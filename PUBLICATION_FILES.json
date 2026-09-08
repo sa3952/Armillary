@@ -37,8 +37,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "2329804bad7fbc1c4dfa0b85b2ada7c6f04174a639962be7bcc12394dd405237",
-      "size_bytes": 12197
+      "sha256": "dd6dd92f2c564369722d190dcebc41afbf9ecbeda90c4b87a241ab65c25f1b64",
+      "size_bytes": 18445
     },
     {
       "path": "SECURITY.md",
@@ -59,6 +59,11 @@
       "path": "THIRD_PARTY_NOTICES.md",
       "sha256": "d034d1757dd771348105046c5fe11b4d61c3b160793fcbfaab760205e4589b95",
       "size_bytes": 2442
+    },
+    {
+      "path": "armillary-mark.svg",
+      "sha256": "fb75e50d66ec6aeb69d8f218bf8c89607d7a8fddc69f4258bce5112ec217c13a",
+      "size_bytes": 683
     },
     {
       "path": "backend/app/__init__.py",
