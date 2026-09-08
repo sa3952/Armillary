@@ -1,0 +1,1506 @@
+{
+  "files": [
+    {
+      "path": ".dockerignore",
+      "sha256": "e2c7e8aafec4ae84f6c6f177c4d5547187ed068a894bc3bfcbd653493e3fba9a",
+      "size_bytes": 1360
+    },
+    {
+      "path": ".github/workflows/production-amd64.yml",
+      "sha256": "623c0d74f40e800c068c5a44d5fb5f6a7d24cb5b7154c9f28467d70f1fa75a36",
+      "size_bytes": 2169
+    },
+    {
+      "path": ".github/workflows/tests.yml",
+      "sha256": "98c0abf8147562db5fed618079cf2a8da30b183e66f3c9332f65de000cfc97a6",
+      "size_bytes": 986
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "c1b69158afeaedbeed7c7f372ceff7924154628ac895ce3e624360530220c1c7",
+      "size_bytes": 109
+    },
+    {
+      "path": ".well-known/security.txt",
+      "sha256": "8c679d464d04b0e49fa40e4f7f099815cab84ff42bd9810122f9908cfc95a47b",
+      "size_bytes": 322
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "sha256": "838ad07ff67ff1612b0fe59dc641f85f4275384136589080da9992bdb6574f50",
+      "size_bytes": 302
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0",
+      "size_bytes": 34523
+    },
+    {
+      "path": "README.md",
+      "sha256": "2329804bad7fbc1c4dfa0b85b2ada7c6f04174a639962be7bcc12394dd405237",
+      "size_bytes": 12197
+    },
+    {
+      "path": "SECURITY.md",
+      "sha256": "4791a3488493d8e8abc7551260c09483a28d455f0285a75e0f2191b63cfdbedc",
+      "size_bytes": 1485
+    },
+    {
+      "path": "SOURCE_EXPORT.json",
+      "sha256": "20453e681f5d6f4ca65bde401476d67a0818a810091efdc3d07e5791ffb45769",
+      "size_bytes": 353
+    },
+    {
+      "path": "SUPPORT.md",
+      "sha256": "cb38d26aee44652a600af60c49b5360e55ccfcae9b583260f340242bd99b297d",
+      "size_bytes": 357
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "sha256": "d034d1757dd771348105046c5fe11b4d61c3b160793fcbfaab760205e4589b95",
+      "size_bytes": 2442
+    },
+    {
+      "path": "backend/app/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "path": "backend/app/config.py",
+      "sha256": "809bec8b57f63405833cd9e8c697760115057dc685d8fbca7d6c08959f563f8e",
+      "size_bytes": 8666
+    },
+    {
+      "path": "backend/app/core/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "path": "backend/app/core/antiscia.py",
+      "sha256": "b81e612e8145a8c3054029a3412e475727a023717d97d1e0d5c51bac4eda69ac",
+      "size_bytes": 2081
+    },
+    {
+      "path": "backend/app/core/aspects.py",
+      "sha256": "1f1687108463ffa356fb9a4d6009b532db1aff66dd3cb3383507eefc83e79c50",
+      "size_bytes": 49761
+    },
+    {
+      "path": "backend/app/core/birth_time_sensitivity.py",
+      "sha256": "75f74e98cb1d4bfa880bab726dda5397c6357bef5b0dea621ed92ad107831f5c",
+      "size_bytes": 37697
+    },
+    {
+      "path": "backend/app/core/bodies.py",
+      "sha256": "2d9d8d7f56517b72f7a661f36a1ce1aad512680225e47ee07abd7fbbfe293494",
+      "size_bytes": 18076
+    },
+    {
+      "path": "backend/app/core/computation_mode.py",
+      "sha256": "f5fdbb83015c411a56a9dc4f2585dbeefa766ce78d7ca3d098027578023fab18",
+      "size_bytes": 6235
+    },
+    {
+      "path": "backend/app/core/declination.py",
+      "sha256": "28a61e07c33cdf90fb2cfcec7c32a0facec7eee1571036c31ab89bd29da6934f",
+      "size_bytes": 4729
+    },
+    {
+      "path": "backend/app/core/dossier.py",
+      "sha256": "b5583b2899311c283ef0b2052da2fb3cde81ae87587f39fda461f14075b49956",
+      "size_bytes": 59193
+    },
+    {
+      "path": "backend/app/core/essential_dignities.py",
+      "sha256": "2b18226f8d76e059c0d99a1eddfb43d7cf11708ccad655d784c74e7254adadc5",
+      "size_bytes": 28387
+    },
+    {
+      "path": "backend/app/core/fixed_stars.py",
+      "sha256": "1e7c9fe887018eea28b0c96b1ec80c7e551cdca726cff78b7943b3ecb8892494",
+      "size_bytes": 7795
+    },
+    {
+      "path": "backend/app/core/formatting.py",
+      "sha256": "dcf1ebb17a7e16356e4a43480060490321f4eaa9960d2d060c58c476a6594d29",
+      "size_bytes": 2524
+    },
+    {
+      "path": "backend/app/core/horizon_events.py",
+      "sha256": "8c8ae0ccd27438c0f6040e0a2c2fa46d69cc73bd74102c1d6b923fb6c6bfa3a8",
+      "size_bytes": 10417
+    },
+    {
+      "path": "backend/app/core/house_placements.py",
+      "sha256": "9d400d5ea4d2886337b9b4e2e56de3d5b4747c4c5a9312be5d6dad15b531d6b2",
+      "size_bytes": 5022
+    },
+    {
+      "path": "backend/app/core/houses.py",
+      "sha256": "0adbd172b5dfa4e6c9574822f0ac58f8ac1ed52f3cc3e82df0ad5ae34ab6d054",
+      "size_bytes": 12309
+    },
+    {
+      "path": "backend/app/core/lots.py",
+      "sha256": "48451e842639b0d0a1fdcc9c1b29c89fc00ae910c6de68b2b3accc3310695076",
+      "size_bytes": 6231
+    },
+    {
+      "path": "backend/app/core/lunar_events.py",
+      "sha256": "8e60d03f5f1b25c3f46b4cb3c33347a9d6e24b0a9dfa3e354a1c40f07c71ee92",
+      "size_bytes": 9364
+    },
+    {
+      "path": "backend/app/core/moon.py",
+      "sha256": "b7924b581dd7a4b610fa5aa55502692e801a4df7f427da04edc3febb65cacb06",
+      "size_bytes": 17757
+    },
+    {
+      "path": "backend/app/core/place_catalog.py",
+      "sha256": "c5199d6ce40bb8d1fa4594bdae1ea598cd0a18fe67ad5d24ba9ded97106c2532",
+      "size_bytes": 14372
+    },
+    {
+      "path": "backend/app/core/root_finding.py",
+      "sha256": "2910927da5ebfff2ae9e2ae9c75a3d908ea2cbd83bf0a41d6d057200160b7dfe",
+      "size_bytes": 15249
+    },
+    {
+      "path": "backend/app/core/time_utils.py",
+      "sha256": "fad65f0983d6394faf7a874d6fdce10430f4e3ffcb7e24617a86a7172b519e23",
+      "size_bytes": 13237
+    },
+    {
+      "path": "backend/app/core/trace.py",
+      "sha256": "f674b13dd074599c145c5f519f8cb5628e218b3465ba867f21e8f21cce55e0ae",
+      "size_bytes": 606
+    },
+    {
+      "path": "backend/app/core/tz_database.py",
+      "sha256": "ad54297d009de9d7ce8c90a36bca454a582ebfbc7f729fafab60a387912f3ab6",
+      "size_bytes": 3776
+    },
+    {
+      "path": "backend/app/ephemeris.py",
+      "sha256": "790e22c7ec5ae928e32bd5d603316a556de81d46c26ba76b48a32fd17bd0e9b9",
+      "size_bytes": 3293
+    },
+    {
+      "path": "backend/app/frontend_assets.py",
+      "sha256": "f29c6e27bc1b3092aeb9c6acbfa89b3e2737be0f4a94707c159e33a0b8e6d77c",
+      "size_bytes": 5034
+    },
+    {
+      "path": "backend/app/frontend_release.py",
+      "sha256": "504c6f5791caf89c11ae5565b6beb909c8eab0151bea8e8e46966875ec599b57",
+      "size_bytes": 17106
+    },
+    {
+      "path": "backend/app/main.py",
+      "sha256": "eef5e644cc98cca446da6c6644195d2a7c7171bb5095917cc30f6d7564f7ce0b",
+      "size_bytes": 58228
+    },
+    {
+      "path": "backend/app/privacy_logging.py",
+      "sha256": "c34b2dad57409fe1d4911ee98a6f57331bf2f7c20c1f01d09a2073d24a6e7d60",
+      "size_bytes": 20830
+    },
+    {
+      "path": "backend/app/privacy_receipt.py",
+      "sha256": "dfe9a4f90b1aa0f5f0b02e5914ce2cfeb499dc4d2f2834694c0ded96dcd67f03",
+      "size_bytes": 11060
+    },
+    {
+      "path": "backend/app/request_limits.py",
+      "sha256": "6b85a07bf9feab8baaf355c51e5ebbe9644be3a4e54fc594a9133a0b1248819c",
+      "size_bytes": 17844
+    },
+    {
+      "path": "backend/app/runtime_static.py",
+      "sha256": "e9a93f8660dfc33b1a4b1c22f3c47d8739ef18375319b34da8f6403fc04ed188",
+      "size_bytes": 3706
+    },
+    {
+      "path": "backend/app/schemas.py",
+      "sha256": "3c552452aa6882f30160a3353e710fa9b9324b8a9728ae2dff92ce7042b5eba3",
+      "size_bytes": 27723
+    },
+    {
+      "path": "backend/app/settings.py",
+      "sha256": "d2fc9039fea903d4b594c06ffa7bda5e689c7a496a54597c60130a425b6656ac",
+      "size_bytes": 4734
+    },
+    {
+      "path": "backend/ephe/seas_18.se1",
+      "sha256": "a2cd8fc33807c78ca9a700c91c2e042258b12fc4796519e00781440b5ad8b2e2",
+      "size_bytes": 223004
+    },
+    {
+      "path": "backend/ephe/sefstars.txt",
+      "sha256": "18b0dcafbe5b7240773daba2c038a325f5b3fc4163f61e0a7f4e92abd4f517c6",
+      "size_bytes": 136618
+    },
+    {
+      "path": "backend/ephe/semo_18.se1",
+      "sha256": "1ca07bd67c24374d77226180c20a4f9996cba013697894810518e7eb582ca4f7",
+      "size_bytes": 1304771
+    },
+    {
+      "path": "backend/ephe/seorbel.txt",
+      "sha256": "97b454ff78f4f4716b5cc987a93ca8f33e44ef4b524a165a155a8a4885fd2e18",
+      "size_bytes": 6063
+    },
+    {
+      "path": "backend/ephe/sepl_18.se1",
+      "sha256": "ca1393ceab3a44fbc895887cf789c68819ae6a1cbc9b22225872dbe4ccd99a66",
+      "size_bytes": 484061
+    },
+    {
+      "path": "backend/place_data/README.md",
+      "sha256": "113a9d6c2b33488d049a2d3f7df1520298c5fb41caa8b008625ead1b10bf6529",
+      "size_bytes": 1562
+    },
+    {
+      "path": "backend/place_data/catalog_manifest.json",
+      "sha256": "2ad02b1cd94144b95a137dc4c4e9d562ec94d27a8ed4283d097757357905873d",
+      "size_bytes": 1953
+    },
+    {
+      "path": "backend/place_data/places.sqlite3",
+      "sha256": "4343ca8b339ff4c01ffa78985a1e8f5dc7412bdcbb7a9e5f6fbac47af9571e8d",
+      "size_bytes": 78954496
+    },
+    {
+      "path": "backend/requirements-dev.lock",
+      "sha256": "d9e8c2249914c3b298e0e356def2ef9298d513c7b49780893a328d0fa3397cb5",
+      "size_bytes": 61822
+    },
+    {
+      "path": "deploy/Dockerfile",
+      "sha256": "9171473cd20a13867cd20defb416a6a85f8b01cee646513b7beb4ecca7a61ffb",
+      "size_bytes": 9378
+    },
+    {
+      "path": "deploy/build-requirements.in",
+      "sha256": "b4265d6b45b5752159beffc5d22e1e868be8ca9d0a1de5fad7ab4e45e48b2e05",
+      "size_bytes": 547
+    },
+    {
+      "path": "deploy/build-requirements.lock",
+      "sha256": "7939b7a00396c1f465440169eba3885fa2f65240112efc402f435c13665888a3",
+      "size_bytes": 30509
+    },
+    {
+      "path": "deploy/compose.frontend-release.yaml",
+      "sha256": "57f9f3726225226e5e663123519cbb081fc07549e6f3f6c569698bdbb0702efa",
+      "size_bytes": 1209
+    },
+    {
+      "path": "deploy/compose.yaml",
+      "sha256": "03c6e5bb487986074b7edf325c1e554345cfbf32d9b61510e45432b83c80a8e7",
+      "size_bytes": 886
+    },
+    {
+      "path": "deploy/container_healthcheck.py",
+      "sha256": "f7b0012b4d192ead10d03303f1e43f0ca672377167f135caa0b4308203d3344e",
+      "size_bytes": 1007
+    },
+    {
+      "path": "deploy/entrypoint.sh",
+      "sha256": "34ea6a7431967ff1a15d6ee702de1960690b1a518a51970e742035a99d8da83a",
+      "size_bytes": 996
+    },
+    {
+      "path": "deploy/ephemeris.sha256",
+      "sha256": "1f0d4f2cfef2965ab6c41ba89ba04da2a5a05aab5d59dcbc601afc9611f19e70",
+      "size_bytes": 456
+    },
+    {
+      "path": "deploy/frontend-contract.json",
+      "sha256": "057e9e09e28079c1f52258349347a8f4115668c57df50971b315f8eb89c1c079",
+      "size_bytes": 111
+    },
+    {
+      "path": "deploy/image-app-built-extensions.json",
+      "sha256": "20fc7c5f07478e98b8dc6fb3b4546dfbc814535feb1aed97e2d9c9d52da8cfd5",
+      "size_bytes": 4478
+    },
+    {
+      "path": "deploy/image-app-tree.json",
+      "sha256": "40cfb72a3891a8205d11b2da1d96e01b31ff66fea31e9f3794d40561697e50db",
+      "size_bytes": 1968
+    },
+    {
+      "path": "deploy/requirements.in",
+      "sha256": "b05b930dbd5beb34c76d45d61d912c5b40204ef259e733688fc7b6dc046c96b3",
+      "size_bytes": 302
+    },
+    {
+      "path": "deploy/requirements.lock",
+      "sha256": "8cf5446c3b68549ef4b301a66ffacf2f58f7ba3bce3105e7fb178f0352e13f98",
+      "size_bytes": 16687
+    },
+    {
+      "path": "deploy/sbom.cyclonedx.json",
+      "sha256": "07c953d1aea5d5e73a5d3b989ab82dea4611f5822ac56a5673d6289c51ac28c2",
+      "size_bytes": 72043
+    },
+    {
+      "path": "deploy/staging/compose.staging.yaml",
+      "sha256": "fc800f306877c1b83caadc8d17c84948b8a212ca3d7ae61ed25f437bf7209af3",
+      "size_bytes": 534
+    },
+    {
+      "path": "deploy/staging/host/private-alpha-watchdog.service",
+      "sha256": "2f49f46802776b360324f7b6870b2ff624add113c97ee486a0f2388702c166c3",
+      "size_bytes": 1529
+    },
+    {
+      "path": "deploy/staging/host/private-alpha-watchdog.timer",
+      "sha256": "9fc05ca77ea276af9aad2bf5f3cf455db27240deaaf02e176c037e5f1584e0cc",
+      "size_bytes": 174
+    },
+    {
+      "path": "deploy/staging/nginx-site.conf.template",
+      "sha256": "735153d810ff994dbf28e8865eba02542100d9097cdc4b6155f0592dab17d517",
+      "size_bytes": 10240
+    },
+    {
+      "path": "deploy/staging/nginx.conf",
+      "sha256": "8c967b3399ec1bd95453e2a85c52a6774c34fcdfd145a9123860655b4ca6edd2",
+      "size_bytes": 707
+    },
+    {
+      "path": "deploy/staging/synthetic-availability-chart.json",
+      "sha256": "7f64acca036039bddb6a5275caea2ef641da9ed625b8426838d4d52132f4b19c",
+      "size_bytes": 366
+    },
+    {
+      "path": "docs/DEPENDENCY_LICENSES.md",
+      "sha256": "ba70800127ee87473d5b72c7cc4d1dd552cbfb8fe9aed4344228a81beaa8c4aa",
+      "size_bytes": 7734
+    },
+    {
+      "path": "docs/DEPENDENCY_POLICY.md",
+      "sha256": "357e26fa61944ceab1236904e569857fa77fd6fae7b8583ccbae4a2faae1d03b",
+      "size_bytes": 382
+    },
+    {
+      "path": "docs/DEPLOYMENT_SECURITY.md",
+      "sha256": "fb92956c7b883ec2ecaa85fc1308323ad1db151c7f7ce167249620dca5def60b",
+      "size_bytes": 676
+    },
+    {
+      "path": "docs/KNOWN_LIMITATIONS.md",
+      "sha256": "9a5f50597caf1aa23c40f5e90331f02c43d12283549acdf70645ad682fb47c3f",
+      "size_bytes": 723
+    },
+    {
+      "path": "docs/PRIVACY_ARCHITECTURE.md",
+      "sha256": "f3a51ae888c661d09ae55d67d23962abc3507caa4ee38399a869736166cadb92",
+      "size_bytes": 712
+    },
+    {
+      "path": "docs/PRIVACY_LOGGING_POLICY.md",
+      "sha256": "13ce494e481e2c492f70dbdcd8291e00b8541d081a49006e90547f0722e3556c",
+      "size_bytes": 797
+    },
+    {
+      "path": "docs/PRIVACY_THREAT_MODEL.md",
+      "sha256": "49292107c9828455637095fdc952aa4f5a2009f119ca9bfeb554b32b8db6421e",
+      "size_bytes": 1249
+    },
+    {
+      "path": "docs/REPRODUCIBLE_BUILD.md",
+      "sha256": "d0f822db8cb0ca0b5e24265488e147ea90932ec4a38aeeb58253f6ecc04ba5a1",
+      "size_bytes": 2620
+    },
+    {
+      "path": "docs/SECURITY_REVIEW_SUMMARY.md",
+      "sha256": "4b7186416689fc9ba65ffa55f7a75b4a88ac4e89f384010c4c0b5e9bd0b821d6",
+      "size_bytes": 598
+    },
+    {
+      "path": "docs/publication/formal_legal_release_copy.json",
+      "sha256": "056deafaea506a4e9858de5046f2956af87c84875eec578286723cb4300abd82",
+      "size_bytes": 2810
+    },
+    {
+      "path": "frontend/bbb6ac30c1952dbb592262ea2656d708.txt",
+      "sha256": "8466c15452ecd5dfaa960bf8e3bca228fa52945afbe2f35835e93fad6be2fec9",
+      "size_bytes": 33
+    },
+    {
+      "path": "frontend/robots.txt",
+      "sha256": "02a4ca79c02c3d6e882d067fa9417ae88884fb542970ef0b69e26612c7c8d55f",
+      "size_bytes": 121
+    },
+    {
+      "path": "frontend/sitemap.xml",
+      "sha256": "b15790df3f45cd7f2324f606dc241d39f471f3bee21e768696f93fdc88f76df8",
+      "size_bytes": 928
+    },
+    {
+      "path": "frontend/surfaces.json",
+      "sha256": "0f82144ce68f3550caad4e99704e4fef73a80486388f0b64147fb0caeb0afcd5",
+      "size_bytes": 6092
+    },
+    {
+      "path": "frontend/tests/client-context.test.cjs",
+      "sha256": "e2a064096f901b105748973eb34583ad49fd1b5e39fb96a8dbe96f67554258ff",
+      "size_bytes": 9766
+    },
+    {
+      "path": "frontend/tests/exporters.test.cjs",
+      "sha256": "291152220ba801d1649c444f157112a097c7cfb2e91b5453471713b73ad41b26",
+      "size_bytes": 29166
+    },
+    {
+      "path": "frontend/tests/fixtures/chart-requests.json",
+      "sha256": "6f8c96bccab9b2ec1d47fab4e799c31a1fcff5240448f80681dfab5f840eedc4",
+      "size_bytes": 4206
+    },
+    {
+      "path": "frontend/tests/fixtures/response-compatibility.json",
+      "sha256": "313e3e2c7d78fc023f51ff4fcfd0556502a676cb80a0c2862a33204b89c0d4ac",
+      "size_bytes": 936
+    },
+    {
+      "path": "frontend/tests/privacy_lifecycle.test.cjs",
+      "sha256": "fc7d90c5e5227da89b09088a6aaa7cc60c29b7e4999af6fba77ad2a488a17a06",
+      "size_bytes": 6093
+    },
+    {
+      "path": "frontend/tests/request_input.test.cjs",
+      "sha256": "7291359d83879b143b6cb6bf46c25b1b8e7100ad87ac193e88c10f333fab261e",
+      "size_bytes": 10112
+    },
+    {
+      "path": "frontend/zh-TW/about.html",
+      "sha256": "8b9e792b29ed848ba867a33d9d93257adab2d647205e8e1eb2dadec67c0511c9",
+      "size_bytes": 11459
+    },
+    {
+      "path": "frontend/zh-TW/blog.html",
+      "sha256": "979e83d3a65605ea1b1ccfba4245ac431bf5872ec9c7b8ac3f1246cbe26267fb",
+      "size_bytes": 11037
+    },
+    {
+      "path": "frontend/zh-TW/calculate.css",
+      "sha256": "d4df7018d60864b0728dedacef6e810c09175fb847d9e35ccce023cc1481c41d",
+      "size_bytes": 34393
+    },
+    {
+      "path": "frontend/zh-TW/calculate.html",
+      "sha256": "028bfbd34ea36a40d4bf6265355defcf66b522f4e030602927df79dcd1569186",
+      "size_bytes": 17626
+    },
+    {
+      "path": "frontend/zh-TW/calculate.js",
+      "sha256": "80f694fafed4e7c3ab97c7a508aa469a44ffc21d411a778136082f354a7a34a7",
+      "size_bytes": 60102
+    },
+    {
+      "path": "frontend/zh-TW/client-context.js",
+      "sha256": "209856b65c59cf90049a2594e411e4fe2282ca8371dcae15f3d5aee0fb025795",
+      "size_bytes": 12728
+    },
+    {
+      "path": "frontend/zh-TW/contact.html",
+      "sha256": "43a4cbfeeec6f559fa3acc5757661e198eac2c7c6c0acf7919de5e70c4c617e2",
+      "size_bytes": 12076
+    },
+    {
+      "path": "frontend/zh-TW/exporters.js",
+      "sha256": "b8a51609b2411a0d8b229bf6b0466399072644a9076a368e41daf5158036fd38",
+      "size_bytes": 21525
+    },
+    {
+      "path": "frontend/zh-TW/favicon.svg",
+      "sha256": "4fc39ec49ab823585c580df2f78bdde4b9e6bfb8389302e0a994ed577f017825",
+      "size_bytes": 662
+    },
+    {
+      "path": "frontend/zh-TW/features.html",
+      "sha256": "f41bea5474ed351dcfa0c74a4e1d394075187f7fbc4755f80fcba3bbfea9a563",
+      "size_bytes": 27026
+    },
+    {
+      "path": "frontend/zh-TW/index.html",
+      "sha256": "93290fc6b701bf345e3c64e0067ba8be887098fa24dfe37e1e48c74a6149d7d1",
+      "size_bytes": 19710
+    },
+    {
+      "path": "frontend/zh-TW/legal/copyright.html",
+      "sha256": "793bfaa762410ae85951ba4e34b201cf7326cbc910ac059e18f6eb23cd424227",
+      "size_bytes": 16762
+    },
+    {
+      "path": "frontend/zh-TW/legal/privacy.html",
+      "sha256": "4c1b4498af9b5bf15dcdb844ff891ba40b721cc48c21343689d848e88646630e",
+      "size_bytes": 19375
+    },
+    {
+      "path": "frontend/zh-TW/legal/terms.html",
+      "sha256": "64ae16e11e604a6b2d596dbd1a51183bc0c975d5010b488d9533655392172a05",
+      "size_bytes": 13890
+    },
+    {
+      "path": "frontend/zh-TW/location-receipt.js",
+      "sha256": "116f3addf1ded50fb9ad70f59b1fbee97a0f75da6496169e670acc2b9b0714f3",
+      "size_bytes": 2062
+    },
+    {
+      "path": "frontend/zh-TW/methods.html",
+      "sha256": "d8d6276f21d03104d0ff11a27a95715626de0cc55559256b393698412a5f375d",
+      "size_bytes": 26653
+    },
+    {
+      "path": "frontend/zh-TW/options-catalogue.js",
+      "sha256": "7b3eb93bd2c7033ec47a0d50ef59916f099a53a5c7016b5df800431caacd1e5b",
+      "size_bytes": 22137
+    },
+    {
+      "path": "frontend/zh-TW/page.css",
+      "sha256": "ab6cee9379951c5612582dc60cef96410ad762da65fe91018a13a0d4dec3387d",
+      "size_bytes": 134260
+    },
+    {
+      "path": "frontend/zh-TW/privacy-lifecycle.js",
+      "sha256": "678e105314bc6191e01bfdc770bfa930fc5d0acd772e3155845353e04e33aa83",
+      "size_bytes": 5197
+    },
+    {
+      "path": "frontend/zh-TW/request-input.js",
+      "sha256": "c89db60164df2e29a94331d95d907409b0606c739c99be938afe80765f8af0be",
+      "size_bytes": 8887
+    },
+    {
+      "path": "frontend/zh-TW/roadmap.html",
+      "sha256": "d3544bf23b74b84a09f07e4037c44ae8b5b0f2b5a04acb1d06ba9e058509ee59",
+      "size_bytes": 17699
+    },
+    {
+      "path": "frontend/zh-TW/security.html",
+      "sha256": "a00989e252e94f0e74627f3fe04bee6e6efbba132e55e46d2966eac50946cc51",
+      "size_bytes": 28803
+    },
+    {
+      "path": "frontend/zh-TW/sensitivity-time.js",
+      "sha256": "d0a866ace3be24853162667c9a36f797bc01c62dd048a61b8db1cf6fb0dc5334",
+      "size_bytes": 971
+    },
+    {
+      "path": "frontend/zh-TW/sensitivity.js",
+      "sha256": "602ed58c011d46757b1297b74996595bcdbc364214d30f09b3a55e71535aa053",
+      "size_bytes": 7923
+    },
+    {
+      "path": "frontend/zh-TW/tokens.css",
+      "sha256": "718f4444ec866f0234313e013313254fb9c07487fc9a9e833690cbcf7ce5b1e5",
+      "size_bytes": 6998
+    },
+    {
+      "path": "frontend/zh-TW/trust.html",
+      "sha256": "2f810a5c20d58c321e5ce6e50b9ac6f9999a17573f48982ddd1e5940cf54c6e3",
+      "size_bytes": 26965
+    },
+    {
+      "path": "frontend/zh-TW/validation.html",
+      "sha256": "917f27d703ba377588ed3e2bc1b61099af02d90e744c1866c674b2c3028f6180",
+      "size_bytes": 9227
+    },
+    {
+      "path": "frontend/zh-TW/view-model.js",
+      "sha256": "f5e485654ba14b98481ba24428a06d1c958557e77a8d4af73619c0856d266990",
+      "size_bytes": 66048
+    },
+    {
+      "path": "publication/third_party_source_lock.json",
+      "sha256": "de66d9cb644906580be0b75c1e3ed44b81355d94a5e85124dcb404dee9250da3",
+      "size_bytes": 5998
+    },
+    {
+      "path": "pytest.ini",
+      "sha256": "5c8a63a922829839d9364b11088e32a90a835c8e5e34b86e201d31ac18f4dc19",
+      "size_bytes": 30
+    },
+    {
+      "path": "scripts/__init__.py",
+      "sha256": "3d7ef32a62e2e8d99af8ab81aa2398af82ecee492f7e0bea6a565fb66d937237",
+      "size_bytes": 57
+    },
+    {
+      "path": "scripts/deployment/__init__.py",
+      "sha256": "59e11265cc608cc059f194fa01b394dbae50cdd288a8791758669b43805c4cc0",
+      "size_bytes": 67
+    },
+    {
+      "path": "scripts/deployment/authorization_markers.py",
+      "sha256": "8ff546d9cf31fbb8356c604adafbe3bb43c36d67f866f08c9d8a17d110c200ab",
+      "size_bytes": 8323
+    },
+    {
+      "path": "scripts/deployment/frontend_release.py",
+      "sha256": "288e4b2b5ba512453c387ca25467a4295703845123688255b5ff7d810ae9d6b0",
+      "size_bytes": 11032
+    },
+    {
+      "path": "scripts/deployment/immutable_frontend.py",
+      "sha256": "e83a75b9170c391be5a5f8cc882a6df34b8dd2c71a11ee8d454df00a74459808",
+      "size_bytes": 7388
+    },
+    {
+      "path": "scripts/deployment/private_alpha_watchdog.py",
+      "sha256": "cf79f2ea98b8f37811f0040379fa195097db763e8060d25c98194170255c99d5",
+      "size_bytes": 17963
+    },
+    {
+      "path": "scripts/deployment/release_packet.py",
+      "sha256": "7d44f0be820cac23054f4b23f24a070b17a4520f8aa124bc2fc26a061e7a87b1",
+      "size_bytes": 14179
+    },
+    {
+      "path": "scripts/deployment/release_transaction.py",
+      "sha256": "b7a65bbd9d5114a63b2bfb7b74c9e27a42a153b1f9881f183a55d95c492752be",
+      "size_bytes": 8963
+    },
+    {
+      "path": "scripts/deployment/run_staging_privacy_canary.py",
+      "sha256": "9fa7e90418a3c458fc77b5c763026d74129852f809df265090e03f00fd87bd3a",
+      "size_bytes": 18897
+    },
+    {
+      "path": "scripts/deployment/staging_release.py",
+      "sha256": "73792c303e7c66515f1e6d4bb34ef98e88aa9b22bc4d8c24c956d590f393f9f4",
+      "size_bytes": 36819
+    },
+    {
+      "path": "scripts/deployment/verify_staging_http.py",
+      "sha256": "6aca93bc7781d66a14c2972b31c9b0e127d838fcf87717b514c7f75fc696516a",
+      "size_bytes": 9694
+    },
+    {
+      "path": "scripts/frontend/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "path": "scripts/frontend/build_pages.py",
+      "sha256": "79b0158b6f21155fb8c80993c76ef878fbb0f160c6713183ca1a49f1e0818c27",
+      "size_bytes": 12842
+    },
+    {
+      "path": "scripts/frontend/gen_armillary.py",
+      "sha256": "725bc0a5502602c92820f95d4eae9c1a30408a993cca91271c75fc261591697b",
+      "size_bytes": 12984
+    },
+    {
+      "path": "scripts/frontend/pages/_shell.html",
+      "sha256": "a6b355ef3fcd516bc5cb300d9aba4544fb88cc72eb9e479d6972a5a4e8afd5b3",
+      "size_bytes": 2885
+    },
+    {
+      "path": "scripts/frontend/pages/about.html",
+      "sha256": "d956530393a415c908f68ed79af4bce7fd555b62b377330c372a7d85c69296c8",
+      "size_bytes": 7614
+    },
+    {
+      "path": "scripts/frontend/pages/blog.html",
+      "sha256": "ed542fc0f84231c31271bdf22aee87ecde075b9edb5d989b7a90fac6aa8116ef",
+      "size_bytes": 7239
+    },
+    {
+      "path": "scripts/frontend/pages/calculate.html",
+      "sha256": "05e0534c038645af182cfd213e221a0317493a0856ce86801feb91e486f55c2d",
+      "size_bytes": 13727
+    },
+    {
+      "path": "scripts/frontend/pages/contact.html",
+      "sha256": "1c2aa70f9a75fd95baccc3e923b74237d1b62c5607f2ab9528c4f91f5bda8963",
+      "size_bytes": 8358
+    },
+    {
+      "path": "scripts/frontend/pages/features.html",
+      "sha256": "6c576203c6728d0d440b5d39380dd4420194166c37bdbd10fc937dfaf4ab8dc5",
+      "size_bytes": 23160
+    },
+    {
+      "path": "scripts/frontend/pages/home.html",
+      "sha256": "35db44a85f2abdea474f81f57d28aea8d291fa4fc6f9a8bb9a7965b7d1a51022",
+      "size_bytes": 15401
+    },
+    {
+      "path": "scripts/frontend/pages/legal-copyright.html",
+      "sha256": "1f3aea09f856e2944e7ed422a0abf5236031e2408760240837949646f4c25054",
+      "size_bytes": 12931
+    },
+    {
+      "path": "scripts/frontend/pages/legal-privacy.html",
+      "sha256": "d34989f47422d4b838d3d631213d8b0c1c35dc1ab35b51daa0dca620c663d5d3",
+      "size_bytes": 15597
+    },
+    {
+      "path": "scripts/frontend/pages/legal-terms.html",
+      "sha256": "4f52971dc86ae47c5e65f64ecd73c9217367f33479b59a27f3d3b2ff101ec38a",
+      "size_bytes": 10147
+    },
+    {
+      "path": "scripts/frontend/pages/methods.html",
+      "sha256": "4ba51b9ea7e997057d1936b1c584e882e791243c014c1a111c6040b82543dc79",
+      "size_bytes": 22710
+    },
+    {
+      "path": "scripts/frontend/pages/roadmap.html",
+      "sha256": "e30c4ac95d3e391909473ab69609395f2dfd61b45873a41654dc15fc0cb5cb14",
+      "size_bytes": 13952
+    },
+    {
+      "path": "scripts/frontend/pages/security.html",
+      "sha256": "f212229a7367df44bff606bc1e412222ab6d3e7a89ad344dc371667071677318",
+      "size_bytes": 23255
+    },
+    {
+      "path": "scripts/frontend/pages/trust.html",
+      "sha256": "9909fa101477b25d0985e9b3d9308df8e1e5ab3591d70fece8d718b93d0e6a83",
+      "size_bytes": 23120
+    },
+    {
+      "path": "scripts/frontend/pages/validation.html",
+      "sha256": "bbdc26ecbcb7dda50a0c6aae97e1520918749ca1bee666f1f30133b01e39b74a",
+      "size_bytes": 5299
+    },
+    {
+      "path": "scripts/publication/__init__.py",
+      "sha256": "c4c5c644025262df1dd0cd6807b5a2b02c6f716c8054024c1d9cba58bbdd0468",
+      "size_bytes": 68
+    },
+    {
+      "path": "scripts/publication/generate_static_openapi.py",
+      "sha256": "a5b058f419327feaf4c5f2ceed86406c7f6a5d5a7c52487de0358c97e674311f",
+      "size_bytes": 1251
+    },
+    {
+      "path": "scripts/publication/prepare_third_party_sources.py",
+      "sha256": "7d1297398a2b506d7bb9c2449a1eb682a5275f1143d71f91ff34ad7283c5d22f",
+      "size_bytes": 29925
+    },
+    {
+      "path": "scripts/publication/verify_candidate_clean.sh",
+      "sha256": "c54177543c93fc34f0d1b16605499e62f734217c2ed9c89ade3844133b0ad1c4",
+      "size_bytes": 1769
+    },
+    {
+      "path": "scripts/publication/verify_image_supply_chain.py",
+      "sha256": "6ef1e92d5ce5dcee7457896962e3e87f7b3c8dd85bbaa91baa842ee8ca610e0b",
+      "size_bytes": 20265
+    },
+    {
+      "path": "scripts/publication/verify_linux_source_build.py",
+      "sha256": "eeb33e31329eb2c63e792c047aec25843b640d2ea728228f36e5c9f38c8861a3",
+      "size_bytes": 11980
+    },
+    {
+      "path": "scripts/publication/verify_publication_candidate.py",
+      "sha256": "a057f3ab4e93d7a26ea243ee25899284ad34078ed1d8abaabfe2f3bde6099223",
+      "size_bytes": 33960
+    },
+    {
+      "path": "scripts/tools/__init__.py",
+      "sha256": "94c24deb1baae7b01a8bd72f8961e67b659df8507a804cb570858330ef950875",
+      "size_bytes": 50
+    },
+    {
+      "path": "scripts/tools/closed_set.py",
+      "sha256": "00ec8ad25d91198408c12a74638e25654a36bbe935e0ee3d6aee47fa612c7baf",
+      "size_bytes": 1666
+    },
+    {
+      "path": "scripts/tools/output_confinement.py",
+      "sha256": "62751968d54b7b57a53b7968f4869f8a026c7bc9a9812b101511fd340cb1fe99",
+      "size_bytes": 427
+    },
+    {
+      "path": "scripts/tools/semantic_currentness.py",
+      "sha256": "dbe00dee044d50344e64d1bc0858f26267c7fa1c78e21ef611d8b8927ba155c6",
+      "size_bytes": 2369
+    },
+    {
+      "path": "scripts/tools/source_tree_identity.py",
+      "sha256": "175cf68854e8a284234f7e2a9cb4ca2df23cbc678058cc05ab4145203b42cbb4",
+      "size_bytes": 5817
+    },
+    {
+      "path": "scripts/tools/staging_secure_io.py",
+      "sha256": "b4d51b8215298687fa1afe056f08ec6d1183bbee067c2ded1981a31ae04a48b1",
+      "size_bytes": 5592
+    },
+    {
+      "path": "scripts/validation/__init__.py",
+      "sha256": "bfe583bed023321c8448795d7e14789c910a39245f94ade5105a55cf75d86660",
+      "size_bytes": 59
+    },
+    {
+      "path": "scripts/validation/build_place_catalog.py",
+      "sha256": "41d1bd4fbdca067a66b856416be375b8cb464eb68447afca4e70ecf21c105cb9",
+      "size_bytes": 20363
+    },
+    {
+      "path": "scripts/verification/__init__.py",
+      "sha256": "c4e9d62046e1b726cf95b76dea0cf2fc0c1681891998a7c0293c2477dab8bab9",
+      "size_bytes": 59
+    },
+    {
+      "path": "scripts/verification/build_release_image.py",
+      "sha256": "fa8b02de6afe4944db1f66c98b904e26666ee1fad8479e31e911b5558f114ebd",
+      "size_bytes": 20486
+    },
+    {
+      "path": "scripts/verification/build_sbom.py",
+      "sha256": "149682102f89e44dbc02824a0c16eac6399f387ba9a44b636694b004e8663404",
+      "size_bytes": 6840
+    },
+    {
+      "path": "scripts/verification/capture_build_evidence.py",
+      "sha256": "95714f2d0eb8b10eb1766f2466e05f1b0fde8d8246e37ccdeb0ecdadac4c9094",
+      "size_bytes": 8012
+    },
+    {
+      "path": "scripts/verification/container_platform_contract.py",
+      "sha256": "4ce63854aa8c44915274208c94631f767f91f64b0877d221a04058638faacda9",
+      "size_bytes": 822
+    },
+    {
+      "path": "scripts/verification/verify_container_runtime.py",
+      "sha256": "698b7e5db3412107102516718222c026cd597c67b8805b8f3b512f2d536fbcd1",
+      "size_bytes": 60900
+    },
+    {
+      "path": "scripts/verification/verify_docker_context.py",
+      "sha256": "2bde8df212a2f9064981674bc37ca032bbcf69f11fb177d482cd1d16b3f3a7e6",
+      "size_bytes": 14025
+    },
+    {
+      "path": "scripts/verification/verify_ephemeris_integrity.py",
+      "sha256": "7459acea981498c6715b7676de93ed33a0791adcfb8bc7508ed5537104476397",
+      "size_bytes": 4271
+    },
+    {
+      "path": "scripts/verification/verify_place_catalog.py",
+      "sha256": "56242e0838258b0a714de135eb21639f223b0938ba92802f02c5007fdfab4952",
+      "size_bytes": 4138
+    },
+    {
+      "path": "scripts/verification/verify_privacy_dependencies.py",
+      "sha256": "57f372f1d561b03e1d858697708dc102f646b1213c551f6623b51fd23e07b97a",
+      "size_bytes": 11503
+    },
+    {
+      "path": "scripts/verify_delivery.py",
+      "sha256": "cffc9beb7ca7adbf1305e9048b93f73f6bda10fae48216cb2d3450d2679559bf",
+      "size_bytes": 9327
+    },
+    {
+      "path": "tests/backend/__init__.py",
+      "sha256": "6dcd4caa191f64df6aad1f33a3bb34fb39518089a3774761aadc7d91fcda052f",
+      "size_bytes": 2333
+    },
+    {
+      "path": "tests/backend/test_privacy_logging.py",
+      "sha256": "70ebae0caaf74cb6444e61b30cf5412febf4dec9b83faae18c2437424ca85acb",
+      "size_bytes": 29501
+    },
+    {
+      "path": "tests/deployment/test_production_runtime_contract.py",
+      "sha256": "1afe9f3545dc4801bb5c173167aca6f7e58d44454736f35ec904fb6f114d5f9d",
+      "size_bytes": 35070
+    },
+    {
+      "path": "tests/deployment/test_release_build_transaction.py",
+      "sha256": "9f4bb7af56fe09eaf0f1b812cf626582464606c031953cb9d8fe00e9623f7d07",
+      "size_bytes": 13167
+    },
+    {
+      "path": "tests/deployment/test_resource_limits.py",
+      "sha256": "26f6e947694aeef0bd783ef3c3988528a26afb8755f640dbf2c521eb06603fa9",
+      "size_bytes": 22102
+    },
+    {
+      "path": "tests/integration/test_hosted_live_server.py",
+      "sha256": "fd3644cd60a48c26467ee72fa5a4a1fb42104a10963105001fd679d762947abd",
+      "size_bytes": 9262
+    },
+    {
+      "path": "tests/integration/test_hosted_profile.py",
+      "sha256": "ab4cfb3d6387104196723da211b1ce77ad194037355544493dc37f833d312b18",
+      "size_bytes": 19236
+    },
+    {
+      "path": "tests/publication/test_privacy_dependency_guard.py",
+      "sha256": "d10d35e000dab76d203b5a865b5bc497af0d0ffc2dd084157419b519a2e8210a",
+      "size_bytes": 7921
+    },
+    {
+      "path": "third_party/SHA256SUMS",
+      "sha256": "89add94d5041c1e29ed6b86d7446a2510d47a81966f997c578d3c2dbd641dfba",
+      "size_bytes": 11887
+    },
+    {
+      "path": "third_party/SOURCE_MANIFEST.json",
+      "sha256": "da8ffc1adbb9c64c6a1ed35d2079ed97180fc289efaab9260d8fcaac15293945",
+      "size_bytes": 63756
+    },
+    {
+      "path": "third_party/build_wheels/ast_serialize-0.8.0-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "sha256": "252f883290d1cdb728eb7fe1d9a7221b88af5a329aae0bc91ddee4dafb820331",
+      "size_bytes": 1258574
+    },
+    {
+      "path": "third_party/build_wheels/dunamai-1.26.2-py3-none-any.whl",
+      "sha256": "4234be3a90c3ec13ecf75d94a2248068e5a3018e8112892fcd9f3a1f287c9c32",
+      "size_bytes": 27478
+    },
+    {
+      "path": "third_party/build_wheels/flit_core-4.0.2-py3-none-any.whl",
+      "sha256": "8d80717e28d982b41594ed5b14d4e89fbc5bad55473fde27994a3101db18a94e",
+      "size_bytes": 44551
+    },
+    {
+      "path": "third_party/build_wheels/hatch_fancy_pypi_readme-25.1.0-py3-none-any.whl",
+      "sha256": "ce0134c40d63d874ac48f48ccc678b8f3b62b8e50e9318520d2bffc752eedaf3",
+      "size_bytes": 10046
+    },
+    {
+      "path": "third_party/build_wheels/hatchling-1.32.0-py3-none-any.whl",
+      "sha256": "0e17c9c3b9aa7c625acc8d0f5b622f107d5049af9ecf5ada4de1aada5be7cdbc",
+      "size_bytes": 78435
+    },
+    {
+      "path": "third_party/build_wheels/jinja2-3.1.6-py3-none-any.whl",
+      "sha256": "85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67",
+      "size_bytes": 134899
+    },
+    {
+      "path": "third_party/build_wheels/librt-0.15.0-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "d4c7bacb70930f3d0a56f4ecf1be474a1f0d941b01dd73b756f3c256d42cb879",
+      "size_bytes": 523073
+    },
+    {
+      "path": "third_party/build_wheels/markupsafe-3.0.3-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "457a69a9577064c05a97c41f4e65148652db078a3a509039e64d3467b9e7ef97",
+      "size_bytes": 23005
+    },
+    {
+      "path": "third_party/build_wheels/maturin-1.15.0-py3-none-manylinux_2_12_x86_64.manylinux2010_x86_64.musllinux_1_1_x86_64.whl",
+      "sha256": "653020a63525bb224e5ab0adf02e17a2e08bc86dbea7fc1399c9a56d7529b99e",
+      "size_bytes": 10541186
+    },
+    {
+      "path": "third_party/build_wheels/mypy_extensions-1.1.0-py3-none-any.whl",
+      "sha256": "1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505",
+      "size_bytes": 4963
+    },
+    {
+      "path": "third_party/build_wheels/packaging-26.3-py3-none-any.whl",
+      "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
+      "size_bytes": 129956
+    },
+    {
+      "path": "third_party/build_wheels/pathspec-1.1.1-py3-none-any.whl",
+      "sha256": "a00ce642f577bf7f473932318056212bc4f8bfdf53128c78bbd5af0b9b20b189",
+      "size_bytes": 57328
+    },
+    {
+      "path": "third_party/build_wheels/pdm_backend-2.4.9-py3-none-any.whl",
+      "sha256": "8d1064751dadb0c40b1026b46826a448d85c8228a564985c62fb53d4aba538a1",
+      "size_bytes": 115770
+    },
+    {
+      "path": "third_party/build_wheels/pluggy-1.6.0-py3-none-any.whl",
+      "sha256": "e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746",
+      "size_bytes": 20538
+    },
+    {
+      "path": "third_party/build_wheels/setuptools-84.0.0-py3-none-any.whl",
+      "sha256": "51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670",
+      "size_bytes": 818216
+    },
+    {
+      "path": "third_party/build_wheels/setuptools_scm-10.2.1-py3-none-any.whl",
+      "sha256": "b7c82f4102d389ee57dc66ccdb4f9b4bca3c40ba83b43f1f63d68ccd72db2580",
+      "size_bytes": 29078
+    },
+    {
+      "path": "third_party/build_wheels/tomlkit-0.15.1-py3-none-any.whl",
+      "sha256": "177a05aece5a8ca5266fd3c448abb47b8d352f09d477d3ca8332db4d89b24304",
+      "size_bytes": 49449
+    },
+    {
+      "path": "third_party/build_wheels/trove_classifiers-2026.6.1.19-py3-none-any.whl",
+      "sha256": "ab4c4ec93cc4a4e7815fa759906e05e6bb3f2fbd92ea0f897288c6a43efd15b3",
+      "size_bytes": 14211
+    },
+    {
+      "path": "third_party/build_wheels/types_psutil-7.2.2.20260827-py3-none-any.whl",
+      "sha256": "62364359cf85482aa698a62488e5420cae5c576e8acec450ce7fb3b91cdb3d96",
+      "size_bytes": 33365
+    },
+    {
+      "path": "third_party/build_wheels/types_setuptools-84.0.0.20260812-py3-none-any.whl",
+      "sha256": "799c08e4bc6a288e8a0b538afb5f5ff320a08927ba8dbedb30c74ee3ba5d867b",
+      "size_bytes": 70320
+    },
+    {
+      "path": "third_party/build_wheels/typing_extensions-4.16.0-py3-none-any.whl",
+      "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+      "size_bytes": 45571
+    },
+    {
+      "path": "third_party/build_wheels/uv_dynamic_versioning-0.14.1-py3-none-any.whl",
+      "sha256": "f9db710cc2ce9dccf06fab958ad10c45cae43cff70e3eccaa89365b040e98306",
+      "size_bytes": 11083
+    },
+    {
+      "path": "third_party/build_wheels/vcs_versioning-2.3.1-py3-none-any.whl",
+      "sha256": "a11299394e101569a62ab061375260d08bc56cd33d685b7067d85312368f4457",
+      "size_bytes": 114617
+    },
+    {
+      "path": "third_party/build_wheels/wheel-0.48.0-py3-none-any.whl",
+      "sha256": "3217dcc807155e45db462d7ef2431f5ddda0d7273b700d05a67b271ceb1287ab",
+      "size_bytes": 33320
+    },
+    {
+      "path": "third_party/dependency_wheels/annotated_doc-0.0.5-py3-none-any.whl",
+      "sha256": "117bac03a25ede5df5440e855b32d556049ca169ead221505badf432fed4b101",
+      "size_bytes": 5302
+    },
+    {
+      "path": "third_party/dependency_wheels/annotated_types-0.8.0-py3-none-any.whl",
+      "sha256": "f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0",
+      "size_bytes": 13427
+    },
+    {
+      "path": "third_party/dependency_wheels/anyio-4.14.2-py3-none-any.whl",
+      "sha256": "9f505dda5ac9f0c8309b5e8bd445a8c2bf7246f3ce950121e45ea15bc41d1494",
+      "size_bytes": 125813
+    },
+    {
+      "path": "third_party/dependency_wheels/ast_serialize-0.8.0-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "sha256": "252f883290d1cdb728eb7fe1d9a7221b88af5a329aae0bc91ddee4dafb820331",
+      "size_bytes": 1258574
+    },
+    {
+      "path": "third_party/dependency_wheels/click-8.5.0-py3-none-any.whl",
+      "sha256": "255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360",
+      "size_bytes": 125251
+    },
+    {
+      "path": "third_party/dependency_wheels/coverage-7.16.0-cp314-cp314-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl",
+      "sha256": "f98d438add63546745e5e847192e3e9ab897ed6f2ca96f8281e2f5a15958ae62",
+      "size_bytes": 257139
+    },
+    {
+      "path": "third_party/dependency_wheels/exceptiongroup-1.3.1-py3-none-any.whl",
+      "sha256": "a7a39a3bd276781e98394987d3a5701d0c4edffb633bb7a5144577f82c773598",
+      "size_bytes": 16740
+    },
+    {
+      "path": "third_party/dependency_wheels/fastapi-0.141.1-py3-none-any.whl",
+      "sha256": "bfb91aa2d334c61cb35ba9a116fc123b3d3df31640b801cf57a7a78ec3f603b3",
+      "size_bytes": 131954
+    },
+    {
+      "path": "third_party/dependency_wheels/h11-0.16.0-py3-none-any.whl",
+      "sha256": "63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86",
+      "size_bytes": 37515
+    },
+    {
+      "path": "third_party/dependency_wheels/httpcore2-2.12.0-py3-none-any.whl",
+      "sha256": "7e04258ce01013d7d615e5b910a3b27fac937d7a95038227e79652b4ba3b4ceb",
+      "size_bytes": 83074
+    },
+    {
+      "path": "third_party/dependency_wheels/httpx2-2.12.0-py3-none-any.whl",
+      "sha256": "cc8b6eecb8661c146b8f89a60e97456ee086e91a784ed31ac450c3a9e613dd36",
+      "size_bytes": 95427
+    },
+    {
+      "path": "third_party/dependency_wheels/hypothesis-6.167.1-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "sha256": "742be00d7bb53d10634e6435e5b98f51fcdbe7ed377d473ab7387d9499c87169",
+      "size_bytes": 1162776
+    },
+    {
+      "path": "third_party/dependency_wheels/idna-3.19-py3-none-any.whl",
+      "sha256": "815e7be7a7806d54abb586dc943addc79e8b2ee16915059658cbeff4b1b43bf4",
+      "size_bytes": 68550
+    },
+    {
+      "path": "third_party/dependency_wheels/iniconfig-2.3.0-py3-none-any.whl",
+      "sha256": "f631c04d2c48c52b84d0d0549c99ff3859c98df65b3101406327ecc7d53fbf12",
+      "size_bytes": 7484
+    },
+    {
+      "path": "third_party/dependency_wheels/librt-0.15.0-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "d4c7bacb70930f3d0a56f4ecf1be474a1f0d941b01dd73b756f3c256d42cb879",
+      "size_bytes": 523073
+    },
+    {
+      "path": "third_party/dependency_wheels/mypy-2.3.1-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "8e036f06b41630f4c8a1d48f9ac6aa26acc65f8be089973f5519da643318f03f",
+      "size_bytes": 15225538
+    },
+    {
+      "path": "third_party/dependency_wheels/mypy_extensions-1.1.0-py3-none-any.whl",
+      "sha256": "1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505",
+      "size_bytes": 4963
+    },
+    {
+      "path": "third_party/dependency_wheels/packaging-26.3-py3-none-any.whl",
+      "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
+      "size_bytes": 129956
+    },
+    {
+      "path": "third_party/dependency_wheels/pathspec-1.1.1-py3-none-any.whl",
+      "sha256": "a00ce642f577bf7f473932318056212bc4f8bfdf53128c78bbd5af0b9b20b189",
+      "size_bytes": 57328
+    },
+    {
+      "path": "third_party/dependency_wheels/pluggy-1.6.0-py3-none-any.whl",
+      "sha256": "e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746",
+      "size_bytes": 20538
+    },
+    {
+      "path": "third_party/dependency_wheels/pydantic-2.13.5-py3-none-any.whl",
+      "sha256": "346a034f080da3755d8e9cb5e00e8b07de1d39e4f6e2c87d8ab7cafa0b269a73",
+      "size_bytes": 472589
+    },
+    {
+      "path": "third_party/dependency_wheels/pydantic_core-2.46.5-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "sha256": "54d510bac3ee52247af28ed4bb18a1e799f040ac60fd2bf5ccd4c92f1fbe786f",
+      "size_bytes": 2068352
+    },
+    {
+      "path": "third_party/dependency_wheels/pygments-2.21.0-py3-none-any.whl",
+      "sha256": "2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9",
+      "size_bytes": 1250147
+    },
+    {
+      "path": "third_party/dependency_wheels/pytest-9.1.1-py3-none-any.whl",
+      "sha256": "37a86b45efb9a47a61a36449063e8e18d0cab3161329fc099eb21783169c4f0c",
+      "size_bytes": 386536
+    },
+    {
+      "path": "third_party/dependency_wheels/sortedcontainers-2.4.0-py2.py3-none-any.whl",
+      "sha256": "a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0",
+      "size_bytes": 29575
+    },
+    {
+      "path": "third_party/dependency_wheels/starlette-1.6.0-py3-none-any.whl",
+      "sha256": "a86dd39d14bb45f85a3d18525215a9ef0cfd1f192ac793220e72598c90335f0c",
+      "size_bytes": 75969
+    },
+    {
+      "path": "third_party/dependency_wheels/tomli-2.4.1-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "01f520d4f53ef97964a240a035ec2a869fe1a37dde002b57ebc4417a27ccd853",
+      "size_bytes": 252084
+    },
+    {
+      "path": "third_party/dependency_wheels/truststore-0.10.4-py3-none-any.whl",
+      "sha256": "adaeaecf1cbb5f4de3b1959b42d41f6fab57b2b1666adb59e89cb0b53361d981",
+      "size_bytes": 18660
+    },
+    {
+      "path": "third_party/dependency_wheels/typing_extensions-4.16.0-py3-none-any.whl",
+      "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+      "size_bytes": 45571
+    },
+    {
+      "path": "third_party/dependency_wheels/typing_inspection-0.4.4-py3-none-any.whl",
+      "sha256": "65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147",
+      "size_bytes": 14750
+    },
+    {
+      "path": "third_party/dependency_wheels/uvicorn-0.52.4-py3-none-any.whl",
+      "sha256": "f86e41a149d7d05a9969337e3946a9c171c06a5d42680896daaba624aeac8da1",
+      "size_bytes": 79871
+    },
+    {
+      "path": "third_party/pyswisseph/LICENSE.txt",
+      "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0",
+      "size_bytes": 34523
+    },
+    {
+      "path": "third_party/pyswisseph/SHA256SUMS",
+      "sha256": "516a9491ce1247c079abde90466ab5bcea437f896d0c0ab11d251b55eaeda4fb",
+      "size_bytes": 430
+    },
+    {
+      "path": "third_party/pyswisseph/SWEPHELP_LICENSE",
+      "sha256": "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643",
+      "size_bytes": 18092
+    },
+    {
+      "path": "third_party/pyswisseph/SWEPHELP_README.txt",
+      "sha256": "947526b761120df1b1101872fb260990e4bdde05801678d83f85c51302dd25c1",
+      "size_bytes": 446
+    },
+    {
+      "path": "third_party/pyswisseph/SWISS_EPHEMERIS_LICENSE",
+      "sha256": "b6345743292c516d07799dfad46f1a641e5270da2160cc4d6bd54594d6faa991",
+      "size_bytes": 2371
+    },
+    {
+      "path": "third_party/pyswisseph/pyswisseph-2.10.3.2.tar.gz",
+      "sha256": "c54c305e83dbd5d2b71e58d8a69d8ee41de24c4d3328ce09e2af860a3537624d",
+      "size_bytes": 6940913
+    },
+    {
+      "path": "third_party/sources/annotated_doc-0.0.5.tar.gz",
+      "sha256": "c7e58ce09192557605d8bbd92836d7e1d520ac9580096042c0bfd197efacf1bb",
+      "size_bytes": 10758
+    },
+    {
+      "path": "third_party/sources/annotated_types-0.8.0.tar.gz",
+      "sha256": "13b2beaad985e05e2d6407ee4c4f35590b11f8d693a258a561055cac8f64cab7",
+      "size_bytes": 15893
+    },
+    {
+      "path": "third_party/sources/anyio-4.14.2.tar.gz",
+      "sha256": "cfa139f3ed1a23ee8f88a145ddb5ac7605b8bbfd8592baacd7ce3d8bb4313c7f",
+      "size_bytes": 260176
+    },
+    {
+      "path": "third_party/sources/ast_serialize-0.8.0.tar.gz",
+      "sha256": "6c37c43e4004dfb42d321ddedc569dc17ff4259296f3af577c9ea46a809bc010",
+      "size_bytes": 845638
+    },
+    {
+      "path": "third_party/sources/click-8.5.0.tar.gz",
+      "sha256": "ba0d2089de75ea0310e2dde03160e6ca10009947fb95a182f9b54021bb272e34",
+      "size_bytes": 382235
+    },
+    {
+      "path": "third_party/sources/coverage-7.16.0.tar.gz",
+      "sha256": "077f0964087883176ff6ab9b074694cae29f8c708273b13ca62c183c6ed716cd",
+      "size_bytes": 945620
+    },
+    {
+      "path": "third_party/sources/dunamai-1.26.2.tar.gz",
+      "sha256": "84ea45eddf9bb4b40df7610b1b22a03137365e6257dbf9d7b72128fdccca564c",
+      "size_bytes": 46536
+    },
+    {
+      "path": "third_party/sources/exceptiongroup-1.3.1.tar.gz",
+      "sha256": "8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219",
+      "size_bytes": 30371
+    },
+    {
+      "path": "third_party/sources/fastapi-0.141.1.tar.gz",
+      "sha256": "e8822fc40db1e1858054d7a949a888695bc9bdce70139178e33bd2871a453ca1",
+      "size_bytes": 425799
+    },
+    {
+      "path": "third_party/sources/flit_core-4.0.2.tar.gz",
+      "sha256": "b6929defd93884b584d7c87829e0e7b5c26ed6be17b0b873979019314aa841c8",
+      "size_bytes": 53083
+    },
+    {
+      "path": "third_party/sources/h11-0.16.0.tar.gz",
+      "sha256": "4e35b956cf45792e4caa5885e69fba00bdbc6ffafbfa020300e549b208ee5ff1",
+      "size_bytes": 101250
+    },
+    {
+      "path": "third_party/sources/hatch_fancy_pypi_readme-25.1.0.tar.gz",
+      "sha256": "9c58ed3dff90d51f43414ce37009ad1d5b0f08ffc9fc216998a06380f01c0045",
+      "size_bytes": 29701
+    },
+    {
+      "path": "third_party/sources/hatchling-1.32.0.tar.gz",
+      "sha256": "0bdbde4a52b06c37e3eca395f85a762bf0ef06fe374fd8ae429dc6be10230f5f",
+      "size_bytes": 57783
+    },
+    {
+      "path": "third_party/sources/httpcore2-2.12.0.tar.gz",
+      "sha256": "9293522bba0aa7c4c8e9e3f040c16575bd8868e155a77fa30c7a9085a5eae648",
+      "size_bytes": 67548
+    },
+    {
+      "path": "third_party/sources/httpx2-2.12.0.tar.gz",
+      "sha256": "7631fe9887a8a2275f4a2540e053aa670fcc50742864a9ae7c66e609fdcf12cf",
+      "size_bytes": 100040
+    },
+    {
+      "path": "third_party/sources/hypothesis-6.167.1.tar.gz",
+      "sha256": "62eefcb4d2791423626e9901c3027a6e0c5ffda2ac0b44b3c7e797ab9d2d5a4c",
+      "size_bytes": 505849
+    },
+    {
+      "path": "third_party/sources/idna-3.19.tar.gz",
+      "sha256": "5e0811a4383b21dc5838069f801c4fb62113b7447663d2530d2bd6e77b49bf15",
+      "size_bytes": 215237
+    },
+    {
+      "path": "third_party/sources/iniconfig-2.3.0.tar.gz",
+      "sha256": "c76315c77db068650d49c5b56314774a7804df16fee4402c1f19d6d15d8c4730",
+      "size_bytes": 20503
+    },
+    {
+      "path": "third_party/sources/jinja2-3.1.6.tar.gz",
+      "sha256": "0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d",
+      "size_bytes": 245115
+    },
+    {
+      "path": "third_party/sources/librt-0.15.0.tar.gz",
+      "sha256": "4e66cbe84437497d951b799d3e1551291b6fb3d643820a7014b3655d57a59162",
+      "size_bytes": 214338
+    },
+    {
+      "path": "third_party/sources/markupsafe-3.0.3.tar.gz",
+      "sha256": "722695808f4b6457b320fdc131280796bdceb04ab50fe1795cd540799ebe1698",
+      "size_bytes": 80313
+    },
+    {
+      "path": "third_party/sources/maturin-1.15.0.tar.gz",
+      "sha256": "94b26cc8e8aba61a5f2099715fe640e18c5f678e9a500408b38761263954228a",
+      "size_bytes": 385504
+    },
+    {
+      "path": "third_party/sources/mypy-2.3.1.tar.gz",
+      "sha256": "47c1b1207258513a9d93495f69c8be9de73916186f0e52703e8c461b7a623419",
+      "size_bytes": 3992554
+    },
+    {
+      "path": "third_party/sources/mypy_extensions-1.1.0.tar.gz",
+      "sha256": "52e68efc3284861e772bbcd66823fde5ae21fd2fdb51c62a211403730b916558",
+      "size_bytes": 6343
+    },
+    {
+      "path": "third_party/sources/packaging-26.3.tar.gz",
+      "sha256": "94edc256424af38762eb31306eed28beb9f0efc50a8837492c9d6fd6004aed79",
+      "size_bytes": 313412
+    },
+    {
+      "path": "third_party/sources/pathspec-1.1.1.tar.gz",
+      "sha256": "17db5ecd524104a120e173814c90367a96a98d07c45b2e10c2f3919fff91bf5a",
+      "size_bytes": 135180
+    },
+    {
+      "path": "third_party/sources/pdm_backend-2.4.9.tar.gz",
+      "sha256": "c41a852ccbf4b567b033db9b2ae78660d7a4ea49307719959ab88a01f0aabb2e",
+      "size_bytes": 119709
+    },
+    {
+      "path": "third_party/sources/pluggy-1.6.0.tar.gz",
+      "sha256": "7dcc130b76258d33b90f61b658791dede3486c3e6bfb003ee5c9bfb396dd22f3",
+      "size_bytes": 69412
+    },
+    {
+      "path": "third_party/sources/pydantic-2.13.5.tar.gz",
+      "sha256": "51a9c5f7b2f8e636f04c6cada605d9b6a3bf1348fdf945a3d8869b19bba0ee08",
+      "size_bytes": 845750
+    },
+    {
+      "path": "third_party/sources/pydantic_core-2.46.5.tar.gz",
+      "sha256": "10416c15b8839ecc4ef4d0885da76da6fd0f67333a0eb8aff6d93c4b8f2910fc",
+      "size_bytes": 472262
+    },
+    {
+      "path": "third_party/sources/pygments-2.21.0.tar.gz",
+      "sha256": "610ca751c9bc2492b38eb9a38a7fbc93edbbb2d7182edaf34e66ae493dee5c8c",
+      "size_bytes": 5005329
+    },
+    {
+      "path": "third_party/sources/pyswisseph-2.10.3.2.tar.gz",
+      "sha256": "c54c305e83dbd5d2b71e58d8a69d8ee41de24c4d3328ce09e2af860a3537624d",
+      "size_bytes": 6940913
+    },
+    {
+      "path": "third_party/sources/pytest-9.1.1.tar.gz",
+      "sha256": "1088fbde8f2b49d95a549a195707afa7a76a3ce9bcadc26b6d71f0ffda5fe313",
+      "size_bytes": 1636369
+    },
+    {
+      "path": "third_party/sources/setuptools-84.0.0.tar.gz",
+      "sha256": "f4695c21257f0d9b537ec2692c941d02ee143b7cc1276941349a546573b2ef73",
+      "size_bytes": 1168449
+    },
+    {
+      "path": "third_party/sources/setuptools_scm-10.2.1.tar.gz",
+      "sha256": "4fa7dd82cf8c800df59c9a288c90299b1657ff1ecfc3f5cc00287c5dbf5e27a9",
+      "size_bytes": 154237
+    },
+    {
+      "path": "third_party/sources/sortedcontainers-2.4.0.tar.gz",
+      "sha256": "25caa5a06cc30b6b83d11423433f65d1f9d76c4c6a0c90e3379eaa43b9bfdb88",
+      "size_bytes": 30594
+    },
+    {
+      "path": "third_party/sources/starlette-1.6.0.tar.gz",
+      "sha256": "d4e3ac5e546444960c710297a3c9fc3f7ebae1b7e963f3d36173b49da535be9b",
+      "size_bytes": 2716969
+    },
+    {
+      "path": "third_party/sources/tomli-2.4.1.tar.gz",
+      "sha256": "7c7e1a961a0b2f2472c1ac5b69affa0ae1132c39adcb67aba98568702b9cc23f",
+      "size_bytes": 17543
+    },
+    {
+      "path": "third_party/sources/tomlkit-0.15.1.tar.gz",
+      "sha256": "e25bbf38843005246210a12982776f27f99cb9be67160e14434d0c0d21ee1e97",
+      "size_bytes": 180129
+    },
+    {
+      "path": "third_party/sources/trove_classifiers-2026.6.1.19.tar.gz",
+      "sha256": "c5132b4b61a829d11cfbd2d72e97f20a45ed6edb95e45c5efdeb5e00836b2745",
+      "size_bytes": 17059
+    },
+    {
+      "path": "third_party/sources/truststore-0.10.4.tar.gz",
+      "sha256": "9d91bd436463ad5e4ee4aba766628dd6cd7010cf3e2461756b3303710eebc301",
+      "size_bytes": 26169
+    },
+    {
+      "path": "third_party/sources/types_psutil-7.2.2.20260827.tar.gz",
+      "sha256": "3c6067dba47c700495ca493f07b11e866ba13de223aabb26da555f9c86ae0b1f",
+      "size_bytes": 27294
+    },
+    {
+      "path": "third_party/sources/types_setuptools-84.0.0.20260812.tar.gz",
+      "sha256": "09bedc248ebbb7a232c9419dfcdca329706e61bf2aa5743e9424d027f1d956b4",
+      "size_bytes": 46545
+    },
+    {
+      "path": "third_party/sources/typing_extensions-4.16.0.tar.gz",
+      "sha256": "dc983d19a509c94dba722ee6abd33940f7c05a89e243c47e907eb4db6f1a43e5",
+      "size_bytes": 113555
+    },
+    {
+      "path": "third_party/sources/typing_inspection-0.4.4.tar.gz",
+      "sha256": "547274fa6b0a561ccf549cc9524b999a578e737d015d8709d021f9d0d13bea47",
+      "size_bytes": 76928
+    },
+    {
+      "path": "third_party/sources/uv_dynamic_versioning-0.14.1.tar.gz",
+      "sha256": "8642db686ce5c50417035e7a257ac73b7e5c3a7a32c33e45bd7e36ba22eeb648",
+      "size_bytes": 42153
+    },
+    {
+      "path": "third_party/sources/uvicorn-0.52.4.tar.gz",
+      "sha256": "73acfee47a0b133c5de13d219492d62d8a31e935f4fe6e41a232451a15379f86",
+      "size_bytes": 100627
+    },
+    {
+      "path": "third_party/sources/vcs_versioning-2.3.1.tar.gz",
+      "sha256": "806635bd0ea653c96af98a70624be758d408a989f2cd0b390e63474d99f96b63",
+      "size_bytes": 156292
+    },
+    {
+      "path": "third_party/sources/wheel-0.48.0.tar.gz",
+      "sha256": "94800765601e9171bf5d58d066e640662842bcedcbab982b2c90787a2c987322",
+      "size_bytes": 66471
+    }
+  ],
+  "hash_algorithm": "sha256",
+  "schema_version": 1
+}

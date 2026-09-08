@@ -1,0 +1,255 @@
+# Installed inside the nginx http context after rendering the three placeholders.
+# No real domain, address, credential, or TLS private key belongs in Git.
+
+# Every zone below is keyed on $binary_remote_addr so a zone bounds one client
+# rather than the whole site. nginx is the edge here, so this is the real peer
+# and not a proxy hop. The address lives only in this shared-memory counter and
+# is never written anywhere: the privacy rule bans client IPs from application
+# logs, which is not the same thing as banning per-client rate limiting.
+#
+# A zone key cannot be changed by reload; applying a change to one requires a
+# full restart, and the operator procedure owns verifying that the restart took
+# effect.
+limit_req_zone $binary_remote_addr zone=private_alpha_chart_client:10m rate=30r/m;
+# Static asset budget is sized for ordinary browsing rather than for a single
+# request: one page bootstrap issues about a dozen asset GETs, and the burst
+# below absorbs several concurrent bootstraps. Concurrency is bounded
+# separately by limit_conn.
+limit_req_zone $binary_remote_addr zone=private_alpha_static_client:10m rate=600r/m;
+limit_conn_zone $binary_remote_addr zone=private_alpha_connections:10m;
+
+server {
+    listen 80;
+    server_name __STAGING_SERVER_NAME__;
+
+    access_log off;
+    error_log /var/log/nginx/error.log emerg;
+    server_tokens off;
+
+    if ($host != $server_name) {
+        return 421;
+    }
+
+    if ($request_method !~ ^(?:GET|HEAD)$) {
+        return 405;
+    }
+
+    location ^~ /.well-known/acme-challenge/ {
+        auth_basic off;
+        root /var/lib/letsencrypt;
+        default_type text/plain;
+        try_files $uri =404;
+    }
+
+    location / {
+        return 308 https://$server_name$request_uri;
+    }
+}
+
+server {
+    listen 80;
+    server_name __STAGING_WWW_SERVER_NAME__;
+    access_log off;
+    error_log /var/log/nginx/error.log emerg;
+    server_tokens off;
+    if ($request_method !~ ^(?:GET|HEAD)$) {
+        return 405;
+    }
+    return 308 https://__STAGING_SERVER_NAME__$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name __STAGING_WWW_SERVER_NAME__;
+    ssl_certificate __TLS_CERTIFICATE_PATH__;
+    ssl_certificate_key __TLS_CERTIFICATE_KEY_PATH__;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_tickets off;
+    ssl_session_cache shared:private_alpha_tls:10m;
+    ssl_session_timeout 10m;
+    access_log off;
+    error_log /var/log/nginx/error.log emerg;
+    server_tokens off;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header Content-Security-Policy "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+    add_header Cache-Control "no-store" always;
+    return 308 https://__STAGING_SERVER_NAME__$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name __STAGING_SERVER_NAME__;
+
+    ssl_certificate __TLS_CERTIFICATE_PATH__;
+    ssl_certificate_key __TLS_CERTIFICATE_KEY_PATH__;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_tickets off;
+    ssl_session_cache shared:private_alpha_tls:10m;
+    ssl_session_timeout 10m;
+
+    access_log off;
+    error_log /var/log/nginx/error.log emerg;
+    server_tokens off;
+
+    if ($host != $server_name) {
+        return 421;
+    }
+
+    auth_basic "Private Alpha";
+    auth_basic_user_file /etc/nginx/private-alpha.htpasswd;
+
+    client_max_body_size 16k;
+    client_body_buffer_size 32k;
+    client_body_temp_path /run/nginx-client-body;
+    client_body_timeout 10s;
+    client_header_timeout 10s;
+    keepalive_timeout 10s;
+    send_timeout 30s;
+
+    limit_req_status 429;
+    limit_conn_status 503;
+
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header Content-Security-Policy "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+    add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "no-referrer" always;
+    add_header Cross-Origin-Opener-Policy "same-origin" always;
+    add_header Cross-Origin-Embedder-Policy "require-corp" always;
+    add_header Cross-Origin-Resource-Policy "same-origin" always;
+    add_header Cache-Control "no-store" always;
+
+    error_page 413 /private-alpha-error-413.html;
+    error_page 429 /private-alpha-error-429.html;
+    error_page 502 /private-alpha-error-502.html;
+    error_page 503 /private-alpha-error-503.html;
+
+    # Public vulnerability-reporting metadata is the only unauthenticated
+    # application-domain file.  Keep an exact file alias rather than opening a
+    # generic dot-path or the immutable frontend mount.
+    location = /.well-known/security.txt {
+        auth_basic off;
+        limit_req zone=private_alpha_static_client burst=40 nodelay;
+        limit_conn private_alpha_connections 32;
+        alias /var/www/project-armillary/.well-known/security.txt;
+        default_type text/plain;
+    }
+
+    location = /private-alpha-error-413.html {
+        internal;
+        auth_basic off;
+        default_type text/html;
+        return 413 '<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><title>請求過大</title><p>送出的資料超過服務上限。請減少內容後重試。</p>';
+    }
+    location = /private-alpha-error-429.html {
+        internal;
+        auth_basic off;
+        default_type text/html;
+        return 429 '<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><title>請求過多</title><p>短時間內請求過多。請稍後再試。</p>';
+    }
+    location = /private-alpha-error-502.html {
+        internal;
+        auth_basic off;
+        default_type text/html;
+        return 502 '<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><title>服務暫時中斷</title><p>服務暫時無法連線。請稍後再試。</p>';
+    }
+    location = /private-alpha-error-503.html {
+        internal;
+        auth_basic off;
+        default_type text/html;
+        return 503 '<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><title>服務忙碌</title><p>服務目前忙碌。請稍後再試。</p>';
+    }
+
+    # `server_tokens off` hides nginx's own banner but not an upstream one.
+    # Keep this defence in depth even though application-owned capacity
+    # responses now remain inside the ASGI security-header/telemetry boundary.
+    proxy_hide_header Server;
+
+    # Segment-bounded chart subtree: covers /api/chart and /api/chart/...
+    # without treating /api/chartography as a sensitive chart route.
+    location ~ ^/api/chart(?:/|$) {
+        limit_req zone=private_alpha_chart_client burst=10 nodelay;
+        # NGINX counts each concurrent HTTP/2 request here, and one cold page
+        # load fans out to about a dozen assets over a single TLS connection.
+        # This budget admits two complete page fanouts with headroom while the
+        # application retains its separate general and compute caps.
+        limit_conn private_alpha_connections 32;
+
+        # Stream the bounded request and response instead of writing birth data
+        # or a calculation dossier to nginx proxy temporary files.
+        # Buffer the bounded (16 KiB max) request body before opening the
+        # upstream request. An idle timeout alone can be reset forever by a
+        # sub-timeout trickle; buffering keeps that client from reserving an
+        # application compute slot while the body is incomplete.
+        proxy_request_buffering on;
+        proxy_buffering off;
+        proxy_cache off;
+
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 10s;
+        proxy_read_timeout 30s;
+
+        proxy_http_version 1.1;
+        proxy_set_header Host $server_name;
+        proxy_set_header Connection "";
+        proxy_set_header Authorization "";
+        proxy_set_header Proxy-Authorization "";
+        proxy_set_header X-Forwarded-For "";
+        proxy_set_header X-Real-IP "";
+        proxy_set_header Forwarded "";
+        proxy_pass http://172.31.240.2:8000;
+    }
+
+    # Segment-bounded place-search subtree.  This is a JSON compute endpoint,
+    # not static content: it queries the bundled FTS5 catalog and its cost
+    # varies with the submitted terms.  Without its own location it fell through
+    # to `location /` and inherited the static zone's 120 r/m, the loosest limit
+    # in this file, while being the most cost-amplifying route measured.  It is
+    # bounded here at the chart rate and given a shorter read timeout, because
+    # the application now caps its own statement budget below that.
+    location ~ ^/api/places/search(?:/|$) {
+        limit_req zone=private_alpha_chart_client burst=5 nodelay;
+        limit_conn private_alpha_connections 32;
+
+        proxy_request_buffering on;
+        proxy_buffering off;
+        proxy_cache off;
+
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 10s;
+        proxy_read_timeout 10s;
+
+        proxy_http_version 1.1;
+        proxy_set_header Host $server_name;
+        proxy_set_header Connection "";
+        proxy_set_header Authorization "";
+        proxy_set_header Proxy-Authorization "";
+        proxy_set_header X-Forwarded-For "";
+        proxy_set_header X-Real-IP "";
+        proxy_set_header Forwarded "";
+        proxy_pass http://172.31.240.2:8000;
+    }
+
+    location / {
+        limit_req zone=private_alpha_static_client burst=40 nodelay;
+        limit_conn private_alpha_connections 32;
+
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 10s;
+        proxy_read_timeout 30s;
+
+        proxy_http_version 1.1;
+        proxy_set_header Host $server_name;
+        proxy_set_header Connection "";
+        proxy_set_header Authorization "";
+        proxy_set_header Proxy-Authorization "";
+        proxy_set_header X-Forwarded-For "";
+        proxy_set_header X-Real-IP "";
+        proxy_set_header Forwarded "";
+        proxy_pass http://172.31.240.2:8000;
+    }
+}

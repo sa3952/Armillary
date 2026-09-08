@@ -1,0 +1,333 @@
+#!/usr/bin/env python3
+"""Block a reviewed list of privacy-sensitive sinks in ``backend/app``.
+
+This is a developer regression barrier for the named modules and distribution
+families below.  The only sink exception is the exact immutable, read-only
+place-catalog module reviewed alongside its integrity and no-write tests.  It
+is not a complete information-flow analysis, dependency sandbox, or transitive
+package audit.
+"""
+
+from __future__ import annotations
+
+import argparse
+import ast
+from pathlib import Path
+import re
+import sys
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+BACKEND_APP = PROJECT_ROOT / "backend" / "app"
+# The scanned set is discovered from the tree under review rather than typed
+# here, so a requirement file added to that tree is scanned without anyone
+# remembering to list it, and one that leaves the published tree is simply not
+# discovered instead of aborting the guard.
+REQUIREMENT_ROOTS = (
+    PROJECT_ROOT / "backend",
+    PROJECT_ROOT / "deploy",
+)
+REQUIREMENT_FILE_NAME = re.compile(
+    r"^[a-z0-9_.-]*requirements[a-z0-9_.-]*\.(?:txt|in|lock)$"
+)
+PRUNED_DIRECTORY_NAMES = frozenset({"__pycache__", "node_modules"})
+MAX_REQUIREMENT_INCLUDE_DEPTH = 8
+MAX_REQUIREMENT_FILES = 64
+
+FORBIDDEN_ROOT_MODULES = frozenset(
+    {
+        "aiohttp",
+        "analytics",
+        "boto3",
+        "datadog",
+        "dbm",
+        "httpx",
+        "newrelic",
+        "opentelemetry",
+        "posthog",
+        "psycopg2",
+        "pymongo",
+        "redis",
+        "requests",
+        "sentry_sdk",
+        "shelve",
+        "sqlalchemy",
+        "sqlite3",
+    }
+)
+FORBIDDEN_EXACT_MODULES = frozenset(
+    {
+        "ftplib",
+        "http.client",
+        "logging.handlers",
+        "smtplib",
+        "socket",
+        "urllib.request",
+    }
+)
+FORBIDDEN_DISTRIBUTIONS = frozenset(
+    module.replace("_", "-") for module in FORBIDDEN_ROOT_MODULES
+)
+FORBIDDEN_DISTRIBUTION_PREFIXES = (
+    "datadog-",
+    "opentelemetry-",
+    "psycopg2-",
+    "sentry-",
+)
+REVIEWED_EXACT_IMPORTS = {
+    (BACKEND_APP / "core" / "place_catalog.py").resolve(): frozenset(
+        {"sqlite3"}
+    ),
+}
+
+
+class PrivacyDependencyFailure(RuntimeError):
+    pass
+
+
+def discover_requirement_files(
+    roots: tuple[Path, ...] = REQUIREMENT_ROOTS,
+) -> tuple[Path, ...]:
+    """Return every requirement file the given roots actually declare.
+
+    A root that is absent is a refusal rather than an empty result: the guard
+    must never report coverage it did not have.
+    """
+
+    discovered: list[Path] = []
+    for root in roots:
+        if not root.is_dir():
+            raise PrivacyDependencyFailure(
+                f"requirement root is absent, so its dependencies cannot be "
+                f"checked: {root}"
+            )
+        pending = [root]
+        while pending:
+            directory = pending.pop()
+            for entry in sorted(directory.iterdir()):
+                if entry.is_dir():
+                    if entry.name.startswith(".") or (
+                        entry.name in PRUNED_DIRECTORY_NAMES
+                    ):
+                        continue
+                    pending.append(entry)
+                elif REQUIREMENT_FILE_NAME.match(entry.name.lower()):
+                    discovered.append(entry)
+    if not discovered:
+        raise PrivacyDependencyFailure(
+            "no requirement file was discovered under "
+            + ", ".join(str(root) for root in roots)
+        )
+    return tuple(sorted(discovered))
+
+
+def _root_module(value: str) -> str:
+    return value.split(".", maxsplit=1)[0].lower()
+
+
+def _static_string(node: ast.AST) -> str | None:
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        left = _static_string(node.left)
+        right = _static_string(node.right)
+        if left is not None and right is not None:
+            return left + right
+    return None
+
+
+def _reject_module(module: str, path: Path, line: int) -> None:
+    normalized = module.lower()
+    is_forbidden = (
+        _root_module(normalized) in FORBIDDEN_ROOT_MODULES
+        or normalized in FORBIDDEN_EXACT_MODULES
+    )
+    reviewed_modules = REVIEWED_EXACT_IMPORTS.get(
+        path.resolve(),
+        frozenset(),
+    )
+    if is_forbidden and _root_module(normalized) not in reviewed_modules:
+        raise PrivacyDependencyFailure(
+            f"{path}: line {line} imports privacy-sensitive dependency {module!r}; "
+            "update the data flow, scrubber contract and canary tests first"
+        )
+
+
+def check_python_source(path: Path) -> None:
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    except (OSError, UnicodeError, SyntaxError) as error:
+        raise PrivacyDependencyFailure(f"cannot safely parse {path}: {error}") from error
+
+    import_module_names: set[str] = set()
+    importlib_aliases: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                _reject_module(alias.name, path, node.lineno)
+                if alias.name == "importlib" or (
+                    alias.name.startswith("importlib.") and alias.asname is None
+                ):
+                    importlib_aliases.add(alias.asname or "importlib")
+        elif isinstance(node, ast.ImportFrom):
+            if node.module:
+                _reject_module(node.module, path, node.lineno)
+                for alias in node.names:
+                    _reject_module(
+                        f"{node.module}.{alias.name}",
+                        path,
+                        node.lineno,
+                    )
+            if node.module == "importlib":
+                for alias in node.names:
+                    if alias.name == "import_module":
+                        import_module_names.add(alias.asname or alias.name)
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        is_dynamic_import = False
+        if isinstance(node.func, ast.Name):
+            is_dynamic_import = node.func.id in import_module_names | {"__import__"}
+        elif (
+            isinstance(node.func, ast.Call)
+            and isinstance(node.func.func, ast.Name)
+            and node.func.func.id == "getattr"
+            and len(node.func.args) >= 2
+            and isinstance(node.func.args[0], ast.Name)
+            and node.func.args[0].id in importlib_aliases
+            and _static_string(node.func.args[1]) == "import_module"
+        ):
+            is_dynamic_import = True
+        elif (
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr == "import_module"
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id in importlib_aliases
+        ):
+            is_dynamic_import = True
+        if not is_dynamic_import:
+            continue
+        if not node.args:
+            raise PrivacyDependencyFailure(
+                f"{path}: line {node.lineno} has an unprovable dynamic import target"
+            )
+        module = _static_string(node.args[0])
+        if module is None:
+            raise PrivacyDependencyFailure(
+                f"{path}: line {node.lineno} has an unprovable dynamic import target"
+            )
+        _reject_module(module, path, node.lineno)
+
+
+def _requirement_name(line: str) -> str | None:
+    line = line.split("#", maxsplit=1)[0].strip()
+    if not line:
+        return None
+    if line.startswith(("-e", "--editable", "git+", "http:", "https:", "file:")):
+        raise PrivacyDependencyFailure(
+            "URL/editable requirements require explicit privacy review"
+        )
+    match = re.match(r"(?P<name>[A-Za-z0-9_.-]+)", line)
+    if not match:
+        raise PrivacyDependencyFailure(f"cannot parse requirement line: {line}")
+    remainder = line[match.end() :].lstrip()
+    if remainder.startswith("@"):
+        raise PrivacyDependencyFailure(
+            "named direct-URL requirements require explicit privacy review"
+        )
+    return re.sub(r"[-_.]+", "-", match.group("name")).lower()
+
+
+def _include_target(line: str) -> str | None:
+    stripped = line.split("#", maxsplit=1)[0].strip()
+    for option in ("-r", "--requirement", "-c", "--constraint"):
+        if stripped == option:
+            raise PrivacyDependencyFailure(f"{option} requires a path")
+        if stripped.startswith(option + "="):
+            return stripped.split("=", 1)[1].strip()
+        if stripped.startswith(option + " "):
+            return stripped[len(option) :].strip()
+    return None
+
+
+def check_requirements(
+    path: Path,
+    *,
+    _root: Path | None = None,
+    _seen: set[Path] | None = None,
+    _depth: int = 0,
+) -> None:
+    root = (_root or path.parent).resolve()
+    seen = _seen if _seen is not None else set()
+    resolved = path.resolve()
+    if _depth > MAX_REQUIREMENT_INCLUDE_DEPTH:
+        raise PrivacyDependencyFailure("requirement include depth exceeds bounded limit")
+    if resolved in seen:
+        raise PrivacyDependencyFailure(f"requirement include cycle at {path}")
+    if len(seen) >= MAX_REQUIREMENT_FILES:
+        raise PrivacyDependencyFailure("requirement include graph exceeds bounded limit")
+    try:
+        resolved.relative_to(root)
+    except ValueError as error:
+        raise PrivacyDependencyFailure(
+            f"requirement include escapes its reviewed root: {path}"
+        ) from error
+    seen.add(resolved)
+    try:
+        content = resolved.read_text(encoding="utf-8")
+    except OSError as error:
+        raise PrivacyDependencyFailure(
+            f"cannot read requirement file {path}: {error}"
+        ) from error
+    for line_number, line in enumerate(content.splitlines(), start=1):
+        include = _include_target(line)
+        if include is not None:
+            if not include or include.startswith(("http:", "https:", "file:")):
+                raise PrivacyDependencyFailure(
+                    f"{path}: line {line_number}: requirement include must be local"
+                )
+            check_requirements(
+                resolved.parent / include,
+                _root=root,
+                _seen=seen,
+                _depth=_depth + 1,
+            )
+            continue
+        try:
+            name = _requirement_name(line)
+        except PrivacyDependencyFailure as error:
+            raise PrivacyDependencyFailure(f"{path}: line {line_number}: {error}") from error
+        if name is not None and (
+            name in FORBIDDEN_DISTRIBUTIONS
+            or name.startswith(FORBIDDEN_DISTRIBUTION_PREFIXES)
+        ):
+            raise PrivacyDependencyFailure(
+                f"{path}: line {line_number} adds privacy-sensitive dependency "
+                f"{name!r}; complete privacy review first"
+            )
+    seen.remove(resolved)
+
+
+def check_repository() -> None:
+    for path in sorted(BACKEND_APP.rglob("*.py")):
+        check_python_source(path)
+    for path in discover_requirement_files():
+        check_requirements(path)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--check", action="store_true", required=True)
+    parser.parse_args()
+    try:
+        check_repository()
+    except PrivacyDependencyFailure as error:
+        print(f"PRIVACY DEPENDENCY CHECK FAILED: {error}", file=sys.stderr)
+        return 1
+    print("PRIVACY DEPENDENCY CHECK PASSED")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,18 @@
+# Fixed internal address for the host NGINX upstream; no host port is published.
+# The address and subnet are literal because host NGINX refers to the upstream
+# by address. Re-evaluate the subnet when moving hosts and update both owners
+# together.
+services:
+  private-alpha-app:
+    restart: unless-stopped
+    networks:
+      private-alpha-internal:
+        ipv4_address: 172.31.240.2
+
+networks:
+  private-alpha-internal:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.31.240.0/28
+          gateway: 172.31.240.1

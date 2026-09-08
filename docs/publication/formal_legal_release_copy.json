@@ -1,0 +1,80 @@
+{
+  "schema_version": "formal-legal-release-copy-v1",
+  "status": "current_release_copy",
+  "publication_disposition": "publication_input",
+  "approved_by": "Sebastian",
+  "approved_on": "2026-09-08",
+  "approval_scope": "exact Traditional Chinese Private Alpha 1.0.0 privacy, terms, copyright and contact release copy effective 2026-09-06; excludes machine-owned release identity fields",
+  "qualified_counsel_review": false,
+  "operator": "Sebastian",
+  "official_contact": "privacy@projectarmillary.com",
+  "contact_reachability": "A live contact route with receive and reply evidence exists for the deployed baseline; independent confirmation remains pending.",
+  "specific_purpose_authority": {
+    "title": "個人資料保護法之特定目的及個人資料之類別",
+    "official_notice": "https://www.moj.gov.tw/2204/2528/2529/2545/12798/",
+    "limitation": "Data-flow mapping prepared without qualified-counsel review; no catch-all code is used."
+  },
+  "specific_purpose_codes": [
+    {
+      "code": "090",
+      "label": "消費者、客戶管理與服務",
+      "applies_to": [
+        "voluntary_contact_email_and_reply"
+      ]
+    },
+    {
+      "code": "135",
+      "label": "資（通）訊服務",
+      "applies_to": [
+        "transient_requested_chart_calculation_and_presentation"
+      ]
+    },
+    {
+      "code": "137",
+      "label": "資通安全與管理",
+      "applies_to": [
+        "invitation_access_verification_and_abuse_protection"
+      ]
+    }
+  ],
+  "release_copy_sources": [
+    {
+      "path": "scripts/frontend/pages/contact.html",
+      "sha256": "1c2aa70f9a75fd95baccc3e923b74237d1b62c5607f2ab9528c4f91f5bda8963"
+    },
+    {
+      "path": "scripts/frontend/pages/legal-privacy.html",
+      "sha256": "d34989f47422d4b838d3d631213d8b0c1c35dc1ab35b51daa0dca620c663d5d3"
+    },
+    {
+      "path": "scripts/frontend/pages/legal-terms.html",
+      "sha256": "4f52971dc86ae47c5e65f64ecd73c9217367f33479b59a27f3d3b2ff101ec38a"
+    },
+    {
+      "path": "scripts/frontend/pages/legal-copyright.html",
+      "sha256": "1f3aea09f856e2944e7ed422a0abf5236031e2408760240837949646f4c25054"
+    }
+  ],
+  "machine_owned_release_fields": {
+    "effective_date": {
+      "owner": "verified publication/frontend release producer",
+      "source_value": null
+    },
+    "release_version": {
+      "owner": "verified publication/frontend release producer",
+      "source_value": null
+    },
+    "public_revision": {
+      "owner": "verified publication/frontend release producer",
+      "source_value": null
+    },
+    "source_archive_url": {
+      "owner": "verified publication/frontend release producer",
+      "source_value": null
+    },
+    "source_archive_sha256": {
+      "owner": "verified publication/frontend release producer",
+      "source_value": null
+    }
+  }
+}

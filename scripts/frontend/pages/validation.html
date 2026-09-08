@@ -1,0 +1,73 @@
+<div class="wrap page-body validation-page">
+  <section class="validation-hero">
+    <h1>驗證不是口號。<br>範圍才是答案。</h1>
+    <p class="lede">渾儀的主要位置結果曾與另一條以JPL DE442、Astropy與ERFA組成的管線逐小時比較。底下直接列結論、方法與沒有涵蓋的地方。</p>
+    <div class="validation-metrics" aria-label="歷史驗證批次摘要">
+      <div><b>2,244,088</b><span>欄位比對</span><small>1990–2026，七個天體</small></div>
+      <div><b>99.96%</b><span>落在設定門檻內</span><small>位置與速度合計</small></div>
+      <div><b>0</b><span>五大行星位置超標</span><small>水星至土星</small></div>
+    </div>
+    <p class="validation-scope">這是歷史、具名範圍的驗證，不是全系統認證，也不是每次開頁重跑。</p>
+  </section>
+
+  <section class="validation-section" id="method">
+    <p class="validation-number">01</p>
+    <div>
+      <h2>兩條不同的計算路徑</h2>
+      <p>產品使用Swiss Ephemeris；比較管線以JPL DE442為幾何星曆，經Astropy／ERFA產生參考結果。兩者在幾何星曆與主要轉換實作上不同，但仍共享IERS／IAU標準、部分觀測資料譜系與視位置定義，因此不稱為「完全獨立」。</p>
+      <div class="validation-pipelines">
+        <div><span>產品管線</span><b>Swiss Ephemeris</b><small>實際產品輸出</small></div>
+        <i aria-hidden="true">對照</i>
+        <div><span>參考管線</span><b>DE442＋Astropy／ERFA</b><small>外部幾何與轉換實作</small></div>
+      </div>
+      <details class="validation-details">
+        <summary>查看比對設定</summary>
+        <dl>
+          <dt>時間</dt><dd>1990-01-01至2026-07-28，逐小時，共320,584個時點</dd>
+          <dt>天體</dt><dd>太陽、月亮、水星、金星、火星、木星、土星</dd>
+          <dt>欄位</dt><dd>黃經、黃緯、赤經、赤緯、地心距離及各項速度</dd>
+          <dt>位置門檻</dt><dd>5角秒；月亮15角秒</dd>
+          <dt>速度門檻</dt><dd>1角秒／日；月亮5角秒／日</dd>
+        </dl>
+      </details>
+    </div>
+  </section>
+
+  <section class="validation-section" id="results">
+    <p class="validation-number">02</p>
+    <div>
+      <h2>結果好看，更要解釋例外</h2>
+      <div class="validation-findings">
+        <article><h3>五大行星位置</h3><p><b>沒有一項超出位置門檻。</b>代表性最大差異為水星赤緯4.8角秒、金星赤經4.0角秒、土星赤經1.7角秒。</p></article>
+        <article><h3>月亮位置</h3><p>位置一致到0.005角秒以內。早期的大幅速度差來自驗證器跨閏秒仍使用固定300秒分母；改用實際301秒後已修正。</p></article>
+        <article><h3>近太陽速度</h3><p>五大行星的最大速度差都發生在太陽視圓面內。該處沒有可觀測的行星視位置，兩套管線的延伸規則不同；這不是產品位置普遍算錯。</p></article>
+        <article><h3>太陽解析速度</h3><p>119個取樣點確認產品速度與自身位置一致到0.05角秒／日內；底層frame的完整分層歸因仍未完成。這不是目前release blocker，也不表示位置輸出已知錯誤。</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="validation-section" id="coverage">
+    <p class="validation-number">03</p>
+    <div>
+      <h2>涵蓋到哪裡，沒有涵蓋哪裡</h2>
+      <div class="validation-coverage">
+        <div class="covered"><h3>已有強證據</h3><ul><li>七個天體的地心主要位置</li><li>指定年代與欄位的逐小時比較</li><li>五大行星站留附近的方向分類</li><li>星曆檔與恆星表的exact SHA-256</li></ul></div>
+        <div class="partial"><h3>部分涵蓋</h3><ul><li>星座、旬、Egyptian bounds與exact aspect邊界</li><li>日夜盤與部分station案例</li><li>升降、中天、固定星與日月食的具名小型驗證</li></ul></div>
+        <div class="uncovered"><h3>不能從本批外推</h3><ul><li>所有宮位制與quadrant cusp</li><li>所有center、frame與position mode</li><li>所有固定星方法與日月食shadow</li><li>全系統天文正確性認證</li></ul></div>
+      </div>
+      <p class="validation-scope">幾角秒的整體差異通常不改變分類，但落在星座、界、宮頭、station或orb邊界附近時仍可能翻轉；因此邊界驗證與大規模平均結果分開處理。</p>
+    </div>
+  </section>
+
+  <section class="validation-section" id="meaning">
+    <p class="validation-number">04</p>
+    <div>
+      <h2>這些證據能證明什麼</h2>
+      <div class="validation-meaning">
+        <p><b>能證明：</b>在上列範圍內，產品與另一條參考管線的主要位置結果高度一致；資料檔若被替換，exact hash控制會失敗。</p>
+        <p><b>不能證明：</b>所有占星方法都正確、所有年代與模式都已驗、目前每一次計算都重新跑過外部驗證，或本產品取得第三方安全與天文認證。</p>
+      </div>
+      <div class="validation-links"><a href="/zh-TW/methods">查看方法與來源</a><a href="/zh-TW/trust">查看證據層級</a><a href="/zh-TW/legal/copyright">取得對應原始碼</a></div>
+    </div>
+  </section>
+</div>
