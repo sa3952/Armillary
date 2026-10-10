@@ -486,7 +486,8 @@ def test_caller_supplied_request_id_is_ignored(monkeypatch):
     assert response.headers["X-Request-ID"] != CANARY_TEXT
     assert response.headers["Content-Security-Policy"] == (
         "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; "
-        "script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'"
+        "script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'; "
+        "require-trusted-types-for 'script'; trusted-types 'none'"
     )
     for name, value in {
         "X-Content-Type-Options": "nosniff",
@@ -513,25 +514,25 @@ def test_public_cache_policy_separates_api_html_and_versioned_assets():
     # Independent oracle for the `?v=` token: SHA-256 prefix of the served bytes.
     page_css, tokens_css = (
         hashlib.sha256((PROJECT_ROOT / "frontend/zh-TW" / name).read_bytes()).hexdigest()[:16]
-        for name in ("page.css", "tokens.css")
+        for name in ("style/home.css", "style/calculate.css")
     )
     immutable = "public, max-age=31536000, immutable"
     expected = {
         "/api/health": "no-store",
         "/zh-TW/features": "no-cache",
-        f"/zh-TW/page.css?v={page_css}": immutable,
+        f"/zh-TW/style/home.css?v={page_css}": immutable,
         "/zh-TW/favicon.svg": "public, max-age=300",
         f"/missing.css?v={page_css}": "no-store",
     }
     not_stored = (
-        f"/zh-TW/page.css?preview={page_css}",
-        "/zh-TW/page.css?v=",
-        "/zh-TW/page.css?v=release-test",
-        "/zh-TW/page.css?v=0.16.6",
-        f"/zh-TW/page.css?v={tokens_css}",
-        f"/zh-TW/page.css?v={page_css[:-1]}",
-        f"/zh-TW/page.css?v={page_css.upper()}",
-        f"/zh-TW/page.css?v={page_css}&v=release-test",
+        f"/zh-TW/style/home.css?preview={page_css}",
+        "/zh-TW/style/home.css?v=",
+        "/zh-TW/style/home.css?v=release-test",
+        "/zh-TW/style/home.css?v=0.16.6",
+        f"/zh-TW/style/home.css?v={tokens_css}",
+        f"/zh-TW/style/home.css?v={page_css[:-1]}",
+        f"/zh-TW/style/home.css?v={page_css.upper()}",
+        f"/zh-TW/style/home.css?v={page_css}&v=release-test",
     )
     with TestClient(create_app(AppSettings())) as client:
         for url, cache_control in expected.items():
@@ -540,8 +541,8 @@ def test_public_cache_policy_separates_api_html_and_versioned_assets():
             response = client.get(url)
             assert response.status_code == 200, url
             assert response.headers["cache-control"] == "no-store", url
-        exact = client.get(f"/zh-TW/page.css?v={page_css}")
-        exact_head = client.head(f"/zh-TW/page.css?v={page_css}")
+        exact = client.get(f"/zh-TW/style/home.css?v={page_css}")
+        exact_head = client.head(f"/zh-TW/style/home.css?v={page_css}")
     assert exact.status_code == 200
     assert exact_head.headers["cache-control"] == immutable
 

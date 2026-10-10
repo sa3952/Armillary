@@ -63,6 +63,14 @@ jobs:
       - name: Privacy dependency boundary
         run: python3 -m scripts.verification.verify_privacy_dependencies --check
 
+      # verify_container_runtime reads deploy/requirements.lock with
+      # `packaging`, which setup-python's interpreter does not carry: install
+      # the build lock's one hashed packaging entry, and nothing else.
+      - name: Lock-pinned packaging for the runtime audit
+        run: |
+          python3 -c 'import re,sys; from pathlib import Path; found=re.findall(r"^packaging==[^\n]*(?:\n[ \t]+--hash=sha256:[^\n]*)+", Path("deploy/build-requirements.lock").read_text(encoding="utf-8"), flags=re.M); len(found)==1 or sys.exit("build lock has no single packaging entry"); Path(sys.argv[1]).write_text(found[0]+"\n", encoding="utf-8")' "$RUNNER_TEMP/runtime-audit.lock"
+          python3 -m pip install --no-deps --require-hashes --only-binary :all: --requirement "$RUNNER_TEMP/runtime-audit.lock"
+
       - name: Native amd64 production runtime and resilience
         run: |
           python3 -m scripts.verification.build_release_image \

@@ -1,0 +1,231 @@
+/* 文章頁（/zh-TW/blog/…）。只由文章頁載入，token 一律來自 tokens.css。
+ *
+ * 形制取研究筆記：一欄正文、左側窄欄放節號、圖版可以比正文寬。
+ * 圖都是頁內 SVG，顏色由這裡的 class 給，不寫在 SVG 屬性裡，
+ * 這樣圖跟著 token 走，也不需要行內 style（served CSP 沒有 'unsafe-inline'）。
+ * SVG 裡的字以 viewBox 單位設定，手機寬度下會等比縮小，所以每張圖的
+ * viewBox 寬度壓在 720 以內、字級不小於 20 單位：390px 寬的螢幕上約 10–11px，
+ * 只用於圖上標註；要讀的數字另外寫在圖說或表格裡。 */
+
+.article{max-width:68rem}
+.article section{border-top:0; padding:0}
+
+/* ─── 頁首 ─── */
+.ar-head{padding:var(--s2) 0 var(--s3); border-bottom:2px solid var(--ink); margin-bottom:var(--s4)}
+.ar-head .eyebrow a{color:inherit; border-bottom:1px solid var(--hair)}
+.ar-head .eyebrow a:hover{color:var(--accent); border-bottom-color:var(--accent)}
+.page-body.article h1{
+  font-size:clamp(2rem,4.6vw,3.3rem); line-height:1.3; max-width:46rem;
+  margin:var(--s2) 0 var(--s2);
+}
+.ar-dek{font-family:var(--serif); font-size:clamp(1.12rem,2vw,1.32rem); line-height:1.8;
+  color:var(--ink-dim); max-width:42rem; margin-bottom:var(--s3) !important}
+.ar-byline{display:flex; flex-wrap:wrap; align-items:center; gap:.4rem 1.4rem;
+  font-family:var(--mono); font-size:.8rem; letter-spacing:.06em; color:var(--ink-faint);
+  border-top:1px solid var(--hair); padding-top:var(--s1); margin:0 !important}
+.ar-tier{background:var(--ink); color:var(--paper); padding:.18rem .55rem; letter-spacing:.12em}
+
+/* ─── 正文欄 ─── */
+.ar-body{display:grid; grid-template-columns:5.5rem minmax(0,40rem) minmax(0,1fr); column-gap:var(--s3)}
+.ar-body > *{grid-column:2}
+.ar-body > .ar-wide{grid-column:2 / 4}
+.ar-body p{font-size:1.04rem; line-height:2.05; margin-bottom:var(--s2)}
+.ar-body p b, .ar-body li b{color:var(--ink)}
+.ar-body ul, .ar-body ol{max-width:none; font-size:1rem; line-height:1.95}
+.ar-lead{font-size:1.14rem !important; line-height:2 !important; color:var(--ink)}
+.ar-lead::first-letter{font-family:var(--serif); font-size:2.6em; float:left; line-height:1;
+  margin:.12em .12em 0 0; color:var(--accent)}
+
+.ar-body h2{position:relative; font-family:var(--serif); font-weight:400;
+  font-size:1.6rem; line-height:1.45; margin:var(--s4) 0 var(--s2); padding-top:var(--s2);
+  border-top:1px solid var(--hair)}
+.ar-sec{position:absolute; left:calc(-5.5rem - var(--s3)); top:var(--s2); width:5.5rem;
+  font-family:var(--mono); font-size:.86rem; letter-spacing:.08em; color:var(--accent);
+  text-align:right; line-height:2.6}
+.ar-body h3{font-size:1.08rem; font-weight:700; margin:var(--s3) 0 var(--s1)}
+
+/* 出處標號：上標小字，連到文末「出處」的那一條 */
+.ar-cite{font-family:var(--mono); font-size:.72em; vertical-align:super; line-height:0;
+  margin-left:.1em; white-space:nowrap}
+.page-body .ar-cite{color:var(--accent); border-bottom:0}
+.page-body .ar-cite:hover{text-decoration:underline}
+
+/* ─── 段內元件 ─── */
+.ar-pull{font-family:var(--serif); font-size:clamp(1.3rem,2.6vw,1.7rem) !important;
+  line-height:1.65 !important; color:var(--ink); border-top:2px solid var(--ink);
+  border-bottom:1px solid var(--hair); padding:var(--s2) 0; margin:var(--s3) 0 !important}
+.ar-key{background:var(--paper-2); border-left:3px solid var(--accent);
+  padding:var(--s2) var(--s2) var(--s1); margin:var(--s2) 0 var(--s3)}
+.ar-key > .ar-k, .ar-scope > .ar-k{display:block; font-family:var(--mono); font-size:.76rem;
+  letter-spacing:.16em; color:var(--accent); margin-bottom:.4rem}
+.ar-key p{font-size:.98rem !important; margin-bottom:var(--s1) !important}
+.ar-scope{border:1px solid var(--ink); padding:var(--s2); margin:var(--s3) 0}
+.ar-scope ul{margin:0; padding-left:1.2rem; color:var(--ink-dim); font-size:.95rem}
+.ar-scope li{margin-bottom:.45rem}
+/* 重點：lede 之後、§01 之前的二到四句，每句一個文內有出處的事實。是一節（有自己的 h2），
+ * 但標題用與 .ar-k 相同的小標樣式，不與編號各節的大標題搶位置。 */
+.ar-body > .ar-points{background:var(--paper-2); border-left:3px solid var(--accent);
+  padding:var(--s2) var(--s2) var(--s1); margin:0 0 var(--s3)}
+.ar-body .ar-points h2{font-family:var(--mono); font-size:.76rem; letter-spacing:.16em;
+  line-height:1.6; color:var(--accent); border-top:0; margin:0 0 .4rem; padding-top:0}
+.ar-points ul{margin:0; padding-left:1.2rem; font-size:.98rem}
+.ar-points li{margin-bottom:.45rem}
+
+/* 數字組：三到四個大數字並排 */
+.ar-stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));
+  border-top:1px solid var(--ink); border-bottom:1px solid var(--ink); margin:var(--s3) 0}
+.ar-stats > div{padding:var(--s2) var(--s2) var(--s2) 0; min-width:0}
+.ar-stats > div + div{border-left:1px solid var(--hair); padding-left:var(--s2)}
+.ar-stats b{display:block; font-family:var(--serif); font-weight:400; color:var(--accent);
+  font-size:clamp(1.9rem,4.5vw,2.8rem); line-height:1.05}
+.ar-stats span{display:block; font-size:.86rem; line-height:1.6; color:var(--ink-dim); margin-top:.35rem}
+
+/* ─── 圖版 ─── */
+.ar-fig{margin:var(--s3) 0 var(--s4)}
+.ar-fig svg{display:block; width:100%; max-width:48rem; height:auto; overflow:visible}
+.ar-hero svg{max-width:56rem; margin:0 auto}
+.ar-hero svg.sq{max-width:38rem}
+.ar-fig .bar-track svg{max-width:none}
+.ar-fig figcaption{font-size:.9rem; line-height:1.85; color:var(--ink-dim);
+  border-top:1px solid var(--hair); padding-top:var(--s1); margin-top:var(--s1); max-width:44rem}
+.ar-fig figcaption b{font-family:var(--mono); font-weight:400; letter-spacing:.1em;
+  color:var(--accent); margin-right:.6em}
+.ar-hero{margin:0 0 var(--s4); padding:var(--s3) var(--s3) var(--s2); background:var(--paper-2);
+  border:1px solid var(--hair)}
+
+/* SVG 的筆與字。名稱描述角色，不描述顏色。 */
+.ar-fig .g-ink{stroke:var(--ink); fill:none; stroke-width:1.5}
+.ar-fig .g-hair{stroke:var(--hair); fill:none; stroke-width:1}
+.ar-fig .g-dim{stroke:var(--ink-faint); fill:none; stroke-width:1}
+.ar-fig .g-dash{stroke:var(--ink-faint); fill:none; stroke-width:1; stroke-dasharray:4 4}
+.ar-fig .g-accent{stroke:var(--accent); fill:none; stroke-width:2.5}
+.ar-fig .g-accent-thin{stroke:var(--accent); fill:none; stroke-width:1.5}
+.ar-fig .g-ring1{stroke:var(--ring-1); fill:none; stroke-width:2.5}
+.ar-fig .g-ring2{stroke:var(--ring-2); fill:none; stroke-width:2.5}
+.ar-fig .g-ring3{stroke:var(--ring-3); fill:none; stroke-width:2.5}
+.ar-fig .f-paper{fill:var(--paper); stroke:none}
+.ar-fig .f-paper2{fill:var(--paper-2); stroke:none}
+.ar-fig .f-hair{fill:var(--hair-soft); stroke:none}
+.ar-fig .f-ink{fill:var(--ink); stroke:none}
+.ar-fig .f-accent{fill:var(--accent); stroke:none}
+.ar-fig .f-accent-soft{fill:var(--accent); fill-opacity:.14; stroke:none}
+.ar-fig .f-ring1{fill:var(--ring-1); stroke:none}
+.ar-fig .f-ring2{fill:var(--ring-2); stroke:none}
+.ar-fig .f-ring3{fill:var(--ring-3); stroke:none}
+.ar-fig .f-ringv{fill:var(--ring-v); stroke:none}
+.ar-fig .f-ring1-soft{fill:var(--ring-1); fill-opacity:.16; stroke:none}
+.ar-fig .f-ring2-soft{fill:var(--ring-2); fill-opacity:.16; stroke:none}
+.ar-fig .f-ring3-soft{fill:var(--ring-3); fill-opacity:.18; stroke:none}
+.ar-fig .t{fill:var(--ink); font-family:var(--sans); font-size:20px}
+.ar-fig .t-dim{fill:var(--ink-dim); font-family:var(--sans); font-size:20px}
+.ar-fig .t-faint{fill:var(--ink-faint); font-family:var(--mono); font-size:18px}
+.ar-fig .t-mono{fill:var(--ink); font-family:var(--mono); font-size:20px}
+.ar-fig .t-accent{fill:var(--accent); font-family:var(--sans); font-size:20px; font-weight:700}
+.ar-fig .t-big{fill:var(--ink); font-family:var(--serif); font-size:30px}
+.ar-fig .t-paper{fill:var(--paper); font-family:var(--sans); font-size:19px}
+.ar-fig .t-mid{text-anchor:middle}
+.ar-fig .t-end{text-anchor:end}
+
+/* ─── 表格 ─── */
+.ar-scroll{overflow-x:auto; margin:var(--s2) 0 var(--s3); border-top:2px solid var(--ink)}
+.ar-scroll:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.ar-table{border-collapse:collapse; width:100%; font-size:.92rem; line-height:1.7}
+.ar-table caption{caption-side:bottom; text-align:left; font-size:.86rem; color:var(--ink-dim);
+  padding-top:var(--s1)}
+.ar-table th, .ar-table td{padding:.6rem .8rem .6rem 0; border-bottom:1px solid var(--hair-soft);
+  text-align:left; vertical-align:top}
+.ar-table thead th{font-family:var(--mono); font-weight:400; font-size:.78rem; letter-spacing:.08em;
+  color:var(--ink-faint); border-bottom:1px solid var(--ink)}
+.ar-table .n{font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap}
+.ar-table tr.hl td{background:var(--paper-2)}
+.ar-table .diff{color:var(--accent); font-weight:700}
+
+/* 界表色帶：每一段的寬度＝度數（HTML 而非 SVG，字跟著讀者字級走） */
+.bands{margin:var(--s3) 0; border-top:2px solid var(--ink)}
+.band-row{display:grid; grid-template-columns:9.5rem minmax(0,1fr); gap:var(--s2);
+  align-items:center; padding:.7rem 0; border-bottom:1px solid var(--hair-soft)}
+.band-name{font-size:.92rem; line-height:1.5; color:var(--ink)}
+.band-name small{display:block; font-family:var(--mono); font-size:.78rem; color:var(--ink-faint); letter-spacing:.04em}
+.band{display:grid; grid-template-columns:repeat(30,minmax(0,1fr)); height:2.6rem}
+.band > span{display:flex; align-items:center; justify-content:center; font-size:.82rem;
+  color:var(--paper); border-right:2px solid var(--paper); min-width:0; overflow:hidden; white-space:nowrap}
+.band > span:last-child{border-right:0}
+.p-saturn{background:var(--plate)}
+.p-jupiter{background:var(--ring-2)}
+.p-mars{background:var(--accent)}
+.p-venus{background:var(--ring-1)}
+/* 水星不用 --ring-3：紙色字在它上面只有 4.05:1，小字不夠；--state-unavailable 是 5.6:1 */
+.p-mercury{background:var(--state-unavailable)}
+.band > span.mark{box-shadow:inset 0 0 0 3px var(--ink), inset 0 0 0 5px var(--paper)}
+.band-scale{display:grid; grid-template-columns:9.5rem minmax(0,1fr); gap:var(--s2); padding-top:.3rem}
+.band-scale > div{display:flex; justify-content:space-between; font-family:var(--mono);
+  font-size:.74rem; color:var(--ink-faint)}
+.band-legend{display:flex; flex-wrap:wrap; gap:.4rem 1.2rem; margin-top:var(--s1); font-size:.86rem; color:var(--ink-dim)}
+.band-legend i{display:inline-block; width:.85rem; height:.85rem; margin-right:.35rem; vertical-align:-.1em}
+/* span 的跨欄數＝這一段的度數；1 到 12 度足以涵蓋四套表 */
+.w1{grid-column:span 1}.w2{grid-column:span 2}.w3{grid-column:span 3}.w4{grid-column:span 4}
+.w5{grid-column:span 5}.w6{grid-column:span 6}.w7{grid-column:span 7}.w8{grid-column:span 8}
+.w9{grid-column:span 9}.w10{grid-column:span 10}.w11{grid-column:span 11}.w12{grid-column:span 12}
+
+/* 長條：以 HTML 畫的水平條，寬度以十二分之一為級（給上升時間等） */
+.bars{margin:var(--s3) 0; border-top:2px solid var(--ink)}
+.bar-row{display:grid; grid-template-columns:4.2rem minmax(0,1fr) 4.6rem; gap:var(--s1);
+  align-items:center; padding:.32rem 0; border-bottom:1px solid var(--hair-soft); font-size:.9rem}
+.bar-row > span:first-child{color:var(--ink)}
+.bar-row > span:last-child{font-family:var(--mono); font-size:.82rem; text-align:right; color:var(--ink-dim)}
+.bar-track{height:.9rem; background:var(--hair-soft)}
+.ar-fig .bar-track svg{width:100%; height:100%}
+
+/* ─── 出處 ─── */
+.ar-refs{margin-top:var(--s5) !important; padding-top:var(--s3) !important; border-top:2px solid var(--ink) !important}
+.ar-refs h2{font-family:var(--serif); font-weight:400; font-size:1.5rem; margin:0 0 var(--s1)}
+.ar-refs > p{max-width:44rem; color:var(--ink-dim); font-size:.95rem}
+.ar-refs ol{list-style:none; counter-reset:ref; padding:0; margin:var(--s2) 0 0; max-width:52rem}
+.ar-refs li{counter-increment:ref; display:grid; grid-template-columns:2.6rem minmax(0,1fr);
+  gap:0 var(--s1); padding:.75rem 0; border-top:1px solid var(--hair-soft);
+  font-size:.92rem; line-height:1.85; color:var(--ink-dim)}
+.ar-refs li::before{content:counter(ref); font-family:var(--mono); color:var(--accent); font-size:.86rem}
+.ar-refs li:target{background:var(--paper-2)}
+.ar-refs li > span{min-width:0; overflow-wrap:anywhere}
+.rs{display:inline-block; font-family:var(--mono); font-size:.78rem; letter-spacing:.06em;
+  border:1px solid currentColor; padding:0 .4rem; margin-left:.4rem; line-height:1.6; white-space:nowrap}
+.rs-checked{color:var(--ring-1)}
+.rs-register{color:var(--ring-2)}
+.rs-relayed{color:var(--state-unavailable)}
+.rs-computed{color:var(--ink-dim)}
+
+/* ─── 收尾 ─── */
+.ar-next{margin-top:var(--s5) !important; display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);
+  gap:0; border:2px solid var(--ink)}
+.ar-next > div{padding:var(--s3)}
+.ar-next > div:first-child{background:var(--plate); color:var(--plate-fg)}
+.ar-next h2{font-family:var(--serif); font-weight:400; font-size:1.45rem; line-height:1.5; margin:0 0 var(--s2)}
+.ar-next p{color:var(--plate-dim); font-size:.95rem}
+.page-body .ar-next .btn-paper{display:inline-block; background:var(--paper); color:var(--plate);
+  padding:.75rem 1.5rem; border-bottom:0; margin-top:var(--s1)}
+.page-body .ar-next .btn-paper:hover{background:var(--accent-rev); color:var(--paper)}
+.ar-next ul{list-style:none; padding:0; margin:0}
+.ar-next li{padding:.55rem 0; border-bottom:1px solid var(--hair-soft); font-size:.95rem}
+.ar-next .ar-k{display:block; font-family:var(--mono); font-size:.76rem; letter-spacing:.16em;
+  color:var(--ink-faint); margin-bottom:var(--s1)}
+
+@media (max-width:60rem){
+  .ar-body{grid-template-columns:minmax(0,1fr)}
+  .ar-body > *, .ar-body > .ar-wide{grid-column:1}
+  .ar-sec{position:static; display:block; width:auto; text-align:left; line-height:1.6; margin-bottom:.2rem}
+  .ar-next{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  .ar-hero{padding:var(--s2) var(--s1) var(--s1); margin-left:calc(-1 * var(--s1)); margin-right:calc(-1 * var(--s1))}
+  .band-row, .band-scale{grid-template-columns:minmax(0,1fr); gap:.35rem}
+  .band-scale > span{display:none}
+  .band > span{font-size:.75rem}
+  .ar-stats > div + div{border-left:0; border-top:1px solid var(--hair); padding-left:0}
+}
+@media print{
+  .ar-next{display:none}
+}
+.ar-hero > .bands:first-child{margin-top:0}
+/* 窄螢幕上表格在自己的捲動區裡橫捲：第一欄（名稱）不斷行，圖說不超出視窗寬 */
+.ar-table th:first-child, .ar-table td:first-child{white-space:nowrap}
+.ar-table caption{max-width:min(44rem, 82vw)}

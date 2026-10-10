@@ -10,17 +10,18 @@
 <link rel="canonical" href="{{canonical}}">
 <link rel="alternate" hreflang="{{locale}}" href="{{canonical}}">
 <link rel="alternate" hreflang="x-default" href="{{canonical}}">
-<meta property="og:type" content="website">
+<meta property="og:type" content="{{og_type}}">
 <meta property="og:site_name" content="{{site_name}}">
 <meta property="og:locale" content="{{og_locale}}">
 <meta property="og:title" content="{{title}}">
 <meta property="og:description" content="{{description}}">
 <meta property="og:url" content="{{canonical}}">
-{{og_image}}<meta name="twitter:card" content="{{twitter_card}}">
+{{og_article}}{{og_image}}<meta name="twitter:card" content="{{twitter_card}}">
 <script type="application/ld+json">{{json_ld}}</script>
 {{/discovery}}
-<link rel="icon" href="/zh-TW/favicon.svg?v={{assets}}">
-<link rel="stylesheet" href="/zh-TW/tokens.css?v={{assets}}">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="/zh-TW/favicon.svg?v={{assets}}" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 {{stylesheets}}
 </head>
 <body>

@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you cite Armillary, cite the exact public commit you used, so the calculation boundary you refer to stays identifiable. 引用時請註明所用的公開 commit。"
+type: software
+title: "渾儀 Armillary"
+abstract: "A Traditional-Chinese-first, verifiable calculator for classical Western astrology. It computes charts with Swiss Ephemeris and returns the coordinate frame, time conversion, named methods and their sources, version identities and a step-by-step calculation trace with each result. It calculates only: no interpretation, no prediction."
+authors:
+  - name: "渾儀 Armillary"
+repository-code: "https://github.com/sa3952/Armillary"
+url: "https://projectarmillary.com/zh-TW/"
+license: AGPL-3.0-only
+keywords:
+  - astrology
+  - classical astrology
+  - Swiss Ephemeris
+  - ephemeris
+  - reproducibility
+  - Traditional Chinese

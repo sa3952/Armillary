@@ -37,6 +37,35 @@
   const submitButton = el("submit-button");
   const cancelButton = el("cancel-button");
   const bootstrapStatus = el("bootstrap-status");
+  // view-model.js（回應 → sections → view tree）只在畫結果時才用得到，卻是本頁最大的
+  // script，所以不在開機時載入：第一次與表單互動時開始抓，送出時與計算請求一起等，
+  // 兩者都到了才畫。網址（含內容版本）由 build_pages 寫在本 script 的 data-view-model。
+  // 用 import() 而不是插入 <script>：同源模組符合 script-src 'self'，也不經過
+  // script.src 這個 Trusted Types 的注入點。
+  const viewModelSource = document.querySelector("script[data-view-model]");
+  const VIEW_MODEL_URL = viewModelSource ? viewModelSource.dataset.viewModel : null;
+  if (!window.ChartViewModel && !VIEW_MODEL_URL) {
+    throw new Error("calculate.js 沒有 view-model.js 的位址。");
+  }
+  let viewModelLoad = null;
+  let viewModelFailures = 0;
+  function loadViewModel() {
+    if (window.ChartViewModel) return Promise.resolve();
+    if (!viewModelLoad) {
+      // 瀏覽器把抓取失敗的模組網址記成失敗，同一網址再 import 不會重抓；
+      // 重試時換一個查詢參數，下一次送出才真的再抓一次。
+      const url = viewModelFailures ? `${VIEW_MODEL_URL}&retry=${viewModelFailures}` : VIEW_MODEL_URL;
+      viewModelLoad = Promise.resolve().then(() => import(url)).then(() => {
+        if (!window.ChartViewModel) throw new Error("view-model.js 沒有提供 ChartViewModel。");
+      }).catch((error) => {
+        viewModelFailures += 1;
+        viewModelLoad = null;
+        throw error;
+      });
+    }
+    return viewModelLoad;
+  }
+  form.addEventListener("focusin", () => { loadViewModel().catch(() => {}); }, { once: true });
   // 技術區塊的集合只有一個出處：exporters 匯出的驗算區段集合。「運算結果」
   // 匯出排除哪些區段，畫面就把哪些收進「技術細節」；不另抄一份 id 清單。
   // 不從投影結果反推：投影同時排除「未請求」的區段，反推
@@ -1280,8 +1309,11 @@
     cancelButton.hidden = false;
     setStatus("計算中…", "info");
 
-    postJson("/api/chart", payload, controller.signal)
-      .then(({ response, body, invalidJsonMedia }) => {
+    Promise.all([
+      postJson("/api/chart", payload, controller.signal),
+      loadViewModel().then(() => true, () => false),
+    ])
+      .then(([{ response, body, invalidJsonMedia }, viewModelReady]) => {
         if (!lifecycle.isCurrentRequest(token)) return;   // late response 丟棄
         if (invalidJsonMedia) {
           showError("計算服務的回應格式不是 JSON。", ["請稍後重試。"]);
@@ -1294,6 +1326,13 @@
         // exporters 的 createDocument 負責，失敗同樣落到下面的完整性錯誤。
         if (!body || typeof body !== "object" || Array.isArray(body)) {
           showIncompleteResponse();
+          return;
+        }
+        // 呈現結果的模組沒抓到，與計算請求沒送到是同一種失敗：連不上本站。
+        if (!viewModelReady) {
+          showError(window.ClientContext.networkErrorMessage(),
+            ["確認服務仍在執行後重試。", "重新載入頁面。"]);
+          setStatus("沒有送達計算服務。", "error");
           return;
         }
         renderResponse(body, signature, payload);

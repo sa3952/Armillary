@@ -9,8 +9,8 @@
     {
       "executable": false,
       "path": ".github/workflows/production-amd64.yml",
-      "sha256": "c5fd075743e9083987ad739badf6205fe127e903b99bf5762d04f51b32183983",
-      "size_bytes": 2652
+      "sha256": "b6254cd6802484d3b2e6644379f390f993bea68b337c88c5fba4b229abecfbc3",
+      "size_bytes": 3457
     },
     {
       "executable": false,
@@ -27,8 +27,14 @@
     {
       "executable": false,
       "path": ".well-known/security.txt",
-      "sha256": "53f1415003357ee0e013acb8ad6450d20c1e4a751cca19c3d734ad9e5d8fd11b",
+      "sha256": "68f2ff470f04330fab1f701417247b9109ea2095d6bc71459a27b77f6a5d1a29",
       "size_bytes": 306
+    },
+    {
+      "executable": false,
+      "path": "CITATION.cff",
+      "sha256": "75dbdd9f05e66a48bfd93c96c4277f70a9fad32fe31f39b15a62dbd4650b9cf1",
+      "size_bytes": 871
     },
     {
       "executable": false,
@@ -45,19 +51,19 @@
     {
       "executable": false,
       "path": "README.md",
-      "sha256": "ec816771a5ef7930e78501067be694e3ca9389b98e94dfd3531d61865e825cb3",
-      "size_bytes": 19063
+      "sha256": "bcf38e42aa098c19def554ca7b68e592133a6beb6c31dd0ce7b3865a73010311",
+      "size_bytes": 12672
     },
     {
       "executable": false,
       "path": "SECURITY.md",
-      "sha256": "23843d798f2a182b85df9e59755ee852df07edd5b38e00dcf39e572b18ba2519",
-      "size_bytes": 1467
+      "sha256": "44dd3005222ce777ae8bcab20a96af485f4fcfbd15f9ad5bb92ea4f9e0c9c501",
+      "size_bytes": 10860
     },
     {
       "executable": false,
       "path": "SOURCE_EXPORT.json",
-      "sha256": "1fa4b04ce3950412225a548ee9a7dc7a594d05bd8311af40aeb9e68d79b75d33",
+      "sha256": "62b66ae079b568d35c66dc330c9d8d913eebf955c287081f7bbad89b40acc57b",
       "size_bytes": 136
     },
     {
@@ -93,8 +99,8 @@
     {
       "executable": false,
       "path": "backend/app/config.py",
-      "sha256": "efce31c6acac173a91072820f3e7265aeb4a0423252a95cacf3d82a141697998",
-      "size_bytes": 14626
+      "sha256": "edb18e9c17e69cb082c1bd737516145ecaef094821d0f0689a3bb8fec4e47edc",
+      "size_bytes": 14696
     },
     {
       "executable": false,
@@ -153,8 +159,8 @@
     {
       "executable": false,
       "path": "backend/app/core/dignity_tables.py",
-      "sha256": "46041282ab2b96c2223ffa948c5dd73e2dee7692c3c23db551dbc1655fe68fb7",
-      "size_bytes": 31387
+      "sha256": "0e88cb8f7c4e7337eb6a8d8e683871cde35ae47f3bbbae58831386b90766d98d",
+      "size_bytes": 33349
     },
     {
       "executable": false,
@@ -309,8 +315,8 @@
     {
       "executable": false,
       "path": "backend/app/privacy_logging.py",
-      "sha256": "af3e3f981139c780be7f1bbe47244db86596ce6fda9956805ca44111f6d6b4da",
-      "size_bytes": 21330
+      "sha256": "23772553928d1ec396fe82bb9d48c6cebc908a028ec685010fcdb04454cdfa51",
+      "size_bytes": 21399
     },
     {
       "executable": false,
@@ -339,8 +345,8 @@
     {
       "executable": false,
       "path": "backend/app/runtime_static.py",
-      "sha256": "e24477d911b78b23c4e5b480ef03fd08492a400479c55e86332b824b817a08a3",
-      "size_bytes": 18467
+      "sha256": "8d4e888cc6157940a7d34fee730ae789a4ef705f8d081d69a9cdcc03dcc6d7e5",
+      "size_bytes": 19359
     },
     {
       "executable": false,
@@ -525,8 +531,8 @@
     {
       "executable": false,
       "path": "deploy/staging/nginx-site.conf.template",
-      "sha256": "481209f22a80a5af02160c25af3eb579cd66841a382e6921c27849bb5d043b2c",
-      "size_bytes": 17362
+      "sha256": "9e4ecd71cd44ee74df09b57cd9141f408439de56fa4daeeaab54282426186435",
+      "size_bytes": 17478
     },
     {
       "executable": false,
@@ -573,8 +579,32 @@
     {
       "executable": false,
       "path": "docs/REPRODUCIBLE_BUILD.md",
-      "sha256": "5eb5215de949e5521a053e29fb3e8fd21c00d275c42e8c6377eafb19befdef5c",
-      "size_bytes": 2699
+      "sha256": "1ab21d393f3ef2ae3713572559b7d60d4062d55507c4ebc8adb8712d2525b1c9",
+      "size_bytes": 5055
+    },
+    {
+      "executable": false,
+      "path": "docs/readme/calculator.png",
+      "sha256": "6edf9653543a625c9dc74f92e305eb03d08cdf19c21c04a81bcc052352172381",
+      "size_bytes": 120225
+    },
+    {
+      "executable": false,
+      "path": "docs/readme/card.png",
+      "sha256": "453adec8612272fb92d98a42a60cce1af3b16e808891d6dc43f4880c8c6301e4",
+      "size_bytes": 99868
+    },
+    {
+      "executable": false,
+      "path": "docs/readme/positions.png",
+      "sha256": "6943f77047ce3469fcf8c0acc1830a939582962232f0bb14f6ab6ea9bdb018e5",
+      "size_bytes": 99731
+    },
+    {
+      "executable": false,
+      "path": "docs/readme/trace.png",
+      "sha256": "9f72864e3aa0baa5d27c6a0ce622c599b1b1da8b9cf8cd2780323be37f0c858e",
+      "size_bytes": 59364
     },
     {
       "executable": false,
@@ -584,9 +614,21 @@
     },
     {
       "executable": false,
+      "path": "frontend/apple-touch-icon.png",
+      "sha256": "f8a5749f0e560cd938d541fe4afc3dd463b667e380fea4ad25cbaa5045767820",
+      "size_bytes": 12304
+    },
+    {
+      "executable": false,
+      "path": "frontend/favicon.ico",
+      "sha256": "62e9be44d3225985d2197a357edc412fb36d0daaf3b567af01e3f5ac6860fbd3",
+      "size_bytes": 6548
+    },
+    {
+      "executable": false,
       "path": "frontend/llms.txt",
-      "sha256": "afb0670c23fb698b2aafad04fc570c842ebe6b1f2b62bf500618cba26d6d132f",
-      "size_bytes": 3543
+      "sha256": "f185af4169e2e8fa017237e2e98fe20f4046041afabea61c20150b2bd246c8af",
+      "size_bytes": 5534
     },
     {
       "executable": false,
@@ -603,26 +645,26 @@
     {
       "executable": false,
       "path": "frontend/robots.txt",
-      "sha256": "71abc93eb0af97d9b2e2d610cefce8d99c90def929d2b47df2cde2c72c23a0c4",
-      "size_bytes": 90
+      "sha256": "a8099393f1b744dd71058ccae10905ae64c12b81114767c8e1ac3cfc4b5b0edc",
+      "size_bytes": 145
     },
     {
       "executable": false,
       "path": "frontend/security.txt",
-      "sha256": "53f1415003357ee0e013acb8ad6450d20c1e4a751cca19c3d734ad9e5d8fd11b",
+      "sha256": "68f2ff470f04330fab1f701417247b9109ea2095d6bc71459a27b77f6a5d1a29",
       "size_bytes": 306
     },
     {
       "executable": false,
       "path": "frontend/sitemap.xml",
-      "sha256": "7dbd1a84623a995ddc674c5c8f0602c425af7a205fb1a06fe89cd1a1e708004c",
-      "size_bytes": 1465
+      "sha256": "4705fabf3450b2d01683df18db674ca28a978c3196f144764384817a236c5f7b",
+      "size_bytes": 2044
     },
     {
       "executable": false,
       "path": "frontend/surfaces.json",
-      "sha256": "66d58ea60dd3ffee7b9d757faf1d160d06855e4051d6f6c4aa13fd96a5a1e977",
-      "size_bytes": 6516
+      "sha256": "15e3e2134ec6e169f9b699ca06448ccb4322d0c7c42187cc8621dd485d3bacd6",
+      "size_bytes": 10109
     },
     {
       "executable": false,
@@ -663,38 +705,62 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/404.html",
-      "sha256": "85a55e721ff5abf338b0af4a9c27f832bc8b65ad8ff040b862cc1e3608a9a2ae",
-      "size_bytes": 2838
+      "sha256": "51d9f7d39ace9457379a5c7ca7e3704044e669be8ae104b0613147a535abb4ff",
+      "size_bytes": 2925
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/about.html",
-      "sha256": "9c7ae44260b0f23883f128575f96431fb0270111c7ff0ead72ccf42bb5ac8ffb",
-      "size_bytes": 13418
+      "sha256": "75a3396aac679e6d675bcd77b155f0c3bc22251cdb583107f2ab02a1b164b76f",
+      "size_bytes": 13540
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog.html",
-      "sha256": "7d9590e3ab0a5a686d374856a2f6df6afb9212173b1b4457e40065d7cbd00c36",
-      "size_bytes": 12387
+      "sha256": "f5b4e72d80ca1591da5e56d09f75e5b7aa4f0917fffe13aeda6447b2b91bb9a9",
+      "size_bytes": 13433
     },
     {
       "executable": false,
-      "path": "frontend/zh-TW/calculate.css",
-      "sha256": "e3ad1efbb0720168e1cff6f5788778443ab3d0d5e1a3c4cd76b896fa3efe9f33",
-      "size_bytes": 39685
+      "path": "frontend/zh-TW/blog/birth-time-sensitivity.html",
+      "sha256": "da3f616998893d43f16e0391b5414a0057125f9deb7189c375f16ba50aa1dbbc",
+      "size_bytes": 27655
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/blog/four-bounds-tables.html",
+      "sha256": "d7546e00a476ad232028e48f1535c484bcb9948018691be8174b375231679fef",
+      "size_bytes": 25213
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/blog/mean-vs-osculating-node.html",
+      "sha256": "5ef9d72ad860dfd4ef69b4df1970eac55c4fbd7af7e508f61ea07bd7c943f56f",
+      "size_bytes": 40840
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/blog/taiwan-time-zone-history.html",
+      "sha256": "39e0b8546651668563bf752729b8a1267674106311b11871d160828c2ba86496",
+      "size_bytes": 28728
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/blog/whole-sign-vs-placidus.html",
+      "sha256": "add9da600296fdbbf0a8568cef3c460b9348aa49c97b07d0cf977d5ccc7ab8c3",
+      "size_bytes": 34290
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/calculate.html",
-      "sha256": "4275f244143bfabed1cc0d7e8f592ff28d40ee9237e28bd72b9d8a0dfca57bf8",
-      "size_bytes": 21152
+      "sha256": "a71d07ce23d01aa359d2f366167bb26e688b1d933bf5cc68fa2a4dfc01d07782",
+      "size_bytes": 22169
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/calculate.js",
-      "sha256": "fe9b913d1e80ba3d10e97bbef8fb10a1f46eba43653fca290fdd6348a2820d4d",
-      "size_bytes": 110675
+      "sha256": "12c14d95b299d88ca13978af622075022e03c1d29979b8f68a1298735699f19e",
+      "size_bytes": 112815
     },
     {
       "executable": false,
@@ -705,8 +771,8 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/contact.html",
-      "sha256": "14ec47a99d9e22a3c148402e268b09cd4a53d2af6a8abbcc54e4e90863046bf8",
-      "size_bytes": 13758
+      "sha256": "97000541e7da4fc9a9be3771ddf1535f303e7db42c395f6537bb532906f97b71",
+      "size_bytes": 13866
     },
     {
       "executable": false,
@@ -717,20 +783,20 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/favicon.svg",
-      "sha256": "4fc39ec49ab823585c580df2f78bdde4b9e6bfb8389302e0a994ed577f017825",
-      "size_bytes": 662
+      "sha256": "c95686a2f029d3697c15053a5a1e98da55129660a6ef85676a87d61581c21bc3",
+      "size_bytes": 432
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/features.html",
-      "sha256": "19ca0278d8d65303be4d48f67a5a1e96a9683f4a7ce16d67171fdead4fccd302",
-      "size_bytes": 30407
+      "sha256": "202eb1bbba985445ae8b401ede56fc6cc66ca625a8a34a58e60c9135cfa09adb",
+      "size_bytes": 30532
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/index.html",
-      "sha256": "ff88fd5f830f3a19041532c3f687bdc2d13749f36cf2bdc40cac62befd563c0c",
-      "size_bytes": 21353
+      "sha256": "64345fefb5376fd1b662435a899a38b604775263a597245995f943a429e79779",
+      "size_bytes": 21836
     },
     {
       "executable": false,
@@ -741,20 +807,20 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/legal/copyright.html",
-      "sha256": "06d63738be6d4041e32a7b3bd73b0b08dd26f7d095b092fd8a974668c820bd77",
-      "size_bytes": 19092
+      "sha256": "f4cf1800ae6ac24ab6f6a8bbecbedb7455114f775b60f1d8a6495a3842c48371",
+      "size_bytes": 19224
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/legal/privacy.html",
-      "sha256": "22bc6962333bf201241906702a6deb0b9e258f241ada4804a750596f681681c2",
-      "size_bytes": 21830
+      "sha256": "e41f4846afbde5bfd73ce1c832d3bbe9e56a6d8867403cfa4b5f930e3bdcdd48",
+      "size_bytes": 21960
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/legal/terms.html",
-      "sha256": "808dd9aeec19edc6884a265de80ca043cd2d539a1c83f9893d4cc1e8462dcc99",
-      "size_bytes": 15128
+      "sha256": "742d575e7d803f97116fd5633e641412cc832e9b21cb5556b359dd6e3fcc0c98",
+      "size_bytes": 15256
     },
     {
       "executable": false,
@@ -765,14 +831,14 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/method-sources.json",
-      "sha256": "e046a0507e6ff4f85e1ee9a7c8e2d90bd5462a9d0dfa34d564a613a245bba7b4",
-      "size_bytes": 51982
+      "sha256": "0a009e6e099db7d90bce718df7a93ce5fde9cbdcfe0c44876db67cc7dda26d78",
+      "size_bytes": 53299
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/methods.html",
-      "sha256": "d1aa9b455e713d8e5fa46624241edb9edce9b434592f02a682b00a231a06500d",
-      "size_bytes": 63584
+      "sha256": "166256c486189659fc85e681a6eefffae59cabcec9effeca37d6b3ce3f6e7ea6",
+      "size_bytes": 63708
     },
     {
       "executable": false,
@@ -785,12 +851,6 @@
       "path": "frontend/zh-TW/options-catalogue.js",
       "sha256": "d3c7cf37aebb8acc5c86a2ba9106a01b7eaa967c5f12f4dfe5e020b25bc58350",
       "size_bytes": 25017
-    },
-    {
-      "executable": false,
-      "path": "frontend/zh-TW/page.css",
-      "sha256": "749bfa663aa0aea293a6c4e04d8833af8b2b3a72a34ed9f94c4c462931d4786c",
-      "size_bytes": 130965
     },
     {
       "executable": false,
@@ -807,14 +867,14 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/roadmap.html",
-      "sha256": "efc137cbafc7191fe481dac1d814f9b851d6019f6efa69910b2f454af26b5a30",
-      "size_bytes": 19491
+      "sha256": "811c54ad19d6acfa25c510f831a7faf7354661e088b79cb038c72137a32596ff",
+      "size_bytes": 19615
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/security.html",
-      "sha256": "3b141afae7c2edc2550252576c790fd1c3fc98158ed16ebffdc0a106b5571dca",
-      "size_bytes": 32285
+      "sha256": "22e13da7e99f9f784e738f4333af05b5898455107f00217f3a82e0554f3e1164",
+      "size_bytes": 32468
     },
     {
       "executable": false,
@@ -830,27 +890,117 @@
     },
     {
       "executable": false,
+      "path": "frontend/zh-TW/style/about.css",
+      "sha256": "eb17a2cae398d5441d273c49b3407fec6d24ec86140282c8dd14e39704fb730b",
+      "size_bytes": 9996
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/style/blog-article.css",
+      "sha256": "17eb957a1958350a9ec73b44f5fc2df79ed6758a873b16086804704eebeb9246",
+      "size_bytes": 19385
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/style/blog.css",
+      "sha256": "bf8dd4a4a53f88c84538693b3bbed9e753eae0d42cefd0b725b71e3106f02643",
+      "size_bytes": 10804
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/style/calculate.css",
+      "sha256": "22bd25d652db6dfbab0af1931ca29c28107bc42ccbe0527e4a1bb83870cb73c1",
+      "size_bytes": 37752
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/style/contact.css",
+      "sha256": "85634fc0a20721986df740c6d00a12cc6ac07c55f19006c11dc4533ecfa9c00e",
+      "size_bytes": 11904
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/style/features.css",
+      "sha256": "4e19d4c31cafa02298623b4355afc3cd0238b227de6c8dbddeae36956202cb3f",
+      "size_bytes": 15171
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/style/home.css",
+      "sha256": "0bf32b3305a692551e4cdb8c0a9008ca8ae28309f7646d21194c8a3626f23a10",
+      "size_bytes": 19313
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/style/legal-copyright.css",
+      "sha256": "8ae097d939f6a955c585e3c4088e9f2881ca854501e12d15c945c12b919d94d5",
+      "size_bytes": 13398
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/style/legal-privacy.css",
+      "sha256": "b4b14f06cd8b95e5b455a6d21a8c2d205307a44c43266e130040c02439ada313",
+      "size_bytes": 13408
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/style/legal-terms.css",
+      "sha256": "79da72c34ed8827d89a6d0243066db90aaf50c7b02907fae22415e4701fc92ad",
+      "size_bytes": 11650
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/style/methods.css",
+      "sha256": "aa16a07706907efcf1fd8fc4ebc94edbc54ab0fa7eb5204369ef789a4b2981c1",
+      "size_bytes": 15744
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/style/not-found.css",
+      "sha256": "f16baca514207cfd7b63109ca126a545095aedd28410a615c1b5dc92bb647fcb",
+      "size_bytes": 7286
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/style/roadmap.css",
+      "sha256": "be248255143e187b4d55ba8119914d4d0597772e05178a48ee293a9c4b2bbffd",
+      "size_bytes": 15798
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/style/security.css",
+      "sha256": "09c3471af90af533cb0141ab4e3994ad95b3d277bfd4d92fd67384c7e79ec439",
+      "size_bytes": 13761
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/style/trust.css",
+      "sha256": "2ca52101862355c51f10bc3a95581772b5fa1aec66433769871a820989f01cd5",
+      "size_bytes": 18498
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/style/validation.css",
+      "sha256": "e54199dfbbd9ecf671cd03a346e63f36ab6c4e93ab29a412e8f8b410d9cc0779",
+      "size_bytes": 11566
+    },
+    {
+      "executable": false,
       "path": "frontend/zh-TW/timezone-names.js",
       "sha256": "b31b78912878f1f36f8ddd790daa418839476e797634cb4c8ab741f5e594b548",
       "size_bytes": 11710
     },
     {
       "executable": false,
-      "path": "frontend/zh-TW/tokens.css",
-      "sha256": "70b8072b7e58d89d31e4d60c5915dd31c2a335596022d33be3fac08398d82939",
-      "size_bytes": 7368
-    },
-    {
-      "executable": false,
       "path": "frontend/zh-TW/trust.html",
-      "sha256": "6f69f3c1d6fa9279bae655c4c9524c43d907ff185cfb8c3768b11996356c570f",
-      "size_bytes": 28372
+      "sha256": "3cc0c22bc13b0a88badb53062e9d12d4ac9432f0a7651d87dc6637ea9944698d",
+      "size_bytes": 28494
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/validation.html",
-      "sha256": "b136a814c849666bdb77d503cb415f261493a02089b9ce853cf147c1303dca7c",
-      "size_bytes": 10739
+      "sha256": "77c0fa0df75e2eefba01a76c9637a44b6fe135166c163a97801500c33665187a",
+      "size_bytes": 10866
     },
     {
       "executable": false,
@@ -909,8 +1059,68 @@
     {
       "executable": false,
       "path": "scripts/frontend/build_pages.py",
-      "sha256": "39f7ca483822b7149fc727231d387921bccb6875e9c00989f5e5d6504769b2e9",
-      "size_bytes": 46946
+      "sha256": "d484156650670f7b7f72499cbf09bfab03ea6d81db93d1ef545e1256fbe248f8",
+      "size_bytes": 62283
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/favicon.py",
+      "sha256": "2e6e6637e22c4343b114f72218cbad0a673c4eb68610b78e72a7d73c1a58b125",
+      "size_bytes": 21271
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/figures/__init__.py",
+      "sha256": "20a85c866e9aa39c8ccb3c6fbf4a63a7e55ec2119f27b647a05b673d50acb486",
+      "size_bytes": 4356
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/figures/__main__.py",
+      "sha256": "0472e2ffee01c7582c667fb3eb1ef01023e7d584f175cef8cb475e45e6bd1736",
+      "size_bytes": 45
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/figures/_common.py",
+      "sha256": "54a483eb68da73d258245f5da615227458235329b4580cf253b7071be37c776d",
+      "size_bytes": 1903
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/figures/birth_time.py",
+      "sha256": "61dcea7ee490897e07a486dc119bdaca90b320d3d265185c84abe3b2111d59c2",
+      "size_bytes": 8239
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/figures/bounds.py",
+      "sha256": "5f14316d06786dc7c53c38fc3e22272a94dd8af5c3bd392e2d8862f37ea8ad73",
+      "size_bytes": 4251
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/figures/houses.py",
+      "sha256": "00adb68717bbd35c386332524c0bdbdabc78c0628cb1e579ab961d45502576a7",
+      "size_bytes": 11615
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/figures/nodes.py",
+      "sha256": "7ac7f5aa84e158bf11996afa826294f188843e164b093d99528c806e93ba6c6c",
+      "size_bytes": 6495
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/figures/taiwan_time.py",
+      "sha256": "5169900e600a80aaa11c910a3ec6f2566c58e2eeb9cac9e1d4cadfe3cc80afd8",
+      "size_bytes": 9312
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/figures/taiwan_tz_2026d.json",
+      "sha256": "7f3ab76b91d5f1851193d3210b236be40393fd2493aa3d6e6df0536b4a4accdc",
+      "size_bytes": 4043
     },
     {
       "executable": false,
@@ -921,8 +1131,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/og_card.py",
-      "sha256": "0b44fb25fa48926ff91a640f6e5e7394c1c3d8427c39d88ddfb1b4f3b1b57a36",
-      "size_bytes": 9432
+      "sha256": "edef15541ef54bd65e54fa307001b43199b7bac16e2174f3b032beb732b9df11",
+      "size_bytes": 9441
     },
     {
       "executable": false,
@@ -933,14 +1143,14 @@
     {
       "executable": false,
       "path": "scripts/frontend/page_lastmod.json",
-      "sha256": "10dbbaf14e2f975b0256bf24a46c47d775dc54381028c0171e61024dee087ad1",
-      "size_bytes": 2102
+      "sha256": "68c2f747ff7df47544e94cfa0e7ec961c0e57337efe49404f468a59dbb331c3e",
+      "size_bytes": 2931
     },
     {
       "executable": false,
       "path": "scripts/frontend/pages/_shell.html",
-      "sha256": "a945d7956f5434e4a2e4d351e0b095b8937612010c90a8ddec36e8d2f558cee1",
-      "size_bytes": 3192
+      "sha256": "3e862ef5668eefc82b2f001385b0bdcc1dbac1c41d0467a06d43098d2e846f30",
+      "size_bytes": 3292
     },
     {
       "executable": false,
@@ -950,21 +1160,51 @@
     },
     {
       "executable": false,
+      "path": "scripts/frontend/pages/blog-birth-time-sensitivity.html",
+      "sha256": "8d53cac9ca5b7c513bbe173fbced2e0f23ce7b42e4795452ecc668295fc3cb1c",
+      "size_bytes": 21709
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/pages/blog-four-bounds-tables.html",
+      "sha256": "c3d2ddd1638579d1d738a949c9ca16dfc34e513b393a4dc3f6ad0c73eac27986",
+      "size_bytes": 19173
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/pages/blog-mean-vs-osculating-node.html",
+      "sha256": "0df39d58dc42038bf8933d2b9639ba90ad21b12d5bb8fd978e85896577ed7b9e",
+      "size_bytes": 34498
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/pages/blog-taiwan-time-zone-history.html",
+      "sha256": "0cb0ea8aba7bdfe66efd5316bb20b6c23e1c248f260149cf12ba32d5ac9de23c",
+      "size_bytes": 22594
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/pages/blog-whole-sign-vs-placidus.html",
+      "sha256": "544600f5c32bcb866f4f11cf17046097c61a4f9b4ae5aa5b03514dcfdead2707",
+      "size_bytes": 28371
+    },
+    {
+      "executable": false,
       "path": "scripts/frontend/pages/blog.html",
-      "sha256": "fbddd24e80a3619dae615c619641ba2a7c6f5b0a18607463963f16ac84cda8b0",
-      "size_bytes": 7532
+      "sha256": "f2e6041d7ca95f621b89b9f90e9f6fedaa5936293a5393d4017e8ce8b56a5c73",
+      "size_bytes": 8738
     },
     {
       "executable": false,
       "path": "scripts/frontend/pages/calculate.html",
-      "sha256": "660345f96c553fb9422c3db8efa972cb8dad101107b02abdcc5b764a0b3d943a",
-      "size_bytes": 17277
+      "sha256": "0749b989296a7bef10f3ab2b87a2e038d5d0ad6225000a4266b831f146ea9497",
+      "size_bytes": 18366
     },
     {
       "executable": false,
       "path": "scripts/frontend/pages/contact.html",
-      "sha256": "41a6f87e79735d2f4190edc523176348f9fbd5985f2ad285591a085323dcf6c4",
-      "size_bytes": 9106
+      "sha256": "91e253f3270a5c485052dcf9c55afa38a0d3301de49fe2b978ad7949c0ed0933",
+      "size_bytes": 9090
     },
     {
       "executable": false,
@@ -975,8 +1215,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/pages/home.html",
-      "sha256": "fc0fa9d8b9c05dfcdae405c07e0bf30a78840cb3f06f650db678c2e7807c48d8",
-      "size_bytes": 14594
+      "sha256": "0ce4a534795c5f60cfd46e435bc4d0419ca8ff4f0dd9a415350e1855c13857f6",
+      "size_bytes": 14606
     },
     {
       "executable": false,
@@ -1017,8 +1257,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/pages/security.html",
-      "sha256": "fb6022a62870f2a731cffaf3be15a6b75e82d7a98c2e5f78daf1089322e2e4d8",
-      "size_bytes": 25971
+      "sha256": "fd7bfb5a2383b768c597f6de5b54bfd6640aa3bbdcc5497df2cfb6c593425453",
+      "size_bytes": 26029
     },
     {
       "executable": false,
@@ -1037,6 +1277,36 @@
       "path": "scripts/frontend/render_og_card.cjs",
       "sha256": "f1fb71aa159bb3193fdb53aa4537b4e622a5a45ae5ac766f3b09b81d3dcea77f",
       "size_bytes": 1390
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/styles/article.css",
+      "sha256": "b529d0ba2061191d3d33037add978a1ea0b4d2a6a984b3cba150721bf3f2c5ad",
+      "size_bytes": 14690
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/styles/calculate.css",
+      "sha256": "ddd7e6cf96eeb29ebac98950aeee7c50820d9d804573ad196c3db68f4d5e5dc7",
+      "size_bytes": 40158
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/styles/page.css",
+      "sha256": "862c31bef0ef3f64cede5a62d212e703adb0f99b58b1890de2a0884dbb2963ee",
+      "size_bytes": 133271
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/styles/tokens.css",
+      "sha256": "70b8072b7e58d89d31e4d60c5915dd31c2a335596022d33be3fac08398d82939",
+      "size_bytes": 7368
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/stylesheets.py",
+      "sha256": "9ef7c0debacbba16629af0dc80abf680c97daf6b11e777f2e14530c05cbdea9c",
+      "size_bytes": 20053
     },
     {
       "executable": false,
@@ -1179,8 +1449,8 @@
     {
       "executable": false,
       "path": "tests/backend/test_privacy_logging.py",
-      "sha256": "5ce67daad6d248ccfdc612ce7cfa8d043a087bfa8eb6a919fb3e979a6802748b",
-      "size_bytes": 35641
+      "sha256": "2d81dc3f49767f7c3775971ae49dcd6f3b441ca5926866576674194564fdcfcc",
+      "size_bytes": 35791
     },
     {
       "executable": false,
@@ -1209,8 +1479,8 @@
     {
       "executable": false,
       "path": "tests/integration/test_hosted_profile.py",
-      "sha256": "ddfb686082d850fd298887bf30ba111066453aacde8a6f940ae953a754f759b9",
-      "size_bytes": 24215
+      "sha256": "80816077e76987a208c787d4e0e33a8c74bacefac39f6fb855d685ceb05db852",
+      "size_bytes": 24436
     },
     {
       "executable": false,

@@ -154,7 +154,8 @@ _SECURITY_HEADERS: Final = {
     "Content-Security-Policy": (
         "default-src 'self'; base-uri 'none'; object-src 'none'; "
         "frame-ancestors 'none'; script-src 'self'; style-src 'self'; "
-        "connect-src 'self'; form-action 'self'"
+        "connect-src 'self'; form-action 'self'; "
+        "require-trusted-types-for 'script'; trusted-types 'none'"
     ),
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",

@@ -1,0 +1,58 @@
+"""Shared pieces of the article figure generators."""
+from __future__ import annotations
+
+from contextlib import contextmanager
+from pathlib import Path
+import sys
+from typing import Any, Iterator
+
+
+ROOT = Path(__file__).resolve().parents[3]
+BACKEND = ROOT / "backend"
+SIGNS = "牡羊 金牛 雙子 巨蟹 獅子 處女 天秤 天蠍 射手 摩羯 水瓶 雙魚".split()
+
+
+@contextmanager
+def backend_on_path() -> Iterator[None]:
+    """backend/ is importable only while a generator reads the product."""
+    sys.path.insert(0, str(BACKEND))
+    try:
+        yield
+    finally:
+        sys.path.remove(str(BACKEND))
+
+
+@contextmanager
+def swiss() -> Iterator[Any]:
+    """Swiss Ephemeris bound to the repository's own ephemeris files.
+
+    Binding and release go through the product's per-thread bookkeeping, so a
+    test that runs a generator does not leave a later chart in the same thread
+    believing the path is still bound after Swiss was closed.
+    """
+    with backend_on_path():
+        import swisseph as swe
+        from app import ephemeris
+
+        ephemeris.release_ephemeris_for_thread()
+        ephemeris.ensure_ephemeris_initialized_for_thread()
+        try:
+            yield swe
+        finally:
+            ephemeris.release_ephemeris_for_thread()
+
+
+def calc_ut(swe, jd: float, body: int, flags: int | None = None) -> tuple:
+    """swe.calc_ut that refuses a silent fall back to the Moshier model."""
+    if flags is None:
+        position, used = swe.calc_ut(jd, body)
+    else:
+        position, used = swe.calc_ut(jd, body, flags)
+    if not used & swe.FLG_SWIEPH:
+        raise RuntimeError(f"Swiss did not read the ephemeris files for body {body} at JD {jd}")
+    return position
+
+
+def indent(block: str, prefix: str = "    ") -> str:
+    """A whole SVG placed inside a <figure>: every line indented once."""
+    return "\n".join(prefix + line for line in block.splitlines())

@@ -300,7 +300,7 @@ def test_hosted_boundary_rejects_oversized_headers_before_chart_parsing():
 
 @pytest.mark.parametrize(("method", "path"), (
     ("GET", "/api/health"), ("HEAD", "/api/health"), ("GET", "/zh-TW/calculate"),
-    ("GET", "/zh-TW/page.css"), ("GET", "/api/not-a-route"),
+    ("GET", "/zh-TW/style/home.css"), ("GET", "/api/not-a-route"),
 ))
 def test_header_budget_holds_on_every_path_not_only_the_json_posts(method, path):
     """SEC-R2-02: the 16 KiB header budget was applied to the two JSON POST
@@ -322,7 +322,7 @@ def test_static_text_assets_are_gzip_encoded_when_the_client_accepts_it():
     with _client() as client:
         for url, name in (
             ("/zh-TW/calculate", "zh-TW/calculate.html"),
-            ("/zh-TW/page.css", "zh-TW/page.css"),
+            ("/zh-TW/style/home.css", "zh-TW/style/home.css"),
             ("/zh-TW/view-model.js", "zh-TW/view-model.js"),
             ("/zh-TW/favicon.svg", "zh-TW/favicon.svg"),
         ):
@@ -348,12 +348,12 @@ def test_static_text_assets_are_gzip_encoded_when_the_client_accepts_it():
 def test_gzip_representation_keeps_head_validators_and_range_semantics():
     gzip_only = {"Accept-Encoding": "gzip"}
     with _client() as client:
-        encoded = client.get("/zh-TW/page.css", headers=gzip_only)
-        head = client.head("/zh-TW/page.css", headers=gzip_only)
+        encoded = client.get("/zh-TW/style/home.css", headers=gzip_only)
+        head = client.head("/zh-TW/style/home.css", headers=gzip_only)
         revalidated = client.get(
-            "/zh-TW/page.css", headers={**gzip_only, "If-None-Match": encoded.headers["etag"]},
+            "/zh-TW/style/home.css", headers={**gzip_only, "If-None-Match": encoded.headers["etag"]},
         )
-        ranged = client.get("/zh-TW/page.css", headers={**gzip_only, "Range": "bytes=0-9"})
+        ranged = client.get("/zh-TW/style/home.css", headers={**gzip_only, "Range": "bytes=0-9"})
 
     assert head.status_code == 200
     for header in ("content-encoding", "content-length", "etag"):
@@ -366,7 +366,7 @@ def test_gzip_representation_keeps_head_validators_and_range_semantics():
     # A byte range addresses the identity bytes; it is never cut from gzip.
     assert ranged.status_code == 206
     assert "content-encoding" not in ranged.headers
-    assert ranged.content == (_FRONTEND_ROOT / "zh-TW/page.css").read_bytes()[:10]
+    assert ranged.content == (_FRONTEND_ROOT / "zh-TW/style/home.css").read_bytes()[:10]
 
 
 def test_api_json_other_than_the_chart_result_is_never_compressed():
@@ -450,7 +450,8 @@ def test_generated_pages_version_every_asset_by_its_served_content_digest():
     """Every `?v=` in every generated page is the first sixteen hex digits of the
     SHA-256 of the file served at that path, and that URL earns the immutable lifetime."""
 
-    reference = re.compile(r'(?:src|href)="/(zh-TW/[^"?#]+)(\?[^"#]*)?"')
+    # data-* carries a module a page loads later (calculate.js's view-model).
+    reference = re.compile(r'(?:src|href|data-[a-z]+(?:-[a-z]+)*)="/(zh-TW/[^"?#]+)(\?[^"#]*)?"')
     pages = sorted((_FRONTEND_ROOT / "zh-TW").rglob("*.html"))
     assert len(pages) >= 14
     versioned: dict[tuple[str, str], str] = {}
@@ -466,6 +467,7 @@ def test_generated_pages_version_every_asset_by_its_served_content_digest():
             versioned[(name, query)] = label
     assert any(name == "zh-TW/calculate.js" for name, _ in versioned)
     assert any(name == "zh-TW/favicon.svg" for name, _ in versioned)
+    assert any(name == "zh-TW/view-model.js" for name, _ in versioned)
 
     with _client() as client:
         for (name, query), label in sorted(versioned.items()):

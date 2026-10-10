@@ -120,6 +120,13 @@
               </div>
             </div>
           </details>
+
+          <!-- 年份與時區由 test_the_calculate_page_says_how_taiwan_clock_times_become_utc
+               對照釘住的 tz 歷史與地點目錄；兩種鐘點的處理對照計算服務的實際回應。 -->
+          <aside class="tz-note" aria-labelledby="tz-note-title">
+            <h2 class="tz-note-title" id="tz-note-title">臺灣的時間怎麼處理</h2>
+            <p>請照出生紀錄填當時的鐘面時間：從目錄選臺灣的地點，時區就是 Asia/Taipei，計算服務依 IANA 時區資料庫把它換算成世界時（UTC）。1937 年 10 月到 1945 年 9 月的 UTC+9，以及 1946–1961、1974、1975、1979 年夏季的日光節約時間，都由資料庫計入，不必自己先加減一小時。時鐘撥回、同一個鐘面時間出現兩次時，本頁會請你指明是哪一次；時鐘撥快而跳過、根本不存在的時刻，服務不替你挪動，會請你核對出生紀錄。逐年的期間與資料庫本身的不確定處，見〈<a href="/zh-TW/blog/taiwan-time-zone-history">臺灣的時區與夏令時間</a>〉。</p>
+          </aside>
         </fieldset>
 
         <!-- ── 計算口徑 ── -->
@@ -262,6 +269,5 @@
 <script src="/zh-TW/options-catalogue.js?v={{assets}}" defer></script>
 <script src="/zh-TW/request-input.js?v={{assets}}" defer></script>
 <script src="/zh-TW/timezone-names.js?v={{assets}}" defer></script>
-<script src="/zh-TW/view-model.js?v={{assets}}" defer></script>
 <script src="/zh-TW/location-receipt.js?v={{assets}}" defer></script>
-<script src="/zh-TW/calculate.js?v={{assets}}" defer></script>
+<script src="/zh-TW/calculate.js?v={{assets}}" data-view-model="/zh-TW/view-model.js?v={{assets}}" defer></script>

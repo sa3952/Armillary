@@ -158,7 +158,7 @@ button.small{font-size:.82rem; padding:.45rem 1rem}
 }
 
 .section-note{max-width:var(--measure); font-size:.9rem; color:var(--ink-dim); margin-top:var(--s1); overflow-wrap:anywhere}
-.section-block{font-family:var(--mono); font-size:.8rem; color:var(--ink-dim); margin-top:var(--s2); word-break:break-word}
+.section-block{font-family:var(--mono); font-size:.8rem; color:var(--ink-dim); margin-top:var(--s2); overflow-wrap:anywhere}
 
 /* ═══ 出生時刻敏感度：取樣摘要 ═══════════════════════════════
    第一行是結論，永遠在摺疊之外。點列是不可操作的圖：每個取樣點一個獨立的點，
@@ -361,13 +361,18 @@ button.small{font-size:.82rem; padding:.45rem 1rem}
 .place-receipt{border:1px solid var(--hair); background:var(--paper-2); padding:var(--s2) var(--s3); margin-top:var(--s2)}
 .place-receipt dl{display:grid; grid-template-columns:11rem 1fr; gap:.3rem var(--s2); margin-top:.6rem}
 .place-receipt dt{font-size:.78rem; color:var(--ink-faint)}
-.place-receipt dd{font-family:var(--mono); font-size:.78rem; word-break:break-word}
+.place-receipt dd{font-family:var(--mono); font-size:.78rem; overflow-wrap:anywhere}
 .receipt-codes{margin-top:var(--s1)}
 .receipt-codes summary{font-size:.78rem; color:var(--ink-faint); cursor:pointer}
 .place-receipt .caveat{font-size:.82rem; color:var(--ink-dim); margin-top:var(--s2); border-left:2px solid var(--accent); padding-left:.8rem}
 .manual-place{margin-top:var(--s3); border-top:1px solid var(--hair-soft); padding-top:var(--s2)}
 .manual-place summary{cursor:pointer; font-size:.88rem; color:var(--ink-dim)}
 .manual-place[open] summary{margin-bottom:var(--s2)}
+/* 臺灣的鐘面時間怎麼換成世界時：地點欄位之後的常駐說明，與地點收據的 caveat 同一套語彙。 */
+.tz-note{margin-top:var(--s3); border-left:2px solid var(--accent); padding-left:.8rem; max-width:var(--measure)}
+.tz-note-title{font-family:var(--serif); font-weight:400; font-size:1.02rem; letter-spacing:.02em;
+  line-height:1.6; color:var(--ink); margin:0 0 .3rem}
+.tz-note p{font-size:.82rem; line-height:1.7; color:var(--ink-dim)}
 
 /* ═══ 選項：層 → 群組摺疊 → 相依子項 ═══════════════════ */
 /* 群組摺疊標題列與計數徽章的樣式待前端設計裁決後補上。 */
@@ -563,7 +568,7 @@ section.result-section h3{font-family:var(--serif); font-weight:400; letter-spac
    td 預設 nowrap 是為了讓座標數值不被折斷；軌跡的算式與輸入是長文字，
    同一條規則會讓整張表寬到必須一路往右拉。這裡改為換行並限制欄寬。 */
 table[data-section="trace"] td,
-table[data-section="trace"] th{white-space:normal; vertical-align:top; word-break:break-word}
+table[data-section="trace"] th{white-space:normal; vertical-align:top; overflow-wrap:anywhere}
 table[data-section="trace"] td{line-height:1.7; padding-right:.8rem}
 table[data-section="trace"] th:nth-child(1){width:3rem}
 table[data-section="trace"] th:nth-child(2),
@@ -575,7 +580,7 @@ table[data-section="trace"] td:nth-child(6){width:7rem}
 
 /* 生效選項也是長文字，同樣不該橫向捲 */
 table[data-section="requested_options"] td,
-table[data-section="requested_options"] th[scope="row"]{white-space:normal; word-break:break-word}
+table[data-section="requested_options"] th[scope="row"]{white-space:normal; overflow-wrap:anywhere}
 
 /* ═══ 表格密度與欄寬：逐類調整 ═════════════════════════
    座標表維持不換行（數值折斷更難讀），但只在自己的容器內橫捲，
@@ -626,7 +631,7 @@ table[data-section="horizon_events"]{table-layout:fixed; width:100%}
 table[data-section="contract"] td,
 table[data-section="receipt"] td,
 table[data-section="lunar_events"] td,
-table[data-section="horizon_events"] td{white-space:normal; word-break:break-word; vertical-align:top}
+table[data-section="horizon_events"] td{white-space:normal; overflow-wrap:anywhere; vertical-align:top}
 table[data-section="receipt"] th:first-child{width:16rem}
 table[data-section="contract"] th:first-child{width:12rem}
 table[data-section="requested_options"] th:first-child{width:22rem}

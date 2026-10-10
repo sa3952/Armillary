@@ -59,7 +59,10 @@ def _segments(*pairs: tuple[str, int]) -> tuple[tuple[str, int], ...]:
 
 # Ptolemy, Tetrabiblos I.20 (Robbins numbering; = Hübner 1998 I.21), Robbins 1940
 # translation: the chapter runs pp.91-97 and the table is printed on p.97; p.99
-# begins I.21, the Chaldaean terms (pages read against the printed Loeb).
+# begins I.21, the Chaldaean terms (pages read against the printed Loeb).  The
+# cells were read against the English table (p.97) and the Greek table with its
+# cumulative endpoints (p.96) in two scanned copies; the copies are named in
+# BOUNDS_SOURCE_DETAILS and the endpoints are pinned in the tests.
 EGYPTIAN_BOUNDS = (
     _segments(("jupiter", 6), ("venus", 6), ("mercury", 8), ("mars", 5), ("saturn", 5)),
     _segments(("venus", 8), ("mercury", 6), ("jupiter", 8), ("saturn", 5), ("mars", 3)),
@@ -82,9 +85,11 @@ EGYPTIAN_BOUNDS = (
 # The printed Loeb (1964 reprint of the 1940 edition, two scanned copies) prints
 # Mars in both the English table (p.107) and the Greek table (p.106), and the
 # manuscript totals in Robbins p.108 n.1 (Mars 66°) hold only with Mars; this
-# profile uses Mars.  All 60 cells of this table and of the Egyptian table (p.97)
-# were read against the same printing and match.  The apparatus Robbins prints
-# for Libra concerns lines 3-4 (Mercury/Jupiter), not line 5.
+# profile uses Mars.  Every cell was read against the English table (p.107) and
+# the Greek table with its cumulative endpoints (p.106) in the same two copies
+# as the Egyptian table, so the row status is the checked one and only Libra
+# carries an exception, for the transcription difference.  The apparatus Robbins
+# prints for Libra concerns lines 3-4 (Mercury/Jupiter), not line 5.
 PTOLEMY_ROBBINS_BOUNDS = (
     _segments(("jupiter", 6), ("venus", 8), ("mercury", 7), ("mars", 5), ("saturn", 4)),
     _segments(("venus", 8), ("mercury", 7), ("jupiter", 7), ("saturn", 2), ("mars", 6)),
@@ -205,6 +210,17 @@ CITATION_VERIFICATION_STATES = (
 _RESEARCH_CITED = CITATION_VERIFICATION_STATES[0]
 _EDITION_PAGES_CHECKED = CITATION_VERIFICATION_STATES[1]
 _ONLINE_TRANSCRIPTION_CHECKED = CITATION_VERIFICATION_STATES[2]
+# The copies read are the 1964 reprint; its imprint lists reprints of the 1940
+# first printing with no revision notice, so they count as first-edition page
+# images.  A silent plate correction between 1940 and 1964 cannot be excluded
+# from these copies, which is why the evidence names the printing.
+_ROBBINS_COPIES = (
+    "Ptolemy, Tetrabiblos, trans. F. E. Robbins (Loeb Classical Library, with "
+    "Manetho; first printed 1940, reprinted 1948, 1956, 1964), two scanned "
+    "copies of the 1964 reprint: Internet Archive "
+    "L350ManethoHistoryOfEgyptPtolemyTetrabiblos and University of Toronto "
+    "copy manethowithengli00maneuoft"
+)
 BOUNDS_ROW_VERIFICATION_STATES = (
     "printed_table_transcription_not_rechecked",
     "generated_from_stated_textual_rule",
@@ -232,7 +248,17 @@ CLAIM_LAYER_STATES = (
 BOUNDS_SOURCE_DETAILS: dict[str, dict[str, Any]] = {
     "egyptian_bounds_robbins_1940_v1": {
         "attribution": "traditional_name_reported_by_ptolemy",
-        "default_row_verification": "printed_table_transcription_not_rechecked",
+        "default_row_verification": "checked_against_first_edition_page_images",
+        "default_row_verification_evidence": [
+            _ROBBINS_COPIES,
+            "p.97, English table 'Terms according to the Egyptians', every "
+            "cell (both copies, Internet Archive page n420)",
+            "p.96, Greek table of the Egyptian terms with cumulative "
+            "endpoints to 30 in every sign (both copies, Internet Archive "
+            "page n419)",
+            "p.96 n.1: the totals some manuscripts add (Saturn 57°, Jupiter "
+            "79°, Mars 66°, Venus 82°, Mercury 76°) equal this table's totals",
+        ],
         "row_exceptions": [],
         "chapter_numbering": {
             "robbins_1940": "I.20",
@@ -270,7 +296,14 @@ BOUNDS_SOURCE_DETAILS: dict[str, dict[str, Any]] = {
     },
     "ptolemy_bounds_robbins_1940_v1": {
         "attribution": "complete_table_authorship_disputed",
-        "default_row_verification": "printed_table_transcription_not_rechecked",
+        "default_row_verification": "checked_against_first_edition_page_images",
+        "default_row_verification_evidence": [
+            _ROBBINS_COPIES,
+            "p.107, English table 'Terms according to Ptolemy', every cell "
+            "(both copies, Internet Archive page n430)",
+            "p.106, Greek table with cumulative endpoints to 30 in every sign "
+            "(both copies, Internet Archive page n429)",
+        ],
         # The printed glyph has been read: the value is kept and the difference
         # from the cited transcription is disclosed.
         "row_exceptions": [
@@ -297,9 +330,9 @@ BOUNDS_SOURCE_DETAILS: dict[str, dict[str, Any]] = {
                     "Library, with Manetho; first printed 1940, 1964 reprint), "
                     "p.107, English table 'Terms according to Ptolemy', Libra "
                     "column 5: Mars 6 (Internet Archive "
-                    "L350ManethoHistoryOfEgyptPtolemyTetrabiblos, leaf 430)",
+                    "L350ManethoHistoryOfEgyptPtolemyTetrabiblos, page n430)",
                     "the same page, University of Toronto copy (Internet Archive "
-                    "manethowithengli00maneuoft, leaf 431)",
+                    "manethowithengli00maneuoft, page n430)",
                     "p.106, Greek table, Ζυγοῦ line 5: Mars, 6, cumulative 30",
                     "p.108 n.1: the totals some manuscripts add after the tables "
                     "(Saturn 57°, Jupiter 79°, Mars 66°, Venus 82°, Mercury 76°) "

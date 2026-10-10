@@ -21,10 +21,11 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="渾儀 Armillary：可驗證的古典西洋占星計算器">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/security#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/security#breadcrumb"},"description":"說明渾儀的安全與隱私邊界、負責任漏洞回報方式、禁止提交的敏感資料及非授權測試範圍。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"安全、隱私邊界與漏洞回報｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/security"},{"@id":"https://projectarmillary.com/zh-TW/security#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/security","name":"安全","position":2}]}]}</script>
-<link rel="icon" href="/zh-TW/favicon.svg?v=4fc39ec49ab82358">
-<link rel="stylesheet" href="/zh-TW/tokens.css?v=70b8072b7e58d89d">
-<link rel="stylesheet" href="/zh-TW/page.css?v=749bfa663aa0aea2">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/security#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/security#breadcrumb"},"description":"說明渾儀的安全與隱私邊界、負責任漏洞回報方式、禁止提交的敏感資料及非授權測試範圍。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"安全、隱私邊界與漏洞回報｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/security"},{"@id":"https://projectarmillary.com/zh-TW/security#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/security","name":"安全","position":2}]}]}</script>
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="/zh-TW/favicon.svg?v=c95686a2f029d369" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/zh-TW/style/security.css?v=09c3471af90af533">
 </head>
 <body>
 
@@ -138,7 +139,7 @@
     <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="ds-05-title">
       <table class="spec">
         <tbody>
-          <tr><td class="mono">Content-Security-Policy</td><td class="mono val">default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'</td></tr>
+          <tr><td class="mono">Content-Security-Policy</td><td class="mono val">default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'; require-trusted-types-for 'script'; trusted-types 'none'</td></tr>
           <tr><td class="mono">Permissions-Policy</td><td class="mono val">camera=(), microphone=(), geolocation=()</td></tr>
           <tr><td class="mono">Cross-Origin-Opener-Policy</td><td class="mono val">same-origin</td></tr>
           <tr><td class="mono">Cross-Origin-Embedder-Policy</td><td class="mono val">require-corp</td></tr>

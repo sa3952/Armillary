@@ -1,4 +1,7 @@
-/* 內容頁樣式。取自 2026-08-05 定案的首頁候選 V2；token 一律來自 tokens.css。 */
+/* 內容頁樣式。取自 2026-08-05 定案的首頁候選 V2；token 一律來自 tokens.css。
+   每頁只收到它用得到的部分：「@pages 頁名…」標記註解（獨占一行、只在最外層）之後的規則只進
+   列名頁面的樣式包，第一個標記之前與「@pages all」之後的規則進每一頁。樣式包由
+   scripts/frontend/stylesheets.py 依原順序拼成；某頁用到的 class 落在沒列它的區段，build 會失敗。 */
 /* ─── token ─────────────────────────────────────────────
    設計探索稿 V2。V1 的深色立場帶已移除：M 全篇同一材質，
    材質切換正是 V1 比 M 吵的原因。所有值集中於此，其下不就地寫死。
@@ -64,6 +67,7 @@ header .wrap{
   color:var(--plate-dim); margin-left:.7rem;
 }
 
+/* @pages home */
 /* ─── 首屏：黑底招牌（借候選 X 的音量）─────────────────────
    全站唯一的深色段。它負責吸睛，其下全部交給紙面負責可信。
    聲部也隨之分工：招牌用黑體，圖版用襯線。
@@ -79,10 +83,12 @@ header .wrap{
 .hero h1 em{font-style:normal; color:var(--accent-rev)}
 .hero .lede{max-width:var(--measure); color:var(--plate-dim); font-size:1.02rem}
 
+/* @pages home features */
 /* ─── 首屏行動列 ───
    計算入口留在首屏，不放頁尾。次要按鈕指向範例卷宗：不交出生資料也能看到
    完整輸出，是本產品與需要登入才給結果的工具之間最直接的差別。 */
 .hero-act{display:flex; flex-wrap:wrap; align-items:center; gap:var(--s3); margin-top:var(--s3)}
+/* @pages home */
 .btn.rev{background:var(--paper); color:var(--plate)}
 .btn.rev:hover{background:var(--accent-rev); color:var(--paper)}
 
@@ -121,8 +127,10 @@ header .wrap{
 }
 .intro .lede{max-width:var(--measure); color:var(--ink-dim); font-size:1.04rem}
 
+/* @pages all */
 /* ─── 分節 ─── */
-section{padding:var(--s5) 0; border-top:1px solid var(--hair-soft)}
+/* 首頁的計算步驟表沒有自己的標題，用 div 而不是 section；外觀與分節相同。 */
+section,.tabula-band{padding:var(--s5) 0; border-top:1px solid var(--hair-soft)}
 h2{
   font-family:var(--serif); font-weight:400;
   font-size:clamp(1.65rem,3vw,2.55rem); line-height:1.5;
@@ -130,6 +138,7 @@ h2{
 }
 p{max-width:var(--measure); color:var(--ink-dim)}
 
+/* @pages home */
 /* ─── 圖版：引線真的接到編號 ─────────────────────────────
    SVG 高度＝5 × --row，引線終點落在 10/30/50/70/90%，
    與右欄五個等高圖例列的垂直中心對齊。
@@ -150,9 +159,11 @@ p{max-width:var(--measure); color:var(--ink-dim)}
 }
 .legend b i{font-style:normal; font-family:var(--serif); color:var(--ink-faint); margin-left:.5rem; font-size:.95rem}
 .legend span{font-size:.86rem; color:var(--ink-dim); line-height:1.75}
+/* @pages home calculate */
 .caption{
   grid-column:1 / -1; font-family:var(--mono); font-size:.75rem;
   letter-spacing:.1em; color:var(--ink-faint); margin-top:var(--s3);
+/* @pages home */
 }
 /* 圖版線重取自定案樣板 M。--hair 是表格分隔線的顏色，先前拿來畫環，
    結構線因此淡得像分隔線；環是實體，用 --ink-faint 才對。 */
@@ -182,6 +193,7 @@ p{max-width:var(--measure); color:var(--ink-dim)}
 .readout{font-family:var(--mono); font-size:.84rem; color:var(--ink-dim); font-variant-numeric:tabular-nums}
 .readout b{color:var(--ink); font-weight:400}
 
+/* @pages home features roadmap */
 /* ─── 量測記錄：只有髮絲線，沒有反白列 ─── */
 .log{width:100%; border-collapse:collapse; margin-top:var(--s4); font-family:var(--mono); font-size:.8rem; font-variant-numeric:tabular-nums}
 .log th{
@@ -201,6 +213,7 @@ p{max-width:var(--measure); color:var(--ink-dim)}
   content:""; position:absolute; left:-1.1rem; top:50%; width:.45rem; height:1px; background:var(--accent);
 }
 .log tr.mark td:nth-child(4){color:var(--ink); border-bottom:1px solid var(--ink)}
+/* @pages home */
 .after{font-family:var(--mono); font-size:.75rem; color:var(--ink-faint); padding-top:var(--s2); letter-spacing:.06em}
 
 /* ─── 圖說在下：物件先出現，說明降級 ───
@@ -403,6 +416,7 @@ p{max-width:var(--measure); color:var(--ink-dim)}
   display:block; margin-top:.55rem; max-width:var(--measure);
   font-size:.9rem; line-height:1.95; color:var(--ink-dim);
 }
+/* @pages home features legal-copyright legal-privacy legal-terms roadmap security trust */
 .limit{
   margin-top:var(--s3); padding:var(--s2) var(--s3);
   border-left:3px solid var(--state-refused);
@@ -411,6 +425,7 @@ p{max-width:var(--measure); color:var(--ink-dim)}
 }
 .limit b{color:var(--ink); font-weight:700}
 
+/* @pages home */
 /* ─── 立場：整幅黑底色帶（借候選 S）───
    原本與正文同紙，讀起來像其中一段。這一段是產品的形狀宣告，不是一段補充，
    給它整片出血的黑底，讓它在捲動中是個地標。與首屏同材質，前後呼應。 */
@@ -433,15 +448,18 @@ p{max-width:var(--measure); color:var(--ink-dim)}
 .formats span{font-size:.78rem; color:var(--ink-faint)}
 .formats-note{margin-top:var(--s2); font-size:.82rem; color:var(--ink-faint); max-width:34rem}
 
+/* @pages home not-found */
 /* ─── CTA ─── */
 .cta{padding:var(--s5) 0 var(--s6); display:grid; grid-template-columns:1fr auto; gap:var(--s4); align-items:end}
 .cta h2{margin-bottom:var(--s1); max-width:24rem}
+/* @pages home about features methods roadmap security trust */
 .btn{
   display:inline-block; font-family:var(--sans); font-size:.95rem;
   background:var(--ink); color:var(--paper); padding:1.05rem 2.4rem; text-decoration:none;
 }
 .btn:hover{background:var(--accent)}
 
+/* @pages all */
 footer{border-top:1px solid var(--ink); padding:var(--s3) 0 var(--s5)}
 footer .wrap{display:flex; gap:var(--s3); flex-wrap:wrap}
 footer span{font-family:var(--mono); font-size:.75rem; color:var(--ink-faint); letter-spacing:.12em}
@@ -565,6 +583,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   .site-nav a{font-size:.8rem}
 }
 
+/* @pages features */
 /* ═══════════════════════════════════════════════════════════════
    /features — 對照頁（comparison sheet）
    視覺語彙刻意與首頁分開：首頁是圖版＋資料帶，本頁是「同一個輸入，
@@ -601,6 +620,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   letter-spacing:0; color:var(--accent);
 }
 
+/* @pages features calculate roadmap */
 /* ─── 大字結論：每一節的第一句，看一眼就懂 ─── */
 .verdict{
   font-family:var(--serif); font-size:1.32rem; line-height:1.6;
@@ -609,6 +629,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 }
 .verdict b{font-weight:700}
 
+/* @pages features */
 /* ─── 對照面板：本頁的主結構 ─── */
 .versus{display:grid; gap:1px; background:var(--hair); margin:var(--s3) 0 var(--s3)}
 .versus.two{grid-template-columns:1fr 1fr}
@@ -643,6 +664,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 .probe span{display:block; font-family:var(--mono); font-size:.88rem; letter-spacing:.06em; color:var(--ink-faint)}
 .probe b{display:block; margin-top:.45rem; font-family:var(--mono); font-size:1rem; font-weight:400; color:var(--ink)}
 
+/* @pages features legal-privacy roadmap trust */
 /* ─── 勾列 ─── */
 .ticks{list-style:none; padding:0; margin:var(--s2) 0 var(--s3); max-width:40rem}
 .ticks li{
@@ -655,6 +677,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 }
 .ticks b{color:var(--ink)}
 
+/* @pages features */
 /* ─── 細節收合 ─── */
 .more{margin:var(--s3) 0; border-top:1px solid var(--hair); border-bottom:1px solid var(--hair)}
 .more summary{
@@ -665,6 +688,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 .more[open] summary{border-bottom:1px solid var(--hair-soft); margin-bottom:var(--s2)}
 .more > *:last-child{margin-bottom:var(--s2)}
 
+/* @pages features home legal-privacy roadmap security */
 /* ─── 表格：可讀性優先 ─── */
 .spec-scroll{
   width:100%; max-width:100%; min-width:0; box-sizing:border-box;
@@ -674,6 +698,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
    （WCAG 2.1.1）；焦點框比照連結。深底的說明書頁改用提亮的赭色。 */
 .spec-scroll:focus-visible,pre.flow:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 .datasheet .spec-scroll:focus-visible,.datasheet pre.flow:focus-visible{outline-color:var(--accent-rev)}
+/* @pages features */
 .specimens .spec-table{font-family:var(--mono); font-size:.95rem; line-height:1.7; margin-top:0}
 .specimens .spec-table th{font-family:var(--mono); font-size:.86rem; color:var(--ink-dim)}
 .specimens .spec-table td{color:var(--ink-dim); padding:.8rem 1.2rem .8rem 0}
@@ -693,6 +718,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 .who p{font-size:.98rem; line-height:1.8; color:var(--ink-dim); margin:0}
 .who-not{border-top-color:var(--accent) !important}
 
+/* @pages features about roadmap */
 /* ─── 收尾 ─── */
 .feat-close{
   display:grid; grid-template-columns:1fr auto; gap:var(--s4); align-items:end;
@@ -701,6 +727,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 .feat-close h2{margin-bottom:var(--s1)}
 .feat-close p{color:var(--ink-dim); margin:0}
 
+/* @pages features */
 /* ─── .page-body 既有規則在本頁的還原（特異性衝突，非新樣式） ─── */
 .specimens .btn,.specimens .btn:hover{color:var(--paper)}
 .specimens section{border-top:0; padding-top:0}
@@ -710,6 +737,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   .versus.four{grid-template-columns:1fr 1fr}
   .bignum{grid-template-columns:repeat(2,1fr)}
 }
+/* @pages features about calculate roadmap validation */
 @media (max-width:48rem){
   .validation-hero h1{font-size:2.3rem; line-height:1.08}
   .versus.two,.versus.three,.versus.four{grid-template-columns:1fr}
@@ -724,6 +752,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   .spec-scroll .spec-table{min-width:28rem}
 }
 
+/* @pages features */
 /* ─── 07 隱私：每個 0 都附一句白話解釋 ───
    使用者不知道 sessionStorage 或 IndexedDB 是什麼，就無法判斷「0」是好消息。
    大字 0 負責一眼看到，術語與解釋負責看懂。b 必須用 > 子選擇器綁定，
@@ -753,6 +782,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   .zeros .zero-count{font-size:2.1rem}
 }
 
+/* @pages roadmap */
 /* ═══════════════════════════════════════════════════════════════
    /roadmap — 階梯頁
    本頁唯一的失效模式是腐爛：狀態寫「未開始」而東西早就做好了。
@@ -864,6 +894,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   .spec-scroll .rm-table{min-width:32rem}
 }
 
+/* @pages roadmap calculate */
 /* ═══════════════════════════════════════════════════════════════
    /roadmap 的路徑語彙
    本頁的主題是「沿著階段往下走」，所以版面主結構是一條真的路徑：
@@ -879,6 +910,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   content:""; position:absolute; left:.69rem; top:0; bottom:0; width:2px;
   background:var(--ink);
 }
+/* @pages roadmap */
 .path.intent::before{
   width:0; border-left:2px dashed var(--ink-faint); background:none;
 }
@@ -912,6 +944,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 
 
 
+/* @pages roadmap calculate */
 @media (max-width:48rem){
   .path{padding-left:2.2rem}
   .path::before{left:.44rem}
@@ -929,6 +962,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 }
 @media (max-width:48rem){ .path:not(.intent)::after{left:-.01rem} }
 
+/* @pages roadmap */
 /* 意圖段開頭的免責敘述（原本在已刪除的分隔欄裡）。
    結構上的區別由虛線軌與空心節點承擔；這段是它的文字對應。 */
 .intent-lead{
@@ -938,6 +972,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 .intent-lead b{color:var(--ink); font-weight:700}
 @media (max-width:48rem){ .intent-lead{font-size:1.12rem} }
 
+/* @pages about */
 /* ═══════════════════════════════════════════════════════════════
    /about — 敘事頁
    第三種語彙：features 是並列對照，roadmap 是單向路徑，本頁是連續散文。
@@ -1011,6 +1046,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   .who-box{padding:var(--s3) var(--s2)}
 }
 
+/* @pages methods */
 /* ═══════════════════════════════════════════════════════════════
    /methods · 校勘欄 apparatus（色塊版）
    ───────────────────────────────────────────────────────────────
@@ -1148,11 +1184,13 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 /* 不用 `grid-row:1 / span 99` 讓編號貫穿整格：那會強迫 grid 生出 99 個隱含列，
    在條目短的地方留下數千像素的空白。編號掛第一列，其下留白即可。 */
 .ap-entry > :not(.sig){grid-column:2}
+/* @pages methods trust */
 .sig{
   background:var(--ink); color:var(--paper);
   font-family:var(--mono); font-size:.94rem; letter-spacing:.06em;
   padding:.4rem .55rem; justify-self:start; align-self:start;
 }
+/* @pages methods */
 .apparatus .ap-entry h2{
   margin:0 0 var(--s3); line-height:1.32; max-width:32rem;
   font-family:var(--sans); font-weight:700; font-size:1.62rem; letter-spacing:-.02em;
@@ -1189,6 +1227,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   background:var(--accent); color:var(--on-accent); padding:.18rem .4rem;
 }
 
+/* @pages methods trust */
 /* ─── 「不設預設」：整條反白色塊 ─────────────────────────────
    全頁出現八次，是這一頁最常重複的一句話，所以給它最重的處理。
    節奏上它也是必要的：八個條目若全是紙面，會讀成一片。 */
@@ -1205,6 +1244,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   white-space:nowrap;
 }
 .apparatus .nodef b{color:var(--accent-rev); font-weight:700}
+/* @pages methods */
 
 /* ─── 口徑對照：兩種做法，中間一條厚分界 ─── */
 .axis{
@@ -1274,6 +1314,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 .apparatus .ap-close .btn{background:var(--accent-rev); color:var(--plate)}
 .apparatus .ap-close .btn:hover{background:var(--paper); color:var(--plate)}
 
+/* @pages methods trust */
 @media (max-width:48rem){
   .ap-hero{grid-template-columns:1fr}
   /* 色塊內距在窄螢幕收一階。首屏 h1 的第二行是八個漢字，--s3 的內距會讓它
@@ -1299,6 +1340,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   .ap-close{grid-template-columns:1fr; padding:var(--s3)}
 }
 
+/* @pages trust */
 /* ═══════════════════════════════════════════════════════════════
    /trust · 執行層 strata
    ───────────────────────────────────────────────────────────────
@@ -1585,6 +1627,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   .cite-x{display:block; margin-left:0; margin-top:.3rem; white-space:normal}
 }
 
+/* @pages security */
 /* ═══════════════════════════════════════════════════════════════
    /security · 規格表 datasheet
    ───────────────────────────────────────────────────────────────
@@ -1621,8 +1664,10 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 }
 .datasheet .ds-note b,.datasheet .lede b{color:var(--plate-fg)}
 
+/* @pages security contact */
 /* ─── 段落與段頭 ─── */
 .ds-sec{padding:var(--s5) 0 0}
+/* @pages security */
 /* 段頭由 <p> 改成 <h2>。改的是語意，不是外觀：選擇器提高到
    (0,2,0) 以壓過 .page-body h2，並把原本 <p> 實際生效的值寫明——
    .page-body p 的 margin-bottom、.datasheet p 的 line-height／max-width／color
@@ -1697,6 +1742,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 }
 .datasheet .fail p{margin:0; color:var(--paper-2)}
 
+/* @pages security calculate */
 /* ─── 信任邊界 ─── */
 .bounds{
   display:grid; grid-template-columns:repeat(auto-fit, minmax(15rem, 1fr));
@@ -1704,6 +1750,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 }
 .bounds > div{padding:var(--s2) var(--s2) var(--s2) 0; border-bottom:1px solid var(--stratum-2)}
 .bounds > div + div{border-left:1px solid var(--stratum-2); padding-left:var(--s2)}
+/* @pages security */
 .bd-k{
   display:inline-block; font-family:var(--mono); font-size:.9rem;
   background:var(--stratum-3); color:var(--paper); padding:.15rem .5rem; margin-bottom:.6rem;
@@ -1762,6 +1809,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 .datasheet .ds-close .btn{background:var(--accent-rev); color:var(--plate)}
 .datasheet .ds-close .btn:hover{background:var(--paper); color:var(--plate)}
 
+/* @pages security calculate */
 @media (max-width:48rem){
   .bounds{grid-template-columns:1fr}
   .bounds > div + div{border-left:0; padding-left:0}
@@ -1769,6 +1817,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   .case{padding:var(--s2)}
 }
 
+/* @pages legal-privacy */
 /* ═══════════════════════════════════════════════════════════════
    /legal/privacy · 公報 statute
    ───────────────────────────────────────────────────────────────
@@ -1943,6 +1992,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   .stamp > div:last-child{border-bottom:0}
 }
 
+/* @pages legal-terms */
 /* ═══════════════════════════════════════════════════════════════
    .covenant — /legal/terms
 
@@ -2093,6 +2143,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   .cv-split > div + div{border-left:0; border-top:1px solid var(--hair)}
 }
 
+/* @pages legal-copyright */
 /* ═══════════════════════════════════════════════════════════════
    .ledger — /legal/copyright
 
@@ -2277,6 +2328,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   .bom{font-size:.9rem}
 }
 
+/* @pages contact */
 /* ═══════════════════════════════════════════════════════════════
    .dispatch — /contact
 
@@ -2423,6 +2475,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   .dispatch .caution{padding:var(--s2)}
 }
 
+/* @pages blog */
 /* ═══════════════════════════════════════════════════════════════
    .desk — /blog
 
@@ -2484,8 +2537,10 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   font-size:.98rem !important; line-height:1.95; max-width:42rem;
 }
 
+/* @pages blog calculate */
 /* ─── 選題板 ─── */
 .group{margin-top:var(--s4)}
+/* @pages blog */
 .gp-k{
   font-family:var(--mono); font-size:.75rem; letter-spacing:.16em;
   color:var(--accent); margin:0 0 var(--s2) !important;
@@ -2511,6 +2566,13 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 .tp-tier{
   font-family:var(--mono); font-size:.76rem; letter-spacing:.06em;
   color:var(--accent); text-align:right; line-height:1.7;
+}
+
+/* 已寫完的題目：標題連到文章，說明前加一枚「已發表」 */
+.desk .slate > li > div > b a{border-bottom-color:var(--accent)}
+.tp-pub{
+  display:inline-block; font-family:var(--mono); font-size:.76rem; letter-spacing:.1em;
+  color:var(--paper); background:var(--accent); padding:0 .45rem; margin-right:.55rem; line-height:1.7;
 }
 
 /* ─── 三層定義 ─── */
@@ -2539,6 +2601,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   .tiers > .tier-def + .tier-def{border-left:0; border-top:1px solid var(--hair)}
 }
 
+/* @pages validation */
 /* /validation：結論先於證據細節。完整Dossier已從公開頁面退役；本頁只保留
    使用者判斷驗證範圍所需的數字、方法、例外與未涵蓋項。 */
 .validation-page{max-width:74rem}
@@ -2591,6 +2654,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   .validation-details dl{grid-template-columns:1fr}
 }
 
+/* @pages home */
 /* 強制色彩模式下滑桿把手只剩被換掉的背景色，整個看不見；改用系統前景色
    填滿，讓可拖曳的把手仍然存在（A11Y-FORCED，WCAG 1.4.11）。一般模式不生效。 */
 @media (forced-colors: active){

@@ -18,7 +18,7 @@ matches (`render_record_errors`).
 
 Every word on the card is already on a public page: 渾儀 and ARMILLARY are the
 header's brand, the two lines are the home page's second heading, and the
-domain is the site's.  Colours are frontend/zh-TW/tokens.css plus the gold
+domain is the site's.  Colours are scripts/frontend/styles/tokens.css plus the gold
 ecliptic, used as decoration.
 """
 

@@ -245,7 +245,13 @@
      "note": "Robbins table p.97",
      "robbins_1940": "I.20"
     },
-    "default_row_verification": "printed_table_transcription_not_rechecked",
+    "default_row_verification": "checked_against_first_edition_page_images",
+    "default_row_verification_evidence": [
+     "Ptolemy, Tetrabiblos, trans. F. E. Robbins (Loeb Classical Library, with Manetho; first printed 1940, reprinted 1948, 1956, 1964), two scanned copies of the 1964 reprint: Internet Archive L350ManethoHistoryOfEgyptPtolemyTetrabiblos and University of Toronto copy manethowithengli00maneuoft",
+     "p.97, English table 'Terms according to the Egyptians', every cell (both copies, Internet Archive page n420)",
+     "p.96, Greek table of the Egyptian terms with cumulative endpoints to 30 in every sign (both copies, Internet Archive page n419)",
+     "p.96 n.1: the totals some manuscripts add (Saturn 57°, Jupiter 79°, Mars 66°, Venus 82°, Mercury 76°) equal this table's totals"
+    ],
     "note": "Ptolemy reports these as the Egyptian terms. The Robbins printing is one realization of a table that later witnesses transmit with local variants. 'Egyptian' is the name Ptolemy reports; Babylonian tablets preserve forerunners (Jones & Steele, ISAW Papers 1, 2011; Steele, JCS 67, 2015); no table is claimed for the tablets.",
     "row_exceptions": [],
     "witnesses": [
@@ -356,7 +362,12 @@
      "ptolemy_prose_discussion_of_terms": "attested_in_cited_text",
      "robbins_1940_numeric_table": "transmitted_printed_table"
     },
-    "default_row_verification": "printed_table_transcription_not_rechecked",
+    "default_row_verification": "checked_against_first_edition_page_images",
+    "default_row_verification_evidence": [
+     "Ptolemy, Tetrabiblos, trans. F. E. Robbins (Loeb Classical Library, with Manetho; first printed 1940, reprinted 1948, 1956, 1964), two scanned copies of the 1964 reprint: Internet Archive L350ManethoHistoryOfEgyptPtolemyTetrabiblos and University of Toronto copy manethowithengli00maneuoft",
+     "p.107, English table 'Terms according to Ptolemy', every cell (both copies, Internet Archive page n430)",
+     "p.106, Greek table with cumulative endpoints to 30 in every sign (both copies, Internet Archive page n429)"
+    ],
     "note": "Tolsa, 'The Table of Ptolemy's Terms (Tetr. 1.21)', Philologus 162.2 (2018) 247-264, DOI 10.1515/phil-2017-0023, argues the complete table is a late-antique systematization that entered the text c. 11th century (his argument, not consensus). The profile id names the printed table, not Ptolemy's authorship.",
     "row_exceptions": [
      {
@@ -366,8 +377,8 @@
       "printed_glyph_checked": true,
       "printed_reading": "mars",
       "printed_reading_evidence": [
-       "Ptolemy, Tetrabiblos, trans. F. E. Robbins (Loeb Classical Library, with Manetho; first printed 1940, 1964 reprint), p.107, English table 'Terms according to Ptolemy', Libra column 5: Mars 6 (Internet Archive L350ManethoHistoryOfEgyptPtolemyTetrabiblos, leaf 430)",
-       "the same page, University of Toronto copy (Internet Archive manethowithengli00maneuoft, leaf 431)",
+       "Ptolemy, Tetrabiblos, trans. F. E. Robbins (Loeb Classical Library, with Manetho; first printed 1940, 1964 reprint), p.107, English table 'Terms according to Ptolemy', Libra column 5: Mars 6 (Internet Archive L350ManethoHistoryOfEgyptPtolemyTetrabiblos, page n430)",
+       "the same page, University of Toronto copy (Internet Archive manethowithengli00maneuoft, page n430)",
        "p.106, Greek table, Ζυγοῦ line 5: Mars, 6, cumulative 30",
        "p.108 n.1: the totals some manuscripts add after the tables (Saturn 57°, Jupiter 79°, Mars 66°, Venus 82°, Mercury 76°) hold only with Mars in Libra line 5"
       ],

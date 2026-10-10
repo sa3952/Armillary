@@ -12,7 +12,7 @@
       "layers": ["L2", "L3"],
       "indexable": true,
       "title": "可驗證的古典西洋占星計算器｜渾儀 Armillary",
-      "description": "以Swiss Ephemeris計算星盤，並呈現座標、時間、方法來源、計算收據與可重現驗證資料。"
+      "description": "目前免費、不需註冊的古典西洋占星計算器：以Swiss Ephemeris計算星盤，並呈現座標、時間、方法來源、計算收據與可重現驗證資料。"
     },
     {
       "key": "calculate",
@@ -23,7 +23,7 @@
       "layers": ["L1", "L2"],
       "indexable": true,
       "title": "古典西洋占星排盤與計算｜渾儀 Armillary",
-      "description": "輸入時間與地點，取得附帶計算模式、座標、方法、來源與驗證收據的古典西洋占星星盤。"
+      "description": "目前免費、不需註冊：輸入時間與地點，取得附帶計算模式、座標、方法、來源與驗證收據的古典西洋占星星盤。"
     },
     {
       "key": "features",
@@ -156,6 +156,66 @@
       "indexable": true,
       "title": "著作權、授權與對應原始碼｜渾儀 Armillary",
       "description": "查看渾儀、Swiss Ephemeris、地名資料、第三方依賴及AGPLv3對應原始碼資訊。"
+    },
+    {
+      "key": "blog-birth-time-sensitivity",
+      "fragment": "blog-birth-time-sensitivity",
+      "output": "zh-TW/blog/birth-time-sensitivity.html",
+      "surface": "/zh-TW/blog/birth-time-sensitivity",
+      "locale": "zh-TW",
+      "layers": ["L2", "L3"],
+      "indexable": true,
+      "title": "出生時間差五分鐘，你的盤會變成什麼樣｜渾儀 Armillary",
+      "description": "同一天同一地點，出生時刻差幾分鐘，行星幾乎不動，上升點與宮位卻可能整組換掉。以合成範例說明原因，以及渾儀怎麼標出不確定。",
+      "article": {"published": "2026-10-10", "modified": "2026-10-10"}
+    },
+    {
+      "key": "blog-taiwan-time-zone-history",
+      "fragment": "blog-taiwan-time-zone-history",
+      "output": "zh-TW/blog/taiwan-time-zone-history.html",
+      "surface": "/zh-TW/blog/taiwan-time-zone-history",
+      "locale": "zh-TW",
+      "layers": ["L2", "L3"],
+      "indexable": true,
+      "title": "臺灣的時區與夏令時間：排盤前要多看一眼的那些年｜渾儀 Armillary",
+      "description": "1896 年以來臺灣換過三種標準時，並在十九個夏天實施日光節約時間。依 IANA 時區資料庫整理這些年份的換算、不存在與重複的鐘點，以及資料本身仍不確定之處。",
+      "article": {"published": "2026-10-10", "modified": "2026-10-10"}
+    },
+    {
+      "key": "blog-whole-sign-vs-placidus",
+      "fragment": "blog-whole-sign-vs-placidus",
+      "output": "zh-TW/blog/whole-sign-vs-placidus.html",
+      "surface": "/zh-TW/blog/whole-sign-vs-placidus",
+      "locale": "zh-TW",
+      "layers": ["L2", "L3"],
+      "indexable": true,
+      "title": "整宮制與 Placidus：同一顆行星，兩個宮位｜渾儀 Armillary",
+      "description": "換一種宮位制，行星就換了宮，不代表有一邊算錯。以合成星盤比較整宮、Placidus、Regiomontanus 與 Alcabitius，並說明北極圈內為什麼算不出 Placidus。",
+      "article": {"published": "2026-10-10", "modified": "2026-10-10"}
+    },
+    {
+      "key": "blog-four-bounds-tables",
+      "fragment": "blog-four-bounds-tables",
+      "output": "zh-TW/blog/four-bounds-tables.html",
+      "surface": "/zh-TW/blog/four-bounds-tables",
+      "locale": "zh-TW",
+      "layers": ["L2", "L3"],
+      "indexable": true,
+      "title": "四套界表，四個答案：同一個度數為什麼有不同的界主｜渾儀 Armillary",
+      "description": "界把每個星座切成五段交給五顆行星，但古書留下的切法不只一套。說明埃及界、迦勒底界、Ptolemy 界與 Lilly 1647 的來歷與差異，以及渾儀為什麼不設預設值。",
+      "article": {"published": "2026-10-10", "modified": "2026-10-10"}
+    },
+    {
+      "key": "blog-mean-vs-osculating-node",
+      "fragment": "blog-mean-vs-osculating-node",
+      "output": "zh-TW/blog/mean-vs-osculating-node.html",
+      "surface": "/zh-TW/blog/mean-vs-osculating-node",
+      "locale": "zh-TW",
+      "layers": ["L2", "L3"],
+      "indexable": true,
+      "title": "平均交點與密切交點：一個現代計算能力造成的選擇｜渾儀 Armillary",
+      "description": "排盤軟體的「真交點」與平均交點最多差將近 2 度。說明「真交點」其實是密切交點、兩者差多少、Tycho 怎麼看交點的不均勻，以及古典技法該用哪一個這個問題要怎麼問。",
+      "article": {"published": "2026-10-10", "modified": "2026-10-10"}
     }
   ],
   "error_pages": [

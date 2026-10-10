@@ -1,0 +1,208 @@
+<!-- 文章：臺灣的時區與夏令時間。偏移與轉換時刻依 IANA 時區資料庫 2026d（asia 檔 Taiwan 一節），
+     以 Python zoneinfo 先以較粗的間隔掃描、再逐步二分逼近到秒求出；換算範例是合成時刻。產生圖的腳本是
+     scripts/frontend/figures/taiwan_time.py，轉換時刻釘在同目錄 taiwan_tz_2026d.json（python -m scripts.frontend.figures --check 核對）。 -->
+<div class="wrap page-body article">
+
+  <div class="ar-head">
+    <p class="eyebrow"><a href="/zh-TW/blog">文章</a> · JOURNAL</p>
+    <h1>臺灣的時區與夏令時間：<br>排盤前要多看一眼的那些年</h1>
+    <p class="ar-dek">1896 年以來，臺灣的時鐘換過三種標準時，還在十九個夏天撥快過一小時。出生在這些日子裡，出生證明上的鐘面時間要先正確換算成世界時，星盤才排得對。</p>
+    <p class="ar-byline"><span class="ar-tier">帶數據</span><span>發布 <time datetime="{{article_published}}">{{article_published}}</time></span><span>閱讀約 {{article_reading_minutes}} 分鐘</span><span>Sebastian</span></p>
+  </div>
+
+  <figure class="ar-fig ar-hero">
+    <!-- figure:clock-offset -->
+    <svg viewBox="0 0 640 330" role="img" aria-label="臺灣鐘面時間與世界時之差，1890 到 1985 年：1896 年以前為地方平時（比世界時快 8 小時 6 分），1896 年起為 UTC+8，1937 年 10 月 1 日起改為 UTC+9，1945 年 9 月 21 日改回 UTC+8；1946 到 1961 年每年夏天、以及 1974、1975、1979 年夏天實施日光節約時間，鐘面為 UTC+9。資料依 IANA 時區資料庫 2026d 版。">
+    <text class="t-faint" x="30" y="40">鐘面比世界時快</text>
+    <rect class="f-hair" x="30.0" y="64" width="36.6" height="70"/>
+    <rect class="f-ring2" x="66.6" y="64" width="254.9" height="70"/>
+    <rect class="f-accent" x="321.5" y="64" width="48.7" height="70"/>
+    <rect class="f-ring2" x="370.2" y="64" width="239.8" height="70"/>
+    <text class="t-paper" x="78.6" y="94">UTC+8</text>
+    <text class="t-paper" x="78.6" y="120">西部標準時</text>
+    <text class="t-paper t-mid" x="345.9" y="94">+9</text>
+    <text class="t-paper" x="382.2" y="94">UTC+8</text>
+    <text class="t-faint t-mid" x="48.3" y="106">LMT</text>
+    <line class="g-hair" x1="30" y1="230" x2="610" y2="230"/>
+    <text class="t-faint" x="30" y="178">夏季日光節約時間（鐘面 UTC+9）</text>
+    <rect class="f-accent" x="374.14" y="190" width="2.33" height="40"/>
+    <rect class="f-accent" x="379.74" y="190" width="3.35" height="40"/>
+    <rect class="f-accent" x="386.12" y="190" width="2.55" height="40"/>
+    <rect class="f-accent" x="392.22" y="190" width="2.56" height="40"/>
+    <rect class="f-accent" x="398.32" y="190" width="2.56" height="40"/>
+    <rect class="f-accent" x="404.43" y="190" width="2.56" height="40"/>
+    <rect class="f-accent" x="409.53" y="190" width="4.09" height="40"/>
+    <rect class="f-accent" x="416.14" y="190" width="3.58" height="40"/>
+    <rect class="f-accent" x="422.24" y="190" width="3.58" height="40"/>
+    <rect class="f-accent" x="428.35" y="190" width="3.06" height="40"/>
+    <rect class="f-accent" x="434.47" y="190" width="3.05" height="40"/>
+    <rect class="f-accent" x="440.56" y="190" width="3.06" height="40"/>
+    <rect class="f-accent" x="446.66" y="190" width="3.06" height="40"/>
+    <rect class="f-accent" x="452.77" y="190" width="3.06" height="40"/>
+    <rect class="f-accent" x="459.90" y="190" width="2.04" height="40"/>
+    <rect class="f-accent" x="466.00" y="190" width="2.04" height="40"/>
+    <rect class="f-accent" x="544.35" y="190" width="3.06" height="40"/>
+    <rect class="f-accent" x="550.45" y="190" width="3.06" height="40"/>
+    <rect class="f-accent" x="576.40" y="190" width="2.00" height="40"/>
+    <text class="t-accent t-mid" x="420.7" y="258">1946–1961</text>
+    <text class="t-accent t-mid" x="561.2" y="258">1974、75、79</text>
+    <line class="g-dim" x1="30.0" y1="290" x2="30.0" y2="298"/>
+    <text class="t-faint t-mid" x="30.0" y="322">1890</text>
+    <line class="g-dim" x1="91.1" y1="290" x2="91.1" y2="298"/>
+    <text class="t-faint t-mid" x="91.1" y="322">1900</text>
+    <line class="g-dim" x1="152.1" y1="290" x2="152.1" y2="298"/>
+    <text class="t-faint t-mid" x="152.1" y="322">1910</text>
+    <line class="g-dim" x1="213.2" y1="290" x2="213.2" y2="298"/>
+    <text class="t-faint t-mid" x="213.2" y="322">1920</text>
+    <line class="g-dim" x1="274.2" y1="290" x2="274.2" y2="298"/>
+    <text class="t-faint t-mid" x="274.2" y="322">1930</text>
+    <line class="g-dim" x1="335.3" y1="290" x2="335.3" y2="298"/>
+    <text class="t-faint t-mid" x="335.3" y="322">1940</text>
+    <line class="g-dim" x1="396.3" y1="290" x2="396.3" y2="298"/>
+    <text class="t-faint t-mid" x="396.3" y="322">1950</text>
+    <line class="g-dim" x1="457.4" y1="290" x2="457.4" y2="298"/>
+    <text class="t-faint t-mid" x="457.4" y="322">1960</text>
+    <line class="g-dim" x1="518.4" y1="290" x2="518.4" y2="298"/>
+    <text class="t-faint t-mid" x="518.4" y="322">1970</text>
+    <line class="g-dim" x1="579.5" y1="290" x2="579.5" y2="298"/>
+    <text class="t-faint t-mid" x="579.5" y="322">1980</text>
+    <line class="g-ink" x1="30" y1="290" x2="610" y2="290"/>
+    </svg>
+    <!-- /figure:clock-offset -->
+    <figcaption><b>圖 1</b>臺灣的鐘面時間比世界時（UTC）快多少，1890 到 1985 年。上排是標準時：地方平時（LMT）、1896 年起的 UTC+8、1937 年 10 月到 1945 年 9 月的 UTC+9；下排紅色細條是實施日光節約時間的十九個夏季，那段期間鐘面也是 UTC+9。依 IANA 時區資料庫 2026d 版<a class="ar-cite" href="#ref-1">[1]</a>。</figcaption>
+  </figure>
+
+  <div class="ar-body">
+    <p class="ar-lead">排盤軟體需要的不是「下午三點」，而是那一刻的世界時。出生證明上寫的是當時牆上時鐘的讀數，而臺灣的時鐘並不是一直對著同一個標準走。大多數年份換算很單純，加減八小時就好；但有幾段年份，同一個鐘面讀數對應的世界時差了一小時，少數幾個鐘點甚至根本不存在，或出現了兩次。</p>
+
+    <section class="ar-points" aria-labelledby="points">
+      <h2 id="points">重點</h2>
+      <ul>
+        <li>臺灣自 1896 年 1 月 1 日起以 UTC+8 為標準時<a class="ar-cite" href="#ref-2">[2]</a>，1937 年 10 月 1 日起改用 UTC+9<a class="ar-cite" href="#ref-3">[3]</a>，1945 年 9 月 21 日改回 UTC+8<a class="ar-cite" href="#ref-1">[1]</a>。</li>
+        <li>依 IANA 時區資料庫 2026d 版，1946–1961、1974、1975、1979 年共 19 個夏季實施日光節約時間，期間鐘面為 UTC+9<a class="ar-cite" href="#ref-1">[1]</a>。</li>
+        <li>這段期間的出生時刻若照平常的 UTC+8 換算，世界時會晚一小時；本文的合成例子（1975 年 7 月 15 日下午 3 點，臺北）上升點因此差了 13 度，從天蠍座換到射手座<a class="ar-cite" href="#ref-8">[8]</a>。</li>
+        <li>日光節約時間開始那天凌晨有一個鐘點不存在，結束那晚有一個鐘點出現兩次；渾儀遇到這兩種時刻不替你猜，會請你核對紀錄，或指明是哪一次<a class="ar-cite" href="#ref-6">[6]</a>。</li>
+      </ul>
+    </section>
+
+    <h2 id="eras"><span class="ar-sec">§01</span>三種標準時</h2>
+    <p><b>1896 年以前</b>沒有官定的標準時。時區資料庫用臺北的地方平時代表這一段，比世界時快 8 小時 6 分，這只是依經度推算的代表值<a class="ar-cite" href="#ref-1">[1]</a>。</p>
+    <p><b>1896 年 1 月 1 日起</b>，依明治 28 年敕令第 167 號，臺灣、澎湖與八重山、宮古群島以東經 120 度子午線的時間為標準，稱為「西部標準時」，也就是 UTC+8<a class="ar-cite" href="#ref-2">[2]</a>。</p>
+    <p><b>1937 年 10 月 1 日起</b>，昭和 12 年敕令第 529 號刪除了西部標準時那一條<a class="ar-cite" href="#ref-3">[3]</a>，臺灣改用日本的中央標準時 UTC+9。時鐘在那天午夜直接從 00:00 跳到 01:00。</p>
+    <p><b>1945 年 9 月 21 日</b>改回 UTC+8。時區資料庫依臺灣總督府府報第 1018 號（1945 年 9 月 19 日）所刊公告，定在那天凌晨 1 點把時鐘撥回 0 點<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-4">[4]</a>。之後的標準時一直是 UTC+8。</p>
+
+    <h2 id="dst"><span class="ar-sec">§02</span>十九個撥快一小時的夏天</h2>
+    <p>戰後的夏季常實施「夏令時間」或「日光節約時間」：開始那天午夜，時鐘從 00:00 直接撥到 01:00；結束那天，時鐘在 00:00 撥回前一天的 23:00。時區資料庫目前收錄的期間如下<a class="ar-cite" href="#ref-1">[1]</a>：</p>
+
+    <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab1-cap">
+      <table class="ar-table">
+        <caption id="tab1-cap">表 1　臺灣實施日光節約時間的期間（鐘面時間），依 IANA 時區資料庫 2026d 版。日期相同的連續年份併為一列；每年開始那天凌晨有一小時不存在，結束那晚有一小時出現兩次。</caption>
+        <thead><tr><th>年</th><th>實施期間（鐘面日期）</th><th>不存在的鐘點</th><th>出現兩次的鐘點</th></tr></thead>
+        <tbody>
+          <!-- figure:dst-summers -->
+          <tr><td class="n">1946</td><td>5 月 15 日至 9 月 30 日</td><td>5 月 15 日 <span class="n">00:00–00:59</span></td><td>9 月 30 日 <span class="n">23:00–23:59</span></td></tr>
+          <tr><td class="n">1947</td><td>4 月 15 日至 10 月 31 日</td><td>4 月 15 日 <span class="n">00:00–00:59</span></td><td>10 月 31 日 <span class="n">23:00–23:59</span></td></tr>
+          <tr><td class="n">1948–1951</td><td>5 月 1 日至 9 月 30 日</td><td>5 月 1 日 <span class="n">00:00–00:59</span></td><td>9 月 30 日 <span class="n">23:00–23:59</span></td></tr>
+          <tr><td class="n">1952</td><td>3 月 1 日至 10 月 31 日</td><td>3 月 1 日 <span class="n">00:00–00:59</span></td><td>10 月 31 日 <span class="n">23:00–23:59</span></td></tr>
+          <tr><td class="n">1953–1954</td><td>4 月 1 日至 10 月 31 日</td><td>4 月 1 日 <span class="n">00:00–00:59</span></td><td>10 月 31 日 <span class="n">23:00–23:59</span></td></tr>
+          <tr><td class="n">1955–1959</td><td>4 月 1 日至 9 月 30 日</td><td>4 月 1 日 <span class="n">00:00–00:59</span></td><td>9 月 30 日 <span class="n">23:00–23:59</span></td></tr>
+          <tr><td class="n">1960–1961</td><td>6 月 1 日至 9 月 30 日</td><td>6 月 1 日 <span class="n">00:00–00:59</span></td><td>9 月 30 日 <span class="n">23:00–23:59</span></td></tr>
+          <tr><td class="n">1974–1975</td><td>4 月 1 日至 9 月 30 日</td><td>4 月 1 日 <span class="n">00:00–00:59</span></td><td>9 月 30 日 <span class="n">23:00–23:59</span></td></tr>
+          <tr><td class="n">1979</td><td>7 月 1 日至 9 月 30 日</td><td>7 月 1 日 <span class="n">00:00–00:59</span></td><td>9 月 30 日 <span class="n">23:00–23:59</span></td></tr>
+          <!-- /figure:dst-summers -->
+        </tbody>
+      </table>
+    </div>
+
+    <div class="ar-stats">
+      <div><b>19</b><span>個實施日光節約時間的夏季（1946–1961、1974、1975、1979）</span></div>
+      <div><b>20</b><span>個不存在的鐘點（含 1937 年改用 UTC+9 那一次）</span></div>
+      <div><b>20</b><span>個出現兩次的鐘點（含 1945 年改回 UTC+8 那一次）</span></div>
+    </div>
+    <p>上面三個數字，是我們用同一版資料庫，先以較粗的間隔掃描 1890 到 1990 年，再逐步二分逼近到秒算出來的<a class="ar-cite" href="#ref-8">[8]</a>。另外 1896 年元旦改用標準時時，時鐘往回撥了 6 分鐘，那 6 分鐘也出現兩次。</p>
+
+    <h2 id="matters"><span class="ar-sec">§03</span>差一小時，盤差多少</h2>
+    <p>取一個合成時刻：1975 年 7 月 15 日下午 3 點，臺北。那年夏天正在實施日光節約時間，所以鐘面 15:00 等於世界時 06:00。如果換算時忽略了夏令時間，把它當成平常的 UTC+8，就會得到世界時 07:00，整整晚了一小時<a class="ar-cite" href="#ref-8">[8]</a>。</p>
+
+    <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab2-cap">
+      <table class="ar-table">
+        <caption id="tab2-cap">表 2　同一個鐘面時刻，兩種換算（合成時刻，臺北）。</caption>
+        <thead><tr><th>換算方式</th><th class="n">世界時</th><th>上升點</th></tr></thead>
+        <tbody>
+          <tr class="hl"><td>依當時實施的夏令時間（UTC+9）</td><td class="n">06:00</td><td>天蠍 18°08′</td></tr>
+          <tr><td>忽略夏令時間（UTC+8）</td><td class="n">07:00</td><td class="diff">射手 1°10′</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>上升點差了 13 度，連星座都換了；在整宮制裡，這代表每一顆行星的宮位都往前移一宮。行星本身一小時移動很少，月亮也只約半度，所以星座位置大多不受影響。<b>受影響的是上升、中天與宮位，和〈<a href="/zh-TW/blog/birth-time-sensitivity">出生時間差五分鐘</a>〉那篇說的是同一件事，只是這裡差的是整整六十分鐘。</b></p>
+
+    <h2 id="gaps"><span class="ar-sec">§04</span>不存在的時刻，與出現兩次的時刻</h2>
+    <p>以 1974 年為例：4 月 1 日凌晨，時鐘從 00:00 直接跳到 01:00，所以「1974 年 4 月 1 日 00:30」這個鐘面時間在臺灣從來沒有出現過。9 月 30 日晚上，時鐘在午夜撥回 23:00，所以「9 月 30 日 23:30」出現了兩次，兩次相隔一小時。</p>
+    <p>渾儀遇到這兩種情形，<b>不會替你猜</b>：</p>
+    <ul>
+      <li><b>不存在的時刻</b>，計算服務會拒絕，並說明這個本地時間在所選時區不存在（時鐘跳過了這段時間）。常見的原因是紀錄寫的是改制前的鐘面，或者抄寫有誤；請先回頭查證。</li>
+      <li><b>出現兩次的時刻</b>，計算頁會在出生時間下方請你指明是第一次還是第二次；沒有指明時，服務不會自己挑一個<a class="ar-cite" href="#ref-6">[6]</a>。</li>
+    </ul>
+    <p>上面兩句說明，是我們用本站計算服務對這兩個時刻實際送出請求後得到的回應<a class="ar-cite" href="#ref-8">[8]</a>。</p>
+
+    <h2 id="data"><span class="ar-sec">§05</span>資料庫本身也改過</h2>
+    <p>這張表不是一開始就長這樣。幾個有據可查的修訂：</p>
+    <ul>
+      <li><b>2010 年</b>：有人在時區資料庫的郵件列表指出，中央氣象局網頁的表列 1979 年 7 月 1 日至 9 月 30 日實施日光節約時間，而資料庫當時把這段放在 1980 年；維護者表示傾向依氣象局的表更正<a class="ar-cite" href="#ref-5">[5]</a>。</li>
+      <li><b>2014 年的 2014f 版</b>：依當時找到的府報與省政府公報，資料庫改寫了 1896 到 1947 年的臺灣：1896 年元旦起用西部標準時、1937 年 10 月 1 日改 UTC+9、1945 年 9 月 21 日凌晨 1 點改回 UTC+8、1945 年不實施夏令時間、1946 年為 5 月 15 日至 9 月 30 日、1947 年為 4 月 15 日至 10 月 31 日<a class="ar-cite" href="#ref-7">[7]</a>。資料庫的註記也說明，氣象局網頁對 1946 年的記載並不正確<a class="ar-cite" href="#ref-1">[1]</a>。</li>
+    </ul>
+    <p>所以，<b>用不同年代的軟體排同一張 1945–1947 年或 1979–1980 年的盤，可能得到相差一小時的世界時</b>。這不是哪一套軟體算錯，而是它們各自內建的時區資料不同版。渾儀把每次換算所用的時區資料庫版本記進計算卷宗，版本換了，你看得出來<a class="ar-cite" href="#ref-6">[6]</a>。</p>
+
+    <p class="ar-pull">鐘面時間是一個歷史紀錄，不是一個天文量。把它換成世界時，需要知道那一天臺灣的時鐘是怎麼撥的。</p>
+
+    <h2 id="unsure"><span class="ar-sec">§06</span>仍然不確定的地方</h2>
+    <ul>
+      <li><b>1896 還是 1898？</b>敕令第 167 號寫明自明治 29 年（1896 年）1 月 1 日施行<a class="ar-cite" href="#ref-2">[2]</a>；但時區資料庫轉引的一篇日本天文月報文章，把西部標準時的採用寫在 1898 年 1 月 1 日<a class="ar-cite" href="#ref-1">[1]</a>。資料庫採 1896 年；那篇文章我們沒有讀到原文。</li>
+      <li><b>1896 年以前</b>：地方平時只是依經度推算的代表值。時區資料庫自己說明，1970 年以前、特別是地方平時的段落多為推定；本站也不把這些段落當作已驗證的歷史鐘面<a class="ar-cite" href="#ref-6">[6]</a>。</li>
+      <li><b>原始公文</b>：1945 到 1947 年的日期，資料庫依據的是府報與省政府公報的影像；我們讀的是資料庫的註記與它轉引的出處，<b>沒有親自查閱公報原件</b><a class="ar-cite" href="#ref-4">[4]</a>。</li>
+      <li><b>紀錄本身</b>：出生紀錄寫的是當時的鐘面，還是有人事後換算過，從紀錄上通常看不出來。這一點只有你手上的文件與家人的記憶能回答。</li>
+    </ul>
+
+    <aside class="ar-scope" aria-labelledby="scope-2">
+      <span class="ar-k" id="scope-2">本文的證據範圍</span>
+      <ul>
+        <li>所有偏移與轉換時刻依 IANA 時區資料庫 2026d 版，以 Python 的 zoneinfo 讀取，先以較粗的間隔掃描，再逐步二分逼近到秒；我們核對了 2026d 版 asia 檔的 Taiwan 規則與註記，兩者一致。</li>
+        <li>計算服務實際使用的時區資料庫版本，由部署環境提供，記在每次計算的卷宗裡；它不一定是本文使用的 2026d。</li>
+        <li>敕令第 167 號與第 529 號，我們讀的是維基文庫的轉錄本，不是官報影像。</li>
+        <li>上升點的數字是單一合成時刻與地點的結果，不代表其他日期的差距。</li>
+      </ul>
+    </aside>
+  </div>
+
+  <section class="ar-refs" aria-labelledby="refs">
+    <h2 id="refs">出處</h2>
+    <p>每一條後面標明我們核到哪一層：<span class="rs rs-checked">已讀原文</span>是我們親自讀過的文本；<span class="rs rs-relayed">轉引</span>是我們只透過別人的引述得知、沒有讀到原件；<span class="rs rs-register">本站出處清單</span>是本站公開的方法說明；<span class="rs rs-computed">本站自算</span>是可以照著重算的數字。</p>
+    <ol>
+      <li id="ref-1"><span>IANA 時區資料庫（tz database）2026d 版，檔案 <code>asia</code> 的 Taiwan 一節：<code>Rule Taiwan</code> 各列與 <code>Zone Asia/Taipei</code>，以及其中 Yu-Cheng Chuang（2013、2014）、smallufo（2010）與 Paul Eggert（2014）的註記。<a href="https://github.com/eggert/tz/blob/2026d/asia">github.com/eggert/tz/blob/2026d/asia</a><span class="rs rs-checked">已讀原文</span></span></li>
+      <li id="ref-2"><span>明治 28 年敕令第 167 號〈標準時ニ關スル件〉（1895 年 12 月 28 日公布）第 2 條（東經 120 度子午線、西部標準時、臺灣及澎湖列島並八重山及宮古列島）、第 3 條（明治 29 年 1 月 1 日施行）。維基文庫轉錄本。<span class="rs rs-checked">已讀轉錄本</span></span></li>
+      <li id="ref-3"><span>昭和 12 年敕令第 529 號（1937 年 9 月 25 日公布）：刪除敕令第 167 號第 2 條，昭和 12 年 10 月 1 日施行。維基文庫轉錄本。<span class="rs rs-checked">已讀轉錄本</span></span></li>
+      <li id="ref-4"><span>臺灣總督府府報第 1018 號（1945 年 9 月 19 日），時區資料庫註記稱其中刊載 1945 年第 386 號公告（英文註記作 Bulletin No. 386）；以及臺灣省政府公報資料庫所收 1946、1947 年的夏令時間公告。均經時區資料庫 asia 檔註記轉引。<span class="rs rs-relayed">轉引，未見原件</span></span></li>
+      <li id="ref-5"><span>tz 郵件列表，2010 年 4 月〈Asia/Taipei has DST in 1979 between July 1st and Sep.30〉：smallufo（4 月 2 日）指出氣象局網頁所列 1979 年；Arthur David Olson（4 月 7 日）比對該網頁表格後表示傾向更正。<a href="https://mm.icann.org/pipermail/tz/2010-April/016165.html">mm.icann.org/pipermail/tz/2010-April/016165.html</a><span class="rs rs-checked">已讀原文</span></span></li>
+      <li id="ref-6"><span>渾儀<a href="/zh-TW/methods#conventions">方法頁</a> §07.6（時區偏移依卷宗記下版本的 IANA 時區資料庫換算；1970 年前與地方平時的段落多為推定），以及<a href="/zh-TW/method-sources.json">方法出處清單</a>條目 <code>library_info</code>（時區資料庫版本不由本產品固定）。計算頁對重複鐘點的處理見計算頁出生時間欄。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-7"><span>IANA 時區資料庫 NEWS 檔，Release 2014f（2014-08-05），〈Changes affecting past timestamps〉中關於 Asia/Taipei 的一段。<a href="https://github.com/eggert/tz/blob/2026d/NEWS">github.com/eggert/tz/blob/2026d/NEWS</a><span class="rs rs-checked">已讀原文</span></span></li>
+      <li id="ref-8"><span>本文的轉換時刻統計（1890–1990 年先以較粗的間隔掃描，再逐步二分逼近到秒）與表 2，以 Python 3.14 zoneinfo 讀取 IANA 時區資料庫 2026d 版、Swiss Ephemeris 2.10.03 計算上升點，2026 年 10 月自算；§04 的兩句回應，取自本站計算服務對合成時刻 1974-04-01 00:30 與 1974-09-30 23:30（臺北）的實際回應。<span class="rs rs-computed">本站自算</span></span></li>
+    </ol>
+  </section>
+
+  <section class="ar-next" aria-labelledby="next-cta">
+    <div>
+      <h2 id="next-cta">在這些年份出生？<br>讓計算頁替你檢查一次。</h2>
+      <p>選臺北或任何臺灣的地點，填上出生證明上的鐘面時間。遇到不存在或出現兩次的時刻，計算頁會停下來問你，而不是悄悄挑一個。</p>
+      <p><a class="btn-paper" href="/zh-TW/calculate">排一張盤 →</a></p>
+    </div>
+    <div>
+      <span class="ar-k">延伸閱讀</span>
+      <ul>
+        <li><a href="/zh-TW/methods#conventions">方法頁：UTC、UT1 與 ΔT</a></li>
+        <li><a href="/zh-TW/blog/birth-time-sensitivity">出生時間差五分鐘，你的盤會變成什麼樣</a></li>
+      </ul>
+    </div>
+  </section>
+
+</div>

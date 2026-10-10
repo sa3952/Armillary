@@ -159,7 +159,7 @@ server {
     error_log /var/log/nginx/error.log emerg;
     server_tokens off;
     add_header Strict-Transport-Security "max-age=31536000" always;
-    add_header Content-Security-Policy "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'" always;
+    add_header Content-Security-Policy "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'; require-trusted-types-for 'script'; trusted-types 'none'" always;
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
     add_header Cache-Control "no-store" always;
     return 308 https://__STAGING_SERVER_NAME__$armillary_redirect_path;
@@ -197,7 +197,7 @@ server {
     limit_conn_status 503;
 
     add_header Strict-Transport-Security "max-age=31536000" always;
-    add_header Content-Security-Policy "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'" always;
+    add_header Content-Security-Policy "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'; require-trusted-types-for 'script'; trusted-types 'none'" always;
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
     add_header X-Robots-Tag "noindex, nofollow, noarchive" always;  # staging_noindex
     add_header X-Content-Type-Options "nosniff" always;

@@ -1,60 +1,80 @@
 {
   "pages": {
     "about": {
-      "content_sha256": "243259975bb53969cd2adc123019c2dc505a6fe1f2c7092edf2743e85533be11",
+      "content_sha256": "3f21dae7243f50b135c45f58c2e2d6a9b6930a5fe3d01f1a30af7b2849dd3c18",
       "lastmod": "2026-10-10"
     },
     "blog": {
-      "content_sha256": "d1529e0659a2b814c4e021d20f40906e3eba2e2eae98fdad42b0e5f3eb336a09",
+      "content_sha256": "1f109182876abe1ab9184e2060761f93a3ed7552efd9d642d9d2c50d9f168099",
+      "lastmod": "2026-10-10"
+    },
+    "blog-birth-time-sensitivity": {
+      "content_sha256": "221df315dee0900e6e918cee4b6ee7ecf3339632bdc76ef0cd92ded4e7bd8490",
+      "lastmod": "2026-10-10"
+    },
+    "blog-four-bounds-tables": {
+      "content_sha256": "4660164418c9a8f2ac04da642e4c86d49c3b93728c1ac2494997cafb6f570945",
+      "lastmod": "2026-10-10"
+    },
+    "blog-mean-vs-osculating-node": {
+      "content_sha256": "ea7ec9cf900924706d47a13d222691f3083b1fd3523ec97d478b1fe977d30da2",
+      "lastmod": "2026-10-10"
+    },
+    "blog-taiwan-time-zone-history": {
+      "content_sha256": "6db05c400baf2e2aa559d092165c730fac390308156af69c42265a4e35d9e7ff",
+      "lastmod": "2026-10-10"
+    },
+    "blog-whole-sign-vs-placidus": {
+      "content_sha256": "0c4362887ed78272d3833b6659f67d2a0563f6e434fda08de17b090460411d63",
       "lastmod": "2026-10-10"
     },
     "calculate": {
-      "content_sha256": "8c5799bd3ef6069d24a091f0e9e301b0f8da722906cbe95af6cf0ddf649acf6b",
+      "content_sha256": "a47609ef0b4857dd4cb7088f33de085365a3f51d62550eb55d7d3ba01911f9d9",
       "lastmod": "2026-10-10"
     },
     "contact": {
-      "content_sha256": "191eeaaf7e038003f358c65ac9dc492a2c4ec98684d5def6cc2d1e12e309502b",
-      "lastmod": "2026-10-07"
+      "content_sha256": "75c164f748d957e73a98d3809dd883d83d9a2640b72e7b927c55ac0d2900605d",
+      "lastmod": "2026-10-10"
     },
     "features": {
-      "content_sha256": "71836495558f07c80557ffc3b0271449543e21e2480091b2d9391dd3b7295b25",
+      "content_sha256": "944694bab7df3d9486888f04815dd814b11c22344a43ce154c8a6697d4f9ae68",
       "lastmod": "2026-10-10"
     },
     "home": {
-      "content_sha256": "86beae4d8e65e0cfefeb5b361f9c851852d3d3a37e6d6d717aad4b425fcdc63e",
+      "content_sha256": "285019bb6c580f3a8ef1de742e296e8741bfdf9198c6325e347cc1ff498e2b07",
       "lastmod": "2026-10-10"
     },
     "legal-copyright": {
-      "content_sha256": "5d2c2f19c26f3d2f224caaa9b075e23d533e554033778734e50a3fcd07e03c03",
+      "content_sha256": "8d44f63781d26d7038f44362c3c18d9a64cd02bbc6488493a4e7e3d13aa450a6",
       "lastmod": "2026-10-10"
     },
     "legal-privacy": {
-      "content_sha256": "0f3b7f44690d33134d42fb76c0e0c69b935b4f7b8bd8c2b00fff12fa1876136c",
+      "content_sha256": "e65ff843c5d29caea272bbf2cd17cd131601a7fd1c0704592b7bbd481f8cf036",
       "lastmod": "2026-10-10"
     },
     "legal-terms": {
-      "content_sha256": "bf9ebf07e25e9ced5becbed271c949579a6182545e1795e28b80f4c887dab88e",
+      "content_sha256": "3269d50b1b132fd0be4705392b79ced5c1e57176a8cc310fcf999971faf24955",
       "lastmod": "2026-10-10"
     },
     "methods": {
-      "content_sha256": "acbf9ae77525d50e891dc90b60aa41df29f23a61c395993c0a5d02bd5dac55a0",
+      "content_sha256": "bbba441f9ff9d07e55cdfa50c7ce3a2ca615badd1cd1c4baf16fd36ef0474521",
       "lastmod": "2026-10-10"
     },
     "roadmap": {
-      "content_sha256": "a67c39c461bd02d0825405e7b4b54953247c8e2c6be1635dd05aba93f1659915",
+      "content_sha256": "0a327e50a19f9ba1bcecfd25f25045a5046831b18aebc4dcded44b307d01295d",
       "lastmod": "2026-10-10"
     },
     "security": {
-      "content_sha256": "3418cfbbc92c3ebacef5a70f8c722ae41f040676775c5e8d37652a09b066fff8",
+      "content_sha256": "2d7e21fcc0b15947dcd1ec1b343d0df3351202488eb74271faf051275fe27e21",
       "lastmod": "2026-10-10"
     },
     "trust": {
-      "content_sha256": "e834aeac2549c04a052fa9d49ef20fba291f5c5dd55d2591b85f9a7683e1aec2",
+      "content_sha256": "c5b38ad6be4cb993ef01e8c31594a960c19f542a4ad5f1c99be85f02afa139c8",
       "lastmod": "2026-10-10"
     },
     "validation": {
-      "content_sha256": "0b64fba90af7e7cafca26dfef4c368f7ccf44337c44d94ae4fa2fd88af96bdeb",
-      "lastmod": "2026-10-05"
+      "content_sha256": "a713575d277e6be19772e3f2508b87c4d34485a54914ab2d5a789011f80addf1",
+      "lastmod": "2026-10-10"
     }
   },
   "schema_version": 1

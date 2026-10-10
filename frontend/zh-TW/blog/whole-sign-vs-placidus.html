@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="index, follow">
+<title>整宮制與 Placidus：同一顆行星，兩個宮位｜渾儀 Armillary</title>
+<meta name="description" content="換一種宮位制，行星就換了宮，不代表有一邊算錯。以合成星盤比較整宮、Placidus、Regiomontanus 與 Alcabitius，並說明北極圈內為什麼算不出 Placidus。">
+<link rel="canonical" href="https://projectarmillary.com/zh-TW/blog/whole-sign-vs-placidus">
+<link rel="alternate" hreflang="zh-TW" href="https://projectarmillary.com/zh-TW/blog/whole-sign-vs-placidus">
+<link rel="alternate" hreflang="x-default" href="https://projectarmillary.com/zh-TW/blog/whole-sign-vs-placidus">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="渾儀 Armillary">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:title" content="整宮制與 Placidus：同一顆行星，兩個宮位｜渾儀 Armillary">
+<meta property="og:description" content="換一種宮位制，行星就換了宮，不代表有一邊算錯。以合成星盤比較整宮、Placidus、Regiomontanus 與 Alcabitius，並說明北極圈內為什麼算不出 Placidus。">
+<meta property="og:url" content="https://projectarmillary.com/zh-TW/blog/whole-sign-vs-placidus">
+<meta property="article:published_time" content="2026-10-10">
+<meta property="article:modified_time" content="2026-10-10">
+<meta property="og:image" content="https://projectarmillary.com/zh-TW/og-card.png?v=16c9900d06168aab">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="渾儀 Armillary：可驗證的古典西洋占星計算器">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/blog/whole-sign-vs-placidus#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/blog/whole-sign-vs-placidus#breadcrumb"},"description":"換一種宮位制，行星就換了宮，不代表有一邊算錯。以合成星盤比較整宮、Placidus、Regiomontanus 與 Alcabitius，並說明北極圈內為什麼算不出 Placidus。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"整宮制與 Placidus：同一顆行星，兩個宮位｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/blog/whole-sign-vs-placidus"},{"@id":"https://projectarmillary.com/zh-TW/blog/whole-sign-vs-placidus#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/blog","name":"文章","position":2},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/blog/whole-sign-vs-placidus","name":"整宮制與 Placidus：同一顆行星，兩個宮位","position":3}]},{"@id":"https://projectarmillary.com/zh-TW/blog/whole-sign-vs-placidus#article","@type":"BlogPosting","dateModified":"2026-10-10","datePublished":"2026-10-10","description":"換一種宮位制，行星就換了宮，不代表有一邊算錯。以合成星盤比較整宮、Placidus、Regiomontanus 與 Alcabitius，並說明北極圈內為什麼算不出 Placidus。","headline":"整宮制與 Placidus：同一顆行星，兩個宮位","image":"https://projectarmillary.com/zh-TW/og-card.png?v=16c9900d06168aab","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/zh-TW/blog#webpage"},"mainEntityOfPage":{"@id":"https://projectarmillary.com/zh-TW/blog/whole-sign-vs-placidus#webpage"},"url":"https://projectarmillary.com/zh-TW/blog/whole-sign-vs-placidus"}]}</script>
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="/zh-TW/favicon.svg?v=c95686a2f029d369" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/zh-TW/style/blog-article.css?v=17eb957a1958350a">
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">跳到主要內容</a>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="/zh-TW/">
+      <svg class="mark" viewBox="0 0 40 40" aria-hidden="true">
+        <circle cx="20" cy="20" r="16"/>
+        <ellipse cx="20" cy="20" rx="16" ry="4.5"/>
+        <ellipse cx="20" cy="20" rx="16" ry="8" transform="rotate(-32 20 20)" class="mark-ecliptic"/>
+        <ellipse cx="20" cy="20" rx="5" ry="16"/>
+        <line x1="20" y1="4" x2="20" y2="36" transform="rotate(-18 20 20)"/>
+      </svg>
+      <span>渾儀<small>ARMILLARY</small></span>
+    </a>
+    <nav class="site-nav" aria-label="主要導覽">
+      <a href="/zh-TW/features">功能</a>
+      <a href="/zh-TW/methods">方法</a>
+      <a href="/zh-TW/validation">驗證</a>
+      <a href="/zh-TW/trust">信任</a>
+      <a href="/zh-TW/blog">文章</a>
+      <a href="/zh-TW/about">關於</a>
+      <a class="nav-cta" href="/zh-TW/calculate">排一張盤</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main-content">
+<div class="wrap page-body article">
+
+  <div class="ar-head">
+    <p class="eyebrow"><a href="/zh-TW/blog">文章</a> · JOURNAL</p>
+    <h1>整宮制與 Placidus：<br>同一顆行星，兩個宮位</h1>
+    <p class="ar-dek">換一種宮位制，行星就換了宮，這不代表有一邊算錯。這篇用一張合成星盤比較本站提供的四種宮位制：它們從哪裡開始不一樣、差出來的是哪幾顆行星，以及為什麼在北極圈裡有一種根本算不出來。</p>
+    <p class="ar-byline"><span class="ar-tier">講方法</span><span>發布 <time datetime="2026-10-10">2026-10-10</time></span><span>閱讀約 9 分鐘</span><span>Sebastian</span></p>
+  </div>
+
+  <figure class="ar-fig ar-hero">
+    <svg class="sq" viewBox="0 0 640 640" role="img" aria-label="同一張合成星盤的兩種分宮：外圈是十二星座，也就是整宮制的十二宮；內圈紅線是 Placidus 的宮頭。上升點在獅子座 14 度 35 分，中天在金牛座 11 度 33 分。水星在整宮制落第 10 宮、在 Placidus 落第 9 宮；木星在整宮制落第 12 宮、在 Placidus 落第 11 宮；其餘五顆兩制相同。">
+    <path class="f-hair" d="M530.6,106.3 A300,300 0 0 0 395.5,29.7 L383.0,78.1 A250,250 0 0 1 495.5,141.9 Z"/>
+    <text class="t-dim t-mid" x="455.8" y="87.9">牡羊</text>
+    <text class="t-mono t-mid" x="432.3" y="129.2">9</text>
+    <line class="g-dim" x1="530.6" y1="106.3" x2="463.9" y2="174.0"/>
+    <path class="f-paper2" d="M395.5,29.7 A300,300 0 0 0 240.3,30.8 L253.5,79.0 A250,250 0 0 1 383.0,78.1 Z"/>
+    <text class="t-dim t-mid" x="318.0" y="52.0">金牛</text>
+    <text class="t-mono t-mid" x="318.4" y="99.5">10</text>
+    <line class="g-dim" x1="395.5" y1="29.7" x2="371.6" y2="121.6"/>
+    <path class="f-hair" d="M240.3,30.8 A300,300 0 0 0 106.3,109.4 L141.9,144.5 A250,250 0 0 1 253.5,79.0 Z"/>
+    <text class="t-dim t-mid" x="180.8" y="89.8">雙子</text>
+    <text class="t-mono t-mid" x="204.8" y="130.8">11</text>
+    <line class="g-dim" x1="240.3" y1="30.8" x2="265.5" y2="122.4"/>
+    <path class="f-paper2" d="M106.3,109.4 A300,300 0 0 0 29.7,244.5 L78.1,257.0 A250,250 0 0 1 141.9,144.5 Z"/>
+    <text class="t-dim t-mid" x="80.9" y="191.2">巨蟹</text>
+    <text class="t-mono t-mid" x="122.2" y="214.7">12</text>
+    <line class="g-dim" x1="106.3" y1="109.4" x2="174.0" y2="176.1"/>
+    <path class="f-hair" d="M29.7,244.5 A300,300 0 0 0 30.8,399.7 L79.0,386.5 A250,250 0 0 1 78.1,257.0 Z"/>
+    <text class="t-dim t-mid" x="45.0" y="329.0">獅子</text>
+    <text class="t-mono t-mid" x="92.5" y="328.6">1</text>
+    <line class="g-dim" x1="29.7" y1="244.5" x2="121.6" y2="268.4"/>
+    <path class="f-paper2" d="M30.8,399.7 A300,300 0 0 0 109.4,533.7 L144.5,498.1 A250,250 0 0 1 79.0,386.5 Z"/>
+    <text class="t-dim t-mid" x="82.8" y="466.2">處女</text>
+    <text class="t-mono t-mid" x="123.8" y="442.2">2</text>
+    <line class="g-dim" x1="30.8" y1="399.7" x2="122.4" y2="374.5"/>
+    <path class="f-hair" d="M109.4,533.7 A300,300 0 0 0 244.5,610.3 L257.0,561.9 A250,250 0 0 1 144.5,498.1 Z"/>
+    <text class="t-dim t-mid" x="184.2" y="566.1">天秤</text>
+    <text class="t-mono t-mid" x="207.7" y="524.8">3</text>
+    <line class="g-dim" x1="109.4" y1="533.7" x2="176.1" y2="466.0"/>
+    <path class="f-paper2" d="M244.5,610.3 A300,300 0 0 0 399.7,609.2 L386.5,561.0 A250,250 0 0 1 257.0,561.9 Z"/>
+    <text class="t-dim t-mid" x="322.0" y="602.0">天蠍</text>
+    <text class="t-mono t-mid" x="321.6" y="554.5">4</text>
+    <line class="g-dim" x1="244.5" y1="610.3" x2="268.4" y2="518.4"/>
+    <path class="f-hair" d="M399.7,609.2 A300,300 0 0 0 533.7,530.6 L498.1,495.5 A250,250 0 0 1 386.5,561.0 Z"/>
+    <text class="t-dim t-mid" x="459.2" y="564.2">射手</text>
+    <text class="t-mono t-mid" x="435.2" y="523.2">5</text>
+    <line class="g-dim" x1="399.7" y1="609.2" x2="374.5" y2="517.6"/>
+    <path class="f-paper2" d="M533.7,530.6 A300,300 0 0 0 610.3,395.5 L561.9,383.0 A250,250 0 0 1 498.1,495.5 Z"/>
+    <text class="t-dim t-mid" x="559.1" y="462.8">摩羯</text>
+    <text class="t-mono t-mid" x="517.8" y="439.3">6</text>
+    <line class="g-dim" x1="533.7" y1="530.6" x2="466.0" y2="463.9"/>
+    <path class="f-hair" d="M610.3,395.5 A300,300 0 0 0 609.2,240.3 L561.0,253.5 A250,250 0 0 1 561.9,383.0 Z"/>
+    <text class="t-dim t-mid" x="595.0" y="325.0">水瓶</text>
+    <text class="t-mono t-mid" x="547.5" y="325.4">7</text>
+    <line class="g-dim" x1="610.3" y1="395.5" x2="518.4" y2="371.6"/>
+    <path class="f-paper2" d="M609.2,240.3 A300,300 0 0 0 530.6,106.3 L495.5,141.9 A250,250 0 0 1 561.0,253.5 Z"/>
+    <text class="t-dim t-mid" x="557.2" y="187.8">雙魚</text>
+    <text class="t-mono t-mid" x="516.2" y="211.8">8</text>
+    <line class="g-dim" x1="609.2" y1="240.3" x2="517.6" y2="265.5"/>
+    <circle class="g-dim" cx="320" cy="320" r="300"/>
+    <circle class="g-dim" cx="320" cy="320" r="250"/>
+    <circle class="g-ink" cx="320" cy="320" r="205"/>
+    <line class="g-ink" x1="115.0" y1="320.0" x2="260.0" y2="320.0"/>
+    <text class="t-accent t-mid" x="240.0" y="345.1">1</text>
+    <line class="g-accent-thin" x1="134.9" y1="408.1" x2="265.8" y2="345.8"/>
+    <text class="t-accent t-mid" x="257.3" y="379.8">2</text>
+    <line class="g-accent-thin" x1="201.6" y1="487.3" x2="285.3" y2="369.0"/>
+    <text class="t-accent t-mid" x="293.1" y="404.5">3</text>
+    <line class="g-ink" x1="309.1" y1="524.7" x2="316.8" y2="379.9"/>
+    <text class="t-accent t-mid" x="338.8" y="406.8">4</text>
+    <line class="g-accent-thin" x1="421.2" y1="498.3" x2="349.6" y2="372.2"/>
+    <text class="t-accent t-mid" x="378.1" y="384.8">5</text>
+    <line class="g-accent-thin" x1="498.8" y1="420.3" x2="372.3" y2="349.4"/>
+    <text class="t-accent t-mid" x="399.3" y="347.7">6</text>
+    <line class="g-ink" x1="525.0" y1="320.0" x2="380.0" y2="320.0"/>
+    <text class="t-accent t-mid" x="400.0" y="308.9">7</text>
+    <line class="g-accent-thin" x1="505.1" y1="231.9" x2="374.2" y2="294.2"/>
+    <text class="t-accent t-mid" x="382.7" y="274.2">8</text>
+    <line class="g-accent-thin" x1="438.4" y1="152.7" x2="354.7" y2="271.0"/>
+    <text class="t-accent t-mid" x="346.9" y="249.5">9</text>
+    <line class="g-ink" x1="330.9" y1="115.3" x2="323.2" y2="260.1"/>
+    <text class="t-accent t-mid" x="301.2" y="247.2">10</text>
+    <line class="g-accent-thin" x1="218.8" y1="141.7" x2="290.4" y2="267.8"/>
+    <text class="t-accent t-mid" x="261.9" y="269.2">11</text>
+    <line class="g-accent-thin" x1="141.2" y1="219.7" x2="267.7" y2="290.6"/>
+    <text class="t-accent t-mid" x="240.7" y="306.3">12</text>
+    <circle class="f-paper" cx="320" cy="320" r="58"/>
+    <circle class="g-accent-thin" cx="320" cy="320" r="60"/>
+    <text class="t-faint t-mid" x="320" y="316">Placidus</text>
+    <text class="t-faint t-mid" x="320" y="340">宮號</text>
+    <text class="t-accent t-end" x="8.0" y="327.0">上升</text>
+    <text class="t-accent t-mid" x="336.4" y="4.4">中天</text>
+    <line class="g-hair" x1="429.2" y1="146.5" x2="407.9" y2="180.4"/>
+    <circle class="f-paper" cx="407.9" cy="180.4" r="17"/>
+    <circle class="g-ink" cx="407.9" cy="180.4" r="17"/>
+    <text class="t t-mid" x="407.9" y="187.4">金</text>
+    <line class="g-hair" x1="343.3" y1="116.3" x2="338.7" y2="156.1"/>
+    <circle class="f-ink" cx="338.7" cy="156.1" r="17"/>
+    <circle class="g-ink" cx="338.7" cy="156.1" r="17"/>
+    <text class="t-paper t-mid" x="338.7" y="163.1">水</text>
+    <line class="g-hair" x1="286.3" y1="117.8" x2="292.9" y2="157.2"/>
+    <circle class="f-paper" cx="292.9" cy="157.2" r="17"/>
+    <circle class="g-ink" cx="292.9" cy="157.2" r="17"/>
+    <text class="t t-mid" x="292.9" y="164.2">日</text>
+    <line class="g-hair" x1="152.3" y1="202.1" x2="185.0" y2="225.1"/>
+    <circle class="f-ink" cx="185.0" cy="225.1" r="17"/>
+    <circle class="g-ink" cx="185.0" cy="225.1" r="17"/>
+    <text class="t-paper t-mid" x="185.0" y="232.1">木</text>
+    <line class="g-hair" x1="510.0" y1="396.9" x2="472.9" y2="381.9"/>
+    <circle class="f-paper" cx="472.9" cy="381.9" r="17"/>
+    <circle class="g-ink" cx="472.9" cy="381.9" r="17"/>
+    <text class="t t-mid" x="472.9" y="388.9">月</text>
+    <line class="g-hair" x1="513.4" y1="387.9" x2="442.7" y2="363.0"/>
+    <circle class="f-paper" cx="442.7" cy="363.0" r="17"/>
+    <circle class="g-ink" cx="442.7" cy="363.0" r="17"/>
+    <text class="t t-mid" x="442.7" y="370.0">土</text>
+    <line class="g-hair" x1="491.0" y1="206.9" x2="457.6" y2="229.0"/>
+    <circle class="f-paper" cx="457.6" cy="229.0" r="17"/>
+    <circle class="g-ink" cx="457.6" cy="229.0" r="17"/>
+    <text class="t t-mid" x="457.6" y="236.0">火</text>
+    </svg>
+    <figcaption><b>圖 1</b>同一張合成星盤（1990 年 5 月 15 日上午 11 點，臺北），兩種分宮疊在一起。外圈是十二星座，旁邊的黑色數字是整宮制的宮號；內圈紅線是 Placidus 的宮頭，紅色數字是 Placidus 的宮號。黑底的兩顆（水星、木星）在兩種宮位制裡落在不同的宮。</figcaption>
+  </figure>
+
+  <div class="ar-body">
+    <p class="ar-lead">如果你用兩套軟體排過自己的盤，大概遇過這種事：同一顆行星，一邊說在第十宮，另一邊說在第九宮。直覺會以為其中一邊錯了。其實兩邊都可能算得完全正確，只是它們用不同的方法把天空分成十二份。</p>
+
+    <section class="ar-points" aria-labelledby="points">
+      <h2 id="points">重點</h2>
+      <ul>
+        <li>整宮制把上升點所在的整個星座當作第一宮；Placidus、Regiomontanus、Alcabitius 三種四分宮制則以上升點為第一宮頭、中天為第十宮頭，再各用自己的幾何方法把天空切成三份<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-3">[3]</a>。</li>
+        <li>所以同一顆行星可能在兩種制度裡落在不同的宮，兩邊都沒算錯：本文的合成盤上，水星在金牛座 8°03′，整宮制算第十宮，三種四分宮制都算第九宮<a class="ar-cite" href="#ref-5">[5]</a>。</li>
+        <li>在北極圈附近，有些黃道度數沒有半日弧，Placidus 無解；本站在整個極區帶（邊界在 1900 到 2399 年間落在 66.54 到 66.62 度）都拒絕 Placidus，不收 Swiss Ephemeris 自動改用的 Porphyry 替代結果<a class="ar-cite" href="#ref-4">[4]</a><a class="ar-cite" href="#ref-5">[5]</a>。</li>
+        <li>本站四種平等提供、一次算一種，不排序它們的歷史適用性<a class="ar-cite" href="#ref-1">[1]</a>。</li>
+      </ul>
+    </section>
+
+    <h2 id="two-ideas"><span class="ar-sec">§01</span>兩種想法：星座就是宮，或從軸點切</h2>
+    <p><b>整宮制</b>最簡單：上升點落在哪個星座，那整個星座就是第一宮，下一個星座是第二宮，依此類推。宮與星座完全重合，宮頭都在星座的 0 度。中天另外計算，不一定落在第十個星座；本站方法頁引用的古代例子裡，雙子上升的盤，按度數算的中天落在水瓶，是第九個星座<a class="ar-cite" href="#ref-1">[1]</a>。</p>
+    <p>本站提供的另外三種，<b>Placidus、Regiomontanus、Alcabitius</b>，都屬於四分宮制：先把上升點定為第一宮頭、中天定為第十宮頭，再用各自的幾何方法，把上升到中天、中天到下降之間的天空各切成三份<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-3">[3]</a>：</p>
+
+    <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab0-cap">
+      <table class="ar-table">
+        <caption id="tab0-cap">表 1　四分宮制三種切法的定義（依 Swiss Ephemeris 文件 §6.2，與本站方法頁的說明）。</caption>
+        <thead><tr><th>宮位制</th><th>在哪裡切三等分</th></tr></thead>
+        <tbody>
+          <tr><td>Placidus</td><td>每個宮頭度數<b>自己的</b>半日弧：第 11 宮頭是已走完自己半日弧三分之二的黃道點，第 12 宮頭是走完三分之一的點；第 2、3 宮頭在半夜弧上同樣分割。</td></tr>
+          <tr><td>Regiomontanus</td><td>天赤道：從子午圈起把赤道十二等分，再以通過地平南北兩點的大圓切到黃道上。</td></tr>
+          <tr><td>Alcabitius</td><td>只取<b>上升點</b>的半日弧與半夜弧，在天赤道上各三等分，再以通過天極的大圓投回黃道。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>所以四分宮制的宮頭幾乎都不在星座的 0 度，宮的大小也不相等，而且隨緯度改變。整宮制與四分宮制最大的分歧，就發生在<b>上升點與中天不在星座開頭</b>的時候：整宮制把第一宮的開頭放在星座 0 度，四分宮制把它放在上升點本身。</p>
+
+    <h2 id="example"><span class="ar-sec">§02</span>同一張合成盤，四種分法</h2>
+    <p>圖 1 的合成時刻，上升點在獅子座 14°35′，中天在金牛座 11°33′。我們分別用四種宮位制向本站計算服務送出同一個請求，七顆古典行星的落宮如下<a class="ar-cite" href="#ref-5">[5]</a>：</p>
+
+    <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab1-cap">
+      <table class="ar-table">
+        <caption id="tab1-cap">表 2　同一個合成時刻，四種宮位制的落宮。底色標出四種制度意見不一致的列，紅字是與整宮制不同的宮號。</caption>
+        <thead><tr><th>天體</th><th>位置</th><th class="n">整宮</th><th class="n">Placidus</th><th class="n">Regiomontanus</th><th class="n">Alcabitius</th></tr></thead>
+        <tbody>
+          <tr><td>太陽</td><td class="n">金牛 24°02′</td><td class="n">10</td><td class="n">10</td><td class="n">10</td><td class="n">10</td></tr>
+          <tr><td>月亮</td><td class="n">摩羯 22°32′</td><td class="n">6</td><td class="n">6</td><td class="n">6</td><td class="n">6</td></tr>
+          <tr class="hl"><td>水星</td><td class="n">金牛 8°03′</td><td class="n">10</td><td class="n diff">9</td><td class="n diff">9</td><td class="n diff">9</td></tr>
+          <tr class="hl"><td>金星</td><td class="n">牡羊 12°23′</td><td class="n">9</td><td class="n">9</td><td class="n">9</td><td class="n diff">8</td></tr>
+          <tr><td>火星</td><td class="n">雙魚 18°03′</td><td class="n">8</td><td class="n">8</td><td class="n">8</td><td class="n">8</td></tr>
+          <tr class="hl"><td>木星</td><td class="n">巨蟹 9°28′</td><td class="n">12</td><td class="n diff">11</td><td class="n diff">11</td><td class="n diff">11</td></tr>
+          <tr><td>土星</td><td class="n">摩羯 25°15′</td><td class="n">6</td><td class="n">6</td><td class="n">6</td><td class="n">6</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><b>水星</b>在金牛座 8°03′。整宮制裡金牛座整座是第十宮；但三種四分宮制的第十宮頭都是中天，在金牛座 11°33′，水星還沒走到，所以落在第九宮。<b>木星</b>在巨蟹座 9°28′，整宮制是第十二宮；Placidus 的第十二宮頭在巨蟹座 15°17′，木星還在它前面，所以算第十一宮。</p>
+    <p><b>金星</b>更細：它在牡羊座 12°23′，Placidus 與 Regiomontanus 的第九宮頭在牡羊座 9° 左右，Alcabitius 的在牡羊座 12°47′，兩者只差不到半度，金星就分到第八宮與第九宮兩邊。三種四分宮制彼此之間，也不總是一致。</p>
+
+    <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab2-cap">
+      <table class="ar-table">
+        <caption id="tab2-cap">表 3　同一個合成時刻的十二個宮頭（黃經）。四分宮制的第 1、4、7、10 宮頭彼此相同，因為它們都是上升、天底、下降、中天。</caption>
+        <thead><tr><th class="n">宮</th><th class="n">整宮</th><th class="n">Placidus</th><th class="n">Regiomontanus</th><th class="n">Alcabitius</th></tr></thead>
+        <tbody>
+          <tr><td class="n">1</td><td class="n">獅子 0°00′</td><td class="n">獅子 14°35′</td><td class="n">獅子 14°35′</td><td class="n">獅子 14°35′</td></tr>
+          <tr><td class="n">2</td><td class="n">處女 0°00′</td><td class="n">處女 10°02′</td><td class="n">處女 10°42′</td><td class="n">處女 13°05′</td></tr>
+          <tr><td class="n">3</td><td class="n">天秤 0°00′</td><td class="n">天秤 9°18′</td><td class="n">天秤 9°01′</td><td class="n">天秤 12°47′</td></tr>
+          <tr><td class="n">4</td><td class="n">天蠍 0°00′</td><td class="n">天蠍 11°33′</td><td class="n">天蠍 11°33′</td><td class="n">天蠍 11°33′</td></tr>
+          <tr><td class="n">5</td><td class="n">射手 0°00′</td><td class="n">射手 14°11′</td><td class="n">射手 15°56′</td><td class="n">射手 13°11′</td></tr>
+          <tr><td class="n">6</td><td class="n">摩羯 0°00′</td><td class="n">摩羯 15°17′</td><td class="n">摩羯 17°14′</td><td class="n">摩羯 13°16′</td></tr>
+          <tr><td class="n">7</td><td class="n">水瓶 0°00′</td><td class="n">水瓶 14°35′</td><td class="n">水瓶 14°35′</td><td class="n">水瓶 14°35′</td></tr>
+          <tr><td class="n">8</td><td class="n">雙魚 0°00′</td><td class="n">雙魚 10°02′</td><td class="n">雙魚 10°42′</td><td class="n">雙魚 13°05′</td></tr>
+          <tr><td class="n">9</td><td class="n">牡羊 0°00′</td><td class="n">牡羊 9°18′</td><td class="n">牡羊 9°01′</td><td class="n">牡羊 12°47′</td></tr>
+          <tr><td class="n">10</td><td class="n">金牛 0°00′</td><td class="n">金牛 11°33′</td><td class="n">金牛 11°33′</td><td class="n">金牛 11°33′</td></tr>
+          <tr><td class="n">11</td><td class="n">雙子 0°00′</td><td class="n">雙子 14°11′</td><td class="n">雙子 15°56′</td><td class="n">雙子 13°11′</td></tr>
+          <tr><td class="n">12</td><td class="n">巨蟹 0°00′</td><td class="n">巨蟹 15°17′</td><td class="n">巨蟹 17°14′</td><td class="n">巨蟹 13°16′</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="ar-pull">同一顆行星可以在整宮制落第十宮、在 Placidus 落第九宮。兩邊都沒算錯；它們回答的是兩個不同的問題。</p>
+
+    <h2 id="choice"><span class="ar-sec">§03</span>本站怎麼看待「選哪一個」</h2>
+    <p>本站四種平等提供，一次算一種，<b>不排序它們的歷史適用性</b><a class="ar-cite" href="#ref-1">[1]</a>。計算頁的預設是整宮制，但預設是什麼、這次用的是哪一種，每一次計算都印在卷宗裡；你換成另一種，結果會標明。</p>
+    <p>比較實用的原則只有兩條：</p>
+    <ul>
+      <li><b>照你要用的方法來選。</b>如果你在讀某位作者的技法，就用那位作者使用的分宮方式；混用會讓那套技法的規則對不上。</li>
+      <li><b>比較兩張盤時，用同一種。</b>一張整宮、一張 Placidus，差異大半來自分宮，而不是天空。</li>
+    </ul>
+    <p>行星恰好落在宮頭上時，本站把它歸入以該宮頭開始的那一宮；結果裡另外列出行星距最近宮頭幾度，距離在 1 度以內會提示，因為這時落宮對出生時刻很敏感<a class="ar-cite" href="#ref-1">[1]</a>（見〈<a href="/zh-TW/blog/birth-time-sensitivity">出生時間差五分鐘</a>〉）。</p>
+
+    <h2 id="polar"><span class="ar-sec">§04</span>為什麼在北極圈裡算不出 Placidus</h2>
+    <p>Placidus 的定義依賴「每個黃道度數自己的半日弧」，也就是那個度數從升起到上中天的那段路。但在緯度夠高的地方，有些黃道度數整天都不落下，或整天都不升起，<b>它們沒有半日弧</b>，於是 Placidus 的構造在那裡沒有解<a class="ar-cite" href="#ref-1">[1]</a>。</p>
+
+    <figure class="ar-fig">
+    <svg viewBox="0 0 640 300" role="img" aria-label="地球的緯度示意。北緯與南緯 66.56 度以上的極區帶以紅色標出，在這裡本站整帶拒絕 Placidus；臺北在北緯 25 度，四種宮位制都可以算；挪威特羅姆瑟在北緯 69.6 度，位於極區帶內。">
+    <circle class="f-paper" cx="170" cy="150" r="125"/>
+    <path class="f-accent-soft" d="M120.3,35.3 A125,125 0 0 1 219.7,35.3 Z"/>
+    <line class="g-accent-thin" x1="120.3" y1="35.3" x2="219.7" y2="35.3"/>
+    <path class="f-accent-soft" d="M120.3,264.7 A125,125 0 0 0 219.7,264.7 Z"/>
+    <line class="g-accent-thin" x1="120.3" y1="264.7" x2="219.7" y2="264.7"/>
+    <line class="g-dim" x1="45" y1="150" x2="295" y2="150"/>
+    <circle class="g-ink" cx="170" cy="150" r="125"/>
+    <circle class="f-ink" cx="283.2" cy="97.1" r="6"/>
+    <line class="g-hair" x1="291.2" y1="97.1" x2="330" y2="97.1"/>
+    <text class="t" x="340" y="104.1">臺北 25.05°N</text>
+    <circle class="f-ink" cx="213.5" cy="32.8" r="6"/>
+    <line class="g-hair" x1="221.5" y1="32.8" x2="330" y2="32.8"/>
+    <text class="t" x="340" y="39.8">特羅姆瑟 69.65°N</text>
+    <text class="t-accent" x="340" y="75.3">66.56°：90° − 黃赤交角</text>
+    <text class="t-faint" x="170" y="156" text-anchor="middle">赤道</text>
+    <text class="t-dim" x="340" y="237.3">紅色帶內：本站不算 Placidus</text>
+    </svg>
+      <figcaption><b>圖 2</b>極區帶的邊界是 90 度減去命盤時刻的真黃赤交角，目前約 66.56 度，隨年代緩慢變動<a class="ar-cite" href="#ref-1">[1]</a>。臺北遠在帶外；挪威的特羅姆瑟（北緯 69.65 度）在帶內。</figcaption>
+    </figure>
+
+    <p>這條邊界不是固定的 66.5 度，而是隨著黃赤交角慢慢移動；本站的拒絕訊息寫明，1900 到 2399 年間它落在 66.54 到 66.62 度之間<a class="ar-cite" href="#ref-5">[5]</a>。Swiss Ephemeris 在這種情況下會自動改用 Porphyry 宮位制並回傳警告<a class="ar-cite" href="#ref-4">[4]</a>；<b>本站不收這個替代結果</b>，整個極區帶都拒絕 Placidus，並附上原因。這是本站的選擇，不是說任何名為 Placidus 的延伸做法在數學上都不可能<a class="ar-cite" href="#ref-1">[1]</a>。</p>
+    <p>我們把同一個日期中午 12 點、特羅姆瑟的請求分別用四種宮位制送出，得到的狀態是<a class="ar-cite" href="#ref-5">[5]</a>：</p>
+
+    <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab3-cap">
+      <table class="ar-table">
+        <caption id="tab3-cap">表 4　北緯 69.65 度的合成時刻，四種宮位制的可用狀態（本站計算服務的實際回應）。</caption>
+        <thead><tr><th>宮位制</th><th>狀態</th><th>意思</th></tr></thead>
+        <tbody>
+          <tr><td>整宮</td><td>可用，屬極區幾何</td><td>照常計算，但標明這是極區帶內的盤。</td></tr>
+          <tr class="hl"><td>Placidus</td><td class="diff">不可用</td><td>原因代碼 <code>placidus_no_semiarc</code>：有些黃道度數沒有半日弧。不給結果。</td></tr>
+          <tr><td>Regiomontanus</td><td>不穩定</td><td>算得出來，但高緯度的四分宮制對時刻或緯度的微小變動非常敏感。</td></tr>
+          <tr><td>Alcabitius</td><td>不穩定</td><td>同上。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>這只是一個時刻的結果。極圈內，中天有時會落到地平線下；這時 Regiomontanus 可能算出反向排列的宮頭，本站目前拒收這種排列，Alcabitius 也一併拒收<a class="ar-cite" href="#ref-1">[1]</a>。Swiss Ephemeris 的文件也說明，在極區內中天有時在地平線下，Regiomontanus 與 Campanus 的幾何定義在這時需要對調中天與天底，整個宮位系統變成順時針方向<a class="ar-cite" href="#ref-4">[4]</a>。在地理極點上，上升點本身沒有唯一定義，任何宮位制都不可用。</p>
+
+    <aside class="ar-scope" aria-labelledby="scope-3">
+      <span class="ar-k" id="scope-3">本文的證據範圍</span>
+      <ul>
+        <li>表 2、表 3、表 4 是本站計算服務對兩個合成請求的實際輸出，只代表這兩個時刻與地點；換一個時刻，哪幾顆行星會分歧就不同。</li>
+        <li>三種四分宮制的幾何定義，我們核對了 Swiss Ephemeris 文件的原文；高緯度可用狀態的分類是本站自己的四態分類，依本站內部方法研究筆記整理，未經第三方核對<a class="ar-cite" href="#ref-2">[2]</a>。</li>
+        <li>本文不討論哪一種宮位制在歷史上「比較古典」，也不評論它們的解讀效果。</li>
+      </ul>
+    </aside>
+  </div>
+
+  <section class="ar-refs" aria-labelledby="refs">
+    <h2 id="refs">出處</h2>
+    <p>每一條後面標明我們核到哪一層：<span class="rs rs-checked">已讀原文</span>是我們親自讀過的文本；<span class="rs rs-register">本站出處清單</span>是本站公開的方法說明；<span class="rs rs-computed">本站自算</span>是本站計算服務或我們依標明版本算出、可以照著重算的結果。</p>
+    <ol>
+      <li id="ref-1"><span>渾儀<a href="/zh-TW/methods#conventions">方法頁</a> §07.1〈四種宮位制：整宮、Placidus、Regiomontanus、Alcabitius〉：四種的定義、整宮例子 Valens V.6（Pingree pp. 215–216）、極區帶邊界與整帶拒絕 Placidus、四種可用狀態、Regiomontanus 與 Alcabitius 在中天低於地平時的拒收、宮頭上行星的歸屬與 1 度提示。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-2"><span>渾儀<a href="/zh-TW/method-sources.json">方法出處清單</a>，條目 <code>houses/availability</code>：可用、可用但屬極區幾何、不穩定、不可用四態，以及各原因代碼。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-3"><span>Dieter Koch &amp; Alois Treindl, <i>Swiss Ephemeris General Documentation</i>（Astrodienst），§6.2.1 Placidus、§6.2.3 Regiomontanus、§6.2.11 Alcabitus system。<a href="https://www.astro.com/swisseph/swisseph.htm">astro.com/swisseph/swisseph.htm</a><span class="rs rs-checked">已讀原文</span></span></li>
+      <li id="ref-4"><span>同上，§6.4〈House cusps beyond the polar circle〉：Placidus 在極圈外有時無法計算，函式自動改用 Porphyry 並回傳警告；中天低於地平時 Regiomontanus 與 Campanus 的處理。<span class="rs rs-checked">已讀原文</span></span></li>
+      <li id="ref-5"><span>本站計算服務對兩個合成請求的回應：1990-05-15 11:00 臺北（北緯 25.05306°、東經 121.52639°），四種宮位制各一次；1990-05-15 12:00 挪威特羅姆瑟（北緯 69.6496°、東經 18.9560°），四種宮位制各一次。2026 年 10 月以本機的同版服務取得，不是對正式站的請求。<span class="rs rs-computed">本站自算</span></span></li>
+    </ol>
+  </section>
+
+  <section class="ar-next" aria-labelledby="next-cta">
+    <div>
+      <h2 id="next-cta">把你的盤，<br>四種宮位制各算一次。</h2>
+      <p>計算頁的宮位制選單有這四種。換一種重算，比較落宮表哪幾行變了；每一次用的是哪一種，都會印在結果與匯出檔裡。</p>
+      <p><a class="btn-paper" href="/zh-TW/calculate">排一張盤 →</a></p>
+    </div>
+    <div>
+      <span class="ar-k">延伸閱讀</span>
+      <ul>
+        <li><a href="/zh-TW/methods#conventions">方法頁：口徑的差別</a></li>
+        <li><a href="/zh-TW/blog/birth-time-sensitivity">出生時間差五分鐘，你的盤會變成什麼樣</a></li>
+      </ul>
+    </div>
+  </section>
+
+</div>
+</main>
+
+<footer>
+  <div class="wrap sitemap">
+    <div class="sitemap-col">
+      <h2>產品</h2>
+      <a href="/zh-TW/">首頁</a>
+      <a href="/zh-TW/calculate">計算</a>
+      <a href="/zh-TW/features">功能</a>
+      <a href="/zh-TW/roadmap">路線</a>
+      <a href="/zh-TW/blog">文章</a>
+    </div>
+    <div class="sitemap-col">
+      <h2>可查證性</h2>
+      <a href="/zh-TW/methods">方法</a>
+      <a href="/zh-TW/validation">驗證</a>
+      <a href="/zh-TW/trust">信任</a>
+      <a href="/zh-TW/security">安全</a>
+    </div>
+    <div class="sitemap-col">
+      <h2>法律與聯絡</h2>
+      <a href="/zh-TW/legal/privacy">隱私政策</a>
+      <a href="/zh-TW/legal/terms">使用條款</a>
+      <a href="/zh-TW/legal/copyright">著作權與原始碼</a>
+      <a href="/zh-TW/contact">聯絡方式</a>
+      <a href="/zh-TW/about">關於</a>
+    </div>
+  </div>
+
+  <div class="wrap footer-rule"><span class="ring-strip" aria-hidden="true"></span></div>
+  <div class="wrap">
+    <span>渾儀 ARMILLARY</span>
+    <span>只計算，不解盤，不預測</span>
+  </div>
+</footer>
+
+</body>
+</html>

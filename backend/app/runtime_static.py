@@ -52,6 +52,24 @@ def _media_type(path: str | os.PathLike[str]) -> str | None:
     return RUNTIME_MEDIA_TYPES.get(os.path.splitext(os.fspath(path))[1].casefold())
 
 
+# The site's machine-readable descriptions, named in a Link header (RFC 8288)
+# on every page answer, so an agent that reads headers finds them without
+# parsing the page.  A release that does not carry one does not link it.
+_PAGE_LINKS = (
+    ("sitemap.xml", "sitemap", "application/xml"),
+    ("llms.txt", "describedby", "text/plain"),
+)
+
+
+def page_link_header(assets: frozenset[str]) -> str | None:
+    links = [
+        f'</{name}>; rel="{rel}"; type="{media_type}"'
+        for name, rel, media_type in _PAGE_LINKS
+        if name in assets
+    ]
+    return ", ".join(links) or None
+
+
 # zlib's default speed/size point.  mtime=0 makes the encoded bytes a pure
 # function of the asset, so two workers never disagree about a representation.
 GZIP_LEVEL = 6
@@ -149,6 +167,7 @@ class RuntimeStaticFiles(StaticFiles):
         self._not_found_page = NOT_FOUND_PAGE if NOT_FOUND_PAGE in declared else None
         assets = declared - {NOT_FOUND_PAGE}
         self._assets = assets
+        self._page_links = page_link_header(assets)
         self._allowed_paths = assets | asset_parent_directories(assets)
         # Keyed by resolved path of a declared asset, so bounded by the
         # allowlist.  An entry is reused only while the file's inode, size
@@ -315,6 +334,9 @@ class RuntimeStaticFiles(StaticFiles):
             stat_result=stat_result,
             media_type=_media_type(full_path),
         )
+        page_links = self._page_links if status_code == 200 and suffix == ".html" else None
+        if page_links is not None:
+            identity.headers["link"] = page_links
         if status_code != 200 or suffix not in COMPRESSIBLE_ASSET_SUFFIXES:
             if self.is_not_modified(identity.headers, request_headers):
                 return NotModifiedResponse(identity.headers)
@@ -336,6 +358,7 @@ class RuntimeStaticFiles(StaticFiles):
             "last-modified": identity.headers["last-modified"],
             # A strong validator names exactly one representation.
             "etag": identity.headers["etag"][:-1] + '-gzip"',
+            **({"link": page_links} if page_links is not None else {}),
         })
         if self.is_not_modified(encoded_headers, request_headers):
             return NotModifiedResponse(encoded_headers)

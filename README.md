@@ -1,300 +1,176 @@
 <p align="center">
-  <img src="armillary-mark.svg" width="104" alt="Armillary current ring mark">
+  <a href="https://projectarmillary.com/zh-TW/"><img src="docs/readme/card.png" width="840" alt="渾儀 Armillary：可驗證的古典西洋占星計算器。只計算，不解盤，不預測。"></a>
 </p>
 
-<h1 align="center">Armillary</h1>
+<h1 align="center">渾儀 Armillary</h1>
 
 <p align="center">
-  <strong>Private by architecture. Exact about assumptions. Built to be challenged.</strong><br>
-  隱私不是附加選項；方法不藏在黑箱裡；每一張盤都應該經得起追問。
-</p>
-
-<p align="center">
-  <a href="https://projectarmillary.com/">Website</a> ·
-  <a href="https://github.com/sa3952/Armillary/releases">Releases</a> ·
-  <a href="docs/PRIVACY_ARCHITECTURE.md">Privacy</a> ·
-  <a href="SECURITY.md">Security</a>
+  <strong>可驗證的古典西洋占星計算器</strong>　·　<strong>A verifiable classical Western astrology calculator</strong><br>
+  只計算，不解盤，不預測。　Calculation only: no interpretation, no prediction.
 </p>
 
 <p align="center">
-  <a href="https://github.com/sa3952/Armillary/actions/workflows/tests.yml"><img src="https://github.com/sa3952/Armillary/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-8b2131.svg" alt="License: AGPL-3.0"></a>
-  <img src="https://img.shields.io/badge/privacy-no_chart_database-355c4b.svg" alt="No chart database">
-  <img src="https://img.shields.io/badge/Python-3.14-3776ab.svg" alt="Python 3.14">
-  <img src="https://img.shields.io/badge/language-繁體中文-c44536.svg" alt="Traditional Chinese">
+  <a href="https://projectarmillary.com/zh-TW/calculate"><strong>排一張盤 →</strong></a> ·
+  <a href="https://projectarmillary.com/zh-TW/features">功能</a> ·
+  <a href="https://projectarmillary.com/zh-TW/methods">方法與出處</a> ·
+  <a href="https://projectarmillary.com/zh-TW/validation">驗證</a> ·
+  <a href="https://projectarmillary.com/zh-TW/blog">文章</a> ·
+  <a href="https://projectarmillary.com/zh-TW/security">安全</a> ·
+  <a href="#english">English</a>
 </p>
+
+<p align="center"><sub>AGPL-3.0 · 繁體中文 · Swiss Ephemeris · 免註冊 · 沒有帳號與星盤資料庫 · Public Alpha</sub></p>
 
 ---
 
-Armillary is an open-source classical astrology calculator built for people who want more than a polished
-answer—and who do not want intimate birth data turned into an account history. Its public deployment
-has no account database, no chart-history database, no application user-data volume, and no application
-Internet egress. The calculation remains inspectable: the effective time and place, coordinate systems,
-selected methods, data sources, unavailable modules, warnings, and release identity travel with the result.
+## 渾儀是什麼
 
-**渾儀 Armillary**是一套以繁體中文為主、可檢查且可重現的古典西洋占星計算工具。它不建立帳號或
-星盤歷史資料庫，不把出生資料當成日後分析或行銷的素材；它也不把複雜選擇藏在一句「系統預設」後面。
-你可以看見實際執行了什麼、哪些沒有執行，以及結果來自哪裡。
+渾儀 Armillary 是一套以繁體中文為主、可檢查且可重現的古典西洋占星計算工具。輸入出生日期、時間與地點，它以 Swiss Ephemeris 算出星盤，並把這張盤用了哪一套座標、哪一種時間換算、哪一條方法規則與出處，連同數字一起交給你。網站目前免費、不需註冊：<https://projectarmillary.com/zh-TW/>。這個 repository 是網站的對應原始碼（AGPL-3.0）。
 
-> **Public Alpha is open.** Anyone can use the hosted service without an invitation, an account, or an email
-> address, and it is still free. The source for every live release remains public.
->
-> **公開測試（Public Alpha）已開放。** 任何人都可以直接使用，不需邀請、帳號或email，目前仍不收費；
-> 每一個live版本的原始碼都保持公開。
+| 它做的事 | 它不做的事 |
+|---|---|
+| 天體位置以黃道、赤道、地平三套座標並列 | 不解盤：不寫性格、運勢或吉凶文字 |
+| 宮位、軸點、相位、本質尊貴、日夜盤、阿拉伯點等古典方法；規則具名，出處逐條列在〈方法〉頁 | 不預測：行運、推運、太陽回歸盤、合盤目前一項都沒有 |
+| 出生時刻不確定時對整個小時取樣，標出哪些判定在取樣之間翻面 | 不替你挑一張預設的界表，也不把不同類別的尊貴折成一個分數 |
+| 每次計算都能取得逐步計算軌跡、版本號與計算收據，可下載離線核對 | 不保管出生資料：沒有帳號，也沒有星盤歷史資料庫 |
 
-## Why Armillary?
+## 畫面
 
-### Your birth data is not the product
+以下畫面來自本機伺服器與計算頁內建的合成範例（1990-05-15 14:30，臺南），不是任何真實人物的出生資料。
 
-Birth time and precise location can be deeply identifying. Armillary's current deployment is deliberately
-small and forgetful: there is no account, access credential, or password to store, request and response bodies
-are excluded from application logs, NGINX access logging is disabled, and client IP headers are not forwarded
-to the application. The application's own events use a closed schema that contains no chart input, response,
-credential, IP address, header, or exception text; the only availability notification is an external uptime
-monitor that requests the public site.
+<p align="center">
+  <img src="docs/readme/calculator.png" width="840" alt="計算頁：出生時刻的把握程度、日期與時間欄位">
+</p>
+<p align="center"><sub>計算頁：先說你對出生時刻有多確定（精確到分鐘、約略小時、只知道日期）。</sub></p>
 
-出生時間與精確地點具有高度識別性。因此Armillary刻意採取「小而健忘」的架構：沒有帳號、存取credential
-或密碼可以保存；application log排除request／response body，NGINX關閉access log，也不把client IP headers
-向後傳遞。Application自己的事件採封閉schema，不包含星盤輸入、回應、credential、IP、header或exception
-文字；唯一的可用性通知是外部uptime monitor對公開網站的請求。
+<p align="center">
+  <img src="docs/readme/positions.png" width="840" alt="計算結果的天體位置表：黃經、星座度數、黃緯、赤經、赤緯、方位角與高度">
+</p>
+<p align="center"><sub>天體位置：黃道、赤道、地平三套座標一次輸出。</sub></p>
 
-### It respects what you actually know
+<p align="center">
+  <img src="docs/readme/trace.png" width="840" alt="技術細節與驗算資料中的逐步計算軌跡：本次的步數與序列化雜湊">
+</p>
+<p align="center"><sub>逐步計算軌跡：展開後逐列列出算式、輸入與結果；序列化雜湊只能偵測意外損壞，不證明來源，也不證明沒被刻意修改。</sub></p>
 
-Birth time is not always exact. Armillary distinguishes an exact minute, an approximate hour, and a date-only
-input instead of silently inventing precision. Ambiguous or nonexistent civil times are surfaced as choices
-or actionable errors.
+## 為什麼說「可驗證」
 
-出生時間不一定精確。Armillary分開「精確到分鐘」「只知道約略小時」與「只知道日期」，不會無聲捏造一個
-精確時刻；遇到重複或不存在的民用時間，則提供選擇或可行動的錯誤說明。
+- **每一步都攤開。** 民用時刻 → 儒略日 → 地方恆星時 → 黃道座標 → 十二宮。展開「技術細節與驗算資料」，可以看到每一步呼叫的函式、參數、旗標與回傳值，拿同一個星曆函式庫照著重跑。
+- **方法有出處。** 界表、三分性、宮位制、容許度等規則具名到作品與章節、行號或頁碼；不確定的出處照實標成不確定。逐條說明見〈[方法](https://projectarmillary.com/zh-TW/methods)〉，機器可讀的清單是
+  [`method-sources.json`](frontend/zh-TW/method-sources.json)。產品能計算某項結果，不代表所有歷史占星方法都已定論或被正式採用；方法的狀態保留在完整的machine-readable result（`projection=detailed`，即驗算匯出）中。
+- **對過外部基準，也寫出沒對過的地方。** 主要位置結果曾與另一條以 JPL DE442、Astropy 與 ERFA 組成的參考管線逐小時比較；月相事件與臺北的日月升降另與 USNO 資料交叉核對。比較範圍、門檻與沒有涵蓋的地方在〈[驗證](https://projectarmillary.com/zh-TW/validation)〉。這是具名範圍的驗證，不是全系統認證。
+- **版本寫在結果裡。** 每次計算回報引擎、星曆與時區資料庫的版本；你這一次用的公開原始碼版本，寫在計算收據上。
+- **收據的界線。** 計算收據是逐步軌跡的 SHA-256：只能偵測意外損壞，不證明來源，也不證明沒被刻意修改。
 
-### It shows its work
+## 隱私：出生資料只是計算的輸入
 
-A result can carry the engine and ephemeris identity, time conversion, observer location, coordinate frame,
-requested and executed options, warnings, method identifiers, trace digest, and reproducibility receipt.
-Astronomical facts, deterministic geometry, astrological methods, and interpretation remain separate layers.
+- **沒有可以存出生資料的地方。** 沒有帳號資料庫、沒有星盤資料庫；application 沒有 user-data persistence volume。
+- **出生資料不進 log。** Application 自己的事件採封閉 schema，不含星盤輸入、回應、IP、header 或 exception
+  文字；NGINX 關閉 access log，也不把 client IP headers 轉送給 application。
+- **沒有追蹤器。** 計算頁載入的每一個檔案都來自本站：沒有外部字型、CDN 或分析腳本；地名搜尋讀內建的離線目錄。唯一的可用性通知是外部 uptime monitor 對公開網站的請求。
+- **我們不宣稱的。** 沒有主動寫入不等於安全抹除；本專案也沒有第三方安全認證或專業滲透測試。
 
-一份結果可以帶著引擎與星曆身分、時間轉換、觀測地點、座標frame、requested／executed options、warnings、
-method identifiers、trace digest與reproducibility receipt。天文事實、確定性幾何、占星方法與解讀始終分層。
+完整範圍見 [privacy architecture](docs/PRIVACY_ARCHITECTURE.md)、[threat model](docs/PRIVACY_THREAT_MODEL.md)
+與 [known limitations](docs/KNOWN_LIMITATIONS.md)。
 
-### It is made to leave the browser
-
-Copy a focused section as tab-separated text, or download the chart as JSON, CSV, Markdown, or plain text. Choose compact chart
-data for ordinary use or include the additional receipts and trace material needed for verification. Every
-format is generated from the same normalized result rather than reconstructed from the rendered page.
+## 匯出與複製
 
 你可以把單一區段複製成以tab分隔的文字，或下載JSON、CSV、Markdown與純文字；平常只帶星盤資料，需要驗算時再加入
 receipts與trace。每一種格式都來自同一份normalized result，不從畫面上的DOM反向拼湊。
 
-## What it calculates
+## 驗證這份原始碼
 
-- **Three coordinate systems／三套座標** — ecliptic、equatorial、horizontal／黃道、赤道與地平座標
-- **Houses and angles／宮位與軸點** — ASC、MC、house cusps與planet-in-house placement
-- **Lunar points／月球幾何點** — true／mean nodes、selected apsides與opt-in research points
-- **Fixed stars／恆星** — 明確標示source與availability boundary
-- **Events／事件** — lunar phases、prenatal syzygy、eclipses、rise／set與meridian transits
-- **Methods／方法** — whole-sign relationships、geometric aspects與具名dignity profiles
-- **Uncertain time／不確定時刻** — exact、approximate-hour與date-only sensitivity results
-- **Calculation Dossier／計算卷宗** — 供檢查、比較與匯出的structured result
-
-Armillary uses [Swiss Ephemeris](https://www.astro.com/swisseph/) through pyswisseph. A supported calculation
-does not imply that every historical astrological method is settled or adopted; offered methods are named and
-their status is kept in the full machine-readable result (`projection=detailed`, the verification export).
-
-Armillary透過pyswisseph使用[Swiss Ephemeris](https://www.astro.com/swisseph/)。產品能計算某項結果，
-不代表所有歷史占星方法都已定論或被正式採用；提供的方法會具名，狀態保留在完整的machine-readable result
-（`projection=detailed`，即驗算匯出）中。
-
-## A different kind of astrology software
-
-| Typical hidden decision／常被藏起來的決定 | Armillary makes it visible／Armillary如何公開 |
-|---|---|
-| Which time was actually calculated? | Civil-time conversion, offset, ambiguity, and precision receipt |
-| Which coordinate system was used? | Center, frame, zodiac, position type, and effective flags |
-| Did every requested module run? | Separate `requested`, `executed`, `applicable`, `available`, and `source` states |
-| Why do two programs disagree? | Method, source, frame, house, node, and option identities travel with the result |
-| Can I reuse the data elsewhere? | Human-readable and machine-readable exports from one canonical snapshot |
-| Which version produced this result? | Public source, backend image, frontend artifact, and combined release identity |
-
-這張表不是宣稱其他工具全部做錯，而是說明Armillary選擇競爭的地方：把會影響結果的假設、版本與執行狀態，
-從隱藏實作提升成使用者可以帶走的資料。
-
-## Privacy and security are product features
-
-The hosted service does not rely on a privacy-policy promise alone. Its deployed boundaries are designed to make
-retention and lateral movement harder:
-
-- **No account or chart database.** The application has no user-data persistence volume.
-- **沒有帳號或星盤資料庫。** Application沒有user-data persistence volume。
-- **No birth-data application logging.** Request bodies, response bodies, queries, headers, exceptions, IP
-  addresses, user agents, and caller-supplied request IDs are excluded from the application event schema.
-- **出生資料不進application log。** Request、response、query、headers、exception、IP、User-Agent與
-  caller-supplied request ID均排除於application event schema之外。
-- **Quiet reverse proxy.** NGINX access logging is disabled and client IP headers are not forwarded downstream.
-- **安靜的reverse proxy。** NGINX access logging關閉，也不向application轉送client IP headers。
-- **Rate limits instead of an invite wall.** Public access is bounded by per-IP request-rate and connection limits
-  held in NGINX memory; client IPs are neither logged nor forwarded to the application.
-- **以限流取代邀請牆。** 公開存取以NGINX記憶體中的per-IP請求速率與連線上限約束；client IP不寫入log，
-  也不轉送給application。
-- **Constrained runtime.** The application runs non-root with a read-only root filesystem, a bounded temporary
-  filesystem, all Linux capabilities dropped, `no-new-privileges`, resource limits, and no application egress.
-- **受限制的runtime。** Non-root、read-only rootfs、bounded tmpfs、drop all capabilities、
-  `no-new-privileges`、resource limits與no application egress。
-- **Immutable frontend.** Browser assets are installed in a digest-named, root-owned read-only directory and
-  checked against a closed per-file SHA-256 manifest before the application serves them.
-- **Immutable frontend。** Browser assets安裝在digest-named、root-owned、read-only目錄，供應前依封閉的
-  逐檔SHA-256 manifest核對。
-- **Minimal monitoring.** Synthetic availability checks use no real birth data; the only notification channel
-  is an external uptime monitor that requests the public site over HTTPS.
-- **最小化monitoring。** Synthetic probe不用真實出生資料；唯一通知管道是外部uptime monitor以HTTPS請求公開網站。
-- **Exact rollback identity.** The running backend image and frontend artifact form one combined release ID;
-  activation advances only after health, synthetic chart, place search, identity, and privacy checks pass.
-- **精確rollback identity。** Backend image與frontend artifact形成combined release ID；health、synthetic
-  chart、place search、identity與privacy全部通過後才activation。
-
-Birth inputs are sent for the requested calculation and held only as needed to produce the response. Copying or
-downloading is an explicit browser action, and files already saved by the user remain under the user's control.
-
-出生輸入只在產生本次回應所需的期間內處理。複製與下載是使用者明確發起的browser action；已經存到使用者
-裝置上的檔案則由使用者自己控制。
-
-The application, reverse proxy, host, browser, uptime monitor, and infrastructure provider are different trust
-layers. Read the [privacy architecture](docs/PRIVACY_ARCHITECTURE.md),
-[threat model](docs/PRIVACY_THREAT_MODEL.md), and [known limitations](docs/KNOWN_LIMITATIONS.md) for the exact
-scope. The project publishes a private vulnerability-reporting route and treats a reproducible privacy or
-security failure as a product defect. No software can promise that unknown vulnerabilities do not exist;
-Armillary instead exposes the architecture and exact source needed to challenge what it claims.
-
-Application、reverse proxy、host、browser、uptime monitor與infrastructure provider是不同的trust layers。
-本專案提供private vulnerability reporting，並把可重現的隱私或資安失敗視為產品缺陷。任何軟體都不能保證
-未知漏洞不存在；Armillary選擇公開架構與exact source，讓自己的主張可以被挑戰。
-
-## Verify the source
-
-Each release is a closed Corresponding Source snapshot rather than a mirror of the private engineering history.
-`PUBLICATION_FILES.json` lists the published files and hashes; `SOURCE_EXPORT.json` binds the source export;
-third-party source and notices remain available with the release.
-
-每次release都是一份封閉的Corresponding Source snapshot，而不是private engineering history的鏡像。
-`PUBLICATION_FILES.json`列出公開檔案與hash，`SOURCE_EXPORT.json`綁定source export，third-party source與
-notices也隨release提供。
-
-After cloning a tagged release, install the pinned test dependencies:
+每次 release 都是一份封閉的 Corresponding Source snapshot，而不是 private engineering history 的鏡像。
+`PUBLICATION_FILES.json` 列出公開檔案與 hash，`SOURCE_EXPORT.json` 綁定 source export，third-party source
+與 notices 也隨 release 提供。需要 Python 3.14 與 Node.js（前端測試只用 Node.js 內建的 `node --test`，不需 npm install）。
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
 python -m scripts.tools.install_dev_dependencies
-```
-
-The published frontend tests use only Node.js built-ins (`node --test`); no npm install is needed.
-
-Then run the documented public verification entrypoint／接著執行公開、可重現的驗證入口：
-
-```bash
 python scripts/verify_delivery.py
 ```
 
-It checks the closed publication tree, privacy-sensitive dependency boundary, Python source, published tests,
-frontend tests, and source postflight. Image, host, TLS, and live-browser claims require their own exact
-artifacts and are not inferred from this command.
+`verify_delivery.py` 驗 closed publication tree、privacy-sensitive dependency boundary、Python source、published
+tests、frontend tests 與 source postflight。Image、host、TLS 與 live browser 需要自己的 exact artifact，不從
+source test 推定。建置映像與 release 結構見 [docs/REPRODUCIBLE_BUILD.md](docs/REPRODUCIBLE_BUILD.md)。
 
-這個命令驗closed publication tree、privacy-sensitive dependency boundary、Python source、published tests、
-frontend tests與source postflight。Image、host、TLS與live browser需要自己的exact artifact，不從source test推定。
-
-## Build an artifact
-
-Requirements: Docker with BuildKit and a Linux/amd64 builder. The release-image owner builds from a `git archive`
-snapshot of one revision after checking its `.dockerignore` whitelist; `deploy/compose.yaml` is runtime-only and deliberately has no raw-checkout `build:` path.
-
-需求為Docker BuildKit與Linux/amd64 builder。Release-image owner只從單一revision的`git archive`快照建置，並先檢查`.dockerignore`白名單；
-`deploy/compose.yaml`只負責runtime，刻意不提供從raw checkout直接build的捷徑。
+在本機啟動（只綁 127.0.0.1；`--no-access-log` 不可省，uvicorn 預設會把每個請求的路徑與 query 寫進 access log）：
 
 ```bash
-evidence_root="$(mktemp -d /tmp/armillary-build.XXXXXX)"
-python -m scripts.verification.build_release_image \
-  --image armillary:local \
-  --platform linux/amd64 \
-  --purpose diagnostic \
-  --evidence-dir "$evidence_root/evidence" \
-  --require-clean
+python -m uvicorn app.main:create_app --factory --app-dir backend --host 127.0.0.1 --port 8000 --no-access-log
 ```
 
-Build the separately mounted, digest-named frontend from the same exact public revision:
+然後開 <http://127.0.0.1:8000/zh-TW/calculate>。
 
-```bash
-python -m scripts.deployment.frontend_release build \
-  --source-root "$PWD" \
-  --output-parent /SAFE/OUTSIDE/SOURCE/frontend-releases \
-  --public-source-revision "$(git rev-parse HEAD)"
-```
+## 專案狀態
 
-`diagnostic` is intentionally provisional. A deployable release additionally needs publication evidence,
-artifact acceptance, an immutable frontend digest, and a combined backend/frontend identity.
+目前是公開測試（Public Alpha）：任何人都可以直接使用，不需邀請、帳號或 email，目前仍不收費；每一個 live 版本的原始碼都保持公開。現階段刻意只做幾件事：計算正確性與明確邊界、以架構落實隱私與資安、讓結果易懂但不刪掉可驗算依據、真正可用的複製與匯出流程；加入解盤、預測或大量方法之前，先取得真實回饋。
 
-`diagnostic`刻意保持provisional。要成為可部署release，還必須有publication evidence、artifact acceptance、
-immutable frontend digest與combined backend/frontend identity。
+本專案由 Sebastian 獨立開發與維護。只要問題可以重現、scope 綁定目前 public release，都歡迎提出 issue；程式碼貢獻依
+[CONTRIBUTING.md](CONTRIBUTING.md)，目前不接受未經邀請的程式碼。好的報告包含 exact release、不涉及他人隱私的最小輸入（請用合成資料，不要貼真實生辰）、實際結果與預期結果；方法提案請指明傳統與來源。另見
+[CONTRIBUTING.md](CONTRIBUTING.md) 與 [SUPPORT.md](SUPPORT.md)。
 
-## Release anatomy
+潛在漏洞請勿開 public issue：依 [SECURITY.md](SECURITY.md) 使用 GitHub private vulnerability reporting；網站的
+[security.txt](https://projectarmillary.com/.well-known/security.txt) 列出同一條管道。
 
-```text
-public source revision ─┐
-source archive          ├─> backend image ─┐
-third-party sources     ┘                  │
-                                           ├─> combined release identity
-public frontend revision ─> frontend digest┘
-```
+## 授權與引用
 
-Backend and frontend revisions may differ after a frontend-only update. Both remain anonymously reachable and
-the live service reports the pair it is actually running. Operational credentials, private history, user data,
-logs, and private review evidence are not part of Corresponding Source.
+Armillary 採 [GNU Affero General Public License v3.0 only](LICENSE)。若修改後的版本透過網路與使用者互動，必須向使用者提供 Corresponding Source。Swiss Ephemeris、pyswisseph、資料檔與 build dependencies 保留各自的 license 與
+notice，詳見 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
-Frontend-only更新後，backend與frontend revision可以不同，但兩者仍須匿名可達，live service也會回報自己
-實際執行的pair。Operational credentials、private history、user data、logs與private review evidence不屬於
-Corresponding Source。
+學術、歷史或技術文章請引用 exact public commit，使被引用的計算邊界仍可辨識；GitHub 側欄的「Cite this repository」讀取 [CITATION.cff](CITATION.cff)。
 
-## Project status
+---
 
-Armillary is in Public Alpha (open public testing). The current focus is deliberately narrow:
+## English
 
-- calculation correctness and explicit boundaries／計算正確性與明確邊界
-- privacy and security enforced by architecture／以架構落實隱私與資安，不只寫政策
-- understandable results without removing evidence／讓結果易懂，但不刪掉可驗算依據
-- useful copy and export workflows／真正可用的複製與匯出流程
-- operation without an account or chart database／不建立帳號或星盤資料庫
-- real-user feedback before interpretation or prediction／加入解盤、預測或大量方法前先取得真實回饋
+**Armillary (渾儀)** is an open-source, Traditional-Chinese-first calculator for classical Western astrology. It
+computes a chart with Swiss Ephemeris and hands you, alongside every number, the coordinate frame, the time
+conversion, and the named method and source that produced it. The hosted service is free for now and needs no
+account: <https://projectarmillary.com/zh-TW/>. This repository is its Corresponding Source under AGPL-3.0.
 
-The project is built and maintained independently by Sebastian. Issues are welcome when they are reproducible
-and scoped to the current public release; code contributions follow [CONTRIBUTING.md](CONTRIBUTING.md), which
-does not currently accept unsolicited code.
+**What it does.** Ecliptic, equatorial and horizontal coordinates side by side; houses and angles; aspects,
+essential dignities, sect and lots, each rule named and its sources listed on the methods page; birth-time sensitivity that samples a whole
+hour when the time is uncertain; a step-by-step calculation trace with the engine, ephemeris and time-zone
+database versions.
 
-本專案由Sebastian獨立開發與維護。只要問題可以重現、scope綁定目前public release，都歡迎提出issue；程式碼
-貢獻依[CONTRIBUTING.md](CONTRIBUTING.md)，目前不接受未經邀請的程式碼。
+**What it does not do.** No interpretation and no prediction: there are no transits, progressions, solar returns
+or synastry. It does not pick a default bounds table for you, and it does not fold different dignities into one
+score.
 
-## Contributing
+**How it can be checked.** The main positions were compared hour by hour against a separate reference pipeline
+built on JPL DE442, Astropy and ERFA; lunar phases and Taipei rise and set times were cross-checked against USNO
+data. The scope, thresholds and what was not covered are on the
+[validation page](https://projectarmillary.com/zh-TW/validation); it is a named-scope comparison, not a
+certification. The trace receipt is an unkeyed SHA-256 over the trace: it detects accidental damage only.
+A supported calculation does not imply that every historical astrological method is settled or adopted;
+offered methods are named and their status is kept in the full machine-readable result (`projection=detailed`,
+the verification export).
 
-Start with [CONTRIBUTING.md](CONTRIBUTING.md). Good reports include an exact release, a minimal input that does
-not contain another person's private data, the observed result, and the result you expected. Method proposals
-should identify the tradition and source rather than describing a method as universally canonical.
+### Your birth data is not the product
 
-請先閱讀[CONTRIBUTING.md](CONTRIBUTING.md)。好的報告應包含exact release、不涉及他人隱私的最小輸入、
-實際結果與預期結果；方法提案則應指明傳統與來源，不把單一方法描述為普遍canonical。
+The service has no account, chart database or application user-data volume. Request and response bodies are
+excluded from application logs, NGINX access logging is disabled, and client IP headers are not forwarded to the
+application. The application's own events use a closed schema with no chart input, response, IP address, header or
+exception text; the only availability notification is an external uptime monitor that requests the public site.
+See the [privacy architecture](docs/PRIVACY_ARCHITECTURE.md), [threat model](docs/PRIVACY_THREAT_MODEL.md) and
+[known limitations](docs/KNOWN_LIMITATIONS.md).
 
-For a potential vulnerability, do not open a public issue. Follow [SECURITY.md](SECURITY.md) and use GitHub's
-private vulnerability reporting channel. Do not include birth data, credentials, host locators, or another
-person's information.
+### Take the result with you
 
-潛在漏洞請勿開public issue。依[SECURITY.md](SECURITY.md)使用GitHub private vulnerability reporting，
-且不得附上出生資料、credential、host locator或他人資訊。
+Copy a focused section as tab-separated text, or download the chart as JSON, CSV, Markdown, or plain text. Every
+format is generated from the same normalized result rather than reconstructed from the rendered page.
 
-## License and citation
+### Run and verify
 
-Armillary is licensed under the [GNU Affero General Public License v3.0 only](LICENSE). Users interacting with a
-modified network deployment must be offered its corresponding source. Swiss Ephemeris, pyswisseph, data files,
-and build dependencies retain their own licenses and notices; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+The commands are in the section [驗證這份原始碼](#驗證這份原始碼) above: create a virtual environment, install the
+pinned dependencies, run `python scripts/verify_delivery.py`, and start a local server with the `uvicorn` line
+shown there. Building the image is described in [docs/REPRODUCIBLE_BUILD.md](docs/REPRODUCIBLE_BUILD.md).
 
-Armillary採[GNU Affero General Public License v3.0 only](LICENSE)。若修改後的版本透過網路與使用者互動，
-必須向使用者提供Corresponding Source。Swiss Ephemeris、pyswisseph、資料檔與build dependencies保留各自
-license與notice，詳見[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+### Status and contributing
 
-Academic, historical, or technical writing can cite the exact Git tag or public commit so the referenced
-calculation boundary remains identifiable.
-
-學術、歷史或技術文章可以引用exact Git tag或public commit，使被引用的計算邊界仍可辨識。
+Armillary is in Public Alpha and is built and maintained independently by Sebastian. Reproducible issues scoped to
+the current public release are welcome; code contributions follow [CONTRIBUTING.md](CONTRIBUTING.md), which does
+not currently accept unsolicited code. Never put real birth data in an issue. Report a potential vulnerability
+privately as described in [SECURITY.md](SECURITY.md).

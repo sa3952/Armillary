@@ -63,7 +63,7 @@
     <p class="stake">兩個都對，差的是起算點，不是天空。<b>但如果一張盤沒寫它用了哪一套，你就沒辦法拿它跟另一張盤對照，也沒辦法重現自己這一張。</b>渾儀把用了哪一套寫在每一次計算的結果與匯出檔裡；想換另一套，在計算頁換一個選項就行。</p>
   </section>
 
-  <section id="log">
+  <div id="log" class="tabula-band">
     <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="log-table-title">
       <table class="log">
         <thead><tr><th>步</th><th>這一步在算什麼</th><th>實際執行的算式</th><th>得到</th></tr></thead>
@@ -79,7 +79,7 @@
     <div class="tabula-foot">
       <p><b id="log-table-title">這是那次計算的前五步，依卷宗整理。</b>第三欄是實際呼叫的簡寫，完整算式在卷宗裡——你可以用同一個星曆函式庫照著重跑，對出同一個值。步數隨啟用的模組而變，實際步數印在該次卷宗的 <code>trace_receipt</code> 裡；整份可下載離線核對。</p>
     </div>
-  </section>
+  </div>
 
   <section id="sens">
     <div class="eyebrow">FIG 1.3 — 出生時間差幾分鐘，會差多少</div>
