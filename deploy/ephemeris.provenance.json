@@ -1,0 +1,29 @@
+{
+ "schema_version": 1,
+ "upstream_repository": "https://github.com/aloistr/swisseph",
+ "upstream_commit": "cae9ecd4b201544d85e411aced17660932514d43",
+ "upstream_directory": "ephe",
+ "note": "Each file has the same bytes as upstream ephe/ at this commit; sefstars.txt and seorbel.txt are the upstream ephe/ versions, newer than the copies inside the vendored pyswisseph sdist (libswe/). SHA-256 values: deploy/ephemeris.sha256.",
+ "files": {
+  "backend/ephe/seas_18.se1": {
+   "upstream_path": "ephe/seas_18.se1",
+   "git_blob_sha1": "8f900cab7e557e4c41f758a6bf3a3c3967e7e3db"
+  },
+  "backend/ephe/sefstars.txt": {
+   "upstream_path": "ephe/sefstars.txt",
+   "git_blob_sha1": "0c6a40a880c4fa9d1b93d09474c923a3284f81e2"
+  },
+  "backend/ephe/semo_18.se1": {
+   "upstream_path": "ephe/semo_18.se1",
+   "git_blob_sha1": "5427d9f885fd6cb9489584ade37e52c6abb4d407"
+  },
+  "backend/ephe/seorbel.txt": {
+   "upstream_path": "ephe/seorbel.txt",
+   "git_blob_sha1": "748189af230eab9af65f45ca72253e0217d4c1cf"
+  },
+  "backend/ephe/sepl_18.se1": {
+   "upstream_path": "ephe/sepl_18.se1",
+   "git_blob_sha1": "786702cd04506371ee6223af1ebac02d54c848b8"
+  }
+ }
+}

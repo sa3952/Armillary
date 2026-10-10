@@ -1,8 +1,10 @@
 (function attachOptionsCatalogue(root, factory) {
-  const api = factory();
+  const commonJs = typeof module === "object" && module.exports;
+  // 宮位制等閉集代碼的中文名在 labels.js（結果與匯出用同一張表）；頁面先載入它。
+  const api = factory(commonJs ? require("./labels.js") : root.ArmillaryLabels);
   if (typeof module === "object" && module.exports) module.exports = api;
   if (root) root.OptionsCatalogue = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function buildCatalogue() {
+})(typeof globalThis !== "undefined" ? globalThis : this, function buildCatalogue(Labels) {
   "use strict";
 
   // 三十五個 OptionsInput 欄位的完整目錄。
@@ -30,7 +32,7 @@
     { key: "points", in_advanced: true,    label_zh: "點與軸",     label_en: "Points and angles" },
     { key: "stars", in_advanced: true,     label_zh: "恆星",       label_en: "Fixed stars" },
     { key: "lunar", in_advanced: true,     label_zh: "月相、食與月空亡", label_en: "Lunar" },
-    { key: "horizon", in_advanced: true,   label_zh: "升降與中天", label_en: "Rise, set and transits" },
+    { key: "horizon", in_advanced: true,   label_zh: "升降與中天", label_en: "Rise, set and meridian transits" },
     { key: "geometry", in_advanced: true,  label_zh: "幾何推導",   label_en: "Derived geometry" },
     { key: "aspects", in_advanced: true,   label_zh: "相位",       label_en: "Aspects" },
     { key: "dignities", in_advanced: true, label_zh: "本質尊貴",   label_en: "Essential dignities" },
@@ -60,17 +62,17 @@
           "include_chiron", "include_lilith_priapus",
         ],
         reason_zh: "古典七政是封閉集合：太陽、月亮、水星、金星、火星、木星、土星。"
-          + "選它就不能同時要求非古典星體；要那些請改回「自訂」。",
+          + "選它就不能同時要求非古典天體；要那些請改回「自訂」。",
       },
       help_zh: "古典七政為太陽、月亮、水星、金星、火星、木星、土星。" },
     { key: "include_outer_planets", group: "bodies", type: "boolean",
       label_zh: "外行星", label_en: "Outer planets", default: false,
       help_zh: "天王星、海王星、冥王星。古典技法不使用，列為可選。" },
     { key: "include_chiron", group: "bodies", type: "boolean",
-      label_zh: "凱龍", label_en: "Chiron", default: false },
+      label_zh: "凱龍星", label_en: "Chiron", default: false },
     { key: "include_lilith_priapus", group: "bodies", type: "boolean",
       label_zh: "Lilith 與 Priapus（目前一起計算）", label_en: "Lilith and Priapus", default: false,
-      help_zh: "後端目前以單一欄位同時計算三個非物理天體點，尚無法只取其一：平均黑月 Lilith（平均月球遠地點）、自然／插值遠地點與其對蹠近地點 Priapus。本產品不提供第三方軟體常稱 True Lilith 的密切／擺動遠地點（實測可相差 9.16°）。" },
+      help_zh: "後端目前以單一欄位同時計算三個非物理天體點，尚無法只取其一：平均黑月 Lilith（平均月球遠地點）、自然／插值遠地點，以及自然／插值近地點 Priapus（獨立計算，與自然遠地點通常不對沖）。本產品不提供第三方軟體常稱 True Lilith 的密切遠地點（Swiss Ephemeris 文件稱其相對平均遠地點的擺幅約 ±30°），這裡的 Lilith 也不是小行星 1181 Lilith。" },
     { key: "include_south_nodes", group: "bodies", type: "boolean",
       label_zh: "南交點", label_en: "South nodes", default: false },
     { key: "moon_position_profile", group: "bodies", type: "choice",
@@ -80,7 +82,7 @@
         { value: "global_computation_mode", label_zh: "跟隨整體計算中心", label_en: "Follow global center" },
         { value: "moon_only_topocentric_v1", label_zh: "僅月亮採站心", label_en: "Moon-only topocentric" },
       ],
-      help_zh: "選「僅月亮採站心」時，回應會同時保留地心參考值並標示混合來源警告。畫面上出現兩個月亮不是錯誤，是明示的座標政策。" },
+      help_zh: "選「僅月亮採站心」時，回應會同時保留地心參考值並標示混合來源警告。畫面上出現兩個月亮不是錯誤，是明示的座標政策。月相與日月食仍依地心，日夜盤仍用地心太陽高度；升降本來就以站心計算。" },
 
     // ── 宮位 ─────────────────────────────────────────────
     // 不單獨呈現：由 house_system 的下拉一併表達（第一個選項是「不計算宮位」）。
@@ -91,10 +93,10 @@
     { key: "house_system", group: "main_form", type: "choice",
       label_zh: "宮位制", label_en: "House system", default: "W", depends_on: "include_houses",
       values: [
-        { value: "W", label_zh: "整宮", label_en: "Whole Sign" },
-        { value: "P", label_zh: "Placidus", label_en: "Placidus" },
-        { value: "R", label_zh: "Regiomontanus", label_en: "Regiomontanus" },
-        { value: "B", label_zh: "Alcabitius", label_en: "Alcabitius" },
+        { value: "W", label_zh: Labels.VOCABULARIES.house_system.W, label_en: "Whole Sign" },
+        { value: "P", label_zh: Labels.VOCABULARIES.house_system.P, label_en: "Placidus" },
+        { value: "R", label_zh: Labels.VOCABULARIES.house_system.R, label_en: "Regiomontanus" },
+        { value: "B", label_zh: Labels.VOCABULARIES.house_system.B, label_en: "Alcabitius" },
       ],
       help_zh: "四種平等提供，本產品不排序其歷史適用性。一次計算一種。" },
 
@@ -105,43 +107,47 @@
       label_zh: "反宿命點", label_en: "Anti-Vertex", default: false },
     { key: "include_lots", group: "points", type: "boolean",
       label_zh: "阿拉伯點", label_en: "Arabic lots", default: false,
-      help_zh: "目前僅命運點與精神點。日夜盤臨界時兩種結果並列，不擇一。" },
+      help_zh: "目前僅命運點與精神點。太陽靠近地平時，日盤與夜盤兩套公式的結果並列；主要值依太陽真高度大於 0 度的規則，落宮與相位只用主要值。" },
 
     // ── 恆星 ─────────────────────────────────────────────
     { key: "include_fixed_stars", group: "stars", type: "boolean",
       label_zh: "恆星", label_en: "Fixed stars", default: false,
-      help_zh: "34 顆，全部標為 research_only；勾選才計算。" },
+      help_zh: "34 顆，全部列為研究用途；勾選才計算。" },
 
     // ── 月相與食 ─────────────────────────────────────────
     { key: "include_lunar_phases", group: "lunar", type: "boolean",
       label_zh: "朔望", label_en: "Lunar phases", default: false,
-      help_zh: "朔望會搜尋出生時刻前後的事件。接近 2399 範圍尾端時，若星曆無法支撐完整搜尋窗，核心星盤仍會完成，本模組會標為不可用並說明原因。" },
+      help_zh: "朔望會搜尋出生時刻前後的事件。「產前朔望」指出生前最近一次地心朔或望，只列天文事件，不當作任何技法的輸入。",
+      availability: {
+        range_tail_may_be_unavailable: true,
+        unavailable_result_preserves_core_chart: true,
+      } },
     { key: "include_eclipses", group: "lunar", type: "boolean",
-      label_zh: "日月食", label_en: "Eclipses", default: false },
+      label_zh: "日月食", label_en: "Eclipses", default: false,
+      help_zh: "出生前最近一次日食與月食，以全球搜尋取得；未評估出生地是否看得見，列出不代表與此盤有占星上的關聯。" },
     { key: "include_void_of_course", group: "lunar", type: "boolean",
       label_zh: "月空亡", label_en: "Void of course", default: false,
       help_zh: "完成時刻的求解方式與其限制隨每次回應交代在結果的月空亡區塊裡。詳見方法頁。" },
 
     // ── 地平事件 ─────────────────────────────────────────
     { key: "include_rise_set_transits", group: "horizon", type: "boolean",
-      label_zh: "升降與中天", label_en: "Rise, set and transits", default: false },
+      label_zh: "升降與中天", label_en: "Rise, set and meridian transits", default: false },
 
     // ── 幾何推導 ─────────────────────────────────────────
     { key: "include_antiscia", group: "geometry", type: "boolean",
       label_zh: "反照點", label_en: "Antiscia", default: false,
-      help_zh: "純幾何鏡射，不需要任何技法選擇，公式會直接印在數值上方。" },
+      help_zh: "座標轉換本身不需要技法選擇，公式會直接印在數值上方；哪些天體參與依方法裁決（七政，交點須另選）。" },
     { key: "antiscia_include_nodes", group: "geometry", type: "boolean",
       label_zh: "反照點含交點", label_en: "Antiscia include nodes", default: false,
       depends_on: "include_antiscia" },
     { key: "include_declination_aspects", group: "geometry", type: "boolean",
       label_zh: "赤緯平行與反平行", label_en: "Declination aspects", default: false,
-      help_zh: "近現代技法，非古典傳統，預設關閉。" },
+      help_zh: "17 世紀 Placidus 的界定，非古典傳統，預設關閉。" },
     { key: "declination_aspect_orb_degrees", group: "geometry", type: "number",
       label_zh: "赤緯容許度（度）", label_en: "Declination orb (degrees)", default: 1.0,
-      // 範圍照抄 backend/app/schemas.py 的 `gt=0.0, le=3.0`：UI 宣告的區間
-      // 必須是契約的子集，否則使用者會在送出後才被伺服器回 422。
-      // 下界取 step 對齊的最小正值，因為契約是 gt 0。
-      depends_on: "include_declination_aspects", min: 0.1, max: 3, step: 0.1 },
+      // 範圍與 backend/app/schemas.py 的 `ge=0.0, le=3.0` 相同：0 是合法值（只收精確平行）。
+      // test_frontend_contract.py 以 schema 的欄位約束對照每個數字選項的上下界。
+      depends_on: "include_declination_aspects", min: 0, max: 3, step: 0.1 },
 
     // ── 相位 ─────────────────────────────────────────────
     { key: "include_aspects", group: "aspects", type: "boolean",
@@ -150,25 +156,31 @@
       label_zh: "相位集合", label_en: "Aspect set", default: "ptolemaic_major_v1",
       depends_on: "include_aspects",
       values: [
-        { value: "ptolemaic_major_v1", label_zh: "Ptolemy 五大相位", label_en: "Ptolemaic major" },
-        { value: "modern_common_minor_v1", label_zh: "五大相位 ＋ 常用幾何小相位", label_en: "Modern common minor" },
-        { value: "modern_quintile_family_v1", label_zh: "五大相位 ＋ 五分相家族", label_en: "Quintile family" },
-        { value: "modern_minor_combined_v1", label_zh: "五大相位 ＋ 常用小相位 ＋ 五分相家族", label_en: "Modern minor combined" },
+        // 標籤與 backend/app/core/aspects.py ASPECT_SET_PROFILES 的 display_name 同字；
+        // options_catalogue.test.cjs 直接讀 aspects.py 對照，不手抄第二份。
+        { value: "ptolemaic_major_v1", label_zh: "合相＋四種傳統逐度相位", label_en: "Conjunction plus four traditional aspects" },
+        { value: "modern_common_minor_v1", label_zh: "合相與四種傳統相位＋常用 Keplerian 小相位", label_en: "Plus common Keplerian minor aspects" },
+        { value: "modern_quintile_family_v1", label_zh: "合相與四種傳統相位＋五分相家族（Keplerian）", label_en: "Plus quintile family (Keplerian)" },
+        { value: "modern_minor_combined_v1", label_zh: "合相與四種傳統相位＋常用小相位＋五分相家族（Keplerian）", label_en: "Plus common minor and quintile family (Keplerian)" },
       ] },
     { key: "aspect_orb_profile", group: "aspects", type: "choice",
-      label_zh: "容許度表", label_en: "Orb profile", default: null,
+      // 產品預設一組 orb profile，並提示可切換。
+      // 值必須等於 backend/app/schemas.py 的 OptionsInput.aspect_orb_profile 預設；
+      // options_catalogue.test.cjs 直接讀 schemas.py 對照，不手抄第二份。
+      label_zh: "容許度表", label_en: "Orb profile", default: "lilly_1647_experience_v1",
+      announce_default: true,
       depends_on: "include_aspects",
       conflicts_when: {
         any_non_null: true,
         disables: ["aspect_fixed_orb_degrees"],
-        reason_zh: "已選容許度表，固定容許度不能同時指定。要用固定值，請先把容許度表改回「不套用」。",
+        reason_zh: "已選容許度表，固定容許度不能同時指定。要用固定值，請先把容許度表改成「不套用容許度」。",
       },
       values: [
         { value: null, label_zh: "不套用容許度", label_en: "None applied" },
         { value: "abu_mashar_lineage_v1", label_zh: "Abu Ma'shar 傳承", label_en: "Abū Ma'shar lineage" },
         { value: "lilly_1647_experience_v1", label_zh: "Lilly 1647 經驗值", label_en: "Lilly 1647 experience" },
       ],
-      help_zh: "目前沒有預設容許度表。不選時，相位只有幾何角距離，沒有「是否在容許度內」的判定，回應中該欄位會是 null，而不是「否」。" },
+      help_zh: "可在這裡切換成另一套容許度表，或選「不套用容許度」。不套用時，相位只有幾何角距離，沒有「是否在容許度內」的判定，回應中該欄位會是 null，而不是「否」。" },
     { key: "aspect_orb_scale_percent", group: "aspects", type: "number",
       label_zh: "容許度縮放（%）", label_en: "Orb scale (percent)", default: null,
       // `gt=0.0, le=300.0`。
@@ -177,14 +189,14 @@
       label_zh: "固定容許度（度）", label_en: "Fixed orb (degrees)", default: null,
       // `gt=0.0, le=30.0`；下界 0 會被拒絕。
       depends_on: "include_aspects", min: 0.1, max: 30, step: 0.1,
-      help_zh: "指定後會取代容許度表的逐星體數值。" },
+      help_zh: "指定後會取代容許度表的逐天體數值。" },
     { key: "partile_profile", group: "aspects", type: "choice",
       label_zh: "同度相位判準", label_en: "Partile profile", default: "same_degree_number_v1",
       depends_on: "include_aspects",
       values: [
-        { value: "same_degree_number_v1", label_zh: "同度數編號", label_en: "Same degree number" },
-        { value: "within_one_degree_v1", label_zh: "一度以內", label_en: "Within one degree" },
-        { value: "lilly_1677_three_degrees_v1", label_zh: "Lilly 1677 三度", label_en: "Lilly 1677 three degrees" },
+        { value: "same_degree_number_v1", label_zh: "Lilly 1647：同一整數度", label_en: "Lilly 1647: same degree number" },
+        { value: "within_one_degree_v1", label_zh: "距精確 1° 以內（未找到具名前現代來源）", label_en: "Within one degree (no named pre-modern source found)" },
+        { value: "lilly_1677_three_degrees_v1", label_zh: "Lilly 1677：距精確 3° 以內", label_en: "Lilly 1677: within three degrees" },
       ] },
     { key: "include_aspect_perfection", group: "aspects", type: "boolean",
       label_zh: "相位完成推算", label_en: "Aspect perfection", default: false,
@@ -201,7 +213,7 @@
       depends_on: "aspect_include_angles", min: 0.1, max: 30, step: 0.1 },
 
     // ── 本質尊貴 ─────────────────────────────────────────
-    // 產品與後端預設皆依 Sebastian 2026-08-05 裁決關閉。
+    // 產品與後端預設皆關閉。
     { key: "include_domicile_exaltation", group: "dignities", type: "boolean",
       // 以下拉呈現，與界／面旬／三分性一致：那三個本來就是「不計算 ＋ 具名 profile」。
       render: "select",
@@ -211,17 +223,17 @@
       ],
       label_zh: "廟與旺", label_en: "Domicile and exaltation",
       default: false,
-      help_zh: "只評估廟與旺；陷、落、外來與互容尚未評估，那是「未評估」，不是「沒有」。恆星黃道下產品會明確拒絕輸出並附原因代碼。" },
+      help_zh: "只評估廟與旺；陷、弱、外來與接納（含互容）尚未評估，那是「未評估」，不是「沒有」。恆星黃道下產品會明確拒絕輸出並附原因代碼。" },
     { key: "bounds_profile", group: "dignities", type: "choice",
       label_zh: "界", label_en: "Bounds", default: null,
       values: [
         { value: null, label_zh: "不計算", label_en: "Not calculated" },
         { value: "egyptian_bounds_robbins_1940_v1", label_zh: "埃及界", label_en: "Egyptian" },
-        { value: "chaldaean_bounds_ptolemy_i_21_v1", label_zh: "Chaldaean 界", label_en: "Chaldaean" },
+        { value: "chaldaean_bounds_ptolemy_i_21_v1", label_zh: "迦勒底界", label_en: "Chaldaean" },
         { value: "ptolemy_bounds_robbins_1940_v1", label_zh: "Ptolemy 界", label_en: "Ptolemy" },
         { value: "lilly_received_bounds_1647_v1", label_zh: "Lilly 1647 承襲界", label_en: "Lilly 1647 received" },
       ],
-      help_zh: "四套平等提供。迦勒底界在宗派未知時無法選定守護星，回應會同時給出日盤與夜盤候選，由你判讀，本產品不替你選一個。" },
+      help_zh: "四套平等提供。迦勒底界在日夜盤未知時無法選定守護星，回應會同時給出日盤與夜盤候選，由你判讀，本產品不替你選一個。" },
     { key: "decan_profile", group: "dignities", type: "choice",
       label_zh: "面／旬", label_en: "Face / decan", default: null,
       values: [
@@ -249,10 +261,12 @@
     return acc;
   }, {}));
 
-  /** 目前值是否偏離產品預設。摺疊處的「已啟用」計數用它。 */
+  /**
+   * 目前值是否偏離產品預設。與 toRequestOptions 同一個判準：等於預設就不送、
+   * 不算；預設開啟的選項被關掉（include_houses: false）、預設有值的選項被清成 null，都是改動。
+   */
   function isEnabled(option, value) {
-    if (option.type === "boolean") return value === true && option.default !== true;
-    return value !== option.default && value !== undefined && value !== null;
+    return value !== undefined && value !== option.default;
   }
 
   /**
@@ -305,14 +319,16 @@
     return true;
   }
 
-  /** 每個群組的「已啟用」計數，供摺疊標題顯示（競品實測法則第 1 條）。 */
+  /**
+   * 每個群組「已調整」的計數，供摺疊標題顯示（競品實測法則第 1 條）。
+   *
+   * 摘要必須描述實際送出的選項，所以計數直接由 toRequestOptions 的 payload 導出，
+   * 不另寫一套判準——被互斥封鎖、父項關閉而不會送出的值不算；預設開啟卻被關掉、會送出 false 的值要算。
+   */
   function enabledCountByGroup(values) {
     const counts = {};
     GROUPS.forEach((group) => { counts[group.key] = 0; });
-    OPTIONS.forEach((option) => {
-      if (!isReachable(option, values)) return;
-      if (isEnabled(option, values[option.key])) counts[option.group] += 1;
-    });
+    Object.keys(toRequestOptions(values)).forEach((key) => { counts[BY_KEY[key].group] += 1; });
     return counts;
   }
 
@@ -320,8 +336,8 @@
    * 目前值 -> 送給 backend 的 options 物件。
    *
    * **等於產品預設的值一律不送。** 後端就是靠「有沒有明示送出」來區分
-   * `requested_explicitly` 與 `defaulted`：把 `include_domicile_exaltation: true`
-   * 明示送出，收據就會從「產品預設帶入」變成「使用者選取」，
+   * option_states 的 `input_presence`（`explicit` 與 `defaulted`）：把某個選項明示送出，
+   * 收據就會從「產品預設」變成「本次選定」，
    * 而 §13.2 第 31 項要求畫面能分辨這兩者。無條件送出全部欄位會讓其中一態永遠不可達。
    *
    * 這不犧牲可重現性：回應的 `requested_options` 會回報本次實際生效的全部值，
@@ -348,8 +364,25 @@
     }, {});
   }
 
+  function helpText(option) {
+    const parts = option.help_zh ? [option.help_zh] : [];
+    // 產品預設的具名值由 default 與 values 導出，不在說明文字裡手抄一次名稱。
+    if (option.announce_default && option.default !== null && option.default !== undefined) {
+      const chosen = (option.values || []).find((value) => value.value === option.default);
+      if (chosen) parts.unshift(`產品預設：${chosen.label_zh}。`);
+    }
+    if (option.availability && option.availability.range_tail_may_be_unavailable) {
+      parts.push(
+        "接近支援年份尾端時，若星曆無法支撐完整搜尋窗，核心星盤仍會完成，"
+        + "本模組會標為不可用並說明原因。"
+      );
+    }
+    return parts.join("");
+  }
+
   return Object.freeze({
     GROUPS, OPTIONS, BY_KEY,
-    isEnabled, isReachable, conflictFor, enabledCountByGroup, toRequestOptions, defaults,
+    isEnabled, isReachable, conflictFor, enabledCountByGroup, toRequestOptions,
+    defaults, helpText,
   });
 });

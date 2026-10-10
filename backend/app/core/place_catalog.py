@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 import sqlite3
+import threading
 import time
 import unicodedata
 
@@ -24,6 +26,17 @@ DEFAULT_CATALOG_PATH = (
 MAX_SEARCH_TOKENS = 6
 MIN_PREFIX_TOKEN_LENGTH = 2
 
+# Catalogue schema versions the runtime can serve.  Schema 4 added the identity
+# columns (admin1_name, admin3, name_zh, disambiguator) every result returns;
+# schema 5 adds ``match_keys``, the names the match tier compares.  An older
+# file would answer them with null or classify every row as other_field, so it
+# is refused.
+SUPPORTED_SCHEMA_VERSIONS = frozenset({5})
+
+
+# Producer-assigned record-id prefix of the derived county representative points.
+TAIWAN_COUNTY_RECORD_PREFIX = "tw-moi-county-derived:"
+
 # FTS5 的 bm25() 欄位權重。四個欄位依序為 name、aliases、admin1、admin2。
 #
 # 為什麼需要權重：`place_search` 是 contentless FTS5 表，bm25 只看索引，而 bm25
@@ -35,18 +48,24 @@ BM25_COLUMN_WEIGHTS = (8.0, 2.0, 1.0, 1.0)
 
 # 排序法的具名版本。排序規則的變更會直接改變使用者選到哪一個地點、
 # 進而改變整張星盤，因此必須是可具名、可比對、可回報的。
-RANKING_METHOD_NAME = "exact_name_then_population_then_weighted_bm25_v2"
+RANKING_METHOD_NAME = "match_tier_then_taiwan_county_then_population_then_weighted_bm25_v3"
 _BM25_SQL = ", ".join(str(value) for value in BM25_COLUMN_WEIGHTS)
 RANKING_STEPS = (
     (
-        "CASE WHEN match_tier = 'exact_name' THEN 0 ELSE 1 END ASC",
-        "1. is_exact_name (exact_name → 0, otherwise → 1) ASC",
-    ),
-    ("population DESC", "2. population DESC"),
-    (
         "CASE match_tier WHEN 'exact_name' THEN 0 "
         "WHEN 'name_prefix' THEN 1 ELSE 2 END ASC",
-        "3. match_tier (exact_name → 0, name_prefix → 1, other_field → 2) ASC",
+        "1. match_tier (exact_name → 0, name_prefix → 1, other_field → 2) ASC; "
+        "the tier compares the name, the Traditional-Chinese name, a Taiwan county's "
+        "short and English names and a Taiwan GeoNames row's Chinese aliases, with 台 read as 臺",
+    ),
+    (
+        f"CASE WHEN substr(source_record_id, 1, {len(TAIWAN_COUNTY_RECORD_PREFIX)}) "
+        f"= '{TAIWAN_COUNTY_RECORD_PREFIX}' THEN 0 ELSE 1 END ASC",
+        "2. is_taiwan_county_representative (→ 0, otherwise → 1) ASC",
+    ),
+    (
+        "population DESC",
+        "3. population DESC (0 means the source gives none; it sorts after every known population)",
     ),
     (
         "bm25_rank ASC",
@@ -68,8 +87,44 @@ SEARCH_STATEMENT_BUDGET_SECONDS = 2.0
 _PROGRESS_HANDLER_INSTRUCTION_INTERVAL = 10_000
 
 
+# How every search ran: the bundled read-only catalog, no network.
+_EXECUTION_RECEIPT = {"catalog_mode": "bundled_read_only_sqlite", "runtime_outbound": False}
+
+
+def _ranking_receipt() -> dict:
+    return {
+        "method": RANKING_METHOD_NAME,
+        # 這份清單必須與 ORDER BY 逐項對應（同一個 RANKING_STEPS 產生兩者）。
+        # 排序結果本身是確定的，可能出錯的是這份自述——而自述錯誤等於
+        # 可追溯性宣稱不實。
+        "order": [description for _sql, description in RANKING_STEPS],
+        "why_the_tier_precedes_population": (
+            "比對層級比對地名、繁體中文名、臺灣縣市的簡稱與英文名，以及臺灣 GeoNames "
+            "城市的中文別名，並把「台」視同「臺」；所以「臺北」「Taipei」對臺北市都是 "
+            "exact_name，層級排在人口之前也不會讓人口 0 的『臺北小別墅』（name_prefix）"
+            "壓過臺北市。同層之內臺灣縣市代表點優先，所以 Penghu、Nantou 不會先給同名的"
+            "中國地點。"
+        ),
+        "population_semantics": (
+            "zero_means_the_source_gives_no_population_and_sorts_after_every_known_population"
+        ),
+    }
+
+
 class PlaceCatalogUnavailableError(RuntimeError):
     code = "place_catalog_unavailable"
+
+
+class PlaceSearchBudgetExceededError(RuntimeError):
+    """The statement budget interrupted a search; the catalogue itself is fine.
+
+    SQLite reports a progress-handler interrupt as the same `sqlite3.Error` a
+    missing or corrupt file raises; this keeps the two apart, because for a
+    broad prefix query under load, retrying or narrowing the query is exactly
+    the remedy, and "catalogue unavailable" carries no Retry-After.
+    """
+
+    code = "place_search_timeout"
 
 
 def normalize_search_text(value: str) -> str:
@@ -89,10 +144,14 @@ def _word_tokens(value: str) -> list[str]:
     """
 
     normalized = normalize_search_text(value)
+    # unicode61 keeps only letters, marks and numbers as token characters;
+    # "_" (category Pc) is a separator to FTS5, so it is a separator here too.
+    # Treating it as a word character let "a_b" pass the prefix-length guard
+    # as one three-character token while FTS5 ran two one-character prefix
+    # scans.
     token_text = "".join(
         character
-        if character == "_"
-        or unicodedata.category(character)[0] in {"L", "M", "N"}
+        if unicodedata.category(character)[0] in {"L", "M", "N"}
         else " "
         for character in normalized
     )
@@ -117,7 +176,117 @@ def place_name_match_key(value: str) -> str:
     return " ".join(_word_tokens(without_marks))
 
 
-def _fts_query(value: str) -> tuple[str, dict]:
+def place_tier_key(value: str) -> str:
+    """Match key with 台 read as 臺, compared on both the stored names and the query.
+
+    The producer indexes both spellings for FTS; the tier must fold them too,
+    or 「臺東」 is a name match for 臺東縣 while 「台東」 is only other_field.
+    """
+
+    return place_name_match_key(value).replace("台", "臺")
+
+
+# Separator of the stored ``match_keys``; it cannot occur in a match key,
+# which holds only letters, marks, numbers and single spaces.
+MATCH_KEY_SEPARATOR = "\x1f"
+
+
+def match_keys_text(names) -> str:
+    """Store a row's tier keys as one delimited string the SQL tier reads with instr()."""
+
+    keys = sorted({key for key in (place_tier_key(name) for name in names if name) if key})
+    return MATCH_KEY_SEPARATOR + MATCH_KEY_SEPARATOR.join(keys) + MATCH_KEY_SEPARATOR
+
+
+def county_prefixes(county_names) -> tuple[str, ...]:
+    """Full and short (without 縣／市) county names, 台 read as 臺, longest first.
+
+    The names come from the catalogue's own derived county points, so the
+    runtime holds no list of its own that could drift from the data.
+    """
+
+    folded = {
+        name.replace("台", "臺")
+        for county in county_names
+        for name in (county, county[:-1])
+        if name
+    }
+    return tuple(sorted(folded, key=lambda name: (-len(name), name)))
+
+
+def _county_prefix_split(token: str, prefixes: tuple[str, ...]) -> tuple[str, str] | None:
+    """Split 「臺北市大安區」 into 「臺北市」 and 「大安區」.
+
+    FTS5 unicode61 keeps a run of Han characters as one token, and labels are
+    indexed as 「大安區, 臺北市」, so the unsplit word matches nothing.  Only a
+    remainder of two or more characters is split off, so it stays a prefix term.
+    """
+
+    folded = token.replace("台", "臺")
+    for prefix in prefixes:
+        if folded.startswith(prefix) and len(token) - len(prefix) >= MIN_PREFIX_TOKEN_LENGTH:
+            return token[: len(prefix)], token[len(prefix):]
+    return None
+
+
+# FTS5 unicode61 keeps these combining marks inside a word and removes them
+# (``sqlite3Fts5UnicodeIsdiacritic``, the U+0300-U+0331 set); every other mark
+# ends the word.  Probed against the running SQLite by
+# tests/backend/test_place_catalog.py.
+_FTS5_DIACRITICS = frozenset(
+    chr(code)
+    for code in (
+        *range(0x0300, 0x0305), *range(0x0306, 0x030D), 0x030F, 0x0311,
+        0x031B, *range(0x0323, 0x0329), 0x032D, 0x032E, 0x0330, 0x0331,
+    )
+)
+
+
+def _fts_sub_tokens(word: str) -> list[str]:
+    """Split one word where FTS5 unicode61 splits it.
+
+    ``_word_tokens`` keeps every mark inside a word, but FTS5 ends a word at
+    any mark outside its diacritic set (Thai U+0E31, Devanagari U+093E).  A
+    leading diacritic starts no word, as in FTS5.
+    """
+
+    sub_tokens: list[str] = []
+    current: list[str] = []
+    for character in word:
+        if character in _FTS5_DIACRITICS:
+            if current:
+                current.append(character)
+        elif unicodedata.category(character)[0] in {"L", "N"}:
+            current.append(character)
+        elif current:
+            sub_tokens.append("".join(current))
+            current = []
+    if current:
+        sub_tokens.append("".join(current))
+    return sub_tokens
+
+
+def _fts_prefix_length(sub_token: str) -> int:
+    """Characters FTS5 is sure to keep at the end of the word a ``*`` expands.
+
+    Diacritics are removed by FTS5 and do not count.  The count stops at a
+    letter or number whose category changed since Unicode 3.2: SQLite's tables
+    are older than Python's, and a few such letters (New Tai Lue vowel signs,
+    U+19B0) are still marks, and so separators, to FTS5.  Stopping there can
+    only withhold a prefix, never let FTS5 run a shorter one.
+    """
+
+    length = 0
+    for character in reversed(sub_token):
+        if character in _FTS5_DIACRITICS:
+            continue
+        if unicodedata.ucd_3_2_0.category(character)[0] not in {"L", "N"}:
+            break
+        length += 1
+    return length
+
+
+def _fts_query(value: str, prefixes: tuple[str, ...] = ()) -> tuple[str, dict]:
     """Build a bounded FTS5 MATCH expression, and report what the bound removed.
 
     Tokenisation keeps only word characters, so no FTS5 metacharacter can
@@ -125,36 +294,44 @@ def _fts_query(value: str) -> tuple[str, dict]:
     boundary because the cost lives in prefix-term breadth, not in the
     length of the submitted string.
 
-    The token bound used to be applied silently.  For a place picker that is a
-    correctness problem, not merely a UX one: a query whose distinguishing word
-    sits past the limit is answered as though that word had never been typed,
-    and the user may accept a coordinate for somewhere else entirely.
-    The bound is therefore kept - it is a real cost
-    control - but the caller now receives the dropped tokens so the response
-    can say so.
+    The token bound is not applied silently.  For a place picker that would be
+    a correctness problem, not merely a UX one: a query whose distinguishing
+    word sits past the limit is answered as though that word had never been
+    typed, and the user may accept a coordinate for somewhere else entirely.
+    The bound is kept - it is a real cost control - and the caller receives the
+    dropped tokens so the response can say so.
     """
 
     tokens = _word_tokens(value)
     bounded = tokens[:MAX_SEARCH_TOKENS]
     dropped = tokens[MAX_SEARCH_TOKENS:]
     terms = []
+    county_splits: list[list[str]] = []
     for token in bounded:
-        # Short tokens stay exact.  A 1-character prefix term is the single
-        # largest cost multiplier and is almost never the user's intent.
-        # FTS5 removes diacritics before matching.  Measure the same effective
-        # token rather than the submitted code-point count, or combining marks
-        # can disguise a one-character prefix scan.
-        effective_token = place_name_match_key(token)
-        if len(effective_token) >= MIN_PREFIX_TOKEN_LENGTH:
-            terms.append(f'"{token}"*')
+        term = _fts_term(token)
+        if term is None:
+            continue
+        split = _county_prefix_split(token, prefixes)
+        split_terms = [_fts_term(part) for part in split] if split else []
+        if split and all(split_terms):
+            # The word itself stays an alternative, so a name that merely
+            # begins with a county name (高雄市政府) is still found.
+            terms.append(f"({term} OR ({' '.join(str(item) for item in split_terms)}))")
+            county_splits.append(list(split))
         else:
-            terms.append(f'"{token}"')
+            terms.append(term)
     receipt = {
+        # Closed: "searched" ran a MATCH; "no_searchable_tokens" had nothing
+        # to match (only punctuation or marks), which is not "no place found".
+        "status": "searched" if terms else "no_searchable_tokens",
         "token_count": len(tokens),
         "max_search_tokens": MAX_SEARCH_TOKENS,
         "truncated": bool(dropped),
         "tokens_used": bounded,
         "tokens_ignored": dropped,
+        # Words that began with a county name and were also searched as
+        # [county, remainder]; the tier still compares the words as typed.
+        "county_prefix_splits": county_splits,
         "reason": (
             "token_limit_protects_against_broad_prefix_term_cost"
             if dropped
@@ -162,6 +339,64 @@ def _fts_query(value: str) -> tuple[str, dict]:
         ),
     }
     return " ".join(terms), receipt
+
+
+def _fts_term(token: str) -> str | None:
+    """One quoted FTS5 term for a word; a prefix star only when it is long enough.
+
+    Short tokens stay exact.  A 1-character prefix term is the single largest
+    cost multiplier and is almost never the user's intent.  Emit and measure
+    what FTS5 will see: a word it splits becomes a phrase of its sub-tokens,
+    and only the last one - the one a trailing "*" expands - decides the
+    prefix.  A word with no sub-token (marks only) is an empty phrase, which
+    FTS5 ignores; it is left out.
+    """
+
+    sub_tokens = _fts_sub_tokens(token)
+    if not sub_tokens:
+        return None
+    phrase = " ".join(sub_tokens)
+    if _fts_prefix_length(sub_tokens[-1]) >= MIN_PREFIX_TOKEN_LENGTH:
+        return f'"{phrase}"*'
+    return f'"{phrase}"'
+
+
+_COUNTY_PREFIX_LOCK = threading.Lock()
+_COUNTY_PREFIX_CACHE: dict[tuple[str, int, int], tuple[str, ...]] = {}
+_ARTIFACT_DIGEST_LOCK = threading.Lock()
+_ARTIFACT_DIGEST_CACHE: dict[tuple[str, int, int], str] = {}
+
+
+def _artifact_digest(path: Path) -> dict:
+    """SHA-256 of the catalogue file the runtime opens, cached per file identity.
+
+    The receipt carried the input digests copied from catalogue
+    metadata but nothing that identified the artifact actually loaded.  The
+    digest is computed from the file itself, once per (path, size, mtime), so
+    a coordinate can be traced to bytes the same way the engine manifest traces
+    ephemeris files.
+    """
+
+    resolved = path.resolve()
+    status = resolved.stat()
+    key = (str(resolved), status.st_size, status.st_mtime_ns)
+    with _ARTIFACT_DIGEST_LOCK:
+        digest = _ARTIFACT_DIGEST_CACHE.get(key)
+    if digest is None:
+        hasher = hashlib.sha256()
+        with resolved.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                hasher.update(chunk)
+        digest = hasher.hexdigest()
+        with _ARTIFACT_DIGEST_LOCK:
+            _ARTIFACT_DIGEST_CACHE.clear()
+            _ARTIFACT_DIGEST_CACHE[key] = digest
+    return {
+        "filename": resolved.name,
+        "sha256": digest,
+        "size_bytes": status.st_size,
+        "digest_basis": "sha256_of_the_file_opened_at_runtime",
+    }
 
 
 class PlaceCatalog:
@@ -181,12 +416,6 @@ class PlaceCatalog:
             ) from exc
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA query_only = ON")
-        connection.create_function(
-            "place_name_match_key",
-            1,
-            place_name_match_key,
-            deterministic=True,
-        )
         return connection
 
     def metadata(self, connection: sqlite3.Connection) -> dict:
@@ -203,6 +432,51 @@ class PlaceCatalog:
             for row in rows
         }
 
+    def _county_prefixes(self, connection: sqlite3.Connection) -> tuple[str, ...]:
+        """County names of the catalogue's derived points, read once per file identity."""
+
+        resolved = self.path.resolve()
+        status = resolved.stat()
+        key = (str(resolved), status.st_size, status.st_mtime_ns)
+        with _COUNTY_PREFIX_LOCK:
+            cached = _COUNTY_PREFIX_CACHE.get(key)
+        if cached is None:
+            names = [
+                row[0]
+                for row in connection.execute(
+                    "SELECT name FROM places WHERE substr(source_record_id, 1, ?) = ?",
+                    (len(TAIWAN_COUNTY_RECORD_PREFIX), TAIWAN_COUNTY_RECORD_PREFIX),
+                )
+            ]
+            cached = county_prefixes(names)
+            with _COUNTY_PREFIX_LOCK:
+                _COUNTY_PREFIX_CACHE.clear()
+                _COUNTY_PREFIX_CACHE[key] = cached
+        return cached
+
+    def _served_metadata(self, connection: sqlite3.Connection) -> dict:
+        metadata = self.metadata(connection)
+        if metadata.get("schema_version") not in SUPPORTED_SCHEMA_VERSIONS:
+            raise PlaceCatalogUnavailableError(
+                "bundled place catalog schema is unsupported"
+            )
+        return metadata
+
+    def _response(self, results: list[dict], metadata: dict, query_receipt: dict) -> dict:
+        return {
+            "results": results,
+            "catalog": {
+                **metadata,
+                "artifact": {
+                    **_artifact_digest(self.path),
+                    "generator_version": metadata.get("generator_version"),
+                },
+            },
+            "query": query_receipt,
+            "ranking": _ranking_receipt(),
+            "execution": dict(_EXECUTION_RECEIPT),
+        }
+
     def search(
         self,
         *,
@@ -210,39 +484,42 @@ class PlaceCatalog:
         country_code: str | None,
         limit: int,
     ) -> dict:
-        match_query, query_receipt = _fts_query(query)
-        if not match_query:
-            return {
-                "results": [],
-                "catalog": {},
-                "query": query_receipt,
-                "execution": {
-                    "catalog_mode": "bundled_read_only_sqlite",
-                    "runtime_outbound": False,
-                },
-            }
-
-        # Tier classification must describe the same sanitized, bounded token
-        # sequence that reached FTS5.  Comparing the raw normalized string
-        # instead made ``London!!!`` execute as ``london`` yet report
-        # ``other_field``; a truncated query had the same receipt/SQL drift.
-        normalized_query = place_name_match_key(
-            " ".join(query_receipt["tokens_used"])
-        )
         connection = self._connect()
         deadline = time.monotonic() + SEARCH_STATEMENT_BUDGET_SECONDS
+        # Whether *this* handler interrupted is recorded rather than inferred
+        # from the clock afterwards, which would also label a genuine fault
+        # that happened to finish late.
+        interrupted = False
+
+        def spend_statement_budget() -> int:
+            nonlocal interrupted
+            if time.monotonic() > deadline:
+                interrupted = True
+                return 1
+            return 0
+
         connection.set_progress_handler(
-            lambda: 1 if time.monotonic() > deadline else 0,
+            spend_statement_budget,
             _PROGRESS_HANDLER_INSTRUCTION_INTERVAL,
         )
         try:
-            metadata = self.metadata(connection)
+            metadata = self._served_metadata(connection)
+            match_query, query_receipt = _fts_query(query, self._county_prefixes(connection))
+            if not match_query:
+                # Nothing reached FTS5: say so in a closed field and keep the
+                # response the same shape as a search that found nothing.
+                return self._response([], metadata, query_receipt)
+            # Tier classification must describe the same sanitized, bounded
+            # token sequence that reached FTS5.  Comparing the raw normalized
+            # string instead made ``London!!!`` execute as ``london`` yet
+            # report ``other_field``; a truncated query had the same drift.
+            tier_query = place_tier_key(" ".join(query_receipt["tokens_used"]))
             # The match key was computed in the projection twice and in the
             # ordering twice more: four Python calls for every FTS hit, and a
             # common prefix matches tens of thousands of rows.  Under the GIL
             # that made concurrent searches exceed the statement budget and
-            # refuse.  The key is computed once per row here; the ranking steps
-            # and their declared descriptions are unchanged.
+            # refuse.  The producer already stored each row's key; runtime
+            # Python normalizes only the query and SQL reads the stored value.
             rows = connection.execute(
                 f"""
                 WITH matched AS MATERIALIZED (
@@ -254,13 +531,17 @@ class PlaceCatalog:
                         p.country_code,
                         p.admin1,
                         p.admin2,
+                        p.admin1_name,
+                        p.admin3,
+                        p.name_zh,
+                        p.disambiguator,
                         p.latitude,
                         p.longitude,
                         p.timezone,
                         p.location_precision,
                         p.population,
                         p.source_priority,
-                        place_name_match_key(p.name) AS name_key,
+                        p.match_keys,
                         bm25(place_search, {_BM25_SQL}) AS bm25_rank
                     FROM place_search
                     JOIN places AS p ON p.rowid = place_search.rowid
@@ -270,9 +551,8 @@ class PlaceCatalog:
                 SELECT
                     *,
                     CASE
-                        WHEN name_key = :query THEN 'exact_name'
-                        WHEN substr(name_key, 1, :query_length)
-                             = :query THEN 'name_prefix'
+                        WHEN instr(match_keys, :exact_key) > 0 THEN 'exact_name'
+                        WHEN instr(match_keys, :key_prefix) > 0 THEN 'name_prefix'
                         ELSE 'other_field'
                     END AS match_tier
                 FROM matched
@@ -283,15 +563,21 @@ class PlaceCatalog:
                 {
                     "match": match_query,
                     "country": country_code,
-                    "query": normalized_query,
-                    # 以 substr 而非 LIKE 做前綴比對：查詢字串是使用者輸入，
-                    # LIKE 會把其中的 % 與 _ 當成萬用字元，需要額外的跳脫處理；
-                    # substr 完全沒有萬用字元語意，不存在該類問題。
-                    "query_length": len(normalized_query),
+                    # 以 instr 而非 LIKE 比對：查詢字串是使用者輸入，LIKE 會把
+                    # 其中的 % 與 _ 當成萬用字元；instr 沒有萬用字元語意。鍵以
+                    # 分隔字元包住，所以「整個鍵相等」與「鍵以查詢開頭」可分。
+                    "exact_key": MATCH_KEY_SEPARATOR + tier_query + MATCH_KEY_SEPARATOR,
+                    "key_prefix": MATCH_KEY_SEPARATOR + tier_query,
                     "limit": limit,
                 },
             ).fetchall()
-        except sqlite3.Error as exc:
+        except (sqlite3.Error, PlaceCatalogUnavailableError) as exc:
+            if interrupted:
+                raise PlaceSearchBudgetExceededError(
+                    "place search exceeded its statement budget"
+                ) from exc
+            if isinstance(exc, PlaceCatalogUnavailableError):
+                raise
             raise PlaceCatalogUnavailableError(
                 "bundled place catalog query failed"
             ) from exc
@@ -299,51 +585,34 @@ class PlaceCatalog:
             connection.set_progress_handler(None, 0)
             connection.close()
 
-        return {
-            "results": [
-                {
-                    "source": row["source"],
-                    "source_record_id": row["source_record_id"],
-                    "name": row["name"],
-                    "display_name": row["display_name"],
-                    "country_code": row["country_code"],
-                    "admin1": row["admin1"],
-                    "admin2": row["admin2"],
-                    "latitude": row["latitude"],
-                    "longitude": row["longitude"],
-                    "timezone": row["timezone"],
-                    "location_precision": row["location_precision"],
-                    "population": row["population"],
-                    # 排序層級一併回傳，讓呼叫端能看出某一筆是「地名
-                    # 本身相符」還是「只有別名或行政區欄位相符」，不必反推。
-                    "match_tier": row["match_tier"],
-                    "coordinate_semantics": (
-                        "dataset_representative_point_not_birth_address"
-                    ),
-                }
-                for row in rows
-            ],
-            "catalog": metadata,
-            "query": query_receipt,
-            "ranking": {
-                "method": RANKING_METHOD_NAME,
-                # 這份清單必須與 ORDER BY 逐項對應。把三層的 match_tier 寫成
-                # 單一個第一順位是錯的：實際 SQL 是先只分「是否 exact_name」，
-                # 人口排在其後，完整的三層細分再排在人口**之後**。
-                # 排序結果本身是確定的，可能出錯的是這份
-                # 自述——而自述錯誤等於可追溯性宣稱不實。
-                "order": [description for _sql, description in RANKING_STEPS],
-                "why_population_precedes_the_detailed_tier": (
-                    "中文查詢命中的是別名欄而非地名欄，故臺北市落在 other_field；"
-                    "若三層細分排在人口之前，人口 0 的『臺北小別墅』（name_prefix）"
-                    "會壓過人口 787 萬的臺北市。"
+        results = [
+            {
+                "source": row["source"],
+                "source_record_id": row["source_record_id"],
+                "name": row["name"],
+                "display_name": row["display_name"],
+                "country_code": row["country_code"],
+                "admin1": row["admin1"],
+                "admin1_name": row["admin1_name"],
+                "admin2": row["admin2"],
+                "admin3": row["admin3"],
+                "name_zh": row["name_zh"],
+                # Set only when another row shares this display_name;
+                # the producer chose the first human-meaningful level
+                # that separates the group (see catalog.label_disambiguation).
+                "disambiguator": row["disambiguator"],
+                "latitude": row["latitude"],
+                "longitude": row["longitude"],
+                "timezone": row["timezone"],
+                "location_precision": row["location_precision"],
+                "population": row["population"],
+                # 排序層級一併回傳，讓呼叫端能看出某一筆是「地名
+                # 本身相符」還是「只有別名或行政區欄位相符」，不必反推。
+                "match_tier": row["match_tier"],
+                "coordinate_semantics": (
+                    "dataset_representative_point_not_birth_address"
                 ),
-                "population_semantics": (
-                    "geonames_settlement_population_zero_for_taiwan_moi_place_names"
-                ),
-            },
-            "execution": {
-                "catalog_mode": "bundled_read_only_sqlite",
-                "runtime_outbound": False,
-            },
-        }
+            }
+            for row in rows
+        ]
+        return self._response(results, metadata, query_receipt)

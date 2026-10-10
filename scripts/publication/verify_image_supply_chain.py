@@ -1,551 +1,514 @@
 #!/usr/bin/env python3
-"""Create auditable SBOM and vulnerability receipts for a local image.
+"""SBOM and vulnerability scan of one built image (Gate D).
 
-Raw scanner matches are evidence for manual triage, not proof that a finding is
-reachable or exploitable.  This gate fails on missing/forbidden runtime
-dependencies or malformed/stale evidence, while preserving every raw match.
+The SBOM is produced from the image itself (syft); it is the only SBOM the
+project keeps.  syft cannot see the C sources the build compiles into the
+pyswisseph extension (Swiss Ephemeris and Swephelp, plus Swephelp's bundled
+SQLite when the extension was built without the system libsqlite3), so they
+are added to it from the vendored sdist the image was built from.  Grype
+scans it after a positive control proves the scanner can see a vulnerability at all, pip-audit checks the production lock, and the
+image's Python inventory must equal the marker-evaluated lock.
+
+Exit codes: 0 no High/Critical finding; 3 every High/Critical is covered by a
+current reviewed triage entry (recorded acceptance); 2 a High/Critical finding
+is not covered, or the triage is absent or expired; 1 the evidence failed.
 """
 
 from __future__ import annotations
 
 import argparse
-from collections import Counter
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import hashlib
 import json
 from pathlib import Path
 import re
+import struct
 import subprocess
 import sys
+import tarfile
 from typing import Any, cast
 from urllib.parse import parse_qs, urlparse
 
 from packaging.markers import Marker, default_environment
+from packaging.requirements import Requirement
 
 from scripts.tools.output_confinement import external_output_path
-from scripts.tools.closed_set import ClosedSetError, require_closed_set
 from scripts.tools.source_tree_identity import sha256_file as _sha256
-from scripts.verification.build_sbom import _components
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_PRODUCTION_LOCK = PROJECT_ROOT / "deploy" / "requirements.lock"
+DEFAULT_PYSWISSEPH_SDIST = PROJECT_ROOT / "third_party/pyswisseph/pyswisseph-2.10.3.2.tar.gz"
 MAX_GRYPE_DB_AGE_HOURS = 72
 REQUIRED = {"fastapi", "pydantic", "pyswisseph", "starlette", "uvicorn"}
+# Why a known-bad distribution is bad; the closed lock comparison decides.
 FORBIDDEN = {
-    "httpx",
-    "httpx2",
-    "pip-audit",
-    "pip-tools",
-    "pip",
-    "pytest",
-    "python-dotenv",
-    "pyyaml",
-    "uvloop",
-    "watchfiles",
-    "websockets",
+    "httpx", "httpx2", "httptools", "pip-audit", "pip-tools", "pip", "pytest",
+    "python-dotenv", "pyyaml", "uvloop", "watchfiles", "websockets",
 }
+TRIAGE_SCHEMA = "image-cve-triage-v1"
+EXIT_UNTRIAGED_HIGH = 2
+EXIT_ALL_TRIAGED = 3
+GATING_SEVERITIES = ("High", "Critical")
+_SEVERITY_RANK = {"High": 1, "Critical": 2}
+# A genuinely old, genuinely vulnerable release, only ever named in a synthetic SBOM.
+POSITIVE_CONTROL_PACKAGE = ("django", "1.11.0")
 
 
 class AuditFailure(RuntimeError):
     pass
 
 
-def _validate_r4_adjudication(
-    receipt: dict, candidate: dict,
-) -> dict[str, str]:
-    """Consume an exact R4 decision without rewriting scanner severity."""
-
-    backend = candidate.get("backend") or candidate
-    observed = receipt.get("candidate")
-    witness = receipt.get("build_witness")
-    supply = receipt.get("supply_chain")
-    artifacts = receipt.get("raw_artifact_sha256")
-    required_artifacts = {
-        "grype.json", "trivy.json", "pip-audit.json", "sbom.syft.json",
-    }
-
-    def digest(value: object) -> bool:
-        return isinstance(value, str) and re.fullmatch(
-            r"[0-9a-f]{64}", value
-        ) is not None
-
-    if (
-        receipt.get("disposition")
-        != "ACCEPTED_IMAGE_LOCAL_WITH_SCOPED_LIMITATIONS"
-        or not isinstance(observed, dict)
-        or observed.get("image_id") != backend.get("image_id")
-        or observed.get("public_source_revision") != backend.get("vcs_revision")
-        or not digest(observed.get("sbom_sha256"))
-        or not isinstance(witness, dict)
-        or not digest(witness.get("external_sha256"))
-        or witness.get("external_sha256") != witness.get("embedded_sha256")
-        or witness.get("plaintext_present_in_build_log_or_flattened_runtime")
-        is not False
-        or witness.get("flattened_rootfs_canary_present") is not False
-        or not isinstance(supply, dict)
-        or not isinstance(supply.get("grype_counts"), dict)
-        or any(
-            type(supply["grype_counts"].get(key)) is not int
-            or supply["grype_counts"][key] < 0
-            for key in ("Critical", "High")
-        )
-        or supply.get("pip_audit", {}).get("exit_code") != 0
-        or supply.get("pip_audit", {}).get("known_vulnerability_count") != 0
-        or supply.get("triage", {}).get("result")
-        != (
-            "no reachable candidate-blocking vulnerability with an "
-            "available Trixie fix"
-        )
-        or not isinstance(artifacts, dict)
-        or not required_artifacts.issubset(artifacts)
-        or any(not digest(artifacts.get(key)) for key in required_artifacts)
-        or artifacts.get("sbom.syft.json") != observed.get("sbom_sha256")
-    ):
-        raise ValueError("R4 supply-chain adjudication is incomplete or mismatched")
-    return {
-        "image_id": str(backend["image_id"]),
-        "revision": str(backend["vcs_revision"]),
-    }
+def normalized(name: str) -> str:
+    return re.sub(r"[-_.]+", "-", name).lower()
 
 
-def validate_receipt(receipt: dict, candidate: dict) -> dict[str, str]:
-    if receipt.get("schema_version") == "r4-image-local-disposition-v1":
-        return _validate_r4_adjudication(receipt, candidate)
-    if receipt.get("schema_version") != "private-alpha-supply-chain-summary-v2":
-        raise ValueError("unsupported supply-chain receipt schema")
-    backend = candidate.get("backend") or candidate
-    observed = receipt.get("candidate")
-    expected = {
-        "image_id": backend.get("image_id"),
-        "revision": backend.get("vcs_revision"),
-        "os": "linux",
-        "architecture": "amd64",
-    }
-    if not isinstance(observed, dict):
-        raise ValueError("supply-chain receipt candidate is missing")
-    for key, value in expected.items():
-        if observed.get(key) != value:
-            raise ValueError(f"supply-chain receipt {key} differs from release candidate")
-    counts = receipt.get("severity_counts")
-    if (
-        not isinstance(counts, dict)
-        or set(counts) != {"grype"}
-        or any(
-            not isinstance(item, dict)
-            or set(item) != {"critical", "high"}
-            or any(type(value) is not int or value < 0 for value in item.values())
-            for item in counts.values()
-        )
-    ):
-        raise ValueError("supply-chain severity counts are invalid")
-    adverse = any(value > 0 for item in counts.values() for value in item.values())
-    # This branch used to accept an adverse scan when the caller named a
-    # triaged issue on the command line, and nothing tied that name's validity
-    # to the issue still being open, so the escape hatch would have outlived its
-    # reason.  A receipt now certifies an image with no high or critical match,
-    # or it is not a receipt.
-    if adverse:
-        raise ValueError(
-            "a supply-chain receipt cannot certify an image with high or critical "
-            "matches; triage the matches and rebuild"
-        )
-    if receipt.get("decision") != "no_high_or_critical_matches":
-        raise ValueError("clean supply-chain receipt has an adverse disposition")
-    positive = receipt.get("scanner_positive_control")
-    if not isinstance(positive, dict) or not isinstance(
-        positive.get("matches"), int
-    ) or positive["matches"] < 1:
-        raise ValueError("supply-chain scanner positive control did not pass")
-    artifacts = receipt.get("artifact_sha256")
-    if not isinstance(artifacts, dict) or not artifacts or not all(
-        isinstance(value, str) and len(value) == 64
-        and all(character in "0123456789abcdef" for character in value)
-        for value in artifacts.values()
-    ):
-        raise ValueError("supply-chain raw artifact identity is invalid")
-    return {"image_id": str(expected["image_id"]), "revision": str(expected["revision"])}
+def locked_runtime_versions(lock: Path, architecture: str = "amd64") -> dict[str, str]:
+    """Distributions the image installs from `lock`: name -> pinned version.
 
-
-def _run(command: list[str], *, timeout: int = 1800) -> str:
-    result = subprocess.run(
-        command,
-        check=False,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-    )
-    if result.returncode:
-        detail = (result.stderr or result.stdout).strip()
-        raise AuditFailure(
-            f"command failed ({result.returncode}): {command[0]}: {detail[-2000:]}"
-        )
-    return result.stdout
-
-
-def _normalized(name: str) -> str:
-    return name.lower().replace("_", "-").replace(".", "-")
-
-
-def _parse_utc_timestamp(value: str) -> datetime:
-    rendered = value[:-1] + "+00:00" if value.endswith("Z") else value
-    parsed = datetime.fromisoformat(rendered)
-    if parsed.tzinfo is None:
-        raise AuditFailure("Grype database build time omitted timezone")
-    return parsed.astimezone(timezone.utc)
-
-
-def _database_age_hours(built: str, checked_at: datetime) -> float:
-    built_at = _parse_utc_timestamp(built)
-    age_hours = (checked_at - built_at).total_seconds() / 3600
-    if age_hours < -1:
-        raise AuditFailure("Grype database build time is in the future")
-    if age_hours > MAX_GRYPE_DB_AGE_HOURS:
-        raise AuditFailure(
-            f"Grype database is stale: {age_hours:.1f}h exceeds "
-            f"{MAX_GRYPE_DB_AGE_HOURS}h"
-        )
-    return max(age_hours, 0)
-
-
-def _db_status(grype: str) -> dict[str, Any]:
-    raw = _run([grype, "db", "status", "-o", "json"])
-    status = json.loads(raw)
-    built = (
-        status.get("built")
-        or status.get("buildDate")
-        or status.get("database", {}).get("built")
-    )
-    if not built:
-        raise AuditFailure("Grype database status omitted database_built")
-    database_source = status.get("from", "")
-    checksum = status.get("checksum")
-    if not checksum and database_source:
-        checksum = parse_qs(urlparse(database_source).query).get(
-            "checksum", [None]
-        )[0]
-    if not checksum:
-        raise AuditFailure("Grype database status omitted checksum evidence")
-    checked_at = datetime.now(timezone.utc)
-    age_hours = _database_age_hours(str(built), checked_at)
-    return {
-        "database_built": built,
-        "checked_at": checked_at.isoformat(),
-        "age_hours": round(age_hours, 3),
-        "max_allowed_age_hours": MAX_GRYPE_DB_AGE_HOURS,
-        "schema_version": status.get("schemaVersion")
-        or status.get("schema_version"),
-        "checksum": checksum,
-    }
-
-
-# A release that is genuinely old and genuinely vulnerable.  Nothing is
-# installed from it; it exists only inside a synthetic SBOM handed to Grype.
-POSITIVE_CONTROL_PACKAGE = ("django", "1.11.0")
-
-
-def _scanner_positive_control(grype: str, workspace: Path) -> dict[str, Any]:
-    """Prove the scanner can report a vulnerability before trusting a zero.
-
-    The database freshness check above bounds staleness, not effectiveness: an
-    empty database, a wrong scan target or a silently failed load all produce
-    a clean report, and a clean report is exactly the outcome this gate is
-    used to justify.  A zero result means nothing until the sink is shown to
-    work.
-
-    The control feeds Grype a minimal SBOM naming one package with known
-    published advisories and requires at least one match.
+    A line whose PEP 508 marker is false in the image (CPython 3.14.8 on
+    Linux) is listed in the lock but never installed.
     """
 
-    name, version = POSITIVE_CONTROL_PACKAGE
-    control_sbom = workspace / "positive-control.sbom.json"
-    control_sbom.write_text(
-        json.dumps(
-            {
-                "bomFormat": "CycloneDX",
-                "specVersion": "1.5",
-                "version": 1,
-                "components": [
-                    {
-                        "type": "library",
-                        "name": name,
-                        "version": version,
-                        "purl": f"pkg:pypi/{name}@{version}",
-                    }
-                ],
-            }
-        ),
-        encoding="utf-8",
-    )
-    control_output = workspace / "positive-control.grype.json"
-    _run(
-        [
-            grype,
-            f"sbom:{control_sbom}",
-            "-o",
-            "json",
-            "--file",
-            str(control_output),
-        ]
-    )
-    report = json.loads(control_output.read_text(encoding="utf-8"))
-    found = len(report.get("matches", []))
-    if found < 1:
-        raise AuditFailure(
-            "vulnerability scanner positive control failed: Grype reported no "
-            f"match for {name} {version}. A clean scan of the real image "
-            "cannot be trusted while the scanner is provably blind."
-        )
-    return {
-        "package": f"{name}@{version}",
-        "matches": found,
-        "semantics": "a zero on the real image is only meaningful because this is non-zero",
-    }
-
-
-def _python_inventory_versions(sbom: dict[str, Any]) -> dict[str, str]:
+    environment = cast(dict[str, str], default_environment())
+    environment.update({
+        "os_name": "posix", "platform_system": "Linux", "sys_platform": "linux",
+        "platform_machine": {"amd64": "x86_64", "arm64": "aarch64"}[architecture],
+        "python_full_version": "3.14.8", "python_version": "3.14",
+    })
+    logical = re.sub(r"\\\n", " ", lock.read_text(encoding="utf-8"))
     versions: dict[str, str] = {}
-    for artifact in sbom.get("artifacts", []):
-        if artifact.get("type") != "python":
+    for line in logical.splitlines():
+        line = line.split("#", 1)[0].strip()
+        if not line:
             continue
-        name = _normalized(artifact.get("name", ""))
-        version = str(artifact.get("version") or "")
-        if name and version:
-            versions[name] = version
+        requirement = Requirement(line.split("--hash=", 1)[0].strip())
+        pins = list(requirement.specifier)
+        if len(pins) != 1 or pins[0].operator != "==" or "--hash=sha256:" not in line:
+            raise AuditFailure(f"lock line is not exactly pinned and hashed: {requirement}")
+        if requirement.marker is None or Marker(str(requirement.marker)).evaluate(environment):
+            versions[normalized(requirement.name)] = pins[0].version
+    if not versions:
+        raise AuditFailure(f"{lock} installs nothing in the image")
     return versions
 
 
-def _verify_python_versions(
-    sbom: dict[str, Any], dependencies: list[dict[str, Any]], lock: Path
-) -> dict[str, str]:
-    installed = _python_inventory_versions(sbom)
-    marker_environment = cast(dict[str, str], default_environment())
-    marker_environment.update({
-        "os_name": "posix",
-        "platform_machine": "x86_64",
-        "platform_system": "Linux",
-        "python_full_version": "3.14.7",
-        "python_version": "3.14",
-        "sys_platform": "linux",
-    })
-    expected: dict[str, str] = {}
-    for item in _components(lock, "required"):
-        marker = next(
-            (
-                property_["value"]
-                for property_ in item.get("properties", [])
-                if property_.get("name") == "pep508_marker"
-            ),
-            None,
-        )
-        if marker is None or Marker(marker).evaluate(marker_environment):
-            expected[_normalized(item["name"])] = str(item["version"])
-    audited = {
-        _normalized(item.get("name", "")): str(item.get("version") or "")
-        for item in dependencies
-        if isinstance(item, dict) and item.get("name") and item.get("version")
-    }
+def grype_matches(path: Path) -> list[Any]:
+    """The scanner's match list; an output without one is not "no findings"."""
+    document = json.loads(path.read_text(encoding="utf-8"))
+    matches = document.get("matches") if isinstance(document, dict) else None
+    if not isinstance(matches, list):
+        raise AuditFailure(f"{path.name} carries no matches list")
+    return matches
+
+
+def _sdist_define(archive: tarfile.TarFile, member: str, name: str) -> str:
+    root = archive.getnames()[0].split("/", 1)[0]
+    handle = archive.extractfile(f"{root}/{member}")
+    match = re.search(rf'#define {name}\s+"([^"]+)"', handle.read().decode("utf-8", "replace")) if handle else None
+    if match is None:
+        raise AuditFailure(f"vendored pyswisseph {member} does not define {name}")
+    return match.group(1)
+
+
+def _sdist_defines(sdist: Path, *wanted: tuple[str, str]) -> list[str]:
     try:
-        require_closed_set(expected, audited, role="pip-audit dependency universe")
-    except ClosedSetError as error:
-        raise AuditFailure(str(error)) from None
-    audit_mismatches = {
-        name: f"expected={version}, audited={audited.get(name, 'missing')}"
-        for name, version in expected.items()
-        if audited.get(name) != version
+        with tarfile.open(sdist, "r:gz") as archive:
+            return [_sdist_define(archive, member, name) for member, name in wanted]
+    except (OSError, tarfile.TarError, KeyError) as error:
+        raise AuditFailure(f"cannot read the vendored pyswisseph sdist: {error}") from None
+
+
+def elf_needed(data: bytes) -> list[str]:
+    """DT_NEEDED entries of a 64-bit little-endian ELF shared object."""
+    try:
+        if data[:4] != b"\x7fELF" or data[4] != 2 or data[5] != 1:
+            raise ValueError("not a 64-bit little-endian ELF")
+        shoff = int.from_bytes(data[0x28:0x30], "little")
+        shentsize, shnum = struct.unpack_from("<HH", data, 0x3A)
+        sections = [struct.unpack_from("<IIQQQQIIQQ", data, shoff + index * shentsize) for index in range(shnum)]
+        needed: list[str] = []
+        for _name, kind, _flags, _addr, offset, size, link, _info, _align, _entsize in sections:
+            if kind != 6:  # SHT_DYNAMIC
+                continue
+            strings = sections[link][4]
+            for position in range(offset, offset + size, 16):
+                tag, value = struct.unpack_from("<qQ", data, position)
+                if tag == 0:
+                    break
+                if tag == 1:  # DT_NEEDED
+                    start = strings + value
+                    needed.append(data[start:data.index(b"\0", start)].decode("ascii"))
+        return needed
+    except (ValueError, IndexError, struct.error, UnicodeError) as error:
+        raise AuditFailure(f"cannot read the pyswisseph extension as ELF: {error}") from None
+
+
+def pyswisseph_sqlite_linkage(extension: bytes, sdist: Path) -> str:
+    """"system" when the extension needs Debian's libsqlite3 and carries no
+    copy of the sdist's bundled amalgamation, "bundled" for the reverse; any
+    other combination is refused."""
+    (source_id,) = _sdist_defines(sdist, ("swephelp/sqlite3/sqlite3.h", "SQLITE_SOURCE_ID"))
+    system = "libsqlite3.so.0" in elf_needed(extension)
+    bundled = source_id.encode() in extension
+    if system != bundled:
+        return "system" if system else "bundled"
+    raise AuditFailure(
+        f"pyswisseph extension SQLite linkage is ambiguous: needs libsqlite3={system}, "
+        f"carries the bundled amalgamation={bundled}"
+    )
+
+
+SWISSEPH_EXTENSION_BYTES = (
+    "import swisseph,sys; sys.stdout.buffer.write(open(swisseph.__file__,'rb').read())"
+)
+
+
+def _run_bytes(command: list[str], *, timeout: int = 600) -> bytes:
+    completed = subprocess.run(command, capture_output=True, timeout=timeout, check=False)
+    if completed.returncode:
+        raise AuditFailure(f"{command[0]} failed: {completed.stderr.decode(errors='replace')[-2000:]}")
+    return completed.stdout
+
+
+def image_swisseph_extension(image: str, run_options: tuple[str, ...] = ("--network", "none")) -> bytes:
+    """The bytes of the pyswisseph extension module the image imports."""
+    return _run_bytes(["docker", "run", "--rm", *run_options, "--entrypoint", "/opt/venv/bin/python",
+                       image, "-c", SWISSEPH_EXTENSION_BYTES])
+
+
+# The licences the vendored sources state: pyswisseph.c and the Swephelp
+# headers grant "version 3 / version 2, or any later version"; libswe/LICENSE
+# offers the AGPL or Astrodienst's Swiss Ephemeris Professional License.
+EMBEDDED_LICENSES: dict[str, str] = {
+    "pyswisseph": "AGPL-3.0-or-later",
+    "swiss-ephemeris": "AGPL-3.0-only OR LicenseRef-SwissEph-Professional",
+    "swephelp": "GPL-2.0-or-later",
+}
+# Swephelp carries no version.  The sdist's swephelp/ equals, blob for blob,
+# the upstream astrorigin/swephelp submodule commit below; that holds for this
+# sdist only, so the identity names the sdist digest it was established for.
+SWEPHELP_UPSTREAM_COMMIT = "git-5db9f591"
+SWEPHELP_IDENTITY_SDIST_SHA256 = "c54c305e83dbd5d2b71e58d8a69d8ee41de24c4d3328ce09e2af860a3537624d"
+
+
+def _concluded_license(expression: str) -> list[dict[str, Any]]:
+    return [{"value": expression, "spdxExpression": expression, "type": "concluded",
+             "urls": [], "locations": []}]
+
+
+def with_embedded_components(sbom: dict[str, Any], sdist: Path, sqlite_linkage: str) -> dict[str, Any]:
+    """`sbom` plus the C sources compiled into the pyswisseph extension.
+
+    Swiss Ephemeris and Swephelp are always compiled in.  deploy/Dockerfile's
+    builder installs pkg-config and libsqlite3-dev, so pyswisseph's setup.py
+    links Debian's libsqlite3, which syft lists as a deb; an extension built
+    without them ("bundled") carries Swephelp's SQLite amalgamation instead,
+    which only this addition names.  Versions come from the sdist's headers.
+    """
+    if sqlite_linkage not in ("system", "bundled"):
+        raise AuditFailure(f"unknown pyswisseph SQLite linkage: {sqlite_linkage!r}")
+    owners = [a for a in sbom.get("artifacts", []) if a.get("type") == "python" and a.get("name") == "pyswisseph"]
+    if len(owners) != 1:
+        raise AuditFailure("the image SBOM does not hold exactly one pyswisseph to attach its C sources to")
+    owner = owners[0]
+    swiss, sqlite = _sdist_defines(
+        sdist, ("libswe/sweph.h", "SE_VERSION"), ("swephelp/sqlite3/sqlite3.h", "SQLITE_VERSION"),
+    )
+    if hashlib.sha256(sdist.read_bytes()).hexdigest() != SWEPHELP_IDENTITY_SDIST_SHA256:
+        raise AuditFailure("the Swephelp identity was established for another pyswisseph sdist")
+    if not owner.get("licenses"):
+        owner = {**owner, "licenses": _concluded_license(EMBEDDED_LICENSES["pyswisseph"])}
+    components: list[tuple[str, str, list[dict[str, str]]]] = [
+        ("swiss-ephemeris", swiss, []), ("swephelp", SWEPHELP_UPSTREAM_COMMIT, []),
+    ]
+    if sqlite_linkage == "bundled":
+        components.append(("sqlite", sqlite, [{"cpe": f"cpe:2.3:a:sqlite:sqlite:{sqlite}:*:*:*:*:*:*:*",
+                                                "source": "nvd-cpe-dictionary"}]))
+    added = []
+    for name, version, cpes in components:
+        added.append({
+            "id": hashlib.sha256(f"pyswisseph-embedded/{name}@{version}".encode()).hexdigest()[:16],
+            "name": name, "version": version, "type": "binary",
+            "foundBy": "armillary-vendored-pyswisseph-sdist", "locations": owner.get("locations", [])[:1],
+            "licenses": _concluded_license(EMBEDDED_LICENSES[name]) if name in EMBEDDED_LICENSES else [],
+            "language": "", "cpes": cpes,
+            "purl": f"pkg:generic/{name}@{version}",
+        })
+    return {
+        **sbom,
+        "artifacts": [*(owner if artifact is owners[0] else artifact for artifact in sbom["artifacts"]), *added],
+        "artifactRelationships": [
+            *sbom.get("artifactRelationships", []),
+            *({"parent": owner["id"], "child": item["id"], "type": "contains"} for item in added),
+        ],
     }
-    if audit_mismatches:
-        raise AuditFailure(f"pip-audit version mismatch: {audit_mismatches}")
-    mismatches = {
-        name: f"expected={version}, installed={installed.get(name, 'missing')}"
-        for name, version in expected.items()
-        if installed.get(name) != version
+
+
+def load_cve_triage(path: Path) -> dict[str, Any]:
+    """A reviewed triage record; anything malformed is refused, not ignored."""
+
+    try:
+        triage = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise AuditFailure(f"CVE triage is unreadable: {error}") from None
+    keys = {
+        "schema_version", "reviewed_on", "accepted_on", "accepted_by", "acceptance",
+        "record", "base_image", "recheck_by", "recheck_rule", "entries",
     }
-    if mismatches:
-        raise AuditFailure(f"Python inventory version mismatch: {mismatches}")
+    entries = triage.get("entries") if isinstance(triage, dict) else None
+    if (
+        not isinstance(triage, dict) or set(triage) != keys
+        or triage.get("schema_version") != TRIAGE_SCHEMA
+        or not isinstance(entries, list) or not entries
+        or any(
+            not isinstance(triage.get(key), str) or not triage[key].strip()
+            for key in keys - {"schema_version", "entries"}
+        )
+    ):
+        raise AuditFailure("CVE triage record is invalid")
+    try:
+        for key in ("reviewed_on", "accepted_on", "recheck_by"):
+            date.fromisoformat(triage[key])
+    except ValueError:
+        raise AuditFailure("CVE triage dates are invalid") from None
+    seen: set[str] = set()
+    for entry in entries:
+        if (
+            not isinstance(entry, dict)
+            or set(entry) != {"id", "severity", "debian_state", "packages", "reachability", "reason"}
+            or not re.fullmatch(r"(?:CVE|GHSA)-[0-9A-Za-z-]+", str(entry.get("id", "")))
+            or entry["id"] in seen
+            or entry.get("severity") not in GATING_SEVERITIES
+            or entry.get("reachability") != "unreachable"
+            or not isinstance(entry.get("reason"), str) or not entry["reason"].strip()
+            or not isinstance(entry.get("packages"), list) or not entry["packages"]
+            or any(not isinstance(name, str) or not name for name in entry["packages"])
+        ):
+            raise AuditFailure(f"CVE triage entry is invalid: {entry!r}"[:300])
+        seen.add(entry["id"])
+    return triage
+
+
+def gating_findings(matches: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """High/Critical matches by vulnerability ID, with every affected package."""
+
+    found: dict[str, dict[str, Any]] = {}
+    for match in matches:
+        vulnerability = match.get("vulnerability", {}) if isinstance(match, dict) else {}
+        severity = vulnerability.get("severity")
+        if severity not in GATING_SEVERITIES:
+            continue
+        artifact = match.get("artifact", {})
+        row = found.setdefault(str(vulnerability.get("id") or "unidentified"), {
+            "id": str(vulnerability.get("id") or "unidentified"), "severity": severity,
+            "packages": set(), "package_names": set(),
+            "fix_state": str((vulnerability.get("fix") or {}).get("state") or ""),
+        })
+        if _SEVERITY_RANK[severity] > _SEVERITY_RANK[row["severity"]]:
+            row["severity"] = severity
+        row["packages"].add(f"{artifact.get('name') or ''}@{artifact.get('version') or ''}")
+        row["package_names"].add(str(artifact.get("name") or ""))
+    return found
+
+
+def triage_decision(
+    found: dict[str, dict[str, Any]], triage: dict[str, Any] | None, *, today: date,
+) -> tuple[str, list[dict[str, Any]], str]:
+    """A finding is accepted only by an entry with its ID, a severity at least as
+    high and every affected package named; an expired triage accepts nothing."""
+
+    entries: dict[str, dict[str, Any]]
+    if triage is None:
+        status, entries = "absent", {}
+    elif today > date.fromisoformat(triage["recheck_by"]):
+        status, entries = "expired", {}
+    else:
+        status, entries = "current", {entry["id"]: entry for entry in triage["entries"]}
+    rows = []
+    for identifier in sorted(found):
+        row, entry = found[identifier], entries.get(identifier)
+        accepted = (
+            entry is not None
+            and _SEVERITY_RANK[row["severity"]] <= _SEVERITY_RANK[entry["severity"]]
+            and row["package_names"] <= set(entry["packages"])
+        )
+        rows.append({
+            "id": identifier, "severity": row["severity"], "fix_state": row["fix_state"],
+            "packages": sorted(row["packages"]),
+            "triage": "accepted_unreachable" if accepted else "untriaged",
+        })
+    if not rows:
+        decision = "no_high_or_critical_matches"
+    elif all(row["triage"] == "accepted_unreachable" for row in rows):
+        decision = "high_or_critical_all_triaged"
+    else:
+        decision = "manual_triage_required"
+    return decision, rows, status
+
+
+def _run(command: list[str], *, timeout: int = 1800) -> str:
+    result = subprocess.run(command, check=False, capture_output=True, text=True, timeout=timeout)
+    if result.returncode:
+        detail = (result.stderr or result.stdout).strip()
+        raise AuditFailure(f"command failed ({result.returncode}): {command[0]}: {detail[-2000:]}")
+    return result.stdout
+
+
+def _database(grype: str) -> dict[str, Any]:
+    """Fresh, checksummed, and of the schema generation this grype reads."""
+
+    status = json.loads(_run([grype, "db", "status", "-o", "json"]))
+    built = status.get("built") or status.get("buildDate") or status.get("database", {}).get("built")
+    checksum = status.get("checksum") or parse_qs(urlparse(status.get("from", "")).query).get(
+        "checksum", [None]
+    )[0]
+    if not built or not checksum:
+        raise AuditFailure("Grype database status omitted its build time or checksum")
+    built_at = datetime.fromisoformat(str(built).replace("Z", "+00:00"))
+    if built_at.tzinfo is None:
+        raise AuditFailure("Grype database build time omitted timezone")
+    age = (datetime.now(timezone.utc) - built_at).total_seconds() / 3600
+    if not -1 <= age <= MAX_GRYPE_DB_AGE_HOURS:
+        raise AuditFailure(f"Grype database age {age:.1f}h is outside 0..{MAX_GRYPE_DB_AGE_HOURS}h")
+    schema = status.get("schemaVersion") or status.get("schema_version")
+    supported = re.search(r"Supported DB Schema:\s*(\d+)", _run([grype, "version"]))
+    generation = re.fullmatch(r"v?(\d+)(?:\.\d+)*", str(schema or ""))
+    if supported is None or generation is None or supported.group(1) != generation.group(1):
+        raise AuditFailure(f"Grype database schema {schema!r} is not the generation grype reads")
+    return {"database_built": built, "age_hours": round(max(age, 0), 3),
+            "schema_version": schema, "checksum": checksum}
+
+
+def _scanner_positive_control(grype: str, workspace: Path) -> dict[str, Any]:
+    """An empty database, a wrong target or a failed load all report clean, so a
+    zero on the real image means nothing until the scanner reports a known match."""
+
+    name, version = POSITIVE_CONTROL_PACKAGE
+    control = workspace / "positive-control.sbom.json"
+    control.write_text(json.dumps({
+        "bomFormat": "CycloneDX", "specVersion": "1.5", "version": 1,
+        "components": [{"type": "library", "name": name, "version": version,
+                        "purl": f"pkg:pypi/{name}@{version}"}],
+    }), encoding="utf-8")
+    output = workspace / "positive-control.grype.json"
+    _run([grype, f"sbom:{control}", "-o", "json", "--file", str(output)])
+    found = len(grype_matches(output))
+    if found < 1:
+        raise AuditFailure(f"scanner positive control failed: no match for {name} {version}")
+    return {"package": f"{name}@{version}", "matches": found}
+
+
+def _verify_python_inventory(sbom: dict[str, Any], audited: list[Any], lock: Path) -> dict[str, str]:
+    installed = {
+        normalized(str(artifact.get("name", ""))): str(artifact.get("version") or "")
+        for artifact in sbom.get("artifacts", []) if artifact.get("type") == "python"
+    }
+    if REQUIRED - set(installed) or FORBIDDEN & set(installed):
+        raise AuditFailure(
+            f"Python inventory: missing={sorted(REQUIRED - set(installed))}, "
+            f"forbidden={sorted(FORBIDDEN & set(installed))}"
+        )
+    expected = locked_runtime_versions(lock)
+    audit = {
+        normalized(str(item.get("name"))): str(item.get("version"))
+        for item in audited if isinstance(item, dict) and item.get("name") and item.get("version")
+    }
+    for role, observed in (("image Python inventory", installed), ("pip-audit universe", audit)):
+        if observed != expected:
+            differing = sorted(set(observed) ^ set(expected) | {
+                name for name in set(observed) & set(expected) if observed[name] != expected[name]
+            })
+            raise AuditFailure(f"{role} differs from the runtime lock: {differing}")
     return expected
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--image", required=True)
     parser.add_argument("--syft", default="syft")
     parser.add_argument("--grype", default="grype")
     parser.add_argument("--pip-audit", default="pip-audit")
-    parser.add_argument(
-        "--production-lock",
-        type=Path,
-        default=DEFAULT_PRODUCTION_LOCK,
-    )
+    parser.add_argument("--production-lock", type=Path, default=DEFAULT_PRODUCTION_LOCK)
+    parser.add_argument("--pyswisseph-sdist", type=Path, default=DEFAULT_PYSWISSEPH_SDIST,
+                        help="the vendored sdist the image's pyswisseph was built from")
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--receipt", type=Path)
+    parser.add_argument("--triage", type=Path, help="reviewed CVE triage (image-cve-triage-v1)")
     args = parser.parse_args()
-
     try:
-        output = external_output_path(
-            args.output_dir,
-            source_root=PROJECT_ROOT,
-            role="image supply-chain output",
-        )
+        output = external_output_path(args.output_dir, source_root=PROJECT_ROOT, role="supply-chain output")
         output.mkdir(parents=True, exist_ok=True)
-        sbom_path = output / "sbom.syft.json"
-        grype_path = output / "grype.json"
-        pip_audit_path = output / "pip-audit.json"
+        lock = args.production_lock.resolve()
+        sbom_path, grype_path, audit_path = (
+            output / "sbom.syft.json", output / "grype.json", output / "pip-audit.json"
+        )
         _run([args.grype, "db", "update"])
         positive_control = _scanner_positive_control(args.grype, output)
-        _run(
-            [
-                args.syft,
-                args.image,
-                "-o",
-                f"syft-json={sbom_path}",
-            ]
+        _run([args.syft, args.image, "-o", f"syft-json={sbom_path}"])
+        sqlite_linkage = pyswisseph_sqlite_linkage(
+            image_swisseph_extension(args.image), args.pyswisseph_sdist,
         )
-        _run(
-            [
-                args.grype,
-                f"sbom:{sbom_path}",
-                "-o",
-                "json",
-                "--file",
-                str(grype_path),
-            ]
-        )
-        pip_audit_command = [
-            args.pip_audit,
-            "--require-hashes",
-            "--disable-pip",
-            "--no-deps",
-            "--format",
-            "json",
-            "--output",
-            str(pip_audit_path),
-            "--requirement",
-            str(args.production_lock.resolve()),
-        ]
-        _run(pip_audit_command)
+        sbom_path.write_text(json.dumps(with_embedded_components(
+            json.loads(sbom_path.read_text(encoding="utf-8")), args.pyswisseph_sdist, sqlite_linkage,
+        )), encoding="utf-8")
+        _run([args.grype, f"sbom:{sbom_path}", "-o", "json", "--file", str(grype_path)])
+        _run([
+            args.pip_audit, "--require-hashes", "--disable-pip", "--no-deps", "--format", "json",
+            "--output", str(audit_path), "--requirement", str(lock),
+        ])
         sbom = json.loads(sbom_path.read_text(encoding="utf-8"))
-        grype = json.loads(grype_path.read_text(encoding="utf-8"))
-        pip_audit = json.loads(
-            pip_audit_path.read_text(encoding="utf-8")
-        )
-        installed_versions = _python_inventory_versions(sbom)
-        python_packages = set(installed_versions)
-        missing = REQUIRED - python_packages
-        forbidden = FORBIDDEN & python_packages
-        if missing or forbidden:
-            raise AuditFailure(
-                f"Python inventory mismatch: missing={sorted(missing)}, "
-                f"forbidden={sorted(forbidden)}"
-            )
-        matches = grype.get("matches", [])
-        severity = Counter(
-            item.get("vulnerability", {}).get("severity", "Unknown")
-            for item in matches
-        )
-        fix_available = sum(
-            bool(item.get("vulnerability", {}).get("fix", {}).get("versions"))
-            for item in matches
-        )
-        image = json.loads(
-            _run(["docker", "image", "inspect", args.image])
-        )[0]
-        database = _db_status(args.grype)
-        high_or_critical = severity["High"] + severity["Critical"]
-        dependencies = (
-            pip_audit
-            if isinstance(pip_audit, list)
-            else pip_audit.get("dependencies", [])
-        )
-        verified_versions = _verify_python_versions(
-            sbom,
-            dependencies,
-            args.production_lock.resolve(),
-        )
-        vulnerabilities = sum(
-            len(item.get("vulns", [])) for item in dependencies
-        )
-        python_dependency_audit = {
-            "artifact_sha256": _sha256(pip_audit_path),
-            "dependency_count": len(dependencies),
-            "known_vulnerability_count": vulnerabilities,
-            "production_lock_sha256": _sha256(
-                args.production_lock.resolve()
-            ),
-            "exit_code": 0,
-        }
-        severity_counts = {
-            "grype": {
-                "critical": severity["Critical"],
-                "high": severity["High"],
-            }
-        }
-        decision = (
-            "manual_triage_required"
-            if high_or_critical
-            else "no_high_or_critical_matches"
+        matches = grype_matches(grype_path)
+        audit = json.loads(audit_path.read_text(encoding="utf-8"))
+        dependencies = audit if isinstance(audit, list) else audit.get("dependencies", [])
+        versions = _verify_python_inventory(sbom, dependencies, lock)
+        database = _database(args.grype)
+        image = json.loads(_run(["docker", "image", "inspect", args.image]))[0]
+        triage = load_cve_triage(args.triage) if args.triage is not None else None
+        decision, rows, triage_status = triage_decision(
+            gating_findings(matches), triage, today=datetime.now(timezone.utc).date()
         )
         receipt = {
-            "schema_version": "private-alpha-supply-chain-summary-v2",
-            "candidate": {
-                "image_reference": args.image,
-                "image_id": image["Id"],
-                "os": image["Os"],
-                "architecture": image["Architecture"],
+            "schema_version": "image-supply-chain-summary-v3",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "image": {
+                "reference": args.image, "id": image["Id"], "architecture": image["Architecture"],
                 "revision": (image.get("Config", {}).get("Labels") or {}).get(
                     "org.opencontainers.image.revision"
                 ),
             },
-            "tools": {
-                "syft": _run([args.syft, "version"]).strip(),
-                "grype": _run([args.grype, "version"]).strip(),
-                "pip_audit": _run(
-                    [args.pip_audit, "--version"]
-                ).strip(),
-            },
             "grype_database": database,
+            "pyswisseph_sqlite_linkage": sqlite_linkage,
             "scanner_positive_control": positive_control,
-            "severity_counts": severity_counts,
             "artifact_sha256": {
-                "syft_json": _sha256(sbom_path),
-                "grype_json": _sha256(grype_path),
-                "pip_audit_json": _sha256(pip_audit_path),
+                "sbom_syft_json": _sha256(sbom_path), "grype_json": _sha256(grype_path),
+                "pip_audit_json": _sha256(audit_path), "production_lock": _sha256(lock),
             },
-            "inventory": {
-                "sbom_packages": len(sbom.get("artifacts", [])),
-                "production_python_distributions": len(python_packages),
-                "lock_bound_python_versions": dict(sorted(verified_versions.items())),
-                "forbidden_packages_present": sorted(forbidden),
-                "pip_present": "pip" in python_packages,
+            "lock_bound_python_versions": dict(sorted(versions.items())),
+            "pip_audit_known_vulnerabilities": sum(len(item.get("vulns", [])) for item in dependencies),
+            "grype_matches_total": len(matches),
+            "high_or_critical_findings": rows,
+            "cve_triage": {
+                "status": triage_status,
+                # The file name only: never a local absolute path.
+                "record": args.triage.name if args.triage is not None else None,
+                "sha256": _sha256(args.triage) if args.triage is not None else None,
+                "recheck_by": triage["recheck_by"] if triage else None,
             },
-            "grype_raw_matches": {
-                **dict(sorted(severity.items())),
-                "total": len(matches),
-                "matches_with_scanner_fix_available": fix_available,
-            },
-            "python_dependency_audit": python_dependency_audit,
             "decision": decision,
         }
         receipt_path = external_output_path(
-            args.receipt or output / "receipt.json",
-            source_root=PROJECT_ROOT,
-            role="image supply-chain receipt",
+            args.receipt or output / "receipt.json", source_root=PROJECT_ROOT, role="supply-chain receipt"
         )
         receipt_path.parent.mkdir(parents=True, exist_ok=True)
-        receipt_path.write_text(
-            json.dumps(receipt, indent=2, sort_keys=True) + "\n",
-            encoding="utf-8",
-        )
+        receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         print(json.dumps(receipt, indent=2, sort_keys=True))
-        return 2 if decision == "manual_triage_required" else 0
-    except (
-        AuditFailure,
-        OSError,
-        subprocess.TimeoutExpired,
-        ValueError,
-        json.JSONDecodeError,
-    ) as exc:
-        print(f"FAIL: {exc}", file=sys.stderr)
+        return {
+            "manual_triage_required": EXIT_UNTRIAGED_HIGH,
+            "high_or_critical_all_triaged": EXIT_ALL_TRIAGED,
+        }.get(decision, 0)
+    except (AuditFailure, OSError, subprocess.TimeoutExpired, ValueError, KeyError) as error:
+        print(f"FAIL: {error}", file=sys.stderr)
         return 1
 
 

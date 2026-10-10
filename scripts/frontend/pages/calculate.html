@@ -9,9 +9,10 @@
       <form id="chart-form" novalidate autocomplete="off">
 
         <fieldset>
-          <legend>出生日期與時間 <span class="en">Date and time</span></legend>
-          <p class="choice-lead">你對出生時刻的把握程度 <span class="en">Birth time precision</span></p>
-          <div class="choice" id="precision-choice">
+          <legend>出生日期與時間 <span class="en" lang="en">Date and time</span></legend>
+          <fieldset class="choice-group" id="precision-choice">
+          <legend class="choice-lead" id="precision-lead">你對出生時刻的把握程度 <span class="en" lang="en">Birth time precision</span></legend>
+          <div class="choice">
             <label>
               <input type="radio" name="precision" value="exact" checked>
               <span><b>精確到分鐘</b><span>出生證明或可靠紀錄。</span></span>
@@ -25,59 +26,63 @@
               <span><b>只知道日期</b><span>對整個民用日取樣；代表性時刻不是出生時刻。</span></span>
             </label>
           </div>
-          <p class="consequence" id="precision-consequence" hidden></p>
+          </fieldset>
+          <p class="consequence" id="precision-consequence" aria-live="polite"></p>
 
           <div class="grid four">
             <div class="field">
               <label for="date">出生日期</label>
-              <input type="date" id="date" min="1900-01-01" max="2399-12-31" autocomplete="off">
-              <span class="hint">西元 1900–2399</span>
+              <input type="date" id="date" aria-describedby="date-hint" min="1900-01-01" max="2399-12-31" autocomplete="off">
+              <span class="hint" id="date-hint">西元 1900–2399，以格里曆解讀；原始紀錄若是儒略曆，請先換算。若只有農曆或民國紀年，請先換算成西元國曆（例：民國 79 年 = 1990 年）。</span>
             </div>
             <div class="field" id="field-hour">
-              <label for="hour">小時 <span class="en">hour</span></label>
-              <input type="number" id="hour" min="0" max="23" step="1" inputmode="numeric" autocomplete="off">
-              <span class="hint">24 小時制 0–23</span>
+              <label for="hour">小時 <span class="en" lang="en">hour</span></label>
+              <input type="number" id="hour" aria-describedby="hour-hint" min="0" max="23" step="1" inputmode="numeric" autocomplete="off">
+              <span class="hint" id="hour-hint">24 小時制 0–23</span>
             </div>
             <div class="field" id="field-minute">
-              <label for="minute">分 <span class="en">minute</span></label>
-              <input type="number" id="minute" min="0" max="59" step="1" inputmode="numeric" autocomplete="off">
-              <span class="hint">0–59</span>
+              <label for="minute">分 <span class="en" lang="en">minute</span></label>
+              <input type="number" id="minute" aria-describedby="minute-hint" min="0" max="59" step="1" inputmode="numeric" autocomplete="off">
+              <span class="hint" id="minute-hint">0–59</span>
             </div>
             <div class="field" id="field-second">
-              <label for="second">秒 <span class="en">second</span></label>
-              <input type="number" id="second" min="0" max="60" step="any" inputmode="decimal" autocomplete="off" placeholder="0">
-              <span class="hint">0–59，可填小數，不填視為 0</span>
+              <label for="second">秒 <span class="en" lang="en">second</span></label>
+              <input type="number" id="second" aria-describedby="second-hint" min="0" max="60" step="any" inputmode="decimal" autocomplete="off" placeholder="0">
+              <span class="hint" id="second-hint">0–59，可填小數（最多六位），不填視為 0</span>
             </div>
           </div>
-          <!-- 重複的民用小時（SD-32）。只有在所填時刻真的在該時區出現兩次時
+          <!-- 重複的民用小時。只有在所填時刻真的在該時區出現兩次時
                才出現；平時完全不佔版面。選項由控制器指令碼依實際偏移產生。 -->
-          <div class="fold-choice" id="fold-choice" hidden
-               role="radiogroup" aria-labelledby="fold-choice-title">
-            <p class="fold-choice-title" id="fold-choice-title"></p>
+          <fieldset class="fold-choice" id="fold-choice" hidden>
+            <legend class="fold-choice-title" id="fold-choice-title"></legend>
             <div class="choice" id="fold-choice-options"></div>
             <p class="note" id="fold-choice-note"></p>
-          </div>
+          </fieldset>
         </fieldset>
 
         <!-- ── 地點：離線目錄查詢優先，手動輸入為後備 ── -->
         <fieldset>
-          <legend>出生地點 <span class="en">Birth place</span></legend>
+          <legend>出生地點 <span class="en" lang="en">Birth place</span></legend>
           <div class="place-search">
             <div class="field grow">
               <label for="place-query">地名查詢</label>
               <div class="row">
-                <input type="search" id="place-query" autocomplete="off" placeholder="例如：臺中、Taipei、Zurich">
+                <input type="search" id="place-query" aria-describedby="place-query-hint" autocomplete="off" placeholder="例如：臺南、Taipei、Zurich">
                 <button type="button" id="place-search-button">查詢</button>
               </div>
-              <span class="hint">讀取內建的唯讀離線目錄，不發出對外請求。中文行政區請用空格分開，例如「臺中 北區」。</span>
+              <span class="hint" id="place-query-hint">讀取內建的唯讀離線目錄，不發出對外請求。中文行政區請用空格分開，例如「臺南 北區」。</span>
             </div>
           </div>
           <p class="status-line" id="place-status" role="status" aria-live="polite"></p>
           <ul class="place-results" id="place-results" hidden></ul>
 
-          <div class="place-receipt" id="place-receipt" hidden>
+          <div class="place-receipt" id="place-receipt" hidden tabindex="-1">
             <div class="eyebrow">已選定地點 · 收據</div>
             <dl id="place-receipt-body"></dl>
+            <details class="receipt-codes">
+              <summary>技術細節：目錄的原始代碼</summary>
+              <dl id="place-receipt-codes"></dl>
+            </details>
             <p class="caveat" id="place-caveat"></p>
           </div>
 
@@ -86,32 +91,32 @@
             <p class="note">目錄查不到、或你握有比目錄更精確的座標時使用。手動輸入的座標不會附帶目錄收據。</p>
             <div class="grid three">
               <div class="field">
-                <label for="latitude">緯度 <span class="en">latitude</span></label>
-                <input type="number" id="latitude" step="any" min="-90" max="90" inputmode="decimal" autocomplete="off">
-                <span class="hint">−90…90，北為正</span>
+                <label for="latitude">緯度 <span class="en" lang="en">latitude</span></label>
+                <input type="number" id="latitude" aria-describedby="latitude-hint" step="any" min="-90" max="90" inputmode="decimal" autocomplete="off">
+                <span class="hint" id="latitude-hint">−90…90，北為正</span>
               </div>
               <div class="field">
-                <label for="longitude">經度 <span class="en">longitude</span></label>
-                <input type="number" id="longitude" step="any" min="-180" max="180" inputmode="decimal" autocomplete="off">
-                <span class="hint">−180…180，東為正</span>
+                <label for="longitude">經度 <span class="en" lang="en">longitude</span></label>
+                <input type="number" id="longitude" aria-describedby="longitude-hint" step="any" min="-180" max="180" inputmode="decimal" autocomplete="off">
+                <span class="hint" id="longitude-hint">−180…180，東為正</span>
               </div>
               <div class="field">
-                <label for="altitude">海拔（公尺） <span class="en">altitude</span></label>
-                <input type="number" id="altitude" step="any" min="-500" max="10000" inputmode="decimal" autocomplete="off">
-                <span class="hint">−500…10000，不確定時填 0</span>
+                <label for="altitude">海拔（公尺） <span class="en" lang="en">altitude</span></label>
+                <input type="number" id="altitude" aria-describedby="altitude-hint" step="any" min="-500" max="10000" inputmode="decimal" autocomplete="off">
+                <span class="hint" id="altitude-hint">−500…10000，不確定時填 0</span>
               </div>
             </div>
             <div class="grid">
               <div class="field">
-                <label for="timezone">IANA 時區名稱 <span class="en">IANA timezone</span></label>
-                <input type="text" id="timezone" autocomplete="off" placeholder="Asia/Taipei" list="timezone-suggestions">
+                <label for="timezone">IANA 時區名稱 <span class="en" lang="en">IANA timezone</span></label>
+                <input type="text" id="timezone" aria-describedby="timezone-hint" autocomplete="off" placeholder="Asia/Taipei" list="timezone-suggestions">
                 <datalist id="timezone-suggestions">
-                  <option value="Asia/Taipei"></option><option value="Asia/Shanghai"></option>
-                  <option value="Asia/Tokyo"></option><option value="Asia/Hong_Kong"></option>
-                  <option value="America/New_York"></option><option value="Europe/London"></option>
-                  <option value="Europe/Zurich"></option><option value="Australia/Sydney"></option>
+                  <option value="Asia/Taipei" label="臺北"></option><option value="Asia/Shanghai" label="上海"></option>
+                  <option value="Asia/Tokyo" label="東京"></option><option value="Asia/Hong_Kong" label="香港"></option>
+                  <option value="America/New_York" label="紐約"></option><option value="Europe/London" label="倫敦"></option>
+                  <option value="Europe/Zurich" label="蘇黎世"></option><option value="Australia/Sydney" label="雪梨"></option>
                 </datalist>
-                <span class="hint">依出生地當時實際適用的時區</span>
+                <span class="hint" id="timezone-hint">依出生地當時實際適用的時區。1970 年前的偏移是 IANA 資料庫推定，未經歷史驗證</span>
               </div>
             </div>
           </details>
@@ -119,43 +124,44 @@
 
         <!-- ── 計算口徑 ── -->
         <fieldset>
-          <legend>計算口徑 <span class="en">Computation mode</span></legend>
+          <legend>計算口徑 <span class="en" lang="en">Computation mode</span></legend>
           <details class="advanced mode" id="mode">
             <summary><span id="mode-summary">回歸黃道 · 整宮制</span></summary>
             <div class="advanced-body">
+              <p class="note">視高度與升降事件的大氣折射使用15°C；氣壓未指定時由海拔估算。地平取平坦、無遮蔽的數學地平，不計眼高俯角。此有效輸入會列在結果與匯出中。</p>
           <div class="grid">
             <div class="field">
-              <label for="zodiac">黃道 <span class="en">zodiac</span></label>
+              <label for="zodiac">黃道 <span class="en" lang="en">zodiac</span></label>
               <select id="zodiac">
                 <option value="tropical">回歸 tropical</option>
                 <option value="sidereal">恆星 sidereal</option>
               </select>
             </div>
             <div class="field" id="field-ayanamsa">
-              <label for="ayanamsa">歲差校正 <span class="en">ayanamsa</span></label>
-              <select id="ayanamsa" disabled>
-                <option value="fagan_bradley">Fagan–Bradley</option>
-                <option value="hipparchos">Hipparchos</option>
-                <option value="sassanian">Sassanian</option>
-                <option value="aldebaran_15_tau">Aldebaran 15 Tau</option>
+              <label for="ayanamsa">歲差校正 <span class="en" lang="en">ayanamsa</span></label>
+              <select id="ayanamsa" aria-describedby="ayanamsa-hint" disabled>
+                <option value="fagan_bradley">Fagan–Bradley（20 世紀慣例）</option>
+                <option value="hipparchos">Hipparchos（Swiss／Mercier 重建）</option>
+                <option value="sassanian">Sassanian（Swiss／Mercier 重建）</option>
+                <option value="aldebaran_15_tau">Aldebaran 15° 金牛（現代定義）</option>
               </select>
-              <span class="hint">僅恆星黃道適用。目前沒有 Lahiri。</span>
+              <span class="hint" id="ayanamsa-hint">僅恆星黃道適用。目前沒有 Lahiri。</span>
             </div>
           </div>
           <div class="grid">
             <div class="field">
-              <label for="opt-house_system">宮位制 <span class="en">house system</span></label>
+              <label id="house-system-label">宮位制 <span class="en" lang="en">house system</span></label>
               <div class="inline-control" id="house-system-slot"></div>
-              <span class="hint">四種平等提供，本產品不排序其歷史適用性。一次計算一種。</span>
+              <span class="hint" id="opt-house_system-hint">四種平等提供，本產品不排序其歷史適用性。一次計算一種。</span>
             </div>
           </div>
-          <p class="consequence" id="zodiac-consequence" hidden></p>
+          <p class="consequence" id="zodiac-consequence" aria-live="polite"></p>
             </div>
           </details>
         </fieldset>
 
         <fieldset>
-          <legend>進階選項 <span class="en">Advanced options</span></legend>
+          <legend>進階選項 <span class="en" lang="en">Advanced options</span></legend>
           <details class="advanced" id="advanced">
             <summary><span id="advanced-summary">全部為產品預設</span></summary>
             <div class="advanced-body">
@@ -171,15 +177,22 @@
           <button type="submit" id="submit-button" disabled
           title="計算程式載入中">開始排盤</button>
           <!-- 送出中的中止入口。#results 內的兩個「清除」按鈕也會 abort，但
-               #results 在第一次成功前是 hidden，因此中止入口必須在這裡。 -->
-          <button type="button" class="ghost small" id="cancel-button" hidden>中止這次計算</button>
+               #results 在第一次成功前是 hidden，因此中止入口必須在這裡。
+               它只能停止瀏覽器等待與顯示，不能打斷伺服器已開始的計算；文案
+               與緊跟在後的說明都照實說。說明是看得見的文字（title 只在滑鼠
+               停留時出現），隨按鈕一起出現與收起（calculate.css）。 -->
+          <button type="button" class="ghost small" id="cancel-button" hidden
+            aria-describedby="cancel-hint">停止等待並捨棄這次結果</button>
+          <span class="cancel-hint" id="cancel-hint">只停止等待與顯示這次結果。伺服器若已開始計算，會算完但不留副本。</span>
           <button type="button" class="ghost small" id="example-button">載入合成範例（不是真實生辰）</button>
           <span class="status-line" id="status-line" role="status" aria-live="polite"></span>
         </div>
       </form>
 
-      <div class="error-panel" id="error-panel" hidden role="alert">
-        <h2 id="error-title">這次計算沒有完成</h2>
+      <!-- 不標 role=alert：錯誤出現時控制器一律移焦點（標題或第一個無效欄位），
+           再宣告一次會念兩遍。標題的描述是訊息與動作。 -->
+      <div class="error-panel" id="error-panel" hidden>
+        <h2 id="error-title" tabindex="-1" aria-describedby="error-message error-actions">這次計算沒有完成</h2>
         <p id="error-message"></p>
         <ul id="error-actions"></ul>
       </div>
@@ -187,30 +200,41 @@
 
     <section class="results" id="results" hidden aria-labelledby="results-heading">
       <div class="result-head">
-        <h2 id="results-heading">計算結果</h2>
-        <span class="versions mono" id="versions"></span>
+        <h2 id="results-heading" tabindex="-1">計算結果</h2>
       </div>
+
+      <section class="print-input-summary" id="print-input-summary" aria-labelledby="print-input-summary-title">
+        <h3 id="print-input-summary-title">輸入摘要</h3>
+        <dl></dl>
+      </section>
+
+      <!-- 出生時刻敏感度的第一行結論；內容由 calculate.js 依 view tree 填入。 -->
+      <p class="sampling-callout" id="sampling-callout" hidden></p>
 
       <ul class="warnings" id="warnings" hidden></ul>
 
+      <!-- 表單改動後結果不再對應目前輸入：標示並停用複製／下載。 -->
+      <p class="stale-notice" id="stale-notice" hidden role="status">表單已改動，這份結果對應的是改動前的輸入。複製與下載已停用；請重新計算，或把欄位改回原值。</p>
+
       <div class="toolbar">
-        <div class="export-mode" role="radiogroup" aria-labelledby="export-mode-title" aria-describedby="export-mode-help">
-          <p class="export-mode-title" id="export-mode-title">複製與下載內容</p>
+        <fieldset class="export-mode" aria-describedby="export-mode-help">
+          <legend class="export-mode-title" id="export-mode-title">複製與下載內容</legend>
           <div class="export-mode-options">
             <label><input type="radio" name="export-detail-mode" value="chart_data_only" checked><span><b>運算結果</b><small>天體、座標、宮位、相位與所選計算</small></span></label>
             <label><input type="radio" name="export-detail-mode" value="reproducibility_detail"><span><b>運算結果＋驗算資料</b><small>再加入版本、來源、計算軌跡與完整收據</small></span></label>
           </div>
-        </div>
-        <p class="note" id="export-mode-help">一般閱讀建議使用PDF、Markdown或純文字；JSON供完整保存與程式處理，CSV供試算表使用。</p>
+        </fieldset>
+        <p class="note" id="export-mode-help">一般閱讀建議使用PDF、Markdown或純文字；JSON供程式處理，完整精度在『運算結果＋驗算資料』的 JSON 匯出中；CSV供試算表使用。</p>
         <div class="export-actions">
           <button type="button" class="ghost small" data-copy="all">複製結果</button>
-          <button type="button" class="ghost small" data-download="md">Markdown</button>
-          <button type="button" class="ghost small" data-download="txt">純文字</button>
-          <button type="button" class="ghost small" data-download="json">JSON</button>
-          <button type="button" class="ghost small" data-download="csv">CSV</button>
+          <button type="button" class="ghost small" data-download="md" aria-describedby="export-data-note">Markdown</button>
+          <button type="button" class="ghost small" data-download="txt" aria-describedby="export-data-note">純文字</button>
+          <button type="button" class="ghost small" data-download="json" aria-describedby="export-data-note">JSON</button>
+          <button type="button" class="ghost small" data-download="csv" aria-describedby="export-data-note">CSV</button>
           <button type="button" class="ghost small" id="print-button">列印／存成PDF</button>
         </div>
-        <p class="note">輸出包含你輸入的出生時間與精確座標。檔名不含這些資料，但內容含有；請自行決定存放位置。</p>
+        <p class="note" id="export-data-note">匯出檔含出生時刻與計算結果；即使不列座標，星盤數值本身也能推回大致的出生時間與地點，刪掉日期欄位也無法匿名。</p>
+        <p class="note">檔名不含這些資料，但內容含有；請自行決定存放位置。</p>
       </div>
 
       <nav class="section-index-wrap" id="section-index-wrap" hidden aria-label="結果區塊索引">
@@ -231,11 +255,13 @@
     </section>
 </div>
 
-<script src="/zh-TW/client-context.js?v={{assets}}"></script>
-<script src="/zh-TW/exporters.js?v={{assets}}"></script>
-<script src="/zh-TW/privacy-lifecycle.js?v={{assets}}"></script>
-<script src="/zh-TW/options-catalogue.js?v={{assets}}"></script>
-<script src="/zh-TW/request-input.js?v={{assets}}"></script>
-<script src="/zh-TW/view-model.js?v={{assets}}"></script>
-<script src="/zh-TW/location-receipt.js?v={{assets}}"></script>
-<script src="/zh-TW/calculate.js?v={{assets}}"></script>
+<script src="/zh-TW/labels.js?v={{assets}}" defer></script>
+<script src="/zh-TW/client-context.js?v={{assets}}" defer></script>
+<script src="/zh-TW/exporters.js?v={{assets}}" defer></script>
+<script src="/zh-TW/privacy-lifecycle.js?v={{assets}}" defer></script>
+<script src="/zh-TW/options-catalogue.js?v={{assets}}" defer></script>
+<script src="/zh-TW/request-input.js?v={{assets}}" defer></script>
+<script src="/zh-TW/timezone-names.js?v={{assets}}" defer></script>
+<script src="/zh-TW/view-model.js?v={{assets}}" defer></script>
+<script src="/zh-TW/location-receipt.js?v={{assets}}" defer></script>
+<script src="/zh-TW/calculate.js?v={{assets}}" defer></script>

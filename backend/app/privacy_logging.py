@@ -17,24 +17,30 @@ import logging
 import math
 from pathlib import PurePosixPath
 import re
-import sys
 import time
 import uuid
-from urllib.parse import parse_qs
 
-if sys.version_info < (3, 11):
-    # Directly declared for the supported Python 3.10 floor. Import failure is
-    # fatal: silently losing mixed-group cancellation semantics would violate
-    # the privacy boundary's process-control contract.
-    from exceptiongroup import BaseExceptionGroup  # type: ignore[import-not-found]
 from collections.abc import Callable, Mapping
 from typing import Final
 
 from starlette.datastructures import MutableHeaders
-from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from .request_limits import BOUNDARY_REASON_CODES, BOUNDARY_REASON_STATE_KEY
+from .refusals import (
+    CHART_ROUTE,
+    HEALTH_ROUTE,
+    PLACE_SEARCH_ROUTE,
+    REFUSALS,
+    refusal_response,
+)
+from .request_limits import (
+    BOUNDARY_REASON_CODES,
+    BOUNDARY_REASON_STATE_KEY,
+    CLIENT_DISCONNECTED,
+    CLOSURE_REASON_CODES,
+    client_disconnected,
+    is_api_path,
+)
 
 
 EVENT_SCHEMA_VERSION: Final = "privacy-request-event-v2"
@@ -56,28 +62,14 @@ ALLOWED_EVENT_FIELDS: Final = (
 )
 
 _ALLOWED_METHODS: Final = frozenset({"GET", "POST", "HEAD", "OPTIONS"})
-_ALLOWED_ROUTES: Final = frozenset(
-    {
-        "/api/chart",
-        "/api/client-config",
-        "/api/health",
-        "/api/places/search",
-    }
-)
+_ALLOWED_ROUTES: Final = frozenset({CHART_ROUTE, HEALTH_ROUTE, PLACE_SEARCH_ROUTE})
+# Every code a refusal can carry is an event code too (the boundary reasons and
+# the domain errors are refusal codes); the refusal table in refusals.py is the
+# owner, so a new refusal cannot reach a response while telemetry reduces it to
+# `unclassified`.  The rest are telemetry's own words.
 _ALLOWED_ERROR_CODES: Final = frozenset(
-    {
-        "ambiguous_local_time_choice_required",
-        "request_rejected",
-        "server_error",
-        "internal_server_error",
-        "full_ephemeris_required",
-        "house_system_unavailable",
-        "nonexistent_local_time",
-        "place_catalog_unavailable",
-        "swiss_ephemeris_error",
-        "unclassified",
-    }
-) | BOUNDARY_REASON_CODES
+    {"request_rejected", "server_error", "unclassified"}
+) | CLOSURE_REASON_CODES | frozenset(REFUSALS)
 # Unexpected failures may expose only a closed exception-class vocabulary.
 # Anything else becomes `unclassified`; messages, tracebacks and request-derived
 # values never reach this field.
@@ -128,7 +120,6 @@ _DOMAIN_FAILURE_CODES: Final = frozenset({
     "place_catalog_unavailable",
     "swiss_ephemeris_error",
 })
-_BOUNDARY_REJECTION_CODES: Final = BOUNDARY_REASON_CODES
 _ALLOWED_DURATION_BUCKETS: Final = frozenset(
     {
         "invalid",
@@ -189,6 +180,25 @@ if not any(
     _handler.setFormatter(logging.Formatter("%(message)s"))
     _handler._classical_astrology_privacy_handler = True  # type: ignore[attr-defined]
     _SECURITY_LOGGER.addHandler(_handler)
+
+
+class _DropEveryRecord(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        return False
+
+
+def silence_server_access_log() -> None:
+    """Turn the ASGI server's access log off from inside the app.
+
+    Uvicorn's access line carries the request target, path and query string
+    included, so a launch that forgets `--no-access-log` would write URLs.
+    A later `logging.config.dictConfig` that names this logger re-enables it,
+    so a drop-everything filter stays behind as well.
+    """
+    access_logger = logging.getLogger("uvicorn.access")
+    access_logger.disabled = True
+    if not any(isinstance(item, _DropEveryRecord) for item in access_logger.filters):
+        access_logger.addFilter(_DropEveryRecord())
 
 
 def _safe_method(value: object) -> str:
@@ -256,9 +266,13 @@ def _outcome(status_code: int, error_code: str | None) -> str:
     # A response can fail after its HTTP status has already been sent.  Keep the
     # wire status truthful while allowing telemetry to record the completed
     # operation as an error.
+    if error_code in CLOSURE_REASON_CODES:
+        # The client left before a response existed: the service neither
+        # refused nor failed it, and there is no status to classify.
+        return "unknown"
     if error_code in {"internal_server_error", "server_error"} | _DOMAIN_FAILURE_CODES:
         return "error"
-    if error_code in _BOUNDARY_REJECTION_CODES:
+    if error_code in BOUNDARY_REASON_CODES:
         return "rejected"
     if 200 <= status_code <= 399:
         return "success"
@@ -282,7 +296,7 @@ def _boundary_reason(scope: Scope) -> str | None:
     if not isinstance(state, Mapping):
         return None
     value = state.get(BOUNDARY_REASON_STATE_KEY)
-    if isinstance(value, str) and value in _BOUNDARY_REJECTION_CODES:
+    if isinstance(value, str) and value in BOUNDARY_REASON_CODES:
         return value
     return None
 
@@ -417,64 +431,49 @@ def _content_length_from_scope(scope: Scope) -> str | None:
 
 
 def _apply_security_headers(
-    message: Message,
-    request_id: str,
-    additional_response_headers: Mapping[str, str],
-    cache_control: str,
+    message: Message, request_id: str, cache_control: str
 ) -> None:
     headers = MutableHeaders(scope=message)
     for name, value in _SECURITY_HEADERS.items():
-        headers[name] = value
-    for name, value in additional_response_headers.items():
         headers[name] = value
     headers["Cache-Control"] = cache_control
     headers["X-Request-ID"] = request_id
 
 
-def _cache_control(scope: Scope, status_code: int, policy: str) -> str:
+def _cache_control(
+    scope: Scope,
+    status_code: int,
+    policy: str,
+    asset_content_version: Callable[[str], str | None] | None = None,
+) -> str:
     if policy == "no_store" or status_code >= 400:
         return "no-store"
     path = scope.get("path")
-    if not isinstance(path, str) or path == "/api" or path.startswith("/api/"):
+    if not isinstance(path, str) or is_api_path(path):
         return "no-store"
     suffix = PurePosixPath(path).suffix.casefold()
     query = scope.get("query_string", b"")
-    try:
-        versioned = bool(parse_qs(query.decode("ascii")).get("v"))
-    except (UnicodeDecodeError, ValueError):
-        versioned = False
-    if suffix in _IMMUTABLE_STATIC_SUFFIXES and versioned:
-        return "public, max-age=31536000, immutable"
-    if suffix in _IMMUTABLE_STATIC_SUFFIXES:
-        return "public, max-age=300"
-    return "no-cache"
-
-
-def _error_response(error_code: str) -> JSONResponse:
-    return JSONResponse(
-        status_code=500,
-        content={
-            "detail": {
-                "code": error_code,
-                "message": (
-                    "伺服器無法完成本次計算。請重新嘗試；若持續發生，"
-                    "請回報 request ID。"
-                ),
-            }
-        },
-    )
-
-
-def _is_excluded_event_path(
-    path: object,
-    excluded_event_routes: frozenset[str],
-) -> bool:
-    if not isinstance(path, str):
-        return False
-    return any(
-        path == route or path.startswith(f"{route}/")
-        for route in excluded_event_routes
-    )
+    if query:
+        # A query on a page or asset address may carry birth data typed
+        # or linked by someone else (the reason the 308 drops it).  Only the
+        # one query this site writes itself — exactly `v=<content version of
+        # the bytes served here>`, byte for byte — may be stored; anything else
+        # is answered but never kept under that URL.
+        version = (
+            asset_content_version(path)
+            if asset_content_version is not None
+            and suffix in _IMMUTABLE_STATIC_SUFFIXES
+            else None
+        )
+        # The year-long immutable entry is bound to the bytes, not to
+        # the presence of a key; a label, a stale or foreign digest, a second
+        # parameter, or an application with no version source never earns it.
+        if version is not None and query == b"v=" + version.encode("ascii"):
+            return "public, max-age=31536000, immutable"
+        return "no-store"
+    if suffix not in _IMMUTABLE_STATIC_SUFFIXES:
+        return "no-cache"
+    return "public, max-age=300"
 
 
 class PrivacyBoundaryMiddleware:
@@ -484,19 +483,15 @@ class PrivacyBoundaryMiddleware:
         app: ASGIApp,
         *,
         event_emitter: Callable[[dict], bool] = emit_security_event,
-        excluded_event_routes: frozenset[str] = frozenset(),
-        additional_response_headers: Mapping[str, str] | None = None,
         cache_policy: str = "no_store",
+        asset_content_version: Callable[[str], str | None] | None = None,
     ) -> None:
         if cache_policy not in {"no_store", "public_split"}:
             raise ValueError("unsupported response cache policy")
         self.app = app
         self.event_emitter = event_emitter
-        self.excluded_event_routes = excluded_event_routes
-        self.additional_response_headers = dict(
-            additional_response_headers or {}
-        )
         self.cache_policy = cache_policy
+        self.asset_content_version = asset_content_version
 
     async def __call__(
         self,
@@ -524,29 +519,40 @@ class PrivacyBoundaryMiddleware:
                 _apply_security_headers(
                     message,
                     request_id,
-                    self.additional_response_headers,
-                    _cache_control(scope, status_code, self.cache_policy),
+                    _cache_control(
+                        scope,
+                        status_code,
+                        self.cache_policy,
+                        self.asset_content_version,
+                    ),
                 )
             elif message["type"] == "http.response.body":
                 response_complete = not message.get("more_body", False)
             await send(message)
 
+        async def send_generic_500() -> None:
+            # The same serializer and fixed message every other refusal uses.
+            try:
+                await refusal_response("internal_server_error")(
+                    scope, receive, send_with_boundary
+                )
+            except BaseException as error:
+                _raise_if_process_control(error)
+                # A failed ASGI send has no safe fallback sink.  The
+                # allowlisted completion event below remains best-effort.
+
         unexpected_failure: BaseException | None = None
         try:
             await self.app(scope, receive, send_with_boundary)
-            if not response_started:
+            if not response_started and client_disconnected(scope):
+                # The request boundary stopped because the client had gone.
+                # No response is owed to a closed connection, and a
+                # synthesized 500 would count a client abort as a server
+                # fault.  The status stays 0: none was sent.
+                error_code = CLIENT_DISCONNECTED
+            elif not response_started:
                 error_code = "internal_server_error"
-                try:
-                    await _error_response(error_code)(
-                        scope,
-                        receive,
-                        send_with_boundary,
-                    )
-                except BaseException as error:
-                    _raise_if_process_control(error)
-                    # A failed ASGI send has no safe fallback sink.  The
-                    # allowlisted completion event below remains best-effort.
-                    pass
+                await send_generic_500()
         except BaseException as error:
             if _is_process_control_exception(error):
                 process_control_exception = True
@@ -561,15 +567,7 @@ class PrivacyBoundaryMiddleware:
             # generic 500.  Afterwards the HTTP status cannot be changed.
             error_code = "internal_server_error"
             if not response_started:
-                try:
-                    await _error_response(error_code)(
-                        scope,
-                        receive,
-                        send_with_boundary,
-                    )
-                except BaseException as response_error:
-                    _raise_if_process_control(response_error)
-                    pass
+                await send_generic_500()
             elif not response_complete:
                 try:
                     await send({"type": "http.response.body", "body": b""})
@@ -577,13 +575,7 @@ class PrivacyBoundaryMiddleware:
                     _raise_if_process_control(send_error)
                     pass
         finally:
-            if (
-                not process_control_exception
-                and not _is_excluded_event_path(
-                    scope.get("path"),
-                    self.excluded_event_routes,
-                )
-            ):
+            if not process_control_exception:
                 if error_code is None:
                     domain_reason = _domain_error_reason(scope)
                     boundary_reason = _boundary_reason(scope)

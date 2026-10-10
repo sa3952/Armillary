@@ -23,13 +23,8 @@ BACKEND_APP = PROJECT_ROOT / "backend" / "app"
 # here, so a requirement file added to that tree is scanned without anyone
 # remembering to list it, and one that leaves the published tree is simply not
 # discovered instead of aborting the guard.
-REQUIREMENT_ROOTS = (
-    PROJECT_ROOT / "backend",
-    PROJECT_ROOT / "deploy",
-)
-REQUIREMENT_FILE_NAME = re.compile(
-    r"^[a-z0-9_.-]*requirements[a-z0-9_.-]*\.(?:txt|in|lock)$"
-)
+REQUIREMENT_ROOTS = (PROJECT_ROOT / "backend", PROJECT_ROOT / "deploy")
+REQUIREMENT_FILE_NAME = re.compile(r"^[a-z0-9_.-]*requirements[a-z0-9_.-]*\.(?:txt|in|lock)$")
 PRUNED_DIRECTORY_NAMES = frozenset({"__pycache__", "node_modules"})
 MAX_REQUIREMENT_INCLUDE_DEPTH = 8
 MAX_REQUIREMENT_FILES = 64
@@ -56,38 +51,18 @@ FORBIDDEN_ROOT_MODULES = frozenset(
     }
 )
 FORBIDDEN_EXACT_MODULES = frozenset(
-    {
-        "ftplib",
-        "http.client",
-        "logging.handlers",
-        "smtplib",
-        "socket",
-        "urllib.request",
-    }
+    {"ftplib", "http.client", "logging.handlers", "smtplib", "socket", "urllib.request"}
 )
-FORBIDDEN_DISTRIBUTIONS = frozenset(
-    module.replace("_", "-") for module in FORBIDDEN_ROOT_MODULES
-)
-FORBIDDEN_DISTRIBUTION_PREFIXES = (
-    "datadog-",
-    "opentelemetry-",
-    "psycopg2-",
-    "sentry-",
-)
-REVIEWED_EXACT_IMPORTS = {
-    (BACKEND_APP / "core" / "place_catalog.py").resolve(): frozenset(
-        {"sqlite3"}
-    ),
-}
+FORBIDDEN_DISTRIBUTIONS = frozenset(module.replace("_", "-") for module in FORBIDDEN_ROOT_MODULES)
+FORBIDDEN_DISTRIBUTION_PREFIXES = ("datadog-", "opentelemetry-", "psycopg2-", "sentry-")
+REVIEWED_EXACT_IMPORTS = {(BACKEND_APP / "core" / "place_catalog.py").resolve(): frozenset({"sqlite3"})}
 
 
 class PrivacyDependencyFailure(RuntimeError):
     pass
 
 
-def discover_requirement_files(
-    roots: tuple[Path, ...] = REQUIREMENT_ROOTS,
-) -> tuple[Path, ...]:
+def discover_requirement_files(roots: tuple[Path, ...] = REQUIREMENT_ROOTS) -> tuple[Path, ...]:
     """Return every requirement file the given roots actually declare.
 
     A root that is absent is a refusal rather than an empty result: the guard
@@ -98,25 +73,21 @@ def discover_requirement_files(
     for root in roots:
         if not root.is_dir():
             raise PrivacyDependencyFailure(
-                f"requirement root is absent, so its dependencies cannot be "
-                f"checked: {root}"
+                f"requirement root is absent, so its dependencies cannot be checked: {root}"
             )
         pending = [root]
         while pending:
             directory = pending.pop()
             for entry in sorted(directory.iterdir()):
                 if entry.is_dir():
-                    if entry.name.startswith(".") or (
-                        entry.name in PRUNED_DIRECTORY_NAMES
-                    ):
+                    if entry.name.startswith(".") or (entry.name in PRUNED_DIRECTORY_NAMES):
                         continue
                     pending.append(entry)
                 elif REQUIREMENT_FILE_NAME.match(entry.name.lower()):
                     discovered.append(entry)
     if not discovered:
         raise PrivacyDependencyFailure(
-            "no requirement file was discovered under "
-            + ", ".join(str(root) for root in roots)
+            "no requirement file was discovered under " + ", ".join(str(root) for root in roots)
         )
     return tuple(sorted(discovered))
 
@@ -138,14 +109,8 @@ def _static_string(node: ast.AST) -> str | None:
 
 def _reject_module(module: str, path: Path, line: int) -> None:
     normalized = module.lower()
-    is_forbidden = (
-        _root_module(normalized) in FORBIDDEN_ROOT_MODULES
-        or normalized in FORBIDDEN_EXACT_MODULES
-    )
-    reviewed_modules = REVIEWED_EXACT_IMPORTS.get(
-        path.resolve(),
-        frozenset(),
-    )
+    is_forbidden = _root_module(normalized) in FORBIDDEN_ROOT_MODULES or normalized in FORBIDDEN_EXACT_MODULES
+    reviewed_modules = REVIEWED_EXACT_IMPORTS.get(path.resolve(), frozenset())
     if is_forbidden and _root_module(normalized) not in reviewed_modules:
         raise PrivacyDependencyFailure(
             f"{path}: line {line} imports privacy-sensitive dependency {module!r}; "
@@ -173,11 +138,7 @@ def check_python_source(path: Path) -> None:
             if node.module:
                 _reject_module(node.module, path, node.lineno)
                 for alias in node.names:
-                    _reject_module(
-                        f"{node.module}.{alias.name}",
-                        path,
-                        node.lineno,
-                    )
+                    _reject_module(f"{node.module}.{alias.name}", path, node.lineno)
             if node.module == "importlib":
                 for alias in node.names:
                     if alias.name == "import_module":
@@ -225,17 +186,13 @@ def _requirement_name(line: str) -> str | None:
     if not line:
         return None
     if line.startswith(("-e", "--editable", "git+", "http:", "https:", "file:")):
-        raise PrivacyDependencyFailure(
-            "URL/editable requirements require explicit privacy review"
-        )
+        raise PrivacyDependencyFailure("URL/editable requirements require explicit privacy review")
     match = re.match(r"(?P<name>[A-Za-z0-9_.-]+)", line)
     if not match:
         raise PrivacyDependencyFailure(f"cannot parse requirement line: {line}")
     remainder = line[match.end() :].lstrip()
     if remainder.startswith("@"):
-        raise PrivacyDependencyFailure(
-            "named direct-URL requirements require explicit privacy review"
-        )
+        raise PrivacyDependencyFailure("named direct-URL requirements require explicit privacy review")
     return re.sub(r"[-_.]+", "-", match.group("name")).lower()
 
 
@@ -252,11 +209,7 @@ def _include_target(line: str) -> str | None:
 
 
 def check_requirements(
-    path: Path,
-    *,
-    _root: Path | None = None,
-    _seen: set[Path] | None = None,
-    _depth: int = 0,
+    path: Path, *, _root: Path | None = None, _seen: set[Path] | None = None, _depth: int = 0
 ) -> None:
     root = (_root or path.parent).resolve()
     seen = _seen if _seen is not None else set()
@@ -270,16 +223,12 @@ def check_requirements(
     try:
         resolved.relative_to(root)
     except ValueError as error:
-        raise PrivacyDependencyFailure(
-            f"requirement include escapes its reviewed root: {path}"
-        ) from error
+        raise PrivacyDependencyFailure(f"requirement include escapes its reviewed root: {path}") from error
     seen.add(resolved)
     try:
         content = resolved.read_text(encoding="utf-8")
     except OSError as error:
-        raise PrivacyDependencyFailure(
-            f"cannot read requirement file {path}: {error}"
-        ) from error
+        raise PrivacyDependencyFailure(f"cannot read requirement file {path}: {error}") from error
     for line_number, line in enumerate(content.splitlines(), start=1):
         include = _include_target(line)
         if include is not None:
@@ -287,20 +236,14 @@ def check_requirements(
                 raise PrivacyDependencyFailure(
                     f"{path}: line {line_number}: requirement include must be local"
                 )
-            check_requirements(
-                resolved.parent / include,
-                _root=root,
-                _seen=seen,
-                _depth=_depth + 1,
-            )
+            check_requirements(resolved.parent / include, _root=root, _seen=seen, _depth=_depth + 1)
             continue
         try:
             name = _requirement_name(line)
         except PrivacyDependencyFailure as error:
             raise PrivacyDependencyFailure(f"{path}: line {line_number}: {error}") from error
         if name is not None and (
-            name in FORBIDDEN_DISTRIBUTIONS
-            or name.startswith(FORBIDDEN_DISTRIBUTION_PREFIXES)
+            name in FORBIDDEN_DISTRIBUTIONS or name.startswith(FORBIDDEN_DISTRIBUTION_PREFIXES)
         ):
             raise PrivacyDependencyFailure(
                 f"{path}: line {line_number} adds privacy-sensitive dependency "
@@ -309,8 +252,20 @@ def check_requirements(
     seen.remove(resolved)
 
 
+def discover_python_sources(app: Path = BACKEND_APP) -> tuple[Path, ...]:
+    """Every Python source under `app`; an absent or empty tree is a refusal,
+    because a scan of nothing would report coverage it did not have."""
+
+    if not app.is_dir():
+        raise PrivacyDependencyFailure(f"source root is absent, so its imports cannot be checked: {app}")
+    sources = tuple(sorted(app.rglob("*.py")))
+    if not sources:
+        raise PrivacyDependencyFailure(f"no Python source was discovered under {app}")
+    return sources
+
+
 def check_repository() -> None:
-    for path in sorted(BACKEND_APP.rglob("*.py")):
+    for path in discover_python_sources():
         check_python_source(path)
     for path in discover_requirement_files():
         check_requirements(path)

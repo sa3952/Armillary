@@ -7,15 +7,24 @@
 <title>可驗證的古典西洋占星計算器｜渾儀 Armillary</title>
 <meta name="description" content="以Swiss Ephemeris計算星盤，並呈現座標、時間、方法來源、計算收據與可重現驗證資料。">
 <link rel="canonical" href="https://projectarmillary.com/zh-TW/">
+<link rel="alternate" hreflang="zh-TW" href="https://projectarmillary.com/zh-TW/">
+<link rel="alternate" hreflang="x-default" href="https://projectarmillary.com/zh-TW/">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="渾儀 Armillary">
+<meta property="og:locale" content="zh_TW">
 <meta property="og:title" content="可驗證的古典西洋占星計算器｜渾儀 Armillary">
 <meta property="og:description" content="以Swiss Ephemeris計算星盤，並呈現座標、時間、方法來源、計算收據與可重現驗證資料。">
 <meta property="og:url" content="https://projectarmillary.com/zh-TW/">
-<meta name="twitter:card" content="summary">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/#webpage","@type":"WebPage","about":{"@id":"https://projectarmillary.com/#application"},"description":"以Swiss Ephemeris計算星盤，並呈現座標、時間、方法來源、計算收據與可重現驗證資料。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"可驗證的古典西洋占星計算器｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/"},{"@id":"https://projectarmillary.com/#application","@type":"WebApplication","alternateName":"Armillary","applicationCategory":"ReferenceApplication","creator":{"@type":"Person","name":"Sebastian"},"description":"以Swiss Ephemeris計算星盤，並呈現座標、時間、方法來源、計算收據與可重現驗證資料。","name":"渾儀 Armillary","operatingSystem":"Web","url":"https://projectarmillary.com/zh-TW/"}]}</script>
-<link rel="icon" href="/zh-TW/favicon.svg">
-<link rel="stylesheet" href="/zh-TW/tokens.css?v=0.16.6">
-<link rel="stylesheet" href="/zh-TW/page.css?v=0.16.6">
+<meta property="og:image" content="https://projectarmillary.com/zh-TW/og-card.png?v=16c9900d06168aab">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="渾儀 Armillary：可驗證的古典西洋占星計算器">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/#webpage","@type":"WebPage","about":{"@id":"https://projectarmillary.com/#application"},"description":"以Swiss Ephemeris計算星盤，並呈現座標、時間、方法來源、計算收據與可重現驗證資料。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"可驗證的古典西洋占星計算器｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/"},{"@id":"https://projectarmillary.com/#application","@type":"WebApplication","alternateName":"Armillary","applicationCategory":"ReferenceApplication","description":"以Swiss Ephemeris計算星盤，並呈現座標、時間、方法來源、計算收據與可重現驗證資料。","inLanguage":"zh-TW","isAccessibleForFree":true,"license":"https://spdx.org/licenses/AGPL-3.0-only.html","name":"渾儀 Armillary","operatingSystem":"Web","url":"https://projectarmillary.com/zh-TW/"}]}</script>
+<link rel="icon" href="/zh-TW/favicon.svg?v=4fc39ec49ab82358">
+<link rel="stylesheet" href="/zh-TW/tokens.css?v=70b8072b7e58d89d">
+<link rel="stylesheet" href="/zh-TW/page.css?v=749bfa663aa0aea2">
 </head>
 <body>
 
@@ -56,7 +65,7 @@
     </div>
     <ul class="creds">
       <li><b>免註冊</b><span>四個欄位就能算</span></li>
-      <li><b>AGPL-3.0</b><span>你按「檢視原始碼」看到的，就是實際執行的程式</span></li>
+      <li><b>AGPL-3.0</b><span>對應原始碼完整公開；你這一次用的版本，寫在計算收據上</span></li>
       <li><b>0 追蹤器</b><span>沒有 cookie 橫幅，因為沒有 cookie</span></li>
     </ul>
     <div class="depth">恆星 · 赤緯平行 · 反照點 · 阿拉伯點 · 日夜盤 · 月空亡 · 三套座標並列</div>
@@ -144,7 +153,7 @@
   </section>
 
   <section id="log">
-    <div class="spec-scroll">
+    <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="log-table-title">
       <table class="log">
         <thead><tr><th>步</th><th>這一步在算什麼</th><th>實際執行的算式</th><th>得到</th></tr></thead>
         <tbody>
@@ -157,7 +166,7 @@
       </table>
     </div>
     <div class="tabula-foot">
-      <p><b>這是那次計算的前五步，原樣照抄，共 98 步。</b>第三欄不是說明文字，是實際跑的那一行——你可以用同一個星曆函式庫照著重跑，對出同一個值。整份可下載離線核對。</p>
+      <p><b id="log-table-title">這是那次計算的前五步，依卷宗整理。</b>第三欄是實際呼叫的簡寫，完整算式在卷宗裡——你可以用同一個星曆函式庫照著重跑，對出同一個值。步數隨啟用的模組而變，實際步數印在該次卷宗的 <code>trace_receipt</code> 裡；整份可下載離線核對。</p>
     </div>
   </section>
 
@@ -175,14 +184,14 @@
       <div class="sd-track">
         <div class="sd-fill"></div>
         <div class="sd-flip" aria-hidden="true"></div>
-        <span class="sd-probe" style="left:0%"></span>
-        <span class="sd-probe" style="left:25%"></span>
-        <span class="sd-probe" style="left:50%"></span>
-        <span class="sd-probe" style="left:75%"></span>
-        <span class="sd-probe" style="left:100%"></span>
+        <span class="sd-probe sd-at-0"></span>
+        <span class="sd-probe sd-at-25"></span>
+        <span class="sd-probe sd-at-50"></span>
+        <span class="sd-probe sd-at-75"></span>
+        <span class="sd-probe sd-at-100"></span>
         <div class="sd-handle" role="slider" tabindex="0"
              aria-label="在這一小時裡移動出生時刻"
-             aria-valuemin="0" aria-valuemax="3600" aria-valuenow="0"
+             aria-valuemin="0" aria-valuemax="3599" aria-valuenow="0"
              aria-valuetext="14:00:00"></div>
       </div>
 
@@ -213,7 +222,7 @@
       <div class="sd-hint">拖曳上面的把手，或用方向鍵移動。五個刻度是後端實際取樣的時刻。</div>
     </div>
 
-    <p class="stake">跨過那條線的瞬間，整宮制下<b>十一個天體的落宮同時改變</b>。所以渾儀不替你猜一個好看的時刻——它把整個小時取樣，告訴你哪些判定在這一小時內完全不動、哪些會翻面、翻面卡在哪兩秒之間。<b>不確定的東西，就標成不確定。</b></p>
+    <p class="stake">跨過那條線的瞬間，整宮制下<b>十一個天體的落宮同時改變</b>。所以渾儀不替你猜一個好看的時刻——它在整個小時裡取樣，告訴你哪些判定在每個取樣時刻都相同、哪些在取樣之間翻面、翻面卡在哪十幾秒之間。<b>不確定的東西，就標成不確定。</b></p>
   </section>
 
   <section id="moduli">
@@ -247,14 +256,14 @@
         </div>
         <ul>
           <li>反照點<em>以巨蟹／摩羯軸鏡射</em></li>
-          <li>赤緯平行與反平行<em>近現代技法，非古典傳統</em></li>
+          <li>赤緯平行與反平行<em>17 世紀 Placidus 的界定，非古典傳統</em></li>
         </ul>
       </div>
 
       <div class="ring r3">
         <div class="ring-head">
           <b>RING III</b><span>方法判斷</span>
-          <i>需要選定技法者，一律標明方法版本與審閱狀態</i>
+          <i>需要選定技法者，一律在卷宗記下方法版本與審閱狀態</i>
         </div>
         <ul>
           <li>宮位分割<em>四種，或不算宮位</em></li>
@@ -262,7 +271,7 @@
           <li>相位</li>
           <li>本質尊貴</li>
           <li>日夜盤</li>
-          <li>阿拉伯點<em>福點 · 精神點</em></li>
+          <li>阿拉伯點<em>命運點 · 精神點</em></li>
           <li>月空亡</li>
         </ul>
       </div>
@@ -281,20 +290,20 @@
         <span>不是「我們選擇不存」，是沒有那個元件：沒有帳號資料庫、沒有命盤資料庫、沒有工作階段儲存、沒有請求快取、沒有出生資料快取、沒有背景佇列。</span>
       </li>
       <li>
-        <b>整條路徑不寫磁碟</b>
+        <b>計算路徑不主動寫磁碟</b>
         <span>請求內容 → 請求範圍的資料模型 → 行程鎖底下的同步計算 → 回應與計算卷宗 → 你的瀏覽器記憶體。只有在你按下時，才進剪貼簿或下載檔案。</span>
       </li>
       <li>
-        <b>寫檔會讓測試失敗</b>
-        <span>自動化守衛在計算請求期間攔截檔案寫入介面。只要請求路徑嘗試寫檔，測試就失敗——這是由測試守著的限制，不是一句話。</span>
+        <b>計算請求期間寫檔會讓測試失敗</b>
+        <span>自動化測試在一次預設計算請求期間，攔截 Python 的檔案寫入介面（open、io.open、os.open）；只要出現一次帶寫入旗標的呼叫，測試就失敗。原生函式庫與其他請求組合不在這個測試的涵蓋範圍內。</span>
       </li>
       <li>
-        <b>日誌只有十個固定欄位</b>
-        <span>每完成一個請求輸出一行事件，欄位是封閉清單。不含出生資料、IP、User-Agent、請求內容。</span>
+        <b>日誌只有 11 個固定欄位</b>
+        <span>每完成一個請求輸出一行事件，欄位是封閉清單。不含出生資料、IP、User-Agent、請求內容。這一行會留在容器日誌裡，保存方式見〈<a href="/zh-TW/legal/privacy">隱私政策</a>〉。</span>
       </li>
       <li>
-        <b>沒有第三方</b>
-        <span>不使用追蹤器、廣告、分析或遠端日誌。站上只有一個資料庫：內建的地名目錄，以唯讀不可變模式開啟，也不寫入你查詢的字串。</span>
+        <b>不引入第三方追蹤、分析或遠端日誌相依</b>
+        <span>不使用追蹤器、廣告、分析或遠端日誌；主機、DNS 與網域在同一家瑞士供應商，那一層的界線寫在〈信任中心〉。站上只有一個資料庫：內建的地名目錄，以唯讀不可變模式開啟，也不寫入你查詢的字串。</span>
       </li>
     </ol>
 
@@ -314,14 +323,14 @@
   <section id="take" class="no-rule">
     <div class="eyebrow">整份可帶走 · PORTABILE</div>
     <h2>離開這個網站以後，<br>這份計算仍然完整。</h2>
-    <p>畫面與匯出讀同一份資料，不從畫面反推。每一份都附完整逐步軌跡與計算收據；在相同輸入、版本、資料與計算口徑下重算，結果應當一致。</p>
+    <p>畫面與匯出讀同一份資料，不從畫面反推。選「運算結果＋驗算資料」匯出時，每一份都附完整逐步軌跡與計算收據；預設的「運算結果」含天體、座標、宮位、相位與所選計算，不另列出生地座標，但星盤數值本身可推回大致地點。在相同輸入、版本、資料與計算口徑下重算，結果應當一致。</p>
     <div class="formats">
       <div><b>JSON</b><span>完整結構</span></div>
       <div><b>Markdown</b><span>可讀卷宗</span></div>
       <div><b>CSV</b><span>表格核對</span></div>
       <div><b>純文字</b><span>筆記保存</span></div>
     </div>
-    <p class="formats-note">結果頁另有列印版面：直接列印或存成 PDF 時，只留下計算結果與收據。</p>
+    <p class="formats-note">結果頁另有列印版面：直接列印或存成 PDF 時，隱藏表單與控制項、展開所有摺疊區塊並印出結果；若已打開「技術細節與驗算資料」取得驗算資料，收據與驗算資料也一併印出。</p>
   </section>
 
   <div class="cta">
@@ -335,8 +344,8 @@
   </div>
 </div>
 
-<script src="/zh-TW/sensitivity-time.js?v=0.16.6" defer></script>
-<script src="/zh-TW/sensitivity.js?v=0.16.6" defer></script>
+<script src="/zh-TW/sensitivity-time.js?v=5b637e5bec762815" defer></script>
+<script src="/zh-TW/sensitivity.js?v=0ef5c0db747fa307" defer></script>
 </main>
 
 <footer>

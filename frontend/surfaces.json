@@ -2,7 +2,6 @@
   "schema_version": 1,
   "origin": "https://projectarmillary.com",
   "default_locale": "zh-TW",
-  "indexnow_key": "bbb6ac30c1952dbb592262ea2656d708",
   "surfaces": [
     {
       "key": "home",
@@ -90,7 +89,7 @@
       "layers": ["L2", "L3"],
       "indexable": true,
       "title": "關於渾儀 Armillary｜可驗證的古典占星計算",
-      "description": "認識渾儀的產品目的、開發者Sebastian、Swiss Ephemeris基礎、方法透明度與零持久化方向。"
+      "description": "渾儀是一台說得出出處的古典占星計算儀器：每個數字都帶著出處，每張表都具名到作品與章節、行號或頁碼，不確定就照實標成不確定。"
     },
     {
       "key": "contact",
@@ -101,7 +100,7 @@
       "layers": ["L1"],
       "indexable": true,
       "title": "聯絡渾儀 Armillary",
-      "description": "聯絡渾儀開發者Sebastian，提出隱私、安全、來源、更正或產品使用相關問題。"
+      "description": "渾儀只有一個聯絡信箱，個資權利請求、安全通報、一般聯絡與錯誤回報共用；本頁說明一封信會經過哪裡、保存在哪裡。"
     },
     {
       "key": "roadmap",
@@ -110,7 +109,7 @@
       "surface": "/zh-TW/roadmap",
       "locale": "zh-TW",
       "layers": ["L1"],
-      "indexable": false,
+      "indexable": true,
       "title": "產品現況與後續方向｜渾儀 Armillary",
       "description": "區分渾儀已提供的能力、正在驗證的工作與尚未承諾的後續方向。"
     },
@@ -121,9 +120,9 @@
       "surface": "/zh-TW/blog",
       "locale": "zh-TW",
       "layers": ["L2", "L3"],
-      "indexable": false,
+      "indexable": true,
       "title": "古典占星計算文章與研究筆記｜渾儀 Armillary",
-      "description": "渾儀預計發布的古典占星計算、方法差異、驗證與出生時間敏感度文章。"
+      "description": "渾儀公開的選題清單：古典占星計算、方法差異、驗證與出生時間敏感度，包括我們自己算錯的地方。"
     },
     {
       "key": "legal-privacy",
@@ -134,7 +133,7 @@
       "layers": ["L1"],
       "indexable": true,
       "title": "隱私政策｜渾儀 Armillary",
-      "description": "說明渾儀處理出生日期時間、座標、憑證、日誌及第三方服務的資料流與限制。"
+      "description": "說明渾儀處理出生日期時間、地點座標、日誌、聯絡信件及第三方服務的資料流與限制，並逐項對應個資法第 8 條告知事項。"
     },
     {
       "key": "legal-terms",
@@ -157,6 +156,17 @@
       "indexable": true,
       "title": "著作權、授權與對應原始碼｜渾儀 Armillary",
       "description": "查看渾儀、Swiss Ephemeris、地名資料、第三方依賴及AGPLv3對應原始碼資訊。"
+    }
+  ],
+  "error_pages": [
+    {
+      "key": "not-found",
+      "fragment": "not-found",
+      "output": "zh-TW/404.html",
+      "status": 404,
+      "locale": "zh-TW",
+      "layers": ["L1"],
+      "title": "找不到這一頁｜渾儀 Armillary"
     }
   ]
 }

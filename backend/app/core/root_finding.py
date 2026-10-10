@@ -1,44 +1,28 @@
 """兩段式角度求根：粗掃描分割根區間，再以二分法收斂。
 
-本模組取代線性外插近似（MTH-Q-003 乙裁決廢止）。線性外插把
-兩顆星體的黃經速度視為視窗期間的常數，對以下三種情況都會給出錯誤答案：
+不把兩顆星體的黃經速度視為視窗內的常數：月亮速度在 11.7–15.4 度/日之間變化；外行星
+在站留附近速度趨近 0 並反號，兩顆速度相近的星體可能在同一視窗內三次形成同一相位；
+相對速度為 0 附近可能相切而不成相。本方法**在每一個取樣點都實際查星曆**，不對星體運動
+做解析假設：
 
-1. **速度非定值。** 月亮的黃經速度在 11.7–15.4 度/日之間變化，2.5 天的搜尋視窗內
-   足以累積數度誤差；外行星在站留(station)附近速度趨近 0 並反號。
-2. **多重根。** 兩顆速度相近的星體可能在同一個視窗內三次形成同一個相位
-   （順行成相 → 對方逆行退回 → 再度順行成相）。線性外插只解得出一個根。
-3. **相對速度反號。** 線性外插在 `relative_speed == 0` 時直接放棄，但真實情況是
-   相位可能在該時刻附近相切（tangency）——差一點成相但沒有成相，或恰好成相一次。
-
-改採的方法對這三種情況都成立，因為它**在每一個取樣點都實際查星曆**，不對星體運動
-做任何解析假設：
-
-- 第一段：以固定步長 `coarse_step_days` 掃描整個視窗，記錄 f(t) 的值。
-  凡相鄰兩點變號、且跨度小於 180 度者，即為一個包住根的區間。
-  「跨度小於 180 度」這個條件用來區分真正的過零與環繞不連續（f 定義在
-  (-180, 180]，星體通過「距離精確相位 180 度」處時 f 會從 +180 跳到 -180）。
-- 第一段補強：偵測 |f| 的局部極小值。若某個取樣點的 |f| 小於
-  `tangency_probe_degrees` 而其兩側皆較大，代表該處可能有一對隱藏在單一步長內的
-  根（相切或近相切）。此時對該鄰域以更細的步長遞迴重掃，深度上限
-  `_MAX_REFINEMENT_DEPTH`。
-- 第二段：對每個已包住根的區間跑二分法。刻意不用 Newton 或割線法——它們需要導數
-  或良好初始值，且在站留附近不穩定；二分法在區間已被包住時無條件收斂，
-  且每次迭代只要一次星曆查詢。
+- 第一段：以固定步長 `coarse_step_days` 掃描整個視窗。相鄰兩點變號、且跨度小於 180 度
+  者即為包住根的區間（「跨度小於 180 度」區分真正的過零與 (-180, 180] 的環繞不連續）。
+- 第一段補強：若某取樣點的 |f| 小於 `_TANGENCY_PROBE_DEGREES` 且為局部極小，該處可能有
+  一對藏在單一步長內的根，對該鄰域以更細的步長遞迴重掃，深度上限 `_MAX_REFINEMENT_DEPTH`。
+- 第二段：對每個區間跑二分法。不用 Newton 或割線法——它們需要導數或良好初始值，且在
+  站留附近不穩定；二分法在區間已被包住時無條件收斂，每次迭代只要一次星曆查詢。
 
 `separation_at` 由呼叫端提供，回傳「目前角距離精確相位還差幾度」的帶號值，
 定義域 (-180, 180]。求根器本身不知道任何占星語意，只解 f(t) = 0。
 
 ## 已知界限（不得對外描述為「已處理」）
 
-1. **恰好相切的偶次根。** f 觸零後不變號（相位在某一瞬間精確成立，隨即拉開），
-   只有在某個取樣點恰好落在該瞬間時才會被找到。浮點數下這實質上不會發生。
-   本求根器對這種情形的行為是「回報沒有根」。這在物理上是可接受的：
-   相切點的存在與否對出生時刻的無窮小擾動不穩定，因此本來就不是可宣稱的結果。
-   `test_a_near_miss_at_a_station_is_not_reported_as_a_perfection` 釘住此行為。
-2. **細掃深度有限。** 若一對根靠得比 `coarse_step / (2·8³)` 還近，仍會被漏掉。
-   呼叫端應以「該對星體的相對角速度上限 × 步長」估算自身的解析度並選定步長。
-3. **視窗外的根不予回報。** 呼叫端必須自行決定視窗，並在回報結果時說明
-   「未找到」指的是「視窗內未找到」，而非「不存在」。
+1. **恰好相切的偶次根**只有取樣點恰好落在該瞬間時才會被找到，否則回報沒有根。相切點
+   的存在與否對出生時刻的無窮小擾動不穩定，本來就不是可宣稱的結果
+   （`test_a_near_miss_at_a_station_is_not_reported_as_a_perfection`）。
+2. **細掃深度有限。** 一對根靠得比 `coarse_step / (2·8³)` 還近時仍會漏掉；呼叫端應以
+   「相對角速度上限 × 步長」估算解析度並選定步長。
+3. **視窗外的根不予回報。** 呼叫端回報時須說明「未找到」是「視窗內未找到」。
 """
 
 from __future__ import annotations
@@ -59,10 +43,12 @@ _REFINEMENT_FACTOR = 8
 _MAX_WRAP_DISAMBIGUATION_DEPTH = 8
 _MAX_COARSE_SAMPLES = 100_000
 _SAMPLE_ZERO_EPSILON_DEGREES = 1e-12
+# |f| below this at an interior local minimum triggers the finer rescan.
+_TANGENCY_PROBE_DEGREES = 1.0
 
 # What this solver assumes, stated because it is the caller who chooses whether
 # it holds.  A coarse step may hide a pair of roots when the function rises above
-# `tangency_probe_degrees` at both ends of one step and crosses twice inside it.
+# `_TANGENCY_PROBE_DEGREES` at both ends of one step and crosses twice inside it.
 # The tangency probe covers the shallow case; a fast excursion is not covered.
 # The callers pick 0.05 days (moon) and 0.125 days (aspect perfection), and no
 # real ephemeris moves a separation far enough within three hours to produce
@@ -94,7 +80,7 @@ def _bisect(
 ) -> dict:
     """在已知變號的 [low, high] 上二分求根。
 
-    回傳的 dict 帶著括號端點與迭代次數，因為 MTH-Q-003 乙的裁決要求
+    回傳的 dict 帶著括號端點與迭代次數，因為本產品要求
     「trace 須輸出括號端點與收斂迭代次數，使第三方能複算」。殘差
     `residual_degrees` 讓複算者能直接看出收斂品質，不必自行重跑。
     """
@@ -128,10 +114,50 @@ def _bisect(
     }
 
 
-def _sign_change(f_left: float, f_right: float) -> bool:
-    """兩個皆非零的端點是否異號。"""
+_ENDPOINT_NUDGE_GROWTH = 8.0
 
-    return (f_left > 0.0) != (f_right > 0.0)
+
+def _nudge_zero_endpoints(
+    separation_at: Callable[[float], float],
+    left_t: float,
+    left_f: float,
+    right_t: float,
+    right_f: float,
+    tolerance_days: float,
+) -> tuple[float, float, float, float] | None:
+    """把為零的端點往區間內移一小段，讓開區間內的另一個根仍能被括住。
+
+    遇到端點為零就整段跳過的話，「根恰落在取樣點上、下一個根在同一個步長內」時，
+    第二個根永遠找不到。VOC 正是這個形狀：盤上時刻恰好成相，另一個相位在第一個粗步長
+    內完成。端點根本身已由第一輪收下；這裡只負責開區間。
+
+    移動量從求根容差起算，移動後仍為零就放大，最多到跨度的四分之一。與端點相距
+    不到容差的根和端點根本身無法區分，交給最後的去重合併。無法取得非零值時回傳
+    None，呼叫端照舊跳過該區間。
+    """
+
+    # Every caller's tolerance is positive, so the first step is the tolerance.
+    limit = (right_t - left_t) / 4.0
+    if limit <= tolerance_days:
+        return None
+
+    def moved_inward(t: float, value: float, direction: float):
+        if abs(value) > _SAMPLE_ZERO_EPSILON_DEGREES:
+            return t, value
+        step = tolerance_days
+        while step <= limit:
+            candidate = t + direction * step
+            candidate_value = separation_at(candidate)
+            if abs(candidate_value) > _SAMPLE_ZERO_EPSILON_DEGREES:
+                return candidate, candidate_value
+            step *= _ENDPOINT_NUDGE_GROWTH
+        return None
+
+    left = moved_inward(left_t, left_f, 1.0)
+    right = moved_inward(right_t, right_f, -1.0)
+    if left is None or right is None:
+        return None
+    return left[0], left[1], right[0], right[1]
 
 
 def _is_ambiguous_span(f_left: float, f_right: float) -> bool:
@@ -156,7 +182,6 @@ def find_crossings_detailed(
     window_days: float,
     coarse_step_days: float,
     tolerance_days: float,
-    tangency_probe_degrees: float = 1.0,
     max_roots: int = 16,
     start_days: float = 0.0,
 ) -> list[dict]:
@@ -187,7 +212,6 @@ def find_crossings_detailed(
         samples,
         roots,
         tolerance_days=tolerance_days,
-        tangency_probe_degrees=tangency_probe_degrees,
         collection_cap=max_roots * 4 + 64,
         depth=0,
     )
@@ -200,12 +224,6 @@ def find_crossings_detailed(
         if not deduped or record["t"] - deduped[-1]["t"] > tolerance_days:
             deduped.append(record)
     return deduped[:max_roots]
-
-
-def find_crossings(separation_at: Callable[[float], float], **kwargs) -> list[float]:
-    """`find_crossings_detailed` 的便利包裝，只取根的時間座標。"""
-
-    return [record["t"] for record in find_crossings_detailed(separation_at, **kwargs)]
 
 
 def _sample(
@@ -227,35 +245,25 @@ def _sample(
     return samples
 
 
-def _exact_sample_root(t: float) -> dict:
-    """取樣點本身即為根時，仍回報同樣形狀的紀錄，讓複算格式一致。
-
-    括號退化成一個點，這是誠實的：根就是取樣點本身，沒有做過任何收斂迭代。
-    """
-
-    return {
-        "t": t,
-        "bracket": {
-            "low_days": t,
-            "high_days": t,
-            "low_offset_degrees": 0.0,
-            "high_offset_degrees": 0.0,
-        },
-        "iterations": 0,
-        "residual_degrees": 0.0,
-    }
-
-
 def _collect(
     separation_at: Callable[[float], float],
     samples: list[tuple[float, float]],
     roots: list[dict],
     *,
     tolerance_days: float,
-    tangency_probe_degrees: float,
     collection_cap: int,
     depth: int,
 ) -> None:
+    def rescan(left_t: float, right_t: float, step: float) -> None:
+        _collect(
+            separation_at,
+            _sample(separation_at, left_t, right_t - left_t, step),
+            roots,
+            tolerance_days=tolerance_days,
+            collection_cap=collection_cap,
+            depth=depth + 1,
+        )
+
     # --- 第一輪：取樣點本身恰為根 ---
     #
     # 這一輪必須與「相鄰區間變號」分開處理。混在同一個迴圈裡時，
@@ -263,13 +271,21 @@ def _collect(
     # t=1，接著區間 [1,2] 因**左端**為零又收下一次 t=1，而 t=2 這個真正的根
     # 從頭到尾沒有被檢查過。分開兩輪之後，
     # 每個為零的取樣點只會被收一次，且不會擋住任何區間的檢查。
+    # 括號退化成一個點：根就是取樣點本身，沒有做過任何收斂迭代；紀錄形狀
+    # 與二分結果相同，讓複算格式一致。
     for t, f_value in samples:
         if abs(f_value) <= _SAMPLE_ZERO_EPSILON_DEGREES:
-            record = _exact_sample_root(t)
-            record["residual_degrees"] = f_value
-            record["bracket"]["low_offset_degrees"] = f_value
-            record["bracket"]["high_offset_degrees"] = f_value
-            roots.append(record)
+            roots.append({
+                "t": t,
+                "bracket": {
+                    "low_days": t,
+                    "high_days": t,
+                    "low_offset_degrees": f_value,
+                    "high_offset_degrees": f_value,
+                },
+                "iterations": 0,
+                "residual_degrees": f_value,
+            })
 
     # --- 第二輪：相鄰區間變號 ---
     for index in range(len(samples) - 1):
@@ -281,25 +297,22 @@ def _collect(
             abs(left_f) <= _SAMPLE_ZERO_EPSILON_DEGREES
             or abs(right_f) <= _SAMPLE_ZERO_EPSILON_DEGREES
         ):
-            # 已由第一輪收下；此處不得再以端點為零當成區間內另有根。
-            continue
-        if not _sign_change(left_f, right_f):
+            # 端點本身已由第一輪收下，但開區間內可能還有另一個根：
+            # 把為零的端點內縮後照常檢查，不整段跳過。
+            nudged = _nudge_zero_endpoints(
+                separation_at, left_t, left_f, right_t, right_f, tolerance_days
+            )
+            if nudged is None:
+                continue
+            left_t, left_f, right_t, right_f = nudged
+        if (left_f > 0.0) == (right_f > 0.0):
             continue
         if _is_ambiguous_span(left_f, right_f):
             # 端點資訊不足以分辨過零與環繞：對半細取樣再判，不用猜的。
             if depth < _MAX_WRAP_DISAMBIGUATION_DEPTH and (
                 right_t - left_t
             ) > tolerance_days:
-                half = (right_t - left_t) / 2.0
-                _collect(
-                    separation_at,
-                    _sample(separation_at, left_t, right_t - left_t, half),
-                    roots,
-                    tolerance_days=tolerance_days,
-                    tangency_probe_degrees=tangency_probe_degrees,
-                    collection_cap=collection_cap,
-                    depth=depth + 1,
-                )
+                rescan(left_t, right_t, (right_t - left_t) / 2.0)
             continue
         roots.append(
             _bisect(
@@ -323,7 +336,7 @@ def _collect(
         previous_f = abs(samples[index - 1][1])
         current_f = abs(samples[index][1])
         next_f = abs(samples[index + 1][1])
-        if current_f >= tangency_probe_degrees:
+        if current_f >= _TANGENCY_PROBE_DEGREES:
             continue
         if not (current_f < previous_f and current_f < next_f):
             continue
@@ -337,12 +350,4 @@ def _collect(
         finer_step = (right_t - left_t) / (2 * _REFINEMENT_FACTOR)
         if finer_step <= tolerance_days:
             continue
-        _collect(
-            separation_at,
-            _sample(separation_at, left_t, right_t - left_t, finer_step),
-            roots,
-            tolerance_days=tolerance_days,
-            tangency_probe_degrees=tangency_probe_degrees,
-            collection_cap=collection_cap,
-            depth=depth + 1,
-        )
+        rescan(left_t, right_t, finer_step)

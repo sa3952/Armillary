@@ -1,6 +1,5 @@
 User-agent: *
-Disallow: /zh-TW/blog
-Disallow: /zh-TW/roadmap
+Disallow: /api/
 Allow: /
 
 Sitemap: https://projectarmillary.com/sitemap.xml

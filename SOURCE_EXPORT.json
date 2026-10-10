@@ -1,8 +1,5 @@
 {
   "export_mode": "closed_allowlist",
-  "private_source_revision": "03701324e93216023f115710327806bcce976392",
-  "public_revision": null,
-  "public_revision_source": "Git commit containing this file; the release receipt records the exact commit and source archive hash",
-  "schema_version": 1,
-  "status": "public_revision_intentionally_out_of_band"
+  "private_source_revision": "cf746302ccf0762c4cafacb62d98eac530113fbf",
+  "schema_version": 1
 }

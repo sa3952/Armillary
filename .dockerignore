@@ -1,49 +1,25 @@
 # Closed production build context for the public Corresponding Source tree.
+#
+# Docker reads this file with last-match-wins semantics, and re-including a
+# directory ("!dir/") re-includes everything under it.  So reopen files and
+# runtime trees by exact path only, never a bare directory, and put every deny
+# that must also hold inside a reopened tree after the reopens.
+# scripts/verification/verify_docker_context.py checks every reopened path
+# against the Dockerfile's COPY sources and deploy/image-app-tree.json, and that
+# sensitive paths stay denied.
 **
 
-.git
-.git/**
-.github
-.github/**
-.build
-.build/**
-dist
-dist/**
-backend/.venv
-backend/.venv/**
-.hypothesis
-.hypothesis/**
-docs
-docs/**
-publication
-publication/**
-frontend/tests
-frontend/tests/**
-**/__pycache__
-**/*.py[cod]
-.pytest_cache
-.pytest_cache/**
-**/.DS_Store
-**/.env
-**/.env.*
-**/*.pem
-**/*.key
-**/*secret*
-**/*token*
-
+# Docker control files and project/third-party notices.
 !.dockerignore
 !LICENSE
 !THIRD_PARTY_NOTICES.md
 
-!backend/
-!backend/app/
+# Runtime Python source and immutable runtime data.
 !backend/app/**
-!backend/ephe/
 !backend/ephe/**
-!backend/place_data/
 !backend/place_data/**
 
-!deploy/
+# Exact Docker build inputs.
 !deploy/Dockerfile
 !deploy/requirements.lock
 !deploy/build-requirements.lock
@@ -52,28 +28,23 @@ frontend/tests/**
 !deploy/entrypoint.sh
 !deploy/container_healthcheck.py
 
-!third_party/
-!third_party/pyswisseph/
+# Exact native source archive consumed by the builder.
 !third_party/pyswisseph/pyswisseph-2.10.3.2.tar.gz
 
-!scripts/
-!scripts/verification/
+# Exact build/runtime verifiers copied by the Dockerfile.
 !scripts/verification/verify_ephemeris_integrity.py
 !scripts/verification/verify_place_catalog.py
-!scripts/verification/capture_build_evidence.py
-!scripts/publication/
-!scripts/publication/verify_linux_source_build.py
 
-!build-context-probe-8f38f069.txt
-
-# Final deny rules must follow broad directory reopens; Docker uses last match.
-**/.DS_Store
+# Final deny rules: they follow the reopens because Docker uses the last match.
+# Hidden paths (.env, .git, .venv, .DS_Store, ...) anywhere, then the control
+# file that is itself hidden.
+**/.*
+!.dockerignore
 **/__pycache__
 **/*.py[cod]
-frontend/tests
-frontend/tests/**
-**/.env
-**/.env.*
+**/tests
+**/dist
+**/[Rr][Ee][Aa][Dd][Mm][Ee].[Mm][Dd]
 **/*.pem
 **/*.key
 **/*secret*

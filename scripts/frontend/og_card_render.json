@@ -1,0 +1,10 @@
+{
+  "asset": "zh-TW/og-card.png",
+  "height": 630,
+  "png_sha256": "16c9900d06168aab4cc73415ebfb91dfcdbed7601d53ce12457b697c9594bf9d",
+  "renderer": "chromium 151.0.7922.34 darwin",
+  "renderer_script_sha256": "f1fb71aa159bb3193fdb53aa4537b4e622a5a45ae5ac766f3b09b81d3dcea77f",
+  "schema_version": 1,
+  "source_html_sha256": "2e54052ee537d8d28f09f664ae8f544f3928be81f94405561178a41be6a88dc8",
+  "width": 1200
+}

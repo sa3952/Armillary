@@ -1,7 +1,10 @@
+# The project name is fixed so the host's containers and network do not depend
+# on the checkout's directory name.
+name: armillary
 services:
-  private-alpha-app:
+  armillary-app:
     # Runtime only; release images come from the governed materialized context.
-    image: "classical-astrology-private-alpha:${IMAGE_TAG:-local}"
+    image: "armillary:${IMAGE_TAG:-local}"
     init: true
     read_only: true
     tmpfs:
@@ -15,20 +18,21 @@ services:
     mem_limit: 512m
     memswap_limit: 512m
     cpus: 1.0
+    # The event log goes to the host journal, so it shares the
+    # journal's bound (deploy/staging/host/journald-armillary.conf) instead
+    # of size-only rotation with no time limit.  verify_staging_http checks the
+    # driver on the host; Gate D declares why it cannot run this driver.
     logging:
-      driver: "local"
-      options:
-        max-size: "5m"
-        max-file: "2"
+      driver: "journald"
     # Conservative process FD ceiling; leak detection remains an image test.
     ulimits:
       nofile:
         soft: 65536
         hard: 65536
     networks:
-      - "private-alpha-internal"
+      - "armillary-internal"
     stop_grace_period: 30s
 
 networks:
-  private-alpha-internal:
+  armillary-internal:
     internal: true

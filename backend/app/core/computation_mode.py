@@ -1,4 +1,4 @@
-"""統一「計算模式」設定：一次設定、套用到所有星體計算。
+"""統一「計算模式」設定：一次設定、套用到所有天體計算。
 
 包含：計算中心 (geo/topo/helio/bary)、黃道系統 (tropical/sidereal + ayanamsa)、
 視位置/真位置、當日黃道/J2000、章動開關。這裡只負責組出 swisseph flags 與判斷
@@ -9,6 +9,7 @@
 import swisseph as swe
 
 from ..config import AYANAMSA_OPTIONS
+from ..ephemeris import configure_chart_swiss_state
 from .trace import Trace
 
 CENTER_FLAGS = {
@@ -34,10 +35,14 @@ class ComputationContext:
         if not mode.nutation:
             self.base_flags |= swe.FLG_NONUT
 
-        if mode.center == "topocentric":
-            swe.set_topo(location.longitude, location.latitude, location.altitude_m)
-        if mode.zodiac == "sidereal":
-            swe.set_sid_mode(AYANAMSA_OPTIONS[mode.ayanamsa], 0, 0)
+        # 地平座標一律以出生地觀測者為原點（見 horizontal_source_flags），
+        # 所以不論計算中心為何都要先登記測站。
+        configure_chart_swiss_state(
+            geopos=(location.longitude, location.latitude, location.altitude_m),
+            sid_mode=(
+                AYANAMSA_OPTIONS[mode.ayanamsa] if mode.zodiac == "sidereal" else None
+            ),
+        )
 
     @property
     def horizon_meaningful(self) -> bool:
@@ -53,15 +58,23 @@ class ComputationContext:
         reference-frame choices. Feeding any of them to ``ECL2HOR`` would
         incorrectly rotate the observer's physical sky, because Swiss expects
         true tropical ecliptic coordinates of date at that boundary.
-        Topocentric center and true/apparent position remain intentional
-        physical choices.
+        True/apparent position remains an intentional physical choice.
+
+        The horizon is an observer-on-the-surface concept, so the ecliptic
+        input is always topocentric (diurnal parallax applied) whatever the
+        display center of the longitudes.  This is the same premise the
+        rise/set module uses: one
+        response, one horizon.  For the Moon the difference reaches a degree;
+        for the Sun and planets it is seconds of arc.
         """
         return (
             self.base_flags
             & ~swe.FLG_SIDEREAL
             & ~swe.FLG_J2000
             & ~swe.FLG_NONUT
-        )
+        ) | swe.FLG_TOPOCTR
+
+    HORIZONTAL_COORDINATE_ORIGIN = "topocentric_observer_diurnal_parallax_applied"
 
     @property
     def equatorial_source_flags(self) -> int:
@@ -74,32 +87,32 @@ class ComputationContext:
         return self.base_flags & ~swe.FLG_SIDEREAL
 
     def ayanamsa_value(self, jd_ut: float):
-        """回傳**本次計算實際套用**的 ayanamsa，供收據、houses.py 與 antiscia.py 使用。
+        """回傳**本次計算實際套用**的 ayanamsa，供收據與 antiscia.py 使用（houses.py 不用它，見下）。
 
         這裡回傳的必須是實際套用值，不是 `get_ayanamsa_ut()`：後者是相對**平**
         春分點定義的傳統數值；`calc_ut(FLG_SIDEREAL)` 在章動開啟時輸出的恆星黃經卻是
         相對**真**春分點。兩者相差恰為當下的黃經章動（實測 ±17.4 角秒內）。
 
-        舊 docstring 把這個差稱為章動慣例殘差、「遠小於任何占星技法的容許誤差」。
-        就「換算回 tropical 核對」而言那句話成立，但它沒有涵蓋這個函式的兩個實際用途：
+        這個差不能當作「遠小於容許誤差」的殘差略過：`astronomical_data.time.ayanamsa`
+        宣稱的是本次從星體黃經扣掉的量，第三方拿平春分點值複算會差最多 17.4 角秒——
+        那是可追溯性宣稱本身出錯，不是精度問題。
 
-        1. **收據。** `astronomical_data.time.ayanamsa` 宣稱的是本次從星體黃經扣掉的
-           量。第三方拿它複算會差最多 17.4 角秒——這是可追溯性宣稱本身出錯，
-           不是精度問題，容許誤差的說法不適用。
-        2. **非整宮 sidereal 宮頭。** `houses.py` 以「tropical 宮頭 − 本值」求 sidereal
-           宮頭，而星體走 Swiss 原生 `FLG_SIDEREAL`。兩者相差同一個章動量，宮頭與星體
-           因此落在不同框架。落宮是硬邊界分類，±13 角秒就是一個約一秒出生時刻的翻宮窗；
-           「遠小於容許誤差」對分類邊界不成立。整宮制不受影響，它本來就走原生路徑。
+        `get_ayanamsa_ex_ut(jd, base_flags)` 回傳的正是同一組旗標下實際套用的值：實測與
+        「同天體同時刻、同一章動設定的 tropical 減 sidereal 黃經」差 0.000000 角秒，章動開
+        與關都成立（章動關時兩邊都相對平春分點）。收據與 antiscia 的 2×ayanamsa 因此為真。
 
-        `get_ayanamsa_ex_ut(jd, base_flags)` 回傳的正是同一組旗標下實際套用的值，實測與
-        「同天體同時刻的 tropical 減 sidereal 黃經」差 0.000000 角秒。改用它之後，
-        「tropical 宮頭 − ayanamsa」與原生 sidereal 宮頭在 P/R/B/A/C 各制皆完全相等，
-        三個下游後果（收據、宮頭、antiscia 的 2×ayanamsa）一次消除。
+        宮頭不能用它換算：`swe.houses_ex` 沒有平春分點框架，它的 tropical 宮頭永遠相對真
+        春分點；章動關時「tropical 宮頭 − 本值」會差一個黃經章動（≤ 約 17″），落宮是硬邊界
+        分類，那就是一個約一秒出生時刻的翻宮窗。所以 `houses.py` 對每一種宮位制都直接呼叫
+        `houses_ex(..., FLG_SIDEREAL)`；Swiss 對恆星黃道不理會 `FLG_NONUT`，宮頭與天體黃經
+        在章動開或關時都相同，同一時刻與地點只有一個 ASC。
 
-        **這改變既有 sidereal 使用者的數值輸出**（≤17.4 角秒）並使 parity baseline 失效。
-        另一條路是保留平春分點值、改讓 houses 走原生 `FLG_SIDEREAL`，但那只修宮頭，
-        收據與 antiscia 仍不實。兩條路都不創設任何占星慣例；此處選擇「回報並套用同一個
-        實際值」，Sebastian 可另行裁決改採另一條。
+        此處選擇「回報並套用同一個實際值」，不創設任何占星慣例。
+
+        上述「差 0.000000 角秒」只在當日黃道框架成立（四種 ayanamsa × 章動開關）。
+        恆星黃道＋J2000 下，本值與實際扣除量實測相差 3.25e-3 度（密切交點 0.13 度），
+        故該組合在請求邊界以 422 拒絕（`frame_compatibility.request_frame_refusal`），
+        不會走到這裡。
         """
         if self.mode.zodiac != "sidereal":
             return None
@@ -110,7 +123,7 @@ class ComputationContext:
         ayan = self.ayanamsa_value(jd_ut)
         trace.add(
             "計算模式設定",
-            formula="套用於本次所有星體計算的統一旗標",
+            formula="套用於本次所有天體計算的統一旗標",
             inputs={
                 "計算中心": self.mode.center,
                 "黃道系統": self.mode.zodiac,

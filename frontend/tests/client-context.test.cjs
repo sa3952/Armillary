@@ -1,263 +1,169 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
+const ClientContext = require("../zh-TW/client-context.js");
 const {
-  PROFILES,
-  validateClientConfiguration,
-  formatApiError,
-  apiErrorActions,
-  networkErrorMessage,
-  placeQueryNotice,
-  resolveProfileBounded,
-} = require("../zh-TW/client-context.js");
+  formatApiError, apiErrorActions, networkErrorMessage, placeQueryNotice, fieldControlIds, KNOWN_CONTROL_IDS,
+} = ClientContext;
 
-assert.match(
-  formatApiError({ code: "request_capacity_exhausted" }, 503),
-  /不是.*輸入|忙碌/
-);
-assert.match(
-  formatApiError({ code: "compute_capacity_exhausted" }, 503),
-  /稍後|重試/
-);
-assert.deepStrictEqual(
-  apiErrorActions(
-    503, "5", PROFILES.PRIVATE_ALPHA
-  ),
-  ["約 5 秒後重試。", "若持續發生，請聯絡邀請者。"]
-);
-assert.ok(
-  !apiErrorActions(
-    503, null, PROFILES.PRIVATE_ALPHA
-  ).some((value) => value.includes("修正輸入"))
-);
+// 422 驗證拒絕與其他拒絕同一個信封——`detail` 是物件，欄位發現在 `issues`。
+const validationRefusal = (...issues) => ({ code: "request_validation_failed", issues });
+const issue = (type, ...loc) => validationRefusal({ type, loc: ["body", ...loc] });
+const GENERIC_INVALID = "部分輸入無法驗證；請檢查必填欄位與格式。";
+const holds = (text, pattern) => (typeof pattern === "string" ? text.includes(pattern) : pattern.test(text));
 
-assert.deepEqual(validateClientConfiguration({ profile: "private_alpha" }), {
-  profile: "private_alpha",
-});
-assert.deepEqual(validateClientConfiguration({ profile: "public" }), {
-  profile: "public",
-});
-for (const invalid of [null, {}, { profile: "production" }]) {
-  assert.throws(() => validateClientConfiguration(invalid));
-}
-
-test("client configuration timeout settles even when fetch never does", async () => {
-  let timeout;
-  let cancelled = 0;
-  const result = resolveProfileBounded(
-    () => new Promise(() => {}),
-    () => { cancelled += 1; },
-    5000,
-    (callback) => { timeout = callback; return 7; },
-    () => {}
-  );
-  timeout();
-  assert.equal(await result, null);
-  assert.equal(cancelled, 1);
+// 拒絕文案只能指向頁面上真的存在的控制項（點名的控制項存在由 calculate_lifecycle.test.cjs 對
+// 開機後的頁面 DOM 驗證），而且不得回顯後端原文。
+test("拒絕文案逐字對照", () => {
+  for (const [detail, status, expected] of [
+    [validationRefusal({
+      type: "value_error", loc: ["body", "timezone"],
+      msg: "Value error, raw framework detail with Not/AZone", input: { iana_name: "Not/AZone" },
+    }), 422, "時區名稱無效；請用「地名查詢」選定地點，由目錄帶入時區，"
+      + "或在「改為手動輸入座標與時區」裡的「IANA 時區名稱」欄輸入例如 Asia/Taipei 的名稱。"],
+    [issue("missing", "datetime", "year"), 422, "年份尚未填寫。"],
+    [issue("less_than_equal", "location", "latitude"), 422, "緯度無效；請輸入 -90 到 90 的十進位度數。"],
+    [issue("less_than_equal", "datetime", "hour"), 422, "小時超出允許範圍；請參考該欄位下方的數字範圍說明。"],
+    // 真正不存在的日期仍是這一句；年份超範圍另有分流（見下一個測試）。
+    [issue("date_from_datetime_parsing", "datetime"), 422, "出生日期時間無效；請確認日期確實存在，且時間數字在允許範圍內。"],
+    // 頁面上的選項叫「整宮」，極區一定走得通的出路是宮位制選單的第一項「不計算宮位」。
+    [{ code: "house_system_unavailable", message: "Placidus 在緯度 89.123456° 無法計算", latitude: 89.123456 }, 422,
+      "所選宮位制無法在這個緯度計算；請在「宮位制」選單改選「整宮」，或選「不計算宮位」。"],
+    [{ code: "internal_server_error", message: "raw traceback detail" }, 500,
+      "服務暫時無法完成計算。請稍後重試；若持續發生，請聯絡服務管理者。"],
+    // 舊的裸陣列不再當成欄位發現。
+    [[{ type: "calendar_date_invalid", loc: ["body", "datetime", "day"] }], 422, GENERIC_INVALID],
+  ]) {
+    assert.equal(formatApiError(detail, status), expected, JSON.stringify(detail));
+  }
 });
 
-test("client configuration success clears the timeout and returns public", async () => {
-  const cleared = [];
-  const result = resolveProfileBounded(
-    () => Promise.resolve({ profile: "public" }),
-    () => assert.fail("successful load must not cancel"),
-    5000,
-    () => 9,
-    (token) => cleared.push(token)
-  );
-  assert.equal(await result, "public");
-  assert.deepEqual(cleared, [9]);
+test("拒絕文案必須說出的與不得說出的", () => {
+  for (const [detail, status, includes, excludes] of [
+    [{ code: "request_capacity_exhausted" }, 503, [/不是.*輸入|忙碌/], []],
+    [{ code: "compute_capacity_exhausted" }, 503, [/稍後|重試/], []],
+    ["caller supplied secret", 400, [], ["secret"]],
+    [null, 500, [/服務暫時無法完成計算/], []],
+    // 訊息只描述情況：出路由 calculate.js 依選擇區是否真的出現導出，訊息不得自行宣稱頁面能或不能
+    // 做什麼，也不得指向本頁不存在的固定偏移輸入，或回顯後端原文。
+    [{
+      code: "ambiguous_local_time_choice_required",
+      message: "此本地時間在 America/New_York 為模糊時刻；已採用 fold=0，對應 UTC-04.00；另一種解讀為 UTC-05.00。",
+    }, 422, ["出現了兩次", "需要知道是哪一次"], ["固定偏移", "無法", "fold", "America/New_York", "UTC-04"]],
+    // 地名目錄不可用不是「無法完成計算」；指向手動輸入，不回顯內部路徑。
+    [{
+      code: "place_catalog_unavailable",
+      message: "bundled place catalog is unavailable at /app/backend/place_data/places.sqlite3",
+    }, 503, ["手動輸入"], ["計算", "sqlite", "/app/"]],
+    // 1800-01-01（支援 1900–2399）確實存在；不得叫人去確認日期是否存在。
+    [issue("greater_than_equal", "datetime", "year"), 422, ["年份", "範圍"], ["確實存在"]],
+    [issue("approximate_hour_requires_zero_subhour"), 422, [/整點|精確到分鐘/], ["輸入資料格式無效"]],
+    [issue("date_only_requires_zero_time"), 422, [/清除時間|出生時間類型/], ["輸入資料格式無效"]],
+    [issue("moon_profile_center_conflict"), 422, [/站心模式|計算中心/], ["輸入資料格式無效"]],
+    [issue("aspect_orb_scale_requires_profile"), 422, ["「容許度表」"], ["輸入資料格式無效"]],
+    [issue("calendar_date_invalid", "datetime", "day"), 422, ["「出生日期」"], []],
+    // 地理極點上整宮也無法計算。
+    [{ code: "house_system_unavailable", reason_code: "unique_ascendant_undefined", latitude: 90 }, 422,
+      ["「不計算宮位」"], ["「整宮」"]],
+    // 本頁到不了這個組合，不得點名控制項。
+    [issue("sidereal_with_j2000_frame_not_supported", "computation_mode"), 422, ["J2000"], [/「[^」]+」/]],
+    [{ code: "place_search_timeout" }, 503, ["「改為手動輸入座標與時區」"], ["目錄暫時無法讀取"]],
+    // 星曆拒絕重送不會改變結果。
+    [{ code: "swiss_ephemeris_error", message: "server text" }, 500, [], ["重試"]],
+    [{ code: "full_ephemeris_required", message: "server text" }, 422, [], ["重試"]],
+  ]) {
+    const message = formatApiError(detail, status);
+    includes.forEach((pattern) => assert.ok(holds(message, pattern), `${JSON.stringify(detail)} 缺 ${pattern}：${message}`));
+    excludes.forEach((pattern) => assert.ok(!holds(message, pattern), `${JSON.stringify(detail)} 不得有 ${pattern}：${message}`));
+  }
 });
 
-const timezoneError = formatApiError(
-  [
-    {
-      type: "value_error",
-      loc: ["body", "timezone"],
-      msg: "Value error, raw framework detail with Not/AZone",
-      input: { iana_name: "Not/AZone" },
-    },
-  ],
-  422
-);
-assert.equal(
-  timezoneError,
-  "時區名稱無效；請使用例如 Asia/Taipei 的 IANA 時區名稱，或改選固定 UTC 偏移。"
-);
-assert.ok(!timezoneError.includes("Not/AZone"));
-assert.ok(!timezoneError.includes("raw framework detail"));
-
-assert.equal(
-  formatApiError(
-    [{ type: "missing", loc: ["body", "datetime", "year"] }],
-    422
-  ),
-  "年份尚未填寫。"
-);
-assert.equal(
-  formatApiError(
-    [{ type: "less_than_equal", loc: ["body", "location", "latitude"] }],
-    422
-  ),
-  "緯度無效；請輸入 -90 到 90 的十進位度數。"
-);
-assert.equal(
-  formatApiError(
-    {
-      code: "house_system_unavailable",
-      message: "Placidus 在緯度 89.123456° 無法計算",
-      latitude: 89.123456,
-    },
-    422
-  ),
-  "所選宮位制無法在這個緯度計算；請改選 Whole Sign 或其他可用宮位制。"
-);
-assert.ok(
-  !formatApiError(
-    {
-      code: "house_system_unavailable",
-      message: "Placidus 在緯度 89.123456° 無法計算",
-      latitude: 89.123456,
-    },
-    422
-  ).includes("89.123456")
-);
-assert.equal(
-  formatApiError(
-    { code: "internal_server_error", message: "raw traceback detail" },
-    500
-  ),
-  "服務暫時無法完成計算。請稍後重試；若持續發生，請聯絡服務管理者。"
-);
-assert.ok(!formatApiError("caller supplied secret", 400).includes("secret"));
-assert.match(formatApiError(null, 500), /服務暫時無法完成計算/);
-
-const hostedNetworkError = networkErrorMessage(PROFILES.PRIVATE_ALPHA);
-assert.match(hostedNetworkError, /Private Alpha/);
-assert.match(hostedNetworkError, /聯絡邀請者/);
-assert.ok(!hostedNetworkError.includes("127.0.0.1"));
-
-console.log("client context tests passed");
-
-// 契約 §9：ambiguous_local_time_choice_required 先前不在封閉對照表內，
-// 因此掉進通用的「部分輸入無法驗證」——對這個情況完全誤導。
-// local profile 的回應帶 message，內容含本地時刻與兩個 UTC 偏移；
-// 指引必須由對照表產生，不得回顯後端原文。
-const ambiguous = formatApiError(
-  {
-    code: "ambiguous_local_time_choice_required",
-    message:
-      "此本地時間在 America/New_York 為模糊時刻；已採用 fold=0，"
-      + "對應 UTC-04.00；另一種解讀為 UTC-05.00。",
-  },
-  422
-);
-assert.ok(ambiguous.includes("出現了兩次"));
-// SD-32：這則訊息原本叫使用者「改用固定偏移輸入」，而本頁沒有那個控制項。
-// 一則指向不存在控制項的「可行動訊息」比沒有訊息更糟——使用者會去找。
-assert.ok(!ambiguous.includes("固定偏移"),
-  "訊息又指向了本頁不存在的固定偏移輸入");
-// 這則訊息一度自己宣稱「只知道約略小時無法指明是哪一次」。那在寫的當天是對的，
-// SD-32 的修復讓頁面對該精度也提供了選擇，而這句話沒有任何路徑會被通知——文案與
-// 介面矛盾了 27 天。訊息現在只描述情況；出路由 calculate.js 依選擇區是否真的出現
-// 在畫面上導出，因為只有它知道。
-assert.ok(!ambiguous.includes("無法"),
-  "訊息不得自行宣稱頁面能或不能做什麼；那是 calculate.js 才知道的事");
-assert.ok(ambiguous.includes("需要知道是哪一次"),
-  "訊息必須說出服務要的是什麼");
-assert.ok(!ambiguous.includes("fold"));
-assert.ok(!ambiguous.includes("America/New_York"));
-assert.ok(!ambiguous.includes("UTC-04"));
-assert.notEqual(ambiguous, "部分輸入無法驗證；請檢查必填欄位與格式。");
-
-// 契約 §9 ＋ SD-18：地名目錄不可用時，先前掉進 statusCode>=500 的通用訊息
-// 「服務暫時無法完成計算」——用詞錯誤（這是地名查詢），且沒有指出手動輸入這條出路。
-// local profile 的回應帶 message，內容含 bundled catalog 的內部描述，不得回顯。
-const catalogDown = formatApiError(
-  {
-    code: "place_catalog_unavailable",
-    message: "bundled place catalog is unavailable at /app/backend/place_data/places.sqlite3",
-  },
-  503
-);
-assert.ok(catalogDown.includes("手動輸入"));
-assert.ok(!catalogDown.includes("計算"));
-assert.ok(!catalogDown.includes("sqlite"));
-assert.ok(!catalogDown.includes("/app/"));
-assert.notEqual(
-  catalogDown,
-  "服務暫時無法完成計算。請稍後重試；若持續發生，請聯絡服務管理者。"
-);
-
-// 2026-08-06 實測：送出 1800-01-01（產品支援 1900–2399），後端回
-// datetime.year 的 greater_than_equal，畫面卻說「請確認日期確實存在」。
-// 那個日期確實存在——指引把使用者送去檢查一個沒有問題的地方。
-// datetime 這一支必須先分流範圍違反，再落到「日期不存在」那句。
-const outOfRangeYear = formatApiError(
-  [{ type: "greater_than_equal", loc: ["body", "datetime", "year"] }],
-  422
-);
-assert.ok(outOfRangeYear.includes("年份"));
-assert.ok(outOfRangeYear.includes("範圍"));
-assert.ok(
-  !outOfRangeYear.includes("確實存在"),
-  "年份超範圍不得沿用「請確認日期確實存在」——那句話指向錯誤的原因"
-);
-
-for (const [type, expected] of [
-  ["approximate_hour_requires_zero_subhour", /整點|精確到分鐘/],
-  ["date_only_requires_zero_time", /清除時間|出生時間類型/],
-  ["moon_profile_center_conflict", /站心模式|計算中心/],
-  ["aspect_orb_scale_requires_profile", /具名容許度來源/],
-]) {
-  const message = formatApiError([{ type, loc: ["body"] }], 422);
-  assert.match(message, expected);
-  assert.ok(!message.includes("輸入資料格式無效"));
-}
-assert.equal(
-  formatApiError(
-    [{ type: "less_than_equal", loc: ["body", "datetime", "hour"] }],
-    422
-  ),
-  "小時超出允許範圍；請參考該欄位下方的數字範圍說明。"
-);
-// 真正不存在的日期仍須維持原本那句。
-assert.equal(
-  formatApiError(
-    [{ type: "date_from_datetime_parsing", loc: ["body", "datetime"] }],
-    422
-  ),
-  "出生日期時間無效；請確認日期確實存在，且時間數字在允許範圍內。"
-);
-console.log("datetime range guidance tests passed");
-
-// ── 地名查詢截斷告知 ──────────────────────────────────────
-// 後端逐字交代哪些詞被丟掉，前端必須讀它：一個被改寫過的查詢不得報成
-// 使用者自己的查詢。有截斷必說、沒截斷不吵，兩邊都要成立。
-
-const truncated = placeQueryNotice({
-  token_count: 8,
-  max_search_tokens: 6,
-  truncated: true,
-  tokens_used: ["新竹縣", "竹北市", "光明", "六路", "東二段", "一號"],
-  tokens_ignored: ["附近", "巷口"],
-  reason: "token_limit_protects_against_broad_prefix_term_cost",
+test("每個閉集代碼都有專屬文案", () => {
+  const codes = [
+    "place_search_timeout", "json_invalid", "request_body_not_utf8", "duplicate_json_key",
+    "not_found", "method_not_allowed", "unsupported_method", "unknown_api_path",
+    "request_body_read_timeout", "request_headers_too_large", "conflicting_request_framing",
+    "empty_request_body", "bad_request", "unauthorized", "undeclared_host", "request_validation_failed",
+  ];
+  const rules = [
+    "calendar_date_invalid", "second_finer_than_microsecond", "iana_name_required", "iana_timezone_unknown",
+    "utc_offset_hours_required", "timezone_field_not_applicable_to_mode", "fold_requires_iana_mode",
+    "place_label_forbidden_codepoint", "location_precision_not_accepted_for_source",
+    "source_record_id_not_allowed_for_manual", "catalog_location_requires_label_and_record_id",
+    "ayanamsa_unsupported", "sidereal_with_j2000_frame_not_supported",
+    "leap_second_not_applicable_to_pre_1972_scale", "leap_second_requires_exact_utc_2359",
+    "leap_second_not_in_bundled_table",
+  ];
+  for (const detail of [...codes.map((code) => ({ code })), ...rules.map((type) => issue(type))]) {
+    const message = formatApiError(detail, 400);
+    assert.notEqual(message, "服務拒絕本次請求（HTTP 400）。請檢查輸入後再試。", JSON.stringify(detail));
+    assert.notEqual(message, "輸入資料格式無效；請檢查後再試。", JSON.stringify(detail));
+  }
 });
-assert.ok(truncated, "截斷了卻沒有任何告知");
-assert.match(truncated, /附近 巷口/, "沒有說出被略過的詞");
-assert.match(truncated, /新竹縣/, "沒有說出實際用來查詢的詞");
-assert.match(truncated, /前 6 個詞/);
 
-// 反向控制：沒有截斷時不得產生告知，否則每次查詢都多一句無意義的警告。
-assert.equal(placeQueryNotice({
-  token_count: 2, max_search_tokens: 6, truncated: false,
-  tokens_used: ["台中"], tokens_ignored: [], reason: null,
-}), null);
-assert.equal(placeQueryNotice(undefined), null);
-assert.equal(placeQueryNotice(null), null);
-assert.equal(placeQueryNotice({}), null);
+test("錯誤動作：可重試的 503 依 Retry-After 建議重試；星曆拒絕不建議重試；不叫人修正輸入", () => {
+  assert.deepStrictEqual(apiErrorActions(503, "5", null), ["約 5 秒後重試。", "若持續發生，請透過聯絡頁回報。"]);
+  assert.equal(apiErrorActions(503, "5", "place_search_timeout")[0], "約 5 秒後重試。");
+  assert.ok(!apiErrorActions(503, null, null).some((value) => value.includes("修正輸入")));
+  for (const [code, status] of [["swiss_ephemeris_error", 500], ["full_ephemeris_required", 422]]) {
+    const actions = apiErrorActions(status, null, code);
+    assert.ok(!actions.some((action) => action.includes("重試")), actions.join(" / "));
+  }
+});
 
-// truncated 為真但沒列出被略過的詞，是自相矛盾的收據；寧可不說，
-// 也不要生出一句「略過了「」」。
-assert.equal(placeQueryNotice({
-  truncated: true, tokens_used: ["台中"], tokens_ignored: [],
-}), null);
+test("網路錯誤只有一種措辭，沒有私測 profile 或邀請者", () => {
+  assert.equal(networkErrorMessage(), "無法連線到命盤計算服務。請確認網路連線後再試；若持續發生，請透過聯絡頁回報。");
+  for (const retired of ["PROFILES", "validateClientConfiguration", "resolveProfileBounded"]) {
+    assert.equal(ClientContext[retired], undefined, retired);
+  }
+});
+
+// 後端逐字交代哪些詞被丟掉：被改寫過的查詢不得報成使用者自己的查詢。有截斷必說、沒截斷不吵。
+test("地名查詢截斷時說出被略過與實際使用的詞，沒有截斷或收據自相矛盾時不說", () => {
+  const truncated = placeQueryNotice({
+    token_count: 8, max_search_tokens: 6, truncated: true,
+    tokens_used: ["新竹縣", "竹北市", "光明", "六路", "東二段", "一號"],
+    tokens_ignored: ["附近", "巷口"],
+    reason: "token_limit_protects_against_broad_prefix_term_cost",
+  });
+  for (const pattern of [/附近 巷口/, /新竹縣/, /前 6 個詞/]) assert.match(truncated, pattern);
+  for (const notice of [
+    { token_count: 2, max_search_tokens: 6, truncated: false, tokens_used: ["台南"], tokens_ignored: [], reason: null },
+    undefined, null, {},
+    // truncated 為真卻沒列出被略過的詞：寧可不說，也不要生出一句「略過了「」」。
+    { truncated: true, tokens_used: ["台南"], tokens_ignored: [] },
+  ]) {
+    assert.equal(placeQueryNotice(notice), null, JSON.stringify(notice));
+  }
+});
+
+test("422 欄位錯誤對應到控制項 id", () => {
+  for (const [detail, expected] of [
+    [issue("value_error", "timezone"), ["timezone"]],
+    [issue("missing", "timezone", "iana_name"), ["timezone"]],
+    [issue("greater_than_equal", "datetime", "year"), ["date"]],
+    [issue("calendar_date_invalid", "datetime", "day"), ["date"]],
+    [issue("less_than_equal", "datetime", "hour"), ["hour"]],
+    [issue("less_than_equal", "location", "latitude"), ["latitude"]],
+    [issue("finite_number", "location", "altitude_m"), ["altitude"]],
+    [issue("literal_error", "options", "partile_profile"), ["opt-partile_profile"]],
+    [issue("aspect_orb_scale_requires_profile", "options"), ["opt-aspect_orb_profile"]],
+    [issue("date_only_requires_zero_time"), ["hour", "minute", "second"]],
+    [validationRefusal(
+      { type: "less_than_equal", loc: ["body", "location", "latitude"] },
+      { type: "less_than_equal", loc: ["body", "location", "longitude"] },
+      { type: "less_than_equal", loc: ["body", "location", "latitude"] },
+    ), ["latitude", "longitude"]],
+    [{ code: "house_system_unavailable" }, ["opt-house_system"]],
+    [{ code: "internal_server_error" }, []],
+    [issue("value_error", "unknown_field"), []],
+    // 重複鍵是頁面組 JSON 出錯，不是使用者填錯欄位。
+    [{ code: "duplicate_json_key", issues: [{ type: "duplicate_json_key", loc: ["body", "datetime"] }] }, []],
+    [null, []],
+  ]) {
+    const ids = fieldControlIds(detail);
+    assert.deepEqual(ids, expected, JSON.stringify(detail));
+    // 頁面上是否真有這個 id 由頁面層測試驗；這裡只要求它屬於模組宣告的集合。
+    ids.filter((id) => !id.startsWith("opt-"))
+      .forEach((id) => assert.ok(KNOWN_CONTROL_IDS.includes(id), `${id} 不在 KNOWN_CONTROL_IDS`));
+  }
+});

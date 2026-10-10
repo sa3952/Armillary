@@ -25,11 +25,17 @@
     return `14:${pad(minute)}:${pad(remainder)}`;
   }
 
+  function isExactSample(value, sampleSeconds) {
+    const second = clampSecond(value);
+    return sampleSeconds.some((sample) => second === sample);
+  }
+
   return Object.freeze({
     HOUR_SECONDS,
     LAST_SECOND,
     clampSecond,
     secondFromRatio,
     clockOf,
+    isExactSample,
   });
 });

@@ -5,6 +5,9 @@ on:
   pull_request:
     paths:
       - ".github/workflows/production-amd64.yml"
+      - ".dockerignore"
+      - "LICENSE"
+      - "THIRD_PARTY_NOTICES.md"
       - "backend/**"
       - "deploy/**"
       - "scripts/**"
@@ -13,6 +16,9 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/production-amd64.yml"
+      - ".dockerignore"
+      - "LICENSE"
+      - "THIRD_PARTY_NOTICES.md"
       - "backend/**"
       - "deploy/**"
       - "scripts/**"
@@ -24,6 +30,10 @@ on:
 
 permissions:
   contents: read
+
+# pip reads no configuration file a runner image or an earlier step left.
+env:
+  PIP_CONFIG_FILE: /dev/null
 
 concurrency:
   group: production-amd64-${{ github.ref }}
@@ -38,9 +48,14 @@ jobs:
       PYTHONPYCACHEPREFIX: /tmp/classical-astrology-pycache
     steps:
       - name: Checkout tested revision
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
+
+      # The project's Python, not the runner's own (Ubuntu 24.04 ships 3.12).
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.14.8"
 
       - name: Publication boundary
         run: python3 -B -m scripts.publication.verify_publication_candidate --root .

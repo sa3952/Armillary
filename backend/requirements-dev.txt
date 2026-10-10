@@ -1,0 +1,15 @@
+# 開發/測試用依賴，不隨production部署安裝。
+-r requirements.txt
+pytest==9.1.1
+# The ordinary check runs the suite once across processes (`pytest -n auto`).
+pytest-xdist==3.8.0
+httpx2==2.13.1
+hypothesis==6.168.3
+# 型別檢查以基線模式執行（見 mypy.ini 與 scripts/verification/verify_types.py）。
+# mypy.ini 自 2026-07-27 就存在，但 mypy 從未被安裝或執行過。
+mypy==2.4.0
+
+# pip-tools 刻意不列在這裡。它只在「重新產生 lockfile」時需要，而它會帶進
+# setuptools 等無法產生 hash 的 build 依賴，使整份 lock 無法以 --require-hashes
+# 安裝。需要時在用完即丟的 venv 以 hash 安裝：
+# python -m pip install --require-hashes -r backend/requirements-tooling.lock

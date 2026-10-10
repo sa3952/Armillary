@@ -2,14 +2,21 @@
  *
  * 這一段的誠實約束比互動效果重要，所以先寫清楚：
  *
- * 後端對「約略一小時」的語意是 five_discrete_probes_not_continuous_hour_proof——
- * 它取五個離散時刻，不宣稱掌握整個小時的連續行為。因此本元件：
+ * 後端對「約略一小時」的語意是 discrete_probes_not_continuous_hour_proof——
+ * 它取離散時刻（每 15 分鐘一點），不宣稱掌握整個小時的連續行為；「各取樣時刻
+ * 相同」只說取樣點一致，不說取樣點之間也一致。因此本元件：
  *
  *   1. 只在五個取樣點顯示確切的上升點度數。拖到兩點之間時顯示區間
  *      （「介於 A 與 B 之間」），不做內插——內插出來的數字沒有人算過。
- *   2. 星座狀態則可以逐秒回答，因為跨界時刻是後端以二分法夾出來的
- *      有界結果（14:22:58–14:23:12，解析度 14 秒）。界外可斷言，界內不可。
+ *   2. 夾擊區間之外逐秒回答上升星座，靠的不是取樣，是取樣之外的一個前提：
+ *      在臺北這種非極區緯度，上升點黃經隨時間只往前走，所以後端以二分法
+ *      夾出的那一次跨界（14:22:58–14:23:12，解析度 14 秒）是這一小時唯一
+ *      的一次。極區附近這個前提不成立；後端的敏感度結果也不使用它。
  *   3. 那 14 秒之內顯示「取樣尚未分辨」，不猜一個看起來比較好看的答案。
+ *   4. 逐秒回答落宮，另靠各天體在這一小時內不換星座：這張盤上每個天體在
+ *      取樣點離星座界線至少 4.7°，移動最快的月亮整個小時只走了約 0.5°
+ *      （以同一請求重算查核）。這是本示範資料的查核結果，
+ *      不是後端對一般情形的保證。
  *
  * 所有數值取自一次實際計算：1990-05-15 14:00–15:00 臺北
  * （25.053060°N 121.526390°E），整宮制、回歸黃道、視位置、地心。
@@ -59,13 +66,13 @@
      回傳兩段文字分別寫入兩個元素，不組 HTML 字串，本 repository 的前端契約
      規定 innerHTML 只能指派空字串（tests/integration/test_frontend_contract.py）。 */
   function ascParts(sec) {
-    for (var i = 0; i < PROBES.length; i++) {
-      if (Math.abs(sec - PROBES[i].at) <= 20) {
-        return {
-          value: "上升 " + PROBES[i].sign + " " + PROBES[i].dms,
-          note: "這是取樣點，值為實算"
-        };
-      }
+    var exact = Time.isExactSample(sec, PROBES.map(function (probe) { return probe.at; }));
+    if (exact) {
+      var probe = PROBES.filter(function (item) { return item.at === sec; })[0];
+      return {
+        value: "上升 " + probe.sign + " " + probe.dms,
+        note: "這是取樣點，值為實算"
+      };
     }
     var lo = PROBES[0], hi = PROBES[PROBES.length - 1];
     for (var j = 0; j < PROBES.length - 1; j++) {
@@ -91,13 +98,11 @@
     var phase = sec < FLIP_LO ? "before" : (sec > FLIP_HI ? "after" : "unknown");
     root.setAttribute("data-phase", phase);
 
-    if (phase === "before") {
-      stateEl.textContent = "上升在處女";
-    } else if (phase === "after") {
-      stateEl.textContent = "上升在天秤";
-    } else {
-      stateEl.textContent = "取樣尚未分辨";
-    }
+    var stateText = phase === "before" ? "上升在處女"
+      : (phase === "after" ? "上升在天秤" : "取樣尚未分辨");
+    // stateEl 是 polite live region：只在狀態真的改變時重寫，否則每按一次
+    // 方向鍵報讀器就重念一次同一句。
+    if (stateEl.textContent !== stateText) stateEl.textContent = stateText;
 
     var parts = ascParts(sec);
     ascEl.textContent = parts.value;
@@ -176,7 +181,8 @@
     else if (e.key === "Home") next = 0;
     else if (e.key === "End") next = LAST_SECOND;
     else if (e.key === "PageUp" || e.key === "PageDown") {
-      var dir = e.key === "PageUp" ? -1 : 1;
+      // APG slider：PageUp 以較大步距「增加」，PageDown「減少」。
+      var dir = e.key === "PageUp" ? 1 : -1;
       for (var i = 0; i < PROBES.length; i++) {
         var k = dir > 0 ? i : PROBES.length - 1 - i;
         if (dir > 0 ? PROBES[k].at > current : PROBES[k].at < current) {
@@ -203,5 +209,8 @@
     });
   }
 
+  // 滑桿移動後上升星座是否改變，是這個示範要讓人聽到的結果；aria-valuetext
+  // 只念時間（WCAG 4.1.3）。
+  stateEl.setAttribute("aria-live", "polite");
   render(0);
 })();

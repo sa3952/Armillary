@@ -5,10 +5,10 @@
     <h1>你的出生資料，<br>我們沒有地方可以存。</h1>
     <p class="lede">不是「我們承諾不保存」。是應用程式裡<b>沒有一個可以保存的位置</b>——沒有帳號資料庫、沒有命盤資料庫、沒有工作階段儲存、沒有請求快取。</p>
     <div class="facts">
-      <div><b>0</b><span>個帳號</span><i>免註冊、免 email、免密碼</i></div>
-      <div><b>0</b><span>次寫檔</span><i>請求處理期間只要出現一次帶寫入旗標的檔案呼叫，測試就失敗</i></div>
-      <div><b>10</b><span>個日誌欄位</span><i>沒有一個是個人資料。不含 IP、User-Agent 或請求內容</i></div>
-      <div><b>0</b><span>個第三方</span><i>不引入追蹤、分析或遠端日誌相依</i></div>
+      <div><b>0</b><span>個帳號</span><i>免註冊、免 email、無帳號密碼；公開測試（Public Alpha）階段也沒有存取憑證</i></div>
+      <div><b>0</b><span>次寫檔</span><i>預設計算請求的測試中，只要出現一次帶寫入旗標的 Python 檔案呼叫，測試就失敗</i></div>
+      <div><b>{{telemetry_field_count}}</b><span>個日誌欄位</span><i>沒有一個是個人資料。不含 IP、User-Agent 或請求內容</i></div>
+      <div><b>0</b><span>個第三方追蹤相依</span><i>不引入追蹤、分析或遠端日誌相依；主機、DNS 與網域在層五的同一家供應商</i></div>
       <div><b>CH</b><span>瑞士</span><i>網域註冊、DNS 權威伺服器、主機——三者同一家瑞士公司</i></div>
     </div>
     <p class="tr-sub">但上面這些話，每個產品都寫得出來。<b>所以這一頁的其餘部分只做一件事：把每一項承諾放回它實際被執行的那一層，並寫出那一層能被反證到什麼程度。</b>打勾符號不會告訴你這些——是程式碼？是容器設定？是主機上的一行組態？還是供應商合約裡的一句話？四者的強度差很多，而打勾符號長得一模一樣。</p>
@@ -16,27 +16,27 @@
 
   <div class="audit">
     <p class="au-k">每一種交付，只能由適用的gate回答</p>
-    <p class="au-line">Gate A是普通產品交付、Gate B是repository治理、Gate C是具名audit closure、Gate D是exact image、Gate E是真實host、Gate F是public release。<b>一個gate通過不會替其他gate背書；exact執行與結果以current receipt為準。</b></p>
+    <p class="au-line">Gate A是普通產品交付、Gate B是repository治理、Gate D是exact image、Gate E是真實host、Gate F是public release（Gate C 已於 2026-10-04 退役：它只核對一份已凍結的歷史稽核登錄表）。<b>一個gate通過不會替其他gate背書；exact執行與結果以current receipt為準。</b></p>
     <div class="roster">
       <div>
         <span class="ro-k">天文正確性</span>
         <ul>
-          <li>對 DE442 ＋ Astropy／ERFA 獨立管線的逐小時比對，<b>2,244,088 列</b>（1990–2026，日月與傳統五政，apparent geocentric tropical）</li>
+          <li>對 DE442 ＋ Astropy／ERFA 外部參考管線（與產品共享 JPL／IAU 譜系，不稱完全獨立）的逐小時比對，<b>2,244,088 列</b>（1990–2026，日月與傳統五政，apparent geocentric tropical）</li>
           <li>五大行星停滯點順逆行分類：448 個零點、1,792 個 ±1h／±6h probes，<b>零符號翻轉</b></li>
         </ul>
       </div>
       <div>
         <span class="ro-k">程式與契約</span>
         <ul>
-          <li><b>Gate A完整Python產品迴歸測試</b>；exact數量與結果由每次delivery receipt記錄，不在本頁手填會漂移的總數</li>
-          <li><b>突變測試</b>：exact-population ratchet固定具名突變體，每一個都必須被自己的expected consumers殺死——<b>這一項檢的不是程式對不對，是測試會不會漏</b></li>
-          <li>mypy 型別檢查（baseline 模式）、ESLint、前端單元測試與runtime JS closed-set語法檢查</li>
+          <li><b>Gate A（make check）完整Python產品迴歸測試</b>：只回報通過或失敗，不在本頁手填會漂移的總數；本機找不到 nginx 時跳過真實 NGINX 測試，CI 設為必跑</li>
+          <li><b>突變測試</b>：固定具名突變體，每一個都必須被自己指定的測試殺死；每週由 CI 排程、發佈前由人跑——<b>這一項檢的不是程式對不對，是測試會不會漏</b></li>
+          <li>mypy 型別檢查（任何錯誤即失敗）、ESLint、前端單元測試與runtime JS closed-set語法檢查</li>
         </ul>
       </div>
       <div>
         <span class="ro-k">供應鏈與隱私</span>
         <ul>
-          <li><b>CycloneDX SBOM</b>，與 lockfile 比對，過期即失敗</li>
+          <li><b>SBOM</b>：Gate D 由映像以 syft 產生，與 lock 比對，保存在發佈收據中</li>
           <li><b>隱私相依守衛</b>：以具名清單阻擋 analytics、opentelemetry、sentry 這類套件進入相依樹</li>
           <li>Docker context與staging組態可在source層預檢；exact image的SBOM、parity與runtime只由Gate D回答</li>
         </ul>
@@ -45,7 +45,6 @@
         <span class="ro-k">治理</span>
         <ul>
           <li><b>Gate B</b>核對current repository結構與authority的可觀測closed sets</li>
-          <li><b>Gate C</b>只有在具名registry、report、execution與retained evidence都可讀時才回答audit lifecycle</li>
           <li>具名記錄的外部技術審查與多工具對抗測試；每一輪的範圍與結果逐次留存</li>
         </ul>
       </div>
@@ -68,9 +67,9 @@
           <span class="tier-how">可被測試反證　·　反例會讓測試變紅</span>
         </div>
         <ul class="claims">
-          <li><b>不建立帳號資料庫</b><span>免註冊、免 email、免密碼。存取憑證在代理層，不在應用程式。</span></li>
+          <li><b>不建立帳號資料庫</b><span>免註冊、免 email、無帳號密碼。公開測試階段沒有存取憑證，應用程式也從不接收任何憑證。</span></li>
           <li><b>出生資料不寫入資料庫、快取、佇列或檔案</b><span>測試會替換掉 <span class="mono">builtins.open</span>、<span class="mono">io.open</span> 與 <span class="mono">os.open</span>，請求處理期間只要有任何一次帶寫入旗標的呼叫，測試就失敗。<b>涵蓋的是 Python 層的寫入</b>——原生函式庫的行為與記憶體抹除不在內。</span></li>
-          <li><b>伺服器日誌只允許十個固定欄位</b><span>事件版本、事件名、請求 ID、路由、方法、狀態碼、耗時分桶、大小分桶、結果、錯誤碼。<b>就這十個</b>，欄位組合不符即拒絕寫出。不含出生資料、IP、User-Agent 或請求內容。</span></li>
+          <li><b>伺服器日誌只允許 {{telemetry_field_count}} 個固定欄位</b><span>{{telemetry_field_list}}。<b>就這 {{telemetry_field_count}} 個</b>，欄位組合不符即拒絕寫出。不含出生資料、IP、User-Agent 或請求內容。</span></li>
           <li><b>不引入第三方追蹤、分析或遠端日誌相依</b><span>相依守衛以具名清單阻擋（analytics、opentelemetry、sentry 等）。<b>這是對已知名稱的阻擋，不是完整的資訊流分析</b>——一個沒被列名的新套件不會被它擋下。</span></li>
           <li><b>錯誤訊息不回顯例外原文或本機路徑</b><span>含串流與背景工作的失敗路徑。已知的輸入錯誤仍會回傳你需要的診斷。</span></li>
         </ul>
@@ -96,7 +95,7 @@
           <span class="tier-how">只能在真實主機上驗，且只代表驗的那個時間點</span>
         </div>
         <ul class="claims">
-          <li><b>存取憑證在代理層</b><span>目前live版本已有具名實測證據：本站回傳 <span class="mono">401</span> 與 <span class="mono">WWW-Authenticate: Basic realm="Private Alpha"</span>。<b>該證據只涵蓋實測時的exact deployed pair</b>，不自動延伸到後續版本。</span></li>
+          <li><b>公開存取，以限流與大小上限防濫用</b><span>沒有存取憑證。反向代理以你的 IP 在記憶體中做限流計數，<b>不寫進日誌，也不轉送給應用程式</b>；數值見〈<a href="/zh-TW/security">安全</a>〉。設定可在版控的 nginx 設定檔逐行核對；主機上的實測<b>只涵蓋實測時的exact deployed pair</b>，不自動延伸到後續版本。</span></li>
           <li><b>不記錄存取日誌、不轉送原始 IP</b><span>有歷史執行證據。<b>供應商、DNS 與 Internet 轉送環節仍會為了建立連線而處理連線 metadata</b>——我們可以不記錄，不能宣稱它在網路上不存在。</span></li>
           <li><b>系統日誌短保留、停用 swap 與當機傾印</b><span>有歷史執行證據。這一層的每一項都需要重新在主機上驗證才能宣稱現況。</span></li>
         </ul>
@@ -122,7 +121,7 @@
         </div>
         <ul class="claims">
           <li><b>資料僅存放於瑞士，且機房為供應商自有</b><span>不是租用第三方雲端再標上「瑞士區域」。<span class="cite-x">使用條款 Art. 15.1</span></span></li>
-          <li><b>未經我們書面同意，不得將資料移出 EU／EEA</b><span>這是硬約束，不是盡力條款。<span class="cite-x">資料處理協議 Art. 13.1</span></span></li>
+          <li><b>未經我們書面同意，不得將資料移出 EU／EEA</b><span>這是硬約束，不是盡力條款。它寫的地理範圍是 EU／EEA，與上一條的「瑞士」用語不同；兩者照原文並列，見〈隱私政策〉<a href="/zh-TW/legal/privacy#transfer">第五節</a>。<span class="cite-x">資料處理協議 Art. 13.1</span></span></li>
           <li><b>收到當局索資時須先通知我們，且只能交出對方明確要求的部分</b><span>除非法律明文禁止告知。<span class="cite-x">資料處理協議 Art. 2.1.13、12.1</span></span></li>
           <li><b>每年執行一次入侵測試</b><span>目的是確保客戶之間不會互相外洩。<b>這是合約義務，不是行銷詞。</b><span class="cite-x">資料處理協議 Art. 2.1.8</span></span></li>
           <li><b>服務終止後三十日內刪除所有副本，並出具書面刪除證明</b><span><span class="cite-x">資料處理協議 Art. 7.1–7.2</span></span></li>
@@ -134,7 +133,7 @@
 
     </div>
 
-    <p class="limit">同一張表在別的網站上會是十一個打勾。<b>打勾把層一與層五畫成同一件事，而它們的證據強度差了一個數量級。</b></p>
+    <p class="limit">同一張表在別的網站上會是一整排打勾。<b>打勾把層一與層五畫成同一件事，而它們的證據強度差了一個數量級。</b></p>
   </section>
 
   <!-- ═══ 02 瑞士 ═══ -->
@@ -182,7 +181,7 @@
 
     <div class="nodef"><span class="nd-k">為什麼是瑞士</span><span>關鍵不是機房的地理位置，是<b>供應商受不受外國法管轄</b>。美國的 CLOUD Act 觸及的是受美國法拘束的業者——<b>一家美國公司在蘇黎世開的機房，資料照樣可能被要求交出</b>。所以「瑞士區域」與「瑞士公司的自有瑞士機房」是兩件不同的事，而我們買的是後者。</span></div>
 
-    <p class="limit"><b>必須講清楚的界線：</b>上面這六道保護的是<b>資料在瑞士期間、以及誰有辦法伸手</b>。它們不會取代你所在地的個資法——台灣使用者的資料主體權利仍然來自台灣個資法。我們也<b>沒有</b>端到端加密；我們的資產是管轄權與「不保存」，不是密碼學。</p>
+    <p class="limit"><b>必須講清楚的界線：</b>上面這六道保護的是<b>資料在瑞士期間、以及誰有辦法伸手</b>。它們不會取代你所在地的個資法——臺灣使用者的資料主體權利仍然來自臺灣個資法。我們也<b>沒有</b>端到端加密；我們的資產是管轄權與「不保存」，不是密碼學。</p>
   </section>
 
   <!-- ═══ 02 層之外 ═══ -->
@@ -225,7 +224,7 @@
     <h2>兩件寫在別頁、但你在這裡就該知道的事</h2>
     <ul class="ticks">
       <li><b>我們只計算，不解盤。</b>不是因為解盤沒有價值，是因為還沒有能力把它做到跟前兩階同樣的嚴謹度。每一條規則的來歷、依據與待決項目逐條列在〈<a href="/zh-TW/methods">方法</a>〉。</li>
-      <li><b>每一次計算都附一份可重算的卷宗。</b>口徑、時間換算、引擎與星曆版本、各項方法狀態、軌跡步數與 SHA-256 收據都在裡面，另一個人拿著它可以重建等價請求核對你的結果。實際長什麼樣子見〈<a href="/zh-TW/validation">驗證</a>〉，能力清單見〈<a href="/zh-TW/features">功能</a>〉。</li>
+      <li><b>每一次計算都產生一份可重算的卷宗。</b>口徑、時間換算、引擎與星曆版本、軌跡步數與 SHA-256 收據都在裡面；匯出時選「運算結果＋驗算資料」即整份帶走，預設的「運算結果」不含它。另一個人拿著它可以重建等價請求核對你的結果。實際長什麼樣子見〈<a href="/zh-TW/validation">驗證</a>〉，能力清單見〈<a href="/zh-TW/features">功能</a>〉。</li>
     </ul>
   </section>
 
@@ -245,7 +244,7 @@
     <div class="beyond docs">
       <div><b><a href="/zh-TW/legal/privacy">隱私政策</a></b><span>實際處理哪些資料、保存多久、誰會接觸到。</span></div>
       <div><b><a href="/zh-TW/legal/terms">使用條款</a></b><span>服務範圍、使用者責任、責任界線。</span></div>
-      <div><b><a href="/zh-TW/legal/copyright">著作權與原始碼</a></b><span>AGPL、取得你正在使用那一版的路徑、隨服務送出的物料清單。</span></div>
+      <div><b><a href="/zh-TW/legal/copyright">著作權與原始碼</a></b><span>AGPL、取得你正在使用那一版的路徑、隨服務送出的元件與各自的授權。</span></div>
       <div><b><a href="/zh-TW/security">安全</a></b><span>技術細節、威脅模型與我們控制不了的部分。</span></div>
       <div><b><a href="/zh-TW/contact">聯絡方式</a></b><span>隱私請求與安全通報。</span></div>
     </div>

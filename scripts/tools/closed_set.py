@@ -1,4 +1,5 @@
 """Fail-closed comparison for independently produced finite universes."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -25,11 +26,7 @@ def _items(values: Iterable[str], *, role: str) -> tuple[str, ...]:
 
 
 def require_closed_set(
-    expected: Iterable[str],
-    observed: Iterable[str],
-    *,
-    role: str,
-    allow_empty: bool = False,
+    expected: Iterable[str], observed: Iterable[str], *, role: str, allow_empty: bool = False
 ) -> ClosedSetResult:
     """Require two caller-produced universes to be equal.
 
@@ -45,7 +42,5 @@ def require_closed_set(
     missing = sorted(set(expected_items) - set(observed_items))
     unexpected = sorted(set(observed_items) - set(expected_items))
     if missing or unexpected:
-        raise ClosedSetError(
-            f"{role} differs: missing={missing!r} unexpected={unexpected!r}"
-        )
+        raise ClosedSetError(f"{role} differs: missing={missing!r} unexpected={unexpected!r}")
     return ClosedSetResult(len(expected_items), len(observed_items))

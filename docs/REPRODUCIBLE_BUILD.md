@@ -2,7 +2,7 @@
 
 The release contract is source-corresponding, not bit-for-bit reproducible across independent builders.
 It binds exact public revision、digest-pinnedlinux/amd64Python base、hashed dependencies、source-built
-pyswisseph、ephemeris hashes、ELF architecture、inventory、SBOM、scanner evidence and image digest.
+pyswisseph、ephemeris hashes、the `/app` file list、the image SBOM、scanner evidence and image digest.
 Timestamps、package repositories、toolchains and platforms may change whole-file bytes.
 
 ## Reconstruction
@@ -26,19 +26,19 @@ bash scripts/publication/verify_candidate_clean.sh --root . \
 ```
 
 The verifier fixes`linux/amd64`; another builder is diagnostic only. RuntimeCompose does not build. The
-sole candidate context is the closed materialized output of
-`scripts.verification.verify_docker_context`；a raw-checkout／Compose build is unsupported.
+build context is a `git archive` snapshot of one revision, whose `.dockerignore` whitelist
+`scripts.verification.verify_docker_context` checks；a raw-checkout／Compose build is unsupported.
 
 ## What this tree does not carry, and why
 
 Two kinds of thing are deliberately absent, so that their absence reads as a decision rather than an
 omission.
 
-**Operator state.** The edge configuration and the site template are here; the renderer that fills in
-a domain, the TLS preparation, the credential tooling and the host hardening for one particular
-machine are not. Those configure sshd, ufw, sysctl, journald and certbot — generally available
-programs used unmodified — and what they hold is one operator's identity, not knowledge needed to
-build or modify this work. Bring your own.
+**Operator state.** The edge (NGINX) configuration and its site template are published here. The tool
+that fills a domain into that template is not, and neither is the hardening of the host machine (TLS
+preparation, credential tooling, and settings for generally available programs such as sshd, ufw,
+sysctl, journald and certbot, used unmodified). What those hold is one operator's machine and
+identity, not knowledge needed to build, run or modify this work. Bring your own.
 
 **Our own quality apparatus.** The tests published here are the ones that verify a claim this
 project makes in public: privacy logging, the runtime contract, resource bounds, the release

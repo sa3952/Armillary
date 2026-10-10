@@ -1,10 +1,10 @@
 # Privacy threat model
 
-Protected data：birth date／time、timezone、precise location、chart request／response、invite credentials and
-client network metadata.
+Protected data：birth date／time、timezone、precise location、chart request／response and client network
+metadata.
 
 ```text
-browser → Internet／DNS → HTTPS proxy／invite auth → application → Swiss Ephemeris → browser response
+browser → Internet／DNS → HTTPS proxy／rate limits → application → Swiss Ephemeris → browser response
 ```
 
 The application has no intended outbound path or user persistence；the browser may retain active-page

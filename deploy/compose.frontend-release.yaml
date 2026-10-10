@@ -1,6 +1,10 @@
 # Bind one verified immutable frontend release; never mount a live checkout.
 services:
-  private-alpha-app:
+  armillary-app:
+    # The approved immutable image ID the pair records, not a tag: another
+    # approved image of the same revision can never change what this runs
+    # (CX-1009 #1).  The image is in the local store; nothing is pulled.
+    image: "${BACKEND_IMAGE_ID:?set BACKEND_IMAGE_ID}"
     environment:
       # The host this deployment answers for.  Admission is the proxy's, which
       # strips Authorization before forwarding, so the application has no

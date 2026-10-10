@@ -1,41 +1,94 @@
 """宮位計算：單一宮位制的 12 宮宮頭與古典角點 (ASC/DSC/MC/IC/ARMC)。
 
-Sidereal Whole Sign 必須讓 Swiss 直接以 ``FLG_SIDEREAL`` 建立恆星黃道
-30°整數宮界；先算 tropical Whole Sign 再減 ayanamsa 會得到落在任意度數的錯誤宮頭。
-其他 sidereal 宮位制保留既有「tropical 宮頭 − ayanamsa」契約（僅套用在
-黃道經度類的值上；ARMC 是恆星時性質的角度，不做 ayanamsa 平移）。
+恆星黃道下每一種宮位制都由 Swiss 直接以 ``FLG_SIDEREAL`` 計算（ARMC 是恆星時性質的
+角度，Swiss 不做 ayanamsa 平移）。Whole Sign 必須如此才得到恆星黃道 30° 整數宮界；
+先算 tropical Whole Sign 再減 ayanamsa 會得到落在任意度數的錯誤宮頭。P/R/B 也不用
+「tropical 宮頭 − ayanamsa」：章動關閉時 ``ayanamsa_value`` 是相對平春分點的值，而
+houses_ex 的 tropical 宮頭相對真春分點，ASC、MC 與每個宮頭會偏一個黃經章動
+（≤ 約 17″），且 ASC 隨所選宮位制而異。Swiss 對恆星黃道不理會 ``FLG_NONUT``：天體黃經
+與原生宮頭在章動開或關時都相同，所以同一時刻、同一地點只有一個 ASC。
 
 Vertex、Equatorial Ascendant、Co-Ascendant(Koch/Munkasey)、Polar Ascendant 是
 swe_houses_ex 附帶回傳的現代/技術性角點，非古典占星角點，因此不進入 `angles`
-主要輸出。2026-08-03 起改為在 `options.include_extra_angles` 開啟時另闢
+主要輸出，而是在 `options.include_extra_angles` 開啟時另闢
 `astronomical_data.extra_angles` 輸出，每一項附上其定義來源與「非古典角點」標記；
 `angles` 的鍵集合維持 asc/mc/desc/ic/armc 不變，既有消費端不受影響。
 
 宮位／ASC／MC／地平系統本質上是「觀測者站在地表看天空」定義出來的概念，恆為地心
-（或站心）視角，不受 computation_mode.center 影響——即使使用者把星體位置切成
-heliocentric/barycentric，這裡算出來的宮位仍然是地球上的觀測者看到的宮位，這是
-刻意的設計而非未定義的語意混合，但容易讓人誤解成「這個程式的座標系統前後不一致」，
-所以在 heliocentric/barycentric 模式下會額外寫一筆 trace 註明。
+（或站心）視角。heliocentric/barycentric 請求不會走到這裡：chart_pipeline.py 依
+frame_compatibility 的 house_division 規則判定不適用，宮位與角點回 not_applicable，
+reason_code 為 non_earth_observer_center。
 """
 
+import functools
 import math
 
 import swisseph as swe
 
-from ..config import HOUSE_SYSTEMS
+from ..config import HOUSE_SYSTEMS, PRODUCT_YEAR_RANGE
+from .method_status import method_receipt
+from .module_state import computed_receipt
 from .trace import Trace
 
 
 # 四分宮制（Placidus/Regiomontanus/Alcabitius）在高緯度會嚴重變形：宮位大小差距
-# 拉大，Placidus 在超過黃赤交角補角（90° − ε ≈ 66.56°，即極圈）之外根本無法定義，
-# 因為該處存在永不升起或永不落下的黃道度數。以下兩個門檻用於發出結構化警告，
-# 不用於阻擋計算——阻擋的條件另由 _has_duplicate_cusps() 與 swe.Error 決定。
+# 拉大，Placidus 在超過黃赤交角補角（90° − ε，即極圈）之外失去標準半弧解，
+# 因為該處存在永不升起或永不落下的黃道度數（|tan φ · tan δ| > 1，方法研究筆記）。
 #
-# 66.5°：極圈。此緯度以上 Placidus 的時間三分法對部分黃道度數無解。
+# 極圈門檻不硬編碼 66.5°：以命盤時刻的真黃赤交角算 90° − ε，
+# 這也是 Swiss swe_houses 對 Placidus 改用 Porphyry 並回 ERR 的同一條界線，
+# 所以「標成極區」與「拒算 Placidus」用同一個數。1900–2399 年間約 66.55°–66.61°。
 # 60.0°：經驗上宮位大小已明顯不均、落宮對出生時刻誤差高度敏感的起點。
-POLAR_CIRCLE_LATITUDE_DEGREES = 66.5
 HIGH_LATITUDE_WARNING_DEGREES = 60.0
 QUADRANT_HOUSE_SYSTEM_CODES = frozenset({"P", "R", "B"})
+
+# 宮位可用性四態（unavailable 仍 422）。
+# 方法研究筆記的詞彙。available_polar_geometry 不是新的成功路徑：它只標記
+# 「現行本來就算得出來、但落在極區帶」的結果；現行拒絕行為一律保留。
+HOUSE_AVAILABILITY_STATES = (
+    "available",
+    "available_polar_geometry",
+    "unstable",
+    "unavailable",
+)
+HOUSE_AVAILABILITY_REASONS = (
+    "unique_ascendant_undefined",        # |φ| ≥ 90°：地理極點無唯一上升點
+    "placidus_no_semiarc",               # Placidus 於極區帶：標準半弧構造無解（產品選擇：全帶拒絕）
+    "swiss_house_fallback_rejected",     # Swiss 對其他宮位制回 ERR／自動 fallback，本產品拒收
+    "degenerate_cusp_cycle_rejected",    # 宮頭重複或未形成單一依序完整分割（含反向 Regiomontanus）
+    "quadrant_high_latitude_sensitivity",# 四分宮制於高緯度（≥60°，含極區帶）：對時刻／緯度微擾高度敏感
+    "polar_band_geometry",               # 極區帶內的非四分宮制（整宮）
+    "mc_below_horizon_rejected",         # Alcabitius：MC 在地平線下（比照 Regiomontanus 拒收）
+)
+
+
+def true_obliquity_degrees(jd_ut: float) -> float:
+    return swe.calc_ut(jd_ut, swe.ECL_NUT, 0)[0][0]
+
+
+def polar_circle_threshold_degrees(jd_ut: float) -> float:
+    """極圈門檻：90° − 命盤時刻真黃赤交角。與 Swiss 的 Placidus 拒算界線相同。"""
+    return 90.0 - true_obliquity_degrees(jd_ut)
+
+
+@functools.cache
+def product_polar_threshold_range_degrees() -> tuple[float, float]:
+    """產品年份範圍內極圈門檻的上下界（向外取整到 0.01°）。
+
+    拒絕本文只能說這個不含日期的範圍：門檻隨黃赤交角每百年約變 0.013°，
+    取到 0.1° 時在約 1915–1919 年間由 66.5 變成 66.6，等於回帶出生年份的一個位元。
+    章動讓真黃赤交角上下擺動（週期約 18.6 年、振幅約 0.0026°），所以不取兩端，
+    而是每 10 日取樣一次整個範圍；向外取整到 0.01° 的餘裕大於取樣間的變化。
+    """
+    first, last = PRODUCT_YEAR_RANGE
+    start = swe.julday(first, 1, 1, 0.0)
+    end = swe.julday(last, 12, 31, 24.0)
+    samples = [
+        polar_circle_threshold_degrees(start + day)
+        for day in range(0, int(end - start) + 1, 10)
+    ]
+    return math.floor(min(samples) * 100) / 100, math.ceil(max(samples) * 100) / 100
+
 
 # 非古典角點的定義來源，隨值一起輸出，避免使用者把它們誤認為古典四角。
 EXTRA_ANGLE_PROVENANCE = {
@@ -81,6 +134,10 @@ EXTRA_ANGLE_PROVENANCE = {
         "derived_from": "vertex",
     },
 }
+EXTRA_ANGLE_SOURCE_LABEL = {
+    "swiss_ephemeris_houses_ex": "swe.houses_ex 附帶回傳",
+    "vertex_longitude_antipode": "由 Vertex 黃經對蹠導出",
+}
 
 
 class HouseSystemUnavailableError(Exception):
@@ -95,9 +152,24 @@ class HouseSystemUnavailableError(Exception):
         name: str,
         latitude: float,
         reason: str | None = None,
+        reason_code: str = "swiss_house_fallback_rejected",
     ):
+        assert reason_code in HOUSE_AVAILABILITY_REASONS, reason_code
         self.house_system = code
         self.latitude = latitude
+        self.reason_code = reason_code
+        # 422 detail 的收據：閉集 reason_code，並說明拒絕是產品選擇、幾何理由是什麼。
+        self.detail_extra = {
+            "availability": "unavailable",
+            "reason_code": reason_code,
+            "house_system": code,
+            "latitude": latitude,
+            "refusal_basis": "product_choice",
+            "geometric_reason": reason or "Swiss Ephemeris 對此宮位制回報錯誤或自動改用其他宮位制，本產品不接受替代結果",
+            # 隱私：拒絕本文不回帶命盤時刻的門檻（90° − 真黃赤交角）。取到 0.1° 也不行：
+            # 它在 1915–1919 年間由 66.5 變成 66.6，仍是出生年份的一個位元。拒絕只說公式與
+            # 產品年份範圍內的上下界（常數，見 geometric_reason）；成功回應保留全精度。
+        }
         if reason:
             message = (
                 f"{name} ({code}) 在緯度 {latitude}° 產生退化宮頭（{reason}）；"
@@ -137,26 +209,51 @@ def _has_invalid_cusp_cycle(
     )
 
 
-def compute_houses(house_system_code: str, jd_ut: float, location, ctx, trace: Trace) -> dict:
-    ayanamsa = ctx.ayanamsa_value(jd_ut) if ctx.mode.zodiac == "sidereal" else None
-    swiss_sidereal_whole_sign = (
-        ctx.mode.zodiac == "sidereal" and house_system_code == "W"
+def mc_true_altitude_degrees(armc: float, obliquity: float, latitude: float) -> float:
+    """Geometric altitude of the MC, the ecliptic point on the upper meridian.
+
+    Its right ascension is the ARMC (frame-independent, so a sidereal chart
+    gives the same answer), so tan(delta) = sin(ARMC) tan(eps); on the upper
+    meridian the altitude is 90 - |phi - delta|.
+    """
+    declination = math.degrees(
+        math.atan(math.sin(math.radians(armc)) * math.tan(math.radians(obliquity)))
     )
+    return 90.0 - abs(latitude - declination)
+
+
+def compute_houses(house_system_code: str, jd_ut: float, location, ctx, trace: Trace) -> dict:
+    sidereal = ctx.mode.zodiac == "sidereal"
+    houses_flags = swe.FLG_SIDEREAL if sidereal else 0
 
     def shift(lon):
-        if swiss_sidereal_whole_sign:
-            return lon % 360.0
-        offset = ayanamsa or 0.0
-        return (lon - offset) % 360.0
+        # Normalisation only: Swiss already returns the requested zodiac.
+        return lon % 360.0
 
     code = house_system_code
     name = HOUSE_SYSTEMS.get(code, code)
+    refusal = functools.partial(
+        HouseSystemUnavailableError, code=code, name=name, latitude=location.latitude
+    )
+    # One Swiss ECL_NUT call serves the Placidus refusal and latitude_regime.
+    obliquity = true_obliquity_degrees(jd_ut)
+    polar_threshold = 90.0 - obliquity
     if abs(location.latitude) >= 90.0:
-        raise HouseSystemUnavailableError(
-            code=code,
-            name=name,
-            latitude=location.latitude,
+        raise refusal(
             reason="地理極點的上升點在數學上未定義",
+            reason_code="unique_ascendant_undefined",
+        )
+    if code == "P" and abs(location.latitude) >= polar_threshold:
+        # 產品選擇：整個極區帶拒絕，不逐時刻判半弧是否有解。
+        # 幾何理由：|φ| ≥ 90° − ε 時存在永不升起／永不落下的黃道度數，
+        # 標準 Placidus 半弧三分對這些度數無解；Swiss 在同一界線改用 Porphyry。
+        raise refusal(
+            reason=(
+                "緯度絕對值 ≥ 極圈門檻（90° − 命盤時刻真黃赤交角；{}–{} 年間在 {:.2f}°–{:.2f}° 之間）："
+                "部分黃道度數永不升起或永不落下，標準 Placidus 半弧構造無解；"
+                "本產品選擇在整個極區帶拒絕，不逐時刻判定"
+            ).format(*PRODUCT_YEAR_RANGE, *product_polar_threshold_range_degrees()),
+            reason_code="placidus_no_semiarc",
         )
     try:
         cusps, ascmc = swe.houses_ex(
@@ -164,22 +261,25 @@ def compute_houses(house_system_code: str, jd_ut: float, location, ctx, trace: T
             location.latitude,
             location.longitude,
             code.encode(),
-            swe.FLG_SIDEREAL if swiss_sidereal_whole_sign else 0,
+            houses_flags,
         )
     except swe.Error as exc:
-        raise HouseSystemUnavailableError(
-            code=code,
-            name=name,
-            latitude=location.latitude,
-        ) from exc
+        raise refusal(reason_code="swiss_house_fallback_rejected") from exc
     if code != "W" and (
         _has_duplicate_cusps(cusps) or _has_invalid_cusp_cycle(cusps)
     ):
-        raise HouseSystemUnavailableError(
-            code=code,
-            name=name,
-            latitude=location.latitude,
-            reason="十二宮宮頭未形成單一、依序且完整的黃道分割",
+        raise refusal(
+            reason="十二宮宮頭未形成單一、依序且完整的黃道分割（含反向排列的宮頭循環；本產品拒收，不宣稱數學上不可用）",
+            reason_code="degenerate_cusp_cycle_rejected",
+        )
+    # In the polar band the MC can culminate below the horizon.  Regiomontanus
+    # cusps then stop forming one ordered cycle (refused above; measured: in
+    # exactly these cells), while Alcabitius still yields an ordered cycle
+    # built on the sunk MC.  The product refuses it in the same cells.
+    if code == "B" and mc_true_altitude_degrees(ascmc[2], obliquity, location.latitude) < 0.0:
+        raise refusal(
+            reason="MC（天頂點）在地平線下；Alcabitius 宮頭仍算得出，但本產品比照 Regiomontanus 在同一情形拒收，不宣稱數學上不可用",
+            reason_code="mc_below_horizon_rejected",
         )
 
     cusps_shifted = [shift(c) for c in cusps]
@@ -194,50 +294,36 @@ def compute_houses(house_system_code: str, jd_ut: float, location, ctx, trace: T
     desc = (asc + 180.0) % 360.0
     ic = (mc + 180.0) % 360.0
 
-    if ctx.mode.center in ("heliocentric", "barycentric"):
-        trace.add(
-            "宮位座標框架提醒",
-            note=f"計算模式的計算中心為 {ctx.mode.center}，但宮位/ASC/MC/地平系統定義上恆為觀測者"
-                 "站在地表看天空的視角，不受此設定影響——本結果仍是地心視角的宮位，"
-                 "並非把日心/質心行星位置硬套進地心宮位系統造成的不一致。",
-        )
-
     frame_notes = []
     if ctx.mode.ecliptic_frame == "j2000":
-        frame_notes.append("星體黃經採 J2000 參考框架")
-    if not ctx.mode.nutation:
-        frame_notes.append("星體黃經採不含章動的平均框架")
+        frame_notes.append("天體黃經採 J2000 參考框架")
+    # Sidereal bodies and cusps do not move with the nutation flag,
+    # so the mean-frame warning is a tropical statement only.
+    if not ctx.mode.nutation and not sidereal:
+        frame_notes.append("天體黃經採不含章動的平均框架")
     if frame_notes:
         trace.add(
-            "宮位與星體參考框架提醒",
+            "宮位與天體參考框架提醒",
             note="；".join(frame_notes)
             + "；宮頭／ASC／MC 仍由 swe.houses_ex 以當日真回歸框架計算。"
-            "本程式不據此產生星體落宮判斷，兩組數值不可直接混合作落宮推論。",
+            "本程式不據此產生天體落宮判斷，兩組數值不可直接混合作落宮推論。",
+        )
+    elif not ctx.mode.nutation:
+        trace.add(
+            "宮位與天體參考框架提醒",
+            note="恆星黃道下，章動開關不改變天體黃經與宮頭：恆星黃經扣除的是從同一個"
+            "春分點量起的 ayanamsa，章動互相抵消；宮頭由 swe.houses_ex 以 FLG_SIDEREAL "
+            "直接算出，同樣不隨章動開關改變。兩者在同一框架，落宮照常判定。",
         )
 
     trace.add(
         f"宮位制：{name} ({code})",
         formula=(
             "swe.houses_ex(JD_UT, 地理緯度, 地理經度, 宮位制代碼"
-            + (
-                ", FLG_SIDEREAL)"
-                if swiss_sidereal_whole_sign
-                else ")"
-            )
-            + (
-                "；其他 sidereal 宮位制：黃道經度類角點減去 ayanamsa"
-                if ayanamsa is not None
-                and not swiss_sidereal_whole_sign
-                else ""
-            )
+            + (", FLG_SIDEREAL)" if sidereal else ")")
         ),
         inputs={"JD(UT)": jd_ut, "緯度": location.latitude, "經度": location.longitude,
-                **({"ayanamsa": ayanamsa} if ayanamsa is not None else {}),
-                "houses_ex_flags": (
-                    swe.FLG_SIDEREAL
-                    if swiss_sidereal_whole_sign
-                    else 0
-                )},
+                "houses_ex_flags": houses_flags},
         result={
             "ASC": asc, "MC": mc, "ARMC": armc, "DESC": desc, "IC": ic,
             "12宮宮頭": cusps_shifted,
@@ -255,11 +341,11 @@ def compute_houses(house_system_code: str, jd_ut: float, location, ctx, trace: T
         "co_ascendant_munkasey": co_ascendant_munkasey,
         "polar_ascendant": polar_ascendant,
     }
+    regime = latitude_regime(location.latitude, code, jd_ut, obliquity=obliquity, armc=armc)
 
     return {
-        # `compute_planet_house_placements` reads this key.  It used to be
-        # supplied by the web layer on the one path that runs, so the two core
-        # modules could not compose outside it.
+        # `compute_planet_house_placements` reads this key, so the two core
+        # modules compose without the web layer supplying it.
         "system_code": code,
         "system_name": name,
         "cusps": cusps_shifted,
@@ -269,20 +355,67 @@ def compute_houses(house_system_code: str, jd_ut: float, location, ctx, trace: T
         "ic": ic,
         "armc": armc,
         "extra_angles": extra_angles,
-        "latitude_regime": latitude_regime(location.latitude, code),
+        "latitude_regime": regime,
+        "availability": house_availability(regime),
     }
 
 
-def latitude_regime(latitude: float, house_system_code: str) -> dict:
+
+def printed_angles(houses: dict) -> dict:
+    """`astronomical_data.angles` for one computed house division.
+
+    The chart and every birth-time sample print the angles through this one
+    function, so a sample is compared field for field with what the page shows.
+    """
+
+    return {
+        **computed_receipt("Swiss Ephemeris houses_ex"),
+        "asc": houses["asc"],
+        "mc": houses["mc"],
+        "desc": houses["desc"],
+        "ic": houses["ic"],
+        "armc": houses["armc"],
+    }
+
+
+def printed_house_division(houses: dict, system_code: str) -> dict:
+    """`derived_methods.house_division` for one computed house division."""
+
+    return {
+        "method": "swiss_ephemeris_house_division_v1",
+        **method_receipt("house_division"),
+        **computed_receipt("Swiss Ephemeris houses_ex"),
+        "execution_status": "computed",
+        "system_code": system_code,
+        "system_name": houses["system_name"],
+        "cusps": houses["cusps"],
+        "angles_source": "astronomical_data.angles",
+        # Four-state availability; `unavailable` never reaches here because it
+        # is raised as HouseSystemUnavailableError (422).
+        "availability": houses["availability"],
+    }
+
+def latitude_regime(
+    latitude: float,
+    house_system_code: str,
+    jd_ut: float,
+    *,
+    obliquity: float | None = None,
+    armc: float | None = None,
+) -> dict:
     """描述本次計算的緯度處於哪一個「宮位制可信度」區間。
 
     這是純粹的幾何事實陳述（緯度是否超過極圈、所選宮位制是否為四分宮制），
     不含任何「應該改用哪一種宮位制」的建議——那屬於方法裁決。
+    極圈門檻依命盤時刻的真黃赤交角計算；compute_houses 傳入它已讀到的交角。
     """
 
     magnitude = abs(latitude)
     is_quadrant = house_system_code in QUADRANT_HOUSE_SYSTEM_CODES
-    if magnitude >= POLAR_CIRCLE_LATITUDE_DEGREES:
+    if obliquity is None:
+        obliquity = true_obliquity_degrees(jd_ut)
+    polar_threshold = 90.0 - obliquity
+    if magnitude >= polar_threshold:
         band = "beyond_polar_circle"
     elif magnitude >= HIGH_LATITUDE_WARNING_DEGREES:
         band = "high_latitude"
@@ -291,8 +424,60 @@ def latitude_regime(latitude: float, house_system_code: str) -> dict:
     return {
         "latitude": latitude,
         "band": band,
-        "polar_circle_threshold_degrees": POLAR_CIRCLE_LATITUDE_DEGREES,
+        "polar_circle_threshold_degrees": polar_threshold,
+        "polar_circle_threshold_source": (
+            "90° − 命盤時刻真黃赤交角（swe.calc_ut ECL_NUT）；與 Swiss swe_houses 的 "
+            "Placidus 拒算界線相同；不再使用固定 66.5°"
+        ),
+        "true_obliquity_degrees": obliquity,
         "high_latitude_threshold_degrees": HIGH_LATITUDE_WARNING_DEGREES,
         "house_system_is_quadrant": is_quadrant,
         "quadrant_distortion_expected": is_quadrant and band != "ordinary",
+        # Only possible inside the polar band; None when no ARMC was given
+        # (a regime asked for without a chart instant).
+        "mc_below_horizon": (
+            None if armc is None
+            else mc_true_altitude_degrees(armc, obliquity, latitude) < 0.0
+        ),
     }
+
+
+def house_availability(regime: dict) -> dict:
+    """四態可用性。只描述已算出的結果；unavailable 由例外路徑產生。
+
+    四態依嚴重度排序：available < available_polar_geometry < unstable < unavailable，
+    同一宮位制在緯度變高時狀態只能變嚴重：四分宮制在極區帶的敏感度只會更高，不能在
+    60° 至極圈之間標 unstable、過了極圈反而標成較輕的 available_polar_geometry。極區帶
+    記在 latitude_regime.band，所以 available_polar_geometry 只給非四分宮制（整宮）。
+    """
+
+    if regime["house_system_is_quadrant"] and regime["band"] != "ordinary":
+        state, reason = "unstable", "quadrant_high_latitude_sensitivity"
+    elif regime["band"] == "beyond_polar_circle":
+        state, reason = "available_polar_geometry", "polar_band_geometry"
+    else:
+        state, reason = "available", None
+    assert state in HOUSE_AVAILABILITY_STATES
+    assert reason is None or reason in HOUSE_AVAILABILITY_REASONS
+    return {
+        "state": state,
+        "reason_code": reason,
+        # The two closed sets and their basis are constant: register entry
+        # houses/availability.
+        "vocabulary_source_ref": "houses/availability",
+    }
+
+
+METHOD_SOURCE_ENTRIES: dict[str, dict] = {
+    "houses/availability": {
+        "applies_to": "derived_methods.house_division.availability",
+        "vocabulary": list(HOUSE_AVAILABILITY_STATES),
+        "reason_vocabulary": list(HOUSE_AVAILABILITY_REASONS),
+        "source": "本產品依緯度帶與宮位制是否為四分宮制所訂的四態分類",
+    },
+    "extra_angles": {
+        "applies_to": "astronomical_data.extra_angles",
+        "calculation_source_labels": dict(EXTRA_ANGLE_SOURCE_LABEL),
+        "note": "皆非古典占星的四角。本產品輸出其數值，不對其占星用途表示任何立場。",
+    },
+}

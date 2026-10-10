@@ -1,15 +1,23 @@
-"""Fail-closed identity verification for mounted frontend releases."""
+"""Fail-closed identity verification for mounted frontend releases.
+
+What the running process checks before it serves a mounted release: the
+manifest's shape, the exact contract versions, the exact file tree and every
+file's digest, the artifact digest and the combined release ID.  Whether a
+published release's Corresponding Source receipt and legal fields are valid,
+and which former public repositories a recorded pair may name, are release-time
+questions; scripts/deployment/frontend_release.py answers them before a
+release is ever mounted.
+"""
 
 from __future__ import annotations
 
 import hashlib
 import json
 import os
-from datetime import date
 from pathlib import Path, PurePosixPath
 import re
 import stat
-from typing import Any, Final, Mapping
+from typing import Any, Collection, Final, Mapping
 
 from .frontend_assets import (
     MANIFEST_NAME,
@@ -19,8 +27,9 @@ from .frontend_assets import (
 
 
 CONTRACT_PATH = Path("deploy/frontend-contract.json")
-SOURCE_URL_PREFIX = "https://github.com/sa3952/Project-Armillary/tree/"
-SOURCE_ARCHIVE_URL_PREFIX = "https://github.com/sa3952/Project-Armillary/archive/"
+#: The public repository every new release is published to.
+PUBLIC_REPOSITORY_URL: Final = "https://github.com/sa3952/Armillary"
+SOURCE_URL_PREFIX = f"{PUBLIC_REPOSITORY_URL}/tree/"
 REQUIRE_ENV = "CLASSICAL_ASTROLOGY_REQUIRE_FRONTEND_RELEASE"
 ROOT_ENV = "CLASSICAL_ASTROLOGY_FRONTEND_ROOT"
 DIGEST_ENV = "CLASSICAL_ASTROLOGY_FRONTEND_RELEASE_DIGEST"
@@ -29,13 +38,10 @@ BACKEND_IMAGE_ENV = "CLASSICAL_ASTROLOGY_BACKEND_IMAGE_ID"
 REVISION_RE = re.compile(r"^[0-9a-f]{40}$")
 DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
 IMAGE_ID_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
-RELEASE_VERSION_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
-FORMAL_LEGAL_FIELDS = frozenset({
-    "effective_date",
-    "release_version",
-    "public_revision",
-    "source_archive_url",
-    "source_archive_sha256",
+#: The two values a manifest's `source_url_status` may take.
+SOURCE_URL_STATUSES: Final = frozenset({
+    "published_and_expected_anonymously_reachable",
+    "provisional_pending_publication",
 })
 
 
@@ -66,57 +72,9 @@ def canonical_json_bytes(value: object) -> bytes:
     ).encode("utf-8")
 
 
-def validate_publication_evidence(
-    receipt: object, *, expected_revision: str
-) -> dict[str, str]:
-    keys = {
-        "schema_version", "status", "effective_date", "release_version",
-        "public_source_revision", "source_url", "source_archive_url",
-        "source_archive_sha256", "anonymous_checkout_sha256", "evidence_sha256",
-    }
-    if not isinstance(receipt, dict) or set(receipt) != keys:
-        raise ValueError("Corresponding Source publication receipt key set is invalid")
-    try:
-        parsed_date = date.fromisoformat(str(receipt.get("effective_date", "")))
-    except ValueError:
-        parsed_date = None
-    if (
-        receipt.get("schema_version")
-        != "corresponding-source-publication-receipt-v1"
-        or receipt.get("status") != "published_anonymously_reachable"
-        or receipt.get("public_source_revision") != expected_revision
-        or receipt.get("source_url") != f"{SOURCE_URL_PREFIX}{expected_revision}"
-        or receipt.get("source_archive_url")
-        != f"{SOURCE_ARCHIVE_URL_PREFIX}{expected_revision}.tar.gz"
-        or parsed_date is None
-        or parsed_date.isoformat() != receipt.get("effective_date")
-        or not RELEASE_VERSION_RE.fullmatch(str(receipt.get("release_version", "")))
-        or any(
-            not DIGEST_RE.fullmatch(str(receipt.get(key, "")))
-            for key in (
-                "source_archive_sha256", "anonymous_checkout_sha256", "evidence_sha256"
-            )
-        )
-    ):
-        raise ValueError(
-            "Corresponding Source publication receipt identity or evidence is invalid"
-        )
-    return {key: str(receipt[key]) for key in keys}
-
-
-def load_publication_evidence(path: Path, *, expected_revision: str) -> dict[str, str]:
-    metadata = path.lstat()
-    if not path.is_file() or path.is_symlink() or metadata.st_size > 32 * 1024:
-        raise ValueError("Corresponding Source publication receipt is unsafe")
-    try:
-        receipt = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as error:
-        raise ValueError(
-            f"Corresponding Source publication receipt is unreadable: {error}"
-        ) from None
-    return validate_publication_evidence(
-        receipt, expected_revision=expected_revision
-    )
+def source_url_for(repository: str, revision: str) -> str:
+    """The exact-revision tree URL of `revision` in `repository`."""
+    return f"{repository}/tree/{revision}"
 
 
 def _sha256(path: Path) -> str:
@@ -127,20 +85,32 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+REQUIRED_CONTRACT_KEYS: Final = (
+    "api_schema_version",
+    "dossier_version",
+    "export_contract_version",
+)
+
+
+def validated_required_contracts(value: object) -> dict[str, str]:
+    """The exact three-version contract set a frontend release requires."""
+    if not isinstance(value, Mapping) or set(value) != set(REQUIRED_CONTRACT_KEYS):
+        raise ValueError("required frontend contracts are not the exact three-version set")
+    for key in REQUIRED_CONTRACT_KEYS:
+        version = value.get(key)
+        if not isinstance(version, str) or not re.fullmatch(r"0\.\d+\.\d+", version):
+            raise ValueError(f"invalid exact frontend contract: {key}")
+    return {key: str(value[key]) for key in REQUIRED_CONTRACT_KEYS}
+
+
 def exact_contract(authority_root: Path) -> dict[str, str | int]:
     contract = _load_object(authority_root / CONTRACT_PATH)
-    expected_keys = {
-        "schema_version",
-        "api_schema_version",
-        "dossier_version",
-        "export_contract_version",
-    }
-    if set(contract) != expected_keys or contract.get("schema_version") != 1:
+    if set(contract) != {"schema_version", *REQUIRED_CONTRACT_KEYS} \
+            or contract.get("schema_version") != 1:
         raise ValueError("unsupported frontend contract policy")
-    for key in expected_keys - {"schema_version"}:
-        value = contract.get(key)
-        if not isinstance(value, str) or not re.fullmatch(r"0\.\d+\.\d+", value):
-            raise ValueError(f"invalid exact frontend contract: {key}")
+    validated_required_contracts(
+        {key: contract.get(key) for key in REQUIRED_CONTRACT_KEYS}
+    )
     return contract
 
 
@@ -176,9 +146,36 @@ def _release_tree(release: Path) -> tuple[set[str], set[str]]:
 def verify_release(
     release_directory: Path,
     *,
-    authority_root: Path,
+    authority_root: Path | None = None,
+    required_contracts: Mapping[str, object] | None = None,
     require_digest_directory_name: bool = True,
+    source_repositories: Collection[str] | None = None,
 ) -> dict[str, object]:
+    """Verify one immutable release tree against exactly one contract authority.
+
+    `authority_root` names a tree whose deploy/frontend-contract.json the
+    release must match: the running image, or the checkout that builds and
+    deploys a new release.  `required_contracts` is the contract a release
+    pair was recorded and accepted with.  `source_repositories` is the set of
+    repositories whose exact-revision tree URL the manifest may name; by
+    default only PUBLIC_REPOSITORY_URL.
+
+    The publication receipt and the legal fields are checked here for shape
+    only (absent while provisional, objects once published); their content is
+    scripts/deployment/frontend_release.verify_published_release's.
+    """
+    if authority_root is not None and required_contracts is None:
+        contract = exact_contract(authority_root)
+        expected_contracts = {key: str(contract[key]) for key in REQUIRED_CONTRACT_KEYS}
+    elif authority_root is None and required_contracts is not None:
+        expected_contracts = validated_required_contracts(required_contracts)
+    else:
+        raise ValueError("frontend release needs exactly one contract authority")
+    repositories = frozenset(
+        (PUBLIC_REPOSITORY_URL,) if source_repositories is None else source_repositories
+    )
+    if not repositories:
+        raise ValueError("frontend release names an unrecorded public repository set")
     release = Path(os.path.abspath(release_directory))
     metadata = release.lstat()
     if not stat.S_ISDIR(metadata.st_mode) or release.is_symlink():
@@ -202,23 +199,15 @@ def verify_release(
     }
     if set(manifest) != required_keys:
         raise ValueError("frontend release manifest key set is invalid")
-    if manifest.get("source_url_status") not in {
-        "published_and_expected_anonymously_reachable",
-        "provisional_pending_publication",
-    }:
+    if manifest.get("source_url_status") not in SOURCE_URL_STATUSES:
         raise ValueError("frontend source URL status is invalid")
     publication = manifest.get("source_publication")
     legal_fields = manifest.get("formal_legal_release_fields")
     if manifest.get("source_url_status") == "provisional_pending_publication":
         if publication is not None or legal_fields is not None:
             raise ValueError("provisional frontend source must not carry publication evidence")
-    else:
-        publication = validate_publication_evidence(
-            publication,
-            expected_revision=str(manifest.get("frontend_public_source_revision", "")),
-        )
-        if not isinstance(legal_fields, dict) or set(legal_fields) != FORMAL_LEGAL_FIELDS:
-            raise ValueError("published frontend source evidence is invalid")
+    elif not isinstance(publication, dict) or not isinstance(legal_fields, dict):
+        raise ValueError("published frontend source evidence is invalid")
     revision = manifest.get("frontend_public_source_revision")
     digest = manifest.get("artifact_digest")
     if manifest.get("schema_version") != 3 or manifest.get(
@@ -229,25 +218,12 @@ def verify_release(
         raise ValueError("frontend source revision is invalid")
     if not isinstance(digest, str) or not DIGEST_RE.fullmatch(digest):
         raise ValueError("frontend artifact digest is invalid")
-    if manifest.get("source_url") != f"{SOURCE_URL_PREFIX}{revision}":
-        raise ValueError("frontend source URL is not pinned to its revision")
-    if publication is not None and (
-        legal_fields
-        != {
-            "effective_date": publication.get("effective_date"),
-            "release_version": publication.get("release_version"),
-            "public_revision": revision,
-            "source_archive_url": publication.get("source_archive_url"),
-            "source_archive_sha256": publication.get("source_archive_sha256"),
-        }
+    if not any(
+        manifest.get("source_url") == source_url_for(repository, revision)
+        for repository in repositories
     ):
-        raise ValueError("frontend source publication evidence identity is invalid")
-    contract = exact_contract(authority_root)
-    if manifest.get("required_contracts") != {
-        "api_schema_version": contract["api_schema_version"],
-        "dossier_version": contract["dossier_version"],
-        "export_contract_version": contract["export_contract_version"],
-    }:
+        raise ValueError("frontend source URL is not pinned to its revision")
+    if manifest.get("required_contracts") != expected_contracts:
         raise ValueError("frontend exact contract mismatch")
     files = manifest.get("files")
     if not isinstance(files, dict) or not files:

@@ -2,8 +2,10 @@
 
 `places.sqlite3`is an immutable generated runtime catalog：GeoNames`cities500`provides the global
 base and Taiwan Ministry of the Interior data provides a higher-priority overlay. Deterministic
-ranking prefers exact normalized names、major populated cities、Taiwan source priority and population.
-Both`臺／台`forms are indexed. For every top-level Taiwan county/city, the
+ranking (v3) orders by match tier, then Taiwan county representative points, then population; the tier
+compares each row's stored `match_keys` (name, Traditional-Chinese name, a county's short name and the
+English names its MOI phonetics and GeoNames `admin2Codes` give, keyed by MOI CountyCode in the producer's
+`TAIWAN_COUNTY_CODES`, and a Taiwan GeoNames row's Chinese-script aliases), with 台 read as 臺. Both`臺／台`forms are indexed. For every top-level Taiwan county/city, the
 producer derives one picker-only administrative representative point from the
 coordinate-bearing MOI child records. It is explicitly not a city hall,
 geometric centroid, address, or asserted birth location.
@@ -13,11 +15,27 @@ makes no outbound request；the catalog stores no query、birth data、account o
 retain source record、representative coordinates、timezone and precision so users can correct them；
 representative points are not verified addresses.
 
-Rebuild only from pinned snapshots：
+**Reproducing the bundled catalogue.** `catalog_manifest.json` records each input's SHA-256
+(`source_sha256`), size and URL (`sources`). GeoNames replaces its dump files under the same unversioned names
+daily, so the URLs do not serve the hashed bytes for long; the exact input files of the current catalogue are
+kept outside the repository beside its review record, and only those bytes reproduce it. A command run on
+fresh downloads produces a **new** catalogue (new input hashes, new release unit).
+
+`scripts/verification/verify_place_catalog.py --check` verifies identity, integrity, row counts and the Taiwan
+priority canary, reads every row named in `source_corrections` back from the database and requires its
+corrected value, and binds the artifact to the producer: the manifest's `generator_version` and
+`source_corrections_table_sha256` must equal the producer's current `GENERATOR_VERSION` and correction table,
+so a correction added without a rebuild fails. The container image ships no producer and runs it with
+`--installed-image`, which keeps the row checks and skips only that binding.
+
+Producing a catalogue from pinned snapshots：
 
 ```bash
 python -m scripts.validation.build_place_catalog \
   --geonames-zip /path/to/cities500.zip \
+  --geonames-admin1-codes /path/to/admin1CodesASCII.txt \
+  --geonames-admin2-codes /path/to/admin2Codes.txt \
+  --geonames-alternate-names /path/to/alternateNamesV2.zip \
   --taiwan-admin-csv /path/to/taiwan-admin.csv \
   --taiwan-settlement-csv /path/to/taiwan-settlement.csv \
   --output backend/place_data/places.sqlite3 \
@@ -27,3 +45,32 @@ python -m scripts.validation.build_place_catalog \
 
 Catalog、manifest、hashes、row counts、notices、Docker context and publication candidate change as one
 reviewed release unit. Source identity and licenses come from the manifest and distributed notices.
+
+Schema 5 (`place-catalog-builder-v7`, 2026-10-10) adds the `match_keys` column; the runtime serves
+schema 5 only. The v7 producer also rejects MOI rows the publisher left in while testing
+(`upstream_test_row`), appends 「（原始資料缺字）」 to the label of a name whose source wrote a lost
+character as `?` or `●` (`missing_glyph_policy`), labels Taiwan GeoNames rows with the county their
+admin2 code names instead of GeoNames' pre-1998 province (`display_name_policy.taiwan_admin1`), and
+leaves out named duplicate source rows through `SOURCE_ROW_EXCLUSIONS` (`source_exclusions`, bound
+like the corrections). Schema 4 producer (`place-catalog-builder-v4` from 2026-09-14): rows with a blank
+or non-word name are rejected and counted in the manifest (`rejected_rows`);
+rows sharing one `display_name` receive a `disambiguator` (MOI village first,
+then a resolved GeoNames admin2 name, then a rounded coordinate as last
+resort; the level used is recorded); the admin1 code is resolved to a name
+through `admin1CodesASCII.txt` or omitted from the label, never shown raw; a
+Traditional-Chinese name from `alternateNamesV2` leads the label when available
+(`zh-Hant`, then `zh-TW`; untagged `zh`, mostly Simplified, is not used); every timezone must be an IANA zone; rows whose GeoNames timezone is a source
+error (the two Auckland suburbs tagged `Pacific/Chatham`, and others found by
+checking each zone against its country's IANA `zone.tab` entries and against
+the zone of its nearest same-country neighbours) are corrected through the
+producer's `SOURCE_TIMEZONE_CORRECTIONS` and recorded under `source_corrections`;
+rows on real or disputed boundaries are left as the source has them and listed
+as reviewed cases in `tests/backend/test_place_catalog.py`;
+when `timezonefinder` is installed every GeoNames timezone is checked against
+its coordinate and a mismatch fails the build (`timezone_coordinate_check`);
+each input is hashed through the descriptor it was read from. The runtime
+refuses any schema it does not serve and reports the SHA-256 of the file it opened in every
+search receipt (`catalog.artifact`). GeoNames `admin3` is a bare code with no
+declared name table, so GeoNames rows leave `admin3` null and it is never a
+disambiguator. The bundled catalogue is built with all six inputs; its schema,
+its generator, snapshot date and counts are in `catalog_manifest.json`.

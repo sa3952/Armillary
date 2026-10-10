@@ -1,0 +1,61 @@
+{
+  "pages": {
+    "about": {
+      "content_sha256": "243259975bb53969cd2adc123019c2dc505a6fe1f2c7092edf2743e85533be11",
+      "lastmod": "2026-10-10"
+    },
+    "blog": {
+      "content_sha256": "d1529e0659a2b814c4e021d20f40906e3eba2e2eae98fdad42b0e5f3eb336a09",
+      "lastmod": "2026-10-10"
+    },
+    "calculate": {
+      "content_sha256": "8c5799bd3ef6069d24a091f0e9e301b0f8da722906cbe95af6cf0ddf649acf6b",
+      "lastmod": "2026-10-10"
+    },
+    "contact": {
+      "content_sha256": "191eeaaf7e038003f358c65ac9dc492a2c4ec98684d5def6cc2d1e12e309502b",
+      "lastmod": "2026-10-07"
+    },
+    "features": {
+      "content_sha256": "71836495558f07c80557ffc3b0271449543e21e2480091b2d9391dd3b7295b25",
+      "lastmod": "2026-10-10"
+    },
+    "home": {
+      "content_sha256": "86beae4d8e65e0cfefeb5b361f9c851852d3d3a37e6d6d717aad4b425fcdc63e",
+      "lastmod": "2026-10-10"
+    },
+    "legal-copyright": {
+      "content_sha256": "5d2c2f19c26f3d2f224caaa9b075e23d533e554033778734e50a3fcd07e03c03",
+      "lastmod": "2026-10-10"
+    },
+    "legal-privacy": {
+      "content_sha256": "0f3b7f44690d33134d42fb76c0e0c69b935b4f7b8bd8c2b00fff12fa1876136c",
+      "lastmod": "2026-10-10"
+    },
+    "legal-terms": {
+      "content_sha256": "bf9ebf07e25e9ced5becbed271c949579a6182545e1795e28b80f4c887dab88e",
+      "lastmod": "2026-10-10"
+    },
+    "methods": {
+      "content_sha256": "acbf9ae77525d50e891dc90b60aa41df29f23a61c395993c0a5d02bd5dac55a0",
+      "lastmod": "2026-10-10"
+    },
+    "roadmap": {
+      "content_sha256": "a67c39c461bd02d0825405e7b4b54953247c8e2c6be1635dd05aba93f1659915",
+      "lastmod": "2026-10-10"
+    },
+    "security": {
+      "content_sha256": "3418cfbbc92c3ebacef5a70f8c722ae41f040676775c5e8d37652a09b066fff8",
+      "lastmod": "2026-10-10"
+    },
+    "trust": {
+      "content_sha256": "e834aeac2549c04a052fa9d49ef20fba291f5c5dd55d2591b85f9a7683e1aec2",
+      "lastmod": "2026-10-10"
+    },
+    "validation": {
+      "content_sha256": "0b64fba90af7e7cafca26dfef4c368f7ccf44337c44d94ae4fa2fd88af96bdeb",
+      "lastmod": "2026-10-05"
+    }
+  },
+  "schema_version": 1
+}

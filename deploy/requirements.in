@@ -3,6 +3,6 @@
 # telemetry, database, cache, or outbound-client extras here.
 fastapi==0.141.1
 pydantic==2.13.5
-starlette==1.6.0
-uvicorn==0.52.4
+starlette==1.7.0
+uvicorn==0.54.0
 pyswisseph==2.10.3.2

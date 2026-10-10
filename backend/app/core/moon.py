@@ -1,70 +1,116 @@
 """月空亡 (Void of Course)：候選入相位事件搜尋（含技法假設）與最終判定，明確分層。
 
-搜尋本身已內含技法假設——採用哪些星體(古典七政)、哪些相位角(托勒密五大相位)、
+搜尋本身已內含技法假設——採用哪些星體(古典七政)、哪些相位角(合相與四種傳統相位)、
 以何種數值方法估計精確時刻——因此以具名 method 標註；「是否構成空亡」的最終布林判定
 獨立成 determine_void_of_course()，不與搜尋結果混在一起，方便日後替換不同流派規則。
 
-方法名稱的來源說明（RES-MTH-SOURCES-2026-08-03 §2）：
-本模組實作的是「月亮離開現在的星座前不完成任何托勒密相位」＋要求相位精確完成。
-該定義有兩處為現代創新——以星座界線阻斷月亮的相位能力，以及不採容許度——
-其推廣者為 20 世紀的 Al H. Morrison，**不是古典或中世紀傳統**：
+本模組實作的是「月亮離開現在的星座前不完成合相與四種傳統相位中的任何一個」＋要求相位
+精確完成。兩個成分來歷不同：星座條件最晚見於 Lilly, Christian Astrology 1647 p.112，
+更早亦見於 Māshāʾallāh；「必須在離座前精確完成、不採容許度」，後人文獻歸於 Al H.
+Morrison（AFA Journal 1966 年 10 月有專文，原文未讀），更早的起源尚未查證。兩者
+合起來的歷史歸屬仍未定（VOC_SOURCE_VERIFICATION；方法登記 `void_of_course`）。其他具名
+定義：Ps.-Porphyry 的「未來 30° 內不與行星接合」（方法登記
+`contested/void_of_course_definition`）；Antiochus 名下「一日一夜（約 13°）內不與任何行星
+結合」之說只見二手轉述（Louis 2013 引 Gramaglia p.188），原文未核。方法名稱因此不含
+"classical"；日後若要提供古典定義，應另立具名方法
+並列（例如 hellenistic_30_degree_kenodromia_v1、lilly_moiety_application_v1），而非改寫
+本方法。
 
-- Antiochus / Porphyry（2–3 世紀）：未來 30° 內不完成相位，與星座界線無關。
-- Antiochus（另一版）：一日一夜（約 13°）內不與任何行星結合。
-- Masha'allah（9 世紀）、Bonatti（13 世紀）：分離後不再 apply，與星座界線無關。
-- Lilly（1647）成文定義提及星座，但實務採容許度（moieties），界線不阻斷 application。
-
-舊名 `classical_ptolemaic_applying_linear_v1` 中的 "classical" 因此是可被證偽的陳述，
-一律不得出現，故更名為如實描述其定義來源者。日後若要提供古典定義，
-應另立具名方法並列（例如 hellenistic_30_degree_kenodromia_v1、lilly_moiety_application_v1），
-而非改寫本方法。
-
-數值解法（MTH-Q-003 乙）：
-線性外插已於 2026-08-03 依裁決廢止，改由 `core/root_finding.py` 的兩段式
-求根器求解，且**換座邊界本身也改為求根**而非除法外插——月亮在 2.5 天內的黃經速度
-變化足以讓「(邊界 − 現在黃經) / 現在速度」產生數分鐘到數十分鐘的誤差，而該誤差
-直接決定哪些候選相位算在邊界之內，也就直接決定空亡的布林結果。
+數值解法：由 `core/root_finding.py` 的兩段式求根器求解，**換座邊界本身也以求根**而非
+除法外插——月亮在 2.5 天內的黃經速度變化足以讓「(邊界 − 現在黃經) / 現在速度」產生
+數分鐘到數十分鐘的誤差，而該誤差直接決定哪些候選相位算在邊界之內，也就直接決定空亡的
+布林結果。
 """
 
 import math
 
-from ..config import PTOLEMAIC_ASPECTS
+from ..config import BODY_ID_BY_KEY, CLASSICAL_BODIES, PTOLEMAIC_ASPECTS
+from .aspects import EXACT_NOW_EPSILON_DEGREES
+from .module_state import (
+    PRODUCT_FORMULA_SOURCE,
+    computed_receipt,
+    not_applicable_receipt,
+)
+from .method_status import method_receipt
 from .root_finding import SOLVER_NAME, find_crossings_detailed, wrap_to_signed_180
 from .trace import Trace
 
 VOC_METHOD_NAME = "modern_sign_bounded_exact_perfection_v1"
-# 數值解法與方法定義分開記錄：解法變更時只需改本常數，方法名稱不受影響。
-VOC_SOLVER_NAME = SOLVER_NAME
-VOC_METHOD_STATUS = "provisional_pending_method_audit"
 
 # 現行預設的來源尚未解決，而輸出必須說出這件事。
 #
-# `modern_sign_bounded_exact_perfection_v1` 的核心規則是「星座界線阻斷 application」。
-# `SEBASTIAN_METHOD_RULINGS_2026-08-03.md` §13.5 記載該規則的出處有兩說並存——
-# 20 世紀的 Al H. Morrison，或中世紀阿拉伯傳統——**兩者皆未查證**：未取得 Morrison
-# 原書，亦未查閱 Masha'allah／Sahl／Bonatti 的校勘本。
+# `modern_sign_bounded_exact_perfection_v1` 的核心規則是「星座界線阻斷 application」，
+# 由兩個成分組成：星座條件已在 Māshāʾallāh（Dykes 2008 p.443 節錄）與 Lilly 1647 p.112
+# 讀到；「離座前精確完成」後人文獻歸於 Al H. Morrison（1966，原文未讀），更早的起源
+# 未查證。收據明示未轉錄一手文本，且 `method_provenance` 說出合起來的歸屬未定，不只說
+# 「現代、非古典」。
 #
-# 依 Sebastian 2026-08-03 E-011 甲案採用的證據標準，只有二手依據的方法**可以**出貨，
-# 但必須在收據中明示未轉錄一手文本。此前這項揭露只存在於文件裡，使用者看不到；
-# `method_provenance` 只說了「現代、非古典」，沒說「連這個歸屬本身都未定」。
-#
-# 這不是說判定數值有誤——換座時刻與相位完成時刻由求根器算出，與規則出處無關。
-# 被揭露的是**規則本身的來源強度**。
+# 被揭露的是**規則本身的來源強度**，不是判定數值：換座時刻與相位完成時刻由求根器算出。
+# 星座條件最晚見於 Lilly 1647 p.112，所以不把整條規則判給 20 世紀；「非古典」仍成立，
+# 歸屬則未定，與 VOC_SOURCE_VERIFICATION 一致。
+VOC_METHOD_PROVENANCE = "not_classical_attribution_unresolved"
+# The two components have
+# different histories, so each carries its own attribution; method_status is not
+# raised.  Closed vocabularies.
+VOC_SIGN_CONDITION_ATTRIBUTIONS = (
+    "attested_masha_allah_and_lilly_1647_earliest_unresolved",
+)
+# The publisher's index locates Morrison's 1966 article; its text, and any
+# earlier origin of the requirement, are not checked, so the code claims only
+# that later literature attributes the requirement to him (the code's wording,
+# "found in 20th-century literature", names where the attribution is found).
+VOC_EXACT_PERFECTION_ATTRIBUTIONS = (
+    "found_in_20th_century_literature_morrison_1966_earlier_origin_unchecked",
+)
+# What the response carries: status codes and a register reference.
+VOC_SOURCE_STATUS = {
+    "primary_texts_independently_transcribed": False,
+    "sign_condition_attribution": VOC_SIGN_CONDITION_ATTRIBUTIONS[0],
+    "exact_perfection_attribution": VOC_EXACT_PERFECTION_ATTRIBUTIONS[0],
+    # Unchanged name: the attribution of the combined rule.
+    "sign_boundary_rule_attribution": "unresolved",
+    "source_ref": "void_of_course",
+}
+# The register entry: the citations behind those codes.
 VOC_SOURCE_VERIFICATION = {
     "primary_texts_independently_transcribed": False,
     "sign_boundary_rule_attribution": "unresolved",
+    "sign_condition": (
+        "The Moon not perfecting an aspect before leaving its sign: Māshāʾallāh, "
+        "On Reception ch.1 (Dykes 2008 p.443; ch.7, p.467, not checked); Lilly, "
+        "Christian Astrology 1647 p.112 'Voyd of course' (bounded by the sign; the "
+        "page does not mention moieties). Sahl's definition in the Latin "
+        "Quadripartitum collection (Venice 1519) is that the Moon joins no planet "
+        "and none joins it; it names neither the sign boundary nor an orb. "
+        "An earlier explicit statement is attributed to Abū Maʿshar, Abbreviation "
+        "III.21-22 (not consulted)."
+    ),
+    "exact_perfection": (
+        "Later literature attributes requiring exact perfection before the sign exit "
+        "to Al H. Morrison (an article in the AFA Journal, October 1966; the article "
+        "was not read); an earlier origin has not been checked."
+    ),
     "competing_attributions": (
         "al_h_morrison_20th_century",
         "medieval_arabic_transmission",
     ),
-    "consulted": (),
-    "not_consulted": (
-        "Al H. Morrison, Void-of-Course Moon material (1980s newsletters)",
-        "Masha'allah, On Reception",
-        "Sahl ibn Bishr, Introduction to Astrology",
-        "Bonatti, Liber Astronomiae Tract V",
+    "consulted": (
+        "Lilly, Christian Astrology 1647 p.112",
+        "Māshāʾallāh, On Reception ch.1 (Dykes 2008 p.443, in the translator's "
+        "published excerpt pp.443-446)",
+        "Sahl, 'De cursu planete vacui', in Quadripartitum Ptolomei ... (Venice "
+        "1519; Seville copy, archive.org ARes08317, PDF p.246, left column)",
     ),
-    "recorded_in": "Sebastian method ruling 2026-08-03 §13.5",
+    "not_consulted": (
+        "Al H. Morrison, 'Void of Course Moon Periods: Their Uses and What May "
+        "Come of Ignoring Them', AFA Journal XXVIII.10 (October 1966) p.10: "
+        "located through the AFA journal author index; the article was not read",
+        "Māshāʾallāh, On Reception ch.7 (Dykes 2008 p.467)",
+        "Abū Maʿshar, Abbreviation III.21-22 (Brill 1994 / ARHAT 1997)",
+        "al-Qabīṣī, Introduction III (Warburg 2004)",
+        "Sahl, Introduction §5.10 (Dykes 2008 p.35) and the Arabic text",
+        "Bonatti, Tract 3 definition chapter",
+    ),
     "consequence": (
         "method_status cannot be raised to adopted until the attribution is "
         "settled against a named edition"
@@ -90,9 +136,106 @@ _SIGN_EXIT_SEARCH_WINDOW_DAYS = 6.0
 _COARSE_STEP_DAYS = 0.05
 # 收斂容差 1e-6 日約 0.086 秒。
 _TOLERANCE_DAYS = 1e-6
-# 恰好落在盤上時刻（t=0）的相位不計入「離開星座前會完成的入相位」。
-# 見 find_voc_candidates 的說明與 MTH-Q-017。
-_PRESENT_INSTANT_EPSILON_DAYS = 1e-9
+# 「此刻精確」（計入判定的那一類）與相位模組用**同一條角度標準**：盤上時刻
+# 月亮距精確相位 ≤ aspects.EXACT_NOW_EPSILON_DEGREES（1″），兩側皆算（剛要完成或剛完成）。
+# 不用 ±1e-9 日之類的時間窗：那只有 JD 浮點最小間隔的約兩倍，實際上等於「浮點相等」，
+# 在日月合相前 1 秒起盤時，相位表會寫「此刻精確」（0.50″），月空亡卻把同一個合相列為
+# 1.09 秒後的未來候選。
+# 1″ 換算成時間隨相對速度而變：日月約 2 秒、站心月亮最慢時約 4 秒。
+#
+# 判定依角度，求根只為了報出完成時刻與括號端點：在 ±_EXACT_NOW_ROOT_HALF_WINDOW_DAYS 內
+# 求那一個根。月亮相對任何行星的黃經速度至少約 4 度/日（站心月亮最低 6.21 度/日減去
+# 水星最快約 2.2 度/日），1″ 之內的根離盤上時刻不超過 7e-5 日；窗取 1e-3 日（約 86 秒）
+# 留十倍以上餘裕，而同一個相位不可能在 86 秒內再完成一次。
+_EXACT_NOW_ROOT_HALF_WINDOW_DAYS = 1e-3
+# 此刻精確的根以更細的容差收斂（約 0.9 毫秒）：窗只有 2e-3 日，多幾次二分即可，
+# 報出的完成時刻才不會比 1″ 對應的秒數還粗。
+_EXACT_NOW_ROOT_TOLERANCE_DAYS = 1e-8
+# 兩個都以 _TOLERANCE_DAYS 收斂的根，時間差不超過此值便無法排出先後。
+_SIMULTANEITY_TOLERANCE_DAYS = _TOLERANCE_DAYS
+PRESENT_INSTANT_CRITERION = "abs_offset_from_exact_at_chart_moment_le_epsilon"
+# The two policies are the same for every chart; they are stated once, in the
+# method source register entry `void_of_course` the receipt's source_ref names.
+PRESENT_INSTANT_POLICY = {
+    "counts_toward_void_verdict": True,
+    "coverage": "two_sided",
+    "criterion": PRESENT_INSTANT_CRITERION,
+    "exact_residual_epsilon_degrees": EXACT_NOW_EPSILON_DEGREES,
+    "shared_with": (
+        "derived_methods.aspects.degree_based.application_policy."
+        "exact_residual_epsilon_degrees"
+    ),
+    "root_search_half_window_days": _EXACT_NOW_ROOT_HALF_WINDOW_DAYS,
+    "root_tolerance_days": _EXACT_NOW_ROOT_TOLERANCE_DAYS,
+    "note": (
+        "盤上時刻月亮距精確相位 1 角秒以內（剛要完成或剛完成都算）的相位，與相位表的"
+        "「此刻精確」同一標準；它此刻正在完成，故計入空亡判定（月亮不空亡）。"
+        "它與未來相位分列兩個欄位以便分辨；all_candidates 只列未來相位，第一個最快完成。"
+    ),
+}
+BOUNDARY_SIMULTANEITY_POLICY = {
+    "tolerance_days": _SIMULTANEITY_TOLERANCE_DAYS,
+    "result_when_only_simultaneous": "simultaneous_boundary",
+    "note": (
+        "simultaneous_boundary：某個相位精確完成的時刻與月亮離開本星座的時刻，"
+        f"相差不超過求根容差 {_SIMULTANEITY_TOLERANCE_DAYS:g} 日（約 0.086 秒），"
+        "數值上分不出先後。此情形既不判為"
+        "空亡、也不判為非空亡：is_void_of_course 為 null，verdict 為 "
+        "simultaneous_boundary；該相位與兩個根的括號區間一併列出，供複算。"
+    ),
+}
+
+# Closed sets: a perfection that
+# cannot be ordered against the sign exit returns `simultaneous_boundary`.
+# The page words each verdict itself (ChartViewModel VOC_VERDICT_ZH).
+VOC_VERDICTS = ("void", "not_void", "simultaneous_boundary", "not_evaluated")
+
+
+def voc_receipt_head() -> dict:
+    """The keys every VOC receipt opens with."""
+
+    return {"method": VOC_METHOD_NAME, **method_receipt("void_of_course")}
+
+
+_SEARCH_HEAD_KEYS = (
+    "method", "method_status", "method_provenance", "source_verification",
+    "solver", "solver_status",
+)
+
+
+def _search_head(solver_status: str) -> dict:
+    """The keys the search result and the verdict built from it open with."""
+
+    return {
+        **voc_receipt_head(),
+        "method_provenance": VOC_METHOD_PROVENANCE,
+        "source_verification": dict(VOC_SOURCE_STATUS),
+        "solver": SOLVER_NAME,
+        "solver_status": solver_status,
+    }
+
+
+def _memoized_longitudes(longitude_at):
+    """One Swiss call per (body, instant) within one VOC search.
+
+    Every aspect target of one body is sampled on the same coarse grid, and the
+    Moon is sampled on that grid again for every body, so without this the same
+    position is recomputed up to 48 times per grid point.  Under the fixed flags
+    of one sampler a longitude is a pure function of (body_id, jd_ut), so the
+    cache cannot change a result; it lives only as long as the search.
+    """
+
+    cache: dict[tuple[int, float], float] = {}
+
+    def cached(body_id: int, jd_ut: float) -> float:
+        key = (body_id, jd_ut)
+        value = cache.get(key)
+        if value is None:
+            value = longitude_at(body_id, jd_ut)
+            cache[key] = value
+        return value
+
+    return cached
 
 
 def _find_sign_exit_days(moon_id, jd_ut, longitude_at, current_longitude):
@@ -124,13 +267,19 @@ def _find_aspect_perfections(
     jd_ut,
     longitude_at,
     window_days,
-):
-    """回傳月亮與某星體在視窗內所有精確成相的時刻與相位角。"""
+) -> tuple[list[dict], list[dict]]:
+    """回傳月亮與某天體的精確成相：(此刻精確, 未來成相)。
 
-    events: list[dict] = []
-    body_id = body.get("body_id")
-    if body_id is None:
-        return events
+    此刻精確：盤上時刻距精確 ≤ 1″（EXACT_NOW_EPSILON_DEGREES）；它的根在盤上時刻前後
+    _EXACT_NOW_ROOT_HALF_WINDOW_DAYS 內求出，可能略早或略晚於盤上時刻。
+    未來成相：(0, window_days] 內其餘的根。同一個根不會同時出現在兩類：此刻精確的
+    target，後段略去離盤上時刻不到半窗的根。
+    """
+
+    present_events: list[dict] = []
+    future_events: list[dict] = []
+    body_id = body["body_id"]
+    half_window = _EXACT_NOW_ROOT_HALF_WINDOW_DAYS
 
     for aspect_angle in PTOLEMAIC_ASPECTS:
         # 合(0°)與沖(180°)的 +angle 與 −angle 在 (-180,180] 上重合，用集合自動去重。
@@ -147,27 +296,55 @@ def _find_aspect_perfections(
                     - _target
                 )
 
-            for record in find_crossings_detailed(
-                separation_at,
-                window_days=window_days,
-                coarse_step_days=_COARSE_STEP_DAYS,
-                tolerance_days=_TOLERANCE_DAYS,
+            offset_now = separation_at(0.0)
+            exact_now = abs(offset_now) <= EXACT_NOW_EPSILON_DEGREES
+            present = (
+                find_crossings_detailed(
+                    separation_at,
+                    start_days=-half_window,
+                    window_days=2.0 * half_window,
+                    coarse_step_days=half_window / 8.0,
+                    tolerance_days=_EXACT_NOW_ROOT_TOLERANCE_DAYS,
+                    max_roots=1,
+                )
+                if exact_now
+                else []
+            )
+            future = [
+                record
+                for record in find_crossings_detailed(
+                    separation_at,
+                    window_days=window_days,
+                    coarse_step_days=_COARSE_STEP_DAYS,
+                    tolerance_days=_TOLERANCE_DAYS,
+                )
+                if record["t"] > (half_window if present else 0.0)
+            ]
+            for records, events, is_exact_now in (
+                (present, present_events, True),
+                (future, future_events, False),
             ):
-                events.append(
+                events.extend(
                     {
                         "body": body["name"],
                         "body_key": body["key"],
                         "aspect_angle": aspect_angle,
                         "time_days": record["t"],
-                        # MTH-Q-003 乙要求輸出括號端點與迭代次數供第三方複算。
+                        # 輸出括號端點與迭代次數供第三方複算。
                         "solver_evidence": {
                             "bracket": record["bracket"],
                             "bisection_iterations": record["iterations"],
                             "residual_degrees": record["residual_degrees"],
                         },
+                        **(
+                            {"offset_at_chart_moment_degrees": offset_now}
+                            if is_exact_now
+                            else {}
+                        ),
                     }
+                    for record in records
                 )
-    return events
+    return present_events, future_events
 
 
 def find_voc_candidates(
@@ -183,6 +360,7 @@ def find_voc_candidates(
 
     moon_lon = moon["longitude"]
     moon_speed = moon["speed_longitude"]
+    longitude_at = _memoized_longitudes(longitude_at)
 
     sign_exit, boundary = _find_sign_exit_days(
         moon_id, jd_ut, longitude_at, moon_lon
@@ -190,25 +368,22 @@ def find_voc_candidates(
     time_to_boundary_days = sign_exit["t"] if sign_exit else None
 
     if time_to_boundary_days is None:
-        # 月亮黃經速度恆為正，3 日視窗內必定換座；找不到根代表星曆或輸入異常，
-        # 不得靜默當成「邊界在無限遠」而讓所有相位都算數。
+        # 找不到根代表星曆或輸入異常；不得從瞬時速度推定換座期限，
+        # 也不得靜默當成「邊界在無限遠」而讓所有相位都算數。
         trace.add(
             "VOC候選搜尋：距離下一個星座邊界的時間",
             inputs={"月亮黃經": moon_lon, "下一星座起點": boundary},
-            note="⚠ 求根器在 3 日視窗內找不到換座時刻，VOC 判定無法進行。",
+            note=(
+                f"⚠ 求根器在 {_SIGN_EXIT_SEARCH_WINDOW_DAYS:g} 日視窗內找不到"
+                "換座時刻，VOC 判定無法進行。"
+            ),
         )
         return {
-            "method": VOC_METHOD_NAME,
-            "method_status": VOC_METHOD_STATUS,
-            "method_authority": None,
-            "method_provenance": "modern_20th_century_not_classical",
-            "source_verification": VOC_SOURCE_VERIFICATION,
-            "solver": VOC_SOLVER_NAME,
-            "solver_status": "sign_exit_not_found_in_search_window",
+            **_search_head("sign_exit_not_found_in_search_window"),
             "time_to_sign_exit_hours": None,
             "candidates": [],
             "exact_at_chart_moment": [],
-            "present_instant_policy": None,
+            "simultaneous_boundary_events": [],
         }
 
     trace.add(
@@ -218,7 +393,8 @@ def find_voc_candidates(
             "月亮黃經": moon_lon,
             "月亮瞬時速度(度/日)": moon_speed,
             "下一星座起點": boundary,
-            "求根器": VOC_SOLVER_NAME,
+            "求根器": SOLVER_NAME,
+            "搜尋視窗(天)": _SIGN_EXIT_SEARCH_WINDOW_DAYS,
         },
         result={
             "距邊界時間(天)": time_to_boundary_days,
@@ -233,66 +409,80 @@ def find_voc_candidates(
             "二分迭代次數": sign_exit["iterations"],
             "收斂殘差(度)": sign_exit["residual_degrees"],
         },
-        note="改以求根取代 (邊界 − 黃經) / 瞬時速度：月亮速度在 11.7–15.4 度/日之間變化，"
-             "除法外插的誤差足以改變哪些相位算在邊界之內，進而改變空亡的布林結果。"
-             "括號端點與迭代次數一併輸出，第三方可據以複算（MTH-Q-003 乙）。",
+        note=(
+            "改以整段實際星曆取樣與求根取代瞬時速度外插；搜尋視窗、"
+            "括號端點與迭代次數一併輸出，第三方可據以複算。"
+        ),
     )
 
-    found = []
+    exact_now: list[dict] = []
+    future: list[dict] = []
     for body in other_bodies:
         if body["longitude"] is None or body["speed_longitude"] is None:
             continue
-        found.extend(
-            _find_aspect_perfections(
-                moon_id,
-                body,
-                jd_ut,
-                longitude_at,
-                time_to_boundary_days,
-            )
+        present_events, future_events = _find_aspect_perfections(
+            moon_id,
+            body,
+            jd_ut,
+            longitude_at,
+            # The window runs past the exit by the simultaneity tolerance so
+            # a perfection that cannot be ordered against the exit is found
+            # and named, rather than falling either side by rounding.
+            time_to_boundary_days + _SIMULTANEITY_TOLERANCE_DAYS,
         )
+        exact_now.extend(present_events)
+        future.extend(future_events)
 
-    # **MTH-Q-017 已裁決（Sebastian 2026-08-03）：恰在盤上時刻精確成立的相位
+    # **恰在盤上時刻精確成立的相位
     # 計入空亡判定。** 理由是它此刻正在完成——有事情正在發生，月亮不是空亡。
     #
     # 需要區分的不是「t=0 是否計入」，而是它不得**默默**被當成一個未來事件
-    # 回報：求根器會讓 t=0 混進 candidates，而舊的線性外插以 `t > 1e-6`
-    # 排除它。
+    # 回報：求根器會讓 t=0 混進 candidates。
     #
-    # 因此裁決後的實作是「計入，但可分辨」：t=0 的事件另列在
+    # 因此實作是「計入，但可分辨」：t=0 的事件另列在
     # exact_at_chart_moment，不混進代表未來的 candidates；空亡判定則同時看兩者。
-    # `next_completing_aspect` 維持「最快的**未來**相位」語意，可能為 null。
-    candidates = [
-        event for event in found
-        if event["time_days"] > _PRESENT_INSTANT_EPSILON_DAYS
-    ]
-    exact_now = [
-        event for event in found
-        if event["time_days"] <= _PRESENT_INSTANT_EPSILON_DAYS
+    # all_candidates 只列**未來**相位，依時間排序，可能為空。
+    #
+    # 與換座時刻在求根容差內分不出先後的
+    # 完成點，既不是「邊界前」也不是「邊界後」，另列 simultaneous_boundary_events，
+    # 並帶上換座根的括號區間，讓第三方能看出兩個根為何無法排序。
+    #
+    # 「此刻」以角度判定（距精確 ≤ 1″，與相位模組同一常數）。
+    exit_low = time_to_boundary_days - _SIMULTANEITY_TOLERANCE_DAYS
+    candidates = [event for event in future if event["time_days"] < exit_low]
+    simultaneous = [
+        {**event, "sign_exit_bracket": sign_exit["bracket"]}
+        for event in future
+        if event["time_days"] >= exit_low
     ]
     candidates.sort(key=lambda c: c["time_days"])
     exact_now.sort(key=lambda c: c["time_days"])
+    simultaneous.sort(key=lambda c: c["time_days"])
 
     trace.add(
-        f"VOC候選搜尋 (method={VOC_METHOD_NAME}, solver={VOC_SOLVER_NAME})",
-        formula="對每個托勒密相位角(0/60/90/120/180°)的兩個帶號目標，"
-                "以粗掃描分割根區間後二分求根，僅保留換座邊界前發生者",
-        result={"候選事件數": len(candidates), "候選清單": candidates},
+        f"VOC候選搜尋 (method={VOC_METHOD_NAME}, solver={SOLVER_NAME})",
+        formula="對合相與四種傳統相位角(0/60/90/120/180°)的兩個帶號目標，"
+                "以粗掃描分割根區間後二分求根；盤上時刻距精確 ≤ 1″ 者列為此刻完成，"
+                "換座時刻前（超出求根容差）者列為候選，與換座時刻在求根容差內"
+                "分不出先後者另列 simultaneous_boundary",
+        result={
+            "候選事件數": len(candidates),
+            "候選清單": candidates,
+            "此刻完成數": len(exact_now),
+            "與換座同時數": len(simultaneous),
+        },
         note="求根器在每個取樣點實際查詢星曆，不假設速度為定值，"
-             "因此對月亮速度變化、被相位行星站留、以及同一視窗內的多重根皆成立。"
-             "此搜尋仍內含「用哪些星體/哪些相位角」的技法假設，屬方法假設而非純天文事實。"
-             "定義為現代（Morrison 系）的星座界線＋精確完成，"
-             "與希臘化 30° 及 Lilly 容許度兩種古典定義不同，見 RES-MTH-SOURCES-2026-08-03 §2",
+             "月亮速度變化與被相位行星站留都照實計入；"
+             "以有限間隔搜尋；間距極近的根或切點可能遺漏。"
+             "此搜尋仍內含「用哪些天體/哪些相位角」的技法假設，屬方法假設而非純天文事實。"
+             "定義為星座界線＋精確完成：星座條件最晚見於 Lilly 1647 p.112；"
+             "要求換座前精確完成：後人文獻歸於 Al H. Morrison（AFA Journal 1966 年 10 月有專文，原文未讀）；"
+             "更早的起源尚未查證。兩者合起來的歷史歸屬未定；與 Porphyry《Introduction》ch.23 的 30° 定義、"
+             "以及 Lilly 1647 以容許度判入相位的做法都不同。",
     )
 
     return {
-        "method": VOC_METHOD_NAME,
-        "method_status": VOC_METHOD_STATUS,
-        "method_authority": None,
-        "method_provenance": "modern_20th_century_not_classical",
-        "source_verification": VOC_SOURCE_VERIFICATION,
-        "solver": VOC_SOLVER_NAME,
-        "solver_status": "converged",
+        **_search_head("converged"),
         "time_to_sign_exit_hours": time_to_boundary_days * 24.0,
         "sign_exit_solver_evidence": {
             "boundary_longitude": boundary,
@@ -303,34 +493,34 @@ def find_voc_candidates(
         },
         "candidates": candidates,
         "exact_at_chart_moment": exact_now,
-        "present_instant_policy": {
-            "counts_toward_void_verdict": True,
-            "epsilon_days": _PRESENT_INSTANT_EPSILON_DAYS,
-            "ruling": "MTH-Q-017, Sebastian 2026-08-03",
-            "note": (
-                "在盤上時刻恰好精確成立的相位既非入相位也非出相位，但它此刻"
-                "正在完成，故計入空亡判定（月亮不空亡）。它與未來相位分列兩個"
-                "欄位以便分辨；next_completing_aspect 仍只取最快的未來相位。"
-                f"「此刻」的容差為 {_PRESENT_INSTANT_EPSILON_DAYS} 日"
-                "（約 0.086 毫秒），實務上極少觸發。"
-            ),
-        },
+        "simultaneous_boundary_events": simultaneous,
     }
 
 
 def determine_void_of_course(voc_data: dict, trace: Trace) -> dict:
-    """方法層最終判定：邊界前無任何相位完成 = 空亡。
+    """方法層最終判定，結果屬閉集 VOC_VERDICTS。
 
-    「無任何相位完成」同時看未來相位與盤上時刻恰好精確成立者——後者依
-    MTH-Q-017 裁決計入。兩者仍分列，只有判定把它們合起來看。
+    - not_void：換座前（超出求根容差）有相位完成，或盤上時刻恰好精確成立
+      （後者也計入）。
+    - simultaneous_boundary：沒有上述相位，但有相位與換座時刻在求根容差內分不出
+      先後；is_void_of_course 為 null。
+    - void：以上皆無。
+    - not_evaluated：換座時刻求根失敗。
     """
 
     candidates = voc_data["candidates"]
     exact_now = voc_data.get("exact_at_chart_moment", [])
+    simultaneous = voc_data.get("simultaneous_boundary_events", [])
     solver_failed = voc_data.get("solver_status") != "converged"
-    is_void = (
-        None if solver_failed else not (candidates or exact_now)
-    )
+    if solver_failed:
+        verdict = "not_evaluated"
+    elif candidates or exact_now:
+        verdict = "not_void"
+    elif simultaneous:
+        verdict = "simultaneous_boundary"
+    else:
+        verdict = "void"
+    is_void = {"void": True, "not_void": False}.get(verdict)
     soonest = candidates[0] if candidates else None
 
     trace.add(
@@ -340,6 +530,15 @@ def determine_void_of_course(voc_data: dict, trace: Trace) -> dict:
         result=(
             {"結果": "⚠ 求根器未收斂，無法判定"}
             if solver_failed
+            else {
+                "結果": "⚠ 相位完成與換座時刻在求根容差內同時，回報 "
+                        "simultaneous_boundary，不判定空亡與否",
+                "同時完成": [
+                    f"{item['body']} {item['aspect_angle']}°"
+                    for item in simultaneous
+                ],
+            }
+            if verdict == "simultaneous_boundary"
             else {
                 **(
                     {
@@ -358,25 +557,99 @@ def determine_void_of_course(voc_data: dict, trace: Trace) -> dict:
             or {"結果": "離開星座前無任何相位完成 -> 月空亡"}
         ),
         note=(
-            "盤上時刻恰好精確成立的相位依 MTH-Q-017 裁決計入判定。"
+            "盤上時刻恰好精確成立的相位也計入判定。"
             if exact_now else ""
         ),
     )
 
     return {
-        "method": voc_data["method"],
-        "method_status": voc_data["method_status"],
-        "method_authority": voc_data["method_authority"],
-        "method_provenance": voc_data.get("method_provenance"),
         # This dict is rebuilt rather than spread, so anything added upstream has
         # to be carried across explicitly or it never reaches the response.
-        "source_verification": voc_data.get("source_verification"),
-        "solver": voc_data["solver"],
-        "solver_status": voc_data.get("solver_status"),
+        **{key: voc_data[key] for key in _SEARCH_HEAD_KEYS},
+        # not_evaluated is a search that ran and found no sign exit.
+        **computed_receipt(
+            PRODUCT_FORMULA_SOURCE,
+            available=verdict != "not_evaluated",
+            reason_code=(
+                voc_data.get("solver_status") if verdict == "not_evaluated" else None
+            ),
+        ),
+        "verdict": verdict,
         "is_void_of_course": is_void,
+        "simultaneous_boundary_events": simultaneous,
         "time_to_sign_exit_hours": voc_data["time_to_sign_exit_hours"],
-        "next_completing_aspect": soonest,
+        # all_candidates[0] is the soonest future perfection.
         "all_candidates": candidates,
         "exact_at_chart_moment": voc_data.get("exact_at_chart_moment", []),
-        "present_instant_policy": voc_data.get("present_instant_policy"),
     }
+
+
+_VOC_OTHER_BODY_KEYS = frozenset(
+    body["key"] for body in CLASSICAL_BODIES if body["key"] != "moon"
+)
+
+
+def evaluate_void_of_course(
+    bodies: list[dict], trace: Trace, *, jd_ut: float, longitude_at
+) -> dict:
+    """The VOC verdict from one set of computed bodies.
+
+    The chart and every birth-time sensitivity probe call this, so both read
+    the same participants (the classical bodies other than the Moon, with
+    their Swiss ids) and the same search.
+    """
+
+    moon = next(body for body in bodies if body["key"] == "moon")
+    others = [
+        {**body, "body_id": BODY_ID_BY_KEY[body["key"]]}
+        for body in bodies
+        if body["key"] in _VOC_OTHER_BODY_KEYS
+    ]
+    return determine_void_of_course(
+        find_voc_candidates(
+            moon,
+            others,
+            trace,
+            jd_ut=jd_ut,
+            longitude_at=longitude_at,
+            moon_id=BODY_ID_BY_KEY["moon"],
+        ),
+        trace,
+    )
+
+
+def void_of_course_not_applicable(state: dict, trace: Trace) -> dict:
+    """VOC refused by the central frame table.
+
+    The sign exit is a boundary of the tropical ecliptic of date, and the method
+    needs an Earth observer.  Outside that frame nothing is searched or converted.
+    """
+
+    trace.add(
+        "月空亡(VOC)",
+        result={"verdict": "not_evaluated", "reason_code": state["reason_code"]},
+        note=(
+            "月亮換座所依的星座界線屬當日回歸框架，且方法需要地表觀測者；"
+            "參考框架相容表判定本次不適用，不搜尋、回傳 null。"
+        ),
+    )
+    return {
+        **voc_receipt_head(),
+        **not_applicable_receipt(state),
+        "verdict": "not_evaluated",
+        "is_void_of_course": None,
+        "time_to_sign_exit_hours": None,
+        "all_candidates": [],
+    }
+
+
+METHOD_SOURCE_ENTRIES: dict[str, dict] = {
+    "void_of_course": {
+        "applies_to": "derived_methods.void_of_course",
+        "method": VOC_METHOD_NAME,
+        "method_provenance": VOC_METHOD_PROVENANCE,
+        "source_verification": dict(VOC_SOURCE_VERIFICATION),
+        "present_instant_policy": dict(PRESENT_INSTANT_POLICY),
+        "boundary_simultaneity_policy": dict(BOUNDARY_SIMULTANEITY_POLICY),
+    },
+}

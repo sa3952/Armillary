@@ -1,19 +1,25 @@
 <!doctype html>
-<html lang="zh-TW">
+<html lang="{{locale}}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="{{robots}}">
 <title>{{title}}</title>
+{{#discovery}}
 <meta name="description" content="{{description}}">
 <link rel="canonical" href="{{canonical}}">
+<link rel="alternate" hreflang="{{locale}}" href="{{canonical}}">
+<link rel="alternate" hreflang="x-default" href="{{canonical}}">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="{{site_name}}">
+<meta property="og:locale" content="{{og_locale}}">
 <meta property="og:title" content="{{title}}">
 <meta property="og:description" content="{{description}}">
 <meta property="og:url" content="{{canonical}}">
-<meta name="twitter:card" content="summary">
+{{og_image}}<meta name="twitter:card" content="{{twitter_card}}">
 <script type="application/ld+json">{{json_ld}}</script>
-<link rel="icon" href="/zh-TW/favicon.svg">
+{{/discovery}}
+<link rel="icon" href="/zh-TW/favicon.svg?v={{assets}}">
 <link rel="stylesheet" href="/zh-TW/tokens.css?v={{assets}}">
 {{stylesheets}}
 </head>

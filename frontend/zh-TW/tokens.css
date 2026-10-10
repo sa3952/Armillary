@@ -1,7 +1,7 @@
 /* 渾儀 Armillary — 設計 token 單一出處
  *
- * 值可以改；改的地方只有這裡。這條規則不隨 SD-30 的美學降級而放寬：
- * 它的理由是維護性與 i18n，不是好不好看（見該裁決 §4 甲）。
+ * 值可以改；改的地方只有這裡。這條規則不隨美學降級而放寬：
+ * 它的理由是維護性與 i18n，不是好不好看。
  * 其餘 CSS 一律引用本檔，不得就地寫死色值或字體堆疊。
  *
  * 目前值取自候選 V2（黑底招牌 + 暖紙圖版），2026-08-05 前端評選結果。
@@ -36,7 +36,7 @@
   --accent-rev: #D45633;   /* 黑底上；同一個紅在深底需要提亮才有相同重量 */
 
   /* ── 三環與驗證層 ───────────────────────────────────────
-   * 四個各自獨立。SD-30 之後這是參考而非規格，但「三個環不共用同一個
+   * 四個各自獨立。美學降級之後這是參考而非規格，但「三個環不共用同一個
    * token」這件事仍是刻意的：共用會讓分層在畫面上不可見。            */
   /* 2026-08-27 調暗：原值 #4A7C59 對 --paper 只有 4.05:1、對 --paper-2 3.70:1。
      在 /validation 之前它只當 border-left 與頁尾色帶的一段，沒有小字用途，
@@ -50,25 +50,28 @@
 
   /* ── 收據狀態 ───────────────────────────────────────────
    * 「產品明確拒絕」與「使用者未請求」必須是不同的視覺，不只是不同的字——
-   * 那個區分由邊框形狀承擔（虛線／實線／實心），不靠顏色深淺，所以下面三個
+   * 那個區分由邊框形狀承擔（虛線／實線／實心），不靠顏色深淺，所以下面兩個
    * 值可以壓深而不破壞它。
    *
    * 這組字正是在告訴使用者「哪一區沒有算」，讀不清楚等於那個資訊沒送到，
    * 所以每一個值在 --paper 與 --paper-2 上都必須達到 WCAG AA 的 4.5。
    * 目前對比分別是：
-   *   absent 5.18／4.73   defaulted 5.45／4.97   unavailable 5.60／5.11
-   * 收斂順序刻意維持——absent 仍是四者中最安靜的一個。 */
+   *   absent 5.18／4.73   unavailable 5.60／5.11
+   * 收斂順序刻意維持——absent 仍是三者中最安靜的一個。 */
   --state-refused:     #A03A22;
-  --state-defaulted:   #6B5C36;
   --state-absent:      #68604F;
   --state-unavailable: #7E5227;
 
   /* ── 字體 ───────────────────────────────────────────── */
-  --serif: "Songti TC", "Noto Serif TC", "Source Han Serif TC",
+  /* 繁中字型依平台列：macOS／iOS、網頁字型名、Linux 套件的字族名（Noto … CJK TC）、
+     Windows。不列日文字型：同一碼位的日文字形與台灣標準字形不同。等寬字型只供拉丁
+     字母與數字，其中夾的中文落到同一組繁中字型，不交給瀏覽器任選。 */
+  --serif: "Songti TC", "Noto Serif TC", "Noto Serif CJK TC", "Source Han Serif TC",
            "Times New Roman", serif;
-  --sans:  "PingFang TC", "Noto Sans TC", "Microsoft JhengHei",
-           "Hiragino Sans", sans-serif;
-  --mono:  ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --sans:  "PingFang TC", "Noto Sans TC", "Noto Sans CJK TC", "Microsoft JhengHei",
+           sans-serif;
+  --mono:  ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono",
+           "Liberation Mono", "PingFang TC", "Noto Sans CJK TC", "Microsoft JhengHei", monospace;
 
   /* ── 間距階梯 ───────────────────────────────────────── */
   --s1: .5rem;
@@ -80,7 +83,7 @@
 
   /* ── 列印 ───────────────────────────────────────────────
    * 列印時強制白底黑字（省墨、避免深色大面積）。它們是 token 不是就地寫死，
-   * 因為 SD-27 §4 的規則沒有為列印開例外，而例外正是漂移的起點。 */
+   * 因為這條規則沒有為列印開例外，而例外正是漂移的起點。 */
   --print-bg: #FFFFFF;
   --print-fg: #000000;
 

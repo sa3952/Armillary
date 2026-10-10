@@ -1,5 +1,7 @@
 """古典占星計算所需的固定設定：星體清單、恆星清單、宮位制代碼、ayanamsa選項、預設容許誤差。"""
 
+from typing import Any
+
 import swisseph as swe
 
 # Public request-contract boundary.  Consumers that expose or describe the
@@ -24,6 +26,47 @@ OUTER_BODIES = [
     {"key": "pluto", "zh": "冥王星", "id": swe.PLUTO},
 ]
 
+# The parameters Swiss Ephemeris 2.10.03 swe_pheno uses for Chiron's
+# apparent diameter and magnitude, built into the library (swecl.c pla_diam[] in
+# sweph.h, 271370 m; mag_elem[] "from Bowell data base", H 6.5, G 0.15, IAU H-G
+# phase law).  They are disclosed, not overridden: JPL SBDB lists
+# 166 km (Dunham 1998) and H 5.54, and the literature has other values again.
+# tests/backend/test_astronomy_disclosures.py reproduces the emitted diameter and
+# magnitude from these numbers, so a library change cannot leave them stale.
+CHIRON_PHYSICAL_PARAMETERS_SOURCE_REF = "chiron/physical_parameters"
+_CHIRON_BUILTIN_DIAMETER_KM = 271.37
+_CHIRON_BUILTIN_H = 6.5
+_CHIRON_BUILTIN_G = 0.15
+# The comparison values a reader is told about (JPL SBDB, retrieved 2026-10-04).
+CHIRON_JPL_SBDB_REFERENCE: dict[str, Any] = {
+    "diameter_km": 166.0,
+    "absolute_magnitude_h": 5.54,
+    "retrieved": "2026-10-04",
+}
+# Disclose the source, do not override it, and say
+# so in words a reader understands.  The sentence is built from the numbers
+# above, so it cannot drift from the parameters it explains.
+CHIRON_PHYSICAL_PARAMETERS_EXPLANATION_ZH = (
+    "凱龍星的「視直徑」與「視星等」，是用星曆程式 Swiss Ephemeris 內建的大小與亮度"
+    f"參數算出來的：直徑 {_CHIRON_BUILTIN_DIAMETER_KM:g} 公里、絕對星等 {_CHIRON_BUILTIN_H:g}。"
+    "美國 JPL 小天體資料庫目前列的是直徑約 "
+    f"{CHIRON_JPL_SBDB_REFERENCE['diameter_km']:g} 公里、絕對星等 "
+    f"{CHIRON_JPL_SBDB_REFERENCE['absolute_magnitude_h']:g}；照那組數值算，視直徑會小約 "
+    f"{round((1 - CHIRON_JPL_SBDB_REFERENCE['diameter_km'] / _CHIRON_BUILTIN_DIAMETER_KM) * 100)}%，"
+    f"看起來亮約 {_CHIRON_BUILTIN_H - CHIRON_JPL_SBDB_REFERENCE['absolute_magnitude_h']:.2f} 等。"
+    "凱龍星有多大，不同文獻本來就說法不一，所以本站照實標明用的是哪一組，不自行改值。"
+    "凱龍星在天上的位置不受這組參數影響。"
+)
+CHIRON_PHYSICAL_PARAMETERS: dict[str, Any] = {
+    "source": "swiss_ephemeris_2_10_03_builtin_table",
+    "diameter_km": _CHIRON_BUILTIN_DIAMETER_KM,
+    "absolute_magnitude_h": _CHIRON_BUILTIN_H,
+    "phase_slope_g": _CHIRON_BUILTIN_G,
+    "magnitude_model": "iau_h_g_two_parameter",
+    "explanation_zh": CHIRON_PHYSICAL_PARAMETERS_EXPLANATION_ZH,
+    "source_ref": CHIRON_PHYSICAL_PARAMETERS_SOURCE_REF,
+}
+
 # 現代小天體。與三王星分開設選項，避免「include_outer_planets」在不知情下
 # 擴張成另一套物件集合。這些物件不自動加入古典方法或相位參與者。
 MODERN_MINOR_BODIES = [
@@ -33,16 +76,17 @@ MODERN_MINOR_BODIES = [
         "id": swe.CHIRON,
         "calculation_source": "swiss_ephemeris_minor_planet",
         "method_classification": "modern_body_not_classical_planet",
+        "physical_parameters": CHIRON_PHYSICAL_PARAMETERS,
     },
 ]
 
-# CMP-A6（Sebastian 2026-08-04，方案三）。這些是月球軌道遠近地點，不是
+# 這些是月球軌道遠近地點，不是
 # 物理天體，也不是小行星 1181 Lilith。Natural Priapus 必須用 Swiss 的
 # INTP_PERG 獨立計算；Swiss 文件明示 natural apogee/perigee 通常不精確對沖。
 LUNAR_APSIDES = [
     {
         "key": "mean_lilith",
-        "zh": "平均黑月莉莉絲",
+        "zh": "平均黑月 Lilith",
         "id": swe.MEAN_APOG,
         "expose_swiss_body_id": True,
         "calculation_source": "swiss_ephemeris_mean_lunar_apogee",
@@ -84,22 +128,25 @@ LUNAR_APSIDES = [
 
 # 南北交點
 #
-# 標籤刻意不用「真交點」。Swiss Ephemeris 自己的文件說得很清楚：
-#   "In the strict sense of the word, even the 'true' nodes are true only twice a
+# 標籤刻意不用「真交點」。Swiss Ephemeris General Documentation 自己說得很清楚：
+#   §2.2.2 "In the strict sense of the word, even the 'true' nodes are true only twice a
 #    month, viz. at the times when the Moon crosses the ecliptic."
-#   "There are no planetary nodes or apsides ... that really deserve the label
+#   §2.2.5 "There are no planetary nodes or apsides ... that really deserve the label
 #    'true'. ... It is more appropriate to call them 'osculating'."
+# （第二句在 §2.2.5，不在 §2.2.2。）
 # 所謂真交點是密切軌道(osculating orbit)的交點：把此刻的瞬時軌道當成兩體問題來解，
-# 只在月亮實際穿越黃道的那兩個時刻為真，其餘時間是數學構造。它在平均交點附近振盪
-# ±約 1.29°、週期約半年，每年數次短暫順行——那個順行是模型產物，不是天象。
+# 只在月亮實際穿越黃道的那兩個時刻為真，其餘時間是數學構造。它在平均交點附近振盪；
+# 本產品以內建星曆在 1800–2400 年每 6 小時比較：最大差 1.98°、中位數 1.04°。1950–2050
+# 年平均每年約 27 次短暫順行、合計約 94 天——那個順行是模型產物，不是天象。Swiss 文件
+# 沒有給振盪幅度；上述數字可用本產品內建星曆以每 6 小時取樣重算（自算腳本未隨原始碼發布）。
 #
-# Sebastian 2026-08-03 裁決（MTH-Q-008 甲）：**正式技法採平均交點**，
-# 理由是古代與中世紀的交點一律出自平均運動表（Ptolemy《Handy Tables》、印度 siddhānta），
-# 真交點在現代計算能力出現前不可得；本產品定位為古典西洋占星。
-# 兩者仍並列輸出，因為差距達 1°–1.5°，讀者有權看到。
-# 見 RES-MTH-SOURCES-2026-08-03 §3。
+# **正式技法採平均交點**，
+# 理由是古代與中世紀的主要天文表以平均運動給交點（Ptolemy《Handy Tables》、印度 siddhānta）；
+# Tycho（1587 年之後）已發現交點運動不均勻並給出改正（Dreyer 1890 ch.XII，真平差可達
+# 1°46′），但那不是現代的密切交點，前現代技法也不以它為輸入。
+# 本產品定位為古典西洋占星。兩者仍並列輸出，因為差距最大約 2°，讀者有權看到。
 #
-# API 鍵值 true_node 維持不變以保相容；顯示標籤改為如實描述。
+# API 鍵值 true_node 維持不變以保相容；顯示標籤如實寫「密切」。
 NODE_BODIES = [
     {"key": "true_node", "zh": "北交點(密切)", "id": swe.TRUE_NODE},
     {"key": "mean_node", "zh": "北交點(平均)", "id": swe.MEAN_NODE},
@@ -112,11 +159,10 @@ BODY_ID_BY_KEY = {
     )
 }
 
-# 需要單一交點的技法一律採此者（MTH-Q-008 甲 裁決）。
-# 目前沒有任何技法消費交點；本常數是為日後的技法預先固定選擇。
-FORMAL_TECHNIQUE_NODE_KEY = "mean_node"
-
-# 古典占星常引用的恆星（名稱需與 sefstars.txt 內拼寫完全一致，大小寫不拘）
+# 產品恆星清單（名稱需與 sefstars.txt 內拼寫完全一致，大小寫不拘）。前 15 顆依
+# Agrippa, De occulta philosophia I.32（星名表）與 II.47（Behenian 星像）的 Behenian
+# 十五星（Pleiades 以 Alcyone 代表；Ala Corvi 取 δ Crv Algorab，Agrippa 未指明）；其餘 19 顆
+# 由產品自選；清單來歷不對使用者標示。
 FIXED_STARS = [
     {"key": "algol", "zh": "大陵五", "name": "Algol"},
     {"key": "alcyone", "zh": "昴宿六(昴星團)", "name": "Alcyone"},
@@ -126,7 +172,7 @@ FIXED_STARS = [
     {"key": "procyon", "zh": "南河三", "name": "Procyon"},
     {"key": "regulus", "zh": "軒轅十四", "name": "Regulus"},
     {"key": "alkaid", "zh": "搖光(大熊座η)", "name": "Alkaid"},
-    {"key": "algorab", "zh": "軫宿一", "name": "Algorab"},
+    {"key": "algorab", "zh": "軫宿三", "name": "Algorab"},
     {"key": "spica", "zh": "角宿一", "name": "Spica"},
     {"key": "arcturus", "zh": "大角", "name": "Arcturus"},
     {"key": "alphecca", "zh": "貫索四", "name": "Alphecca"},
@@ -139,7 +185,7 @@ FIXED_STARS = [
     {"key": "pollux", "zh": "北河三", "name": "Pollux"},
     {"key": "betelgeuse", "zh": "參宿四", "name": "Betelgeuse"},
     {"key": "alpheratz", "zh": "壁宿二", "name": "Alpheratz"},
-    {"key": "mira", "zh": "芻蒿增二", "name": "Mira"},
+    {"key": "mira", "zh": "蒭藁增二", "name": "Mira"},
     {"key": "bellatrix", "zh": "參宿五", "name": "Bellatrix"},
     {"key": "canopus", "zh": "老人星", "name": "Canopus"},
     {"key": "vindemiatrix", "zh": "東次將", "name": "Vindemiatrix"},
@@ -156,6 +202,68 @@ FIXED_STARS = [
     {"key": "hamal", "zh": "婁宿三", "name": "Hamal"},
     {"key": "zubenelgenubi", "zh": "氐宿一", "name": "Zubenelgenubi"},
 ]
+
+# 恆星中文名的查證狀態。閉集。
+# - corrected_against_cited_star_name_table：依具名對照表、對著 Swiss 目錄實際比對到的星體
+#   （Bayer 代號）更正過標籤。
+# - checked_against_cited_star_name_table：標籤與具名對照表的同一 Bayer 星相符，未改。
+#   產品在表名後加的括號說明（如「（牛郎星）」）與表上的「天狼」「老人」不加「星」不算不符。
+# - unverified：本產品沒有逐一核對，不是「已確認正確」，也不是「已知有誤」。
+# 每筆更正與核對所依的對照表記在 cited_tables；何時、由誰核對不給使用者看。
+FIXED_STAR_ZH_NAME_STATES = (
+    "corrected_against_cited_star_name_table",
+    "checked_against_cited_star_name_table",
+    "unverified",
+)
+FIXED_STAR_ZH_NAME_TABLES = {
+    "hksm_bright_stars": (
+        "香港太空館〈亮星中英對照表〉（星座與神話，教師專區），繁體版"
+    ),
+    "tam_journal_2017_02_mira": (
+        "臺北市立天文科學教育館《天文館期刊》2017 年 2 月，p.32"
+        "〈不可思議的星星：蒭藁增二〉"
+    ),
+    "zh_wikipedia_star_name_table": "zh.wikipedia〈中西星名對照表〉",
+}
+FIXED_STAR_ZH_NAME_CORRECTIONS: dict[str, dict[str, Any]] = {
+    "algorab": {
+        "status": "corrected_against_cited_star_name_table",
+        "previous_label": "軫宿一",
+        "swiss_catalogue_designation": "deCrv",
+        "reason": (
+            "per the cited tables 軫宿一 is γ Crv; the catalogue record matched "
+            "here is δ Crv, which the tables name 軫宿三"
+        ),
+        "cited_tables": ["zh_wikipedia_star_name_table", "hksm_bright_stars"],
+    },
+    "mira": {
+        "status": "corrected_against_cited_star_name_table",
+        # The label shipped before any correction, as for Algorab.
+        "previous_label": "芻蒿增二",
+        "swiss_catalogue_designation": "omiCet",
+        "reason": (
+            "the cited Taipei Astronomical Museum article names ο Ceti 蒭藁增二 "
+            "(蒭 is a variant of 芻); the earlier label 芻蒿增二 had the wrong "
+            "asterism character"
+        ),
+        "cited_tables": ["tam_journal_2017_02_mira"],
+    },
+}
+# 依香港太空館表核對相符、未改標籤的 32 顆（Algorab、Mira 另列於上）。
+FIXED_STAR_ZH_NAME_CHECKED: dict[str, dict[str, Any]] = {
+    key: {
+        "status": "checked_against_cited_star_name_table",
+        "cited_tables": ["hksm_bright_stars"],
+    }
+    for key in (
+        "algol", "alcyone", "aldebaran", "capella", "sirius", "procyon",
+        "regulus", "alkaid", "spica", "arcturus", "alphecca", "antares",
+        "vega", "deneb_algedi", "rigel", "altair", "castor", "pollux",
+        "betelgeuse", "alpheratz", "bellatrix", "canopus", "vindemiatrix",
+        "fomalhaut", "achernar", "polaris", "deneb", "hadar", "menkar",
+        "schedar", "hamal", "zubenelgenubi",
+    )
+}
 
 # 宮位制代碼 (swe_houses hsys 單一字元)
 HOUSE_SYSTEMS = {
@@ -176,7 +284,7 @@ AYANAMSA_OPTIONS = {
 # 預設容許誤差 (度)
 DECLINATION_ASPECT_ORB = 1.0
 
-# 月空亡(VOC)判斷用的托勒密五大相位角度
+# 月空亡(VOC)判斷用的合相與四種傳統相位角度（常數名是既有識別碼，不宣稱五者皆出自 Ptolemy）
 PTOLEMAIC_ASPECTS = [0.0, 60.0, 90.0, 120.0, 180.0]
 
 # One declared default for the refraction atmosphere.  The bundled client sent

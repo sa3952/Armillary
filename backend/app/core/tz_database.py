@@ -2,86 +2,163 @@
 
 Every chart converts a local birth time to UTC through an IANA zone, so the tz
 database is an *input* to the calculation in exactly the way the ephemeris files
-are.  The Calculation Dossier recorded the pyswisseph and Swiss Ephemeris
-versions and not this one, which made it possible for the same request, on the
-same code, to produce a different chart with nothing in the receipt changing.
+are, and the Calculation Dossier records it beside the Swiss versions.  IANA
+releases often *correct historical offsets*, so the same request on the same
+code can convert to a different UTC, and so a different chart.  The version is
+not pinned here (macOS supplies it from the operating system, the container
+from the image's tzdata); recording it makes a change visible when someone asks
+why a chart moved.
 
-That is not hypothetical.  IANA publishes several releases a year and a large
-share of them *correct historical offsets* — a zone's UTC offset for a date in
-1953 is a research finding, not a constant, and it gets revised.  A birth in a
-revised window converts to a different UTC, and therefore to a different
-Ascendant, different houses, different everything.
+Resolution follows zoneinfo's own lookup order, because the
+receipt must name the database that actually converted the time, not whichever
+one happens to be installed:
 
-The version is also not pinned here: on macOS the database comes from the
-operating system, so a system update changes it silently.  In the container it
-comes from whichever tzdata the image has.  Recording it does not stop it
-changing; it makes the change visible when someone asks why a chart moved.
+1. the first ``zoneinfo.TZPATH`` directory that holds the probe zone file —
+   zoneinfo reads that directory before it ever consults the tzdata package; the
+   version comes from its ``+VERSION`` file, else the ``# version`` line of its
+   ``tzdata.zi`` (with any build variant such as ``rearguard``);
+2. only when no TZPATH directory holds zone data, the ``tzdata`` PyPI package;
+3. otherwise ``unavailable``, with a reason code, never a silent omission.
 
-Resolution order, most to least specific:
+A version string counts only when it matches the IANA release grammar;
+anything else is ``tz_database_version_unrecognized_format``.
 
-1. the ``tzdata`` PyPI package, when installed;
-2. the ``+VERSION`` file shipped in a zoneinfo directory;
-3. the ``# version`` line of ``tzdata.zi``;
-4. otherwise ``unavailable``, with a reason code, never a silent omission.
+The receipt names *which* file carried the version (``+VERSION`` or
+``tzdata.zi``) but never *where* it is: a server's filesystem layout is not
+part of a chart's provenance and does not belong in every response and export.
+``source`` already says the TZPATH was read.
 """
 from __future__ import annotations
 
 import importlib.metadata
+import re
 import zoneinfo
 from pathlib import Path
 from typing import Final
 
-# "2026b", "2024a" and so on.  Two or three digits are not valid tzdata
-# releases, so a loose match here would let a truncated read through.
-_VERSION_FILES: Final = ("+VERSION", "tzdata.zi")
+# IANA release names are a four-digit year and one lowercase letter ("2026b").
+# Two or three digits, an uppercase letter or trailing text are not releases,
+# and accepting them would let a truncated or foreign read pass as verified.
+_IANA_RELEASE: Final = re.compile(r"^\d{4}[a-z]$")
+# tzdata.zi opens with "# version 2026c", optionally with a build variant suffix
+# ("-rearguard" is what macOS ships).
+_TZDATA_ZI_VERSION_LINE: Final = re.compile(r"^# version (\d{4}[a-z])(?:-([a-z]+))?$")
+# zoneinfo resolves a key through TZPATH first and the tzdata package second.
+# This key decides which TZPATH directory zoneinfo would actually read.
+_PROBE_KEY: Final = "UTC"
+RESOLUTION_ORDER: Final = ("zoneinfo.TZPATH", "tzdata_package")
+SOURCES: Final = ("zoneinfo_tzpath", "pypi_tzdata_package")
+REASON_CODES: Final = (
+    "tz_database_version_not_identifiable",
+    "tz_database_version_unrecognized_format",
+)
 
 
-def _from_pip() -> tuple[str, str] | None:
+def _pypi_tzdata_versions() -> tuple[str | None, str] | None:
+    """(IANA release, distribution version) of the installed tzdata package."""
+
     try:
-        version = importlib.metadata.version("tzdata")
+        distribution_version = importlib.metadata.version("tzdata")
     except importlib.metadata.PackageNotFoundError:
         return None
-    return version, "pypi_tzdata_package"
+    try:
+        import tzdata  # type: ignore[import-untyped]
+    except ImportError:
+        return None
+    iana_version = getattr(tzdata, "IANA_VERSION", None)
+    if not isinstance(iana_version, str) or not _IANA_RELEASE.fullmatch(iana_version):
+        return None, distribution_version
+    return iana_version, distribution_version
 
 
-def _from_zoneinfo_files() -> tuple[str, str] | None:
+def _tzpath_base_holding_zone_data() -> str | None:
     for base in zoneinfo.TZPATH:
-        for filename in _VERSION_FILES:
-            path = Path(base) / filename
-            try:
-                first_line = path.read_text(encoding="utf-8", errors="replace")
-            except OSError:
-                continue
-            first_line = first_line.splitlines()[0] if first_line else ""
-            # "+VERSION" holds the bare version; tzdata.zi starts "# version 2026b".
-            candidate = first_line.replace("# version", "").strip()
-            if candidate:
-                return candidate, f"zoneinfo_file:{filename}"
+        if (Path(base) / _PROBE_KEY).is_file():
+            return str(base)
     return None
+
+
+def _first_line(path: Path) -> str | None:
+    try:
+        with path.open(encoding="utf-8", errors="replace") as handle:
+            return handle.readline().strip()
+    except OSError:
+        return None
+
+
+def _version_in_base(base: str) -> dict:
+    """The version named by one TZPATH directory's +VERSION, else its tzdata.zi."""
+
+    def entry(version, version_file, build_variant=None, unrecognized=False) -> dict:
+        return {
+            "version": version,
+            "version_file": version_file,
+            "build_variant": build_variant,
+            "unrecognized": unrecognized,
+        }
+
+    unrecognized = False
+    line = _first_line(Path(base) / "+VERSION")
+    if line is not None:
+        if _IANA_RELEASE.fullmatch(line):
+            return entry(line, "+VERSION")
+        unrecognized = True
+    line = _first_line(Path(base) / "tzdata.zi")
+    if line is not None:
+        match = _TZDATA_ZI_VERSION_LINE.fullmatch(line)
+        if match:
+            return entry(match.group(1), "tzdata.zi", match.group(2))
+        unrecognized = True
+    return entry(None, None, unrecognized=unrecognized)
 
 
 def resolve_tz_database_version() -> dict:
     """Return a receipt for the tz database, never an omission."""
 
-    for resolver in (_from_pip, _from_zoneinfo_files):
-        found = resolver()
-        if found is not None:
-            version, source = found
-            return {
-                "version": version,
-                "source": source,
-                "available": True,
-                "reason_code": None,
-            }
-    return {
+    receipt = {
         "version": None,
         "source": None,
         "available": False,
-        # The chart is still computed — the conversion happened, we just cannot
-        # name which database performed it.  That is a weaker receipt, not a
-        # failed calculation, so it is reported rather than raised.
-        "reason_code": "tz_database_version_not_identifiable",
+        "reason_code": None,
+        "resolution_order": list(RESOLUTION_ORDER),
+        "probe_key": _PROBE_KEY,
+        "version_file": None,
+        "build_variant": None,
+        "package_distribution_version": None,
+        "shadowed_pypi_tzdata_version": None,
     }
+    pypi = _pypi_tzdata_versions()
+    base = _tzpath_base_holding_zone_data()
+    if base is not None:
+        found = _version_in_base(base)
+        receipt.update(
+            source=SOURCES[0],
+            version_file=found["version_file"],
+            build_variant=found["build_variant"],
+            # Installed, but zoneinfo never reads it while TZPATH has the zone.
+            shadowed_pypi_tzdata_version=pypi[0] if pypi else None,
+        )
+        if found["version"] is not None:
+            receipt.update(version=found["version"], available=True)
+        else:
+            receipt["reason_code"] = REASON_CODES[1 if found["unrecognized"] else 0]
+        return receipt
+    if pypi is not None:
+        iana_version, distribution_version = pypi
+        receipt.update(
+            source=SOURCES[1],
+            package_distribution_version=distribution_version,
+        )
+        if iana_version is not None:
+            receipt.update(version=iana_version, available=True)
+        else:
+            receipt["reason_code"] = REASON_CODES[1]
+        return receipt
+    # The chart is still computed — the conversion happened, we just cannot name
+    # which database performed it.  That is a weaker receipt, not a failed
+    # calculation, so it is reported rather than raised.
+    receipt["reason_code"] = REASON_CODES[0]
+    return receipt
 
 
 # Resolved once at import: the database does not change inside a process, and a
@@ -89,3 +166,17 @@ def resolve_tz_database_version() -> dict:
 # replaces it takes effect on the next restart, which is also when the recorded
 # version changes — the two stay consistent with each other.
 TZ_DATABASE: Final = resolve_tz_database_version()
+
+
+METHOD_SOURCE_ENTRIES: Final[dict[str, dict]] = {
+    "library_info": {
+        "applies_to": "library_info",
+        "note": (
+            "兩者是不同的版本號：前者是 pip 安裝的 pyswisseph 套件版本，後者是其內建 "
+            "Swiss Ephemeris C 函式庫自報的版本，數字格式相近但並非同一個值。"
+            "tz_database 是本地時間換算所用的 IANA 時區資料庫版本，"
+            "它不由本產品固定：macOS 由作業系統提供、容器由 image 提供，"
+            "更新後同一組輸入可能換算出不同的 UTC。"
+        ),
+    },
+}

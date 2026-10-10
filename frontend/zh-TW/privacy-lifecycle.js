@@ -13,7 +13,6 @@
 
     let canonicalDocument = null;
     let activeRequest = null;
-    let requestGeneration = 0;
     const objectUrls = new Set();
     const sectionNodes = new Set();
 
@@ -69,11 +68,11 @@
         try {
           activeRequest.controller.abort();
         } catch (_error) {
-          // A failed abort still invalidates the old generation below.
+          // Replacing activeRequest below invalidates the old token even if
+          // the browser refuses to abort the transport.
         }
       }
-      requestGeneration += 1;
-      const token = Object.freeze({ generation: requestGeneration });
+      const token = Object.freeze({});
       activeRequest = { controller, token };
       return token;
     }
@@ -88,6 +87,21 @@
       return true;
     }
 
+    function scheduleAbort(controller, delayMs, scheduleTimeout = setTimeout) {
+      if (!controller || typeof controller.abort !== "function") {
+        throw new Error("逾時控制必須使用可中止的 AbortController。");
+      }
+      if (!Number.isFinite(delayMs) || delayMs <= 0) {
+        throw new Error("逾時上限必須是正數。");
+      }
+      let timedOut = false;
+      const handle = scheduleTimeout(() => {
+        timedOut = true;
+        try { controller.abort(); } catch (_error) { /* token另行判斷是否有效 */ }
+      }, delayMs);
+      return Object.freeze({ handle, didTimeout: () => timedOut });
+    }
+
     /**
      * 中止進行中的請求，但**不動**已算出的結果。
      *
@@ -99,14 +113,14 @@
      */
     function abortActiveRequest() {
       if (!activeRequest) return false;
-      // generation 先失效：即使 abort() 丟例外，遲到的回應也必須被擋下。
-      requestGeneration += 1;
-      try {
-        activeRequest.controller.abort();
-      } catch (_error) {
-        // 已作廢的 generation 就是保護本身。
-      }
+      // 先清掉token：即使abort()丟例外，遲到的回應也必須被擋下。
+      const request = activeRequest;
       activeRequest = null;
+      try {
+        request.controller.abort();
+      } catch (_error) {
+        // token已作廢。
+      }
       return true;
     }
 
@@ -119,24 +133,20 @@
       };
 
       canonicalDocument = null;
-      requestGeneration += 1;
-
       if (activeRequest) {
-        try {
-          activeRequest.controller.abort();
-        } catch (_error) {
-          // The request generation is already invalid even if abort() fails.
-        }
+        const request = activeRequest;
         activeRequest = null;
+        try {
+          request.controller.abort();
+        } catch (_error) {
+          // The token is already invalid even if abort() fails.
+        }
       }
 
-      for (const node of sectionNodes) {
-        try {
-          node._canonicalExportSection = null;
-        } catch (_error) {
-          // Continue clearing every other registered reference.
-        }
-      }
+      // 登記表只持有 section 節點的引用；節點上沒有任何敏感欄位（section 快照
+      // 在 calculate.js 的 sectionSnapshots，由呼叫端清除，DOM 由呼叫端移除）。
+      // 清除就是放掉這些引用，不在節點上寫一個從未被設定過的屬性，假裝清掉了
+      // 什麼。
       sectionNodes.clear();
 
       for (const url of Array.from(objectUrls)) {
@@ -164,6 +174,7 @@
       beginRequest,
       isCurrentRequest,
       finishRequest,
+      scheduleAbort,
       abortActiveRequest,
       clear,
       inspect,

@@ -27,7 +27,7 @@
 ---
 
 Armillary is an open-source classical astrology calculator built for people who want more than a polished
-answer—and who do not want intimate birth data turned into an account history. Its Private Alpha deployment
+answer—and who do not want intimate birth data turned into an account history. Its public deployment
 has no account database, no chart-history database, no application user-data volume, and no application
 Internet egress. The calculation remains inspectable: the effective time and place, coordinate systems,
 selected methods, data sources, unavailable modules, warnings, and release identity travel with the result.
@@ -36,26 +36,27 @@ selected methods, data sources, unavailable modules, warnings, and release ident
 星盤歷史資料庫，不把出生資料當成日後分析或行銷的素材；它也不把複雜選擇藏在一句「系統預設」後面。
 你可以看見實際執行了什麼、哪些沒有執行，以及結果來自哪裡。
 
-> **Private Alpha is live and invite-only.** The source for every live release remains public. Broader access
-> will open after real-user feedback confirms that the calculation and export workflows are ready.
+> **Public Alpha is open.** Anyone can use the hosted service without an invitation, an account, or an email
+> address, and it is still free. The source for every live release remains public.
 >
-> **Private Alpha已上線，目前採邀請制。** 每一個live版本的原始碼都保持公開；待真實使用者確認計算與
-> 匯出流程已足夠成熟後，再擴大開放。
+> **公開測試（Public Alpha）已開放。** 任何人都可以直接使用，不需邀請、帳號或email，目前仍不收費；
+> 每一個live版本的原始碼都保持公開。
 
 ## Why Armillary?
 
 ### Your birth data is not the product
 
 Birth time and precise location can be deeply identifying. Armillary's current deployment is deliberately
-small and forgetful: credentials terminate at the reverse proxy, the application receives no credential to
-store, request and response bodies are excluded from application logs, NGINX access logging is disabled, and
-client IP headers are not forwarded to the application. Availability notifications use a closed event schema
-that contains no chart input, response, credential, IP address, header, or exception text.
+small and forgetful: there is no account, access credential, or password to store, request and response bodies
+are excluded from application logs, NGINX access logging is disabled, and client IP headers are not forwarded
+to the application. The application's own events use a closed schema that contains no chart input, response,
+credential, IP address, header, or exception text; the only availability notification is an external uptime
+monitor that requests the public site.
 
-出生時間與精確地點具有高度識別性。因此Armillary刻意採取「小而健忘」的架構：credential在reverse proxy
-終止，計算application不接收可保存的credential；application log排除request／response body，NGINX關閉
-access log，也不把client IP headers向後傳遞。Availability通知採封閉schema，不包含星盤輸入、回應、
-credential、IP、header或exception文字。
+出生時間與精確地點具有高度識別性。因此Armillary刻意採取「小而健忘」的架構：沒有帳號、存取credential
+或密碼可以保存；application log排除request／response body，NGINX關閉access log，也不把client IP headers
+向後傳遞。Application自己的事件採封閉schema，不包含星盤輸入、回應、credential、IP、header或exception
+文字；唯一的可用性通知是外部uptime monitor對公開網站的請求。
 
 ### It respects what you actually know
 
@@ -77,11 +78,11 @@ method identifiers、trace digest與reproducibility receipt。天文事實、確
 
 ### It is made to leave the browser
 
-Copy a focused section or export the chart as JSON, CSV, Markdown, TSV, or plain text. Choose compact chart
+Copy a focused section as tab-separated text, or download the chart as JSON, CSV, Markdown, or plain text. Choose compact chart
 data for ordinary use or include the additional receipts and trace material needed for verification. Every
 format is generated from the same normalized result rather than reconstructed from the rendered page.
 
-你可以複製單一區段，或匯出JSON、CSV、Markdown、TSV與純文字；平常只帶星盤資料，需要驗算時再加入
+你可以把單一區段複製成以tab分隔的文字，或下載JSON、CSV、Markdown與純文字；平常只帶星盤資料，需要驗算時再加入
 receipts與trace。每一種格式都來自同一份normalized result，不從畫面上的DOM反向拼湊。
 
 ## What it calculates
@@ -97,10 +98,11 @@ receipts與trace。每一種格式都來自同一份normalized result，不從�
 
 Armillary uses [Swiss Ephemeris](https://www.astro.com/swisseph/) through pyswisseph. A supported calculation
 does not imply that every historical astrological method is settled or adopted; offered methods are named and
-their status is kept visible in the machine-readable result.
+their status is kept in the full machine-readable result (`projection=detailed`, the verification export).
 
 Armillary透過pyswisseph使用[Swiss Ephemeris](https://www.astro.com/swisseph/)。產品能計算某項結果，
-不代表所有歷史占星方法都已定論或被正式採用；提供的方法會具名，狀態也保留在machine-readable result中。
+不代表所有歷史占星方法都已定論或被正式採用；提供的方法會具名，狀態保留在完整的machine-readable result
+（`projection=detailed`，即驗算匯出）中。
 
 ## A different kind of astrology software
 
@@ -118,7 +120,7 @@ Armillary透過pyswisseph使用[Swiss Ephemeris](https://www.astro.com/swisseph/
 
 ## Privacy and security are product features
 
-The Private Alpha does not rely on a privacy-policy promise alone. Its deployed boundaries are designed to make
+The hosted service does not rely on a privacy-policy promise alone. Its deployed boundaries are designed to make
 retention and lateral movement harder:
 
 - **No account or chart database.** The application has no user-data persistence volume.
@@ -129,9 +131,10 @@ retention and lateral movement harder:
   caller-supplied request ID均排除於application event schema之外。
 - **Quiet reverse proxy.** NGINX access logging is disabled and client IP headers are not forwarded downstream.
 - **安靜的reverse proxy。** NGINX access logging關閉，也不向application轉送client IP headers。
-- **Credentials stop at the edge.** Independent invitation credentials are checked by NGINX rather than passed
-  into the calculation application.
-- **Credential停在edge。** 每組邀請credential由NGINX驗證，不傳入計算application。
+- **Rate limits instead of an invite wall.** Public access is bounded by per-IP request-rate and connection limits
+  held in NGINX memory; client IPs are neither logged nor forwarded to the application.
+- **以限流取代邀請牆。** 公開存取以NGINX記憶體中的per-IP請求速率與連線上限約束；client IP不寫入log，
+  也不轉送給application。
 - **Constrained runtime.** The application runs non-root with a read-only root filesystem, a bounded temporary
   filesystem, all Linux capabilities dropped, `no-new-privileges`, resource limits, and no application egress.
 - **受限制的runtime。** Non-root、read-only rootfs、bounded tmpfs、drop all capabilities、
@@ -140,10 +143,9 @@ retention and lateral movement harder:
   checked against a closed per-file SHA-256 manifest before the application serves them.
 - **Immutable frontend。** Browser assets安裝在digest-named、root-owned、read-only目錄，供應前依封閉的
   逐檔SHA-256 manifest核對。
-- **Minimal monitoring.** Synthetic availability checks use no real birth data; notifications carry only a
-  closed availability event, failure class, restart status, and release revision.
-- **最小化monitoring。** Synthetic probe不用真實出生資料；通知只帶封閉event、failure class、restart status
-  與release revision。
+- **Minimal monitoring.** Synthetic availability checks use no real birth data; the only notification channel
+  is an external uptime monitor that requests the public site over HTTPS.
+- **最小化monitoring。** Synthetic probe不用真實出生資料；唯一通知管道是外部uptime monitor以HTTPS請求公開網站。
 - **Exact rollback identity.** The running backend image and frontend artifact form one combined release ID;
   activation advances only after health, synthetic chart, place search, identity, and privacy checks pass.
 - **精確rollback identity。** Backend image與frontend artifact形成combined release ID；health、synthetic
@@ -179,10 +181,10 @@ notices也隨release提供。
 After cloning a tagged release, install the pinned test dependencies:
 
 ```bash
-python -m pip install --require-hashes \
-  --requirement backend/requirements-dev.lock
-npm --prefix frontend ci --ignore-scripts
+python -m scripts.tools.install_dev_dependencies
 ```
+
+The published frontend tests use only Node.js built-ins (`node --test`); no npm install is needed.
 
 Then run the documented public verification entrypoint／接著執行公開、可重現的驗證入口：
 
@@ -199,10 +201,10 @@ frontend tests與source postflight。Image、host、TLS與live browser需要自�
 
 ## Build an artifact
 
-Requirements: Docker with BuildKit and a Linux/amd64 builder. The release-image owner materializes and checks
-one build context; `deploy/compose.yaml` is runtime-only and deliberately has no raw-checkout `build:` path.
+Requirements: Docker with BuildKit and a Linux/amd64 builder. The release-image owner builds from a `git archive`
+snapshot of one revision after checking its `.dockerignore` whitelist; `deploy/compose.yaml` is runtime-only and deliberately has no raw-checkout `build:` path.
 
-需求為Docker BuildKit與Linux/amd64 builder。Release-image owner只materialize並檢查一份build context；
+需求為Docker BuildKit與Linux/amd64 builder。Release-image owner只從單一revision的`git archive`快照建置，並先檢查`.dockerignore`白名單；
 `deploy/compose.yaml`只負責runtime，刻意不提供從raw checkout直接build的捷徑。
 
 ```bash
@@ -250,7 +252,7 @@ Corresponding Source。
 
 ## Project status
 
-Armillary 1.0.0 is in invited Private Alpha. The current focus is deliberately narrow:
+Armillary is in Public Alpha (open public testing). The current focus is deliberately narrow:
 
 - calculation correctness and explicit boundaries／計算正確性與明確邊界
 - privacy and security enforced by architecture／以架構落實隱私與資安，不只寫政策
@@ -259,11 +261,12 @@ Armillary 1.0.0 is in invited Private Alpha. The current focus is deliberately n
 - operation without an account or chart database／不建立帳號或星盤資料庫
 - real-user feedback before interpretation or prediction／加入解盤、預測或大量方法前先取得真實回饋
 
-The project is built and maintained by Sebastian in Taichung, Taiwan. Issues and contributions are welcome when
-they are reproducible and scoped to the current public release.
+The project is built and maintained independently by Sebastian. Issues are welcome when they are reproducible
+and scoped to the current public release; code contributions follow [CONTRIBUTING.md](CONTRIBUTING.md), which
+does not currently accept unsolicited code.
 
-本專案由Sebastian在台灣台中獨立開發與維護。只要問題可以重現、scope綁定目前public release，都歡迎提出
-issue或contribution。
+本專案由Sebastian獨立開發與維護。只要問題可以重現、scope綁定目前public release，都歡迎提出issue；程式碼
+貢獻依[CONTRIBUTING.md](CONTRIBUTING.md)，目前不接受未經邀請的程式碼。
 
 ## Contributing
 

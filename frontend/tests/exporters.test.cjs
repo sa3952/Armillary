@@ -1,6 +1,8 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const crypto = require("node:crypto");
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 
 const Exporters = require("../zh-TW/exporters.js");
@@ -23,6 +25,77 @@ const compatibilityFixture = JSON.parse(
   )
 );
 
+// ── 公開匯出樹刻意省略的輸入 ─────────────────────────────────────────
+// 公開樹由 scripts/publication/export_public_source.py 依 publication/publication_manifest.json
+// 的 include／forbidden glob 產生；docs/contracts 與後端回應 fixture（chart-*.json）刻意不公開。
+// 判準：同時帶 SOURCE_EXPORT.json（export_mode 為 export_public_source.py 寫入的
+// "closed_allowlist"）與 PUBLICATION_FILES.json，且前者以 SHA-256 登錄在後者，才算已驗證的
+// 公開匯出；某路徑只有在那份清單沒有登錄它時才算被公開邊界省略。私有樹沒有這兩個標記，
+// 讀檔照常執行，缺檔照常紅。
+const REPOSITORY_ROOT = path.join(__dirname, "..", "..");
+
+function publicationOmits(relativePath, root = REPOSITORY_ROOT) {
+  let markerBytes;
+  let receipt;
+  let inventory;
+  try {
+    markerBytes = fs.readFileSync(path.join(root, "SOURCE_EXPORT.json"));
+    receipt = JSON.parse(markerBytes.toString("utf8"));
+    inventory = JSON.parse(
+      fs.readFileSync(path.join(root, "PUBLICATION_FILES.json"), "utf8")
+    );
+  } catch {
+    return false;
+  }
+  if (
+    !receipt
+    || receipt.schema_version !== 1
+    || receipt.export_mode !== "closed_allowlist"
+    || !/^[0-9a-f]{40}$/.test(String(receipt.private_source_revision || ""))
+  ) {
+    return false;
+  }
+  const entries = inventory && inventory.files;
+  if (!Array.isArray(entries)) {
+    return false;
+  }
+  const markerDigest = crypto.createHash("sha256").update(markerBytes).digest("hex");
+  const markerBound = entries.some(
+    (entry) => entry && entry.path === "SOURCE_EXPORT.json" && entry.sha256 === markerDigest
+  );
+  return markerBound && !entries.some((entry) => entry && entry.path === relativePath);
+}
+
+// 下面三個以真實回應 fixture 驗證的測試在 publicationOmits 為真時 skip；判準一旦恆真，它們就無聲跳過。
+test("公開匯出省略只在已驗證的匯出樹成立；私有樹缺檔仍要紅", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "public-export-marker-"));
+  const target = "docs/contracts/EXPORT_CONTRACT.md";
+  const writeJson = (name, value) => {
+    const body = JSON.stringify(value);
+    fs.writeFileSync(path.join(root, name), body);
+    return crypto.createHash("sha256").update(body).digest("hex");
+  };
+  const marker = { schema_version: 1, export_mode: "closed_allowlist", private_source_revision: "a".repeat(40) };
+  try {
+    assert.equal(publicationOmits(target, root), false, "沒有標記的私有樹");
+    const digest = writeJson("SOURCE_EXPORT.json", marker);
+    assert.equal(publicationOmits(target, root), false, "只有標記、沒有清單");
+    writeJson("PUBLICATION_FILES.json", { files: [{ path: "SOURCE_EXPORT.json", sha256: "0".repeat(64) }] });
+    assert.equal(publicationOmits(target, root), false, "清單沒有以 digest 綁定標記");
+    writeJson("PUBLICATION_FILES.json", { files: [{ path: "SOURCE_EXPORT.json", sha256: digest }] });
+    assert.equal(publicationOmits(target, root), true, "已驗證的匯出且清單未登錄該路徑");
+    writeJson("PUBLICATION_FILES.json", {
+      files: [{ path: "SOURCE_EXPORT.json", sha256: digest }, { path: target, sha256: "1".repeat(64) }],
+    });
+    assert.equal(publicationOmits(target, root), false, "清單登錄了該路徑，缺檔就該紅");
+    const forged = writeJson("SOURCE_EXPORT.json", { ...marker, private_source_revision: "HEAD" });
+    writeJson("PUBLICATION_FILES.json", { files: [{ path: "SOURCE_EXPORT.json", sha256: forged }] });
+    assert.equal(publicationOmits(target, root), false, "標記不是封閉匯出的收據");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 // 版本一律取自 response-compatibility.json 的 accepted 組合，不在此重複字面值。
 // 這兩個字串曾各自釘死在 0.10.0／0.3.2，而契約已走到 0.13.0／0.6.0，
 // 使八個與版本無關的 serializer 測試一起變紅。單一出處讓它不會再漂第二次。
@@ -34,315 +107,212 @@ function fixture() {
       authority: "backend-authored calculation receipt",
       input_receipt: {
         datetime: { year: 1997, month: 8, day: 17, hour: 9, minute: 42, second: 0 },
-        location: { latitude: 24.1477, longitude: 120.6736, altitude_m: 80 },
+        location: { latitude: 22.9908, longitude: 120.2133, altitude_m: 80 },
       },
       time_conversion: { utc_iso_8601: "1997-08-17T01:42:00.000Z" },
       warnings: [{ code: "TEST_WARNING", message: "保留, 逗號與 \"引號\"" }],
+      // 狀態權威：createDocument 拒絕缺它的回應。一個未請求的選項，它寫的容器是 null。
+      calculation_policy: {
+        option_states: {
+          include_aspects: {
+            requested: false, executed: false, applicable: false, available: false,
+            reason_code: "option_not_requested", response_paths: ["derived_methods.aspects"],
+          },
+        },
+        modules: { aspects: "not_requested" },
+      },
       privacy: {
         privacy_attestation_version: ATTESTATION_VERSION,
         attestation_status: "provisional_pending_external_review",
-        claims: [{
-          id: "application_chart_path_no_persistence",
-          status: "implemented_in_application_layer",
-          enforcement_layer: "application_request_path",
-          control: { id: "application-no-persistence-v1" },
-          evidence: [{ reference: "backend/tests/test_privacy_logging.py" }],
-          scope: { applies_to: "/api/chart" },
-          limitations: ["No secure memory erasure claim"],
+        uncovered_layers: [{
+          layer: "hosting_supervisor",
+          status: "outside_current_control_scope",
         }],
       },
     },
     library_info: { swiss_ephemeris_library_version: "2.10.03" },
+    computation_mode: { zodiac: "tropical" },
+    requested_options: { include_aspects: false },
+    output_contract: { status: "provisional" },
     astronomical_data: {
       bodies: [{ name: "木星, Jupiter", longitude: 321.123456789 }],
     },
     derived_geometry: {},
-    derived_methods: {},
+    derived_methods: { aspects: null },
+    birth_time_sensitivity: { precision: "exact" },
     calculation_trace: [{ title: "測試步驟", result: { longitude: 321.123456789 } }],
   };
   const sections = [
     {
-      id: "time",
-      title: "時間轉換",
-      layer_label: "天文原始資料",
-      notes: ["以下時間均標明時間尺度。"],
-      tables: [
-        {
-          title: "時間",
-          columns: ["項目", "數值"],
-          rows: [["UTC", "1997-08-17T01:42:00.000Z"], ["備註", "say \"hi\", then check"]],
-        },
-      ],
-      blocks: [],
+      id: "time", title: "時間轉換", layer_label: "天文原始資料", notes: ["以下時間均標明時間尺度。"], blocks: [],
+      tables: [{
+        title: "時間", columns: ["項目", "數值"],
+        rows: [["UTC", "1997-08-17T01:42:00.000Z"], ["備註", "say \"hi\", then check"]],
+      }],
     },
     {
-      id: "bodies",
-      title: "七政",
-      layer_label: "天文原始資料",
-      notes: [],
-      tables: [
-        {
-          title: "黃道／赤道座標",
-          columns: ["星體", "黃經"],
-          rows: [["木星, Jupiter", "水瓶 21°07'24\""]],
-        },
-      ],
-      blocks: [],
+      id: "bodies", title: "七政", layer_label: "天文原始資料", notes: [], blocks: [],
+      tables: [{ title: "黃道／赤道座標", columns: ["星體", "黃經"], rows: [["木星, Jupiter", "水瓶 21°07'24\""]] }],
     },
   ];
   return { response, sections };
 }
 
+const fixtureDocument = () => {
+  const { response, sections } = fixture();
+  return Exporters.createDocument(response, sections);
+};
+
 test("one canonical document keeps the dossier, raw precision, and display sections", () => {
   const { response, sections } = fixture();
   const document = Exporters.createDocument(response, sections);
-
-  assert.equal(document.export_contract_version, "0.1.2");
+  assert.equal(document.export_contract_version, compatibilityFixture.accepted.export_contract_version);
   assert.equal(document.calculation_dossier, response.calculation_dossier);
   assert.equal(document.source_response, response);
   // 正規化會補上預設收據狀態；沒有 status 的 section 一律視為「已計算」。
-  assert.deepEqual(
-    document.sections,
-    sections.map((section) => ({
-      ...section,
-      status: {
-        state: "present",
-        label: Exporters.SECTION_STATES.present,
-        reason_code: "",
-      },
-    }))
-  );
-  assert.equal(
-    document.source_response.astronomical_data.bodies[0].longitude,
-    321.123456789
-  );
+  assert.deepEqual(document.sections, sections.map((section) => ({
+    ...section, status: { state: "present", label: Exporters.SECTION_STATES.present, reason_code: "", reason_label: "" },
+  })));
 });
 
-test("compatibility fixture accepts only the supported API and Dossier pair", () => {
+test("compatibility fixture rejects every unsupported API and Dossier pair by its own guard", () => {
   const { response, sections } = fixture();
-  const accepted = compatibilityFixture.accepted;
-  response.schema_version = accepted.api_schema_version;
-  response.calculation_dossier.dossier_version = accepted.dossier_version;
-
-  const document = Exporters.createDocument(response, sections);
-  assert.equal(
-    document.export_contract_version,
-    accepted.export_contract_version
-  );
-
-  compatibilityFixture.rejected.forEach((entry) => {
-    const rejectedResponse = structuredClone(response);
-    if (entry.api_schema_version === null) {
-      delete rejectedResponse.schema_version;
-    } else {
-      rejectedResponse.schema_version = entry.api_schema_version;
+  for (const entry of compatibilityFixture.rejected) {
+    const rejected = structuredClone(response);
+    for (const [field, owner] of [["api_schema_version", rejected], ["dossier_version", rejected.calculation_dossier]]) {
+      const key = field === "api_schema_version" ? "schema_version" : field;
+      if (entry[field] === null) delete owner[key];
+      else owner[key] = entry[field];
     }
-    if (entry.dossier_version === null) {
-      delete rejectedResponse.calculation_dossier.dossier_version;
-    } else {
-      rejectedResponse.calculation_dossier.dossier_version =
-        entry.dossier_version;
-    }
-    // A single alternation over every guard's message would let one guard
-    // cover for another: a rejected case can throw from a neighbouring guard
-    // and still satisfy the assertion, leaving the intended guard untested.
-    // Each rejected case therefore names the one guard that must reject it,
-    // and the fixture owns that name.
+    // 一個涵蓋所有守衛訊息的 alternation 會讓相鄰的守衛替另一個頂罪；每個案例由 fixture
+    // 指名必須拒絕它的那一個守衛。
     const expected = entry.expected_error_contains;
     assert.ok(expected, `rejected case ${entry.name} names no expected guard`);
-    assert.throws(
-      () => Exporters.createDocument(rejectedResponse, sections),
-      (error) =>
-        error instanceof Error && error.message.includes(expected),
-      `${entry.name} must be rejected by the guard that reports ${expected}`
-    );
-  });
-});
-
-test("section and full copy are rendered from the canonical section model", () => {
-  const { response, sections } = fixture();
-  const document = Exporters.createDocument(response, sections);
-  const sectionText = Exporters.renderSectionText(document.sections[0]);
-  const fullText = Exporters.renderPlainText(document);
-
-  assert.match(sectionText, /時間轉換/);
-  assert.match(sectionText, /項目\t數值/);
-  assert.match(sectionText, /UTC\t1997-08-17T01:42:00\.000Z/);
-  assert.ok(
-    fullText.includes(
-      `Calculation Dossier ${compatibilityFixture.accepted.dossier_version}`
-    ),
-    "全文複製必須印出目前 accepted 的 Dossier 版本"
-  );
-  assert.match(fullText, /TEST_WARNING/);
-  assert.match(fullText, /木星, Jupiter/);
-  assert.match(fullText, /"latitude": 24\.1477/);
-  assert.match(fullText, /Calculation Dossier（機器可讀）/);
-  assert.match(fullText, /application_chart_path_no_persistence/);
-});
-
-test("section renderer explicitly rejects missing or non-record models", () => {
-  for (const invalidSection of [null, undefined, [], "section"]) {
-    assert.throws(
-      () => Exporters.renderSectionText(invalidSection),
-      /canonical section/
-    );
+    assert.throws(() => Exporters.createDocument(rejected, sections),
+      (error) => error instanceof Error && error.message.includes(expected),
+      `${entry.name} must be rejected by the guard that reports ${expected}`);
   }
-  const { response, sections } = fixture();
-  const document = Exporters.createDocument(response, sections);
-  assert.match(
-    Exporters.renderSectionText(document.sections[0]),
-    /## 時間轉換/
-  );
+});
+
+test("section and full copy are rendered from the canonical section model; non-record sections are rejected", () => {
+  const document = fixtureDocument();
+  const sectionText = Exporters.renderSectionText(document.sections[0]);
+  for (const pattern of [/## 時間轉換/, /項目\t數值/, /UTC\t1997-08-17T01:42:00\.000Z/]) assert.match(sectionText, pattern);
+  const fullText = Exporters.renderPlainText(document);
+  assert.ok(fullText.includes(`Calculation Dossier ${compatibilityFixture.accepted.dossier_version}`),
+    "全文複製必須印出目前 accepted 的 Dossier 版本");
+  for (const pattern of [/TEST_WARNING/, /木星, Jupiter/, /"latitude": 22\.9908/, /Calculation Dossier（機器可讀）/, /hosting_supervisor/]) {
+    assert.match(fullText, pattern);
+  }
+  for (const invalidSection of [null, undefined, [], "section"]) {
+    assert.throws(() => Exporters.renderSectionText(invalidSection), /canonical section/);
+  }
 });
 
 test("CSV uses a stable long-form schema and RFC 4180 escaping", () => {
-  const { response, sections } = fixture();
-  const csv = Exporters.renderCsv(Exporters.createDocument(response, sections));
+  const csv = Exporters.renderCsv(fixtureDocument());
   const lines = csv.split("\r\n");
-
-  assert.equal(lines[0], "section_id,section,table,row,field,value");
-  assert.match(csv, /input_receipt\.location\.latitude,24\.1477/);
-  assert.match(csv, /warnings\[0\]\.code,TEST_WARNING/);
-  assert.match(
-    csv,
-    /privacy\.claims\[0\]\.id,application_chart_path_no_persistence/
-  );
-  assert.match(csv, /"say ""hi"", then check"/);
-  assert.match(csv, /"木星, Jupiter"/);
+  assert.equal(lines[0], "區段代碼,區段,表,列,欄位,值,代碼");
+  for (const pattern of [
+    /input_receipt\.location\.latitude,22\.9908/, /warnings\[0\]\.code,TEST_WARNING/,
+    /privacy\.uncovered_layers\[0\]\.layer,hosting_supervisor/, /"say ""hi"", then check"/, /"木星, Jupiter"/,
+  ]) {
+    assert.match(csv, pattern);
+  }
   assert.ok(lines.every((line) => !line.includes("undefined")));
 });
 
-test("CSV neutralizes spreadsheet formulas without corrupting numeric literals", () => {
-  const { response, sections } = fixture();
-  sections.push({
-    id: "csv-boundary",
-    title: "CSV boundary",
-    layer_label: "test",
-    notes: [],
-    tables: [{
-      title: "Injection cases",
-      columns: ["case", "value"],
-      rows: [
-        ["equals", "=1+1"],
-        ["at", "@SUM(A1:A2)"],
-        ["expression", "-1+2"],
-        ["leading tab", "\t=1+1"],
-        ["leading carriage return", "\r=1+1"],
-        ["leading spaces", "   =1+1"],
-        ["leading no-break space", "\u00a0=1+1"],
-        ["leading ideographic space", "\u3000@SUM(A1:A2)"],
-        ["negative number", "-2.5"],
-        ["positive number", "+123"],
-        ["scientific number", "1e-6"],
-        // 前導不可見字元原本是手列的；零寬字元在 Unicode 裡不歸在空白，
-        // 於是 U+200B／U+200C／U+2060 整組落在防護之外。
-        ["leading zero width space", "\u200b=1+1"],
-        ["leading zero width non joiner", "\u200c=1+1"],
-        ["leading word joiner", "\u2060@SUM(A1:A2)"],
-        // 反向：帶單位的量測值不是公式。一份普通星盤匯出曾有九格被加上單引號，
-        // 南緯、南赤緯與負偏移全中，讀起來像資料壞了。
-        ["south declination", "-23\u00b003\u203230.38\u2033"],
-        ["negative celsius", "-4.5 \u2103"],
-      ],
-    }],
-    blocks: [],
-  });
-  const csv = Exporters.renderCsv(Exporters.createDocument(response, sections));
-
-  assert.match(csv, /,'=1\+1/);
-  assert.match(csv, /,'@SUM\(A1:A2\)/);
-  assert.match(csv, /,'-1\+2/);
-  assert.match(csv, /,'\t=1\+1/);
-  assert.match(csv, /"'\r=1\+1"/);
-  assert.match(csv, /,'   =1\+1/);
-  assert.ok(csv.includes("'\u00a0=1+1"));
-  assert.ok(csv.includes("'\u3000@SUM(A1:A2)"));
-  assert.match(csv, /,-2\.5/);
-  assert.match(csv, /,\+123/);
-  assert.match(csv, /,1e-6/);
-  assert.ok(csv.includes("'\u200b=1+1"), "zero width space slipped past the guard");
-  assert.ok(csv.includes("'\u200c=1+1"), "zero width non-joiner slipped past the guard");
-  assert.ok(csv.includes("'\u2060@SUM(A1:A2)"), "word joiner slipped past the guard");
-  assert.ok(csv.includes(",-23\u00b003\u203230.38\u2033"),
-    "a measured value carrying a unit was treated as a formula");
-  assert.ok(csv.includes(",-4.5 \u2103"),
-    "a measured value carrying a unit was treated as a formula");
-});
-
 test("JSON is lossless and Markdown is labelled as data rather than interpretation", () => {
-  const { response, sections } = fixture();
-  const document = Exporters.createDocument(response, sections);
+  const document = fixtureDocument();
   const parsed = JSON.parse(Exporters.renderJson(document));
-  const markdown = Exporters.renderMarkdown(document);
-
-  assert.equal(parsed.export_contract_version, "0.1.2");
-  assert.equal(
-    parsed.source_response.astronomical_data.bodies[0].longitude,
-    321.123456789
-  );
-  assert.equal(
-    parsed.source_response.calculation_dossier.input_receipt.location.longitude,
-    120.6736
-  );
+  assert.equal(parsed.export_contract_version, compatibilityFixture.accepted.export_contract_version);
+  assert.equal(parsed.source_response.astronomical_data.bodies[0].longitude, 321.123456789);
+  assert.equal(parsed.source_response.calculation_dossier.input_receipt.location.longitude, 120.2133);
   assert.equal("calculation_dossier" in parsed, false);
-  assert.match(markdown, /^# 古典西洋占星天文計算資料/m);
-  assert.match(markdown, /這是計算資料與重現收據，不是占星解讀/);
-  assert.match(markdown, /\| 木星, Jupiter \| 水瓶 21°07'24" \|/);
-  assert.match(markdown, /TEST_WARNING/);
-  assert.match(markdown, /application_chart_path_no_persistence/);
-});
-
-test("download names are generic and never embed birth data", () => {
-  for (const extension of ["csv", "json", "txt", "md"]) {
-    const name = Exporters.buildDownloadName(extension);
-    assert.equal(name, `classical-astrology-export.${extension}`);
-    assert.doesNotMatch(name, /1997|120|24/);
+  const markdown = Exporters.renderMarkdown(document);
+  for (const pattern of [
+    /^# 古典西洋占星天文計算資料/m, /這是計算資料與重現收據，不是占星解讀/,
+    /\| 木星, Jupiter \| 水瓶 21°07'24" \|/, /TEST_WARNING/, /hosting_supervisor/,
+  ]) {
+    assert.match(markdown, pattern);
   }
 });
 
-test("every download format has one tested renderer, MIME type, filename, and CSV BOM policy", () => {
-  const { response, sections } = fixture();
-  const document = Exporters.createDocument(response, sections);
-  const expected = {
-    csv: ["text/csv;charset=utf-8", "classical-astrology-export.csv"],
-    json: ["application/json;charset=utf-8", "classical-astrology-export.json"],
-    txt: ["text/plain;charset=utf-8", "classical-astrology-export.txt"],
-    md: ["text/markdown;charset=utf-8", "classical-astrology-export.md"],
-  };
-
-  for (const [format, [mimeType, filename]] of Object.entries(expected)) {
+test("every download format has one renderer, MIME type, generic filename, and CSV BOM policy", () => {
+  const document = fixtureDocument();
+  for (const [format, mimeType] of Object.entries({
+    csv: "text/csv;charset=utf-8", json: "application/json;charset=utf-8",
+    txt: "text/plain;charset=utf-8", md: "text/markdown;charset=utf-8",
+  })) {
     const artifact = Exporters.buildDownloadArtifact(document, format);
     assert.equal(artifact.mime_type, mimeType);
-    assert.equal(artifact.filename, filename);
+    // 檔名固定，從不帶出生資料。
+    assert.equal(artifact.filename, `classical-astrology-export.${format}`);
+    assert.equal(Exporters.buildDownloadName(format), artifact.filename);
     assert.ok(artifact.content.length > 100);
     assert.equal(artifact.content.startsWith("\uFEFF"), format === "csv");
   }
-  assert.throws(
-    () => Exporters.buildDownloadArtifact(document, "pdf"),
-    /不支援的匯出格式/
-  );
-});
-
-test("download action returns an explicit failure instead of claiming success", () => {
-  const { response, sections } = fixture();
-  const document = Exporters.createDocument(response, sections);
-
-  const outcome = Exporters.runDownloadAction(document, "json", () => {
+  assert.throws(() => Exporters.buildDownloadArtifact(document, "pdf"), /不支援的匯出格式/);
+  // 交付失敗時明說，不宣稱成功。
+  assert.deepEqual(Exporters.runDownloadAction(document, "json", () => {
     throw new Error("simulated Blob delivery failure");
-  });
-
-  assert.deepEqual(outcome, {
-    ok: false,
-    error_message: "simulated Blob delivery failure",
-  });
+  }), { ok: false, error_message: "simulated Blob delivery failure" });
 });
 
-// ── Markdown 匯出的自由文字必須逐點 escape ───────────────────
-// Markdown 允許 raw HTML，所以未經處理的自由文字在支援 HTML 的 renderer
-// 裡就是 active content。匯出物是 L1、會脫離脈絡流傳，因此 escaping 是
-// serializer 自己的契約責任，不能倚賴「目前 schema 剛好沒有自由文字」。
+// ── 每一種輸出各自中和自己的邊界 ─────────────────────────────────────
+// 匯出物會脫離脈絡流傳，所以中和是 serializer 自己的責任，不能倚賴「目前 schema
+// 剛好沒有自由文字」。下面三張表各管一種輸出：試算表（CSV 與區段複製的 TSV）、
+// Markdown、純文字（全文複製／TXT 與區段複製的欄列結構）。每張表都含相鄰控制：
+// 一個把所有東西都吃掉的 escaper 也會讓防護那一半通過。
 
+function cellsDocument(rows, response = fixture().response) {
+  return Exporters.createDocument(response, [{
+    id: "cells", title: "測試表", layer_label: "test", notes: [], blocks: [],
+    tables: [{ title: "cases", columns: ["case", "value"], rows }],
+  }]);
+}
+
+const csvField = (value) => (/[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value);
+const foldControls = (value) => value.replace(/[\t\r\n]+/g, " ");
+
+// [儲存格內容, 是否加公式撇號]。量測值是反向控制：一份普通星盤匯出曾有九格被加上撇號，
+// 南緯、南赤緯與負偏移全中。前導的零寬字元與 C0 控制字元不歸在空白，曾整組落在防護之外。
+const SPREADSHEET_CASES = [
+  ["=1+1", true], ["@SUM(A1:A2)", true], ["-1+2", true], ["=SUM(A1)", true],
+  ["\t=1+1", true], ["\r=1+1", true], ["   =1+1", true],
+  [" =1+1", true], ["　@SUM(A1:A2)", true],
+  ["​=1+1", true], ["‌=1+1", true], ["⁠@SUM(A1:A2)", true], ["​+cmd|calc", true],
+  ["\u0001=1+1", true], ["\u0000 @SUM(A1:A2)", true], ["\u007f-1+2", true], ["\u000b=cmd|' /C calc'!A0", true],
+  ["+0+m1", true], ["+1+m:m", true], ["-1+1%", true], ["+3%+A1", true],
+  ["-2.5", false], ["+123", false], ["1e-6", false], ["-23.4", false],
+  ["-23°03′30.38″", false], ["-4.5 ℃", false], ["-12.5%", false],
+  ["-1.5h", false], ["-0°00′00.10″", false],
+  ["<img src=x>", false], ["太陽", false],
+  // 全形的 ＝＋－＠ 同樣可能被試算表讀成公式前導；前面的零寬或
+  // 不換行空白也一樣。相鄰控制：不在開頭的全形符號、全形負號開頭的量測值（豁免只認 ASCII 正負號）。
+  ["＝1+1", true], ["＋1", true], ["－1", true], ["＠SUM(A1:A2)", true],
+  ["​＝1+1", true], ["\u00a0＝1+1", true], ["　＋cmd|calc", true],
+  ["－15°25′02.60″", true], ["太陽＝1", false], ["A－B", false],
+];
+
+test("試算表輸出（CSV、區段複製）在儲存格開頭中和公式；全文複製與 TXT 原樣，tab／換行折成空白", () => {
+  for (const [value, guarded] of SPREADSHEET_CASES) {
+    const label = JSON.stringify(value);
+    const document = cellsDocument([["v", value]]);
+    const neutralized = `${guarded ? "'" : ""}${value}`;
+    assert.ok(Exporters.renderCsv(document).includes(`,${csvField(neutralized)}`), `CSV ${label}`);
+    assert.ok(Exporters.buildDownloadArtifact(document, "csv").content.includes(`,${csvField(neutralized)}`),
+      `CSV 下載 ${label}`);
+    const sectionText = Exporters.renderSectionText(document.sections[0]);
+    assert.ok(sectionText.includes(`\nv\t${foldControls(neutralized)}`), `區段複製 ${label}`);
+    const plain = Exporters.renderPlainText(document);
+    assert.ok(plain.includes(`\nv\t${foldControls(value)}`), `全文複製 ${label}`);
+    if (guarded) assert.ok(!plain.includes(`\nv\t'`), `全文複製不帶撇號 ${label}`);
+  }
+});
+
+// Markdown 允許 raw HTML，未經處理的自由文字在支援 HTML 的 renderer 裡就是 active content。
+// 每一列：[名稱, 文件, 檢查範圍（行首字串；null＝整份）, 必須包含, 不得包含]。
 function hostileDocument(payload) {
   const { response } = fixture();
   return {
@@ -365,398 +335,371 @@ function hostileDocument(payload) {
   };
 }
 
-test("markdown escapes HTML metacharacters on every free-text surface", () => {
-  const markdown = Exporters.renderMarkdown(
-    hostileDocument('<img src=x onerror=alert(1)>')
-  );
+function sectionDocument(section, mutate = () => {}) {
+  const { response } = fixture();
+  mutate(response);
+  return Exporters.createDocument(response, [{ tables: [], notes: [], blocks: [], ...section }]);
+}
 
-  assert.ok(!markdown.includes("<img"), "raw <img 進入了 Markdown");
-  assert.ok(!markdown.includes("onerror=alert(1)>"), "raw HTML 尾端仍在");
+const HOSTILE_IMG = "<img src=x onerror=alert(1)>";
+const markdownCases = () => [
+  ["raw HTML 不進 Markdown", hostileDocument(HOSTILE_IMG), null, [], ["<img", "onerror=alert(1)>"]],
   // 四個面都要涵蓋：先前只有表格儲存格被討論，標題／備註／表格標題同樣沒防。
-  for (const surface of ["## 標題", "**層級：**", "> 備註", "### 表格標題"]) {
-    const line = markdown.split("\n").find((l) => l.startsWith(surface));
-    assert.ok(line, `找不到 ${surface} 這一行`);
-    assert.match(line, /&lt;img/, `${surface} 沒有被 escape`);
+  ...["## 標題", "**層級：**", "> 備註", "### 表格標題"].map((surface) => [
+    `${surface} 經過 escape`, hostileDocument(HOSTILE_IMG), surface, ["&lt;img"], [],
+  ]),
+  // & 必須先換，否則 `<` 會變成 `&amp;lt;`。
+  ["& 不重複編碼", hostileDocument("A & B < C"), null, ["A &amp; B &lt; C"], ["&amp;lt;"]],
+  // GFM 的延伸自動連結會把散文裡的 http(s)://、ftp:// 與 www. 變成可點的連結；
+  // 跳脫冒號與點之後渲染出的文字不變，但不再是連結。相鄰控制：不接 // 的冒號與一般的點不動。
+  ["純文字網址不被自動轉成連結", hostileDocument("見 https://evil.example/x 或 WWW.example.invalid、ftp://h/f"), null,
+    ["https\\://evil.example/x", "WWW\\.example.invalid", "ftp\\://h/f"], ["https://", "WWW.example", "ftp://"]],
+  ["時刻的冒號與小數點不跳脫（相鄰控制）", hostileDocument("12:30 與 22.9908、abcwww.x"), null,
+    ["12:30 與 22.9908、abcwww.x"], ["12\\:30", "22\\.9908", "abcwww\\."]],
+  ["表格儲存格只 escape 一次、裸 CR 不破表", hostileDocument("alpha|beta\\gamma\rnext"), null,
+    ["alpha\\|beta\\\\gamma<br>next"], ["alpha\\\\\\|", "\r"]],
+  ["一般文字與表格結構不變（相鄰控制）", hostileDocument("台南 22.9915"), null,
+    ["## 標題 台南 22.9915", "| 地點標籤 | 台南 22.9915 |", "| --- | --- |"], []],
+  // 文件末端的 dossier JSON code fence 內仍是原值（fence 內不解析 Markdown），這裡只查散文插值點。
+  ["authority 插值點經過 escape", sectionDocument({ id: "s", title: "s" }, (response) => {
+    response.calculation_dossier.authority = "<script>alert(1)</script> & more";
+  }), "- Authority:", ["&lt;script&gt;"], ["<script>"]],
+  // inline code span 內的反引號會提早關閉 span。
+  ["UTC 的 code span 避開內容裡的反引號", sectionDocument({ id: "s", title: "s" }, (response) => {
+    response.calculation_dossier.time_conversion.utc_iso_8601 = "1997`x`Z";
+  }), "- UTC:", [": ``"], []],
+  ["blocks 的 fence 依內容加長", sectionDocument({ id: "b", title: "測試區段", blocks: ["```\n偽造的區段外文字\n```"] }),
+    null, ["\n````text\n"], []],
+  ["一般 block 仍用三個反引號（相鄰控制）", sectionDocument({ id: "b", title: "一般區段", blocks: ["沒有反引號的內容"] }),
+    null, ["```text\n沒有反引號的內容\n```"], []],
+  ["reason_code 的 code span 不被內容裡的反引號提前關閉", sectionDocument({
+    id: "s", title: "測試區段", status: { state: "executed_unavailable", reason_code: "alpha`偽造散文`omega" },
+  }), "**狀態：**", ["``alpha`偽造散文`omega``"], []],
+  ["一般 reason_code 仍用單一反引號（相鄰控制）", sectionDocument({
+    id: "s", title: "測試區段", status: { state: "not_requested", reason_code: "house_not_requested" },
+  }), "**狀態：**", ["`house_not_requested`"], []],
+  ["表格儲存格的裸 CR 轉成 <br>", sectionDocument({
+    id: "t", title: "測試表", tables: [{ columns: ["A", "B"], rows: [["left\rright", "ok"]] }],
+  }), null, ["left<br>right"], ["\r"]],
+  ["CRLF 只產生一個 <br>", sectionDocument({
+    id: "t", title: "測試表", tables: [{ columns: ["A"], rows: [["a\r\nb"], ["c\nd"]] }],
+  }), null, ["a<br>b", "c<br>d"], ["<br><br>"]],
+  ["散文欄位的換行不能偽造標題", sectionDocument({
+    id: "h", title: "first\n# forged\tcell\rend", layer_label: "first\n# forged\tcell\rend",
+    notes: ["first\n# forged\tcell\rend"],
+  }), null, ["\\# forged"], ["\n# forged"]],
+  ["~~ 與行首清單／分隔線標記", sectionDocument({
+    id: "probe", title: "~~struck~~", layer_label: "- not a list",
+    notes: ["- item", "1. numbered", "---", "1) paren"],
+  }), null, ["\\~\\~struck\\~\\~", "> \\- item", "> 1\\. numbered", "> 1\\) paren", "\\- not a list"],
+  ["~~struck~~", "\n> - item\n", "\n> ---\n"]],
+];
+
+test("Markdown 在每一個自由文字插值點中和 HTML、反引號、換行與行首標記", () => {
+  for (const [name, document, linePrefix, includes, excludes] of markdownCases()) {
+    const markdown = Exporters.renderMarkdown(document);
+    const scope = linePrefix === null
+      ? markdown
+      : markdown.split("\n").find((line) => line.startsWith(linePrefix));
+    assert.ok(scope, `${name}：找不到 ${linePrefix} 這一行`);
+    includes.forEach((text) => assert.ok(scope.includes(text), `${name}：缺 ${JSON.stringify(text)}\n${scope}`));
+    excludes.forEach((text) => assert.ok(!scope.includes(text), `${name}：仍有 ${JSON.stringify(text)}\n${scope}`));
   }
 });
 
-test("markdown escaping does not double-encode an ampersand", () => {
-  // & 必須先換。若順序反了，`<` 會變成 `&amp;lt;`，使用者看到的是亂碼。
-  const markdown = Exporters.renderMarkdown(hostileDocument("A & B < C"));
-  assert.ok(markdown.includes("A &amp; B &lt; C"), markdown.slice(0, 400));
-  assert.ok(!markdown.includes("&amp;lt;"), "重複編碼");
-});
-
-test("markdown table cells are escaped exactly once across line endings", () => {
-  const markdown = Exporters.renderMarkdown(
-    hostileDocument("alpha|beta\\gamma\rnext")
-  );
-  assert.ok(markdown.includes("alpha\\|beta\\\\gamma<br>next"), markdown);
-  assert.ok(!markdown.includes("alpha\\\\\\|"), "pipe escape was escaped twice");
-  assert.ok(!markdown.includes("\r"), "bare CR escaped the table boundary");
-});
-
-test("markdown keeps legitimate text and table structure intact", () => {
-  // 反向控制：一個把所有東西都吃掉的 escaper 也會讓上面兩個測試通過。
-  const markdown = Exporters.renderMarkdown(hostileDocument("台中 24.1469"));
-  assert.match(markdown, /## 標題 台中 24\.1469/);
-  assert.match(markdown, /\| 地點標籤 \| 台中 24\.1469 \|/);
-  assert.ok(markdown.includes("| --- | --- |"), "表格分隔列不見了");
-});
-
-test("json and csv are unchanged by the markdown escaping", () => {
-  // 相鄰控制：escaping 只屬於 Markdown serializer，不得滲進其他格式。
-  const document = hostileDocument('<img src=x>');
-  assert.ok(Exporters.renderJson(document).includes('<img src=x>'),
-    "JSON 應保存原始位元組，不做 HTML escaping");
-  assert.ok(Exporters.renderCsv(document).includes('<img src=x>'),
-    "CSV 的守衛是 formula hardening，不是 HTML escaping");
-});
-
-// ══ Serializer 邊界中和 ══════════════════════════════════════════════
-//
-// 這兩組在目前的 schema 下都**不可觸發**：`authority` 是後端硬編碼字串，
-// 進入儲存格的自由文字也不含 tab 或換行。仍然測，是因為「目前 schema 沒有
-// 自由文字」不是未來也安全的理由。測試以
-// 合成的敵意輸入證明 serializer 自己就守得住，不依賴上游剛好乾淨。
-
-test("Markdown 的 authority 與 UTC 兩個插值點都經過 escape", () => {
-  const { response } = fixture();
-  response.calculation_dossier.authority = "<script>alert(1)</script> & more";
-  response.calculation_dossier.time_conversion.utc_iso_8601 = "1997`x`Z";
-  const markdown = Exporters.renderMarkdown(
-    Exporters.createDocument(response, [])
-  );
-
-  const authorityLine = markdown
-    .split("\n")
-    .find((line) => line.startsWith("- Authority:"));
-  assert.ok(authorityLine, "Authority 行不見了");
-  assert.ok(
-    authorityLine.includes("&lt;script&gt;"),
-    `authority 未經 escape 就插入 Markdown：${authorityLine}`
-  );
-  // 文件末端的 dossier JSON code fence 內仍是原值，那是刻意的：fence 內不解析
-  // Markdown，且那份 JSON 就是要逐字重現後端回應。這裡只查散文插值點。
-  assert.ok(!authorityLine.includes("<script>"));
-  // inline code span 內的反引號會提早關閉 span，後面的文字就落在 code 之外。
-  const utcLine = markdown
-    .split("\n")
-    .find((line) => line.startsWith("- UTC:"));
-  assert.ok(utcLine, "UTC 行不見了");
-  const fenceMatch = utcLine.match(/`+/);
-  assert.ok(
-    fenceMatch[0].length >= 2,
-    `UTC 的 code span 沒有避開內容裡的反引號：${utcLine}`
-  );
-});
-
-test("blocks 的 fence 依內容加長，內容撐不破它", () => {
-  const { response } = fixture();
-  const document = Exporters.createDocument(response, [
-    {
-      id: "hostile",
-      title: "測試區段",
-      blocks: ["```\n偽造的區段外文字\n```"],
-    },
-  ]);
-  const markdown = Exporters.renderMarkdown(document);
-
-  const lines = markdown.split("\n");
-  const opening = lines.findIndex((line) => /^`{4,}text$/.test(line));
-  assert.ok(
-    opening >= 0,
-    "含 ``` 的 block 仍使用三個反引號的 fence，內容可以逃出去"
-  );
-});
-
-test("一般內容仍使用三個反引號（相鄰控制）", () => {
-  const document = Exporters.createDocument(fixture().response, [
-    {
-      id: "plain",
-      title: "一般區段",
-      blocks: ["沒有反引號的內容"],
-    },
-  ]);
-  const markdown = Exporters.renderMarkdown(document);
-  assert.ok(markdown.includes("```text\n沒有反引號的內容\n```"));
-});
-
-test("TSV 在儲存格邊界中和 tab 與換行", () => {
-  const section = {
-    id: "tsv",
-    title: "測試表",
-    tables: [
-      {
-        title: "含惡意字元",
-        columns: ["欄一", "欄二"],
-        rows: [["a\tb", "c\nd"]],
-      },
-    ],
-  };
-  const document = Exporters.createDocument(fixture().response, [section]);
-  const text = Exporters.renderSectionText(document.sections[0]);
-
-  const dataLine = text
-    .split("\n")
-    .find((line) => line.startsWith("a"));
-  assert.ok(dataLine, "資料列不見了");
-  assert.equal(
-    dataLine.split("\t").length,
-    2,
-    `儲存格內的 tab 多切出一欄：${JSON.stringify(dataLine)}`
-  );
-  assert.ok(
-    !dataLine.includes("\n"),
-    "儲存格內的換行把一列拆成兩列"
-  );
-});
-
-test("不含這些字元的表格逐字不變（相鄰控制）", () => {
-  const section = {
-    id: "clean",
-    title: "測試表",
-    tables: [
-      {
-        columns: ["天體", "黃經"],
-        rows: [["太陽", "23°26′31.79″"]],
-      },
-    ],
-  };
-  const document = Exporters.createDocument(fixture().response, [section]);
-  const text = Exporters.renderSectionText(document.sections[0]);
-  assert.ok(text.includes("天體\t黃經"));
-  assert.ok(text.includes("太陽\t23°26′31.79″"));
-});
-
-// ══ 部分覆蓋不算覆蓋 ═══════════════════════════════════════════════════
-//
-// 兩組都在守同一件事：一個逐點套用的中和規則，只要漏掉任何一個插值點或
-// 任何一個控制字元，剩下的覆蓋率不會讓輸出變安全。
-
-test("reason_code 的 code span 不會被內容裡的反引號提前關閉", () => {
-  const { response } = fixture();
-  const document = Exporters.createDocument(response, [
-    {
-      id: "s",
-      title: "測試區段",
-      status: {
-        state: "executed_unavailable",
-        reason_code: "alpha`偽造散文`omega",
-      },
-      tables: [],
-      notes: [],
-      blocks: [],
-    },
-  ]);
-  const line = Exporters.renderMarkdown(document)
-    .split("\n")
-    .find((row) => row.startsWith("**狀態：**"));
-
-  assert.ok(line, "狀態行不見了");
-  // 反引號成對才代表 span 沒有被撐開；奇數個必然有一段內容落在 span 之外。
-  const backticks = (line.match(/`/g) || []).length;
-  assert.equal(
-    backticks % 2,
-    0,
-    `code span 被內容裡的反引號提前關閉：${line}`
-  );
-  assert.ok(!/`偽造散文`/.test(line.replace(/^.*?（原因代碼 /, "")) ||
-    /``+/.test(line), `分隔沒有加長：${line}`);
-});
-
-test("一般 reason_code 仍使用單一反引號（相鄰控制）", () => {
-  const { response } = fixture();
-  const document = Exporters.createDocument(response, [
-    {
-      id: "s",
-      title: "測試區段",
-      status: { state: "not_requested", reason_code: "house_not_requested" },
-      tables: [],
-      notes: [],
-      blocks: [],
-    },
-  ]);
-  const line = Exporters.renderMarkdown(document)
-    .split("\n")
-    .find((row) => row.startsWith("**狀態：**"));
-  assert.ok(line.includes("`house_not_requested`"), line);
-});
-
-test("單獨的 CR 也在儲存格邊界被中和", () => {
-  const { response } = fixture();
-  const document = Exporters.createDocument(response, [
-    {
-      id: "t",
-      title: "測試表",
-      tables: [{ columns: ["A", "B"], rows: [["left\rright", "ok"]] }],
-      notes: [],
-      blocks: [],
-    },
-  ]);
-  const text = Exporters.renderSectionText(document.sections[0]);
-
-  // 試算表把裸 CR 當成 record separator，所以它自己就能拆列。
-  assert.ok(!text.includes("\r"), `裸 CR 仍在輸出中：${JSON.stringify(text)}`);
-  const dataLine = text.split("\n").find((row) => row.startsWith("left"));
-  assert.equal(dataLine.split("\t").length, 2, dataLine);
-});
-
-test("CRLF 與 LF 仍如既有行為被折成空白（相鄰控制）", () => {
-  const { response } = fixture();
-  const document = Exporters.createDocument(response, [
-    {
-      id: "t",
-      title: "測試表",
-      tables: [{ columns: ["A"], rows: [["a\r\nb"], ["c\nd"]] }],
-      notes: [],
-      blocks: [],
-    },
-  ]);
-  const text = Exporters.renderSectionText(document.sections[0]);
-  assert.ok(text.includes("a b"), text);
-  assert.ok(text.includes("c d"), text);
-});
-
-test("E-023：Markdown 表格儲存格的裸 CR 也轉成 <br>", () => {
-  const { response } = fixture();
-  const document = Exporters.createDocument(response, [
-    {
-      id: "t",
-      title: "測試表",
-      tables: [{ columns: ["A", "B"], rows: [["left\rright", "ok"]] }],
-      notes: [],
-      blocks: [],
-    },
-  ]);
-  const row = Exporters.renderMarkdown(document)
-    .split("\n")
-    .find((line) => line.includes("left"));
-
-  assert.ok(row, "資料列不見了");
-  assert.ok(!row.includes("\r"), `裸 CR 仍在表格列中：${JSON.stringify(row)}`);
-  assert.ok(row.includes("left<br>right"), row);
-});
-
-test("E-023：CRLF 只產生一個 <br>（相鄰控制）", () => {
-  const { response } = fixture();
-  const document = Exporters.createDocument(response, [
-    {
-      id: "t",
-      title: "測試表",
-      tables: [{ columns: ["A"], rows: [["a\r\nb"], ["c\nd"]] }],
-      notes: [],
-      blocks: [],
-    },
-  ]);
-  const markdown = Exporters.renderMarkdown(document);
-  assert.ok(markdown.includes("a<br>b"), "CRLF 應折成單一 <br>");
-  assert.ok(markdown.includes("c<br>d"));
-  assert.ok(!markdown.includes("<br><br>"), "CRLF 被算成兩次換行");
-});
-
-test("serializer boundaries contain control and Markdown structure injection on every prose field", () => {
-  const { response } = fixture();
-  const hostile = "first\n# forged\tcell\rend";
-  const document = Exporters.createDocument(response, [{
-    id: "hostile",
-    title: hostile,
-    layer_label: hostile,
-    notes: [hostile],
-    tables: [],
-    blocks: [],
-  }]);
-
-  const plain = Exporters.renderPlainText(document);
-  assert.ok(!plain.includes("\n# forged"), plain);
-  assert.ok(!plain.includes("\r"), plain);
-  const markdown = Exporters.renderMarkdown(document);
-  assert.ok(!markdown.includes("\n# forged"), markdown);
-  assert.ok(markdown.includes("\\# forged"), markdown);
-});
-
-test("chart-data-only export omits receipts and trace while detailed mode retains them", () => {
-  const { response } = fixture();
-  response.calculation_dossier.warnings.push({
-    code: "provisional_method_result",
-    message: "internal-method-warning",
+test("純文字與區段複製守住欄列結構；JSON 與 CSV 不做 HTML escaping", () => {
+  const forged = (response) => response.calculation_dossier.warnings.push({
+    code: "X\r\n## forged",
+    message: "line one\n注意［FAKE］: line two\rend",
   });
-  const document = Exporters.createDocument(response, [
-    {
-      id: "bodies", title: "天體", tables: [], notes: ["人類可讀說明"], blocks: [],
-    },
-    { id: "trace", title: "逐步計算軌跡", tables: [], notes: [], blocks: ["secret-trace"] },
-    { id: "receipt", title: "收據", tables: [], notes: [], blocks: ["secret-receipt"] },
-  ]);
-
-  const compact = Exporters.buildDownloadArtifact(document, "json", "chart_data_only");
-  const detailed = Exporters.buildDownloadArtifact(document, "json", "reproducibility_detail");
-  assert.ok(!compact.content.includes("secret-trace"));
-  assert.ok(!compact.content.includes("secret-receipt"));
-  assert.ok(!compact.content.includes("calculation_dossier"));
-  assert.ok(!compact.content.includes("internal-method-warning"));
-  assert.ok(compact.content.includes("人類可讀說明"));
-  assert.ok(detailed.content.includes("secret-trace"));
-  assert.ok(detailed.content.includes("internal-method-warning"));
-  assert.ok(detailed.content.includes("calculation_dossier"));
+  const hostileProse = sectionDocument({
+    id: "h", title: "first\n# forged\tcell\rend", layer_label: "first\n# forged\tcell\rend",
+    notes: ["first\n# forged\tcell\rend"],
+  });
+  const sectionText = (rows) => Exporters.renderSectionText(cellsDocument(rows).sections[0]);
+  const cases = [
+    // 儲存格內的 tab 會多切一欄、換行會拆列，而貼進試算表的人不會察覺錯位；裸 CR 本身就是列界。
+    ["tab 與 LF", sectionText([["a\tb", "c\nd"]]), ["\na b\tc d"], ["a\tb", "c\nd"]],
+    ["單獨的 CR", sectionText([["left\rright", "ok"]]), ["\nleft right\tok"], ["\r"]],
+    ["CRLF 與 LF 各折成一個空白", sectionText([["a\r\nb", "c\nd"]]), ["\na b\tc d"], []],
+    ["不含這些字元的儲存格逐字不變", sectionText([["太陽", "23°26′31.79″"]]), ["case\tvalue", "\n太陽\t23°26′31.79″"], []],
+    ["散文欄位", Exporters.renderPlainText(hostileProse), [], ["\n# forged", "\r"]],
+    ["warning 不能偽造紀錄", Exporters.renderPlainText(sectionDocument({ id: "s", title: "s" }, forged)),
+      [], ["\n## forged", "\n注意［FAKE］", "\r"]],
+    ["運算結果模式的 warning", Exporters.renderPlainText(Exporters.projectOutputDocument(
+      sectionDocument({ id: "s", title: "s" }, forged), "chart_data_only")), [], ["\n注意［FAKE］", "\r"]],
+    // escaping 只屬於 Markdown serializer：JSON 保存原始位元組，CSV 的守衛是公式中和。
+    ["JSON 不做 HTML escaping", Exporters.renderJson(hostileDocument("<img src=x>")), ["<img src=x>"], []],
+    ["CSV 不做 HTML escaping", Exporters.renderCsv(hostileDocument("<img src=x>")), ["<img src=x>"], []],
+  ];
+  for (const [name, output, includes, excludes] of cases) {
+    includes.forEach((text) => assert.ok(output.includes(text), `${name}：缺 ${JSON.stringify(text)}`));
+    excludes.forEach((text) => assert.ok(!output.includes(text), `${name}：仍有 ${JSON.stringify(text)}`));
+  }
 });
 
-test("both detail modes preserve core chart data across copy and every download format", () => {
-  const { response } = fixture();
-  const document = Exporters.createDocument(response, [
-    {
-      id: "bodies",
-      title: "天體",
-      tables: [],
-      notes: ["core-chart-data"],
-      blocks: [],
-    },
-    {
-      id: "trace",
-      title: "逐步計算軌跡",
-      tables: [],
-      notes: [],
-      blocks: ["reproducibility-trace"],
-    },
-    {
-      id: "receipt",
-      title: "收據",
-      tables: [],
-      notes: [],
-      blocks: ["reproducibility-receipt"],
-    },
-  ]);
+// UTC 偏移曾經印成「+08:00:00」（試算表讀成公式，CSV 加撇號）與「−04:00:00」
+// （U+2212，不加撇號），同一欄有的帶撇號、有的不帶，負號也與度分秒的 ASCII「-」不一致。偏移改寫成
+// 「UTC+08:00」：不以正負號開頭，就不必中和，每一種輸出都是同一個字串。正確答案由回應的
+// utc_offset_hours 以獨立的算法換算（整數秒、四捨五入），不讀 view-model 的格式函式。
+function expectedOffset(hours) {
+  const seconds = Math.round(Math.abs(hours) * 3600);
+  const parts = [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60];
+  const shown = parts[2] ? parts : parts.slice(0, 2);
+  return `UTC${hours < 0 ? "-" : "+"}${shown.map((part) => String(part).padStart(2, "0")).join(":")}`;
+}
 
-  for (const format of ["json", "csv", "md", "txt"]) {
-    const dataOnly = Exporters.buildDownloadArtifact(
-      document,
-      format,
-      "chart_data_only",
-    ).content;
-    const detailed = Exporters.buildDownloadArtifact(
-      document,
-      format,
-      "reproducibility_detail",
-    ).content;
-
-    assert.ok(dataOnly.includes("core-chart-data"), `${format} dropped chart data`);
-    assert.ok(detailed.includes("core-chart-data"), `${format} dropped detailed chart data`);
-    assert.ok(!dataOnly.includes("reproducibility-trace"), `${format} leaked trace`);
-    assert.ok(!dataOnly.includes("reproducibility-receipt"), `${format} leaked receipt`);
-    assert.ok(detailed.includes("reproducibility-trace"), `${format} lost trace`);
-    assert.ok(detailed.includes("reproducibility-receipt"), `${format} lost receipt`);
+test("UTC 偏移在每一種輸出都是同一個「UTC±hh:mm」字串，不以正負號開頭、不帶公式撇號", (t) => {
+  const relatives = ["page/chart-exact.json", "page/chart-repeated-hour-fold.json"]
+    .map((name) => `frontend/tests/fixtures/${name}`);
+  const omitted = relatives.filter((relative) => publicationOmits(relative));
+  if (omitted.length) {
+    t.skip(`後端回應 fixture 不在公開匯出 allowlist（${omitted.join("、")}）`);
+    return;
   }
+  const ViewModel = require("../zh-TW/view-model.js");
+  const signs = new Set();
+  for (const name of ["chart-exact", "chart-repeated-hour-fold"]) {
+    const page = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "page", `${name}.json`), "utf8"));
+    const hours = page.astronomical_data.time.utc_offset_hours;
+    signs.add(Math.sign(hours));
+    const offset = expectedOffset(hours);
+    const document = Exporters.createDocument(page, ViewModel.buildSections(page));
+    const dataOnly = Exporters.OUTPUT_MODES.chart_data_only;
+    const render = (format) => Exporters.buildDownloadArtifact(document, format, dataOnly).content;
+    const timeSection = document.sections.find((section) => section.id === "time");
+    assert.ok(render("txt").includes(`UTC 偏移\t${offset}`), `${name} TXT 必須印出 ${offset}`);
+    assert.ok(Exporters.renderSectionText(timeSection).includes(`UTC 偏移\t${offset}`), `${name} 區段複製`);
+    // 長格式：時間表的「UTC 偏移」那一列，其「數值」欄（同一區段、表、列）。
+    const csvRows = parseCsvRows(render("csv"));
+    const offsetCells = csvRows.filter((row) => row[0] === "time" && row[4] === "項目" && row[5] === "UTC 偏移")
+      .map((label) => csvRows.find((row) => row[0] === "time" && row[2] === label[2] && row[3] === label[3] && row[4] === "數值")[5]);
+    assert.deepEqual(offsetCells, [offset], `${name} CSV 的 UTC 偏移格`);
+    assert.match(render("md"), new RegExp(`\\| UTC 偏移 \\| ${offset.replace("+", "\\\\\\+")} \\|`), `${name} Markdown`);
+  }
+  assert.deepEqual([...signs].sort(), [-1, 1], "fixture 必須涵蓋正負兩種偏移");
+});
 
-  const dataOnlyCopy = Exporters.renderPlainText(
-    Exporters.projectOutputDocument(document, "chart_data_only"),
+// 「運算結果」不得刪掉未請求的區段（讀者才知道那一區是沒請求、不是不存在），
+// 驗算區段與收據只在「運算結果＋驗算資料」。
+test("both detail modes keep chart data across copy and every format; only the detailed one carries trace and receipt", () => {
+  const { response } = fixture();
+  response.calculation_dossier.warnings.push({ code: "provisional_method_result", message: "internal-method-warning" });
+  const document = Exporters.createDocument(response, [
+    { id: "bodies", title: "天體", tables: [], notes: ["core-chart-data"], blocks: [] },
+    {
+      id: "lots", title: "阿拉伯點", status: { state: "not_requested", reason_code: "option_not_requested" },
+      tables: [], notes: ["本次未請求阿拉伯點。"], blocks: [],
+    },
+    { id: "trace", title: "逐步計算軌跡", tables: [], notes: [], blocks: ["reproducibility-trace"] },
+    { id: "receipt", title: "收據", tables: [], notes: [], blocks: ["reproducibility-receipt"] },
+  ]);
+  const ids = Exporters.projectOutputDocument(document, "chart_data_only").sections.map((s) => s.id);
+  assert.ok(ids.includes("lots") && !ids.includes("trace"), ids.join(","));
+  const renderers = {
+    copy: (mode) => Exporters.renderPlainText(Exporters.projectOutputDocument(document, mode)),
+    ...Object.fromEntries(["json", "csv", "md", "txt"].map((format) => [
+      format, (mode) => Exporters.buildDownloadArtifact(document, format, mode).content,
+    ])),
+  };
+  for (const [format, render] of Object.entries(renderers)) {
+    const dataOnly = render("chart_data_only");
+    const detailed = render("reproducibility_detail");
+    assert.ok(dataOnly.includes("core-chart-data") && detailed.includes("core-chart-data"), `${format} dropped chart data`);
+    for (const technical of ["reproducibility-trace", "reproducibility-receipt"]) {
+      assert.ok(!dataOnly.includes(technical), `${format} leaked ${technical}`);
+      assert.ok(detailed.includes(technical), `${format} lost ${technical}`);
+    }
+    assert.ok(dataOnly.includes("阿拉伯點"), `${format} 沒有列出未請求的區段`);
+    if (format !== "copy") {
+      const marker = format === "csv" || format === "json" ? "not_requested" : "未請求";
+      assert.ok(dataOnly.includes(marker), `${format} 沒有帶出未請求狀態`);
+    }
+  }
+  const compact = renderers.json("chart_data_only");
+  const detailedJson = renderers.json("reproducibility_detail");
+  for (const internal of ["calculation_dossier", "internal-method-warning"]) {
+    assert.ok(!compact.includes(internal), internal);
+    assert.ok(detailedJson.includes(internal), internal);
+  }
+});
+
+test("JSON 匯出把 -0 寫成 0（值相等、非位元相等）", () => {
+  const { response } = fixture();
+  response.astronomical_data = { ...(response.astronomical_data || {}), negative_zero_probe: -0 };
+  const json = Exporters.renderJson(Exporters.createDocument(response, []));
+  assert.ok(json.includes('"negative_zero_probe": 0'), json.slice(0, 400));
+  assert.ok(!json.includes('"negative_zero_probe": -0'), json.slice(0, 400));
+});
+
+test("printExpansion 展開每個 details 並在 restore 時還原原狀", () => {
+  const details = [{ open: false }, { open: true }, { open: false }];
+  const restore = Exporters.printExpansion(details);
+  assert.deepEqual(details.map((d) => d.open), [true, true, true]);
+  restore();
+  assert.deepEqual(details.map((d) => d.open), [false, true, false]);
+  // 冪等：afterprint 可能被觸發兩次。
+  restore();
+  assert.deepEqual(details.map((d) => d.open), [false, true, false]);
+});
+
+
+// 版本相容但結構被截斷的回應要大聲拒絕。判準由後端自己的單一狀態產生器給：calculation_policy.option_states 裡 executed=true、
+// available=true 的選項，其 response_paths 必須在回應裡真的有內容。畫面不得把「後端說算了、
+// 容器卻不見」渲染成「少了幾區」的正常結果。
+test("option_states 說已算出的模組容器缺席時 createDocument 拒絕", (t) => {
+  const responseFixtures = ["chart-approximate-hour", "chart-exact", "chart-date-only"];
+  const omitted = responseFixtures
+    .map((name) => `frontend/tests/fixtures/${name}.json`)
+    .filter((relativePath) => publicationOmits(relativePath));
+  if (omitted.length) {
+    t.skip(`後端回應 fixture 不在公開匯出 allowlist（${omitted.join("、")}）；此樹無法以真實回應驗證截斷拒絕`);
+    return;
+  }
+  const load = (name) => JSON.parse(
+    fs.readFileSync(path.join(__dirname, "fixtures", `${name}.json`), "utf8")
   );
-  const detailedCopy = Exporters.renderPlainText(
-    Exporters.projectOutputDocument(document, "reproducibility_detail"),
+  const real = load("chart-approximate-hour");
+  assert.doesNotThrow(() => Exporters.createDocument(real, []));
+  for (const [label, mutate] of [
+    ["容器整個不見", (response) => { delete response.derived_methods.lots; }],
+    ["容器是 null", (response) => { response.astronomical_data.horizon_events = null; }],
+    ["容器是空物件", (response) => { response.derived_methods.void_of_course = {}; }],
+    ["巢狀路徑不見", (response) => { delete response.astronomical_data.lunar_events.eclipses; }],
+    ["整層不見", (response) => { delete response.derived_methods; }],
+  ]) {
+    const truncated = structuredClone(real);
+    mutate(truncated);
+    assert.throws(() => Exporters.createDocument(truncated, []), /結構不完整/, label);
+  }
+  // 相鄰控制：沒有請求的模組容器為空是正常形狀，不得被當成截斷。
+  for (const name of responseFixtures.filter((candidate) => candidate !== "chart-approximate-hour")) {
+    assert.doesNotThrow(() => Exporters.createDocument(load(name), []), name);
+  }
+});
+
+// 預設「運算結果」匯出必須說出經度的參考框架。頁面投影曾經丟掉 computation_mode，框架只留在驗算資料的「計算政策」收據裡；
+// 恆星黃道的盤匯出後與回歸黃道無從分辨。基線 03701324 的運算結果 JSON 在
+// source_response 頂層帶著 computation_mode，這裡要求同一個位置、同一個值。
+test("恆星／回歸黃道的預設匯出四種格式都寫出黃道，JSON 帶 computation_mode", (t) => {
+  const names = ["frontend/tests/fixtures/chart-exact.json", "frontend/tests/fixtures/page/chart-exact.json"];
+  const omitted = names.filter((relativePath) => publicationOmits(relativePath));
+  if (omitted.length) {
+    t.skip(`後端回應 fixture 不在公開匯出 allowlist（${omitted.join("、")}）`);
+    return;
+  }
+  const ViewModel = require("../zh-TW/view-model.js");
+  const load = (relative) => JSON.parse(
+    fs.readFileSync(path.join(__dirname, "fixtures", relative), "utf8")
   );
-  assert.ok(dataOnlyCopy.includes("core-chart-data"));
-  assert.ok(!dataOnlyCopy.includes("reproducibility-trace"));
-  assert.ok(!dataOnlyCopy.includes("reproducibility-receipt"));
-  assert.ok(detailedCopy.includes("core-chart-data"));
-  assert.ok(detailedCopy.includes("reproducibility-trace"));
-  assert.ok(detailedCopy.includes("reproducibility-receipt"));
+  const tropicalPage = load("page/chart-exact.json");
+  const tropical = load("chart-exact.json");
+  assert.deepEqual(tropicalPage.computation_mode, tropical.computation_mode,
+    "頁面投影必須保留與完整回應相同的 computation_mode");
+  // 恆星黃道：同一份頁面回應換上恆星黃道的 computation_mode（後端回應裡的形狀）。
+  const siderealPage = structuredClone(tropicalPage);
+  siderealPage.computation_mode = { ...tropicalPage.computation_mode, zodiac: "sidereal" };
+  for (const [name, page, zodiac, ayanamsaShown] of [
+    ["sidereal", siderealPage, "sidereal", true],
+    ["tropical", tropicalPage, "tropical", false],
+  ]) {
+    const document = Exporters.createDocument(page, ViewModel.buildSections(page));
+    const render = (format) => Exporters.buildDownloadArtifact(
+      document, format, Exporters.OUTPUT_MODES.chart_data_only
+    ).content;
+
+    const txt = render("txt");
+    const md = render("md");
+    const csv = render("csv");
+    const json = JSON.parse(render("json"));
+    const ayanamsa = page.computation_mode.ayanamsa;
+    assert.ok(txt.includes(`計算模式: 黃道 ${zodiac}；`), `${name} TXT：${txt.slice(0, 300)}`);
+    assert.ok(md.includes(`- 計算模式: 黃道 ${zodiac}；`), `${name} Markdown：${md.slice(0, 300)}`);
+    assert.ok(csv.includes(`_computation_mode,計算模式,計算模式,1,黃道,${zodiac},zodiac`),
+      `${name} CSV`);
+    // Markdown 把 `_` 跳脫成 `\_`（escapeMarkdownText），渲染後才是原代碼。
+    for (const text of [txt, md.replace(/\\_/g, "_"), csv]) {
+      assert.equal(text.includes(ayanamsa), ayanamsaShown,
+        `${name}：歲差校正只在恆星黃道下印出`);
+    }
+    assert.deepEqual(json.source_response.computation_mode, page.computation_mode,
+      `${name} JSON：source_response.computation_mode 與回應同位置同值`);
+    // 純文字複製與 TXT 下載同一份位元組（契約：Full copy／TXT identical）。
+    assert.equal(
+      Exporters.renderPlainText(Exporters.projectOutputDocument(document, "chart_data_only")),
+      txt
+    );
+  }
+});
+
+// RFC 4180 讀回（CRLF 列界、雙引號跳脫）；BOM 只在下載前綴，renderCsv 本身沒有。
+function parseCsvRows(content) {
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let quoted = false;
+  const body = content.replace(/^﻿/, "");
+  for (let index = 0; index < body.length; index += 1) {
+    const char = body[index];
+    if (quoted) {
+      if (char === '"' && body[index + 1] === '"') { cell += '"'; index += 1; }
+      else if (char === '"') quoted = false;
+      else cell += char;
+    } else if (char === '"') quoted = true;
+    else if (char === ",") { row.push(cell); cell = ""; }
+    else if (char === "\r" && body[index + 1] === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; index += 1; }
+    else cell += char;
+  }
+  row.push(cell);
+  rows.push(row);
+  return rows;
+}
+
+// 匯出自己的結構字彙（CSV 表頭、表名與欄位名、注意事項的標題）是讀者看的標籤，一律中文；
+// 閉集代碼（區段狀態、原因、注意事項代碼、計算模式的鍵）只放在 CSV 的「代碼」欄。資料表格的
+// 標題與欄名是 view-model 的內容，不在此限；Dossier 的 JSON 路徑列是機器可讀的收據本身。
+const SNAKE_CASE = /\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b/;
+const ASCII_WORD = /^[A-Za-z][A-Za-z ]*$/;
+test("匯出的結構字彙是中文，閉集代碼另放在代碼欄（兩種模式、真實回應）", (t) => {
+  const names = ["frontend/tests/fixtures/chart-heliocentric-all.json", "frontend/tests/fixtures/page/chart-heliocentric-all.json"];
+  const omitted = names.filter((relativePath) => publicationOmits(relativePath));
+  if (omitted.length) {
+    t.skip(`後端回應 fixture 不在公開匯出 allowlist（${omitted.join("、")}）`);
+    return;
+  }
+  const ViewModel = require("../zh-TW/view-model.js");
+  const load = (relative) => JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", relative), "utf8"));
+  for (const [mode, response] of [
+    ["chart_data_only", load("page/chart-heliocentric-all.json")],
+    ["reproducibility_detail", load("chart-heliocentric-all.json")],
+  ]) {
+    const document = Exporters.createDocument(response, ViewModel.buildSections(response));
+    const projected = Exporters.projectOutputDocument(document, mode);
+    const dataTables = new Set(projected.sections.flatMap((section) => section.tables.map((table) => table.title)));
+    const render = (format) => Exporters.buildDownloadArtifact(document, format, mode).content;
+    const rows = parseCsvRows(render("csv"));
+    assert.deepEqual(rows[0], ["區段代碼", "區段", "表", "列", "欄位", "值", "代碼"], `${mode} CSV 表頭`);
+    const structural = rows.slice(1).filter((row) => row[0] !== "_dossier" && !dataTables.has(row[2]));
+    assert.ok(structural.length > 0, `${mode}：沒有結構列可檢查`);
+    for (const row of structural) {
+      for (const [column, value] of [["表", row[2]], ["欄位", row[4]]]) {
+        assert.ok(!SNAKE_CASE.test(value) && !ASCII_WORD.test(value), `${mode} CSV ${column}「${value}」：${row.join(",")}`);
+      }
+    }
+    // 狀態列：值是中文標籤、代碼欄是閉集代碼；兩者對應同一個區段狀態。
+    const statusRows = structural.filter((row) => row[2] === "狀態" && row[4] === "狀態");
+    assert.ok(statusRows.length > 0, `${mode}：沒有狀態列`);
+    statusRows.forEach((row) => {
+      const section = projected.sections.find((candidate) => candidate.id === row[0]);
+      assert.deepEqual([row[5], row[6]], [section.status.label, section.status.state], row.join(","));
+    });
+    // 注意事項：值是訊息、代碼欄是代碼。
+    const warnings = structural.filter((row) => row[0] === "_warnings");
+    assert.deepEqual(warnings.map((row) => [row[5], row[6]]),
+      JSON.parse(render("json")).warnings.map((warning) => [warning.message, warning.code]));
+    for (const format of ["txt", "md"]) {
+      assert.doesNotMatch(render(format), /^(?:[-#]+ )?Warnings?\b/m, `${mode} ${format} 仍有英文的注意事項標記`);
+    }
+    assert.match(render("md"), /^## 注意事項$/m, `${mode} Markdown 的注意事項標題`);
+  }
 });

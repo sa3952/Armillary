@@ -1,7 +1,7 @@
 # PEP 517 build backend trust root for offline source reconstruction.
 # These tools are not installed in the final runtime image.  They cover the
 # build-system requirements declared by every production/development sdist.
-ast-serialize==0.8.0
+ast-serialize==0.12.1
 flit-core>=4.0.2,<5
 hatch-fancy-pypi-readme>=22.5.0
 hatchling>=1.32,<2
@@ -15,4 +15,4 @@ types-setuptools
 typing-extensions==4.16.0
 uv-dynamic-versioning>=0.14.1,<1
 wheel>=0.48,<0.49
-librt==0.15.0
+librt==0.16.0

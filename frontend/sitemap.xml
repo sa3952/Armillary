@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://projectarmillary.com/zh-TW/</loc></url>
-  <url><loc>https://projectarmillary.com/zh-TW/calculate</loc></url>
-  <url><loc>https://projectarmillary.com/zh-TW/features</loc></url>
-  <url><loc>https://projectarmillary.com/zh-TW/methods</loc></url>
-  <url><loc>https://projectarmillary.com/zh-TW/validation</loc></url>
-  <url><loc>https://projectarmillary.com/zh-TW/trust</loc></url>
-  <url><loc>https://projectarmillary.com/zh-TW/security</loc></url>
-  <url><loc>https://projectarmillary.com/zh-TW/about</loc></url>
-  <url><loc>https://projectarmillary.com/zh-TW/contact</loc></url>
-  <url><loc>https://projectarmillary.com/zh-TW/legal/privacy</loc></url>
-  <url><loc>https://projectarmillary.com/zh-TW/legal/terms</loc></url>
-  <url><loc>https://projectarmillary.com/zh-TW/legal/copyright</loc></url>
+  <url><loc>https://projectarmillary.com/zh-TW/</loc><lastmod>2026-10-10</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/calculate</loc><lastmod>2026-10-10</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/features</loc><lastmod>2026-10-10</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/methods</loc><lastmod>2026-10-10</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/validation</loc><lastmod>2026-10-05</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/trust</loc><lastmod>2026-10-10</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/security</loc><lastmod>2026-10-10</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/about</loc><lastmod>2026-10-10</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/contact</loc><lastmod>2026-10-07</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/roadmap</loc><lastmod>2026-10-10</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog</loc><lastmod>2026-10-10</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/legal/privacy</loc><lastmod>2026-10-10</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/legal/terms</loc><lastmod>2026-10-10</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/legal/copyright</loc><lastmod>2026-10-10</lastmod></url>
 </urlset>

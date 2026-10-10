@@ -1,516 +1,288 @@
+"""The hosted application through TestClient: safety, refusals, pages, asset delivery."""
+
 from __future__ import annotations
 
+import gzip
+import hashlib
 import json
-import os
 from pathlib import Path
 import re
-import subprocess
-import sys
 
 from fastapi.testclient import TestClient
 import pytest
 from app.frontend_assets import discover_source_assets
 from app.main import create_app
 from app.runtime_static import RuntimeStaticFiles
-from app.settings import AppProfile, AppSettings, load_settings
-from tests.backend import minimal_chart_payload
+from app.settings import AppSettings, load_settings
+from tests.backend import synthetic_birth_payload as _payload
 
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2] / "backend"
+_FRONTEND_ROOT = BACKEND_ROOT.parent / "frontend"
+_HEALTH = {"status": "ok", "ready": True, "readiness_scope": "process_liveness_only"}
+_ZH_TW_PAGES = (
+    "", "calculate", "features", "validation", "trust", "security", "roadmap", "blog",
+    "about", "contact", "legal/privacy", "legal/terms", "legal/copyright",
+)
 
 
-def _payload() -> dict:
-    return minimal_chart_payload(
-        year=1997, month=8, day=17, hour=9, minute=42,
-        latitude=24.1477, longitude=120.6736, altitude_m=80,
-    )
+def _client(**options) -> TestClient:
+    return TestClient(create_app(AppSettings()), **options)
 
 
-def test_profile_parser_accepts_only_closed_vocabulary():
-    assert load_settings({}).profile is AppProfile.PRIVATE_ALPHA
-    assert (
-        load_settings({"CLASSICAL_ASTROLOGY_PROFILE": "private_alpha"}).profile
-        is AppProfile.PRIVATE_ALPHA
-    )
-    assert (
-        load_settings({"CLASSICAL_ASTROLOGY_PROFILE": "public"}).profile
-        is AppProfile.PUBLIC
-    )
-    with pytest.raises(RuntimeError, match="unsupported application profile"):
-        load_settings({"CLASSICAL_ASTROLOGY_PROFILE": "production"})
-
-
-def test_build_revision_is_release_controlled_and_fail_closed():
-    revision = "b" * 40
-    settings = load_settings(
-        {
-            "CLASSICAL_ASTROLOGY_PROFILE": "private_alpha",
-            "CLASSICAL_ASTROLOGY_SOURCE_REVISION": revision,
-        }
-    )
-    assert settings.source_revision == revision
-    assert settings.revision_source == (
-        "build_environment:CLASSICAL_ASTROLOGY_SOURCE_REVISION"
-    )
-
-    default = load_settings({})
-    assert default.source_revision is None
-    assert default.revision_source is None
-
-    uncommitted = load_settings(
-        {"CLASSICAL_ASTROLOGY_SOURCE_REVISION": "uncommitted"}
-    )
-    assert uncommitted.source_revision is None
-    assert uncommitted.revision_source is None
-
+def test_settings_take_the_build_revision_fail_closed_and_ignore_the_retired_profile():
+    # One posture: a stale CLASSICAL_ASTROLOGY_PROFILE changes nothing.
+    assert not hasattr(AppSettings(), "profile")
+    for stale in ("private_alpha", "public", "production"):
+        assert load_settings({"CLASSICAL_ASTROLOGY_PROFILE": stale}) == load_settings({})
+    variable = "CLASSICAL_ASTROLOGY_SOURCE_REVISION"
+    settings = load_settings({variable: "b" * 40})
+    assert settings.source_revision == "b" * 40
+    assert settings.revision_source == f"build_environment:{variable}"
+    for unset in (load_settings({}), load_settings({variable: "uncommitted"})):
+        assert (unset.source_revision, unset.revision_source) == (None, None)
     with pytest.raises(RuntimeError, match="source revision"):
-        load_settings(
-            {"CLASSICAL_ASTROLOGY_SOURCE_REVISION": "caller-controlled"}
-        )
-
-
-def test_unknown_profile_fails_closed_during_process_import():
-    environment = {**os.environ, "CLASSICAL_ASTROLOGY_PROFILE": "production"}
-    completed = subprocess.run(
-        [sys.executable, "-c", "import app.main"],
-        cwd=BACKEND_ROOT,
-        env=environment,
-        check=False,
-        capture_output=True,
-        text=True,
-        timeout=20,
-    )
-
-    assert completed.returncode != 0
-    assert "unsupported application profile" in completed.stderr
-
-
-def test_offline_openapi_documents_parser_boundary_without_live_schema():
-    application = create_app(AppSettings(profile=AppProfile.PRIVATE_ALPHA))
-    schema = application.openapi()
-
-    assert "400" in schema["paths"]["/api/chart"]["post"]["responses"]
-    assert "503" in schema["paths"]["/api/chart"]["post"]["responses"]
-    assert "400" in schema["paths"]["/api/places/search"]["post"]["responses"]
-    assert "503" in schema["paths"]["/api/places/search"]["post"]["responses"]
-    location_conditions = schema["components"]["schemas"]["LocationInput"][
-        "allOf"
-    ]
-    assert any(
-        condition.get("if", {}).get("properties", {})
-        .get("location_source", {})
-        .get("const")
-        == "geonames_cities500"
-        for condition in location_conditions
-    )
-    assert any(
-        condition.get("if", {}).get("not") == {"required": ["location_source"]}
-        for condition in location_conditions
-    )
+        load_settings({variable: "caller-controlled"})
 
 
 def test_api_method_rejections_keep_allow_header_before_static_mount():
-    application = create_app(AppSettings(profile=AppProfile.PRIVATE_ALPHA))
-    with TestClient(application) as client:
-        health = client.request("TRACE", "/api/health")
-        chart = client.request("TRACE", "/api/chart")
-        search = client.request("TRACE", "/api/places/search")
-
-    assert (health.status_code, health.headers.get("allow")) == (405, "GET")
-    assert (chart.status_code, chart.headers.get("allow")) == (405, "POST")
-    assert (search.status_code, search.headers.get("allow")) == (405, "POST")
-
-
-def test_private_alpha_exposes_only_hosted_health_and_no_live_schema():
-    hosted_app = create_app(AppSettings(profile=AppProfile.PRIVATE_ALPHA))
-    with TestClient(hosted_app) as client:
-        health = client.get("/api/health")
-        runtime = client.get("/api/runtime-health")
-        schema = client.get("/openapi.json")
-
-    assert health.status_code == 200
-    assert health.json() == {
-        "status": "ok",
-        "ready": True,
-        "readiness_scope": "process_liveness_only",
+    with _client() as client:
+        observed = {
+            path: (response.status_code, response.headers.get("allow"))
+            for path in ("/api/health", "/api/chart", "/api/places/search")
+            for response in [client.request("TRACE", path)]
+        }
+    assert observed == {
+        "/api/health": (405, "GET, HEAD"),
+        "/api/chart": (405, "POST"),
+        "/api/places/search": (405, "POST"),
     }
-    assert runtime.status_code == 404
-    assert schema.status_code == 404
 
 
-def test_public_profile_keeps_hosted_safety_without_private_indexing_headers():
-    public_app = create_app(AppSettings(profile=AppProfile.PUBLIC))
+def test_hosted_safety_holds_without_indexing_headers():
+    """Liveness-only health, no live schema, closed refusals that echo neither the
+    validator message nor the input, no CORS grant, and no X-Robots-Tag anywhere
+    (indexing is the edge's decision)."""
+
     payload = _payload()
     payload["datetime"]["month"] = 13
-    with TestClient(public_app) as client:
+    payload["location"]["unexpected_CANARY_1997_24_1477"] = "HOSTED_SENSITIVE_CANARY"
+    with _client() as client:
         health = client.get("/api/health")
-        runtime = client.get("/api/runtime-health")
-        schema = client.get("/openapi.json")
+        hidden = [client.get(path) for path in ("/api/runtime-health", "/openapi.json")]
+        retired = client.get("/api/client-config")
         unsupported = client.post(
-            "/api/chart",
-            content=b"{}",
-            headers={"Content-Type": "text/plain"},
+            "/api/chart", content=b"{}", headers={"Content-Type": "text/plain"}
         )
         invalid = client.post("/api/chart", json=payload)
-        index = client.get("/")
+        preflight = client.options("/api/chart", headers={
+            "Origin": "https://untrusted.invalid", "Access-Control-Request-Method": "POST",
+        })
+        unindexed = [health, client.get("/"), client.get("/not-a-real-route")]
 
-    assert health.json() == {
-        "status": "ok",
-        "ready": True,
-        "readiness_scope": "process_liveness_only",
-    }
-    assert runtime.status_code == 404
-    assert schema.status_code == 404
+    assert (health.status_code, health.json()) == (200, _HEALTH)
+    assert [response.status_code for response in hidden] == [404, 404]
+    # /api/client-config only chose invitee wording; it is retired.
+    assert retired.status_code == 404
+    assert retired.json()["detail"]["code"] == "unknown_api_path"
     assert unsupported.status_code == 415
     assert invalid.status_code == 422
-    assert all(set(issue) == {"type", "loc"} for issue in invalid.json()["detail"])
-    assert "x-robots-tag" not in index.headers
-
-
-def test_client_configuration_exposes_only_the_closed_profile_name():
-    hosted_app = create_app(AppSettings(profile=AppProfile.PRIVATE_ALPHA))
-    public_app = create_app(AppSettings(profile=AppProfile.PUBLIC))
-
-    with TestClient(hosted_app) as client:
-        hosted_config = client.get("/api/client-config")
-    with TestClient(public_app) as client:
-        public_config = client.get("/api/client-config")
-
-    assert hosted_config.status_code == 200
-    assert hosted_config.json() == {"profile": "private_alpha"}
-    assert public_config.status_code == 200
-    assert public_config.json() == {"profile": "public"}
-    assert "/api/client-config" not in hosted_app.openapi()["paths"]
-
-
-def test_private_alpha_applies_noindex_while_public_remains_indexable():
-    hosted_app = create_app(AppSettings(profile=AppProfile.PRIVATE_ALPHA))
-    public_app = create_app(AppSettings(profile=AppProfile.PUBLIC))
-
-    with TestClient(hosted_app) as client:
-        hosted_index = client.get("/")
-        hosted_missing = client.get("/not-a-real-route")
-    with TestClient(public_app) as client:
-        public_index = client.get("/")
-
-    assert (
-        hosted_index.headers["x-robots-tag"]
-        == "noindex, nofollow, noarchive"
+    assert all(
+        set(issue) == {"type", "loc"} for issue in invalid.json()["detail"]["issues"]
     )
-    assert (
-        hosted_missing.headers["x-robots-tag"]
-        == "noindex, nofollow, noarchive"
-    )
-    assert "x-robots-tag" not in public_index.headers
+    assert "HOSTED_SENSITIVE_CANARY" not in invalid.text
+    assert "unexpected_CANARY_1997_24_1477" not in invalid.text
+    assert "access-control-allow-origin" not in preflight.headers
+    for response in unindexed:
+        assert "x-robots-tag" not in response.headers
 
 
 def test_static_aliases_redirect_to_one_canonical_url_shape():
-    application = create_app(AppSettings(profile=AppProfile.PUBLIC))
-    with TestClient(application, follow_redirects=False) as client:
-        observations = {
+    """Pages live under explicit /zh-TW/ URLs so the shape does not drift when English
+    is added; every alias redirects to one canonical URL and legacy routes are gone."""
+
+    with _client(follow_redirects=False) as client:
+        pages = {name: client.get(f"/zh-TW/{name}") for name in _ZH_TW_PAGES}
+        redirects = {
             path: client.get(path)
-            for path in (
-                "/zh-TW/",
-                "/zh-TW/index.html",
-                "/zh-TW/features",
-                "/zh-TW/features.html",
-                "/zh-TW/features/",
-            )
+            for path in ("/", "/zh-TW/index.html", "/zh-TW/features.html", "/zh-TW/features/")
         }
+        legacy = [client.get(path) for path in ("/calculate", "/trust", "/legal/privacy")]
 
-    assert observations["/zh-TW/"].status_code == 200
-    assert observations["/zh-TW/features"].status_code == 200
-    assert observations["/zh-TW/index.html"].headers["location"] == "/zh-TW/"
-    assert observations["/zh-TW/features.html"].headers["location"] == (
-        "/zh-TW/features"
-    )
-    assert observations["/zh-TW/features/"].headers["location"] == (
-        "/zh-TW/features"
-    )
-    assert all(
-        response.status_code == 308
-        for path, response in observations.items()
-        if path not in {"/zh-TW/", "/zh-TW/features"}
-    )
-
+    for name, response in pages.items():
+        assert response.status_code == 200, name
+        assert 'lang="zh-TW"' in response.text, name
+    assert {
+        path: (response.status_code, response.headers.get("location"))
+        for path, response in redirects.items()
+    } == {
+        "/": (308, "/zh-TW/"),
+        "/zh-TW/index.html": (308, "/zh-TW/"),
+        "/zh-TW/features.html": (308, "/zh-TW/features"),
+        "/zh-TW/features/": (308, "/zh-TW/features"),
+    }
+    assert [response.status_code for response in legacy] == [404, 404, 404]
     runtime = RuntimeStaticFiles(
-        directory=BACKEND_ROOT.parent / "frontend",
-        html=True,
-        allowed_assets=discover_source_assets(BACKEND_ROOT.parent / "frontend"),
+        directory=_FRONTEND_ROOT, html=True,
+        allowed_assets=discover_source_assets(_FRONTEND_ROOT),
     )
     assert runtime._canonical_redirect({
-        "method": "GET",
-        "path": "//zh-TW//features",
-        "query_string": b"",
+        "method": "GET", "path": "//zh-TW//features", "query_string": b"",
     }) == "/zh-TW/features"
 
 
 def test_public_discovery_assets_are_exact_runtime_files_not_source_metadata():
-    application = create_app(AppSettings(profile=AppProfile.PUBLIC))
-    with TestClient(application) as client:
+    with _client() as client:
         robots = client.get("/robots.txt")
         sitemap = client.get("/sitemap.xml")
-        indexnow = client.get("/bbb6ac30c1952dbb592262ea2656d708.txt")
         source_manifest = client.get("/surfaces.json")
 
     assert robots.status_code == 200
     assert robots.headers["content-type"].startswith("text/plain")
-    assert robots.text.endswith(
-        "Sitemap: https://projectarmillary.com/sitemap.xml\n"
-    )
+    assert robots.text.endswith("Sitemap: https://projectarmillary.com/sitemap.xml\n")
     assert sitemap.status_code == 200
-    assert sitemap.headers["content-type"].split(";", 1)[0] in {
-        "application/xml",
-        "text/xml",
-    }
+    assert sitemap.headers["content-type"].split(";", 1)[0] in {"application/xml", "text/xml"}
     assert "https://projectarmillary.com/zh-TW/features" in sitemap.text
     assert "features.html" not in sitemap.text
-    assert indexnow.text == "bbb6ac30c1952dbb592262ea2656d708\n"
     assert source_manifest.status_code == 404
 
 
-def test_frontend_uses_explicit_zh_tw_urls_and_does_not_keep_legacy_aliases():
-    """The first public URL shape must not silently drift when English is added."""
-    application = create_app(AppSettings(profile=AppProfile.PUBLIC))
-    with TestClient(application, follow_redirects=False) as client:
-        root = client.get("/")
-        localized = {
-            route: client.get(route)
-            for route in (
-                "/zh-TW/",
-                "/zh-TW/calculate",
-                "/zh-TW/features",
-                "/zh-TW/validation",
-                "/zh-TW/trust",
-                "/zh-TW/security",
-                "/zh-TW/roadmap",
-                "/zh-TW/blog",
-                "/zh-TW/about",
-                "/zh-TW/contact",
-                "/zh-TW/legal/privacy",
-                "/zh-TW/legal/terms",
-                "/zh-TW/legal/copyright",
-            )
-        }
-        legacy = {
-            route: client.get(route)
-            for route in ("/calculate", "/trust", "/legal/privacy")
-        }
+def test_hosted_static_openapi_is_generated_offline_not_served():
+    schema = json.loads(json.dumps(create_app(AppSettings()).openapi(), sort_keys=True))
+    components = schema["components"]["schemas"]
 
-    assert root.status_code == 308
-    assert root.headers["location"] == "/zh-TW/"
-    assert all(response.status_code == 200 for response in localized.values())
-    assert all('lang="zh-TW"' in response.text for response in localized.values())
-    assert all(response.status_code == 404 for response in legacy.values())
-
-
-def test_private_alpha_static_openapi_is_generated_offline_not_served():
-    hosted_app = create_app(AppSettings(profile=AppProfile.PRIVATE_ALPHA))
-    schema = hosted_app.openapi()
-
-    assert "/api/chart" in schema["paths"]
-    assert "/api/health" in schema["paths"]
-    assert "/api/runtime-health" not in schema["paths"]
-    assert json.dumps(schema, sort_keys=True)
-
-
-def test_private_alpha_chart_emits_status_only_allowlisted_event():
-    events: list[dict] = []
-    hosted_app = create_app(
-        AppSettings(profile=AppProfile.PRIVATE_ALPHA),
-        event_emitter=lambda event: events.append(event) or True,
+    assert set(schema["paths"]) == {"/api/chart", "/api/health", "/api/places/search"}
+    chart = schema["paths"]["/api/chart"]["post"]
+    search = schema["paths"]["/api/places/search"]["post"]
+    for endpoint in (chart, schema["paths"]["/api/health"]["get"], search):
+        success = endpoint["responses"]["200"]
+        assert success["content"]["application/json"]["schema"]["type"] == "object"
+        assert success["description"] != "Successful Response"
+    # One refusal envelope for every status; neither the validator message nor
+    # the submitted input is part of an issue.
+    issue = components["RefusalIssue"]
+    assert set(issue["required"]) == {"loc", "type"}
+    assert "msg" not in issue["properties"]
+    assert "input" not in issue["properties"]
+    for endpoint in (chart, search):
+        for status in ("400", "413", "415", "422", "431", "503"):
+            assert endpoint["responses"][status]["content"]["application/json"][
+                "schema"
+            ] == {"$ref": "#/components/schemas/RefusalResponse"}
+    conditions = components["TimezoneInput"]["allOf"]
+    for mode, required in (("iana", "iana_name"), ("fixed_offset", "utc_offset_hours")):
+        assert any(
+            item.get("if", {}).get("properties", {}).get("mode") == {"const": mode}
+            and required in item.get("then", {}).get("required", [])
+            for item in conditions
+        )
+    location = [item.get("if", {}) for item in components["LocationInput"]["allOf"]]
+    assert any(
+        rule.get("properties", {}).get("location_source", {}).get("const") == "geonames_cities500"
+        for rule in location
     )
-    with TestClient(hosted_app) as client:
+    assert any(rule.get("not") == {"required": ["location_source"]} for rule in location)
+
+
+def test_hosted_chart_emits_status_only_allowlisted_event():
+    """Events carry closed route labels and no request value."""
+
+    events: list[dict] = []
+    application = create_app(AppSettings(), event_emitter=lambda event: events.append(event) or True)
+    with TestClient(application, follow_redirects=False) as client:
         response = client.post("/api/chart", json=_payload())
         health = client.get("/api/health")
-
-    assert response.status_code == 200
-    assert health.status_code == 200
-    assert [event["route"] for event in events] == [
-        "/api/chart",
-        "/api/health",
-    ]
-    chart_event = events[0]
-    assert chart_event["status_code"] == 200
-    assert chart_event["outcome"] == "success"
-    # `request_id` is a `uuid4().hex`, independent of the request, so scanning
-    # it for a birth year makes this canary's verdict depend on a coincidence:
-    # the export rehearsal drew an id containing "1997" and the canary went red
-    # on a run that leaked nothing.  The id is asserted against its declared
-    # domain instead, and the scan covers every field that carries meaning.
-    assert re.fullmatch(r"[0-9a-f]{32}", chart_event["request_id"])
-    meaningful = {
-        name: value
-        for name, value in chart_event.items()
-        if name != "request_id"
-    }
-    encoded = json.dumps(meaningful, ensure_ascii=False)
-    assert str(_payload()["location"]["latitude"]) not in encoded
-    assert str(_payload()["location"]["longitude"]) not in encoded
-    assert "1997" not in encoded
-
-
-def test_private_alpha_chart_subtree_uses_closed_route_labels():
-    events: list[dict] = []
-    hosted_app = create_app(
-        AppSettings(profile=AppProfile.PRIVATE_ALPHA),
-        event_emitter=lambda event: events.append(event) or True,
-    )
-    with TestClient(hosted_app, follow_redirects=False) as client:
         trailing_slash = client.post("/api/chart/", json=_payload())
         future_child = client.post("/api/chart/future", json=_payload())
         lookalike = client.get("/api/chartography")
 
-    # The trailing-slash variant is not a registered route, and the API
-    # boundary now answers for its own prefix instead of letting the asset
-    # mount reply 405 with no Allow header and a third body shape.  404 is
-    # also the more accurate refusal: the resource does not exist.
-    assert trailing_slash.status_code == 404
+    assert (response.status_code, health.status_code) == (200, 200)
+    # The API boundary answers for its own prefix (404), not the asset mount (405).
     assert trailing_slash.json()["detail"]["code"] == "unknown_api_path"
-    assert future_child.status_code == 404
-    assert lookalike.status_code == 404
+    assert [r.status_code for r in (trailing_slash, future_child, lookalike)] == [404] * 3
     assert [event["route"] for event in events] == [
-        "frontend_or_unmatched",
-        "frontend_or_unmatched",
-        "frontend_or_unmatched",
+        "/api/chart", "/api/health", *["frontend_or_unmatched"] * 3,
     ]
-
-
-def test_private_alpha_does_not_grant_cross_origin_access():
-    hosted_app = create_app(AppSettings(profile=AppProfile.PRIVATE_ALPHA))
-    with TestClient(hosted_app) as client:
-        response = client.options(
-            "/api/chart",
-            headers={
-                "Origin": "https://untrusted.invalid",
-                "Access-Control-Request-Method": "POST",
-            },
-        )
-
-    assert "access-control-allow-origin" not in response.headers
-
-
-def test_private_alpha_validation_errors_do_not_echo_sensitive_input():
-    hosted_app = create_app(AppSettings(profile=AppProfile.PRIVATE_ALPHA))
-    payload = _payload()
-    payload["datetime"]["month"] = 13
-    payload["location"]["unexpected_CANARY_1997_24_1477"] = (
-        "PRIVATE_ALPHA_SENSITIVE_CANARY"
+    chart_event = events[0]
+    assert (chart_event["status_code"], chart_event["outcome"]) == (200, "success")
+    # request_id is a random uuid4 hex that can contain "1997" by chance, so it
+    # is checked against its domain and every other field is scanned.
+    assert re.fullmatch(r"[0-9a-f]{32}", chart_event["request_id"])
+    encoded = json.dumps(
+        {name: value for name, value in chart_event.items() if name != "request_id"},
+        ensure_ascii=False,
     )
-
-    with TestClient(hosted_app) as client:
-        response = client.post("/api/chart", json=payload)
-
-    assert response.status_code == 422
-    body = response.json()
-    rendered = json.dumps(body, ensure_ascii=False)
-    assert "PRIVATE_ALPHA_SENSITIVE_CANARY" not in rendered
-    assert "unexpected_CANARY_1997_24_1477" not in rendered
-    assert all(
-        set(issue) <= {"type", "loc"}
-        for issue in body["detail"]
-    )
-    assert all(
-        {"input", "msg", "ctx"}.isdisjoint(issue)
-        for issue in body["detail"]
-    )
+    location = _payload()["location"]
+    for value in (str(location["latitude"]), str(location["longitude"]), "1997"):
+        assert value not in encoded
 
 
 @pytest.mark.parametrize(
-    ("mutate", "reason_code", "location"),
+    ("update", "reason_code", "location"),
     [
-        (
-            lambda payload: payload.update({
-                "birth_time_precision": "approximate_hour"
-            }),
-            "approximate_hour_requires_zero_subhour",
-            ["body"],
-        ),
-        (
-            lambda payload: payload.update({
-                "birth_time_precision": "date_only"
-            }),
-            "date_only_requires_zero_time",
-            ["body"],
-        ),
-        (
-            lambda payload: payload.update({
-                "computation_mode": {"center": "heliocentric"},
-                "options": {"moon_position_profile": "moon_only_topocentric_v1"},
-            }),
-            "moon_profile_center_conflict",
-            ["body"],
-        ),
-        (
-            lambda payload: payload.update({
-                "options": {"aspect_orb_scale_percent": 80.0},
-            }),
-            "aspect_orb_scale_requires_profile",
-            ["body", "options"],
-        ),
+        ({"birth_time_precision": "approximate_hour"},
+         "approximate_hour_requires_zero_subhour", ["body"]),
+        ({"birth_time_precision": "date_only"}, "date_only_requires_zero_time", ["body"]),
+        ({"computation_mode": {"center": "heliocentric"},
+          "options": {"moon_position_profile": "moon_only_topocentric_v1"}},
+         "moon_profile_center_conflict", ["body"]),
+        ({"options": {"aspect_orb_profile": None, "aspect_orb_scale_percent": 80.0}},
+         "aspect_orb_scale_requires_profile", ["body", "options"]),
     ],
 )
 def test_model_conflicts_expose_closed_actionable_reason_without_values(
-    mutate, reason_code, location
+    update, reason_code, location
 ):
-    hosted_app = create_app(AppSettings(profile=AppProfile.PRIVATE_ALPHA))
     payload = _payload()
-    mutate(payload)
-    with TestClient(hosted_app) as client:
+    payload.update(update)
+    with _client() as client:
         response = client.post("/api/chart", json=payload)
     assert response.status_code == 422
-    assert response.json()["detail"] == [{
-        "type": reason_code,
-        "loc": location,
-    }]
+    assert response.json()["detail"]["issues"] == [{"type": reason_code, "loc": location}]
 
 
 def test_numeric_fields_reject_boolean_and_string_coercion():
-    hosted_app = create_app(AppSettings(profile=AppProfile.PRIVATE_ALPHA))
-    boolean_payload = _payload()
-    boolean_payload["timezone"] = {
-        "mode": "fixed_offset",
-        "utc_offset_hours": False,
-    }
-    fold_payload = _payload()
-    fold_payload["timezone"]["fold"] = False
-    string_payload = _payload()
-    string_payload["location"]["longitude"] = "120.0"
-
-    with TestClient(hosted_app) as client:
-        boolean_response = client.post("/api/chart", json=boolean_payload)
-        fold_response = client.post("/api/chart", json=fold_payload)
-        string_response = client.post("/api/chart", json=string_payload)
-
-    assert boolean_response.status_code == 422
-    assert fold_response.status_code == 422
-    assert string_response.status_code == 422
+    offset = _payload()
+    offset["timezone"] = {"mode": "fixed_offset", "utc_offset_hours": False}
+    fold = _payload()
+    fold["timezone"]["fold"] = False
+    longitude = _payload()
+    longitude["location"]["longitude"] = "120.0"
+    with _client() as client:
+        statuses = [
+            client.post("/api/chart", json=payload).status_code
+            for payload in (offset, fold, longitude)
+        ]
+    assert statuses == [422, 422, 422]
 
 
-@pytest.mark.parametrize("profile_name", ["private_alpha", "public"])
-def test_supported_profiles_return_only_closed_error_code(monkeypatch, profile_name):
+def test_ephemeris_refusal_returns_only_the_closed_error_code(monkeypatch):
     from app import main
     from app.ephemeris import FullEphemerisRequiredError
+    from app.refusals import REFUSALS
+
     def fail(_request):
         raise FullEphemerisRequiredError(
             operation="CANARY_OPERATION",
             jd_ut=2597667.2296284684,
             retflag=4,
+            # The request's own refusal; the server-fault reasons are 500.
+            reason="segment_out_of_coverage",
         )
 
     monkeypatch.setattr(main, "_compute_chart_locked", fail)
     events = []
     hosted_app = main.create_app(
-        AppSettings(profile=AppProfile(profile_name)),
-        event_emitter=lambda event: events.append(event) or True,
+        AppSettings(), event_emitter=lambda event: events.append(event) or True,
     )
     with TestClient(hosted_app) as client:
         response = client.post("/api/chart", json=_payload())
 
-    assert response.status_code == 503
-    assert response.json() == {
-        "detail": {"code": "full_ephemeris_required"}
-    }
+    assert response.status_code == 422
+    assert response.json() == {"detail": {
+        "code": "full_ephemeris_required",
+        "message": REFUSALS["full_ephemeris_required"].message,
+    }}
     assert "2597667" not in response.text
     assert "CANARY_OPERATION" not in response.text
     assert events[-1]["error_code"] == "full_ephemeris_required"
@@ -518,13 +290,228 @@ def test_supported_profiles_return_only_closed_error_code(monkeypatch, profile_n
 
 
 def test_hosted_boundary_rejects_oversized_headers_before_chart_parsing():
-    hosted_app = create_app(AppSettings(profile=AppProfile.PRIVATE_ALPHA))
-    with TestClient(hosted_app) as client:
+    with _client() as client:
         response = client.post(
-            "/api/chart",
-            json=_payload(),
-            headers={"X-Oversized-Probe": "a" * (20 * 1024)},
+            "/api/chart", json=_payload(), headers={"X-Oversized-Probe": "a" * (20 * 1024)},
         )
-
     assert response.status_code == 431, response.text
     assert response.json()["detail"]["code"] == "request_headers_too_large"
+
+
+@pytest.mark.parametrize(("method", "path"), (
+    ("GET", "/api/health"), ("HEAD", "/api/health"), ("GET", "/zh-TW/calculate"),
+    ("GET", "/zh-TW/page.css"), ("GET", "/api/not-a-route"),
+))
+def test_header_budget_holds_on_every_path_not_only_the_json_posts(method, path):
+    """SEC-R2-02: the 16 KiB header budget was applied to the two JSON POST
+    routes only; a page or health request with 64 KB of headers was a 200,
+    and the only bound left was the edge's."""
+    with _client() as client:
+        within = client.request(method, path, headers={"X-Probe": "a" * 1024})
+        over = client.request(method, path, headers={"X-Probe": "a" * (17 * 1024)})
+    assert within.status_code != 431
+    assert over.status_code == 431, (path, over.status_code)
+    if method != "HEAD":
+        assert over.json()["detail"]["code"] == "request_headers_too_large"
+
+
+def test_static_text_assets_are_gzip_encoded_when_the_client_accepts_it():
+    """Gzip only for a client that lists it with non-zero quality; every
+    representation names Accept-Encoding in Vary so a shared cache cannot mix them."""
+
+    with _client() as client:
+        for url, name in (
+            ("/zh-TW/calculate", "zh-TW/calculate.html"),
+            ("/zh-TW/page.css", "zh-TW/page.css"),
+            ("/zh-TW/view-model.js", "zh-TW/view-model.js"),
+            ("/zh-TW/favicon.svg", "zh-TW/favicon.svg"),
+        ):
+            original = (_FRONTEND_ROOT / name).read_bytes()
+            encoded = client.get(url, headers={"Accept-Encoding": "gzip"})
+            identity = client.get(url, headers={"Accept-Encoding": "identity"})
+            refused = client.get(url, headers={"Accept-Encoding": "gzip;q=0"})
+
+            assert encoded.status_code == 200, url
+            assert encoded.headers.get("content-encoding") == "gzip", url
+            assert int(encoded.headers["content-length"]) < len(original), url
+            assert encoded.content == original, url
+            for response in (identity, refused):
+                assert response.status_code == 200, url
+                assert "content-encoding" not in response.headers, url
+                assert response.content == original, url
+            for response in (encoded, identity, refused):
+                assert "accept-encoding" in response.headers["vary"].lower(), url
+            # Two representations cannot share one strong validator.
+            assert encoded.headers["etag"] != identity.headers["etag"], url
+
+
+def test_gzip_representation_keeps_head_validators_and_range_semantics():
+    gzip_only = {"Accept-Encoding": "gzip"}
+    with _client() as client:
+        encoded = client.get("/zh-TW/page.css", headers=gzip_only)
+        head = client.head("/zh-TW/page.css", headers=gzip_only)
+        revalidated = client.get(
+            "/zh-TW/page.css", headers={**gzip_only, "If-None-Match": encoded.headers["etag"]},
+        )
+        ranged = client.get("/zh-TW/page.css", headers={**gzip_only, "Range": "bytes=0-9"})
+
+    assert head.status_code == 200
+    for header in ("content-encoding", "content-length", "etag"):
+        assert head.headers[header] == encoded.headers[header], header
+    assert head.headers["content-encoding"] == "gzip"
+    assert head.content == b""
+    assert revalidated.status_code == 304
+    assert revalidated.headers["etag"] == encoded.headers["etag"]
+    assert "accept-encoding" in revalidated.headers["vary"].lower()
+    # A byte range addresses the identity bytes; it is never cut from gzip.
+    assert ranged.status_code == 206
+    assert "content-encoding" not in ranged.headers
+    assert ranged.content == (_FRONTEND_ROOT / "zh-TW/page.css").read_bytes()[:10]
+
+
+def test_api_json_other_than_the_chart_result_is_never_compressed():
+    """Place search echoes the submitted terms and refusals are small: none is encoded,
+    and no blanket compression middleware exists that could reach them."""
+
+    application = create_app(AppSettings())
+    assert not any(
+        "gzip" in getattr(middleware.cls, "__name__", "").casefold()
+        for middleware in application.user_middleware
+    )
+    gzip_only = {"Accept-Encoding": "gzip"}
+    with TestClient(application) as client:
+        observations = {
+            "places": client.post("/api/places/search", json={"query": "Tainan"}, headers=gzip_only),
+            "health": client.get("/api/health", headers=gzip_only),
+            "rejected": client.post("/api/chart", json={"unexpected": True}, headers=gzip_only),
+        }
+
+    assert observations["rejected"].status_code == 422
+    for name, response in observations.items():
+        assert "content-encoding" not in response.headers, name
+        assert "accept-encoding" not in response.headers.get("vary", "").lower(), name
+        assert response.headers["cache-control"] == "no-store", name
+
+
+@pytest.mark.parametrize(("accept_encoding", "expected"), (
+    ("gzip", True), ("GZIP", True), ("gzip;q=1", True), ("gzip; q=1.000", True),
+    ("gzip;q=0.001", True), ("br, gzip;q=0.5", True),
+    ("gzip;q=0", False), ("gzip;q=0.000", False), ("*", False), ("identity", False),
+    # SEC-R2-06: RFC 9110 §12.4.2 qvalues are 0–1 with at most three decimals;
+    # anything else is not a quality, and `float` read `inf` as a preference.
+    ("gzip;q=inf", False), ("gzip;q=nan", False), ("gzip;q=1e0", False),
+    ("gzip;q=1_0", False), ("gzip;q=2", False), ("gzip;q=-1", False),
+    ("gzip;q=1.0001", False), ("gzip;q=", False),
+))
+def test_gzip_is_chosen_only_for_a_valid_nonzero_qvalue(accept_encoding, expected):
+    from starlette.datastructures import Headers
+
+    from app.runtime_static import accepts_gzip
+
+    assert accepts_gzip(Headers({"accept-encoding": accept_encoding})) is expected
+
+
+def test_chart_result_is_gzip_encoded_only_for_clients_that_name_gzip():
+    """Decoding gives exactly the identity bytes, encoding is deterministic, and both
+    representations carry the same Vary, Cache-Control and security headers."""
+
+    def raw(client: TestClient, accept_encoding: str) -> tuple[int, dict, bytes]:
+        with client.stream(
+            "POST", "/api/chart", json=_payload(), headers={"Accept-Encoding": accept_encoding}
+        ) as response:
+            return response.status_code, dict(response.headers), b"".join(response.iter_raw())
+
+    with _client() as client:
+        status, identity_headers, identity = raw(client, "identity")
+        refused_status, refused_headers, refused = raw(client, "gzip;q=0")
+        encoded_status, encoded_headers, encoded = raw(client, "gzip, deflate, br")
+        again_status, _, again = raw(client, "gzip")
+
+    assert status == refused_status == encoded_status == again_status == 200
+    for headers, body in ((identity_headers, identity), (refused_headers, refused)):
+        assert "content-encoding" not in headers
+        assert body == identity
+    assert encoded_headers["content-encoding"] == "gzip"
+    assert int(encoded_headers["content-length"]) == len(encoded) < len(identity) // 3
+    assert gzip.decompress(encoded) == identity
+    assert again == encoded, "one request body, one encoded byte sequence"
+    for headers in (identity_headers, refused_headers, encoded_headers):
+        assert "accept-encoding" in headers["vary"].lower()
+        assert headers["cache-control"] == "no-store"
+    representation = {"content-encoding", "content-length", "x-request-id"}
+    assert {
+        name: value for name, value in encoded_headers.items() if name not in representation
+    } == {
+        name: value for name, value in identity_headers.items() if name not in representation
+    }
+
+
+def test_generated_pages_version_every_asset_by_its_served_content_digest():
+    """Every `?v=` in every generated page is the first sixteen hex digits of the
+    SHA-256 of the file served at that path, and that URL earns the immutable lifetime."""
+
+    reference = re.compile(r'(?:src|href)="/(zh-TW/[^"?#]+)(\?[^"#]*)?"')
+    pages = sorted((_FRONTEND_ROOT / "zh-TW").rglob("*.html"))
+    assert len(pages) >= 14
+    versioned: dict[tuple[str, str], str] = {}
+    for page in pages:
+        for match in reference.finditer(page.read_text(encoding="utf-8")):
+            name, query = match.group(1), match.group(2)
+            if Path(name).suffix not in {".css", ".js", ".mjs", ".svg"}:
+                continue
+            label = f"{page.relative_to(_FRONTEND_ROOT)} -> {name}"
+            assert query, f"{label}: static asset reference lacks a version key"
+            expected = hashlib.sha256((_FRONTEND_ROOT / name).read_bytes()).hexdigest()[:16]
+            assert query == f"?v={expected}", label
+            versioned[(name, query)] = label
+    assert any(name == "zh-TW/calculate.js" for name, _ in versioned)
+    assert any(name == "zh-TW/favicon.svg" for name, _ in versioned)
+
+    with _client() as client:
+        for (name, query), label in sorted(versioned.items()):
+            response = client.get(f"/{name}{query}")
+            assert response.status_code == 200, label
+            assert response.headers["cache-control"] == "public, max-age=31536000, immutable", label
+
+
+def test_content_version_follows_the_bytes_not_the_process_start(tmp_path):
+    """A source checkout can change under a running process; the token must follow."""
+
+    frontend = tmp_path / "frontend"
+    (frontend / "zh-TW").mkdir(parents=True)
+    (frontend / "zh-TW/index.html").write_text("<!doctype html>", encoding="utf-8")
+    asset = frontend / "zh-TW/page.css"
+    asset.write_bytes(b"body{color:red}")
+    runtime = RuntimeStaticFiles(
+        directory=frontend, html=True, allowed_assets=discover_source_assets(frontend),
+    )
+    assert runtime.content_version("/zh-TW/page.css") == (
+        hashlib.sha256(b"body{color:red}").hexdigest()[:16]
+    )
+    asset.write_bytes(b"body{color:blue;margin:0}")
+    assert runtime.content_version("/zh-TW/page.css") == (
+        hashlib.sha256(b"body{color:blue;margin:0}").hexdigest()[:16]
+    )
+    for outside in ("/zh-TW/missing.css", "/zh-TW/../frontend/zh-TW/page.css",
+                    "zh-TW/page.css", "/zh-TW/page", "/api/chart"):
+        assert runtime.content_version(outside) is None, outside
+
+
+def test_importing_the_application_module_builds_no_application():
+    """Arch I-01: the image runs `uvicorn --factory app.main:create_app`, which
+    imports app.main and then calls the factory; a module-level `app =
+    create_app()` built a second, unused application in every worker.  The module
+    builds `app` only when something reads it (`uvicorn app.main:app`, tests)."""
+    import subprocess
+    import sys
+
+    probe = (
+        "import app.main as m\n"
+        "assert 'app' not in vars(m), 'importing app.main built an application'\n"
+        "from app.main import app\n"
+        "from fastapi import FastAPI\n"
+        "assert isinstance(app, FastAPI) and m.app is app\n"
+    )
+    completed = subprocess.run([sys.executable, "-c", probe], cwd=BACKEND_ROOT,
+                               capture_output=True, text=True, timeout=60, check=False)
+    assert completed.returncode == 0, completed.stderr[-2000:]

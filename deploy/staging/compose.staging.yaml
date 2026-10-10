@@ -3,14 +3,14 @@
 # by address. Re-evaluate the subnet when moving hosts and update both owners
 # together.
 services:
-  private-alpha-app:
+  armillary-app:
     restart: unless-stopped
     networks:
-      private-alpha-internal:
+      armillary-internal:
         ipv4_address: 172.31.240.2
 
 networks:
-  private-alpha-internal:
+  armillary-internal:
     internal: true
     ipam:
       config:

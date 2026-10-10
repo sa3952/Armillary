@@ -1,0 +1,874 @@
+{
+ "entries": {
+  "aspects/minor_aspects": {
+   "applies_to": "derived_methods.aspects.degree_based (modern minor aspects)",
+   "kepler_status_by_aspect": {
+    "biquintile": "early_core",
+    "quincunx": "later_adopted",
+    "quintile": "early_core",
+    "semisextile": "later_adopted",
+    "semisquare": "later_admitted_weakest_grade",
+    "sesquiquadrate": "later_downgraded"
+   },
+   "sources": [
+    "Kepler, De fundamentis astrologiae certioribus (Pragae: Schumann, 1602), Thesis XXXVIII, sig. C1v of the 1602 printing (unpaginated; image 21 of the Royal Library Copenhagen copy, archive.org den-kbd-pil-20002065-001): quintile, biquintile and sesquiquadrate added to the five aspects of the ancients (Frisch, Opera omnia I (1858) p.428 not checked)",
+    "Kepler, Harmonices mundi (Linz 1619) Lib. IV cap. V, Prop. XII p.145 (third grade: trine, sextile, semisextile), Prop. XIII pp.147-148 (fourth grade: quintile, biquintile, quincunx), Prop. XIV p.148 (fifth, weakest grade: decile, tridecile, octile = semisquare, trioctile = sesquiquadrate)",
+    "Kepler, Harmonices mundi (1619) Lib. IV cap. VI p.155: octile and sesquiquadrate have no power unless the primary aspects are long absent"
+   ]
+  },
+  "aspects/orb/abu_mashar_lineage_v1": {
+   "applies_to": "derived_methods.aspects.degree_based.orb_profile_detail",
+   "pair_combination_rule_note": "The pair threshold is the average of the two orbs. al-Bīrūnī, Book of Instruction §490, lists it as one of several views on where application begins (others: 5°, 6°, 12°, 15° the Sun's orb, exact conjunction only). Abū Maʿshar, Great Introduction (2019 ed.), gives the seven values in VII.3 lines 204-210 and treats application and separation in VII.5 lines 443-465, in terms of each planet's own orb; those lines state no averaging formula. The product applies the average to this table: one attested view chosen among several.",
+   "source_verification": {
+    "evidence_standard": "secondary_tabulation_permitted_when_disclosed",
+    "independence_claim_withdrawn": "Holden notes a probable derivation relationship between the Porphyry chapter and Sahl; Pingree regards chs. 53-55 as a later insertion. Repetition across medieval authors evidences transmission, not independent attestation.",
+    "primary_texts_independently_transcribed": false,
+    "renamed_from": "abu_mashar_consensus_v1",
+    "retracted_claim": "five_independent_pre_modern_sources_in_agreement",
+    "tabulated_from": "Steven Birchfield, 'Orbs of Influence', 2nd ed. 2013 (secondary)"
+   },
+   "sources": [
+    "Porphyry, Introduction to the Tetrabiblos §55 (trans. Holden, AFA 2009)",
+    "Abū Maʿshar, Abbreviation of the Introduction to Astrology II.11-12 (Burnett-Yamamoto-Yano, Brill 1994; ARHAT ed. 1997, 2nd printing 2000); Dykes, ITA (2010) §II.6 pp.90-91",
+    "Abū Maʿshar, The Great Introduction to Astrology, ed. Yamamoto, Burnett and Pingree (2019), English translation: VII.3 lines 204-210 (the seven values) and VII.5 lines 443-465 (application and separation); the Arabic text and the Dykes ITA (2010) locators are not compared",
+    "Sahl ibn Bishr, Introduction ch.3 §§13-18, trans. Dykes, The Astrology of Sahl b. Bishr vol. I (Cazimi 2019), via Birchfield, The Planets Degrees of Influence (rev. 2019) pp.5-6 n.12",
+    "Ibn Ezra, The Beginning of Wisdom ch. IV (trans. Epstein, ARHAT 1998)",
+    "Bonatti, Liber Astronomiae Tract III chs. LXV-LXXI (trans. Zoller, 1994; values not checked; publisher and chapters to be confirmed)",
+    "al-Bīrūnī, The Book of Instruction in the Elements of the Art of Astrology, trans. R. Ramsay Wright (London: Luzac 1934) §436: the same seven values (archive.org typescript reproduction, whose page numbers differ from the Luzac print; cited by section)"
+   ]
+  },
+  "aspects/orb/lilly_1647_experience_v1": {
+   "applies_to": "derived_methods.aspects.degree_based.orb_profile_detail",
+   "second_set_not_used": "p.107 prints a second set beside the first (Saturn 9, Jupiter 9, Mars 7, Sun 15, Venus 7, Mercury 7, Moon 12; rows marked 'According to others', 'All consent' and the like), and Lilly says he uses one or the other as memory serves; his separation example on p.110 uses the second set. The product offers only the first set, the one he gives as 'the best Authors and my owne Experience'.",
+   "source_verification": {
+    "evidence_standard": "checked_against_first_edition_page_images",
+    "note": "The 1659 second edition has the same pagination and readings.",
+    "primary_texts_independently_transcribed": true,
+    "tabulated_from": "William Lilly, Christian Astrology (1647) p.107, first column, read in the first edition (archive.org/details/b30338724); agrees with Steven Birchfield, 'Orbs of Influence', 2nd ed. 2013 (secondary)"
+   },
+   "sources": [
+    "William Lilly, Christian Astrology (1647) Book I ch. XIX p.107, first column"
+   ]
+  },
+  "aspects/orb_boundary": {
+   "applies_to": "derived_methods.aspects.degree_based.orb_receipt.boundary_operator",
+   "boundary_operator": "<=",
+   "boundary_provenance": "product_convention",
+   "note": "No checked pre-modern text states whether an offset exactly equal to the orb is inside it. The product keeps <= because exact equality practically never occurs on a real chart.",
+   "sources": [
+    "William Lilly, Christian Astrology (1647) p.110: the planets are not totally separated until 'fully 9 degrees distant' (indirect; reads as leaning exclusive, not a stated rule)"
+   ]
+  },
+  "aspects/partile": {
+   "applies_to": "derived_methods.aspects.degree_based.partile_source_verification",
+   "source_verification": {
+    "evidence_standard": "secondary_tabulation_permitted_when_disclosed",
+    "primary_texts_independently_transcribed": false,
+    "tabulated_from": "Deborah Houlding, Skyscript glossary 'Partile / Platick' (secondary; she cites Lilly's Christian Astrology p.107 - the definition runs pp.106-107 of the 1647 printing, the example is on p.106) and Merlini Anglici 1677"
+   },
+   "valid_aspect_rule": "lilly_1647_same_degree_requires_whole_sign_configuration_angle_pairs_use_in_orb;degree_offset_profiles_use_their_threshold_only",
+   "valid_aspect_rule_profiles": [
+    "same_degree_number_v1"
+   ],
+   "valid_aspect_sources": [
+    "William Lilly, Christian Astrology (1647) Book I ch. XIX p.106: both partile examples (Venus 9 Aries / Jupiter 9 Leo, Sun 1 Taurus / Moon 1 Cancer) are sign aspects first",
+    "William Lilly, Christian Astrology (1647) p.109: signs that do not behold one another 'cannot have any aspect'",
+    "al-Bīrūnī, The Book of Instruction, trans. R. Ramsay Wright (1934) §446: partile defined among planets in signs that aspect each other"
+   ]
+  },
+  "aspects/partile/lilly_1677_three_degrees_v1": {
+   "applies_to": "derived_methods.aspects.degree_based.partile_profile_detail",
+   "sources": [
+    "Merlini Anglici Ephemeris ... for the Year 1677 (London: J. Macock for the Company of Stationers), 'Useful Astrological Aphorisms for Young Students and others', no. 25",
+    "Deborah Houlding, Skyscript glossary 'Partile / Platick'"
+   ]
+  },
+  "aspects/partile/same_degree_number_v1": {
+   "applies_to": "derived_methods.aspects.degree_based.partile_profile_detail",
+   "sources": [
+    "William Lilly, Christian Astrology (1647) Book I ch. XIX p.106 (partile definition and examples; Lilly writes 'exactly so many degrees ... as make a perfect aspect', not 'same degree': the same-degree reading is Houlding's)",
+    "Deborah Houlding, Skyscript glossary 'Partile / Platick'"
+   ]
+  },
+  "aspects/partile/within_one_degree_v1": {
+   "applies_to": "derived_methods.aspects.degree_based.partile_profile_detail",
+   "sources": [
+    "Deborah Houlding, Skyscript glossary 'Partile / Platick'（記為 traditional authors 的用法，未點名個別作者）"
+   ]
+  },
+  "aspects/whole_sign": {
+   "applies_to": "derived_methods.aspects.whole_sign",
+   "sources": "Ptolemy I.13 (Robbins pp.73-75 = Hübner I.14), I.16 (pp.77-79 = Hübner I.17); Ps.-Porphyry 'On bearing testimony' (Antiochus; CCAG V.4 pp.185-228, chapter not checked). Counts signs between; Firmicus II.22 counts inclusively (trine = fifth sign)"
+  },
+  "birth_time_sensitivity/approximate_hour": {
+   "applies_to": "birth_time_sensitivity (precision approximate_hour)",
+   "method": "Classifications (every non-numeric value each resampled path prints: the sign of every longitude, angle, cusp and Lot; house placements of planets and Lots; motion direction; sect and its near-horizon band; the Lot formula basis; the void-of-course flag only) are recomputed at the listed sampled instants of the stated civil hour [H:00,H+1:00) in the named fold: a quarter-hour grid plus the seconds either side of any UTC-offset change inside the hour, located by a one-minute UTC scan refined to the second. same_at_all_samples means only that those sampled instants agree; it is not proof that the classification holds between them, and no invariant is applied to exclude a change and reversal between adjacent samples. Adjacent samples that differ are bisected to at most 15 s; each bracket holds at least one change, not necessarily one. Inside the polar circle the Ascendant can reverse between samples, so every path read off it is at most partially evaluated. Numeric values are sampled envelopes, not states. Every sample fails closed when its calculation did not use the Swiss files."
+  },
+  "birth_time_sensitivity/date_only": {
+   "applies_to": "birth_time_sensitivity (precision date_only)",
+   "method": "Classifications of bodies and nodes (every non-numeric value they print: sign, motion direction, reason codes) are recomputed at the listed sampled instants of the local civil day, every instant the zone labels with the date (one or more UTC stretches): every existing hourly clock label on both folds, the first and last second of each stretch, and the seconds either side of every UTC-offset change that fall on the date, located by a one-minute UTC scan refined to the second. same_at_all_samples means only that those sampled instants agree; it is not proof that the classification holds between them, and no invariant is applied to exclude a change and reversal between adjacent samples. Numeric values are sampled envelopes, not states. Every sample fails closed when its calculation did not use the Swiss files."
+  },
+  "chiron/physical_parameters": {
+   "applies_to": "astronomical_data.bodies[key=chiron].apparent_diameter, apparent_magnitude and physical_parameters",
+   "note": "Apparent diameter and magnitude use the parameters built into Swiss Ephemeris, not the current JPL SBDB solution: the diameter is about 63.5% larger and the magnitude about 0.96 mag fainter than SBDB values. Published Chiron diameters differ between sources, so the built-in values are disclosed rather than replaced. The position comes from the Swiss seas_18 file; measured against JPL#171 relative to the Sun it agrees within 0.04 arcsec at 1987, 2000 and 2024 and differs by up to 1.48 arcsec at 2399. This is a measurement, not an accuracy claim.",
+   "sources": [
+    "Swiss Ephemeris 2.10.03 sweph.h pla_diam[] (Chiron 271370 m) and swecl.c mag_elem[] (Chiron H 6.5, G 0.15, \"from Bowell data base\"), used by swe_pheno",
+    "JPL Small-Body Database, 2060 Chiron, physical parameters retrieved 2026-10-04: diameter 166 km (Dunham 1998), H 5.54",
+    "JPL Horizons, 2060 Chiron orbit solution JPL#171"
+   ]
+  },
+  "contested/bounds_tables": {
+   "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=bounds_tables; marks derived_methods.essential_dignities)",
+   "sources": [
+    "Ptolemy, Tetrabiblos I.20-21, trans. Robbins (Loeb 1940) pp.91-107: Egyptian terms (table p.97), Chaldaean terms rule (pp.99-101), complete table p.107",
+    "Authorship of the complete table disputed: Tolsa, Philologus 162.2 (2018) 247-264 (abstract only checked)"
+   ],
+   "technique_family": "bounds"
+  },
+  "contested/degree_aspect_orbs": {
+   "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=degree_aspect_orbs; marks derived_methods.aspects)",
+   "sources": [
+    "William Lilly, Christian Astrology (1647) p.107: two sets of orbs printed side by side; he uses one or the other as memory serves",
+    "al-Bīrūnī, The Book of Instruction, trans. R. Ramsay Wright (1934) §490: 5°, 6°, 12°, 15° (the Sun's orb), the average of the two orbs, or exact conjunction only",
+    "William Lilly, Christian Astrology (1647) p.109; al-Bīrūnī §446: aspects presuppose signs that behold one another"
+   ],
+   "technique_family": "aspect_orbs"
+  },
+  "contested/lot_formulas": {
+   "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=lot_formulas; marks derived_methods.lots)",
+   "sources": [
+    "Ptolemy, Tetrabiblos III.10 (Robbins numbering; = Hübner III.11): the Lot of Fortune from Sun to Moon by day and by night",
+    "Vettius Valens, Anthologies III.11 (Pingree; = III.14 Kroll/Riley, '14K;11P'): at night the formula changes with whether the Moon has set",
+    "Paulus Alexandrinus ch.23: reversal at night (the product's formula); read in the Greek-Latin first printing (Wittenberg 1586); Boer 1958 not checked"
+   ],
+   "technique_family": "lots"
+  },
+  "contested/partile_definition": {
+   "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=partile_definition; marks derived_methods.aspects)",
+   "sources": [
+    "William Lilly, Christian Astrology (1647) Book I ch. XIX p.106",
+    "Merlini Anglici Ephemeris ... for the Year 1677, 'Useful Astrological Aphorisms', no. 25 (aphorism section unsigned; prefatory letter signed William Lilly)",
+    "Deborah Houlding, Skyscript glossary 'Partile / Platick' (secondary; the within-one-degree usage, no named author)"
+   ],
+   "technique_family": "partile"
+  },
+  "contested/void_of_course_definition": {
+   "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=void_of_course_definition; marks derived_methods.void_of_course)",
+   "sources": [
+    "Ps.-Porphyry, Introduction ch.23 (Boer-Weinstock, CCAG V/4, 1940, p.202; read in an online Greek transcription and Holden 2009 trans. p.18, the CCAG page itself not checked): the Moon joins no planet, by sign, degree, aspect or kollesis, within the next 30 degrees, regardless of the sign boundary",
+    "William Lilly, Christian Astrology (1647) p.112 'Voyd of course': bounded by the sign",
+    "Requiring exact perfection before the sign exit: attributed by later literature to Al H. Morrison (an article in the AFA Journal, October 1966; the article was not read); an earlier origin has not been checked"
+   ],
+   "technique_family": "void_of_course"
+  },
+  "contested/whitelist": {
+   "applies_to": "calculation_dossier.methodology.classical_source_disagreements",
+   "marked": [
+    "bounds_tables",
+    "degree_aspect_orbs",
+    "lot_formulas",
+    "partile_definition",
+    "void_of_course_definition"
+   ],
+   "not_marked": {
+    "rulership_scheme": "The product emits no procedural rulership scheme; whether to adopt one is an open question.",
+    "sect_boundary": "Checked texts (Valens III.5, Ptolemy I.7) treat day and night births as given classes and set no boundary; the 0° rule is a product convention explained on the methods page (§05.3), not a classical dispute."
+   },
+   "policy": "marked_only_where_named_pre_modern_texts_give_rules_that_change_the_output"
+  },
+  "declination_aspects": {
+   "applies_to": "derived_methods.declination_aspects.method_provenance_attribution",
+   "attribution": {
+    "attributed_to": "Placidus de Titis, Tabulae primi mobilis (Padua: Frambotti, 1657): parallels and their opposite-hemisphere counterpart defined by equal declination",
+    "attribution_source": "Placidus de Titis, Tabulae primi mobilis, Padua: Frambotti 1657, Theses ex II. libro, no. 50, p.9: the commonly so-called antiscia are renamed 'Parallelos', defined as equally distant from the equator and taken from the declination table; in the same hemisphere 'primarius seu intuens', in opposite hemispheres commanding and obeying (the contra-parallel). Placidus presents this as Ptolemy's relation of signs of equal rising and the same parallel (Tetrabiblos I.14-I.15), which concerns signs, not bodies.",
+    "date_claim": "1657",
+    "note": "The date is that of the cited printed definition, not a claim of earliest use; earlier uses are not checked. Whether the declinations include planetary latitude is not asserted. The technique is not presented as Hellenistic or medieval.",
+    "status": "attested_placidus_1657"
+   },
+   "method_provenance": "not_classical_earliest_use_attribution_unverified"
+  },
+  "dignities/chaldaean_bounds_ptolemy_i_21_v1": {
+   "applies_to": "derived_methods.essential_dignities.profile_results.chaldaean_bounds_ptolemy_i_21_v1",
+   "details": {
+    "attribution": "system_reported_by_ptolemy",
+    "chapter_numbering": {
+     "hubner_1998": "I.21",
+     "note": "Robbins pp.99-101, prose rule, no table",
+     "robbins_1940": "I.21"
+    },
+    "default_row_verification": "generated_from_stated_textual_rule",
+    "note": "Generated from the rule Ptolemy reports: the triplicity ruler sequence with Saturn and Mercury exchanging position, and so length, by sect. I.21 is the only known classical witness (Jones & Steele 2011 §1: 'attested in no other source').",
+    "row_exceptions": []
+   },
+   "statement": "Chaldaean terms as reported by Ptolemy, Tetrabiblos I.21: triplicity sequence, sect-dependent Saturn/Mercury order, lengths 8/7/6/5/4"
+  },
+  "dignities/chaldean_planetary_faces_firmicus_ii_4_v1": {
+   "applies_to": "derived_methods.essential_dignities.profile_results.chaldean_planetary_faces_firmicus_ii_4_v1",
+   "details": {
+    "citation_verification": "cited_from_methodology_research_report_not_independently_checked",
+    "complete_table_anchor": "Firmicus Maternus, Mathesis II.4.3 (complete 36-face table; Kroll-Skutsch ed. 1897, vol. I p.45; chapter II.4 pp.44-46)",
+    "conventional_name_note": "'Chaldean order' is the conventional modern name for this sequence; the profile does not claim the method begins with Firmicus",
+    "earliest_attributed_tradition": "Teucer of Babylon, transmitted through later compilations, not a surviving table (Hübner, Berichte zur Wissenschaftsgeschichte 39.1, 2016, 36-51: 'first witness, if not the inventor'; abstract only)",
+    "editorial_corrections": [],
+    "later_witness": "Lilly 1647 p.104 faces columns",
+    "not_to_be_confused_with": "Ptolemy's 'proper face', Tetrabiblos I.23 (Robbins pp.111-113); shares only the name 'Chaldaean' with the terms",
+    "parallel_witness": "Paulus Alexandrinus, Introduction ch.4 (Boer 1958 numbering, main text; Schmidt/Hand 1995 pp.9-10), 'seven-zoned sphere' (order and term per research report, not checked)"
+   },
+   "statement": "Firmicus Maternus, Mathesis II.4, planetary decans/faces in the order conventionally called Chaldean"
+  },
+  "dignities/dorothean_triplicity_three_rulers_v1": {
+   "applies_to": "derived_methods.essential_dignities.profile_results.dorothean_triplicity_three_rulers_v1",
+   "details": {
+    "chapter": "Carmen Astrologicum I.1 (Pingree pp.161-162); use of the rulers I.4 (pp.163-164, not checked)",
+    "citation_verification": "checked_against_cited_edition_pages",
+    "corroboration": "Valens II.1-2 (Pingree pp.54-56; Riley/Griscti pp.89-92; not checked)",
+    "cross_check_pending": "Dykes, Dorotheus's Carmen Astrologicum, 2nd ed. (not compared)",
+    "sign_specific_additional_shares": [
+     {
+      "application": "disclosed_not_applied",
+      "basis": "Pingree I.1 p.162 'and in Virgo is also a share for Mercury' (page checked) and the Greek verse in Hephaestio I.6 (online transcription only). A sign-specific share, not a fourth earth ruler; not added to the rulers.",
+      "planet": "mercury",
+      "sign": "virgo"
+     }
+    ],
+    "third_ruler_term": "third_and_common_ruler",
+    "third_ruler_term_source": "Holden's Rhetorius per research report, not checked; Pingree has 'then' (I.1), 'associate' (I.28), 'participant' (I.10)"
+   },
+   "statement": "Dorotheus, Carmen Astrologicum I.1 (Arabic recension; Pingree 1976 pp.161-162): the first two rulers exchange by sect and the third ('the associate of these two', I.28 p.196) participates by day and by night; the Greek verse in Hephaestio I.6 gives the same four triads (read in an online transcription following CCAG/TLG; the Pingree 1973 edition and Schmidt 1994 p.30 not checked)"
+  },
+  "dignities/egyptian_bounds_robbins_1940_v1": {
+   "applies_to": "derived_methods.essential_dignities.profile_results.egyptian_bounds_robbins_1940_v1",
+   "details": {
+    "attribution": "traditional_name_reported_by_ptolemy",
+    "chapter_numbering": {
+     "hubner_1998": "I.21",
+     "note": "Robbins table p.97",
+     "robbins_1940": "I.20"
+    },
+    "default_row_verification": "printed_table_transcription_not_rechecked",
+    "note": "Ptolemy reports these as the Egyptian terms. The Robbins printing is one realization of a table that later witnesses transmit with local variants. 'Egyptian' is the name Ptolemy reports; Babylonian tablets preserve forerunners (Jones & Steele, ISAW Papers 1, 2011; Steele, JCS 67, 2015); no table is claimed for the tablets.",
+    "row_exceptions": [],
+    "witnesses": [
+     "checked: Firmicus II.6.4-5, 10; Valens I.3; al-Bīrūnī, Tafhīm §453",
+     "not checked: Dorotheus via Hephaistio; Paulus ch.3; Abū Maʿshar, Abbr. 7.10"
+    ]
+   },
+   "statement": "Egyptian terms as reported by Ptolemy, Tetrabiblos I.20; Frank E. Robbins trans., Loeb 1940, pp.91-97, table p.97; a transmitted table (Robbins's printed recension), not a single manuscript witness"
+  },
+  "dignities/lilly_received_bounds_1647_v1": {
+   "applies_to": "derived_methods.essential_dignities.profile_results.lilly_received_bounds_1647_v1",
+   "details": {
+    "attribution": "named_author_printed_table",
+    "default_row_verification": "checked_against_first_edition_page_images",
+    "intra_book_variants": "Gemini Venus: chapter p.73 15-20, table ends 21; Sagittarius: Mercury chapter pp.76-77 15-20 and Saturn p.57 21-25, table 19/25",
+    "planet_totals_note": "Totals of the printed p.104 table as transcribed: Saturn 57, Jupiter 80, Mars 65, Venus 82, Mercury 76 (Robbins p.108 n.1: Jupiter 79, Mars 66); not normalised",
+    "row_exceptions": [
+     {
+      "evidence": [
+       "William Lilly, Christian Astrology (London, 1647), p.104, Termes columns, Wellcome copy (Internet Archive b30338724, leaf 138)",
+       "second edition (1659), p.104",
+       "the same book's planet chapters: Saturn p.57, Mercury pp.76-77, Venus p.73, Jupiter p.62, Mars p.66 list Leo 1-6, 7-13, 14-19, 20-25, 26-30; Mercury p.76 prints the 7-13 line under the Virgo glyph and the 1-7 line under the Leo glyph (read by sequence as Leo 7-13, Virgo 1-7)"
+      ],
+      "previous_recorded_row": [
+       [
+        "jupiter",
+        6
+       ],
+       [
+        "venus",
+        7
+       ],
+       [
+        "saturn",
+        6
+       ],
+       [
+        "mercury",
+        6
+       ],
+       [
+        "mars",
+        5
+       ]
+      ],
+      "row_changed": true,
+      "row_verification": "corrected_against_first_edition_page_images",
+      "sign": "leo"
+     }
+    ],
+    "source_priority": "Christian Astrology 1647 p.104 consolidated table",
+    "table_heading": "'...Dignities of the Planets according to Ptolomy' (Lilly's heading)"
+   },
+   "statement": "William Lilly, Christian Astrology (1647), p.104, Table of the Essential Dignities, Termes columns; Leo reads Saturn 6, Mercury 7, Venus 6, Jupiter 6, Mars 5"
+  },
+  "dignities/lilly_triplicity_compact_1647_v1": {
+   "applies_to": "derived_methods.essential_dignities.profile_results.lilly_triplicity_compact_1647_v1",
+   "details": {
+    "citation_verification": "cited_from_methodology_research_report_not_independently_checked",
+    "not_an_alias_of": [
+     "dorothean_triplicity_three_rulers_v1",
+     "ptolemy_triplicity_textual_corulership_v1"
+    ],
+    "note": "Fire, earth and air coincide with the first two Dorothean rulers, but water does not: by day Dorotheus gives Venus and Lilly gives Mars. Lilly keeps Mars for water by day and night without Ptolemy's Venus/Moon co-rulers.",
+    "water_rule": "mars_alone_by_day_and_night"
+   },
+   "statement": "William Lilly, Christian Astrology (1647), p.104, day/night triplicity table, headed 'according to Ptolomy', columns Di. and Noc. only; p.105: Mars 'ruleth onely that Triplicity both day and night', which Lilly attributes to Ptolomy and Naibod (Naibod 1560 not checked). This is Lilly's printed table, not the Dorothean table without its third ruler and not Ptolemy's co-rulership text"
+  },
+  "dignities/manilius_sign_decans_astronomica_iv_v1": {
+   "applies_to": "derived_methods.essential_dignities.profile_results.manilius_sign_decans_astronomica_iv_v1",
+   "details": {
+    "citation_verification": "cited_from_methodology_research_report_not_independently_checked",
+    "editorial_corrections": [
+     {
+      "adopted_reading": [
+       "capricorn",
+       "aquarius"
+      ],
+      "basis": "The transmitted readings break the sequence the poem itself sets up. Housman, M. Manilii Astronomicon liber quartus (1920) prints the transmitted Aries, Taurus at IV.359-360; his note on p.43 and his decan table on p.vi give Capricorn, Aquarius as the poem's own rule requires, accepting Scaliger's view that the transmitted reading is the poet's error. Goold (LCL 469) per research report, pages not checked. One table is kept and the correction disclosed.",
+      "cited_lines": "IV.359-360",
+      "decan_numbers": [
+       1,
+       2
+      ],
+      "passage": "IV.358-362",
+      "sign": "pisces",
+      "transmitted_reading": [
+       "aries",
+       "taurus"
+      ]
+     }
+    ]
+   },
+   "statement": "Manilius, Astronomica IV.294-386 (decan assignments from IV.312ff.); Pisces decans 1-2 follow the editorial correction of IV.359-360 (transmitted text: Aries, Taurus)"
+  },
+  "dignities/ptolemy_bounds_robbins_1940_v1": {
+   "applies_to": "derived_methods.essential_dignities.profile_results.ptolemy_bounds_robbins_1940_v1",
+   "details": {
+    "attribution": "complete_table_authorship_disputed",
+    "chapter_numbering": {
+     "hubner_1998": "I.21",
+     "note": "Robbins pp.103-105 account, table p.107",
+     "robbins_1940": "I.21"
+    },
+    "claim_layers": {
+     "complete_table_written_by_ptolemy": "disputed_unresolved",
+     "ptolemy_invented_these_terms": "not_claimed",
+     "ptolemy_prose_discussion_of_terms": "attested_in_cited_text",
+     "robbins_1940_numeric_table": "transmitted_printed_table"
+    },
+    "default_row_verification": "printed_table_transcription_not_rechecked",
+    "note": "Tolsa, 'The Table of Ptolemy's Terms (Tetr. 1.21)', Philologus 162.2 (2018) 247-264, DOI 10.1515/phil-2017-0023, argues the complete table is a late-antique systematization that entered the text c. 11th century (his argument, not consensus). The profile id names the printed table, not Ptolemy's authorship.",
+    "row_exceptions": [
+     {
+      "basis_for_product_reading": "Robbins prints Mars in both tables (English p.107, Greek p.106), and the manuscript totals in p.108 n.1 (Mars 66°) hold only with Mars; his apparatus for Libra (p.107) concerns lines 3-4 only",
+      "cited_transcription": "LacusCurtius (B. Thayer) online transcription of Robbins 1940",
+      "cited_transcription_reading": "saturn",
+      "printed_glyph_checked": true,
+      "printed_reading": "mars",
+      "printed_reading_evidence": [
+       "Ptolemy, Tetrabiblos, trans. F. E. Robbins (Loeb Classical Library, with Manetho; first printed 1940, 1964 reprint), p.107, English table 'Terms according to Ptolemy', Libra column 5: Mars 6 (Internet Archive L350ManethoHistoryOfEgyptPtolemyTetrabiblos, leaf 430)",
+       "the same page, University of Toronto copy (Internet Archive manethowithengli00maneuoft, leaf 431)",
+       "p.106, Greek table, Ζυγοῦ line 5: Mars, 6, cumulative 30",
+       "p.108 n.1: the totals some manuscripts add after the tables (Saturn 57°, Jupiter 79°, Mars 66°, Venus 82°, Mercury 76°) hold only with Mars in Libra line 5"
+      ],
+      "product_reading": "mars",
+      "row_changed": false,
+      "row_verification": "reading_differs_from_cited_transcription",
+      "segment_number": 5,
+      "sign": "libra"
+     }
+    ]
+   },
+   "statement": "Ptolemaic terms, Robbins 1940 transmitted table: the complete table printed after Ptolemy's discussion in Tetrabiblos I.20-21, Frank E. Robbins trans., Loeb 1940, pp.103-107; authorship of the complete table is disputed in scholarship"
+  },
+  "dignities/ptolemy_triplicity_textual_corulership_v1": {
+   "applies_to": "derived_methods.essential_dignities.profile_results.ptolemy_triplicity_textual_corulership_v1",
+   "details": {
+    "chapter_numbering": {
+     "concordance_note": "Robbins I.11-I.20 = Hübner I.12-I.21 (Robbins I.10 is split)",
+     "hubner_1998": "I.19",
+     "locator": "PAL ed. 9 text 1, 〈I.19〉 Περὶ τριγώνων",
+     "robbins_1940": "I.18",
+     "robbins_1940_pages": "pp.83-87"
+    },
+    "citation_verification": "checked_against_online_transcription_not_printed_page"
+   },
+   "statement": "Ptolemy, Tetrabiblos I.18 in Frank E. Robbins trans. (1940) = I.19 in W. Hübner ed. (1998). Following Hübner, fire, earth and air are each assigned to two planets (Sun+Jupiter, Venus+Moon, Saturn+Mercury), sect giving first governance and the other planet keeping a share (secondary_ruler); water is left to Mars, with Venus by day and Moon by night as co-rulers. This product's earlier one-ruler-per-sect table was its own simplification: Robbins (pp.83-87) and Hübner both assign two planets. secondary_ruler adds no score."
+  },
+  "dignities/traditional_seven_domicile_exaltation_signs_v1": {
+   "applies_to": "derived_methods.essential_dignities.profile_results.traditional_seven_domicile_exaltation_signs_v1",
+   "degree_policy": "specific_exaltation_degrees_not_selected_or_evaluated",
+   "not_evaluated": [
+    "detriment",
+    "fall",
+    "peregrine",
+    "reception"
+   ],
+   "source_scope_note": "Ptolemy I.17 and I.19 support the sign-level output used here. The Dorotheus, Valens, and Firmicus passages, which also attest these assignments, transmit exact-degree traditions that this profile deliberately does not evaluate; their inclusion does not imply that ancient traditions were sign-only. Whether these witnesses are independent of Ptolemy has not been evaluated. For manuscript variation in the exaltation degrees see Ossendrijver (2025), Journal for the History of Astronomy 56.4: 396-411, table 2, DOI 10.1177/00218286251353245 (table 2 not consulted; checked at the bibliography level only).",
+   "sources": [
+    {
+     "location": "I.17 (Robbins, LCL 435, 1940, pp.79-83 = Hübner 1998 I.18) and I.19 (Robbins; = Hübner I.20)",
+     "role": "whole_sign_domicile_and_exaltation_basis_without_exact_degrees_in_the_cited_chapters",
+     "work": "Ptolemy, Tetrabiblos"
+    },
+    {
+     "location": "I.1 (houses of the planets) and I.2 (exaltations), Pingree 1976 p.162",
+     "role": "also_attested_sign_assignments_source_also_supplies_exact_degrees_not_evaluated_by_this_profile",
+     "work": "Dorotheus of Sidon, Carmen Astrologicum"
+    },
+    {
+     "location": "III.4 (Pingree 1986 numbering; Riley, CSUS PDF (2010) p.61)",
+     "role": "also_attested_exaltation_signs_source_also_supplies_exact_degrees_not_evaluated_by_this_profile",
+     "work": "Vettius Valens, Anthologies"
+    },
+    {
+     "location": "II.2 and II.3.5-6 (Kroll-Skutsch-Ziegler)",
+     "role": "also_attested_domiciles_and_exaltation_signs_source_also_supplies_exact_degrees_not_evaluated_by_this_profile",
+     "work": "Firmicus Maternus, Mathesis"
+    }
+   ],
+   "statement": "Ptolemy, Tetrabiblos I.17, I.19 (Robbins 1940; = Hübner I.18, I.20); also attested in Dorotheus, Valens and Firmicus"
+  },
+  "eclipses/classification_borderline": {
+   "applies_to": "astronomical_data.lunar_events.eclipses.previous_*.classification_borderline",
+   "note": "Over 1181 solar eclipses 1900-2399 the Swiss type or centrality differs from the NASA canon in 7 cases, all within the canon's own classification margin. Inside the margin both classifications are defensible at the stated precision; outside it they agree. Lunar eclipse classes have no criterion here.",
+   "quantities": {
+    "gamma_earth_radii": "signed distance of the shadow axis from Earth's centre at the Swiss maximum, in Earth equatorial radii (6378.137 km), from geocentric apparent equatorial vectors of date; positive north",
+    "moon_sun_diameter_ratio": "Swiss sol_eclipse_where attr[1] at each instant Swiss uses to decide the type"
+   },
+   "reasons": {
+    "diameter_ratio_near_one": "an annular, total or hybrid eclipse whose Moon/Sun apparent diameter ratio at the greatest-eclipse ground point is within 0.001 of 1 at the maximum or at the central-phase begin or end",
+    "hybrid_type": "a hybrid eclipse, whose annular segment may be confined to the sunrise or sunset ends of the track",
+    "shadow_axis_grazes_earth_limb": "a central or non-central eclipse with 0.99 <= |gamma| <= 1.005"
+   },
+   "sources": [
+    "Swiss Ephemeris 2.10.03 swecl.c: eclipse_where, sol_eclipse_when_glob, swe_sol_eclipse_where",
+    "NASA GSFC Five Millennium Canon of Solar Eclipses (Espenak & Meeus, NASA/TP-2006-214141): type, gamma and magnitude columns"
+   ],
+   "states": [
+    "inside_classification_margin",
+    "outside_classification_margin",
+    "no_criterion_for_lunar_eclipses"
+   ]
+  },
+  "eclipses/contact_labels": {
+   "applies_to": "astronomical_data.lunar_events.eclipses.previous_*.contacts",
+   "source": "Swiss Ephemeris 2.10.03 swecl.c tret index documentation; labels chosen by eclipse kind and type",
+   "vocabulary": {
+    "lunar": [
+     "partial_begin",
+     "partial_end",
+     "totality_begin",
+     "totality_end",
+     "penumbral_begin",
+     "penumbral_end"
+    ],
+    "solar": [
+     "partial_begin",
+     "partial_end",
+     "totality_begin",
+     "totality_end",
+     "annularity_begin",
+     "annularity_end",
+     "central_phase_begin",
+     "central_phase_end",
+     "center_line_begin",
+     "center_line_end"
+    ]
+   }
+  },
+  "eclipses/maximum": {
+   "applies_to": "astronomical_data.lunar_events.eclipses.previous_*.instant_definition",
+   "instant_definitions": {
+    "lunar": "swiss_minimum_limb_separation_of_sun_and_earth_seen_from_moon_centre",
+    "solar": "swiss_geocentric_minimum_limb_separation_of_sun_and_moon"
+   },
+   "note": "The three definitions name different instants; external comparison with NASA greatest eclipse differs by seconds.",
+   "sources": [
+    "Swiss Ephemeris Programming Interface (2.10.03) §8.3, §8.10, and swecl.c: time of maximum eclipse",
+    "NASA GSFC, Key to Solar Eclipse Maps and Glossary: greatest eclipse is the instant the shadow axis passes closest to Earth's centre, in dynamical time",
+    "IMCCE, Éclipses de Soleil: maximum is the instant of largest magnitude"
+   ]
+  },
+  "extra_angles": {
+   "applies_to": "astronomical_data.extra_angles",
+   "calculation_source_labels": {
+    "swiss_ephemeris_houses_ex": "swe.houses_ex 附帶回傳",
+    "vertex_longitude_antipode": "由 Vertex 黃經對蹠導出"
+   },
+   "note": "皆非古典占星的四角。本產品輸出其數值，不對其占星用途表示任何立場。"
+  },
+  "fixed_stars/policy": {
+   "applies_to": "astronomical_data.fixed_star_policy",
+   "note": "座標為天文計算結果（fixstar2_ut＋sefstars.txt，目錄未獨立核對）；不輸出合相判定：要先選幾何（黃道合相、同升或中天、地平事件），再定容許度與歲差。逐星來源考據延後。"
+  },
+  "fixed_stars/zh_names": {
+   "applies_to": "astronomical_data.fixed_star_policy.zh_name_verification",
+   "checked": {
+    "achernar": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "alcyone": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "aldebaran": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "algol": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "alkaid": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "alphecca": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "alpheratz": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "altair": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "antares": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "arcturus": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "bellatrix": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "betelgeuse": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "canopus": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "capella": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "castor": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "deneb": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "deneb_algedi": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "fomalhaut": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "hadar": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "hamal": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "menkar": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "polaris": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "pollux": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "procyon": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "regulus": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "rigel": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "schedar": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "sirius": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "spica": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "vega": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "vindemiatrix": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "zubenelgenubi": {
+     "cited_tables": [
+      "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    }
+   },
+   "corrections": {
+    "algorab": {
+     "cited_tables": [
+      "zh_wikipedia_star_name_table",
+      "hksm_bright_stars"
+     ],
+     "previous_label": "軫宿一",
+     "reason": "per the cited tables 軫宿一 is γ Crv; the catalogue record matched here is δ Crv, which the tables name 軫宿三",
+     "status": "corrected_against_cited_star_name_table",
+     "swiss_catalogue_designation": "deCrv"
+    },
+    "mira": {
+     "cited_tables": [
+      "tam_journal_2017_02_mira"
+     ],
+     "previous_label": "芻蒿增二",
+     "reason": "the cited Taipei Astronomical Museum article names ο Ceti 蒭藁增二 (蒭 is a variant of 芻); the earlier label 芻蒿增二 had the wrong asterism character",
+     "status": "corrected_against_cited_star_name_table",
+     "swiss_catalogue_designation": "omiCet"
+    }
+   },
+   "note": "status_by_key 是每顆星中文名的核對狀態；所依對照表與更正紀錄如下。",
+   "tables": {
+    "hksm_bright_stars": "香港太空館〈亮星中英對照表〉（星座與神話，教師專區），繁體版",
+    "tam_journal_2017_02_mira": "臺北市立天文科學教育館《天文館期刊》2017 年 2 月，p.32〈不可思議的星星：蒭藁增二〉",
+    "zh_wikipedia_star_name_table": "zh.wikipedia〈中西星名對照表〉"
+   }
+  },
+  "horizon_events": {
+   "applies_to": "astronomical_data.horizon_events.contract.provenance",
+   "circumpolar_geometry_source": "點中心、幾何地平、無折射的判準 |φ|+|δ|>90°；本模組只用它跳過不可能有事件的日子，不用它作最終判定",
+   "event_definition": "Swiss Ephemeris swe_rise_trans default: refracted upper limb crossing the apparent horizon",
+   "event_definition_sources": "Swiss swephprg.htm (2.10.03) §8.12, §8.12.1; USNO RST_defs (Sun centre at zenith distance 90.8333° = 16′ + 34′); USNO Astronomical Almanac Glossary (2023 ed.). Upper limb as USNO for Sun and Moon; planets likewise by Swiss, arc-second semidiameters",
+   "state_vocabulary_source": "這組狀態詞彙是產品的分類，不是 USNO 的；'event not found' 不等於 'never rises'",
+   "transit_definition_source": "子午圈中天為時角 0（上）／180°（下），不是高度極值；拱極體有中天無升降"
+  },
+  "horizon_events/statuses": {
+   "applies_to": "astronomical_data.horizon_events",
+   "event_status_vocabulary": [
+    "event_found",
+    "grazing_contact",
+    "always_above_threshold",
+    "always_below_threshold",
+    "no_event_within_search_interval",
+    "numerically_unavailable",
+    "method_not_applicable"
+   ],
+   "side_status_vocabulary": [
+    "event_found",
+    "no_event_within_search_interval",
+    "numerically_unavailable",
+    "not_searched"
+   ],
+   "visibility_vocabulary": [
+    "rises_and_sets",
+    "above_horizon_between_bracketing_events",
+    "below_horizon_between_bracketing_events",
+    "continuously_above_during_search_interval",
+    "continuously_below_during_search_interval",
+    "grazing_contact",
+    "indeterminate_evidence_conflict",
+    "numerically_unavailable",
+    "method_not_applicable"
+   ]
+  },
+  "houses/availability": {
+   "applies_to": "derived_methods.house_division.availability",
+   "reason_vocabulary": [
+    "unique_ascendant_undefined",
+    "placidus_no_semiarc",
+    "swiss_house_fallback_rejected",
+    "degenerate_cusp_cycle_rejected",
+    "quadrant_high_latitude_sensitivity",
+    "polar_band_geometry",
+    "mc_below_horizon_rejected"
+   ],
+   "source": "本產品依緯度帶與宮位制是否為四分宮制所訂的四態分類",
+   "vocabulary": [
+    "available",
+    "available_polar_geometry",
+    "unstable",
+    "unavailable"
+   ]
+  },
+  "library_info": {
+   "applies_to": "library_info",
+   "note": "兩者是不同的版本號：前者是 pip 安裝的 pyswisseph 套件版本，後者是其內建 Swiss Ephemeris C 函式庫自報的版本，數字格式相近但並非同一個值。tz_database 是本地時間換算所用的 IANA 時區資料庫版本，它不由本產品固定：macOS 由作業系統提供、容器由 image 提供，更新後同一組輸入可能換算出不同的 UTC。"
+  },
+  "lots": {
+   "applies_to": "derived_methods.lots",
+   "method_provenance": "valens_paulus_sect_reversing_lineage",
+   "sources": "Paulus, Eisagōgika ch.23 (Boer 1958, main text; Schmidt/Hand 1995 pp.43–45; neither edition checked), the cleanest witness: the Greek-Latin first printing (Wittenberg: Lehmann, 1586), chapter on the seven lots of Panaretus, reverses Fortune and Spirit at night. Valens III.11 (Pingree p.147; = III.14 Kroll/Riley, '14K;11P') also uses the day formula at night once the Moon has set: not adopted (Greenbaum, Culture and Cosmos 11, 2007, p.183). Abū Maʿshar's line via al-Bīrūnī, Tafhīm §476 (Wright 1934); Abbr. VI.3–4 and Bonatti not checked. Named disagreement not adopted: Ptolemy III.10 (Robbins pp.275–277) = III.11 (Hübner), Fortune Sun to Moon by day and night (Sun:ASC = Moon:Fortune); at night it falls on the reversing Spirit's degree (Rhetorius, CCAG VIII/4 p.121, via Greenbaum 2007 p.181). Ptolemy gives no Spirit formula there; a non-reversing Spirit attributed to Ibn Ezra is not checked."
+  },
+  "lots/boundary_policy": {
+   "applies_to": "derived_methods.lots.boundary_policy",
+   "rule": "sect_status == boundary_both_shown 時，fortune／spirit 是依 >0° 判準的主要值；by_sect 中另一日夜盤公式的結果並列為比較值，不隱藏；落宮與相位只用主要值"
+  },
+  "sect": {
+   "applies_to": "derived_methods.sect",
+   "method_provenance": "product_convention_sources_checked_do_not_specify_boundary",
+   "sources": "Passages (not independently verified): Dorotheus I.1 (Pingree pp.161–162), I.22 (p.183); Ptolemy I.7 (Robbins p.43); Valens III.5 (Pingree pp.133–134); Paulus ch.6, ch.23 (Boer 1958, main text; Schmidt 1995 pp.13, 43); Firmicus II.7.1–4; Rhetorius ch.2, ch.44 (Holden 2009 numbering, a compilation of epitomes; not verified); Abū Maʿshar, Great Introduction II.9.1 (locator not verified), Abbreviation III.3 (Dykes ITA §III.2); al-Qabīṣī I (Latin 1512); Lilly 1647 p.113 (Hayz), p.42. Most treat a diurnal or nocturnal birth as a given category, or describe planetary conditions as above or below the earth; the closest to a solar day/night criterion are Valens III.11 (Pingree; = III.14 Kroll/Riley, '14K;11P'; the Moon 'above the earth' read as until it sets) and Lilly 1647 p.42 (checking the chart time by the Sun's house). None specifies sun-centre, upper limb or refraction; the >0° rule is a product convention."
+  },
+  "sect/near_horizon_band": {
+   "applies_to": "derived_methods.sect.near_horizon_band",
+   "geometric_reason": "標準視日出（上緣初現）時太陽中心約在幾何地平下 50′（折射約 34′＋太陽半徑約 16′），故 −50′ < h ≤ 0° 是幾何中心判準與視日出判準會分歧的區間；本產品對稱擴成 ±50′ 作為敏感提示帶。",
+   "time_span_note": "依緯度與季節而異：低緯每次穿越約數分鐘，60°N 至點約 20 分鐘，更高緯可達數十分鐘，近極圈時太陽可能整夜停在帶內；不給固定分鐘數。"
+  },
+  "time/delta_t_model": {
+   "applies_to": "astronomical_data.time.delta_t_model and calculation_dossier.time_conversion.delta_t_model",
+   "provenance": "Swiss 2.10.03 calc_deltat(): SMH 2016 model before 1955 (1000-day transition), dt[] table 1955–2028 (2024–2028 extrapolated), long-term formula beyond; σ orders from NASA GSFC (Espenak): Stephenson & Houlden 1986 to 1962, Huber 2000 after 2028",
+   "status_vocabulary": [
+    "historical_reconstruction",
+    "measured_era_table",
+    "swiss_table_prediction",
+    "near_future_extrapolation",
+    "far_epoch_extrapolation"
+   ]
+  },
+  "time/sidereal_time_model": {
+   "applies_to": "astronomical_data.time.sidereal_time_model and calculation_dossier.time_conversion.sidereal_time_model",
+   "segment_vocabulary": [
+    "iau_2006_short_term",
+    "swiss_long_term"
+   ],
+   "source": "Swiss Ephemeris 2.10.03 swe_sidtime / swe_sidtime0 (swephlib.c SIDT_LTERM_T0, SIDT_LTERM_T1)"
+  },
+  "void_of_course": {
+   "applies_to": "derived_methods.void_of_course",
+   "boundary_simultaneity_policy": {
+    "note": "simultaneous_boundary：某個相位精確完成的時刻與月亮離開本星座的時刻，相差不超過求根容差 1e-06 日（約 0.086 秒），數值上分不出先後。此情形既不判為空亡、也不判為非空亡：is_void_of_course 為 null，verdict 為 simultaneous_boundary；該相位與兩個根的括號區間一併列出，供複算。",
+    "result_when_only_simultaneous": "simultaneous_boundary",
+    "tolerance_days": 1e-06
+   },
+   "method": "modern_sign_bounded_exact_perfection_v1",
+   "method_provenance": "not_classical_attribution_unresolved",
+   "present_instant_policy": {
+    "counts_toward_void_verdict": true,
+    "coverage": "two_sided",
+    "criterion": "abs_offset_from_exact_at_chart_moment_le_epsilon",
+    "exact_residual_epsilon_degrees": 0.0002777777777777778,
+    "note": "盤上時刻月亮距精確相位 1 角秒以內（剛要完成或剛完成都算）的相位，與相位表的「此刻精確」同一標準；它此刻正在完成，故計入空亡判定（月亮不空亡）。它與未來相位分列兩個欄位以便分辨；all_candidates 只列未來相位，第一個最快完成。",
+    "root_search_half_window_days": 0.001,
+    "root_tolerance_days": 1e-08,
+    "shared_with": "derived_methods.aspects.degree_based.application_policy.exact_residual_epsilon_degrees"
+   },
+   "source_verification": {
+    "competing_attributions": [
+     "al_h_morrison_20th_century",
+     "medieval_arabic_transmission"
+    ],
+    "consequence": "method_status cannot be raised to adopted until the attribution is settled against a named edition",
+    "consulted": [
+     "Lilly, Christian Astrology 1647 p.112",
+     "Māshāʾallāh, On Reception ch.1 (Dykes 2008 p.443, in the translator's published excerpt pp.443-446)",
+     "Sahl, 'De cursu planete vacui', in Quadripartitum Ptolomei ... (Venice 1519; Seville copy, archive.org ARes08317, PDF p.246, left column)"
+    ],
+    "exact_perfection": "Later literature attributes requiring exact perfection before the sign exit to Al H. Morrison (an article in the AFA Journal, October 1966; the article was not read); an earlier origin has not been checked.",
+    "not_consulted": [
+     "Al H. Morrison, 'Void of Course Moon Periods: Their Uses and What May Come of Ignoring Them', AFA Journal XXVIII.10 (October 1966) p.10: located through the AFA journal author index; the article was not read",
+     "Māshāʾallāh, On Reception ch.7 (Dykes 2008 p.467)",
+     "Abū Maʿshar, Abbreviation III.21-22 (Brill 1994 / ARHAT 1997)",
+     "al-Qabīṣī, Introduction III (Warburg 2004)",
+     "Sahl, Introduction §5.10 (Dykes 2008 p.35) and the Arabic text",
+     "Bonatti, Tract 3 definition chapter"
+    ],
+    "primary_texts_independently_transcribed": false,
+    "sign_boundary_rule_attribution": "unresolved",
+    "sign_condition": "The Moon not perfecting an aspect before leaving its sign: Māshāʾallāh, On Reception ch.1 (Dykes 2008 p.443; ch.7, p.467, not checked); Lilly, Christian Astrology 1647 p.112 'Voyd of course' (bounded by the sign; the page does not mention moieties). Sahl's definition in the Latin Quadripartitum collection (Venice 1519) is that the Moon joins no planet and none joins it; it names neither the sign boundary nor an orb. An earlier explicit statement is attributed to Abū Maʿshar, Abbreviation III.21-22 (not consulted)."
+   }
+  }
+ },
+ "register_id": "armillary-method-sources",
+ "version": "1"
+}

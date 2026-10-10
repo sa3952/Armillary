@@ -1,5 +1,6 @@
-# Installed inside the nginx http context after rendering the three placeholders.
+# Installed inside the nginx http context after rendering the placeholders.
 # No real domain, address, credential, or TLS private key belongs in Git.
+# The line carrying the staging noindex marker is rendered only for a staging host.
 
 # Every zone below is keyed on $binary_remote_addr so a zone bounds one client
 # rather than the whole site. nginx is the edge here, so this is the real peer
@@ -10,13 +11,86 @@
 # A zone key cannot be changed by reload; applying a change to one requires a
 # full restart, and the operator procedure owns verifying that the restart took
 # effect.
-limit_req_zone $binary_remote_addr zone=private_alpha_chart_client:10m rate=30r/m;
+limit_req_zone $binary_remote_addr zone=armillary_chart_client:10m rate=30r/m;
 # Static asset budget is sized for ordinary browsing rather than for a single
 # request: one page bootstrap issues about a dozen asset GETs, and the burst
-# below absorbs several concurrent bootstraps. Concurrency is bounded
-# separately by limit_conn.
-limit_req_zone $binary_remote_addr zone=private_alpha_static_client:10m rate=600r/m;
-limit_conn_zone $binary_remote_addr zone=private_alpha_connections:10m;
+# below absorbs several concurrent bootstraps. Requests in progress are bounded
+# separately by limit_conn.  limit_conn counts requests (each HTTP/2 stream is
+# one), not connections: it runs in the request phase, so a connection that has
+# not finished its TLS handshake or request header is not counted.  Those are
+# bounded by the client header timeout in nginx.conf and, per source, by the host
+# firewall (deploy/staging/host/armillary-ingress.nft).
+limit_req_zone $binary_remote_addr zone=armillary_static_client:10m rate=600r/m;
+limit_conn_zone $binary_remote_addr zone=armillary_connections:10m;
+
+# Cache-Control.  The edge is the only emitter of the header (the
+# application's copy is hidden below), but the policy for site responses is
+# the application's: it alone can tell a page from an asset whose `?v=`
+# equals the content version of the bytes it serves
+# (backend/app/privacy_logging.py `_cache_control`).  The edge relays that
+# value and owns only the privacy floor beneath it, which holds even if the
+# application regresses: anything under /api (birth data, place queries), any
+# 4xx/5xx, any answer the edge generates itself, and any answer without the
+# header is `no-store`.  The edge-served security.txt revalidates against the
+# ETag/Last-Modified NGINX sends for a static file.
+map $uri $armillary_cache_scope {
+    default site;
+    ~^/api(?:/|$) api;
+    /.well-known/security.txt edge_file;
+}
+map "$armillary_cache_scope $status $upstream_http_cache_control" $armillary_cache_control {
+    default no-store;
+    "~^site [23][0-9][0-9] (?<armillary_relayed_cache_control>.+)$" $armillary_relayed_cache_control;
+    "~^edge_file (?:200|304) $" no-cache;
+}
+
+# An answer NGINX writes itself (413, 429, 502, 503) for an /api path is a
+# JSON refusal in the application's shape, {"detail": {"code", "message"}},
+# with codes and messages from backend/app/refusals.py (that table is the
+# owner; tests/deployment/test_edge_api_refusals.py holds these bodies to it
+# against a running NGINX).  Pages keep the HTML pages.  The bodies are
+# written here rather than rendered from the table because the renderer runs
+# on the host's stdlib-only python3, which cannot import the application.
+map $uri $armillary_edge_error_kind {
+    default html;
+    ~^/api(?:/|$) json;
+}
+# Retry-After on every busy or unavailable answer the edge writes itself; an
+# application answer that carries its own (a 503 compute refusal) keeps it and
+# gets no second one.  The value is the application's RETRY_AFTER_SECONDS.
+map "$status $upstream_http_retry_after" $armillary_edge_retry_after {
+    default "";
+    "~^(?:429|502|503) $" 5;
+}
+
+# The canonical redirects (plain HTTP, www) keep the path and drop the query:
+# an outside link may carry birth data there, and the application never reads
+# a query on a page.  The path is the raw one the client sent, still encoded:
+# the decoded $uri would turn %3F back into a query and %0D%0A into a line
+# break in Location.
+map $request_uri $armillary_redirect_path {
+    "~^(?<armillary_raw_path>[^?]*)" $armillary_raw_path;
+}
+
+# An explicit default on each port.  Without it the first server block
+# for a port answered every unknown Host/SNI, so the www vhost presented its
+# certificate and redirect to arbitrary names.  444 closes the connection;
+# ssl_reject_handshake refuses TLS before any certificate is sent.
+server {
+    listen 80 default_server;
+    server_name _;
+    access_log off;
+    error_log /var/log/nginx/error.log emerg;
+    return 444;
+}
+
+server {
+    listen 443 ssl http2 default_server;
+    server_name _;
+    access_log off;
+    error_log /var/log/nginx/error.log emerg;
+    ssl_reject_handshake on;
+}
 
 server {
     listen 80;
@@ -35,14 +109,14 @@ server {
     }
 
     location ^~ /.well-known/acme-challenge/ {
-        auth_basic off;
         root /var/lib/letsencrypt;
         default_type text/plain;
         try_files $uri =404;
     }
 
     location / {
-        return 308 https://$server_name$request_uri;
+        add_header Cache-Control "no-store" always;
+        return 308 https://$server_name$armillary_redirect_path;
     }
 }
 
@@ -55,7 +129,17 @@ server {
     if ($request_method !~ ^(?:GET|HEAD)$) {
         return 405;
     }
-    return 308 https://__STAGING_SERVER_NAME__$request_uri;
+    # The certificate names www, so HTTP-01 renewal must be able to
+    # reach the challenge here; a server-level redirect ran before any location.
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/lib/letsencrypt;
+        default_type text/plain;
+        try_files $uri =404;
+    }
+    location / {
+        add_header Cache-Control "no-store" always;
+        return 308 https://__STAGING_SERVER_NAME__$armillary_redirect_path;
+    }
 }
 
 server {
@@ -64,8 +148,12 @@ server {
     ssl_certificate __TLS_CERTIFICATE_PATH__;
     ssl_certificate_key __TLS_CERTIFICATE_KEY_PATH__;
     ssl_protocols TLSv1.2 TLSv1.3;
+    # TLS 1.2 offers only ECDHE key exchange with AEAD ciphers, so every
+    # protocol on offer is forward-secret whatever the certificate's key type;
+    # the TLS 1.3 suites are all ECDHE+AEAD already and are left to OpenSSL.
+    ssl_ciphers ECDHE+AESGCM:ECDHE+CHACHA20;
     ssl_session_tickets off;
-    ssl_session_cache shared:private_alpha_tls:10m;
+    ssl_session_cache shared:armillary_tls:10m;
     ssl_session_timeout 10m;
     access_log off;
     error_log /var/log/nginx/error.log emerg;
@@ -74,7 +162,7 @@ server {
     add_header Content-Security-Policy "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'" always;
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
     add_header Cache-Control "no-store" always;
-    return 308 https://__STAGING_SERVER_NAME__$request_uri;
+    return 308 https://__STAGING_SERVER_NAME__$armillary_redirect_path;
 }
 
 server {
@@ -84,8 +172,12 @@ server {
     ssl_certificate __TLS_CERTIFICATE_PATH__;
     ssl_certificate_key __TLS_CERTIFICATE_KEY_PATH__;
     ssl_protocols TLSv1.2 TLSv1.3;
+    # TLS 1.2 offers only ECDHE key exchange with AEAD ciphers, so every
+    # protocol on offer is forward-secret whatever the certificate's key type;
+    # the TLS 1.3 suites are all ECDHE+AEAD already and are left to OpenSSL.
+    ssl_ciphers ECDHE+AESGCM:ECDHE+CHACHA20;
     ssl_session_tickets off;
-    ssl_session_cache shared:private_alpha_tls:10m;
+    ssl_session_cache shared:armillary_tls:10m;
     ssl_session_timeout 10m;
 
     access_log off;
@@ -96,16 +188,10 @@ server {
         return 421;
     }
 
-    auth_basic "Private Alpha";
-    auth_basic_user_file /etc/nginx/private-alpha.htpasswd;
 
     client_max_body_size 16k;
     client_body_buffer_size 32k;
     client_body_temp_path /run/nginx-client-body;
-    client_body_timeout 10s;
-    client_header_timeout 10s;
-    keepalive_timeout 10s;
-    send_timeout 30s;
 
     limit_req_status 429;
     limit_conn_status 503;
@@ -113,69 +199,116 @@ server {
     add_header Strict-Transport-Security "max-age=31536000" always;
     add_header Content-Security-Policy "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'" always;
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
-    add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+    add_header X-Robots-Tag "noindex, nofollow, noarchive" always;  # staging_noindex
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "no-referrer" always;
     add_header Cross-Origin-Opener-Policy "same-origin" always;
     add_header Cross-Origin-Embedder-Policy "require-corp" always;
     add_header Cross-Origin-Resource-Policy "same-origin" always;
-    add_header Cache-Control "no-store" always;
+    add_header Cache-Control $armillary_cache_control always;
 
-    error_page 413 /private-alpha-error-413.html;
-    error_page 429 /private-alpha-error-429.html;
-    error_page 502 /private-alpha-error-502.html;
-    error_page 503 /private-alpha-error-503.html;
+    # 413 goes to a named location.  An error_page URI is a new
+    # location match, which re-runs the client_max_body_size check; HTTP/2 does
+    # not mark a Content-Length-rejected body as discarded, so the 413 page
+    # failed its own check and NGINX sent its built-in English page instead.
+    # A named location is entered after that check.
+    error_page 413 @armillary_error_413;
+    error_page 429 /_error/429.$armillary_edge_error_kind;
+    error_page 502 /_error/502.$armillary_edge_error_kind;
+    error_page 503 /_error/503.$armillary_edge_error_kind;
+    add_header Retry-After $armillary_edge_retry_after always;
 
-    # Public vulnerability-reporting metadata is the only unauthenticated
-    # application-domain file.  Keep an exact file alias rather than opening a
-    # generic dot-path or the immutable frontend mount.
+    # Public vulnerability-reporting metadata is the only file the edge serves
+    # itself.  Keep an exact file alias rather than opening a generic dot-path
+    # or the immutable frontend mount.
     location = /.well-known/security.txt {
-        auth_basic off;
-        limit_req zone=private_alpha_static_client burst=40 nodelay;
-        limit_conn private_alpha_connections 32;
+        limit_req zone=armillary_static_client burst=40 nodelay;
+        limit_conn armillary_connections 32;
         alias /var/www/project-armillary/.well-known/security.txt;
         default_type text/plain;
+        # RFC 9116 §3: text/plain with the charset parameter set to utf-8.
+        # The mime table types the file but names no charset.
+        charset utf-8;
     }
 
-    location = /private-alpha-error-413.html {
+    location @armillary_error_413 {
         internal;
-        auth_basic off;
         default_type text/html;
         return 413 '<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><title>請求過大</title><p>送出的資料超過服務上限。請減少內容後重試。</p>';
     }
-    location = /private-alpha-error-429.html {
+    location = /_error/429.html {
         internal;
-        auth_basic off;
         default_type text/html;
         return 429 '<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><title>請求過多</title><p>短時間內請求過多。請稍後再試。</p>';
     }
-    location = /private-alpha-error-502.html {
+    location = /_error/502.html {
         internal;
-        auth_basic off;
         default_type text/html;
         return 502 '<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><title>服務暫時中斷</title><p>服務暫時無法連線。請稍後再試。</p>';
     }
-    location = /private-alpha-error-503.html {
+    location = /_error/503.html {
         internal;
-        auth_basic off;
         default_type text/html;
         return 503 '<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><title>服務忙碌</title><p>服務目前忙碌。請稍後再試。</p>';
+    }
+    # The JSON siblings for /api paths ($armillary_edge_error_kind).  413
+    # on the two body routes uses its own named location (a URI
+    # error page re-runs the body-size check), declared in those locations.
+    location @armillary_api_error_413 {
+        internal;
+        default_type application/json;
+        return 413 '{"detail":{"code":"request_body_too_large","message":"請求內容超過 16 KiB 上限。"}}';
+    }
+    location = /_error/429.json {
+        internal;
+        default_type application/json;
+        return 429 '{"detail":{"code":"edge_rate_limited","message":"短時間內請求過多。請稍後再試。"}}';
+    }
+    location = /_error/502.json {
+        internal;
+        default_type application/json;
+        return 502 '{"detail":{"code":"upstream_unavailable","message":"服務暫時無法連線。請稍後再試。"}}';
+    }
+    location = /_error/503.json {
+        internal;
+        default_type application/json;
+        return 503 '{"detail":{"code":"request_capacity_exhausted","message":"服務目前忙碌，請稍後重試。"}}';
     }
 
     # `server_tokens off` hides nginx's own banner but not an upstream one.
     # Keep this defence in depth even though application-owned capacity
     # responses now remain inside the ASGI security-header/telemetry boundary.
     proxy_hide_header Server;
+    # The application sends these too; `add_header` above does not replace an
+    # upstream header, so each reached the browser twice.  The edge stays
+    # authoritative, including on NGINX-generated error pages.  The
+    # application's X-Robots-Tag is hidden, so the edge alone decides whether
+    # noindex is sent; Cache-Control is hidden and re-sent from
+    # $armillary_cache_control above, so the browser sees it exactly once.
+    proxy_hide_header Content-Security-Policy;
+    proxy_hide_header X-Content-Type-Options;
+    proxy_hide_header Referrer-Policy;
+    proxy_hide_header Permissions-Policy;
+    proxy_hide_header Cross-Origin-Opener-Policy;
+    proxy_hide_header Cross-Origin-Embedder-Policy;
+    proxy_hide_header Cross-Origin-Resource-Policy;
+    proxy_hide_header X-Robots-Tag;
+    proxy_hide_header Cache-Control;
 
     # Segment-bounded chart subtree: covers /api/chart and /api/chart/...
     # without treating /api/chartography as a sensitive chart route.
     location ~ ^/api/chart(?:/|$) {
-        limit_req zone=private_alpha_chart_client burst=10 nodelay;
+        # An error_page here replaces every inherited one, so all four are named.
+        error_page 413 @armillary_api_error_413;
+        error_page 429 /_error/429.json;
+        error_page 502 /_error/502.json;
+        error_page 503 /_error/503.json;
+        limit_req zone=armillary_chart_client burst=10 nodelay;
         # NGINX counts each concurrent HTTP/2 request here, and one cold page
         # load fans out to about a dozen assets over a single TLS connection.
         # This budget admits two complete page fanouts with headroom while the
         # application retains its separate general and compute caps.
-        limit_conn private_alpha_connections 32;
+        limit_conn armillary_connections 32;
 
         # Stream the bounded request and response instead of writing birth data
         # or a calculation dossier to nginx proxy temporary files.
@@ -205,13 +338,18 @@ server {
     # Segment-bounded place-search subtree.  This is a JSON compute endpoint,
     # not static content: it queries the bundled FTS5 catalog and its cost
     # varies with the submitted terms.  Without its own location it fell through
-    # to `location /` and inherited the static zone's 120 r/m, the loosest limit
+    # to `location /` and inherited the static zone's 600 r/m, the loosest limit
     # in this file, while being the most cost-amplifying route measured.  It is
     # bounded here at the chart rate and given a shorter read timeout, because
     # the application now caps its own statement budget below that.
     location ~ ^/api/places/search(?:/|$) {
-        limit_req zone=private_alpha_chart_client burst=5 nodelay;
-        limit_conn private_alpha_connections 32;
+        # An error_page here replaces every inherited one, so all four are named.
+        error_page 413 @armillary_api_error_413;
+        error_page 429 /_error/429.json;
+        error_page 502 /_error/502.json;
+        error_page 503 /_error/503.json;
+        limit_req zone=armillary_chart_client burst=5 nodelay;
+        limit_conn armillary_connections 32;
 
         proxy_request_buffering on;
         proxy_buffering off;
@@ -233,8 +371,8 @@ server {
     }
 
     location / {
-        limit_req zone=private_alpha_static_client burst=40 nodelay;
-        limit_conn private_alpha_connections 32;
+        limit_req zone=armillary_static_client burst=40 nodelay;
+        limit_conn armillary_connections 32;
 
         proxy_buffering off;
         proxy_cache off;

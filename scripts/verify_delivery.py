@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import os
 import json
-import re
 import subprocess
 import sys
 import argparse
@@ -28,7 +27,7 @@ from scripts.tools.source_tree_identity import observe_source_tree
 SOURCE_ROOT = Path.cwd().resolve()
 
 
-COMMANDS = (
+FULL_COMMANDS = (
     [
         sys.executable,
         "-m",
@@ -58,6 +57,8 @@ COMMANDS = (
         # and stops describing the tree the moment a test is renamed.
         "tests",
         "-q",
+        # A skipped test is named with its reason: green covers only what ran.
+        "-rs",
     ],
     [
         "node",
@@ -67,6 +68,25 @@ COMMANDS = (
             for path in sorted(Path("frontend/tests").glob("*.test.cjs"))
         ],
     ],
+    [
+        sys.executable,
+        "-m",
+        "scripts.publication.verify_publication_candidate",
+        "--root",
+        ".",
+    ],
+)
+
+FRONTEND_COMMANDS = (
+    [
+        sys.executable,
+        "-m",
+        "scripts.publication.verify_publication_candidate",
+        "--root",
+        ".",
+    ],
+    [sys.executable, "-m", "scripts.frontend.build_pages", "--check"],
+    ["node", "--test"],
     [
         sys.executable,
         "-m",
@@ -120,6 +140,16 @@ def _frontend_tests() -> list[str]:
     return paths
 
 
+def _compile_universe() -> None:
+    """compileall reports success for a directory it cannot list."""
+    for directory in ("backend/app", "scripts"):
+        root = Path(directory)
+        if not root.is_dir() or next(root.rglob("*.py"), None) is None:
+            raise SystemExit(
+                f"PUBLIC DELIVERY FAILED: compile universe {directory} is missing or empty"
+            )
+
+
 def _validate_build_transaction(*, image: str, evidence_dir: Path) -> dict:
     evidence_dir = _external_output_path(evidence_dir)
     try:
@@ -141,48 +171,17 @@ def _validate_build_transaction(*, image: str, evidence_dir: Path) -> dict:
             capture_output=True,
             text=True,
         ).stdout.strip()
-        embedded_witness = json.loads(
-            subprocess.run(
-                [
-                    "docker", "run", "--rm", "--entrypoint", "/bin/cat",
-                    image,
-                    "/usr/local/share/project-armillary/build-evidence/"
-                    "buildkit-witness-consumed.json",
-                ],
-                check=True,
-                capture_output=True,
-                text=True,
-            ).stdout
-        )
     except (OSError, ValueError, IndexError, KeyError, subprocess.CalledProcessError) as error:
         raise SystemExit(f"PUBLIC DELIVERY FAILED: invalid build transaction: {error}")
     if (
         not isinstance(receipt, dict)
-        or receipt.get("schema_version") != "release-build-transaction-v2"
+        or receipt.get("schema_version") != "release-build-transaction-v3"
         or receipt.get("purpose") != "release-candidate"
-        or receipt.get("publication_status")
-        != "published_anonymously_reachable"
+        or receipt.get("publication_status") != "published_anonymously_reachable"
         or receipt.get("source_revision") != revision
         or receipt.get("image") != image
         or receipt.get("image_id") != actual.get("Id")
-        or not isinstance(receipt.get("builder_isolation"), dict)
-        or receipt["builder_isolation"].get("mode")
-        != "ephemeral_docker_container_builder_no_cache"
-        or not receipt["builder_isolation"].get("builder_name")
-        or receipt.get("source_identity_unchanged") is not True
-        or receipt.get("build_witness_plaintext_present_in_log_or_runtime")
-        is not False
-        or re.fullmatch(
-            r"[0-9a-f]{64}", str(receipt.get("build_witness_sha256", ""))
-        ) is None
-        or embedded_witness != {
-            "consumed": True,
-            "nonempty": True,
-            "witness_classification": "generated_noncredential_build_witness",
-            "witness_sha256": receipt.get("build_witness_sha256"),
-        }
-        or receipt.get("materialized_context_identity_sha256")
-        != receipt.get("buildkit_context_identity_sha256")
+        or receipt.get("builder_isolation") != "ephemeral_docker_container_builder_no_cache"
     ):
         raise SystemExit(
             "PUBLIC DELIVERY FAILED: build transaction is not bound to this "
@@ -200,7 +199,7 @@ def _run_release_artifact_gates(
     commands = (
         [
             sys.executable, "-m", "scripts.verification.verify_container_runtime",
-            "--image", image,
+            "--image", image, "--platform", "linux/amd64",
             "--receipt", str(output_dir / "container-runtime.json"),
         ],
         [
@@ -218,6 +217,14 @@ def _run_release_artifact_gates(
 
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--frontend-only",
+        action="store_true",
+        help=(
+            "verify the closed public tree, generated frontend pages, and "
+            "published frontend tests without re-running backend/image consumers"
+        ),
+    )
     parser.add_argument("--release-image")
     parser.add_argument("--release-build-evidence-dir", type=Path)
     parser.add_argument("--release-output-dir", type=Path)
@@ -234,12 +241,15 @@ def main() -> int:
     # Resolve the universe before any command runs so a missing test directory
     # cannot be mistaken for a successful Node invocation.
     frontend_tests = _frontend_tests()
+    if not args.frontend_only:
+        _compile_universe()
     with TemporaryDirectory(prefix="public-source-pycache-") as pycache:
         child_environment = os.environ.copy()
         child_environment["PYTHONPYCACHEPREFIX"] = pycache
         child_environment["PYTHONDONTWRITEBYTECODE"] = "1"
         child_environment["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"
-        for command in COMMANDS:
+        commands = FRONTEND_COMMANDS if args.frontend_only else FULL_COMMANDS
+        for command in commands:
             if command[:2] == ["node", "--test"]:
                 command = ["node", "--test", *frontend_tests]
             result = subprocess.run(

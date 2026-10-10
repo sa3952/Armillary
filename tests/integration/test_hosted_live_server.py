@@ -1,275 +1,324 @@
+"""Real uvicorn processes: refusals, privacy of process output, admission timing.
+
+TestClient hands the application a whole body in one message and cannot hold a
+slot open, so these claims are made against a real server over raw sockets.
+They say nothing about NGINX, which buffers bodies in the deployed path.
+"""
+
 from __future__ import annotations
 
 import json
-import os
 import socket
 import subprocess
 import sys
 import time
+from contextlib import contextmanager
 from pathlib import Path
+from types import SimpleNamespace
 from urllib.error import URLError
 
 from tests.backend import http_request as _request
-from tests.backend import minimal_chart_payload
-from tests.backend import unused_local_port as _unused_local_port
+from tests.backend import synthetic_birth_payload as _payload
+from tests.backend import unused_local_port
 
 
 BACKEND_ROOT = str(Path(__file__).resolve().parents[2] / "backend")
-PROFILE_ENV = "CLASSICAL_ASTROLOGY_PROFILE"
 CANARY = "HOSTED_PRIVACY_CANARY_842761"
+TRACEBACK = "Traceback (most recent call last)"
 
 
-def _payload() -> dict:
-    return minimal_chart_payload(
-        year=1997, month=8, day=17, hour=9, minute=42,
-        latitude=24.1477, longitude=120.6736, altitude_m=80,
+@contextmanager
+def _hosted_server(*setup: str, scripted: bool = False):
+    """A ready server; `.output` holds its stdout+stderr after the block exits.
+
+    By default it is the plain `uvicorn app.main:app` command the deployment
+    runs; a scripted process runs `setup` lines before `create_app(AppSettings())`.
+    """
+
+    port = unused_local_port()
+    if scripted or setup:
+        script = "\n".join((
+            "import uvicorn",
+            "from app import main, request_limits",
+            "from app.settings import AppSettings",
+            *setup,
+            "application = main.create_app(AppSettings())",
+            f"uvicorn.run(application, host='127.0.0.1', http='h11', port={port}, access_log=False)",
+        ))
+        command = [sys.executable, "-c", script]
+    else:
+        command = [
+            sys.executable, "-m", "uvicorn", "app.main:app", "--http", "h11",
+            "--host", "127.0.0.1", "--port", str(port), "--no-access-log",
+        ]
+    process = subprocess.Popen(
+        command, cwd=BACKEND_ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
     )
+    server = SimpleNamespace(port=port, url=f"http://127.0.0.1:{port}", output="")
+    try:
+        deadline = time.monotonic() + 20
+        while True:
+            if process.poll() is not None:
+                raise AssertionError("hosted server stopped early:\n" + process.stdout.read())
+            if time.monotonic() > deadline:
+                raise AssertionError("hosted server startup timed out")
+            try:
+                status, health = _request(f"{server.url}/api/health")
+                if status == 200:
+                    health = json.loads(health)
+                    assert health["status"] == "ok" and health["ready"] is True
+                    break
+            except URLError:
+                pass
+            time.sleep(0.05)
+        yield server
+    finally:
+        if process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=8)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=5)
+        server.output = process.stdout.read()
 
 
-def _raw_conflicting_framing_request(port: int, body: bytes) -> tuple[int, bytes]:
-    """Send the wire representation that normal HTTP clients normalize away."""
+def _post(server, body: bytes, path: str = "/api/chart", content_type: str = "application/json"):
+    return _request(f"{server.url}{path}", body=body, content_type=content_type)
 
-    request = (
-        b"POST /api/chart HTTP/1.1\r\n"
-        b"Host: 127.0.0.1\r\n"
-        b"Content-Type: application/json\r\n"
-        + f"Content-Length: {len(body)}\r\n".encode()
-        + b"Transfer-Encoding: chunked\r\nConnection: close\r\n\r\n"
-        + f"{len(body):x}\r\n".encode()
-        + body
-        + b"\r\n0\r\n\r\n"
+
+def _raw_post(port: int, path: str, body: bytes, *, declared_length: int | None = None) -> socket.socket:
+    """Send a request head and `body`; `declared_length` may promise more."""
+
+    client = socket.create_connection(("127.0.0.1", port), timeout=20)
+    length = len(body) if declared_length is None else declared_length
+    client.sendall(
+        f"POST {path} HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Type: application/json\r\n"
+        f"Content-Length: {length}\r\nConnection: close\r\n\r\n".encode() + body
     )
-    with socket.create_connection(("127.0.0.1", port), timeout=5) as client:
-        client.sendall(request)
-        response = b""
+    return client
+
+
+def _read_raw_response(client: socket.socket) -> tuple[int, dict[str, str], bytes]:
+    response = b""
+    with client:
         while chunk := client.recv(65536):
             response += chunk
-    head, response_body = response.split(b"\r\n\r\n", 1)
-    status = int(head.split(b"\r\n", 1)[0].split()[1])
-    return status, response_body
-
-
-def _wait_until_ready(process: subprocess.Popen, base_url: str) -> None:
-    deadline = time.monotonic() + 20
-    while time.monotonic() < deadline:
-        if process.poll() is not None:
-            raise AssertionError(
-                "hosted server stopped early:\n" + process.stdout.read()
-            )
-        try:
-            status, body = _request(f"{base_url}/api/health")
-            if status == 200:
-                health = json.loads(body)
-                assert health["status"] == "ok"
-                assert health["ready"] is True
-                return
-        except URLError:
-            pass
-        time.sleep(0.05)
-    raise AssertionError("hosted server startup timed out")
-
-
-def _stop_and_read(process: subprocess.Popen) -> str:
-    if process.poll() is None:
-        process.terminate()
-        try:
-            process.wait(timeout=8)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait(timeout=5)
-    return process.stdout.read()
+    if b"\r\n\r\n" not in response:
+        raise AssertionError(f"no HTTP response: {response[:80]!r}")
+    head, body = response.split(b"\r\n\r\n", 1)
+    lines = head.decode("latin-1").split("\r\n")
+    headers = {}
+    for line in lines[1:]:
+        name, _, value = line.partition(":")
+        headers[name.strip().lower()] = value.strip()
+    return int(lines[0].split()[1]), headers, body
 
 
 def test_real_hosted_server_success_rejections_and_process_output_are_bounded():
-    port = _unused_local_port()
-    environment = {**os.environ, PROFILE_ENV: "private_alpha"}
-    process = subprocess.Popen(
-        [
-            sys.executable,
-            "-m",
-            "uvicorn",
-            "app.main:app",
-            "--http",
-            "h11",
-            "--host",
-            "127.0.0.1",
-            "--port",
-            str(port),
-            "--no-access-log",
-        ],
-        cwd=BACKEND_ROOT,
-        env=environment,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-    )
-    base_url = f"http://127.0.0.1:{port}"
-
-    try:
-        _wait_until_ready(process, base_url)
-        success = _request(
-            f"{base_url}/api/chart",
-            body=json.dumps(_payload()).encode(),
-            content_type="application/json",
+    body = json.dumps(_payload()).encode()
+    invalid_payload = _payload()
+    invalid_payload["datetime"]["month"] = 13
+    invalid_payload["location"][CANARY] = CANARY
+    coordinate = "25.0337891"
+    wrong_latitude = _payload()
+    wrong_latitude["location"]["latitude"] = coordinate
+    with _hosted_server() as server:
+        success = _post(server, body)
+        # Content-Length and chunked together, which normal HTTP clients normalize away.
+        framing = socket.create_connection(("127.0.0.1", server.port), timeout=5)
+        framing.sendall(
+            b"POST /api/chart HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Type: application/json\r\n"
+            + f"Content-Length: {len(body)}\r\nTransfer-Encoding: chunked\r\n".encode()
+            + f"Connection: close\r\n\r\n{len(body):x}\r\n".encode() + body + b"\r\n0\r\n\r\n"
         )
-        conflicting_framing = _raw_conflicting_framing_request(
-            port,
-            json.dumps(_payload()).encode(),
-        )
-        wrong_type = _request(
-            f"{base_url}/api/chart",
-            body=CANARY.encode(),
-            content_type="text/plain",
-        )
-        malformed = _request(
-            f"{base_url}/api/chart",
-            body=(b'{"datetime":"' + CANARY.encode()),
-            content_type="application/json",
-        )
-        invalid_payload = _payload()
-        invalid_payload["datetime"]["month"] = 13
-        invalid_payload["location"][CANARY] = CANARY
-        invalid = _request(
-            f"{base_url}/api/chart",
-            body=json.dumps(invalid_payload).encode(),
-            content_type="application/json",
-        )
-        oversized = _request(
-            f"{base_url}/api/chart",
-            body=CANARY.encode() + b"x" * (16 * 1024),
-            content_type="application/json",
-        )
-        trailing_slash = _request(
-            f"{base_url}/api/chart/",
-            body=CANARY.encode(),
-            content_type="application/json",
-        )
-        future_child = _request(
-            f"{base_url}/api/chart/future",
-            body=CANARY.encode(),
-            content_type="application/json",
-        )
-        lookalike = _request(f"{base_url}/api/chartography")
-        openapi = _request(f"{base_url}/openapi.json")
-        runtime = _request(f"{base_url}/api/runtime-health")
-    finally:
-        output = _stop_and_read(process)
+        conflicting_framing = _read_raw_response(framing)
+        wrong_type = _post(server, CANARY.encode(), content_type="text/plain")
+        malformed = _post(server, b'{"datetime":"' + CANARY.encode())
+        invalid = _post(server, json.dumps(invalid_payload).encode())
+        oversized = _post(server, CANARY.encode() + b"x" * (16 * 1024))
+        string_coordinate = _post(server, json.dumps(wrong_latitude).encode())
+        # NaN is not JSON text; the strict reader answers json_invalid (400).
+        nonfinite = _post(server, json.dumps(_payload()).replace("22.9908", "NaN", 1).encode())
+        trailing_slash = _post(server, CANARY.encode(), path="/api/chart/")
+        future_child = _post(server, CANARY.encode(), path="/api/chart/future")
+        not_found = [
+            _request(f"{server.url}{path}")
+            for path in ("/api/chartography", "/openapi.json", "/api/runtime-health")
+        ]
+    output = server.output
 
     assert success[0] == 200
     assert conflicting_framing[0] == 400
-    assert json.loads(conflicting_framing[1])["detail"]["code"] == (
-        "conflicting_request_framing"
-    )
+    assert json.loads(conflicting_framing[2])["detail"]["code"] == "conflicting_request_framing"
     assert wrong_type[0] == 415
-    # Malformed syntax and rejected values are different refusals and now say
-    # so: 400 for a body the parser never read, 422 for one it did.
+    # 400 for a body the parser never read, 422 for one it did.
     assert malformed[0] == 400
-    assert json.loads(malformed[1])["detail"][0]["type"] == "json_invalid"
-    assert invalid[0] == 422
-    assert oversized[0] == 413
-    # Answered by the API boundary rather than the asset mount; 404 is the
-    # accurate refusal for a path that is not a route.
+    assert json.loads(malformed[1])["detail"]["code"] == "json_invalid"
+    assert (invalid[0], oversized[0], string_coordinate[0], nonfinite[0]) == (422, 413, 422, 400)
     assert trailing_slash[0] == 404
     assert json.loads(trailing_slash[1])["detail"]["code"] == "unknown_api_path"
-    assert future_child[0] == 404
-    assert lookalike[0] == 404
-    assert openapi[0] == 404
-    assert runtime[0] == 404
+    assert [future_child[0], *(status for status, _ in not_found)] == [404] * 4
     assert CANARY not in malformed[1].decode()
     assert CANARY not in invalid[1].decode()
-    assert CANARY not in output
-    assert '"POST /api/chart HTTP/' not in output
-    assert output.count('"route":"/api/chart"') == 6
+    assert coordinate not in string_coordinate[1].decode()
+    assert "NaN" not in nonfinite[1].decode()
+    for leaked in (CANARY, coordinate, '"POST /api/chart HTTP/', TRACEBACK):
+        assert leaked not in output, leaked
+    assert output.count('"route":"/api/chart"') == 8
     assert output.count('"route":"frontend_or_unmatched"') == 5
-    assert "Traceback (most recent call last)" not in output
+
+
+def test_real_hosted_server_fuzzed_refusals_do_not_echo_or_log_the_input():
+    """Canaries as values (a zone name, a text year), as keys (top level and next
+    to an out-of-range latitude) and non-object JSON bodies, through the real
+    process: the in-process tests cannot see what uvicorn itself prints."""
+
+    canaries = [f"{CANARY}_{index:02d}" for index in range(16)]
+    bodies = [b"{", b"[", b"null", b"true", b'"birth"', json.dumps({"birth": canaries[0]}).encode()]
+    for index, canary in enumerate(canaries[1:], start=1):
+        payload = _payload()
+        target = index % 5
+        if target == 0:
+            payload["datetime"]["year"] = canary
+        elif target == 1:
+            payload["datetime"].update(month=2, day=30)
+            payload["datetime"][canary] = canary
+        elif target == 2:
+            payload["location"]["latitude"] = 91
+            payload["location"][canary] = canary
+        elif target == 3:
+            payload["timezone"]["iana_name"] = canary
+        else:
+            payload[canary] = [canary]
+        bodies.append(json.dumps(payload).encode())
+    with _hosted_server() as server:
+        responses = [_post(server, body) for body in bodies]
+
+    # 400 for a body the parser never read, 422 for one it did.
+    assert all(status in (400, 422) for status, _ in responses)
+    assert any(status == 400 for status, _ in responses)
+    combined = b"\n".join(body for _, body in responses).decode()
+    for canary in canaries:
+        assert canary not in combined, canary
+        assert canary not in server.output, canary
+    for leaked in ('"POST /api/chart HTTP/', TRACEBACK):
+        assert leaked not in server.output, leaked
+    assert server.output.count('"route":"/api/chart"') == len(bodies)
 
 
 def test_real_hosted_server_unexpected_error_is_generic_and_not_logged():
-    port = _unused_local_port()
-    script = "\n".join(
-        (
-            "import uvicorn",
-            "from app import main",
-            "from app.settings import AppProfile, AppSettings",
-            "def fail(_request):",
-            f"    raise RuntimeError({CANARY!r})",
-            "main._compute_chart_locked = fail",
-            (
-                "main.app = main.create_app("
-                "AppSettings(profile=AppProfile.PRIVATE_ALPHA))"
-            ),
-            (
-                "uvicorn.run(main.app, host='127.0.0.1', http='h11', "
-                f"port={port}, access_log=False)"
-            ),
-        )
-    )
-    process = subprocess.Popen(
-        [sys.executable, "-c", script],
-        cwd=BACKEND_ROOT,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-    )
-    base_url = f"http://127.0.0.1:{port}"
-
-    try:
-        _wait_until_ready(process, base_url)
-        status, body = _request(
-            f"{base_url}/api/chart",
-            body=json.dumps(_payload()).encode(),
-            content_type="application/json",
-        )
-    finally:
-        output = _stop_and_read(process)
+    with _hosted_server(
+        "def fail(_request):", f"    raise RuntimeError({CANARY!r})",
+        "main._compute_chart_locked = fail",
+    ) as server:
+        status, body = _post(server, json.dumps(_payload()).encode())
 
     assert status == 500
     assert json.loads(body)["detail"]["code"] == "internal_server_error"
     assert CANARY not in body.decode()
-    assert CANARY not in output
-    assert '"POST /api/chart HTTP/' not in output
-    assert output.count('"route":"/api/chart"') == 1
-    assert "Traceback (most recent call last)" not in output
+    for leaked in (CANARY, '"POST /api/chart HTTP/', TRACEBACK):
+        assert leaked not in server.output, leaked
+    assert server.output.count('"route":"/api/chart"') == 1
 
 
-def test_real_supported_server_sanitizes_validation_input_and_nonfinite_numbers():
+def test_real_server_incomplete_bodies_do_not_hold_compute_slots():
+    from app.request_limits import MAX_HOSTED_COMPUTE_REQUESTS_PER_WORKER
 
-    port = _unused_local_port()
-    environment = {**os.environ, PROFILE_ENV: "private_alpha"}
-    process = subprocess.Popen(
-        [
-            sys.executable, "-m", "uvicorn", "app.main:app", "--http", "h11", "--host",
-            "127.0.0.1", "--port", str(port), "--no-access-log",
-        ],
-        cwd=BACKEND_ROOT,
-        env=environment,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
+    body = json.dumps(_payload()).encode()
+    held: list[socket.socket] = []
+    with _hosted_server(scripted=True) as server:
+        try:
+            # Each connection sends its head and one byte of a body it never finishes.
+            for _ in range(MAX_HOSTED_COMPUTE_REQUESTS_PER_WORKER):
+                held.append(_raw_post(server.port, "/api/chart", body[:1], declared_length=len(body)))
+            time.sleep(0.5)
+            status, response_body = _post(server, body)
+        finally:
+            for client in held:
+                client.close()
+
+    assert status == 200, response_body[:300]
+    assert TRACEBACK not in server.output
+
+
+def test_real_server_ends_a_trickled_body_at_the_total_deadline():
+    deadline = 1.5
+    response = b""
+    answered_after = None
+    with _hosted_server(f"request_limits.REQUEST_BODY_DEADLINE_SECONDS = {deadline}") as server:
+        client = _raw_post(server.port, "/api/chart", b"{", declared_length=4096)
+        started = time.monotonic()
+        client.settimeout(0.2)
+        with client:
+            while time.monotonic() - started < deadline + 4.0:
+                try:
+                    chunk = client.recv(65536)
+                except TimeoutError:
+                    # Nothing yet: one more byte, far inside any gap timeout.
+                    try:
+                        client.sendall(b" ")
+                    except OSError:
+                        break
+                    continue
+                except OSError:
+                    break
+                if answered_after is None:
+                    answered_after = time.monotonic() - started
+                if not chunk:
+                    break
+                response += chunk
+
+    assert answered_after is not None, "a body trickled under the gap timeout was never refused"
+    head, _, payload = response.partition(b"\r\n\r\n")
+    assert head.split()[1:2] == [b"408"], head[:80]
+    assert json.loads(payload)["detail"]["code"] == "request_body_read_timeout"
+    assert deadline - 0.2 <= answered_after < deadline + 2.0, answered_after
+    assert TRACEBACK not in server.output
+
+
+def test_real_server_slow_place_searches_leave_health_and_assets_answerable():
+    from app.request_limits import (
+        MAX_HOSTED_REQUESTS_PER_WORKER,
+        MAX_HOSTED_SEARCH_REQUESTS_PER_WORKER,
+        RETRY_AFTER_SECONDS,
     )
-    base_url = f"http://127.0.0.1:{port}"
-    coordinate = "25.0337891"
-    try:
-        _wait_until_ready(process, base_url)
-        wrong_type_payload = _payload()
-        wrong_type_payload["location"]["latitude"] = coordinate
-        wrong_type = _request(
-            f"{base_url}/api/chart",
-            body=json.dumps(wrong_type_payload).encode(),
-            content_type="application/json",
-        )
-        nonfinite_body = json.dumps(_payload()).replace("24.1477", "NaN", 1)
-        nonfinite = _request(
-            f"{base_url}/api/chart",
-            body=nonfinite_body.encode(),
-            content_type="application/json",
-        )
-    finally:
-        output = _stop_and_read(process)
 
-    assert wrong_type[0] == 422
-    assert nonfinite[0] == 422
-    assert coordinate not in wrong_type[1].decode()
-    assert "NaN" not in nonfinite[1].decode()
-    assert coordinate not in output
-    assert "Traceback (most recent call last)" not in output
+    body = json.dumps({"query": "taipei"}).encode()
+    lookups: list[socket.socket] = []
+    # Each admitted lookup holds a worker thread for four seconds, as one that
+    # runs to the catalogue statement budget does.
+    with _hosted_server(
+        "import time",
+        "from app.core import place_catalog",
+        "def slow_search(self, **_arguments):",
+        "    time.sleep(4.0)",
+        "    return {'results': [], 'catalog': {}, 'query': {}, 'execution': {}}",
+        "place_catalog.PlaceCatalog.search = slow_search",
+    ) as server:
+        try:
+            # As many lookups as the general pool admits for everything else.
+            for _ in range(MAX_HOSTED_REQUESTS_PER_WORKER):
+                lookups.append(_raw_post(server.port, "/api/places/search", body))
+            time.sleep(0.75)
+            started = time.monotonic()
+            health = _request(f"{server.url}/api/health", timeout=3)
+            health_seconds = time.monotonic() - started
+            page = _request(f"{server.url}/zh-TW/", timeout=3)
+            answers = [_read_raw_response(client) for client in lookups]
+        finally:
+            for client in lookups:
+                client.close()
+
+    assert health[0] == 200, health[1][:200]
+    assert json.loads(health[1])["status"] == "ok"
+    assert health_seconds < 2.0, health_seconds
+    assert page[0] == 200, page[1][:200]
+    statuses = [status for status, _headers, _payload in answers]
+    assert statuses.count(200) == MAX_HOSTED_SEARCH_REQUESTS_PER_WORKER, statuses
+    refused = [(headers, payload) for status, headers, payload in answers if status == 503]
+    assert len(refused) == len(answers) - MAX_HOSTED_SEARCH_REQUESTS_PER_WORKER
+    for headers, payload in refused:
+        assert headers.get("retry-after") == str(RETRY_AFTER_SECONDS)
+        assert json.loads(payload)["detail"]["code"] == "request_capacity_exhausted"
+    assert TRACEBACK not in server.output

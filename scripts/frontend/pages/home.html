@@ -8,7 +8,7 @@
     </div>
     <ul class="creds">
       <li><b>免註冊</b><span>四個欄位就能算</span></li>
-      <li><b>AGPL-3.0</b><span>你按「檢視原始碼」看到的，就是實際執行的程式</span></li>
+      <li><b>AGPL-3.0</b><span>對應原始碼完整公開；你這一次用的版本，寫在計算收據上</span></li>
       <li><b>0 追蹤器</b><span>沒有 cookie 橫幅，因為沒有 cookie</span></li>
     </ul>
     <div class="depth">恆星 · 赤緯平行 · 反照點 · 阿拉伯點 · 日夜盤 · 月空亡 · 三套座標並列</div>
@@ -28,39 +28,7 @@
     <p>黃道座標問「它在十二宮的哪裡」，赤道座標問「它在天球的哪裡」，地平座標問「此時此地你要抬頭往哪看」。三者互相可換算，但用途完全不同。<b>渾儀一次全給你——不必為了查赤緯或方位角，換一個工具、把生辰再填一次。</b></p>
 
     <div class="plate">
-      <svg viewBox="0 0 640 520" role="img" aria-label="渾儀環組圖版，編號標示黃道環、赤道環、極軸、地平環與子午環">
-        <g>
-          <circle class="s-ring soft" cx="248" cy="260" r="196"/>
-          <ellipse class="s-ring soft" cx="248" cy="260" rx="196" ry="50.73" transform="rotate(-180.00 248 260)"/>
-          <ellipse class="s-ring" cx="248" cy="260" rx="196" ry="149.19" transform="rotate(-108.33 248 260)"/>
-          <ellipse class="s-ring" cx="248" cy="260" rx="196" ry="84.11" transform="rotate(127.78 248 260)"/>
-          <ellipse class="s-ring hot" cx="248" cy="260" rx="196" ry="123.90" transform="rotate(105.19 248 260)"/>
-          <line class="s-ring" x1="387.92" y1="368.46" x2="108.08" y2="151.54"/>
-          <circle class="s-dot" cx="387.92" cy="368.46" r="3"/>
-          <circle class="s-dot" cx="108.08" cy="151.54" r="3"/>
-        </g>
-        <g class="s-lead" fill="none">
-          <path d="M355.1,117.0 L420.1,52 H598"/>
-          <path d="M385.1,155.8 L430.1,156 H598"/>
-          <path d="M278.8,283.9 L460.0,260 H598"/>
-          <path d="M331.6,305.9 L430.1,364 H598"/>
-          <path d="M370.9,399.5 L439.5,468 H598"/>
-        </g>
-        <g class="s-dot">
-          <circle cx="355.1" cy="117.0" r="2.2"/>
-          <circle cx="385.1" cy="155.8" r="2.2"/>
-          <circle cx="278.8" cy="283.9" r="2.2"/>
-          <circle cx="331.6" cy="305.9" r="2.2"/>
-          <circle cx="370.9" cy="399.5" r="2.2"/>
-        </g>
-        <g class="s-num">
-          <text x="610" y="56">1</text>
-          <text x="610" y="160">2</text>
-          <text x="610" y="264">3</text>
-          <text x="610" y="368">4</text>
-          <text x="610" y="472">5</text>
-        </g>
-      </svg>
+      {{armillary_svg}}
 
       <ul class="legend">
         <li><b>黃道環 <i>Ecliptic</i></b><span>太陽視行的大圓。傾角 ε＝23°26′31.79″，取這一刻的真黃赤交角（平值加章動），不是固定值。</span></li>
@@ -96,7 +64,7 @@
   </section>
 
   <section id="log">
-    <div class="spec-scroll">
+    <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="log-table-title">
       <table class="log">
         <thead><tr><th>步</th><th>這一步在算什麼</th><th>實際執行的算式</th><th>得到</th></tr></thead>
         <tbody>
@@ -109,7 +77,7 @@
       </table>
     </div>
     <div class="tabula-foot">
-      <p><b>這是那次計算的前五步，原樣照抄，共 98 步。</b>第三欄不是說明文字，是實際跑的那一行——你可以用同一個星曆函式庫照著重跑，對出同一個值。整份可下載離線核對。</p>
+      <p><b id="log-table-title">這是那次計算的前五步，依卷宗整理。</b>第三欄是實際呼叫的簡寫，完整算式在卷宗裡——你可以用同一個星曆函式庫照著重跑，對出同一個值。步數隨啟用的模組而變，實際步數印在該次卷宗的 <code>trace_receipt</code> 裡；整份可下載離線核對。</p>
     </div>
   </section>
 
@@ -127,14 +95,14 @@
       <div class="sd-track">
         <div class="sd-fill"></div>
         <div class="sd-flip" aria-hidden="true"></div>
-        <span class="sd-probe" style="left:0%"></span>
-        <span class="sd-probe" style="left:25%"></span>
-        <span class="sd-probe" style="left:50%"></span>
-        <span class="sd-probe" style="left:75%"></span>
-        <span class="sd-probe" style="left:100%"></span>
+        <span class="sd-probe sd-at-0"></span>
+        <span class="sd-probe sd-at-25"></span>
+        <span class="sd-probe sd-at-50"></span>
+        <span class="sd-probe sd-at-75"></span>
+        <span class="sd-probe sd-at-100"></span>
         <div class="sd-handle" role="slider" tabindex="0"
              aria-label="在這一小時裡移動出生時刻"
-             aria-valuemin="0" aria-valuemax="3600" aria-valuenow="0"
+             aria-valuemin="0" aria-valuemax="3599" aria-valuenow="0"
              aria-valuetext="14:00:00"></div>
       </div>
 
@@ -165,7 +133,7 @@
       <div class="sd-hint">拖曳上面的把手，或用方向鍵移動。五個刻度是後端實際取樣的時刻。</div>
     </div>
 
-    <p class="stake">跨過那條線的瞬間，整宮制下<b>十一個天體的落宮同時改變</b>。所以渾儀不替你猜一個好看的時刻——它把整個小時取樣，告訴你哪些判定在這一小時內完全不動、哪些會翻面、翻面卡在哪兩秒之間。<b>不確定的東西，就標成不確定。</b></p>
+    <p class="stake">跨過那條線的瞬間，整宮制下<b>十一個天體的落宮同時改變</b>。所以渾儀不替你猜一個好看的時刻——它在整個小時裡取樣，告訴你哪些判定在每個取樣時刻都相同、哪些在取樣之間翻面、翻面卡在哪十幾秒之間。<b>不確定的東西，就標成不確定。</b></p>
   </section>
 
   <section id="moduli">
@@ -199,14 +167,14 @@
         </div>
         <ul>
           <li>反照點<em>以巨蟹／摩羯軸鏡射</em></li>
-          <li>赤緯平行與反平行<em>近現代技法，非古典傳統</em></li>
+          <li>赤緯平行與反平行<em>17 世紀 Placidus 的界定，非古典傳統</em></li>
         </ul>
       </div>
 
       <div class="ring r3">
         <div class="ring-head">
           <b>RING III</b><span>方法判斷</span>
-          <i>需要選定技法者，一律標明方法版本與審閱狀態</i>
+          <i>需要選定技法者，一律在卷宗記下方法版本與審閱狀態</i>
         </div>
         <ul>
           <li>宮位分割<em>四種，或不算宮位</em></li>
@@ -214,7 +182,7 @@
           <li>相位</li>
           <li>本質尊貴</li>
           <li>日夜盤</li>
-          <li>阿拉伯點<em>福點 · 精神點</em></li>
+          <li>阿拉伯點<em>命運點 · 精神點</em></li>
           <li>月空亡</li>
         </ul>
       </div>
@@ -233,20 +201,20 @@
         <span>不是「我們選擇不存」，是沒有那個元件：沒有帳號資料庫、沒有命盤資料庫、沒有工作階段儲存、沒有請求快取、沒有出生資料快取、沒有背景佇列。</span>
       </li>
       <li>
-        <b>整條路徑不寫磁碟</b>
+        <b>計算路徑不主動寫磁碟</b>
         <span>請求內容 → 請求範圍的資料模型 → 行程鎖底下的同步計算 → 回應與計算卷宗 → 你的瀏覽器記憶體。只有在你按下時，才進剪貼簿或下載檔案。</span>
       </li>
       <li>
-        <b>寫檔會讓測試失敗</b>
-        <span>自動化守衛在計算請求期間攔截檔案寫入介面。只要請求路徑嘗試寫檔，測試就失敗——這是由測試守著的限制，不是一句話。</span>
+        <b>計算請求期間寫檔會讓測試失敗</b>
+        <span>自動化測試在一次預設計算請求期間，攔截 Python 的檔案寫入介面（open、io.open、os.open）；只要出現一次帶寫入旗標的呼叫，測試就失敗。原生函式庫與其他請求組合不在這個測試的涵蓋範圍內。</span>
       </li>
       <li>
-        <b>日誌只有十個固定欄位</b>
-        <span>每完成一個請求輸出一行事件，欄位是封閉清單。不含出生資料、IP、User-Agent、請求內容。</span>
+        <b>日誌只有 {{telemetry_field_count}} 個固定欄位</b>
+        <span>每完成一個請求輸出一行事件，欄位是封閉清單。不含出生資料、IP、User-Agent、請求內容。這一行會留在容器日誌裡，保存方式見〈<a href="/zh-TW/legal/privacy">隱私政策</a>〉。</span>
       </li>
       <li>
-        <b>沒有第三方</b>
-        <span>不使用追蹤器、廣告、分析或遠端日誌。站上只有一個資料庫：內建的地名目錄，以唯讀不可變模式開啟，也不寫入你查詢的字串。</span>
+        <b>不引入第三方追蹤、分析或遠端日誌相依</b>
+        <span>不使用追蹤器、廣告、分析或遠端日誌；主機、DNS 與網域在同一家瑞士供應商，那一層的界線寫在〈信任中心〉。站上只有一個資料庫：內建的地名目錄，以唯讀不可變模式開啟，也不寫入你查詢的字串。</span>
       </li>
     </ol>
 
@@ -266,14 +234,14 @@
   <section id="take" class="no-rule">
     <div class="eyebrow">整份可帶走 · PORTABILE</div>
     <h2>離開這個網站以後，<br>這份計算仍然完整。</h2>
-    <p>畫面與匯出讀同一份資料，不從畫面反推。每一份都附完整逐步軌跡與計算收據；在相同輸入、版本、資料與計算口徑下重算，結果應當一致。</p>
+    <p>畫面與匯出讀同一份資料，不從畫面反推。選「運算結果＋驗算資料」匯出時，每一份都附完整逐步軌跡與計算收據；預設的「運算結果」含天體、座標、宮位、相位與所選計算，不另列出生地座標，但星盤數值本身可推回大致地點。在相同輸入、版本、資料與計算口徑下重算，結果應當一致。</p>
     <div class="formats">
       <div><b>JSON</b><span>完整結構</span></div>
       <div><b>Markdown</b><span>可讀卷宗</span></div>
       <div><b>CSV</b><span>表格核對</span></div>
       <div><b>純文字</b><span>筆記保存</span></div>
     </div>
-    <p class="formats-note">結果頁另有列印版面：直接列印或存成 PDF 時，只留下計算結果與收據。</p>
+    <p class="formats-note">結果頁另有列印版面：直接列印或存成 PDF 時，隱藏表單與控制項、展開所有摺疊區塊並印出結果；若已打開「技術細節與驗算資料」取得驗算資料，收據與驗算資料也一併印出。</p>
   </section>
 
   <div class="cta">

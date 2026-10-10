@@ -1,58 +1,17 @@
-/* /calculate — compose ＋ read。色值與字體一律來自 tokens.css。 */
+/* /calculate — compose ＋ read。本頁先載入 page.css（重置、頁首、頁尾、導覽、
+   網站地圖與環組標記都在那裡），這裡只寫本頁自己的規則與覆寫。
+   色值與字體一律來自 tokens.css。 */
 
-*{box-sizing:border-box;margin:0;padding:0}
-html{-webkit-text-size-adjust:100%}
-body{
-  background:var(--paper); color:var(--ink);
-  font-family:var(--sans); font-size:16px; line-height:1.8;
-  font-feature-settings:"palt" 1;
-}
-.skip-link{position:fixed;z-index:1000;top:var(--s2);left:var(--s2);padding:.55rem .75rem;background:var(--paper);color:var(--ink);border:2px solid var(--accent);border-radius:var(--radius);transform:translateY(-180%);text-decoration:none}
-.skip-link:focus{transform:translateY(0)}
-main{display:block}
-.wrap{max-width:var(--wrap); margin:0 auto; padding:0 var(--pad)}
-.mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
-
-/* 內文連結：與 page.css 同一條規則。計算頁目前沒有內文連結，寫在這裡是為了
-   讓兩份樣式表對「裸 a」的答案一致，之後加連結時不會突然冒出瀏覽器預設藍。 */
-a{
-  color:var(--accent); text-decoration:underline;
-  text-decoration-style:dotted; text-decoration-thickness:1px;
-  text-underline-offset:.22em;
-}
-a:hover{text-decoration-style:solid}
-a:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+body{line-height:1.8}
 [hidden]{display:none !important}
 
-.eyebrow{
-  font-family:var(--mono); font-size:.7rem; letter-spacing:.22em;
-  text-transform:uppercase; color:var(--ink-faint);
-}
+.eyebrow{font-size:.75rem; letter-spacing:.22em}
 
-/* ── 頁首：黑底招牌 ─────────────────────────────── */
-header{background:var(--plate); color:var(--plate-fg); border-bottom:1px solid var(--plate-hair)}
-/* 頁首一列。三件事都必須寫在這裡，缺一個就會壞：
-   · align-items:center。原本是 baseline，它讓招牌與導覽各自對齊自己的文字
-     基線，而招牌含一個 2rem 的環組標記、導覽是 .88rem 的字，兩個盒子的高度
-     差很多。實測 754px 時招牌盒的垂直中心比頁首中心高 17px，導覽低 2.5px，
-     看起來就是「商標莫名其妙靠齊上方」。改置中之後兩者共用同一條中線。
-   · gap。招牌與導覽之間原本沒有任何間距，只靠 .site-nav 的 margin-left:auto
-     推開。而 900px 以下那個 auto 被歸零（見下），於是導覽直接黏在
-     「ARMILLARY」右邊，實測間距 0px。gap 讓它們在任何寬度都推不到一起。
-   · flex-wrap 與 min-height。固定 height:78px 在裝不下時不會讓路，只會擠。
-     改成最小高度，裝不下就換行。 */
-header .wrap{
-  display:flex; align-items:center; flex-wrap:wrap;
-  gap:.6rem var(--s3); min-height:78px;
-}
-.brand{font-family:var(--serif); font-size:1.45rem; letter-spacing:.18em; text-decoration:none; color:inherit}
-.brand small{font-family:var(--serif); font-size:.82rem; letter-spacing:.3em; color:var(--plate-dim); margin-left:.7rem}
 /* ── 表單 ───────────────────────────────────────── */
 h1{
   font-family:var(--serif); font-weight:400; letter-spacing:.02em;
   font-size:clamp(1.9rem,4vw,3rem); line-height:1.35; margin:var(--s2) 0 var(--s2);
 }
-.lede{max-width:var(--measure); color:var(--ink-dim)}
 
 form{margin-top:var(--s4); border-top:1px solid var(--ink)}
 fieldset{border:0; border-bottom:1px solid var(--hair-soft); padding:var(--s3) 0}
@@ -64,7 +23,8 @@ legend{
 .grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
 .field{display:flex; flex-direction:column; gap:.3rem}
 .field label{font-size:.88rem; color:var(--ink-dim)}
-.field .hint{font-family:var(--mono); font-size:.68rem; color:var(--ink-faint); letter-spacing:.04em}
+/* 說明是中文句子：用內文字型、不加字距，至少 0.8rem（12.8px）。數字範圍照常是表格數字。 */
+.field .hint{font-size:.8rem; line-height:1.6; color:var(--ink-faint); font-variant-numeric:tabular-nums}
 input,select{
   font-family:var(--mono); font-size:.95rem; font-variant-numeric:tabular-nums;
   background:var(--paper-2); color:var(--ink);
@@ -73,7 +33,7 @@ input,select{
 }
 input::placeholder{color:var(--ink-faint); opacity:1}
 input,select,button{min-width:0; max-width:100%}
-input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible,summary:focus-visible,.table-wrap:focus-visible{
   outline:2px solid var(--accent); outline-offset:2px;
 }
 input:disabled{background:var(--paper); color:var(--ink-faint); cursor:not-allowed}
@@ -108,6 +68,14 @@ input:disabled{background:var(--paper); color:var(--ink-faint); cursor:not-allow
   margin-top:var(--s2); border-left:2px solid var(--accent);
   padding:.5rem 0 .5rem .9rem; font-size:.86rem; color:var(--ink-dim);
 }
+/* 後果說明是常駐的宣告區：沒有話要說時留在無障礙樹裡但不佔版面，
+   內容一出現報讀器才念得到（hidden 會把區域本身一起拿掉）。 */
+.consequence:empty{margin:0; padding:0; border:0}
+/* 欄位自己的錯誤訊息（aria-describedby 的第一個 token），與錯誤狀態同色。 */
+.field-error{display:block; font-size:.82rem; line-height:1.6; color:var(--accent)}
+/* 停止鈕的限制說明：隨按鈕出現與收起，不另由指令碼切換。 */
+.cancel-hint{font-size:.82rem; color:var(--ink-dim); line-height:1.6; flex:1 1 16rem}
+#cancel-button[hidden] + .cancel-hint{display:none}
 
 .actions{display:flex; flex-wrap:wrap; gap:var(--s2); align-items:center; padding:var(--s3) 0}
 button{
@@ -143,15 +111,20 @@ button.small{font-size:.82rem; padding:.45rem 1rem}
 /* ── 結果 ───────────────────────────────────────── */
 .result-head{padding:var(--s2) 0; display:flex; flex-wrap:wrap; gap:var(--s2) var(--s3); align-items:baseline}
 .result-head h2{font-family:var(--serif); font-weight:400; font-size:1.6rem}
-.versions{margin-left:auto; font-family:var(--mono); font-size:.7rem; color:var(--ink-faint); letter-spacing:.1em; overflow-wrap:anywhere}
 
 .warnings{border:1px solid var(--hair); padding:var(--s2) var(--s3); margin-bottom:var(--s3)}
 .warnings li{list-style:none; font-size:.88rem; color:var(--ink-dim); overflow-wrap:anywhere}
-.warnings li b{font-family:var(--mono); font-size:.74rem; color:var(--accent); letter-spacing:.08em; margin-right:.5rem}
+/* 表單改動後的結果標 stale。用邊框與實色字，不用 opacity 淡化結果——
+   淡化會讓整份結果掉到對比門檻以下，而結果本身仍要能讀。 */
+.stale-notice{border:1px solid var(--accent); border-left-width:3px; padding:var(--s2) var(--s3); margin:0 0 var(--s3); max-width:none; font-size:.92rem; color:var(--ink)}
 
 .toolbar{display:block; padding:var(--s3) 0; border-bottom:1px solid var(--hair-soft)}
 .toolbar .note{font-size:.82rem; color:var(--ink-faint); line-height:1.6; margin-top:var(--s1)}
 .export-mode{margin:0 0 var(--s2)}
+/* 驗算資料按需取得的狀態列（匯出區與技術細節區各一） */
+.detail-status{display:flex; flex-wrap:wrap; gap:var(--s1); align-items:baseline; margin:0 0 var(--s2)}
+.detail-status[hidden]{display:none}
+.detail-status > .note{margin:0; flex:1 1 16rem}
 .export-mode-title{font-family:var(--serif); font-size:1.15rem; margin:0 0 var(--s2)}
 .export-mode-options{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1px; background:var(--hair)}
 .export-mode-options label{display:flex; gap:.8rem; align-items:flex-start; min-width:0; padding:var(--s2); background:var(--paper-2); cursor:pointer}
@@ -164,7 +137,7 @@ button.small{font-size:.82rem; padding:.45rem 1rem}
 .export-mode small{display:block; color:var(--ink-faint); font-size:.78rem; line-height:1.55; margin-top:.25rem}
 .export-actions{display:flex; flex-wrap:wrap; gap:var(--s1); margin-top:var(--s2)}
 .ring-tag{
-  font-family:var(--mono); font-size:.66rem; letter-spacing:.18em; text-transform:uppercase;
+  font-family:var(--mono); font-size:.75rem; letter-spacing:.18em; text-transform:uppercase;
   border-left:3px solid var(--ring-v); padding-left:.6rem; color:var(--ink-faint);
 }
 .ring-tag[data-ring="ring-1"]{border-left-color:var(--ring-1)}
@@ -174,56 +147,170 @@ button.small{font-size:.82rem; padding:.45rem 1rem}
 
 /* 收據狀態：形狀與顏色都不同，不只是文字不同 */
 .state{
-  font-family:var(--mono); font-size:.68rem; letter-spacing:.1em;
+  font-family:var(--mono); font-size:.75rem; letter-spacing:.1em;
   padding:.15rem .6rem; border:1px solid currentColor; border-radius:999px;
 }
 .state[data-state="present"]{display:none}
-.state[data-state="defaulted"]{color:var(--state-defaulted)}
 .state[data-state="not_requested"]{color:var(--state-absent); border-style:dashed}
 .state[data-state="executed_unavailable"]{color:var(--state-unavailable)}
 .state[data-state="refused"]{
   color:var(--paper); background:var(--state-refused); border-color:var(--state-refused);
 }
-.reason-code{font-family:var(--mono); font-size:.7rem; color:var(--accent); letter-spacing:.06em; overflow-wrap:anywhere}
 
 .section-note{max-width:var(--measure); font-size:.9rem; color:var(--ink-dim); margin-top:var(--s1); overflow-wrap:anywhere}
 .section-block{font-family:var(--mono); font-size:.8rem; color:var(--ink-dim); margin-top:var(--s2); word-break:break-word}
-td:first-child{color:var(--ink)}
 
-footer{border-top:1px solid var(--ink); padding:var(--s3) 0 var(--s5)}
-footer .wrap{display:flex; gap:var(--s3); flex-wrap:wrap}
-footer span{font-family:var(--mono); font-size:.68rem; color:var(--ink-faint); letter-spacing:.12em}
+/* ═══ 出生時刻敏感度：取樣摘要 ═══════════════════════════════
+   第一行是結論，永遠在摺疊之外。點列是不可操作的圖：每個取樣點一個獨立的點，
+   點與點之間是點線（那裡沒有計算），刻意不畫連續填滿的條。改變的時刻畫成
+   一段斜紋「帶」，不是一條線；帶的寬度是符號，不是比例尺，實際範圍寫在旁邊。
+   意義不只靠顏色：空心／實心點、帶的斜紋、各組標題的字與左線的實線／虛線／點線
+   各自承擔一部分。位置全部由 class 與 data 屬性決定，沒有 style 屬性（CSP）。 */
+/* 結果頂端的敏感度結論：與 .warnings 同一套細框語彙，但左側是驗證環的線，
+   它是限定條件，不是警告。標籤、結論、連結三段在窄螢幕各自換行。 */
+.sampling-callout{
+  display:flex; flex-wrap:wrap; align-items:baseline; gap:.2rem .9rem;
+  border:1px solid var(--hair); border-left:3px solid var(--ring-v);
+  padding:.8rem var(--s2); margin-bottom:var(--s2);
+}
+.sampling-callout-label{font-family:var(--mono); font-size:.75rem; letter-spacing:.14em; color:var(--ink-faint)}
+.sampling-callout-lead{font-family:var(--serif); font-size:1.02rem; color:var(--ink); line-height:1.6}
+.sampling-callout a{font-size:.85rem; white-space:nowrap}
+/* 只給輔助科技的文字（例如標籤與結論之間的「：」）。不用 display:none，那會讓它也不被朗讀。 */
+.visually-hidden{
+  position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
+  overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap;
+}
+
+/* 結論行用墨色而不是重點紅：「有改變」是資訊，不是錯誤；紅色只留給帶。 */
+.sampling{
+  margin-top:var(--s2); max-width:46rem;
+  padding-bottom:var(--s2); border-bottom:1px solid var(--hair-soft); margin-bottom:var(--s1);
+}
+.sampling-lead{font-family:var(--serif); font-size:1.15rem; line-height:1.6; color:var(--ink)}
+.sampling-marks{
+  display:flex; align-items:center; max-width:34rem;
+  margin:var(--s2) 0 0; padding:1.25rem .2rem 1.5rem;
+}
+.sampling-mark{position:relative; flex:none; display:flex; justify-content:center}
+.sampling-dot{
+  display:block; width:12px; height:12px; border-radius:50%;
+  background:var(--ink); border:2px solid var(--ink);
+}
+.sampling-mark[data-representative] .sampling-dot{background:var(--paper)}
+.sampling-time{
+  position:absolute; top:calc(100% + .3rem); left:50%; transform:translateX(-50%);
+  font-family:var(--mono); font-size:.75rem; line-height:1.2; letter-spacing:.02em;
+  color:var(--ink-dim); white-space:nowrap; font-variant-numeric:tabular-nums;
+}
+.sampling-mark[data-edge="first"] .sampling-time{left:0; transform:none}
+.sampling-mark[data-edge="last"] .sampling-time{left:auto; right:0; transform:none}
+.sampling-mark[data-representative] .sampling-time{color:var(--ink)}
+.sampling-marks[data-density="dense"] .sampling-dot{width:8px; height:8px; border-width:1.5px}
+.sampling-marks[data-density="dense"] .sampling-mark:not([data-edge]):not([data-representative]) .sampling-time{display:none}
+.sampling-gap{
+  position:relative; flex:1 1 0; min-width:3px; align-self:stretch;
+  display:flex; align-items:center; justify-content:center;
+}
+.sampling-gap::before{
+  content:""; position:absolute; left:3px; right:3px; top:50%;
+  border-top:1px dotted var(--ink-faint);
+}
+.sampling-gap-band,
+.sampling-band{
+  display:block; position:relative; background-color:var(--paper);
+  background-image:repeating-linear-gradient(135deg, var(--accent) 0 1.5px, transparent 1.5px 4px);
+  border:1px solid var(--accent);
+}
+.sampling-gap-band{width:16px; height:9px}
+/* 點很密時空隙只有幾個像素，固定寬度的帶會壓到相鄰的點；改成填滿那一格空隙，
+   意思不變：改變落在這兩個點之間的某處。 */
+.sampling-marks[data-density="dense"] .sampling-gap-band{width:auto; left:1px; right:1px; position:absolute; height:7px}
+.sampling-gap-count{
+  position:absolute; bottom:calc(100% + .15rem); left:50%; transform:translateX(-50%);
+  font-family:var(--mono); font-size:.75rem; line-height:1.2; color:var(--accent); white-space:nowrap;
+}
+.sampling-note{margin-top:.2rem; font-size:.8rem; color:var(--ink-faint); max-width:var(--measure)}
+
+.sampling-group{margin-top:var(--s2); padding-left:.9rem; border-left:3px solid var(--hair)}
+.sampling-group[data-tone="differs"]{border-left-color:var(--accent)}
+.sampling-group[data-tone="same"]{border-left-color:var(--ink-faint)}
+.sampling-group[data-tone="partial"]{border-left-style:dashed; border-left-color:var(--state-unavailable)}
+.sampling-group[data-tone="unchecked"]{border-left-style:dotted; border-left-color:var(--state-absent)}
+.sampling-group-title{font-family:var(--sans); font-size:.95rem; font-weight:600; line-height:1.6; color:var(--ink)}
+.sampling-group-note{font-size:.82rem; line-height:1.7; color:var(--ink-dim); max-width:var(--measure)}
+.sampling-items{margin-top:.25rem; font-size:.88rem; line-height:1.75; color:var(--ink-dim); overflow-wrap:anywhere}
+.sampling-bands{list-style:none; margin-top:.45rem}
+.sampling-bands li{
+  display:grid; grid-template-columns:1.5rem max-content max-content minmax(0,1fr);
+  gap:.15rem .7rem; align-items:center;
+  padding:.35rem 0; border-bottom:1px solid var(--hair-soft); font-size:.85rem;
+}
+.sampling-bands li:last-child{border-bottom:0}
+.sampling-band{width:1.5rem; height:.6rem}
+.sampling-band-range{font-family:var(--mono); font-variant-numeric:tabular-nums; color:var(--ink); white-space:nowrap}
+.sampling-band-resolution{
+  font-family:var(--mono); font-size:.75rem; letter-spacing:.04em; color:var(--ink-dim);
+  border:1px solid var(--hair); border-radius:999px; padding:0 .45rem; white-space:nowrap;
+  justify-self:start;
+}
+.sampling-band-what{color:var(--ink-dim); line-height:1.6; overflow-wrap:anywhere}
+@media (max-width:640px){
+  .sampling-lead{font-size:1.05rem}
+  .sampling-time{font-size:.6rem; letter-spacing:0}
+  /* 窄螢幕：帶與範圍一列，解析度與內容各自換到下一列，長的解析度說明也能換行。 */
+  .sampling-bands li{grid-template-columns:1.5rem minmax(0,1fr)}
+  .sampling-band-resolution,.sampling-band-what{grid-column:2}
+  .sampling-band-resolution{white-space:normal}
+}
+/* 強制色彩模式移除背景色與背景圖：實心點與帶的斜紋會消失，空心／實心的區別也跟著
+   消失。這兩個元素改用系統色自己畫（與單選鈕的處理相同，A11Y-FORCED）。 */
+@media (forced-colors: active){
+  .sampling-dot{forced-color-adjust:none; background:CanvasText; border-color:CanvasText}
+  .sampling-mark[data-representative] .sampling-dot{background:Canvas}
+  .sampling-gap-band,.sampling-band{forced-color-adjust:none; background:CanvasText; border-color:CanvasText}
+}
 
 @media (max-width:900px){
   :root{--pad:1.4rem; --s4:2.2rem; --s5:3rem; --s6:4rem}
   .grid,.grid.three{grid-template-columns:1fr}
-  .versions{margin-left:0; flex-basis:100%}
+}
+/* 640px 以下頁首完全交給 page.css，與其他頁同一個樣子；
+   本頁只在 641–900px 之間加上下內距。 */
+@media (min-width:641px) and (max-width:900px){
   header .wrap{padding-top:.8rem; padding-bottom:.8rem}
 }
 
-/* 窄螢幕：導覽換行後，固定高度反而讓頁首裝不下自己的導覽列。
-   本段與 page.css 的同名規則逐條相同，改一邊必須改兩邊——兩份樣式表現在
-   由同一個殼產生同一份 header markup，長得不一樣就是缺陷。
-   `height:auto` 不可省：上面的基準規則是 `height:78px`，光寫 `min-height:0`
-   蓋不掉它。2026-08-27 實測，只寫 min-height 時導覽列會溢出頁首 18px。 */
-@media (max-width:640px){
-  header .wrap{
-    min-height:0; padding-top:.9rem; padding-bottom:.9rem;
-  }
-  .brand{font-size:1.2rem; letter-spacing:.12em}
-  .brand small{font-size:.7rem; letter-spacing:.22em; margin-left:.5rem}
-  .mark{width:1.6rem; height:1.6rem}
-  .site-nav{width:100%; margin-left:0; gap:.85rem}
-  .site-nav a{font-size:.8rem}
-}
+/* 列印用的輸入摘要：表單在紙上被藏起，摘要只在列印時出現（calculate.js 在 beforeprint 填入、
+   afterprint 清空）。 */
+.print-input-summary{display:none}
 
 @media print{
-  /* 列印只留占星結果與收據。互動區塊要整塊藏起來，不只藏它的按鈕：只藏
-     按鈕會留下一段指向不存在控制項的孤兒文字。 */
-  header,form,.toolbar,.actions,button,
+  .print-input-summary{display:block; margin:0 0 var(--s2)}
+  .print-input-summary dl{display:grid; grid-template-columns:max-content 1fr; gap:.1rem .8rem; margin:0}
+  .print-input-summary dt{font-weight:600}
+  .print-input-summary dd{margin:0}
+  /* 列印隱藏表單與控制項，結果全部印出；收據與驗算資料只在已取得時印出（摺疊
+     區塊由 calculate.js 的 beforeprint 展開，beforeprint 不觸發取得）。互動區塊要整塊藏起來，不只藏它的
+     按鈕：只藏按鈕會留下一段指向不存在控制項的孤兒文字。 */
+  header,form,.toolbar,.actions,button,.skip-link,
   .clear-zone,.section-index-wrap,#place-results,footer{display:none !important}
   body{background:var(--print-bg); color:var(--print-fg)}
   section.result-section{break-inside:avoid}
+  .sampling{break-inside:avoid}
+  /* 畫面上寬表靠 overflow-x 捲動；紙上沒有捲軸，被裁掉的欄
+     就是不見了。列印改成不捲動、允許任何位置換行、縮小字級。 */
+  .table-wrap{overflow:visible; border:0}
+  .table-wrap table{table-layout:auto; width:100%; font-size:.75rem}
+  .table-wrap th,.table-wrap td{overflow-wrap:anywhere; word-break:break-all; white-space:normal}
+  details>summary{display:none}
+  /* 驗算資料尚未取得時，「技術細節與驗算資料」裡只有說明與操作提示；
+     summary 藏起後那些字就成了孤兒，整區不印。取得之後照常印出。 */
+  .technical-results[data-detail="pending"]{display:none !important}
+  /* 結果已不對應目前輸入（calculate.js beforeprint 套用匯出守衛）：紙上只留
+     stale 說明，不印改動前的結果。 */
+  .results[data-print-withheld="true"]>:not(.stale-notice){display:none !important}
+  @page{margin:12mm}
 }
 
 /* ═══ 兩個區：填表與結果 ═══════════════════════════════
@@ -241,7 +328,7 @@ footer span{font-family:var(--mono); font-size:.68rem; color:var(--ink-faint); l
 .field.grow{flex:1}
 .note{font-size:.82rem; color:var(--ink-faint); line-height:1.7; max-width:var(--measure)}
 
-/* 重複的民用小時（SD-32）。這一區只在所填時刻真的在該時區出現兩次時才出現，
+/* 重複的民用小時。這一區只在所填時刻真的在該時區出現兩次時才出現，
    而它問的問題會改變上升點落在哪個星座——所以它不能長得像一段普通內文。
    之前 .fold-choice 與 .fold-choice-title 完全沒有規則：容器 border、
    background、padding、margin 全是 0，標題是 16px 一般內文，視覺重量低於
@@ -270,11 +357,13 @@ footer span{font-family:var(--mono); font-size:.68rem; color:var(--ink-faint); l
 }
 .place-option:hover{background:var(--paper-2)}
 .place-option b{display:block; font-weight:600; font-size:.92rem; overflow-wrap:anywhere}
-.place-meta{display:block; font-size:.72rem; color:var(--ink-faint); margin-top:.2rem; overflow-wrap:anywhere}
+.place-meta{display:block; font-size:.75rem; color:var(--ink-faint); margin-top:.2rem; overflow-wrap:anywhere}
 .place-receipt{border:1px solid var(--hair); background:var(--paper-2); padding:var(--s2) var(--s3); margin-top:var(--s2)}
 .place-receipt dl{display:grid; grid-template-columns:11rem 1fr; gap:.3rem var(--s2); margin-top:.6rem}
 .place-receipt dt{font-size:.78rem; color:var(--ink-faint)}
 .place-receipt dd{font-family:var(--mono); font-size:.78rem; word-break:break-word}
+.receipt-codes{margin-top:var(--s1)}
+.receipt-codes summary{font-size:.78rem; color:var(--ink-faint); cursor:pointer}
 .place-receipt .caveat{font-size:.82rem; color:var(--ink-dim); margin-top:var(--s2); border-left:2px solid var(--accent); padding-left:.8rem}
 .manual-place{margin-top:var(--s3); border-top:1px solid var(--hair-soft); padding-top:var(--s2)}
 .manual-place summary{cursor:pointer; font-size:.88rem; color:var(--ink-dim)}
@@ -313,6 +402,16 @@ button.danger:hover{background:var(--ink); border-color:var(--ink)}
 .choice-lead{
   font-size:.85rem; color:var(--ink-dim); margin-bottom:.5rem;
 }
+/* 單選群組是巢狀 fieldset（原生群組語意，legend 是群組名稱），外觀維持原本的
+   段落與方塊：不畫外層 fieldset 的分隔線，legend 不壓在框線上（float 讓它回到
+   一般區塊的排版），字型回到各自的 class。 */
+fieldset.choice-group,fieldset.export-mode{border:0; padding:0; min-width:0}
+fieldset.fold-choice{min-width:0}
+legend.choice-lead,legend.fold-choice-title,legend.export-mode-title{
+  float:left; width:100%; padding:0; letter-spacing:normal;
+}
+legend.choice-lead{font-family:inherit}
+legend.choice-lead + *,legend.fold-choice-title + *,legend.export-mode-title + *{clear:both}
 .choice-lead .en{color:var(--ink-faint)}
 .advanced-body{padding:var(--s2) 1rem var(--s3)}
 .options-actions{display:flex; justify-content:flex-end; padding-bottom:var(--s1)}
@@ -327,7 +426,6 @@ button.danger:hover{background:var(--ink); border-color:var(--ink)}
 
 /* 主表單裡的宮位控制項 */
 .inline-control{display:flex; align-items:center; min-height:2.6rem}
-.inline-control .inline-control input[type="checkbox"]{width:1.05rem; height:1.05rem}
 .inline-control select{min-width:0; width:100%}
 
 .grid.four{grid-template-columns:repeat(4,minmax(0,1fr))}
@@ -433,10 +531,9 @@ input[type="checkbox"].option-control:disabled{
 .index-link[data-ring="ring-2"]{border-left-color:var(--ring-2)}
 .index-link[data-ring="ring-3"]{border-left-color:var(--ring-3)}
 .index-link:hover{background:var(--paper); color:var(--accent)}
-.index-state{font-family:var(--mono); font-size:.66rem; letter-spacing:.06em; color:var(--state-absent); margin-left:auto}
+.index-state{font-family:var(--mono); font-size:.75rem; letter-spacing:.06em; color:var(--state-absent); margin-left:auto}
 .index-state[data-state="refused"]{color:var(--state-refused)}
 .index-state[data-state="executed_unavailable"]{color:var(--state-unavailable)}
-.index-state[data-state="defaulted"]{color:var(--state-defaulted)}
 
 /* 區塊之間要有明顯的呼吸，否則二十一個區塊會糊成一片 */
 section.result-section{ border-bottom:1px solid var(--hair-soft);padding:var(--s4) 0 var(--s3); scroll-margin-top:var(--s2)}
@@ -465,12 +562,10 @@ section.result-section h3{font-family:var(--serif); font-weight:400; letter-spac
 /* ═══ 逐步軌跡：換行而不是往右長 ═══════════════════════
    td 預設 nowrap 是為了讓座標數值不被折斷；軌跡的算式與輸入是長文字，
    同一條規則會讓整張表寬到必須一路往右拉。這裡改為換行並限制欄寬。 */
-table[data-section="trace"]{table-layout:fixed; width:100%}
 table[data-section="trace"] td,
 table[data-section="trace"] th{white-space:normal; vertical-align:top; word-break:break-word}
 table[data-section="trace"] td{line-height:1.7; padding-right:.8rem}
-table[data-section="trace"] th:nth-child(1),
-table[data-section="trace"] td:nth-child(1){width:3rem}
+table[data-section="trace"] th:nth-child(1){width:3rem}
 table[data-section="trace"] th:nth-child(2),
 table[data-section="trace"] td:nth-child(2){width:9rem}
 table[data-section="trace"] th:nth-child(3),
@@ -479,26 +574,47 @@ table[data-section="trace"] th:nth-child(6),
 table[data-section="trace"] td:nth-child(6){width:7rem}
 
 /* 生效選項也是長文字，同樣不該橫向捲 */
-table[data-section="requested_options"]{table-layout:fixed; width:100%}
-table[data-section="requested_options"] td{white-space:normal; word-break:break-word}
+table[data-section="requested_options"] td,
+table[data-section="requested_options"] th[scope="row"]{white-space:normal; word-break:break-word}
 
 /* ═══ 表格密度與欄寬：逐類調整 ═════════════════════════
    座標表維持不換行（數值折斷更難讀），但只在自己的容器內橫捲，
    不讓整頁溢出；文字型表格一律換行。 */
 table{width:100%; border-collapse:collapse; font-family:var(--mono); font-variant-numeric:tabular-nums;font-size:.78rem}
 th{
-  text-align:left; font-weight:400; font-size:.66rem; letter-spacing:.14em;
+  text-align:left; font-weight:400; font-size:.75rem; letter-spacing:.14em;
   text-transform:uppercase; color:var(--ink-faint);
   border-bottom:1px solid var(--hair); white-space:nowrap;padding:.55rem .85rem; background:var(--paper-2); position:sticky; top:0; z-index:1}
 td{ border-bottom:1px solid var(--hair-soft); color:var(--ink-dim); white-space:nowrap;padding:.5rem .85rem}
 tbody tr:nth-child(even) td{background:var(--zebra)}
 tbody tr:hover td{background:var(--paper-2)}
-caption{
-  text-align:left; font-family:var(--mono); font-size:.66rem; letter-spacing:.18em;
-  text-transform:uppercase; color:var(--ink-faint); padding:.55rem .85rem; background:var(--paper-2); border-bottom:1px solid var(--hair)}
+/* 每列第一格是列標頭（th scope=row）。語意改了，外觀維持原本的第一欄：
+   不沿用欄標頭的小型大寫、字級、底色與 sticky，字色比資料格深一階（--ink）。
+   padding 與 white-space 不在這裡設，讓窄螢幕與各表的既有規則照舊生效。 */
+tbody th[scope="row"]{
+  font-size:inherit; letter-spacing:normal; text-transform:none; color:var(--ink);
+  background:transparent; position:static; z-index:auto; border-bottom:1px solid var(--hair-soft)}
+tbody tr:nth-child(even) th[scope="row"]{background:var(--zebra)}
+tbody tr:hover th[scope="row"]{background:var(--paper-2)}
 
-/* 數值欄靠右並用等寬對齊小數點 */
-table td:not(:first-child){font-variant-numeric:tabular-nums}
+/* 座標表：第一欄（名稱與欄標頭）固定，往右捲時名稱不會消失，390px 手機也一樣。
+   固定格必須不透明，否則捲過去的數值會透出來；斑馬紋是半透明的，
+   所以疊在紙色上。欄標頭的 z-index 要高過其他欄標頭（它們也是 sticky）。 */
+:is(table[data-section="bodies"],table[data-section="nodes"],
+    table[data-section="lunar_apsides"],table[data-section="fixed_stars"]) th:first-child{
+  position:sticky; left:0; z-index:2}
+:is(table[data-section="bodies"],table[data-section="nodes"],
+    table[data-section="lunar_apsides"],table[data-section="fixed_stars"]) tbody tr th[scope="row"]{
+  background:var(--paper)}
+:is(table[data-section="bodies"],table[data-section="nodes"],
+    table[data-section="lunar_apsides"],table[data-section="fixed_stars"]) tbody tr:nth-child(even) th[scope="row"]{
+  background:linear-gradient(var(--zebra),var(--zebra)) var(--paper)}
+:is(table[data-section="bodies"],table[data-section="nodes"],
+    table[data-section="lunar_apsides"],table[data-section="fixed_stars"]) tbody tr:hover th[scope="row"]{
+  background:var(--paper-2)}
+caption{
+  text-align:left; font-family:var(--mono); font-size:.75rem; letter-spacing:.18em;
+  text-transform:uppercase; color:var(--ink-faint); padding:.55rem .85rem; background:var(--paper-2); border-bottom:1px solid var(--hair)}
 
 /* 文字型表格：換行、不橫捲 */
 table[data-section="requested_options"],
@@ -511,20 +627,9 @@ table[data-section="contract"] td,
 table[data-section="receipt"] td,
 table[data-section="lunar_events"] td,
 table[data-section="horizon_events"] td{white-space:normal; word-break:break-word; vertical-align:top}
-table[data-section="receipt"] th:first-child,
-table[data-section="receipt"] td:first-child{width:16rem}
-table[data-section="contract"] th:first-child,
-table[data-section="contract"] td:first-child{width:12rem}
-table[data-section="requested_options"] th:first-child,
-table[data-section="requested_options"] td:first-child{width:22rem}
-
-/* 座標表：第一欄固定，往右捲時天體名不會消失 */
-table[data-section="bodies"] td:first-child,
-table[data-section="nodes"] td:first-child,
-table[data-section="lunar_apsides"] td:first-child,
-table[data-section="fixed_stars"] td:first-child{
-  position:sticky; left:0; background:var(--paper); z-index:1;
-}
+table[data-section="receipt"] th:first-child{width:16rem}
+table[data-section="contract"] th:first-child{width:12rem}
+table[data-section="requested_options"] th:first-child{width:22rem}
 
 /* ═══ 行動版 ═══════════════════════════════════════════ */
 @media (max-width:900px){
@@ -536,23 +641,17 @@ table[data-section="fixed_stars"] td:first-child{
   section.result-section h3{font-size:1.2rem}
   section.result-section > .head{flex-wrap:wrap}
   .section-copy{margin-left:0; margin-top:.4rem}
-  table{font-size:.72rem}
+  table{font-size:.75rem}
   th,td{padding:.45rem .6rem}
-  /* 固定欄在窄螢幕會吃掉太多寬度，關掉 */
-  table td:first-child{position:static !important}
   /* 文字型表格在窄螢幕改為單欄堆疊，避免兩欄都被壓扁 */
   table[data-section="receipt"] th:first-child,
-  table[data-section="receipt"] td:first-child,
   table[data-section="contract"] th:first-child,
-  table[data-section="contract"] td:first-child,
-  table[data-section="requested_options"] th:first-child,
-  table[data-section="requested_options"] td:first-child{width:40%}
+  table[data-section="requested_options"] th:first-child{width:40%}
   table[data-section="trace"]{table-layout:auto}
   table[data-section="trace"] th:nth-child(3),
   table[data-section="trace"] td:nth-child(3){width:auto}
   .place-receipt dl{grid-template-columns:1fr}
   .result-head{flex-direction:column; align-items:flex-start}
-  .versions{margin-left:0}
 }
 
 /* 表格逃出捲動容器造成整頁水平溢出（2026-08-05 於 390px 實測）。
@@ -567,46 +666,12 @@ main,
 .table-wrap{ margin-top:var(--s2);border:1px solid var(--hair-soft); border-radius:var(--radius);max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch}
 .long-section > *{min-width:0}
 
-/* 全站識別：與其餘十二頁共用同一枚環組標記與頁尾色帶 */
-a.brand{display:inline-flex; align-items:center; gap:.7rem; color:inherit; text-decoration:none}
-.mark{width:2rem; height:2rem; flex:0 0 auto; overflow:visible}
-.mark circle,.mark ellipse,.mark line{fill:none; stroke:var(--plate-dim); stroke-width:1}
-.mark .mark-ecliptic{stroke:var(--accent-rev); stroke-width:1.2}
-a.brand:hover .mark circle,a.brand:hover .mark ellipse,a.brand:hover .mark line{stroke:var(--plate-fg)}
-.footer-rule{padding-bottom:var(--s2)}
-.ring-strip{display:block; height:2px; width:100%;
-  background:linear-gradient(to right, var(--ring-1) 0 25%, var(--ring-2) 25% 50%,
-    var(--ring-3) 50% 75%, var(--ring-v) 75% 100%)}
-
-/* ═══ 導覽與網站地圖：十三個介面都要到得了 ═══════════════ */
-/* align-items:center 不可省。預設的 stretch 會把每個連結的盒子拉到最高那一個
-   （帶內距的 CTA）的高度，而連結的文字是貼在那個被拉高的盒子頂端的。
-   816px 實測：五個純連結的文字中線在 30.8，CTA 的在 38.8，導覽列自己的中線
-   是 39.0——連結整排高了 8.2px，而 CTA 是唯一對齊的那一個，於是它看起來
-   像是浮在旁邊，跟誰都沒有關係。置中之後六個項目共用同一條文字中線。 */
-.site-nav{margin-left:auto; display:flex; align-items:center; gap:1.25rem; flex-wrap:wrap}
-.site-nav a{color:var(--plate-dim); text-decoration:none; font-size:.88rem; white-space:nowrap}
-.site-nav a:hover{color:var(--plate-fg)}
-/* 導覽列常駐入口，與 page.css 同一條規則。本頁自己就是它的目的地，產生器因此
-   在這一頁替它加上 aria-current="page"。 */
-.site-nav a.nav-cta{
-  background:var(--paper); color:var(--plate);
-  padding:.5rem 1.15rem; margin-left:.6rem;
-}
-.site-nav a.nav-cta:hover{background:var(--accent-rev); color:var(--paper)}
-.site-nav a.nav-cta[aria-current="page"]{
-  background:transparent; color:var(--plate-fg);
-  box-shadow:inset 0 0 0 1px var(--plate-hair);
-}
-.sitemap{display:grid; grid-template-columns:repeat(auto-fit,minmax(12rem,1fr));
-  gap:var(--s3); padding-top:var(--s4); padding-bottom:var(--s3)}
-.sitemap-col{display:flex; flex-direction:column; gap:.4rem}
-.sitemap-col h2{font-family:var(--mono); font-size:.68rem; letter-spacing:.2em;
-  text-transform:uppercase; color:var(--ink-faint); margin:0 0 .3rem; font-weight:400}
-.sitemap-col a{color:var(--ink-dim); text-decoration:none; font-size:.9rem}
-.sitemap-col a:hover{color:var(--accent)}
-@media (max-width:900px){
-  .site-nav{gap:.9rem}
-  .site-nav a{font-size:.82rem}
-  .sitemap{grid-template-columns:1fr 1fr}
+/* 強制色彩模式（Windows 高對比等）以系統色取代作者的背景色並移除背景圖。
+   單選鈕的實心點、下拉選單的箭頭都只靠背景畫出，在那個模式裡會消失：三個
+   精確度選項看起來都沒選，下拉選單看起來像文字框（A11Y-FORCED，WCAG 1.4.11）。
+   一般模式下這裡完全不生效，視覺不變。 */
+@media (forced-colors: active){
+  .choice input[type="radio"]:checked::after,
+  .export-mode input[type="radio"]:checked::after{forced-color-adjust:none; background:CanvasText}
+  select.option-control{appearance:auto; -webkit-appearance:auto}
 }

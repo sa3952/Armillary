@@ -50,9 +50,22 @@
     return value(parsed);
   }
 
+  // 一個數在最短十進位寫法下的小數位數。JSON.stringify 送出的就是這個寫法，
+  // 後端 schemas.exact_second_microseconds 也以 Python 的同一種寫法（repr）計數，
+  // 兩邊因此對同一個值得到同一個答案：String(1e-7) 是 "1e-7"，算七位。
+  const SHORTEST_DECIMAL = /^\d+(?:\.(\d+))?(?:e([+-]\d+))?$/;
+
+  function fractionDigits(number) {
+    const match = SHORTEST_DECIMAL.exec(String(number));
+    if (!match) return Infinity;
+    return Math.max((match[1] || "").length - Number(match[2] || 0), 0);
+  }
+
   /**
    * 秒：唯一允許小數的時間欄位；60只可能是後端另行驗證的UTC閏秒。
-   * 小數必須保留——截斷會算出使用者沒有輸入的時刻。
+   * 小數必須保留——截斷會算出使用者沒有輸入的時刻。所以比微秒更細的值
+   * 不在這裡捨去，而是與後端一樣拒絕：捨入會把 59.9999999 帶進下一分鐘，
+   * 甚至越過時鐘跳躍或閏秒。
    */
   function readSecond(raw) {
     const text = String(raw === undefined || raw === null ? "" : raw).trim();
@@ -60,6 +73,7 @@
     const parsed = Number(text);
     if (!Number.isFinite(parsed)) return invalid("必須是數字");
     if (parsed < 0 || parsed > 60) return invalid("必須介於 0 與 60 之間");
+    if (fractionDigits(parsed) > 6) return invalid("最多到小數第六位（微秒）");
     return value(parsed);
   }
 
@@ -108,8 +122,8 @@
       // `float_type` 422。其餘三個數字選項預設就是 null，清空等於省略，
       // 所以只有這一類會踩到。
       //
-      // 不自動填回預設：那是把使用者沒有輸入的值算進結果，正是
-      // 那正是靜默改值。改為明講這欄必填。
+      // 不自動填回預設：那是把使用者沒有輸入的值算進結果，正是靜默改值。
+      // 所以明講這欄必填。
       if (candidate === null || candidate === undefined) {
         if (option.default !== null && option.default !== undefined) {
           problems.push(`${option.label_zh} 必須填寫（或關閉這個選項）`);
@@ -123,7 +137,7 @@
     return problems;
   }
 
-  // ── 模糊民用時刻（SD-32）───────────────────────────────
+  // ── 模糊民用時刻 ───────────────────────────────────────
   //
   // DST 結束當天，同一個時鐘時間在該時區出現兩次，對應兩個相差一小時的
   // UTC 時刻。後端支援 PEP 495 的 `fold` 讓呼叫端指明是哪一次，前端卻
@@ -135,14 +149,28 @@
 
   const DAY_MS = 86400000;
 
+  // 一個整小時的判定要問上百次偏移（見 civilHourOccurrences），每次新建
+  // DateTimeFormat 太貴；同一個時區共用一個。只快取時區名稱對應的格式器，
+  // 不含任何時刻。
+  const formatters = new Map();
+
+  function zoneFormatter(timeZone) {
+    let formatter = formatters.get(timeZone);
+    if (!formatter) {
+      formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        hourCycle: "h23",
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
+      });
+      formatters.set(timeZone, formatter);
+    }
+    return formatter;
+  }
+
   /** 某個 UTC 瞬間在該時區的偏移（分鐘）。 */
   function zoneOffsetMinutes(utcMillis, timeZone) {
-    const formatter = new Intl.DateTimeFormat("en-US", {
-      timeZone,
-      hourCycle: "h23",
-      year: "numeric", month: "2-digit", day: "2-digit",
-      hour: "2-digit", minute: "2-digit", second: "2-digit",
-    });
+    const formatter = zoneFormatter(timeZone);
     const parts = {};
     formatter.formatToParts(new Date(utcMillis)).forEach((part) => {
       parts[part.type] = part.value;
@@ -171,6 +199,8 @@
     for (const part of [year, month, day, hour, minute]) {
       if (!Number.isFinite(part)) return null;
     }
+    // 整秒以下只截斷：時區的偏移只在整秒改變，而後端也以精確值判定、
+    // 從不把 59.999999 進位到下一分鐘，所以兩邊對同一個值的判定相同。
     const wholeSeconds = Math.floor(Number.isFinite(second) ? second : 0);
     let wall;
     try {
@@ -208,10 +238,130 @@
     };
   }
 
+  // ── 大約時辰：整個民用小時裡有沒有任何一段重複──────
+  //
+  // 後端對 approximate_hour 取樣的是整個小時（:30 錨點、每 15 分鐘、59:59，
+  // 再加上小時內每一次偏移變更的兩側），只要其中有重複的瞬間就要求 fold。
+  // 只看 HH:00:00 會漏掉重複區段在小時中間開始或結束的情形：
+  // America/St_Johns 2005-10-29 在 00:01 調回，重複的是 23:01–00:00:59；
+  // Australia/Lord_Howe 2024-04-07 重複 01:30–01:59:59。整點本身都只出現一次。
+  //
+  // 判法與後端 _utc_offset_changes／_clock_change_edge_offsets 相同：在涵蓋這個
+  // 小時所有可能瞬間（前後再各留一小時）的 UTC 區間裡逐分鐘找偏移變更、精修到
+  // 整秒；偏移變小（時鐘往回撥）的每一次變更，重複的鐘面區間是
+  // [變更瞬間＋新偏移, 變更瞬間＋舊偏移)，與這個小時有交集就算模糊。
+
+  const SECOND_MS = 1000;
+  const MINUTE_MS = 60 * SECOND_MS;
+  const HOUR_MS = 60 * MINUTE_MS;
+  // 後端 PROBE_OFFSETS_SECONDS 的代表點順序（approximate_hour_representative_request）：
+  // 先 :30，再其餘取樣點。選擇區列出的兩個世界時取自第一個落在重複區段裡的點。
+  const HOUR_LABEL_PREFERENCE_SECONDS = [1800, 0, 900, 2700, 3599];
+
+  /** 第一個偏移等於 `after` 的整秒，介於 (lo, hi]。 */
+  function refineChange(lo, hi, timeZone, after) {
+    let left = lo;
+    let right = hi;
+    while (right - left > SECOND_MS) {
+      const middle = left + Math.floor((right - left) / (2 * SECOND_MS)) * SECOND_MS;
+      if (zoneOffsetMinutes(middle, timeZone) === after) right = middle;
+      else left = middle;
+    }
+    return right;
+  }
+
+  function offsetChanges(startUtc, endUtc, timeZone) {
+    const changes = [];
+    let previous = zoneOffsetMinutes(startUtc, timeZone);
+    for (let t = startUtc + MINUTE_MS; t <= endUtc; t += MINUTE_MS) {
+      const current = zoneOffsetMinutes(t, timeZone);
+      if (current !== previous) {
+        changes.push({
+          atUtc: refineChange(t - MINUTE_MS, t, timeZone, current),
+          before: previous,
+          after: current,
+        });
+        previous = current;
+      }
+    }
+    return changes;
+  }
+
+  /**
+   * 一個民用小時（`hour` 那一整個小時）在該時區是否有任何一段鐘面時間出現兩次。
+   *
+   *   `ambiguous`     —— 有；`occurrences` 是重複區段裡一個代表時刻的兩次解讀
+   *                      （形狀同 civilTimeOccurrences），`repeated` 是這個小時內
+   *                      重複的鐘面區間（以小時起點起算的秒數，[from, to)）；
+   *   `not_ambiguous` —— 整個小時沒有重複的瞬間（可能部分或全部不存在，那由後端判定）。
+   *
+   * 時區名稱不合法或欄位不完整時回 null。
+   */
+  function civilHourOccurrences(fields, timeZone) {
+    if (!timeZone) return null;
+    const { year, month, day, hour } = fields;
+    for (const part of [year, month, day, hour]) {
+      if (!Number.isFinite(part)) return null;
+    }
+    let wallStart;
+    try {
+      wallStart = Date.UTC(year, month - 1, day, hour, 0, 0);
+      zoneOffsetMinutes(wallStart, timeZone);
+    } catch (_error) {
+      return null;
+    }
+    const wallEnd = wallStart + HOUR_MS;
+    const candidates = [
+      zoneOffsetMinutes(wallStart - DAY_MS, timeZone),
+      zoneOffsetMinutes(wallEnd + DAY_MS, timeZone),
+      zoneOffsetMinutes(wallStart, timeZone),
+    ];
+    const earliest = Math.min(...candidates.map((o) => wallStart - o * MINUTE_MS)) - HOUR_MS;
+    const latest = Math.max(...candidates.map((o) => wallEnd - o * MINUTE_MS)) + HOUR_MS;
+
+    let from = null;
+    let to = null;
+    offsetChanges(earliest, latest, timeZone).forEach((change) => {
+      if (change.after >= change.before) return;   // 往前撥：產生空隙，不是重複
+      const repeatStart = Math.max(wallStart, change.atUtc + change.after * MINUTE_MS);
+      const repeatEnd = Math.min(wallEnd, change.atUtc + change.before * MINUTE_MS);
+      if (repeatStart >= repeatEnd) return;
+      if (from === null || repeatStart < from) from = repeatStart;
+      if (to === null || repeatEnd > to) to = repeatEnd;
+    });
+    if (from === null) return { state: "not_ambiguous", occurrences: [] };
+
+    const firstWholeSecond = Math.ceil(from / SECOND_MS) * SECOND_MS;
+    const preferred = HOUR_LABEL_PREFERENCE_SECONDS
+      .map((seconds) => wallStart + seconds * SECOND_MS)
+      .find((label) => label >= from && label < to);
+    const label = preferred === undefined ? firstWholeSecond : preferred;
+    const labelDate = new Date(label);
+    const occurrences = civilTimeOccurrences({
+      year, month, day, hour,
+      minute: labelDate.getUTCMinutes(),
+      second: labelDate.getUTCSeconds(),
+    }, timeZone);
+    if (!occurrences || occurrences.state !== "ambiguous") {
+      // 理論上不會發生：重複區段裡的時刻依定義有兩個解讀。若前後一天的偏移
+      // 推不出那兩個解讀（同一天內多次變更），仍回報模糊，只是不列世界時。
+      return {
+        state: "ambiguous",
+        occurrences: [{ fold: 0 }, { fold: 1 }],
+        repeated: { from: (from - wallStart) / SECOND_MS, to: (to - wallStart) / SECOND_MS },
+      };
+    }
+    return {
+      state: "ambiguous",
+      occurrences: occurrences.occurrences,
+      repeated: { from: (from - wallStart) / SECOND_MS, to: (to - wallStart) / SECOND_MS },
+    };
+  }
+
   return Object.freeze({
     STATES: Object.freeze({ EMPTY, INVALID, VALUE }),
-    zoneOffsetMinutes,
     civilTimeOccurrences,
+    civilHourOccurrences,
     readInteger,
     readSecond,
     readDecimal,
