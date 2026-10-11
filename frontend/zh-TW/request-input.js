@@ -358,8 +358,76 @@
     };
   }
 
+  // ── 民國年與日本年號 → 西元國曆 ─────────────────────────
+  //
+  // 只是年份的加法：民國紀年自 1912 年、日本自明治 6 年（1873）起都用格里曆的月日，
+  // 所以月與日原樣保留。難處在改元日落在年中：明治 45 年與大正元年、大正 15 年與
+  // 昭和元年同在一個西元年，因此每個年號都帶第一天與最後一天，兩端之外的日期拒絕，
+  // 不挪到相鄰的年號。明治 5 年以前的舊曆日期換出來早於 1900 年，由範圍檢查拒絕。
+  const ERAS = Object.freeze({
+    roc: Object.freeze({ label: "民國", offset: 1911, first: [1912, 1, 1], last: null, before: null, after: null }),
+    meiji: Object.freeze({ label: "明治", offset: 1867, first: null, last: [1912, 7, 29], before: null, after: "大正元年" }),
+    taisho: Object.freeze({ label: "大正", offset: 1911, first: [1912, 7, 30], last: [1926, 12, 24], before: "明治 45 年", after: "昭和元年" }),
+    showa: Object.freeze({ label: "昭和", offset: 1925, first: [1926, 12, 25], last: [1989, 1, 7], before: "大正 15 年", after: "平成（平成以後請直接填西元日期）" }),
+  });
+
+  const pad2 = (number) => String(number).padStart(2, "0");
+  const isoDate = (year, month, day) => `${String(year).padStart(4, "0")}-${pad2(month)}-${pad2(day)}`;
+  const westernText = ([year, month, day]) => `西元 ${year} 年 ${month} 月 ${day} 日`;
+  const compareDates = (a, b) => (a[0] - b[0]) || (a[1] - b[1]) || (a[2] - b[2]);
+
+  function realCalendarDate(year, month, day) {
+    const probe = new Date(Date.UTC(2000, month - 1, day));
+    probe.setUTCFullYear(year);
+    return probe.getUTCFullYear() === year && probe.getUTCMonth() === month - 1 && probe.getUTCDate() === day;
+  }
+
+  /**
+   * 讀年號、年、月、日四欄，換成西元日期。bounds 是出生日期欄的 min／max
+   * （YYYY-MM-DD），範圍只有那一個出處。回傳封閉三態；value 帶回顯用的換算式。
+   */
+  function readEraDate(fields, bounds) {
+    const reads = [fields.year, fields.month, fields.day].map(readInteger);
+    if (reads.every((read) => read.state === EMPTY)) return empty();
+    const definition = Object.prototype.hasOwnProperty.call(ERAS, fields.era) ? ERAS[fields.era] : null;
+    if (!definition) return invalid("請選擇紀年");
+    const [yearRead, monthRead, dayRead] = reads;
+    if (reads.some((read) => read.state === EMPTY)) return invalid("年、月、日都要填");
+    if (yearRead.state === INVALID) return invalid(`年份${yearRead.reason}`);
+    if (monthRead.state === INVALID) return invalid(`月份${monthRead.reason}`);
+    if (dayRead.state === INVALID) return invalid(`日${dayRead.reason}`);
+    const eraYear = yearRead.value;
+    const month = monthRead.value;
+    const day = dayRead.value;
+    if (eraYear < 1) return invalid("年份從元年（1）起算");
+    if (month < 1 || month > 12) return invalid("月份必須是 1 到 12");
+    const year = eraYear + definition.offset;
+    if (!realCalendarDate(year, month, day)) return invalid("這一天不存在，請核對月與日");
+    const date = [year, month, day];
+    if (definition.first && compareDates(date, definition.first) < 0) {
+      return invalid(`${definition.label}元年從${westernText(definition.first)}開始；這一天屬於${definition.before}`);
+    }
+    if (definition.last && compareDates(date, definition.last) > 0) {
+      return invalid(`${definition.label}的最後一天是${westernText(definition.last)}；之後是${definition.after}`);
+    }
+    const iso = isoDate(year, month, day);
+    if ((bounds.min && iso < bounds.min) || (bounds.max && iso > bounds.max)) {
+      return invalid(
+        `換算結果是西元 ${year} 年，超出本計算器的 ${bounds.min.slice(0, 4)}–${bounds.max.slice(0, 4)} 年範圍`
+      );
+    }
+    return value({
+      year, month, day, iso,
+      eraText: `${definition.label}${eraYear === 1 ? "元年" : ` ${eraYear} 年`} ${month} 月 ${day} 日`,
+      gregorianText: westernText(date),
+      formula: `${eraYear} ＋ ${definition.offset} ＝ ${year}`,
+    });
+  }
+
   return Object.freeze({
     STATES: Object.freeze({ EMPTY, INVALID, VALUE }),
+    ERAS,
+    readEraDate,
     civilTimeOccurrences,
     civilHourOccurrences,
     readInteger,

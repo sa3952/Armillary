@@ -10,6 +10,8 @@ import threading
 import time
 import unicodedata
 
+from .civil_time_basis import civil_time_basis_choices, is_dual_civil_time_place
+
 
 DEFAULT_CATALOG_PATH = (
     Path(__file__).resolve().parents[2]
@@ -477,6 +479,27 @@ class PlaceCatalog:
             "execution": dict(_EXECUTION_RECEIPT),
         }
 
+    def record_zone(self, source: str, source_record_id: str) -> dict | None:
+        """The catalogue's country and zone for one record, or None if it has none."""
+
+        connection = self._connect()
+        try:
+            self._served_metadata(connection)
+            row = connection.execute(
+                "SELECT country_code, timezone FROM places "
+                "WHERE source = ? AND source_record_id = ?",
+                (source, source_record_id),
+            ).fetchone()
+        except sqlite3.Error as exc:
+            raise PlaceCatalogUnavailableError(
+                "bundled place catalog query failed"
+            ) from exc
+        finally:
+            connection.close()
+        if row is None:
+            return None
+        return {"country_code": row["country_code"], "timezone": row["timezone"]}
+
     def search(
         self,
         *,
@@ -611,6 +634,18 @@ class PlaceCatalog:
                 "match_tier": row["match_tier"],
                 "coordinate_semantics": (
                     "dataset_representative_point_not_birth_address"
+                ),
+                # A place whose records may use either of two clocks lists both;
+                # a chart for it is refused until the request names one.
+                "civil_time_basis_choices": (
+                    civil_time_basis_choices()
+                    if is_dual_civil_time_place(
+                        source=row["source"],
+                        source_record_id=row["source_record_id"],
+                        country_code=row["country_code"],
+                        timezone=row["timezone"],
+                    )
+                    else None
                 ),
             }
             for row in rows

@@ -5,44 +5,56 @@
       "lastmod": "2026-10-10"
     },
     "blog": {
-      "content_sha256": "1f109182876abe1ab9184e2060761f93a3ed7552efd9d642d9d2c50d9f168099",
-      "lastmod": "2026-10-10"
+      "content_sha256": "e87ddf8f9764b67f4d6edb2e256436fd1e7754044c405d3f27a8d5b79647adb8",
+      "lastmod": "2026-10-11"
     },
     "blog-birth-time-sensitivity": {
-      "content_sha256": "221df315dee0900e6e918cee4b6ee7ecf3339632bdc76ef0cd92ded4e7bd8490",
-      "lastmod": "2026-10-10"
+      "content_sha256": "9391207de7201403c2fa8eaf9e9a759a584b14abe2161579d4dd3c4b0567744f",
+      "lastmod": "2026-10-11"
     },
     "blog-four-bounds-tables": {
-      "content_sha256": "4660164418c9a8f2ac04da642e4c86d49c3b93728c1ac2494997cafb6f570945",
-      "lastmod": "2026-10-10"
+      "content_sha256": "bd64e78babe622e1ed167e5e03f21aabbcca88700de10201086d9fc1405e42d8",
+      "lastmod": "2026-10-11"
     },
     "blog-mean-vs-osculating-node": {
-      "content_sha256": "ea7ec9cf900924706d47a13d222691f3083b1fd3523ec97d478b1fe977d30da2",
-      "lastmod": "2026-10-10"
+      "content_sha256": "25914c688b4e493c655d1e5c2906cfac18e1d83246862b0e457169e4f5ac8d3b",
+      "lastmod": "2026-10-11"
+    },
+    "blog-rising-sign-tables": {
+      "content_sha256": "085155b661361e06ff058272530b0ef7425156b11e098a6242c3ba422630c8ee",
+      "lastmod": "2026-10-11"
     },
     "blog-taiwan-time-zone-history": {
-      "content_sha256": "6db05c400baf2e2aa559d092165c730fac390308156af69c42265a4e35d9e7ff",
-      "lastmod": "2026-10-10"
+      "content_sha256": "c50c695205523158bc61b6d4ecd5e4893a01e0a4ffb0047a026d1ce8032b52a4",
+      "lastmod": "2026-10-11"
+    },
+    "blog-true-solar-time": {
+      "content_sha256": "4448ac7fe6a89b706e071515a68d23695751eedf6182874121ad910e9abfe2bb",
+      "lastmod": "2026-10-11"
+    },
+    "blog-unknown-birth-time": {
+      "content_sha256": "abfbd00167d160f97cb2c42362f6f424cf86f19763d27dd0ebd51ded2eda23f9",
+      "lastmod": "2026-10-11"
     },
     "blog-whole-sign-vs-placidus": {
-      "content_sha256": "0c4362887ed78272d3833b6659f67d2a0563f6e434fda08de17b090460411d63",
-      "lastmod": "2026-10-10"
+      "content_sha256": "0c0fdbeb0b9d035bb943fbc875ce6faec5f8668fbd7f5b6b6acb2b8d3f25c900",
+      "lastmod": "2026-10-11"
     },
     "calculate": {
-      "content_sha256": "a47609ef0b4857dd4cb7088f33de085365a3f51d62550eb55d7d3ba01911f9d9",
-      "lastmod": "2026-10-10"
+      "content_sha256": "9b1ec8e69d6b718de292cd491096400aa6c9e7a16100438b41c73138fe02a8f4",
+      "lastmod": "2026-10-11"
     },
     "contact": {
       "content_sha256": "75c164f748d957e73a98d3809dd883d83d9a2640b72e7b927c55ac0d2900605d",
       "lastmod": "2026-10-10"
     },
     "features": {
-      "content_sha256": "944694bab7df3d9486888f04815dd814b11c22344a43ce154c8a6697d4f9ae68",
-      "lastmod": "2026-10-10"
+      "content_sha256": "45fb8f5f97c07615df288f93d49ce8f290f456ad6e8e826395ebf55a90b68245",
+      "lastmod": "2026-10-11"
     },
     "home": {
-      "content_sha256": "285019bb6c580f3a8ef1de742e296e8741bfdf9198c6325e347cc1ff498e2b07",
-      "lastmod": "2026-10-10"
+      "content_sha256": "c78eb6967df1f395291fddb91683ebfd3ecdbb3dd64542d699129874d55c0914",
+      "lastmod": "2026-10-11"
     },
     "legal-copyright": {
       "content_sha256": "8d44f63781d26d7038f44362c3c18d9a64cd02bbc6488493a4e7e3d13aa450a6",
@@ -57,16 +69,24 @@
       "lastmod": "2026-10-10"
     },
     "methods": {
-      "content_sha256": "bbba441f9ff9d07e55cdfa50c7ce3a2ca615badd1cd1c4baf16fd36ef0474521",
-      "lastmod": "2026-10-10"
+      "content_sha256": "d44cae22d59add5dcf77af1d01fd6f0f21f475b244bd51df9c7cf3af622b5f67",
+      "lastmod": "2026-10-11"
+    },
+    "methods-birth-time-conversion": {
+      "content_sha256": "7dbd14a5eaa84d68de27e6a118c79370967e7f7efa54116e8849bf421d79db39",
+      "lastmod": "2026-10-11"
     },
     "roadmap": {
-      "content_sha256": "0a327e50a19f9ba1bcecfd25f25045a5046831b18aebc4dcded44b307d01295d",
-      "lastmod": "2026-10-10"
+      "content_sha256": "567c2c3d031e8562497d353847d83f89ac3f6c3b646cfe79e1c6e162b24b97ae",
+      "lastmod": "2026-10-11"
     },
     "security": {
-      "content_sha256": "2d7e21fcc0b15947dcd1ec1b343d0df3351202488eb74271faf051275fe27e21",
-      "lastmod": "2026-10-10"
+      "content_sha256": "6eb04d5bfcc931f99952edad1a83b1d0f67de8bcb5578fa9764bd601470b06be",
+      "lastmod": "2026-10-11"
+    },
+    "security-verify": {
+      "content_sha256": "a79d3022b4d64d903dba20d10c86c09cfbd9803867ddc8717f17e5073aa98ced",
+      "lastmod": "2026-10-11"
     },
     "trust": {
       "content_sha256": "c5b38ad6be4cb993ef01e8c31594a960c19f542a4ad5f1c99be85f02afa139c8",

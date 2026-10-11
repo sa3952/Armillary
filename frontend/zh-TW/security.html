@@ -102,7 +102,7 @@
         <thead><tr><th>欄位</th><th>允許的值</th></tr></thead>
         <tbody>
           <tr><td class="mono">duration_bucket</td><td>固定分組，不記精確耗時</td></tr>
-          <tr><td class="mono">error_code</td><td>空值，或：ambiguous_local_time_choice_required、bad_request、client_disconnected、compute_capacity_exhausted、conflicting_request_framing、duplicate_json_key、edge_rate_limited、empty_request_body、full_ephemeris_required、house_system_unavailable、internal_server_error、invalid_content_length、json_invalid、method_not_allowed、nonexistent_local_time、not_found、place_catalog_unavailable、place_search_timeout、request_body_not_utf8、request_body_read_timeout、request_body_too_large、request_capacity_exhausted、request_headers_too_large、request_rejected、request_validation_failed、server_error、swiss_ephemeris_error、unauthorized、unclassified、undeclared_host、unknown_api_path、unsupported_media_type、unsupported_method、upstream_unavailable</td></tr>
+          <tr><td class="mono">error_code</td><td>空值，或：ambiguous_local_time_choice_required、bad_request、civil_time_basis_not_applicable、civil_time_basis_required、client_disconnected、compute_capacity_exhausted、conflicting_request_framing、duplicate_json_key、edge_rate_limited、empty_request_body、full_ephemeris_required、house_system_unavailable、internal_server_error、invalid_content_length、json_invalid、method_not_allowed、nonexistent_local_time、not_found、place_catalog_unavailable、place_search_timeout、request_body_not_utf8、request_body_read_timeout、request_body_too_large、request_capacity_exhausted、request_headers_too_large、request_rejected、request_validation_failed、server_error、swiss_ephemeris_error、time_conversion_zone_not_covered、unauthorized、unclassified、undeclared_host、unknown_api_path、unsupported_media_type、unsupported_method、upstream_unavailable</td></tr>
           <tr><td class="mono">event</td><td>固定字串</td></tr>
           <tr><td class="mono">event_schema_version</td><td>固定字串</td></tr>
           <tr><td class="mono">failure_class</td><td>空值，或：AssertionError、AttributeError、Error、IndexError、KeyError、OSError、OverflowError、RecursionError、RuntimeError、TypeError、UnicodeDecodeError、ValueError、ZeroDivisionError、unclassified</td></tr>
@@ -127,6 +127,7 @@
     <p>容器接在一個<b>標記為 internal 的 Docker 網路</b>上。<span class="mono">internal: true</span> 的意思是<b>這個網路沒有對外路由</b>——即使有程式想連出去，也沒有路可以走。</p>
     <p>在那之上還有兩層：後端不含任何錯誤追蹤、APM、外部分析，<b>也沒有對外的 HTTP 客戶端</b>；相依守衛偵測到這類套件名稱就直接失敗。</p>
     <p>前端不載入外部字型、CDN 腳本、第三方 JavaScript 或遠端圖片。地名搜尋走<b>同源</b>請求讀內建目錄，<b>不使用瀏覽器定位、不使用 IP 定位、不呼叫任何線上服務</b>。</p>
+    <p><b>這一段你可以自己檢查。</b>〈<a href="/zh-TW/security/verify">親手驗證</a>〉一步一步帶你用瀏覽器內建的開發者工具，看算一次盤送出的每一個請求、它們送到哪個網域，以及瀏覽器裡有沒有留下任何東西。</p>
     <div class="fail">
       <span class="fail-k">守衛的極限</span>
       <p>相依守衛是<b>針對已審查名單上的名稱</b>所設的迴歸阻擋，<b>不是完整的資訊流分析，不是遞移相依稽核，也不是執行期沙箱</b>。名單外的新途徑仍需人工審查。<b>真正擋住出口的是網路那一層，不是這份名單。</b></p>
@@ -164,6 +165,7 @@
         <tbody>
           <tr><td>計算請求限流</td><td class="mono val">30 r/min／IP，burst 10，nodelay　→　429</td></tr>
           <tr><td>地名查詢限流</td><td class="mono val">與計算請求共用同一個 30 r/min／IP 額度，burst 5　→　429</td></tr>
+          <tr><td>換算助手限流</td><td class="mono val">與計算請求共用同一個 30 r/min／IP 額度，burst 5　→　429</td></tr>
           <tr><td>靜態資源限流</td><td class="mono val">600 r/min／IP</td></tr>
           <tr><td>同時連線數</td><td class="mono val">另有 limit_conn 上限　→　503</td></tr>
           <tr><td>請求主體上限</td><td class="mono val">16 KB</td></tr>
@@ -174,7 +176,7 @@
         </tbody>
       </table>
     </div>
-    <p>處理濫用期間，以上數值可能暫時調低（計算與地名查詢 6 r/min、靜態資源 300 r/min、同時連線 16），濫用結束後恢復。</p>
+    <p>處理濫用期間，以上數值可能暫時調低（計算、地名查詢與換算助手 6 r/min、靜態資源 300 r/min、同時連線 16），濫用結束後恢復。</p>
     <p><b>限流用的是你的 IP，這件事值得說清楚。</b>反向代理必須看得到你的位址，否則封包送不回去。它拿那個位址做限流計數，<b>但不寫進日誌，也不轉送給應用程式</b>——應用程式從頭到尾沒有機會知道你的 IP。</p>
     <p>應用程式不會因<b>等待佇列預算到期</b>而主動取消已取得計算鎖、正在執行的同步星曆計算；worker、容器或主機故障仍可能中斷請求。</p>
   </section>

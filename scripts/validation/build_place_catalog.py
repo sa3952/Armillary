@@ -26,8 +26,8 @@ two search results apart without reading raw coordinates:
   separates the group and records which level it used.
 
 The producer rejects rows whose name is blank or contains no word character,
-validates every timezone against the IANA database, applies a closed table of
-named source corrections, and hashes each input through the same descriptor
+validates every timezone against the IANA database, applies closed tables of
+named source corrections (timezone and admin1 code), and hashes each input through the same descriptor
 it streams from, so the manifest describes the bytes that were consumed.
 """
 
@@ -78,7 +78,7 @@ TAIWAN_SETTLEMENT_SOURCE_URL = (
     "4A5AB0C9-0395-4B04-AE50-02624075516F/resource/"
     "AE5B85B6-0895-4D32-8027-1713F018A649/download"
 )
-GENERATOR_VERSION = "place-catalog-builder-v7"
+GENERATOR_VERSION = "place-catalog-builder-v8"
 SCHEMA_VERSION = 5
 MAX_INPUT_BYTES = 512 * 1024 * 1024
 MAX_UNCOMPRESSED_BYTES = 2 * 1024 * 1024 * 1024
@@ -264,14 +264,186 @@ SOURCE_TIMEZONE_CORRECTIONS: dict[str, dict[str, str]] = {
             "central time; America/Mazatlan is the neighbouring Nayarit zone"
         ),
     },
+    "8550587": {
+        "expected": "Asia/Urumqi",
+        "corrected": "Asia/Shanghai",
+        "reason": (
+            "Duobagou 多坝沟 (39.75181, 93.48198) is in Akqi Township, Aksay Kazakh Autonomous "
+            "County, Gansu (Wikidata Q13924614 多坝沟村, in Q13924602 阿克旗乡 at 39.288 N 93.007 E, "
+            "west of this row); Gansu keeps Beijing time, and every catalogue row within 120 km, "
+            "Aksay's seat Hongliuwan 8550586 included, carries Asia/Shanghai; Asia/Urumqi is Xinjiang time"
+        ),
+    },
 }
 
 
-# Named source rows left out because another row is the same place.  Each
-# entry states the name the source row is expected to carry and the row that
-# stays; a source row that no longer carries that name is kept and reported.
+
+# Named admin1 errors in GeoNames rows: the row's code names a province the row
+# is nowhere near, so the label read "Baiyanghe, Heilongjiang, CN" for a Xinjiang
+# township.  admin1CodesASCII.txt maps each code correctly; the rows carry the
+# wrong code.  Found by testing every Chinese row against its province's
+# published extent (tests/backend/test_place_catalog.py keeps that check) and
+# identified by the township names the rows carry.  Each group is
+# (expected code, corrected code, reason, row ids); like the zone table, a row
+# is changed only while the source still carries the expected code.
+_ADMIN1_CORRECTION_GROUPS: tuple[tuple[str, str, str, tuple[str, ...]], ...] = (
+    (
+        "08", "13",
+        "Xinjiang townships of the 2013 GeoNames import (e.g. 柏杨河哈萨克族乡, 吉木萨尔镇, "
+        "塔克什肯镇, 铁干里克乡) at 37-48 N, 83-91 E, all on Asia/Urumqi: inside Xinjiang "
+        "(73.5-96.4 E); CN.08 Heilongjiang lies east of 121.2 E",
+        (
+            "8548587", "8548588", "8548589", "8548590", "8548592", "8548593", "8548594",
+            "8548595", "8548619", "8548621", "8548622", "8548623", "8548624", "8548625",
+            "8548626", "8548705", "8548749", "8548750", "8548754", "8548876", "8548877",
+            "8548878", "8548879", "8548894", "8548895", "8548896", "8548902", "8548903",
+            "8548904", "8549034", "8549035", "8549133", "8549135", "8549136", "8549378",
+            "8550443", "8550444",
+        ),
+    ),
+    (
+        "08", "15",
+        "Duobagou 多坝沟乡 (39.75181, 93.48198) is in Aksay Kazakh Autonomous County, Gansu "
+        "(the county's 多坝沟 forest station and 多坝沟胡杨峡 scenic area); its GeoNames id "
+        "follows Aksay's seat Hongliuwan 8550586 (CN.15) and its eight nearest rows are CN.15; "
+        "CN.08 Heilongjiang lies east of 121.2 E",
+        ("8550587",),
+    ),
+    (
+        "13", "20",
+        "Townships of Baotou, Inner Mongolia (下湿壕镇, 卜塔亥, 红泥井, 吉忽伦图苏木) at "
+        "40.8-41.4 N, 109.8-110.6 E: inside Inner Mongolia (97.2-126.1 E); CN.13 Xinjiang "
+        "lies west of 96.4 E",
+        ("8544212", "8544248", "8544438", "8545763", "8545899", "8545941", "8545962"),
+    ),
+    (
+        "09", "10",
+        "Townships of Shijiazhuang and Baoding, Hebei (九门回族乡, 白鹿泉乡, 北正乡, 羊平镇) "
+        "at 38.0-39.0 N, 114.1-115.0 E among 119 rows coded CN.10 Hebei; CN.09 Henan lies "
+        "south of 36.4 N",
+        (
+            "8561593", "8561608", "8561612", "8561617", "8561623", "8561628", "8561645",
+            "8561736", "8561780", "8561781", "8561816", "8561827", "8561844", "8561845",
+            "8561876", "8561878", "8561887", "8561889", "8561901", "8561903", "8561907",
+            "8561919", "8561933", "8561935", "8561956", "8561970", "8562004", "8562010",
+            "8562026", "8562030", "8562049", "8562065", "8562069", "8562077", "8562089",
+            "8562152", "8562161", "8562162", "8562169", "8562192", "8562300", "8562381",
+            "8594797", "8594798",
+        ),
+    ),
+    (
+        "10", "14",
+        "Townships of Nagqu and Chamdo, Tibet (强玛镇, 嘎美乡, 赤多乡, 马武乡, 措折强玛乡) "
+        "at 30.9-33.3 N, 87.8-95.2 E; CN.10 Hebei lies east of 113.4 E",
+        ("8577878", "8578325", "8578737", "8578738", "8579135"),
+    ),
+    (
+        "33", "02",
+        "Townships of Yongjia County, Wenzhou, Zhejiang (大箬岩镇, 潘坑乡, 茗岙乡, 西溪乡) "
+        "at 28.2-28.5 N, 120.4-120.6 E; CN.33 Chongqing lies west of 110.2 E",
+        ("8415423", "8415425", "8415426", "8415429", "8415430", "8415431", "8415432"),
+    ),
+    (
+        "04", "06",
+        "Tuohua 托勒蒙古族乡 (37.08139, 100.68358) lies north-east of Qinghai Lake in Haibei, "
+        "Qinghai, and its eight nearest rows are CN.06; CN.04 Jiangsu lies east of 116.3 E",
+        ("7351996",),
+    ),
+    (
+        "04", "32",
+        "Daocheng (29.0379, 100.2974) is the seat of Daocheng County 稻城县, Garze, Sichuan, "
+        "at these exact coordinates (GeoNames' 道成 is a homophone); CN.04 Jiangsu lies east "
+        "of 116.3 E",
+        ("8395541",),
+    ),
+)
+# Named admin1 errors outside China, found by comparing each row's admin1 with
+# its nearest same-country neighbours and checked one by one against the
+# place's own administrative statement (Wikidata, or the PhilAtlas gazetteer
+# for a Philippine barangay).  Rows whose code is right but whose coordinates
+# belong elsewhere are not corrected here: changing the province would label a
+# different place.
+_OTHER_ADMIN1_CORRECTIONS: dict[str, dict[str, str]] = {
+    "1218089": {
+        "country": "TM", "expected": "03", "corrected": "04",
+        "reason": "Garlyk (37.5899, 66.34081) is a village of Köýtendag District, Lebap "
+        "(Wikidata Q25389108 at 37.5897, 66.3407); Dasoguz is the country's north, its seat at 41.8 N",
+    },
+    "1644833": {
+        "country": "ID", "expected": "36", "corrected": "39",
+        "reason": "Fakfak (-2.92481, 132.29813) is the seat of Fakfak Regency, West Papua "
+        "(Wikidata Q26727, Q1393640 at -2.930, 132.303); Papua province lies east of it",
+    },
+    "1717066": {
+        "country": "PH", "expected": "03", "corrected": "41",
+        "reason": "Communal (alternate name Comunal; 13.2548, 121.1366, population 2773) is "
+        "barangay Comunal, Calapan, Oriental Mindoro, Mimaropa (PhilAtlas: 13.3075, 121.1606, "
+        "2,700 in 2007); Central Luzon's southern tip, Bataan, is near 14.4 N",
+    },
+    "1824888": {
+        "country": "KH", "expected": "24", "corrected": "07",
+        "reason": "Siem Reab (11.40035, 104.86384) is a commune of Kandal Stueng District, Kandal "
+        "(Wikidata Q56320412 at 11.4001, 104.8686); Siem Reap province is on the north shore of the Tonle Sap",
+    },
+    "2281606": {
+        "country": "CI", "expected": "92", "corrected": "96",
+        "reason": "Sinfra (6.62103, -5.91144) is the seat of Sinfra Department, Marahoué Region, "
+        "Sassandra-Marahoué District (Wikidata Q12709357); Zanzan is the north-east of the country",
+    },
+    "3080533": {
+        "country": "PL", "expected": "83", "corrected": "72",
+        "reason": "Zawidów (51.02546, 15.06213) is a town of Zgorzelec County, Lower Silesian "
+        "Voivodeship (Wikidata Q167756 at 51.0262, 15.0624); Silesian Voivodeship lies at 18-20 E",
+    },
+    "3084237": {
+        "country": "PL", "expected": "77", "corrected": "76",
+        "reason": "Sulęcin (52.44429, 15.11676) is the seat of Sulęcin County, Lubusz Voivodeship "
+        "(Wikidata Q718038 at 52.4417, 15.1167); Lesser Poland lies south-east, near 50 N 20 E",
+    },
+    "548040": {
+        "country": "RU", "expected": "40", "corrected": "21",
+        "reason": "Kitovo (56.86586, 41.28246) is a village of Shuysky District, Ivanovo Oblast "
+        "(Wikidata Q18398963 at 56.8656, 41.2919); Kurgan Oblast lies beyond the Urals, east of 61 E",
+    },
+    "693305": {
+        "country": "UA", "expected": "05", "corrected": "04",
+        "reason": "Sofiyivka (48.00675, 33.11347) is Sofiivka, Kryvyi Rih Raion, Dnipropetrovsk "
+        "Oblast (Wikidata Q4102960 at 48.0089, 33.1152); its Donetsk code and Kramatorsk admin2 "
+        "belong to the Sofiyivka of row 693315",
+    },
+    "693315": {
+        "country": "UA", "expected": "04", "corrected": "05",
+        "reason": "Sofiyivka (48.74078, 37.51411) is the settlement of Kramatorsk Raion, Donetsk "
+        "Oblast (Wikidata Q4429956 at 48.7408, 37.5131); its Dnipropetrovsk code belongs to row 693305",
+    },
+    "8529147": {
+        "country": "TO", "expected": "03", "corrected": "02",
+        "reason": "Pelehake (-21.21283, -175.14328) is on Tongatapu, in Tatakamotonga "
+        "(Wikidata Q124791606 at -21.2160, -175.1399); Vava'u lies near 18.6 S",
+    },
+    "8613348": {
+        "country": "ID", "expected": "14", "corrected": "42",
+        "reason": "Sungai Nyamuk (4.14383, 117.91087) is a village of East Sebatik, Nunukan, "
+        "North Kalimantan (Wikidata Q12517896 at 4.1289, 117.8828); North Kalimantan was separated "
+        "from East Kalimantan in 2012",
+    },
+}
+SOURCE_ADMIN1_CORRECTIONS: dict[str, dict[str, str]] = {
+    **{
+        record_id: {"country": "CN", "expected": expected, "corrected": corrected, "reason": reason}
+        for expected, corrected, reason, record_ids in _ADMIN1_CORRECTION_GROUPS
+        for record_id in record_ids
+    },
+    **_OTHER_ADMIN1_CORRECTIONS,
+}
+
+# Named source rows left out: another row is the same place, or the row's
+# coordinates are another place's and no source gives its own.  Each entry
+# states the name the source row is expected to carry and the row that stays in
+# its place (None when none does); a source row that no longer carries that name
+# is kept and reported.
 CORRECTION_EXCLUDED = "excluded"
-SOURCE_ROW_EXCLUSIONS: dict[str, dict[str, str]] = {
+SOURCE_ROW_EXCLUSIONS: dict[str, dict[str, str | None]] = {
     "1679136": {
         "expected_name": "Chang-hua",
         "kept": "1993459",
@@ -279,6 +451,15 @@ SOURCE_ROW_EXCLUSIONS: dict[str, dict[str, str]] = {
             "Changhua City twice: 1679136 Chang-hua and 1993459 Changhua both link "
             "en.wikipedia.org/wiki/Changhua and carry population 226564, 1.3 km apart; "
             "1993459 carries the zh-Hant name 彰化市"
+        ),
+    },
+    "2460584": {
+        "expected_name": "Bamba",
+        "kept": None,
+        "reason": (
+            "Bamba of Bourem Cercle, Gao (admin2 and population 28524 are that commune's; "
+            "en.wikipedia.org/wiki/Bamba,_Gao_Region at 17.033, -1.400) carries the coordinates "
+            "10.38333, -7.15 of Daladiéko, Sikasso (GeoNames 2459430), about 965 km away"
         ),
     },
 }
@@ -304,6 +485,12 @@ def correction_table_sha256() -> str:
     """
 
     return _table_sha256(SOURCE_TIMEZONE_CORRECTIONS)
+
+
+def admin1_correction_table_sha256() -> str:
+    """Digest of the admin1 correction table; the verifier binds it like the zone table."""
+
+    return _table_sha256(SOURCE_ADMIN1_CORRECTIONS)
 
 
 # Chinese-name language preference, most preferred first.  Untagged "zh" is
@@ -680,6 +867,24 @@ def _taiwan_county(geonameid: str, admin1: str, admin2: str, counties: dict[str,
     return county
 
 
+def _admin1_correction_record(
+    geonameid: str, correction: dict[str, str], observed: str | None, status: str,
+    admin1_names: dict[str, str],
+) -> dict:
+    return {
+        "source": "geonames_cities500",
+        "source_record_id": geonameid,
+        "field": "admin1",
+        "country_code": correction["country"],
+        "expected": correction["expected"],
+        "corrected": correction["corrected"],
+        "corrected_name": admin1_names.get(f"{correction['country']}.{correction['corrected']}"),
+        "observed": observed,
+        "status": status,
+        "reason": correction["reason"],
+    }
+
+
 def import_geonames(
     connection: sqlite3.Connection,
     source: Path | BoundedInput,
@@ -689,6 +894,7 @@ def import_geonames(
     rejected: Counter | None = None,
     corrections: list[dict] | None = None,
     exclusions: list[dict] | None = None,
+    admin1_corrections: list[dict] | None = None,
 ) -> int:
     """Import cities500; ``taiwan_counties`` maps a GeoNames admin1.admin2 code to its MOI county."""
 
@@ -699,6 +905,8 @@ def import_geonames(
     exclusions = exclusions if exclusions is not None else []
     pending_corrections = dict(SOURCE_TIMEZONE_CORRECTIONS)
     pending_exclusions = dict(SOURCE_ROW_EXCLUSIONS)
+    admin1_corrections = admin1_corrections if admin1_corrections is not None else []
+    pending_admin1 = dict(SOURCE_ADMIN1_CORRECTIONS)
     count = 0
     for line in _geonames_lines(source):
         if count >= MAX_SOURCE_ROWS:
@@ -769,6 +977,19 @@ def import_geonames(
                 }
             )
         _require_iana_timezone(timezone, record_id=geonameid)
+        admin1_fix = pending_admin1.pop(geonameid, None)
+        if admin1_fix is not None:
+            observed_admin1 = admin1
+            if country_code == admin1_fix["country"] and admin1 == admin1_fix["expected"]:
+                admin1_status = CORRECTION_APPLIED
+                admin1 = admin1_fix["corrected"]
+            elif country_code == admin1_fix["country"] and admin1 == admin1_fix["corrected"]:
+                admin1_status = CORRECTION_ALREADY_UPSTREAM
+            else:
+                admin1_status = CORRECTION_STALE_NOT_APPLIED
+            admin1_corrections.append(
+                _admin1_correction_record(geonameid, admin1_fix, observed_admin1, admin1_status, admin1_names)
+            )
         aliases = " ".join(item for item in (ascii_name, alternate_names.replace(",", " ")) if item)
         admin1_name: str | None
         if country_code == "TW":
@@ -815,6 +1036,10 @@ def import_geonames(
                 "status": CORRECTION_ROW_ABSENT,
                 "reason": exclusion["reason"],
             }
+        )
+    for geonameid, admin1_fix in pending_admin1.items():
+        admin1_corrections.append(
+            _admin1_correction_record(geonameid, admin1_fix, None, CORRECTION_ROW_ABSENT, admin1_names)
         )
     for geonameid, correction in pending_corrections.items():
         corrections.append(
@@ -1218,6 +1443,7 @@ def build_catalog(
         }
         corrections: list[dict] = []
         exclusions: list[dict] = []
+        admin1_corrections: list[dict] = []
         moi_inputs = (inputs["taiwan_moi_administrative"], inputs["taiwan_moi_settlement"])
         moi_counties = taiwan_counties_by_code(moi_inputs)
         taiwan_counties = {
@@ -1234,6 +1460,7 @@ def build_catalog(
                 rejected=rejected["geonames_cities500"],
                 corrections=corrections,
                 exclusions=exclusions,
+                admin1_corrections=admin1_corrections,
             ),
             "taiwan_moi_administrative": import_taiwan(
                 connection,
@@ -1277,6 +1504,8 @@ def build_catalog(
             "source_corrections_table_sha256": correction_table_sha256(),
             "source_exclusions": exclusions,
             "source_exclusions_table_sha256": exclusion_table_sha256(),
+            "source_admin1_corrections": admin1_corrections,
+            "source_admin1_corrections_table_sha256": admin1_correction_table_sha256(),
             "timezone_coordinate_check": timezone_check,
             "label_disambiguation": label_disambiguation,
             "missing_glyph_policy": {
@@ -1377,6 +1606,8 @@ def build_artifact_manifest(metadata: dict, *, catalog_path: Path) -> dict:
         "source_corrections_table_sha256": metadata["source_corrections_table_sha256"],
         "source_exclusions": metadata["source_exclusions"],
         "source_exclusions_table_sha256": metadata["source_exclusions_table_sha256"],
+        "source_admin1_corrections": metadata["source_admin1_corrections"],
+        "source_admin1_corrections_table_sha256": metadata["source_admin1_corrections_table_sha256"],
         "timezone_coordinate_check": metadata["timezone_coordinate_check"],
         "label_disambiguation": metadata["label_disambiguation"],
         "missing_glyph_policy": metadata["missing_glyph_policy"],

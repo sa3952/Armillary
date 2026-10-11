@@ -142,6 +142,11 @@ METHOD_FRAME_TABLE: dict[str, dict[str, Any]] = {
             ),
         ),
     },
+    # Sunrise and sunset belong to an observer on the Earth's surface; a chart
+    # seen from the Sun or the barycentre has no day or night to divide.
+    "planetary_hours": {
+        "requirements": ((_EARTH_CENTRE, NON_EARTH_OBSERVER_CENTER),),
+    },
     "essential_dignities": {
         "requirements": (
             (_EARTH_CENTRE, "non_earth_center_dignity_basis_not_authorized"),

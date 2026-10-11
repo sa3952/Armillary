@@ -100,7 +100,7 @@
       <table class="log rm-table">
         <thead><tr><th>項目</th><th>狀態</th><th>依據</th></tr></thead>
         <tbody>
-          <tr><td>古典七政、三王星、凱龍星、平均／密切交點與南交點、Lilith 與 Priapus、34 顆恆星</td><td class="st ok">已完成</td><td>計算頁的天體選項；卷宗中逐項回顯</td></tr>
+          <tr><td>古典七政、三王星、凱龍星、平均／密切交點（密切交點常被稱為真交點）與南交點、Lilith 與 Priapus、34 顆恆星</td><td class="st ok">已完成</td><td>計算頁的天體選項；卷宗中逐項回顯</td></tr>
           <tr><td>黃道／赤道／地平三套座標並列</td><td class="st ok">已完成</td><td>任一次計算的 <span class="mono">astronomical_data.bodies</span></td></tr>
           <tr><td>逐步計算軌跡與 SHA-256 收據</td><td class="st ok">已完成</td><td>卷宗的 <span class="mono">trace_receipt</span> 與三個星曆檔的 <span class="mono">sha256</span></td></tr>
           <tr><td>對外部參考星曆管線（DE442＋Astropy／ERFA，與產品共享 JPL／IAU 譜系，不稱完全獨立）的逐小時比對（1990–2026、七個天體）</td><td class="st ok">已完成</td><td>DE442 驗證報告 2026-07-28</td></tr>
@@ -124,13 +124,14 @@
       <table class="log rm-table">
         <thead><tr><th>項目</th><th>狀態</th><th>依據</th></tr></thead>
         <tbody>
-          <tr><td>黃道相位：整宮配置層 ＋ 逐度層</td><td class="st ok">已完成</td><td>計算頁相位組十項控制</td></tr>
+          <tr><td>黃道相位：整宮配置層 ＋ 逐度層，另附相位方格</td><td class="st ok">已完成</td><td>計算頁相位組十項控制；方格把逐度層的同一份兩兩組合排成三角形，不另計算</td></tr>
           <tr><td>四套相位集合、兩套具名容許度表、三種同度判準</td><td class="st ok">已完成</td><td>同上；容許度表逐條列出書目</td></tr>
           <tr><td>界四套、面／旬兩套、三分性三套，皆具名到來源</td><td class="st ok">已完成</td><td>回應中每套帶作品與章節、行號或頁碼</td></tr>
           <tr><td>廟旺判定</td><td class="st ok">已完成</td><td>來源：Ptolemy <i>Tetrabiblos</i> I.17／I.19（Robbins 編號；Hübner 為 I.18／I.20），並見於 Dorotheus、Valens、Firmicus</td></tr>
           <tr><td>月空亡（含兩段式求根）</td><td class="st ok">已完成</td><td>求根器回傳括號端點與二分迭代次數</td></tr>
           <tr><td>日夜盤（含近地平提示與並列輸出）</td><td class="st ok">已完成</td><td>太陽中心真高度 ±50 角分標記 <span class="mono">in_near_horizon_band</span></td></tr>
-          <tr><td>命運點與精神點、行星落宮、反照點</td><td class="st ok">已完成</td><td>計算頁的點與幾何選項組</td></tr>
+          <tr><td>行星日與行星時（從日出起算、晝夜各十二等分、迦勒底序）</td><td class="st ok">已完成</td><td>每張盤的 <span class="mono">derived_methods.planetary_hours</span>；方法狀態為暫定，待方法審閱；極區沒有日出日落循環時標為不適用</td></tr>
+          <tr><td>命運點（福點、幸運點）與精神點、行星落宮、反照點</td><td class="st ok">已完成</td><td>計算頁的點與幾何選項組</td></tr>
           <tr><td>不計算宮位的模式、只知道日期的模式</td><td class="st ok">已完成</td><td>計算頁的出生時刻精度三選一</td></tr>
           <tr><td>守護星體系的整體採用</td><td class="st ok">已裁決</td><td>所有古典程序固定使用七政主宰表；現代外行星主宰不在產品範圍</td></tr>
           <tr><td>日夜盤判定基準的文獻考據</td><td class="st wip">進行中</td><td><b>研究筆記所列的古典段落沒有明定太陽中心、上緣或折射的邊界</b>；現行規則標為產品慣例，非古典來源</td></tr>
@@ -139,7 +140,7 @@
         </tbody>
       </table>
     </div>
-    <p class="limit"><b>這張表最值得看的是下面三列，不是上面九列。</b>「已完成」只表示算得出來；「尚未裁決」表示我們知道有這個東西、也知道自己還沒有決定用誰的版本——<b>而在決定之前不會偷偷選一個給你。</b></p>
+    <p class="limit"><b>這張表最值得看的是下面三列，不是上面十列。</b>「已完成」只表示算得出來；「尚未裁決」表示我們知道有這個東西、也知道自己還沒有決定用誰的版本——<b>而在決定之前不會偷偷選一個給你。</b></p>
   </section>
 
   <section class="rm-sec">
@@ -152,7 +153,6 @@
           <tr><td>公開原始碼與source archive</td><td class="st ok">每版各自驗證</td><td>每一個live版本都要有自己的exact public source、匿名取得與archive readback驗證收據；一版的收據不外推到其他版本</td></tr>
           <tr><td>主機、隱私與故障通知</td><td class="st ok">每版各自實測</td><td>每一個live版本都要有自己的具名host、privacy與rollback驗證收據；可用性由容器健康檢查維持（連續失敗時自動重啟容器），故障通知來自外部可用性監控；一版的收據不外推到其他版本</td></tr>
           <tr><td>原生列印／PDF 輸出</td><td class="st ok">已完成</td><td>結果頁有列印版面：隱藏表單與控制項、展開所有摺疊區塊並印出結果；已取得驗算資料時，收據與驗算資料一併印出</td></tr>
-          <tr><td>淺色主題</td><td class="st no">未開始</td><td>樣式表中沒有任何淺色配色路徑</td></tr>
           <tr><td>多語系框架、英文版</td><td class="st no">未開始</td><td>目前只有繁體中文一個語系</td></tr>
           <tr><td>外部安全或隱私審查</td><td class="st wip">多輪具名審查</td><td><b>有外部技術審查與多工具對抗測試；沒有本產品專業滲透測試、第三方認證或漏洞獎金</b></td></tr>
         </tbody>
@@ -200,10 +200,6 @@
         <p>繁體中文是階段選擇，不是產品定位。英文版會做，但排在有一定成果之後。</p>
       </div>
       <div>
-        <h3>補上淺色主題與更好的列印</h3>
-        <p>深色先行是為了省成本而延後淺色，不是設計主張。</p>
-      </div>
-      <div>
         <h3>關於收費</h3>
         <p>目前全部免費。未來可能有付費項目。<b>我們不打算靠出售或分析你的出生資料獲利</b>——那會同時違反本產品的隱私原則與它被選擇的理由。任何收費方式的改變都會事先公告。</p>
       </div>
@@ -216,6 +212,7 @@
       <li>不加追蹤器、不加廣告、不加第三方分析。</li>
       <li>不因為別的工具有某個功能就加進來。</li>
       <li>不把廟、旺、三分性、界、面這些不同類別的尊貴加總成一個分數——那等於宣稱它們可以通約。</li>
+      <li>不做深色／淺色主題切換，維持現行的紙色配色。意圖裡曾列「補上淺色主題與更好的列印」，2026-10-11 放棄；列印版面已列在上方現況表。</li>
     </ul>
     <p class="limit"><b>「不解盤、不預測」不在這一節。</b>那不是我們的意圖選擇，是第三階尚未開放的現況事實——見本頁最上方的階梯。</p>
   </section>

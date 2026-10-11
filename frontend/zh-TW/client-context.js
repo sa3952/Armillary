@@ -63,6 +63,13 @@
       "這個時間在所選時區出現了兩次（時區在此改變了 UTC 偏移，例如日光節約時間結束或標準時變更），"
       + "服務需要知道是哪一次。"
     ),
+    // 同上，只描述情況；指向選擇區的連結由 calculate.js 依選擇區有沒有出現導出。
+    civil_time_basis_required: (
+      "這個出生地的紀錄可能用北京時間，也可能用新疆時間，兩者相差 2 小時；"
+      + "服務需要知道出生紀錄用的是哪一種，不替你猜。"
+    ),
+    // 本頁只在目錄標示為新疆的地點送出這一項；走到這裡表示頁面版本與服務不一致。
+    civil_time_basis_not_applicable: PAGE_SERVICE_MISMATCH,
     // 本頁的選項叫「整宮」，而一定走得通的出路是宮位制選單的「不計算宮位」。
     // 引號裡的名稱必須是頁面上真的存在的控制項（client-context.test.cjs 逐一對照頁面）。
     house_system_unavailable: (
@@ -104,6 +111,11 @@
     place_search_timeout: (
       "地名查詢這次花太久而被中止，這不是你的輸入有問題；請輸入更完整的地名後再試，"
       + "或展開「改為手動輸入座標與時區」直接輸入。"
+    ),
+    // 換算助手只在本頁時區屬於這四地時送出；走到這裡多半是時區欄在送出後改了。
+    time_conversion_zone_not_covered: (
+      "換算助手目前只涵蓋臺灣、香港、澳門與中國大陸的時區；其他時區請直接按「開始排盤」，"
+      + "計算結果會記下換算出的世界時與時區資料庫版本。"
     ),
     request_validation_failed: "部分輸入無法驗證；請檢查必填欄位與格式。",
     json_invalid: STALE_PAGE_REQUEST,
@@ -158,6 +170,8 @@
     utc_offset_hours_required: STALE_PAGE_REQUEST,
     timezone_field_not_applicable_to_mode: STALE_PAGE_REQUEST,
     fold_requires_iana_mode: STALE_PAGE_REQUEST,
+    // 本頁依所選的那一種填入時區；兩者不一致只會來自過期的頁面。
+    civil_time_basis_zone_mismatch: STALE_PAGE_REQUEST,
     place_label_forbidden_codepoint: (
       "地點名稱含有不可顯示的控制字元；請重新用「地名查詢」選定地點。"
     ),
@@ -180,6 +194,11 @@
     ),
     leap_second_not_in_bundled_table: (
       "這個時刻換算成 UTC 後不是服務內建表中的閏秒；" + LEAP_SECOND_GUIDANCE
+    ),
+    // 換算助手送出的時區沒有 fold；收到這一項表示頁面版本與服務不一致。
+    fold_not_accepted_by_time_conversion: STALE_PAGE_REQUEST,
+    leap_second_not_accepted_by_time_conversion: (
+      "換算助手不核對秒數 60（閏秒）；核對時請把「秒」改為 0 到 59，計算時仍可依紀錄填 60。"
     ),
   });
 

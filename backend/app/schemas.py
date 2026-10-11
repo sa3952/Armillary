@@ -35,6 +35,7 @@ from pydantic import (
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import PydanticCustomError, core_schema
 
+from .core.civil_time_basis import CIVIL_TIME_BASIS_ZONES, CivilTimeBasis
 from .core.frame_compatibility import (
     REQUEST_FRAME_REFUSAL_CODES,
     request_frame_refusal,
@@ -56,6 +57,7 @@ REQUEST_VALIDATION_RULES: dict[str, str] = {
     "utc_offset_hours_required": "TimezoneInput",
     "timezone_field_not_applicable_to_mode": "TimezoneInput",
     "fold_requires_iana_mode": "TimezoneInput",
+    "civil_time_basis_zone_mismatch": "TimezoneInput",
     "place_label_forbidden_codepoint": "LocationInput",
     "location_precision_not_accepted_for_source": "LocationInput",
     "source_record_id_not_allowed_for_manual": "LocationInput",
@@ -72,6 +74,8 @@ REQUEST_VALIDATION_RULES: dict[str, str] = {
     "moon_profile_center_conflict": "ChartRequest",
     "approximate_hour_requires_zero_subhour": "ChartRequest",
     "date_only_requires_zero_time": "ChartRequest",
+    "fold_not_accepted_by_time_conversion": "TimeConversionRequest",
+    "leap_second_not_accepted_by_time_conversion": "TimeConversionRequest",
 }
 # Pydantic's own error types are a closed Literal in pydantic-core.  With the
 # rule codes above and the duplicate-key finding they are every `issues[].type`.
@@ -332,15 +336,23 @@ _TIMEZONE_SCHEMA_RULES: dict[str, dict[str, Any]] = {
         "properties": {
             "utc_offset_hours": {"maximum": 14.0, "minimum": -14.0, "type": "number"},
             "fold": {"const": 0},
+            "civil_time_basis": {"type": "null"},
         },
         "required": ["utc_offset_hours"],
     },
 }
+_TIMEZONE_SCHEMA = _conditional_rules("mode", _TIMEZONE_SCHEMA_RULES)
+_TIMEZONE_SCHEMA["allOf"].extend(
+    _conditional_rules("civil_time_basis", {
+        basis: {"properties": {"iana_name": {"const": zone}}, "required": ["iana_name"]}
+        for basis, zone in CIVIL_TIME_BASIS_ZONES.items()
+    })["allOf"]
+)
 
 
 class TimezoneInput(StrictInputModel):
     model_config = ConfigDict(
-        json_schema_extra=_conditional_rules("mode", _TIMEZONE_SCHEMA_RULES)
+        json_schema_extra=_TIMEZONE_SCHEMA
     )
     mode: Literal["iana", "fixed_offset"]
     iana_name: Optional[str] = None
@@ -348,6 +360,12 @@ class TimezoneInput(StrictInputModel):
     # PEP 495 fold：本地時間在 DST 轉換附近可能模糊（同一時鐘時間對應兩個 UTC），
     # 0=較早/夏令的那一次(預設)，1=較晚/標準時間的那一次。只在 mode='iana' 時有意義。
     fold: int = Field(default=0, ge=0, le=1)
+    # Which clock the birth record uses, for a place that keeps two (Xinjiang:
+    # Beijing time or Xinjiang time).  It names the record's clock; iana_name
+    # still carries the zone, and the two must agree.  Whether the place needs
+    # it is the catalogue's to say, or for manual coordinates the zone's
+    # (core.civil_time_basis), checked at the route.
+    civil_time_basis: Optional[CivilTimeBasis] = None
 
     # Derive inert-field rejection from the same declaration that owns each
     # mode's meaningful fields.
@@ -386,6 +404,14 @@ class TimezoneInput(StrictInputModel):
             # 自己已經選到了另一種 DST 解讀，不如明確拒絕。
             if self.fold != 0:
                 raise _rule_error("fold_requires_iana_mode", "fold")
+        if (
+            self.civil_time_basis is not None
+            and (
+                self.mode != "iana"
+                or self.iana_name != CIVIL_TIME_BASIS_ZONES[self.civil_time_basis]
+            )
+        ):
+            raise _rule_error("civil_time_basis_zone_mismatch", "civil_time_basis")
         return self
 
 
@@ -794,6 +820,28 @@ class ChartRequest(StrictInputModel):
         return self
 
 
+class TimeConversionRequest(StrictInputModel):
+    """One wall-clock time and its zone, for the calculate page's conversion helper.
+
+    The answer lists every reading of the time, so a fold is not asked for; and
+    the helper reads clock offsets, which a leap second's label does not change,
+    so second 60 is refused rather than given its own rule here.
+    """
+
+    datetime: DateTimeInput
+    timezone: TimezoneInput
+
+    @model_validator(mode="after")
+    def check_helper_fields(self):
+        if "fold" in self.timezone.model_fields_set:
+            raise _rule_error("fold_not_accepted_by_time_conversion", "timezone", "fold")
+        if self.datetime.second == 60:
+            raise _rule_error(
+                "leap_second_not_accepted_by_time_conversion", "datetime", "second"
+            )
+        return self
+
+
 class PlaceSearchRequest(StrictInputModel):
     query: str = Field(min_length=1, max_length=100)
     country_code: Optional[str] = Field(
@@ -878,7 +926,7 @@ def _declared_field_names(*models: type[BaseModel]) -> frozenset[str]:
 # Derived from the models; the hand-kept list it replaces lived in main.py and
 # had to be edited by every package that added a field.
 REQUEST_FIELD_NAMES: frozenset[str] = _declared_field_names(
-    ChartRequest, PlaceSearchRequest
+    ChartRequest, PlaceSearchRequest, TimeConversionRequest
 )
 _REQUEST_ROOTS = frozenset({"body", "query"})
 UNDECLARED_KEY = "input"

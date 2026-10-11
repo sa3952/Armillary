@@ -2,7 +2,7 @@
 
     <section class="compose" aria-labelledby="compose-heading">
       <div class="eyebrow">計算 · COMPOSE</div>
-      <h1 id="compose-heading">建立一張可以逐步檢查的星盤。</h1>
+      <h1 id="compose-heading">排一張本命盤，每一步都能檢查。</h1>
       <p class="lede">輸入你真正知道的程度；不知道的部分，不替你假裝精確。出生資料只用於本次計算，回應送出後伺服器不留副本。</p>
       <p class="status-line" id="bootstrap-status" role="status" aria-live="polite" data-tone="warning">計算介面正在載入。若這段訊息持續顯示，代表頁面未完整載入；請重新整理，仍有問題請稍後再試。</p>
 
@@ -10,8 +10,9 @@
 
         <fieldset>
           <legend>出生日期與時間 <span class="en" lang="en">Date and time</span></legend>
-          <fieldset class="choice-group" id="precision-choice">
+          <fieldset class="choice-group" id="precision-choice" aria-describedby="precision-help">
           <legend class="choice-lead" id="precision-lead">你對出生時刻的把握程度 <span class="en" lang="en">Birth time precision</span></legend>
+          <p class="note" id="precision-help">不知道確切出生時間？選『只知道日期』或『只知道約略小時』，結果會告訴你上升點與宮位在這段時間裡有沒有換（只知道日期時不算上升點與宮位）。</p>
           <div class="choice">
             <label>
               <input type="radio" name="precision" value="exact" checked>
@@ -33,7 +34,7 @@
             <div class="field">
               <label for="date">出生日期</label>
               <input type="date" id="date" aria-describedby="date-hint" min="1900-01-01" max="2399-12-31" autocomplete="off">
-              <span class="hint" id="date-hint">西元 1900–2399，以格里曆解讀；原始紀錄若是儒略曆，請先換算。若只有農曆或民國紀年，請先換算成西元國曆（例：民國 79 年 = 1990 年）。</span>
+              <span class="hint" id="date-hint">西元 1900–2399，以格里曆解讀；原始紀錄若是儒略曆，請先換算。民國年與日本年號可用下方的換算助手；農曆請先換算成西元國曆。</span>
             </div>
             <div class="field" id="field-hour">
               <label for="hour">小時 <span class="en" lang="en">hour</span></label>
@@ -58,6 +59,45 @@
             <div class="choice" id="fold-choice-options"></div>
             <p class="note" id="fold-choice-note"></p>
           </fieldset>
+          <!-- 換算助手：年號換算只在本頁的記憶體裡做，結果寫進上面的出生日期欄；
+               欄位沒有 name，不屬於送出的請求，清除敏感資料時與表單一起清空。
+               核對鐘面時間由計算服務回答（與排盤同一個換算），結果只留在畫面上。 -->
+          <details class="time-helper" id="time-helper">
+            <summary>換算助手：民國年、日本年號，以及這個鐘面時間在當地是世界時幾點</summary>
+            <p class="note" id="era-note">民國年加 1911；明治加 1867、大正加 1911、昭和加 1925，月與日不變。改元那一年會核對日期：大正元年從 1912 年 7 月 30 日開始，昭和元年從 1926 年 12 月 25 日開始。這一步只在你的瀏覽器裡換算，不送出任何資料。農曆與時辰目前不換算。</p>
+            <div class="grid four">
+              <div class="field">
+                <label for="era-name">紀年</label>
+                <select id="era-name">
+                  <option value="roc">民國</option>
+                  <option value="meiji">明治</option>
+                  <option value="taisho">大正</option>
+                  <option value="showa">昭和</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="era-year">年</label>
+                <input type="number" id="era-year" aria-describedby="era-year-hint" min="1" step="1" inputmode="numeric" autocomplete="off">
+                <span class="hint" id="era-year-hint">元年填 1</span>
+              </div>
+              <div class="field">
+                <label for="era-month">月</label>
+                <input type="number" id="era-month" min="1" max="12" step="1" inputmode="numeric" autocomplete="off">
+              </div>
+              <div class="field">
+                <label for="era-day">日</label>
+                <input type="number" id="era-day" min="1" max="31" step="1" inputmode="numeric" autocomplete="off">
+              </div>
+            </div>
+            <button type="button" class="ghost small" id="era-apply">換算並填入出生日期</button>
+            <p class="status-line" id="era-echo" role="status" aria-live="polite"></p>
+            <div class="time-check">
+              <p class="note" id="time-check-note">填好出生日期、時刻並選定出生地點後，可以先核對：這個鐘面時間在當地是 UTC 加幾小時、當時是否實施夏令時間或日本時間、是否根本不存在或出現兩次，以及這條規則出自哪份文件、我們核到哪一層。核對由計算服務以排盤時同一份時區資料庫回答；送出的只有日期、時刻與時區，不含座標，服務不留副本。目前涵蓋臺灣、香港、澳門與中國大陸；四地的規則與出處見〈<a href="/zh-TW/methods/birth-time-conversion">出生時間換算的規則與出處</a>〉。</p>
+              <button type="button" class="ghost small" id="time-check-button">核對這個鐘面時間</button>
+              <p class="status-line" id="time-check-status" role="status" aria-live="polite"></p>
+              <div class="time-check-result" id="time-check-result" hidden></div>
+            </div>
+          </details>
         </fieldset>
 
         <!-- ── 地點：離線目錄查詢優先，手動輸入為後備 ── -->
@@ -85,6 +125,13 @@
             </details>
             <p class="caveat" id="place-caveat"></p>
           </div>
+          <!-- 出生紀錄用北京時間還是新疆時間。只在目錄標示為新疆的地點出現；
+               沒有預設，選定前不能送出。選項由控制器依地名查詢回傳的兩種鐘點產生。 -->
+          <fieldset class="fold-choice" id="civil-time-choice" hidden>
+            <legend class="fold-choice-title" id="civil-time-choice-title">出生紀錄用的是北京時間還是新疆時間？</legend>
+            <div class="choice" id="civil-time-choice-options"></div>
+            <p class="note" id="civil-time-choice-note">新疆同時使用北京時間與新疆時間，兩者相差 2 小時，上升點與宮位可能整個不同。請依出生紀錄（例如出生證明）上的鐘點選擇；服務不替你猜。不確定時，請先向開立紀錄的單位或家人確認。</p>
+          </fieldset>
 
           <details class="manual-place" id="manual-place">
             <summary>改為手動輸入座標與時區</summary>
@@ -260,6 +307,51 @@
         <p class="note">兩者都會讓舊的複製與下載按鈕立即失效，並撤銷已建立的下載連結。<strong>但已經複製到系統剪貼簿、或已經存到你磁碟上的檔案，本頁無法收回。</strong></p>
       </div>
     </section>
+
+    <!-- 常見問題：可見的問答，不另做 FAQPage 結構化資料。每一題的答案對照產品的實際行為。 -->
+    <section class="calc-faq" aria-labelledby="faq-heading">
+      <h2 id="faq-heading">常見問題</h2>
+      <details>
+        <summary>不知道出生時間，可以排星盤嗎？</summary>
+        <p>可以選「只知道日期」或「只知道約略小時」。只知道約略小時，上升點與宮位會標出這一小時內有沒有換、在哪段時間換；只知道日期，就不給上升點與宮位。行星所在星座通常仍然可用。</p>
+      </details>
+      <details>
+        <summary>為什麼兩個網站算出的上升星座不一樣？</summary>
+        <p>常見原因有時區、夏令時間、經緯度、回歸或恆星黃道。渾儀會把用了哪一套寫在結果裡。</p>
+      </details>
+      <details>
+        <summary>上升星座查詢表為什麼可能不準？</summary>
+        <p>查表通常假設某個緯度和標準時，沒有計入出生地經度和夏令時間。</p>
+      </details>
+      <details>
+        <summary>出生在夏令時間的年份，要先減一小時嗎？</summary>
+        <p>在渾儀不用，照出生紀錄的鐘面時間填。</p>
+      </details>
+      <details>
+        <summary>西洋占星要換真太陽時嗎？</summary>
+        <p>不用。渾儀把當地鐘面時間換成世界時，再用出生地經度算地方恆星時。先換真太陽時反而會把經度重複計算。</p>
+      </details>
+      <details>
+        <summary>整宮制和 Placidus 哪個準？</summary>
+        <p>計算上沒有對錯，是兩種不同的切宮規則。渾儀四種都提供，不替你排序。</p>
+      </details>
+      <details>
+        <summary>可以排印度占星（吠陀）星盤嗎？</summary>
+        <p>恆星黃道目前提供四種歲差值，沒有 Lahiri。</p>
+      </details>
+      <details>
+        <summary>渾儀會解盤或看運勢嗎？</summary>
+        <p>不會，只計算。</p>
+      </details>
+      <details>
+        <summary>有福點（幸運點）嗎？</summary>
+        <p>有，名稱是「命運點」。依日盤或夜盤採用對應的公式；太陽靠近地平時，日盤和夜盤公式的結果都列出。</p>
+      </details>
+      <details>
+        <summary>可以排合盤、行運或太陽回歸盤嗎？</summary>
+        <p>目前都沒有。</p>
+      </details>
+    </section>
 </div>
 
 <script src="/zh-TW/labels.js?v={{assets}}" defer></script>
@@ -270,4 +362,7 @@
 <script src="/zh-TW/request-input.js?v={{assets}}" defer></script>
 <script src="/zh-TW/timezone-names.js?v={{assets}}" defer></script>
 <script src="/zh-TW/location-receipt.js?v={{assets}}" defer></script>
+<script src="/zh-TW/chart-glyphs.js?v={{assets}}" defer></script>
+<script src="/zh-TW/chart-wheel-model.js?v={{assets}}" defer></script>
+<script src="/zh-TW/chart-wheel.js?v={{assets}}" defer></script>
 <script src="/zh-TW/calculate.js?v={{assets}}" data-view-model="/zh-TW/view-model.js?v={{assets}}" defer></script>

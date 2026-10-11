@@ -31,9 +31,9 @@ _BLOCK = re.compile(
 
 
 def articles() -> tuple:
-    from . import birth_time, bounds, houses, nodes, taiwan_time
+    from . import birth_time, bounds, houses, nodes, rising_tables, solar_time, taiwan_time, unknown_time
 
-    return (birth_time, taiwan_time, houses, bounds, nodes)
+    return (birth_time, taiwan_time, houses, bounds, nodes, unknown_time, rising_tables, solar_time)
 
 
 def blocks_in(fragment: str) -> dict[str, str]:

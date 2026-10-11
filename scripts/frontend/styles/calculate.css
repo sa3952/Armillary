@@ -159,6 +159,8 @@ button.small{font-size:.82rem; padding:.45rem 1rem}
 
 .section-note{max-width:var(--measure); font-size:.9rem; color:var(--ink-dim); margin-top:var(--s1); overflow-wrap:anywhere}
 .section-block{font-family:var(--mono); font-size:.8rem; color:var(--ink-dim); margin-top:var(--s2); overflow-wrap:anywhere}
+/* 本命盤速覽（calculate.js 建在匯出工具列之前）：表後那一行是指向完整表的文字，不是程式輸出。 */
+.chart-summary .section-block{font-family:inherit; font-size:.88rem}
 
 /* ═══ 出生時刻敏感度：取樣摘要 ═══════════════════════════════
    第一行是結論，永遠在摺疊之外。點列是不可操作的圖：每個取樣點一個獨立的點，
@@ -365,14 +367,32 @@ button.small{font-size:.82rem; padding:.45rem 1rem}
 .receipt-codes{margin-top:var(--s1)}
 .receipt-codes summary{font-size:.78rem; color:var(--ink-faint); cursor:pointer}
 .place-receipt .caveat{font-size:.82rem; color:var(--ink-dim); margin-top:var(--s2); border-left:2px solid var(--accent); padding-left:.8rem}
-.manual-place{margin-top:var(--s3); border-top:1px solid var(--hair-soft); padding-top:var(--s2)}
-.manual-place summary{cursor:pointer; font-size:.88rem; color:var(--ink-dim)}
-.manual-place[open] summary{margin-bottom:var(--s2)}
+.manual-place,.time-helper{margin-top:var(--s3); border-top:1px solid var(--hair-soft); padding-top:var(--s2)}
+.manual-place summary,.time-helper summary{cursor:pointer; font-size:.88rem; color:var(--ink-dim)}
+.manual-place[open] summary,.time-helper[open] summary{margin-bottom:var(--s2)}
+.time-helper .status-line{margin-top:var(--s2)}
+.time-check{margin-top:var(--s3); border-top:1px solid var(--hair-soft); padding-top:var(--s2)}
+.time-check-result{margin-top:var(--s2); max-width:var(--measure)}
+.time-check-result p,.time-check-result li{font-size:.86rem; line-height:1.7}
+.time-check-result ul{margin:.4rem 0 .4rem 1.2rem}
+.time-check-result .caveat{font-size:.82rem; color:var(--ink-dim); margin-top:var(--s2); border-left:2px solid var(--accent); padding-left:.8rem}
+.time-check-result dl{display:grid; grid-template-columns:9rem 1fr; gap:.3rem var(--s2); margin-top:.6rem}
+.time-check-result dt{font-size:.78rem; color:var(--ink-faint)}
+.time-check-result dd{font-size:.82rem; overflow-wrap:anywhere}
 /* 臺灣的鐘面時間怎麼換成世界時：地點欄位之後的常駐說明，與地點收據的 caveat 同一套語彙。 */
 .tz-note{margin-top:var(--s3); border-left:2px solid var(--accent); padding-left:.8rem; max-width:var(--measure)}
 .tz-note-title{font-family:var(--serif); font-weight:400; font-size:1.02rem; letter-spacing:.02em;
   line-height:1.6; color:var(--ink); margin:0 0 .3rem}
 .tz-note p{font-size:.82rem; line-height:1.7; color:var(--ink-dim)}
+
+/* 常見問題：頁尾的問答摺疊；列印只印結果，問答不上紙。 */
+.calc-faq{border-top:1px solid var(--ink); padding:var(--s4) 0 var(--s5); max-width:var(--measure)}
+.calc-faq h2{font-family:var(--serif); font-weight:400; letter-spacing:.02em; font-size:1.45rem; margin:0 0 var(--s2)}
+.calc-faq details{border-bottom:1px solid var(--hair-soft)}
+.calc-faq summary{cursor:pointer; padding:.7rem 0; font-size:.95rem; line-height:1.6; color:var(--ink)}
+.calc-faq summary::marker{color:var(--accent)}
+.calc-faq details p{margin:0 0 .8rem; font-size:.88rem; line-height:1.75; color:var(--ink-dim)}
+@media print{.calc-faq{display:none}}
 
 /* ═══ 選項：層 → 群組摺疊 → 相依子項 ═══════════════════ */
 /* 群組摺疊標題列與計數徽章的樣式待前端設計裁決後補上。 */
@@ -578,6 +598,23 @@ table[data-section="trace"] td:nth-child(3){width:14rem}
 table[data-section="trace"] th:nth-child(6),
 table[data-section="trace"] td:nth-child(6){width:7rem}
 
+/* ═══ 相位方格 ═══════════════════════════════════════
+   三角形相位表：格內文字置中、可換行；窄螢幕在 table-wrap 內橫捲，列標頭黏在左側，
+   捲動時仍看得到是哪一顆星。空格（對角線以上、沒有相位的組合）不畫底色。 */
+table.aspect-grid{width:auto}
+table.aspect-grid th[scope="col"]{text-align:center; letter-spacing:.04em; text-transform:none}
+table.aspect-grid td{text-align:center; white-space:normal; min-width:5.5rem; max-width:9rem; line-height:1.5; border-left:1px solid var(--hair-soft)}
+table.aspect-grid td:empty{background:transparent}
+table.aspect-grid tbody th[scope="row"]{position:sticky; left:0; z-index:1; background:var(--paper-2)}
+/* 窄螢幕只收窄格子，不縮字：中文字不得小於 12px（e2e accessibility）。 */
+@media (max-width:640px){
+  table.aspect-grid td{min-width:4.5rem; padding:.4rem .5rem}
+}
+@media print{
+  table.aspect-grid{width:100%}
+  table.aspect-grid tbody th[scope="row"]{position:static}
+}
+
 /* 生效選項也是長文字，同樣不該橫向捲 */
 table[data-section="requested_options"] td,
 table[data-section="requested_options"] th[scope="row"]{white-space:normal; overflow-wrap:anywhere}
@@ -679,4 +716,65 @@ main,
   .choice input[type="radio"]:checked::after,
   .export-mode input[type="radio"]:checked::after{forced-color-adjust:none; background:CanvasText}
   select.option-control{appearance:auto; -webkit-appearance:auto}
+}
+
+/* ═══ 星盤圖 ═══════════════════════════════════════════
+   圖由 chart-wheel.js 以 SVG 元素建立，顏色與字體只用下面這些 class（不寫 style 屬性，CSP）。
+   頁面版是紙色：底透出頁面，星座環用第二層紙色；下載檔另有白底的展示屬性版本。
+   唯一的強調色是四軸；吉凶、元素、行星都不上色。 */
+section.chart-wheel{border-bottom:1px solid var(--hair-soft); padding:var(--s4) 0 var(--s3); scroll-margin-top:var(--s2)}
+section.chart-wheel > .head{padding-bottom:.6rem; border-bottom:1px solid var(--hair)}
+section.chart-wheel h3{font-family:var(--serif); font-weight:400; letter-spacing:.02em; font-size:1.45rem}
+.chart-wheel-figure{max-width:600px; margin:var(--s2) auto 0}
+.chart-wheel-svg{display:block; width:100%; height:auto; cursor:zoom-in}
+.chart-wheel-caption{max-width:600px; margin:.4rem auto 0; font-size:.88rem; color:var(--ink-dim)}
+.chart-wheel-legend{max-width:var(--measure); margin:var(--s2) 0 0; padding-left:1.2rem; font-size:.85rem; line-height:1.7; color:var(--ink-dim)}
+.chart-wheel-actions{display:flex; flex-wrap:wrap; align-items:center; gap:var(--s1) var(--s2); margin-top:var(--s2)}
+.chart-wheel-input{display:flex; align-items:center; gap:.5rem; font-size:.88rem; color:var(--ink-dim); cursor:pointer}
+section.chart-wheel > .note{margin-top:var(--s1)}
+
+.chart-wheel-svg .cw-f-none{fill:none}
+.chart-wheel-svg .cw-f-bg{fill:var(--paper)}
+.chart-wheel-svg .cw-f-band{fill:var(--paper-2)}
+.chart-wheel-svg .cw-f-fg{fill:var(--ink)}
+.chart-wheel-svg .cw-f-dim{fill:var(--ink-dim)}
+.chart-wheel-svg .cw-f-hair{fill:var(--hair)}
+.chart-wheel-svg .cw-f-accent{fill:var(--accent)}
+.chart-wheel-svg .cw-s-bg{stroke:var(--paper)}
+.chart-wheel-svg .cw-s-band{stroke:var(--paper-2)}
+.chart-wheel-svg .cw-s-fg{stroke:var(--ink)}
+.chart-wheel-svg .cw-s-dim{stroke:var(--ink-dim)}
+.chart-wheel-svg .cw-s-hair{stroke:var(--hair)}
+.chart-wheel-svg .cw-s-accent{stroke:var(--accent)}
+/* 標籤壓在引線上時，以紙色描一圈外框，字才讀得清楚。 */
+.chart-wheel-svg .cw-halo{stroke:var(--paper); paint-order:stroke; stroke-linejoin:round}
+.chart-wheel-svg .cw-font-sans{font-family:var(--sans)}
+.chart-wheel-svg .cw-font-mono{font-family:var(--mono)}
+
+/* 放大檢視：手機上保留完整資訊，放大看。 */
+.chart-wheel-dialog{margin:auto; padding:0; border:1px solid var(--ink); background:var(--paper); color:var(--ink);
+  width:min(96vw, 100rem); max-width:96vw; max-height:96vh}
+.chart-wheel-dialog::backdrop{background:color-mix(in srgb, var(--plate) 72%, transparent)}
+.chart-wheel-dialog-body{padding:var(--s1) var(--s1) var(--s2)}
+.chart-wheel-dialog-head{display:flex; align-items:baseline; justify-content:space-between; gap:var(--s1); margin-bottom:var(--s1)}
+.chart-wheel-dialog-head h3{font-family:var(--serif); font-weight:400; font-size:1.1rem}
+.chart-wheel-dialog-view{overflow:auto; max-height:calc(96vh - 5rem); -webkit-overflow-scrolling:touch}
+/* 桌機：整張圖放進視窗高度。手機：圖放大到約 900px 寬，在 .chart-wheel-dialog-view 裡捲動看。 */
+.chart-wheel-dialog .chart-wheel-svg{width:min(100%, calc((96vh - 6rem) * .916)); height:auto; margin:0 auto; cursor:default}
+@media (max-width:640px){
+  .chart-wheel-dialog .chart-wheel-svg{width:56rem; max-width:none}
+}
+
+@media (max-width:900px){
+  section.chart-wheel{padding:var(--s3) 0 var(--s2)}
+  section.chart-wheel h3{font-size:1.2rem}
+}
+@media print{
+  section.chart-wheel{break-inside:avoid}
+  .chart-wheel-actions,.chart-wheel-dialog,section.chart-wheel > .note{display:none !important}
+  .chart-wheel-svg .cw-f-bg{fill:var(--print-bg)}
+  .chart-wheel-svg .cw-s-bg,.chart-wheel-svg .cw-halo{stroke:var(--print-bg)}
+}
+@media (forced-colors: active){
+  .chart-wheel-svg{forced-color-adjust:none}
 }

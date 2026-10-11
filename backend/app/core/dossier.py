@@ -31,7 +31,7 @@ from .module_state import (
 )
 
 
-DOSSIER_VERSION = "0.7.0"
+DOSSIER_VERSION = "0.8.0"
 
 # The six-field vocabulary (MODULE_STATUSES, EVENT_SEARCH_REASON_CODES
 # and the builders) lives in module_state; the Dossier copies what each
@@ -154,7 +154,7 @@ _MODULE_ORDER = (
     "outer_planets", "chiron", "south_nodes", "anti_vertex", "lunar_apsides",
     "parallax_moon", "essential_dignities", "antiscia", "sect", "lots",
     "void_of_course", "declination_aspects", "lunar_phases", "eclipses",
-    "rise_set_transits",
+    "rise_set_transits", "planetary_hours",
 )
 # The classical bodies are always computed, or the request fails outright.
 _CORE_POSITIONS_STATE = module_state(
@@ -186,6 +186,7 @@ def _module_states(
         for name in (
             "house_division", "planet_in_house", "aspects", "sect", "lots",
             "void_of_course", "declination_aspects", "essential_dignities",
+            "planetary_hours",
         )
     }
     states.update({
@@ -237,6 +238,7 @@ def _methodology_receipt(derived_methods: dict, modules: dict) -> dict:
         "void_of_course",
         "declination_aspects",
         "essential_dignities",
+        "planetary_hours",
     ):
         value = derived_methods[name]
         execution_status = modules[name]

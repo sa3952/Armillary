@@ -31,6 +31,7 @@ from .schemas import (
     ChartRequest,
     PlaceSearchRequest,
     RefusalResponse,
+    TimeConversionRequest,
     StrictJsonBodyError,
     check_strict_json_body,
     check_strict_query,
@@ -40,6 +41,7 @@ from .refusals import (
     CHART_ROUTE,
     HEALTH_ROUTE,
     PLACE_SEARCH_ROUTE,
+    TIME_CONVERT_ROUTE,
     refusal_response,
     routes_refusals,
 )
@@ -47,7 +49,16 @@ from .core.time_utils import (
     AmbiguousLocalTimeChoiceRequiredError,
     NonexistentLocalTimeError,
 )
+from .core.civil_time_basis import (
+    CivilTimeBasisNotApplicableError,
+    CivilTimeBasisRequiredError,
+    check_civil_time_basis,
+)
 from .core.houses import HouseSystemUnavailableError
+from .core.time_conversion import (
+    TimeConversionZoneNotCoveredError,
+    convert_civil_time,
+)
 from .core.dossier import DOSSIER_VERSION
 from .response_projection import (
     DEFAULT_CHART_PROJECTION,
@@ -310,13 +321,15 @@ def _add_api_routes(
     place_catalog: PlaceCatalog,
     runtime_build_identity: dict,
 ) -> dict[str, frozenset[str]]:
-    """The three API routes; returns the methods each one serves."""
+    """The four API routes; returns the methods each one serves."""
 
     async def identified_compute_chart(
         req: ChartRequest,
         request: Request,
         projection: ChartProjection = DEFAULT_CHART_PROJECTION,
     ):
+        # Before the compute line: a refusal here costs no Swiss slot.
+        await run_in_threadpool(check_civil_time_basis, req, place_catalog.record_zone)
         token = _BUILD_IDENTITY_CONTEXT.set(runtime_build_identity)
         try:
             # page is derived from this one detailed response.
@@ -333,11 +346,17 @@ def _add_api_routes(
             limit=request.limit,
         )
 
+    # On the event loop: zone arithmetic for one wall-clock time, no Swiss and
+    # no file; a worker thread would cost more than the answer.
+    async def convert_time(request: TimeConversionRequest):
+        return convert_civil_time(request)
+
     api_method_routes = {
         # HEAD wherever GET is served.
         "/api/health": frozenset({"GET", "HEAD"}),
         "/api/chart": frozenset({"POST"}),
         "/api/places/search": frozenset({"POST"}),
+        TIME_CONVERT_ROUTE: frozenset({"POST"}),
     }
     # GET and HEAD are separate routes so each has its own OpenAPI operation ID;
     # one route carrying both methods published a duplicate ID.
@@ -375,6 +394,17 @@ def _add_api_routes(
         ),
         responses=_declared_refusals(PLACE_SEARCH_ROUTE),
     )
+    application.add_api_route(
+        TIME_CONVERT_ROUTE,
+        convert_time,
+        methods=["POST"],
+        name="convert_time",
+        response_model=dict[str, Any],
+        response_description=(
+            "Every reading of one wall-clock time, with its rule's source row and the tz database."
+        ),
+        responses=_declared_refusals(TIME_CONVERT_ROUTE),
+    )
     return api_method_routes
 
 
@@ -385,6 +415,9 @@ def _add_refusal_handlers(application: FastAPI) -> None:
         (AmbiguousLocalTimeChoiceRequiredError, _handle_domain_error),
         (FullEphemerisRequiredError, _handle_domain_error),
         (HouseSystemUnavailableError, _handle_domain_error),
+        (CivilTimeBasisRequiredError, _handle_domain_error),
+        (CivilTimeBasisNotApplicableError, _handle_domain_error),
+        (TimeConversionZoneNotCoveredError, _handle_domain_error),
         (PlaceCatalogUnavailableError, _handle_domain_error),
         (PlaceSearchBudgetExceededError, _handle_domain_error),
         (StrictJsonBodyError, _handle_strict_json_body),

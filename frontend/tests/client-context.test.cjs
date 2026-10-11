@@ -83,10 +83,12 @@ test("每個閉集代碼都有專屬文案", () => {
     "not_found", "method_not_allowed", "unsupported_method", "unknown_api_path",
     "request_body_read_timeout", "request_headers_too_large", "conflicting_request_framing",
     "empty_request_body", "bad_request", "unauthorized", "undeclared_host", "request_validation_failed",
+    "civil_time_basis_required", "civil_time_basis_not_applicable",
   ];
   const rules = [
     "calendar_date_invalid", "second_finer_than_microsecond", "iana_name_required", "iana_timezone_unknown",
     "utc_offset_hours_required", "timezone_field_not_applicable_to_mode", "fold_requires_iana_mode",
+    "civil_time_basis_zone_mismatch",
     "place_label_forbidden_codepoint", "location_precision_not_accepted_for_source",
     "source_record_id_not_allowed_for_manual", "catalog_location_requires_label_and_record_id",
     "ayanamsa_unsupported", "sidereal_with_j2000_frame_not_supported",

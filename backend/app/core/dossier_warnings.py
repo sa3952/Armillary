@@ -11,7 +11,16 @@ from collections.abc import Iterator
 from ..config import PRODUCT_YEAR_RANGE
 from .method_status import METHOD_STATUS_PROVISIONAL
 from .module_state import EVENT_SEARCH_REASON_CODES, MODULE_STATUSES
-from .time_utils import TZDB_PRE_1970_SOURCE
+import datetime as dtmod
+from zoneinfo import ZoneInfo
+
+from .planetary_hours import NO_DIURNAL_CYCLE
+from .time_utils import (
+    PRC_1988_DISPUTED_LOCAL_INTERVAL,
+    PRC_1988_DST_SOURCE_REF,
+    TZDB_PRE_1970_SOURCE,
+    prc_1988_dst_start_disputed,
+)
 
 # The reader's name of each module, for the sentences a person reads on the page
 # and in the exports.  The response keeps the keys where a program reads them
@@ -38,6 +47,7 @@ MODULE_NAMES_ZH = {
     "lunar_phases": "朔望",
     "eclipses": "日月食",
     "rise_set_transits": "升降與中天",
+    "planetary_hours": "行星日與行星時",
     "extra_angles": "額外角點",
     "birth_time_sensitivity": "出生時刻敏感度",
 }
@@ -418,6 +428,48 @@ def _time_scale_warnings(time_conversion: dict) -> Iterator[dict]:
         )
 
 
+def _utc_offset_label(offset: dtmod.timedelta) -> str:
+    minutes = round(offset.total_seconds() / 60)
+    sign = "-" if minutes < 0 else "+"
+    hours, rest = divmod(abs(minutes), 60)
+    return f"UTC{sign}{hours:02d}:{rest:02d}"
+
+
+def prc_1988_dst_dispute_warnings(request) -> Iterator[dict]:
+    # A notice of disagreeing sources, not a second chart: the calculation keeps
+    # the tz database's offset.  Both offsets are read from the running zone
+    # data (inside the interval and one hour on), not written here.
+    timezone = request.timezone
+    if timezone.mode != "iana":
+        return
+    stated = request.datetime
+    local = dtmod.datetime(stated.year, stated.month, stated.day, stated.hour, stated.minute)
+    if not prc_1988_dst_start_disputed(
+        timezone.iana_name, request.birth_time_precision, local
+    ):
+        return
+    zone = ZoneInfo(timezone.iana_name)
+    start, end = PRC_1988_DISPUTED_LOCAL_INTERVAL
+    used = (start + (end - start) / 2).replace(tzinfo=zone).utcoffset()
+    summer = (end + dtmod.timedelta(hours=1)).replace(tzinfo=zone).utcoffset()
+    assert used is not None and summer is not None
+    yield _warning(
+        "prc_1988_dst_start_disputed",
+        "warning",
+        (
+            "1988 年中國夏令時間的起始日，資料來源說法不一：IANA 時區資料庫自 2018f 版起依"
+            "《人民日報》1988 年 4 月 12 日頭版，定為 4 月 17 日 02:00 起；部分中文說明表寫"
+            " 4 月 10 日起。你的出生時間落在兩說之間（1988-04-10 00:00 至 04-17 02:00），"
+            f"本服務依時區資料庫採用 {_utc_offset_label(used)}；若依 4 月 10 日之說應為 "
+            f"{_utc_offset_label(summer)}，換算出的世界時早 "
+            f"{abs(summer - used).total_seconds() / 3600:g} 小時，上升點與宮位可能不同。"
+            "本服務只算這一張盤，不替你改動時刻。"
+        ),
+        f"IANA tz database asia, Rule PRC (2018f); method source {PRC_1988_DST_SOURCE_REF}",
+        ["calculation_dossier.time_conversion", "astronomical_data.time"],
+    )
+
+
 def _supported_range_warnings(
     request,
     time_conversion: dict,
@@ -576,12 +628,34 @@ def _module_state_warnings(
             ],
         )
 
+    # No sunrise and sunset within one diurnal cycle is a fact of the place and
+    # season, not of the request's mode; it has its own notice.
+    no_diurnal_cycle_modules = [
+        name
+        for name, state in states.items()
+        if state["requested"]
+        and not state["available"]
+        and state["reason_code"] == NO_DIURNAL_CYCLE
+    ]
+    if no_diurnal_cycle_modules:
+        yield _warning(
+            "no_sunrise_sunset_cycle",
+            "notice",
+            (
+                "出生地在這段時間沒有一天一次的日出與日落（極晝、極夜或其前後幾天），"
+                f"因此未產生結果：{_module_names(no_diurnal_cycle_modules)}"
+            ),
+            "calculation_policy.modules",
+            [f"derived_methods.{name}" for name in no_diurnal_cycle_modules],
+        )
+
     not_applicable_modules = [
         name
         for name, status in modules.items()
         if (
             status == "not_applicable"
             and name not in event_not_applicable_modules
+            and name not in no_diurnal_cycle_modules
         )
     ]
     if not_applicable_modules:
@@ -612,7 +686,7 @@ def _module_state_warnings(
             yield _warning(
                 "provisional_method_result",
                 "notice",
-                f"{name} 已計算，但方法仍待審閱，不能視為正式採用。",
+                f"{_module_names([name])}已計算，但方法仍待審閱，不能視為正式採用。",
                 item["response_path"],
                 [item["response_path"]],
             )
@@ -739,6 +813,7 @@ def structured_warnings(
         *_sect_house_hemisphere_warnings(sect, essential_dignities, planet_in_house),
         *_topocentric_speed_warnings(bodies),
         *_time_scale_warnings(time_conversion),
+        *prc_1988_dst_dispute_warnings(request),
         *_supported_range_warnings(request, time_conversion),
         *_mixed_origin_moon_warnings(request),
         *_ephemeris_source_warnings(

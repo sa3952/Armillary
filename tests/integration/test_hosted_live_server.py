@@ -207,6 +207,36 @@ def test_real_hosted_server_fuzzed_refusals_do_not_echo_or_log_the_input():
     assert server.output.count('"route":"/api/chart"') == len(bodies)
 
 
+def test_real_hosted_server_time_conversion_logs_only_its_route_label():
+    """The helper's body is a birth date, time and zone: the process prints its
+    route label and nothing it was asked, for an answer and for each refusal."""
+
+    birth = {"year": 1974, "month": 9, "day": 30, "hour": 23, "minute": 30}
+    bodies = [
+        {"datetime": birth, "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"}},
+        {"datetime": birth, "timezone": {"mode": "iana", "iana_name": CANARY}},
+        {"datetime": {**birth, "year": CANARY}, "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"}},
+        {"datetime": birth, "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"}, CANARY: CANARY},
+        {"datetime": birth, "timezone": {"mode": "iana", "iana_name": "Europe/London"}},
+        {"datetime": birth, "timezone": {"mode": "iana", "iana_name": "Asia/Urumqi"}},
+    ]
+    with _hosted_server() as server:
+        responses = [
+            _post(server, json.dumps(body).encode(), path="/api/time/convert") for body in bodies
+        ]
+        malformed = _post(server, b'{"datetime":"' + CANARY.encode(), path="/api/time/convert")
+
+    assert [status for status, _ in responses] == [200, 422, 422, 422, 422, 422]
+    assert json.loads(responses[0][1])["status"] == "repeated"
+    assert malformed[0] == 400
+    for _, body in [*responses[1:], malformed]:
+        assert CANARY not in body.decode()
+    for leaked in (CANARY, "1974-09-30", "23:30", "Asia/Taipei", "Europe/London",
+                   '"POST /api/time/convert HTTP/', TRACEBACK):
+        assert leaked not in server.output, leaked
+    assert server.output.count('"route":"/api/time/convert"') == len(bodies) + 1
+
+
 def test_real_hosted_server_unexpected_error_is_generic_and_not_logged():
     with _hosted_server(
         "def fail(_request):", f"    raise RuntimeError({CANARY!r})",

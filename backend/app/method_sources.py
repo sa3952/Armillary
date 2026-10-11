@@ -41,6 +41,7 @@ def _module_entries() -> dict[str, dict[str, Any]]:
         aspects,
         birth_time_sensitivity,
         bodies,
+        civil_time_basis,
         contested_methods,
         declination,
         essential_dignities,
@@ -50,6 +51,7 @@ def _module_entries() -> dict[str, dict[str, Any]]:
         lots,
         lunar_events,
         moon,
+        planetary_hours,
         time_utils,
         tz_database,
     )
@@ -63,12 +65,14 @@ def _module_entries() -> dict[str, dict[str, Any]]:
         declination,
         fixed_stars,
         horizon_events,
+        planetary_hours,
         lunar_events,
         bodies,
         contested_methods,
         birth_time_sensitivity,
         houses,
         time_utils,
+        civil_time_basis,
         tz_database,
     ):
         for ref, entry in module.METHOD_SOURCE_ENTRIES.items():

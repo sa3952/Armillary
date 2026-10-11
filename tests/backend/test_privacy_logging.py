@@ -150,6 +150,10 @@ def test_structured_event_schema_is_closed_and_discards_attacker_controlled_text
     place = _event(path="/api/places/search", content_length="72")
     assert place["route"] == "/api/places/search"
     assert "query" not in place
+    # So is the time-conversion helper, never with the birth time it was asked about.
+    conversion = _event(path="/api/time/convert", content_length="120")
+    assert conversion["route"] == "/api/time/convert"
+    assert "datetime" not in conversion and "timezone" not in conversion
 
 
 def test_duration_bucket_rejects_non_finite_values():
@@ -595,6 +599,18 @@ _WRITE_GUARD_CASES = {
     "chart_unexpected_error": ("POST", "/api/chart", _payload, _raise_unexpected, 500),
     "place_search": ("POST", "/api/places/search", {"query": "Tainan"}, None, 200),
     "place_search_refusal": ("POST", "/api/places/search", {"query": CANARY_TEXT * 10}, None, 422),
+    "time_convert": (
+        "POST", "/api/time/convert",
+        {"datetime": {"year": 1974, "month": 9, "day": 30, "hour": 23, "minute": 30},
+         "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"}},
+        None, 200,
+    ),
+    "time_convert_refusal": (
+        "POST", "/api/time/convert",
+        {"datetime": {"year": 1974, "month": 9, "day": 30, "hour": 23, "minute": 30},
+         "timezone": {"mode": "iana", "iana_name": "Europe/London"}},
+        None, 422,
+    ),
     "health": ("GET", "/api/health", None, None, 200),
     "static_page": ("GET", "/zh-TW/calculate", None, None, 200),
     "static_asset": ("GET", "/zh-TW/calculate.js", None, None, 200),

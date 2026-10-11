@@ -105,7 +105,7 @@
     "trace", "requested_options", "contract", "receipt",
   ]);
   const SUPPORTED_RESPONSE_CONTRACTS = Object.freeze({
-    "0.14.0": Object.freeze(["0.7.0"]),
+    "0.15.0": Object.freeze(["0.8.0"]),
   });
 
   function assertCompatibleSourceResponse(sourceResponse) {
@@ -145,6 +145,8 @@
       title: text(table.title || ""),
       columns: (table.columns || []).map(text),
       rows: (table.rows || []).map((row) => row.map(text)),
+      // 版面變體（相位方格）只決定畫面樣式；文字匯出照一般表格輸出，不讀它。
+      ...(table.variant ? { variant: text(table.variant) } : {}),
     };
   }
 

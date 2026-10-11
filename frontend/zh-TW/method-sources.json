@@ -806,6 +806,23 @@
    "applies_to": "derived_methods.lots.boundary_policy",
    "rule": "sect_status == boundary_both_shown 時，fortune／spirit 是依 >0° 判準的主要值；by_sect 中另一日夜盤公式的結果並列為比較值，不隱藏；落宮與相位只用主要值"
   },
+  "planetary_hours": {
+   "applies_to": "derived_methods.planetary_hours",
+   "day_ruler_rule_boundary": "the weekday is read from the sunrise's civil date; where two consecutive sunrises fall on one civil date or skip one (near polar transitions) the Chaldean sequence across the two days does not continue, and the product does not adjust it",
+   "definition": "Planetary day from sunrise to the next sunrise; twelve equal day hours sunrise→sunset and twelve equal night hours sunset→next sunrise (unequal or seasonal hours); hours ruled in the Chaldean order Saturn, Jupiter, Mars, Sun, Venus, Mercury, Moon; the first hour's ruler is the weekday ruler of the sunrise's civil date in the request time zone",
+   "interval_vocabulary": [
+    "stated_civil_hour",
+    "civil_day"
+   ],
+   "not_applicable_rule": "applicable only when the sunrise before and the sunrise after the instant are at most 1.5 days apart with exactly one sunset between them (the horizon module's diurnal regime); otherwise no_sunrise_sunset_cycle_around_instant",
+   "primary_text_checked": "dio_xxxvii_19_in_english_translation_only",
+   "reason_vocabulary": [
+    "no_sunrise_sunset_cycle_around_instant"
+   ],
+   "source_note": "Cassius Dio, Roman History XXXVII.19: the weekday names follow from giving the planets, from Saturn on, to the successive hours of day and night. Dio defines neither unequal hours nor a day starting at sunrise; those are the standard later tradition, for which no primary text is cited. No page numbers",
+   "source_status": "standard_tradition",
+   "sunrise_definition": "the horizon module's event: refracted upper limb crossing the apparent horizon, topocentric, request atmosphere, no dip (USNO standard definition; Swiss swe_rise_trans default)"
+  },
   "sect": {
    "applies_to": "derived_methods.sect",
    "method_provenance": "product_convention_sources_checked_do_not_specify_boundary",
@@ -827,6 +844,15 @@
     "far_epoch_extrapolation"
    ]
   },
+  "time/prc_1988_dst_start": {
+   "applies_to": "calculation_dossier.warnings[code=prc_1988_dst_start_disputed]; zones Asia/Chongqing, Asia/Harbin, Asia/Shanghai",
+   "disputed_local_interval": [
+    "1988-04-10T00:00",
+    "1988-04-17T02:00"
+   ],
+   "note": "部分中文說明表把 1988 年中國夏令時間的起點寫成 4 月 10 日。本服務依 IANA 時區資料庫（4 月 17 日 02:00 起）換算，不另算一張盤；出生時間落在 1988-04-10 00:00 至 04-17 02:00（北京時間）之間時加一則警告，說明兩種說法的 UTC 相差 1 小時。",
+   "source": "IANA tz database, file asia: Rule PRC 1987 1991 - Apr Sun>=11 2:00 1:00 D (1988-04-17 02:00); comment by P Chan (2018-05-07) citing the first page of People's Daily of 1988-04-12, which states that summer time is to begin on 17 April; adopted in tz release 2018f. U.S. Naval Observatory (1989-01-19, quoted in the same file) also gives APR 17."
+  },
   "time/sidereal_time_model": {
    "applies_to": "astronomical_data.time.sidereal_time_model and calculation_dossier.time_conversion.sidereal_time_model",
    "segment_vocabulary": [
@@ -834,6 +860,19 @@
     "swiss_long_term"
    ],
    "source": "Swiss Ephemeris 2.10.03 swe_sidtime / swe_sidtime0 (swephlib.c SIDT_LTERM_T0, SIDT_LTERM_T1)"
+  },
+  "time/xinjiang_civil_time_basis": {
+   "applies_to": "input_receipt.timezone.civil_time_basis",
+   "basis_vocabulary": [
+    "beijing_time",
+    "xinjiang_time"
+   ],
+   "note": "新疆同時使用北京時間（Asia/Shanghai）與新疆時間（Asia/Urumqi，慢 2 小時）。目錄裡國別為中國、時區為 Asia/Urumqi 的地點、三個目錄給北京時間的新疆地點（博樂、阿拉山口、依吞布拉克），以及手動輸入座標而時區為 Asia/Urumqi 或 Asia/Kashgar 的請求，計算前必須由使用者指明出生紀錄用哪一種；服務不預設。",
+   "source": "IANA tz database, file asia, comments on Asia/Urumqi: Luther Ma (2009-10-17, 2014-04-22) on Beijing time and Xinjiang time both in use; Paul Eggert (2014-06-30): Xinjiang Time is officially recognized, no good records before 1986",
+   "zones": {
+    "beijing_time": "Asia/Shanghai",
+    "xinjiang_time": "Asia/Urumqi"
+   }
   },
   "void_of_course": {
    "applies_to": "derived_methods.void_of_course",

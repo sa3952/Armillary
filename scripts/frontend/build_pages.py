@@ -532,6 +532,8 @@ def load_surface_manifest() -> dict:
         raise ValueError("frontend surface set is invalid")
     if {"/zh-TW/", "/zh-TW/calculate"} - seen["surface"]:
         raise ValueError("frontend entry surfaces are missing")
+    for item in payload["surfaces"]:
+        _validate_sub_page(item, payload["surfaces"])
     _validate_error_pages(payload, seen)
     return payload
 
@@ -569,6 +571,34 @@ def _validate_article(item: dict) -> None:
     published, modified = (date.fromisoformat(article[name]) for name in ("published", "modified"))
     if modified < published:
         raise ValueError(f"article is modified before it was published: {item['key']}")
+
+
+# A sub-page is a page whose address is another page's address plus one more
+# segment (/zh-TW/security/verify under /zh-TW/security).  Like an article
+# under the blog, it is linked from its parent page instead of the shared
+# footer, and its trail runs home › parent › its own h1.  An article is the
+# blog's kind of child and keeps its own rules; a page whose address prefix is
+# no surface (/zh-TW/legal/privacy) is an ordinary footer page.
+def parent_surface(item: Mapping, surfaces: list[dict]) -> str | None:
+    if is_article(item):
+        return None
+    parent = item["surface"].rsplit("/", 1)[0]
+    return parent if any(other["surface"] == parent for other in surfaces) else None
+
+
+def _validate_sub_page(item: dict, surfaces: list[dict]) -> None:
+    parent = parent_surface(item, surfaces)
+    if parent is None:
+        return
+    slug = item["surface"].removeprefix(parent + "/")
+    owner = next(other for other in surfaces if other["surface"] == parent)
+    if (
+        not _FRAGMENT_NAME.fullmatch(slug)
+        or item["output"] != f"{parent.removeprefix('/')}/{slug}.html"
+        or is_article(owner)
+        or parent_surface(owner, surfaces) is not None
+    ):
+        raise ValueError(f"frontend sub-page row is invalid: {item.get('key')}")
 
 
 # The error pages a release carries, by the status each one answers with, and
@@ -662,14 +692,27 @@ def require_footer_links(payload: dict, labels: dict[str, str] | None = None) ->
     footer on every page, an article through the blog page."""
 
     labels = footer_link_labels() if labels is None else labels
+    surfaces = payload["surfaces"]
     unlinked = [
-        item["surface"] for item in payload["surfaces"]
-        if not is_article(item) and item["surface"] not in labels
+        item["surface"] for item in surfaces
+        if not is_article(item) and parent_surface(item, surfaces) is None
+        and item["surface"] not in labels
     ]
     if unlinked:
         raise ValueError(
             "surface is not linked from the shared footer: " + ", ".join(unlinked)
         )
+    unlinked = []
+    for item in surfaces:
+        parent = parent_surface(item, surfaces)
+        if parent is None:
+            continue
+        owner = next(other for other in surfaces if other["surface"] == parent)
+        body = (PAGES / f"{owner['fragment']}.html").read_text(encoding="utf-8")
+        if f'href="{item["surface"]}"' not in body:
+            unlinked.append(item["surface"])
+    if unlinked:
+        raise ValueError("sub-page is not linked from its parent page: " + ", ".join(unlinked))
     articles = [item for item in payload["surfaces"] if is_article(item)]
     if not articles:
         return
@@ -680,12 +723,13 @@ def require_footer_links(payload: dict, labels: dict[str, str] | None = None) ->
         raise ValueError("article is not linked from the blog page: " + ", ".join(unlinked))
 
 
-def article_headline(body: str, key: str) -> str:
-    """An article's headline is the text of its one h1, as the reader sees it."""
+def page_headline(body: str, key: str) -> str:
+    """An article's or a sub-page's headline is the text of its one h1, as the
+    reader sees it."""
 
     headings = re.findall(r"<h1\b[^>]*>(.*?)</h1>", body, re.DOTALL)
     if len(headings) != 1:
-        raise ValueError(f"article {key!r} must have exactly one h1")
+        raise ValueError(f"page {key!r} must have exactly one h1")
     text = html.unescape(re.sub(r"<[^<>]+>", "", headings[0]))
     return re.sub(r"\s+", " ", text).strip()
 
@@ -907,12 +951,16 @@ def _json_ld(item: dict, origin: str, headline: str | None = None) -> str:
         graph[1]["about"] = {"@id": origin + "/#application"}
     else:
         # A page's trail is home and the page, named by their footer links; an
-        # article's is home, the blog and the article's own headline.
+        # article's is home, the blog and the article's own headline, and a
+        # sub-page's home, its parent and its own headline.
         trail = [(HOME_SURFACE, labels.get(HOME_SURFACE))]
-        if is_article(item):
+        parent = BLOG_SURFACE if is_article(item) else parent_surface(
+            item, load_surface_manifest()["surfaces"]
+        )
+        if parent is not None:
             if not headline:
-                raise ValueError(f"article has no headline: {item['surface']}")
-            trail += [(BLOG_SURFACE, labels.get(BLOG_SURFACE)), (item["surface"], headline)]
+                raise ValueError(f"page has no headline: {item['surface']}")
+            trail += [(parent, labels.get(parent)), (item["surface"], headline)]
         else:
             trail.append((item["surface"], labels.get(item["surface"])))
         if not all(name for _, name in trail):
@@ -1026,6 +1074,45 @@ def _template(path: Path) -> str:
     return strip_html_comments(path.read_text(encoding="utf-8"))
 
 
+def calculation_requests(origin: str) -> list:
+    """The requests one calculation makes, read from the calculator page as
+    rendered here (scripts/frontend/privacy_check.py)."""
+
+    from scripts.frontend import privacy_check
+
+    calculate = next(
+        item for item in load_surface_manifest()["surfaces"]
+        if item["key"] == privacy_check.CALCULATE_KEY
+    )
+    return privacy_check.calculation_requests(
+        render(calculate, origin),
+        calculate["surface"],
+        privacy_check.frontend_cache_control(
+            _backend("privacy_logging"), _frontend_assets_module(), FRONTEND
+        ),
+    )
+
+
+def fill_calculation_requests(body: str, origin: str) -> str:
+    from scripts.frontend import privacy_check
+
+    return privacy_check.fill(
+        body,
+        rows=lambda: calculation_requests(origin),
+        host=privacy_check.host_of(origin),
+        # The headers the application adds to every response; the security
+        # page prints the same table, bound by test_page_copy_facts.
+        headers=lambda: dict(_backend("privacy_logging")._SECURITY_HEADERS),
+        repository_url=lambda: _backend("frontend_release").PUBLIC_REPOSITORY_URL,
+    )
+
+
+def fill_civil_time_tables(body: str) -> str:
+    from scripts.frontend import civil_time_tables
+
+    return civil_time_tables.fill(body)
+
+
 def render(item: dict, origin: str) -> str:
     name = item["fragment"]
     shell = _mark_nav_cta(_template(SHELL), item["surface"])
@@ -1049,8 +1136,14 @@ def render(item: dict, origin: str) -> str:
     body = fill_published_article_count(body)
     body = fill_slate_numbers(body)
     body = fill_slate_counts(body)
+    body = fill_calculation_requests(body, origin)
+    body = fill_civil_time_tables(body)
     reject_inline_style(body, item["key"])
-    headline = article_headline(body, item["key"]) if is_article(item) else None
+    headline = (
+        page_headline(body, item["key"])
+        if is_article(item) or parent_surface(item, load_surface_manifest()["surfaces"])
+        else None
+    )
     metadata = metadata_values(item, origin, headline)
     og_image, twitter_card = og_image_markup(origin)
     # {{body}} 先插入，{{assets}} 後蓋上內容版本，順序不可調換：頁面片段自己
@@ -1298,6 +1391,15 @@ def llms_text(payload: dict, shell: str | None = None) -> str:
         # section of their own, headed by the blog's footer label.
         columns.append((footer_link_labels(shell)[BLOG_SURFACE], [item["surface"] for item in articles]))
     for heading, surfaces in columns:
+        # A sub-page follows its parent, in the parent's column.
+        surfaces = [
+            listed_surface
+            for surface in surfaces
+            for listed_surface in [surface, *(
+                item["surface"] for item in payload["surfaces"]
+                if parent_surface(item, payload["surfaces"]) == surface
+            )]
+        ]
         entries = [by_surface[surface] for surface in surfaces if surface in by_surface]
         if not entries:
             continue
@@ -1323,10 +1425,14 @@ def llms_text(payload: dict, shell: str | None = None) -> str:
 
 
 def _discovery_outputs(payload: dict, lastmod: dict) -> dict[Path, str]:
+    assets = _frontend_assets_module()
     return {
         ROOT / "frontend" / "robots.txt": robots_text(payload),
         ROOT / "frontend" / "sitemap.xml": sitemap_text(payload, lastmod),
         ROOT / "frontend" / "llms.txt": llms_text(payload),
+        # Exactly the key, with no line end: an IndexNow engine compares the
+        # file with the key it was sent.
+        ROOT / "frontend" / assets.INDEXNOW_KEY_FILE: assets.INDEXNOW_KEY,
     }
 
 

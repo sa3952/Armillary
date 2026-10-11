@@ -3,7 +3,8 @@
 
 The edge is expected to serve anonymous pages and API without a noindex
 header (``--noindex`` expects the header a staging rendering adds),
-robots.txt/sitemap.xml/llms.txt, a crawlable and indexable site (robots.txt
+robots.txt/sitemap.xml/llms.txt and the IndexNow key file holding exactly the
+key, a crawlable and indexable site (robots.txt
 admits pages and excludes the API, the entry page carries no noindex, a
 missing page answers a branded noindex HTML 404 while a missing API path
 keeps its JSON 404, discovery files are typed UTF-8, every other spelling of a
@@ -38,6 +39,7 @@ import re
 import secrets
 import stat
 import subprocess
+import sys
 import tempfile
 import time
 from typing import Any, NamedTuple
@@ -52,6 +54,13 @@ from scripts.tools.staging_secure_io import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
+try:
+    import app.frontend_assets  # noqa: F401  the canonical package
+except ModuleNotFoundError:
+    # The host runs this from a checkout without backend/ on the path.
+    sys.path.insert(0, str(ROOT / "backend"))
+from app.frontend_assets import INDEXNOW_KEY, INDEXNOW_KEY_FILE  # noqa: E402
+
 MAX_RESPONSE_BYTES = 4 * 1024 * 1024
 HSTS_MIN_AGE_SECONDS = 365 * 24 * 60 * 60
 # Must match the `logging.driver` in deploy/compose.yaml; change both together.
@@ -86,7 +95,12 @@ IMMUTABLE_MIN_AGE_SECONDS = 365 * 24 * 60 * 60
 # Every static reference the page generator stamps: `/zh-TW/<asset>?v=<16 hex>`
 # (scripts/frontend/build_pages.py).
 _VERSIONED_ASSET_REFERENCE = re.compile(rb'(?:src|href)="(/zh-TW/[^"?#]+)\?v=([0-9a-f]{16})"')
-_PUBLIC_DISCOVERY_FILES = ("/robots.txt", "/sitemap.xml", "/llms.txt", "/.well-known/security.txt")
+# The IndexNow key file an engine fetches to verify a submission
+# (scripts/deployment/submit_indexnow.py).
+_INDEXNOW_KEY_PATH = "/" + INDEXNOW_KEY_FILE
+_PUBLIC_DISCOVERY_FILES = (
+    "/robots.txt", "/sitemap.xml", "/llms.txt", "/.well-known/security.txt", _INDEXNOW_KEY_PATH,
+)
 
 
 def _header(headers: dict[str, str], name: str) -> str | None:
@@ -189,6 +203,7 @@ _DISCOVERY_MEDIA_TYPES = {
     "/llms.txt": ("text/plain",),
     "/.well-known/security.txt": ("text/plain",),
     "/sitemap.xml": ("application/xml", "text/xml"),
+    _INDEXNOW_KEY_PATH: ("text/plain",),
 }
 # Every other spelling of a page is a permanent redirect to its one address,
 # in one hop, so no page is reachable at two URLs.
@@ -245,6 +260,9 @@ def _public_discovery_cases(base_url: str, page: bytes) -> dict[str, bool]:
         typed.append(status == 200 and kind in accepted and parameters.get("charset") == "utf-8")
         if path == "/llms.txt":
             cases["llms_txt_served"] = status == 200 and body.startswith(b"# ")
+        if path == _INDEXNOW_KEY_PATH:
+            # Exactly the key: an engine compares the file with the key it was sent.
+            cases["indexnow_key_served"] = status == 200 and body == INDEXNOW_KEY.encode("ascii")
     cases["discovery_files_typed_utf8"] = all(typed)
     redirects = []
     for spelling, canonical in _NONCANONICAL_SPELLINGS:

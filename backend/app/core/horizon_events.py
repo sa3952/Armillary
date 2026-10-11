@@ -250,16 +250,19 @@ def search_coverage_reach_days() -> float:
     return max(SEARCH_HORIZON_DAYS.values()) + SEARCH_COVERAGE_MARGIN_DAYS
 
 
-def require_search_coverage(body_defs: list[dict], reference_jd_ut: float) -> None:
+def require_search_coverage(
+    body_defs: list[dict], reference_jd_ut: float, *, reach_days: float | None = None
+) -> None:
     """Refuse, before any Swiss call, a search that would leave the bundled files.
 
     Raises ``FullEphemerisRequiredError`` (reason ``segment_out_of_coverage`` or
     ``segment_file_missing``), which the chart turns into this module's
     not_applicable with a closed event-search reason code, exactly as for the
     lunar searches.  Coverage is an interval, so the two ends of the reach
-    decide it for every instant in between.
+    decide it for every instant in between.  ``reach_days`` replaces the
+    seasonal reach for a caller that searches a shorter window.
     """
-    reach = search_coverage_reach_days()
+    reach = search_coverage_reach_days() if reach_days is None else reach_days
     flags = EPHEMERIS_FLAGS | swe.FLG_TOPOCTR
     for body in body_defs:
         for instant in (reference_jd_ut - reach, reference_jd_ut + reach):
@@ -670,6 +673,39 @@ def _first_event_after(
         # -2: no event in Swiss's own one/two-day window from this cursor.
         cursor = step(cursor)
     return None
+
+
+SUN_CROSSING_RESUME_DAYS: Final = 1.0 / 1440.0
+
+
+def sun_horizon_crossings(
+    start_jd_ut: float, end_jd_ut: float, location, atmosphere
+) -> list[tuple[float, str]]:
+    """Every sunrise and sunset in (start, end], in time order, by this module's definition.
+
+    The same Swiss probe walk as the rise/set search (refracted upper limb,
+    apparent topocentric, the request's atmosphere), over a caller's window
+    instead of the seasonal horizon.  The caller checks coverage first
+    (``require_search_coverage`` with its own reach).
+    """
+    geopos = (location.longitude, location.latitude, location.altitude_m)
+    pressure_hpa = atmosphere.pressure_hpa if atmosphere.pressure_hpa is not None else 0.0
+    crossings = []
+    for name in HORIZON_CROSSINGS:
+        cursor = start_jd_ut
+        while True:
+            found = _first_event_after(
+                cursor, end_jd_ut, swe.SUN, name, geopos, pressure_hpa,
+                atmosphere.temperature_c, None,
+            )
+            if found is None:
+                break
+            crossings.append((found, name))
+            # Swiss re-solves a root from a start just past it to within a few
+            # ULPs, so the walk resumes a minute later; two sunrises a minute
+            # apart do not exist outside a grazing contact.
+            cursor = found + SUN_CROSSING_RESUME_DAYS
+    return sorted(crossings)
 
 
 def _search_next(

@@ -15,6 +15,7 @@ from .refusals import (
     HEALTH_ROUTE,
     PLACE_SEARCH_ROUTE,
     RETRY_AFTER_SECONDS,
+    TIME_CONVERT_ROUTE,
     refusal_response,
 )
 
@@ -30,11 +31,14 @@ MAX_HOSTED_REQUESTS_PER_WORKER: Final = 32
 # evenly and only one worker's pool is guaranteed (measured:
 # docs/operations/CAPACITY_MEASUREMENT_2026-10-04.md §8.1).
 MAX_HOSTED_COMPUTE_REQUESTS_PER_WORKER: Final = 4
-# Place lookup.  It is neither page traffic nor chart computation: an admitted
-# lookup holds a worker thread for up to the catalogue statement budget, and in
-# the general pool a burst of lookups refused assets and the health probe.  The
-# page starts a lookup only on an explicit action and aborts the previous one,
-# so four per worker is not a typeahead budget.
+# Place lookup and time conversion.  They are neither page traffic nor chart
+# computation: an admitted place lookup holds a worker thread for up to the
+# catalogue statement budget, and in the general pool a burst of lookups refused
+# assets and the health probe.  A time conversion is microseconds on the event
+# loop, but its body is birth data and it is the same kind of explicit-action
+# request, so it shares this pool rather than the page's.  The page starts either
+# only on an explicit action and aborts the previous one, so four per worker is
+# not a typeahead budget.
 MAX_HOSTED_SEARCH_REQUESTS_PER_WORKER: Final = 4
 # RETRY_AFTER_SECONDS (re-exported above) is the one retry contract for every
 # admission refusal; refusal_response adds it.
@@ -82,7 +86,8 @@ COMPUTE_QUEUE_WAIT_BUDGET_SECONDS: Final = (
 API_PATH_PREFIX: Final = "/api/"
 # "Takes a bounded JSON body" and "which admission pool" are separate
 # questions with separate sets.
-_BOUNDED_JSON_PATHS: Final = frozenset({CHART_ROUTE, PLACE_SEARCH_ROUTE})
+_BOUNDED_JSON_PATHS: Final = frozenset({CHART_ROUTE, PLACE_SEARCH_ROUTE, TIME_CONVERT_ROUTE})
+_LOOKUP_PATHS: Final = frozenset({PLACE_SEARCH_ROUTE, TIME_CONVERT_ROUTE})
 # The liveness probe returns a constant on the event loop and is never charged
 # to a pool: a full pool of any class must not make the container look dead.
 _ADMISSION_EXEMPT_PATHS: Final = frozenset({HEALTH_ROUTE})
@@ -336,7 +341,7 @@ class RequestCapacityBoundary:
             return
 
         compute = path == CHART_ROUTE
-        search = path == PLACE_SEARCH_ROUTE
+        search = path in _LOOKUP_PATHS
         with self._lock:
             if compute:
                 accepted = self._active_compute < self.max_compute_concurrent

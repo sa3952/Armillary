@@ -385,6 +385,42 @@ TZDB_PRE_1970_SOURCE = (
 )
 
 
+# China's 1988 summer time: the tz database (Rule PRC 1987-1991 Apr Sun>=11 2:00,
+# corrected in 2018f after People's Daily of 1988-04-12) starts it on 04-17 at
+# 02:00; some published tables start it on 04-10, and tables that give only a
+# date make that whole day summer time, hence 00:00.  Between the two the
+# tables put a birth one hour apart in UTC.  The zones are Asia/Shanghai and the
+# tz database's backward links to it that the service accepts.
+PRC_RULE_ZONES = frozenset({"Asia/Shanghai", "Asia/Chongqing", "Asia/Harbin"})
+PRC_1988_DISPUTED_LOCAL_INTERVAL = (
+    dtmod.datetime(1988, 4, 10, 0, 0),
+    dtmod.datetime(1988, 4, 17, 2, 0),
+)
+PRC_1988_DST_SOURCE_REF = "time/prc_1988_dst_start"
+
+
+def prc_1988_dst_start_disputed(
+    zone_name: str | None, precision: str, local: dtmod.datetime
+) -> bool:
+    """Whether the stated birth time meets the week the 1988 sources disagree on.
+
+    The stated time is an interval: the instant itself for an exact time, the
+    civil hour for approximate_hour, the civil day for date_only.
+    """
+
+    if zone_name not in PRC_RULE_ZONES:
+        return False
+    length = {
+        "exact": dtmod.timedelta(0),
+        "approximate_hour": dtmod.timedelta(hours=1),
+        "date_only": dtmod.timedelta(days=1),
+    }[precision]
+    start, end = PRC_1988_DISPUTED_LOCAL_INTERVAL
+    if not length:
+        return start <= local < end
+    return local < end and local + length > start
+
+
 def offset_status(timezone_mode: str, utc_dt: dtmod.datetime, ambiguous: bool) -> dict:
     if timezone_mode != "iana":
         return {
@@ -528,6 +564,34 @@ def _to_utc_datetime(
         tz_label = _utc_offset_text(offset_hours)
 
     return utc_dt, offset_hours, tz_label, dst_warning
+
+
+def wall_clock_readings(dt_input, tz_input) -> list[tuple[int, dtmod.datetime, float]]:
+    """Every reading of an IANA wall-clock time, by the conversion the chart uses.
+
+    ``(fold, utc, offset_hours)``: none when the clock never showed the time, one
+    (fold 0) when it showed it once, two (fold 0 the earlier) when twice.  Each
+    reading is what ``compute_time_conversion`` resolves for that fold.
+    """
+
+    readings = []
+    for fold in (0, 1):
+        try:
+            utc_dt, offset_hours, _label, _warning = _to_utc_datetime(
+                dt_input, tz_input.model_copy(update={"fold": fold})
+            )
+        except NonexistentLocalTimeError:
+            return []
+        readings.append((fold, utc_dt, offset_hours))
+    if readings[0][1] == readings[1][1]:
+        return readings[:1]
+    return readings
+
+
+def utc_offset_text(offset_hours: float) -> str:
+    """UTC±HH:MM, with :SS only when the offset has seconds (historical LMT)."""
+
+    return _utc_offset_text(offset_hours)
 
 
 def compute_time_conversion(
@@ -1114,6 +1178,27 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "transition), dt[] table 1955–2028 (2024–2028 extrapolated), long-term "
             "formula beyond; σ orders from NASA GSFC (Espenak): Stephenson & Houlden "
             "1986 to 1962, Huber 2000 after 2028"
+        ),
+    },
+    PRC_1988_DST_SOURCE_REF: {
+        "applies_to": (
+            "calculation_dossier.warnings[code=prc_1988_dst_start_disputed]; "
+            "zones " + ", ".join(sorted(PRC_RULE_ZONES))
+        ),
+        "disputed_local_interval": [
+            moment.isoformat(timespec="minutes") for moment in PRC_1988_DISPUTED_LOCAL_INTERVAL
+        ],
+        "source": (
+            "IANA tz database, file asia: Rule PRC 1987 1991 - Apr Sun>=11 2:00 1:00 D "
+            "(1988-04-17 02:00); comment by P Chan (2018-05-07) citing the first page of "
+            "People's Daily of 1988-04-12, which states that summer time is to begin on "
+            "17 April; adopted in tz release 2018f. U.S. Naval Observatory (1989-01-19, "
+            "quoted in the same file) also gives APR 17."
+        ),
+        "note": (
+            "部分中文說明表把 1988 年中國夏令時間的起點寫成 4 月 10 日。本服務依 IANA 時區"
+            "資料庫（4 月 17 日 02:00 起）換算，不另算一張盤；出生時間落在 1988-04-10 00:00 至 "
+            "04-17 02:00（北京時間）之間時加一則警告，說明兩種說法的 UTC 相差 1 小時。"
         ),
     },
     "time/sidereal_time_model": {

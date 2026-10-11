@@ -12,7 +12,7 @@
       "layers": ["L2", "L3"],
       "indexable": true,
       "title": "可驗證的古典西洋占星計算器｜渾儀 Armillary",
-      "description": "目前免費、不需註冊的古典西洋占星計算器：以Swiss Ephemeris計算星盤，並呈現座標、時間、方法來源、計算收據與可重現驗證資料。"
+      "description": "目前免費、不需註冊：輸入出生日期、時間與地點，排出古典西洋占星本命盤，查看太陽、月亮與上升點所在星座、中天、行星落宮、界與三分性等本質尊貴與相位；每個數字附方法來源與計算收據。只計算，不解盤。"
     },
     {
       "key": "calculate",
@@ -22,8 +22,8 @@
       "locale": "zh-TW",
       "layers": ["L1", "L2"],
       "indexable": true,
-      "title": "古典西洋占星排盤與計算｜渾儀 Armillary",
-      "description": "目前免費、不需註冊：輸入時間與地點，取得附帶計算模式、座標、方法、來源與驗證收據的古典西洋占星星盤。"
+      "title": "古典占星排盤與星盤查詢：整宮制等四種宮位制｜渾儀 Armillary",
+      "description": "目前免費、不需註冊：輸入出生日期、時間與地點，查個人星盤的上升點、中天、下降點與行星落宮，可選整宮制、Placidus、Regiomontanus、Alcabitius。不知道確切出生時間也能算：只知道日期或大約幾點時，會標出哪些結果在這段時間內會改變。"
     },
     {
       "key": "features",
@@ -33,7 +33,7 @@
       "locale": "zh-TW",
       "layers": ["L2", "L3"],
       "indexable": true,
-      "title": "可驗證的星盤計算與輸出功能｜渾儀 Armillary",
+      "title": "星盤計算功能：上升點、宮位、界與三分性、恆星與匯出｜渾儀 Armillary",
       "description": "查看渾儀提供的天文座標、古典方法、出生時間敏感度、計算卷宗與多格式匯出功能。"
     },
     {
@@ -44,8 +44,19 @@
       "locale": "zh-TW",
       "layers": ["L1"],
       "indexable": true,
-      "title": "古典占星計算方法、界、三分性與宮位制｜渾儀 Armillary",
+      "title": "古典占星計算方法：宮位制、界、三分性與廟旺的來源｜渾儀 Armillary",
       "description": "說明渾儀採用及可選的宮位制、界、面與旬、三分性、相位、黃道與其他計算規則及來源狀態。"
+    },
+    {
+      "key": "methods-birth-time-conversion",
+      "fragment": "methods-birth-time-conversion",
+      "output": "zh-TW/methods/birth-time-conversion.html",
+      "surface": "/zh-TW/methods/birth-time-conversion",
+      "locale": "zh-TW",
+      "layers": ["L1"],
+      "indexable": true,
+      "title": "出生時間換算的規則與出處｜渾儀 Armillary",
+      "description": "計算頁的換算助手如何把民國年與日本年號換成西元，如何由伺服器回顯鐘面時間在臺灣、香港、澳門與中國大陸當時的 UTC 偏移，以及每一條時區規則的出處與我們核到哪一層。"
     },
     {
       "key": "validation",
@@ -79,6 +90,17 @@
       "indexable": true,
       "title": "安全、隱私邊界與漏洞回報｜渾儀 Armillary",
       "description": "說明渾儀的安全與隱私邊界、負責任漏洞回報方式、禁止提交的敏感資料及非授權測試範圍。"
+    },
+    {
+      "key": "security-verify",
+      "fragment": "security-verify",
+      "output": "zh-TW/security/verify.html",
+      "surface": "/zh-TW/security/verify",
+      "locale": "zh-TW",
+      "layers": ["L1"],
+      "indexable": true,
+      "title": "親手驗證本站的隱私說明｜渾儀 Armillary",
+      "description": "用瀏覽器內建的開發者工具，自己檢查算一次盤會送出哪些請求、送到哪個網域、瀏覽器裡有沒有留下 cookie 或儲存，以及這個檢查證明不了什麼。"
     },
     {
       "key": "about",
@@ -165,7 +187,7 @@
       "locale": "zh-TW",
       "layers": ["L2", "L3"],
       "indexable": true,
-      "title": "出生時間差五分鐘，你的盤會變成什麼樣｜渾儀 Armillary",
+      "title": "不確定出生時間？差五分鐘，上升星座與宮位會怎麼變｜渾儀 Armillary",
       "description": "同一天同一地點，出生時刻差幾分鐘，行星幾乎不動，上升點與宮位卻可能整組換掉。以合成範例說明原因，以及渾儀怎麼標出不確定。",
       "article": {"published": "2026-10-10", "modified": "2026-10-10"}
     },
@@ -177,7 +199,7 @@
       "locale": "zh-TW",
       "layers": ["L2", "L3"],
       "indexable": true,
-      "title": "臺灣的時區與夏令時間：排盤前要多看一眼的那些年｜渾儀 Armillary",
+      "title": "臺灣夏令時間出生，排盤要減一小時嗎？那些要多看一眼的年份｜渾儀 Armillary",
       "description": "1896 年以來臺灣換過三種標準時，並在十九個夏天實施日光節約時間。依 IANA 時區資料庫整理這些年份的換算、不存在與重複的鐘點，以及資料本身仍不確定之處。",
       "article": {"published": "2026-10-10", "modified": "2026-10-10"}
     },
@@ -189,7 +211,7 @@
       "locale": "zh-TW",
       "layers": ["L2", "L3"],
       "indexable": true,
-      "title": "整宮制與 Placidus：同一顆行星，兩個宮位｜渾儀 Armillary",
+      "title": "整宮制與 Placidus 差在哪：同一顆行星，兩個宮位｜渾儀 Armillary",
       "description": "換一種宮位制，行星就換了宮，不代表有一邊算錯。以合成星盤比較整宮、Placidus、Regiomontanus 與 Alcabitius，並說明北極圈內為什麼算不出 Placidus。",
       "article": {"published": "2026-10-10", "modified": "2026-10-10"}
     },
@@ -202,7 +224,7 @@
       "layers": ["L2", "L3"],
       "indexable": true,
       "title": "四套界表，四個答案：同一個度數為什麼有不同的界主｜渾儀 Armillary",
-      "description": "界把每個星座切成五段交給五顆行星，但古書留下的切法不只一套。說明埃及界、迦勒底界、Ptolemy 界與 Lilly 1647 的來歷與差異，以及渾儀為什麼不設預設值。",
+      "description": "界把每個星座切成五段交給五顆行星（各段的行星稱為界主星），但古書留下的切法不只一套。說明埃及界、迦勒底界、Ptolemy 界與 Lilly 1647 的來歷與差異，以及渾儀為什麼不設預設值。",
       "article": {"published": "2026-10-10", "modified": "2026-10-10"}
     },
     {
@@ -213,9 +235,45 @@
       "locale": "zh-TW",
       "layers": ["L2", "L3"],
       "indexable": true,
-      "title": "平均交點與密切交點：一個現代計算能力造成的選擇｜渾儀 Armillary",
-      "description": "排盤軟體的「真交點」與平均交點最多差將近 2 度。說明「真交點」其實是密切交點、兩者差多少、Tycho 怎麼看交點的不均勻，以及古典技法該用哪一個這個問題要怎麼問。",
+      "title": "真交點與平均交點差多少：『真交點』其實是密切交點｜渾儀 Armillary",
+      "description": "北交點（俗稱龍頭）有兩種算法：排盤軟體的「真交點」與平均交點最多差將近 2 度。說明「真交點」其實是密切交點、兩者差多少、Tycho 怎麼看交點的不均勻，以及古典技法該用哪一個這個問題要怎麼問。",
       "article": {"published": "2026-10-10", "modified": "2026-10-10"}
+    },
+    {
+      "key": "blog-unknown-birth-time",
+      "fragment": "blog-unknown-birth-time",
+      "output": "zh-TW/blog/unknown-birth-time.html",
+      "surface": "/zh-TW/blog/unknown-birth-time",
+      "locale": "zh-TW",
+      "layers": ["L2", "L3"],
+      "indexable": true,
+      "title": "不知道出生時間，能排星盤嗎？只知道日期或大約幾點時，哪些結果站得住｜渾儀 Armillary",
+      "description": "不知道確切出生時間也能排星盤。以合成範例實算：只知道日期時，哪些行星星座仍然站得住；只知道大約幾點時，上升星座、宮位與日夜盤在一小時裡怎麼翻面。",
+      "article": {"published": "2026-10-11", "modified": "2026-10-11"}
+    },
+    {
+      "key": "blog-rising-sign-tables",
+      "fragment": "blog-rising-sign-tables",
+      "output": "zh-TW/blog/rising-sign-tables.html",
+      "surface": "/zh-TW/blog/rising-sign-tables",
+      "locale": "zh-TW",
+      "layers": ["L2", "L3"],
+      "indexable": true,
+      "title": "上升星座查詢表為什麼常常不準｜渾儀 Armillary",
+      "description": "上升星座查詢表只問出生時段或日期，卻默默假設了出生地的緯度、經度與時鐘規則。以實算比較兩種查表做法與精算，看在臺北、金門、夏令時間年份與國外各有多少時刻查錯。",
+      "article": {"published": "2026-10-11", "modified": "2026-10-11"}
+    },
+    {
+      "key": "blog-true-solar-time",
+      "fragment": "blog-true-solar-time",
+      "output": "zh-TW/blog/true-solar-time.html",
+      "surface": "/zh-TW/blog/true-solar-time",
+      "locale": "zh-TW",
+      "layers": ["L2", "L3"],
+      "indexable": true,
+      "title": "西洋占星要不要換真太陽時？｜渾儀 Armillary",
+      "description": "西洋占星排盤不用換真太陽時：上升點與宮位由世界時加出生地經度決定。先換真太陽時再輸入，經度會被算兩次。以合成例子逐步列出兩種算法的數字與一年裡的誤差。",
+      "article": {"published": "2026-10-11", "modified": "2026-10-11"}
     }
   ],
   "error_pages": [

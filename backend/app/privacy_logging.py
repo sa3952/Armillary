@@ -31,6 +31,7 @@ from .refusals import (
     HEALTH_ROUTE,
     PLACE_SEARCH_ROUTE,
     REFUSALS,
+    TIME_CONVERT_ROUTE,
     refusal_response,
 )
 from .request_limits import (
@@ -62,7 +63,9 @@ ALLOWED_EVENT_FIELDS: Final = (
 )
 
 _ALLOWED_METHODS: Final = frozenset({"GET", "POST", "HEAD", "OPTIONS"})
-_ALLOWED_ROUTES: Final = frozenset({CHART_ROUTE, HEALTH_ROUTE, PLACE_SEARCH_ROUTE})
+_ALLOWED_ROUTES: Final = frozenset({
+    CHART_ROUTE, HEALTH_ROUTE, PLACE_SEARCH_ROUTE, TIME_CONVERT_ROUTE,
+})
 # Every code a refusal can carry is an event code too (the boundary reasons and
 # the domain errors are refusal codes); the refusal table in refusals.py is the
 # owner, so a new refusal cannot reach a response while telemetry reduces it to

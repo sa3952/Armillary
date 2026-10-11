@@ -1,0 +1,225 @@
+<!-- 安全頁的子頁：教讀者用瀏覽器內建的開發者工具親手檢查隱私宣稱。請求清單、Network 示意圖與標頭表
+     由 scripts/frontend/privacy_check.py 從計算頁的實際內容與後端定義產生，不要手改；
+     frontend/tests/e2e/privacy-check.spec.cjs 以真實瀏覽器跑一次合成範例，核對清單與觀察到的請求。
+     其餘兩張示意圖是手繪 SVG，畫的是工具的位置，不含會隨版本變動的值。 -->
+<div class="wrap page-body datasheet">
+
+  <section class="ds-hero">
+    <p class="eyebrow"><a href="/zh-TW/security">安全</a> · VERIFY</p>
+    <h1>不必相信我們，<br>打開瀏覽器自己看。</h1>
+    <p class="lede">〈<a href="/zh-TW/security">安全</a>〉說：前端只向本站要東西、不用 cookie、不在你的瀏覽器裡存資料。<b>這一頁教你用瀏覽器內建的開發者工具，親手檢查這幾句話。</b>不必安裝任何東西，大約十分鐘。</p>
+    <p class="ds-note">你會看到三件事：算一次盤，瀏覽器送出哪些請求、每一個送到哪個網域；瀏覽器裡有沒有留下 cookie 或其他儲存；伺服器的回應帶了哪些安全標頭。<b>從瀏覽器看不到的部分——伺服器收到之後做了什麼——最後一節照實說。</b></p>
+  </section>
+
+  <section class="ds-sec">
+    <h2 class="hdr"><span>01</span>開始之前</h2>
+    <ul class="vf-steps">
+      <li>用桌機或筆電上的 Chrome、Edge、Firefox 或 Safari。手機的做法在第 06 節。</li>
+      <li><b>開一個無痕（私密）視窗，並確認擴充功能沒有在裡面執行。</b>擴充功能自己的請求也會出現在清單裡，會讓你分不清哪些是本站的。</li>
+      <li><b>不要用真實的出生資料。</b>計算頁有一顆「載入合成範例（不是真實生辰）」按鈕，下面的步驟都用它。</li>
+      <li>開發者工具的介面語言可能是中文，按鈕名稱會和下面寫的英文不同；位置是一樣的。</li>
+    </ul>
+  </section>
+
+  <section class="ds-sec">
+    <h2 class="hdr"><span>02</span>打開 Network 分頁，保留記錄</h2>
+    <p>Network（網路）分頁會列出頁面向伺服器要的每一樣東西。「保留記錄」讓清單在重新載入頁面時不被清空，<b>這樣頁面一打開就送出的請求也看得到。</b></p>
+
+    <h3 class="vf-browser">Chrome 與 Edge</h3>
+    <ol class="vf-steps">
+      <li>打開計算頁 <span class="mono">https://projectarmillary.com/zh-TW/calculate</span>。</li>
+      <li>按 <kbd>F12</kbd>（Mac 按 <kbd>⌥⌘I</kbd>），或在頁面上按右鍵選「檢查」。</li>
+      <li>點上方的 <b>Network</b> 分頁（圖中 ①）。</li>
+      <li>勾選 <b>Preserve log</b>（圖中 ②）。</li>
+      <li>在清單的欄位標題上按右鍵，勾選 <b>Domain</b>，清單會多出一欄網域（圖中 ③）。</li>
+      <li>按 <kbd>Ctrl</kbd>＋<kbd>R</kbd>（Mac 按 <kbd>⌘R</kbd>）重新載入頁面。</li>
+    </ol>
+
+    <h3 class="vf-browser">Firefox</h3>
+    <ol class="vf-steps">
+      <li>打開計算頁，按 <kbd>F12</kbd>（Mac 按 <kbd>⌥⌘I</kbd>）。</li>
+      <li>點 <b>Network</b> 分頁。</li>
+      <li>點 Network 分頁右上角的齒輪，勾選 <b>Persist Logs</b>——這是 Firefox 對「保留記錄」的叫法。</li>
+      <li>Firefox 的清單預設就有 <b>Domain</b> 欄；沒有的話在欄位標題上按右鍵加上。</li>
+      <li>重新載入頁面。</li>
+    </ol>
+
+    <h3 class="vf-browser">Safari</h3>
+    <ol class="vf-steps">
+      <li>先打開開發者功能：Safari 選單 → 設定 → 進階 → 勾選「顯示網頁開發者功能」（較舊的版本叫「在選單列中顯示『開發』選單」）。</li>
+      <li>打開計算頁，按 <kbd>⌥⌘I</kbd> 開啟網頁檢閱器。</li>
+      <li>點 <b>Network</b> 分頁，打開分頁上方的 <b>Preserve Log</b>。</li>
+      <li>需要網域欄時，在欄位標題上按右鍵加上 <b>Domain</b>。</li>
+      <li>重新載入頁面。</li>
+    </ol>
+    <p class="limit">各瀏覽器的開發者工具會隨版本改版，<b>按鈕的位置或名稱可能和這裡寫的略有不同</b>；要找的東西一樣是：請求清單、保留記錄、網域欄。</p>
+  </section>
+
+  <section class="ds-sec">
+    <h2 class="hdr" id="vf-03-title"><span>03</span>算一次合成範例，看清單</h2>
+    <ol class="vf-steps">
+      <li>在計算頁按「載入合成範例（不是真實生辰）」，再按「計算」。</li>
+      <li><b>看 Domain 欄：每一列都應該是 <span class="mono">projectarmillary.com</span>。</b>只要有一列不是，就是我們說錯了——請寫信告訴我們（第 07 節最後）。</li>
+      <li>點名稱是 <span class="mono">chart</span>、方法是 <span class="mono">POST</span> 的那一列（圖中 ④），看 <b>Payload</b>（Firefox 叫 Request，Safari 在 Headers 底下）：送出去的就是表單上的日期、時間、座標、時區與選項，沒有別的。<b>Response</b> 是算好的星盤。</li>
+    </ol>
+    <figure class="vf-fig">
+      <div class="spec-scroll" tabindex="0" role="region" aria-label="Network 分頁示意圖（可橫向捲動）">
+{{network_panel_figure}}
+      </div>
+      <figcaption>示意圖，不是截圖：各瀏覽器的版面不同，清單的列與本頁下表相同。</figcaption>
+    </figure>
+
+    <p><b>每一次計算都會出現的請求一共 {{calculation_request_count}} 個；加上瀏覽器可能另外要的圖示，以及只有你做了某件事才會出現的請求，全部列在下面三張表。</b>這幾張表不是手抄的：網站每次更新時，由程式從計算頁實際載入的檔案重新產生；另有自動測試用真的瀏覽器跑一次合成範例，<b>觀察到的請求和這幾張表不一致，測試就失敗。</b></p>
+    <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="vf-required-title">
+      <table class="spec vf-reqs">
+        <caption id="vf-required-title">每一次計算都會出現的請求</caption>
+        <thead><tr><th scope="col">方法</th><th scope="col">位址</th><th scope="col">是什麼</th><th scope="col">什麼時候</th><th scope="col">快取（Cache-Control）</th></tr></thead>
+        <tbody>
+{{calculation_requests:required}}
+        </tbody>
+      </table>
+    </div>
+    <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="vf-icons-title">
+      <table class="spec vf-reqs">
+        <caption id="vf-icons-title">瀏覽器可能另外要的圖示</caption>
+        <thead><tr><th scope="col">方法</th><th scope="col">位址</th><th scope="col">是什麼</th><th scope="col">什麼時候</th><th scope="col">快取（Cache-Control）</th></tr></thead>
+        <tbody>
+{{calculation_requests:icons}}
+        </tbody>
+      </table>
+    </div>
+    <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="vf-optional-title">
+      <table class="spec vf-reqs">
+        <caption id="vf-optional-title">只有你做了某件事才會出現的請求</caption>
+        <thead><tr><th scope="col">方法</th><th scope="col">位址</th><th scope="col">是什麼</th><th scope="col">什麼時候</th><th scope="col">快取（Cache-Control）</th></tr></thead>
+        <tbody>
+{{calculation_requests:optional}}
+        </tbody>
+      </table>
+    </div>
+    <ul class="vf-steps">
+      <li>位址裡 <span class="mono">?v=</span> 後面那串是檔案內容的雜湊。<b>網站更新後它會變</b>，你看到的值和上表不同時，先重新整理這一頁再比。</li>
+      <li>第二次載入時，有些列可能顯示 <span class="mono">(disk cache)</span>、<span class="mono">(memory cache)</span> 或 <span class="mono">304</span>：那是瀏覽器用了自己暫存的檔案，沒有新的下載。</li>
+      <li>清單裡如果出現 <span class="mono">chrome-extension://</span>、<span class="mono">moz-extension://</span> 之類的列，那是擴充功能，不是本站——回到第 01 節，換一個沒有擴充功能的視窗。</li>
+    </ul>
+  </section>
+
+  <section class="ds-sec">
+    <h2 class="hdr"><span>04</span>瀏覽器裡沒有留下東西</h2>
+    <p>算完之後，看瀏覽器替這個網站存了什麼：</p>
+    <ul class="vf-steps">
+      <li><b>Chrome 與 Edge：</b>開發者工具的 <b>Application</b> 分頁，左側 Storage 底下。</li>
+      <li><b>Firefox 與 Safari：</b><b>Storage</b> 分頁。</li>
+    </ul>
+    <p>逐一展開 <b>Cookies、Local storage、Session storage、IndexedDB、Cache storage</b>，點 <span class="mono">https://projectarmillary.com</span>：<b>每一個都應該是空的</b>（圖中 ⑤）。也可以回到 Network，點任一列看 Headers：回應裡沒有 <span class="mono">Set-Cookie</span>，請求裡也沒有 <span class="mono">Cookie</span>。</p>
+    <figure class="vf-fig">
+      <div class="spec-scroll" tabindex="0" role="region" aria-label="Application 分頁示意圖（可橫向捲動）">
+        <svg class="vf-svg" viewBox="0 0 720 250" role="img" aria-label="示意圖，不是截圖。左側是儲存類別：Local storage、Session storage、IndexedDB、Cookies、Cache storage，每一類底下是 https://projectarmillary.com。右側選中 Cookies，表格只有欄位標題 Name 與 Value，下面寫著沒有資料，標著編號 5。">
+          <rect class="vf-frame" x="1" y="1" width="718" height="248" rx="6"/>
+          <text class="vf-t-dim vf-mono" x="24" y="28">Elements</text>
+          <text class="vf-t-dim vf-mono" x="104" y="28">Console</text>
+          <text class="vf-t-dim vf-mono" x="180" y="28">Network</text>
+          <text class="vf-t vf-mono vf-tab-on" x="256" y="28">Application</text>
+          <line class="vf-accent-line" x1="252" y1="34" x2="342" y2="34"/>
+          <line class="vf-rule" x1="1" y1="42" x2="719" y2="42"/>
+          <line class="vf-rule" x1="250" y1="42" x2="250" y2="248"/>
+          <text class="vf-t-dim vf-mono" x="20" y="66">Storage</text>
+          <text class="vf-t vf-mono" x="32" y="90">▸ Local storage</text>
+          <text class="vf-t vf-mono" x="32" y="114">▸ Session storage</text>
+          <text class="vf-t vf-mono" x="32" y="138">▸ IndexedDB</text>
+          <text class="vf-t vf-mono" x="32" y="162">▾ Cookies</text>
+          <rect class="vf-row-on" x="40" y="168" width="204" height="22"/>
+          <text class="vf-t vf-mono" x="52" y="184">projectarmillary.com</text>
+          <text class="vf-t vf-mono" x="32" y="214">▸ Cache storage</text>
+          <rect class="vf-head" x="262" y="56" width="444" height="22"/>
+          <text class="vf-t vf-mono" x="274" y="72">Name</text>
+          <text class="vf-t vf-mono" x="470" y="72">Value</text>
+          <text class="vf-t" x="484" y="146" text-anchor="middle">沒有資料</text>
+          <circle class="vf-callout" cx="560" cy="141" r="11"/>
+          <text class="vf-callout-n" x="560" y="145.5" text-anchor="middle">5</text>
+        </svg>
+      </div>
+      <figcaption>示意圖，不是截圖。其他四類展開後也是同樣的空表。</figcaption>
+    </figure>
+    <div class="fail">
+      <span class="fail-k">邊界</span>
+      <p>這裡檢查的是<b>本站要瀏覽器存下的東西</b>，結果是沒有。<b>瀏覽器自己仍會留下兩樣：</b>瀏覽紀錄裡的網址，以及樣式、程式檔的暫存（〈<a href="/zh-TW/security#ds-05-title">安全</a>〉第 05 節說過，暫存裡沒有出生資料，也沒有計算結果）。計算結果在你關掉分頁或按「清除」之前，留在這個分頁的記憶體裡。</p>
+    </div>
+  </section>
+
+  <section class="ds-sec">
+    <h2 class="hdr" id="vf-05-title"><span>05</span>看回應標頭</h2>
+    <p>在 Network 清單點任一列，打開 <b>Headers</b>，往下找 <b>Response Headers</b>。本站的每一個回應都帶著下面這一組，值應該一字不差：</p>
+    <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="vf-05-title">
+      <table class="spec vf-headers">
+        <thead><tr><th scope="col">標頭</th><th scope="col">值</th><th scope="col">意思</th></tr></thead>
+        <tbody>
+{{security_header_rows}}
+        </tbody>
+      </table>
+    </div>
+    <ul class="vf-steps">
+      <li><span class="mono">Cache-Control</span> 依回應的種類不同，第 03 節的表逐列寫了應該是哪一個值。<b>重點是 <span class="mono">/api/</span> 底下的回應一律 <span class="mono">no-store</span>：</b>出生資料只出現在這些回應裡，它們不進任何快取。</li>
+      <li><span class="mono">X-Request-ID</span> 是伺服器每次隨機產生的編號，和日誌那一行的請求 ID 相同，用來對應錯誤回報；<b>它不是從你的 IP 或瀏覽器算出來的。</b></li>
+      <li>線上的網站另由反向代理加上 <span class="mono">Strict-Transport-Security</span>，要求瀏覽器之後只用 HTTPS 連線。</li>
+    </ul>
+  </section>
+
+  <section class="ds-sec">
+    <h2 class="hdr"><span>06</span>在手機上檢查</h2>
+    <p><b>老實說，手機比較難。</b>手機瀏覽器沒有內建的請求清單，要接上一台電腦才看得到：</p>
+    <ul class="vf-steps">
+      <li><b>iPhone、iPad：</b>需要一台 Mac。在手機的「設定 → Safari → 進階」（較新的 iOS 在「設定 → App → Safari → 進階」）打開「網頁檢閱器」，用線接上 Mac；Mac 的 Safari 照第 02 節打開開發者功能後，在「開發」選單裡選你的手機與這個分頁，就會得到同樣的 Network 與 Storage 分頁。</li>
+      <li><b>Android：</b>需要一台裝了 Chrome 的電腦。在手機的「開發人員選項」打開「USB 偵錯」，用線接上電腦；在電腦的 Chrome 網址列打開 <span class="mono">chrome://inspect</span>，找到手機上的分頁按 inspect。</li>
+      <li><b>沒有電腦：</b>本站沒有另一個手機版，手機載入的是同一個網址、同一組檔案，所以在電腦上看到的清單也就是手機會要的清單。<b>但這是推論，不是你在手機上親眼看到的。</b></li>
+    </ul>
+  </section>
+
+  <section class="ds-sec">
+    <h2 class="hdr"><span>07</span>這個檢查證明不了什麼</h2>
+    <p>開發者工具只看得到<b>你的瀏覽器送出什麼、收到什麼</b>。請求抵達伺服器之後發生的事，從這裡一樣也看不到。</p>
+    <figure class="vf-fig">
+      <div class="spec-scroll" tabindex="0" role="region" aria-label="檢查範圍示意圖（可橫向捲動）">
+        <svg class="vf-svg" viewBox="0 0 720 210" role="img" aria-label="左邊是你的瀏覽器，開發者工具看得到請求、回應、標頭與瀏覽器儲存。中間一條虛線是看得到的邊界。右邊是反向代理與應用程式，日誌、記憶體與主機從瀏覽器看不到，要靠日誌欄位表與公開原始碼核對。">
+          <defs>
+            <marker id="vf-arrow-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path class="vf-arrow-head" d="M0 0 L10 5 L0 10 z"/>
+            </marker>
+          </defs>
+          <rect class="vf-box-seen" x="12" y="30" width="250" height="150" rx="4"/>
+          <text class="vf-t-on" x="28" y="58">你的瀏覽器</text>
+          <text class="vf-t" x="28" y="88">開發者工具看得到：</text>
+          <text class="vf-t" x="28" y="112">請求與回應的內容</text>
+          <text class="vf-t" x="28" y="136">標頭</text>
+          <text class="vf-t" x="28" y="160">cookie 與瀏覽器儲存</text>
+          <line class="vf-edge" x1="300" y1="12" x2="300" y2="198"/>
+          <text class="vf-t-dim" x="308" y="26">看得到的邊界</text>
+          <line class="vf-arrow" x1="264" y1="105" x2="338" y2="105" marker-end="url(#vf-arrow-head)" marker-start="url(#vf-arrow-head)"/>
+          <text class="vf-t-dim vf-mono" x="270" y="96">HTTPS</text>
+          <rect class="vf-box" x="342" y="30" width="366" height="150" rx="4"/>
+          <text class="vf-t-on" x="358" y="58">反向代理 → 應用程式</text>
+          <text class="vf-t" x="358" y="88">從瀏覽器看不到：</text>
+          <text class="vf-t" x="358" y="112">日誌寫了什麼、記憶體、主機</text>
+          <text class="vf-t" x="358" y="136">要靠：日誌欄位表、出口限制、</text>
+          <text class="vf-t" x="358" y="160">可以逐行核對的公開原始碼</text>
+        </svg>
+      </div>
+      <figcaption>虛線左邊，這一頁的步驟讓你親眼看到；虛線右邊，只能靠公開的設定與原始碼核對。</figcaption>
+    </figure>
+    <ul class="weak">
+      <li><b>伺服器收到之後做了什麼，這個檢查證明不了。</b>我們能給的是可以核對的東西：日誌每一行的完整欄位（〈<a href="/zh-TW/security#ds-03-title">安全</a>〉第 03 節）、容器沒有對外路由（同頁第 04 節），以及<a href="{{public_repository_url}}">公開的原始碼</a>。</li>
+      <li><b>線上跑的版本不必然等於公開原始碼的最新版。</b>要確認你用的是哪一版，看計算卷宗裡的版本識別碼。</li>
+      <li><b>反向代理看得到你的 IP 位址</b>，否則回應送不回來；它拿來做限流計數，不寫進日誌，也不轉給應用程式（〈<a href="/zh-TW/security#ds-06-title">安全</a>〉第 06 節）。這一點從瀏覽器同樣無法驗證。</li>
+      <li><b>這張清單是本站頁面要求瀏覽器做的事。</b>瀏覽器本身（安全瀏覽檢查、更新、擴充功能）另外送出的請求不在其中，也不一定會出現在開發者工具裡。</li>
+    </ul>
+  </section>
+
+  <section class="ds-close">
+    <div>
+      <h2>清單裡多了一列？<br>那就是我們錯了。</h2>
+      <p>請寫信到 <span class="mono">privacy@projectarmillary.com</span>，附上那一列的位址與網域；<b>不要附上任何人的真實出生資料</b>。設定與攻擊面的完整數值在〈<a href="/zh-TW/security">安全</a>〉。</p>
+    </div>
+    <p><a class="btn" href="/zh-TW/calculate">打開計算頁 →</a></p>
+  </section>
+
+</div>

@@ -4,9 +4,10 @@
 A matching SHA-256 only says the bytes were not altered after the manifest was
 written; it says nothing about whether those bytes carry the producer's named
 corrections.  So besides identity and integrity this reads every corrected row
-from the catalogue itself and, in the repository, binds the artifact to the
-producer that should have built it: a correction or generator version changed
-in ``scripts/validation/build_place_catalog.py`` without a rebuild fails here.
+(timezone and admin1 code) from the catalogue itself and, in the repository,
+binds the artifact to the producer that should have built it: a correction or
+generator version changed in ``scripts/validation/build_place_catalog.py``
+without a rebuild fails here.
 
 The container image ships this verifier and the catalogue but not the
 producer, so the entrypoint passes ``--installed-image``: the freshness binding
@@ -80,6 +81,20 @@ def _check_producer_freshness(manifest: dict) -> None:
     for record_id, correction in table.items():
         if recorded[record_id].get("corrected") != correction["corrected"]:
             raise SystemExit(f"recorded correction for {record_id} differs from the producer")
+    admin1_table = producer.SOURCE_ADMIN1_CORRECTIONS
+    if manifest.get("source_admin1_corrections_table_sha256") != _table_sha256(admin1_table):
+        raise SystemExit("producer admin1 correction table changed since the catalogue was built; rebuild it")
+    recorded_admin1 = {
+        item.get("source_record_id"): item for item in manifest.get("source_admin1_corrections") or []
+    }
+    if set(recorded_admin1) != set(admin1_table):
+        raise SystemExit(
+            "producer admin1 correction table and recorded admin1 corrections name different rows: "
+            f"{sorted(set(admin1_table) ^ set(recorded_admin1))}"
+        )
+    for record_id, correction in admin1_table.items():
+        if recorded_admin1[record_id].get("corrected") != correction["corrected"]:
+            raise SystemExit(f"recorded admin1 correction for {record_id} differs from the producer")
     exclusions = producer.SOURCE_ROW_EXCLUSIONS
     if manifest.get("source_exclusions_table_sha256") != _table_sha256(exclusions):
         raise SystemExit("producer exclusion table changed since the catalogue was built; rebuild it")
@@ -118,8 +133,38 @@ def _check_corrections(connection: sqlite3.Connection, manifest: dict) -> int:
     return len(corrections)
 
 
+def _check_admin1_corrections(connection: sqlite3.Connection, manifest: dict) -> int:
+    """Each recorded admin1 correction was applied: the row carries the corrected code and its name."""
+
+    corrections = manifest.get("source_admin1_corrections")
+    if not isinstance(corrections, list):
+        raise SystemExit("place catalog manifest records no admin1 correction list")
+    stored = connection.execute(
+        "SELECT value_json FROM catalog_metadata WHERE key = 'source_admin1_corrections'"
+    ).fetchone()
+    if stored is None or json.loads(stored[0]) != corrections:
+        raise SystemExit("catalogue and manifest record different admin1 corrections")
+    for item in corrections:
+        record_id = item.get("source_record_id")
+        if item.get("field") != "admin1" or item.get("source") != "geonames_cities500":
+            raise SystemExit(f"unsupported admin1 correction for {record_id}")
+        if item.get("status") not in APPLIED_CORRECTION_STATUSES or not item.get("corrected_name"):
+            raise SystemExit(f"admin1 correction {record_id} was not applied: {item.get('status')}")
+        rows = connection.execute(
+            "SELECT country_code, admin1, admin1_name FROM places WHERE source = ? AND source_record_id = ?",
+            (item["source"], record_id),
+        ).fetchall()
+        wanted = [(item.get("country_code"), item.get("corrected"), item.get("corrected_name"))]
+        if [tuple(row) for row in rows] != wanted:
+            raise SystemExit(
+                f"place catalog row {record_id} does not carry its corrected admin1 {wanted!r}: "
+                f"{[tuple(row) for row in rows]!r}"
+            )
+    return len(corrections)
+
+
 def _check_exclusions(connection: sqlite3.Connection, manifest: dict) -> None:
-    """Each recorded exclusion was applied: the row is absent and the row kept in its place is present."""
+    """Each recorded exclusion was applied: the row is absent and the row kept in its place, if any, is present."""
 
     exclusions = manifest.get("source_exclusions")
     if not isinstance(exclusions, list):
@@ -133,7 +178,10 @@ def _check_exclusions(connection: sqlite3.Connection, manifest: dict) -> None:
         record_id = item.get("source_record_id")
         if item.get("source") != "geonames_cities500" or item.get("status") != "excluded":
             raise SystemExit(f"source exclusion {record_id} was not applied: {item.get('status')}")
-        for wanted, count in ((record_id, 0), (item.get("kept"), 1)):
+        expected_rows = [(record_id, 0)]
+        if item.get("kept") is not None:
+            expected_rows.append((item["kept"], 1))
+        for wanted, count in expected_rows:
             (found,) = connection.execute(
                 "SELECT COUNT(*) FROM places WHERE source = 'geonames_cities500' AND source_record_id = ?",
                 (wanted,),
@@ -237,7 +285,10 @@ def verify(*, installed_image: bool = False) -> None:
             row["key"]: json.loads(row["value_json"])
             for row in connection.execute("SELECT key, value_json FROM catalog_metadata")
         }
-        for key in ("schema_version", "generator_version", "source_corrections_table_sha256"):
+        for key in (
+            "schema_version", "generator_version", "source_corrections_table_sha256",
+            "source_admin1_corrections_table_sha256",
+        ):
             if metadata.get(key) != manifest.get(key):
                 raise SystemExit(f"catalogue and manifest disagree on {key}")
         counts = {
@@ -268,6 +319,7 @@ def verify(*, installed_image: bool = False) -> None:
         if metadata.get("runtime_outbound") is not False:
             raise SystemExit("place catalog claims runtime outbound")
         corrected_rows = _check_corrections(connection, manifest)
+        admin1_rows = _check_admin1_corrections(connection, manifest)
         _check_exclusions(connection, manifest)
         _check_taiwan_counties(
             connection, None if installed_image else len(_load_producer().TAIWAN_COUNTY_CODES)
@@ -291,7 +343,10 @@ def verify(*, installed_image: bool = False) -> None:
     finally:
         connection.close()
 
-    print(f"PLACE CATALOG VERIFIED ({corrected_rows} corrected rows read back)")
+    print(
+        f"PLACE CATALOG VERIFIED ({corrected_rows} corrected rows and "
+        f"{admin1_rows} admin1-corrected rows read back)"
+    )
 
 
 def main() -> None:

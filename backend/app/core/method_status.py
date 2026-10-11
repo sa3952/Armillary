@@ -31,8 +31,11 @@ DECIDED_METHODS: frozenset[str] = frozenset({
 })
 
 # 維持 provisional 的方法：Lots 隨可用的上升點保留 provisional；月空亡的定義仍未定，
-# 已定的只有求解法；相位預設開啟不等於採用該方法。
-PROVISIONAL_METHODS: frozenset[str] = frozenset({"lots", "void_of_course", "aspects"})
+# 已定的只有求解法；相位預設開啟不等於採用該方法；行星時隨基本輸出計算，但核准加入
+# 輸出不等於採用其定義（日主取日出所在民用日期等）。
+PROVISIONAL_METHODS: frozenset[str] = frozenset({
+    "lots", "void_of_course", "aspects", "planetary_hours",
+})
 
 # 列為研究用途的 profile；被選為主要 profile 時也要標出。
 RESEARCH_ONLY_PROFILES: frozenset[str] = frozenset({"lilly_triplicity_compact_1647_v1"})

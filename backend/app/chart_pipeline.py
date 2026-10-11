@@ -60,6 +60,7 @@ from .core.time_utils import (
     representative_sample_instants,
     resolve_civil_day,
     resolve_date_only_anchor,
+    utc_datetime_to_jd_ut,
 )
 from .core.bodies import (
     DATE_ONLY_NO_BIRTH_TIME_REASON,
@@ -120,6 +121,10 @@ from .core.horizon_events import (
     compute_horizon_events,
     probe_cache_for_chart,
 )
+from .core.planetary_hours import (
+    compute_planetary_hours,
+    planetary_hours_not_applicable,
+)
 from .core.root_finding import wrap_to_signed_180
 from .core.dossier import EVENT_SEARCH_REASON_CODES, build_calculation_dossier
 from .core.module_state import (
@@ -134,7 +139,7 @@ from .core.module_state import (
 from .core.method_status import method_receipt
 
 
-SCHEMA_VERSION = "0.14.0"
+SCHEMA_VERSION = "0.15.0"
 
 _CLASSICAL_KEYS = tuple(body["key"] for body in CLASSICAL_BODIES)
 
@@ -319,6 +324,7 @@ class DerivedChart:
     declination_aspects: Any
     essential_dignities: Any
     lots: Any
+    planetary_hours: Any
     sect: Any
     void_of_course: Any
 
@@ -1495,6 +1501,77 @@ def _essential_dignities(
     )
 
 
+_ONE_SECOND = dtmod.timedelta(seconds=1)
+
+
+def _birth_time_interval_spans(time: TimeResolution) -> tuple[str | None, list | None]:
+    """The half-open JD(UT) stretches a non-exact birth time may lie in.
+
+    approximate_hour: the stated civil hour's first to last existing second
+    (the representative samples' own ends); date_only: every UTC stretch the
+    zone labels with the date.
+    """
+
+    input_request = time.input_request
+    precision = input_request.birth_time_precision
+    if precision == "date_only":
+        assert time.civil_day is not None  # resolved for every date_only chart
+        return "civil_day", [
+            (utc_datetime_to_jd_ut(start), utc_datetime_to_jd_ut(end))
+            for start, end in time.civil_day["spans"]
+        ]
+    if precision == "approximate_hour":
+        assert time.anchor_utc is not None  # resolved for every non-exact chart
+        samples = representative_sample_instants(
+            input_request.datetime,
+            input_request.timezone,
+            precision=precision,
+            anchor_utc=time.anchor_utc,
+        )
+        first, last = samples[0]["reference_utc_time"], samples[-1]["reference_utc_time"]
+        start = dtmod.datetime.fromisoformat(first.replace("Z", "+00:00"))
+        end = dtmod.datetime.fromisoformat(last.replace("Z", "+00:00")) + _ONE_SECOND
+        return "stated_civil_hour", [
+            (utc_datetime_to_jd_ut(start), utc_datetime_to_jd_ut(end))
+        ]
+    return None, None
+
+
+def _planetary_hours(facts: AstronomicalFacts) -> JsonObject:
+    """Planetary day and hours: basic output, computed for every chart."""
+
+    time = facts.time
+    req, trace = time.request, time.trace
+    frame = time.frame_states["planetary_hours"]
+    if not frame["applicable"]:
+        return planetary_hours_not_applicable(
+            frame["reason_code"], executed=False, trace=trace
+        )
+    interval, spans = _birth_time_interval_spans(time)
+    try:
+        return compute_planetary_hours(
+            reference_jd_ut=time.jd_ut,
+            interval_spans=spans,
+            interval=interval,
+            time_basis=(
+                _EXACT_EVENT_TIME_BASIS
+                if interval is None
+                else time.time_conversion["input_semantics"]
+            ),
+            location=req.location,
+            atmosphere=req.atmosphere,
+            tz_input=time.input_request.timezone,
+            trace=trace,
+        )
+    except (FullEphemerisRequiredError, swe.Error) as error:
+        refusal = _event_search_refusal("行星日與行星時", error, trace)
+        return planetary_hours_not_applicable(
+            refusal["reason_code"],
+            executed=refusal["executed"],
+            applicable=refusal["applicable"],
+        )
+
+
 def _derived_chart(facts: AstronomicalFacts) -> DerivedChart:
     time = facts.time
     req = time.request
@@ -1510,6 +1587,7 @@ def _derived_chart(facts: AstronomicalFacts) -> DerivedChart:
     declination_aspects = _declination_aspects(facts)
     aspects = _aspects(facts, lots)
     essential_dignities = _essential_dignities(facts, sect_sun_altitude)
+    planetary_hours = _planetary_hours(facts)
 
     if time.input_request.birth_time_precision == "date_only":
         for requested, result in (
@@ -1536,6 +1614,7 @@ def _derived_chart(facts: AstronomicalFacts) -> DerivedChart:
         declination_aspects=declination_aspects,
         essential_dignities=essential_dignities,
         lots=lots,
+        planetary_hours=planetary_hours,
         sect=sect,
         void_of_course=void_of_course,
     )
@@ -1617,6 +1696,8 @@ def _derived_methods(facts: AstronomicalFacts, methods: DerivedChart) -> JsonObj
         ),
         "aspects": _module_container(methods.aspects, options.include_aspects),
         "essential_dignities": methods.essential_dignities,
+        # Basic output: written for every chart, with its own state.
+        "planetary_hours": methods.planetary_hours,
     }
 
 

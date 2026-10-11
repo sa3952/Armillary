@@ -48,12 +48,32 @@
       name_prefix: "地名開頭相符",
       other_field: "別名或行政區欄位相符",
     }),
+    // TimezoneInput.civil_time_basis：出生紀錄用的是哪一種鐘點（新疆的地點）。
+    civil_time_basis: Object.freeze({
+      beijing_time: "北京時間",
+      xinjiang_time: "新疆時間",
+    }),
+    // 換算助手回應的 rule.regime（backend/app/core/civil_time_sources.py REGIMES）。
+    civil_time_regime: Object.freeze({
+      local_mean_time: "地方平時（依經度推算）",
+      standard_time: "標準時",
+      summer_time: "夏令時間（日光節約時間）",
+      japan_standard_time: "日本中央標準時",
+      wartime_time: "戰時時間",
+    }),
     // OptionsInput.house_system；表單選單與結果都取這一組。
     house_system: Object.freeze({
       W: "整宮",
       P: "Placidus",
       R: "Regiomontanus",
       B: "Alcabitius",
+    }),
+    // 黃道十二星座，依黃經序（0＝牡羊）。後端在尊貴模組回英文星座鍵、在其餘模組回
+    // sign_position 的星座索引；結果表格與星盤圖都取這一組（全站寫「水瓶」）。
+    zodiac_sign: Object.freeze({
+      aries: "牡羊", taurus: "金牛", gemini: "雙子", cancer: "巨蟹",
+      leo: "獅子", virgo: "處女", libra: "天秤", scorpio: "天蠍",
+      sagittarius: "射手", capricorn: "摩羯", aquarius: "水瓶", pisces: "雙魚",
     }),
     // 後端對同一組代碼給的英文名（app.config.HOUSE_SYSTEMS，一對一）。回應只帶名稱
     // 不帶代碼時，由這一組找回代碼；兩邊一致由整合測試對照。
@@ -62,6 +82,14 @@
       P: "Placidus",
       R: "Regiomontanus",
       B: "Alcabitius",
+    }),
+    // 後端月交點的名稱（app.config.NODE_BODIES 與 core/bodies.py 的南交點，一對一）。頁面投影的
+    // 交點只帶名稱不帶鍵；星盤圖由這一組找回是哪一種交點。兩邊一致由整合測試對照。
+    node_backend_name: Object.freeze({
+      true_node: "北交點(密切)",
+      mean_node: "北交點(平均)",
+      true_south_node: "南交點(密切)",
+      mean_south_node: "南交點(平均)",
     }),
   });
 
@@ -86,5 +114,23 @@
     return found ? found[0] : null;
   }
 
-  return Object.freeze({ VOCABULARIES, label, houseSystemCodeForName });
+  /** 由後端的月交點名稱找回鍵；不在表裡回 null。 */
+  function nodeKeyForName(name) {
+    const found = Object.entries(VOCABULARIES.node_backend_name).find(([, backendName]) => backendName === name);
+    return found ? found[0] : null;
+  }
+
+  /**
+   * 宮位制的名稱：以代碼取中文名，與表單選單同一個出處；後端給的名稱不同於中文名時附在
+   * 括號裡（例：整宮（Whole Sign））。頁面投影只帶名稱，代碼由後端名稱找回。
+   * 代碼與名稱都沒有時回 null，由呼叫端決定怎麼寫「沒有」。
+   */
+  function houseSystemText(givenCode, name) {
+    const code = givenCode || houseSystemCodeForName(name);
+    if (!code) return name || null;
+    const zh = label("house_system", code);
+    return name && name !== zh ? `${zh}（${name}）` : zh;
+  }
+
+  return Object.freeze({ VOCABULARIES, label, houseSystemCodeForName, houseSystemText, nodeKeyForName });
 });

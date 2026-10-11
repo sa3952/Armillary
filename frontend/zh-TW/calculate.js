@@ -34,6 +34,13 @@
   const sectionsHost = el("sections");
   const warningsHost = el("warnings");
   const samplingCalloutHost = el("sampling-callout");
+  // 本命盤速覽排在警告之後、匯出工具列之前：算完不必捲過工具列與區塊索引就看得到。
+  // 容器在這裡建立，不改頁面骨架；內容是 view tree 的 summary 區段，畫法與其他區段相同。
+  const SUMMARY_SECTION_ID = "summary";
+  const summaryHost = document.createElement("div");
+  summaryHost.className = "chart-summary";
+  summaryHost.hidden = true;
+  results.querySelector(".toolbar").before(summaryHost);
   const submitButton = el("submit-button");
   const cancelButton = el("cancel-button");
   const bootstrapStatus = el("bootstrap-status");
@@ -83,6 +90,8 @@
 
   let optionValues = Catalogue.defaults();
   let selectedPlace = null;            // 目錄選定的地點，含收據欄位
+  let civilTimeBasis = null;           // 新疆的地點：出生紀錄用的鐘點；null = 尚未選
+  let manualCivilTime = false;         // 手動座標、時區填的是新疆時間：同樣要問鐘點
   const sectionSnapshots = new Map();  // section id -> canonical section
 
   // 驗算資料的取得狀態。宣告在最前面：清除與過期判定在初始化時
@@ -556,12 +565,83 @@
     return item;
   }
 
+  // ── 出生紀錄用北京時間還是新疆時間 ─────────────────────
+  //
+  // 新疆同時使用北京時間與新疆時間；目錄對這類地點回兩種鐘點
+  // （civil_time_basis_choices，北京時間在前）。沒有預設：選定前時區欄留空、
+  // 送出 fail closed；選定後時區欄填入那一種的 IANA 時區，請求一併送出所選的鐘點。
+  //
+  // 手動輸入座標沒有目錄列可問，服務也不以座標判定（沒有省界多邊形）：使用者親手把時區
+  // 填成新疆時間（Asia/Urumqi 或其 tz 連結 Asia/Kashgar）時，問同一個問題、給同樣兩個選項；
+  // 服務對這種請求同樣要求指明鐘點。選項之後由程式改寫時區欄，不會再觸發這個判定。
+  const XINJIANG_TIME_ZONES = Object.freeze(["Asia/Urumqi", "Asia/Kashgar"]);
+  const MANUAL_CIVIL_TIME_CHOICES = Object.freeze([
+    Object.freeze({ civil_time_basis: "beijing_time", iana_name: "Asia/Shanghai" }),
+    Object.freeze({ civil_time_basis: "xinjiang_time", iana_name: "Asia/Urumqi" }),
+  ]);
+  function civilTimeChoices(place) {
+    if (!place) return manualCivilTime ? MANUAL_CIVIL_TIME_CHOICES : null;
+    return Array.isArray(place.civil_time_basis_choices)
+      && place.civil_time_basis_choices.length
+      ? place.civil_time_basis_choices
+      : null;
+  }
+
+  function chosenCivilTime() {
+    const choices = civilTimeChoices(selectedPlace);
+    if (!choices || civilTimeBasis === null) return null;
+    return choices.find((choice) => choice.civil_time_basis === civilTimeBasis) || null;
+  }
+
+  // 目錄收據仍成立時，時區欄應有的值；不同就是使用者手動改過。
+  function expectedPlaceTimezone(place) {
+    if (!civilTimeChoices(place)) return String(place.timezone || "");
+    const chosen = chosenCivilTime();
+    return chosen ? chosen.iana_name : "";
+  }
+
+  function renderCivilTimeChoice(place) {
+    const choices = civilTimeChoices(place);
+    const options = el("civil-time-choice-options");
+    options.replaceChildren();
+    // 上一組選項的錯誤訊息不再對應任何選項。
+    const stale = document.getElementById("civil_time_basis-error");
+    if (stale) stale.remove();
+    civilTimeBasis = null;
+    el("civil-time-choice").hidden = !choices;
+    (choices || []).forEach((choice) => {
+      const label = document.createElement("label");
+      const input = document.createElement("input");
+      input.type = "radio";
+      input.name = "civil_time_basis";
+      input.value = choice.civil_time_basis;
+      // 先於表單層的 change 執行：noteFormChanged 重算模糊時刻時，時區欄已是所選的那一種。
+      input.addEventListener("change", () => {
+        civilTimeBasis = choice.civil_time_basis;
+        el("timezone").value = choice.iana_name;
+      });
+      const caption = document.createElement("span");
+      const bold = document.createElement("b");
+      bold.textContent = Labels.label("civil_time_basis", choice.civil_time_basis);
+      const zone = document.createElement("span");
+      zone.className = "mono";
+      zone.lang = "en";
+      zone.textContent = choice.iana_name;
+      caption.append(bold, zone);
+      label.append(input, caption);
+      options.appendChild(label);
+    });
+  }
+
   function selectPlace(place) {
     selectedPlace = place;
+    manualCivilTime = false;
     el("latitude").value = String(place.latitude);
     el("longitude").value = String(place.longitude);
     if (!el("altitude").value.trim()) el("altitude").value = "0";
-    el("timezone").value = place.timezone || "";
+    renderCivilTimeChoice(place);
+    const dualClock = Boolean(civilTimeChoices(place));
+    el("timezone").value = expectedPlaceTimezone(place);
 
     // 收據念的是中文標籤；目錄的原始代碼與記錄 id 收在「技術細節」摺疊裡，
     // 回報問題或對照目錄時仍拿得到，平常讀收據時不會聽到一串底線英文。
@@ -587,7 +667,9 @@
       ["地點", null, place.display_name || place.name],
       ["緯度", "latitude", Number(place.latitude).toFixed(6)],
       ["經度", "longitude", Number(place.longitude).toFixed(6)],
-      ["時區", "timezone", place.timezone || "—"],
+      ["時區", "timezone", dualClock
+        ? `${place.timezone}（目錄的時區；出生紀錄可能用北京時間或新疆時間，請在下方選擇）`
+        : place.timezone || "—"],
       ["目錄來源", null, Labels.label("place_source", place.source)],
       ["座標語義", null, Labels.label("coordinate_semantics", place.coordinate_semantics)],
       ["位置精度", null, Labels.label("location_precision", place.location_precision)],
@@ -603,10 +685,19 @@
 
     el("place-caveat").textContent =
       "這組座標是目錄對該地點的代表點，不是你的出生地址。上升點對經緯度敏感，"
-      + "若你知道更精確的座標，請在下方手動輸入取代它。時區已依目錄帶入，仍請確認出生當時實際適用的時區。";
+      + "若你知道更精確的座標，請在下方手動輸入取代它。"
+      + (dualClock
+        ? "這個地點同時使用北京時間與新疆時間，請在下方指明出生紀錄用的是哪一種；選定前不會計算。"
+        : "時區已依目錄帶入，仍請確認出生當時實際適用的時區。");
     el("place-receipt").hidden = false;
     placeResults.hidden = true;
-    setPlaceStatus(PLACE_SEARCH.FOUND, "已選定地點，座標與時區已填入。", "info");
+    setPlaceStatus(
+      PLACE_SEARCH.FOUND,
+      dualClock
+        ? "已選定地點，座標已填入；請選擇出生紀錄用的是北京時間還是新疆時間。"
+        : "已選定地點，座標與時區已填入。",
+      "info"
+    );
     // 程式寫入座標與時區，和使用者親手輸入走同一條狀態轉移：模糊時刻的
     // 選擇區、欄位錯誤旗標、結果與表單的綁定都由 noteFormChanged 重算。
     // 少了這一步，「先填時間再選地點」的順序永遠看不到
@@ -624,13 +715,22 @@
       const drifted =
         !LocationReceipt.sameCoordinate(el("latitude").value, selectedPlace.latitude)
         || !LocationReceipt.sameCoordinate(el("longitude").value, selectedPlace.longitude)
-        || String(el("timezone").value) !== String(selectedPlace.timezone || "");
+        || String(el("timezone").value) !== expectedPlaceTimezone(selectedPlace);
       if (drifted) {
         selectedPlace = null;
         clearPlaceReceipt();
         setPlaceStatus(PLACE_SEARCH.NOT_SEARCHED, "座標或時區已手動修改，目錄收據不再適用。", "info");
       }
     });
+  });
+
+  // 手動座標親手填的時區是新疆時間：顯示鐘點選擇（重新填一次就重新問）；改成別的時區就撤下。
+  el("timezone").addEventListener("input", () => {
+    if (selectedPlace) return;
+    const xinjiang = XINJIANG_TIME_ZONES.includes(String(el("timezone").value).trim());
+    if (!xinjiang && !manualCivilTime) return;
+    manualCivilTime = xinjiang;
+    renderCivilTimeChoice(null);
   });
 
   // ══ 表單連動 ══════════════════════════════════════════
@@ -868,6 +968,7 @@
       clearFieldInvalid(target);
     }
     refreshResultBinding();
+    refreshTimeCheckBinding();
   }
 
   form.addEventListener("change", (event) => {
@@ -877,6 +978,289 @@
     noteFormChanged(event.target);
   });
   form.addEventListener("input", (event) => { noteFormChanged(event.target); });
+
+  // ── 換算助手：民國年與日本年號 ─────────────────────────
+  //
+  // 換算在 RequestInput（純函式，範圍讀出生日期欄自己的 min／max）；這裡只把結果寫進
+  // 出生日期欄，並走與使用者輸入相同的轉移。助手的欄位沒有 name，不進請求。
+  function setEraEcho(message, tone) {
+    const echo = el("era-echo");
+    echo.textContent = message;
+    echo.dataset.tone = tone;
+  }
+
+  el("era-apply").addEventListener("click", () => {
+    const dateInput = el("date");
+    const read = RI.readEraDate({
+      era: el("era-name").value,
+      year: String(el("era-year").value),
+      month: String(el("era-month").value),
+      day: String(el("era-day").value),
+    }, { min: dateInput.min, max: dateInput.max });
+    if (read.state === RI.STATES.EMPTY) {
+      setEraEcho("請填年、月、日。", "error");
+      return;
+    }
+    if (read.state === RI.STATES.INVALID) {
+      setEraEcho(`${read.reason}。出生日期沒有改動。`, "error");
+      return;
+    }
+    const { eraText, gregorianText, formula, iso } = read.value;
+    dateInput.value = iso;
+    noteFormChanged(dateInput);
+    setEraEcho(`${eraText} ＝ ${gregorianText}（${formula}），已填入出生日期。`, "info");
+  });
+
+  // ── 換算助手：核對鐘面時間 ─────────────────────────────
+  //
+  // 由計算服務回答（POST /api/time/convert）：它跑的是排盤時同一個換算函式、同一份時區資料庫。
+  // 瀏覽器自己的時區資料版本不明，不拿來回答這個問題。請求只帶日期、時刻與時區，不帶座標；
+  // 回答只留在畫面上，對應的輸入一改就撤下，清除敏感資料時與進行中的請求一起作廢。
+  const TIME_CHECK_TIMEOUT_MS = 10000;
+  const timeCheckLifecycle = window.PrivacyLifecycle.createSensitiveDataLifecycle();
+  let timeCheckShownKey = null;
+
+  function setTimeCheckStatus(message, tone) {
+    const status = el("time-check-status");
+    status.textContent = message;
+    status.dataset.tone = tone;
+  }
+
+  function clearTimeCheck(message, tone) {
+    timeCheckLifecycle.abortActiveRequest();
+    const host = el("time-check-result");
+    host.replaceChildren();
+    host.hidden = true;
+    timeCheckShownKey = null;
+    setTimeCheckStatus(message || "", tone || "info");
+  }
+
+  /** 從目前的表單組出核對請求，或說出還缺什麼。不動 DOM。 */
+  function timeCheckRequest() {
+    const dateValue = String(el("date").value).trim();
+    if (!dateValue) return { problem: "請先填出生日期（或用上面的年號換算）。" };
+    const precision = currentPrecision();
+    if (precision === "date_only") {
+      return { problem: "「只知道日期」沒有單一的鐘面時刻可以核對；請填上時刻並改選較精確的出生時間，或直接計算。" };
+    }
+    const inRange = (read, low, high) => read.state === RI.STATES.VALUE && read.value >= low && read.value <= high;
+    const hour = RI.readInteger(String(hourInput.value));
+    if (!inRange(hour, 0, 23)) return { problem: "請先填小時（0–23）。" };
+    let minute = 0;
+    let second = 0;
+    if (precision === "exact") {
+      const minuteRead = RI.readInteger(String(minuteInput.value));
+      if (!inRange(minuteRead, 0, 59)) return { problem: "請先填分（0–59）。" };
+      minute = minuteRead.value;
+      const secondRead = RI.readSecond(String(secondInput.value));
+      if (secondRead.state === RI.STATES.INVALID) return { problem: `秒${secondRead.reason}。` };
+      second = secondRead.state === RI.STATES.VALUE ? secondRead.value : 0;
+    }
+    const civilTime = chosenCivilTime();
+    if (civilTimeChoices(selectedPlace) && !civilTime) {
+      return { problem: "請先在出生地點下方選擇出生紀錄用的是北京時間還是新疆時間。" };
+    }
+    const timezone = String(el("timezone").value).trim();
+    if (!timezone) return { problem: "請先選定出生地點，或在手動輸入裡填 IANA 時區名稱。" };
+    if (!TimezoneNames.accepts(timezone)) {
+      return { problem: "時區名稱不在服務接受的 IANA 名單內（例如 Asia/Taipei，大小寫須相符）。" };
+    }
+    const [year, month, day] = dateValue.split("-").map(Number);
+    return {
+      approximate: precision === "approximate_hour",
+      body: {
+        datetime: { year, month, day, hour: hour.value, minute, second },
+        timezone: {
+          mode: "iana",
+          iana_name: timezone,
+          ...(civilTime ? { civil_time_basis: civilTime.civil_time_basis } : {}),
+        },
+      },
+    };
+  }
+
+  const timeCheckKey = (request) => (request.body ? JSON.stringify(request.body) : null);
+
+  // 表單改動後，畫面上的核對結果若不再對應目前的輸入就撤下（由 noteFormChanged 呼叫）。
+  function refreshTimeCheckBinding() {
+    if (timeCheckShownKey === null) return;
+    if (timeCheckKey(timeCheckRequest()) === timeCheckShownKey) return;
+    clearTimeCheck("出生日期、時刻或時區改了；先前的核對結果已撤下，請重新核對。", "info");
+  }
+
+  function appendText(host, tag, text, className) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    node.textContent = text;
+    host.appendChild(node);
+    return node;
+  }
+
+  function externalLink(label, url) {
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.rel = "noopener noreferrer";
+    anchor.target = "_blank";
+    anchor.textContent = label;
+    return anchor;
+  }
+
+  const wallTime = (label) => String(label).replace(/\.000$/, "");
+
+  function readingKind(reading) {
+    const regime = reading.rule && reading.rule.regime;
+    const kind = regime ? Labels.label("civil_time_regime", regime) : (reading.summer_time ? "夏令時間" : "非夏令時間");
+    return `${kind}，時區縮寫 ${reading.abbreviation}`;
+  }
+
+  function renderRule(host, rule, checkedVersion) {
+    if (!rule || rule.status === "not_cited") {
+      appendText(host, "p", "這一段沒有可引用的文件（未引用）：時區資料庫的值是它自己的推定。", "caveat");
+      return;
+    }
+    if (rule.status !== "cited" || !rule.source) {
+      appendText(host, "p",
+        `服務正在使用的時區資料庫對這一段的說法，與本站出處表（依 ${checkedVersion} 核對）不同，因此不列出處。`,
+        "caveat");
+      return;
+    }
+    const source = rule.source;
+    const list = document.createElement("dl");
+    const row = (term, ...content) => {
+      const dt = document.createElement("dt");
+      dt.textContent = term;
+      const dd = document.createElement("dd");
+      dd.append(...content);
+      list.append(dt, dd);
+    };
+    row("規則", source.title);
+    row("依據文件", source.document);
+    row("我們核到哪一層", source.verification_label);
+    const read = [];
+    source.read.forEach((item, index) => {
+      if (index) read.push("；");
+      read.push(externalLink(item.label, item.url));
+    });
+    row("我們讀過的", ...read);
+    const holder = [];
+    if (source.holder.name) {
+      holder.push(source.holder.url ? externalLink(source.holder.name, source.holder.url) : source.holder.name);
+      holder.push("。");
+    }
+    holder.push(source.holder.note);
+    row("原件在哪裡", ...holder);
+    host.appendChild(list);
+  }
+
+  function renderTimeCheck(body, approximate) {
+    const host = el("time-check-result");
+    host.replaceChildren();
+    const zone = body.timezone;
+    const where = `${zone.region_label}（${zone.iana_name}）`;
+    const local = wallTime(body.input_local_time);
+    if (approximate) {
+      appendText(host, "p", `只知道約略小時：這裡核對的是 ${local} 這一刻；計算時會對整個小時取樣。`, "note");
+    }
+    const readings = Array.isArray(body.readings) ? body.readings : [];
+    let rules;
+    if (body.status === "nonexistent" && body.gap) {
+      const gap = body.gap;
+      appendText(host, "p",
+        `${local} 在${where}不存在：時鐘在 ${gap.skipped_local_start} 從 ${gap.offset_before_label} `
+        + `撥到 ${gap.offset_after_label}，${gap.skipped_local_start} 到 ${gap.skipped_local_end} 之間的鐘面時間被跳過了。`
+        + "請核對出生紀錄的日期與時刻；服務不會替你挪動。");
+      rules = [gap.rule];
+    } else if (body.status === "repeated" && readings.length === 2) {
+      appendText(host, "p", `${local} 在${where}出現了兩次：`);
+      const list = document.createElement("ul");
+      readings.forEach((reading, index) => {
+        appendText(list, "li",
+          `${index === 0 ? "第一次（較早）" : "第二次（較晚）"}　${reading.utc_offset_label}（${readingKind(reading)}），`
+          + `世界時 ${reading.utc_iso_8601}`);
+      });
+      host.appendChild(list);
+      appendText(host, "p", "計算時，請在出生時間下方指明是哪一次。");
+      rules = readings.map((reading) => reading.rule);
+    } else if (body.status === "single" && readings.length === 1) {
+      const reading = readings[0];
+      appendText(host, "p",
+        `${local} 在${where}是 ${reading.utc_offset_label}（${readingKind(reading)}），即世界時 ${reading.utc_iso_8601}。`);
+      rules = [reading.rule];
+    } else {
+      throw new Error("換算助手的回應無法解讀。");
+    }
+    (body.warnings || []).forEach((warning) => appendText(host, "p", warning.message, "caveat"));
+    const checkedVersion = body.source_table && body.source_table.tzdb_version_checked;
+    const seen = new Set();
+    rules.forEach((rule) => {
+      const key = rule && rule.source ? rule.source.id : JSON.stringify(rule && rule.status);
+      if (seen.has(key)) return;
+      seen.add(key);
+      renderRule(host, rule, checkedVersion);
+    });
+    const tz = body.tz_database || {};
+    appendText(host, "p",
+      `時區資料庫：${tz.version || "無法辨識版本"}（服務實際使用的版本）；出處表依 ${checkedVersion} 核對。`, "note");
+    if (readings.some((reading) => reading.offset_status
+      && reading.offset_status.historical_verification_status === "pre_1970_database_inferred_not_verified")) {
+      appendText(host, "p", "1970 年以前的偏移多為時區資料庫的推定，未經歷史文獻核實。", "note");
+    }
+    host.hidden = false;
+  }
+
+  el("time-check-button").addEventListener("click", () => {
+    clearTimeCheck();
+    const request = timeCheckRequest();
+    if (!request.body) {
+      setTimeCheckStatus(request.problem, "error");
+      return;
+    }
+    setTimeCheckStatus("核對中…", "info");
+    const controller = new AbortController();
+    const token = timeCheckLifecycle.beginRequest(controller);
+    const timeout = timeCheckLifecycle.scheduleAbort(
+      controller, TIME_CHECK_TIMEOUT_MS, window.setTimeout.bind(window)
+    );
+    const key = timeCheckKey(request);
+    postJson("/api/time/convert", request.body, controller.signal)
+      .then(({ response, body, invalidJsonMedia }) => {
+        if (!timeCheckLifecycle.isCurrentRequest(token)) return;
+        if (!response.ok) {
+          setTimeCheckStatus(window.ClientContext.formatApiError(body && body.detail, response.status), "error");
+          return;
+        }
+        if (invalidJsonMedia || !body || typeof body !== "object" || !body.timezone) {
+          setTimeCheckStatus("換算助手的回應無法解讀；這不影響計算，請重試或直接計算。", "error");
+          return;
+        }
+        if (timeCheckKey(timeCheckRequest()) !== key) {
+          setTimeCheckStatus("出生日期、時刻或時區在核對途中改了；請重新核對。", "info");
+          return;
+        }
+        try {
+          renderTimeCheck(body, request.approximate);
+        } catch (_) {
+          el("time-check-result").replaceChildren();
+          el("time-check-result").hidden = true;
+          setTimeCheckStatus("換算助手的回應無法解讀；這不影響計算，請重試或直接計算。", "error");
+          return;
+        }
+        timeCheckShownKey = key;
+        setTimeCheckStatus("", "info");
+      })
+      .catch((error) => {
+        if (!timeCheckLifecycle.isCurrentRequest(token)) return;
+        const timedOut = timeout.didTimeout() && error && error.name === "AbortError";
+        setTimeCheckStatus(
+          timedOut ? "核對逾時；請重試，或直接計算。" : "核對沒有完成；請重試，或直接計算。",
+          "error"
+        );
+      })
+      .finally(() => {
+        window.clearTimeout(timeout.handle);
+        timeCheckLifecycle.finishRequest(token);
+      });
+  });
 
   // 範例載入是完整的狀態取代：先走與「清除敏感資料」相同的
   // 重設，把舊結果、地點收據、查詢結果、錯誤、選項與欄位旗標全部換掉，再
@@ -964,7 +1348,16 @@
     const dateValue = String(el("date").value).trim();
     if (!dateValue) requireField(el("date"), "出生日期");
     const timezone = String(el("timezone").value).trim();
-    if (!timezone) requireField(el("timezone"), "時區（查詢地點或手動輸入）");
+    // 新疆的地點在選定鐘點前時區欄是空的：指向那一組選項，不叫人去填時區欄。
+    const civilTime = chosenCivilTime();
+    if (civilTimeChoices(selectedPlace) && !civilTime) {
+      invalid.push("請先選擇出生紀錄用的是北京時間還是新疆時間");
+      const firstChoice = form.querySelector('#civil-time-choice input[name="civil_time_basis"]');
+      if (firstChoice) {
+        fields.push(firstChoice);
+        messages.set(firstChoice, "請選擇北京時間或新疆時間。");
+      }
+    } else if (!timezone) requireField(el("timezone"), "時區（查詢地點或手動輸入）");
     // 服務只接受隨程式碼釘選的 IANA 名單（不含 localtime、Factory 與舊別名）；
     // 頁面讀同一份產生出來的名單，不讓使用者送出後才被拒。
     else if (!TimezoneNames.accepts(timezone)) {
@@ -1022,9 +1415,13 @@
         },
         // fold 只在真的模糊時送出。平時省略，讓收據忠實反映「使用者沒有
         // 需要做這個選擇」，而不是「他選了第一次」。
-        timezone: ambiguity
-          ? { mode: "iana", iana_name: timezone, fold: foldChoice }
-          : { mode: "iana", iana_name: timezone },
+        // 鐘點只在新疆的地點送出，收據因此只在使用者真的做了這個選擇時記下它。
+        timezone: {
+          mode: "iana",
+          iana_name: timezone,
+          ...(ambiguity ? { fold: foldChoice } : {}),
+          ...(civilTime ? { civil_time_basis: civilTime.civil_time_basis } : {}),
+        },
         location: LocationReceipt.buildLocationInput({
           latitude,
           longitude,
@@ -1082,6 +1479,10 @@
   const FOLD_ACTION = Object.freeze({
     text: "到「這個時間出現了兩次」的選擇區指定是第一次還是第二次。",
     href: "#fold-choice",
+  });
+  const CIVIL_TIME_ACTION = Object.freeze({
+    text: "到「出生紀錄用的是北京時間還是新疆時間？」選擇其中一種。",
+    href: "#civil-time-choice",
   });
 
   function showError(message, actions) {
@@ -1407,6 +1808,13 @@
       }
       if (!el("fold-choice").hidden) actions.unshift(FOLD_ACTION);
     }
+    // 服務說這個地點要指明鐘點：選擇區在就指向它；不在表示頁面不知道這個地點有兩種鐘點
+    // （頁面版本較舊），重新查詢地點才會帶出選項。
+    if (code === "civil_time_basis_required") {
+      actions.unshift(el("civil-time-choice").hidden
+        ? "請重新載入頁面，再用「地名查詢」選定地點。"
+        : CIVIL_TIME_ACTION);
+    }
     showError(message, actions);
     setStatus("服務拒絕了這次計算。", "error");
     // 伺服器點名的欄位標 aria-invalid、展開所在摺疊區並移焦點。
@@ -1426,6 +1834,9 @@
       // 服務要的是重複時刻的選擇：帶人到那一組選項，與本頁自己擋下時同一個落點。
       const firstFold = form.querySelector('#fold-choice input[name="fold"]');
       if (firstFold) markInvalidFields([firstFold]);
+    } else if (code === "civil_time_basis_required" && !el("civil-time-choice").hidden) {
+      const firstChoice = form.querySelector('#civil-time-choice input[name="civil_time_basis"]');
+      if (firstChoice) markInvalidFields([firstChoice]);
     }
   }
 
@@ -1488,19 +1899,23 @@
     // 結果頁有二十一個區塊、三百多列，沒有索引就只能一路捲。
     // 索引同時顯示每一區的環與收據狀態，讓「哪些被拒絕、哪些沒請求」在捲之前就看得到。
     const technicalIds = TECHNICAL_SECTION_IDS;
+    const summarySection = tree.sections.find((section) => section.id === SUMMARY_SECTION_ID);
     const resultSections = tree.sections.filter(
       (section) => section.status.state !== "not_requested"
         && !technicalIds.has(section.id)
+        && section.id !== SUMMARY_SECTION_ID
     );
     const technicalSections = tree.sections.filter(
       (section) => technicalIds.has(section.id)
     );
     buildSectionIndex(resultSections);
+    renderSummary(summarySection, resultSections);
 
     sectionsHost.replaceChildren();
     resultSections.forEach(
       (section) => sectionsHost.appendChild(materializeSection(section))
     );
+    mountChartWheel(canonical);
     // 預設回應不含驗算資料；技術區塊等使用者打開時才取得。
     // 回應若本來就是完整版（沒有 projection 鍵），技術區塊照舊直接畫出。
     beginDetailBinding(canonical, payload);
@@ -1540,6 +1955,78 @@
     // 結果到達時把焦點交給結果標題（HTML 帶 tabindex="-1"），使用者才知道
     // 畫面上多了什麼。
     el("results-heading").focus();
+  }
+
+  // ── 星盤圖 ──────────────────────────────────────────
+  //
+  // 圖由 canonical document 的 source_response 畫出（與表格同一份回應），放在天體位置表之前。
+  // 它在 #sections 裡：清除、重新計算與 pagehide 換掉 #sections 時一起移除，放大的對話框也在
+  // 區塊內。圖畫不出來時只留一句說明，表格照常。
+  const WHEEL_FILES = Object.freeze({ svg: "classical-astrology-chart.svg", png: "classical-astrology-chart.png" });
+
+  function mountChartWheel(canonical) {
+    let section;
+    try {
+      const model = window.ChartWheel.buildModel(canonical.source_response);
+      // 文字替代就是表格：圖說之外，aria-describedby 指向天體位置與軸點兩區。
+      const describedBy = ["section-bodies", "section-nodes", "section-angles"]
+        .filter((id) => sectionsHost.querySelector(`#${id}`));
+      section = window.ChartWheel.createSection(document, model, { describedBy, onDownload: downloadChartWheel });
+    } catch (_error) {
+      section = window.ChartWheel.createFailureSection(document);
+    }
+    lifecycle.registerSectionNode(section);
+    const bodies = sectionsHost.querySelector("#section-bodies");
+    sectionsHost.insertBefore(section, bodies || sectionsHost.firstChild);
+  }
+
+  /** 下載星盤圖。預設不印任何輸入；勾選時加一行與列印摘要同一組的輸入。 */
+  function downloadChartWheel(format, includeInput, button) {
+    let canonical;
+    try {
+      canonical = requireExportableDocument("chart_data_only");
+    } catch (error) {
+      reportAt(button, `下載失敗：${error.message}`, "error");
+      return;
+    }
+    const summary = includeInput
+      ? [`輸入摘要：${printInputEntries().map(([term, value]) => `${term} ${value}`).join("；")}`]
+      : null;
+    let model;
+    try {
+      model = window.ChartWheel.buildModel(canonical.source_response, { inputSummary: summary });
+    } catch (_error) {
+      reportAt(button, "下載失敗：這次的星盤圖無法繪製。", "error");
+      return;
+    }
+    if (format === "svg") {
+      const svg = window.ChartWheel.renderSvg(document, model, { variant: "download" });
+      deliverBlob(new Blob([window.ChartWheel.serializeSvg(svg)], { type: "image/svg+xml" }), WHEEL_FILES.svg);
+      reportAt(button, "已產生 SVG 檔案。", "info");
+      return;
+    }
+    // PNG：同一份場景以 Canvas 2D 直接畫，不經 SVG→<img>（CSP 的 img-src 不允許 blob:）。
+    const canvas = document.createElement("canvas");
+    canvas.width = model.width * window.ChartWheel.PNG_SCALE;
+    canvas.height = model.height * window.ChartWheel.PNG_SCALE;
+    const context = canvas.getContext("2d");
+    if (!context || typeof canvas.toBlob !== "function") {
+      reportAt(button, "下載失敗：這個瀏覽器無法產生 PNG。", "error");
+      return;
+    }
+    window.ChartWheel.drawCanvas(context, model);
+    canvas.toBlob((blob) => {
+      // toBlob 是非同步的：期間若已清除或換了結果，就不交出這張圖。
+      let current = null;
+      try { current = lifecycle.requireCanonicalDocument(); } catch (_error) { current = null; }
+      if (current !== canonical) return;
+      if (!blob) {
+        reportAt(button, "下載失敗：無法產生 PNG。", "error");
+        return;
+      }
+      deliverBlob(blob, WHEEL_FILES.png);
+      reportAt(button, "已產生 PNG 檔案。", "info");
+    }, "image/png");
   }
 
   // ── 結果與表單的綁定──────────────────────
@@ -1597,8 +2084,12 @@
       button.disabled = !allowed
         || (waitingForDetail && button.id !== "print-button");
     });
-    sectionsHost.querySelectorAll(".section-copy").forEach((button) => {
+    results.querySelectorAll(".section-copy").forEach((button) => {
       button.disabled = !actions.copy_enabled;
+    });
+    // 星盤圖下載畫的是頁面那一份結果，不等驗算資料；結果過期時與其他下載一起停用。
+    sectionsHost.querySelectorAll(".chart-wheel-download").forEach((button) => {
+      button.disabled = !actions.download_enabled;
     });
   }
 
@@ -1823,7 +2314,7 @@
   // 只有真的橫向溢出的表格才是 region 與 tab 停留點；未溢出時多一個
   // 停留點只是噪音。標籤帶區塊標題，報讀時才分得出是哪一區的表。
   function applyOverflowRegions() {
-    sectionsHost.querySelectorAll(".table-wrap").forEach((wrap) => {
+    results.querySelectorAll(".table-wrap").forEach((wrap) => {
       if (wrap.scrollWidth > wrap.clientWidth) {
         wrap.setAttribute("role", "region");
         wrap.setAttribute("aria-label", wrap.dataset.regionLabel);
@@ -1994,6 +2485,33 @@
     );
   }
 
+  // 本命盤速覽。表後那一行的〈區段標題〉換成連到畫面上那一區的連結，文字不變
+  // （匯出印的是同一句）；沒有畫出的區段照原字。null 時清空並隱藏。
+  function renderSummary(section, linkable) {
+    summaryHost.replaceChildren();
+    summaryHost.hidden = !section;
+    if (!section) return;
+    const node = materializeSection(section);
+    const targets = new Map(linkable.map((item) => [item.title, `#section-${item.id}`]));
+    node.querySelectorAll(".section-block").forEach((note) => {
+      const parts = note.textContent.split(/〈([^〉]+)〉/);
+      if (parts.length === 1) return;
+      note.replaceChildren();
+      parts.forEach((part, index) => {
+        const href = index % 2 === 1 ? targets.get(part) : null;
+        if (!href) {
+          if (part) note.append(index % 2 === 1 ? `〈${part}〉` : part);
+          return;
+        }
+        const link = document.createElement("a");
+        link.href = href;
+        link.textContent = part;
+        note.append("〈", link, "〉");
+      });
+    });
+    summaryHost.appendChild(node);
+  }
+
   // ── 取樣摘要圖 ─────────────────────────────────────────
   //
   // 不可操作：沒有把手、沒有焦點停留點。每個取樣點是一個獨立的點，點與點之間
@@ -2110,6 +2628,11 @@
       .filter(Boolean).join("：");
     const table = document.createElement("table");
     if (sectionId) table.dataset.section = sectionId;
+    // 版面變體（相位方格）只換 class，樣式在 calculate.css；不寫 style 屬性（CSP）。
+    if (model.variant === "aspect_grid") {
+      table.className = "aspect-grid";
+      wrap.classList.add("aspect-grid-wrap");
+    }
     if (model.title) {
       const caption = document.createElement("caption");
       caption.textContent = model.title;
@@ -2227,12 +2750,15 @@
   });
 
   function deliverArtifact(artifact) {
-    const blob = new Blob([artifact.content], { type: artifact.mime_type });
+    deliverBlob(new Blob([artifact.content], { type: artifact.mime_type }), artifact.filename);
+  }
+
+  function deliverBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     lifecycle.registerObjectUrl(url);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = artifact.filename;
+    anchor.download = filename;
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
@@ -2357,6 +2883,7 @@
     sectionsHost.replaceChildren();
     warningsHost.replaceChildren();
     renderSamplingCallout(null);
+    renderSummary(null, []);
     results.hidden = true;
     boundInputSignature = null;
     currentViewTree = null;
@@ -2375,6 +2902,9 @@
     el("place-receipt-body").replaceChildren();
     el("place-receipt-codes").replaceChildren();
     el("place-caveat").textContent = "";
+    // 鐘點的選擇屬於那個目錄地點；地點撤下，選擇一起撤下。
+    manualCivilTime = false;
+    renderCivilTimeChoice(null);
   }
 
   /**
@@ -2407,6 +2937,8 @@
     // 服務回報過的那個時刻同樣是上一筆輸入的痕跡，一起清掉。
     serviceRepeatedTime = null;
     refreshFoldChoice();
+    setEraEcho("", "info");
+    clearTimeCheck();
   }
 
   function clearSensitiveState() {

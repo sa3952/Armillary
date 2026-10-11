@@ -4,16 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="index, follow">
-<title>平均交點與密切交點：一個現代計算能力造成的選擇｜渾儀 Armillary</title>
-<meta name="description" content="排盤軟體的「真交點」與平均交點最多差將近 2 度。說明「真交點」其實是密切交點、兩者差多少、Tycho 怎麼看交點的不均勻，以及古典技法該用哪一個這個問題要怎麼問。">
+<title>真交點與平均交點差多少：『真交點』其實是密切交點｜渾儀 Armillary</title>
+<meta name="description" content="北交點（俗稱龍頭）有兩種算法：排盤軟體的「真交點」與平均交點最多差將近 2 度。說明「真交點」其實是密切交點、兩者差多少、Tycho 怎麼看交點的不均勻，以及古典技法該用哪一個這個問題要怎麼問。">
 <link rel="canonical" href="https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node">
 <link rel="alternate" hreflang="zh-TW" href="https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node">
 <link rel="alternate" hreflang="x-default" href="https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="渾儀 Armillary">
 <meta property="og:locale" content="zh_TW">
-<meta property="og:title" content="平均交點與密切交點：一個現代計算能力造成的選擇｜渾儀 Armillary">
-<meta property="og:description" content="排盤軟體的「真交點」與平均交點最多差將近 2 度。說明「真交點」其實是密切交點、兩者差多少、Tycho 怎麼看交點的不均勻，以及古典技法該用哪一個這個問題要怎麼問。">
+<meta property="og:title" content="真交點與平均交點差多少：『真交點』其實是密切交點｜渾儀 Armillary">
+<meta property="og:description" content="北交點（俗稱龍頭）有兩種算法：排盤軟體的「真交點」與平均交點最多差將近 2 度。說明「真交點」其實是密切交點、兩者差多少、Tycho 怎麼看交點的不均勻，以及古典技法該用哪一個這個問題要怎麼問。">
 <meta property="og:url" content="https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node">
 <meta property="article:published_time" content="2026-10-10">
 <meta property="article:modified_time" content="2026-10-10">
@@ -23,7 +23,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="渾儀 Armillary：可驗證的古典西洋占星計算器">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node#breadcrumb"},"description":"排盤軟體的「真交點」與平均交點最多差將近 2 度。說明「真交點」其實是密切交點、兩者差多少、Tycho 怎麼看交點的不均勻，以及古典技法該用哪一個這個問題要怎麼問。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"平均交點與密切交點：一個現代計算能力造成的選擇｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node"},{"@id":"https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/blog","name":"文章","position":2},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node","name":"平均交點與密切交點：一個現代計算能力造成的選擇","position":3}]},{"@id":"https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node#article","@type":"BlogPosting","dateModified":"2026-10-10","datePublished":"2026-10-10","description":"排盤軟體的「真交點」與平均交點最多差將近 2 度。說明「真交點」其實是密切交點、兩者差多少、Tycho 怎麼看交點的不均勻，以及古典技法該用哪一個這個問題要怎麼問。","headline":"平均交點與密切交點：一個現代計算能力造成的選擇","image":"https://projectarmillary.com/zh-TW/og-card.png?v=16c9900d06168aab","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/zh-TW/blog#webpage"},"mainEntityOfPage":{"@id":"https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node#webpage"},"url":"https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node"}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node#breadcrumb"},"description":"北交點（俗稱龍頭）有兩種算法：排盤軟體的「真交點」與平均交點最多差將近 2 度。說明「真交點」其實是密切交點、兩者差多少、Tycho 怎麼看交點的不均勻，以及古典技法該用哪一個這個問題要怎麼問。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"真交點與平均交點差多少：『真交點』其實是密切交點｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node"},{"@id":"https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/blog","name":"文章","position":2},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node","name":"真交點與平均交點差多少：『真交點』其實是密切交點","position":3}]},{"@id":"https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node#article","@type":"BlogPosting","dateModified":"2026-10-10","datePublished":"2026-10-10","description":"北交點（俗稱龍頭）有兩種算法：排盤軟體的「真交點」與平均交點最多差將近 2 度。說明「真交點」其實是密切交點、兩者差多少、Tycho 怎麼看交點的不均勻，以及古典技法該用哪一個這個問題要怎麼問。","headline":"真交點與平均交點差多少：『真交點』其實是密切交點","image":"https://projectarmillary.com/zh-TW/og-card.png?v=16c9900d06168aab","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/zh-TW/blog#webpage"},"mainEntityOfPage":{"@id":"https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node#webpage"},"url":"https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node"}]}</script>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" href="/zh-TW/favicon.svg?v=c95686a2f029d369" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -62,7 +62,7 @@
 
   <div class="ar-head">
     <p class="eyebrow"><a href="/zh-TW/blog">文章</a> · JOURNAL</p>
-    <h1>平均交點與密切交點：<br>一個現代計算能力造成的選擇</h1>
+    <h1>真交點與平均交點差多少：<br>『真交點』其實是密切交點</h1>
     <p class="ar-dek">很多排盤軟體讓你在「真交點」與「平均交點」之間二選一，兩者最多差將近 2 度。哪一個才是古典的？要回答這個問題，得先知道「真交點」到底真在哪裡。</p>
     <p class="ar-byline"><span class="ar-tier">講方法</span><span>發布 <time datetime="2026-10-10">2026-10-10</time></span><span>閱讀約 6 分鐘</span><span>Sebastian</span></p>
   </div>
@@ -138,7 +138,7 @@
   </figure>
 
   <div class="ar-body">
-    <p class="ar-lead">月亮繞地球的軌道，跟太陽在天上走的黃道之間有一個約 5 度的夾角<a class="ar-cite" href="#ref-3">[3]</a>。兩個大圓相交在兩個點：月亮從黃道南邊穿到北邊的那一點叫升交點，反過來的叫降交點；占星裡通稱北交點與南交點<a class="ar-cite" href="#ref-2">[2]</a>。日月食只會發生在交點附近，所以交點自古就受重視。</p>
+    <p class="ar-lead">月亮繞地球的軌道，跟太陽在天上走的黃道之間有一個約 5 度的夾角<a class="ar-cite" href="#ref-3">[3]</a>。兩個大圓相交在兩個點：月亮從黃道南邊穿到北邊的那一點叫升交點，反過來的叫降交點；占星裡通稱北交點（俗稱龍頭）與南交點<a class="ar-cite" href="#ref-2">[2]</a>。日月食只會發生在交點附近，所以交點自古就受重視。</p>
 
     <section class="ar-points" aria-labelledby="points">
       <h2 id="points">重點</h2>

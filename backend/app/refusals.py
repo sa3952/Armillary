@@ -39,6 +39,7 @@ from starlette.responses import JSONResponse
 CHART_ROUTE: Final = "/api/chart"
 PLACE_SEARCH_ROUTE: Final = "/api/places/search"
 HEALTH_ROUTE: Final = "/api/health"
+TIME_CONVERT_ROUTE: Final = "/api/time/convert"
 # Not an OpenAPI path: the bundled page and its assets under the static mount.
 FRONTEND_ASSETS: Final = "frontend_assets"
 
@@ -49,9 +50,9 @@ RETRY_AFTER_SECONDS: Final = 5
 # cut and the refusal says so, so the answer cannot outgrow the request.
 MAX_REFUSAL_ISSUES: Final = 32
 
-_JSON_BODY_ROUTES: Final = frozenset({CHART_ROUTE, PLACE_SEARCH_ROUTE})
+_JSON_BODY_ROUTES: Final = frozenset({CHART_ROUTE, PLACE_SEARCH_ROUTE, TIME_CONVERT_ROUTE})
 _API_ROUTES: Final = frozenset({
-    CHART_ROUTE, PLACE_SEARCH_ROUTE, HEALTH_ROUTE,
+    CHART_ROUTE, PLACE_SEARCH_ROUTE, HEALTH_ROUTE, TIME_CONVERT_ROUTE,
 })
 _EVERY_ROUTE: Final = _API_ROUTES | {FRONTEND_ASSETS}
 
@@ -122,6 +123,26 @@ REFUSALS: Final[Mapping[str, Refusal]] = MappingProxyType({
         422, "這個本地時間在所選時區出現兩次；請以 fold 指定是哪一次。",
         frozenset({CHART_ROUTE}),
     ),
+    # A catalogue place that keeps Beijing time and Xinjiang time is computed
+    # only once the request names the birth record's clock (core.civil_time_basis).
+    "civil_time_basis_required": Refusal(
+        422,
+        "這個出生地的紀錄可能用北京時間，也可能用新疆時間；"
+        "請以 timezone.civil_time_basis 指明出生紀錄用的是哪一種。",
+        frozenset({CHART_ROUTE, TIME_CONVERT_ROUTE}),
+    ),
+    "civil_time_basis_not_applicable": Refusal(
+        422,
+        "timezone.civil_time_basis 只適用於目錄標示為同時使用北京時間與新疆時間的地點。",
+        frozenset({CHART_ROUTE, TIME_CONVERT_ROUTE}),
+    ),
+    # The helper answers only where its source table has rows
+    # (core.civil_time_sources); elsewhere it would give an offset without a source.
+    "time_conversion_zone_not_covered": Refusal(
+        422,
+        "換算助手目前只涵蓋臺灣、香港、澳門與中國大陸的 IANA 時區；其他時區請直接計算，卷宗會記下換算結果。",
+        frozenset({TIME_CONVERT_ROUTE}),
+    ),
     "house_system_unavailable": Refusal(
         422, "所選宮位制在這個位置無法計算；reason_code 說明原因。", frozenset({CHART_ROUTE}),
     ),
@@ -139,8 +160,10 @@ REFUSALS: Final[Mapping[str, Refusal]] = MappingProxyType({
     "swiss_ephemeris_error": Refusal(
         500, "Swiss Ephemeris 無法完成這次計算；錯誤內容不對外輸出。", frozenset({CHART_ROUTE}),
     ),
+    # The chart route reads the catalogue to learn whether a catalogue place
+    # keeps two clocks; it refuses rather than guess when it cannot.
     "place_catalog_unavailable": Refusal(
-        503, "內建地名目錄無法讀取。", frozenset({PLACE_SEARCH_ROUTE}),
+        503, "內建地名目錄無法讀取。", frozenset({PLACE_SEARCH_ROUTE, CHART_ROUTE}),
     ),
     "place_search_timeout": Refusal(
         503, "地名查詢超過語句時間預算而中止；請稍後重試，或改用較具體的查詢。",

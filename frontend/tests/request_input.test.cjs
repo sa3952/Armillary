@@ -134,3 +134,99 @@ test("civilHourOccurrences：小時內任一段重複就是模糊；鄰近的小
   assert.equal(RequestInput.civilHourOccurrences({ year: 2025, month: 1, day: 1, hour: 0 }, "Not/AZone"), null);
   assert.equal(RequestInput.civilHourOccurrences({ year: 2025, month: 1, day: 1, hour: NaN }, "UTC"), null);
 });
+
+// ── 民國年與日本年號 ──────────────────────────────────────────────
+// 期待值是逐條手打的史實，不由被測的年號表推出：民國元年＝1912；明治改元大正在
+// 1912 年 7 月 30 日（明治 45 年 7 月 29 日為明治最後一天），大正改元昭和在 1926 年
+// 12 月 25 日（大正 15 年 12 月 24 日為大正最後一天），昭和最後一天是 1989 年 1 月 7 日。
+const DATE_BOUNDS = { min: "1900-01-01", max: "2399-12-31" };
+const era = (name, year, month, day) => RequestInput.readEraDate(
+  { era: name, year: String(year), month: String(month), day: String(day) }, DATE_BOUNDS
+);
+
+test("年號換算：手打的史實逐條對上，回顯含換算式", () => {
+  for (const [args, iso] of [
+    [["roc", 64, 7, 15], "1975-07-15"],
+    [["roc", 1, 1, 1], "1912-01-01"],
+    [["roc", 79, 5, 15], "1990-05-15"],
+    [["roc", 34, 10, 25], "1945-10-25"],
+    [["roc", 89, 2, 29], "2000-02-29"],
+    [["roc", 9, 2, 29], "1920-02-29"],
+    [["roc", 488, 12, 31], "2399-12-31"],
+    [["meiji", 33, 1, 1], "1900-01-01"],
+    [["meiji", 45, 7, 29], "1912-07-29"],
+    [["taisho", 1, 7, 30], "1912-07-30"],
+    [["taisho", 12, 9, 1], "1923-09-01"],
+    [["taisho", 15, 12, 24], "1926-12-24"],
+    [["showa", 1, 12, 25], "1926-12-25"],
+    [["showa", 1, 12, 31], "1926-12-31"],
+    [["showa", 2, 1, 1], "1927-01-01"],
+    [["showa", 3, 2, 29], "1928-02-29"],
+    [["showa", 12, 10, 1], "1937-10-01"],
+    [["showa", 20, 8, 15], "1945-08-15"],
+    [["showa", 64, 1, 7], "1989-01-07"],
+  ]) {
+    const read = era(...args);
+    assert.equal(read.state, VALUE, `${args.join(" ")}：${read.reason || ""}`);
+    assert.equal(read.value.iso, iso, args.join(" "));
+  }
+  const roc = era("roc", 64, 7, 15).value;
+  assert.equal(roc.eraText, "民國 64 年 7 月 15 日");
+  assert.equal(roc.gregorianText, "西元 1975 年 7 月 15 日");
+  assert.equal(roc.formula, "64 ＋ 1911 ＝ 1975");
+  const showa = era("showa", 1, 12, 25).value;
+  assert.equal(showa.eraText, "昭和元年 12 月 25 日");
+  assert.equal(showa.formula, "1 ＋ 1925 ＝ 1926");
+  assert.equal(era("meiji", 45, 7, 29).value.formula, "45 ＋ 1867 ＝ 1912");
+  assert.equal(era("taisho", 15, 12, 24).value.formula, "15 ＋ 1911 ＝ 1926");
+});
+
+test("年號換算：改元日前後與不存在的日期一律拒絕，並說出原因", () => {
+  for (const [args, pattern] of [
+    [["taisho", 1, 7, 29], /大正元年從西元 1912 年 7 月 30 日開始/],
+    [["taisho", 1, 1, 1], /大正元年從西元 1912 年 7 月 30 日開始/],
+    [["showa", 1, 12, 24], /昭和元年從西元 1926 年 12 月 25 日開始/],
+    [["showa", 1, 3, 1], /昭和元年從西元 1926 年 12 月 25 日開始/],
+    [["meiji", 45, 7, 30], /明治的最後一天是西元 1912 年 7 月 29 日/],
+    [["meiji", 46, 1, 1], /明治的最後一天是西元 1912 年 7 月 29 日/],
+    [["taisho", 15, 12, 25], /大正的最後一天是西元 1926 年 12 月 24 日/],
+    [["taisho", 16, 1, 1], /大正的最後一天是西元 1926 年 12 月 24 日/],
+    [["showa", 64, 1, 8], /昭和的最後一天是西元 1989 年 1 月 7 日/],
+    [["roc", 88, 2, 29], /這一天不存在/],
+    [["roc", 64, 2, 30], /這一天不存在/],
+    [["roc", 64, 13, 1], /月份必須是 1 到 12/],
+    [["roc", 64, 0, 1], /月份必須是 1 到 12/],
+    [["roc", 0, 1, 1], /年份從元年（1）起算/],
+    [["roc", -1, 1, 1], /年份從元年（1）起算/],
+    [["roc", "64.5", 1, 1], /必須是整數/],
+    [["roc", 489, 1, 1], /西元 2400 年，超出本計算器的 1900–2399 年範圍/],
+    [["meiji", 32, 12, 31], /西元 1899 年，超出本計算器的 1900–2399 年範圍/],
+    [["heisei", 1, 1, 8], /請選擇紀年/],
+  ]) {
+    const read = era(...args);
+    assert.equal(read.state, INVALID, args.join(" "));
+    assert.match(read.reason, pattern, args.join(" "));
+  }
+  assert.equal(era("roc", "", "", "").state, EMPTY, "全部空白是「沒填」，不是錯誤");
+  assert.equal(era("roc", 64, "", 15).state, INVALID, "部分空白是錯誤");
+});
+
+test("年號換算：每個年號的每一天都換回同一天（逐日走過 1900–1989，另以民國走到 2399）", () => {
+  // 期待值只用上面手打的改元日判斷每一天屬於哪個年號，不讀被測模組的表。
+  const boundaries = [
+    ["meiji", 1867, "1900-01-01", "1912-07-29"],
+    ["taisho", 1911, "1912-07-30", "1926-12-24"],
+    ["showa", 1925, "1926-12-25", "1989-01-07"],
+    ["roc", 1911, "1912-01-01", "2399-12-31"],
+  ];
+  for (const [name, offset, first, last] of boundaries) {
+    const day = new Date(`${first}T00:00:00Z`);
+    const end = new Date(`${last}T00:00:00Z`);
+    for (; day <= end; day.setUTCDate(day.getUTCDate() + (name === "roc" ? 7 : 1))) {
+      const iso = day.toISOString().slice(0, 10);
+      const read = era(name, day.getUTCFullYear() - offset, day.getUTCMonth() + 1, day.getUTCDate());
+      assert.equal(read.state, VALUE, `${name} ${iso}`);
+      assert.equal(read.value.iso, iso);
+    }
+  }
+});

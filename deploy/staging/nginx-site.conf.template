@@ -370,6 +370,38 @@ server {
         proxy_pass http://172.31.240.2:8000;
     }
 
+    # Segment-bounded time-conversion subtree.  Its body is a birth date, time and
+    # zone, so it gets the chart's buffering and header stripping and must not
+    # fall through to `location /` and the static zone's 600 r/m.  The answer is
+    # zone arithmetic on the event loop, so the read timeout is the lookup's.
+    location ~ ^/api/time/convert(?:/|$) {
+        # An error_page here replaces every inherited one, so all four are named.
+        error_page 413 @armillary_api_error_413;
+        error_page 429 /_error/429.json;
+        error_page 502 /_error/502.json;
+        error_page 503 /_error/503.json;
+        limit_req zone=armillary_chart_client burst=5 nodelay;
+        limit_conn armillary_connections 32;
+
+        proxy_request_buffering on;
+        proxy_buffering off;
+        proxy_cache off;
+
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 10s;
+        proxy_read_timeout 10s;
+
+        proxy_http_version 1.1;
+        proxy_set_header Host $server_name;
+        proxy_set_header Connection "";
+        proxy_set_header Authorization "";
+        proxy_set_header Proxy-Authorization "";
+        proxy_set_header X-Forwarded-For "";
+        proxy_set_header X-Real-IP "";
+        proxy_set_header Forwarded "";
+        proxy_pass http://172.31.240.2:8000;
+    }
+
     location / {
         limit_req zone=armillary_static_client burst=40 nodelay;
         limit_conn armillary_connections 32;

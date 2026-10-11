@@ -46,13 +46,24 @@ python -m scripts.validation.build_place_catalog \
 Catalog、manifest、hashes、row counts、notices、Docker context and publication candidate change as one
 reviewed release unit. Source identity and licenses come from the manifest and distributed notices.
 
+`place-catalog-builder-v8` (2026-10-11, still schema 5) corrects GeoNames rows whose admin1 code names a
+province the row is nowhere near (the label read "Baiyanghe, Heilongjiang, CN" for a Xinjiang township):
+`SOURCE_ADMIN1_CORRECTIONS` names the Chinese rows found so far, each applied only while the source still carries the
+expected code and recorded under `source_admin1_corrections` with its own table digest, which the verifier
+binds and reads back row by row like the zone corrections. `tests/backend/test_place_catalog.py` checks every
+shipped Chinese row against its province's published extent.
+The table also names rows outside China, each checked in the same test file against the place's own
+administrative statement (Wikidata or the PhilAtlas gazetteer); a row whose region is right but whose coordinates
+belong to another place is not relabelled.
+
 Schema 5 (`place-catalog-builder-v7`, 2026-10-10) adds the `match_keys` column; the runtime serves
 schema 5 only. The v7 producer also rejects MOI rows the publisher left in while testing
 (`upstream_test_row`), appends 「（原始資料缺字）」 to the label of a name whose source wrote a lost
 character as `?` or `●` (`missing_glyph_policy`), labels Taiwan GeoNames rows with the county their
 admin2 code names instead of GeoNames' pre-1998 province (`display_name_policy.taiwan_admin1`), and
 leaves out named duplicate source rows through `SOURCE_ROW_EXCLUSIONS` (`source_exclusions`, bound
-like the corrections). Schema 4 producer (`place-catalog-builder-v4` from 2026-09-14): rows with a blank
+like the corrections); the same table also leaves out a row whose coordinates are another place's, with
+no row kept in its place. Schema 4 producer (`place-catalog-builder-v4` from 2026-09-14): rows with a blank
 or non-word name are rejected and counted in the manifest (`rejected_rows`);
 rows sharing one `display_name` receive a `disambiguator` (MOI village first,
 then a resolved GeoNames admin2 name, then a rounded coordinate as last

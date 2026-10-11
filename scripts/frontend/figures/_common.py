@@ -56,3 +56,22 @@ def calc_ut(swe, jd: float, body: int, flags: int | None = None) -> tuple:
 def indent(block: str, prefix: str = "    ") -> str:
     """A whole SVG placed inside a <figure>: every line indented once."""
     return "\n".join(prefix + line for line in block.splitlines())
+
+
+@contextmanager
+def product_charts() -> Iterator[Any]:
+    """`post(payload, expected=200)` against the real application in process,
+    the full (`detailed`) response, as the chart fixtures read it."""
+    with backend_on_path():
+        from fastapi.testclient import TestClient
+        from app.main import app
+
+        client = TestClient(app)
+
+        def post(payload: dict, expected: int = 200) -> dict:
+            response = client.post("/api/chart?projection=detailed", json=payload)
+            if response.status_code != expected:
+                raise RuntimeError(f"chart request answered {response.status_code}: {response.text[:300]}")
+            return response.json()
+
+        yield post

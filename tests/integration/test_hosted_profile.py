@@ -49,13 +49,14 @@ def test_api_method_rejections_keep_allow_header_before_static_mount():
     with _client() as client:
         observed = {
             path: (response.status_code, response.headers.get("allow"))
-            for path in ("/api/health", "/api/chart", "/api/places/search")
+            for path in ("/api/health", "/api/chart", "/api/places/search", "/api/time/convert")
             for response in [client.request("TRACE", path)]
         }
     assert observed == {
         "/api/health": (405, "GET, HEAD"),
         "/api/chart": (405, "POST"),
         "/api/places/search": (405, "POST"),
+        "/api/time/convert": (405, "POST"),
     }
 
 
@@ -135,6 +136,7 @@ def test_public_discovery_assets_are_exact_runtime_files_not_source_metadata():
     with _client() as client:
         robots = client.get("/robots.txt")
         sitemap = client.get("/sitemap.xml")
+        indexnow = client.get("/bbb6ac30c1952dbb592262ea2656d708.txt")
         source_manifest = client.get("/surfaces.json")
 
     assert robots.status_code == 200
@@ -144,6 +146,7 @@ def test_public_discovery_assets_are_exact_runtime_files_not_source_metadata():
     assert sitemap.headers["content-type"].split(";", 1)[0] in {"application/xml", "text/xml"}
     assert "https://projectarmillary.com/zh-TW/features" in sitemap.text
     assert "features.html" not in sitemap.text
+    assert indexnow.content == b"bbb6ac30c1952dbb592262ea2656d708"
     assert source_manifest.status_code == 404
 
 
@@ -151,10 +154,13 @@ def test_hosted_static_openapi_is_generated_offline_not_served():
     schema = json.loads(json.dumps(create_app(AppSettings()).openapi(), sort_keys=True))
     components = schema["components"]["schemas"]
 
-    assert set(schema["paths"]) == {"/api/chart", "/api/health", "/api/places/search"}
+    assert set(schema["paths"]) == {
+        "/api/chart", "/api/health", "/api/places/search", "/api/time/convert",
+    }
     chart = schema["paths"]["/api/chart"]["post"]
     search = schema["paths"]["/api/places/search"]["post"]
-    for endpoint in (chart, schema["paths"]["/api/health"]["get"], search):
+    convert = schema["paths"]["/api/time/convert"]["post"]
+    for endpoint in (chart, schema["paths"]["/api/health"]["get"], search, convert):
         success = endpoint["responses"]["200"]
         assert success["content"]["application/json"]["schema"]["type"] == "object"
         assert success["description"] != "Successful Response"
@@ -164,7 +170,7 @@ def test_hosted_static_openapi_is_generated_offline_not_served():
     assert set(issue["required"]) == {"loc", "type"}
     assert "msg" not in issue["properties"]
     assert "input" not in issue["properties"]
-    for endpoint in (chart, search):
+    for endpoint in (chart, search, convert):
         for status in ("400", "413", "415", "422", "431", "503"):
             assert endpoint["responses"][status]["content"]["application/json"][
                 "schema"

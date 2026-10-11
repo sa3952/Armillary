@@ -77,6 +77,7 @@ _DIGNITY_OBJECT = (
     "domicile_signs,exaltation_matched,exaltation_sign"
 )
 _SAMPLES = "representative_samples[]"
+_LOCAL_INSTANT = "local_time,utc_offset,utc_time,time_scale"
 
 # Kept although the page reads no value under them, each for a stated reader.
 PAGE_KEPT_UNREAD_PATHS: tuple[str, ...] = (
@@ -89,7 +90,6 @@ PAGE_KEPT_UNREAD_PATHS: tuple[str, ...] = (
     # each such path present where the page reads nothing under it.
     "calculation_dossier.calculation_policy.body_selection.excluded_optional_body_groups",
     "derived_geometry.antiscia.scope.semantics",
-    "derived_methods.aspects.participants[].key",
     "derived_methods.aspects.perfection.status",
     "derived_methods.declination_aspects.participant_keys",
     # A sample's own event carries no instant only when the sample and the
@@ -171,6 +171,7 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     "birth_time_sensitivity.planet_in_house[].{name,status,representative_house,"
     "sampled_houses}",
     "birth_time_sensitivity.angles.*.status",
+    "birth_time_sensitivity.angles.asc.sampled_sign_indices",
     "birth_time_sensitivity.house_cusps[].{house,status}",
     "birth_time_sensitivity.{sect,void_of_course}.status",
     "birth_time_sensitivity.lots.{discontinuity,fortune.status,spirit.status,"
@@ -202,13 +203,28 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     "orb_profile_detail.display_name}",
     "derived_methods.aspects.degree_based.angle_participation.executed",
     f"derived_methods.aspects.degree_based.orb_receipt.{{{_RECEIPT},fixed_pair_threshold_degrees}}",
-    "derived_methods.aspects.pairs[].{body_a_name,body_b_name,separation_degrees,"
+    # The aspect grid places each pair by its participants' keys and order.
+    "derived_methods.aspects.participants[].{key,name}",
+    "derived_methods.aspects.pairs[].{body_a,body_b,body_a_name,body_b_name,separation_degrees,"
     "applying_reason_code,aspects_in_orb}",
     "derived_methods.aspects.pairs[].whole_sign.{applicable,in_aspect,configuration_zh}",
     "derived_methods.aspects.pairs[].nearest_aspect.{key,signed_offset_from_exact_degrees}",
     "derived_methods.aspects.pairs[].aspect_targets[].{key,in_orb,in_orb_reason_code,applying,"
+    "offset_from_exact_degrees,"
     "partile,partile_reason_code,perfection_status,"
     "perfection.{hours_from_chart_moment,search_window_days}}",
+    f"derived_methods.planetary_hours.{{{_RECEIPT},time_basis}}",
+    "derived_methods.planetary_hours.chart_instant.planetary_day.{ruler_name,weekday,"
+    "sunrise_local_date,day_hour_minutes,night_hour_minutes}",
+    f"derived_methods.planetary_hours.chart_instant.planetary_day.{{sunrise,sunset,next_sunrise}}."
+    f"{{{_LOCAL_INSTANT}}}",
+    "derived_methods.planetary_hours.chart_instant.planetary_hour.{index,period,index_in_period,"
+    "ruler_name}",
+    f"derived_methods.planetary_hours.chart_instant.planetary_hour.{{start,end}}.{{{_LOCAL_INSTANT}}}",
+    "derived_methods.planetary_hours.birth_time_interval.{interval,crosses_hour_boundary,"
+    "crosses_planetary_day_boundary}",
+    "derived_methods.planetary_hours.birth_time_interval.candidates[].{planetary_day_ruler_name,"
+    "index,period,index_in_period,ruler_name,start.{local_time,utc_offset},end.{local_time,utc_offset}}",
     f"derived_methods.essential_dignities.{{{_RECEIPT},selected_profiles,"
     "research_comparison_profiles,sect.{selected_ruler_available,sect_dependent_components,"
     "in_near_horizon_band,near_horizon_band_half_width_degrees,is_day}}",

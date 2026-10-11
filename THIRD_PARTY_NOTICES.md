@@ -31,6 +31,15 @@ beside that exact sdist as `SWEPHELP_README.txt` and `SWEPHELP_LICENSE`.
 
 Coordinates are representative points, not verified addresses；neither provider endorses this service.
 
+## Chart glyphs
+
+The chart wheel's astrological symbols are SVG paths taken from the outlines of Noto Sans Symbols 2.003,
+Noto Sans Symbols 2 2.008 and Noto Sans 2.015：Copyright 2022 The Noto Project Authors
+（<https://github.com/notofonts/symbols>, <https://github.com/notofonts/latin-greek-cyrillic>），licensed under the
+[SIL Open Font License 1.1](https://openfontlicense.org). The paths are distributed under that licence; the
+copyright lines and the full licence text are in the header of `frontend/zh-TW/chart-glyphs.js` and in
+`third_party/noto-fonts/`, with each font's version and checksum. No font file is distributed.
+
 ## Source location
 
 Named paths are relative to the Corresponding Source tree, not the runtime image. For an eligible hosted

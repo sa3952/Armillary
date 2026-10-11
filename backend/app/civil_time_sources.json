@@ -1,0 +1,2572 @@
+{
+ "schema": "civil-time-sources-v1",
+ "tzdb_version_checked": "2026d",
+ "verification_levels": {
+  "read_original": "已讀原件",
+  "read_transcription": "已讀轉錄本",
+  "relayed": "轉引"
+ },
+ "sources": {
+  "tzdb-local-mean-time": {
+   "region": null,
+   "title": "地方平時（依經度推算的代表值）",
+   "document": "IANA 時區資料庫各區 Zone 列的地方平時（LMT）",
+   "verification_level": "read_original",
+   "read": [
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，各區 Zone 列",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "IANA 時區資料庫",
+    "url": "https://data.iana.org/time-zones/",
+    "note": "地方平時是資料庫依城市經度推算的代表值，不是當時公告的鐘點；資料庫自己說明 1970 年以前多為推定。"
+   }
+  },
+  "tw-1896": {
+   "region": "taiwan",
+   "title": "西部標準時（UTC+8）",
+   "document": "明治 28 年敕令第 167 號〈標準時ニ關スル件〉，日本《官報》第 3752 號（1895 年 12 月 28 日），1896 年 1 月 1 日施行",
+   "verification_level": "read_original",
+   "read": [
+    {
+     "label": "國立國會圖書館數位典藏《官報》第 3752 號影像（第 1 影格）",
+     "url": "https://dl.ndl.go.jp/pid/2947028/1/1"
+    },
+    {
+     "label": "維基文庫轉錄本",
+     "url": "https://ja.wikisource.org/wiki/標準時ニ關スル件_(公布時)"
+    },
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，Taiwan 一節",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "日本國立國會圖書館數位典藏",
+    "url": "https://dl.ndl.go.jp/pid/2947028",
+    "note": "線上影像免登入，永久識別碼 info:ndljp/pid/2947028。敕令只寫施行日，沒有寫鐘點。"
+   }
+  },
+  "tw-1937": {
+   "region": "taiwan",
+   "title": "改用日本中央標準時（UTC+9）",
+   "document": "昭和 12 年敕令第 529 號（刪除西部標準時一條），日本《官報》第 3220 號（1937 年 9 月 25 日），10 月 1 日施行",
+   "verification_level": "read_original",
+   "read": [
+    {
+     "label": "國立國會圖書館數位典藏《官報》第 3220 號影像（第 3 影格）",
+     "url": "https://dl.ndl.go.jp/pid/2959706/1/3"
+    },
+    {
+     "label": "維基文庫轉錄本",
+     "url": "https://ja.wikisource.org/wiki/明治二十八年勅令第百六十七號標準時ニ關スル件中改正ノ件"
+    },
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，Taiwan 一節",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "日本國立國會圖書館數位典藏",
+    "url": "https://dl.ndl.go.jp/pid/2959706",
+    "note": "線上影像免登入，永久識別碼 info:ndljp/pid/2959706。臺灣當地轉載的府報與告示第 207 號，國史館臺灣文獻館典藏號 0071033091a003、0071033091a006（我們只看了目錄，沒有開影像）。"
+   }
+  },
+  "tw-1945": {
+   "region": "taiwan",
+   "title": "改回 UTC+8",
+   "document": "臺灣總督府告示第 386 號〈臺灣ノ標準時ニ關スル件〉，《臺灣總督府官報》第 1018 號（1945 年 9 月 19 日；時區資料庫稱府報）：9 月 21 日午前一時改為午前零時",
+   "verification_level": "read_original",
+   "read": [
+    {
+     "label": "國史館臺灣文獻館文獻檔案查詢系統，典藏號 0072031018a005 影像",
+     "url": "https://onlinearchives.th.gov.tw/"
+    },
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，Taiwan 一節，Yu-Cheng Chuang 2014-07-03 註記",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "國史館臺灣文獻館文獻檔案查詢系統",
+    "url": "https://onlinearchives.th.gov.tw/",
+    "note": "以典藏號 0072031018a005 檢索，「線上閱覽」免登入；檢視器網址每次產生，請引用典藏號。時區資料庫引用的舊網址（db2.th.gov.tw）已失效。告示號碼取自目錄，影像上的標題字跡不清。"
+   }
+  },
+  "tw-1946": {
+   "region": "taiwan",
+   "title": "1946 年夏令時間",
+   "document": "臺灣省行政長官公署代電〈電知實行夏季時間〉（1946 年 5 月 16 日），《臺灣省行政長官公署公報》35 年夏字第 27 期第 431–432 頁：5 月 15 日起至 9 月 30 日止撥早一小時",
+   "verification_level": "read_original",
+   "read": [
+    {
+     "label": "國家圖書館政府公報資訊網影像",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E1097973"
+    },
+    {
+     "label": "維基文庫轉錄本",
+     "url": "https://zh.wikisource.org/wiki/電知實行夏季時間_(民國35年臺灣省行政長官公署代電)"
+    },
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，Taiwan 一節，Yu-Cheng Chuang 2014-07-02 註記",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "國家圖書館政府公報資訊網",
+    "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E1097973",
+    "note": "詳目頁附 PDF 影像，免登入。命令沒有寫開始的鐘點。時區資料庫引用的舊網址（subtpg.tpg.gov.tw）已失效；舊中央氣象局表把 1946 年寫成 5 月 1 日起，與命令不符。"
+   }
+  },
+  "tw-1947": {
+   "region": "taiwan",
+   "title": "1947 年夏令時間",
+   "document": "行政院電（4 月 15 日零時起至 9 月 30 日午夜止），《臺灣省行政長官公署公報》36 年夏字第 11 期第 173 頁；臺灣省政府代電延長至 10 月 31 日午夜，《臺灣省政府公報》36 年秋字第 68 期第 1073 頁",
+   "verification_level": "read_original",
+   "read": [
+    {
+     "label": "國家圖書館政府公報資訊網影像（4 月 15 日起）",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E10A3267"
+    },
+    {
+     "label": "國史館臺灣文獻館剪閱公報，典藏號 00301100020004 影像（延長令）",
+     "url": "https://onlinearchives.th.gov.tw/"
+    },
+    {
+     "label": "國民政府訓令（延長至 10 月 31 日）影像",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E1064612"
+    },
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，Taiwan 一節，Yu-Cheng Chuang 2014-07-02 註記",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "國家圖書館政府公報資訊網；國史館臺灣文獻館",
+    "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E10A3267",
+    "note": "兩處都可線上看影像。維基文庫轉錄本與時區資料庫的英文註記把原定結束日寫成 9 月 20 日，影像是 9 月 30 日；不影響換算，因為後來延長到 10 月 31 日。"
+   }
+  },
+  "tw-1948-1961": {
+   "region": "taiwan",
+   "title": "1948–1961 年夏令時間",
+   "document": "歷年總統令、行政院令（夏令時間、日光節約時間），刊於《總統府公報》與《臺灣省政府公報》",
+   "verification_level": "read_transcription",
+   "read": [
+    {
+     "label": "1948 年《臺灣省政府公報》37 年夏字第 7 期",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E1068952"
+    },
+    {
+     "label": "1949 年《總統府公報》第 221 號",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=D4900090"
+    },
+    {
+     "label": "1950 年《總統府公報》（只讀到轉錄本）",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E0606296"
+    },
+    {
+     "label": "1951 年《總統府公報》第 292 號",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=D5100020"
+    },
+    {
+     "label": "1952 年《臺灣省政府公報》41 年春字第 49 期",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E1007615"
+    },
+    {
+     "label": "1953 年《總統府公報》",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=D5300023"
+    },
+    {
+     "label": "1954 年《總統府公報》",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=D5400171"
+    },
+    {
+     "label": "1955 年《總統府公報》",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=D5500019"
+    },
+    {
+     "label": "1956 年《總統府公報》",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E0963238"
+    },
+    {
+     "label": "1957 年《總統府公報》",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=D5700026"
+    },
+    {
+     "label": "1958 年《總統府公報》第 899 號",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E0510480"
+    },
+    {
+     "label": "1959 年《總統府公報》第 1003 號",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=D5900025"
+    },
+    {
+     "label": "1960 年《總統府公報》第 1114 號",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=D6000015"
+    },
+    {
+     "label": "1961 年《總統府公報》第 1217 號",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E0504488"
+    },
+    {
+     "label": "1962 年停止實施，《臺灣省政府公報》第 4597 期",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E0967812"
+    },
+    {
+     "label": "中央氣象局舊表（網際網路檔案館 2011 年副本）",
+     "url": "https://web.archive.org/web/20110814111034/http://www.cwb.gov.tw/V6/astronomy/cdata/summert.htm"
+    },
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，Rule Taiwan 各列",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "國家圖書館政府公報資訊網",
+    "url": "https://gaz.ncl.edu.tw/",
+    "note": "各年詳目頁附 PDF 影像，免登入。1949、1951–1961 年讀了原件影像，1948 年讀了轉錄本與剪報標題，1950 年只讀到轉錄本，所以這一列標「已讀轉錄本」。各年日期都與時區資料庫一致；中央氣象局原網頁已失效。"
+   }
+  },
+  "tw-1974-1975": {
+   "region": "taiwan",
+   "title": "1974–1975 年日光節約時間",
+   "document": "總統令實施「日光節約時間」（1974 年 2 月、1975 年 3 月 21 日），4 月 1 日零時起至 9 月 30 日二十四時止，刊於《總統府公報》第 2695、2862 號",
+   "verification_level": "read_original",
+   "read": [
+    {
+     "label": "《總統府公報》第 2695 號（1974）",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E0510959"
+    },
+    {
+     "label": "《總統府公報》第 2862 號（1975）",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E0513445"
+    },
+    {
+     "label": "《臺灣省政府公報》63 年秋字第 76 期（恢復標準時間）",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E0835048"
+    },
+    {
+     "label": "《臺灣省政府公報》65 年春字第 53 期（1976 年起停止）",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E0805431"
+    }
+   ],
+   "holder": {
+    "name": "國家圖書館政府公報資訊網",
+    "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E0510959",
+    "note": "詳目頁附 PDF 影像，免登入。"
+   }
+  },
+  "tw-1979": {
+   "region": "taiwan",
+   "title": "1979 年日光節約時間",
+   "document": "臺灣省政府函轉行政院規定（1979 年 7 月 9 日，奉總統 6 月 28 日核定）：7 月 1 日零時起至 9 月 30 日二十四時止，《臺灣省政府公報》68 年秋字第 10 期",
+   "verification_level": "read_original",
+   "read": [
+    {
+     "label": "《臺灣省政府公報》68 年秋字第 10 期",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E0749862"
+    },
+    {
+     "label": "《臺灣省政府公報》68 年秋字第 76 期（恢復標準時間）",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E0751563"
+    },
+    {
+     "label": "tz 郵件列表 2010 年 4 月",
+     "url": "https://mm.icann.org/pipermail/tz/2010-April/016165.html"
+    }
+   ],
+   "holder": {
+    "name": "國家圖書館政府公報資訊網",
+    "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E0749862",
+    "note": "讀的是省政府轉發的函；1979 年的總統令原文這次沒有找到。"
+   }
+  },
+  "hk-1904": {
+   "region": "hong_kong",
+   "title": "香港改用 UTC+8",
+   "document": "香港政府憲報 1904 年第 719 號公告（10 月 30 日起採用東經 120 度時間，本地時間撥快 23 分 18 秒）及第 743、744 號（午炮、時間球）",
+   "verification_level": "read_original",
+   "read": [
+    {
+     "label": "香港大學圖書館 HKGRO：1904 年 10 月 21 日憲報",
+     "url": "https://sunzi.lib.hku.hk/hkgro/view/g1904/488317.pdf"
+    },
+    {
+     "label": "香港大學圖書館 HKGRO：1904 年 10 月 28 日憲報",
+     "url": "https://sunzi.lib.hku.hk/hkgro/view/g1904/488434.pdf"
+    },
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，Hong Kong 一節",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "香港大學圖書館 Hong Kong Government Reports Online",
+    "url": "https://sunzi.lib.hku.hk/hkgro/index.jsp",
+    "note": "PDF 須先開啟 HKGRO 首頁取得 cookie 才能下載。憲報只寫日期，沒有寫切換的鐘點；資料庫定在 10 月 30 日 01:00，當天中午的午炮另有可能。"
+   }
+  },
+  "hk-1941": {
+   "region": "hong_kong",
+   "title": "1941 年夏令時間與冬令時間",
+   "document": "The Hong Kong Daylight-Saving Regulations, 1941（憲報第 724 號，6 月 15 日 3 時起 UTC+9）及第 1134 號公告（10 月 1 日起冬令時間 UTC+8:30）",
+   "verification_level": "read_original",
+   "read": [
+    {
+     "label": "HKGRO：1941 年 6 月 13 日憲報",
+     "url": "https://sunzi.lib.hku.hk/hkgro/view/g1941/304271.pdf"
+    },
+    {
+     "label": "HKGRO：1941 年 9 月 19 日憲報",
+     "url": "https://sunzi.lib.hku.hk/hkgro/view/g1941/305516.pdf"
+    },
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，Hong Kong 一節",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "香港大學圖書館 Hong Kong Government Reports Online",
+    "url": "https://sunzi.lib.hku.hk/hkgro/index.jsp",
+    "note": "PDF 須先開啟 HKGRO 首頁取得 cookie。天文台的表只列 1941 年 6 月 15 日至 9 月 30 日，沒有列冬令時間。"
+   }
+  },
+  "hk-1941-1945": {
+   "region": "hong_kong",
+   "title": "日佔時期的東京時間（UTC+9）與 1945 年改回 UTC+8",
+   "document": "1941 年 12 月起改用東京時間，1945 年 11 月 18 日 02:00 恢復 UTC+8（依當時報刊）",
+   "verification_level": "relayed",
+   "read": [
+    {
+     "label": "香港天文台〈香港夏令時間〉（1942–1945 年列為全年）",
+     "url": "https://www.hko.gov.hk/tc/gts/time/Summertime.htm"
+    },
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，Hong Kong 一節，Phake Nick 2018-10-26、P Chan 2018-12-31 註記",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "香港公共圖書館多媒體資訊系統（舊報紙）",
+    "url": "https://mmis.hkpl.gov.hk",
+    "note": "沒有找到官方公告；開始與結束的日期依資料庫轉述的報紙，需到館或用多媒體資訊系統查閱。天文台表把 1945 年列為全年夏令時間，與資料庫的 11 月 18 日不同。"
+   }
+  },
+  "hk-1946-1979": {
+   "region": "hong_kong",
+   "title": "1946–1979 年夏令時間",
+   "document": "香港天文台〈香港夏令時間〉逐年表；Summer Time Ordinance（1946 年第 14 號，3 時 30 分切換）；立法局 1979 年 5 月 9 日決議",
+   "verification_level": "read_original",
+   "read": [
+    {
+     "label": "香港天文台〈香港夏令時間〉",
+     "url": "https://www.hko.gov.hk/tc/gts/time/Summertime.htm"
+    },
+    {
+     "label": "Summer Time Ordinance 1946（香港大學圖書館 Historical Laws of Hong Kong Online）",
+     "url": "https://oelawhk.lib.hku.hk/archive/files/bb74b06a74d5294620a15de560ab33c6.pdf"
+    },
+    {
+     "label": "立法局會議紀錄 1979 年 5 月 9 日",
+     "url": "https://www.legco.gov.hk/yr78-79/english/lc_sitg/hansard/h790509.pdf"
+    },
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，Hong Kong 一節",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "香港天文台；香港大學圖書館；立法會",
+    "url": "https://www.hko.gov.hk/tc/gts/time/Summertime.htm",
+    "note": "1947–1979 年天文台表的日期與資料庫逐年一致。1946 年天文台寫 4 月 20 日開始，資料庫依兩份報紙定為 4 月 21 日 00:00，可能是同一個午夜的兩種說法，沒有找到開始的命令。1953–1977 年各年的政府命令沒有讀；切換鐘點依條例與資料庫。"
+   }
+  },
+  "mo-1904": {
+   "region": "macau",
+   "title": "澳門改用 UTC+8",
+   "document": "1904 年 10 月 21 日第 204 號訓令（Portaria n.º 204）：10 月 30 日起時鐘撥快 25 分 50 秒，《澳門政府公報》1904 年第 44 號第 360 頁",
+   "verification_level": "read_original",
+   "read": [
+    {
+     "label": "澳門檔案館公報影像",
+     "url": "https://igallery.icm.gov.mo/Images/Archives/BO/MO_AH_PUB_BO_1904_10/MO_AH_PUB_BO_1904_10_00025_Grey.JPG"
+    },
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，Macau 一節",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "澳門檔案館公報影像",
+    "url": "https://igallery.icm.gov.mo/Images/Archives/BO/MO_AH_PUB_BO_1904_10/MO_AH_PUB_BO_1904_10_00025_Grey.JPG",
+    "note": "影像直連可用；時區資料庫引用的 archives.gov.mo 網址已失效。"
+   }
+  },
+  "mo-1941": {
+   "region": "macau",
+   "title": "1941 年改用 UTC+9",
+   "document": "立法條例第 732 號（Diploma legislativo n.º 732）：1941 年 12 月 21 日 23 時時鐘撥快 1 小時",
+   "verification_level": "read_original",
+   "read": [
+    {
+     "label": "澳門檔案館公報影像（1941 年 12 月）",
+     "url": "https://igallery.icm.gov.mo/Images/Archives/BO/MO_AH_PUB_BO_1941_12/MO_AH_PUB_BO_1941_12_00014_Grey.JPG"
+    },
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，Macau 一節",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "澳門檔案館公報影像",
+    "url": "https://igallery.icm.gov.mo/Images/Archives/BO/MO_AH_PUB_BO_1941_12/MO_AH_PUB_BO_1941_12_00014_Grey.JPG",
+    "note": "影像直連可用。"
+   }
+  },
+  "mo-1942-1945": {
+   "region": "macau",
+   "title": "1942–1945 年戰時時間",
+   "document": "澳門政府 1942–1945 年的立法條例與訓令（DIL 764、DIL 781、PT 3434、PT 3504、PT 3843）",
+   "verification_level": "relayed",
+   "read": [
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，Macau 一節，P Chan 2018-05-10 註記",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "澳門檔案館公報影像",
+    "url": "https://igallery.icm.gov.mo/",
+    "note": "我們沒有讀到這幾份原件。公報影像在澳門檔案館的影像庫，沒有索引，需依年月逐頁翻找；時區資料庫引用的 LegisMac 查詢系統已失效。"
+   }
+  },
+  "mo-1946-1979": {
+   "region": "macau",
+   "title": "1946–1979 年夏令時間",
+   "document": "地球物理氣象局〈夏令時間〉紀錄表；歷年夏令時間訓令（PT 3961 至 PT 166/79/M）",
+   "verification_level": "read_original",
+   "read": [
+    {
+     "label": "地球物理氣象局〈夏令時間〉",
+     "url": "https://www.smg.gov.mo/en/subpage/224/page/174"
+    },
+    {
+     "label": "1946 年第 3961 號訓令影像",
+     "url": "https://igallery.icm.gov.mo/Images/Archives/BO/MO_AH_PUB_BO_1946_04/MO_AH_PUB_BO_1946_04_00021_Grey.JPG"
+    },
+    {
+     "label": "1946 年第 4026 號訓令影像",
+     "url": "https://igallery.icm.gov.mo/Images/Archives/BO/MO_AH_PUB_BO_1946_09/MO_AH_PUB_BO_1946_09_00028_Grey.JPG"
+    },
+    {
+     "label": "1949 年第 4666 號訓令（公報目錄）影像",
+     "url": "https://igallery.icm.gov.mo/Images/Archives/BO/MO_AH_PUB_BO_1949_10/MO_AH_PUB_BO_1949_10_00038_Grey.JPG"
+    },
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，Macau 一節",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "地球物理氣象局；澳門檔案館公報影像",
+    "url": "https://www.smg.gov.mo/en/subpage/224/page/174",
+    "note": "氣象局現行表的開始日期逐年與資料庫一致；1949、1951、1952 年的結束日差一天，1949 年原件寫夏令鐘面 30 日零時，與資料庫的標準時 29 日 23 時是同一刻。其餘各年的訓令沒有逐一讀；1965、1966 年 02:30 的切換鐘點沒有核對。"
+   }
+  },
+  "cn-1901": {
+   "region": "mainland_china",
+   "title": "上海改用 UTC+8",
+   "document": "郭慶生〈中國百年標準時變遷〉稱上海「自十九世紀末」改用 UT+8；1901 年是資料庫採用的推定年份",
+   "verification_level": "relayed",
+   "read": [
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，China 一節，Paul Eggert 2017-01-05 註記",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": null,
+    "url": null,
+    "note": "確切的改用日期沒有文件；1901 年是時區資料庫的推定。"
+   }
+  },
+  "cn-1919": {
+   "region": "mainland_china",
+   "title": "1919 年上海夏令時間",
+   "document": "《申報》1919 年 4 月 11 日報導與海關《Returns of Trade and Trade Reports》1919 年第 711 頁",
+   "verification_level": "relayed",
+   "read": [
+    {
+     "label": "新浪新聞 2004 年 9 月 1 日報導（引《申報》）",
+     "url": "https://news.sina.com.cn/c/2004-09-01/19524201403.shtml"
+    },
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，China 一節，Phake Nick 與 Paul Eggert 2020-04-15 註記",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "上海圖書館等收藏的《申報》",
+    "url": null,
+    "note": "沒有找到可公開線上閱讀的原件，需透過《申報》全文資料庫或圖書館查閱；上海的結束日只見於資料庫轉引的海關報告。"
+   }
+  },
+  "cn-1940-1945": {
+   "region": "mainland_china",
+   "title": "1940–1945 年上海夏令時間",
+   "document": "李玉〈1940 年代上海「日光節約」運動研究〉，《南京社會科學》2014 年第 2 期第 144–150 頁，表 1",
+   "verification_level": "relayed",
+   "read": [
+    {
+     "label": "論文摘要（DOI）",
+     "url": "https://doi.org/10.15937/j.cnki.issn1001-8263.2014.02.002"
+    },
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，China 一節，Paul Eggert 2018-10-02 與 Phake Nick 2020-04-15 註記",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "中國知網（CNKI）",
+    "url": "https://doi.org/10.15937/j.cnki.issn1001-8263.2014.02.002",
+    "note": "我們只讀到摘要，沒有讀到表 1；全文需付費下載。表只列日期，切換鐘點是資料庫的推定；當時租界與日方控制區各有主張。"
+   }
+  },
+  "cn-1946-1949": {
+   "region": "mainland_china",
+   "title": "1946–1949 年夏令時間",
+   "document": "國民政府與總統府的全國夏令時間命令：1946 年 5 月 15 日至 9 月 30 日、1947 年 4 月 15 日至 10 月 31 日、1948 與 1949 年 5 月 1 日至 9 月 30 日",
+   "verification_level": "read_transcription",
+   "read": [
+    {
+     "label": "1946 年命令（行政長官公署公報轉載）",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E1097973"
+    },
+    {
+     "label": "1947 年國民政府訓令",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=E1064612"
+    },
+    {
+     "label": "1949 年《總統府公報》第 221 號",
+     "url": "https://gaz.ncl.edu.tw/detail.jsp?sysid=D4900090"
+    },
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，China 一節",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "國家圖書館政府公報資訊網",
+    "url": "https://gaz.ncl.edu.tw/",
+    "note": "1946、1947、1949 年讀了原件影像，1948 年只讀到轉錄本，所以這一列標「已讀轉錄本」。上海 1949 年 5 月 28 日的結束，是資料庫以中共接管上海為界的推定，不是命令。"
+   }
+  },
+  "cn-1986": {
+   "region": "mainland_china",
+   "title": "1986 年夏時制",
+   "document": "中共中央辦公廳、國務院辦公廳〈關於在全國範圍內實行夏時制的通知〉：5 月 4 日 2 時撥到 3 時，9 月 14 日 2 時撥回 1 時，轉載於《浙江政報》1986 年第 8 期第 21–22 頁",
+   "verification_level": "read_original",
+   "read": [
+    {
+     "label": "《浙江政報》1986 年第 8 期影像",
+     "url": "http://www.zj.gov.cn/attach/zfgb/198608.pdf"
+    },
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，China 一節，P Chan 2018-05-07 註記",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "浙江省人民政府",
+    "url": "http://www.zj.gov.cn/attach/zfgb/198608.pdf",
+    "note": "PDF 是掃描影像，網址會轉到雲端儲存位址；發文日期這次沒有在影像中讀到。"
+   }
+  },
+  "cn-1987": {
+   "region": "mainland_china",
+   "title": "1987 年夏時制",
+   "document": "國務院辦公廳〈關於一九八七年夏時制的公告〉（1987 年 2 月 15 日）：4 月 12 日至 9 月 13 日，凌晨 2 時切換，《國務院公報》1987 年第 3 號第 114 頁",
+   "verification_level": "read_original",
+   "read": [
+    {
+     "label": "《國務院公報》1987 年第 3 號",
+     "url": "https://www.gov.cn/gongbao/shuju/1987/gwyb198703.pdf"
+    },
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，China 一節，P Chan 2018-05-07 註記",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "中國政府網《國務院公報》",
+    "url": "https://www.gov.cn/gongbao/shuju/1987/gwyb198703.pdf",
+    "note": "線上 PDF（掃描影像）。"
+   }
+  },
+  "cn-1988-1991": {
+   "region": "mainland_china",
+   "title": "1988–1991 年夏時制",
+   "document": "國務院辦公廳〈關於夏時制的公告〉（1987 年 9 月 9 日）：自 1988 年起四月中旬第一個星期日凌晨 2 時開始、九月中旬第一個星期日凌晨 2 時結束，《國務院公報》1987 年第 21 號第 709 頁；1992 年起暫停，《國務院公報》1992 年第 5 號第 152 頁",
+   "verification_level": "read_original",
+   "read": [
+    {
+     "label": "《國務院公報》1987 年第 21 號",
+     "url": "https://www.gov.cn/gongbao/shuju/1987/gwyb198721.pdf"
+    },
+    {
+     "label": "《國務院公報》1992 年第 5 號",
+     "url": "https://www.gov.cn/gongbao/shuju/1992/gwyb199205.pdf"
+    },
+    {
+     "label": "IANA 時區資料庫 2026d 版 asia 檔，China 一節，P Chan 2018-05-07 註記",
+     "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    }
+   ],
+   "holder": {
+    "name": "中國政府網《國務院公報》",
+    "url": "https://www.gov.cn/gongbao/shuju/1987/gwyb198721.pdf",
+    "note": "線上 PDF（掃描影像）。「四月中旬第一個星期日」即 11 日以後的第一個星期日；1988 年是 4 月 17 日。資料庫引用的《人民日報》1988 年 4 月 12 日版面影像網址已失效。"
+   }
+  }
+ },
+ "periods": [
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1895-12-31T15:54:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1896"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1937-09-30T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "JST",
+   "summer_time": false,
+   "regime": "japan_standard_time",
+   "source": "tw-1937"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1945-09-20T16:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1945"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1946-05-14T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "tw-1946"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1946-09-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1946"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1947-04-14T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "tw-1947"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1947-10-31T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1947"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1948-04-30T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1948-09-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1949-04-30T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1949-09-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1950-04-30T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1950-09-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1951-04-30T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1951-09-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1952-02-29T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1952-10-31T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1953-03-31T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1953-10-31T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1954-03-31T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1954-10-31T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1955-03-31T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1955-09-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1956-03-31T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1956-09-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1957-03-31T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1957-09-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1958-03-31T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1958-09-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1959-03-31T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1959-09-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1960-05-31T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1960-09-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1961-05-31T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1961-09-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1948-1961"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1974-03-31T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "tw-1974-1975"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1974-09-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1974-1975"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1975-03-31T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "tw-1974-1975"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1975-09-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1974-1975"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1979-06-30T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "tw-1979"
+  },
+  {
+   "zone": "Asia/Taipei",
+   "from_utc": "1979-09-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "tw-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": null,
+   "utc_offset": "+07:36:42",
+   "abbreviation": "LMT",
+   "summer_time": false,
+   "regime": "local_mean_time",
+   "source": "tzdb-local-mean-time"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1904-10-29T17:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1904"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1941-06-14T19:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1941"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1941-09-30T19:00:00Z",
+   "utc_offset": "+08:30",
+   "abbreviation": "HKWT",
+   "summer_time": true,
+   "regime": "wartime_time",
+   "source": "hk-1941"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1941-12-24T15:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "JST",
+   "summer_time": false,
+   "regime": "japan_standard_time",
+   "source": "hk-1941-1945"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1945-11-17T17:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1941-1945"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1946-04-20T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1946-11-30T19:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1947-04-12T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1947-11-29T19:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1948-05-01T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1948-10-30T19:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1949-04-02T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1949-10-29T19:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1950-04-01T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1950-10-28T19:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1951-03-31T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1951-10-27T19:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1952-04-05T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1952-11-01T19:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1953-04-04T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1953-10-31T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1954-03-20T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1954-10-30T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1955-03-19T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1955-11-05T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1956-03-17T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1956-11-03T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1957-03-23T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1957-11-02T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1958-03-22T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1958-11-01T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1959-03-21T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1959-10-31T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1960-03-19T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1960-11-05T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1961-03-18T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1961-11-04T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1962-03-17T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1962-11-03T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1963-03-23T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1963-11-02T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1964-03-21T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1964-10-31T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1965-04-17T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1965-10-16T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1966-04-16T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1966-10-15T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1967-04-15T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1967-10-21T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1968-04-20T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1968-10-19T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1969-04-19T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1969-10-18T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1970-04-18T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1970-10-17T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1971-04-17T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1971-10-16T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1972-04-15T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1972-10-21T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1973-04-21T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1973-10-20T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1973-12-29T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1974-10-19T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1975-04-19T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1975-10-18T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1976-04-17T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1976-10-16T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1979-05-12T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "HKST",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Hong_Kong",
+   "from_utc": "1979-10-20T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "HKT",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "hk-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": null,
+   "utc_offset": "+07:34:10",
+   "abbreviation": "LMT",
+   "summer_time": false,
+   "regime": "local_mean_time",
+   "source": "tzdb-local-mean-time"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1904-10-29T16:25:50Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1904"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1941-12-21T15:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "+09",
+   "summer_time": false,
+   "regime": "wartime_time",
+   "source": "mo-1941"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1942-04-30T14:00:00Z",
+   "utc_offset": "+10:00",
+   "abbreviation": "+10",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1942-1945"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1942-11-17T13:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "+09",
+   "summer_time": false,
+   "regime": "wartime_time",
+   "source": "mo-1942-1945"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1943-04-30T14:00:00Z",
+   "utc_offset": "+10:00",
+   "abbreviation": "+10",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1942-1945"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1943-09-30T13:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "+09",
+   "summer_time": false,
+   "regime": "wartime_time",
+   "source": "mo-1942-1945"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1945-09-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1942-1945"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1946-04-30T15:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1946-09-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1947-04-19T15:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1947-11-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1948-05-02T15:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1948-10-31T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1949-04-02T15:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1949-10-29T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1950-04-01T15:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1950-10-28T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1951-03-31T15:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1951-10-28T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1952-04-05T15:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1952-11-01T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1953-04-04T15:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1953-10-31T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1954-03-20T15:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1954-10-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1955-03-19T15:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1955-11-05T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1956-03-17T15:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1956-11-03T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1957-03-23T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1957-11-02T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1958-03-22T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1958-11-01T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1959-03-21T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1959-10-31T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1960-03-19T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1960-11-05T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1961-03-18T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1961-11-04T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1962-03-17T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1962-11-03T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1963-03-23T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1963-11-02T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1964-03-21T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1964-10-31T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1965-04-17T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1965-10-16T17:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1966-04-16T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1966-10-15T17:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1967-04-15T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1967-10-21T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1968-04-20T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1968-10-19T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1969-04-19T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1969-10-18T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1970-04-18T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1970-10-17T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1971-04-17T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1971-10-16T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1972-04-15T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1972-10-21T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1973-04-21T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1973-10-20T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1973-12-29T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1974-10-19T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1975-04-19T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1975-10-18T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1976-04-17T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1976-10-16T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1979-05-12T19:30:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Macau",
+   "from_utc": "1979-10-20T18:30:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "mo-1946-1979"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": null,
+   "utc_offset": "+08:05:43",
+   "abbreviation": "LMT",
+   "summer_time": false,
+   "regime": "local_mean_time",
+   "source": "tzdb-local-mean-time"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1900-12-31T15:54:17Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "cn-1901"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1919-04-12T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "cn-1919"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1919-09-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "cn-1919"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1940-05-31T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "cn-1940-1945"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1940-10-12T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "cn-1940-1945"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1941-03-14T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "cn-1940-1945"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1941-11-01T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "cn-1940-1945"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1942-01-30T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "cn-1940-1945"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1945-09-01T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "cn-1940-1945"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1946-05-14T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "cn-1946-1949"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1946-09-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "cn-1946-1949"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1947-04-14T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "cn-1946-1949"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1947-10-31T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "cn-1946-1949"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1948-04-30T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "cn-1946-1949"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1948-09-30T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "cn-1946-1949"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1949-04-30T16:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "cn-1946-1949"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1949-05-27T15:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "cn-1946-1949"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1986-05-03T18:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "cn-1986"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1986-09-13T17:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "cn-1986"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1987-04-11T18:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "cn-1987"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1987-09-12T17:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "cn-1987"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1988-04-16T18:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "cn-1988-1991"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1988-09-10T17:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "cn-1988-1991"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1989-04-15T18:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "cn-1988-1991"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1989-09-16T17:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "cn-1988-1991"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1990-04-14T18:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "cn-1988-1991"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1990-09-15T17:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "cn-1988-1991"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1991-04-13T18:00:00Z",
+   "utc_offset": "+09:00",
+   "abbreviation": "CDT",
+   "summer_time": true,
+   "regime": "summer_time",
+   "source": "cn-1988-1991"
+  },
+  {
+   "zone": "Asia/Shanghai",
+   "from_utc": "1991-09-14T17:00:00Z",
+   "utc_offset": "+08:00",
+   "abbreviation": "CST",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "cn-1988-1991"
+  },
+  {
+   "zone": "Asia/Urumqi",
+   "from_utc": null,
+   "utc_offset": "+05:50:20",
+   "abbreviation": "LMT",
+   "summer_time": false,
+   "regime": "local_mean_time",
+   "source": "tzdb-local-mean-time"
+  },
+  {
+   "zone": "Asia/Urumqi",
+   "from_utc": "1927-12-31T18:09:40Z",
+   "utc_offset": "+06:00",
+   "abbreviation": "+06",
+   "summer_time": false,
+   "regime": "standard_time",
+   "source": "not_cited"
+  }
+ ]
+}

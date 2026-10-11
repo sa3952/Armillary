@@ -61,6 +61,7 @@
     "derived_methods.declination_aspects": { zh: "赤緯相位", section: "declination_aspects" },
     "derived_methods.aspects": { zh: "相位", section: "aspects" },
     "derived_methods.essential_dignities": { zh: "本質尊貴", section: "dignities" },
+    "derived_methods.planetary_hours": { zh: "行星日與行星時", section: "planetary_hours" },
 
     // 頂層鍵。這份宣告的範圍必須是回應的實際範圍：任何只涵蓋部分資料層的
     // 宣告，都會讓它沒列到的頂層鍵完全不受這道閘門檢查。
@@ -79,12 +80,8 @@
 
   const DASH = "—";
 
-  /** 後端在尊貴模組回英文星座鍵；其餘模組回黃經。統一成同一套中文名。 */
-  const SIGN_BY_KEY = Object.freeze({
-    aries: "牡羊", taurus: "金牛", gemini: "雙子", cancer: "巨蟹",
-    leo: "獅子", virgo: "處女", libra: "天秤", scorpio: "天蠍",
-    sagittarius: "射手", capricorn: "摩羯", aquarius: "水瓶", pisces: "雙魚",
-  });
+  /** 後端在尊貴模組回英文星座鍵；其餘模組回黃經。統一成 labels.js 的同一套中文名。 */
+  const SIGN_BY_KEY = Labels.VOCABULARIES.zodiac_sign;
   /** 依黃經序（0＝牡羊）的同一組名字。 */
   const SIGNS = Object.freeze(Object.values(SIGN_BY_KEY));
   const PLANET_BY_KEY = Object.freeze({
@@ -614,16 +611,9 @@
     };
   }
 
-  /**
-   * 宮位制的名稱以代碼取 labels.js 的中文名，與表單選單同一個出處；後端給的名稱
-   * 不同於中文名時附在括號裡（例：整宮（Whole Sign））。
-   */
+  /** 宮位制的名稱（labels.js；星盤圖頁尾同一句）。 */
   function houseSystemText(givenCode, name) {
-    // 頁面投影只帶名稱；代碼由後端名稱對照表找回，兩種投影說同一句話。
-    const code = givenCode || Labels.houseSystemCodeForName(name);
-    if (!code) return name || DASH;
-    const zh = Labels.label("house_system", code);
-    return name && name !== zh ? `${zh}（${name}）` : zh;
+    return Labels.houseSystemText(givenCode, name) || DASH;
   }
 
   /** 宮位 notes：宮位制，以及 house_division.availability 不是 available 時的說明。 */
@@ -794,6 +784,62 @@
     return `${rule}${angleRule}。${rest}`;
   }
 
+  // 相位方格裡的入／出相位縮寫；鍵同 APPLYING_ZH（core/aspects.py APPLYING_STATES）。
+  const APPLYING_SHORT_ZH = Object.freeze({
+    applying: "入",
+    exact_now: "精確",
+    separating: "出",
+    indeterminate_relative_station: "方向未定",
+  });
+
+  /**
+   * 相位方格：同一份 pairs 排成三角形，不另算。列是第 2 到最後一個參與者，欄是第 1 到倒數
+   * 第二個；一格是容許度內的每個相位（名稱、距精確的度數、入／出），容許度內沒有相位但
+   * 兩星的星座成相位時寫「整宮」加名稱。後端沒列出的組合（沒有相位）與對角線以上留空。
+   */
+  function aspectGridTable(aspects, zhByKey) {
+    const participants = Array.isArray(aspects.participants)
+      ? aspects.participants.filter((item) => isRecord(item) && item.key)
+      : [];
+    if (participants.length < 2) return null;
+    const index = new Map(participants.map((item, position) => [item.key, position]));
+    const cells = new Map();
+    (aspects.pairs || []).forEach((pair) => {
+      const a = index.get(pair.body_a);
+      const b = index.get(pair.body_b);
+      if (a === undefined || b === undefined) {
+        throw exportPipeline.incompleteResponse("相位組合的天體不在參與者清單裡");
+      }
+      const targets = Array.isArray(pair.aspect_targets) ? pair.aspect_targets : [];
+      const inOrb = targets.filter((target) => isRecord(target) && target.in_orb === true);
+      const ws = isRecord(pair.whole_sign) ? pair.whole_sign : {};
+      const text = inOrb.length
+        ? inOrb.map((target) => [
+          zhByKey.get(target.key) || `未識別的相位（${target.key}）`,
+          typeof target.offset_from_exact_degrees === "number"
+            ? `${num(Math.abs(target.offset_from_exact_degrees), 2)}°` : DASH,
+          target.applying === null || target.applying === undefined
+            ? null : presentClosedVocabulary(target.applying, APPLYING_SHORT_ZH, "入出相位狀態"),
+        ].filter(Boolean).join(" ")).join("；")
+        // 軸點組合沒有整宮 doctrine（applicable=false），不讀它的 in_aspect。
+        : ("applicable" in ws && ws.applicable === false) || ws.in_aspect !== true
+          ? DASH : `整宮${ws.configuration_zh || DASH}`;
+      cells.set(`${Math.max(a, b)}:${Math.min(a, b)}`, text);
+    });
+    const names = participants.map((item) => item.name || item.key);
+    return {
+      title: "相位方格",
+      variant: "aspect_grid",
+      columns: ["天體", ...names.slice(0, -1)],
+      rows: names.slice(1).map((name, row) => [
+        name,
+        ...names.slice(0, -1).map((_other, column) => (
+          column <= row ? (cells.get(`${row + 1}:${column}`) ?? "") : ""
+        )),
+      ]),
+    };
+  }
+
   function aspectsSection(response) {
     const aspects = (response.derived_methods || {}).aspects;
     // pairs 在 aspects 的**頂層**，不在 degree_based 底下。取錯層級的
@@ -861,6 +907,14 @@
           ];
         }),
       });
+    }
+    const grid = aspectGridTable(aspects, zhByKey);
+    if (grid) {
+      tables.push(grid);
+      notes.push(
+        "「相位方格」把同一份結果排成三角形：每一格是容許度內的相位、距精確的度數與入／出相位；"
+        + "容許度內沒有相位、但兩星的星座成相位時寫「整宮」加相位名；空白格是沒有相位的組合。"
+      );
     }
     return {
       id: "aspects",
@@ -1352,6 +1406,8 @@
     nutation_off_dignity_basis_not_authorized: "此參考框架下不適用（章動關閉）",
     nutation_off_lots_basis_not_authorized: "此參考框架下不適用（章動關閉）",
     nutation_off_void_of_course_basis_not_authorized: "此參考框架下不適用（章動關閉）",
+    // 行星日與行星時（app.core.planetary_hours）
+    no_sunrise_sunset_cycle_around_instant: "出生地這段時間沒有一天一次的日出日落（極晝、極夜或前後幾天），無法定出行星日",
     // 星曆涵蓋與搜尋
     ephemeris_segment_out_of_coverage: "日期超出這個天體星曆檔的涵蓋範圍",
     ephemeris_segment_file_missing: "伺服器缺少所需的星曆檔",
@@ -1879,6 +1935,116 @@
           ["兩種日出日落定義判法不同", yesNo(module.named_boundary_disagreement)],
         ],
       }],
+      blocks: [],
+    };
+  }
+
+  // core/planetary_hours.py WEEKDAYS 與 PERIODS 的閉集。
+  const WEEKDAY_ZH = Object.freeze({
+    monday: "星期一", tuesday: "星期二", wednesday: "星期三", thursday: "星期四",
+    friday: "星期五", saturday: "星期六", sunday: "星期日",
+  });
+  const PLANETARY_PERIOD_ZH = Object.freeze({ day: "晝", night: "夜" });
+  const PLANETARY_INTERVAL_ZH = Object.freeze({
+    stated_civil_hour: "所填的那一個鐘點",
+    civil_day: "出生當天（民用日期）",
+  });
+
+  /** 第 n 時（晝或夜第 k 時）。 */
+  function planetaryHourText(hour) {
+    if (!isRecord(hour) || typeof hour.index !== "number") return DASH;
+    const period = presentClosedVocabulary(hour.period, PLANETARY_PERIOD_ZH, "晝夜");
+    return `第 ${hour.index} 時（${period}第 ${hour.index_in_period} 時）`;
+  }
+
+  /** 當地時間與它的 UTC 偏移，同一格。 */
+  function planetaryLocalTime(instant) {
+    if (!isRecord(instant) || !instant.local_time) return DASH;
+    return `${instant.local_time} ${instant.utc_offset || ""}`.trim();
+  }
+
+  function planetaryHoursSection(response) {
+    const module = (response.derived_methods || {}).planetary_hours;
+    const status = moduleState(
+      response, { module: "planetary_hours" }, module,
+      isRecord(module) && isRecord(module.chart_instant)
+    );
+    if (status.state !== "present") {
+      return absentSectionFor("planetary_hours", "行星日與行星時", RING.METHOD,
+        "本次未計算行星日與行星時。", status);
+    }
+    const day = isRecord(module.chart_instant.planetary_day) ? module.chart_instant.planetary_day : {};
+    const hour = isRecord(module.chart_instant.planetary_hour) ? module.chart_instant.planetary_hour : {};
+    const interval = isRecord(module.birth_time_interval) ? module.birth_time_interval : {};
+    const candidates = Array.isArray(interval.candidates) ? interval.candidates : [];
+    const anchored = module.time_basis !== "birth_instant";
+    const notes = [
+      "行星日從日出算起，不從午夜算起：日出到日落十二等分為晝時，日落到下一次日出十二等分為夜時，"
+      + "所以晝時與夜時通常不等長。第一時之主是日出那天（民用日期）的七曜之主，"
+      + "之後依迦勒底序（土星、木星、火星、太陽、金星、水星、月亮）逐時輪替。",
+      "日出與日落用太陽上緣、含標準大氣折射、從地表觀測者看、不計地平俯角，與「升降與中天」同一個定義。",
+    ];
+    if (anchored) {
+      notes.push(
+        "出生時刻不精確：「代表性時刻所在的行星日與行星時」表讀的是計算用的代表性時刻，不是出生時刻；"
+        + `「可能的行星時」表列出${presentClosedVocabulary(interval.interval, PLANETARY_INTERVAL_ZH, "區間")}`
+        + "內每一個可能的行星時。"
+        + (interval.crosses_hour_boundary === true ? "這段時間跨過行星時的交界，行星時無法只定一個。" : "")
+        + (interval.crosses_planetary_day_boundary === true ? "這段時間也跨過日出，行星日之主有兩個可能。" : "")
+      );
+    }
+    const eras = [day.sunrise, day.sunset, day.next_sunrise, hour.start, hour.end]
+      .filter((instant) => isRecord(instant) && instant.utc_time)
+      .map((instant) => instant.time_scale);
+    const timed = timedTable("時刻", eras);
+    const utcCell = (instant) => (
+      isRecord(instant) && instant.utc_time ? timed.cell(instant.utc_time, instant.time_scale) : DASH
+    );
+    const weekday = presentClosedVocabulary(day.weekday, WEEKDAY_ZH, "星期");
+    const tables = [
+      {
+        title: anchored ? "代表性時刻所在的行星日與行星時" : "出生時刻所在的行星日與行星時",
+        columns: ["項目", "數值"],
+        rows: [
+          ["行星日之主", `${day.ruler_name || DASH}（日出在 ${day.sunrise_local_date || DASH}，${weekday}）`],
+          ["行星時", planetaryHourText(hour)],
+          ["行星時之主", hour.ruler_name || DASH],
+          ["一個晝時的長度（分鐘）", num(day.day_hour_minutes, 1)],
+          ["一個夜時的長度（分鐘）", num(day.night_hour_minutes, 1)],
+        ],
+      },
+      {
+        // 時間尺度標在世界時欄（timed.heading），不標在表題：當地時間欄不是 UTC。
+        title: "行星日與行星時的起訖時刻",
+        columns: ["事件", "當地時間", timed.heading("世界時")],
+        rows: [
+          ["日出（行星日開始）", day.sunrise],
+          ["日落（晝時結束、夜時開始）", day.sunset],
+          ["下一次日出（行星日結束）", day.next_sunrise],
+          ["本行星時開始", hour.start],
+          ["本行星時結束", hour.end],
+        ].map(([label, instant]) => [label, planetaryLocalTime(instant), utcCell(instant)]),
+      },
+    ];
+    if (anchored) {
+      tables.push({
+        title: "可能的行星時",
+        columns: ["行星日之主", "行星時", "行星時之主", "開始（當地時間）", "結束（當地時間）"],
+        rows: candidates.map((item) => [
+          item.planetary_day_ruler_name || DASH,
+          planetaryHourText(item),
+          item.ruler_name || DASH,
+          planetaryLocalTime(item.start),
+          planetaryLocalTime(item.end),
+        ]),
+      });
+    }
+    return {
+      id: "planetary_hours", title: "行星日與行星時",
+      layer_label: RING.METHOD.layer,
+      status,
+      notes,
+      tables,
       blocks: [],
     };
   }
@@ -2977,6 +3143,10 @@
             ["出生時刻把握程度", Labels.label("birth_time_precision", receipt.birth_time_precision)],
             ["本地時間", (time.input_local_time)],
             ["時區", time.timezone_label],
+            // 新疆的地點由使用者指明出生紀錄用的鐘點；只在真的做了這個選擇時出現。
+            ...((receipt.timezone || {}).civil_time_basis
+              ? [["出生紀錄的鐘點", Labels.label("civil_time_basis", receipt.timezone.civil_time_basis)]]
+              : []),
             ["UTC 偏移", utcOffsetText(time.utc_offset_hours)],
             // 後端在模糊時刻已經逐字說明採用了
             // 哪一次、另一次是什麼，前端卻整份丟掉。使用者因此看不出自己
@@ -3050,11 +3220,109 @@
   /**
    * 回應 -> sections。這是唯一一處把後端形狀翻成顯示投影的地方。
    */
+  // ═══ 本命盤速覽 ═════════════════════════════════════════
+  //
+  // 太陽、月亮與上升的星座，排在結果最前面。不另算：單一星座照印天體表與軸點表
+  // 那一格（同一個 signPosition）；出生時刻不精確時，候選星座讀後端取樣的星座集合
+  // （只知小時：body_signs、angles.asc；只知日期：position_ranges），集合有兩個以上
+  // 就全部列出。集合只含取樣時刻看到的星座，所以註明「取樣到的」。不寫任何解讀。
+  const SUMMARY_TITLE = "本命盤速覽";
+  const SUMMARY_CHANGES = "（這段時間內會換星座）";
+
+  /** 星座索引依黃道順序排：從前一個星座不在集合裡的那一個開始，跨 0° 時雙魚接牡羊。 */
+  function zodiacOrder(indices) {
+    const present = new Set(indices);
+    const start = indices.find((index) => !present.has((index + 11) % 12));
+    if (start === undefined) return indices.slice().sort((a, b) => a - b);
+    return Array.from({ length: 12 }, (_, step) => (start + step) % 12)
+      .filter((index) => present.has(index));
+  }
+
+  /** 一個天體或上升點的那一格：取樣集合有兩個以上星座就列候選，否則照印代表值。 */
+  function summaryCell(sampled, position) {
+    const indices = isRecord(sampled) && Array.isArray(sampled.sampled_sign_indices)
+      ? sampled.sampled_sign_indices.filter((index) => Number.isInteger(index) && index >= 0 && index < 12)
+      : null;
+    if (indices && indices.length > 1) {
+      const names = zodiacOrder(indices).map((index) => SIGNS[index]);
+      return `${names.slice(0, -1).join("、")}或${names[names.length - 1]}${SUMMARY_CHANGES}`;
+    }
+    if (indices && indices.length === 0) return samplingStatus(sampled.status);
+    return signPosition(position);
+  }
+
+  function summarySection(response, angles) {
+    // 日心或質心沒有地表觀測者：與軸點表同一個拒絕與原因。
+    if (angles.status.state === "refused" && angles.status.reason_code === "non_earth_observer_center") {
+      return absentSectionFor("summary", SUMMARY_TITLE, RING.ASTRONOMICAL, "", angles.status);
+    }
+    const sensitivity = isRecord(response.birth_time_sensitivity) ? response.birth_time_sensitivity : {};
+    const precision = sensitivity.precision;
+    const sampledList = precision === "approximate_hour" ? sensitivity.body_signs
+      : precision === "date_only" ? sensitivity.position_ranges : null;
+    const samplesByKey = Object.fromEntries(
+      (Array.isArray(sampledList) ? sampledList : [])
+        .filter((item) => isRecord(item) && item.key)
+        .map((item) => [item.key, item])
+    );
+    const bodies = (response.astronomical_data || {}).bodies || [];
+    const bodyRow = (key, label) => {
+      const body = bodies.find((item) => isRecord(item) && item.key === key);
+      return [label, summaryCell(samplesByKey[key], body ? body.sign_position : null)];
+    };
+
+    const angleRecord = response.astronomical_data.angles;
+    const ascPosition = isRecord(angleRecord) && isRecord(angleRecord.sign_positions)
+      ? angleRecord.sign_positions.asc : null;
+    let ascText;
+    if (angles.status.state === "present") {
+      const sampledAngles = precision === "approximate_hour" && isRecord(sensitivity.angles)
+        ? sensitivity.angles.asc : null;
+      ascText = summaryCell(sampledAngles, ascPosition);
+    } else if (angles.status.reason_code === "date_only_no_birth_time") {
+      ascText = "需要出生時間";
+    } else if (angles.status.state === "not_requested") {
+      ascText = "本次未計算軸點";
+    } else {
+      ascText = moduleReason(angles.status.reason_code);
+    }
+
+    const notes = [];
+    if (precision === "approximate_hour" || precision === "date_only") {
+      notes.push("出生時刻不精確：只有一個星座的，度數取自代表性時刻，不是出生時刻；"
+        + "會換星座的，列出取樣到的每一個星座。");
+    }
+    if (angles.status.reason_code === "date_only_no_birth_time") {
+      notes.push("上升星座需要出生時刻；知道大約幾點時，可改選「只知道約略小時」。");
+    }
+
+    const sidereal = (response.computation_mode || {}).zodiac === "sidereal";
+    return {
+      id: "summary",
+      title: SUMMARY_TITLE,
+      layer_label: RING.ASTRONOMICAL.layer,
+      status: { state: "present" },
+      notes,
+      tables: [{
+        title: "太陽、月亮與上升",
+        columns: ["項目", sidereal ? "星座度數（恆星黃道）" : "星座度數"],
+        rows: [bodyRow("sun", "太陽星座"), bodyRow("moon", "月亮星座"), ["上升星座", ascText]],
+      }],
+      // 表後一行指向完整的表；畫面把〈〉裡的區段名換成連結。
+      blocks: [angles.status.state === "present"
+        ? "完整數值見〈天體位置〉與〈軸點〉。"
+        : "完整數值見〈天體位置〉。"],
+    };
+  }
+
   function buildSections(response) {
     if (!isRecord(response)) throw new Error("缺少可用的 backend response。");
     // 先確認版本與狀態權威；之後各區只讀，不再替缺席的權威猜狀態。
     exportPipeline.assertRenderableResponse(response);
+    const angles = anglesSection(response);
     return withReasonLabels([
+      // 速覽在最前面：剛算完的人先看到最常被問到的三個星座，細節在後面各區。
+      summarySection(response, angles),
       timeSection(response),
       // 敏感度緊接在時間轉換之後。它限定後面每一區
       // 結果的成立範圍，排在第二十幾區等於讀完全部結果才知道哪些會變。
@@ -3065,7 +3333,7 @@
       lunarApsidesSection(response),
       parallaxMoonSection(response),
       fixedStarsSection(response),
-      anglesSection(response),
+      angles,
       extraAnglesSection(response),
       lunarEventsSection(response),
       horizonEventsSection(response),
@@ -3074,6 +3342,7 @@
       housesSection(response),
       planetInHouseSection(response),
       sectSection(response),
+      planetaryHoursSection(response),
       lotsSection(response),
       voidOfCourseSection(response),
       aspectsSection(response),
@@ -3137,6 +3406,7 @@
             title: table.title,
             columns: table.columns,
             rows: table.rows,
+            ...(table.variant ? { variant: table.variant } : {}),
           })),
           section.blocks.map((block) => ({ type: "block", text: block }))
         ),
