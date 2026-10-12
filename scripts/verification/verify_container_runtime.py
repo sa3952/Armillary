@@ -569,11 +569,11 @@ def _compose_environment(interpolation: dict[str, str]) -> dict[str, str]:
 
 
 def _compose_service_model(
-    interpolation: dict[str, str], files: tuple[str, ...] = COMPOSE_FILES,
+    interpolation: dict[str, str], files: tuple[str, ...] = COMPOSE_FILES, root: Path | None = None,
 ) -> dict[str, Any]:
     command = ["docker", "compose"]
     for relative in files:
-        command += ["--file", str(PROJECT_ROOT / relative)]
+        command += ["--file", str((PROJECT_ROOT if root is None else root) / relative)]
     output = _run([*command, "config", "--format", "json"], env=_compose_environment(interpolation)).stdout
     try:
         service = json.loads(output)["services"][COMPOSE_SERVICE]
@@ -725,7 +725,7 @@ def _start_container(image: str, workers: int, platform: str | None) -> tuple[st
             "BACKEND_IMAGE_ID": image_id,
         })
         # Production compose activates the pair's immutable image ID, never a
-        # tag another image of the same revision could move (CX-1009 #1).
+        # tag another image of the same revision could move.
         if service.get("image") != image_id:
             raise GateFailure(
                 f"compose activates {service.get('image')!r}, not the image ID under test {image_id}"

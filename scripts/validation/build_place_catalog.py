@@ -120,7 +120,7 @@ CORRECTION_ROW_ABSENT = "row_absent"
 # Named corrections to individual source rows.  Each entry states the value
 # the source is expected to carry; the correction is applied only when that
 # expectation holds, so a silently changed upstream row is reported rather
-# than overwritten.  ASTRO-34: two Auckland suburbs carry Pacific/Chatham
+# than overwritten.  Two Auckland suburbs carry Pacific/Chatham
 # (UTC+12:45 / +13:45) although they sit at 174.74°E, -36.7°, inside
 # Pacific/Auckland; the 45-minute offset moves every house cusp.  The other
 # rows were found by checking each zone against the country's zone.tab entries
@@ -276,6 +276,148 @@ SOURCE_TIMEZONE_CORRECTIONS: dict[str, dict[str, str]] = {
     },
 }
 
+# Vietnam was divided from 1954 to 1976 at a line that ran down the Bến Hải river
+# (source 16.919 N, mouth 17.015 N; Wikidata Q1931412) and, west of Bo Ho Su, due
+# west to the Laos border.  South Vietnam kept UTC+8 from 1959-12-31 23:00 to
+# 1975-06-13 while the North kept UTC+7; tzdata's zone1970.tab gives south
+# Vietnam Asia/Ho_Chi_Minh and north Vietnam Asia/Bangkok.  GeoNames gives these
+# rows the other side's zone, which moves a birth of those years by an hour.
+# Each row lies outside 16.88-17.10 N, the band the line runs in, except Gio
+# Linh, which is placed by its district.  Each entry is (row id, name and
+# coordinates as GeoNames gives them).
+_VIETNAM_SIDE_ZONES = {"north": "Asia/Bangkok", "south": "Asia/Ho_Chi_Minh"}
+_VIETNAM_SIDE_REASONS = {
+    "south": (
+        "south of the 1954-1976 Bến Hải demarcation line (Wikidata Q1931412), where South Vietnam "
+        "kept UTC+8 from 1959-12-31 to 1975-06-13; tzdata zone1970.tab gives south Vietnam "
+        "Asia/Ho_Chi_Minh, and Asia/Bangkok stays at UTC+7"
+    ),
+    "north": (
+        "north of the 1954-1976 Bến Hải demarcation line (Wikidata Q1931412), where North Vietnam "
+        "kept UTC+7; tzdata zone1970.tab gives north Vietnam Asia/Bangkok, and Asia/Ho_Chi_Minh "
+        "carries South Vietnam's UTC+8 of 1959-12-31 to 1975-06-13"
+    ),
+}
+_VIETNAM_ROWS_BY_SIDE: dict[str, tuple[tuple[str, str], ...]] = {
+    "south": (
+        ("8656223", "A Roàng Hai (16.11247, 107.39699)"),
+        ("8656112", "Khe Tre (16.1691, 107.71793)"),
+        ("8656219", "Hương Nguyên (16.23873, 107.44103)"),
+        ("1594548", "A Lưới (16.27228, 107.23385)"),
+        ("1569850", "Phú Vang (16.43911, 107.71438)"),
+        ("1580240", "Huế (16.4619, 107.59546)"),
+        ("1580092", "Hương Trà (16.52539, 107.4755)"),
+        ("8656203", "Sịa (16.57452, 107.51066)"),
+        ("1570863", "Phong Điền (16.58321, 107.36438)"),
+        ("1579363", "Khe Sanh (16.62825, 106.73884)"),
+        ("8650753", "Krông Klang (16.68906, 106.8874)"),
+        ("1581317", "Hải Lăng (16.69347, 107.25124)"),
+        ("1565760", "Ái Tử (16.76886, 107.16504)"),
+        ("1586384", "Cam Lộ (16.80797, 106.99405)"),
+        ("1582926", "Ðông Hà (16.81625, 107.10031)"),
+        (
+            "1581673",
+            "Gio Linh (16.9248, 107.08438), Gio Linh commune of Gio Linh District (Wikidata Q10761602), "
+            "across the Hiền Lương bridge (Q1537236, 17.004 N) from Vĩnh Linh",
+        ),
+    ),
+    "north": (
+        ("1570668", "Phúc Trạch (18.13333, 105.76667)"),
+        ("10275425", "Hòa Hợp (18.3114, 105.9099)"),
+        ("13526847", "Đồng Lộc (18.37606, 105.71747)"),
+        ("1563559", "Trường Sơn (18.38333, 105.73333)"),
+        ("1587254", "Bùi Xá (18.38983, 105.82503)"),
+        ("1560038", "Khánh Vĩnh Yên (18.46312, 105.7131)"),
+        ("13512656", "Kim Song Trường (18.46343, 105.68731)"),
+        ("13589184", "Yên Lộc (18.46476, 105.70884)"),
+        ("1584601", "Cửa Lô (18.81667, 105.71667)"),
+        ("1560065", "Yên Thượng (18.88333, 105.28333)"),
+        ("1578904", "Kim Liên (18.88333, 105.31667)"),
+        ("8628059", "Thái Hòa (18.92031, 104.97441)"),
+        ("1570686", "Phúc Sơn (18.96667, 105.05)"),
+        ("1560578", "Xuân Lạc (19.0, 105.28333)"),
+        ("1572588", "Nghĩa Đàn (19.3, 105.43333)"),
+        ("8628018", "Bản Na Hỷ (19.56361, 104.53459)"),
+        ("1568142", "Sầm Sơn (19.73333, 105.9)"),
+        ("1577859", "Thị Trấn Lam Sơn (19.9047, 105.40562)"),
+        ("1587919", "Bỉm Sơn (20.07806, 105.86028)"),
+        ("8554466", "Hanoi (20.32773, 106.01208)"),
+        ("1582367", "Đố Sơn (20.71361, 106.78944)"),
+        ("1586052", "Cát Bà (20.72779, 107.04819)"),
+        ("1560551", "Xuân Mai (20.9, 105.58333)"),
+        ("13494192", "Ecopark (20.9621, 105.9318)"),
+        ("13494195", "Vinhomes Royal City (21.0028, 105.8151)"),
+        ("13494193", "Vinhomes Smart City (21.0045, 105.7404)"),
+        ("1586357", "Cẩm Phả Mines (21.01667, 107.3)"),
+        ("12808881", "Ô Chợ Dừa (21.02146, 105.82464)"),
+        ("12808882", "Láng Thượng (21.02374, 105.8036)"),
+        ("1563241", "Thành Phố Uông Bí (21.03433, 106.77049)"),
+        ("8200721", "Xuân Trùng (21.05751, 105.28383)"),
+        ("1574873", "Thị Trấn Mạo Khê (21.05858, 106.59255)"),
+        ("13405933", "Bắc Từ Liêm (21.06532, 105.74661)"),
+        ("1585489", "Chí Linh (21.06667, 106.31667)"),
+        ("8232480", "Pú Hồng (21.0696, 103.23711)"),
+        ("1570263", "Phù Ninh (21.08333, 105.95)"),
+        ("1584955", "Cổ Lóa (21.11667, 105.86667)"),
+        ("1560830", "Trại Khoai (21.13174, 105.34479)"),
+        ("8340760", "Cung Kiệm (21.18697, 106.16076)"),
+        ("12382295", "Quang Minh (21.18884, 105.77269)"),
+        ("8201690", "Phong Châu (21.23931, 105.43247)"),
+        ("1562818", "Việt Yên (21.26667, 106.13333)"),
+        ("1591468", "Bắc Lũng (21.26667, 106.38333)"),
+        ("1564589", "Thị Trấn Tiên Yên (21.33133, 107.40533)"),
+        ("1579752", "Kép (21.4, 106.26667)"),
+        ("1590900", "Thị Trấn Thuận Châu (21.43849, 103.69)"),
+        ("1572221", "Nhã Nam (21.45, 106.1)"),
+        ("13513036", "Phổng Lăng (21.46463, 103.67036)"),
+        ("1564065", "Thị Trấn Trạm Tấu (21.46659, 104.37966)"),
+        ("1570043", "Phương Linh (21.46709, 105.09871)"),
+        ("13513037", "Thành phố Sông Công (21.4772, 105.84137)"),
+        ("1589412", "Nà Tấu (21.50635, 103.1178)"),
+        ("1563509", "Tuần Giáo (21.58333, 103.41667)"),
+        ("1572565", "Nghĩa Lộ (21.6, 104.51667)"),
+        ("1584242", "Thị Trấn Đại Từ (21.63384, 105.63766)"),
+        ("1575247", "Lương Bằng (21.64841, 105.02855)"),
+        ("1573844", "Thị Trấn Na Dương (21.7025, 106.95552)"),
+        ("1560344", "Thị Trấn Yên Bình (21.72585, 104.96346)"),
+        ("8425634", "Mường Chà (21.76172, 103.09783)"),
+        ("13513035", "Si Pa Phìn (21.80147, 102.96263)"),
+        ("1571833", "Nong Hạ (21.95, 105.8)"),
+        ("1582998", "Thị Trấn Đồng Đăng (21.9511, 106.69767)"),
+        ("1586153", "Cao Ký (21.98333, 105.85)"),
+        ("1574257", "Mường Lay (22.0, 103.13333)"),
+        ("13494381", "Lay Nưa (22.01758, 103.11625)"),
+        ("13526660", "Na Lay (22.03509, 103.15347)"),
+        ("1572898", "Thị Trấn Na Sầm (22.05639, 106.6151)"),
+        ("1579615", "Thị Trấn Khánh Yên (22.08935, 104.25149)"),
+        ("1573111", "Nằm Vi (22.21667, 102.51667)"),
+        ("1588242", "Thị Trấn Phố Ràng (22.23429, 104.47643)"),
+        ("1565969", "Thị Trấn Thất Khê (22.25525, 106.47359)"),
+        ("1576275", "Lao Chải (22.31377, 103.86844)"),
+        ("1570880", "Thị Trấn Phố Lu (22.31918, 104.18719)"),
+        ("1581341", "Hạ Hiệu (22.43333, 105.85)"),
+        ("1585312", "Chợ Rã (22.45, 105.7)"),
+        ("1591440", "Bắc Quang (22.48333, 104.86667)"),
+        ("1567221", "Thị Trấn Tà Lùng (22.4979, 106.5669)"),
+        ("1571725", "Thị Trấn Nước Hai (22.73738, 106.15216)"),
+        ("1563704", "Thị Trấn Trùng Khánh (22.83514, 106.52496)"),
+        ("1574706", "Thị Trấn Mèo Vạc (23.16411, 105.40993)"),
+        ("1570907", "Thị Trấn Phố Bảng (23.25432, 105.18448)"),
+        ("1568039", "Sà Phìn (23.26667, 105.25)"),
+        ("1575552", "Lũng Cú (23.36106, 105.31552)"),
+    ),
+}
+SOURCE_TIMEZONE_CORRECTIONS.update(
+    {
+        record_id: {
+            "expected": _VIETNAM_SIDE_ZONES["south" if side == "north" else "north"],
+            "corrected": _VIETNAM_SIDE_ZONES[side],
+            "reason": f"{place}: {_VIETNAM_SIDE_REASONS[side]}",
+        }
+        for side, rows in _VIETNAM_ROWS_BY_SIDE.items()
+        for record_id, place in rows
+    }
+)
 
 
 # Named admin1 errors in GeoNames rows: the row's code names a province the row

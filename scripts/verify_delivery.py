@@ -182,6 +182,9 @@ def _validate_build_transaction(*, image: str, evidence_dir: Path) -> dict:
         or receipt.get("image") != image
         or receipt.get("image_id") != actual.get("Id")
         or receipt.get("builder_isolation") != "ephemeral_docker_container_builder_no_cache"
+        # The image's own label, not only the transaction's claim, is HEAD.
+        or ((actual.get("Config") or {}).get("Labels") or {}).get(
+            "org.opencontainers.image.revision") != revision
     ):
         raise SystemExit(
             "PUBLIC DELIVERY FAILED: build transaction is not bound to this "
@@ -193,18 +196,19 @@ def _validate_build_transaction(*, image: str, evidence_dir: Path) -> dict:
 def _run_release_artifact_gates(
     *, image: str, build_evidence_dir: Path, output_dir: Path
 ) -> int:
-    _validate_build_transaction(image=image, evidence_dir=build_evidence_dir)
+    # Both gates run the image ID the build transaction bound, not the tag.
+    image_id = _validate_build_transaction(image=image, evidence_dir=build_evidence_dir)["image_id"]
     output_dir = _external_output_path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     commands = (
         [
             sys.executable, "-m", "scripts.verification.verify_container_runtime",
-            "--image", image, "--platform", "linux/amd64",
+            "--image", image_id, "--platform", "linux/amd64",
             "--receipt", str(output_dir / "container-runtime.json"),
         ],
         [
             sys.executable, "-m", "scripts.publication.verify_image_supply_chain",
-            "--image", image, "--output-dir", str(output_dir / "supply-chain"),
+            "--image", image_id, "--output-dir", str(output_dir / "supply-chain"),
             "--receipt", str(output_dir / "image-supply-chain.json"),
         ],
     )

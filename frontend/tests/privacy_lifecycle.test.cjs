@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const PrivacyLifecycle = require("../zh-TW/privacy-lifecycle.js");
+const PrivacyLifecycle = require("../../scripts/frontend/scripts/privacy-lifecycle.js");
 
 const createLifecycle = (revoked = []) => PrivacyLifecycle.createSensitiveDataLifecycle({
   revokeObjectUrl: (url) => revoked.push(url),
@@ -87,6 +87,28 @@ test("the shared request timeout aborts only after its bounded delay", () => {
   callback();
   assert.equal(timeout.didTimeout(), true);
   assert.equal(controller.signal.aborted, true);
+});
+
+test("a timed request is the current request, aborts the one before it, and times out on its own controller", () => {
+  const lifecycle = PrivacyLifecycle.createSensitiveDataLifecycle();
+  const callbacks = [];
+  const schedule = (fn, delay) => { callbacks.push({ fn, delay }); return callbacks.length; };
+  const first = lifecycle.beginTimedRequest(5000, schedule);
+  assert.ok(first.controller instanceof AbortController);
+  assert.equal(lifecycle.isCurrentRequest(first.token), true);
+  assert.equal(first.timeout.handle, 1);
+  assert.equal(callbacks[0].delay, 5000);
+  // The controller class can be the page window's own.
+  class PageController extends AbortController {}
+  const second = lifecycle.beginTimedRequest(7000, schedule, PageController);
+  assert.ok(second.controller instanceof PageController);
+  assert.equal(first.controller.signal.aborted, true, "a new request aborts the one in flight");
+  assert.equal(lifecycle.isCurrentRequest(first.token), false);
+  assert.equal(lifecycle.isCurrentRequest(second.token), true);
+  callbacks[1].fn();
+  assert.equal(second.timeout.didTimeout(), true);
+  assert.equal(second.controller.signal.aborted, true);
+  assert.equal(first.timeout.didTimeout(), false);
 });
 
 test("releasing a Blob URL is idempotent and clear does not revoke it twice", () => {

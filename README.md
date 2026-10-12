@@ -21,6 +21,36 @@
 
 <p align="center"><sub>AGPL-3.0 · 繁體中文 · Swiss Ephemeris · 免註冊 · 沒有帳號與星盤資料庫 · Public Alpha</sub></p>
 
+## 簡介 · Introduction
+
+**渾儀 Armillary** 是可驗證的古典西洋占星計算器，介面為繁體中文，網站在 <https://projectarmillary.com/zh-TW/>。以 Swiss Ephemeris 計算；只計算，不解盤，不預測。
+
+**Armillary** is a verifiable calculator for classical Western astrology with a Traditional Chinese interface, live at <https://projectarmillary.com/zh-TW/>. It is computed with the Swiss Ephemeris and does calculation only: no interpretation, no prediction.
+
+**有什麼不同。** 每個數字附方法來源與計算收據。界表提供四套具名表並列（埃及、迦勒底、Ptolemy、Lilly），不替你挑預設。只知道約略小時或只知道日期時，在那一小時或那一天裡取樣，標出哪些判定會改變。歷史時區以 IANA 時區資料庫換算，臺灣、香港、澳門與中國的時區規則逐條列出處（〈[出生時間換算](https://projectarmillary.com/zh-TW/methods/birth-time-conversion)〉）。
+
+**What is different.** Every number comes with its method source and a calculation receipt. Four named bounds tables (Egyptian, Chaldean, Ptolemy, Lilly) are shown side by side, with no default chosen for you. If you know only the hour or only the date, the calculator samples that hour or day and marks which judgements change within it. Historical time zones come from the IANA tz database, with a source for each rule used in Taiwan, Hong Kong, Macau and mainland China.
+
+**隱私是架構，不是設定。** 沒有帳號、沒有星盤資料庫；計算頁沒有任何第三方請求，不用 cookie，也不在你的瀏覽器裡存資料。〈[自己檢查](https://projectarmillary.com/zh-TW/security/verify)〉一頁教你用瀏覽器的開發者工具親手驗證。
+
+**Privacy as architecture.** No accounts and no chart database. The calculator makes no third-party requests, sets no cookies and stores nothing in your browser; a [hands-on check page](https://projectarmillary.com/zh-TW/security/verify) shows how to confirm this with your browser's developer tools.
+
+**費用、授權與語言。** 目前免費，不需註冊。原始碼以 AGPL-3.0 公開。介面目前只有繁體中文，英文版在規劃中。
+
+**Cost, licence, language.** Free for now, with no signup. The source is under AGPL-3.0. The interface is Traditional Chinese only; an English version is planned.
+
+**界線。** 可計算 1900–2399 年。不做合盤、行運或太陽回歸盤；恆星黃道沒有 Lahiri。
+
+**Limits.** Dates from 1900 to 2399. No synastry, transits or solar returns, and no Lahiri ayanamsa for the sidereal zodiac.
+
+**數字算錯了？** 依〈[聯絡](https://projectarmillary.com/zh-TW/contact)〉寫信，或開 GitHub issue：寫明哪一個數值、你看到什麼、預期什麼，以及你拿來對照的參考值（某本書的表、另一個軟體）。請用合成資料，不要貼真實生辰。漏洞請依 [SECURITY.md](SECURITY.md) 私下通報。
+
+**Found a wrong number?** Write through the [contact page](https://projectarmillary.com/zh-TW/contact) or open a GitHub issue: name the value, what you got, what you expected, and the reference value you compared it against (a printed table, another program). Use synthetic data, never a real birth. Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+
+**連結 · Links：** [排一張盤 Calculator](https://projectarmillary.com/zh-TW/calculate) · [方法與出處 Methods](https://projectarmillary.com/zh-TW/methods) · [文章 Blog](https://projectarmillary.com/zh-TW/blog) · [SECURITY.md](SECURITY.md) · [聯絡與錯誤回報 Contact](https://projectarmillary.com/zh-TW/contact)
+
+<sub>以下是原始碼、驗證與開發說明。　Below: source code, verification and development notes.</sub>
+
 ---
 
 ## 渾儀是什麼
@@ -29,8 +59,8 @@
 
 | 它做的事 | 它不做的事 |
 |---|---|
-| 天體位置以黃道、赤道、地平三套座標並列 | 不解盤：不寫性格、運勢或吉凶文字 |
-| 宮位、軸點、相位、本質尊貴、日夜盤、阿拉伯點等古典方法；規則具名，出處逐條列在〈方法〉頁 | 不預測：行運、推運、太陽回歸盤、合盤目前一項都沒有 |
+| 天體位置以黃道、赤道、地平三套座標並列 | 不解盤：不寫性格、運勢，也不把原典的分類綜合成對個人的判斷（原典說吉、凶，照原文附出處列出） |
+| 宮位、軸點、相位、本質尊貴、日夜盤、阿拉伯點等古典方法；規則具名，出處逐條列在〈方法〉頁 | 不預測：年度小限、法達、黃道釋放與十年期只列哪一段時間由哪顆行星或哪個星座輪值，不替你解盤；行運、推運、太陽回歸盤、合盤目前一項都沒有 |
 | 出生時刻不確定時對整個小時取樣，標出哪些判定在取樣之間翻面 | 不替你挑一張預設的界表，也不把不同類別的尊貴折成一個分數 |
 | 每次計算都能取得逐步計算軌跡、版本號與計算收據，可下載離線核對 | 不保管出生資料：沒有帳號，也沒有星盤歷史資料庫 |
 

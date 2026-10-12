@@ -393,8 +393,8 @@ def compute_body(body_id: int, key: str, zh_name: str, jd_ut: float, ctx, atmosp
             + (
                 ""
                 if emit_apparent_altitude
-                else "position_mode=true 下不輸出視高度：幾何方向與大氣折射是互斥前提，"
-                     "混合後的數值無法被正確解讀或複算。"
+                else "你選了『真位置』（不含大氣折射的幾何位置），所以這裡不列出天體『看起來』"
+                     "離地平線多高：那個數值一定含大氣折射，和真位置混用會失真，也無法正確複算。"
             )
             + (
                 "站心的速度欄位是 Swiss Ephemeris 以解析式算出的值；已知太陽與月亮的部分速度欄位"
@@ -465,6 +465,30 @@ def make_longitude_sampler(ctx, *, moon_ctx=None, moon_id: int = swe.MOON):
         return values[0]
 
     return longitude_at
+
+
+def memoized_longitudes(longitude_at):
+    """One Swiss call per (body, instant) within one search.
+
+    Root searches over several pairs sample every pair on the same coarse grid,
+    so without this the same position is recomputed once per pair it belongs
+    to (the VOC search: up to 48 times per grid point).  Under the fixed flags
+    of one sampler a longitude is a pure function of (body_id, jd_ut), so the
+    cache cannot change a result; it lives only as long as the caller keeps it.
+    A refused position raises and is not cached.
+    """
+
+    cache: dict[tuple[int, float], float] = {}
+
+    def cached(body_id: int, jd_ut: float) -> float:
+        key = (body_id, jd_ut)
+        value = cache.get(key)
+        if value is None:
+            value = longitude_at(body_id, jd_ut)
+            cache[key] = value
+        return value
+
+    return cached
 
 
 def unavailable_body_record(
@@ -777,17 +801,25 @@ def geocentric_sun_true_altitude(jd_ut: float, ctx, atmosphere) -> float | None:
     只擋範圍外，不擋缺檔。
     """
 
+    return geocentric_true_altitude(jd_ut, ctx, atmosphere, swe.SUN)
+
+
+def geocentric_true_altitude(jd_ut: float, ctx, atmosphere, body_id: int) -> float | None:
+    """One body's centre true altitude from the geocentre, read like the Sun's for sect."""
+
     if not ctx.horizon_meaningful:
         return None
-    for segment in segments_read_by(swe.SUN, SECT_SUN_FLAGS):
+    for segment in segments_read_by(body_id, SECT_SUN_FLAGS):
         if coverage_state(jd_ut, segment) == COVERAGE_STATES[1]:
             raise FullEphemerisRequiredError(
-                operation="日夜盤（太陽地心高度）",
+                operation=(
+                    "日夜盤（太陽地心高度）" if body_id == swe.SUN else "行星地心高度"
+                ),
                 jd_ut=jd_ut,
                 retflag=0,
                 reason="segment_out_of_coverage",
             )
-    ecl, _retflag = swe.calc_ut(jd_ut, swe.SUN, SECT_SUN_FLAGS)
+    ecl, _retflag = swe.calc_ut(jd_ut, body_id, SECT_SUN_FLAGS)
     return horizontal_position(jd_ut, ctx, atmosphere, ecl)[2]
 
 

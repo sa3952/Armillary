@@ -18,6 +18,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -55,11 +56,11 @@ PUBLISHED_SOURCE_STATUS = "published_and_expected_anonymously_reachable"
 
 # --- publication evidence (release time; the running process verifies only the tree)
 SOURCE_ARCHIVE_URL_PREFIX = f"{PUBLIC_REPOSITORY_URL}/archive/"
-#: DH-1: the closed set of public repositories a release has ever been
+#: The closed set of public repositories a release has ever been
 #: published to.  A release pair already recorded in deployment state is
 #: verified against the repository it was published to, which its own
 #: immutable manifest names: the live 2026-09-12 pair was published to
-#: sa3952/Project-Armillary before R5 moved the repository.  A new release
+#: sa3952/Project-Armillary before the source moved to its current repository.  A new release
 #: may only name PUBLIC_REPOSITORY_URL.
 RECORDED_PUBLIC_REPOSITORY_URLS: Final = frozenset(
     {PUBLIC_REPOSITORY_URL, "https://github.com/sa3952/Project-Armillary"}
@@ -77,7 +78,7 @@ FORMAL_LEGAL_FIELDS = frozenset(
 
 
 def _not_after_today(value: date | None) -> bool:
-    """GATE-30: a publication cannot have taken effect after today.
+    """A publication cannot have taken effect after today.
 
     The receipt's `effective_date` is the UTC date of the anonymous readback;
     the legal pages' own date is a separate field.  A UTC date
@@ -182,6 +183,24 @@ def load_publication_evidence(path: Path, *, expected_revision: str) -> dict[str
     return validate_publication_evidence(receipt, expected_revision=expected_revision)
 
 
+RELEASE_FILE_MODE: Final = 0o444
+RELEASE_DIRECTORY_MODE: Final = 0o555
+
+
+def _require_release_modes(release: Path) -> None:
+    """Every file of a release is RELEASE_FILE_MODE and every directory, the
+    release itself included, RELEASE_DIRECTORY_MODE, as build and install
+    write them.  The tree verifier has already closed the entry set."""
+    for path in (release, *sorted(release.rglob("*"))):
+        metadata = path.lstat()
+        expected = RELEASE_DIRECTORY_MODE if stat.S_ISDIR(metadata.st_mode) else RELEASE_FILE_MODE
+        if stat.S_IMODE(metadata.st_mode) != expected:
+            raise ValueError(
+                f"frontend release mode {stat.S_IMODE(metadata.st_mode):04o} is not "
+                f"{expected:04o}: {path.relative_to(release).as_posix()}"
+            )
+
+
 def verify_published_release(
     release_directory: Path,
     *,
@@ -196,7 +215,7 @@ def verify_published_release(
     `source_repositories` is the set of public repositories the release may
     name; by default only PUBLIC_REPOSITORY_URL.  Only a recorded pair
     (`required_contracts`) may also name a former repository from
-    RECORDED_PUBLIC_REPOSITORY_URLS (DH-1); its manifest, the receipt inside it
+    RECORDED_PUBLIC_REPOSITORY_URLS; its manifest, the receipt inside it
     and its legal fields must all name the same one.
     """
     repositories = frozenset((PUBLIC_REPOSITORY_URL,) if source_repositories is None else source_repositories)
@@ -211,6 +230,7 @@ def verify_published_release(
         require_digest_directory_name=require_digest_directory_name,
         source_repositories=repositories,
     )
+    _require_release_modes(Path(os.path.abspath(release_directory)))
     if verified["source_url_status"] == "provisional_pending_publication":
         return verified
     revision = str(verified["frontend_public_source_revision"])
@@ -233,7 +253,7 @@ def verify_published_release(
     return {**verified, "source_publication": publication}
 
 
-# GATE-30: the receipt claims that an anonymous reader can fetch this revision.
+# The receipt claims that an anonymous reader can fetch this revision.
 # Only fetching it anonymously can show that, so the build-side consumer does.
 READBACK_HOSTS = frozenset({"github.com", "codeload.github.com"})
 MAX_SOURCE_ARCHIVE_BYTES = 256 * 1024 * 1024
@@ -406,8 +426,7 @@ def formal_legal_release_fields(
 ) -> dict[str, str] | None:
     """Bind release-owned legal fields to verified publication evidence.
 
-    The legal approval record (docs/publication/formal_legal_release_copy.json)
-    is private, so this published producer cannot and
+    The legal approval record is private, so this published producer cannot and
     does not read it: it runs in the public checkout.  That the record leaves
     these fields to this producer is checked privately, by Gate F's
     verify_pre_image_readiness against the private tree.
@@ -555,7 +574,7 @@ def build_release(
                 target.write_bytes(committed)
             else:
                 shutil.copyfile(source, target)
-            os.chmod(target, 0o444)
+            os.chmod(target, RELEASE_FILE_MODE)
             files[name] = {"sha256": _sha256(target), "size_bytes": target.stat().st_size}
         payload = _manifest_payload(
             revision=public_source_revision,
@@ -568,14 +587,14 @@ def build_release(
         manifest = {**payload, "artifact_digest": digest}
         manifest_path = temporary / MANIFEST_NAME
         manifest_path.write_bytes(canonical_json_bytes(manifest) + b"\n")
-        os.chmod(manifest_path, 0o444)
+        os.chmod(manifest_path, RELEASE_FILE_MODE)
         for directory in sorted(
             (path for path in temporary.rglob("*") if path.is_dir()),
             key=lambda path: len(path.parts),
             reverse=True,
         ):
-            os.chmod(directory, 0o555)
-        os.chmod(temporary, 0o555)
+            os.chmod(directory, RELEASE_DIRECTORY_MODE)
+        os.chmod(temporary, RELEASE_DIRECTORY_MODE)
         destination = output_parent / digest
         if destination.exists() or destination.is_symlink():
             raise FileExistsError(f"frontend release already exists: {destination}")
@@ -647,7 +666,7 @@ def verify_release(
     pair already recorded in deployment state carries the contract it was
     accepted with; it is verified against that, never against a newer checkout,
     and against the public repository it was published to, from the closed set
-    RECORDED_PUBLIC_REPOSITORY_URLS (DH-1).  A new release names only the
+    RECORDED_PUBLIC_REPOSITORY_URLS.  A new release names only the
     current repository.
     """
     if required_contracts is not None:
@@ -724,14 +743,14 @@ def install_release(
                     raise RuntimeError("frontend input changed during descriptor copy")
             finally:
                 os.close(descriptor)
-            os.chmod(target, 0o444)
+            os.chmod(target, RELEASE_FILE_MODE)
         for directory in sorted(
             (path for path in temporary.rglob("*") if path.is_dir()),
             key=lambda path: len(path.parts),
             reverse=True,
         ):
-            os.chmod(directory, 0o555)
-        os.chmod(temporary, 0o555)
+            os.chmod(directory, RELEASE_DIRECTORY_MODE)
+        os.chmod(temporary, RELEASE_DIRECTORY_MODE)
         materialized = verify_published_release(
             temporary, authority_root=authority_root, require_digest_directory_name=False
         )
@@ -787,7 +806,7 @@ def main() -> None:
         if os.geteuid() == 0:
             from scripts.tools.staging_secure_io import require_privileged_checkout
 
-            require_privileged_checkout(ROOT)  # OPS-47
+            require_privileged_checkout(ROOT)  # root runs only a trusted checkout
         result = install_release(
             args.incoming_release_dir,
             args.release_root,

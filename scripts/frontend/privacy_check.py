@@ -48,8 +48,14 @@ SCRIPT_ROLES = {
     "timezone-names.js": "服務接受的時區名稱，送出前先在本機檢查",
     "location-receipt.js": "地點收據：你選的地點與座標",
     "chart-glyphs.js": "星盤圖的符號（取自開源字型的輪廓，不另載字型）",
+    "chart-wheel-aspects.js": "依回應的相位結果畫出星盤圖中央的相位線，在你的瀏覽器裡排版",
     "chart-wheel-model.js": "把回應裡的位置排成星盤圖，在你的瀏覽器裡計算版面",
+    "chart-square.js": "把同一份位置依宮位排成方盤（方形的星盤），在你的瀏覽器裡計算版面",
     "chart-wheel.js": "畫出星盤圖、放大檢視與 SVG／PNG 下載，在你的瀏覽器裡產生",
+    "timelords-model.js": "把年度回應整理成時間主星的時間軸、年表、行事曆檔與時間主星表，在你的瀏覽器裡計算版面",
+    "timelords.js": "畫出時間主星一區；按「排出時間主星」才送出年度請求",
+    "result-chapters.js": "三種模式各預先勾哪些選項、結果的每一區放在哪一章",
+    "glossary.js": "名詞解釋的詞條與抽屜，不送出任何請求",
     "calculate.js": "頁面本身的程式：收表單、送出請求、畫出結果",
     "view-model.js": "把回應整理成畫面；第一次按「計算」時才載入",
 }
@@ -81,10 +87,36 @@ API_CALLS = (
     ),
     ApiCall(
         "POST", "/api/chart?projection=detailed", False,
-        "打開「技術細節與驗算資料」，或匯出時選「運算結果＋驗算資料」",
+        "打開「技術細節與驗算資料」，或匯出時選「運算結果＋驗算資料」（「自訂」模式預設選它，算完就會取）",
         "與上一次「計算」相同的內容，請伺服器再算一次並附上完整驗算資料",
     ),
 )
+
+# A request the page lists only once a script the calculator loads sends it.
+# The annual route is registered behind a deployment flag; its row appears the
+# build the calculator's own code calls it (timelords.js), so the list never
+# names a request no button sends, nor misses one a button does.
+GATED_API_CALLS = (
+    ApiCall(
+        "POST", "/api/chart/annual?projection=page", False,
+        "按「排出時間主星」，或在「古典完整」模式勾著「算完星盤後，接著排出時間主星」時算完星盤；"
+        "之後每換到一個還沒取過月小限的年度，就再取那一年的月小限（同一個請求也帶回那一年"
+        "所在大期的第二層）；捲到另一個大期或打開另一段十年時，再取那一段的第二層（黃道釋放的小期、十年期的第二層）",
+        "與「計算」相同的出生資料，加上要查的年份、技法與十年期的起點；回應是一生的分期與那一年"
+        "由哪顆行星或哪個星座輪值（小限、月小限、法達、黃道釋放、十年期）與計算卷宗",
+    ),
+)
+
+# How the calculator's code sends a request (frontend/zh-TW/calculate.js
+# `postJson`): the address is always a string literal at the call.
+_POST_JSON_CALL = re.compile(r"""\bpostJson\(\s*["']([^"']+)["']""")
+
+
+def sent_api_urls(sources: dict[str, str]) -> set[str]:
+    """Every address a loaded script passes to `postJson`, by its literal."""
+
+    return {url for text in sources.values() for url in _POST_JSON_CALL.findall(text)}
+
 
 # What each header the application adds to every response means for the
 # reader.  A header without a line here fails the build.
@@ -176,11 +208,15 @@ def calculation_requests(
     calculate_page: str,
     calculate_surface: str,
     cache_control: Callable[[str], str],
+    script_source: Callable[[str], str],
 ) -> list[Request]:
     """The rows: the page, its assets in the order the page names them, then
     the API calls; grouped into what every calculation makes (`required`),
     what the browser may fetch for its tab icon (`icons`) and what only an
-    action of yours sends (`optional`)."""
+    action of yours sends (`optional`).
+
+    `script_source` gives the text of a script the page loads, by its name;
+    the API rows are checked against the addresses that code sends."""
 
     rows = [Request(
         "GET", calculate_surface, "document", "計算頁本身", "打開計算頁",
@@ -196,7 +232,14 @@ def calculation_requests(
     loaded = {PurePosixPath(row.url.partition("?")[0]).name for row in rows if row.kind in {"script", "module"}}
     if used != loaded:
         raise ValueError(f"script descriptions name files the page does not load: {sorted(used - loaded)}")
-    for call in API_CALLS:
+    sent = sent_api_urls({name: script_source(name) for name in sorted(loaded)})
+    undescribed = sent - {call.url for call in (*API_CALLS, *GATED_API_CALLS)}
+    if undescribed:
+        raise ValueError(f"the calculator sends a request with no description: {sorted(undescribed)}")
+    stale = {call.url for call in API_CALLS} - sent
+    if stale:
+        raise ValueError(f"the list describes a request the calculator no longer sends: {sorted(stale)}")
+    for call in (*API_CALLS, *(call for call in GATED_API_CALLS if call.url in sent)):
         rows.append(Request(
             call.method, call.url, "fetch", call.carries, call.when,
             cache_control(call.url), "required" if call.required else "optional",

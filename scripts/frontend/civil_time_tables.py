@@ -44,29 +44,24 @@ REGIONS = (
     ("taiwan", "臺灣", ("Asia/Taipei",)),
     ("hong_kong", "香港", ("Asia/Hong_Kong",)),
     ("macau", "澳門", ("Asia/Macau",)),
-    ("mainland_china", "中國大陸", ("Asia/Shanghai", "Asia/Urumqi")),
+    ("mainland_china", "中國", ("Asia/Shanghai", "Asia/Urumqi")),
 )
 ZONE_NOTES = {
     "Asia/Shanghai": "北京時間",
     "Asia/Urumqi": "新疆時間",
 }
 UTC = dtmod.timezone.utc
+# The rule tables' columns.  Each cell repeats its column's name as data-label:
+# on a phone the stylesheet lays a row out as a card and shows the name beside
+# the value, since a five-column table squeezed into a phone's width is
+# unreadable.
+RULE_COLUMNS = ("規則", "期間（當地鐘面）", "UTC 偏移", "依據文件", "核到哪一層")
 
 
 def _offset(text: str) -> dtmod.timedelta:
     sign = -1 if text[0] == "-" else 1
     parts = [int(part) for part in text[1:].split(":")] + [0, 0]
     return sign * dtmod.timedelta(hours=parts[0], minutes=parts[1], seconds=parts[2])
-
-
-def _offset_label(delta: dtmod.timedelta) -> str:
-    """'+08:00', or '+08:05:43' when the offset has seconds (local mean time)."""
-
-    seconds = round(delta.total_seconds())
-    sign = "-" if seconds < 0 else "+"
-    hours, rest = divmod(abs(seconds), 3600)
-    minutes, secs = divmod(rest, 60)
-    return f"{sign}{hours:02d}:{minutes:02d}" + (f":{secs:02d}" if secs else "")
 
 
 def _instant(text: str | None) -> dtmod.datetime | None:
@@ -199,13 +194,16 @@ def _region_table(document: dict, key: str, name: str, zones: tuple[str, ...], n
         zone_slug = zone.split("/")[1].lower().replace("_", "-")
         caption_id = f"tab-{key}-{zone_slug}"
         label = f"{name}（{ZONE_NOTES[zone]}，{zone}）" if zone in ZONE_NOTES else f"{name}（{zone}）"
+        # The roles restate what the elements already are: WebKit drops a table's
+        # semantics once CSS changes its display, which the phone layout does.
         lines += [
             f'<div class="spec-scroll" tabindex="0" role="region" aria-labelledby="{caption_id}">',
-            '  <table class="spec">',
+            '  <table class="spec ct-rules" role="table">',
             f'    <caption id="{caption_id}">表 {number}　{html.escape(label)}的規則與出處</caption>',
-            '    <thead><tr><th scope="col">規則</th><th scope="col">期間（當地鐘面）</th>'
-            '<th scope="col">UTC 偏移</th><th scope="col">依據文件</th><th scope="col">核到哪一層</th></tr></thead>',
-            "    <tbody>",
+            '    <thead role="rowgroup"><tr role="row">'
+            + "".join(f'<th scope="col" role="columnheader">{column}</th>' for column in RULE_COLUMNS)
+            + "</tr></thead>",
+            '    <tbody role="rowgroup">',
         ]
         for source_key, rows in groups.items():
             source = document["sources"].get(source_key)
@@ -222,7 +220,14 @@ def _region_table(document: dict, key: str, name: str, zones: tuple[str, ...], n
                     html.escape(source["document"]), _level_badge(document, source["verification_level"]),
                 )
                 row_id = f"src-{zone_slug}-{source_key}"
-            lines.append(f'      <tr id="{row_id}"><td>' + "</td><td>".join(cells) + "</td></tr>")
+            lines.append(
+                f'      <tr id="{row_id}" role="row">'
+                + "".join(
+                    f'<td role="cell" data-label="{column}">{cell}</td>'
+                    for column, cell in zip(RULE_COLUMNS, cells, strict=True)
+                )
+                + "</tr>"
+            )
         lines += ["    </tbody>", "  </table>", "</div>"]
         # The first period is the one in effect on 1900-01-01; its own start, if
         # any, is before the product's range and has no earlier period here.

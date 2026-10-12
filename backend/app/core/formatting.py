@@ -85,6 +85,13 @@ def _dms_from_centi_arcsec(total_centi_arcsec: int) -> str:
     return f"{d}°{m:02d}′{s:02d}.{centi:02d}″"
 
 
+def dms_text(value_degrees: float) -> str:
+    """非負度數的度分秒，到百分之一角秒，捨入不跨整數度（與 sign_position 同一規則）。"""
+    return _dms_from_centi_arcsec(
+        quantize_keep_degree(value_degrees, CENTI_ARCSEC_PER_DEGREE)
+    )
+
+
 def degree_text(value_degrees: float, places: int) -> str:
     """非負度數的十進位字串，`places` 位小數，捨入不跨整數度（KEEP_DEG）。
 
@@ -119,7 +126,7 @@ def sign_position(longitude: float | None) -> list | None:
     in_sign = normalized - index * 30.0
     return [
         index,
-        _dms_from_centi_arcsec(quantize_keep_degree(in_sign, CENTI_ARCSEC_PER_DEGREE)),
+        dms_text(in_sign),
         degree_text(normalized, LONGITUDE_DECIMAL_PLACES),
     ]
 
@@ -155,6 +162,7 @@ RECORD_COLLECTIONS = (
     ("astronomical_data", "parallax_moon.topocentric_effective"),
     ("derived_geometry", "antiscia.antiscia"),
     ("derived_geometry", "antiscia.contra_antiscia"),
+    ("derived_methods", "dodecatemoria.points"),
 )
 
 
@@ -228,6 +236,10 @@ def attach_sign_positions(
         for entry in (lots.get("by_sect") or {}).values():
             if isinstance(entry, dict):
                 entry["sign_positions"] = _sign_positions(entry, LOT_KEYS)
+
+    # A twelfth-part row prints the point it was taken from beside the result.
+    for record in _records(_walk(derived_methods, "dodecatemoria.points")):
+        record["point_sign_position"] = sign_position(_number(record.get("point_longitude")))
 
     for item in (birth_time_sensitivity or {}).get("position_ranges") or []:
         if isinstance(item, dict) and "representative_longitude" in item:

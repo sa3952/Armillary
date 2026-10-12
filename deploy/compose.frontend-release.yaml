@@ -2,8 +2,8 @@
 services:
   armillary-app:
     # The approved immutable image ID the pair records, not a tag: another
-    # approved image of the same revision can never change what this runs
-    # (CX-1009 #1).  The image is in the local store; nothing is pulled.
+    # approved image of the same revision can never change what this runs.
+    # The image is in the local store; nothing is pulled.
     image: "${BACKEND_IMAGE_ID:?set BACKEND_IMAGE_ID}"
     environment:
       # The host this deployment answers for.  Admission is the proxy's, which
@@ -17,6 +17,9 @@ services:
       CLASSICAL_ASTROLOGY_FRONTEND_RELEASE_DIGEST: "${FRONTEND_RELEASE_DIGEST:?set FRONTEND_RELEASE_DIGEST}"
       CLASSICAL_ASTROLOGY_COMBINED_RELEASE_ID: "${COMBINED_RELEASE_ID:?set COMBINED_RELEASE_ID}"
       CLASSICAL_ASTROLOGY_BACKEND_IMAGE_ID: "${BACKEND_IMAGE_ID:?set BACKEND_IMAGE_ID}"
+      # The one switch for POST /api/chart/annual; on since
+      # public-alpha-2026-10-13, which publishes the route with its source.
+      ARMILLARY_ENABLE_ANNUAL_ROUTE: "1"
     volumes:
       - type: bind
         source: "${FRONTEND_RELEASE_DIR:?set FRONTEND_RELEASE_DIR}"

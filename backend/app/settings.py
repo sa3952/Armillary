@@ -25,6 +25,12 @@ BUILD_ENVIRONMENT_REVISION_SOURCE = (
     "build_environment:CLASSICAL_ASTROLOGY_SOURCE_REVISION"
 )
 _SOURCE_REVISION_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+# A candidate route not yet released: unset (or "0") the annual route is not
+# registered at all, so it answers 404 unknown_api_path and is absent from the
+# OpenAPI document.  Only "1" registers it; any other value fails start-up
+# rather than guessing which state was meant.
+ANNUAL_ROUTE_ENVIRONMENT_VARIABLE = "ARMILLARY_ENABLE_ANNUAL_ROUTE"
+_FLAG_VALUES = {None: False, "": False, "0": False, "1": True}
 
 
 @dataclass(frozen=True)
@@ -38,6 +44,7 @@ class AppSettings:
     # bundled immutable default.
     place_catalog_path: str | None = None
     expected_host: str | None = None
+    enable_annual_route: bool = False
 
     def __post_init__(self) -> None:
         if self.source_revision is None:
@@ -85,8 +92,15 @@ def load_settings(environment: Mapping[str, str] | None = None) -> AppSettings:
             "hexadecimal characters"
         )
 
+    raw_annual_flag = source.get(ANNUAL_ROUTE_ENVIRONMENT_VARIABLE)
+    if raw_annual_flag not in _FLAG_VALUES:
+        raise RuntimeError(
+            f"{ANNUAL_ROUTE_ENVIRONMENT_VARIABLE} must be unset, '0' or '1'"
+        )
+
     return AppSettings(
         expected_host=expected_host or None,
         source_revision=source_revision,
         revision_source=revision_source,
+        enable_annual_route=_FLAG_VALUES[raw_annual_flag],
     )

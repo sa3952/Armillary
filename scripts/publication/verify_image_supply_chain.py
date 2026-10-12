@@ -26,6 +26,7 @@ import struct
 import subprocess
 import sys
 import tarfile
+import tempfile
 from typing import Any, cast
 from urllib.parse import parse_qs, urlparse
 
@@ -175,6 +176,46 @@ def image_swisseph_extension(image: str, run_options: tuple[str, ...] = ("--netw
     """The bytes of the pyswisseph extension module the image imports."""
     return _run_bytes(["docker", "run", "--rm", *run_options, "--entrypoint", "/opt/venv/bin/python",
                        image, "-c", SWISSEPH_EXTENSION_BYTES])
+
+
+def image_archive_identity(archive: Path) -> tuple[set[str], str]:
+    """(the manifest digests its index.json names, the config digest its
+    manifest.json names) of a `docker save` archive."""
+    try:
+        with tarfile.open(archive) as saved:
+            def member(name: str) -> Any:
+                handle = saved.extractfile(name)
+                if handle is None:
+                    raise KeyError(name)
+                return json.loads(handle.read())
+
+            index, manifest = member("index.json"), member("manifest.json")
+        manifests = {str(entry["digest"]) for entry in index["manifests"]}
+        configs = [str(entry["Config"]) for entry in manifest]
+    except (OSError, KeyError, TypeError, ValueError, tarfile.TarError) as error:
+        raise AuditFailure(f"the saved image archive is unreadable: {error}") from None
+    if len(configs) != 1 or not configs[0].startswith("blobs/sha256/"):
+        raise AuditFailure(f"the saved image archive does not hold exactly one image: {configs}")
+    return manifests, "sha256:" + configs[0].removeprefix("blobs/sha256/")
+
+
+def image_sbom(image_id: str, syft: str, sbom_path: Path, workspace: Path) -> str:
+    """syft's SBOM of a `docker save` of the image ID: syft reads that archive
+    and resolves no reference of its own.  The archive must be the image (its
+    index names the ID, or, in Docker's classic store, its config is the ID)
+    and the SBOM must be of the archive's config.  Returns that config digest."""
+    archive = workspace / "image.tar"
+    _run(["docker", "save", "--output", str(archive), image_id])
+    manifests, config = image_archive_identity(archive)
+    if image_id not in manifests | {config}:
+        raise AuditFailure(f"docker save of {image_id} wrote another image: {sorted(manifests)} / {config}")
+    _run([syft, f"docker-archive:{archive}", "-o", f"syft-json={sbom_path}"])
+    archive.unlink()
+    scanned = ((json.loads(sbom_path.read_text(encoding="utf-8")).get("source") or {})
+               .get("metadata") or {}).get("imageID")
+    if scanned != config:
+        raise AuditFailure(f"the SBOM is of image config {scanned!r}, not the saved image's {config}")
+    return config
 
 
 # The licences the vendored sources state: pyswisseph.c and the Swephelp
@@ -443,11 +484,17 @@ def main() -> int:
         sbom_path, grype_path, audit_path = (
             output / "sbom.syft.json", output / "grype.json", output / "pip-audit.json"
         )
+        # The reference is read once; every scan below reads that image ID.
+        image = json.loads(_run(["docker", "image", "inspect", args.image]))[0]
+        image_id = image["Id"]
+        if not re.fullmatch(r"sha256:[0-9a-f]{64}", str(image_id)):
+            raise AuditFailure(f"{args.image} has no image ID")
         _run([args.grype, "db", "update"])
         positive_control = _scanner_positive_control(args.grype, output)
-        _run([args.syft, args.image, "-o", f"syft-json={sbom_path}"])
+        with tempfile.TemporaryDirectory(prefix="image-archive-") as workspace:
+            sbom_config = image_sbom(image_id, args.syft, sbom_path, Path(workspace))
         sqlite_linkage = pyswisseph_sqlite_linkage(
-            image_swisseph_extension(args.image), args.pyswisseph_sdist,
+            image_swisseph_extension(image_id), args.pyswisseph_sdist,
         )
         sbom_path.write_text(json.dumps(with_embedded_components(
             json.loads(sbom_path.read_text(encoding="utf-8")), args.pyswisseph_sdist, sqlite_linkage,
@@ -463,16 +510,16 @@ def main() -> int:
         dependencies = audit if isinstance(audit, list) else audit.get("dependencies", [])
         versions = _verify_python_inventory(sbom, dependencies, lock)
         database = _database(args.grype)
-        image = json.loads(_run(["docker", "image", "inspect", args.image]))[0]
         triage = load_cve_triage(args.triage) if args.triage is not None else None
         decision, rows, triage_status = triage_decision(
             gating_findings(matches), triage, today=datetime.now(timezone.utc).date()
         )
         receipt = {
-            "schema_version": "image-supply-chain-summary-v3",
+            "schema_version": "image-supply-chain-summary-v4",
             "created_at": datetime.now(timezone.utc).isoformat(),
             "image": {
-                "reference": args.image, "id": image["Id"], "architecture": image["Architecture"],
+                "reference": args.image, "id": image_id, "architecture": image["Architecture"],
+                "sbom_config_digest": sbom_config,
                 "revision": (image.get("Config", {}).get("Labels") or {}).get(
                     "org.opencontainers.image.revision"
                 ),

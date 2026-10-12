@@ -4,6 +4,27 @@
  "upstream_commit": "cae9ecd4b201544d85e411aced17660932514d43",
  "upstream_directory": "ephe",
  "note": "Each file has the same bytes as upstream ephe/ at this commit; sefstars.txt and seorbel.txt are the upstream ephe/ versions, newer than the copies inside the vendored pyswisseph sdist (libswe/). SHA-256 values: deploy/ephemeris.sha256.",
+ "licence_basis": {
+  "checked_on": "2026-10-11",
+  "finding": "Astrodienst's Swiss Ephemeris pages state no licence specific to the ephemeris files; they publish one dual licence (GNU AGPL or the Swiss Ephemeris Professional License) for Swiss Ephemeris, describe the compressed ephemeris files as part of Swiss Ephemeris, and point to upstream ephe/ for them. Upstream ephe/ at upstream_commit carries no licence file of its own; the repository root carries LICENSE and agpl-3.0.txt. Stated basis: distributed with Swiss Ephemeris under its dual licence, GNU AGPL route, with the caveat that no file-specific statement exists.",
+  "sources": [
+   {
+    "url": "https://www.astro.com/swisseph/swisseph.htm",
+    "section": "1.1. Licensing",
+    "quote": "All actual software and data are found in the public download area"
+   },
+   {
+    "url": "https://www.astro.com/swisseph/swephinfo_e.htm",
+    "section": "How to license the Swiss Ephemeris",
+    "says": "the dual licence (GNU AGPL or Swiss Ephemeris Professional License) for Swiss Ephemeris as a whole; nothing specific to the ephemeris files"
+   },
+   {
+    "url": "https://www.astro.com/swisseph/swedownload_e.htm",
+    "section": "Compressed Swiss Ephemeris planet and main asteroid files",
+    "says": "the files are downloaded from the ephe folder of the public Swiss Ephemeris GitHub repository; no licence is named for them"
+   }
+  ]
+ },
  "files": {
   "backend/ephe/seas_18.se1": {
    "upstream_path": "ephe/seas_18.se1",

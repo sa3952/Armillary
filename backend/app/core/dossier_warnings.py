@@ -48,8 +48,27 @@ MODULE_NAMES_ZH = {
     "eclipses": "日月食",
     "rise_set_transits": "升降與中天",
     "planetary_hours": "行星日與行星時",
+    "dodecatemoria": "十二分部",
+    "lunar_mansions": "月宿",
+    "solar_phase": "各行星離太陽多遠",
+    "classical_classifications": "行星與宮的古典分類",
     "extra_angles": "額外角點",
     "birth_time_sensitivity": "出生時刻敏感度",
+    "prenatal_syzygy": "產前朔望",
+}
+
+
+# Why an event search produced nothing, one clause per reason code: leaving
+# the bundled coverage is the request's, the other two are the server's.
+EVENT_SEARCH_NOTICE_PREFIX_ZH = "星盤主體照常算出，但下列項目這次沒有結果"
+EVENT_SEARCH_CAUSES_ZH = {
+    EVENT_SEARCH_REASON_CODES[0]: "{modules}：要找的日期超出本站星曆資料涵蓋的年代",
+    EVENT_SEARCH_REASON_CODES[1]: (
+        "{modules}：伺服器少了計算這一項所需的星曆資料檔（這是本站的問題，不是你的輸入有誤）"
+    ),
+    EVENT_SEARCH_REASON_CODES[2]: (
+        "{modules}：天文計算程式在找這些事件時出錯（這是本站的問題，不是你的輸入有誤）"
+    ),
 }
 
 
@@ -63,11 +82,17 @@ def _warning(
     message: str,
     source: str,
     affected_paths: list[str],
+    params: dict | None = None,
 ) -> dict:
+    # `code` and `params` are the warning; `message` is its Traditional Chinese
+    # sentence for a reader without a catalogue.  `params` holds only numbers,
+    # booleans, keys and closed-set codes, so another language can write the same
+    # sentence from them without parsing `message`.
     return {
         "code": code,
         "severity": severity,
         "message": message,
+        "params": params or {},
         "source": source,
         "affected_paths": affected_paths,
     }
@@ -107,10 +132,34 @@ def _zone_incoherence_warnings(
             ),
             "astronomical_data.time",
             ["astronomical_data.time", "astronomical_data.angles"],
+            {
+                "solar_offset_hours": solar_offset_hours,
+                "utc_offset_hours": utc_offset_hours,
+                "divergence_hours": divergence,
+                "threshold_hours": GEOGRAPHIC_ZONE_INCOHERENCE_HOURS,
+            },
         )
 
 
-def _latitude_regime_warnings(latitude_regime: dict | None) -> Iterator[dict]:
+# What a house system that is not a quadrant division keeps at high latitude, and
+# how it still draws its boundaries when the MC is below the horizon.  Only these
+# systems reach either sentence: the quadrant ones are flagged or refused instead.
+_NON_QUADRANT_LATITUDE_CLAUSE = {
+    "W": "所選為整宮制，宮界不受緯度影響；",
+    "E": "所選為等分宮制（從上升點起每 30 度一宮），宮的大小不受緯度影響；",
+}
+_NON_QUADRANT_MC_BELOW_CLAUSE = {
+    "W": "整宮制的宮界照樣由上升點所在的星座劃分",
+    "E": "等分宮制的宮界照樣從上升點起每 30 度劃分",
+}
+# A system added later without its own sentence still gets a warning: one that
+# claims nothing about how it behaves at this latitude, rather than a lookup
+# error that would fail the whole chart.
+_GENERIC_LATITUDE_CLAUSE = "所選宮位制的宮頭仍為 Swiss Ephemeris 的計算結果；"
+_GENERIC_MC_BELOW_CLAUSE = "所選宮位制的宮頭仍為 Swiss Ephemeris 的計算結果"
+
+
+def _latitude_regime_warnings(latitude_regime: dict | None, house_system_code: str) -> Iterator[dict]:
     if latitude_regime and latitude_regime["band"] != "ordinary":
         beyond_polar = latitude_regime["band"] == "beyond_polar_circle"
         distorted = latitude_regime["quadrant_distortion_expected"]
@@ -140,8 +189,8 @@ def _latitude_regime_warnings(latitude_regime: dict | None) -> Iterator[dict]:
                     + ("部分黃道度數可能永不升起或永不落下；" if beyond_polar else "")
                     + "宮頭數值仍為 Swiss Ephemeris 的計算結果，但落宮結論對出生時刻高度敏感。"
                     if distorted
-                    else "所選為整宮制，宮界不受緯度影響；"
-                    "但地平座標與升降事件在此緯度仍可能退化。"
+                    else _NON_QUADRANT_LATITUDE_CLAUSE.get(house_system_code, _GENERIC_LATITUDE_CLAUSE)
+                    + "但地平座標與升降事件在此緯度仍可能退化。"
                 )
             ),
             "houses.latitude_regime",
@@ -150,26 +199,39 @@ def _latitude_regime_warnings(latitude_regime: dict | None) -> Iterator[dict]:
                 "derived_methods.planet_in_house",
                 "astronomical_data.angles",
             ],
+            {
+                "hemisphere": "north" if latitude_regime["latitude"] > 0 else "south",
+                "threshold_degrees": (
+                    latitude_regime["polar_circle_threshold_degrees"]
+                    if beyond_polar
+                    else latitude_regime["high_latitude_threshold_degrees"]
+                ),
+                "quadrant_distortion_expected": bool(distorted),
+                "house_system_code": house_system_code,
+            },
         )
 
 
-def _mc_below_horizon_warnings(latitude_regime: dict | None) -> Iterator[dict]:
+def _mc_below_horizon_warnings(latitude_regime: dict | None, house_system_code: str) -> Iterator[dict]:
     if latitude_regime and latitude_regime["mc_below_horizon"] is True:
         yield _warning(
             "mc_below_horizon",
             "notice",
             (
-                "MC（天頂點，黃道在上子午圈的那一點）此刻在地平線下；這只會在極圈內發生。"
-                "整宮制的宮界照樣由上升點所在的星座劃分，但「MC 在天頂附近、是黃道最高點」"
-                "的直觀在此不成立。同一情形下 Regiomontanus 與 Alcabitius 不提供宮位。"
+                "中天（MC，黃道在上子午圈的那一點）此刻在地平線下；這只會在極圈內發生。"
+                + _NON_QUADRANT_MC_BELOW_CLAUSE.get(house_system_code, _GENERIC_MC_BELOW_CLAUSE)
+                + "，但「中天在天頂附近、是黃道最高點」的直觀在此不成立。"
+                "同一情形下 Porphyry、Alcabitius、Campanus 與 Regiomontanus 不提供宮位。"
             ),
             "houses.latitude_regime",
             ["astronomical_data.angles", "derived_methods.house_division"],
+            {"house_system_code": house_system_code},
         )
 
 
 # Whole-sign houses 1 and 7 hold the rising and setting signs, which straddle
-# the horizon; for a quadrant division the horizon is the 1st and 7th cusps.
+# the horizon; for a quadrant or an equal division the horizon is the 1st and
+# 7th cusps (equal cusp 1 is the ASC and cusp 7 the DSC).
 _WHOLE_SIGN_HOUSES_BELOW_HORIZON = frozenset(range(2, 7))
 _WHOLE_SIGN_HOUSES_ABOVE_HORIZON = frozenset(range(8, 13))
 _QUADRANT_HOUSES_BELOW_HORIZON = frozenset(range(1, 7))
@@ -217,6 +279,11 @@ def _sect_house_hemisphere_warnings(
             ),
             "sect_and_house_placement",
             [sect_path, "derived_methods.planet_in_house"],
+            {
+                "is_day": bool(is_day),
+                "sun_house": house,
+                "house_system_code": planet_in_house.get("house_system_code"),
+            },
         )
 
 
@@ -243,6 +310,17 @@ def _near_cusp_warnings(planet_in_house: dict) -> Iterator[dict]:
             ),
             "planet_in_house.placements",
             ["derived_methods.planet_in_house.placements"],
+            {
+                "threshold_degrees": CUSP_PROXIMITY_WARNING_DEGREES,
+                "bodies": [
+                    {
+                        "key": item["key"],
+                        "house": item["house"],
+                        "distance_degrees": item["distance_to_nearest_cusp_degrees"],
+                    }
+                    for item in near_cusp
+                ],
+            },
         )
 
 
@@ -282,6 +360,18 @@ def _near_sign_boundary_warnings(
                 if aspect_participants_present
                 else []
             ),
+            {
+                "threshold_degrees": SIGN_BOUNDARY_WARNING_DEGREES,
+                "bodies": [
+                    {
+                        "key": body["key"],
+                        "distance_degrees": min(
+                            body["longitude"] % 30.0, 30.0 - (body["longitude"] % 30.0)
+                        ),
+                    }
+                    for body in near_sign_boundary
+                ],
+            },
         )
 
 
@@ -304,14 +394,17 @@ def _sect_near_critical_warnings(
         if tolerance is None:
             raise RuntimeError("near-critical sect receipt lacks its tolerance")
         consequences = []
+        consequence_codes = []
         affected = ["derived_methods.sect"] if sect else []
         if lots_near:
             consequences.append("阿拉伯點因此並列日盤與夜盤兩套公式")
+            consequence_codes.append("lots_list_both_sect_formulas")
             affected.append("derived_methods.lots")
         if dignities_near:
             consequences.append(
                 "本質尊貴的迦勒底界主與三分性主星依這個日夜盤選定，換一種邊界可能改變"
             )
+            consequence_codes.append("dignity_rulers_follow_this_sect")
             affected.append("derived_methods.essential_dignities")
         yield _warning(
             "sect_near_horizon_critical",
@@ -326,6 +419,10 @@ def _sect_near_critical_warnings(
             ),
             affected[0],
             affected,
+            {
+                "band_half_width_degrees": tolerance,
+                "consequences": consequence_codes,
+            },
         )
 
 
@@ -345,10 +442,32 @@ def _topocentric_speed_warnings(bodies: list[dict]) -> Iterator[dict]:
             "這些速度欄位不得解讀為已驗證的導數精度。",
             "Swiss Ephemeris FLG_SPEED",
             ["astronomical_data.bodies"],
+            {"body_keys": limited_topocentric_speeds},
         )
 
 
-def _time_scale_warnings(time_conversion: dict) -> Iterator[dict]:
+def _ambiguous_time_params(request, time_conversion: dict) -> dict:
+    """The two readings of a repeated wall-clock time, from the zone itself."""
+
+    timezone = request.timezone
+    stated = request.datetime
+    naive = dtmod.datetime(
+        stated.year, stated.month, stated.day, stated.hour, stated.minute,
+        int(stated.second),
+    )
+    zone = ZoneInfo(timezone.iana_name)
+    other = naive.replace(tzinfo=zone, fold=1 - timezone.fold).utcoffset()
+    assert other is not None
+    return {
+        "timezone": timezone.iana_name,
+        "fold": timezone.fold,
+        "utc_offset_hours": time_conversion["utc_offset_hours"],
+        "alternative_fold": 1 - timezone.fold,
+        "alternative_utc_offset_hours": other.total_seconds() / 3600.0,
+    }
+
+
+def _time_scale_warnings(request, time_conversion: dict) -> Iterator[dict]:
     if time_conversion["dst_warning"]:
         yield _warning(
             "ambiguous_local_time",
@@ -359,14 +478,16 @@ def _time_scale_warnings(time_conversion: dict) -> Iterator[dict]:
                 "calculation_dossier.time_conversion",
                 "astronomical_data.time",
             ],
+            _ambiguous_time_params(request, time_conversion),
         )
 
     if time_conversion["swiss_time_input_semantics"] == "ut1_before_1972_swiss_rule":
         yield _warning(
             "pre_1972_ut1_input_semantics",
             "warning",
-            "Swiss Ephemeris在1972年前把utc_to_jd輸入視為UT1；"
-            "civil-time標籤不可解讀為現代UTC leap-second尺度。",
+            "1972 年以前還沒有現行的國際標準時間（含閏秒的 UTC），所以本站把你填的出生時間，"
+            "直接當作依地球自轉計算的世界時（UT1）。兩者差異極小（不到 1 秒），對星盤幾乎沒有影響；"
+            "只是這裡標示的時間，不能拿來跟現代的 UTC 直接對照。",
             "Swiss Ephemeris handling_of_leap_seconds",
             ["calculation_dossier.time_conversion"],
         )
@@ -377,9 +498,9 @@ def _time_scale_warnings(time_conversion: dict) -> Iterator[dict]:
         yield _warning(
             "future_ut1_input_semantics",
             "warning",
-            "Swiss Ephemeris判定內建閏秒表可能已過期（約2033-09-17起），把utc_to_jd輸入"
-            "視為UT1；civil-time標籤不可解讀為UTC。ΔT的誤差因此移動天體位置，"
-            "而不是恆星時與宮位；切換瞬間時刻約有1秒的不連續。",
+            "國際上何時再加『閏秒』要事先公告，本站內建的閏秒表只涵蓋到約 2033 年 9 月 17 日。"
+            "這天以後的時間，本站直接當作依地球自轉計算的世界時（UT1）。"
+            "影響：行星位置可能有極小的誤差，上升點與宮位不受影響；換用的那一刻，時間會跳約 1 秒。",
             "Swiss Ephemeris handling_of_leap_seconds",
             ["calculation_dossier.time_conversion"],
         )
@@ -394,6 +515,10 @@ def _time_scale_warnings(time_conversion: dict) -> Iterator[dict]:
             "（研究筆記所引，非權威信賴區間，未經第三方核對）。",
             "Swiss Ephemeris delta_t future estimate; Huber 2000 per the method research notes",
             ["calculation_dossier.time_conversion.delta_t_model"],
+            {
+                "delta_t_model_status": delta_t_model["status"],
+                "uncertainty_order_seconds": delta_t_model["uncertainty_order_seconds"],
+            },
         )
     elif delta_t_model["status"] in (
         "swiss_table_prediction",
@@ -407,6 +532,10 @@ def _time_scale_warnings(time_conversion: dict) -> Iterator[dict]:
             "由 UTC 推得 UT1，ΔT 的誤差會移動恆星時、宮位與角點，不移動天體位置。",
             "Swiss Ephemeris delta_t table (TABEND 2028); method research notes",
             ["calculation_dossier.time_conversion.delta_t_model"],
+            {
+                "delta_t_model_status": delta_t_model["status"],
+                "uncertainty_order_seconds": delta_t_model["uncertainty_order_seconds"],
+            },
         )
 
     # A notice, not a refusal, and nothing more is
@@ -425,6 +554,7 @@ def _time_scale_warnings(time_conversion: dict) -> Iterator[dict]:
             ),
             TZDB_PRE_1970_SOURCE,
             ["calculation_dossier.time_conversion.offset_status"],
+            {"timezone": time_conversion["timezone_label"]},
         )
 
 
@@ -467,6 +597,12 @@ def prc_1988_dst_dispute_warnings(request) -> Iterator[dict]:
         ),
         f"IANA tz database asia, Rule PRC (2018f); method source {PRC_1988_DST_SOURCE_REF}",
         ["calculation_dossier.time_conversion", "astronomical_data.time"],
+        {
+            "timezone": timezone.iana_name,
+            "utc_offset_hours_used": used.total_seconds() / 3600.0,
+            "utc_offset_hours_if_april_10": summer.total_seconds() / 3600.0,
+            "difference_hours": abs(summer - used).total_seconds() / 3600.0,
+        },
     )
 
 
@@ -504,6 +640,11 @@ def _supported_range_warnings(
                 "calculation_dossier.time_conversion.calendar",
                 "calculation_dossier.provenance.event_modules",
             ],
+            {
+                "supported_year_range": list(PRODUCT_YEAR_RANGE),
+                "utc_year": utc_year,
+                "local_year": request.datetime.year,
+            },
         )
 
 
@@ -581,6 +722,7 @@ def _ephemeris_source_warnings(
                 "calculation_dossier.provenance.core_objects",
                 "calculation_dossier.provenance.fixed_stars",
             ],
+            {"core_keys": fallback_core, "fixed_star_keys": fallback_stars},
         )
 
     failed_stars = [
@@ -595,6 +737,7 @@ def _ephemeris_source_warnings(
             f"固定星查詢失敗：{', '.join(failed_stars)}",
             "fixed_star_results",
             ["astronomical_data.fixed_stars"],
+            {"fixed_star_keys": failed_stars},
         )
 
 
@@ -605,27 +748,39 @@ def _module_state_warnings(
 ) -> Iterator[dict]:
     # A refused event search is recognised by its recorded reason code, wherever
     # the module keeps its state (VOC on its own module object).
+    refused_by_reason = {
+        reason: [
+            name
+            for name, state in states.items()
+            if state["requested"]
+            and not state["available"]
+            and state["reason_code"] == reason
+        ]
+        for reason in EVENT_SEARCH_REASON_CODES
+    }
     event_not_applicable_modules = [
-        name
-        for name, state in states.items()
-        if state["requested"]
-        and not state["available"]
-        and state["reason_code"] in EVENT_SEARCH_REASON_CODES
+        name for names in refused_by_reason.values() for name in names
     ]
-    if event_not_applicable_modules:
+    clauses = [
+        EVENT_SEARCH_CAUSES_ZH[reason].format(modules=_module_names(names))
+        for reason, names in refused_by_reason.items()
+        if names
+    ]
+    if clauses:
         yield _warning(
             "module_not_applicable",
             "notice",
-            (
-                "核心命盤仍可計算，但下列事件模組超出其完整資料"
-                "搜尋範圍，因此未產生結果："
-                f"{_module_names(event_not_applicable_modules)}"
-            ),
+            EVENT_SEARCH_NOTICE_PREFIX_ZH + "。" + "；".join(clauses) + "。",
             "provenance.event_modules",
             [
                 "calculation_dossier.calculation_policy.modules",
                 "calculation_dossier.provenance.event_modules",
             ],
+            {
+                "modules_by_reason": {
+                    reason: names for reason, names in refused_by_reason.items() if names
+                },
+            },
         )
 
     # No sunrise and sunset within one diurnal cycle is a fact of the place and
@@ -647,6 +802,7 @@ def _module_state_warnings(
             ),
             "calculation_policy.modules",
             [f"derived_methods.{name}" for name in no_diurnal_cycle_modules],
+            {"modules": no_diurnal_cycle_modules},
         )
 
     not_applicable_modules = [
@@ -676,6 +832,7 @@ def _module_state_warnings(
                     if name in methodology["items"]
                 ],
             ],
+            {"modules": not_applicable_modules},
         )
 
     for name, item in methodology["items"].items():
@@ -689,6 +846,7 @@ def _module_state_warnings(
                 f"{_module_names([name])}已計算，但方法仍待審閱，不能視為正式採用。",
                 item["response_path"],
                 [item["response_path"]],
+                {"module": name},
             )
 
 
@@ -700,7 +858,14 @@ def _true_position_warnings(
         yield _warning(
             "true_position_refraction_semantics_provisional",
             "notice",
-            "true position 與大氣折射同時使用時的產品語意仍待確認。",
+            (
+                "你選了『真位置』：不計入光從天體傳到地球途中所花的時間，也不計地球運動造成的方向偏移，"
+                "得到天體在幾何上實際所在的方向，而不是肉眼看到的方向。大氣折射（空氣把光線折彎，"
+                "使天體看起來比實際高一點）屬於『肉眼看到的樣子』，和真位置的前提互相衝突，"
+                "所以本站在這個模式下不列出含折射的『看起來的高度』，日出、日落等時刻則照肉眼可見的"
+                "定義計算。大氣折射的這項處理只涉及高度與升落時刻，"
+                "不影響行星所在的星座與度數。"
+            ),
             "product_method_audit_pending",
             [
                 "calculation_dossier.calculation_policy.computation_mode",
@@ -714,14 +879,11 @@ def _true_position_warnings(
                 "horizon_events_keep_apparent_frame_under_true_position",
                 "notice",
                 (
-                    "您選了 position_mode=true，因此天體與恆星的視高度"
-                    "（altitude_apparent）已抑制為 null——"
-                    "幾何方向與大氣折射是互斥前提，混用的數值無法解讀。"
-                    "但升降事件模組仍會輸出視高度取樣，這不是疏漏："
-                    "「升起」的定義就是天體**經過折射的上緣**穿過地平的時刻，"
-                    "把折射拿掉，該事件本身就不存在。因此該模組一律使用"
-                    "視位置＋站心框架，不跟隨 computation_mode，"
-                    "其輸出的 contract.frame 欄位有完整宣告。"
+                    "你選了『真位置』，也就是不含大氣折射等視覺效果的幾何位置，"
+                    "所以這裡不列出天體『看起來』離地平線多高，因為那個數值一定含大氣折射，"
+                    "和真位置混用會失真。『日出、日落』這類時刻則照常列出："
+                    "日出的定義本來就是太陽上緣經過大氣折射、碰到地平線的那一刻，"
+                    "所以這一項固定用肉眼看得到的位置計算，不跟著你選的模式。"
                 ),
                 "astronomical_data.horizon_events.contract.frame",
                 [
@@ -754,7 +916,8 @@ def _date_only_warnings(
             "warning",
             (
                 "這些方法結果只屬當地正午的可重現計算錨點，"
-                "不是出生時刻判定；目前未評估它們在整個 civil day 內"
+                "不是出生時刻判定；目前未評估它們在整個民用日"
+                "（當地日曆上這一天的所有時刻，通常從午夜到下一個午夜）之內"
                 "是否改變。"
             ),
             "birth_time_precision_date_only_policy",
@@ -771,11 +934,80 @@ def _date_only_warnings(
             "notice",
             (
                 "Lilith／Priapus 數值只屬當地正午計算錨點；目前未評估"
-                "它們在整個 civil day 內的變化。"
+                "它們在整個民用日（當地日曆上這一天的所有時刻，通常從午夜到下一個午夜）"
+                "內的變化。"
             ),
             "birth_time_precision_date_only_policy",
             ["astronomical_data.lunar_apsides"],
         )
+
+
+def _near_lunar_mansion_boundary_warnings(lunar_mansions: dict | None) -> Iterator[dict]:
+    # Only for an exact birth time: a stated hour or civil day lists every
+    # mansion the Moon is in, which already answers the question.
+    if not lunar_mansions or lunar_mansions.get("birth_time_interval") is not None:
+        return
+    near = [
+        placement
+        for placement in lunar_mansions.get("placements") or []
+        if placement["near_boundary"]
+    ]
+    if near:
+        yield _warning(
+            "moon_near_lunar_mansion_boundary",
+            "notice",
+            (
+                "月亮離月宿的交界不到 1′，出生時刻差幾分鐘就可能落在相鄰的另一宿"
+                "（月亮大約每 2 分鐘走 1′）："
+                + "、".join(
+                    f"{item['name']}（第 {item['mansion']['number']} 宿，"
+                    f"距交界 {item['distance_to_nearest_boundary_degrees'] * 3600:.1f}″）"
+                    for item in near
+                )
+            ),
+            "derived_methods.lunar_mansions",
+            ["derived_methods.lunar_mansions.placements"],
+            {
+                "placements": [
+                    {
+                        "key": item["key"],
+                        "mansion_number": item["mansion"]["number"],
+                        "distance_degrees": item["distance_to_nearest_boundary_degrees"],
+                    }
+                    for item in near
+                ],
+            },
+        )
+
+
+def _classical_sect_within_hour_warnings(classical: dict | None) -> Iterator[dict]:
+    # A stated hour in which the Sun crosses the horizon: the module reads one
+    # sect at the representative instant, but day and night both occur in the
+    # hour, and every classification that follows the sect follows it.
+    chart_sect = (classical or {}).get("chart_sect") or {}
+    if chart_sect.get("across_stated_hour") != "differs_between_samples":
+        return
+    is_day = bool(chart_sect["is_day"])
+    yield _warning(
+        "classical_sect_differs_within_stated_hour",
+        "warning",
+        (
+            "你給的出生時刻只到小時，而太陽在這一小時之內越過地平線："
+            "這一小時裡有一段是日盤、一段是夜盤。"
+            f"「{MODULE_NAMES_ZH['classical_classifications']}」照代表時刻判為"
+            f"{'日盤' if is_day else '夜盤'}；行星屬日間或夜間一組、halb 與 hayyiz（hayz）"
+            "都跟著日盤或夜盤判定，所以在這一小時內也可能改變。"
+        ),
+        "derived_methods.classical_classifications",
+        [
+            "derived_methods.classical_classifications.chart_sect",
+            "derived_methods.classical_classifications.planets",
+        ],
+        {
+            "representative_is_day": is_day,
+            "sample_is_day": list(chart_sect["sample_is_day"]),
+        },
+    )
 
 
 def structured_warnings(
@@ -798,21 +1030,29 @@ def structured_warnings(
     aspect_participants_present: bool,
     horizon_contract_present: bool,
     essential_dignities: dict | None,
+    lunar_mansions: dict | None = None,
+    classical_classifications: dict | None = None,
+    effective_request=None,
 ) -> list[dict]:
+    # The time conversion ran on the effective request (an approximate hour's
+    # representative minute), so its repeated-time readings are read there.
+    time_request = effective_request if effective_request is not None else request
     return [
         # 前五條是敏感度提示，不是錯誤：計算結果本身有效，但若出生時刻或座標有一點
         # 誤差，這個結論就會翻掉，而使用者無從自行看出這一點。
         *_zone_incoherence_warnings(
             request.location.longitude, time_conversion["utc_offset_hours"]
         ),
-        *_latitude_regime_warnings(latitude_regime),
-        *_mc_below_horizon_warnings(latitude_regime),
+        *_latitude_regime_warnings(latitude_regime, request.options.house_system),
+        *_mc_below_horizon_warnings(latitude_regime, request.options.house_system),
         *_near_cusp_warnings(planet_in_house),
         *_near_sign_boundary_warnings(bodies, aspect_participants_present),
+        *_near_lunar_mansion_boundary_warnings(lunar_mansions),
         *_sect_near_critical_warnings(sect, essential_dignities),
         *_sect_house_hemisphere_warnings(sect, essential_dignities, planet_in_house),
+        *_classical_sect_within_hour_warnings(classical_classifications),
         *_topocentric_speed_warnings(bodies),
-        *_time_scale_warnings(time_conversion),
+        *_time_scale_warnings(time_request, time_conversion),
         *prc_1988_dst_dispute_warnings(request),
         *_supported_range_warnings(request, time_conversion),
         *_mixed_origin_moon_warnings(request),

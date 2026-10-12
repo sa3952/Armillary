@@ -2,6 +2,7 @@
   "schema_version": 1,
   "origin": "https://projectarmillary.com",
   "default_locale": "zh-TW",
+  "locales": ["zh-TW"],
   "surfaces": [
     {
       "key": "home",
@@ -22,8 +23,8 @@
       "locale": "zh-TW",
       "layers": ["L1", "L2"],
       "indexable": true,
-      "title": "古典占星排盤與星盤查詢：整宮制等四種宮位制｜渾儀 Armillary",
-      "description": "目前免費、不需註冊：輸入出生日期、時間與地點，查個人星盤的上升點、中天、下降點與行星落宮，可選整宮制、Placidus、Regiomontanus、Alcabitius。不知道確切出生時間也能算：只知道日期或大約幾點時，會標出哪些結果在這段時間內會改變。"
+      "title": "古典占星排盤與星盤查詢：整宮制等七種宮位制｜渾儀 Armillary",
+      "description": "目前免費、不需註冊：輸入出生日期、時間與地點，查個人星盤的上升點、中天、下降點與行星落宮，可選整宮制、等分宮制、Placidus、Regiomontanus 等七種宮位制。不知道確切出生時間也能算：只知道日期或大約幾點時，會標出哪些結果在這段時間內會改變。"
     },
     {
       "key": "features",
@@ -56,7 +57,29 @@
       "layers": ["L1"],
       "indexable": true,
       "title": "出生時間換算的規則與出處｜渾儀 Armillary",
-      "description": "計算頁的換算助手如何把民國年與日本年號換成西元，如何由伺服器回顯鐘面時間在臺灣、香港、澳門與中國大陸當時的 UTC 偏移，以及每一條時區規則的出處與我們核到哪一層。"
+      "description": "計算頁的換算助手如何把民國年與日本年號換成西元，如何由伺服器回顯鐘面時間在臺灣、香港、澳門與中國當時的 UTC 偏移，以及每一條時區規則的出處與我們核到哪一層。"
+    },
+    {
+      "key": "methods-time-lords",
+      "fragment": "methods-time-lords",
+      "output": "zh-TW/methods/time-lords.html",
+      "surface": "/zh-TW/methods/time-lords",
+      "locale": "zh-TW",
+      "layers": ["L1"],
+      "indexable": true,
+      "title": "年度小限、法達、黃道釋放與十年期：年度時間主星的規則與出處｜渾儀 Armillary",
+      "description": "年度小限、法達、黃道釋放、十年期與七個延伸的阿拉伯點，各照什麼規則算、根據哪些古典文獻、我們核到哪一層，以及文獻說法不同時用的是哪一種。只列哪一段時間由誰輪值；不替你解盤，也不預測。"
+    },
+    {
+      "key": "methods-decennials",
+      "fragment": "methods-decennials",
+      "output": "zh-TW/methods/decennials.html",
+      "surface": "/zh-TW/methods/decennials",
+      "locale": "zh-TW",
+      "layers": ["L1"],
+      "indexable": true,
+      "title": "十年期的規則、出處與驗算｜渾儀 Armillary",
+      "description": "十年期（每段 10 年 9 個月）怎麼算、從哪顆行星開始、出自哪幾本古書，並用古書自己的例盤與細分表逐格驗算；另附行星年數表、人生七齡與三分性主星。"
     },
     {
       "key": "validation",
@@ -189,7 +212,7 @@
       "indexable": true,
       "title": "不確定出生時間？差五分鐘，上升星座與宮位會怎麼變｜渾儀 Armillary",
       "description": "同一天同一地點，出生時刻差幾分鐘，行星幾乎不動，上升點與宮位卻可能整組換掉。以合成範例說明原因，以及渾儀怎麼標出不確定。",
-      "article": {"published": "2026-10-10", "modified": "2026-10-10"}
+      "article": {"published": "2026-10-11", "modified": "2026-10-11"}
     },
     {
       "key": "blog-taiwan-time-zone-history",
@@ -201,7 +224,7 @@
       "indexable": true,
       "title": "臺灣夏令時間出生，排盤要減一小時嗎？那些要多看一眼的年份｜渾儀 Armillary",
       "description": "1896 年以來臺灣換過三種標準時，並在十九個夏天實施日光節約時間。依 IANA 時區資料庫整理這些年份的換算、不存在與重複的鐘點，以及資料本身仍不確定之處。",
-      "article": {"published": "2026-10-10", "modified": "2026-10-10"}
+      "article": {"published": "2026-10-11", "modified": "2026-10-11"}
     },
     {
       "key": "blog-whole-sign-vs-placidus",
@@ -213,7 +236,7 @@
       "indexable": true,
       "title": "整宮制與 Placidus 差在哪：同一顆行星，兩個宮位｜渾儀 Armillary",
       "description": "換一種宮位制，行星就換了宮，不代表有一邊算錯。以合成星盤比較整宮、Placidus、Regiomontanus 與 Alcabitius，並說明北極圈內為什麼算不出 Placidus。",
-      "article": {"published": "2026-10-10", "modified": "2026-10-10"}
+      "article": {"published": "2026-10-11", "modified": "2026-10-11"}
     },
     {
       "key": "blog-four-bounds-tables",
@@ -225,7 +248,7 @@
       "indexable": true,
       "title": "四套界表，四個答案：同一個度數為什麼有不同的界主｜渾儀 Armillary",
       "description": "界把每個星座切成五段交給五顆行星（各段的行星稱為界主星），但古書留下的切法不只一套。說明埃及界、迦勒底界、Ptolemy 界與 Lilly 1647 的來歷與差異，以及渾儀為什麼不設預設值。",
-      "article": {"published": "2026-10-10", "modified": "2026-10-10"}
+      "article": {"published": "2026-10-11", "modified": "2026-10-11"}
     },
     {
       "key": "blog-mean-vs-osculating-node",
@@ -237,7 +260,7 @@
       "indexable": true,
       "title": "真交點與平均交點差多少：『真交點』其實是密切交點｜渾儀 Armillary",
       "description": "北交點（俗稱龍頭）有兩種算法：排盤軟體的「真交點」與平均交點最多差將近 2 度。說明「真交點」其實是密切交點、兩者差多少、Tycho 怎麼看交點的不均勻，以及古典技法該用哪一個這個問題要怎麼問。",
-      "article": {"published": "2026-10-10", "modified": "2026-10-10"}
+      "article": {"published": "2026-10-11", "modified": "2026-10-11"}
     },
     {
       "key": "blog-unknown-birth-time",

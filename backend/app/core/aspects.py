@@ -37,8 +37,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from ..ephemeris import FullEphemerisRequiredError
-from .bodies import DEFINITIONAL_EXCLUDED_PAIRS
-from .frame_compatibility import ANGLE_FRAME_INCOMPATIBLE
+from .bodies import DEFINITIONAL_EXCLUDED_PAIRS, memoized_longitudes
 from .module_state import (
     PRODUCT_FORMULA_SOURCE,
     SEARCH_EPHEMERIS_REFUSALS,
@@ -136,6 +135,30 @@ def pair_is_listed(pair: dict) -> bool:
         target["in_orb"] is True or target.get("partile") is True
         for target in pair["aspect_targets"]
     )
+
+
+def whole_sign_aversions(evaluated: list[dict]) -> list[dict]:
+    """Every evaluated pair whose signs form no whole-sign configuration.
+
+    A separate list beside `pairs`: the listing rule above leaves a pair in
+    aversion out of `pairs` when no degree aspect lists it, which made aversion
+    visible only as a count.  Pairs with an angle take no part (the whole-sign
+    layer does not apply to them).
+    """
+
+    return [
+        {
+            "body_a": pair["body_a"],
+            "body_a_name": pair["body_a_name"],
+            "body_b": pair["body_b"],
+            "body_b_name": pair["body_b_name"],
+            "signed_sign_distance": pair["whole_sign"]["signed_sign_distance"],
+            "configuration_key": pair["whole_sign"]["configuration_key"],
+            "configuration_zh": pair["whole_sign"]["configuration_zh"],
+        }
+        for pair in evaluated
+        if pair["whole_sign"].get("configuration_key") == "aversion"
+    ]
 
 
 def _pair_listing(evaluated: int, listed: int, rule: str = PAIR_LISTING_RULE) -> dict:
@@ -535,6 +558,7 @@ def aspects_not_applicable(state: dict, trace: Trace) -> dict:
         "excluded_participant_keys": [],
         "pairs": [],
         "pair_listing": _pair_listing(0, 0),
+        "whole_sign_aversions": [],
     }
 
 
@@ -549,7 +573,6 @@ def compute_aspects(
     angle_orb_degrees: float | None = None,
     angles_requested: bool = False,
     angles_applicable: bool = True,
-    angle_inapplicable_reason_code: str | None = ANGLE_FRAME_INCOMPATIBLE,
     partile_profile_key: str = DEFAULT_PARTILE_PROFILE_KEY,
     include_perfection: bool = False,
     jd_ut: float | None = None,
@@ -590,6 +613,9 @@ def compute_aspects(
     partile_profile = PARTILE_PROFILES.get(partile_profile_key)
     if partile_profile is None:
         raise ValueError(f"unknown partile profile: {partile_profile_key}")
+    if longitude_at is not None:
+        # Every pair's perfection search samples the same coarse grid.
+        longitude_at = memoized_longitudes(longitude_at)
     usable = [
         participant
         for participant in participants
@@ -725,7 +751,7 @@ def compute_aspects(
                     available=angles_used,
                     source="astronomical_data.angles.asc_and_mc" if angles_used else None,
                     reason_code=(
-                        None if angles_applicable else angle_inapplicable_reason_code
+                        None if angles_applicable else "house_calculation_not_executed"
                     ),
                 ),
                 "participant_keys": [
@@ -779,6 +805,7 @@ def compute_aspects(
         "excluded_pairs_by_definition": [],
         "pairs": [],
         "pair_listing": None,
+        "whole_sign_aversions": [],
     }
 
     coverage = dict.fromkeys(PERFECTION_STATUSES, 0)
@@ -847,6 +874,7 @@ def compute_aspects(
             "reason_code": reason_code,
         })
     receipt["pairs"] = [pair for pair in evaluated if pair_filter(pair)]
+    receipt["whole_sign_aversions"] = whole_sign_aversions(evaluated)
     receipt["pair_listing"] = _pair_listing(
         len(evaluated),
         len(receipt["pairs"]),

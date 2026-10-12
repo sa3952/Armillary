@@ -10,6 +10,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -181,7 +182,7 @@ def test_container_healthcheck_signals_nothing_outside_a_container(monkeypatch, 
 
 
 def test_container_healthcheck_does_not_follow_an_ambient_proxy(monkeypatch, tmp_path):
-    """OPS-19: a proxy answering the expected body must not make a dead listener healthy."""
+    """A proxy answering the expected body must not make a dead listener healthy."""
     from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
     import socket
     import threading
@@ -406,7 +407,7 @@ def test_place_catalog_startup_verifier_rejects_a_corrupted_catalog(tmp_path, mo
     (("perl-base\tyes\nperl\tno\n", True), ("perl-base\tyes\nlibc6\tyes\n", False)),
 )
 def test_dockerfile_perl_survivor_check_fails_the_build_under_set_e(tmp_path, installed, must_fail):
-    """OPS-36: `! cmd` is exempt from `set -e`, so the old check could not fail."""
+    """`! cmd` is exempt from `set -e`, so the old check could not fail."""
     import subprocess
 
     shell = shutil.which("sh")
@@ -429,21 +430,122 @@ def test_dockerfile_perl_survivor_check_fails_the_build_under_set_e(tmp_path, in
         assert result.returncode == 0 and "reached" in result.stdout
 
 
-def test_graceful_shutdown_lets_a_queued_chart_finish_before_the_container_is_killed():
-    """OPS-20: queue wait + compute < graceful window < stop grace."""
+def dockerfile_instructions(text: str) -> list[tuple[str, str]]:
+    """(INSTRUCTION, arguments) per the Dockerfile reference: parser directives
+    (escape), comment lines, line continuations, case-insensitive keywords."""
 
-    dockerfile = (PROJECT_ROOT / "deploy/Dockerfile").read_text(encoding="utf-8")
-    runtime = (PROJECT_ROOT / "scripts/verification/verify_container_runtime.py").read_text(encoding="utf-8")
-    compose = (PROJECT_ROOT / "deploy/compose.yaml").read_text(encoding="utf-8")
+    escape = "\\"
+    lines = text.splitlines()
+    for line in lines:
+        directive = re.fullmatch(r"#\s*([A-Za-z]+)\s*=\s*(\S+)\s*", line)
+        if directive is None:
+            break
+        if directive.group(1).lower() == "escape":
+            escape = directive.group(2)
+    instructions: list[tuple[str, str]] = []
+    current: str | None = None
+    for raw in lines:
+        stripped = raw.strip()
+        if not stripped or stripped.startswith("#"):
+            continue  # also inside a continued instruction, where the reference removes them
+        line = raw.rstrip()
+        if line.endswith(escape):
+            current = (current or "") + line[: -len(escape)]
+            continue
+        logical = ((current or "") + line).strip()
+        current = None
+        keyword, _, arguments = logical.partition(" ")
+        instructions.append((keyword.upper(), arguments.strip()))
+    assert current is None, "the Dockerfile ends inside a continued instruction"
+    return instructions
+
+
+def image_command() -> list[str]:
+    """The final stage's CMD, which deploy/entrypoint.sh execs: exec form is JSON."""
+
+    instructions = dockerfile_instructions((PROJECT_ROOT / "deploy/Dockerfile").read_text(encoding="utf-8"))
+    last_from = max(index for index, (keyword, _) in enumerate(instructions) if keyword == "FROM")
+    commands = [arguments for keyword, arguments in instructions[last_from:] if keyword == "CMD"]
+    assert commands, "the final stage has no CMD"
+    command = json.loads(commands[-1])
+    assert isinstance(command, list) and all(isinstance(word, str) for word in command), command
+    return command
+
+
+def uvicorn_options(argv) -> dict:
+    """The options uvicorn's own command-line parser reads from `python -m uvicorn ARGS`."""
+
+    argv = list(argv)
+    start = next(index for index in range(len(argv) - 1) if argv[index:index + 2] == ["-m", "uvicorn"])
+    cli = importlib.import_module("uvicorn.main").main
+    return cli.make_context("uvicorn", argv[start + 2:]).params
+
+
+# Placeholders for the variables the release override requires; the values
+# are never used, the model is read for its runtime settings.
+_COMPOSE_INTERPOLATION = {
+    "BACKEND_IMAGE_ID": "sha256:" + "0" * 64, "STAGING_SERVER_NAME": "example.invalid",
+    "FRONTEND_RELEASE_DIGEST": "0" * 64, "COMBINED_RELEASE_ID": "placeholder",
+    "FRONTEND_RELEASE_DIR": "/nonexistent-frontend-release",
+}
+
+
+def production_compose_service() -> dict:
+    """The production service as Docker Compose itself resolves the two files the
+    host runs (`docker compose config`)."""
+
+    docker = shutil.which("docker")
+    if docker is None:
+        pytest.skip("Docker (compose) is unavailable")
+    import subprocess
+
+    command = [docker, "compose"]
+    for name in ("deploy/compose.yaml", "deploy/compose.frontend-release.yaml"):
+        command += ["--file", str(PROJECT_ROOT / name)]
+    environment = {key: value for key, value in os.environ.items()
+                   if not key.startswith("COMPOSE_") and key not in _COMPOSE_INTERPOLATION}
+    completed = subprocess.run([*command, "config", "--format", "json"], capture_output=True, text=True,
+                               env={**environment, **_COMPOSE_INTERPOLATION}, check=False, timeout=60)
+    assert completed.returncode == 0, completed.stderr
+    return json.loads(completed.stdout)["services"]["armillary-app"]
+
+
+def duration_seconds(text: str) -> float:
+    """A Go duration as Compose prints it (`30s`, `1m30s`)."""
+
+    parts = re.findall(r"(\d+(?:\.\d+)?)(h|ms|m|s|us|ns)", text)
+    assert parts and "".join(number + unit for number, unit in parts) == text, text
+    scale = {"h": 3600, "m": 60, "s": 1, "ms": 1e-3, "us": 1e-6, "ns": 1e-9}
+    return sum(float(number) * scale[unit] for number, unit in parts)
+
+
+def test_graceful_shutdown_lets_a_queued_chart_finish_before_the_container_is_killed():
+    """Queue wait + compute < graceful window < stop grace.  The window is
+    what uvicorn's parser reads from the image's CMD and from the command Gate D
+    runs; the grace is what Compose resolves from the production files."""
+
     from app import main
 
-    graceful = int(re.search(r'"--timeout-graceful-shutdown", "(\d+)"', dockerfile).group(1))
-    assert re.search(r'"--timeout-graceful-shutdown", "(\d+)"', runtime).group(1) == str(graceful)
-    # AR-1: the wait budget is derived in request_limits, so read the value
+    graceful = uvicorn_options(image_command())["timeout_graceful_shutdown"]
+    runtime = _load_script("container_runtime_gate", CONTAINER_GATE)
+    assert uvicorn_options(runtime.SINGLE_WORKER_COMMAND)["timeout_graceful_shutdown"] == graceful
+    # The wait budget is derived in request_limits, so read the value
     # the process runs with rather than a literal in the source.
     queue_wait = main._COMPUTE_LOCK_WAIT_TIMEOUT_SECONDS
-    stop_grace = int(re.search(r"stop_grace_period: (\d+)s", compose).group(1))
-    assert queue_wait < graceful < stop_grace
+    stop_grace = duration_seconds(production_compose_service()["stop_grace_period"])
+    assert graceful is not None and queue_wait < graceful < stop_grace
+
+
+def test_the_dockerfile_reader_follows_the_reference():
+    """The reader under the CMD above: continuations, comments inside them, the
+    escape directive, a lower-case keyword and the last CMD of the last stage."""
+
+    text = ("# escape=`\nFROM a AS b\nCMD [\"x\"]\nfrom c\n# comment\nRUN one `\n# inside\n  two\n"
+            "cmd [\"/opt/venv/bin/python\", \"-m\", \"uvicorn\", \"m:app\", \"--workers\", \"3\"]\n")
+    assert dockerfile_instructions(text) == [
+        ("FROM", "a AS b"), ("CMD", '["x"]'), ("FROM", "c"), ("RUN", "one   two"),
+        ("CMD", '["/opt/venv/bin/python", "-m", "uvicorn", "m:app", "--workers", "3"]')]
+    assert uvicorn_options(json.loads(dockerfile_instructions(text)[-1][1]))["workers"] == 3
 
 
 # The overflow is reachable only through the old fixed-star API; with the same
@@ -469,7 +571,8 @@ def _old_fixed_star_api_uses(source: str, filename: str) -> list[str]:
 
 
 def test_the_product_reaches_swiss_fixed_stars_only_through_fixstar2():
-    """OPS-29 is accepted permanently on this premise; an AST scan of the
+    """The fixed-star loader's oversized copy is accepted permanently on this
+    premise (the product calls only fixstar2_ut and fixstar2_mag); an AST scan of the
     backend replaces the grep that used to be its only evidence."""
     uses, fixstar2_calls = [], 0
     for path in sorted((PROJECT_ROOT / "backend").rglob("*.py")):
@@ -492,7 +595,7 @@ def test_the_product_reaches_swiss_fixed_stars_only_through_fixstar2():
 
 
 def test_bundled_star_catalogue_fits_the_fixed_star_name_buffer():
-    """OPS-29: libswe copies up to SE_MAX_STNAME (256) bytes of a catalogue name into
+    """libswe copies up to SE_MAX_STNAME (256) bytes of a catalogue name into
     a SWI_STAR_LENGTH + 1 buffer.  The bundled, hash-verified catalogue must never
     reach that path with a longer field."""
     archive = PROJECT_ROOT / "third_party/pyswisseph/pyswisseph-2.10.3.2.tar.gz"

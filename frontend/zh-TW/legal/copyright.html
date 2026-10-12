@@ -25,7 +25,7 @@
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" href="/zh-TW/favicon.svg?v=c95686a2f029d369" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="/zh-TW/style/legal-copyright.css?v=8ae097d939f6a955">
+<link rel="stylesheet" href="/zh-TW/style/legal-copyright.css?v=d317a0a7fef3ecf5">
 </head>
 <body>
 
@@ -61,12 +61,12 @@
   <section class="lg-head">
     <p class="eyebrow">法律 · LEGAL</p>
     <h1>著作權與原始碼</h1>
-    <p class="draft-flag"><b>本版文案已由 Sebastian 認可。</b>每一個live版本都必須有自己的公開原始碼與發布識別；日後版本仍須由發布流程產生自己的exact identity，不沿用前版。</p>
+    <p class="draft-flag"><b>本版文案經我（Sebastian）認可。</b>每一個live版本都必須有自己的公開原始碼與發布識別；日後版本仍須由發布流程產生自己的exact identity，不沿用前版。</p>
 
-    <p class="lg-decl"><b>本服務以 GNU Affero General Public License v3 授權。</b>不是部分、不是雙授權——<b>公開的原始碼樹整棵是它</b>，發布清單裡的授權表述就是一行 <span class="mono">AGPL-3.0-only</span>。</p>
+    <p class="lg-decl"><b>本服務自有的程式碼與文件以 GNU Affero General Public License v3（僅限第 3 版）授權。</b>不是部分、不是雙授權——發布清單裡的授權表述就是一行 <span class="mono">AGPL-3.0-only</span>。<b>公開原始碼樹裡也有其他作者的元件</b>（Swiss Ephemeris、pyswisseph、地名資料、星盤符號），它們保留各自作者給的授權，列在第 03 節。</p>
 
     <div class="lg-meta">
-      <div><span>授權表述</span><b class="mono">AGPL-3.0-only</b></div>
+      <div><span>本專案授權</span><b class="mono">AGPL-3.0-only</b></div>
       <div><span>發布位置</span><b class="mono">github.com/sa3952/<wbr>Armillary</b></div>
       <div><span>散布形式</span><b>僅託管服務</b></div>
       <div><span>版本識別</span><b>由服務自報</b></div>
@@ -123,9 +123,14 @@
       <thead><tr><th>項目</th><th>授權</th><th>出處與姓名標示</th></tr></thead>
       <tbody>
         <tr>
+          <td><b>pyswisseph 2.10.3.2</b><br><span class="sub">Python 綁定，把 Swiss Ephemeris 編成擴充模組</span></td>
+          <td class="lic">GNU AGPL v3 或更新版本</td>
+          <td>Copyright © 2007–2023 Stanislas Marquis</td>
+        </tr>
+        <tr>
           <td><b>Swiss Ephemeris</b><br><span class="sub">經 <span class="mono">pyswisseph 2.10.3.2</span></span></td>
-          <td class="lic">GNU AGPL v3 或更新版本<br><span class="sub">pyswisseph 的授權；Swiss Ephemeris 本身為雙授權，本專案走 AGPL 路線</span></td>
-          <td>Copyright © 1997–2021 Astrodienst AG, Switzerland<br>作者：Dieter Koch、Alois Treindl</td>
+          <td class="lic">雙授權，本專案選 GNU AGPL<br><span class="sub">另一條是 Swiss Ephemeris 專業授權</span></td>
+          <td>Copyright © 1997–2021 Astrodienst AG, Switzerland<br>授權全文：<span class="mono">third_party/pyswisseph/SWISS_EPHEMERIS_LICENSE</span></td>
         </tr>
         <tr>
           <td><b>Swephelp</b><br><span class="sub">pyswisseph 內附的輔助程式，編入同一個擴充模組</span></td>
@@ -134,8 +139,8 @@
         </tr>
         <tr>
           <td><b>星曆檔</b><br><span class="sub">基於 JPL DE441</span></td>
-          <td class="lic">同上</td>
-          <td>由 Astrodienst 建立，隨映像一起送出（見下方摘要）</td>
+          <td class="lic">同 Swiss Ephemeris（AGPL 路線）<br><span class="sub">隨 Swiss Ephemeris 散布；Astrodienst 網站未就星曆檔另列授權（2026-10-11 查核），依據記在 <span class="mono">deploy/ephemeris.provenance.json</span></span></td>
+          <td>由 Astrodienst AG 建立，隨映像一起送出（見下方摘要）<br>授權全文：<span class="mono">third_party/pyswisseph/SWISS_EPHEMERIS_LICENSE</span></td>
         </tr>
         <tr>
           <td><b>全球地名</b><br><span class="sub"><span class="mono">cities500</span> 衍生快照</span></td>
@@ -146,6 +151,11 @@
           <td><b>臺灣地名</b><br><span class="sub">行政區域 ＋ 聚落</span></td>
           <td class="lic">政府資料開放<br>授權條款 1.0</td>
           <td>內政部地政司 2026「臺灣地區地名資料_行政區域類」、「臺灣地區地名資料_聚落類」（2026-10-09 取得；資料集未標版本號）<br><span class="mono">data.gov.tw/dataset/40281</span><br><span class="mono">data.gov.tw/dataset/53677</span><br>此開放資料依政府資料開放授權條款 (Open Government Data License) 進行公眾釋出，使用者於遵守本條款各項規定之前提下，得利用之。政府資料開放授權條款：<span class="mono">https://data.gov.tw/license</span></td>
+        </tr>
+        <tr>
+          <td><b>星盤符號</b><br><span class="sub">取自字型輪廓的 SVG 路徑，不散布字型檔</span></td>
+          <td class="lic">SIL Open Font License 1.1</td>
+          <td>Copyright 2022 The Noto Project Authors；Noto Sans Symbols、Noto Sans Symbols 2、Noto Sans</td>
         </tr>
         <tr>
           <td><b>時區資料</b></td>
@@ -206,7 +216,7 @@
     <div class="split">
       <div>
         <span class="sp-k">在範圍內</span>
-        <p>程式碼、build 與安裝腳本、鎖定檔、介面定義，以及形成並執行該版本所需的一切對應原始碼。公開程式庫採<b>封閉白名單</b>複製——是逐條列出要發布什麼，不是列出要排除什麼。</p>
+        <p>程式碼、build 與安裝腳本、鎖定檔、介面定義，以及形成並執行該版本所需的一切對應原始碼。公開程式庫採<b>白名單</b>複製：發布清單列出可發布的目錄與檔案種類，另列永不發布的路徑；不是列出要排除什麼。</p>
       </div>
       <div>
         <span class="sp-k">不在範圍內</span>

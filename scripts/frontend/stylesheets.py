@@ -3,8 +3,8 @@
 Every page used to load tokens.css and the whole of page.css (131 KB, most of
 it the other pages' layouts) as two render-blocking requests.  A page now loads
 one bundle: tokens.css, then the parts of page.css its audience needs, then
-calculate.css on the calculator or article.css on an article, all in source
-order, so the cascade among the rules a page receives is the cascade it always
+calculate.css and timelords.css on the calculator or article.css on an article,
+all in source order, so the cascade among the rules a page receives is the cascade it always
 had.
 
 page.css says which pages need which part with marker comments alone on a
@@ -28,13 +28,18 @@ import re
 from pathlib import Path
 from typing import Iterable, Mapping
 
+from scripts.frontend.site_locale import DEFAULT_LOCALE
+
 STYLES = Path(__file__).resolve().parent / "styles"
 DESIGN_SHEET = "tokens.css"
 PAGE = "page.css"
 CALCULATOR = "calculate.css"
+# The calculator's time-lord section keeps its rules in their own sheet, appended
+# after calculate.css in the same bundle.
+CALCULATOR_PARTS = (CALCULATOR, "timelords.css")
 ARTICLE = "article.css"
 # Where the bundles live, relative to frontend/ and as served.
-BUNDLE_DIRECTORY = "zh-TW/style"
+BUNDLE_DIRECTORY = f"{DEFAULT_LOCALE}/style"
 SHARED = "all"
 ARTICLE_AUDIENCE = "blog-article"
 NOT_FOUND_AUDIENCE = "not-found"
@@ -187,6 +192,8 @@ def regions(items: Iterable[Item]) -> list[tuple[frozenset[str], list[Item]]]:
         for child in item.children:
             if child.kind == "comment" and _MARKER_START.match(child.text):
                 raise ValueError("an @pages marker must stand at the top level, not inside an at-rule")
+        if item.kind == "rule" and _MARKER_START.search(item.text):
+            raise ValueError(f"an @pages marker must stand at the top level, not inside a rule: {item.prelude}")
         grouped[-1][1].append(item)
     return [(audiences, members) for audiences, members in grouped if members]
 
@@ -236,7 +243,7 @@ def bundle_source(audience: str, styles: Path = STYLES) -> str:
     parts = [_source(DESIGN_SHEET, styles).strip()]
     parts.extend(item.text for item in page_items_for(audience, styles))
     if audience == CALCULATOR_AUDIENCE:
-        parts.append(_source(CALCULATOR, styles).strip())
+        parts.extend(_source(name, styles).strip() for name in CALCULATOR_PARTS)
     elif audience == ARTICLE_AUDIENCE:
         parts.append(_source(ARTICLE, styles).strip())
     return "\n".join(parts) + "\n"
@@ -345,7 +352,7 @@ def uncovered_rules(audience: str, names: set[str], styles: Path = STYLES) -> li
     ]
 
 
-_SCRIPT_SOURCE = re.compile(r'<script src="/(zh-TW/[^"?#]+)')
+_SCRIPT_SOURCE = re.compile(r'<script src="/(' + re.escape(DEFAULT_LOCALE) + r'/[^"?#]+)')
 
 
 def names_on_page(markup: str, frontend: Path) -> set[str]:

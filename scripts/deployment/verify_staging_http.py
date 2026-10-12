@@ -42,7 +42,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, cast
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote_from_bytes, urlparse
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
@@ -60,6 +60,7 @@ except ModuleNotFoundError:
     # The host runs this from a checkout without backend/ on the path.
     sys.path.insert(0, str(ROOT / "backend"))
 from app.frontend_assets import INDEXNOW_KEY, INDEXNOW_KEY_FILE  # noqa: E402
+from app.settings import ANNUAL_ROUTE_ENVIRONMENT_VARIABLE, load_settings  # noqa: E402
 
 MAX_RESPONSE_BYTES = 4 * 1024 * 1024
 HSTS_MIN_AGE_SECONDS = 365 * 24 * 60 * 60
@@ -207,6 +208,8 @@ _DISCOVERY_MEDIA_TYPES = {
 }
 # Every other spelling of a page is a permanent redirect to its one address,
 # in one hop, so no page is reachable at two URLs.
+# Where the application's root redirects (backend/app/main.py).
+ENTRY_PATH = "/zh-TW/"
 _NONCANONICAL_SPELLINGS = (
     ("/zh-TW", "/zh-TW/"),
     ("/zh-TW/index", "/zh-TW/"),
@@ -282,12 +285,16 @@ def origin_redirect_is_bare(status: int, headers: dict[str, str], expected: str)
 
 def _canonical_host_cases(base_url: str) -> dict[str, bool]:
     """www and plain HTTP each reach the apex over HTTPS in one permanent hop,
-    keeping the path only, so the site has one origin."""
+    keeping the path only, so the site has one origin; the plain-HTTP root
+    reaches the entry page in that one hop, not the HTTPS root."""
     apex, www = deployment_hostnames(urlparse(base_url).hostname or "")
     path = "/zh-TW/calculate"
     observed = [_request(origin + path + "?armillary-verifier=1") for origin in (f"https://{www}", f"http://{www}")]
+    roots = [_request(origin + "/?armillary-verifier=1") for origin in (f"http://{apex}", f"http://{www}")]
     return {"www_redirects_to_apex_308": all(
-        origin_redirect_is_bare(status, headers, f"https://{apex}{path}") for status, _, headers in observed)}
+        origin_redirect_is_bare(status, headers, f"https://{apex}{path}") for status, _, headers in observed),
+        "http_root_redirects_to_entry_308": all(
+            origin_redirect_is_bare(status, headers, f"https://{apex}{ENTRY_PATH}") for status, _, headers in roots)}
 
 
 class _NoRedirect(HTTPRedirectHandler):
@@ -348,15 +355,42 @@ def validate_base_url(base_url: str, *, approved_hostname: str | None = None) ->
 
 def _entrypoint(base_url: str) -> tuple[int, bytes, dict[str, str]]:
     status, body, headers = _request(base_url + "/")
-    if status == 308 and headers.get("location") == "/zh-TW/":
+    if status == 308 and headers.get("location") == ENTRY_PATH:
         # Only the one same-origin entrypoint the frontend owns is followed.
-        status, body, headers = _request(base_url + "/zh-TW/")
+        status, body, headers = _request(base_url + ENTRY_PATH)
     return status, body, headers
 
 
 def _robots_noindex(headers: dict[str, str]) -> bool:
     return "noindex" in {key.casefold(): value for key, value in headers.items()}.get(
         "x-robots-tag", "").casefold()
+
+
+def _tls_handshake_signed(address: str, server_name: str, *arguments: str) -> bool | None:
+    """Whether `openssl s_client` completes a handshake in which the edge signed; None when it cannot run."""
+    try:
+        done = subprocess.run(["openssl", "s_client", "-connect", address, "-servername", server_name, *arguments],
+                              input="", capture_output=True, text=True, timeout=30, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return done.returncode == 0 and "Peer signature type" in done.stdout
+
+
+# Python's ssl module cannot narrow the signature algorithms a client offers,
+# so the case asks the OpenSSL client.  Its own security level is lowered so
+# that only the edge can refuse.
+_WEAK_SIGNATURES = ("ECDSA+SHA224:RSA+SHA224", "ECDSA+SHA1:RSA+SHA1")
+
+
+def tls12_signature_case(hostname: str, *, address: str | None = None) -> bool:
+    """An ordinary TLS 1.2 client completes its handshake, and one that offers
+    only SHA-224 or only SHA-1 signatures is refused (the edge's
+    ssl_conf_command SignatureAlgorithms).  A client that cannot run proves nothing."""
+    address = address or f"{hostname}:443"
+    ordinary = _tls_handshake_signed(address, hostname, "-tls1_2")
+    weak = [_tls_handshake_signed(address, hostname, "-tls1_2", "-sigalgs", offered, "-cipher", "DEFAULT:@SECLEVEL=0")
+            for offered in _WEAK_SIGNATURES]
+    return ordinary is True and all(result is False for result in weak)
 
 
 def verify(base_url: str, *, approved_hostname: str | None = None, noindex: bool = False) -> dict[str, object]:
@@ -372,6 +406,7 @@ def verify(base_url: str, *, approved_hostname: str | None = None, noindex: bool
     cases["anonymous_entrypoint_200"] = status == 200
     cases["edge_noindex_as_rendered"] = status == 200 and _robots_noindex(headers) is noindex
     cases["hsts"] = hsts_is_sufficient(headers.get("Strict-Transport-Security", ""))
+    cases["tls12_signs_with_sha256_or_stronger"] = tls12_signature_case(urlparse(base_url).hostname or "")
     cases.update(_public_cache_cases(base_url, page, headers))
     cases.update(_public_discovery_cases(base_url, page))
     cases.update(_canonical_host_cases(base_url))
@@ -855,6 +890,57 @@ def scan_host_sinks(canary: Canary, since: float) -> list[dict[str, Any]]:
             scan_host_containers(canary, since=since)]
 
 
+APPLICATION_SERVICE = "armillary-app"
+
+
+def _compose_command(*arguments: str) -> list[str]:
+    return ["docker", "compose", "--file", str(ROOT / "deploy/compose.yaml"),
+            "--file", str(ROOT / "deploy/staging/compose.staging.yaml"), *arguments]
+
+
+def compose_runtime_declaration() -> dict[str, dict]:
+    """The application's tmpfs mounts and networks as `docker compose config` renders the compose files.
+
+    ``tmpfs`` maps a container path to its options (what `docker inspect`
+    reports as HostConfig.Tmpfs); ``networks`` maps each network's full name
+    to whether it is declared internal.
+    """
+    completed = subprocess.run(_compose_command("config", "--format", "json"), capture_output=True, text=True,
+                               check=False)
+    try:
+        if completed.returncode != 0:
+            raise ValueError(completed.returncode)
+        config = json.loads(completed.stdout)
+        service = config["services"][APPLICATION_SERVICE]
+        tmpfs = dict(entry.split(":", 1) if ":" in entry else (entry, "") for entry in service.get("tmpfs") or ())
+        networks = {config["networks"][name]["name"]: config["networks"][name].get("internal") is True
+                    for name in service["networks"]}
+    except (TypeError, KeyError, AttributeError, ValueError):  # json.JSONDecodeError is a ValueError
+        raise ValueError("the compose declaration of the application could not be read "
+                         f"(docker compose config exit {completed.returncode})") from None
+    return {"tmpfs": tmpfs, "networks": networks}
+
+
+def _network_is_internal(name: str) -> bool:
+    found = subprocess.run(["docker", "network", "inspect", "--format", "{{.Internal}}", name],
+                           capture_output=True, text=True, check=False)
+    return found.returncode == 0 and found.stdout.strip() == "true"
+
+
+def require_declared_isolation(observed: dict) -> None:
+    """The live container has the declared tmpfs and only internal networks, read back now."""
+    declaration = compose_runtime_declaration()
+    if not declaration["networks"] or not all(declaration["networks"].values()):
+        raise ValueError("the compose declaration gives the application Internet egress (a network not internal)")
+    if ((observed.get("HostConfig") or {}).get("Tmpfs") or {}) != declaration["tmpfs"]:
+        raise ValueError("application container tmpfs differs from the compose declaration")
+    attached = set((observed.get("NetworkSettings") or {}).get("Networks") or {})
+    if attached != set(declaration["networks"]):
+        raise ValueError("application container networks differ from the compose declaration")
+    if not all(_network_is_internal(name) for name in attached):
+        raise ValueError("application container has Internet egress: Docker does not report its network internal")
+
+
 def inspect_application_container(container: str, expected_image_id: str | None) -> str:
     payload = json.loads(subprocess.run(["docker", "inspect", container], check=True, capture_output=True,
                                         text=True).stdout)
@@ -873,13 +959,31 @@ def inspect_application_container(container: str, expected_image_id: str | None)
     ports = (observed.get("NetworkSettings") or {}).get("Ports") or {}
     if host_config.get("PortBindings") or any(ports.values()):
         raise ValueError("application container publishes a host port")
+    require_declared_isolation(observed)
     return observed["Id"]
 
 
-def scan_application_logs(canary: Canary, container: str, *, since: float) -> dict[str, object]:
+# The application's X-Request-ID (backend/app/privacy_logging.py: uuid4().hex), also its event's request_id.
+REQUEST_ID_PATTERN = re.compile(r"[0-9a-f]{32}")
+
+
+def scan_application_logs(canary: Canary, container: str, *, since: float,
+                          run_request_ids: tuple[str, ...] | None = None) -> dict[str, object]:
+    """The exact container's log stream since ``since``.
+
+    On the live host it is observed only when it shows one of
+    ``run_request_ids``, the IDs the application answered this run's requests
+    with: any other line (a health check, another visitor) proves the stream is
+    written, not that this run's requests reached it.  The IDs are counted,
+    never recorded.  ``None`` is a disposable container (Gate D's drills),
+    which only the run that started it writes to.
+    """
     completed = subprocess.run(["docker", "logs", "--since", f"{since:.9f}", container], check=True,
                                capture_output=True, text=True)
     content = completed.stdout + completed.stderr
+    identifiers = {value for value in run_request_ids or () if REQUEST_ID_PATTERN.fullmatch(value)}
+    read = sum(1 for value in identifiers if value in content)
+    observed = bool(content) if run_request_ids is None else read > 0
     return {
         "sink_name_sha256": hashlib.sha256(container.encode("utf-8")).hexdigest(),
         "sink_role": "exact_container_docker_log_stream",
@@ -887,17 +991,24 @@ def scan_application_logs(canary: Canary, container: str, *, since: float) -> di
         "byte_length": len(content.encode("utf-8")),
         "line_count": len(content.splitlines()),
         "changed_since_request_start": bool(content),
-        "disposition": (SinkDisposition.OBSERVED_ACTIVITY if content
+        "run_request_id_count": len(identifiers),
+        "run_request_ids_read": read,
+        "disposition": (SinkDisposition.OBSERVED_ACTIVITY if observed
                         else SinkDisposition.NOT_OBSERVED).value,
     }
 
 
 def exercise_requests(base_url: str, canary: Canary) -> dict[str, object]:
     header = {"X-Private-Alpha-Canary": canary.marker}
+    request_ids: list[str] = []
 
     def chart(body: bytes, content_type: str = "application/json") -> int:
-        return _request(base_url + "/api/chart", body=body, content_type=content_type,
-                        extra_headers=header)[0]
+        status, _body, headers = _request(base_url + "/api/chart", body=body, content_type=content_type,
+                                          extra_headers=header)
+        value = {key.casefold(): item for key, item in headers.items()}.get("x-request-id", "")
+        if REQUEST_ID_PATTERN.fullmatch(value):
+            request_ids.append(value)
+        return status
 
     invalid = json.loads(canary.payload_bytes)
     invalid["datetime"]["month"] = 13
@@ -915,7 +1026,82 @@ def exercise_requests(base_url: str, canary: Canary) -> dict[str, object]:
         if burst[-1] == 429:
             break
     cases["429"] = 429 if 429 in burst else "not_observed"
-    return {**cases, **DEFERRED_REQUEST_CASES}
+    return {**cases, **DEFERRED_REQUEST_CASES, "run_request_ids": tuple(dict.fromkeys(request_ids))}
+
+
+# The flagged annual route (backend/app/refusals.py ANNUAL_ROUTE; the host
+# cannot import that module).  Whether the live container registers it is read
+# from that container's environment with the application's own reading of the
+# flag, never inferred from an answer: a container meant to serve it that
+# answers 404 is a failure, not an "off".
+ANNUAL_ROUTE_PATH = "/api/chart/annual"
+ANNUAL_SMOKE_SELECTION = {"target_kind": "completed_years", "target_value": 1}
+# The smoke asks for the page view by name, the request the calculator sends,
+# so it also runs the projection code on the host.
+ANNUAL_SMOKE_QUERY = "?projection=page"
+ANNUAL_SMOKE_EXPECTATIONS = {"success": 200, "gzip_json": True, "no_store": True}
+
+
+def annual_route_flag(container: str | None) -> str:
+    """`on`, `off`, `invalid` (a value the application refuses to start with) or
+    `not_observed` (no container to read)."""
+    if container is None:
+        return "not_observed"
+    completed = subprocess.run(["docker", "inspect", container], check=False, capture_output=True, text=True)
+    try:
+        if completed.returncode != 0:
+            raise ValueError(completed.returncode)
+        [observed] = json.loads(completed.stdout)
+        variables = (observed.get("Config") or {}).get("Env") or []
+        environment = dict(item.split("=", 1) for item in variables if isinstance(item, str) and "=" in item)
+    except (TypeError, ValueError, AttributeError):
+        return "not_observed"
+    flag = {key: value for key, value in environment.items() if key == ANNUAL_ROUTE_ENVIRONMENT_VARIABLE}
+    try:
+        return "on" if load_settings(flag).enable_annual_route else "off"
+    except RuntimeError:
+        return "invalid"
+
+
+def annual_smoke_payload(canary: Canary) -> dict[str, Any]:
+    """The canary's synthetic birth with one annual selection: the same marker
+    and fragments, so the sink search also covers what the annual path logs."""
+    payload = json.loads(canary.payload_bytes)
+    payload["annual"] = dict(ANNUAL_SMOKE_SELECTION)
+    return payload
+
+
+def exercise_annual_route(base_url: str, canary: Canary, flag: str) -> dict[str, Any]:
+    """With the flag on, one synthetic annual request through the real path;
+    otherwise nothing is sent and the smoke is named `not_run` with its reason."""
+    if flag != "on":
+        reason = {"off": "flag_off", "not_observed": "application_container_not_observed",
+                  "invalid": "flag_value_invalid"}[flag]
+        return {"flag": flag, "smoke": "not_run", "not_run_reason": reason, "cases": {}, "run_request_ids": ()}
+    status, body, headers = _request(
+        # Encoded as the canary encodes a payload, so the body as sent is one of
+        # the renderings derive_canary searches for.
+        base_url + ANNUAL_ROUTE_PATH + ANNUAL_SMOKE_QUERY,
+        body=json.dumps(annual_smoke_payload(canary), separators=(",", ":")).encode(),
+        content_type="application/json",
+        extra_headers={"X-Private-Alpha-Canary": canary.marker, "Accept-Encoding": "gzip"})
+    lowered = {key.casefold(): value for key, value in headers.items()}
+    try:
+        decoded = json.loads(gzip.decompress(body)) if lowered.get("content-encoding") == "gzip" else None
+    except (OSError, ValueError, EOFError):
+        decoded = None
+    cases = {"success": status, "gzip_json": isinstance(decoded, dict), "no_store": is_no_store(headers)}
+    request_id = lowered.get("x-request-id", "")
+    return {"flag": flag, "smoke": "pass" if cases == ANNUAL_SMOKE_EXPECTATIONS else "fail",
+            "not_run_reason": None, "cases": cases,
+            "run_request_ids": (request_id,) if REQUEST_ID_PATTERN.fullmatch(request_id) else ()}
+
+
+def annual_route_passes(annual: dict[str, Any]) -> bool:
+    """An off flag passes with the smoke not run; on must pass its smoke; a
+    flag the application would refuse, or one never read, does not pass."""
+    return (annual.get("flag") == "off" and annual.get("smoke") == "not_run") or (
+        annual.get("flag") == "on" and annual.get("smoke") == "pass")
 
 
 def evaluate_request_cases(cases: dict[str, Any]) -> dict[str, bool]:
@@ -957,8 +1143,8 @@ def privacy_canary(base_url: str, *, application_container: str | None,
 
     The universe is the exact application container's log stream, the edge
     file sinks of the log sink model and the host sinks (``host_sinks``: the
-    journal since the canary started, /var/log, every container).  ``application_sink_observed`` is derived
-    from the container log stream having changed after the requests; the edge
+    journal since the canary started, /var/log, every container).  ``application_sink_observed`` is true
+    only when the container log stream shows a request ID this run's requests were answered with; the edge
     sinks are quiet by verified configuration only when ``edge_configuration``
     (the `nginx -T` dump) is inside the model.  Without either the result
     cannot be a pass.
@@ -971,8 +1157,16 @@ def privacy_canary(base_url: str, *, application_container: str | None,
     else:
         receipt_image = None
     edge_model, edge_errors = edge_sink_universe(edge_configuration)
+    flag = annual_route_flag(container)
+    if flag == "on":
+        canary = derive_canary(canary, annual_smoke_payload(canary))
     started = time.time()
+    # Before the chart cases: the 429 burst there empties the bucket the edge
+    # serves the annual route from.
+    annual = exercise_annual_route(base_url, canary, flag)
     cases = exercise_requests(base_url, canary)
+    run_request_ids = cast(tuple[str, ...], cases.pop("run_request_ids", ()))
+    run_request_ids = tuple(dict.fromkeys(run_request_ids + tuple(annual.pop("run_request_ids", ()))))
     receipt = scan_sinks(canary, list(EDGE_FILE_SINKS), disposition=(
         SinkDisposition.QUIET_BY_VERIFIED_CONFIGURATION if edge_model == "verified"
         else SinkDisposition.NOT_OBSERVED))
@@ -981,10 +1175,11 @@ def privacy_canary(base_url: str, *, application_container: str | None,
     receipt["application_image_id"] = receipt_image
     receipt["edge_log_sink_departures"] = edge_errors
     if container is not None:
-        application_log = scan_application_logs(canary, container, since=started)
+        application_log = scan_application_logs(canary, container, since=started, run_request_ids=run_request_ids)
         receipt["sinks"].append(application_log)
         receipt["total_match_count"] += application_log["match_count"]
-        receipt["application_sink_observed"] = application_log["changed_since_request_start"] is True
+        read = application_log.get("run_request_ids_read")
+        receipt["application_sink_observed"] = isinstance(read, int) and read > 0
     else:
         receipt["application_sink_observed"] = "not_observed"
     for host_sink in (host_sinks or scan_host_sinks)(canary, started):
@@ -995,17 +1190,16 @@ def privacy_canary(base_url: str, *, application_container: str | None,
     checks = evaluate_request_cases(cases)
     receipt.update({
         "request_cases": cases, "request_case_checks": checks, "deferred_request_cases": DEFERRED_REQUEST_CASES,
-        "result": "pass" if evidence_passes(receipt, checks) else (
+        "annual_route": annual,
+        "result": "pass" if evidence_passes(receipt, checks) and annual_route_passes(annual) else (
             "not_observed" if container is None or edge_model == "not_observed" else "fail"),
     })
     return receipt
 
 
 def _compose_app_container() -> str | None:
-    completed = subprocess.run(
-        ["docker", "compose", "--file", str(ROOT / "deploy/compose.yaml"),
-         "--file", str(ROOT / "deploy/staging/compose.staging.yaml"), "ps", "--quiet", "armillary-app"],
-        check=False, capture_output=True, text=True)
+    completed = subprocess.run(_compose_command("ps", "--quiet", APPLICATION_SERVICE),
+                               check=False, capture_output=True, text=True)
     return completed.stdout.strip() or None if completed.returncode == 0 else None
 
 
@@ -1022,7 +1216,8 @@ def main() -> None:
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     if os.geteuid() == 0:
-        # As root (Gate E) it hands this checkout's compose files to Docker (OPS-47).
+        # As root (Gate E) it hands this checkout's compose files to Docker, so
+        # the checkout must be one root can trust.
         try:
             require_privileged_checkout(ROOT)
         except (OSError, ValueError) as error:

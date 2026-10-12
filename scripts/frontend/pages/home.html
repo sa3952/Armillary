@@ -50,13 +50,13 @@
     <div class="rules">
       <div class="rule-row">
         <span class="name">回歸黃道<i>tropical</i></span>
-        <span class="readout">上升 ASC　<b>天秤 1°35′32″</b></span>
+        <span class="readout">上升 ASC　<b>天秤 1°35′32.3″</b></span>
         <span class="why">從春分點起算。這是多數西洋占星軟體的預設。</span>
       </div>
       <div class="rule-row">
         <span class="name">恆星黃道<i>sidereal</i></span>
         <span class="readout">上升 ASC　<b>處女 6°58′59.9″</b></span>
-        <span class="why">扣掉歲差 24°36′32″（Fagan–Bradley）。上升星座因此退到前一個星座。</span>
+        <span class="why">扣掉歲差 24°36′32.4″（Fagan–Bradley）。上升星座因此退到前一個星座。</span>
       </div>
     </div>
 
@@ -68,16 +68,18 @@
       <table class="log">
         <thead><tr><th>步</th><th>這一步在算什麼</th><th>實際執行的算式</th><th>得到</th></tr></thead>
         <tbody>
-          <tr><td>001</td><td>本地時間 → UTC</td><td>UTC ＝ 本地時間 − 時區偏移</td><td>1990-05-15 06:30:00.000</td></tr>
-          <tr><td>002</td><td>UTC → 儒略日</td><td><code>swe.utc_to_jd(年,月,日,時,分,秒, 格里曆)</code></td><td>JD(UT) 2448026.7708342</td></tr>
-          <tr><td>003</td><td>地球時與世界時之差</td><td>ΔT ＝ (JD_ET − JD_UT) × 86400</td><td>57.1052 秒</td></tr>
-          <tr><td>004</td><td>黃赤交角與章動</td><td><code>swe.calc_ut(JD_UT, ECL_NUT)</code></td><td>真 ε 23°26′31.79″</td></tr>
-          <tr class="mark"><td>005</td><td>地方真恆星時</td><td>LAST ＝ <code>swe.sidtime(JD_UT)</code> ＋ 東經 ÷ 15</td><td>6.1171350 小時</td></tr>
+          <!-- figure:trace-steps -->
+          <tr><td>002</td><td>本地時間 → UTC</td><td>UTC ＝ 本地時間 − 時區偏移</td><td>1990-05-15 06:30:00.000</td></tr>
+          <tr><td>003</td><td>UTC → 儒略日</td><td><code>swe.utc_to_jd(年,月,日,時,分,秒, 格里曆)</code></td><td>JD(UT) 2448026.7708342</td></tr>
+          <tr><td>004</td><td>地球時與世界時之差</td><td>ΔT（地球自轉與均勻時間的差）＝ <code>swe.deltat_ex(JD_UT)</code> × 86400 秒</td><td>57.1052 秒</td></tr>
+          <tr><td>005</td><td>黃赤交角與章動</td><td><code>swe.calc_ut(JD_UT, ECL_NUT)</code></td><td>真 ε 23°26′31.79″</td></tr>
+          <tr class="mark"><td>006</td><td>地方真恆星時</td><td>LAST ＝ <code>swe.sidtime(JD_UT)</code> ＋ 東經 ÷ 15</td><td>6.1171350 小時</td></tr>
+          <!-- /figure:trace-steps -->
         </tbody>
       </table>
     </div>
     <div class="tabula-foot">
-      <p><b id="log-table-title">這是那次計算的前五步，依卷宗整理。</b>第三欄是實際呼叫的簡寫，完整算式在卷宗裡——你可以用同一個星曆函式庫照著重跑，對出同一個值。步數隨啟用的模組而變，實際步數印在該次卷宗的 <code>trace_receipt</code> 裡；整份可下載離線核對。</p>
+      <p><b id="log-table-title">這是那次計算的第 002–006 步，依卷宗整理。</b>第三欄是實際呼叫的簡寫，完整算式在卷宗裡——你可以用同一個星曆函式庫照著重跑，對出同一個值。步數隨啟用的模組而變，實際步數印在該次卷宗的 <code>trace_receipt</code> 裡；整份可下載離線核對。</p>
     </div>
   </div>
 
@@ -151,7 +153,7 @@
           <li>天體位置<em>七政</em></li>
           <li>月交點<em>密切與平均並列</em></li>
           <li>軸點<em>ASC · MC · DSC · IC</em></li>
-          <li>恆星<em>34 顆</em></li>
+          <li>恆星<em>{{fixed_star_count}} 顆</em></li>
           <li>Lilith 與 Priapus</li>
           <li>站心月亮</li>
           <li>額外角點</li>
@@ -166,7 +168,7 @@
           <i>純幾何轉換，算式印在數字上方</i>
         </div>
         <ul>
-          <li>反照點<em>以巨蟹／摩羯軸鏡射</em></li>
+          <li>反照點<em>antiscia，以巨蟹／摩羯軸鏡射</em></li>
           <li>赤緯平行與反平行<em>17 世紀 Placidus 的界定，非古典傳統</em></li>
         </ul>
       </div>
@@ -177,12 +179,12 @@
           <i>需要選定技法者，一律在卷宗記下方法版本與審閱狀態</i>
         </div>
         <ul>
-          <li>宮位分割<em>四種，或不算宮位</em></li>
+          <li>宮位分割<em>七種，或不算宮位</em></li>
           <li>行星落宮<em>附距最近宮頭的角距</em></li>
           <li>相位</li>
           <li>本質尊貴</li>
           <li>日夜盤</li>
-          <li>阿拉伯點<em>命運點（福點、幸運點）· 精神點</em></li>
+          <li>阿拉伯點<em>命運點（Lot of Fortune，也譯福點、幸運點）· 精神點（Lot of Spirit）</em></li>
           <li>月空亡</li>
         </ul>
       </div>
@@ -236,7 +238,7 @@
   <section id="take" class="no-rule">
     <div class="eyebrow">整份可帶走 · PORTABILE</div>
     <h2>離開這個網站以後，<br>這份計算仍然完整。</h2>
-    <p>畫面與匯出讀同一份資料，不從畫面反推。選「運算結果＋驗算資料」匯出時，每一份都附完整逐步軌跡與計算收據；預設的「運算結果」含天體、座標、宮位、相位與所選計算，不另列出生地座標，但星盤數值本身可推回大致地點。在相同輸入、版本、資料與計算口徑下重算，結果應當一致。</p>
+    <p>畫面與匯出讀同一份資料，不從畫面反推。選「運算結果＋驗算資料」匯出時，每一份都附完整逐步軌跡與計算收據；預設的「運算結果」含天體、座標、宮位、相位與所選計算，不另列出生地座標，但星盤數值本身可推回出生地點。在相同輸入、版本、資料與計算口徑下重算，結果應當一致。</p>
     <div class="formats">
       <div><b>JSON</b><span>完整結構</span></div>
       <div><b>Markdown</b><span>可讀卷宗</span></div>

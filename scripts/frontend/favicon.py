@@ -42,20 +42,22 @@ import struct
 import sys
 import zlib
 
+from scripts.frontend.site_locale import DEFAULT_LOCALE
+
 
 ROOT = Path(__file__).resolve().parents[2]
 FRONTEND = ROOT / "frontend"
 SHELL = ROOT / "scripts" / "frontend" / "pages" / "_shell.html"
 TOKENS = ROOT / "scripts" / "frontend" / "styles" / "tokens.css"
 
-SVG_ASSET = "zh-TW/favicon.svg"
+SVG_ASSET = f"{DEFAULT_LOCALE}/favicon.svg"
 ICO_ASSET = "favicon.ico"
 TOUCH_ASSET = "apple-touch-icon.png"
 ICO_SIZES = (16, 32, 48)
 TOUCH_SIZE = 180
 
 # The plate's corner radius as a share of its side: the repository mark's
-# (publication/public_overlay/armillary-mark.svg, 12 on 120).  The touch icon
+# (armillary-mark.svg at the public repository root, 12 on 120).  The touch icon
 # stays square: iOS applies its own mask.
 CORNER = 0.1
 # The touch icon's ring is 70 % of the side, inside the area every iOS mask keeps.

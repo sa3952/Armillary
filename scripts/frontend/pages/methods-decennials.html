@@ -1,0 +1,245 @@
+<!-- 方法頁的子頁：十年期的規則、出處與驗算，另附行星年數表、人生七齡與三分性主星。
+     第 05 節的 49 格表：「表上的值」照 Riley 英譯 VI.6a 抄錄；「依公式計算」「差距」「判定」由
+     tests/publication/test_decennials_page.py 以「小段月數 × 小年 ÷ 129」獨立重算逐格核對。
+     第 04 節的邊界由同一個測試依本頁第 02 節的規則重算。 -->
+<div class="wrap page-body ct-sheet dc-sheet">
+
+  <section class="ds-hero">
+    <p class="eyebrow"><a href="/zh-TW/methods">方法</a> · DECENNIALS</p>
+    <h1>十年期的規則、出處與驗算</h1>
+    <p class="lede">十年期（每段 10 年 9 個月）是古希臘占星書裡的一種時間分段法：把出生之後的時間切成一段段，每段交給一顆行星輪值。這一頁說明本站怎麼算、每一步出自哪本書，並拿古書作者自己留下的例盤和細分表，逐格對照我們算出的數字。</p>
+    <p class="ds-note">頁末另收三件相關的事：古書裡的行星年數表、Ptolemy 的人生七齡，以及三分性主星。三者本站都只列表與說明，不畫時間軸。</p>
+  </section>
+
+  <section class="ds-sec">
+    <h2 class="hdr"><span>01</span>十年期在算什麼</h2>
+    <p>古代占星有一類技法叫「時間主星」（time lord）：把人生切成一段段時期，每段指定一顆行星「輪值」。十年期是其中一種，英文稱 decennials；西元二世紀的 Vettius Valens 在《占星選集》（Anthologiae）第六卷稱它為「10 年 9 個月的分配」，四世紀的 Firmicus Maternus 在《Mathesis》（原意「學問」，即占星學）第二卷也寫下同一套規則。</p>
+    <p>它只用到你出生那一刻七顆古典行星（太陽、月亮、水星、金星、火星、木星、土星）在黃道上的位置，以及這張盤是日盤還是夜盤。結果是一張表：第幾段、哪顆行星、從哪一天到哪一天。</p>
+    <p>本站畫面上的短名是「十年期」，完整名稱是「十年期（每段 10 年 9 個月）」。「十年」只是約數，每一段實際是 10 年 9 個月的「分配年」，見下一節。</p>
+    <p class="dc-flag"><span class="dc-flag-k">本站的立場</span><span><b>只列計算結果：哪一段時間由哪顆行星或哪個星座輪值。不替你解盤，也不預測。</b></span></p>
+  </section>
+
+  <section class="ds-sec">
+    <h2 class="hdr"><span>02</span>規則</h2>
+    <p>以下四步依 Valens《占星選集》VI.6–VI.7 與 Firmicus《Mathesis》II.26–27。兩人各自寫下同樣的長度與分段方式；起點的條件不同，見第 03 節。</p>
+    <ol>
+      <li><b>從哪顆星開始。</b>白天出生從太陽開始，夜間出生從月亮開始。「白天出生」指出生那一刻太陽在地平線以上，也就是「日盤」；判定方式與本站其他技法相同，見〈<a href="/zh-TW/methods#disclosures">方法</a>〉第 05.3 節。另外兩種起點見第 03 節。</li>
+      <li><b>接下來輪到誰。</b>從起點那顆星在黃道上的實際位置出發，依黃道順序（牡羊、金牛、雙子……的方向）往前找，遇到的下一顆行星接手，七顆依序排完。每個人出生時行星的位置不同，所以每個人的順序都不一樣。</li>
+      <li><b>每段多長。</b>每顆行星管 129 個月，也就是 10 年 9 個月。這裡的年與月是古代分配時間用的「分配年」：一年 360 日、一個月 30 日。所以一段是 3,870 日，約 10 年 7 個月的日曆時間；七段合計 27,090 日，約 74.2 個日曆年。七段輪完，再從起點那顆星開始下一輪；Valens 說只要還有年數就繼續分配，本站不以壽命截斷。</li>
+      <li><b>每段裡面再分七小段。</b>每顆行星有一個古書傳下來的固定年數，叫「小年」（least years）：土星 30、木星 12、火星 15、太陽 19、金星 8、水星 20、月亮 25，加起來正好 129。十年期把這些數字當作月數：一段 129 個月裡，七個小段各占自己小年那麼多個月，由這一段的輪值行星自己先開始，之後依同一個本命黃道順序輪下去，剛好填滿，不會有剩。</li>
+    </ol>
+    <p>Valens 在 VI.6 的例子裡明寫：這種分配的日數與循環用 360 日的年，出生後經過的年數才用 365¼ 日的年。本站因此把每個邊界算成「出生那一刻加上若干日」，不經過日曆上的月份，也不經過生日。</p>
+    <p>本站目前輸出兩層：第一層的七大段（每段 129 個月），以及每一大段裡的七小段。日期是出生地的日期，只顯示到日；古書只給到年與月，時、分、秒是假精度。</p>
+    <p><b>出生時間不準時。</b>邊界本身只會跟著出生時刻前後移動幾分鐘；但月亮每小時大約走半度，如果月亮正好靠近另一顆行星，出生時間差一兩個小時，就可能改變兩者的先後，整條順序隨之不同。</p>
+  </section>
+
+  <section class="ds-sec">
+    <h2 class="hdr"><span>03</span>三種起點，為什麼預設 Firmicus</h2>
+    <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="dc-start-cap">
+      <table class="spec">
+        <caption id="dc-start-cap">起點的三種選擇</caption>
+        <thead><tr><th scope="col">起點</th><th scope="col">規則</th><th scope="col">出處</th></tr></thead>
+        <tbody>
+          <tr><td>日夜盤的光體（太陽或月亮；預設）</td><td>日盤從太陽、夜盤從月亮開始，沒有其他條件。</td><td>Firmicus《Mathesis》II.26</td></tr>
+          <tr><td>上升點之後的第一顆行星</td><td>從上升點（出生時東方地平線上的黃道度數）往黃道順序找到的第一顆行星開始。Valens 規定：光體「狀態好」才用光體，兩個光體都不好才改從這裡起。</td><td>Valens《占星選集》VI.6、VI.7</td></tr>
+          <tr><td>自己指定</td><td>七顆行星任選一顆當起點，順序與長度的規則不變。</td><td>本站提供的選項</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><b>為什麼預設是 Firmicus 的規則。</b>Valens 的條件「狀態好」是一個判斷：要看光體落在哪裡、和其他行星的關係，古書沒有給出一條人人照做都得到同一答案的判準。本站不替你做這種判斷，所以預設採用不需要判斷的 Firmicus 規則；如果你自己判斷兩個光體都不合用，可以改選「上升點之後的第一顆行星」，或直接指定起點。結果會寫明這次用的是哪一種起點。</p>
+    <p>另有一說：五世紀的 Hephaistio 寫光體不合用時先改用另一個光體。我們只讀到後人的轉述，沒有讀到原文，所以不列為選項。</p>
+    <p class="dc-flag"><span class="dc-flag-k">來歷</span><span><b>起點條件是簡化過的。</b>Valens 的「狀態好」條件不自動判斷，預設改用 Firmicus 的無條件規則；這是本站的選擇，不是古書的定論。</span></p>
+  </section>
+
+  <section class="ds-sec">
+    <h2 class="hdr"><span>04</span>用 Valens 自己的例子驗算</h2>
+    <p>Valens 在 VI.6 留下一張夜間出生的例盤（現代學者定為約西元 132 年 2 月 7 日凌晨 2 時），並一步一步算給讀者看。原文給的位置：月亮雙魚 18°、金星牡羊、木星天秤、土星與上升點射手、火星水瓶初、太陽水瓶、水星雙魚（在月亮之前）。他要找的是出生後 52 年又 124 日那一天的時間主星。</p>
+    <p>十年期的邊界只取決於順序與「從出生起算的日數」，不需要更精確的行星度數，所以這個例子可以完整重算。下表左欄是 Valens 印在書上的數字，右欄依本頁第 02 節的規則算出。</p>
+    <div class="spec-scroll dc-wide" tabindex="0" role="region" aria-labelledby="dc-vi6-cap">
+      <table class="spec dc-check">
+        <caption id="dc-vi6-cap">Valens VI.6 例盤：書上的數字與重算</caption>
+        <thead><tr><th scope="col">步驟</th><th scope="col">Valens 書上</th><th scope="col">依規則重算</th><th scope="col">結果</th></tr></thead>
+        <tbody>
+          <tr data-step="query"><td>要查的那一天</td><td>52 × 365¼ ＝ 18,993 日，加 124 日，換成 53 個分配年又 37 日</td><td class="mono">19,117 日 ＝ 53 × 360 ＋ 37</td><td>相符</td></tr>
+          <tr data-step="order"><td>第一層的順序</td><td>月亮、金星、木星、土星、火星</td><td class="mono">月亮 → 金星 → 木星 → 土星 → 火星 → 太陽 → 水星</td><td>相符</td></tr>
+          <tr data-step="first-four"><td>前四大段結束</td><td>43 年</td><td class="mono">4 × 3,870 ＝ 15,480 日 ＝ 43 年</td><td>相符</td></tr>
+          <tr data-step="mars-mars"><td>火星大段的第一小段（火星自己 15 個月）結束</td><td>44 年 3 個月</td><td class="mono">15,930 日 ＝ 44 年 3 個月</td><td>相符</td></tr>
+          <tr data-step="mars-jupiter"><td>再經太陽 19、水星 20、月亮 25、金星 8、木星 12 個月</td><td>51 年 3 個月</td><td class="mono">18,450 日 ＝ 51 年 3 個月</td><td>相符</td></tr>
+          <tr data-step="mars-end"><td>土星 30 個月，火星大段結束</td><td>53 年 9 個月</td><td class="mono">19,350 日 ＝ 53 年 9 個月</td><td>相符</td></tr>
+          <tr data-step="saturn-day"><td>要查的那一天落在土星小段的第幾日</td><td>667 日（270 ＋ 360 ＋ 37）</td><td class="mono">19,117 − 18,450 ＝ 667 日</td><td>相符</td></tr>
+          <tr data-step="days-cycle"><td>再往下一層：每日的時間主星</td><td>土星小段裡每 129 日一個循環，第六個循環（金星）內剩 22 日：金星 8 日、木星 12 日，最後 2 日屬土星</td><td>本站不算這一層</td><td>見第 06 節</td></tr>
+          <tr data-step="vi7"><td>VI.7 的另一種算法</td><td>52 × 365¼ ＋ 123 ＝ 19,116 日，除以 129 得「149 個循環餘 24 日」，落在金星循環裡的土星日</td><td class="mono">19,116 ＝ 148 × 129 ＋ 24：第 149 個循環的第 24 日</td><td>本站不算這一層</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>第一層與第二層的每一個邊界都與 Valens 書上的數字相同。原文自己有兩處小出入，我們照實列出：同一段日數，VI.6 寫 124 日，VI.7 寫 123 日；VI.7 的「149 個循環餘 24 日」，實際是 148 個完整循環、正在第 149 個循環裡。兩處都不影響第一、二層。</p>
+  </section>
+
+  <section class="ds-sec">
+    <h2 class="hdr"><span>05</span>Valens 的細分表：49 格逐格對照</h2>
+    <p>Valens 在 VI.6 之後附了一張表，把七個小段再各分給七顆行星，比例同樣是小年；這張表在 Riley 英譯本標為 VI.6a，在 Kroll 校勘本（學者比對多份古抄本後整理出的版本）是 pp.254–255，在 Pingree 校勘本是 pp.243–244。算法是：</p>
+    <p class="dc-formula"><b>分得的時間 ＝ 這一小段的月數 × 分得那顆星的小年 ÷ 129</b></p>
+    <p>例如土星小段 30 個月，分給木星的是 30 × 12 ÷ 129 ≈ 2.79 個月。表裡的月是 30 日、日是 24 小時，Valens 寫到幾分之一小時。這張表的行星排列用的是「迦勒底序」（土星、木星、火星、太陽、金星、水星、月亮，從各小段的主星起循環），是一張示範表，不是某一張真實星盤的順序；Valens 在 VI.7 明白反對用這個固定順序替人排時間主星。</p>
+    <p>這張表屬於第三層，本站目前不輸出第三層（見第 06 節）。我們仍逐格重算，因為它能檢查兩件事：分配確實按小年的比例，以及這張表傳到今天還有多可靠。</p>
+    <p><b>結果：49 格中有 44 格相符，5 格不符。</b>相符的 44 格，與公式的差距都在 0.25 小時（15 分鐘）以內，最大 0.17 小時，大致是表上分數的捨入。不符的 5 格差了 0.77 到 19.94 小時，而且和表中其他格互相矛盾：木星分給太陽、太陽分給木星都是 12 × 19 ÷ 129 個月，兩格應該相等，表上卻一格多了將近 20 小時、另一格多了將近 8 小時。我們把這 5 格視為已知的抄本差異：古書經過多次傳抄，數字抄錯並不少見。測試與本站的計算一律以公式為準。</p>
+    <p>我們核對的是 Riley 的英譯本（附 Kroll 與 Pingree 校勘本頁碼），沒有持希臘文校勘本逐格核對；這 5 格錯在希臘文抄本、譯本還是排版，目前無法斷定。火星分給水星的「9 日」在英譯本裡加了角括號，表示是譯者補上的數字，下表照樣標〈9〉；補上的值與公式相符。</p>
+    <div class="spec-scroll dc-wide" tabindex="0" role="region" aria-labelledby="dc-vi6a-cap">
+      <table class="spec dc-table">
+        <caption id="dc-vi6a-cap">VI.6a 細分表：書上的值與公式重算（差距 ＝ 書上 − 重算）</caption>
+        <thead><tr><th scope="col">小段</th><th scope="col">分給</th><th scope="col">書上的值</th><th scope="col">依公式計算</th><th scope="col">差距</th><th scope="col">判定</th></tr></thead>
+        <tbody>
+          <tr class="dc-variant" data-lord="saturn" data-sub="saturn"><td>土星</td><td>土星</td><td class="mono">6 個月 29 日 6¼ 時</td><td class="mono">6 個月 29 日 7.26 時</td><td class="mono">−1.01 時</td><td>抄本差異</td></tr>
+          <tr data-lord="saturn" data-sub="jupiter"><td>土星</td><td>木星</td><td class="mono">2 個月 23 日 17⅓ 時</td><td class="mono">2 個月 23 日 17.30 時</td><td class="mono">+0.03 時</td><td>相符</td></tr>
+          <tr data-lord="saturn" data-sub="mars"><td>土星</td><td>火星</td><td class="mono">3 個月 14 日 15⅔ 時</td><td class="mono">3 個月 14 日 15.63 時</td><td class="mono">+0.04 時</td><td>相符</td></tr>
+          <tr data-lord="saturn" data-sub="sun"><td>土星</td><td>太陽</td><td class="mono">4 個月 12 日 13 5⁄12 時</td><td class="mono">4 個月 12 日 13.40 時</td><td class="mono">+0.02 時</td><td>相符</td></tr>
+          <tr data-lord="saturn" data-sub="venus"><td>土星</td><td>金星</td><td class="mono">1 個月 25 日 19½ 時</td><td class="mono">1 個月 25 日 19.53 時</td><td class="mono">−0.03 時</td><td>相符</td></tr>
+          <tr data-lord="saturn" data-sub="mercury"><td>土星</td><td>水星</td><td class="mono">4 個月 19 日 12⅔ 時</td><td class="mono">4 個月 19 日 12.84 時</td><td class="mono">−0.17 時</td><td>相符</td></tr>
+          <tr data-lord="saturn" data-sub="moon"><td>土星</td><td>月亮</td><td class="mono">5 個月 24 日 10 時</td><td class="mono">5 個月 24 日 10.05 時</td><td class="mono">−0.05 時</td><td>相符</td></tr>
+          <tr data-lord="jupiter" data-sub="jupiter"><td>木星</td><td>木星</td><td class="mono">1 個月 3 日 11¾ 時</td><td class="mono">1 個月 3 日 11.72 時</td><td class="mono">+0.03 時</td><td>相符</td></tr>
+          <tr data-lord="jupiter" data-sub="mars"><td>木星</td><td>火星</td><td class="mono">1 個月 11 日 20⅔ 時</td><td class="mono">1 個月 11 日 20.65 時</td><td class="mono">+0.02 時</td><td>相符</td></tr>
+          <tr class="dc-variant" data-lord="jupiter" data-sub="sun"><td>木星</td><td>太陽</td><td class="mono">1 個月 23 日 20½ 時</td><td class="mono">1 個月 23 日 0.56 時</td><td class="mono">+19.94 時</td><td>抄本差異</td></tr>
+          <tr data-lord="jupiter" data-sub="venus"><td>木星</td><td>金星</td><td class="mono">22 日 7⅚ 時</td><td class="mono">22 日 7.81 時</td><td class="mono">+0.02 時</td><td>相符</td></tr>
+          <tr data-lord="jupiter" data-sub="mercury"><td>木星</td><td>水星</td><td class="mono">1 個月 25 日 19½ 時</td><td class="mono">1 個月 25 日 19.53 時</td><td class="mono">−0.03 時</td><td>相符</td></tr>
+          <tr data-lord="jupiter" data-sub="moon"><td>木星</td><td>月亮</td><td class="mono">2 個月 9 日 18⅓ 時</td><td class="mono">2 個月 9 日 18.42 時</td><td class="mono">−0.09 時</td><td>相符</td></tr>
+          <tr data-lord="jupiter" data-sub="saturn"><td>木星</td><td>土星</td><td class="mono">2 個月 23 日 17¼ 時</td><td class="mono">2 個月 23 日 17.30 時</td><td class="mono">−0.05 時</td><td>相符</td></tr>
+          <tr data-lord="mars" data-sub="mars"><td>火星</td><td>火星</td><td class="mono">1 個月 22 日 7⅔ 時</td><td class="mono">1 個月 22 日 7.81 時</td><td class="mono">−0.15 時</td><td>相符</td></tr>
+          <tr data-lord="mars" data-sub="sun"><td>火星</td><td>太陽</td><td class="mono">2 個月 6 日 6⅔ 時</td><td class="mono">2 個月 6 日 6.70 時</td><td class="mono">−0.03 時</td><td>相符</td></tr>
+          <tr data-lord="mars" data-sub="venus"><td>火星</td><td>金星</td><td class="mono">27 日 21⅚ 時</td><td class="mono">27 日 21.77 時</td><td class="mono">+0.07 時</td><td>相符</td></tr>
+          <tr data-lord="mars" data-sub="mercury"><td>火星</td><td>水星</td><td class="mono">2 個月 〈9〉 日 18⅓ 時</td><td class="mono">2 個月 9 日 18.42 時</td><td class="mono">−0.09 時</td><td>相符</td></tr>
+          <tr data-lord="mars" data-sub="moon"><td>火星</td><td>月亮</td><td class="mono">2 個月 27 日 5 時</td><td class="mono">2 個月 27 日 5.02 時</td><td class="mono">−0.02 時</td><td>相符</td></tr>
+          <tr data-lord="mars" data-sub="saturn"><td>火星</td><td>土星</td><td class="mono">3 個月 14 日 15⅔ 時</td><td class="mono">3 個月 14 日 15.63 時</td><td class="mono">+0.04 時</td><td>相符</td></tr>
+          <tr data-lord="mars" data-sub="jupiter"><td>火星</td><td>木星</td><td class="mono">1 個月 11 日 20⅔ 時</td><td class="mono">1 個月 11 日 20.65 時</td><td class="mono">+0.02 時</td><td>相符</td></tr>
+          <tr data-lord="sun" data-sub="sun"><td>太陽</td><td>太陽</td><td class="mono">2 個月 23 日 22¾ 時</td><td class="mono">2 個月 23 日 22.88 時</td><td class="mono">−0.13 時</td><td>相符</td></tr>
+          <tr data-lord="sun" data-sub="venus"><td>太陽</td><td>金星</td><td class="mono">1 個月 5 日 8⅓ 時</td><td class="mono">1 個月 5 日 8.37 時</td><td class="mono">−0.04 時</td><td>相符</td></tr>
+          <tr data-lord="sun" data-sub="mercury"><td>太陽</td><td>水星</td><td class="mono">2 個月 28 日 8 11⁄12 時</td><td class="mono">2 個月 28 日 8.93 時</td><td class="mono">−0.01 時</td><td>相符</td></tr>
+          <tr data-lord="sun" data-sub="moon"><td>太陽</td><td>月亮</td><td class="mono">3 個月 20 日 11¼ 時</td><td class="mono">3 個月 20 日 11.16 時</td><td class="mono">+0.09 時</td><td>相符</td></tr>
+          <tr data-lord="sun" data-sub="saturn"><td>太陽</td><td>土星</td><td class="mono">4 個月 12 日 13¼ 時</td><td class="mono">4 個月 12 日 13.40 時</td><td class="mono">−0.15 時</td><td>相符</td></tr>
+          <tr class="dc-variant" data-lord="sun" data-sub="jupiter"><td>太陽</td><td>木星</td><td class="mono">1 個月 23 日 8½ 時</td><td class="mono">1 個月 23 日 0.56 時</td><td class="mono">+7.94 時</td><td>抄本差異</td></tr>
+          <tr data-lord="sun" data-sub="mars"><td>太陽</td><td>火星</td><td class="mono">2 個月 6 日 6⅔ 時</td><td class="mono">2 個月 6 日 6.70 時</td><td class="mono">−0.03 時</td><td>相符</td></tr>
+          <tr data-lord="venus" data-sub="venus"><td>金星</td><td>金星</td><td class="mono">14 日 21⅕ 時</td><td class="mono">14 日 21.21 時</td><td class="mono">−0.01 時</td><td>相符</td></tr>
+          <tr class="dc-variant" data-lord="venus" data-sub="mercury"><td>金星</td><td>水星</td><td class="mono">1 個月 7 日 4¼ 時</td><td class="mono">1 個月 7 日 5.02 時</td><td class="mono">−0.77 時</td><td>抄本差異</td></tr>
+          <tr data-lord="venus" data-sub="moon"><td>金星</td><td>月亮</td><td class="mono">1 個月 16 日 12¼ 時</td><td class="mono">1 個月 16 日 12.28 時</td><td class="mono">−0.03 時</td><td>相符</td></tr>
+          <tr data-lord="venus" data-sub="saturn"><td>金星</td><td>土星</td><td class="mono">1 個月 25 日 19½ 時</td><td class="mono">1 個月 25 日 19.53 時</td><td class="mono">−0.03 時</td><td>相符</td></tr>
+          <tr data-lord="venus" data-sub="jupiter"><td>金星</td><td>木星</td><td class="mono">22 日 7⅔ 時</td><td class="mono">22 日 7.81 時</td><td class="mono">−0.15 時</td><td>相符</td></tr>
+          <tr data-lord="venus" data-sub="mars"><td>金星</td><td>火星</td><td class="mono">27 日 21¾ 時</td><td class="mono">27 日 21.77 時</td><td class="mono">−0.02 時</td><td>相符</td></tr>
+          <tr data-lord="venus" data-sub="sun"><td>金星</td><td>太陽</td><td class="mono">1 個月 5 日 8⅓ 時</td><td class="mono">1 個月 5 日 8.37 時</td><td class="mono">−0.04 時</td><td>相符</td></tr>
+          <tr class="dc-variant" data-lord="mercury" data-sub="mercury"><td>水星</td><td>水星</td><td class="mono">3 個月 3 日 9½ 時</td><td class="mono">3 個月 3 日 0.56 時</td><td class="mono">+8.94 時</td><td>抄本差異</td></tr>
+          <tr data-lord="mercury" data-sub="moon"><td>水星</td><td>月亮</td><td class="mono">3 個月 26 日 6¾ 時</td><td class="mono">3 個月 26 日 6.70 時</td><td class="mono">+0.05 時</td><td>相符</td></tr>
+          <tr data-lord="mercury" data-sub="saturn"><td>水星</td><td>土星</td><td class="mono">4 個月 19 日 12¾ 時</td><td class="mono">4 個月 19 日 12.84 時</td><td class="mono">−0.09 時</td><td>相符</td></tr>
+          <tr data-lord="mercury" data-sub="jupiter"><td>水星</td><td>木星</td><td class="mono">1 個月 25 日 19½ 時</td><td class="mono">1 個月 25 日 19.53 時</td><td class="mono">−0.03 時</td><td>相符</td></tr>
+          <tr data-lord="mercury" data-sub="mars"><td>水星</td><td>火星</td><td class="mono">2 個月 9 日 18 5⁄12 時</td><td class="mono">2 個月 9 日 18.42 時</td><td class="mono">0.00 時</td><td>相符</td></tr>
+          <tr data-lord="mercury" data-sub="sun"><td>水星</td><td>太陽</td><td class="mono">2 個月 28 日 8 11⁄12 時</td><td class="mono">2 個月 28 日 8.93 時</td><td class="mono">−0.01 時</td><td>相符</td></tr>
+          <tr data-lord="mercury" data-sub="venus"><td>水星</td><td>金星</td><td class="mono">1 個月 7 日 5 時</td><td class="mono">1 個月 7 日 5.02 時</td><td class="mono">−0.02 時</td><td>相符</td></tr>
+          <tr data-lord="moon" data-sub="moon"><td>月亮</td><td>月亮</td><td class="mono">4 個月 25 日 8¼ 時</td><td class="mono">4 個月 25 日 8.37 時</td><td class="mono">−0.12 時</td><td>相符</td></tr>
+          <tr data-lord="moon" data-sub="saturn"><td>月亮</td><td>土星</td><td class="mono">5 個月 24 日 10 時</td><td class="mono">5 個月 24 日 10.05 時</td><td class="mono">−0.05 時</td><td>相符</td></tr>
+          <tr data-lord="moon" data-sub="jupiter"><td>月亮</td><td>木星</td><td class="mono">2 個月 9 日 18 5⁄12 時</td><td class="mono">2 個月 9 日 18.42 時</td><td class="mono">0.00 時</td><td>相符</td></tr>
+          <tr data-lord="moon" data-sub="mars"><td>月亮</td><td>火星</td><td class="mono">2 個月 27 日 5 時</td><td class="mono">2 個月 27 日 5.02 時</td><td class="mono">−0.02 時</td><td>相符</td></tr>
+          <tr data-lord="moon" data-sub="sun"><td>月亮</td><td>太陽</td><td class="mono">3 個月 20 日 11⅙ 時</td><td class="mono">3 個月 20 日 11.16 時</td><td class="mono">0.00 時</td><td>相符</td></tr>
+          <tr data-lord="moon" data-sub="venus"><td>月亮</td><td>金星</td><td class="mono">1 個月 16 日 12¼ 時</td><td class="mono">1 個月 16 日 12.28 時</td><td class="mono">−0.03 時</td><td>相符</td></tr>
+          <tr data-lord="moon" data-sub="mercury"><td>月亮</td><td>水星</td><td class="mono">3 個月 26 日 6¾ 時</td><td class="mono">3 個月 26 日 6.70 時</td><td class="mono">+0.05 時</td><td>相符</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="ds-sec">
+    <h2 class="hdr"><span>06</span>本站目前不做的事</h2>
+    <ul>
+      <li><b>第三層（每日的時間主星）。</b>Valens 書裡有三種互不相容的算法：(a) 第 05 節細分表的比例法；(b) VI.6 例子裡，從第二層小段的起點開始，每顆星一個 129 日的循環；(c) VI.7 裡，從出生那天起連續數 129 日的循環。用同一個例子重算，(a) 落在月亮，(b) 與 (c) 都落在金星循環裡的土星日。另有 Hephaistio 的「小年 × 7 日」，我們只讀到轉述。古書沒有告訴我們哪一種才對，所以目前只輸出第一、二層。</li>
+      <li><b>迦勒底序。</b>子段一律依你出生時的黃道順序，不提供固定的迦勒底序（理由見第 05 節）。</li>
+      <li><b>替你判斷光體好不好。</b>見第 03 節。</li>
+      <li><b>365¼ 日的年。</b>有些軟體可以把分配年改成 365¼ 日；Valens 在 VI.6 明寫用 360 日，本站照這個。</li>
+      <li><b>任何解讀。</b>Valens 在例子後面寫了這位當事人那幾年遭遇的事，本站不輸出這類描述。</li>
+    </ul>
+    <p class="dc-flag"><span class="dc-flag-k">來歷</span><span><b>第三層用哪一種算法，是現代人的選擇。</b>任何軟體給出的第三層，都是替古書在幾種互相矛盾的算法裡挑了一種，所以本站目前不輸出這一層。</span></p>
+  </section>
+
+  <section class="ds-sec">
+    <h2 class="hdr"><span>07</span>其他軟體的做法</h2>
+    <p>2026 年 10 月我們讀了幾個公開提供十年期的工具的說明頁。它們都是對古書的重建，各自在下面幾處做了選擇；我們沒有用同一張盤逐一核對它們的結果，說明頁之後也可能更新。</p>
+    <div class="spec-scroll dc-wide" tabindex="0" role="region" aria-labelledby="dc-tools-cap">
+      <table class="spec">
+        <caption id="dc-tools-cap">古書留下的選擇，與本站的做法</caption>
+        <thead><tr><th scope="col">選擇</th><th scope="col">古書與其他工具的做法</th><th scope="col">本站</th></tr></thead>
+        <tbody>
+          <tr><td>起點</td><td>日夜盤光體（Firmicus）；光體不合用時改從上升點之後第一顆（Valens）或另一個光體（Hephaistio）。有的工具自動判斷光體合不合用，有的讓使用者改起點</td><td>預設 Firmicus，另兩種可選，不自動判斷</td></tr>
+          <tr><td>小段順序</td><td>本命黃道順序（Valens 例盤、VI.7，Firmicus）；固定的迦勒底序（VI.6a 示範表）。多數工具用黃道順序</td><td>只用黃道順序</td></tr>
+          <tr><td>一年幾日</td><td>360 日（Valens 明寫）；有的工具另提供 365¼ 日</td><td>360 日</td></tr>
+          <tr><td>第三層以下</td><td>比例法、129 日循環、Hephaistio 的 7 日倍數；有的工具做到第四層</td><td>不輸出</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="ds-sec">
+    <h2 class="hdr"><span>08</span>行星年數表</h2>
+    <p>十年期的 129、黃道釋放（zodiacal releasing）的星座年數、人生七齡的年數，都出自同一張古老的「行星年數」表。古書給每顆行星幾種年數，本站只用到小年。下表逐欄註明出處，沒有核到原典的格子照實標出。</p>
+    <div class="spec-scroll dc-wide" tabindex="0" role="region" aria-labelledby="dc-years-cap">
+      <table class="spec dc-years">
+        <caption id="dc-years-cap">行星年數</caption>
+        <thead><tr><th scope="col">行星</th><th scope="col">小年</th><th scope="col">中年</th><th scope="col">大年</th><th scope="col">最大年</th></tr></thead>
+        <tbody>
+          <tr data-planet="saturn"><td>土星</td><td class="mono">30</td><td class="mono">43½（推算）</td><td class="mono">57</td><td>未核</td></tr>
+          <tr data-planet="jupiter"><td>木星</td><td class="mono">12</td><td class="mono">45½（推算）</td><td class="mono">79</td><td>未核</td></tr>
+          <tr data-planet="mars"><td>火星</td><td class="mono">15</td><td class="mono">40½（推算）</td><td class="mono">66</td><td>未核</td></tr>
+          <tr data-planet="sun"><td>太陽</td><td class="mono">19</td><td class="mono">69½（推算）</td><td class="mono">120</td><td>未核</td></tr>
+          <tr data-planet="venus"><td>金星</td><td class="mono">8</td><td class="mono">45（推算）</td><td class="mono">82</td><td>未核</td></tr>
+          <tr data-planet="mercury"><td>水星</td><td class="mono">20</td><td class="mono">48（推算）</td><td class="mono">76</td><td>未核</td></tr>
+          <tr data-planet="moon"><td>月亮</td><td class="mono">25</td><td class="mono">66½（推算）</td><td class="mono">108</td><td>未核</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul>
+      <li><b>小年</b>：Valens《占星選集》IV.1、IV.30；Firmicus《Mathesis》II.27（當作月數）；Dorotheus《Carmen Astrologicum》I.23（Pingree 英譯）也用同一組數字。七個數字合計 129。</li>
+      <li><b>大年</b>：Valens IV.30 的表（英譯作 maximum）。Valens 在 III.10 的一個例子裡給金星 84 年，重排本的編注說金星通常是 82；上表照 IV.30 寫 82。</li>
+      <li><b>中年</b>：後世通常說是小年與大年的平均，上表依此推算；我們在 Valens 書中沒有找到這個名稱與數值，所以每格標「推算」。</li>
+      <li><b>最大年</b>：後世文獻另有一組更大的數字，我們沒有核到古希臘的出處，暫不列出數字。</li>
+    </ul>
+
+    <h3>兩種只列年數、不算時間軸的分配法</h3>
+    <p><b>Valens 的「四分之一期間」</b>（IV.1–3、IV.30）：每顆行星先管自己小年的四分之一那麼多年（土星 7½、木星 3、火星 3¾、太陽 4¾、金星 2、水星 5、月亮 6¼ 年，一輪 32 年 3 個月），再往下細分成日。本站不算它，因為 Valens 書裡幾處互相矛盾：起點要看出生前最近一次是新月還是滿月，從它之後的第一顆行星開始；細分的順序在 IV.2 是黃道順序，在 IV.30 的表卻是迦勒底序；一年幾日沒有明說，表上的日數加起來暗示一年 365½ 日，和 360、365¼ 都不同。IV.30 末尾另附兩種替代分配，Valens 對其中一種的評語是「不一致」；他在 IV.11 也批評過依小年分配的做法會讓結果失真。</p>
+    <p><b>Critodemus 法</b>（Valens IV.26）：每顆行星的年數依天球由近到遠排：月亮 1 年、水星 2、金星 3、太陽 4、火星 5、木星 6、土星 7，七顆合計 28 年；起點是月亮所在那一度的「單度主星」（把每一度各配給一顆行星的另一套表），之後依出生時排在它後面的行星輪下去。這一章只有一段，沒有例盤，起點又要先選定一套單度主星表，所以本站不算。附帶一提：這一章的標題說「依天球上行」，指的是行星天球由內往外的順序，<b>不是</b>「上升時間」（各星座從東方地平線升起所花的時間）；Valens 用上升時間分期的是另外幾章。</p>
+  </section>
+
+  <section class="ds-sec">
+    <h2 class="hdr"><span>09</span>Ptolemy 的人生七齡</h2>
+    <p>Ptolemy 在《占星四書》（Tetrabiblos）IV.10 把人的一生依七顆行星分成七個年齡階段，順序從離地球最近的月亮，往外到最遠的土星。這是一張<b>對所有人都一樣</b>的通則表，和你的星盤無關；Ptolemy 接著說，每個人具體的時間要從本命盤的其他推算方法去找。所以本站只把它當作背景說明，不換算成日期。</p>
+    <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="dc-ages-cap">
+      <table class="spec dc-ages">
+        <caption id="dc-ages-cap">人生七齡（年齡是原文各段年數相加；第一段原文寫「約」四年）</caption>
+        <thead><tr><th scope="col">行星</th><th scope="col">年齡</th><th scope="col">階段</th><th scope="col">Loeb 頁碼</th></tr></thead>
+        <tbody>
+          <tr data-planet="moon"><td>月亮</td><td class="mono">0–4 歲</td><td>嬰兒</td><td class="mono">p.443</td></tr>
+          <tr data-planet="mercury"><td>水星</td><td class="mono">4–14 歲</td><td>童年</td><td class="mono">p.443</td></tr>
+          <tr data-planet="venus"><td>金星</td><td class="mono">14–22 歲</td><td>少年</td><td class="mono">pp.443–445</td></tr>
+          <tr data-planet="sun"><td>太陽</td><td class="mono">22–41 歲</td><td>青年</td><td class="mono">p.445</td></tr>
+          <tr data-planet="mars"><td>火星</td><td class="mono">41–56 歲</td><td>壯年</td><td class="mono">pp.445–447</td></tr>
+          <tr data-planet="jupiter"><td>木星</td><td class="mono">56–68 歲</td><td>老年前期</td><td class="mono">p.447</td></tr>
+          <tr data-planet="saturn"><td>土星</td><td class="mono">68 歲以後</td><td>老年晚期</td><td class="mono">pp.447–449</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>金星 8、太陽 19、火星 15、木星 12 年，正是第 08 節的小年；水星取小年 20 的一半；月亮的 4 年 Ptolemy 另有說明。年數與十年期、法達（firdaria）有重疊，但意思不同，彼此不能互相推導。英譯本的編注提到，有學者認為這一章與全書其他部分不太一致。</p>
+    <p class="dc-cite">Ptolemy《占星四書》IV.10〈Of the Division of Times〉，F. E. Robbins 英譯，Loeb Classical Library 435（1940）pp.441–449</p>
+  </section>
+
+  <section class="ds-sec">
+    <h2 class="hdr"><span>10</span>三分性主星</h2>
+    <p>黃道十二星座分成火、土、風、水四組，每組三個星座，叫「三分性」（triplicity）。每組有三位「三分性主星」，第一、第二位的先後依日盤或夜盤互換，第三位日夜都在。本站用的 Dorotheus 三主星表見〈<a href="/zh-TW/methods#dignities">方法</a>〉第 03 節。</p>
+    <p>Dorotheus 在《Carmen Astrologicum》I.22（Pingree 英譯 p.183）看日盤的太陽、夜盤的月亮落在哪一組，取那一組的主星：<b>第一位對應人生的前段，第二位對應後段</b>；第三位在這一章不管任何時段。Valens 在 II.2 也只分前後兩段，交接的時點寫成「直到該星座的上升時間或時間主星的週期回歸」，沒有說清楚是哪一個星座、用哪一張上升時間表。</p>
+    <p><b>原典沒有說前段到幾歲結束。</b>把人生平分成三段、每位主星各管一段，是後來中世紀作者的讀法（Bonatti 轉述 al-Qabīṣī；我們讀的是研究者的轉引），而且有研究者認為連 al-Qabīṣī 的原文都沒有限定時段。平分三段還需要先假定一個壽命長度。所以本站只列出這三位主星和它們的順序，不畫時間軸，也不換算年齡；也不判斷它們的好壞。</p>
+  </section>
+
+  <section class="ds-sec">
+    <h2 class="hdr"><span>11</span>出處</h2>
+    <ul class="ct-notes">
+      <li>Vettius Valens, Anthology, Mark T. Riley 英譯（初稿）：VI.6、VI.6a、VI.7（Kroll pp.252–257；Pingree pp.241–246）；IV.1–3、IV.11、IV.26、IV.30；II.2。<a href="https://www.skyscript.co.uk/valens_riley.html">Skyscript 上的譯本</a>。我們讀的是網路上公開的重新排版本（附 Kroll 與 Pingree 頁碼，以 GPL-2.0 授權），沒有讀希臘文校勘本。</li>
+      <li>Firmicus Maternus, Mathesis II.26–28（規則與月數）、VI.33–39（逐星解說），Kroll 與 Skutsch 校勘的拉丁文本，<a href="https://penelope.uchicago.edu/Thayer/L/Roman/Texts/Firmicus_Maternus/Mathesis/2*.html">LacusCurtius 第二卷</a>。</li>
+      <li>Ptolemy《占星四書》IV.10，F. E. Robbins 英譯（Loeb 1940），<a href="https://penelope.uchicago.edu/Thayer/E/Roman/Texts/Ptolemy/Tetrabiblos/4C*.html">LacusCurtius</a>。</li>
+      <li>Dorotheus of Sidon, Carmen Astrologicum I.1、I.22、I.23，David Pingree 英譯（Teubner 1976），<a href="https://www.skyscript.co.uk/dorotheus1.pdf">Skyscript 授權重排本第一卷</a>。</li>
+      <li>例盤的年代：O. Neugebauer &amp; H. B. Van Hoesen, Greek Horoscopes（1959）L132，經英譯重排本的註轉引。</li>
+      <li>Hephaistio 的十年期規則：只讀到依 Schmidt 英譯整理的二手轉述，原文未讀。</li>
+    </ul>
+  </section>
+
+</div>

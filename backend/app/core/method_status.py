@@ -28,6 +28,8 @@ DECIDED_METHODS: frozenset[str] = frozenset({
     "lunar_apsides",
     "parallax_moon",
     "essential_dignities",
+    # 十二分部：預設算法、列出的點與守護行星表已追認。
+    "dodecatemoria",
 })
 
 # 維持 provisional 的方法：Lots 隨可用的上升點保留 provisional；月空亡的定義仍未定，
@@ -35,19 +37,33 @@ DECIDED_METHODS: frozenset[str] = frozenset({
 # 輸出不等於採用其定義（日主取日出所在民用日期等）。
 PROVISIONAL_METHODS: frozenset[str] = frozenset({
     "lots", "void_of_course", "aspects", "planetary_hours",
+    # 月宿：等分與起點待方法裁決追認。
+    "lunar_mansions",
+    # 焦傷與光束下：預設分法已裁定，判定細節（開閉、7 天門檻、月亮）待追認。
+    "solar_phase",
+    # 行星與宮的古典分類：地平上下的判準與預設的出處組合待追認。
+    "classical_classifications",
+})
+
+# The flagged annual route's methods: provisional until their "how it is
+# output" rows are decided.  Kept apart so the chart's own partition
+# test can name the methods /api/chart emits.
+ANNUAL_PROVISIONAL_METHODS: frozenset[str] = frozenset({
+    "annual_profection", "firdaria", "zodiacal_releasing", "extended_lots", "decennials",
+    "monthly_profection",
 })
 
 # 列為研究用途的 profile；被選為主要 profile 時也要標出。
 RESEARCH_ONLY_PROFILES: frozenset[str] = frozenset({"lilly_triplicity_compact_1647_v1"})
 
-if DECIDED_METHODS & PROVISIONAL_METHODS:
+if DECIDED_METHODS & (PROVISIONAL_METHODS | ANNUAL_PROVISIONAL_METHODS):
     raise RuntimeError("a method is either decided or provisional, never both")
 
 
 def method_status(module: str) -> str:
     if module in DECIDED_METHODS:
         return METHOD_STATUS_DECIDED
-    if module in PROVISIONAL_METHODS:
+    if module in PROVISIONAL_METHODS | ANNUAL_PROVISIONAL_METHODS:
         return METHOD_STATUS_PROVISIONAL
     raise KeyError(f"method {module!r} has no status basis")
 

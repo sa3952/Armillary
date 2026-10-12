@@ -27,6 +27,7 @@ from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from .refusals import (
+    ANNUAL_ROUTE,
     CHART_ROUTE,
     HEALTH_ROUTE,
     PLACE_SEARCH_ROUTE,
@@ -63,8 +64,11 @@ ALLOWED_EVENT_FIELDS: Final = (
 )
 
 _ALLOWED_METHODS: Final = frozenset({"GET", "POST", "HEAD", "OPTIONS"})
+# The annual route keeps its own label whether or not its flag registered it:
+# the label is the fixed path, never request text, and an unregistered probe of
+# it stays distinguishable from a page fetch.
 _ALLOWED_ROUTES: Final = frozenset({
-    CHART_ROUTE, HEALTH_ROUTE, PLACE_SEARCH_ROUTE, TIME_CONVERT_ROUTE,
+    ANNUAL_ROUTE, CHART_ROUTE, HEALTH_ROUTE, PLACE_SEARCH_ROUTE, TIME_CONVERT_ROUTE,
 })
 # Every code a refusal can carry is an event code too (the boundary reasons and
 # the domain errors are refusal codes); the refusal table in refusals.py is the

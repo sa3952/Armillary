@@ -28,7 +28,6 @@
 /* ─── 正文欄 ─── */
 .ar-body{display:grid; grid-template-columns:5.5rem minmax(0,40rem) minmax(0,1fr); column-gap:var(--s3)}
 .ar-body > *{grid-column:2}
-.ar-body > .ar-wide{grid-column:2 / 4}
 .ar-body p{font-size:1.04rem; line-height:2.05; margin-bottom:var(--s2)}
 .ar-body p b, .ar-body li b{color:var(--ink)}
 .ar-body ul, .ar-body ol{max-width:none; font-size:1rem; line-height:1.95}
@@ -87,7 +86,7 @@
 .ar-hero svg.sq{max-width:38rem}
 .ar-fig .bar-track svg{max-width:none}
 .ar-fig figcaption{font-size:.9rem; line-height:1.85; color:var(--ink-dim);
-  border-top:1px solid var(--hair); padding-top:var(--s1); margin-top:var(--s1); max-width:44rem}
+  border-top:1px solid var(--hair); padding-top:var(--s1); margin-top:var(--s1); max-width:var(--measure-cjk)}
 .ar-fig figcaption b{font-family:var(--mono); font-weight:400; letter-spacing:.1em;
   color:var(--accent); margin-right:.6em}
 .ar-hero{margin:0 0 var(--s4); padding:var(--s3) var(--s3) var(--s2); background:var(--paper-2);
@@ -97,23 +96,16 @@
 .ar-fig .g-ink{stroke:var(--ink); fill:none; stroke-width:1.5}
 .ar-fig .g-hair{stroke:var(--hair); fill:none; stroke-width:1}
 .ar-fig .g-dim{stroke:var(--ink-faint); fill:none; stroke-width:1}
-.ar-fig .g-dash{stroke:var(--ink-faint); fill:none; stroke-width:1; stroke-dasharray:4 4}
 .ar-fig .g-accent{stroke:var(--accent); fill:none; stroke-width:2.5}
 .ar-fig .g-accent-thin{stroke:var(--accent); fill:none; stroke-width:1.5}
-.ar-fig .g-ring1{stroke:var(--ring-1); fill:none; stroke-width:2.5}
 .ar-fig .g-ring2{stroke:var(--ring-2); fill:none; stroke-width:2.5}
-.ar-fig .g-ring3{stroke:var(--ring-3); fill:none; stroke-width:2.5}
 .ar-fig .f-paper{fill:var(--paper); stroke:none}
 .ar-fig .f-paper2{fill:var(--paper-2); stroke:none}
 .ar-fig .f-hair{fill:var(--hair-soft); stroke:none}
 .ar-fig .f-ink{fill:var(--ink); stroke:none}
 .ar-fig .f-accent{fill:var(--accent); stroke:none}
 .ar-fig .f-accent-soft{fill:var(--accent); fill-opacity:.14; stroke:none}
-.ar-fig .f-ring1{fill:var(--ring-1); stroke:none}
 .ar-fig .f-ring2{fill:var(--ring-2); stroke:none}
-.ar-fig .f-ring3{fill:var(--ring-3); stroke:none}
-.ar-fig .f-ringv{fill:var(--ring-v); stroke:none}
-.ar-fig .f-ring1-soft{fill:var(--ring-1); fill-opacity:.16; stroke:none}
 .ar-fig .f-ring2-soft{fill:var(--ring-2); fill-opacity:.16; stroke:none}
 .ar-fig .f-ring3-soft{fill:var(--ring-3); fill-opacity:.18; stroke:none}
 .ar-fig .t{fill:var(--ink); font-family:var(--sans); font-size:20px}
@@ -121,7 +113,6 @@
 .ar-fig .t-faint{fill:var(--ink-faint); font-family:var(--mono); font-size:18px}
 .ar-fig .t-mono{fill:var(--ink); font-family:var(--mono); font-size:20px}
 .ar-fig .t-accent{fill:var(--accent); font-family:var(--sans); font-size:20px; font-weight:700}
-.ar-fig .t-big{fill:var(--ink); font-family:var(--serif); font-size:30px}
 .ar-fig .t-paper{fill:var(--paper); font-family:var(--sans); font-size:19px}
 .ar-fig .t-mid{text-anchor:middle}
 .ar-fig .t-end{text-anchor:end}
@@ -137,6 +128,8 @@
 .ar-table thead th{font-family:var(--mono); font-weight:400; font-size:.78rem; letter-spacing:.08em;
   color:var(--ink-faint); border-bottom:1px solid var(--ink)}
 .ar-table .n{font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap}
+/* 中文只在空格與標點處折行：等寬的時間欄不折行時，短詞（「命運點星座」）原本被擠成一字一行。 */
+.ar-table th, .ar-table td{word-break:keep-all}
 .ar-table tr.hl td{background:var(--paper-2)}
 .ar-table .diff{color:var(--accent); font-weight:700}
 
@@ -179,7 +172,7 @@
 /* ─── 出處 ─── */
 .ar-refs{margin-top:var(--s5) !important; padding-top:var(--s3) !important; border-top:2px solid var(--ink) !important}
 .ar-refs h2{font-family:var(--serif); font-weight:400; font-size:1.5rem; margin:0 0 var(--s1)}
-.ar-refs > p{max-width:44rem; color:var(--ink-dim); font-size:.95rem}
+.ar-refs > p{max-width:var(--measure-cjk); color:var(--ink-dim); font-size:.95rem}
 .ar-refs ol{list-style:none; counter-reset:ref; padding:0; margin:var(--s2) 0 0; max-width:52rem}
 .ar-refs li{counter-increment:ref; display:grid; grid-template-columns:2.6rem minmax(0,1fr);
   gap:0 var(--s1); padding:.75rem 0; border-top:1px solid var(--hair-soft);
@@ -211,7 +204,7 @@
 
 @media (max-width:60rem){
   .ar-body{grid-template-columns:minmax(0,1fr)}
-  .ar-body > *, .ar-body > .ar-wide{grid-column:1}
+  .ar-body > *{grid-column:1}
   .ar-sec{position:static; display:block; width:auto; text-align:left; line-height:1.6; margin-bottom:.2rem}
   .ar-next{grid-template-columns:1fr}
 }

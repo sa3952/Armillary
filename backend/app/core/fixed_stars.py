@@ -1,8 +1,8 @@
 """恆星位置與星等（含完整赤緯相關資料），套用統一計算模式。
 
-這 34 顆恆星全部標為 `research_only`，
-維持預設關閉、明示勾選才計算。逐星補齊來源、時代、作者、幾何方法、orb 與歲差政策
-的工作延後，不阻擋前端上線。
+清單（config.FIXED_STARS）上的恆星全部標為 `research_only`，
+維持預設關閉、明示勾選才計算。逐星的幾何方法、orb 與歲差政策未裁決；清單依據哪些
+古典文本記在內部來源表與方法頁，計算輸出不逐星標出處。
 
 `research_only` 的意思是：**位置數值本身是天文計算結果，但「這顆星在古典占星中
 如何使用」尚未有本產品採用的方法**。本模組因此只輸出座標與星等，不輸出任何
@@ -10,13 +10,14 @@
 Anonymous of 379 用的是升起與中天，不是黃經合相：CCAG V/1, Boll–Cumont 1904,
 pp.194–211），再定 orb 與歲差政策，這些都未裁決。
 
-位置的出處是 Swiss Ephemeris `fixstar2_ut` 加上捆綁的 `sefstars.txt`。驗證頁的固定星
-比對是在同一份 sefstars 記錄上以獨立轉換鏈核對演算法、對 SIMBAD 現值只量目錄漂移。
-逐星來源表（內部；tests/backend/fixtures/fixed_star_provenance.json）把 34 顆
-各綁到 Swiss 實際比對到的 sefstars 行號與 sha256，並確認數值即 Hipparcos 2007 新歸算
+位置的出處是 Swiss Ephemeris `fixstar2_ut` 加上捆綁的 `sefstars.txt`。
+逐星來源表（內部；tests/backend/fixtures/fixed_star_provenance.json）把每顆星
+綁到 Swiss 實際比對到的 sefstars 行號與 sha256，並判定數值是否即 Hipparcos 2007 新歸算
 （I/311）推到 J2000；常駐測試以不呼叫 Swiss 的 ERFA 公式鏈（DE441 地球狀態）對
-/api/chart 三個日期核對黃經黃緯：同一記錄 ≤ 0.01″、Hipparcos 2007 由 J1991.25 推算
-≤ 0.02″、SIMBAD 現值 ≤ 0.5″（其中 4 顆 SIMBAD 已改用 Gaia DR3，屬目錄漂移）。
+/api/chart 三個日期核對黃經黃緯，容差與實測最大值寫在來源表：同一記錄、Hipparcos
+2007 由 J1991.25 推算、SIMBAD 現值（部分星 SIMBAD 已改用 Gaia DR3，屬目錄漂移）。
+不是 Hipparcos 2007 的記錄（α Cen 是雙星系統的值、θ¹ Eri 精度較低）逐星記下與
+Hipparcos、SIMBAD 的差。沒有逐星對 Gaia 核對。
 
 安全約束：星名為硬編碼常數，使用者無法控制傳入 Swiss Ephemeris
 的字串。若未來開放自訂星名，必須先以 ASan 受控輸入重新評估 `libswe/sweph.c` 的
@@ -215,9 +216,11 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
     "fixed_stars/policy": {
         "applies_to": "astronomical_data.fixed_star_policy",
         "note": (
-            "座標為天文計算結果（fixstar2_ut＋sefstars.txt，目錄未獨立核對）；"
+            "座標為天文計算結果（fixstar2_ut＋sefstars.txt）。每顆星的位置已用獨立換算，"
+            "對 Hipparcos 衛星星表 2007 年新歸算與 SIMBAD 現值核對；少數記錄不是 Hipparcos "
+            "2007 的值（例如南門二是整個雙星系統的值），另記差距；沒有逐星對 Gaia 核對。"
             "不輸出合相判定：要先選幾何（黃道合相、同升或中天、地平事件），再定容許度"
-            "與歲差。逐星來源考據延後。"
+            "與歲差。清單依據的古典文本見方法頁，計算結果不逐星標出處。"
         ),
     },
     "fixed_stars/zh_names": {

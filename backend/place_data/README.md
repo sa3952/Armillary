@@ -74,7 +74,10 @@ Traditional-Chinese name from `alternateNamesV2` leads the label when available
 error (the two Auckland suburbs tagged `Pacific/Chatham`, and others found by
 checking each zone against its country's IANA `zone.tab` entries and against
 the zone of its nearest same-country neighbours) are corrected through the
-producer's `SOURCE_TIMEZONE_CORRECTIONS` and recorded under `source_corrections`;
+producer's `SOURCE_TIMEZONE_CORRECTIONS` and recorded under `source_corrections`
+(Vietnamese rows take the zone of their side of the 1954-1976 Bến Hải line, as tzdata's
+`zone1970.tab` assigns them: Asia/Bangkok north, Asia/Ho_Chi_Minh south, one hour apart from
+1960 to mid-1975);
 rows on real or disputed boundaries are left as the source has them and listed
 as reviewed cases in `tests/backend/test_place_catalog.py`;
 when `timezonefinder` is installed every GeoNames timezone is checked against

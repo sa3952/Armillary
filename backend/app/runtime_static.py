@@ -32,7 +32,7 @@ from .frontend_assets import (
     validate_asset_name,
 )
 from .privacy_logging import DOMAIN_ERROR_STATE_KEY
-from .refusals import CHART_ROUTE
+from .refusals import ANNUAL_ROUTE, CHART_ROUTE
 from .request_limits import is_api_path
 
 
@@ -376,7 +376,8 @@ class RuntimeStaticFiles(StaticFiles):
 # gzip for the chart result.
 #
 # A chart result is 100-600 KB of JSON that compresses to about a seventh.  Only
-# the successful `POST /api/chart` result is encoded, only for a client that
+# the successful `POST /api/chart` result (and the flagged `POST
+# /api/chart/annual` result, the same kind of body) is encoded, only for a client that
 # names gzip in Accept-Encoding (the same reading as the static assets,
 # accepts_gzip above), with the same deterministic encoder (level
 # GZIP_LEVEL, mtime 0): one request body gives one byte sequence on every worker
@@ -398,7 +399,12 @@ class RuntimeStaticFiles(StaticFiles):
 # `application/json`, which a cross-site page cannot send without a CORS
 # preflight this application never grants), so no response ever mixes a guess
 # with that data.  What an on-path observer still sees is the length of the victim's own response, which
-# the identity encoding reveals as well.
+# the identity encoding reveals as well.  The annual result is the same: a
+# function of its own request body, holding no secret but the birth data that
+# body carried.
+_COMPRESSED_RESULT_ROUTES = frozenset({CHART_ROUTE, ANNUAL_ROUTE})
+
+
 class ChartResultCompression:
     """Encode the 200 chart result with gzip for clients that ask for it."""
 
@@ -409,7 +415,7 @@ class ChartResultCompression:
         if (
             scope["type"] != "http"
             or scope.get("method") != "POST"
-            or scope.get("path") != CHART_ROUTE
+            or scope.get("path") not in _COMPRESSED_RESULT_ROUTES
         ):
             await self.app(scope, receive, send)
             return

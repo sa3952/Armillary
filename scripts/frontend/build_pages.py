@@ -2,11 +2,13 @@
 """Generate frontend pages from fragments at commit time.
 
 The project chose "generate at commit time and commit the output" over both a
-hand-written set and a build chain: the served files stay readable source, so
-AGPL §13's Corresponding Source obligation is discharged by View Source, while
-the surfaces (times languages, once more than one is served) do not each carry their own
+hand-written set and a build chain: the release copies committed files, and the
+surfaces (times languages, once more than one is served) do not each carry their own
 copy of the head, header and footer.  How many surfaces there are is whatever
-frontend/surfaces.json lists; it is not restated here.
+frontend/surfaces.json lists; it is not restated here.  The stylesheets and the
+page scripts ship minified; their readable forms (scripts/frontend/styles/ and
+scripts/frontend/scripts/), the form to edit, are what the public source export
+carries beside the shipped files.
 
 The generated files are committed. `--check` re-runs the generation in memory
 and fails if any committed file differs, which is what keeps the output from
@@ -33,6 +35,8 @@ import sys
 import textwrap
 from xml.sax.saxutils import escape as xml_escape
 
+from scripts.frontend.site_locale import DEFAULT_LOCALE
+
 
 ROOT = Path(__file__).resolve().parents[2]
 PAGES = ROOT / "scripts" / "frontend" / "pages"
@@ -45,8 +49,11 @@ FRONTEND = ROOT / "frontend"
 # the page's content digest changes, so `--check` stays deterministic and a
 # rebuild that changes nothing does not advance any date (search engines ignore
 # a lastmod that moves on every build).  It lives beside the producer, not in
-# frontend/, so it is never a served asset.
-PAGE_LASTMOD = ROOT / "scripts" / "frontend" / "page_lastmod.json"
+# frontend/, so it is never a served asset.  An unchanged page carries its
+# date forward, so `--check` alone would accept an edited date; it also holds
+# each date to the record's first-parent Git history (lastmod_binding_errors).
+PAGE_LASTMOD_PATH = "scripts/frontend/page_lastmod.json"
+PAGE_LASTMOD = ROOT / PAGE_LASTMOD_PATH
 _ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 # A content digest ignores `?v=` stamps: a stylesheet edit re-stamps every page
 # but changes no page's content, and must not advance every <lastmod>.
@@ -71,16 +78,27 @@ PUBLIC_ALPHA_START = date(2026, 10, 10)
 _PUBLIC_ALPHA_PLACEHOLDER = re.compile(r"\{\{(public_alpha_start|private_alpha_last_day)\}\}")
 
 
-def public_alpha_dates(start: date | None = None) -> dict[str, str]:
+# The privacy and terms head notes write their dates with U+2011 (non-breaking
+# hyphen): a wrapping head note would otherwise break a date at its hyphen.  It
+# looks the same as "-".  Other pages keep the plain hyphen.
+NON_BREAKING_HYPHEN = "\u2011"
+NON_BREAKING_DATE_FRAGMENTS = frozenset({"legal-privacy", "legal-terms"})
+
+
+def public_alpha_dates(start: date | None = None, *, non_breaking: bool = False) -> dict[str, str]:
     start = PUBLIC_ALPHA_START if start is None else start
+    hyphen = NON_BREAKING_HYPHEN if non_breaking else "-"
     return {
-        "public_alpha_start": start.isoformat(),
-        "private_alpha_last_day": (start - timedelta(days=1)).isoformat(),
+        key: value.isoformat().replace("-", hyphen)
+        for key, value in (
+            ("public_alpha_start", start),
+            ("private_alpha_last_day", start - timedelta(days=1)),
+        )
     }
 
 
-def fill_public_alpha_dates(body: str, start: date | None = None) -> str:
-    dates = public_alpha_dates(start)
+def fill_public_alpha_dates(body: str, start: date | None = None, *, non_breaking: bool = False) -> str:
+    dates = public_alpha_dates(start, non_breaking=non_breaking)
     return _PUBLIC_ALPHA_PLACEHOLDER.sub(lambda match: dates[match.group(1)], body)
 
 
@@ -153,7 +171,7 @@ def fill_ephemeris_digests(body: str) -> str:
 # page names them as {{advanced_option_count}} and {{advanced_group_count}}, and
 # they are read from the catalogue the page ships, so the sentence cannot drift
 # from the form.
-OPTIONS_CATALOGUE = ROOT / "frontend/zh-TW/options-catalogue.js"
+OPTIONS_CATALOGUE = ROOT / "frontend" / DEFAULT_LOCALE / "options-catalogue.js"
 _OPTIONS_PLACEHOLDER = re.compile(r"\{\{(advanced_option_count|advanced_group_count)\}\}")
 _ZH_DIGITS = "零一二三四五六七八九"
 _CATALOGUE_COUNTS_SCRIPT = (
@@ -200,6 +218,22 @@ def fill_options_catalogue_counts(body: str) -> str:
     return _OPTIONS_PLACEHOLDER.sub(lambda match: counts[match.group(1)], body)
 
 
+# Several pages state how many fixed stars the calculator offers.  The product's
+# star list (app.config.FIXED_STARS) is the one producer of that number: the
+# pages write {{fixed_star_count}} and the build fills it.
+_FIXED_STAR_COUNT_PLACEHOLDER = "{{fixed_star_count}}"
+
+
+def fixed_star_count() -> int:
+    return len(_backend("config").FIXED_STARS)
+
+
+def fill_fixed_star_count(body: str) -> str:
+    if _FIXED_STAR_COUNT_PLACEHOLDER not in body:
+        return body
+    return body.replace(_FIXED_STAR_COUNT_PLACEHOLDER, str(fixed_star_count()))
+
+
 # The home page's armillary plate is gen_armillary's projection, injected where
 # the fragment writes {{armillary_svg}} on a line of its own and indented to
 # match, so the drawing served is the geometry the currentness test checks.
@@ -237,7 +271,7 @@ API_PATH_PREFIX = "/api/"
 # absolute and carries the asset's content version, so a new card is a new URL
 # and every platform cache refetches; the width and height are read from the
 # PNG itself, never declared beside it.
-OG_IMAGE_ASSET: str | None = "zh-TW/og-card.png"
+OG_IMAGE_ASSET: str | None = f"{DEFAULT_LOCALE}/og-card.png"
 # Alt text proposed with the wiring.
 OG_IMAGE_ALT = "渾儀 Armillary：可驗證的古典西洋占星計算器"
 _PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
@@ -245,10 +279,11 @@ _PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 # llms.txt: a plain index of the pages for language-model crawlers,
 # built from what the site already says.  The sections are the shared footer's
 # columns, each entry is a surface's title and description, and the optional
-# links take their label from the anchor text the named page already shows.
-# Nothing here is new prose; a link that disappears from its page fails the build.
+# links take their label from the anchor text the named page already shows; a
+# link that disappears from its page fails the build.  Only the facts list
+# (llms_facts) has labels of its own.
 LLMS_OPTIONAL_LINKS = (
-    ("methods", "/zh-TW/method-sources.json"),
+    ("methods", f"/{DEFAULT_LOCALE}/method-sources.json"),
     ("legal-copyright", "https://github.com/sa3952/Armillary"),
 )
 
@@ -260,7 +295,9 @@ LLMS_OPTIONAL_LINKS = (
 # URL did not.  Editing a referenced asset without re-running this generator is
 # now page drift that `--check` reports.
 _VERSIONED_ASSET_REFERENCE = re.compile(
-    r'(?P<prefix>(?:src|href|data-[a-z]+(?:-[a-z]+)*)="/(?P<name>zh-TW/[^"?#]+)\?v=)\{\{assets\}\}"'
+    r'(?P<prefix>(?:src|href|data-[a-z]+(?:-[a-z]+)*)="/(?P<name>'
+    + re.escape(DEFAULT_LOCALE)
+    + r'/[^"?#]+)\?v=)\{\{assets\}\}"'
 )
 
 
@@ -355,7 +392,7 @@ def og_image_markup(
 
 
 def stamp_asset_versions(markup: str, key: str) -> str:
-    """Replace each `/zh-TW/<asset>?v={{assets}}` with that asset's version."""
+    """Replace each `/<locale>/<asset>?v={{assets}}` with that asset's version."""
 
     stamped = _VERSIONED_ASSET_REFERENCE.sub(
         lambda match: (
@@ -477,15 +514,17 @@ def telemetry_field_list(contract: dict[str, tuple[str, ...]] | None = None) -> 
 
 
 _FRAGMENT_NAME = re.compile(r"[a-z0-9_-]+")
+# A declared locale: a language subtag, optionally a script and a region.
+_LOCALE_CODE = re.compile(r"[a-z]{2,3}(?:-[A-Z][a-z]{3})?(?:-[A-Z]{2})?")
 
 
-def _common_row_fields_valid(item: dict) -> bool:
+def _common_row_fields_valid(item: dict, locales: list[str]) -> bool:
     # Surface and error page rows alike: the fragment names a file under pages/, never a path,
     # and a bad one is refused under its own name.
     if not (isinstance(item["fragment"], str) and _FRAGMENT_NAME.fullmatch(item["fragment"])):
         raise ValueError(f"frontend page fragment is invalid: {item.get('key')}")
     return (
-        item["locale"] == "zh-TW"
+        item["locale"] in locales
         and isinstance(item["layers"], list)
         and bool(item["layers"])
         and set(item["layers"]) <= {"L1", "L2", "L3"}
@@ -497,13 +536,23 @@ def _common_row_fields_valid(item: dict) -> bool:
 def load_surface_manifest() -> dict:
     payload = json.loads(SURFACE_MANIFEST.read_text(encoding="utf-8"))
     if set(payload) != {
-        "schema_version", "origin", "default_locale", "surfaces", "error_pages",
+        "schema_version", "origin", "default_locale", "locales", "surfaces", "error_pages",
     } or payload["schema_version"] != 1:
         raise ValueError("frontend surface manifest root is invalid")
     if payload["origin"] != "https://projectarmillary.com":
         raise ValueError("frontend canonical origin is invalid")
-    if payload["default_locale"] != "zh-TW":
+    # The declared locales are data: a row's locale must be one of them and its
+    # address and output must sit under that locale's directory.
+    locales = payload["locales"]
+    if (
+        not isinstance(locales, list)
+        or not locales
+        or len(set(locales)) != len(locales)
+        or not all(isinstance(code, str) and _LOCALE_CODE.fullmatch(code) for code in locales)
+        or payload["default_locale"] not in locales
+    ):
         raise ValueError("frontend locale is invalid")
+    default = payload["default_locale"]
     expected_fields = {
         "key", "fragment", "output", "surface", "locale", "layers",
         "indexable", "title", "description",
@@ -513,12 +562,12 @@ def load_surface_manifest() -> dict:
         if not isinstance(item, dict) or set(item) - {"article"} != expected_fields:
             raise ValueError("frontend surface row field set is invalid")
         if (
-            not _common_row_fields_valid(item)
+            not _common_row_fields_valid(item, locales)
             or not isinstance(item["indexable"], bool)
             or not isinstance(item["description"], str)
             or not item["description"].strip()
-            or not item["surface"].startswith("/zh-TW/")
-            or not item["output"].startswith("zh-TW/")
+            or not item["surface"].startswith(f"/{item['locale']}/")
+            or not item["output"].startswith(f"{item['locale']}/")
             or ".." in Path(item["output"]).parts
         ):
             raise ValueError(f"frontend surface row is invalid: {item.get('key')}")
@@ -530,11 +579,11 @@ def load_surface_manifest() -> dict:
             seen[field].add(value)
     if seen["surface"] != {item["surface"] for item in payload["surfaces"]}:
         raise ValueError("frontend surface set is invalid")
-    if {"/zh-TW/", "/zh-TW/calculate"} - seen["surface"]:
+    if {f"/{default}/", f"/{default}/calculate"} - seen["surface"]:
         raise ValueError("frontend entry surfaces are missing")
     for item in payload["surfaces"]:
         _validate_sub_page(item, payload["surfaces"])
-    _validate_error_pages(payload, seen)
+    _validate_error_pages(payload, seen, locales)
     return payload
 
 
@@ -542,7 +591,7 @@ def load_surface_manifest() -> dict:
 # `article` block with the day it was published and the day it was last
 # revised.  It lives under the blog's address, is linked from the blog page
 # instead of the shared footer, and is described as a BlogPosting.
-BLOG_SURFACE = "/zh-TW/blog"
+BLOG_SURFACE = f"/{DEFAULT_LOCALE}/blog"
 ARTICLE_FIELDS = frozenset({"published", "modified"})
 
 
@@ -561,7 +610,7 @@ def _validate_article(item: dict) -> None:
     if (
         not under_blog
         or not _FRAGMENT_NAME.fullmatch(slug)
-        or item["output"] != f"zh-TW/blog/{slug}.html"
+        or item["output"] != f"{DEFAULT_LOCALE}/blog/{slug}.html"
         or not isinstance(article, dict)
         or set(article) != ARTICLE_FIELDS
         or not all(isinstance(article[name], str) and _ISO_DATE.fullmatch(article[name])
@@ -609,7 +658,7 @@ def error_page_outputs() -> dict[int, str]:
     return {404: _frontend_assets_module().NOT_FOUND_PAGE}
 
 
-def _validate_error_pages(payload: dict, seen: dict[str, set[str]]) -> None:
+def _validate_error_pages(payload: dict, seen: dict[str, set[str]], locales: list[str]) -> None:
     rows = payload["error_pages"]
     expected_fields = {"key", "fragment", "output", "status", "locale", "layers", "title"}
     outputs = error_page_outputs()
@@ -620,7 +669,7 @@ def _validate_error_pages(payload: dict, seen: dict[str, set[str]]) -> None:
         if not isinstance(item, dict) or set(item) != expected_fields:
             raise ValueError("frontend error page row field set is invalid")
         if (
-            not _common_row_fields_valid(item)
+            not _common_row_fields_valid(item, locales)
             or item["status"] not in outputs
             or item["status"] in statuses
             or item["output"] != outputs[item["status"]]
@@ -661,8 +710,10 @@ def unclassified_pages(payload: dict, frontend: Path) -> list[str]:
     return sorted(pages - registered)
 
 
-_FOOTER_LINK = re.compile(r'<a href="(?P<href>/zh-TW/[^"]*)">(?P<label>[^<>]+)</a>')
-HOME_SURFACE = "/zh-TW/"
+_FOOTER_LINK = re.compile(
+    r'<a href="(?P<href>/' + re.escape(DEFAULT_LOCALE) + r'/[^"]*)">(?P<label>[^<>]+)</a>'
+)
+HOME_SURFACE = f"/{DEFAULT_LOCALE}/"
 
 
 def _footer(shell: str | None) -> str:
@@ -903,6 +954,30 @@ def fill_slate_numbers(body: str) -> str:
     return body
 
 
+# The site as the publisher of the application and the articles.  It names
+# no person.  The alternate names are the two halves of the site name and the
+# domain's form of it; the description tells the site apart from the
+# astronomical instrument it is named after (the about page's 這個名字), and
+# `sameAs` is the public source repository, as on the application.
+ORGANIZATION_ID = "/#organization"
+ORGANIZATION_ALTERNATE_NAMES = (*SITE_NAME.split(" "), "Project Armillary")
+ORGANIZATION_DISAMBIGUATION = (
+    "古典西洋占星的計算網站與開源程式；名稱取自天文儀器渾儀（armillary sphere），本身不是那件儀器。"
+)
+
+
+def _organization(origin: str) -> dict:
+    return {
+        "@type": "Organization",
+        "@id": origin + ORGANIZATION_ID,
+        "name": SITE_NAME,
+        "alternateName": list(ORGANIZATION_ALTERNATE_NAMES),
+        "url": origin + "/",
+        "disambiguatingDescription": ORGANIZATION_DISAMBIGUATION,
+        "sameAs": [_backend("frontend_release").PUBLIC_REPOSITORY_URL],
+    }
+
+
 def _json_ld(item: dict, origin: str, headline: str | None = None) -> str:
     canonical = origin + item["surface"]
     labels = footer_link_labels()
@@ -927,9 +1002,11 @@ def _json_ld(item: dict, origin: str, headline: str | None = None) -> str:
             "isPartOf": {"@id": origin + "/#website"},
         },
     ]
+    if item["surface"] == HOME_SURFACE or is_article(item):
+        graph.append(_organization(origin))
     if item["surface"] == HOME_SURFACE:
-        # No `creator` (no person is named in the structured data), no
-        # Organization; free to use, and the license it is published under.
+        # No `creator` (no person is named in the structured data); free to
+        # use, and the license it is published under.
         graph.append({
             "@type": "WebApplication",
             "@id": origin + "/#application",
@@ -947,6 +1024,7 @@ def _json_ld(item: dict, origin: str, headline: str | None = None) -> str:
             # The public source repository tells this application apart from
             # same-named ones; it names no person or organisation.
             "sameAs": [_backend("frontend_release").PUBLIC_REPOSITORY_URL],
+            "publisher": {"@id": origin + ORGANIZATION_ID},
         })
         graph[1]["about"] = {"@id": origin + "/#application"}
     else:
@@ -980,8 +1058,8 @@ def _json_ld(item: dict, origin: str, headline: str | None = None) -> str:
         })
         graph[1]["breadcrumb"] = {"@id": canonical + "#breadcrumb"}
     if is_article(item):
-        # No author or publisher: the structured data names no person or
-        # organisation; the byline on the page does.
+        # The publisher is the site; no author, because the byline on the page
+        # names a person and the structured data names none.
         post = {
             "@type": "BlogPosting",
             "@id": canonical + "#article",
@@ -993,6 +1071,7 @@ def _json_ld(item: dict, origin: str, headline: str | None = None) -> str:
             "inLanguage": item["locale"],
             "mainEntityOfPage": {"@id": canonical + "#webpage"},
             "isPartOf": {"@id": origin + BLOG_SURFACE + "#webpage"},
+            "publisher": {"@id": origin + ORGANIZATION_ID},
         }
         image = og_image_url(origin)
         if image is not None:
@@ -1090,6 +1169,8 @@ def calculation_requests(origin: str) -> list:
         privacy_check.frontend_cache_control(
             _backend("privacy_logging"), _frontend_assets_module(), FRONTEND
         ),
+        # The readable source, not the shipped copy this build may be rewriting.
+        lambda name: (ROOT / "scripts" / "frontend" / "scripts" / name).read_text(encoding="utf-8"),
     )
 
 
@@ -1126,10 +1207,11 @@ def render(item: dict, origin: str) -> str:
         )
     if "{{telemetry_" in body:
         raise ValueError(f"unknown telemetry placeholder in fragment {name!r}")
-    body = fill_public_alpha_dates(body)
+    body = fill_public_alpha_dates(body, non_breaking=name in NON_BREAKING_DATE_FRAGMENTS)
     body = fill_place_source_snapshot_date(body)
     body = fill_ephemeris_digests(body)
     body = fill_options_catalogue_counts(body)
+    body = fill_fixed_star_count(body)
     body = fill_armillary_svg(body)
     body = fill_article_dates(body, item)
     body = fill_article_reading_time(body, item)
@@ -1281,6 +1363,58 @@ def updated_page_lastmod(previous: dict, digests: dict[str, str], build_date: st
     return {"schema_version": 1, "pages": pages}
 
 
+def committed_page_lastmod(root: Path = ROOT) -> list[tuple[str, dict]]:
+    """Every committed revision of the lastmod record on the first-parent line,
+    newest first, with its committer's calendar date (YYYY-MM-DD)."""
+
+    def git(*arguments: str, given: bytes | None = None) -> bytes:
+        return subprocess.run(["git", *arguments], cwd=root, input=given, check=True,
+                              capture_output=True, timeout=120).stdout
+
+    try:
+        if git("rev-parse", "--is-shallow-repository").strip() != b"false":
+            raise ValueError("a shallow clone")
+        commits = [line.split() for line in git(
+            "log", "--first-parent", "--format=%H %cs", "--", PAGE_LASTMOD_PATH).decode().splitlines()]
+        batch = git("cat-file", "--batch", given="".join(
+            f"{commit}:{PAGE_LASTMOD_PATH}\n" for commit, _date in commits).encode())
+    except (OSError, ValueError, subprocess.SubprocessError) as error:
+        raise ValueError(f"the page lastmod dates need the record's full Git history: {error}") from None
+    history = []
+    for _commit, committed in commits:
+        header, _, batch = batch.partition(b"\n")
+        size = int(header.split()[2])
+        history.append((committed, json.loads(batch[:size])))
+        batch = batch[size + 1:]
+    return history
+
+
+def lastmod_binding_errors(record: dict, history: list[tuple[str, dict]], today: str) -> list[str]:
+    """A page's date stays what it was committed with while its content digest
+    is unchanged, is no later than the commit that introduced that digest
+    (today, if none has yet) and no earlier than the page's previous date."""
+
+    errors = []
+    for key, entry in sorted(record["pages"].items()):
+        introduced, previous = today, None
+        for committed, revision in history:
+            old = revision.get("pages", {}).get(key)
+            if not isinstance(old, dict) or old.get("content_sha256") != entry["content_sha256"]:
+                previous = old.get("lastmod") if isinstance(old, dict) else None
+                break
+            if old.get("lastmod") != entry["lastmod"]:
+                errors.append(f"{key}: lastmod {entry['lastmod']}, but the same content was "
+                              f"committed with {old.get('lastmod')}")
+                break
+            introduced = committed
+        if entry["lastmod"] > introduced:
+            errors.append(f"{key}: lastmod {entry['lastmod']} is after {introduced}, "
+                          "when its content was introduced")
+        if previous is not None and entry["lastmod"] < previous:
+            errors.append(f"{key}: lastmod {entry['lastmod']} is before its previous date {previous}")
+    return errors
+
+
 def page_lastmod_text(record: dict) -> str:
     return json.dumps(record, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
 
@@ -1365,15 +1499,73 @@ def footer_tagline(shell: str | None = None) -> str:
     return html.unescape(match.group(1)).strip()
 
 
+# The facts llms.txt states before its page lists, each read from its owner:
+# the license from LICENSE_URL, the source repository and the engine pin from
+# the backend, the house systems from the backend's table (in the order the
+# calculate page lists them), the phase from PUBLIC_ALPHA_START with the about
+# page's own words for it, and two links.  The known limitations are the
+# public repository's docs/KNOWN_LIMITATIONS.md, in English.
+REQUIREMENTS = ROOT / "backend" / "requirements.txt"
+LLMS_HOUSE_SYSTEM_ORDER = ("W", "E", "O", "B", "C", "R", "P")
+LLMS_KNOWN_LIMITATIONS_PATH = "/blob/main/docs/KNOWN_LIMITATIONS.md"
+LLMS_PRIVACY_CHECK_SURFACE = f"/{DEFAULT_LOCALE}/security/verify"
+
+
+def pinned_version(package: str, requirements: Path | None = None) -> str:
+    text = (REQUIREMENTS if requirements is None else requirements).read_text(encoding="utf-8")
+    pins = re.findall(rf"^{re.escape(package)}==(\S+)$", text, re.MULTILINE)
+    if len(pins) != 1:
+        raise ValueError(f"backend requirements pin {package} {len(pins)} times")
+    return pins[0]
+
+
+def _license_id() -> str:
+    return LICENSE_URL.rsplit("/", 1)[1].removesuffix(".html")
+
+
+def llms_facts(origin: str, by_surface: Mapping[str, dict]) -> list[str]:
+    houses = _backend("config").HOUSE_SYSTEMS
+    if set(houses) != set(LLMS_HOUSE_SYSTEM_ORDER):
+        raise ValueError("llms.txt house-system order does not match the backend's table")
+    repository = _backend("frontend_release").PUBLIC_REPOSITORY_URL
+    license_id = _license_id()
+    facts: tuple[tuple[str, str], ...] = (
+        ("授權", f"{license_id}（{LICENSE_URL}）"),
+        ("原始碼", repository),
+        ("計算引擎", f"Swiss Ephemeris（pyswisseph {pinned_version('pyswisseph')}）"),
+        ("宮位制", "、".join(houses[code] for code in LLMS_HOUSE_SYSTEM_ORDER)),
+        ("狀態", f"公開測試（Public Alpha），自{PUBLIC_ALPHA_START.isoformat()}起"),
+        ("已知限制（英文）", repository + LLMS_KNOWN_LIMITATIONS_PATH),
+    )
+    check = by_surface.get(LLMS_PRIVACY_CHECK_SURFACE)
+    if check is not None and check["indexable"]:
+        facts += (("親手驗證隱私", origin + LLMS_PRIVACY_CHECK_SURFACE),)
+    return [f"- {label}：{value}" for label, value in facts]
+
+
+def llms_english_summary() -> str:
+    """The one English passage on a Chinese-only site, for crawlers that read
+    English: what the site is, its boundary, the licence, no accounts or trackers."""
+
+    return (
+        "Armillary (渾儀) is a classical Western astrology calculator with a Traditional Chinese interface: "
+        "enter a birth date, time and place to get a natal chart, with the method source and a calculation "
+        "receipt for every number. It only calculates; it does not interpret charts or make predictions. "
+        f"The code is licensed {_license_id()}, and the site has no accounts, no cookies and no third-party "
+        "analytics or trackers."
+    )
+
+
 def llms_text(payload: dict, shell: str | None = None) -> str:
     """/llms.txt (llmstxt.org): the site's name, its summary and its pages.
 
-    Every word is already on the site: the name, the entry page's description
-    as the summary, the footer's column headings as sections, each surface's
-    title and description, and the optional links' own anchor text.  A surface
-    the footer does not group fails the build rather than going unlisted.  The
-    footer's closing line follows the summary, so the site's boundary is
-    quoted with it.
+    The name, the entry page's description as the summary, the footer's
+    column headings as sections, each surface's title and description, and
+    the optional links' own anchor text are words already on the site.  A
+    surface the footer does not group fails the build rather than going
+    unlisted.  The footer's closing line follows the summary, so the site's
+    boundary is quoted with it, the facts list (llms_facts) follows that, and
+    the English summary (llms_english_summary) closes the head.
     """
 
     origin = payload["origin"]
@@ -1382,6 +1574,8 @@ def llms_text(payload: dict, shell: str | None = None) -> str:
     lines = [
         f"# {SITE_NAME}", "", f"> {_markdown_text(home['description'])}", "",
         _markdown_text(footer_tagline(shell)) + "。", "",
+        *llms_facts(origin, by_surface), "",
+        llms_english_summary(), "",
     ]
     listed: set[str] = set()
     columns = footer_columns(shell)
@@ -1437,7 +1631,8 @@ def _discovery_outputs(payload: dict, lastmod: dict) -> dict[Path, str]:
 
 
 IANA_ZONE_NAMES = ROOT / "backend" / "app" / "iana_zone_names.json"
-TIMEZONE_NAMES_SCRIPT = FRONTEND / "zh-TW" / "timezone-names.js"
+# The readable script; it ships minified like every page script (javascript.py).
+TIMEZONE_NAMES_SCRIPT = ROOT / "scripts" / "frontend" / "scripts" / "timezone-names.js"
 
 
 def timezone_names_script() -> str:
@@ -1486,6 +1681,33 @@ def _method_source_register_output() -> tuple[Path, str]:
     )
 
 
+def _write_or_compare(outputs: Mapping[str, str], directory: Path, pattern: str, *, check: bool) -> list[str]:
+    """Write `outputs` (keyed by path under frontend/) and delete any other
+    file of `directory` matching `pattern`; with `check`, write nothing and
+    return what differs or is left over."""
+
+    stale = sorted(
+        path.relative_to(FRONTEND).as_posix()
+        for path in (directory.glob(pattern) if directory.is_dir() else ())
+        if path.relative_to(FRONTEND).as_posix() not in outputs
+    )
+    drift: list[str] = []
+    for name, text in outputs.items():
+        target = FRONTEND / name
+        if check:
+            current = target.read_text(encoding="utf-8") if target.is_file() else ""
+            if current != text:
+                drift.append(name)
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(text, encoding="utf-8")
+    if check:
+        return drift + stale
+    for name in stale:
+        (FRONTEND / name).unlink()
+    return []
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true")
@@ -1508,7 +1730,8 @@ def main() -> int:
     require_footer_links(payload)
     drift: list[str] = []
     # Written before the pages: a page's `?v=` stamp is the content version of
-    # the script file as it is on disk.
+    # the shipped script as it is on disk.  The time-zone list's readable
+    # script comes first, then every shipped script from its readable source.
     zone_script = timezone_names_script()
     if args.check:
         current = (
@@ -1519,31 +1742,17 @@ def main() -> int:
             drift.append(TIMEZONE_NAMES_SCRIPT.name)
     else:
         TIMEZONE_NAMES_SCRIPT.write_text(zone_script, encoding="utf-8")
+    from scripts.frontend import javascript
+
+    drift.extend(_write_or_compare(
+        javascript.build_scripts(), FRONTEND / javascript.SHIPPED_DIRECTORY, "*.js", check=args.check,
+    ))
     from scripts.frontend import stylesheets
 
     rows = [*payload["surfaces"], *payload["error_pages"]]
-    bundles = stylesheets.build_bundles(rows)
-    bundle_directory = FRONTEND / stylesheets.BUNDLE_DIRECTORY
-    stale = sorted(
-        path.relative_to(FRONTEND).as_posix()
-        for path in (bundle_directory.iterdir() if bundle_directory.is_dir() else ())
-        if path.relative_to(FRONTEND).as_posix() not in bundles
-    )
-    for name, text in bundles.items():
-        target = FRONTEND / name
-        if args.check:
-            current = target.read_text(encoding="utf-8") if target.is_file() else ""
-            if current != text:
-                drift.append(name)
-        else:
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(text, encoding="utf-8")
-    if stale:
-        if args.check:
-            drift.extend(stale)
-        else:
-            for name in stale:
-                (FRONTEND / name).unlink()
+    drift.extend(_write_or_compare(
+        stylesheets.build_bundles(rows), FRONTEND / stylesheets.BUNDLE_DIRECTORY, "*", check=args.check,
+    ))
     uncovered: list[str] = []
     digests: dict[str, str] = {}
     for item in payload["surfaces"]:
@@ -1573,6 +1782,17 @@ def main() -> int:
         )
         return 1
     outputs[PAGE_LASTMOD] = page_lastmod_text(lastmod)
+    if args.check:
+        # Both calendars: a build dated in UTC or in the committer's zone is not in the future.
+        today = max(build_date(), date.today().isoformat())
+        try:
+            unbound = lastmod_binding_errors(load_page_lastmod(), committed_page_lastmod(), today)
+        except ValueError as refusal:
+            unbound = [str(refusal)]
+        for finding in unbound:
+            print(f"{PAGE_LASTMOD.name}: {finding}", file=sys.stderr)
+        if unbound:
+            drift.append(f"{PAGE_LASTMOD.name} dates")
     register_target, register_text = _method_source_register_output()
     outputs[register_target] = register_text
     for target, rendered in outputs.items():
@@ -1601,7 +1821,7 @@ def main() -> int:
         f"PAGES {'CHECKED' if args.check else 'BUILT'}: "
         f"{len(payload['surfaces'])} surfaces + {len(payload['error_pages'])} error page(s) "
         "+ 4 discovery assets + page lastmod record + method source register"
-        " + time-zone name list"
+        " + time-zone name list + shipped scripts"
     )
     return 0
 

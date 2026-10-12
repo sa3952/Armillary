@@ -62,6 +62,17 @@ DELTA_T_STATUSES = (
 # magnitude with that basis named.  The 1 s (before 1900) and 0.1 s (from 1900)
 # orders come from the same NASA page's Table 2, i.e. Stephenson & Houlden 1986;
 # Morrison & Stephenson 2004 gives only σ < 1 s for 1900.
+# Measured era: Swiss interpolates yearly dt[] values, which cannot follow the
+# seasonal part of Earth rotation.  Its size is the conventional UT2−UT1 formula
+# every IERS Bulletin A prints (T in Besselian years; checked in Vol. XXXIX No.
+# 041, 2026-10-08): 0.022 sin 2πT − 0.012 cos 2πT − 0.006 sin 4πT + 0.007 cos 4πT
+# seconds, whose two amplitudes add to 0.034 s.  Against IERS EOP 20 C04 the
+# table misses by 0.021–0.034 s at four dates 1980–2015; the test that holds the
+# order to those measurements is in tests/backend/test_time_receipts.py.
+_UT2_MINUS_UT1_SEASONAL_SIN_COS_SECONDS = ((0.022, -0.012), (-0.006, 0.007))
+MEASURED_ERA_DELTA_T_ERROR_ORDER_SECONDS = round(
+    sum(math.hypot(*terms) for terms in _UT2_MINUS_UT1_SEASONAL_SIN_COS_SECONDS), 2
+)
 _HUBER_CALIBRATION_YEAR = 2005.0
 _HUBER_Q = 0.058
 _HUBER_M = 2500.0
@@ -101,9 +112,10 @@ def delta_t_model_receipt(jd_ut: float, swiss_time_input_semantics: str) -> dict
         uncertainty = 0.1
         basis = "stephenson_houlden_1986_via_nasa_espenak_table_2_about_0_1_second_from_1900"
     elif decimal_year < DELTA_T_SWISS_TABLE_LAST_MEASURED_YEAR:
-        uncertainty = None
+        uncertainty = MEASURED_ERA_DELTA_T_ERROR_ORDER_SECONDS
         basis = (
-            "measured_era_yearly_swiss_table_interpolation_error_not_quantified"
+            "iers_bulletin_a_ut2_minus_ut1_seasonal_terms_"
+            "not_followed_by_the_yearly_swiss_table"
         )
     elif decimal_year <= DELTA_T_SWISS_TABLE_END_YEAR:
         uncertainty = 1.0
@@ -152,6 +164,32 @@ def delta_t_model_receipt(jd_ut: float, swiss_time_input_semantics: str) -> dict
         "uncertainty_verification": "not_third_party_verified",
         "error_propagation": propagation,
     }
+
+
+def _measured_era_delta_t_note(delta_t_model: dict) -> str:
+    if delta_t_model["status"] != "measured_era_table":
+        return ""
+    order = delta_t_model["uncertainty_order_seconds"]
+    rate = delta_t_model["error_propagation"]["sidereal_arcsec_per_second_of_delta_t_error"]
+    cause = (
+        f"{DELTA_T_MODERN_MEASUREMENT_START_YEAR}～{DELTA_T_SWISS_TABLE_LAST_MEASURED_YEAR} 年的 ΔT "
+        "來自實測紀錄，但本站用的是逐年表格內插，"
+        f"抓不到地球自轉在一年之中的季節性快慢，誤差約 {order:.2f} 秒。"
+    )
+    basis = "依據是 IERS（國際地球自轉服務）公報的季節修正式，並已與 IERS 實測值核對。"
+    if rate is None:
+        # Input taken as UT1: the error moves TT and the body positions.
+        return cause + (
+            "這個年代的出生時間直接當作依地球自轉計算的世界時，所以誤差影響的是行星位置（極小），"
+            "不影響上升點與宮位。"
+        ) + basis
+    # Input from UTC: the error moves UT1, so sidereal time, the angles and
+    # the cusps, by the same arc.
+    arcsec = round(order * rate, 1)
+    return cause + (
+        f"換算到星盤：上升點、天頂與宮頭可能偏差約 {arcsec:.1f} 角秒，"
+        f"約等於 1/{round(3600 / arcsec)} 度；行星位置不受影響。"
+    ) + basis
 
 
 # --- Sidereal time model --------------------------------------------
@@ -221,8 +259,8 @@ _MODERN_UTC_START_JD_UT = 2441317.5  # 1972-01-01
 # CCTF/09-32 (BIPM 2009) pp.2-7, IANA tz theory ('UTC was not defined until
 # 1960'); 1972: IERS TAI-UTC, ITU-R TF.460-6.  The Swiss manual's "UTC
 # introduced 1961" (Programming interface 2.10 §9.3, p.43) is BIH coordination;
-# 1960 and 1961 are computed as UT1 either way.  OUTPUT_CONTRACT.md states the
-# rule once instead of every event module repeating it.
+# 1960 and 1961 are computed as UT1 either way.  The output contract states
+# the rule once instead of every event module repeating it.
 _CIVIL_SCALE_LABELS = {
     "pre_utc_ut1_estimate": "UT1 估計",
     "early_utc_era_ut1_by_swiss_rule": "UT1（舊協調世界時期間）",
@@ -345,6 +383,67 @@ def jd_ut_to_iso_utc(jd_ut: float) -> str:
     ) + "Z"
 
 
+def utc_parts_of_jd(jd_ut: float) -> tuple[dtmod.datetime, int]:
+    """The instant as an aware UTC datetime and its millisecond-of-minute count.
+
+    Rounded to the millisecond as ``jd_ut_to_iso_utc`` is; inside a leap second
+    the datetime stops at :59.999 and the count keeps the 60.
+    """
+
+    year, month, day, hour, minute, second = swe.jdut1_to_utc(
+        jd_ut + _HALF_MILLISECOND_DAYS, swe.GREG_CAL
+    )
+    millis = math.floor(second * 1000.0)
+    held = min(millis, 59_999)
+    value = dtmod.datetime(
+        year, month, day, hour, minute, held // 1000, (held % 1000) * 1000,
+        tzinfo=dtmod.timezone.utc,
+    )
+    return value, millis
+
+
+def local_wall_time(utc_value: dtmod.datetime, tz_input) -> tuple[dtmod.datetime, float]:
+    """The birth place's wall clock at a UTC instant, and its offset in hours.
+
+    The request's own zone: an IANA name through the process's tz database, or
+    the fixed offset the request named.
+    """
+
+    if tz_input.mode == "iana":
+        local = utc_value.astimezone(ZoneInfo(tz_input.iana_name))
+        offset = local.utcoffset()
+        assert offset is not None
+        return local.replace(tzinfo=None), offset.total_seconds() / 3600.0
+    offset = dtmod.timedelta(hours=tz_input.utc_offset_hours)
+    return (utc_value + offset).replace(tzinfo=None), tz_input.utc_offset_hours
+
+
+def civil_instant(jd_ut: float, tz_input) -> dict:
+    """An instant with its UTC label and the birth place's civil time."""
+
+    utc_value, millis = utc_parts_of_jd(jd_ut)
+    local, offset_hours = local_wall_time(utc_value, tz_input)
+    return {
+        "jd_ut": jd_ut,
+        "utc_time": jd_ut_to_iso_utc(jd_ut),
+        "time_scale": time_scale_for_jd_ut(jd_ut),
+        # Inside a positive leap second the label keeps second 60, as the UTC
+        # label does (leap seconds postdate every offset with a seconds part).
+        "local_time": civil_time_label(
+            local.year, local.month, local.day, local.hour, local.minute,
+            millis * 1000 if millis > 59_999
+            else local.second * 1_000_000 + local.microsecond,
+        ),
+        "utc_offset": utc_offset_text(offset_hours),
+    }
+
+
+def civil_date(jd_ut: float, tz_input) -> dtmod.date:
+    """The birth place's civil date at an instant."""
+
+    return local_wall_time(utc_parts_of_jd(jd_ut)[0], tz_input)[0].date()
+
+
 class NonexistentLocalTimeError(ValueError):
     """Raised when an IANA-zone wall-clock time has no corresponding UTC instant."""
 
@@ -455,7 +554,7 @@ def _offset_span_label(offset_hours: float, other_offset_hours: float) -> str:
     return " ".join(parts) or "0 秒"
 
 
-def _utc_offset_text(offset_hours: float) -> str:
+def utc_offset_text(offset_hours: float) -> str:
     """UTC±HH:MM, with :SS only when the offset has seconds (historical LMT)."""
 
     total = round(offset_hours * 3600)
@@ -550,8 +649,8 @@ def _to_utc_datetime(
                 dst_warning = (
                     f"此本地時間在 {tz_label} 為時區偏移改變造成的模糊時刻（例如日光節約時間結束或標準時變更；"
                     f"同一本地時間對應兩個 UTC 時刻，兩次相差 {_offset_span_label(offset_hours, alt_offset_hours)}）。"
-                    f"已採用 fold={fold}，對應 {_utc_offset_text(offset_hours)}；"
-                    f"另一種解讀為 {_utc_offset_text(alt_offset_hours)}。如果您知道確切是哪一次，"
+                    f"已採用 fold={fold}，對應 {utc_offset_text(offset_hours)}；"
+                    f"另一種解讀為 {utc_offset_text(alt_offset_hours)}。如果您知道確切是哪一次，"
                     f"請在請求中指定 timezone.fold={1 - fold} 以取得另一種結果。"
                 )
     else:
@@ -561,7 +660,7 @@ def _to_utc_datetime(
         offset_hours = fixed_offset_hours
         local_dt = naive.replace(tzinfo=dtmod.timezone(dtmod.timedelta(hours=offset_hours)))
         utc_dt = local_dt.astimezone(dtmod.timezone.utc)
-        tz_label = _utc_offset_text(offset_hours)
+        tz_label = utc_offset_text(offset_hours)
 
     return utc_dt, offset_hours, tz_label, dst_warning
 
@@ -586,12 +685,6 @@ def wall_clock_readings(dt_input, tz_input) -> list[tuple[int, dtmod.datetime, f
     if readings[0][1] == readings[1][1]:
         return readings[:1]
     return readings
-
-
-def utc_offset_text(offset_hours: float) -> str:
-    """UTC±HH:MM, with :SS only when the offset has seconds (historical LMT)."""
-
-    return _utc_offset_text(offset_hours)
 
 
 def compute_time_conversion(
@@ -673,8 +766,9 @@ def compute_time_conversion(
         inputs={("UT1-like input" if ut1_input else "UTC"): utc_label},
         result={"JD(UT)": jd_ut, "JD(ET/TT)": jd_et},
         note=(
-            "Swiss Ephemeris在1972年前把utc_to_jd輸入視為UT1；"
-            "本欄不宣稱存在當代UTC leap-second語義。"
+            "1972 年以前還沒有含閏秒的現行 UTC，所以這一步把出生時間直接當作依地球自轉計算的"
+            "世界時（UT1），換算成儒略日（天文計算用的連續日數）；這裡的時間不能拿來跟現代的 "
+            "UTC 直接對照。"
             if swiss_time_input_semantics == "ut1_before_1972_swiss_rule"
             else _CIVIL_SCALE_NOTES[TIME_SCALE_ERAS[3]]
             if ut1_input
@@ -682,12 +776,30 @@ def compute_time_conversion(
         ),
     )
 
-    delta_t_seconds = (jd_et - jd_ut) * 86400.0
+    # The receipted ΔT and TT are the ones the positions use: swe_calc_ut takes
+    # TT = JD_UT + swe_deltat_ex(JD_UT, iflag), and only the ephemeris bits of
+    # iflag reach the tidal acceleration.  utc_to_jd's own JD_ET uses another
+    # tidal acceleration before 1955 (0.037 s apart in 1900), so it is not the TT.
+    delta_t_days = swe.deltat_ex(jd_ut, swe.FLG_SWIEPH)
+    delta_t_seconds = delta_t_days * 86400.0
+    utc_to_jd_et = jd_et
+    jd_et = jd_ut + delta_t_days
+    utc_to_jd_gap_seconds = (utc_to_jd_et - jd_et) * 86400.0
+    delta_t_model = delta_t_model_receipt(jd_ut, swiss_time_input_semantics)
     trace.add(
         "地球時與世界時之差 ΔT",
-        formula="ΔT(秒) = (JD_ET - JD_UT) * 86400",
-        inputs={"JD(ET)": jd_et, "JD(UT)": jd_ut},
-        result={"ΔT(秒)": round(delta_t_seconds, 4)},
+        formula=(
+            "ΔT（地球自轉時間與均勻時間的差）＝ swe.deltat_ex(JD_UT, FLG_SWIEPH) × 86400 秒；"
+            "JD_TT ＝ JD_UT ＋ ΔT（這就是計算行星位置實際用的時間）"
+        ),
+        inputs={"JD(UT)": jd_ut},
+        result={"ΔT(秒)": round(delta_t_seconds, 4), "JD(TT)": jd_et},
+        note=(
+            "Swiss Ephemeris 另一個時間換算函式，對 1955 年以前用了略為不同的月球潮汐設定，"
+            f"結果會差 {abs(utc_to_jd_gap_seconds):.4f} 秒。本收據和行星位置用的是同一個時間，兩者彼此一致。"
+            if round(utc_to_jd_gap_seconds, 4) != 0.0
+            else _measured_era_delta_t_note(delta_t_model)
+        ),
     )
 
     ecl_nut, retflag = swe.calc_ut(jd_ut, swe.ECL_NUT, 0)
@@ -769,7 +881,7 @@ def compute_time_conversion(
         "jd_ut": jd_ut,
         "jd_et": jd_et,
         "delta_t_seconds": delta_t_seconds,
-        "delta_t_model": delta_t_model_receipt(jd_ut, swiss_time_input_semantics),
+        "delta_t_model": delta_t_model,
         "time_scale_era": time_scale_era,
         "sidereal_time_model": sidereal_model,
         "gast_hours": gast_hours,
@@ -1177,7 +1289,8 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "Swiss 2.10.03 calc_deltat(): SMH 2016 model before 1955 (1000-day "
             "transition), dt[] table 1955–2028 (2024–2028 extrapolated), long-term "
             "formula beyond; σ orders from NASA GSFC (Espenak): Stephenson & Houlden "
-            "1986 to 1962, Huber 2000 after 2028"
+            "1986 to 1962, Huber 2000 after 2028; 1962–2023 the seasonal UT2−UT1 terms "
+            "of IERS Bulletin A, which the yearly table does not follow"
         ),
     },
     PRC_1988_DST_SOURCE_REF: {

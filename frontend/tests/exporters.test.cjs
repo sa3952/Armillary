@@ -5,7 +5,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 
-const Exporters = require("../zh-TW/exporters.js");
+const Exporters = require("../../scripts/frontend/scripts/exporters.js");
 
 // 這個值曾經在這裡被手寫成 "1.2.0"，而生產者在 37 天後升到 "1.3.0"；匯出器只是
 // 透傳，所以測試永遠不會紅。fixture 不得記得生產者的值——它要去讀。
@@ -26,9 +26,9 @@ const compatibilityFixture = JSON.parse(
 );
 
 // ── 公開匯出樹刻意省略的輸入 ─────────────────────────────────────────
-// 公開樹由 scripts/publication/export_public_source.py 依 publication/publication_manifest.json
-// 的 include／forbidden glob 產生；docs/contracts 與後端回應 fixture（chart-*.json）刻意不公開。
-// 判準：同時帶 SOURCE_EXPORT.json（export_mode 為 export_public_source.py 寫入的
+// 公開樹由私有的匯出工具依發布清單的 include／forbidden glob 產生；契約文件與後端回應
+// fixture（chart-*.json）刻意不公開。
+// 判準：同時帶 SOURCE_EXPORT.json（export_mode 為匯出工具寫入的
 // "closed_allowlist"）與 PUBLICATION_FILES.json，且前者以 SHA-256 登錄在後者，才算已驗證的
 // 公開匯出；某路徑只有在那份清單沒有登錄它時才算被公開邊界省略。私有樹沒有這兩個標記，
 // 讀檔照常執行，缺檔照常紅。
@@ -69,7 +69,7 @@ function publicationOmits(relativePath, root = REPOSITORY_ROOT) {
 // 下面三個以真實回應 fixture 驗證的測試在 publicationOmits 為真時 skip；判準一旦恆真，它們就無聲跳過。
 test("公開匯出省略只在已驗證的匯出樹成立；私有樹缺檔仍要紅", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "public-export-marker-"));
-  const target = "docs/contracts/EXPORT_CONTRACT.md";
+  const target = "omitted/a-private-document.md";
   const writeJson = (name, value) => {
     const body = JSON.stringify(value);
     fs.writeFileSync(path.join(root, name), body);
@@ -293,6 +293,12 @@ const SPREADSHEET_CASES = [
   ["＝1+1", true], ["＋1", true], ["－1", true], ["＠SUM(A1:A2)", true],
   ["​＝1+1", true], ["\u00a0＝1+1", true], ["　＋cmd|calc", true],
   ["－15°25′02.60″", true], ["太陽＝1", false], ["A－B", false],
+  // `|`（DDE 的 `|calc!A1`）與 `;`（`;=1+1`）在開頭同樣中和，前導空白、零寬與控制字元一樣略過。
+  // 相鄰控制：不在開頭的 `|`、`;`、`=` 不加撇號；量測值豁免不變。
+  ["|calc!A1", true], [";=1+1", true], [";", true], ["|", true],
+  ["\u200b|calc!A1", true], ["  ;=1+1", true], ["\u0001|cmd", true], ["\t;SUM(A1)", true],
+  ["a|b", false], ["太陽;月亮", false], ["x;=1+1", false], ["A1=B1", false], ["1|2", false],
+  ["+12.5%", false], ["-23°03′30.38″", false],
 ];
 
 test("試算表輸出（CSV、區段複製）在儲存格開頭中和公式；全文複製與 TXT 原樣，tab／換行折成空白", () => {
@@ -308,6 +314,116 @@ test("試算表輸出（CSV、區段複製）在儲存格開頭中和公式；�
     const plain = Exporters.renderPlainText(document);
     assert.ok(plain.includes(`\nv\t${foldControls(value)}`), `全文複製 ${label}`);
     if (guarded) assert.ok(!plain.includes(`\nv\t'`), `全文複製不帶撇號 ${label}`);
+  }
+});
+
+// 試算表開啟 CSV 時的型別判定（Excel、LibreOffice、Numbers 的共同部分），測試自己的模型，
+// 不沿用匯出器的 regex：整格（去掉首尾空白）是布林、時刻、ISO 日期或日期加時刻，就會被轉成
+// 布林或日期時間值，`14:30:00.000` 的毫秒與 `true` 的大小寫在顯示時就不是原字串了。
+function spreadsheetTypes(cell) {
+  const value = cell.trim();
+  if (value.toLowerCase() === "true" || value.toLowerCase() === "false") return "boolean";
+  const digits = (part, min, max) => part.length >= min && part.length <= max && [...part].every((c) => c >= "0" && c <= "9");
+  const isClock = (part) => {
+    const body = part.endsWith("Z") ? part.slice(0, -1) : part;
+    const fields = body.split(":");
+    if (fields.length < 1 || fields.length > 3 || !digits(fields[0], 1, 2) || Number(fields[0]) > 23) return false;
+    if (fields.length >= 2 && !(digits(fields[1], 2, 2) && Number(fields[1]) < 60)) return false;
+    if (fields.length === 3) {
+      const [whole, fraction, extra] = fields[2].split(".");
+      if (extra !== undefined || !digits(whole, 2, 2) || Number(whole) > 60) return false;
+      if (fraction !== undefined && !digits(fraction, 1, 9)) return false;
+    }
+    return true;
+  };
+  const isDate = (part) => {
+    const fields = part.split("-");
+    return fields.length === 3 && digits(fields[0], 4, 4) && digits(fields[1], 2, 2) && digits(fields[2], 2, 2)
+      && Number(fields[1]) >= 1 && Number(fields[1]) <= 12 && Number(fields[2]) >= 1 && Number(fields[2]) <= 31;
+  };
+  const separator = value.length > 10 ? value[10] : "";
+  if (isDate(value.slice(0, 10)) && separator === "") return "date";
+  if (isDate(value.slice(0, 10)) && (separator === " " || separator === "T") && isClock(value.slice(11))) {
+    return "date-time";
+  }
+  if (value.includes(":") && isClock(value)) return "time";
+  return null;
+}
+
+const TYPED_CASES = [
+  ["14:30:00.000", true], ["14:30", true], ["9:05:07", true], ["true", true], ["FALSE", true], [" true ", true],
+  ["1990-05-15", true], ["1990-05-15 14:30:00.000", true], ["1990-05-15T16:00:00Z", true],
+  ["1990-05-14T21:18:34.341Z", true], ["1990-05-15 14", true],
+  // 相鄰控制：帶尾隨文字、時區標記或其他字的格不是試算表的型別，不加撇號。
+  ["true story", false], ["untrue", false], ["14:30 UTC", false], ["UTC+08:00", false],
+  ["1990-05-15 05:18:34.341 UTC+08:00", false], ["include_houses=true", false], ["2448026.77", false],
+  ["14:04:27–14:04:41（解析度 ≤15 秒）：土星的落宮", false], ["1", false], ["-23.4", false], ["0.2.0", false],
+];
+
+test("CSV 把試算表會轉成布林或日期時間的整格字串加撇號；區段複製、全文複製與 TXT 原樣", () => {
+  for (const [value, guarded] of TYPED_CASES) {
+    const label = JSON.stringify(value);
+    assert.equal(Boolean(spreadsheetTypes(value)), guarded, `模型本身 ${label}`);
+    const document = cellsDocument([["v", value]]);
+    const expected = `${guarded ? "'" : ""}${value}`;
+    assert.ok(Exporters.renderCsv(document).includes(`,${csvField(expected)},`), `CSV ${label}`);
+    assert.ok(Exporters.buildDownloadArtifact(document, "csv").content.includes(`,${csvField(expected)},`),
+      `CSV 下載 ${label}`);
+    // 區段複製與全文複製會去掉行尾空白。
+    assert.ok(Exporters.renderSectionText(document.sections[0]).includes(`\nv\t${value.trimEnd()}`), `區段複製 ${label}`);
+    assert.ok(Exporters.renderPlainText(document).includes(`\nv\t${value.trimEnd()}`), `全文複製 ${label}`);
+  }
+});
+
+// 真實回應的 CSV（兩種模式）：模型判定會被轉型的格一律帶撇號；撇號不多加；`_dossier` 列去掉撇號後
+// 等於測試自己攤平 Dossier 得到的字串。
+test("真實回應的 CSV 沒有一格會被試算表轉成布林或日期時間，去掉撇號即為原值", (t) => {
+  const names = fs.readdirSync(path.join(__dirname, "fixtures"))
+    .filter((name) => /^chart-.*\.json$/.test(name) && name !== "chart-requests.json");
+  // 公開樹裡這些 fixture 一個都不在，目錄列不出來；那時改問一個具名的 fixture 是否被省略。
+  const relatives = (names.length ? names : ["chart-exact.json"]).map((name) => `frontend/tests/fixtures/${name}`);
+  const omitted = relatives.filter((relative) => publicationOmits(relative));
+  if (omitted.length) {
+    t.skip(`後端回應 fixture 不在公開匯出 allowlist（${omitted.join("、")}）`);
+    return;
+  }
+  const ViewModel = require("../../scripts/frontend/scripts/view-model.js");
+  const seen = { boolean: 0, date: 0, "date-time": 0, time: 0 };
+  for (const name of names) {
+    const response = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", name), "utf8"));
+    const expectedDossier = new Map();
+    (function walk(value, at) {
+      if (Array.isArray(value)) {
+        if (!value.length) expectedDossier.set(at, "[]");
+        value.forEach((item, index) => walk(item, `${at}[${index}]`));
+      } else if (value && typeof value === "object") {
+        if (!Object.keys(value).length) expectedDossier.set(at, "{}");
+        for (const key of Object.keys(value)) walk(value[key], at ? `${at}.${key}` : key);
+      } else {
+        expectedDossier.set(at, value === null ? "null" : String(value));
+      }
+    })(response.calculation_dossier, "");
+    const document = Exporters.createDocument(response, ViewModel.buildSections(response));
+    for (const mode of Object.values(Exporters.OUTPUT_MODES)) {
+      const rows = parseCsvRows(Exporters.buildDownloadArtifact(document, "csv", mode).content);
+      rows.slice(1).forEach((row) => {
+        const cell = row[5];
+        const guarded = cell.startsWith("'");
+        const original = guarded ? cell.slice(1) : cell;
+        const type = spreadsheetTypes(original);
+        if (type) seen[type] += 1;
+        const where = `${name} ${mode} ${row.slice(0, 5).join(",")}`;
+        if (type) assert.ok(guarded, `${where}：${JSON.stringify(cell)} 會被試算表轉成 ${type}`);
+        if (guarded) assert.ok(type, `${where}：${JSON.stringify(cell)} 不該有撇號`);
+        if (row[0] === "_dossier" && expectedDossier.has(row[4])) {
+          assert.equal(original, expectedDossier.get(row[4]), `${where}：去掉撇號後的值`);
+        }
+      });
+    }
+  }
+  // 真實回應裡有布林、日期與日期加時刻（`1990-05-15 14:30:00.000`）；單獨的時刻由上一個測試涵蓋。
+  for (const type of ["boolean", "date", "date-time"]) {
+    assert.ok(seen[type] > 0, `fixture 必須含會被轉成 ${type} 的格，否則這個測試沒有涵蓋它`);
   }
 });
 
@@ -407,6 +523,66 @@ test("Markdown 在每一個自由文字插值點中和 HTML、反引號、換行
   }
 });
 
+// CommonMark 0.31 §6.1 的 code span，獨立實作：開頭一段反引號串（長度 n），到下一段長度恰為 n
+// 的反引號串結束；內容的換行改成空白，首尾都是空白且不全是空白時各去掉一個。
+function parseCodeSpan(fragment) {
+  const runAt = (index) => {
+    let end = index;
+    while (fragment[end] === "`") end += 1;
+    return end - index;
+  };
+  const open = runAt(0);
+  if (!open) return null;
+  let index = open;
+  while (index < fragment.length) {
+    if (fragment[index] !== "`") { index += 1; continue; }
+    const run = runAt(index);
+    if (run === open) {
+      let content = fragment.slice(open, index).replace(/\r\n|\r|\n/g, " ");
+      if (content.length > 2 && content[0] === " " && content[content.length - 1] === " " && content.trim() !== "") {
+        content = content.slice(1, -1);
+      }
+      return { fence: open, content, end: index + run };
+    }
+    index += run;
+  }
+  return null;
+}
+
+function longestRun(value) {
+  let longest = 0;
+  let current = 0;
+  for (const char of value) {
+    current = char === "`" ? current + 1 : 0;
+    longest = Math.max(longest, current);
+  }
+  return longest;
+}
+
+test("Markdown 行內代碼用比內容最長反引號串多一個的圍欄（最少 1 個），依 CommonMark 讀回原字串", () => {
+  const cases = [
+    "house_not_requested", "1990-05-15T06:30:00Z", "a`b", "alpha`偽造散文`omega", "``x", "x`", "a```b",
+    "` `", " a ", "x``y`z", "````",
+  ];
+  for (const code of cases) {
+    const document = sectionDocument({
+      id: "s", title: "測試區段", status: { state: "executed_unavailable", reason_code: code },
+    });
+    const line = Exporters.renderMarkdown(document).split("\n").find((row) => row.startsWith("**狀態：**"));
+    const fragment = line.slice(line.indexOf("（原因代碼 ") + "（原因代碼 ".length, -"）".length);
+    const span = parseCodeSpan(fragment);
+    const label = JSON.stringify(code);
+    assert.ok(span, `${label}：${fragment} 不是 code span`);
+    assert.equal(span.end, fragment.length, `${label}：code span 提前結束於 ${fragment}`);
+    assert.equal(span.content, code, `${label}：讀回的內容`);
+    assert.equal(span.fence, longestRun(code) + 1, `${label}：圍欄長度 ${fragment}`);
+  }
+  // 只有 fenced code block 需要至少三個反引號；blocks 與 Dossier JSON 仍是三個（相鄰控制）。
+  const block = Exporters.renderMarkdown(sectionDocument({ id: "b", title: "一般區段", blocks: ["內容"] }));
+  assert.ok(block.includes("\n```text\n內容\n```\n"), "block fence");
+  assert.ok(block.includes("\n```json\n{"), "Dossier JSON fence");
+});
+
 test("純文字與區段複製守住欄列結構；JSON 與 CSV 不做 HTML escaping", () => {
   const forged = (response) => response.calculation_dossier.warnings.push({
     code: "X\r\n## forged",
@@ -457,7 +633,7 @@ test("UTC 偏移在每一種輸出都是同一個「UTC±hh:mm」字串，不以
     t.skip(`後端回應 fixture 不在公開匯出 allowlist（${omitted.join("、")}）`);
     return;
   }
-  const ViewModel = require("../zh-TW/view-model.js");
+  const ViewModel = require("../../scripts/frontend/scripts/view-model.js");
   const signs = new Set();
   for (const name of ["chart-exact", "chart-repeated-hour-fold"]) {
     const page = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "page", `${name}.json`), "utf8"));
@@ -588,7 +764,7 @@ test("恆星／回歸黃道的預設匯出四種格式都寫出黃道，JSON 帶
     t.skip(`後端回應 fixture 不在公開匯出 allowlist（${omitted.join("、")}）`);
     return;
   }
-  const ViewModel = require("../zh-TW/view-model.js");
+  const ViewModel = require("../../scripts/frontend/scripts/view-model.js");
   const load = (relative) => JSON.parse(
     fs.readFileSync(path.join(__dirname, "fixtures", relative), "utf8")
   );
@@ -667,7 +843,7 @@ test("匯出的結構字彙是中文，閉集代碼另放在代碼欄（兩種�
     t.skip(`後端回應 fixture 不在公開匯出 allowlist（${omitted.join("、")}）`);
     return;
   }
-  const ViewModel = require("../zh-TW/view-model.js");
+  const ViewModel = require("../../scripts/frontend/scripts/view-model.js");
   const load = (relative) => JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", relative), "utf8"));
   for (const [mode, response] of [
     ["chart_data_only", load("page/chart-heliocentric-all.json")],
@@ -701,5 +877,37 @@ test("匯出的結構字彙是中文，閉集代碼另放在代碼欄（兩種�
       assert.doesNotMatch(render(format), /^(?:[-#]+ )?Warnings?\b/m, `${mode} ${format} 仍有英文的注意事項標記`);
     }
     assert.match(render("md"), /^## 注意事項$/m, `${mode} Markdown 的注意事項標題`);
+  }
+});
+
+test("一頁摘要的收據身分：三個版本、計算模式與出生時刻把握程度，與純文字匯出（驗算資料）的行逐字相同", (t) => {
+  const names = ["frontend/tests/fixtures/chart-exact.json", "frontend/tests/fixtures/chart-approximate-hour.json"];
+  const omitted = names.filter((relativePath) => publicationOmits(relativePath));
+  if (omitted.length) {
+    t.skip(`後端回應 fixture 不在公開匯出 allowlist（${omitted.join("、")}）`);
+    return;
+  }
+  const ViewModel = require("../../scripts/frontend/scripts/view-model.js");
+  for (const relative of ["chart-exact.json", "chart-approximate-hour.json"]) {
+    const response = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", relative), "utf8"));
+    const document = Exporters.createDocument(response, ViewModel.buildSections(response));
+    const lines = Exporters.renderPlainText(
+      Exporters.projectOutputDocument(document, Exporters.OUTPUT_MODES.reproducibility_detail)
+    ).split("\n");
+    // 版本字串另以回應與匯出器常數核對，不只與同一個產生器的輸出比。
+    const versions = Exporters.contractVersionLines(document);
+    assert.deepEqual(versions, [
+      `Export Contract ${Exporters.EXPORT_CONTRACT_VERSION}`,
+      `API Schema ${response.schema_version}`,
+      `Calculation Dossier ${response.calculation_dossier.dossier_version}`,
+    ]);
+    const start = lines.indexOf(versions[0]);
+    assert.ok(start > 0, relative);
+    assert.deepEqual(lines.slice(start, start + 3), versions);
+    const mode = Exporters.computationModeLine(document.source_response);
+    assert.ok(lines.includes(`${mode.label}: ${mode.value}`), `${relative} 計算模式`);
+    const precision = Exporters.inputAssumptionEntries(document).find((entry) => entry.key === "birth_time_precision");
+    assert.equal(precision.code, response.birth_time_sensitivity.precision);
+    assert.ok(lines.includes(Exporters.inputAssumptionText(precision)), `${relative} 出生時刻把握程度`);
   }
 });

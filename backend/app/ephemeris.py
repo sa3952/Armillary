@@ -411,9 +411,36 @@ def input_file_inventory() -> list[dict]:
     ]
 
 
+# The answer for each file set, remembered for the manifest it was read from.
+# Coverage checks ask before and after every Swiss call (tens of thousands of
+# times for a high-latitude chart with every module), always for the same few
+# sets; a new manifest (a refresh after the files changed) starts a new memo,
+# and a manifest that was not cached is never answered from it.
+_PRESENCE_MEMO: tuple[dict | None, dict[tuple[str, ...], bool]] = (None, {})
+
+
 def segment_files_present(*filenames: str) -> bool:
+    global _PRESENCE_MEMO
+    source, answers = _PRESENCE_MEMO
+    cache = _MANIFEST_CACHE
+    # The hot path: the memo belongs to the manifest ephemeris_file_manifest()
+    # would return now (same cached object, same directory).
+    if (
+        cache is not None
+        and cache[1] is source
+        and cache[0] is not None
+        and cache[0][0] == EPHE_DIR
+    ):
+        present = answers.get(filenames)
+        if present is not None:
+            return present
     manifest = ephemeris_file_manifest()
-    return all(manifest.get(name, {}).get("present", False) for name in filenames)
+    if source is not manifest:
+        answers = {}
+        _PRESENCE_MEMO = (manifest, answers)
+    present = all(manifest.get(name, {}).get("present", False) for name in filenames)
+    answers[filenames] = present
+    return present
 
 
 def has_full_ephemeris_files() -> bool:
@@ -428,6 +455,12 @@ def coverage_state(jd_ut: float, segment: str) -> str:
 
     if not segment_files_present(segment):
         return COVERAGE_STATES[2]
+    return _span_state(jd_ut, segment)
+
+
+def _span_state(jd_ut: float, segment: str) -> str:
+    """Covered or outside, for a segment whose file is present."""
+
     low, high = SEGMENT_MANIFEST[segment]["jd_ut_coverage"]
     if low <= jd_ut <= high:
         return COVERAGE_STATES[0]
@@ -547,8 +580,11 @@ def require_object_coverage(
     a barycentric one raises ``swe.Error`` and a warm worker may extrapolate.
     """
 
-    for segment in segments_read_by(body, flags):
-        state = coverage_state(jd_ut, segment)
+    segments = segments_read_by(body, flags)
+    # One presence question for the whole set; per segment only when a file is missing.
+    all_present = segment_files_present(*segments)
+    for segment in segments:
+        state = _span_state(jd_ut, segment) if all_present else coverage_state(jd_ut, segment)
         if state != COVERAGE_STATES[0]:
             raise FullEphemerisRequiredError(
                 operation=operation,
@@ -576,14 +612,13 @@ def require_full_ephemeris(
     therefore required to be present by manifest as well.
     """
 
-    for segment in segments:
-        if not segment_files_present(segment):
-            raise FullEphemerisRequiredError(
-                operation=operation,
-                jd_ut=jd_ut,
-                retflag=retflag,
-                reason="segment_file_missing",
-            )
+    if not segment_files_present(*segments):
+        raise FullEphemerisRequiredError(
+            operation=operation,
+            jd_ut=jd_ut,
+            retflag=retflag,
+            reason="segment_file_missing",
+        )
     if not _retflag_says_files(retflag):
         raise FullEphemerisRequiredError(
             operation=operation,

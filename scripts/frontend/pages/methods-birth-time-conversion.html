@@ -1,13 +1,13 @@
 <!-- 方法頁的子頁：計算頁換算助手的規則與出處。四地的規則表、逐段轉換時刻與原件清單由
      scripts/frontend/civil_time_tables.py 從 backend/app/civil_time_sources.json 產生，不要手改；
      年號表的換算式與改元日由 frontend/tests/era_table_page.test.cjs 對照 RequestInput 的年號表。 -->
-<div class="wrap page-body datasheet">
+<div class="wrap page-body ct-sheet">
 
   <section class="ds-hero">
     <p class="eyebrow"><a href="/zh-TW/methods">方法</a> · BIRTH TIME</p>
     <h1>出生時間換算的規則與出處</h1>
     <p class="lede">出生紀錄上寫的，是當時牆上時鐘的讀數；排盤要的是那一刻的世界時。計算頁的換算助手做兩件事：把民國年與日本年號換成西元日期，以及在計算之前，由計算服務告訴你這個鐘面時間在當地是 UTC 加幾小時、出自哪一條規則。這一頁列出它用的全部規則，以及每一條我們核到哪一層。</p>
-    <p class="ds-note">涵蓋臺灣、香港、澳門與中國大陸。換算由伺服器以排盤時同一份 IANA 時區資料庫完成；下面的表依時區資料庫 {{civil_time_tzdb_checked}} 版核對，共 {{civil_time_period_count}} 段期間、{{civil_time_source_count}} 條出處。</p>
+    <p class="ds-note">涵蓋臺灣、香港、澳門與中國。換算由伺服器以排盤時同一份 IANA 時區資料庫完成；下面的表依時區資料庫 {{civil_time_tzdb_checked}} 版核對，共 {{civil_time_period_count}} 段期間、{{civil_time_source_count}} 條出處。</p>
   </section>
 
   <section class="ds-sec">

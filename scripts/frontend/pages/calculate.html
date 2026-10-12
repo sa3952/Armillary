@@ -6,6 +6,29 @@
       <p class="lede">輸入你真正知道的程度；不知道的部分，不替你假裝精確。出生資料只用於本次計算，回應送出後伺服器不留副本。</p>
       <p class="status-line" id="bootstrap-status" role="status" aria-live="polite" data-tone="warning">計算介面正在載入。若這段訊息持續顯示，代表頁面未完整載入；請重新整理，仍有問題請稍後再試。</p>
 
+      <!-- 三種模式：只是預先勾好的一組選項，送出的仍是同一份選項；收據照舊列出實際生效的每一項。
+           不記住選了哪一種（不用任何瀏覽器儲存）；站內連結帶的 ?mode= 由 calculate.js 讀一次就從網址拿掉。
+           放在表單外面：「清除」把表單還原時，模式由 calculate.js 自己決定回到哪一種。 -->
+      <fieldset class="mode-choice" id="mode-choice">
+        <legend class="mode-choice-title" id="mode-choice-title">你想看到多少？</legend>
+        <p class="note" id="mode-choice-note">三種都用同一套計算，只差算哪些項目、結果頁先給你看什麼；隨時可以換。本站不記住你選了哪一種：不用 cookie，也不用瀏覽器儲存。</p>
+        <div class="choice mode-cards">
+          <label>
+            <input type="radio" name="calc-mode" value="quick" checked autocomplete="off">
+            <span><b>快速看盤</b><span>我想看我的星盤：上升星座、太陽與月亮在哪裡。星盤圖、行星位置、宮位與相位；結果分四章。</span></span>
+          </label>
+          <label>
+            <input type="radio" name="calc-mode" value="classical" autocomplete="off">
+            <span><b>古典完整</b><span>我照古典占星的作法讀盤：古典七顆行星、日盤夜盤、廟與旺、命運點、十二分部，算完接著排時間主星。界、面、三分性由你選一套。結果分六章。</span></span>
+          </label>
+          <label>
+            <input type="radio" name="calc-mode" value="custom" autocomplete="off">
+            <span><b>自訂</b><span>我要自己挑每個選項：從快速看盤的設定開始，全部選項攤開；匯出預設帶驗算資料。結果分六章。</span></span>
+          </label>
+        </div>
+        <p class="mode-choice-actions"><button type="button" class="ghost small glossary-open" data-glossary-open>名詞解釋</button></p>
+      </fieldset>
+
       <form id="chart-form" novalidate autocomplete="off">
 
         <fieldset>
@@ -24,7 +47,7 @@
             </label>
             <label>
               <input type="radio" name="precision" value="date_only">
-              <span><b>只知道日期</b><span>對整個民用日取樣；代表性時刻不是出生時刻。</span></span>
+              <span><b>只知道日期</b><span>對整個民用日（出生地日曆上的那一天，從午夜到午夜）取樣；代表性時刻是計算時拿來代表這一天的一個時刻，不是出生時刻。</span></span>
             </label>
           </div>
           </fieldset>
@@ -92,7 +115,7 @@
             <button type="button" class="ghost small" id="era-apply">換算並填入出生日期</button>
             <p class="status-line" id="era-echo" role="status" aria-live="polite"></p>
             <div class="time-check">
-              <p class="note" id="time-check-note">填好出生日期、時刻並選定出生地點後，可以先核對：這個鐘面時間在當地是 UTC 加幾小時、當時是否實施夏令時間或日本時間、是否根本不存在或出現兩次，以及這條規則出自哪份文件、我們核到哪一層。核對由計算服務以排盤時同一份時區資料庫回答；送出的只有日期、時刻與時區，不含座標，服務不留副本。目前涵蓋臺灣、香港、澳門與中國大陸；四地的規則與出處見〈<a href="/zh-TW/methods/birth-time-conversion">出生時間換算的規則與出處</a>〉。</p>
+              <p class="note" id="time-check-note">填好出生日期、時刻並選定出生地點後，可以先核對：這個鐘面時間在當地是 UTC 加幾小時、當時是否實施夏令時間或日本時間、是否根本不存在或出現兩次，以及這條規則出自哪份文件、我們核到哪一層。核對由計算服務以排盤時同一份時區資料庫回答；送出的只有日期、時刻與時區，不含座標，服務不留副本。目前涵蓋臺灣、香港、澳門與中國；四地的規則與出處見〈<a href="/zh-TW/methods/birth-time-conversion">出生時間換算的規則與出處</a>〉。</p>
               <button type="button" class="ghost small" id="time-check-button">核對這個鐘面時間</button>
               <p class="status-line" id="time-check-status" role="status" aria-live="polite"></p>
               <div class="time-check-result" id="time-check-result" hidden></div>
@@ -156,14 +179,10 @@
             <div class="grid">
               <div class="field">
                 <label for="timezone">IANA 時區名稱 <span class="en" lang="en">IANA timezone</span></label>
-                <input type="text" id="timezone" aria-describedby="timezone-hint" autocomplete="off" placeholder="Asia/Taipei" list="timezone-suggestions">
-                <datalist id="timezone-suggestions">
-                  <option value="Asia/Taipei" label="臺北"></option><option value="Asia/Shanghai" label="上海"></option>
-                  <option value="Asia/Tokyo" label="東京"></option><option value="Asia/Hong_Kong" label="香港"></option>
-                  <option value="America/New_York" label="紐約"></option><option value="Europe/London" label="倫敦"></option>
-                  <option value="Europe/Zurich" label="蘇黎世"></option><option value="Australia/Sydney" label="雪梨"></option>
-                </datalist>
+                <input type="text" id="timezone" aria-describedby="timezone-hint timezone-offset" autocomplete="off" placeholder="Asia/Taipei" list="timezone-suggestions">
+                <datalist id="timezone-suggestions"></datalist>
                 <span class="hint" id="timezone-hint">依出生地當時實際適用的時區。1970 年前的偏移是 IANA 資料庫推定，未經歷史驗證</span>
+                <span class="hint" id="timezone-offset" hidden></span>
               </div>
             </div>
           </details>
@@ -176,8 +195,30 @@
           </aside>
         </fieldset>
 
+        <!-- ── 這次會算什麼：一行摘要（每種模式），古典完整另有第一層的勾選與三個流派選單 ── -->
+        <fieldset class="plan" id="plan">
+          <legend>這次會算什麼</legend>
+          <p class="note plan-summary" id="plan-summary"></p>
+          <div class="plan-classical" id="plan-classical" hidden>
+            <p class="note">已依古典作法勾好；不要的可以取消。</p>
+            <div class="plan-checks">
+              <label><input type="checkbox" class="option-control" id="plan-body_selection_preset" data-plan-key="body_selection_preset" data-plan-on="classical_seven_v1" data-plan-off="custom" autocomplete="off">只算古典七顆行星（太陽、月亮、水星、金星、火星、木星、土星）</label>
+              <label><input type="checkbox" class="option-control" id="plan-include_lots" data-plan-key="include_lots" autocomplete="off">日盤／夜盤，以及命運點與精神點</label>
+              <label><input type="checkbox" class="option-control" id="plan-include_domicile_exaltation" data-plan-key="include_domicile_exaltation" autocomplete="off">廟與旺</label>
+              <label><input type="checkbox" class="option-control" id="plan-include_dodecatemoria" data-plan-key="include_dodecatemoria" autocomplete="off"><span>十二分部 <span class="en" lang="en">Dodecatemoria</span></span></label>
+            </div>
+            <fieldset class="plan-profiles" id="plan-profiles" aria-describedby="plan-profiles-note">
+              <legend>界、面、三分性：選你用的那一套</legend>
+              <p class="note" id="plan-profiles-note">古書有好幾套，本站不替你選。選了才會算；先不選也可以，結果頁會留一行讓你之後再選。</p>
+              <div class="grid three" id="plan-profile-slots"></div>
+            </fieldset>
+            <label class="plan-timelords"><input type="checkbox" class="option-control" id="plan-timelords" checked autocomplete="off" aria-describedby="plan-timelords-note">算完星盤後，接著排出時間主星</label>
+            <p class="note" id="plan-timelords-note">會用同一份出生資料再請計算服務算一次年度小限、法達、黃道釋放與十年期，伺服器同樣不留副本。不勾也可以，之後在「時間主星」一章按一下就好。</p>
+          </div>
+        </fieldset>
+
         <!-- ── 計算口徑 ── -->
-        <fieldset>
+        <fieldset id="settings-mode">
           <legend>計算口徑 <span class="en" lang="en">Computation mode</span></legend>
           <details class="advanced mode" id="mode">
             <summary><span id="mode-summary">回歸黃道 · 整宮制</span></summary>
@@ -206,7 +247,8 @@
             <div class="field">
               <label id="house-system-label">宮位制 <span class="en" lang="en">house system</span></label>
               <div class="inline-control" id="house-system-slot"></div>
-              <span class="hint" id="opt-house_system-hint">四種平等提供，本產品不排序其歷史適用性。一次計算一種。</span>
+              <span class="hint" id="opt-house_system-detail"></span>
+              <span class="hint" id="opt-house_system-hint">整宮與等分宮每宮都是 30 度。四分宮制先用上升點與中天（黃道在上子午圈的那一點；子午圈是通過天頂與正南、正北的大圓）把一圈分成四段，每段再分成三宮，所以宮的大小不一。七種平等提供，本產品不排序其歷史適用性；一次計算一種。</span>
             </div>
           </div>
           <p class="consequence" id="zodiac-consequence" aria-live="polite"></p>
@@ -214,7 +256,7 @@
           </details>
         </fieldset>
 
-        <fieldset>
+        <fieldset id="settings-advanced">
           <legend>進階選項 <span class="en" lang="en">Advanced options</span></legend>
           <details class="advanced" id="advanced">
             <summary><span id="advanced-summary">全部為產品預設</span></summary>
@@ -255,11 +297,26 @@
     <section class="results" id="results" hidden aria-labelledby="results-heading">
       <div class="result-head">
         <h2 id="results-heading" tabindex="-1">計算結果</h2>
+        <p class="result-mode" id="result-mode">模式：<b id="result-mode-name">快速看盤</b></p>
+        <button type="button" class="ghost small glossary-open" data-glossary-open aria-label="名詞解釋（結果頁）">名詞解釋</button>
       </div>
+
+      <!-- 一頁摘要的標頭與收據身分：畫面上不顯示，只在按「列印一頁摘要」時印出。收據身分由 calculate.js
+           算完時填入（三個契約版本、計算模式、出生時刻把握程度），不含任何輸入。 -->
+      <div class="print-brief print-brief-head" id="print-brief-head">
+        <p class="print-brief-title">星盤摘要</p>
+        <p class="print-brief-subtitle">渾儀 Armillary　計算資料，不是占星解讀</p>
+        <dl class="print-brief-receipt" id="print-brief-receipt"><dt>收據身分</dt></dl>
+      </div>
+
+      <!-- 時間收據的一行重點（本地時間、時區、UTC），由 calculate.js 從「時間轉換」區的表格列填入；
+           完整表格收在結果最後的「展開完整時間收據」。 -->
+      <p class="time-brief" id="time-brief" hidden></p>
 
       <section class="print-input-summary" id="print-input-summary" aria-labelledby="print-input-summary-title">
         <h3 id="print-input-summary-title">輸入摘要</h3>
         <dl></dl>
+        <p class="note" id="print-privacy-note">這份紙本含出生時刻與精確座標；即使刪去座標，星盤數值本身也能推回出生時間與地點。</p>
       </section>
 
       <!-- 出生時刻敏感度的第一行結論；內容由 calculate.js 依 view tree 填入。 -->
@@ -270,7 +327,131 @@
       <!-- 表單改動後結果不再對應目前輸入：標示並停用複製／下載。 -->
       <p class="stale-notice" id="stale-notice" hidden role="status">表單已改動，這份結果對應的是改動前的輸入。複製與下載已停用；請重新計算，或把欄位改回原值。</p>
 
-      <div class="toolbar">
+      <!-- 結果分六章，一次看一章：章節欄（桌機在左側，窄螢幕是頂端的一列分頁）由 calculate.js 依
+           ResultChapters 的表與這次畫出的區段建出。哪一區屬於哪一章只在 result-chapters.js 那一張表；
+           章只是畫面上的分組，匯出與列印的內容與順序不變（列印時每一章都印）。 -->
+      <nav class="chapter-nav" id="chapter-nav" hidden aria-label="結果的章節">
+        <div class="eyebrow">本次結果 · 章節</div>
+        <ul class="chapter-index" id="chapter-index"></ul>
+        <p class="note chapter-mode-note" id="chapter-mode-note" hidden></p>
+        <button type="button" class="ghost small chapters-all" id="chapters-all" aria-pressed="false">全部章節一次展開（列印或搜尋用）</button>
+      </nav>
+
+      <section class="chapter" id="chapter-overview" data-chapter="overview" aria-labelledby="chapter-overview-title">
+        <div class="chapter-head">
+          <h2 id="chapter-overview-title" tabindex="-1">總覽</h2>
+          <p class="chapter-lead">這一章是這張盤最常被問的部分：星盤圖，以及太陽、月亮、<button type="button" class="term" data-term="asc">上升星座</button>三個星座。數字和後面各章的表格是同一份。</p>
+        </div>
+        <details class="first-time" id="first-time">
+          <summary>第一次看星盤？三步讀這一頁</summary>
+          <ol>
+            <li><b>先看「本命盤速覽」的三件事。</b>上升星座是出生那一刻東方地平線上的星座，需要準確的出生時間。</li>
+            <li><b>再看圖。</b>外圈是 12 個星座，裡面的符號是行星，數字 1–12 是宮位。點任何一個符號，會跳到它在「位置」一章的那一列。</li>
+            <li><b>看不懂的詞，按「名詞解釋」。</b>想核對數字怎麼來的，到最後一章「收據與匯出」。</li>
+          </ol>
+          <p class="note">照原典列出；不替這張盤做個人解讀，也不預測。</p>
+        </details>
+
+      <!-- 結果首屏：本命盤速覽（calculate.js 建在最前面）、常用匯出、星盤圖。桌機左圖右速覽，窄螢幕依原始碼順序上下排。 -->
+      <div class="result-lead" id="result-lead">
+        <div class="toolbar quick-toolbar" role="group" aria-labelledby="quick-toolbar-title">
+          <div class="eyebrow" id="quick-toolbar-title">常用匯出</div>
+          <!-- 每顆的名稱以看得見的字開頭再接「（常用匯出）」：與結果最下方同字的按鈕在按鈕清單裡分得開（WCAG 2.5.3）。 -->
+          <div class="export-actions">
+            <button type="button" class="ghost small" data-quick-copy="all" aria-label="複製結果（常用匯出）">複製結果</button>
+            <button type="button" class="ghost small" data-quick-download="md" aria-label="Markdown（常用匯出）" aria-describedby="quick-export-data-note">Markdown</button>
+            <button type="button" class="ghost small" id="print-brief-button" data-print-mode="brief">列印一頁摘要</button>
+            <button type="button" class="ghost small" id="quick-print-button" data-print-mode="full" aria-label="列印完整結果（常用匯出）">列印完整結果</button>
+          </div>
+          <label class="print-brief-input"><input type="checkbox" class="option-control" id="print-brief-input">摘要加印出生日期、時間與地點</label>
+          <p class="note" id="quick-export-data-note">匯出檔含出生時刻與計算結果；即使不列座標，星盤數值本身也能推回出生時間與地點，刪掉日期欄位也無法匿名。</p>
+          <p class="note"><a href="#export-toolbar">純文字、JSON、CSV 與『運算結果＋驗算資料』在「收據與匯出」一章的匯出工具列。</a></p>
+        </div>
+        <div class="result-lead-wheel" id="chart-wheel-host"></div>
+        <!-- 一頁摘要的位置表：畫面上不顯示；紙上排在圖的右邊、速覽之下。calculate.js 算完時依畫面上的表格原字填入。 -->
+        <div class="print-brief print-brief-tables" id="print-brief-tables"></div>
+      </div>
+
+      <!-- 一頁摘要的隱私句與頁尾：畫面上不顯示。 -->
+      <div class="print-brief print-brief-body" id="print-brief-body">
+        <p class="note" id="print-brief-privacy">這份摘要預設不印出生日期、時間與地點；但星盤數值本身也能推回出生時間與地點。</p>
+        <p class="note print-brief-foot">完整數值、計算軌跡與驗算資料見完整列印或匯出檔。</p>
+      </div>
+
+        <div class="chapter-sections" data-chapter-host="overview"></div>
+      </section>
+
+      <section class="chapter" id="chapter-positions" data-chapter="positions" aria-labelledby="chapter-positions-title" hidden>
+        <div class="chapter-head">
+          <h2 id="chapter-positions-title" tabindex="-1">位置</h2>
+          <p class="chapter-lead">每顆行星與每個點在黃道上的位置，以及由位置直接推出來的點（例如<button type="button" class="term" data-term="dodecatemoria">十二分部</button>）。</p>
+        </div>
+        <div class="chapter-sections" data-chapter-host="positions"></div>
+      </section>
+
+      <section class="chapter" id="chapter-houses_aspects" data-chapter="houses_aspects" aria-labelledby="chapter-houses_aspects-title" hidden>
+        <div class="chapter-head">
+          <h2 id="chapter-houses_aspects-title" tabindex="-1">宮位與相位</h2>
+          <p class="chapter-lead">宮位：依出生的時間與地點把天空分成 12 塊，看每顆行星落在哪一塊（例如<button type="button" class="term" data-term="whole_sign">整宮制</button>）。相位：兩顆行星在黃道上相隔接近特定的角度，例如 90 度、120 度；差多少度以內還算數，叫<button type="button" class="term" data-term="orb">容許度</button>。原典替<button type="button" class="term" data-term="aspect">相位</button>分了性質：拱與六分是和諧的，刑與沖是不和諧的（Ptolemy《占星四書》（Tetrabiblos）I.13）。</p>
+        </div>
+        <div class="chapter-sections" data-chapter-host="houses_aspects"></div>
+      </section>
+
+      <section class="chapter" id="chapter-classical" data-chapter="classical" aria-labelledby="chapter-classical-title" hidden>
+        <div class="chapter-head">
+          <h2 id="chapter-classical-title" tabindex="-1">古典判斷</h2>
+          <p class="chapter-lead">古典占星讀盤前先要確認的幾件事：<button type="button" class="term" data-term="sect">日盤還是夜盤</button>、行星的<button type="button" class="term" data-term="domicile_exaltation">廟與旺</button>、<button type="button" class="term" data-term="lots">命運點與精神點</button>、<button type="button" class="term" data-term="planetary_hours">行星時</button>。照原典列出；不替這張盤做個人解讀，也不預測。</p>
+        </div>
+        <div class="chapter-sections" data-chapter-host="classical"></div>
+      </section>
+
+      <section class="chapter" id="chapter-timelords" data-chapter="timelords" data-nav-title="時間主星" aria-labelledby="annual-heading" hidden>
+      <!-- 年度時間主星：讀畫面上這張本命盤的請求，不另收出生資料；內容由 timelords.js 建立。
+           結果清除、過期或離開頁面時一起丟棄或停用（calculate.js 呼叫它的 drop／setStale）。
+           不寫網址、不用瀏覽器儲存。 -->
+      <div class="annual" id="annual" hidden>
+        <div class="ring-tag" data-ring="ring-3">方法判斷</div>
+        <h2 id="annual-heading">時間主星：一生的分期與今年</h2>
+        <p class="annual-fixed">只列計算結果：哪一段時間由哪顆行星或哪個星座輪值。不替你解盤，也不預測。</p>
+        <p class="note">時間主星（time lords）：把一生切成一段段時期，每段由某顆行星或某個星座「輪值」的一類古典技法。主星：輪值的那顆行星；輪值的是星座時，指這個星座的守護行星（只用傳統七顆行星：日、月、水、金、火、木、土）。年界：每年太陽回到出生時黃經位置的時刻（太陽回歸）；這一區的「一年」都從這一刻算起，不是生日日期。</p>
+        <div class="annual-options" id="annual-options">
+          <label for="annual-dec-profile">十年期從哪顆行星起算</label>
+          <select id="annual-dec-profile">
+            <option value="firmicus_sect_light_v1" selected>日盤從太陽、夜盤從月亮（Firmicus，預設）</option>
+            <option value="valens_first_after_asc_v1">上升點之後的第一顆行星（Valens）</option>
+            <option value="user_selected_planet_v1">自己指定一顆行星</option>
+          </select>
+          <span class="annual-dec-planet" hidden>
+            <label for="annual-dec-planet">起點行星</label>
+            <select id="annual-dec-planet" disabled>
+              <option value="sun" selected>太陽</option>
+              <option value="moon">月亮</option>
+              <option value="mercury">水星</option>
+              <option value="venus">金星</option>
+              <option value="mars">火星</option>
+              <option value="jupiter">木星</option>
+              <option value="saturn">土星</option>
+            </select>
+          </span>
+          <p class="note">十年期（每段 10 年 9 個月）的起點，古書有不同的規則；本站預設不需要判斷的 Firmicus 規則，不替你判斷光體（太陽與月亮）的好壞。說明見〈<a href="/zh-TW/methods/decennials">十年期的規則、出處與驗算</a>〉。</p>
+        </div>
+        <div class="annual-start" id="annual-start">
+          <button type="button" class="ghost small" id="annual-load">排出時間主星</button>
+          <p class="note">用上面這張本命盤的出生資料，再請計算服務算一次年度小限、法達（firdaria）、黃道釋放（zodiacal releasing）與十年期（decennials）；不必再填任何資料，伺服器不留副本。</p>
+        </div>
+        <p class="status-line" id="annual-status" role="status" aria-live="polite"></p>
+        <div class="annual-body" id="annual-body" hidden></div>
+      </div>
+      </section>
+
+      <section class="chapter" id="chapter-receipt" data-chapter="receipt" aria-labelledby="chapter-receipt-title" hidden>
+        <div class="chapter-head">
+          <h2 id="chapter-receipt-title" tabindex="-1">收據與匯出</h2>
+          <p class="chapter-lead">想核對數字怎麼來的、或把結果存下來，都在這一章：時間怎麼換算、出生時刻不確定時哪些會跟著變、這次的<button type="button" class="term" data-term="receipt">收據</button>與驗算資料，以及匯出。</p>
+        </div>
+        <div class="chapter-sections" data-chapter-host="receipt"></div>
+
+      <div class="toolbar" id="export-toolbar">
         <fieldset class="export-mode" aria-describedby="export-mode-help">
           <legend class="export-mode-title" id="export-mode-title">複製與下載內容</legend>
           <div class="export-mode-options">
@@ -285,18 +466,13 @@
           <button type="button" class="ghost small" data-download="txt" aria-describedby="export-data-note">純文字</button>
           <button type="button" class="ghost small" data-download="json" aria-describedby="export-data-note">JSON</button>
           <button type="button" class="ghost small" data-download="csv" aria-describedby="export-data-note">CSV</button>
-          <button type="button" class="ghost small" id="print-button">列印／存成PDF</button>
+          <button type="button" class="ghost small" id="print-button" data-print-mode="full">列印完整結果</button>
         </div>
-        <p class="note" id="export-data-note">匯出檔含出生時刻與計算結果；即使不列座標，星盤數值本身也能推回大致的出生時間與地點，刪掉日期欄位也無法匿名。</p>
+        <p class="note" id="export-data-note">匯出檔含出生時刻與計算結果；即使不列座標，星盤數值本身也能推回出生時間與地點，刪掉日期欄位也無法匿名。</p>
         <p class="note">檔名不含這些資料，但內容含有；請自行決定存放位置。</p>
       </div>
+      </section>
 
-      <nav class="section-index-wrap" id="section-index-wrap" hidden aria-label="結果區塊索引">
-        <div class="eyebrow">本次結果 · 區塊索引</div>
-        <ul class="section-index" id="section-index"></ul>
-      </nav>
-
-      <div id="sections"></div>
 
       <div class="clear-zone">
         <div class="eyebrow">清除 · CLEAR</div>
@@ -345,7 +521,7 @@
       </details>
       <details>
         <summary>有福點（幸運點）嗎？</summary>
-        <p>有，名稱是「命運點」。依日盤或夜盤採用對應的公式；太陽靠近地平時，日盤和夜盤公式的結果都列出。</p>
+        <p>有，名稱是「命運點」（Lot of Fortune）。依日盤或夜盤採用對應的公式；太陽靠近地平時，日盤和夜盤公式的結果都列出。</p>
       </details>
       <details>
         <summary>可以排合盤、行運或太陽回歸盤嗎？</summary>
@@ -363,6 +539,12 @@
 <script src="/zh-TW/timezone-names.js?v={{assets}}" defer></script>
 <script src="/zh-TW/location-receipt.js?v={{assets}}" defer></script>
 <script src="/zh-TW/chart-glyphs.js?v={{assets}}" defer></script>
+<script src="/zh-TW/chart-wheel-aspects.js?v={{assets}}" defer></script>
 <script src="/zh-TW/chart-wheel-model.js?v={{assets}}" defer></script>
+<script src="/zh-TW/chart-square.js?v={{assets}}" defer></script>
 <script src="/zh-TW/chart-wheel.js?v={{assets}}" defer></script>
+<script src="/zh-TW/timelords-model.js?v={{assets}}" defer></script>
+<script src="/zh-TW/timelords.js?v={{assets}}" defer></script>
+<script src="/zh-TW/result-chapters.js?v={{assets}}" defer></script>
+<script src="/zh-TW/glossary.js?v={{assets}}" defer></script>
 <script src="/zh-TW/calculate.js?v={{assets}}" data-view-model="/zh-TW/view-model.js?v={{assets}}" defer></script>

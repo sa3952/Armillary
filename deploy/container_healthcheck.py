@@ -33,7 +33,7 @@ import time
 from urllib.error import HTTPError, URLError
 from urllib.request import ProxyHandler, Request, build_opener
 
-# OPS-19: the probe is about this container's own listener.  An ambient
+# The probe is about this container's own listener.  An ambient
 # HTTP_PROXY (Docker injects the daemon's proxy settings into containers)
 # would otherwise carry the loopback request to a proxy, and a proxy that
 # answers with the expected body would make a dead listener look healthy.

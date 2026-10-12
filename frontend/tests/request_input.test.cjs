@@ -1,8 +1,8 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const RequestInput = require("../zh-TW/request-input.js");
-const Catalogue = require("../zh-TW/options-catalogue.js");
+const RequestInput = require("../../scripts/frontend/scripts/request-input.js");
+const Catalogue = require("../../scripts/frontend/scripts/options-catalogue.js");
 
 // 這一檔守兩件事：時間欄位不得靜默改值，UI 數字範圍不得與 API 契約不一致。兩者的失敗
 // 形狀相同——介面接受了一個它算不出來的值，而且不說。所以每一組都同時要求「不合法的值

@@ -142,7 +142,7 @@ LUNAR_APSIDES = [
 # 密切交點〉（方法頁引用其中兩個），不在這裡另抄一份。
 #
 # **正式技法採平均交點**，
-# 理由是古代與中世紀的主要天文表以平均運動給交點（Ptolemy《Handy Tables》、印度 siddhānta）；
+# 理由是古代與中世紀的主要天文表以平均運動給交點（Ptolemy《實用天文表》（Procheiroi kanones）、印度 siddhānta）；
 # Tycho（1587 年之後）已發現交點運動不均勻並給出改正（Dreyer 1890 ch.XII，真平差可達
 # 1°46′），但那不是現代的密切交點，前現代技法也不以它為輸入。
 # 本產品定位為古典西洋占星。兩者仍並列輸出，因為差距最大約 2°，讀者有權看到。
@@ -162,8 +162,10 @@ BODY_ID_BY_KEY = {
 
 # 產品恆星清單（名稱需與 sefstars.txt 內拼寫完全一致，大小寫不拘）。前 15 顆依
 # Agrippa, De occulta philosophia I.32（星名表）與 II.47（Behenian 星像）的 Behenian
-# 十五星（Pleiades 以 Alcyone 代表；Ala Corvi 取 δ Crv Algorab，Agrippa 未指明）；其餘 19 顆
-# 由產品自選；清單來歷不對使用者標示。
+# 十五星（Pleiades 以 Alcyone 代表；Ala Corvi 取 δ Crv Algorab，Agrippa 未指明，
+# γ Crv Gienah 另列在表尾）；接著是產品自選的星；表尾是 Ptolemy《占星四書》I.9、
+# Lilly《Christian Astrology》與 Anonymous of 379 點名、可唯一指認的星。只在表尾追加，
+# 不重排：內部來源表依位置記錄每顆星的來歷。計算輸出不逐星標來歷。
 FIXED_STARS = [
     {"key": "algol", "zh": "大陵五", "name": "Algol"},
     {"key": "alcyone", "zh": "昴宿六(昴星團)", "name": "Alcyone"},
@@ -202,6 +204,35 @@ FIXED_STARS = [
     {"key": "schedar", "zh": "王良四", "name": "Schedar"},
     {"key": "hamal", "zh": "婁宿三", "name": "Hamal"},
     {"key": "zubenelgenubi", "zh": "氐宿一", "name": "Zubenelgenubi"},
+    {"key": "alphard", "zh": "星宿一", "name": "Alphard"},
+    {"key": "denebola", "zh": "五帝座一", "name": "Denebola"},
+    # The catalogue spells it "Zuben Eschamali"; Swiss matches names with blanks removed.
+    {"key": "zubeneschamali", "zh": "氐宿四", "name": "Zubeneschamali"},
+    {"key": "asellus_borealis", "zh": "鬼宿三", "name": "Asellus Borealis"},
+    {"key": "asellus_australis", "zh": "鬼宿四", "name": "Asellus Australis"},
+    {"key": "acamar", "zh": "天園六", "name": "Acamar"},
+    {"key": "alnilam", "zh": "參宿二", "name": "Alnilam"},
+    {"key": "menkalinan", "zh": "五車三", "name": "Menkalinan"},
+    {"key": "zosma", "zh": "西上相", "name": "Zosma"},
+    # sefstars.txt 的 α Cen 記錄是整個雙星系統的值，不是 α Cen A。
+    {"key": "rigil_kentaurus", "zh": "南門二", "name": "Rigil Kentaurus"},
+    {"key": "elnath", "zh": "五車五", "name": "Elnath"},
+    # ζ Tau 在 sefstars.txt 只有 IAU 核定的這個名字。
+    {"key": "tianguan", "zh": "天關", "name": "Tianguan"},
+    {"key": "prima_hyadum", "zh": "畢宿四", "name": "Prima Hyadum"},
+    # β1 Sco 在目錄裡也叫 Graffias，是同一筆資料。
+    {"key": "acrab", "zh": "房宿四", "name": "Acrab"},
+    {"key": "dschubba", "zh": "房宿三", "name": "Dschubba"},
+    {"key": "shaula", "zh": "尾宿八", "name": "Shaula"},
+    {"key": "lesath", "zh": "尾宿九", "name": "Lesath"},
+    {"key": "alkes", "zh": "翼宿一", "name": "Alkes"},
+    # "Gienah" 也是 ε Cyg 的名字（Gienah Cygni），所以用 名稱,代號 鎖定 γ Crv。
+    {"key": "gienah", "zh": "軫宿一", "name": "Gienah,gaCrv"},
+    {"key": "unukalhai", "zh": "天市右垣七", "name": "Unukalhai"},
+    # 目錄另有只差一個字母的 "Markeb"（κ Vel），所以鎖定 α Peg。
+    {"key": "markab", "zh": "室宿一", "name": "Markab,alPeg"},
+    {"key": "scheat", "zh": "室宿二", "name": "Scheat"},
+    {"key": "alrescha", "zh": "外屏七", "name": "Alrescha"},
 ]
 
 # 恆星中文名的查證狀態。閉集。
@@ -250,20 +281,33 @@ FIXED_STAR_ZH_NAME_CORRECTIONS: dict[str, dict[str, Any]] = {
         "cited_tables": ["tam_journal_2017_02_mira"],
     },
 }
-# 依香港太空館表核對相符、未改標籤的 32 顆（Algorab、Mira 另列於上）。
-FIXED_STAR_ZH_NAME_CHECKED: dict[str, dict[str, Any]] = {
-    key: {
-        "status": "checked_against_cited_star_name_table",
-        "cited_tables": ["hksm_bright_stars"],
-    }
-    for key in (
+# 依具名對照表核對相符、未改標籤的星（Algorab、Mira 另列於上）。香港太空館表只收
+# 英文名與目錄傳統名相同的那一列；天關（ζ Tau）與畢宿四（γ Tau，表上叫 Hyadum I）
+# 在香港表裡沒有同名的列，只依 zh.wikipedia 表核對。
+_ZH_NAME_TABLES_BY_KEY: dict[tuple[str, ...], tuple[str, ...]] = {
+    ("hksm_bright_stars",): (
         "algol", "alcyone", "aldebaran", "capella", "sirius", "procyon",
         "regulus", "alkaid", "spica", "arcturus", "alphecca", "antares",
         "vega", "deneb_algedi", "rigel", "altair", "castor", "pollux",
         "betelgeuse", "alpheratz", "bellatrix", "canopus", "vindemiatrix",
         "fomalhaut", "achernar", "polaris", "deneb", "hadar", "menkar",
         "schedar", "hamal", "zubenelgenubi",
-    )
+    ),
+    ("hksm_bright_stars", "zh_wikipedia_star_name_table"): (
+        "alphard", "denebola", "zubeneschamali", "asellus_borealis",
+        "asellus_australis", "acamar", "alnilam", "menkalinan", "zosma",
+        "rigil_kentaurus", "elnath", "acrab", "dschubba", "shaula", "lesath",
+        "alkes", "gienah", "unukalhai", "markab", "scheat", "alrescha",
+    ),
+    ("zh_wikipedia_star_name_table",): ("tianguan", "prima_hyadum"),
+}
+FIXED_STAR_ZH_NAME_CHECKED: dict[str, dict[str, Any]] = {
+    key: {
+        "status": "checked_against_cited_star_name_table",
+        "cited_tables": list(tables),
+    }
+    for tables, keys in _ZH_NAME_TABLES_BY_KEY.items()
+    for key in keys
 }
 
 # 宮位制代碼 (swe_houses hsys 單一字元)
@@ -272,6 +316,9 @@ HOUSE_SYSTEMS = {
     "R": "Regiomontanus",
     "W": "Whole Sign",
     "P": "Placidus",
+    "O": "Porphyry",
+    "E": "Equal",
+    "C": "Campanus",
 }
 
 # 古典占星脈絡下較站得住腳的西方歷史性 ayanamsa（非印度占星常用的 Lahiri/KP）

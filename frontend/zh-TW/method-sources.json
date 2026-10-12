@@ -102,11 +102,11 @@
   },
   "birth_time_sensitivity/approximate_hour": {
    "applies_to": "birth_time_sensitivity (precision approximate_hour)",
-   "method": "Classifications (every non-numeric value each resampled path prints: the sign of every longitude, angle, cusp and Lot; house placements of planets and Lots; motion direction; sect and its near-horizon band; the Lot formula basis; the void-of-course flag only) are recomputed at the listed sampled instants of the stated civil hour [H:00,H+1:00) in the named fold: a quarter-hour grid plus the seconds either side of any UTC-offset change inside the hour, located by a one-minute UTC scan refined to the second. same_at_all_samples means only that those sampled instants agree; it is not proof that the classification holds between them, and no invariant is applied to exclude a change and reversal between adjacent samples. Adjacent samples that differ are bisected to at most 15 s; each bracket holds at least one change, not necessarily one. Inside the polar circle the Ascendant can reverse between samples, so every path read off it is at most partially evaluated. Numeric values are sampled envelopes, not states. Every sample fails closed when its calculation did not use the Swiss files."
+   "method": "Classifications (every non-numeric value each resampled path prints: the sign of every longitude, angle, cusp and Lot; house placements of planets and Lots; motion direction; sect and its near-horizon band; the Lot formula basis; the void-of-course flag only; the twelfth-part of every point the chart lists) are recomputed at the listed sampled instants of the stated civil hour [H:00,H+1:00) in the named fold: a quarter-hour grid plus the seconds either side of any UTC-offset change inside the hour, located by a one-minute UTC scan refined to the second. same_at_all_samples means only that those sampled instants agree; it is not proof that the classification holds between them, and no invariant is applied to exclude a change and reversal between adjacent samples. Adjacent samples that differ are bisected to at most 15 s; each bracket holds at least one change, not necessarily one. A twelfth-part's own sign change is not bisected: its signs are those seen at the samples and at the midpoints other changes needed. Inside the polar circle the Ascendant can reverse between samples, so every path read off it is at most partially evaluated. Numeric values are sampled envelopes, not states. Every sample fails closed when its calculation did not use the Swiss files."
   },
   "birth_time_sensitivity/date_only": {
    "applies_to": "birth_time_sensitivity (precision date_only)",
-   "method": "Classifications of bodies and nodes (every non-numeric value they print: sign, motion direction, reason codes) are recomputed at the listed sampled instants of the local civil day, every instant the zone labels with the date (one or more UTC stretches): every existing hourly clock label on both folds, the first and last second of each stretch, and the seconds either side of every UTC-offset change that fall on the date, located by a one-minute UTC scan refined to the second. same_at_all_samples means only that those sampled instants agree; it is not proof that the classification holds between them, and no invariant is applied to exclude a change and reversal between adjacent samples. Numeric values are sampled envelopes, not states. Every sample fails closed when its calculation did not use the Swiss files."
+   "method": "Classifications of bodies and nodes (every non-numeric value they print: sign, motion direction, reason codes) and of the planets' twelfth-parts are recomputed at the listed sampled instants of the local civil day, every instant the zone labels with the date (one or more UTC stretches): every existing hourly clock label on both folds, the first and last second of each stretch, and the seconds either side of every UTC-offset change that fall on the date, located by a one-minute UTC scan refined to the second. same_at_all_samples means only that those sampled instants agree; it is not proof that the classification holds between them, and no invariant is applied to exclude a change and reversal between adjacent samples. A Moon sign transition between the last sample of one stretch and the first of the next is marked as across another date: part of the time between them is labelled with another date. Numeric values are sampled envelopes, not states. Every sample fails closed when its calculation did not use the Swiss files."
   },
   "chiron/physical_parameters": {
    "applies_to": "astronomical_data.bodies[key=chiron].apparent_diameter, apparent_magnitude and physical_parameters",
@@ -116,6 +116,111 @@
     "JPL Small-Body Database, 2060 Chiron, physical parameters retrieved 2026-10-04: diameter 166 km (Dunham 1998), H 5.54",
     "JPL Horizons, 2060 Chiron orbit solution JPL#171"
    ]
+  },
+  "classical_classifications": {
+   "above_horizon_rule": "Above the earth means the planet centre's geocentric true altitude is above 0 deg, the rule this product uses for the Sun's sect. The sources say only 'above/under the earth' and do not choose between the horizon and the house division.",
+   "applies_to": "derived_methods.classical_classifications",
+   "joy_houses": "A joy is met when the planet's house in the chart's selected house division is the named place.",
+   "mercury_sect": "Mercury's sect follows Ptolemy I.7 (morning star diurnal, evening star nocturnal), judged by ecliptic longitude east or west of the Sun; al-Bīrūnī gives no computable rule and Valens I.1 none.",
+   "rule": "Each classification is the named source's own; where sources differ each gets its own field. Nothing is summed or scored. The places' meanings are not part of the chart output.",
+   "sources": {
+    "al_biruni_tafhim_382": {
+     "citation": "al-Bīrūnī, Kitāb al-tafhīm (Book of Instruction) §382, §385, §386",
+     "read_at": "R. Ramsay Wright's translation (1934), archive.org OCR text",
+     "reading": "translation_read",
+     "says": "Saturn and Mars maleficent, Saturn especially; Jupiter and Venus beneficent; the Sun beneficent when in aspect and distant, maleficent when conjoined and near; Mercury fortunate or the reverse after the planet nearest it; the Moon fortunate; Mercury's sect after the sign or the planet it is with (no morning/evening rule)"
+    },
+    "al_biruni_tafhim_496": {
+     "agrees": [
+      {
+       "citation": "al-Qabīṣī, Introduction I.78 (Burnett et al. 2004)",
+       "read_at": "John of Seville's Latin translation and Burnett's English, read online",
+       "reading": "translation_read"
+      },
+      {
+       "citation": "Bonatti, Liber astronomiae III.8",
+       "read_at": "the chapter reference only",
+       "reading": "bibliographic_only"
+      }
+     ],
+     "citation": "al-Bīrūnī, Kitāb al-tafhīm §496",
+     "read_at": "R. Ramsay Wright's translation (1934), archive.org OCR text",
+     "reading": "translation_read",
+     "says": "halb: a diurnal planet above the earth by day and below it by night, a nocturnal one the reverse; hayyiz: halb and a male planet in a male sign or a female planet in a female sign; Mars, male and nocturnal, above the earth by night in a male sign; every hayyiz is a halb"
+    },
+    "dorotheus_carmen_i_5": {
+     "citation": "Dorotheus of Sidon, Carmen astrologicum I.5 (Pingree, from the Arabic)",
+     "read_at": "reported by sevenstarsastrology.com; Pingree's translation not read",
+     "reading": "secondary_only",
+     "says": "the best places 1, 10, 11, 5, 7, 4, 9; middling 3, 2, 8; bad 6 and 12"
+    },
+    "firmicus_mathesis_ii_15_20": {
+     "citation": "Firmicus Maternus, Mathesis II.15-20 (Kroll-Skutsch)",
+     "read_at": "Latin text, LacusCurtius",
+     "reading": "original_language_read",
+     "says": "four angles; four places after them joined to the ascendant (3, 9, 5, 11); four sluggish and cast-down places (2, 8, 6, 12) with no association with the ascendant; the Latin and Greek names of the twelve places"
+    },
+    "firmicus_mathesis_ii_19": {
+     "citation": "Firmicus Maternus, Mathesis II.19 (Kroll-Skutsch)",
+     "read_at": "Latin text, LacusCurtius",
+     "reading": "original_language_read",
+     "says": "no star rejoices in the 8th place except the Moon, and only in night births; the 5th is the place of Venus, the 6th of Mars, the 9th of the Sun, the 11th of Jupiter, the 12th of Saturn (as places, not in the word 'joy')"
+    },
+    "lilly_christian_astrology_p113": {
+     "citation": "William Lilly, Christian Astrology (1647) p.113, 'Hayz'",
+     "read_at": "archive.org OCR text of a modern reset edition",
+     "reading": "original_language_read",
+     "says": "a masculine diurnal planet by day above the earth in a masculine sign; a feminine nocturnal planet by night in a feminine sign and under the earth; no halb"
+    },
+    "manilius_astronomica_ii": {
+     "citation": "Manilius, Astronomica II (the twelve temples, about lines 856-967)",
+     "read_at": "Latin, The Latin Library, in part; the place mapping as given by P. Yong (premieretat.com) not checked against Goold",
+     "reading": "secondary_only",
+     "says": "a different scheme of names and patrons: Venus at the midheaven, Saturn at the lower midheaven, Typhon in the 2nd and 8th; not used for the places listed here"
+    },
+    "paulus_introduction_24": {
+     "citation": "Paulus Alexandrinus, Introduction (Eisagōgika) ch.24",
+     "read_at": "reported by C. Brennan, 'The Planetary Joys and the Origins of the Significations of the Houses and Triplicities', ISAR Journal 42.1 (2013), n.2, with Olympiodorus ch.23 and Rhetorius ch.54; none of the three read",
+     "reading": "secondary_only",
+     "says": "the joys: Mercury 1st, Moon 3rd, Venus 5th, Mars 6th, Sun 9th, Jupiter 11th, Saturn 12th"
+    },
+    "ptolemy_tetrabiblos_i_5": {
+     "citation": "Ptolemy, Tetrabiblos (Apotelesmatika) I.5 'Of Beneficent and Maleficent Planets'",
+     "read_at": "Robbins translation (Loeb 1940), LacusCurtius",
+     "reading": "translation_read",
+     "says": "Jupiter, Venus and the Moon beneficent; Saturn and Mars maleficent; the Sun and Mercury have both powers"
+    },
+    "ptolemy_tetrabiblos_i_6_7_12": {
+     "citation": "Ptolemy, Tetrabiblos I.6 (masculine and feminine planets), I.7 (diurnal and nocturnal planets), I.12 (masculine and feminine signs)",
+     "read_at": "Robbins translation (Loeb 1940), LacusCurtius",
+     "reading": "translation_read",
+     "says": "Moon and Venus feminine, Mercury common; Sun and Jupiter diurnal, Moon and Venus nocturnal, Saturn given to the day and Mars to the night; Mercury diurnal as a morning star and nocturnal as an evening star; the signs alternate masculine and feminine from Aries"
+    },
+    "ptolemy_tetrabiblos_iii_3_10": {
+     "citation": "Ptolemy, Tetrabiblos III.3 and III.10 with Robbins's notes 56-57",
+     "read_at": "Robbins translation (Loeb 1940), LacusCurtius",
+     "reading": "translation_read",
+     "says": "angles, succedent places and places declining from the angles; the names of the twelve places (Horoscope, Gate of Hades, Goddess, Lower Midheaven, Good Fortune, Bad Fortune, Occident, Beginning of Death, God, Midheaven, Good Daemon, Bad Daemon)"
+    },
+    "valens_anthologies_i_1": {
+     "citation": "Vettius Valens, Anthologies I.1",
+     "read_at": "Riley's translation in a reformatted online copy (github janegca/latex-valens)",
+     "reading": "translation_read",
+     "says": "Saturn, Jupiter and the Sun of the day sect; Mars, Venus and the Moon of the night sect; no sect stated for Mercury; malefic stars operative in appropriate places in their own sect are bestowers of good"
+    },
+    "valens_anthologies_ii": {
+     "citation": "Vettius Valens, Anthologies II.4-15 (Kroll), the places one by one",
+     "read_at": "Riley's translation in a reformatted online copy",
+     "reading": "translation_read",
+     "says": "the 3rd the place of the Goddess Moon, the 6th the place of Mars, the 9th the place of the God Sun, the 11th the Good Daimon, the 12th the Bad Daimon, the 2nd the Gate of Hades"
+    },
+    "valens_anthologies_iv_12": {
+     "citation": "Vettius Valens, Anthologies IV, 'The names of the twelve places'",
+     "read_at": "Riley's translation in a reformatted online copy",
+     "reading": "translation_read",
+     "says": "the 8th the Inactive Place; the topics of each place (methods page only)"
+    }
+   }
   },
   "contested/bounds_tables": {
    "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=bounds_tables; marks derived_methods.essential_dignities)",
@@ -133,6 +238,22 @@
     "William Lilly, Christian Astrology (1647) p.109; al-Bīrūnī §446: aspects presuppose signs that behold one another"
    ],
    "technique_family": "aspect_orbs"
+  },
+  "contested/dodecatemoria_formula": {
+   "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=dodecatemoria_formula; marks derived_methods.dodecatemoria)",
+   "sources": [
+    "Firmicus Maternus, Mathesis II.13 (Kroll-Skutsch numbering): degrees and minutes times 12 from the start of the sign; example Sun Aries 5 deg 05 min, first degree of Gemini (Latin read)",
+    "Paulus Alexandrinus, Introduction ch.22: degrees times 13; example Aries 11 deg, Leo 23 deg (via Greenbaum and Jones, ISAW Papers 12, 2017, para. 185; the Greek not checked)"
+   ],
+   "technique_family": "dodecatemoria"
+  },
+  "contested/hayz_definition": {
+   "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=hayz_definition; marks derived_methods.classical_classifications)",
+   "sources": [
+    "al-Bīrūnī, Kitāb al-tafhīm §496 (Wright 1934, read in the archive.org OCR text): a nocturnal planet above the earth by night and below it by day; halb, and hayyiz with the sign's gender",
+    "William Lilly, Christian Astrology (1647) p.113 (read in an archive.org OCR text of a modern reset edition): a feminine nocturnal planet by night under the earth in a feminine sign; no halb"
+   ],
+   "technique_family": "classical_classifications"
   },
   "contested/lot_formulas": {
    "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=lot_formulas; marks derived_methods.lots)",
@@ -152,6 +273,15 @@
    ],
    "technique_family": "partile"
   },
+  "contested/solar_phase_limits": {
+   "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=solar_phase_limits; marks derived_methods.solar_phase)",
+   "sources": [
+    "William Lilly, Christian Astrology (1647) p.113: 17 minutes, 8 deg 30 min, 17 degrees; aphorism 26 (p.300 per Houlding): 12 degrees and 16 minutes",
+    "al-Biruni, Book of Instruction, trans. Wright (1934) §481-484: under 16 minutes, 6 degrees (7 for Mercury and Venus direct), under the rays 12-18 degrees by planet and side",
+    "Porphyry, Introduction ch.2; Antiochus (via Brennan 2017, secondary): one band of 15 degrees"
+   ],
+   "technique_family": "solar_phase"
+  },
   "contested/void_of_course_definition": {
    "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=void_of_course_definition; marks derived_methods.void_of_course)",
    "sources": [
@@ -166,8 +296,11 @@
    "marked": [
     "bounds_tables",
     "degree_aspect_orbs",
+    "dodecatemoria_formula",
+    "hayz_definition",
     "lot_formulas",
     "partile_definition",
+    "solar_phase_limits",
     "void_of_course_definition"
    ],
    "not_marked": {
@@ -440,6 +573,81 @@
    ],
    "statement": "Ptolemy, Tetrabiblos I.17, I.19 (Robbins 1940; = Hübner I.18, I.20); also attested in Dorotheus, Valens and Firmicus"
   },
+  "dodecatemoria": {
+   "applies_to": "derived_methods.dodecatemoria",
+   "default_basis": "The only text read in its own words that states the rule and works an example is Firmicus II.13, and it multiplies by 12 from the start of the sign; the 2 deg 30 min division of Manilius and Ptolemy gives the same sign. The 13-fold rule is attested by the examples of Paulus and Olympiodorus as reported by Greenbaum and Jones; both are offered.",
+   "default_profile": "twelvefold_from_sign_start_v1",
+   "documentary_evidence": "P.Berl. 9825 (horoscope of 319 CE) gives the twelfth-part signs only; Greenbaum and Jones 2017 para. 188 find five of its planets fit the 13-fold rule and Mercury, the nodes and the prenatal full Moon fit the 12-fold rule.",
+   "lord_rule": "The lord listed is the domicile lord of the twelfth-part's sign in the traditional seven-planet scheme (the product's domicile table). Paulus and Firmicus then look at which planets occupy or aspect that sign; this product lists positions and lords only.",
+   "not_computed": "Manilius's further division of each part among the five planets; the midheaven (no witness read); judgements of which planets occupy or aspect the twelfth-part.",
+   "profiles": {
+    "thirteenfold_from_sign_start_v1": "Multiply the degrees inside the sign by 13 and count on from the start of the same sign; the same as multiplying by 12 and counting on from the point's own degree.",
+    "twelvefold_from_sign_start_v1": "Multiply the degrees and minutes inside the sign by 12 and count the product on from the start of the same sign, 30 to each sign. The product's default. At sign level this equals the division of each sign into twelve parts of 2 deg 30 min given to the sign itself and the following signs in order."
+   },
+   "sect_band": "When the Sun is in the near-horizon band and the Lots show both formulas, each Lot row says whether the other sect's formula gives another twelfth-part sign (sign_differs_under_other_sect, comparison_sign), as the zodiacal-releasing rows do; the listed value follows the product's sect rule.",
+   "sources": [
+    {
+     "citation": "Firmicus Maternus, Mathesis II.13 (Kroll-Skutsch numbering; Holden's translation numbers it II.17)",
+     "example": "Sun Aries 5 deg 05 min: 60 + 1 = 61, the first degree of Gemini",
+     "profile": "twelvefold_from_sign_start_v1",
+     "read_at": "Latin text, LacusCurtius (penelope.uchicago.edu)",
+     "reading": "original_language_read",
+     "rule": "degrees and minutes of the star times 12, given 30 to each sign starting with the sign the star is in"
+    },
+    {
+     "citation": "Manilius, Astronomica II.693-748",
+     "note": "Whether the Moon rule counts from the sign's start or the Moon's degree is ambiguous in the Latin; Goold's and Housman's readings were not checked.",
+     "profile": "twelvefold_from_sign_start_v1",
+     "profile_agreement": "sign_level_only",
+     "read_at": "Latin text, The Latin Library; lines 732-734 bracketed as suspect",
+     "reading": "original_language_read",
+     "rule": "each sign in twelve parts of 2 1/2 degrees, the first to the sign itself and the rest to the following signs; for the Moon its degrees times 12, 30 to each sign from the Moon's sign; each part halved again among the five planets (not computed)"
+    },
+    {
+     "citation": "Ptolemy, Tetrabiblos I.22 (Robbins, Loeb 1940)",
+     "profile_agreement": "sign_level_only",
+     "read_at": "Robbins translation, LacusCurtius",
+     "reading": "translation_read",
+     "rule": "describes the twelfth of a sign (2 1/2 degrees) assigned to the signs in order, and rejects it as unfounded"
+    },
+    {
+     "citation": "Paulus Alexandrinus, Introduction ch.22",
+     "example": "Aries 11 deg: 143 deg, Leo 23 deg",
+     "profile": "thirteenfold_from_sign_start_v1",
+     "read_at": "Greenbaum and Jones, P.Berl. 9825, ISAW Papers 12 (2017) para. 185; the Greek text and Greenbaum's translation not checked",
+     "reading": "secondary_only",
+     "rule": "degrees times 13, added to the start of the sign"
+    },
+    {
+     "citation": "Olympiodorus, Commentary on Paulus ch.20 (Boer 1962, 41.12-20)",
+     "example": "Ascendant Scorpio 20 deg: 20 x 13 = 260, + 210 = 470, - 360 = 110, Cancer 20 deg",
+     "profile": "thirteenfold_from_sign_start_v1",
+     "read_at": "Greenbaum and Jones 2017 para. 186; the Greek text not checked",
+     "reading": "secondary_only",
+     "rule": "the same as Paulus, worked for the ascendant"
+    },
+    {
+     "citation": "Olympiodorus, Commentary on Paulus ch.21",
+     "read_at": "chapter title in a published table of contents only",
+     "reading": "bibliographic_only",
+     "rule": "chapter on the Lots and their twelfth-parts"
+    },
+    {
+     "citation": "Vettius Valens, Anthology I.4",
+     "example": "Sun Aquarius 22 deg, twelfth-part in Scorpio (fits the 13-fold rule only)",
+     "read_at": "reported by secondary summaries; Riley's translation not read",
+     "reading": "secondary_only",
+     "rule": "the Sun's twelfth-part used to find the ascendant"
+    },
+    {
+     "citation": "Porphyry, Introduction ch.39 (Holden 2009)",
+     "example": "Moon Aries 13 deg, Virgo (both rules agree)",
+     "read_at": "reported by secondary summaries; Holden's translation not read",
+     "reading": "secondary_only",
+     "rule": "the Moon's degrees measured off by 2 1/2 degrees through the following signs"
+    }
+   ]
+  },
   "eclipses/classification_borderline": {
    "applies_to": "astronomical_data.lunar_events.eclipses.previous_*.classification_borderline",
    "note": "Over 1181 solar eclipses 1900-2399 the Swiss type or centrality differs from the NASA canon in 7 cases, all within the canon's own classification margin. Inside the margin both classifications are defensible at the stated precision; outside it they agree. Lunar eclipse classes have no criterion here.",
@@ -501,6 +709,35 @@
     "IMCCE, Éclipses de Soleil: maximum is the instant of largest magnitude"
    ]
   },
+  "eclipses/prenatal_selection": {
+   "applies_to": "astronomical_data.lunar_events.eclipses.{previous_umbral_lunar,selection_profile} and eclipses_at_birth",
+   "classical_use": "Ptolemy, Tetrabiblos II.4-II.8 (Robbins) uses eclipses chiefly for regions, cities and public affairs: II.4 calls the conjunctions of the Sun and Moon at eclipse 'the first and most potent cause' of such events; II.8 calls the positions in which a luminary of a nativity holds the degree of an eclipse (one after the birth) or the opposite degree 'most dangerous and hardest to avoid'; II.6 times the effect by the hours the obscuration lasts. Treating the last eclipse before birth as a point of the nativity is a twentieth-century practice (Jansky, Lineman, Brady, Graves 2004; secondary only). No source read says whether a penumbral lunar eclipse counts",
+   "definition": "the last solar and lunar eclipse whose Swiss maximum is before birth, as astronomical events. The lunar one includes penumbral eclipses; the last eclipse in which the Moon enters the umbra (partial or total) is listed beside it. The eclipse degree is the Sun's longitude at a solar eclipse and the Moon's at a lunar one, at the maximum. An eclipse whose first contact is at or before birth and whose maximum is after it is listed as under way",
+   "penumbral_note": "In a penumbral lunar eclipse the Moon passes only through the Earth's outer, partial shadow (the penumbra) and never reaches the dark core (the umbra). Espenak (eclipsewise.com, Visual Appearance of Lunar Eclipses): a penumbral magnitude above about 0.6 is needed before skilled observers can detect faint shading, the early and late stages are invisible, and it becomes readily apparent only within about 0.05 magnitude of a partial eclipse. For including it: it is an eclipse in the astronomical catalogues (NASA's lunar catalogue lists it, type N) and in Swiss Ephemeris's default search. For excluding it: Ptolemy's eclipses are visible obscurations (II.5: those 'in which the eclipse, since it took place above the earth, was visible'; II.6 times their effects by how many hours 'the obscuration' lasts). No astrological source read states a rule for penumbral eclipses; both are listed and none is chosen",
+   "sources": [
+    {
+     "citation": "Swiss Ephemeris 2.10.03: swe_sol_eclipse_when_glob, swe_lun_eclipse_when (ECL_PARTIAL|ECL_TOTAL for the umbral search)",
+     "read_at": "the Swiss Ephemeris programmer's documentation",
+     "reading": "original_language_read"
+    },
+    {
+     "citation": "NASA GSFC Five Millennium Canon of Solar Eclipses and Catalog of Lunar Eclipses (Espenak & Meeus): the test oracle. Eclipse Predictions by Fred Espenak and Jean Meeus (NASA's GSFC)",
+     "read_at": "the catalogue pages, parsed for the tests",
+     "reading": "original_language_read"
+    },
+    {
+     "citation": "Ptolemy, Tetrabiblos II.4-II.8 (Robbins, Loeb 1940)",
+     "read_at": "Robbins's English translation; the Greek not checked",
+     "reading": "translation_read"
+    },
+    {
+     "citation": "the last eclipse before birth as a point of the nativity: Jansky, Lineman, Brady, Graves 2004",
+     "read_at": "secondary reports only; none of the works read",
+     "reading": "secondary_only"
+    }
+   ],
+   "visibility": "whether the eclipse could be seen at the birthplace is not evaluated"
+  },
   "extra_angles": {
    "applies_to": "astronomical_data.extra_angles",
    "calculation_source_labels": {
@@ -511,14 +748,28 @@
   },
   "fixed_stars/policy": {
    "applies_to": "astronomical_data.fixed_star_policy",
-   "note": "座標為天文計算結果（fixstar2_ut＋sefstars.txt，目錄未獨立核對）；不輸出合相判定：要先選幾何（黃道合相、同升或中天、地平事件），再定容許度與歲差。逐星來源考據延後。"
+   "note": "座標為天文計算結果（fixstar2_ut＋sefstars.txt）。每顆星的位置已用獨立換算，對 Hipparcos 衛星星表 2007 年新歸算與 SIMBAD 現值核對；少數記錄不是 Hipparcos 2007 的值（例如南門二是整個雙星系統的值），另記差距；沒有逐星對 Gaia 核對。不輸出合相判定：要先選幾何（黃道合相、同升或中天、地平事件），再定容許度與歲差。清單依據的古典文本見方法頁，計算結果不逐星標出處。"
   },
   "fixed_stars/zh_names": {
    "applies_to": "astronomical_data.fixed_star_policy.zh_name_verification",
    "checked": {
+    "acamar": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
     "achernar": {
      "cited_tables": [
       "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "acrab": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
      ],
      "status": "checked_against_cited_star_name_table"
     },
@@ -546,6 +797,27 @@
      ],
      "status": "checked_against_cited_star_name_table"
     },
+    "alkes": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "alnilam": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "alphard": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
     "alphecca": {
      "cited_tables": [
       "hksm_bright_stars"
@@ -555,6 +827,13 @@
     "alpheratz": {
      "cited_tables": [
       "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "alrescha": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
      ],
      "status": "checked_against_cited_star_name_table"
     },
@@ -573,6 +852,20 @@
     "arcturus": {
      "cited_tables": [
       "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "asellus_australis": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "asellus_borealis": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
      ],
      "status": "checked_against_cited_star_name_table"
     },
@@ -618,9 +911,37 @@
      ],
      "status": "checked_against_cited_star_name_table"
     },
+    "denebola": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "dschubba": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "elnath": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
     "fomalhaut": {
      "cited_tables": [
       "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "gienah": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
      ],
      "status": "checked_against_cited_star_name_table"
     },
@@ -633,6 +954,27 @@
     "hamal": {
      "cited_tables": [
       "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "lesath": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "markab": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "menkalinan": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
      ],
      "status": "checked_against_cited_star_name_table"
     },
@@ -654,6 +996,12 @@
      ],
      "status": "checked_against_cited_star_name_table"
     },
+    "prima_hyadum": {
+     "cited_tables": [
+      "zh_wikipedia_star_name_table"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
     "procyon": {
      "cited_tables": [
       "hksm_bright_stars"
@@ -672,9 +1020,30 @@
      ],
      "status": "checked_against_cited_star_name_table"
     },
+    "rigil_kentaurus": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "scheat": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
     "schedar": {
      "cited_tables": [
       "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "shaula": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
      ],
      "status": "checked_against_cited_star_name_table"
     },
@@ -690,6 +1059,19 @@
      ],
      "status": "checked_against_cited_star_name_table"
     },
+    "tianguan": {
+     "cited_tables": [
+      "zh_wikipedia_star_name_table"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "unukalhai": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
     "vega": {
      "cited_tables": [
       "hksm_bright_stars"
@@ -702,9 +1084,23 @@
      ],
      "status": "checked_against_cited_star_name_table"
     },
+    "zosma": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
     "zubenelgenubi": {
      "cited_tables": [
       "hksm_bright_stars"
+     ],
+     "status": "checked_against_cited_star_name_table"
+    },
+    "zubeneschamali": {
+     "cited_tables": [
+      "hksm_bright_stars",
+      "zh_wikipedia_star_name_table"
      ],
      "status": "checked_against_cited_star_name_table"
     }
@@ -793,6 +1189,100 @@
     "unavailable"
    ]
   },
+  "houses/systems": {
+   "applies_to": "derived_methods.house_division.system_code",
+   "note": "The product offers these systems on an equal footing and does not rank their historical fitness.",
+   "reading_vocabulary": [
+    "original_language_read",
+    "translation_read",
+    "secondary_only",
+    "bibliographic_only"
+   ],
+   "systems": {
+    "B": {
+     "definition": "The ascendant's own semi-diurnal and semi-nocturnal arcs are trisected on the equator and projected to the ecliptic through the celestial poles.",
+     "definition_source": "Swiss Ephemeris General Documentation §6.2.11 Alcabitus",
+     "history": [
+      {
+       "citation": "Named after al-Qabīṣī (Alcabitius, d. 967) (Astrodienst FAQ on house systems)",
+       "reading": "secondary_only"
+      }
+     ]
+    },
+    "C": {
+     "definition": "The prime vertical is divided into twelve 30° arcs from the zenith; great circles through the north and south points of the horizon carry the divisions to the ecliptic.",
+     "definition_source": "Swiss Ephemeris General Documentation §6.2.4 Campanus",
+     "history": [
+      {
+       "citation": "Named after Campanus of Novara (13th century) (Swiss Ephemeris §6.2.4)",
+       "reading": "secondary_only"
+      },
+      {
+       "citation": "The prime-vertical method was described earlier in Arabic sources: a treatise by Ibn Muʿādh al-Jayyānī (11th century; studied by J. Casulleras) and, per J. D. North, Horoscopes and History (1986) pp. 175-176, al-Bīrūnī; both cited via secondary sources, not read",
+       "reading": "secondary_only"
+      }
+     ]
+    },
+    "E": {
+     "definition": "Twelve houses of 30° each, the first beginning at the ascendant's degree.",
+     "definition_source": "Swiss Ephemeris General Documentation §6.2.5 Equal systems",
+     "history": [
+      {
+       "citation": "Ptolemy, Tetrabiblos III.12 in Ashmand's translation (III.10 in Robbins): the places used for the length of life are 30° each, the first from 5° above the horizon to 25° below it. That rule starts 5° earlier than this construction, which starts at the ascendant's degree",
+       "reading": "translation_read"
+      },
+      {
+       "citation": "Astrodienst's house-system FAQ says equal houses have been used since antiquity, without a named source",
+       "reading": "secondary_only"
+      }
+     ]
+    },
+    "O": {
+     "definition": "Each quadrant between ASC, MC, DSC and IC is divided into three equal parts of ecliptic longitude.",
+     "definition_source": "Swiss Ephemeris General Documentation §6.2.6.1 Porphyry",
+     "history": [
+      {
+       "citation": "The trisection of the quadrants appears in Vettius Valens, Anthology book III, in a chapter on the active and inactive places (cited via secondary sources; the chapter was not read, and R. Schmidt reads it as a measure of planetary activity rather than a division into topics)",
+       "reading": "secondary_only"
+      },
+      {
+       "citation": "Named after Porphyry of Tyre (3rd century), Introduction to the Tetrabiblos (CCAG V.4; trans. Holden 2009); the chapter number was not verified",
+       "reading": "bibliographic_only"
+      }
+     ]
+    },
+    "P": {
+     "definition": "Cusps 11, 12, 2 and 3 trisect each cusp degree's own semi-diurnal or semi-nocturnal arc.",
+     "definition_source": "Swiss Ephemeris General Documentation §6.2.1 Placidus",
+     "history": [
+      {
+       "citation": "Named after Placidus de Titis (1590-1668) (Swiss Ephemeris §6.2.1)",
+       "reading": "secondary_only"
+      }
+     ]
+    },
+    "R": {
+     "definition": "The equator is divided into twelve 30° arcs from the meridian; great circles through the north and south points of the horizon carry the divisions to the ecliptic.",
+     "definition_source": "Swiss Ephemeris General Documentation §6.2.3 Regiomontanus",
+     "history": [
+      {
+       "citation": "Named after Johannes Müller of Königsberg, called Regiomontanus (1436-1476) (Swiss Ephemeris §6.2.3)",
+       "reading": "secondary_only"
+      }
+     ]
+    },
+    "W": {
+     "definition": "The rising sign is the whole first house; each later sign is the next house.",
+     "definition_source": "this product's definition (methods page §07.1)",
+     "history": [
+      {
+       "citation": "Vettius Valens, Anthology V.6 (Pingree 1986 pp. 215-216): a chart whose degree-based MC falls in the ninth sign, cited on the methods page and not re-read for this entry",
+       "reading": "bibliographic_only"
+      }
+     ]
+    }
+   }
+  },
   "library_info": {
    "applies_to": "library_info",
    "note": "兩者是不同的版本號：前者是 pip 安裝的 pyswisseph 套件版本，後者是其內建 Swiss Ephemeris C 函式庫自報的版本，數字格式相近但並非同一個值。tz_database 是本地時間換算所用的 IANA 時區資料庫版本，它不由本產品固定：macOS 由作業系統提供、容器由 image 提供，更新後同一組輸入可能換算出不同的 UTC。"
@@ -805,6 +1295,72 @@
   "lots/boundary_policy": {
    "applies_to": "derived_methods.lots.boundary_policy",
    "rule": "sect_status == boundary_both_shown 時，fortune／spirit 是依 >0° 判準的主要值；by_sect 中另一日夜盤公式的結果並列為比較值，不隱藏；落宮與相位只用主要值"
+  },
+  "lunar_events/prenatal_syzygy_degree": {
+   "applies_to": "astronomical_data.lunar_events.prenatal_syzygy.degree_selection and prenatal_syzygy_at_birth.luminaries_above_horizon_at_birth",
+   "cross_check": "ecliptic hemisphere: whether each luminary's longitude lies between the descendant and the ascendant through the midheaven at the moment of the syzygy; reported beside the altitude reading, never used to choose",
+   "definition": "The prenatal syzygy is the nearest new or full Moon before birth (true syzygy: apparent geocentric Sun and Moon, tropical of date). At a new Moon the degree is the common degree of the luminaries. At a full Moon it is the degree of the luminary above the horizon of the birthplace at the moment of the syzygy.",
+   "horizon_criterion": "the sect rule: the body's centre, geocentric true altitude (no refraction) above 0°; within ±50′ of the horizon, or when both or neither luminary is above it, no luminary is chosen and both degrees are listed. The Moon's topocentric altitude can differ from its geocentric one by up to about a degree; the geocentric value is used so that the product has one horizon criterion",
+   "not_done": "the ascendant corrected by this degree (the animodar) is not computed and the degree is not an input to any other technique. The Trutina Hermetis is a different, birth-time rectification method (from the conception) and is not provided",
+   "sources": [
+    {
+     "citation": "Ptolemy, Tetrabiblos III.2 (Robbins, Loeb 1940, pp. 231-235; Hübner III.3)",
+     "read_at": "Robbins's English translation; the Greek not checked",
+     "reading": "translation_read",
+     "says": "take the degree of the most recent syzygy before birth, at a new Moon the degree of both luminaries, at a full Moon that of the luminary above the earth; then find the planet that rules that degree"
+    },
+    {
+     "citation": "Robbins, note 9 to Tetrabiblos III.2 (Loeb 1940)",
+     "read_at": "Robbins's English translation and note; the Greek not checked",
+     "reading": "translation_read",
+     "says": "the text follows the two chief manuscripts and the anonymous commentator in judging 'above the earth' at the syzygy; another reading judges it at the birth. The second reading is reported as information (prenatal_syzygy_at_birth.luminaries_above_horizon_at_birth)"
+    }
+   ]
+  },
+  "lunar_events/prenatal_syzygy_sect_profile": {
+   "applies_to": "astronomical_data.lunar_events.prenatal_syzygy_at_birth.sect_profile",
+   "definition": "a named pick listed beside the nearest syzygy, not the default: for a day birth the previous new Moon, for a night birth the previous full Moon, passing over a nearer syzygy of the other kind. Day and night by the sect rule; inside its near-horizon band, or without a birth time, nothing is picked and both are listed",
+   "sources": [
+    {
+     "citation": "Ptolemy, Tetrabiblos III.10 (Robbins pp. 271-307; the relevant passage pp. 277-279; Hübner III.11)",
+     "read_at": "Robbins's English translation; the Greek not checked",
+     "reading": "translation_read",
+     "says": "in a day nativity the candidates include the preceding new Moon, in a night nativity the preceding full Moon; the text does not say whether a nearer syzygy of the other kind is passed over"
+    },
+    {
+     "citation": "William Lilly, Christian Astrology (1647), Book III, ch. CIV, pp. 527-529",
+     "read_at": "the English of 1647, read for the product's methods page; the pages were not re-read for this entry",
+     "reading": "original_language_read",
+     "says": "by day the preceding new Moon, by night the preceding full Moon, passing over the nearer one"
+    }
+   ]
+  },
+  "lunar_mansions": {
+   "applies_to": "derived_methods.lunar_mansions",
+   "boundary_rule": "membership by exact rational comparison of the float longitude; a Moon within 1′ of an edge is flagged (near_boundary)",
+   "definition": "28 equal mansions of 360°/28 (12°51′25.714″; medieval texts round it to 12°51′26″) on the tropical ecliptic of date, the first starting at 0° Aries; mansion n is [(n−1)·360°/28, n·360°/28); only the Moon is placed",
+   "interval_rule": "for a non-exact birth time, every mansion the Moon is in between its longitudes at the ends of the stated hour or civil day; the Moon's apparent longitude only increases",
+   "interval_vocabulary": [
+    "stated_civil_hour",
+    "civil_day"
+   ],
+   "names_note": "Arabic names as al-Biruni lists them (Sachau's translation, read in a scanned text); the Arabic script and the forms al-Fargh al-Muqaddam and al-Fargh al-Mu'akhkhar were not checked against a printed source; no. 1 is also called al-Nath. The names are given in the original only (Arabic script and transliteration), with no translated name",
+   "not_the_chinese_xiu": "the 二十八宿 of ancient China are unequal lodges measured in right ascension from determinative stars; this module does not compute them and gives no Chinese lodge name",
+   "points_note": "every source read gives a mansion only to the Moon; none places the ascendant or another planet in them",
+   "source_note": "Agrippa, De occulta philosophia II.33 (English translation, London 1651): 28 mansions of 12°51′ and almost 26″ each, after Abraham; mansions 1, 8, 15 and 22 begin at the heads of Aries, Cancer, Libra and Capricorn, but Agrippa places them in the zodiac of the eighth sphere. al-Biruni, Chronology of Ancient Nations ch. XXI (tr. Sachau 1879, pp. 335-366): the Arabs divided the sphere into 28 parts, 2 1/3 to a sign, beginning with al-Sharatan because its stars stood in the first part of Aries in their time, and the stars have since moved. Counting from the tropical vernal point of date is the product's convention for these equal parts. Picatrix, Ibn Abi al-Rijal and al-Biruni's Book of Instruction were not read. No page numbers for Agrippa",
+   "sources": [
+    {
+     "citation": "Agrippa, De occulta philosophia II.33 (English translation, London 1651)",
+     "read_at": "the archive.org scan of the 1651 English translation and its OCR text",
+     "reading": "translation_read"
+    },
+    {
+     "citation": "al-Biruni, Chronology of Ancient Nations ch. XXI (tr. Sachau 1879, pp. 335-366)",
+     "read_at": "a scanned copy of Sachau's translation",
+     "reading": "translation_read"
+    }
+   ],
+   "zero_point_basis": "product_convention"
   },
   "planetary_hours": {
    "applies_to": "derived_methods.planetary_hours",
@@ -833,9 +1389,70 @@
    "geometric_reason": "標準視日出（上緣初現）時太陽中心約在幾何地平下 50′（折射約 34′＋太陽半徑約 16′），故 −50′ < h ≤ 0° 是幾何中心判準與視日出判準會分歧的區間；本產品對稱擴成 ±50′ 作為敏感提示帶。",
    "time_span_note": "依緯度與季節而異：低緯每次穿越約數分鐘，60°N 至點約 20 分鐘，更高緯可達數十分鐘，近極圈時太陽可能整夜停在帶內；不給固定分鐘數。"
   },
+  "solar_phase": {
+   "applies_to": "derived_methods.solar_phase",
+   "boundary_rule": "membership by exact rational comparison of the float |difference| with the limit in whole arcseconds; each limit inclusive or exclusive as worded",
+   "decision_basis_argument": "Inference by this product, not a statement found in a source: al-Biruni (Book of Instruction §483) says a Venus whose north latitude exceeds 7 degrees at the conjunction is to be called neither samim nor combust but 'accompanying the Sun', and that at her greatest north latitude she remains visible; Abu Ma'shar (Great Introduction VII.2, Latin of Hermann of Carinthia) says Venus can be seen 'ex eodem cum Sole gradu' because of her latitude and is then not to be called burnt but appearing. Had these authors measured the true distance on the sky, such a Venus would already be 7-8 degrees from the Sun, outside 16 minutes and outside 6 degrees, and no exception would be needed; the exception is needed because the distance they read is in degrees of the zodiac (longitude), on which this Venus stands in the Sun's own degree.",
+   "default_basis": "Lilly p.113 was read in the 1647 text, gives a limit for every band, and halves the Sun's orb of 17 degrees (p.107) that the product's default aspect orbs already use. Lilly himself writes 12 degrees and 16 minutes in aphorism 26 (p.300 as cited by Houlding; no page number in the transcription read); that disagreement is disclosed, not resolved.",
+   "default_profile": "lilly_1647_p113_v1",
+   "definition": "The signed difference of ecliptic longitude, body minus Sun, in (-180, 180]; the band is read from |difference| against the profile's limits for the side the body is on (negative: west of the Sun, rising before it, the morning side). The true angular separation and the ecliptic latitude are listed and decide nothing, except the optional solar-disc cazimi (separation at most the Sun's apparent semidiameter at that instant), which changes only the cazimi band. Listed: the Moon and the five planets. All three profiles are computed; the selected one fills rows[].",
+   "doctrine": [
+    "Lilly 1647 p.111: 'the combustion of any Planet is the greatest misfortune that can be'",
+    "Lilly 1647 p.113: when the Sun applies to the planet it is more afflicted than when the Sun separates from it; 'all Authors doe hold a Planet in Cazimi to be fortified thereby'",
+    "Lilly aphorism 26: under the beams within 12 degrees it 'hath no fortitude'; within 16 minutes in Cazimi it is 'wonderous strong'",
+    "al-Biruni §481: under the rays 'they remain like prisoners in confinement'; §486: the influence 'is at its minimum in combustion'",
+    "Abu Ma'shar, Great Introduction VII.2 (Latin): the Sun burns, weakens and corrupts every star joined to it except one in zamim",
+    "Ptolemy, Tetrabiblos III.10 (Robbins p.285): no planet under the rays of the Sun is admitted to destroy or to aid"
+   ],
+   "interval_rule": "for a non-exact birth time, every band each profile puts each body in over the stated hour or civil day, from the roots of every band edge; the least and greatest difference over it sampled every half hour and at the ends",
+   "interval_vocabulary": [
+    "stated_civil_hour",
+    "civil_day"
+   ],
+   "not_applied": "Bonatti and al-Qabisi require the latitude as well as the longitude within 16 minutes for cazimi (al-Qabisi Introduction III, John of Seville's Latin translation read; Bonatti via Dykes 2007 p.211, secondary); the optional solar-disc reading comes close but is not their rule. Abu Ma'shar's own limits (combust 6 degrees, Mars 10; under the rays east 15, Mars 18) are not offered as a profile. Visibility by place and atmosphere (Swiss heliacal functions) is not computed.",
+   "profiles": {
+    "biruni_wright_v1": "al-Biruni §481-484: samim under 16 minutes (exclusive); combust to 6 degrees, to 7 degrees for Mercury and Venus in direct motion (§482); the Moon combust under 7 degrees and under the rays to 12 degrees (§484); under the rays rising in the east (morning side) to 12 Venus and Mercury, 15 Saturn and Jupiter, 16 Mars, setting in the west (evening side) from 16 Saturn and Jupiter, 18 Mars; Mercury and Venus take 12 on both sides, since §482 says only that their west 'resembles' the superior planets'; Venus north of 7 degrees latitude in the samim or combust band is 'accompanying the Sun' (§483).",
+    "hellenistic_15_v1": "One band, under the beams within 15 degrees on either side; no cazimi or combust band (Porphyry, Antiochus as reported by Brennan 2017).",
+    "lilly_1647_p113_v1": "Lilly 1647 p.113: cazimi within 17 minutes, combust within 8 deg 30 min, under the Sun-beams until 17 degrees; every limit inclusive; the same numbers for every body and side. The default."
+   },
+   "same_sign_rule": "Lilly p.113-114: combustion only by bodily conjunction in one sign, not by aspect. No other source read has the rule and Lilly's aphorism 26 puts a planet under the beams 'in what Signe it will'; the product reports same_sign_as_sun and does not apply the rule. In the sidereal zodiac only this flag can differ; the distance and the band cannot.",
+   "seven_day_rule": "For the five planets, every crossing of the profile's under-the-beams limit within 7 days before or after the chart instant, emerging or sinking; stations not searched; the Moon not searched. The 7-day rule is reported from Porphyry, Introduction ch.30 and Rhetorius (Holden 2009 pp.24, 134) via a secondary page; the original was not read.",
+   "sources": [
+    {
+     "citation": "William Lilly, Christian Astrology (London 1647) Book I, pp.111, 113-114",
+     "read_at": "archive.org full text of the 1647 printing and of a 1659 transcription; scans not checked. The p.115 table of fortitudes and debilities was read only as OCR and is not cited",
+     "reading": "original_language_read"
+    },
+    {
+     "citation": "William Lilly, Christian Astrology, aphorism 26 (p.300 per Houlding)",
+     "read_at": "archive.org 1659 transcription; page number from Houlding",
+     "reading": "original_language_read"
+    },
+    {
+     "citation": "al-Biruni, The Book of Instruction in the Elements of the Art of Astrology, trans. R. Ramsay Wright (London 1934) §481-486",
+     "read_at": "archive.org typescript OCR (the Skyscript facsimile, pp.88-93 of the facsimile); the 1934 page numbers not checked",
+     "reading": "translation_read"
+    },
+    {
+     "citation": "Abu Ma'shar, Great Introduction VII.2, Latin of Hermann of Carinthia (Liber introductorius maior), Wurzburg Arabic-Latin Corpus lines 130_123-126; English: Dykes 2020 p.418",
+     "read_at": "Hermann's Latin translation read online, the Arabic not read; Dykes's English only as cited by Tony Louis",
+     "reading": "translation_read"
+    },
+    {
+     "citation": "Ptolemy, Tetrabiblos III.10, trans. Robbins (Loeb 1940) p.285",
+     "read_at": "LacusCurtius transcription",
+     "reading": "translation_read"
+    },
+    {
+     "citation": "Porphyry, Introduction ch.2 and ch.30; Antiochus; Rhetorius (Holden 2009 pp.24, 134); Brennan, Hellenistic Astrology (2017)",
+     "read_at": "secondary pages and search excerpts only",
+     "reading": "secondary_only"
+    }
+   ]
+  },
   "time/delta_t_model": {
    "applies_to": "astronomical_data.time.delta_t_model and calculation_dossier.time_conversion.delta_t_model",
-   "provenance": "Swiss 2.10.03 calc_deltat(): SMH 2016 model before 1955 (1000-day transition), dt[] table 1955–2028 (2024–2028 extrapolated), long-term formula beyond; σ orders from NASA GSFC (Espenak): Stephenson & Houlden 1986 to 1962, Huber 2000 after 2028",
+   "provenance": "Swiss 2.10.03 calc_deltat(): SMH 2016 model before 1955 (1000-day transition), dt[] table 1955–2028 (2024–2028 extrapolated), long-term formula beyond; σ orders from NASA GSFC (Espenak): Stephenson & Houlden 1986 to 1962, Huber 2000 after 2028; 1962–2023 the seasonal UT2−UT1 terms of IERS Bulletin A, which the yearly table does not follow",
    "status_vocabulary": [
     "historical_reconstruction",
     "measured_era_table",

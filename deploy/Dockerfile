@@ -16,9 +16,9 @@ ENV CXX="g++" \
 
 WORKDIR /build
 
-# OPS-26: install the toolchain from the same Debian snapshot the pinned base
+# Install the toolchain from the same Debian snapshot the pinned base
 # image records in its sources (20260918T000000Z), not from whatever the mirror
-# serves on build day.  OPS-28: pkg-config and libsqlite3-dev make pyswisseph's
+# serves on build day.  pkg-config and libsqlite3-dev make pyswisseph's
 # setup.py link Debian's libsqlite3 (security-maintained, the runtime base
 # already carries libsqlite3-0) instead of compiling Swephelp's bundled SQLite.
 ARG DEBIAN_SNAPSHOT=20260918T000000Z
@@ -35,20 +35,27 @@ RUN sed -i \
 COPY deploy/requirements.lock /build/requirements.lock
 COPY deploy/build-requirements.lock /build/build-requirements.lock
 COPY third_party/pyswisseph/pyswisseph-2.10.3.2.tar.gz /source/pyswisseph-2.10.3.2.tar.gz
+# The locked wheels, downloaded and hash-checked by build_release_image before
+# the build; pip below reads only this directory, in a step with no network.
+COPY wheelhouse /wheelhouse
 
-# OPS-27: the image build needs only pyswisseph's build backend (setuptools and
+# The image build needs only pyswisseph's build backend (setuptools and
 # wheel), so only those two pinned entries of build-requirements.lock are
 # installed, and every other distribution must arrive as a wheel.
-RUN python -c 'import re,sys; from pathlib import Path; blocks=re.findall(r"^((?:setuptools|wheel)==[^\n]*(?:\n[ \t]+[^\n]*)*)", Path("/build/build-requirements.lock").read_text(), flags=re.M); names=sorted(b.split("==")[0] for b in blocks); names==["setuptools","wheel"] or sys.exit("image build lock subset is not exactly setuptools and wheel"); Path("/build/image-build.lock").write_text("\n".join(re.sub(r"\n[ \t]+#.*", "", b) for b in blocks)+"\n")' \
+RUN --network=none python -c 'import re,sys; from pathlib import Path; blocks=re.findall(r"^((?:setuptools|wheel)==[^\n]*(?:\n[ \t]+[^\n]*)*)", Path("/build/build-requirements.lock").read_text(), flags=re.M); names=sorted(b.split("==")[0] for b in blocks); names==["setuptools","wheel"] or sys.exit("image build lock subset is not exactly setuptools and wheel"); Path("/build/image-build.lock").write_text("\n".join(re.sub(r"\n[ \t]+#.*", "", b) for b in blocks)+"\n")' \
     && python -m venv /opt/venv \
     && mkdir --parents /wheels \
     && python -m pip install \
         --disable-pip-version-check \
+        --no-index \
+        --find-links /wheelhouse \
         --require-hashes \
         --no-deps \
         --requirement /build/image-build.lock \
     && python -m pip wheel \
         --disable-pip-version-check \
+        --no-index \
+        --find-links /wheelhouse \
         --require-hashes \
         --no-build-isolation \
         --only-binary=:all: \

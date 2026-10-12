@@ -3,34 +3,29 @@
 
 Checked here: the closed file list (PUBLICATION_FILES.json), no symlink or
 private path, no private marker, personal data, secret or private-record
-reference in any byte, and the third-party sources against the committed
-source lock.  Whether the tree builds and its tests pass is the public
-repository CI's job (its scripts/verify_delivery.py).
+reference in any byte, no ticket or ruling id in a comment, no named path
+the tree does not carry, the vendored pyswisseph source against the committed
+source lock, and no dependency bundle: the other dependencies are named by
+their locked hashes and fetched from PyPI, not shipped.  Whether the tree
+builds and its tests pass is the public repository CI's job (its
+scripts/verify_delivery.py).
 
-`--reconstruction-mode` additionally rebuilds the dependency set in a pinned
-Linux builder; Gate F runs it only when the locks or third_party/ changed.
+`--reconstruction-mode online-clean` additionally rebuilds the dependency set
+from PyPI by the locked hashes in a pinned Linux builder; Gate F runs it only
+when the locks or third_party/ changed.
 """
 
 from __future__ import annotations
 
 import argparse
-import hashlib
+import io
 import json
 import re
 import subprocess
 import sys
-import tarfile
+import tokenize
 from pathlib import Path
 
-from scripts.publication.prepare_third_party_sources import (
-    DEPENDENCY_SOURCE_BUILD_PACKAGES,
-    MAX_ARCHIVE_MEMBER_BYTES,
-    SourcePreparationError,
-    license_evidence_complete,
-    parse_lock,
-    render_dependency_license_table,
-    verify_manifest_lock_inputs,
-)
 from scripts.tools.source_tree_identity import (
     is_public_release_record, observe_publication_tree, sha256_file as _sha256,
 )
@@ -71,6 +66,12 @@ FORBIDDEN_TEXT = {
     "work" + "trees/",
     "codex" + "-review",
     "open_items" + ".json",
+    # The private contracts, register and agent rules: a public file names
+    # what they hold in words ("the output contract"), not the file.
+    "OUTPUT_CONTRACT" + ".md",
+    "EXPORT_CONTRACT" + ".md",
+    "DECISION_REGISTER" + ".md",
+    "AGENTS" + ".md",
     "UNIFIED" + "_REGISTER",
     "ALL" + "_VERIFIED",
     "CURRENT" + "_HANDOFF",
@@ -113,6 +114,13 @@ PUBLIC_FILE_PATTERNS = {
         re.IGNORECASE,
     ),
 }
+_CREDENTIAL_NAME = (
+    rb"[A-Za-z0-9_.-]*"
+    rb"(?:pass" rb"word|passwd|sec" rb"ret|tok" rb"en|api[_-]?key|private[_-]?key|access[_-]?key)"
+    rb"[A-Za-z0-9_.-]*"
+)
+# At least six characters, one of them a letter, none a quote, space or template sigil.
+_CREDENTIAL_LITERAL = rb"(?=[^\s\"']*[A-Za-z])[^\s\"'$(){}\[\]<>,;]{6,}"
 SECRET_PATTERNS = {
     "private key": re.compile(rb"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
     "GitHub token": re.compile(rb"\bgh[opsu]_[A-Za-z0-9_]{20,}\b"),
@@ -122,14 +130,16 @@ SECRET_PATTERNS = {
     "Slack token": re.compile(rb"\bxox[baprs]-[A-Za-z0-9-]{20,}\b"),
     "Stripe live key": re.compile(rb"\bsk_live_[A-Za-z0-9]{20,}\b"),
     "generic API token": re.compile(rb"\bsk-[A-Za-z0-9_-]{20,}\b"),
-    # A line that assigns a literal to a password, secret, token or key name,
-    # as an env file, shell profile or config does (`DB_PASSWORD=...`).  Code
-    # that assigns an expression, a number or a ${reference} is not matched.
+    # A literal assigned to a password, secret, token or key name: a whole line,
+    # as an env file, shell profile or config writes it (`DB_PASSWORD=...`), or
+    # a quoted key anywhere on a line, as a JSON object, a Python dict or a
+    # JavaScript object writes it (`"password": "..."`, `{ accessToken: "..." }`).
+    # Code that assigns an expression, a number, null or a ${reference} is not matched.
     "credential assignment": re.compile(
-        rb"(?im)^[ \t]*(?:export[ \t]+)?[A-Za-z0-9_.-]*"
-        rb"(?:pass" rb"word|passwd|sec" rb"ret|tok" rb"en|api[_-]?key|private[_-]?key|access[_-]?key)"
-        rb"[A-Za-z0-9_.-]*[ \t]*[:=][ \t]*[\"']?(?=[^\s\"']*[A-Za-z])[^\s\"'$(){}\[\]<>,;]{6,}[\"']?"
-        rb"[ \t]*(?:#.*)?$"
+        rb"(?im)^[ \t]*(?:export[ \t]+)?" + _CREDENTIAL_NAME
+        + rb"[ \t]*[:=][ \t]*[\"']?" + _CREDENTIAL_LITERAL + rb"[\"']?[ \t]*(?:#.*)?$"
+        rb"|(?:[\"']" + _CREDENTIAL_NAME + rb"[\"']|[{,][ \t]*" + _CREDENTIAL_NAME + rb")"
+        rb"[ \t]*[:=][ \t]*[\"']" + _CREDENTIAL_LITERAL + rb"[\"']"
     ),
 }
 SOURCE_LOCK = "publication/third_party_source_lock.json"
@@ -137,6 +147,16 @@ PYSWISSEPH_FILES = (
     "pyswisseph-2.10.3.2.tar.gz", "LICENSE.txt", "SWISS_EPHEMERIS_LICENSE",
     "SWEPHELP_LICENSE", "SWEPHELP_README.txt",
 )
+# What third_party/ holds: the AGPL pyswisseph source with its notices, the
+# glyph licence files and the exporter's manifest of the shipped source.
+THIRD_PARTY_ENTRIES = frozenset({"SOURCE_MANIFEST.json", "noto-fonts", "pyswisseph"})
+# Paths of the retired dependency bundle (sdists, wheel indexes, their checksum
+# list and licence table), refused by name so that it cannot come back unnoticed
+# (strings split so this file names no path the tree does not carry).
+DEPENDENCY_BUNDLE_PATHS = ("third_party/" "sources", "third_party/" "build_wheels",
+                           "third_party/" "dependency_wheels", "third_party/" "SHA256SUMS",
+                           "docs/" "DEPENDENCY_LICENSES.md")
+RECONSTRUCTION_MODES = ("online-clean",)
 RECONSTRUCTION_BUILDER_IMAGE = (
     "python:3.14.8-trixie@"
     "sha256:d0ef532dea88a06a0f950a40f95c553086c1f282bf8e313d328f11d289f72582"
@@ -148,6 +168,221 @@ class CandidateFailure(RuntimeError):
 
 
 BINARY_SNIFF_BYTES = 8192
+
+
+# Ticket and ruling ids of the private project.  A comment keeps the reason and
+# drops the id: a reader of the public tree cannot open the record it names.
+# The private tests bind this list to every id prefix the project's decision
+# register and open items use; DH and AR label review findings, T the time-lord
+# specification's items and D the questions a review puts to the owner.  A prefix may carry one round digit (R2, CX2)
+# and must start a word, so SHA-256, UTC-10, Etc/GMT-8 and a 2D-3 grid do not match.
+INTERNAL_CODE_PREFIXES = (
+    "GOV-RULE", "GOV-C", "GOV-Q", "GOV", "MTH-Q", "MTH", "PUB-Q", "PUB", "DEC-DIR",
+    "R-FIX", "FRONTEND", "RECEIPT", "SUPPLY", "ASTRO", "CONST", "XDOM", "I18N", "PRIV",
+    "GATE", "TIME", "OPS", "API", "CLN", "SEC", "RUL", "FE", "CX", "GK", "SD", "BD", "RT",
+    "DH", "AR", "R", "C", "V", "T", "D",
+)
+INTERNAL_CODE = re.compile(
+    r"(?<![A-Za-z0-9_-])(?:" + "|".join(map(re.escape, INTERNAL_CODE_PREFIXES))
+    + r")[0-9]?-[0-9]{1,4}(?![0-9])"
+    r"|(?<![A-Za-z0-9_])r[0-9]ops-[0-9]"
+    r"|(?:裁決|ruling)\s*#\s*[0-9]"
+    r"|Claude Security F[0-9]"
+)
+# Where a file's comments are.  Prose (Markdown, plain text, LICENSE) is read
+# whole; data (JSON, images, catalogues) carries no comment.
+_HASH_COMMENT = re.compile(r"(?m)(?:^|\s)#.*$")
+_C_COMMENT = re.compile(r"/\*.*?\*/|(?<![:\"'\\])//.*$", re.DOTALL | re.MULTILINE)
+_HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
+_HASH_SUFFIXES = {
+    ".yaml", ".yml", ".conf", ".template", ".sh", ".in", ".lock", ".ini", ".cff",
+    ".npmrc", ".gitignore", ".dockerignore", ".toml", ".cfg", ".service", ".nft",
+}
+_C_SUFFIXES = {".js", ".cjs", ".mjs", ".css", ".ts"}
+_MARKUP_SUFFIXES = {".html", ".svg", ".xml"}
+
+
+def _python_comments(text: str) -> list[tuple[int, str]]:
+    """Comments and docstrings (a string literal that is a whole statement),
+    each with the line it starts on."""
+    found: list[tuple[int, str]] = []
+    previous = tokenize.NEWLINE
+    try:
+        for token in tokenize.generate_tokens(io.StringIO(text).readline):
+            if token.type == tokenize.COMMENT:
+                found.append((token.start[0], token.string))
+            elif token.type == tokenize.STRING and previous in (
+                tokenize.NEWLINE, tokenize.INDENT, tokenize.DEDENT,
+            ):
+                found.append((token.start[0], token.string))
+            # A line break inside brackets (NL) does not start a statement.
+            if token.type not in (tokenize.COMMENT, tokenize.NL):
+                previous = token.type
+    except (tokenize.TokenError, SyntaxError) as error:
+        raise CandidateFailure(f"cannot read the comments of a Python file: {error}") from None
+    return found
+
+
+def _matches(pattern: re.Pattern[str], text: str) -> list[tuple[int, str]]:
+    return [(text.count("\n", 0, match.start()) + 1, match.group(0)) for match in pattern.finditer(text)]
+
+
+def comment_parts(relative: str, data: bytes) -> list[tuple[int, str]] | None:
+    """Each comment (or docstring) of one file with the line it starts on; the
+    whole text of a prose file; None for a data or binary file."""
+    name = relative.rsplit("/", 1)[-1]
+    suffix = name[name.rfind("."):] if "." in name else ""
+    if b"\0" in data[:BINARY_SNIFF_BYTES] or suffix == ".json":
+        return None
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    if suffix == ".py":
+        return _python_comments(text)
+    if suffix in _HASH_SUFFIXES or name == "Dockerfile":
+        return _matches(_HASH_COMMENT, text)
+    if suffix in _C_SUFFIXES:
+        return _matches(_C_COMMENT, text)
+    if suffix in _MARKUP_SUFFIXES:
+        return _matches(_HTML_COMMENT, text) + _matches(_C_COMMENT, text)
+    # Prose, and any text file whose comment syntax is not named above.
+    return [(1, text)]
+
+
+def comment_code_lines(
+    relative: str, data: bytes, pattern: re.Pattern[str] = INTERNAL_CODE,
+) -> list[tuple[int, str]]:
+    """(line, id) for every match of `pattern` in the comments (or prose) of one file."""
+    return [
+        (line + part.count("\n", 0, match.start()), match.group(0))
+        for line, part in comment_parts(relative, data) or []
+        for match in pattern.finditer(part)
+    ]
+
+
+def comment_codes(relative: str, data: bytes) -> list[str]:
+    """Internal ids in the comments (or prose) of one file; [] for a data file."""
+    return [code for _line, code in comment_code_lines(relative, data)]
+
+
+def scan_comment_codes(root: Path) -> None:
+    """Fail on a ticket or ruling id in a comment of any file outside third_party/."""
+    scanned = 0
+    for path in sorted(root.rglob("*")):
+        relative = path.relative_to(root)
+        if not path.is_file() or relative.parts[0] in {".git", "third_party"}:
+            continue
+        scanned += 1
+        codes = comment_codes(relative.as_posix(), path.read_bytes())
+        if codes:
+            raise CandidateFailure(
+                f"internal ticket or ruling id {codes[0]!r} in a comment of {relative.as_posix()}"
+            )
+    if not scanned:
+        raise CandidateFailure(f"no file to scan under {root}")
+
+
+# A repository path a public file names must be one the tree carries: a reader
+# cannot open a private document, tool or record.  The two tables below name
+# every exception with its reason (strings split so this file names no path).
+_REPOSITORY_PATH = re.compile(
+    r"(?<![\w.-])((?:backend|deploy|docs|frontend|publication|scripts|tests|third_party)"
+    r"/[\w./*{},-]*[\w/*}]|AGENTS\.md|CLAUDE\.md)"
+)
+_MODULE_PATH = re.compile(
+    r"(?<![\w.])scripts\.(?:deployment|frontend|publication|tools|validation|verification)"
+    r"\.[a-z_][a-z0-9_]*(?![\w.])"
+)
+UNPUBLISHED_PATH_CLASSES = {
+    "tests" "/": "the private test suite: a comment may name the test that guards a rule",
+    "frontend/" "tests/": "frontend tests and response fixtures the public tree does not carry",
+}
+UNPUBLISHED_REFERENCE_SITES = {
+    "scripts/publication/verify_publication_candidate.py": (
+        "the private directories this denylist refuses",
+        frozenset({"docs/" "archive", "docs/" "development", "docs/" "red_team"}),
+    ),
+    "scripts/verification/verify_docker_context.py": (
+        "probes: paths the image build context must deny or never copy",
+        frozenset({
+            "AGENTS" ".md", "docs/" "README.md", "backend/" "app/.env", "backend/" "app/x.pem",
+            "backend/" "app/x.key", "backend/" "app/tests/test_x.py",
+            "backend/" "app/__pycache__/x.pyc", "backend/" "app/secret_settings.py",
+            "publication/" "public_overlay/THIRD_PARTY_NOTICES.md",
+        }),
+    ),
+    "tests/deployment/test_production_runtime_contract.py": (
+        "a file the test plants and removes",
+        frozenset({"backend/" "ephe/unexpected.se1"}),
+    ),
+    "docs/REPRODUCIBLE_BUILD.md": (
+        "prose: a backend and frontend pair, not a path",
+        frozenset({"backend/" "frontend"}),
+    ),
+    "scripts/verify_delivery.py": (
+        "prose: backend and image consumers, not a path",
+        frozenset({"backend/" "image"}),
+    ),
+    "tests/integration/test_hosted_profile.py": (
+        "a path-traversal probe the static server must refuse",
+        frozenset({"frontend/" "zh-TW/page.css"}),
+    ),
+}
+
+
+def _names_a_published_path(root: Path, reference: str) -> bool:
+    if any(character in reference for character in "*{"):
+        pattern = re.sub(r"\{[^}]*\}", "*", reference)
+        return any(root.glob(pattern))
+    if (root / reference).exists() or (root / f"{reference}.py").is_file():
+        return True
+    # `module.attribute`: the path of a module and a name inside it.
+    module, _, attribute = reference.rpartition(".")
+    return bool(module) and attribute.isidentifier() and (root / f"{module}.py").is_file()
+
+
+def path_references(root: Path, relative: str, data: bytes) -> list[str]:
+    """Repository paths one public file names that the tree does not carry."""
+    if b"\0" in data[:BINARY_SNIFF_BYTES]:
+        return []
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        return []
+    named = {
+        match.group(1).rstrip("./") for match in _REPOSITORY_PATH.finditer(text)
+        # After a lone `/` it is an absolute or URL path, not one of the tree;
+        # after `../` it is relative to the tree.
+        if text[max(0, match.start() - 1):match.start()] != "/"
+        or text[max(0, match.start() - 2):match.start()] == "./"
+    }
+    # A module the way `python -m` and imports name it (a module or a package).
+    named |= {match.group(0).replace(".", "/") for match in _MODULE_PATH.finditer(text)}
+    site = UNPUBLISHED_REFERENCE_SITES.get(relative, ("", frozenset()))[1]
+    return sorted(
+        reference for reference in named
+        if reference not in site
+        and not reference.startswith(tuple(UNPUBLISHED_PATH_CLASSES))
+        and not _names_a_published_path(root, reference)
+    )
+
+
+def scan_path_references(root: Path) -> None:
+    """Fail on a public file outside third_party/ that names an unpublished path."""
+    scanned = 0
+    for path in sorted(root.rglob("*")):
+        relative = path.relative_to(root)
+        if not path.is_file() or relative.parts[0] in {".git", "third_party"}:
+            continue
+        scanned += 1
+        missing = path_references(root, relative.as_posix(), path.read_bytes())
+        if missing:
+            raise CandidateFailure(
+                f"{relative.as_posix()} names unpublished path(s): {', '.join(missing)}"
+            )
+    if not scanned:
+        raise CandidateFailure(f"no file to scan under {root}")
 
 
 def scan_candidate_content(
@@ -272,115 +507,30 @@ def _verify_sha256sums(base: Path, expected: set[str]) -> None:
             raise CandidateFailure(f"SHA256SUMS mismatch for {relative}")
 
 
-def _verify_license_files(archive: Path, package: dict) -> None:
-    if not license_evidence_complete(package):
-        raise CandidateFailure(f"license evidence incomplete for {package.get('name')}")
-    try:
-        with tarfile.open(archive, "r:gz") as source:
-            members = {member.name: member for member in source.getmembers() if member.isfile()}
-            for relative in package["license_files"]:
-                member = members.get(relative)
-                handle = (
-                    source.extractfile(member)
-                    if member is not None and member.size <= MAX_ARCHIVE_MEMBER_BYTES else None
-                )
-                if handle is None or hashlib.sha256(handle.read()).hexdigest() != (
-                    package["license_file_sha256"][relative]
-                ):
-                    raise CandidateFailure(f"license file differs for {package['name']}: {relative}")
-    except (OSError, tarfile.TarError) as error:
-        raise CandidateFailure(f"cannot inspect licenses of {package['name']}: {error}") from None
-
-
-def _verify_third_party(root: Path, authority_lock: Path | None, require_bundle: bool) -> None:
+def _verify_third_party(root: Path, authority_lock: Path | None) -> None:
     candidate_lock = root / SOURCE_LOCK
     if authority_lock is not None and (
         not authority_lock.is_file() or _sha256(authority_lock) != _sha256(candidate_lock)
     ):
         raise CandidateFailure("candidate third-party source lock differs from release authority")
+    bundled = sorted(relative for relative in DEPENDENCY_BUNDLE_PATHS if (root / relative).exists())
+    unexpected = sorted(
+        f"third_party/{path.name}" for path in (root / "third_party").iterdir()
+        if path.name not in THIRD_PARTY_ENTRIES
+    ) if (root / "third_party").is_dir() else []
+    if bundled or unexpected:
+        raise CandidateFailure(
+            "candidate carries a dependency bundle the public tree does not ship "
+            f"(dependency sources come from PyPI by their locked hashes): {sorted({*bundled, *unexpected})}"
+        )
     locked = source_lock_sdists(_load_json(candidate_lock))
     vendor = root / "third_party" / "pyswisseph"
     _verify_sha256sums(vendor, set(PYSWISSEPH_FILES))
     if locked.get(("pyswisseph", "2.10.3.2")) != _sha256(vendor / PYSWISSEPH_FILES[0]):
         raise CandidateFailure("pyswisseph source differs from the third-party source lock")
-    bundle = root / "third_party"
-    if not (bundle / "SHA256SUMS").is_file():
-        if require_bundle:
-            raise CandidateFailure("third-party source bundle is absent")
-        return
-    manifest = _load_json(bundle / "SOURCE_MANIFEST.json")
-    shipped: set[str] = set()
-    for package in manifest.get("packages", []):
-        archive = bundle / "sources" / str(package.get("filename", ""))
-        key = (str(package.get("name", "")).lower(), str(package.get("version", "")))
-        if not archive.is_file() or _sha256(archive) != package.get("sha256"):
-            raise CandidateFailure(f"source archive differs for {package.get('name')}")
-        # The candidate's own manifest is not the authority; the committed lock is.
-        if locked.get(key) != package["sha256"]:
-            raise CandidateFailure(f"retained sdist is not the source-lock artifact for {key[0]}")
-        _verify_license_files(archive, package)
-        shipped.add(f"sources/{package['filename']}")
-    for index_name, directory, lock, source_built in (
-        ("build_wheel_index", "build_wheels", "deploy/build-requirements.lock", frozenset()),
-        ("dependency_wheel_index", "dependency_wheels", "backend/requirements-dev.lock",
-         DEPENDENCY_SOURCE_BUILD_PACKAGES),
-    ):
-        index = manifest.get(index_name)
-        if not isinstance(index, dict):
-            raise CandidateFailure(f"{index_name} is missing")
-        artifacts = index.get("artifacts")
-        try:
-            wanted = [p for p in parse_lock(root / lock, index_name) if p["name"].lower() not in source_built]
-        except (OSError, SourcePreparationError) as error:
-            raise CandidateFailure(f"{index_name}: cannot read {lock}: {error}") from None
-        # One retained wheel per lock entry, as the producer requires; an
-        # incomplete or empty index would leave the offline rebuild nothing.
-        if (
-            index.get("complete") is not True
-            or not isinstance(artifacts, list)
-            or not artifacts
-            or len(artifacts) != len(wanted)
-        ):
-            raise CandidateFailure(
-                f"{index_name} is incomplete: {len(artifacts) if isinstance(artifacts, list) else 0} "
-                f"wheel artifact(s) for {len(wanted)} {lock} entries"
-            )
-        # SHA256SUMS is written with the bundle; the committed lock's hashes are the authority.
-        allowed = {digest for package in wanted for digest in package["allowed_sha256"]}
-        for artifact in artifacts:
-            if f"sources/{artifact.get('source_sdist_filename')}" not in shipped:
-                raise CandidateFailure(f"wheel lacks a retained sdist: {artifact.get('filename')}")
-            filename = str(artifact.get("filename", ""))
-            wheel = bundle / directory / filename
-            if (
-                Path(filename).name != filename
-                or wheel.is_symlink()
-                or not wheel.is_file()
-                or _sha256(wheel) != artifact.get("sha256")
-                or artifact.get("sha256") not in allowed
-            ):
-                raise CandidateFailure(f"retained wheel is not the lock's artifact: {filename!r}")
-            shipped.add(f"{directory}/{filename}")
-    _verify_sha256sums(bundle, shipped)
-    try:
-        verify_manifest_lock_inputs(manifest, {
-            "production": root / "deploy/requirements.lock",
-            "build": root / "deploy/build-requirements.lock",
-            "development": root / "backend/requirements-dev.lock",
-        })
-        table = render_dependency_license_table(manifest)
-    except SourcePreparationError as error:
-        raise CandidateFailure(str(error)) from None
-    if (root / "docs/DEPENDENCY_LICENSES.md").read_text(encoding="utf-8") != table:
-        raise CandidateFailure("human-readable dependency license table has drifted")
 
 
-def verify_candidate(
-    root: Path,
-    third_party_source_lock: Path | None = None,
-    *,
-    require_third_party_sources: bool = False,
-) -> str:
+def verify_candidate(root: Path, third_party_source_lock: Path | None = None) -> str:
     """Verify the candidate; return its tree digest, the SHA-256 of the
     PUBLICATION_FILES.json the tree was proven equal to: every file's path,
     bytes and Git executable bit.  The receipt producer binds the published
@@ -394,7 +544,9 @@ def verify_candidate(
     except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
         raise CandidateFailure(str(error)) from None
     scan_candidate_content(root)
-    _verify_third_party(root, third_party_source_lock, require_third_party_sources)
+    scan_comment_codes(root)
+    scan_path_references(root)
+    _verify_third_party(root, third_party_source_lock)
     return identity.index_sha256
 
 
@@ -436,19 +588,10 @@ def public_file_delta(root: Path, previous: Path) -> dict:
 
 
 def _reconstruction_script(mode: str) -> str:
-    if mode == "online-clean":
-        # The hashed build backend, then the lock without build isolation.
-        install = '"$VENV/python" -m scripts.tools.install_dev_dependencies'
-    elif mode == "offline-source-only":
-        install = (
-            '"$VENV/pip" install --no-index --find-links=third_party/build_wheels '
-            "--require-hashes --requirement deploy/build-requirements.lock\n"
-            '"$VENV/pip" install --no-index --find-links=third_party/dependency_wheels '
-            "--find-links=third_party/sources --only-binary=:all: --no-binary=pyswisseph "
-            "--no-build-isolation --require-hashes --requirement backend/requirements-dev.lock"
-        )
-    else:
+    if mode not in RECONSTRUCTION_MODES:
         raise CandidateFailure(f"unsupported reconstruction mode: {mode}")
+    # The hashed build backend, then the lock without build isolation, from PyPI.
+    install = '"$VENV/python" -m scripts.tools.install_dev_dependencies'
     # The concurrency test has a product timeout and measures QEMU speed here.
     return f"""set -eu
 export PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_CACHE_DIR=1 PYTHONDONTWRITEBYTECODE=1
@@ -468,7 +611,7 @@ def verify_dependency_reconstruction(root: Path, *, mode: str, builder_image: st
     completed = subprocess.run(
         [
             "docker", "run", "--rm", "--platform", "linux/amd64",
-            "--network", "none" if mode == "offline-source-only" else "bridge",
+            "--network", "bridge",
             "--volume", f"{root.resolve()}:/candidate:ro",
             "--tmpfs", "/work:exec,size=4g",
             builder_image, "sh", "-c", _reconstruction_script(mode),
@@ -484,11 +627,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--third-party-source-lock", type=Path)
-    parser.add_argument(
-        "--require-third-party-sources", action="store_true",
-        help="a release candidate must carry the vendored sdist bundle",
-    )
-    parser.add_argument("--reconstruction-mode", choices=("online-clean", "offline-source-only"))
+    parser.add_argument("--reconstruction-mode", choices=RECONSTRUCTION_MODES)
     parser.add_argument("--builder-image", default=RECONSTRUCTION_BUILDER_IMAGE)
     parser.add_argument(
         "--previous-public", type=Path,
@@ -497,10 +636,7 @@ def main() -> int:
     )
     args = parser.parse_args()
     try:
-        tree_sha256 = verify_candidate(
-            args.root, args.third_party_source_lock,
-            require_third_party_sources=args.require_third_party_sources,
-        )
+        tree_sha256 = verify_candidate(args.root, args.third_party_source_lock)
         if args.reconstruction_mode:
             verify_dependency_reconstruction(
                 args.root, mode=args.reconstruction_mode, builder_image=args.builder_image

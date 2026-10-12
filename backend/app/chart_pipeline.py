@@ -55,6 +55,7 @@ from .core.frame_compatibility import method_frame_states
 from .core.time_utils import (
     REPRESENTATIVE_SAMPLE_ROLES,
     civil_day_receipt,
+    civil_instant,
     compute_time_conversion,
     representative_policy,
     representative_sample_instants,
@@ -70,6 +71,7 @@ from .core.bodies import (
     derive_node_antipode,
     effective_participants,
     geocentric_sun_true_altitude,
+    geocentric_true_altitude,
     make_longitude_sampler,
     participant_policy_receipt,
     unavailable_body_record,
@@ -92,8 +94,10 @@ from .core.houses import (
     printed_angles,
     printed_house_division,
 )
-from .core.house_placements import compute_planet_house_placements
+from .core.house_placements import compute_planet_house_placements, whole_sign_point_placements
 from .core.birth_time_sensitivity import (
+    DIFFERS_BETWEEN_SAMPLES,
+    SAME_AT_ALL_SAMPLES,
     approximate_hour_representative_request,
     build_approximate_hour_sensitivity,
     build_date_only_sensitivity,
@@ -107,6 +111,11 @@ from .core.lots import (
     lots_not_applicable,
 )
 from .core.antiscia import antiscia_not_applicable, compute_antiscia
+from .core.dodecatemoria import compute_dodecatemoria, dodecatemoria_not_applicable
+from .core.classical_classifications import (
+    classical_classifications_not_applicable,
+    compute_classical_classifications,
+)
 from .core.moon import (
     evaluate_void_of_course,
     voc_receipt_head,
@@ -116,6 +125,12 @@ from .core.lunar_events import (
     compute_primary_phases,
     compute_previous_eclipses,
 )
+from .core.prenatal_points import (
+    PrenatalPlace,
+    attach_eclipse_points,
+    attach_prenatal_syzygy,
+    comparable_view as prenatal_comparable_view,
+)
 from .core.horizon_events import (
     HorizonProbeCache,
     compute_horizon_events,
@@ -124,6 +139,17 @@ from .core.horizon_events import (
 from .core.planetary_hours import (
     compute_planetary_hours,
     planetary_hours_not_applicable,
+)
+from .core.lunar_mansions import (
+    compute_lunar_mansions,
+    lunar_mansions_not_applicable,
+    lunar_mansions_unavailable,
+)
+from .core.solar_phase import (
+    compute_solar_phase,
+    make_ecliptic_sampler,
+    solar_phase_not_applicable,
+    solar_phase_unavailable,
 )
 from .core.root_finding import wrap_to_signed_180
 from .core.dossier import EVENT_SEARCH_REASON_CODES, build_calculation_dossier
@@ -139,7 +165,7 @@ from .core.module_state import (
 from .core.method_status import method_receipt
 
 
-SCHEMA_VERSION = "0.15.0"
+SCHEMA_VERSION = "0.16.0"
 
 _CLASSICAL_KEYS = tuple(body["key"] for body in CLASSICAL_BODIES)
 
@@ -322,11 +348,15 @@ class DerivedChart:
     antiscia: Any
     aspects: Any
     declination_aspects: Any
+    dodecatemoria: Any
     essential_dignities: Any
     lots: Any
     planetary_hours: Any
     sect: Any
     void_of_course: Any
+    lunar_mansions: Any
+    solar_phase: Any
+    classical_classifications: Any
 
 
 # Event-search containment boundary.  Every optional search that
@@ -336,6 +366,15 @@ class DerivedChart:
 # with it, and the Swiss state is reset so the next search in this worker does
 # not inherit a segment left open at its edge.
 EVENT_SEARCH_SOURCE = "Swiss Ephemeris"
+
+
+def _prenatal_place(input_request: ChartRequest, context: ComputationContext) -> PrenatalPlace:
+    return PrenatalPlace(
+        context=context,
+        atmosphere=input_request.atmosphere,
+        timezone=input_request.timezone,
+        precision=input_request.birth_time_precision,
+    )
 
 
 def _event_availability_entry(requested: bool) -> dict:
@@ -442,7 +481,10 @@ def _omit_lunar_keys_same_as_anchor(sample: dict, anchor: dict) -> None:
     same = [
         key
         for key in _LUNAR_SAMPLE_RESULT_KEYS
-        if key in sample and key in anchor and _same_event(sample[key], anchor[key])
+        if key in sample and key in anchor and _same_event(
+            prenatal_comparable_view(key, sample[key]),
+            prenatal_comparable_view(key, anchor[key]),
+        )
     ]
     for key in same:
         del sample[key]
@@ -466,6 +508,15 @@ def _omit_horizon_events_same_as_anchor(bodies: list[dict], anchor: dict) -> Non
 _EXACT_EVENT_TIME_BASIS = "birth_instant"
 
 
+def _event_time_basis(time: TimeResolution) -> str:
+    """What an event module's instants stand for: the birth instant for an
+    exact time, else the request's own input semantics."""
+
+    if time.input_request.birth_time_precision == "exact":
+        return _EXACT_EVENT_TIME_BASIS
+    return time.time_conversion["input_semantics"]
+
+
 def _representative_sampling_receipt(precision: str) -> dict:
     if precision == "exact":
         return {
@@ -475,7 +526,7 @@ def _representative_sampling_receipt(precision: str) -> dict:
     return {
         "status": REPRESENTATIVE_SAMPLING_STATUSES[0],
         "interval": "civil_day" if precision == "date_only" else "stated_civil_hour",
-        "sample_roles": ["interval_start", "representative_anchor", "interval_end"],
+        "sample_roles": list(REPRESENTATIVE_SAMPLE_ROLES),
         "merge_policy": "side_by_side_not_merged",
         "result_locations": list(SAMPLE_RESULT_LOCATIONS),
         "same_as_anchor_semantics": "listed_keys_omitted_because_equal_to_the_anchor_value",
@@ -498,6 +549,7 @@ def _representative_event_sample(
     horizon_probe_cache: HorizonProbeCache | None,
     sample_trace: Trace,
     trace: Trace,
+    place: PrenatalPlace,
 ) -> tuple[JsonObject, JsonObject]:
     """One interval-end sample's lunar and horizon searches, beside the anchor."""
 
@@ -514,12 +566,24 @@ def _representative_event_sample(
             lunar_refusals["lunar_phases"] = _event_search_refusal(
                 f"代表性取樣（{role}）：主要月相事件", error, trace
             )
+        try:
+            attach_prenatal_syzygy(
+                lunar_sample, reference, place, sample_trace, with_birth_relation=False
+            )
+        except (FullEphemerisRequiredError, swe.Error) as error:
+            lunar_refusals["prenatal_syzygy"] = _event_search_refusal(
+                f"代表性取樣（{role}）：產前朔望", error, trace
+            )
     if req.options.include_eclipses:
         try:
             lunar_sample["eclipses"] = compute_previous_eclipses(
                 reference, sample_trace
             )
+            attach_eclipse_points(
+                lunar_sample, reference, place, sample_trace, with_birth_relation=False
+            )
         except (FullEphemerisRequiredError, swe.Error) as error:
+            lunar_sample.pop("eclipses", None)
             lunar_refusals["eclipses"] = _event_search_refusal(
                 f"代表性取樣（{role}）：出生前最近日食／月食", error, trace
             )
@@ -561,11 +625,7 @@ def _label_event_identity(
     if not (lunar_requested or horizon_requested):
         return
     receipt = _representative_sampling_receipt(precision)
-    time_basis = (
-        _EXACT_EVENT_TIME_BASIS
-        if precision == "exact"
-        else time.time_conversion["input_semantics"]
-    )
+    time_basis = _event_time_basis(time)
     if lunar_requested:
         lunar_events["time_basis"] = time_basis
         lunar_events["representative_sampling"] = receipt
@@ -606,6 +666,7 @@ def _label_event_identity(
             horizon_probe_cache=horizon_probe_cache,
             sample_trace=sample_trace,
             trace=trace,
+            place=_prenatal_place(input_request, time.context),
         )
         lunar_samples.append(lunar_sample)
         horizon_samples.append(horizon_sample)
@@ -1017,7 +1078,7 @@ def _extra_angles(
     The container's source is read off the members, so a container holding
     only the anti-vertex (derived from the Vertex, not returned by
     `swe.houses_ex`) cannot contradict its member's own receipt; a refused
-    container's source is null like every other refused receipt (R3-1008 #2).
+    container's source is null like every other refused receipt.
     """
 
     if not (options.include_extra_angles or options.include_anti_vertex):
@@ -1181,6 +1242,20 @@ def _houses(time: TimeResolution, bodies: list[JsonObject]) -> HouseFacts:
     )
 
 
+# --- Whole-sign places of the nodes and lunar apsides beside the planets' ---
+def _place_nodes_and_apsides(
+    time: TimeResolution, positions: PositionFacts, houses: HouseFacts
+) -> None:
+    if not isinstance(houses.planet_in_house, dict) or "placements" not in houses.planet_in_house:
+        return
+    houses.planet_in_house["point_placements"] = whole_sign_point_placements(
+        [*positions.nodes, *((positions.lunar_apsides or {}).get("points") or [])],
+        houses.houses,
+        houses.planet_in_house,
+        time.trace,
+    )
+
+
 def _fixed_stars(time: TimeResolution) -> list[JsonObject]:
     req = time.request
     if not req.options.include_fixed_stars:
@@ -1204,8 +1279,10 @@ def _events(time: TimeResolution, body_defs: list[JsonObject]) -> EventFacts:
             ("eclipses", req.options.include_eclipses),
             ("rise_set_transits", req.options.include_rise_set_transits),
             ("birth_time_sensitivity", time.input_request.birth_time_precision != "exact"),
+            ("prenatal_syzygy", req.options.include_lunar_phases),
         )
     }
+    place = _prenatal_place(time.input_request, time.context)
     if req.options.include_lunar_phases:
         try:
             lunar_events.update(compute_primary_phases(jd_ut, trace))
@@ -1213,10 +1290,21 @@ def _events(time: TimeResolution, body_defs: list[JsonObject]) -> EventFacts:
             event_module_availability["lunar_phases"] = _event_search_refusal(
                 "主要月相事件", error, trace
             )
+        # The prenatal syzygy needs only its own event, so it survives a
+        # refusal of the eight-event phase search.
+        try:
+            attach_prenatal_syzygy(lunar_events, jd_ut, place, trace)
+        except (FullEphemerisRequiredError, swe.Error) as error:
+            event_module_availability["prenatal_syzygy"] = _event_search_refusal(
+                "產前朔望", error, trace
+            )
     if req.options.include_eclipses:
         try:
             lunar_events["eclipses"] = compute_previous_eclipses(jd_ut, trace)
+            attach_eclipse_points(lunar_events, jd_ut, place, trace)
         except (FullEphemerisRequiredError, swe.Error) as error:
+            lunar_events.pop("eclipses", None)
+            lunar_events.pop("eclipses_at_birth", None)
             event_module_availability["eclipses"] = _event_search_refusal(
                 "出生前最近日食／月食", error, trace
             )
@@ -1258,6 +1346,7 @@ def _events(time: TimeResolution, body_defs: list[JsonObject]) -> EventFacts:
 def _astronomical_facts(time: TimeResolution) -> AstronomicalFacts:
     positions = _positions(time)
     houses = _houses(time, positions.bodies)
+    _place_nodes_and_apsides(time, positions, houses)
     fixed_stars = _fixed_stars(time)
     events = _events(time, positions.body_defs)
     return AstronomicalFacts(
@@ -1430,12 +1519,13 @@ def _aspects(facts: AstronomicalFacts, lots: JsonObject) -> JsonObject:
     time, positions = facts.time, facts.positions
     req, trace = time.request, time.trace
     aspects_frame = time.frame_states["aspects"]
-    angle_frame = time.frame_states["aspect_angle_participation"]
     if not req.options.include_aspects:
         return {}
     if not aspects_frame["applicable"]:
         return aspects_not_applicable(aspects_frame, trace)
-    angle_aspects_applicable = req.options.include_houses and angle_frame["applicable"]
+    # Aspects run only in the frame the angles share (the aspects row of the
+    # frame table), so the angles take part whenever the houses ran.
+    angle_aspects_applicable = req.options.include_houses
     return compute_aspects(
         _aspect_participants(
             req.options,
@@ -1452,11 +1542,6 @@ def _aspects(facts: AstronomicalFacts, lots: JsonObject) -> JsonObject:
         angle_orb_degrees=req.options.aspect_angle_orb_degrees,
         angles_requested=req.options.aspect_include_angles,
         angles_applicable=angle_aspects_applicable,
-        angle_inapplicable_reason_code=(
-            "house_calculation_not_executed"
-            if not req.options.include_houses
-            else angle_frame["reason_code"]
-        ),
         partile_profile_key=req.options.partile_profile,
         orb_profile_selection_state=orb_profile_selection(req.options),
         include_perfection=req.options.include_aspect_perfection,
@@ -1553,11 +1638,7 @@ def _planetary_hours(facts: AstronomicalFacts) -> JsonObject:
             reference_jd_ut=time.jd_ut,
             interval_spans=spans,
             interval=interval,
-            time_basis=(
-                _EXACT_EVENT_TIME_BASIS
-                if interval is None
-                else time.time_conversion["input_semantics"]
-            ),
+            time_basis=_event_time_basis(time),
             location=req.location,
             atmosphere=req.atmosphere,
             tz_input=time.input_request.timezone,
@@ -1570,6 +1651,181 @@ def _planetary_hours(facts: AstronomicalFacts) -> JsonObject:
             executed=refusal["executed"],
             applicable=refusal["applicable"],
         )
+
+
+# --- Twelfth-parts: an optional natal technique, read off emitted positions ---
+def _dodecatemoria(facts: AstronomicalFacts, lots: JsonObject) -> JsonObject:
+    time = facts.time
+    req, trace = time.request, time.trace
+    if not req.options.include_dodecatemoria:
+        return {}
+    frame = time.frame_states["dodecatemoria"]
+    if not frame["applicable"]:
+        return dodecatemoria_not_applicable(frame, trace)
+    planets = effective_participants(
+        facts.positions.bodies_all, include_nodes=False, include_outer_planets=False
+    )
+    angles = facts.houses.angles if facts.houses.angles.get("available") else None
+    return compute_dodecatemoria(
+        planets=planets,
+        angles=angles,
+        lots=lots if lots and lots.get("available") else None,
+        profile=req.options.dodecatemoria_profile,
+        trace=trace,
+    )
+
+
+# --- Planet and place classifications: an optional natal output ---
+def _classical_classifications(
+    facts: AstronomicalFacts, sect_sun_altitude: float | None
+) -> JsonObject:
+    time, positions = facts.time, facts.positions
+    req, trace = time.request, time.trace
+    if not time.input_request.options.include_classical_classifications:
+        return {}
+    frame = time.frame_states["classical_classifications"]
+    if not frame["applicable"]:
+        return classical_classifications_not_applicable(frame, trace)
+    timed = time.input_request.birth_time_precision != "date_only"
+    planets = [body for body in positions.bodies if body["key"] in _CLASSICAL_KEYS]
+    ids = {item["key"]: item["id"] for item in positions.body_defs}
+    # The planets were just computed at this instant from the same files, so
+    # their altitudes read nothing the chart has not read already.
+    altitudes = (
+        {
+            body["key"]: geocentric_true_altitude(
+                time.jd_ut, time.context, req.atmosphere, ids[body["key"]]
+            )
+            for body in planets
+        }
+        if timed
+        else None
+    )
+    module = facts.houses.planet_in_house
+    placements = (
+        {place["key"]: place["house"] for place in module["placements"]}
+        if isinstance(module, dict) and module.get("execution_status") == "computed"
+        else None
+    )
+    result = compute_classical_classifications(
+        planets=planets,
+        altitudes=altitudes,
+        sect=classify_sect(sect_sun_altitude) if timed else None,
+        placements=placements,
+        trace=trace,
+    )
+    if result.get("chart_sect") is not None:
+        result["chart_sect"].update(_sect_across_stated_hour(time))
+    return result
+
+
+def _sect_across_stated_hour(time: TimeResolution) -> JsonObject:
+    """Day or night at each representative sample of a stated hour.
+
+    The classifications follow one sect, read at the representative instant;
+    when the Sun crosses the horizon inside the stated hour the sect, and so
+    sect membership, halb and hayyiz, change within it.  Only the sect is
+    probed: it is the one input of the module that flips as a whole.
+    """
+
+    input_request = time.input_request
+    if input_request.birth_time_precision != "approximate_hour":
+        return {"across_stated_hour": None, "sample_is_day": None}
+    assert time.anchor_utc is not None  # resolved for every non-exact chart
+    instants = representative_sample_instants(
+        input_request.datetime,
+        input_request.timezone,
+        precision="approximate_hour",
+        anchor_utc=time.anchor_utc,
+    )
+    try:
+        sample_is_day = [
+            classify_sect(
+                geocentric_sun_true_altitude(
+                    instant["reference_jd_ut"], time.context, time.request.atmosphere
+                )
+            )["is_day"]
+            for instant in instants
+        ]
+    except FullEphemerisRequiredError:
+        return {"across_stated_hour": None, "sample_is_day": None}
+    state = (
+        SAME_AT_ALL_SAMPLES if len(set(sample_is_day)) == 1 else DIFFERS_BETWEEN_SAMPLES
+    )
+    return {"across_stated_hour": state, "sample_is_day": sample_is_day}
+
+
+def _lunar_mansions(facts: AstronomicalFacts) -> JsonObject:
+    """The Moon's mansion; for a non-exact birth time, every mansion it is in."""
+
+    time, positions = facts.time, facts.positions
+    trace = time.trace
+    if not time.input_request.options.include_lunar_mansions:
+        return {}
+    frame = time.frame_states["lunar_mansions"]
+    if not frame["applicable"]:
+        return lunar_mansions_not_applicable(frame, trace)
+    interval, spans = _birth_time_interval_spans(time)
+    try:
+        moon_at_ends = (
+            None
+            if spans is None
+            else [
+                (
+                    positions.longitude_at(swe.MOON, start),
+                    positions.longitude_at(swe.MOON, end),
+                )
+                for start, end in spans
+            ]
+        )
+    except (FullEphemerisRequiredError, swe.Error) as error:
+        refusal = _event_search_refusal("月宿", error, trace)
+        return lunar_mansions_unavailable(refusal)
+    return compute_lunar_mansions(
+        positions.bodies,
+        trace,
+        time_basis=_event_time_basis(time),
+        interval=interval,
+        interval_moon_longitudes=moon_at_ends,
+    )
+
+
+def _solar_phase(facts: AstronomicalFacts) -> JsonObject:
+    """Each planet's and the Moon's distance from the Sun and its band."""
+
+    time, positions = facts.time, facts.positions
+    options = time.input_request.options
+    if not options.include_solar_phase:
+        return {}
+    frame = time.frame_states["solar_phase"]
+    if not frame["applicable"]:
+        return solar_phase_not_applicable(frame, time.trace)
+    flags = time.context.base_flags
+    # The effective Moon: topocentric under the Moon-only profile.
+    moon_topocentric = (
+        time.request.options.moon_position_profile == "moon_only_topocentric_v1"
+        or time.request.computation_mode.center == "topocentric"
+    )
+    moon_flags = flags | swe.FLG_TOPOCTR if moon_topocentric else flags
+    interval, spans = _birth_time_interval_spans(time)
+    try:
+        return compute_solar_phase(
+            positions.bodies,
+            time.trace,
+            profile=options.solar_phase_profile,
+            disc_cazimi=options.solar_phase_disc_cazimi,
+            time_basis=_event_time_basis(time),
+            moon_center="topocentric" if moon_topocentric else "geocentric",
+            jd_ut=time.jd_ut,
+            instant_of=lambda jd: civil_instant(jd, time.input_request.timezone),
+            sample=make_ecliptic_sampler(flags, moon_flags),
+            sun_flags=flags,
+            interval=interval,
+            interval_spans=spans,
+        )
+    except (FullEphemerisRequiredError, swe.Error) as error:
+        refusal = _event_search_refusal("焦傷與光束下", error, time.trace)
+        return solar_phase_unavailable(refusal)
 
 
 def _derived_chart(facts: AstronomicalFacts) -> DerivedChart:
@@ -1588,6 +1844,10 @@ def _derived_chart(facts: AstronomicalFacts) -> DerivedChart:
     aspects = _aspects(facts, lots)
     essential_dignities = _essential_dignities(facts, sect_sun_altitude)
     planetary_hours = _planetary_hours(facts)
+    dodecatemoria = _dodecatemoria(facts, lots)
+    lunar_mansions = _lunar_mansions(facts)
+    solar_phase = _solar_phase(facts)
+    classical_classifications = _classical_classifications(facts, sect_sun_altitude)
 
     if time.input_request.birth_time_precision == "date_only":
         for requested, result in (
@@ -1595,6 +1855,8 @@ def _derived_chart(facts: AstronomicalFacts) -> DerivedChart:
             (req.options.include_aspects, aspects),
             (req.options.include_declination_aspects, declination_aspects),
             (essential_dignities is not None, essential_dignities),
+            (req.options.include_dodecatemoria, dodecatemoria),
+            (req.options.include_classical_classifications, classical_classifications),
         ):
             if requested and result:
                 result["time_basis"] = (
@@ -1612,11 +1874,15 @@ def _derived_chart(facts: AstronomicalFacts) -> DerivedChart:
         antiscia=antiscia,
         aspects=aspects,
         declination_aspects=declination_aspects,
+        dodecatemoria=dodecatemoria,
         essential_dignities=essential_dignities,
         lots=lots,
         planetary_hours=planetary_hours,
         sect=sect,
         void_of_course=void_of_course,
+        lunar_mansions=lunar_mansions,
+        solar_phase=solar_phase,
+        classical_classifications=classical_classifications,
     )
 
 
@@ -1698,6 +1964,14 @@ def _derived_methods(facts: AstronomicalFacts, methods: DerivedChart) -> JsonObj
         "essential_dignities": methods.essential_dignities,
         # Basic output: written for every chart, with its own state.
         "planetary_hours": methods.planetary_hours,
+        "dodecatemoria": _module_container(methods.dodecatemoria, options.include_dodecatemoria),
+        "lunar_mansions": _module_container(
+            methods.lunar_mansions, options.include_lunar_mansions
+        ),
+        "solar_phase": _module_container(methods.solar_phase, options.include_solar_phase),
+        "classical_classifications": _module_container(
+            methods.classical_classifications, options.include_classical_classifications
+        ),
     }
 
 
@@ -1726,6 +2000,7 @@ def _birth_time_sensitivity(
                 representative_void_of_course=methods.void_of_course,
                 representative_offset_seconds=time.representative_offset_seconds,
                 representative_semantics=time.time_conversion["input_semantics"],
+                representative_dodecatemoria=methods.dodecatemoria,
             )
         elif input_request.birth_time_precision == "date_only":
             assert time.civil_day is not None  # resolved for every date_only chart
@@ -1740,6 +2015,7 @@ def _birth_time_sensitivity(
                     time.time_conversion["date_only_anchor"]["anchor_local_time"]
                 ),
                 representative_semantics=time.representative_policy,
+                representative_dodecatemoria=methods.dodecatemoria,
             )
         else:
             birth_time_sensitivity = None
@@ -1874,3 +2150,41 @@ def compute_chart_response(req: ChartRequest, *, build_identity: JsonObject) -> 
     facts = _astronomical_facts(time)
     methods = _derived_chart(facts)
     return _assemble_chart_response(facts, methods, build_identity=build_identity)
+
+
+@dataclass(frozen=True)
+class NatalAnchor:
+    """Stages 1-2 and Sect／Lots of one request, for the annual route.
+
+    The same stage functions as compute_chart_response, called in the same
+    order, so every natal fact the annual techniques read (the birth instant,
+    the Sun's longitude, the ascendant, Sect and the Fortune／Spirit pair) is
+    the value /api/chart prints for the same request and options.  Event
+    searches, fixed stars and the response assembly are not run.
+    """
+
+    time: TimeResolution
+    positions: PositionFacts
+    houses: HouseFacts
+    sect: JsonObject | None
+    lots: JsonObject
+
+
+def compute_natal_anchor(req: ChartRequest) -> NatalAnchor:
+    """The caller holds the Swiss line, as for compute_chart_response."""
+
+    time = _resolve_time(req)
+    positions = _positions(time)
+    houses = _houses(time, positions.bodies)
+    facts = AstronomicalFacts(
+        time=time,
+        positions=positions,
+        houses=houses,
+        fixed_stars=[],
+        events=EventFacts(lunar_events={}, horizon_events={}, availability={}),
+    )
+    sect_sun_altitude = geocentric_sun_true_altitude(
+        time.jd_ut, time.context, time.request.atmosphere
+    )
+    sect, lots = _sect_and_lots(facts, sect_sun_altitude)
+    return NatalAnchor(time=time, positions=positions, houses=houses, sect=sect, lots=lots)

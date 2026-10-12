@@ -31,6 +31,9 @@
 # Exact native source archive consumed by the builder.
 !third_party/pyswisseph/pyswisseph-2.10.3.2.tar.gz
 
+# The hash-checked wheels build_release_image writes into the snapshot.
+!wheelhouse/*.whl
+
 # Exact build/runtime verifiers copied by the Dockerfile.
 !scripts/verification/verify_ephemeris_integrity.py
 !scripts/verification/verify_place_catalog.py

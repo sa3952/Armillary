@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import math
 
-from ._common import SIGNS, backend_on_path, indent
+from ._common import SIGNS, backend_on_path, indent, spoken_longitude as _spoken
 
 
 FRAGMENT = "blog-whole-sign-vs-placidus"
@@ -73,12 +73,6 @@ def _data() -> dict:
         if polar != POLAR_STATES:
             raise RuntimeError(f"polar house states changed: {polar}")
     return d
-
-
-def _spoken(lon: float) -> str:
-    total = round(lon * 60)
-    sign, rest = divmod(total, 30 * 60)
-    return f"{SIGNS[sign]}座 {rest // 60} 度 {rest % 60} 分"
 
 
 def _written(lon: float) -> str:

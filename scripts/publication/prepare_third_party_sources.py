@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Download and verify exact source distributions for locked dependencies."""
+"""Download and verify exact source distributions for locked dependencies.
+
+Every package the requirement locks pin must have exactly the sdist the
+committed source lock names: PyPI's declared SHA-256 and the downloaded bytes
+are both checked against it, and each sdist must carry license evidence.  The
+public tree ships none of these archives; this is how a reader obtains them,
+and Gate F runs it (into a throwaway directory) whenever a lock changed.
+"""
 
 from __future__ import annotations
 
@@ -7,10 +14,8 @@ import argparse
 import email.policy
 import hashlib
 import json
-import os
 import re
 import shutil
-import subprocess
 import sys
 import tarfile
 import urllib.error
@@ -18,7 +23,7 @@ import urllib.request
 import urllib.parse
 from email.parser import BytesParser
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from scripts.tools.output_confinement import external_output_path
 from scripts.tools.source_tree_identity import sha256_file as _sha256
@@ -37,25 +42,6 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 class SourcePreparationError(RuntimeError):
     """Raised when exact third-party source cannot be proven."""
-
-
-def _wheel_identity(filename: str) -> tuple[str, str, Callable[[str], str]]:
-    # Packaging is required only in wheel-acquisition paths.
-    try:
-        from packaging.utils import canonicalize_name, parse_wheel_filename
-    except ModuleNotFoundError as error:
-        raise SourcePreparationError(
-            "wheel acquisition requires the hash-locked build environment"
-        ) from error
-    wheel_name, wheel_version, _, _ = parse_wheel_filename(filename)
-    return canonicalize_name(wheel_name), str(wheel_version), canonicalize_name
-
-
-ROLES = ("production", "build", "development")
-
-
-# Built from their retained sdist, so the dependency wheel index carries no wheel for them.
-DEPENDENCY_SOURCE_BUILD_PACKAGES = frozenset({"pyswisseph"})
 
 
 def parse_lock(path: Path, role: str) -> list[dict[str, Any]]:
@@ -254,114 +240,6 @@ def license_evidence_complete(package: dict[str, Any]) -> bool:
     )
 
 
-def _license_identity(package: dict[str, Any]) -> str:
-    expression = package.get("license_expression")
-    if isinstance(expression, str) and expression.strip():
-        return expression.strip()
-    classifiers = package.get("license_classifiers")
-    if isinstance(classifiers, list) and classifiers:
-        normalized = []
-        classifier_identities = {
-            "License :: OSI Approved :: MIT License": "MIT",
-            "License :: OSI Approved :: Apache Software License": "Apache-2.0",
-            "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)": "MPL-2.0",
-            "License :: OSI Approved :: ISC License (ISCL)": "ISC",
-            "License :: OSI Approved :: Python Software Foundation License": "PSF-2.0",
-            # OPS-33: the classifier does not say "only" or "or later"; pyswisseph's
-            # own header grants "version 3 ... or (at your option) any later version".
-            "License :: OSI Approved :: GNU Affero General Public License v3": (
-                "AGPL-3.0 (Trove classifier; -only or -or-later unspecified)"
-            ),
-            "License :: OSI Approved :: BSD License": ("BSD License (Trove classifier; variant unspecified)"),
-        }
-        for item in classifiers:
-            rendered = str(item).strip()
-            normalized.append(classifier_identities.get(rendered, rendered))
-        return "; ".join(normalized)
-    metadata = package.get("license_metadata")
-    if isinstance(metadata, str) and metadata.strip():
-        rendered = " ".join(metadata.split())
-        if len(rendered) > 200:
-            raise SourcePreparationError(
-                "dependency license metadata is too long for the human table: "
-                f"{package.get('name')}=={package.get('version')}"
-            )
-        return rendered
-    raise SourcePreparationError(
-        f"dependency has no human-readable license identity: {package.get('name')}=={package.get('version')}"
-    )
-
-
-def render_dependency_license_table(manifest: dict[str, Any]) -> str:
-    """Render the human view strictly from the machine source manifest."""
-    packages = manifest.get("packages")
-    if manifest.get("complete") is not True or not isinstance(packages, list):
-        raise SourcePreparationError("license table requires a complete source manifest")
-    lines = [
-        "# Dependency licenses",
-        "",
-        "This file is generated from `third_party/SOURCE_MANIFEST.json`; manual edits are not accepted.",
-        "",
-        "| Package | Version | Roles | License | Source archive | Manifest entry |",
-        "|---|---:|---|---|---|---|",
-    ]
-    for index, package in enumerate(packages):
-        if not license_evidence_complete(package):
-            raise SourcePreparationError(
-                f"dependency license evidence is incomplete: {package.get('name')}=={package.get('version')}"
-            )
-        roles = package.get("roles")
-        if not isinstance(roles, list) or not roles or any(role not in ROLES for role in roles):
-            raise SourcePreparationError(f"dependency roles are invalid: {package.get('name')}")
-        values = (
-            str(package.get("name", "")),
-            str(package.get("version", "")),
-            ", ".join(roles),
-            _license_identity(package),
-            f"`third_party/sources/{package.get('filename', '')}`",
-            f"`third_party/SOURCE_MANIFEST.json#/packages/{index}`",
-        )
-        escaped = [value.replace("|", "\\|") for value in values]
-        lines.append("| " + " | ".join(escaped) + " |")
-    lines.extend(
-        [
-            "",
-            "Each row requires archive-level license files and hashes in the "
-            "machine manifest. The publication verifier regenerates this table "
-            "and fails on drift or missing evidence.",
-            "",
-        ]
-    )
-    return "\n".join(lines)
-
-
-def verify_manifest_lock_inputs(manifest: dict[str, Any], lock_paths: dict[str, Path]) -> None:
-    """Fail closed when locks and the bundled source inventory diverge."""
-    declared_inputs = manifest.get("lock_inputs")
-    if manifest.get("schema_version") != 2 or not isinstance(declared_inputs, dict):
-        raise SourcePreparationError("source manifest has no governed lock inputs")
-    expected: dict[tuple[str, str], set[str]] = {}
-    for role, path in sorted(lock_paths.items()):
-        declared = declared_inputs.get(role)
-        if not isinstance(declared, dict):
-            raise SourcePreparationError(f"source manifest omits {role} lock")
-        if declared.get("filename") != path.name or declared.get("sha256") != _sha256(path):
-            raise SourcePreparationError(f"{role} dependency lock has drifted")
-        if declared.get("selection") != "caller_supplied" or declared.get("role") != role:
-            raise SourcePreparationError(f"{role} dependency lock identity is ambiguous")
-        if not isinstance(declared.get("source_path"), str) or not declared["source_path"]:
-            raise SourcePreparationError(f"{role} dependency lock path identity is missing")
-        for package in parse_lock(path, role):
-            key = (package["name"].lower(), package["version"])
-            expected.setdefault(key, set()).add(role)
-    actual: dict[tuple[str, str], set[str]] = {}
-    for package in manifest.get("packages", []):
-        key = (str(package.get("name", "")).lower(), str(package.get("version", "")))
-        actual[key] = set(package.get("roles", []))
-    if actual != expected:
-        raise SourcePreparationError("source manifest package versions or roles differ from dependency locks")
-
-
 def _prepare_package(
     package: dict[str, Any], sources_dir: Path, source_lock: dict[tuple[str, str], str]
 ) -> dict[str, Any]:
@@ -416,117 +294,12 @@ def _prepare_package(
     }
 
 
-def _prepare_wheel_index(
-    lock: Path,
-    destination: Path,
-    *,
-    source_inventory: list[dict[str, Any]],
-    platforms: list[str],
-    python_version: str,
-    abi: str,
-    role: str,
-    source_build_packages: frozenset[str] = frozenset(),
-) -> dict[str, Any]:
-    packages = [
-        package for package in parse_lock(lock, role) if package["name"].lower() not in source_build_packages
-    ]
-    directory_name = "build_wheels" if role == "build" else "dependency_wheels"
-    wheel_dir = destination / directory_name
-    wheel_dir.mkdir()
-    filtered_lock = destination / f".{directory_name}.lock"
-    filtered_lock.write_text(
-        "".join(
-            f"{package['name']}=={package['version']} "
-            + " ".join(f"--hash=sha256:{digest}" for digest in package["allowed_sha256"])
-            + "\n"
-            for package in packages
-        ),
-        encoding="utf-8",
-    )
-    command = [
-        sys.executable,
-        "-m",
-        "pip",
-        "download",
-        "--disable-pip-version-check",
-        "--no-deps",
-        "--require-hashes",
-        "--only-binary=:all:",
-    ]
-    for platform_name in platforms:
-        command.extend(["--platform", platform_name])
-    command.extend(
-        [
-            "--implementation",
-            "cp",
-            "--python-version",
-            python_version,
-            "--abi",
-            abi,
-            "--dest",
-            str(wheel_dir),
-            "--requirement",
-            str(filtered_lock),
-        ]
-    )
-    environment = {**os.environ, "PIP_NO_CACHE_DIR": "1"}
-    try:
-        subprocess.run(command, check=True, env=environment)
-    finally:
-        filtered_lock.unlink(missing_ok=True)
-    allowed = {digest for package in packages for digest in package["allowed_sha256"]}
-    wheels = []
-    for path in sorted(wheel_dir.glob("*.whl")):
-        digest = _sha256(path)
-        if digest not in allowed:
-            raise SourcePreparationError(f"{role} wheel is not authorized by lock: {path.name}")
-        wheel_name, wheel_version, normalize = _wheel_identity(path.name)
-        source = next(
-            (
-                item
-                for item in source_inventory
-                if normalize(item["name"]) == wheel_name and item["version"] == wheel_version
-            ),
-            None,
-        )
-        if source is None:
-            raise SourcePreparationError(f"{role} wheel has no retained matching sdist: {path.name}")
-        wheels.append(
-            {
-                "filename": path.name,
-                "sha256": digest,
-                "source_sdist_filename": source["filename"],
-                "source_sdist_sha256": source["sha256"],
-            }
-        )
-    if len(wheels) != len(packages):
-        raise SourcePreparationError(
-            f"{role} wheel index does not contain exactly one artifact per lock entry"
-        )
-    result: dict[str, Any] = {
-        "complete": True,
-        "target": {
-            "implementation": "cp",
-            "python_version": python_version,
-            "abi": abi,
-            "platforms": platforms,
-        },
-        "artifacts": wheels,
-    }
-    if source_build_packages:
-        result["source_build_packages"] = sorted(source_build_packages)
-    return result
-
-
 def prepare_sources(
     runtime_lock: Path,
     build_lock: Path,
     destination: Path,
     source_lock_path: Path,
     development_lock: Path | None = None,
-    build_wheel_platforms: list[str] | None = None,
-    build_python_version: str = "3.14",
-    build_abi: str = "cp314",
 ) -> dict[str, Any]:
     try:
         destination = external_output_path(
@@ -571,29 +344,6 @@ def prepare_sources(
         ]
         licenses_complete = all(license_evidence_complete(item) for item in inventory)
         complete = licenses_complete
-        build_wheel_index = None
-        dependency_wheel_index = None
-        if build_wheel_platforms:
-            build_wheel_index = _prepare_wheel_index(
-                build_lock,
-                destination,
-                source_inventory=inventory,
-                platforms=build_wheel_platforms,
-                python_version=build_python_version,
-                abi=build_abi,
-                role="build",
-            )
-            if development_lock is not None:
-                dependency_wheel_index = _prepare_wheel_index(
-                    development_lock,
-                    destination,
-                    source_inventory=inventory,
-                    platforms=build_wheel_platforms,
-                    python_version=build_python_version,
-                    abi=build_abi,
-                    role="development",
-                    source_build_packages=DEPENDENCY_SOURCE_BUILD_PACKAGES,
-                )
 
         def lock_identity(role: str, lock_path: Path) -> dict[str, str]:
             try:
@@ -617,31 +367,12 @@ def prepare_sources(
             "lock_inputs": {
                 role: lock_identity(role, lock_path) for role, lock_path in sorted(lock_inputs.items())
             },
-            "reconstruction_complete": bool(
-                complete
-                and build_wheel_index
-                and build_wheel_index.get("complete") is True
-                and dependency_wheel_index
-                and dependency_wheel_index.get("complete") is True
-            ),
-            "build_wheel_index": build_wheel_index,
-            "dependency_wheel_index": dependency_wheel_index,
             "packages": inventory,
         }
         (destination / "SOURCE_MANIFEST.json").write_text(
             json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8"
         )
         sums = "".join(f"{item['sha256']}  sources/{item['filename']}\n" for item in inventory)
-        if build_wheel_index:
-            sums += "".join(
-                f"{item['sha256']}  build_wheels/{item['filename']}\n"
-                for item in build_wheel_index["artifacts"]
-            )
-        if dependency_wheel_index:
-            sums += "".join(
-                f"{item['sha256']}  dependency_wheels/{item['filename']}\n"
-                for item in dependency_wheel_index["artifacts"]
-            )
         (destination / "SHA256SUMS").write_text(sums, encoding="ascii")
         return payload
     except Exception:
@@ -654,9 +385,6 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--runtime-lock", type=Path, required=True)
     parser.add_argument("--build-lock", type=Path, required=True)
     parser.add_argument("--development-lock", type=Path)
-    parser.add_argument("--build-wheel-platform", action="append", dest="build_wheel_platforms")
-    parser.add_argument("--build-python-version", default="3.14")
-    parser.add_argument("--build-abi", default="cp314")
     parser.add_argument("--destination", type=Path, required=True)
     parser.add_argument("--source-lock", type=Path, required=True)
     return parser.parse_args()
@@ -671,9 +399,6 @@ def main() -> int:
             args.destination,
             args.source_lock,
             args.development_lock,
-            args.build_wheel_platforms,
-            args.build_python_version,
-            args.build_abi,
         )
     except (OSError, SourcePreparationError, urllib.error.URLError) as exc:
         print(f"THIRD-PARTY SOURCE PREPARATION FAILED: {exc}", file=sys.stderr)

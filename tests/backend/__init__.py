@@ -39,12 +39,12 @@ def minimal_chart_payload(
     }
 
 
-# OPS-61 provenance.  The person-shaped tuple below (1997-08-17 09:42 Asia/Taipei,
+# Provenance.  The person-shaped tuple below (1997-08-17 09:42 Asia/Taipei,
 # 22.9908 N 120.2133 E, 80 m) is a synthetic test fixture written by an earlier AI
 # coding session; it was not taken from any person's record.  Its coordinates are
 # the bundled catalog's Tainan representative point (GeoNames 1668355) rounded to
-# four decimals; they replaced an earlier hand-written point on 2026-10-06
-# (GOV-48), so no public test names that place.
+# four decimals; they replaced an earlier hand-written point on 2026-10-06,
+# so no public test names that place.
 # The project's record lists it as synthetic with no known person linkage
 # and notes that the generation method (random or hand-picked) is not known.  Any
 # complete birth tuple can coincide with an unknown real person, so this note claims

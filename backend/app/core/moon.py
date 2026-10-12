@@ -26,6 +26,7 @@ import math
 
 from ..config import BODY_ID_BY_KEY, CLASSICAL_BODIES, PTOLEMAIC_ASPECTS
 from .aspects import EXACT_NOW_EPSILON_DEGREES
+from .bodies import memoized_longitudes
 from .module_state import (
     PRODUCT_FORMULA_SOURCE,
     computed_receipt,
@@ -215,29 +216,6 @@ def _search_head(solver_status: str) -> dict:
     }
 
 
-def _memoized_longitudes(longitude_at):
-    """One Swiss call per (body, instant) within one VOC search.
-
-    Every aspect target of one body is sampled on the same coarse grid, and the
-    Moon is sampled on that grid again for every body, so without this the same
-    position is recomputed up to 48 times per grid point.  Under the fixed flags
-    of one sampler a longitude is a pure function of (body_id, jd_ut), so the
-    cache cannot change a result; it lives only as long as the search.
-    """
-
-    cache: dict[tuple[int, float], float] = {}
-
-    def cached(body_id: int, jd_ut: float) -> float:
-        key = (body_id, jd_ut)
-        value = cache.get(key)
-        if value is None:
-            value = longitude_at(body_id, jd_ut)
-            cache[key] = value
-        return value
-
-    return cached
-
-
 def _find_sign_exit_days(moon_id, jd_ut, longitude_at, current_longitude):
     """求月亮實際跨過下一個星座界線的時刻（自盤上時刻起算的日數）。
 
@@ -360,7 +338,7 @@ def find_voc_candidates(
 
     moon_lon = moon["longitude"]
     moon_speed = moon["speed_longitude"]
-    longitude_at = _memoized_longitudes(longitude_at)
+    longitude_at = memoized_longitudes(longitude_at)
 
     sign_exit, boundary = _find_sign_exit_days(
         moon_id, jd_ut, longitude_at, moon_lon
@@ -477,7 +455,7 @@ def find_voc_candidates(
              "此搜尋仍內含「用哪些天體/哪些相位角」的技法假設，屬方法假設而非純天文事實。"
              "定義為星座界線＋精確完成：星座條件最晚見於 Lilly 1647 p.112；"
              "要求換座前精確完成：後人文獻歸於 Al H. Morrison（AFA Journal 1966 年 10 月有專文，原文未讀）；"
-             "更早的起源尚未查證。兩者合起來的歷史歸屬未定；與 Porphyry《Introduction》ch.23 的 30° 定義、"
+             "更早的起源尚未查證。兩者合起來的歷史歸屬未定；與 Porphyry 名下《占星四書導論》（Eisagōgē）第 23 章的 30° 定義、"
              "以及 Lilly 1647 以容許度判入相位的做法都不同。",
     )
 

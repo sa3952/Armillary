@@ -1,5 +1,5 @@
 #
-# Hash-locked tool environment for regenerating the project's locks (OPS-66).
+# Hash-locked tool environment for regenerating the project's locks.
 # Install with: python -m pip install --require-hashes -r backend/requirements-tooling.lock
 #
 # Produced under Python 3.14 by:

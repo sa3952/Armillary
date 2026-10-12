@@ -7,27 +7,39 @@ Timestamps、package repositories、toolchains and platforms may change whole-fi
 
 ## Reconstruction
 
-Both supported modes create a fresh environment and use the digest-pinned builder recorded in
-`deploy/Dockerfile`：
+The tree carries the AGPL pyswisseph source（`third_party/pyswisseph/`, recorded in
+**third_party/SOURCE_MANIFEST.json**）and no other dependency archive. Every other input is named by hash: the
+requirement locks（`deploy/requirements.lock`、`deploy/build-requirements.lock`、`backend/requirements-dev.lock`）pin
+each artifact pip may install, and `publication/third_party_source_lock.json` names each dependency's single source
+distribution on PyPI.
 
-- `online-clean`installs the exact hashed development lock fromHTTPS.
-- `offline-source-only`uses only candidate sdists and lock-authorized wheel indexes；pyswisseph is still
-  built from retained source. Some upstream Rust sdists are not self-contained, so an all-sdist build is
-  not claimed.
-
-**third_party/SOURCE_MANIFEST.json** binds roles、archive／wheel hashes and source-built status；generated
-**docs/DEPENDENCY_LICENSES.md** must match it.
+The supported reconstruction creates a fresh environment in the digest-pinned builder recorded in `deploy/Dockerfile`
+and installs the development lock from PyPI over HTTPS with `--require-hashes`; pyswisseph is built from its source.
+Some upstream Rust sdists are not self-contained, so an all-sdist build is not claimed.
 
 ```bash
 bash scripts/publication/verify_candidate_clean.sh --root . \
-  --reconstruction-mode offline-source-only
-bash scripts/publication/verify_candidate_clean.sh --root . \
   --reconstruction-mode online-clean
+```
+
+To obtain every dependency's source distribution and check it against the locked hashes（PyPI's declared hash and
+the downloaded bytes must both equal the source lock's）:
+
+```bash
+python -m scripts.publication.prepare_third_party_sources \
+  --runtime-lock deploy/requirements.lock --build-lock deploy/build-requirements.lock \
+  --development-lock backend/requirements-dev.lock \
+  --source-lock publication/third_party_source_lock.json \
+  --destination /SAFE/OUTSIDE/SOURCE/dependency-sources
 ```
 
 The verifier fixes`linux/amd64`; another builder is diagnostic only. RuntimeCompose does not build. The
 build context is a `git archive` snapshot of one revision, whose `.dockerignore` whitelist
 `scripts.verification.verify_docker_context` checks；a raw-checkout／Compose build is unsupported.
+`build_release_image` adds a directory named `wheelhouse` to that snapshot（it is not in the tree）: one wheel per locked runtime dependency and the
+build lock's `setuptools`／`wheel`, downloaded on the host for the image's platform and checked against the
+lock hashes. The builder installs only from it（`pip --no-index`）in a `RUN --network=none` step, so the image
+build itself reaches no package index; the build receipt lists every wheel's SHA-256（`wheelhouse_sha256`）.
 
 ## Build an artifact
 
@@ -67,7 +79,7 @@ immutable frontend digest與combined backend/frontend identity。
 ```text
 public source revision ─┐
 source archive          ├─> backend image ─┐
-third-party sources     ┘                  │
+locked dependencies     ┘                  │
                                            ├─> combined release identity
 public frontend revision ─> frontend digest┘
 ```

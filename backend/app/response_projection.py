@@ -77,12 +77,19 @@ _DIGNITY_OBJECT = (
     "domicile_signs,exaltation_matched,exaltation_sign"
 )
 _SAMPLES = "representative_samples[]"
+_SYZYGY_POINT = (
+    "local_time,utc_offset,sun_sign_position,moon_sign_position,chart_zodiac.sign_positions,"
+    "degree_selection.{state,selected_luminary,selected_sign_position,"
+    "horizon_at_syzygy.{sun,moon}.{altitude_true_degrees,above_horizon,in_near_horizon_band},"
+    "horizon_at_syzygy.ecliptic_hemisphere_check.agrees_with_altitude}"
+)
+_ECLIPSE_POINT = "maximum_local_time,maximum_utc_offset,eclipsed_luminary,eclipse_sign_position"
 _LOCAL_INSTANT = "local_time,utc_offset,utc_time,time_scale"
 
 # Kept although the page reads no value under them, each for a stated reader.
 PAGE_KEPT_UNREAD_PATHS: tuple[str, ...] = (
-    # The availability probes (deploy/container_healthcheck.py and
-    # scripts/deployment/staging_release.py) read these from the default response.
+    # The availability probes (deploy/container_healthcheck.py and the
+    # operator's deploy tool) read these from the default response.
     "calculation_dossier.input_receipt.location.place_label",
     "calculation_dossier.provenance.all_core_calculation_sources_used_full_ephemeris",
     # createDocument refuses a response in which an executed option's response
@@ -96,6 +103,10 @@ PAGE_KEPT_UNREAD_PATHS: tuple[str, ...] = (
     # anchor disagree on it near a polar day or night; ChartViewModel then
     # prints that side's search status (horizonSideCell).
     f"astronomical_data.horizon_events.{_SAMPLES}.bodies[].events.*.search.*.status",
+    # A warning is its code and params; the zh-TW page prints the backend's
+    # message, and a reader writing the sentence in another language from the
+    # code reads params from the default response as well.
+    "calculation_dossier.warnings[].params",
 )
 
 PAGE_KEPT_PATHS: tuple[str, ...] = (
@@ -121,13 +132,13 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     "utc_time,time_scale_era,jd_ut,delta_t_seconds,last_hours,true_obliquity,ayanamsa}",
     "astronomical_data.atmosphere.{temperature_c,pressure_hpa,pressure_mode,refraction}",
     f"astronomical_data.bodies[].{{key,speed_position_derivative_status,{_POSITION}}}",
-    f"astronomical_data.nodes[].{{{_POSITION}}}",
+    f"astronomical_data.nodes[].{{key,{_POSITION}}}",
     f"astronomical_data.lunar_apsides.{{{_RECEIPT}}}",
-    f"astronomical_data.lunar_apsides.points[].{{{_POSITION}}}",
+    f"astronomical_data.lunar_apsides.points[].{{key,{_POSITION}}}",
     f"astronomical_data.parallax_moon.{{{_RECEIPT},longitude_delta_degrees}}",
     "astronomical_data.parallax_moon.{geocentric_reference,topocentric_effective}.sign_position",
     "astronomical_data.fixed_star_policy.catalog_size",
-    "astronomical_data.fixed_stars[].{name,catalog_name,magnitude,declination,sign_position}",
+    "astronomical_data.fixed_stars[].{name,catalog_name,magnitude,latitude,declination,sign_position}",
     f"astronomical_data.angles.{{{_RECEIPT},sign_positions}}",
     f"astronomical_data.extra_angles.{{{_RECEIPT}}}",
     "astronomical_data.extra_angles.angles.*.{zh,sign_position}",
@@ -139,9 +150,24 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     f"astronomical_data.lunar_events.{_SAMPLES}.{{sample_role,reference_local_time,"
     "result_location,same_as_anchor,module_refusals}",
     f"astronomical_data.lunar_events.{_SAMPLES}.primary_phases.*.{_INSTANT}",
-    f"astronomical_data.lunar_events.{_SAMPLES}.prenatal_syzygy.{{utc_time,time_scale}}",
+    f"astronomical_data.lunar_events.{_SAMPLES}.prenatal_syzygy.{{utc_time,time_scale,phase}}",
     f"astronomical_data.lunar_events.{_SAMPLES}.eclipses.{{previous_lunar,previous_solar}}."
     "{time_scale,type,utc_time_maximum}",
+    # The prenatal syzygy's degree and the eclipses around the birth
+    # (ChartViewModel prenatalPointsSection).
+    f"astronomical_data.lunar_events.prenatal_syzygy.{{{_SYZYGY_POINT}}}",
+    "astronomical_data.lunar_events.prenatal_syzygy_at_birth.{reference,hours_before_birth,"
+    "near_birth,luminaries_above_horizon_at_birth.{state,sun.above_horizon,moon.above_horizon},"
+    "sect_profile.{state,selected_phase,selected,other_previous_syzygy.{state,phase,"
+    "hours_before_birth}}}",
+    "astronomical_data.lunar_events.prenatal_syzygy_at_birth.sect_profile.other_previous_syzygy."
+    f"event.{{{_SYZYGY_POINT}}}",
+    "astronomical_data.lunar_events.eclipses.{previous_lunar,previous_solar,previous_umbral_lunar}."
+    f"{{{_ECLIPSE_POINT}}}",
+    "astronomical_data.lunar_events.eclipses.previous_umbral_lunar.{type,relation_to_previous_lunar}",
+    "astronomical_data.lunar_events.eclipses_at_birth.{reference,days_before_birth.*,"
+    "in_progress.*.{relation,maximum_minus_birth_minutes}}",
+    f"astronomical_data.lunar_events.eclipses_at_birth.in_progress.*.eclipse.{{type,{_ECLIPSE_POINT}}}",
     "astronomical_data.horizon_events.contract.{disc_position,refraction,"
     "upper_transit_is_hour_angle_zero_not_max_altitude,search_horizon_days.{rise,upper_transit}}",
     "astronomical_data.horizon_events.bodies[].{key,name,visibility,"
@@ -168,6 +194,7 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     "sampled_sign_indices}",
     "birth_time_sensitivity.body_signs[].{key,name,status,representative_sign_index,"
     "sampled_sign_indices}",
+    "birth_time_sensitivity.dodecatemoria_signs[].{key,sampled_sign_indices}",
     "birth_time_sensitivity.planet_in_house[].{name,status,representative_house,"
     "sampled_houses}",
     "birth_time_sensitivity.angles.*.status",
@@ -182,13 +209,15 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     "birth_time_sensitivity.transitions[].{lower_bound_local,upper_bound_local,changed_paths,"
     "resolution_seconds}",
     "birth_time_sensitivity.moon_boundary_assessment.sampled_sign_boundary_transitions[]."
-    "{lower_sample_local,upper_sample_local}",
+    "{lower_sample_local,upper_sample_local,semantics}",
     # Methods.
     f"derived_methods.house_division.{{{_RECEIPT},execution_status,system_code,system_name,cusps,"
     "cusp_sign_positions,availability.state}",
     f"derived_methods.planet_in_house.{{{_RECEIPT},execution_status,house_system_code,house_system_name}}",
     "derived_methods.planet_in_house.placements[].{key,name,house,on_cusp,"
     "distance_to_nearest_cusp_degrees}",
+    "derived_methods.planet_in_house.point_placements.{execution_status,reason_code}",
+    "derived_methods.planet_in_house.point_placements.placements[].{key,name,house}",
     f"derived_methods.sect.{{{_RECEIPT},sect_status,is_day,sun_altitude_used,"
     "in_near_horizon_band,near_horizon_band_half_width_degrees,named_boundary_disagreement}",
     f"derived_methods.lots.{{{_RECEIPT},formula_basis,fortune,sign_positions,"
@@ -208,6 +237,7 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     "derived_methods.aspects.pairs[].{body_a,body_b,body_a_name,body_b_name,separation_degrees,"
     "applying_reason_code,aspects_in_orb}",
     "derived_methods.aspects.pairs[].whole_sign.{applicable,in_aspect,configuration_zh}",
+    "derived_methods.aspects.whole_sign_aversions[].{body_a,body_b,signed_sign_distance,configuration_zh}",
     "derived_methods.aspects.pairs[].nearest_aspect.{key,signed_offset_from_exact_degrees}",
     "derived_methods.aspects.pairs[].aspect_targets[].{key,in_orb,in_orb_reason_code,applying,"
     "offset_from_exact_degrees,"
@@ -225,11 +255,43 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     "crosses_planetary_day_boundary}",
     "derived_methods.planetary_hours.birth_time_interval.candidates[].{planetary_day_ruler_name,"
     "index,period,index_in_period,ruler_name,start.{local_time,utc_offset},end.{local_time,utc_offset}}",
+    f"derived_methods.lunar_mansions.{{{_RECEIPT}}}",
+    "derived_methods.lunar_mansions.division.width_text",
+    "derived_methods.lunar_mansions.placements[].{key,name,degrees_into_mansion_text,"
+    "distance_to_nearest_boundary_degrees,near_boundary}",
+    "derived_methods.lunar_mansions.placements[].mansion.{number,transliteration,"
+    "boundary_sign_positions}",
+    "derived_methods.lunar_mansions.birth_time_interval.{interval,crosses_mansion_boundary}",
+    "derived_methods.lunar_mansions.birth_time_interval.mansions[].{number,transliteration}",
+    f"derived_methods.solar_phase.{{{_RECEIPT},profile,decision_basis,moon_center,time_basis}}",
+    "derived_methods.solar_phase.disc_cazimi.{requested,applicable,reason_code}",
+    "derived_methods.solar_phase.sun.semidiameter_degrees",
+    "derived_methods.solar_phase.rows[].{key,name,longitude_difference_degrees,"
+    "longitude_difference_text,angular_separation_degrees,ecliptic_latitude_degrees,side,"
+    "relative_motion,band,within_solar_disc,same_sign_as_sun}",
+    "derived_methods.solar_phase.rows[].daily_longitude_differences[].{day_offset,"
+    "longitude_difference_degrees}",
+    "derived_methods.solar_phase.profile_results.*.{limits,venus_latitude_exception_degrees,"
+    "disc_cazimi_applied,bands,bands_seen_in_birth_time_interval}",
+    "derived_methods.solar_phase.profile_results.*.beam_crossings_within_7_days.*[].{direction,"
+    "threshold_degrees,day_offset,instant.{local_time,utc_offset}}",
+    "derived_methods.solar_phase.seven_day_search.window_days",
+    "derived_methods.solar_phase.birth_time_interval.interval",
+    "derived_methods.solar_phase.birth_time_interval.rows[].{key,name,stable,"
+    "longitude_difference_min_degrees,longitude_difference_max_degrees}",
     f"derived_methods.essential_dignities.{{{_RECEIPT},selected_profiles,"
     "research_comparison_profiles,sect.{selected_ruler_available,sect_dependent_components,"
     "in_near_horizon_band,near_horizon_band_half_width_degrees,is_day}}",
     "derived_methods.essential_dignities.profile_results.*.{profile_id,technique,ruler_type,source}",
     f"derived_methods.essential_dignities.profile_results.*.objects[].{{{_DIGNITY_OBJECT}}}",
+    f"derived_methods.dodecatemoria.{{{_RECEIPT},profile,scope.not_listed}}",
+    "derived_methods.dodecatemoria.points[].{key,name,category,point_sign_position,"
+    "sign_position,domicile_lord,sign_differs_under_other_sect,comparison_sign}",
+    f"derived_methods.classical_classifications.{{{_RECEIPT},not_evaluated}}",
+    "derived_methods.classical_classifications.chart_sect.{is_day,in_near_horizon_band}",
+    "derived_methods.classical_classifications.planets[].{name,nature,gender,sect_membership,"
+    "of_chart_sect,sign,sign_gender,above_horizon,altitude_in_near_horizon_band,house,joys,hayz}",
+    "derived_methods.classical_classifications.places",
     *PAGE_KEPT_UNREAD_PATHS,
 )
 
@@ -366,7 +428,7 @@ def project_chart_response(response: dict[str, Any], projection: str) -> dict[st
             "name": "page",
             "derived_from": "detailed",
             # The rule, not the list: the kept paths are PAGE_KEPT_PATHS, printed
-            # in OUTPUT_CONTRACT.md「Projections」.
+            # in the output contract's「Projections」.
             "kept": "fields_the_result_page_body_reads",
             "verification_detail": "projection=detailed",
         }

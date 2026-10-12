@@ -1,0 +1,201 @@
+(function attachGlossary(root, factory) {
+  const api = factory();
+  if (typeof module === "object" && module.exports) module.exports = api;
+  if (root) root.ArmillaryGlossary = api;
+})(typeof globalThis !== "undefined" ? globalThis : this, function buildGlossary() {
+  "use strict";
+
+  // 計算頁的「名詞解釋」：一份詞條表與一個抽屜。詞條只解釋名詞，原典的分類照原文寫出並附出處；每個詞第一次在
+  // 頁面上出現時照舊就地解釋，抽屜是給讀到後面忘了的人回查的。抽屜不擋住結果（不是對話框），
+  // 不送出任何請求，不寫任何儲存；詞條是寫在這支程式裡的靜態字。
+  //
+  // en：沒有通行中文譯名的詞，第一次出現時並列原文。chapter：在結果頁的哪一章看得到。
+  const ENTRIES = Object.freeze([
+    { key: "asc", term: "上升星座", chapter: "總覽、位置",
+      text: "出生那一刻，東方地平線上正在升起的那個星座。要知道準確的出生時間；差幾分鐘就可能換成下一個星座。" },
+    { key: "whole_sign", term: "整宮制", en: "Whole Sign", chapter: "宮位與相位",
+      text: "把上升星座整個當作第 1 宮，下一個星座是第 2 宮，依此類推，每一宮剛好一個星座。這是最古老的分宮法之一；本站另有幾種分宮法，各種平等提供，不排先後。" },
+    { key: "retrograde", term: "逆行", chapter: "位置",
+      text: "從地球看，行星有一段時間看起來在星座之間往回走。這是從地球看出去的現象，行星本身沒有倒退。" },
+    { key: "node", term: "月交點", chapter: "位置",
+      text: "月亮的軌道與太陽在天上走的路（黃道）相交的兩點。北交點是月亮由南往北穿過黃道的那一點，南交點在它正對面。" },
+    { key: "orb", term: "容許度", chapter: "宮位與相位",
+      text: "兩顆行星的角距離與精確的相位角度相差多少度以內，還算有這個相位。古書給的度數不只一套，本站寫明這次用哪一套。" },
+    { key: "aspect", term: "相位", en: "Aspect", chapter: "宮位與相位",
+      text: "兩顆行星在黃道上相隔特定的角度：合相 0 度、六分 60 度、刑 90 度、拱 120 度、沖 180 度。原典替相位分了性質：Ptolemy《占星四書》（Tetrabiblos）I.13 說拱與六分是和諧的，刑與沖是不和諧的；al-Bīrūnī《占星術入門》（Book of Instruction）§374 說六分、拱的星座彼此友好，刑不友好，沖是敵對。" },
+    { key: "aversion", term: "不合意", en: "Aversion", chapter: "宮位與相位",
+      text: "兩個星座之間不成任何一種古典相位：彼此相鄰，或相隔第 6、第 8 個星座。al-Bīrūnī《占星術入門》§374 說與牡羊不相見的是金牛、處女、天蠍、雙魚。" },
+    { key: "benefic_malefic", term: "吉星與凶星", en: "Benefic / Malefic", chapter: "古典判斷",
+      text: "Ptolemy《占星四書》I.5：古人把木星、金星與月亮歸為吉星，土星（過冷）與火星（過燥）歸為凶星，太陽與水星兩者兼有。其他作者的歸法略有不同，本站照各書原文分別列出。" },
+    { key: "sect", term: "日盤／夜盤", chapter: "古典判斷",
+      text: "出生時太陽在地平線上方是日盤，在下方是夜盤。古典技法常依此換用不同的規則，例如命運點的公式、法達的起點。" },
+    { key: "domicile_exaltation", term: "廟與旺", en: "Domicile / Exaltation", chapter: "古典判斷",
+      text: "古書替每顆行星指定它自己的星座（廟）和它受尊崇的星座（旺）。古書把行星在廟、在旺看作有力（Lilly 稱為 essential fortitudes），在陷、在弱看作減損（debilities）；本站目前只判定廟與旺。" },
+    { key: "bounds_dignity", term: "界", en: "Bounds", chapter: "古典判斷",
+      text: "把每個星座切成五段，每段由一顆行星管。古書有好幾套切法，本站平等提供，不替你選。" },
+    { key: "face", term: "面／旬", en: "Face / Decan", chapter: "古典判斷",
+      text: "把每個星座切成三段，每段 10 度。古書有兩種：一種每段由一顆行星管，一種每段由一個星座管。" },
+    { key: "triplicity", term: "三分性", en: "Triplicity", chapter: "古典判斷",
+      text: "火、土、風、水四個元素各有幾顆守護行星；日盤與夜盤由不同的行星主事。古書有好幾套，本站平等提供，不替你選。" },
+    { key: "lots", term: "命運點與精神點", en: "Lot of Fortune, Lot of Spirit", chapter: "古典判斷",
+      text: "用太陽、月亮與上升點的位置算出來的點，不是天體。日盤與夜盤的公式不同。命運點也叫福點、幸運點。" },
+    { key: "dodecatemoria", term: "十二分部", en: "Dodecatemoria", chapter: "位置",
+      text: "把一個點在星座裡走了幾度乘以 12，從同一個星座的起點往後數，數到的位置。古羅馬與希臘化時期的作者用過；另有乘以 13 的算法。" },
+    { key: "lunar_mansions", term: "月宿", en: "Lunar mansions", chapter: "古典判斷",
+      text: "把月亮繞黃道一圈的路分成 28 段，看月亮落在哪一段。阿拉伯與中世紀歐洲的文獻常用；分法有好幾種。" },
+    { key: "planetary_hours", term: "行星時", en: "Planetary hours", chapter: "古典判斷",
+      text: "把白天與夜晚各分成 12 段，依固定的順序輪給七顆行星。所以夏天白天的一段比夜晚的一段長。" },
+    { key: "time_lords", term: "時間主星", en: "Time lords", chapter: "時間主星",
+      text: "把一生切成一段段時期，每段由某顆行星或某個星座輪值的一類古典技法。本站照原典列出輪值表；不替這張盤做個人解讀，也不預測。" },
+    { key: "profection", term: "年度小限", en: "Annual profections", chapter: "時間主星",
+      text: "從上升星座開始，每過一歲往後換一個星座，12 年繞一圈。管那個星座的行星叫年主星。" },
+    { key: "monthly_profection", term: "月小限", en: "Monthly profections", chapter: "時間主星",
+      text: "把一年再分成 12 個月，每個月從年度小限的星座往後換一個星座。" },
+    { key: "firdaria", term: "法達", en: "Firdaria", chapter: "時間主星",
+      text: "把一生依古書定好的年數，輪流分給七顆行星和兩個月交點，一輪 75 年；每顆行星的那一大段再分成七小段。" },
+    { key: "zodiacal_releasing", term: "黃道釋放", en: "Zodiacal releasing", chapter: "時間主星",
+      text: "從命運點或精神點所在的星座起，依各星座的年數往後分期。這個名稱是現代人取的，Valens 本人沒有用這個詞。" },
+    { key: "decennials", term: "十年期", en: "Decennials", chapter: "時間主星",
+      text: "每段 10 年 9 個月，依出生時行星在黃道上的順序輪值；本站算到第二層。" },
+    { key: "receipt", term: "收據", chapter: "收據與匯出",
+      text: "這次計算用了哪個時區、哪一版程式與哪種算法的紀錄，讓別人可以照著重算核對。" },
+  ]);
+
+  /** 底部抽屜的斷點：與 calculate.css 的 @media (max-width:640px) 相同。 */
+  const NARROW_SHEET_QUERY = "(max-width: 640px)";
+
+  const BY_KEY = new Map(ENTRIES.map((entry) => [entry.key, entry]));
+
+  const TEXT = Object.freeze({
+    title: "名詞解釋",
+    close: "關閉名詞解釋",
+    lead: "只解釋名詞；不替這張盤做個人解讀。",
+    where: "在：",
+  });
+
+  /**
+   * 頁面上的抽屜：第一次呼叫時建出並接線。openers 是「名詞解釋」鈕的選擇器；頁面上帶
+   * data-term 的詞（.term）點了就打開抽屜並捲到那一條。焦點：打開時交給抽屜的標題（或那一條
+   * 詞），Esc 或「關閉」收起並把焦點還給打開它的元素。
+   */
+  function mount(doc, { host, openers = "[data-glossary-open]" } = {}) {
+    const win = doc.defaultView;
+    const node = (tag, className, text) => {
+      const element = doc.createElement(tag);
+      if (className) element.className = className;
+      if (text !== undefined) element.textContent = text;
+      return element;
+    };
+    const drawer = node("aside", "glossary");
+    drawer.id = "glossary";
+    drawer.setAttribute("aria-labelledby", "glossary-title");
+    drawer.hidden = true;
+    const head = node("div", "glossary-head");
+    const title = node("h2", null, TEXT.title);
+    title.id = "glossary-title";
+    title.tabIndex = -1;
+    const close = node("button", "ghost small glossary-close", "關閉");
+    close.type = "button";
+    close.setAttribute("aria-label", TEXT.close);
+    head.append(title, close);
+    const lead = node("p", "note glossary-lead", TEXT.lead);
+    const list = node("dl", "glossary-list");
+    ENTRIES.forEach((entry) => {
+      const term = node("dt", null, entry.term);
+      term.id = `glossary-${entry.key}`;
+      term.tabIndex = -1;
+      if (entry.en) {
+        const en = node("span", "en", entry.en);
+        en.lang = "en";
+        term.append(" ", en);
+      }
+      const text = node("dd", null, entry.text);
+      text.appendChild(node("span", "glossary-where", `${TEXT.where}${entry.chapter}`));
+      list.append(term, text);
+    });
+    drawer.append(head, lead, list);
+    (host || doc.body).appendChild(drawer);
+
+    // 窄螢幕（與 calculate.css 的底部抽屜同一個斷點）上，抽屜蓋住大半個畫面，實際上是模態：
+    // 打開時標成 dialog／aria-modal，並把抽屜以外的頁面設為 inert，Tab 不會跑到被蓋住的連結；
+    // 關閉時還原。寬螢幕是側欄，維持非模態，不加任何標記。
+    let inerted = [];
+    const narrow = () => Boolean(win && typeof win.matchMedia === "function"
+      && win.matchMedia(NARROW_SHEET_QUERY).matches);
+    function makeModal() {
+      drawer.setAttribute("role", "dialog");
+      drawer.setAttribute("aria-modal", "true");
+      for (let item = drawer; item.parentElement && item !== doc.body; item = item.parentElement) {
+        [...item.parentElement.children].forEach((sibling) => {
+          if (sibling === item || sibling.hasAttribute("inert") || sibling.tagName === "SCRIPT") return;
+          sibling.setAttribute("inert", "");
+          inerted.push(sibling);
+        });
+      }
+    }
+    function releaseModal() {
+      inerted.forEach((item) => item.removeAttribute("inert"));
+      inerted = [];
+      drawer.removeAttribute("role");
+      drawer.removeAttribute("aria-modal");
+    }
+
+    let opener = null;
+    function open(key, from) {
+      opener = from || null;
+      drawer.hidden = false;
+      releaseModal();
+      if (narrow()) makeModal();
+      drawer.querySelectorAll("dt.is-hit").forEach((item) => item.classList.remove("is-hit"));
+      const hit = key && BY_KEY.has(key) ? drawer.querySelector(`#glossary-${key}`) : null;
+      if (hit) {
+        hit.classList.add("is-hit");
+        if (typeof hit.scrollIntoView === "function") hit.scrollIntoView({ block: "start" });
+        hit.focus({ preventScroll: true });
+      } else {
+        list.scrollTop = 0;
+        title.focus({ preventScroll: true });
+      }
+      doc.querySelectorAll(openers).forEach((button) => button.setAttribute("aria-expanded", "true"));
+    }
+    function shut() {
+      if (drawer.hidden) return;
+      drawer.hidden = true;
+      releaseModal();
+      doc.querySelectorAll(openers).forEach((button) => button.setAttribute("aria-expanded", "false"));
+      if (opener && opener.isConnected && typeof opener.focus === "function") opener.focus();
+      opener = null;
+    }
+    doc.querySelectorAll(openers).forEach((button) => {
+      button.setAttribute("aria-controls", "glossary");
+      button.setAttribute("aria-expanded", "false");
+    });
+    doc.addEventListener("click", (event) => {
+      const target = event.target && event.target.closest ? event.target : null;
+      if (!target) return;
+      const term = target.closest(".term[data-term]");
+      if (term) {
+        event.preventDefault();
+        open(term.dataset.term, term);
+        return;
+      }
+      const button = target.closest(openers);
+      if (button) {
+        if (drawer.hidden) open(null, button);
+        else shut();
+      }
+    });
+    close.addEventListener("click", shut);
+    // Esc 只關最上層：抽屜開著時先關抽屜，並標記 defaultPrevented，星盤的點選標示不跟著清除。
+    doc.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape" || event.defaultPrevented || drawer.hidden) return;
+      if (event.target && event.target.closest && event.target.closest("dialog")) return;
+      event.preventDefault();
+      shut();
+    }, true);
+    if (win) win.addEventListener("pagehide", () => { drawer.hidden = true; releaseModal(); });
+    return Object.freeze({ open, close: shut, element: drawer });
+  }
+
+  return Object.freeze({ ENTRIES, TEXT, NARROW_SHEET_QUERY, mount });
+});

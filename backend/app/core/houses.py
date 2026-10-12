@@ -28,10 +28,11 @@ import swisseph as swe
 from ..config import HOUSE_SYSTEMS, PRODUCT_YEAR_RANGE
 from .method_status import method_receipt
 from .module_state import computed_receipt
+from .source_reading import SOURCE_READING_LEVELS
 from .trace import Trace
 
 
-# 四分宮制（Placidus/Regiomontanus/Alcabitius）在高緯度會嚴重變形：宮位大小差距
+# 四分宮制（Placidus/Regiomontanus/Alcabitius/Porphyry/Campanus）在高緯度會嚴重變形：宮位大小差距
 # 拉大，Placidus 在超過黃赤交角補角（90° − ε，即極圈）之外失去標準半弧解，
 # 因為該處存在永不升起或永不落下的黃道度數（|tan φ · tan δ| > 1，方法研究筆記）。
 #
@@ -40,7 +41,14 @@ from .trace import Trace
 # 所以「標成極區」與「拒算 Placidus」用同一個數。1900–2399 年間約 66.55°–66.61°。
 # 60.0°：經驗上宮位大小已明顯不均、落宮對出生時刻誤差高度敏感的起點。
 HIGH_LATITUDE_WARNING_DEGREES = 60.0
-QUADRANT_HOUSE_SYSTEM_CODES = frozenset({"P", "R", "B"})
+# Porphyry and Campanus put cusp 1 on the ASC and cusp 10 on the MC like the other
+# three, so they share the quadrant sensitivity.  Equal is ASC + 30° steps: like
+# whole sign its house sizes do not depend on latitude.
+QUADRANT_HOUSE_SYSTEM_CODES = frozenset({"P", "R", "B", "O", "C"})
+# Refused where the MC culminates below the horizon although Swiss still returns an
+# ordered cycle: both divide the quadrants that the sunk MC bounds.  Regiomontanus
+# and Campanus are refused in the same cells by the cusp-cycle check.
+MC_BELOW_HORIZON_REFUSED_CODES = frozenset({"B", "O"})
 
 # 宮位可用性四態（unavailable 仍 422）。
 # 方法研究筆記的詞彙。available_polar_geometry 不是新的成功路徑：它只標記
@@ -55,10 +63,10 @@ HOUSE_AVAILABILITY_REASONS = (
     "unique_ascendant_undefined",        # |φ| ≥ 90°：地理極點無唯一上升點
     "placidus_no_semiarc",               # Placidus 於極區帶：標準半弧構造無解（產品選擇：全帶拒絕）
     "swiss_house_fallback_rejected",     # Swiss 對其他宮位制回 ERR／自動 fallback，本產品拒收
-    "degenerate_cusp_cycle_rejected",    # 宮頭重複或未形成單一依序完整分割（含反向 Regiomontanus）
+    "degenerate_cusp_cycle_rejected",    # 宮頭重複或未形成單一依序完整分割（含反向 Regiomontanus、Campanus）
     "quadrant_high_latitude_sensitivity",# 四分宮制於高緯度（≥60°，含極區帶）：對時刻／緯度微擾高度敏感
-    "polar_band_geometry",               # 極區帶內的非四分宮制（整宮）
-    "mc_below_horizon_rejected",         # Alcabitius：MC 在地平線下（比照 Regiomontanus 拒收）
+    "polar_band_geometry",               # 極區帶內的非四分宮制（整宮、等分宮）
+    "mc_below_horizon_rejected",         # Alcabitius、Porphyry：中天（MC）在地平線下（比照 Regiomontanus 拒收）
 )
 
 
@@ -273,12 +281,21 @@ def compute_houses(house_system_code: str, jd_ut: float, location, ctx, trace: T
             reason_code="degenerate_cusp_cycle_rejected",
         )
     # In the polar band the MC can culminate below the horizon.  Regiomontanus
-    # cusps then stop forming one ordered cycle (refused above; measured: in
-    # exactly these cells), while Alcabitius still yields an ordered cycle
-    # built on the sunk MC.  The product refuses it in the same cells.
-    if code == "B" and mc_true_altitude_degrees(ascmc[2], obliquity, location.latitude) < 0.0:
+    # and Campanus cusps then stop forming one ordered cycle (refused above;
+    # measured: in exactly these cells), while Alcabitius and Porphyry still
+    # yield an ordered cycle built on the sunk MC.  The product refuses them in
+    # the same cells.
+    if code in MC_BELOW_HORIZON_REFUSED_CODES and (
+        mc_true_altitude_degrees(ascmc[2], obliquity, location.latitude) < 0.0
+    ):
         raise refusal(
-            reason="MC（天頂點）在地平線下；Alcabitius 宮頭仍算得出，但本產品比照 Regiomontanus 在同一情形拒收，不宣稱數學上不可用",
+            reason=(
+                "中天（MC，黃道在上子午圈的那一點）此刻在地平線下，這只會在極圈內發生。"
+                f"{name} 先用上升點與中天把天空分成四段，再各分成三宮；平常中天在地平線上方，"
+                "四段是地平線上、下各兩段，中天沉到地平線下時，這四段就不再是這個方法設想的樣子。"
+                "宮頭在數學上仍算得出，但本產品比照同一情形下的 Regiomontanus 與 Campanus 拒收，"
+                "不宣稱數學上不可用。可以改用整宮或等分宮（每宮 30 度，不靠中天分宮），或不計算宮位"
+            ),
             reason_code="mc_below_horizon_rejected",
         )
 
@@ -390,6 +407,7 @@ def printed_house_division(houses: dict, system_code: str) -> dict:
         "system_name": houses["system_name"],
         "cusps": houses["cusps"],
         "angles_source": "astronomical_data.angles",
+        "source_ref": HOUSE_SYSTEM_SOURCE_REF,
         # Four-state availability; `unavailable` never reaches here because it
         # is raised as HouseSystemUnavailableError (422).
         "availability": houses["availability"],
@@ -448,7 +466,7 @@ def house_availability(regime: dict) -> dict:
     四態依嚴重度排序：available < available_polar_geometry < unstable < unavailable，
     同一宮位制在緯度變高時狀態只能變嚴重：四分宮制在極區帶的敏感度只會更高，不能在
     60° 至極圈之間標 unstable、過了極圈反而標成較輕的 available_polar_geometry。極區帶
-    記在 latitude_regime.band，所以 available_polar_geometry 只給非四分宮制（整宮）。
+    記在 latitude_regime.band，所以 available_polar_geometry 只給非四分宮制（整宮、等分宮）。
     """
 
     if regime["house_system_is_quadrant"] and regime["band"] != "ordinary":
@@ -468,7 +486,135 @@ def house_availability(regime: dict) -> dict:
     }
 
 
+HOUSE_SYSTEM_SOURCE_REF = "houses/systems"
+_ORIGINAL, _TRANSLATION, _SECONDARY, _BIBLIOGRAPHIC = SOURCE_READING_LEVELS
+# One row per code in config.HOUSE_SYSTEMS.  `definition` is the geometry the
+# product computes (through swe.houses_ex); `history` says where the name and the
+# idea come from, each citation with how far it was read.  Nothing here ranks
+# the systems.
+HOUSE_SYSTEM_SOURCES: dict[str, dict] = {
+    "W": {
+        "definition": "The rising sign is the whole first house; each later sign is the next house.",
+        "definition_source": "this product's definition (methods page §07.1)",
+        "history": [
+            {
+                "citation": (
+                    "Vettius Valens, Anthology V.6 (Pingree 1986 pp. 215-216): a chart whose "
+                    "degree-based MC falls in the ninth sign, cited on the methods page and "
+                    "not re-read for this entry"
+                ),
+                "reading": _BIBLIOGRAPHIC,
+            },
+        ],
+    },
+    "P": {
+        "definition": "Cusps 11, 12, 2 and 3 trisect each cusp degree's own semi-diurnal or semi-nocturnal arc.",
+        "definition_source": "Swiss Ephemeris General Documentation §6.2.1 Placidus",
+        "history": [
+            {
+                "citation": "Named after Placidus de Titis (1590-1668) (Swiss Ephemeris §6.2.1)",
+                "reading": _SECONDARY,
+            },
+        ],
+    },
+    "R": {
+        "definition": "The equator is divided into twelve 30° arcs from the meridian; great circles through "
+        "the north and south points of the horizon carry the divisions to the ecliptic.",
+        "definition_source": "Swiss Ephemeris General Documentation §6.2.3 Regiomontanus",
+        "history": [
+            {
+                "citation": (
+                    "Named after Johannes Müller of Königsberg, called Regiomontanus (1436-1476) "
+                    "(Swiss Ephemeris §6.2.3)"
+                ),
+                "reading": _SECONDARY,
+            },
+        ],
+    },
+    "B": {
+        "definition": "The ascendant's own semi-diurnal and semi-nocturnal arcs are trisected on the equator "
+        "and projected to the ecliptic through the celestial poles.",
+        "definition_source": "Swiss Ephemeris General Documentation §6.2.11 Alcabitus",
+        "history": [
+            {
+                "citation": "Named after al-Qabīṣī (Alcabitius, d. 967) (Astrodienst FAQ on house systems)",
+                "reading": _SECONDARY,
+            },
+        ],
+    },
+    "O": {
+        "definition": "Each quadrant between ASC, MC, DSC and IC is divided into three equal parts of ecliptic longitude.",
+        "definition_source": "Swiss Ephemeris General Documentation §6.2.6.1 Porphyry",
+        "history": [
+            {
+                "citation": (
+                    "The trisection of the quadrants appears in Vettius Valens, Anthology book III, in a "
+                    "chapter on the active and inactive places (cited via secondary sources; the chapter "
+                    "was not read, and R. Schmidt reads it as a measure of planetary activity rather than "
+                    "a division into topics)"
+                ),
+                "reading": _SECONDARY,
+            },
+            {
+                "citation": (
+                    "Named after Porphyry of Tyre (3rd century), Introduction to the Tetrabiblos "
+                    "(CCAG V.4; trans. Holden 2009); the chapter number was not verified"
+                ),
+                "reading": _BIBLIOGRAPHIC,
+            },
+        ],
+    },
+    "E": {
+        "definition": "Twelve houses of 30° each, the first beginning at the ascendant's degree.",
+        "definition_source": "Swiss Ephemeris General Documentation §6.2.5 Equal systems",
+        "history": [
+            {
+                "citation": (
+                    "Ptolemy, Tetrabiblos III.12 in Ashmand's translation (III.10 in Robbins): the places "
+                    "used for the length of life are 30° each, the first from 5° above the horizon to 25° "
+                    "below it. That rule starts 5° earlier than this construction, which starts at the "
+                    "ascendant's degree"
+                ),
+                "reading": _TRANSLATION,
+            },
+            {
+                "citation": (
+                    "Astrodienst's house-system FAQ says equal houses have been used since antiquity, "
+                    "without a named source"
+                ),
+                "reading": _SECONDARY,
+            },
+        ],
+    },
+    "C": {
+        "definition": "The prime vertical is divided into twelve 30° arcs from the zenith; great circles through "
+        "the north and south points of the horizon carry the divisions to the ecliptic.",
+        "definition_source": "Swiss Ephemeris General Documentation §6.2.4 Campanus",
+        "history": [
+            {
+                "citation": "Named after Campanus of Novara (13th century) (Swiss Ephemeris §6.2.4)",
+                "reading": _SECONDARY,
+            },
+            {
+                "citation": (
+                    "The prime-vertical method was described earlier in Arabic sources: a treatise by Ibn "
+                    "Muʿādh al-Jayyānī (11th century; studied by J. Casulleras) and, per J. D. North, "
+                    "Horoscopes and History (1986) pp. 175-176, al-Bīrūnī; both cited via secondary "
+                    "sources, not read"
+                ),
+                "reading": _SECONDARY,
+            },
+        ],
+    },
+}
+
 METHOD_SOURCE_ENTRIES: dict[str, dict] = {
+    HOUSE_SYSTEM_SOURCE_REF: {
+        "applies_to": "derived_methods.house_division.system_code",
+        "reading_vocabulary": list(SOURCE_READING_LEVELS),
+        "systems": HOUSE_SYSTEM_SOURCES,
+        "note": "The product offers these systems on an equal footing and does not rank their historical fitness.",
+    },
     "houses/availability": {
         "applies_to": "derived_methods.house_division.availability",
         "vocabulary": list(HOUSE_AVAILABILITY_STATES),

@@ -5,9 +5,12 @@ pytest==9.1.1
 pytest-xdist==3.8.0
 httpx2==2.13.1
 hypothesis==6.168.3
-# 型別檢查以基線模式執行（見 mypy.ini 與 scripts/verification/verify_types.py）。
+# 型別檢查以基線模式執行（設定在 mypy.ini，由私有的型別檢查工具執行）。
 # mypy.ini 自 2026-07-27 就存在，但 mypy 從未被安裝或執行過。
 mypy==2.4.0
+# 測試以真的解析器讀 Markdown（CommonMark）與 YAML 1.2，不以 regex 猜文件結構；只在測試，不進映像。
+marko==2.2.4
+ruamel.yaml==0.19.1
 
 # pip-tools 刻意不列在這裡。它只在「重新產生 lockfile」時需要，而它會帶進
 # setuptools 等無法產生 hash 的 build 依賴，使整份 lock 無法以 --require-hashes

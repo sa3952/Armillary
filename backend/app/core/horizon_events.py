@@ -196,8 +196,8 @@ VISIBILITY_EVIDENCE_METHOD: Final = {
     "method": (
         f"{ENVELOPE_SAMPLE_COUNT} topocentric apparent upper-limb altitude samples "
         f"across {(ENVELOPE_SAMPLE_COUNT - 1) / ENVELOPE_SAMPLES_PER_DAY * 24:.0f} hours; "
-        "each extreme refined by a parabola through the extreme sample and its "
-        "two neighbours"
+        "each extreme refined by a parabola through the true altitudes of the "
+        "extreme sample and its two neighbours, then refracted"
     ),
     "coordinate_origin": "topocentric",
     "disc_position": "upper_limb",
@@ -893,7 +893,9 @@ def _refined_extreme(values: list[float], index: int, *, maximum: bool) -> float
     horizon was classified as always above or always below unless a sample fell
     near the extreme.  Three-point interpolation needs
     no extra Swiss calls; the vertex is used only when it lies between the
-    neighbours and is more extreme than the sample itself.
+    neighbours and is more extreme than the sample itself.  `values` must be a
+    smooth function of time: the caller passes TRUE altitudes, never refracted
+    ones, which jump where Swiss switches refraction off.
     """
     sample = values[index]
     if index == 0 or index == len(values) - 1:
@@ -918,7 +920,7 @@ def _sample_altitude_envelope(
 ) -> dict:
     swe.set_topo(*geopos)
     topocentric_flags = EPHEMERIS_FLAGS | swe.FLG_TOPOCTR
-    apparent_upper_limb_altitudes = []
+    samples = []
     for jd_ut in _envelope_sample_instants(reference_jd_ut):
         ecliptic = swe.calc_ut(jd_ut, body_id, topocentric_flags)[0]
         azimuth, true_centre_altitude, _apparent_centre_altitude = swe.azalt(
@@ -937,32 +939,68 @@ def _sample_altitude_envelope(
         # by the radius, then refract that direction, the order swe_rise_trans
         # uses for its upper-limb event (swecl.c: true height of the uppermost
         # point, then azalt_rev -> azalt).
-        limb_equatorial = swe.azalt_rev(
-            jd_ut, swe.HOR2EQU, geopos, azimuth, true_centre_altitude + semidiameter
+        true_limb_altitude = true_centre_altitude + semidiameter
+        samples.append((
+            jd_ut,
+            azimuth,
+            true_limb_altitude,
+            _apparent_altitude(jd_ut, azimuth, true_limb_altitude, geopos, pressure_hpa, temperature_c),
+        ))
+    # Swiss's refraction is monotonic in the true altitude over the accepted
+    # atmosphere, so the apparent extreme is the refracted true extreme.  The
+    # parabola runs through the smooth true altitudes and only its vertex is
+    # refracted: through the refracted samples it would straddle the jump where
+    # Swiss switches refraction off and land on neither side of it.
+    # Every local extreme is refined, not only the extreme sample: the window
+    # holds two culminations, and near a solstice the one whose sample sits
+    # nearer its peak need not be the higher one.  Near the jump a thousandth
+    # of a degree of true altitude decides the side.
+    true_values = [sample[2] for sample in samples]
+
+    def extreme(maximum: bool) -> float:
+        pick = max if maximum else min
+        sign = 1.0 if maximum else -1.0
+        last = len(true_values) - 1
+        candidates = {pick(range(len(true_values)), key=true_values.__getitem__)} | {
+            index
+            for index in range(1, last)
+            if sign * true_values[index] >= sign * true_values[index - 1]
+            and sign * true_values[index] >= sign * true_values[index + 1]
+        }
+        refined, index = pick(
+            (_refined_extreme(true_values, index, maximum=maximum), index) for index in candidates
         )
-        apparent_upper_limb_altitudes.append(
-            swe.azalt(
-                jd_ut,
-                swe.EQU2HOR,
-                geopos,
-                pressure_hpa,
-                temperature_c,
-                (limb_equatorial[0], limb_equatorial[1], 1.0),
-            )[2]
-        )
-    values = apparent_upper_limb_altitudes
-    lowest = min(range(len(values)), key=values.__getitem__)
-    highest = max(range(len(values)), key=values.__getitem__)
+        jd_ut, azimuth, true_altitude, apparent_altitude = samples[index]
+        if refined == true_altitude:
+            return apparent_altitude
+        return _apparent_altitude(jd_ut, azimuth, refined, geopos, pressure_hpa, temperature_c)
+
     # 方法、座標原點與圓面位置對每個天體、每個代表性取樣都相同，只寫在
     # contract.visibility_evidence_window（VISIBILITY_EVIDENCE_METHOD）；逐體只帶兩個極值。
     return {
-        "minimum_apparent_upper_limb_altitude_degrees": _refined_extreme(
-            values, lowest, maximum=False
-        ),
-        "maximum_apparent_upper_limb_altitude_degrees": _refined_extreme(
-            values, highest, maximum=True
-        ),
+        "minimum_apparent_upper_limb_altitude_degrees": extreme(False),
+        "maximum_apparent_upper_limb_altitude_degrees": extreme(True),
     }
+
+
+def _apparent_altitude(
+    jd_ut: float,
+    azimuth: float,
+    true_altitude: float,
+    geopos: tuple[float, float, float],
+    pressure_hpa: float,
+    temperature_c: float,
+) -> float:
+    """Swiss's refracted altitude of the direction at (azimuth, true altitude)."""
+    equatorial = swe.azalt_rev(jd_ut, swe.HOR2EQU, geopos, azimuth, true_altitude)
+    return swe.azalt(
+        jd_ut,
+        swe.EQU2HOR,
+        geopos,
+        pressure_hpa,
+        temperature_c,
+        (equatorial[0], equatorial[1], 1.0),
+    )[2]
 
 
 def _bracketing_interval(events: dict) -> dict:

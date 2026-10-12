@@ -58,6 +58,8 @@ PUBLIC_ORIGIN = "https://github.com"
 INVENTORY_NAME = "PUBLICATION_FILES.json"
 RECEIPT_NAME = "publication-receipt.json"
 EVIDENCE_NAME = "publication-evidence.json"
+EVIDENCE_SCHEMA = "corresponding-source-publication-evidence-v3"
+MAX_EVIDENCE_BYTES = 32 * 1024
 REVISION_RE = re.compile(r"^[0-9a-f]{40}$")
 MAX_ARCHIVE_EXPANDED_BYTES = 2 * 1024 * 1024 * 1024
 _scrubbed_git_environment = consumer.anonymous_git_environment
@@ -292,7 +294,7 @@ def produce_receipt(
 
     observed_at = (today or datetime.now(timezone.utc)).astimezone(timezone.utc)
     evidence = {
-        "schema_version": "corresponding-source-publication-evidence-v3",
+        "schema_version": EVIDENCE_SCHEMA,
         "observed_at_utc": observed_at.isoformat(timespec="seconds"),
         "public_repository": repository,
         "public_source_revision": revision,
@@ -324,11 +326,57 @@ def produce_receipt(
     return consumer_view
 
 
+def _verify_evidence_content(evidence_path: Path, receipt: dict[str, str], checkout: Path) -> None:
+    """Every field of the evidence the producer wrote, against the receipt it is
+    bound to, the canonical URLs and the checkout it describes."""
+
+    try:
+        if evidence_path.is_symlink() or evidence_path.stat().st_size > MAX_EVIDENCE_BYTES:
+            raise ValueError("not a bounded regular file")
+        evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+        observed_date = datetime.fromisoformat(str(evidence["observed_at_utc"])).date().isoformat()
+    except (OSError, UnicodeError, ValueError, KeyError, TypeError) as error:
+        raise ReceiptRefusal(f"publication evidence is unreadable: {error}") from None
+    revision = receipt["public_source_revision"]
+    tip = evidence.get("default_branch_tip")
+    expected = {
+        "schema_version": EVIDENCE_SCHEMA,
+        "public_repository": accepted_repository(),
+        "public_source_revision": revision,
+        **canonical_urls(revision),
+        "source_archive_sha256": receipt["source_archive_sha256"],
+        "publication_files_sha256": receipt["anonymous_checkout_sha256"],
+        # The checkout's inventory lists every candidate file but itself.
+        "public_file_count": len(_load_inventory_declaration(checkout / INVENTORY_NAME)) + 1,
+        "archive_tree_equals_candidate": True,
+        "anonymous_checkout_equals_candidate": True,
+    }
+    # Checked below: the observation time against the receipt date, the tip in the checkout.
+    observed_fields = {"observed_at_utc", "default_branch_tip"}
+    differing = sorted(
+        key for key in (set(evidence) | set(expected)) - observed_fields
+        if key not in expected or evidence.get(key) != expected[key]
+        or type(evidence.get(key)) is not type(expected[key])
+    )
+    if observed_date != receipt["effective_date"]:
+        differing.append("observed_at_utc")
+    if not isinstance(tip, str) or not REVISION_RE.fullmatch(tip) or subprocess.run(
+        ["git", "merge-base", "--is-ancestor", revision, tip],
+        cwd=checkout, capture_output=True, check=False,
+    ).returncode != 0:
+        differing.append("default_branch_tip")
+    if differing:
+        raise ReceiptRefusal(f"publication evidence differs from the receipt and checkout in: {differing}")
+
+
 def verify_receipt(
     *, receipt_path: Path, revision: str, evidence_path: Path | None = None, checkout: Path | None = None,
 ) -> dict[str, str]:
-    """Re-check a receipt: consumer readback, evidence bytes and checkout identity."""
+    """Re-check a receipt: consumer readback, evidence bytes and fields, and checkout identity."""
 
+    if evidence_path is not None and checkout is None:
+        raise ReceiptRefusal("publication evidence is verified against the checkout it describes: "
+                             "pass the checkout too")
     try:
         evidence = consumer.validate_publication_receipt(receipt_path, expected_revision=revision)
     except (OSError, ValueError) as error:
@@ -355,6 +403,8 @@ def verify_receipt(
             raise ReceiptRefusal(f"checkout differs from its own inventory: {error}") from None
         if sha256_file(checkout / INVENTORY_NAME) != evidence["anonymous_checkout_sha256"]:
             raise ReceiptRefusal("checkout inventory differs from anonymous_checkout_sha256")
+        if evidence_path is not None:
+            _verify_evidence_content(evidence_path, evidence, checkout)
     return evidence
 
 

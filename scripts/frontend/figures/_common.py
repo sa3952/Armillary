@@ -53,6 +53,13 @@ def calc_ut(swe, jd: float, body: int, flags: int | None = None) -> tuple:
     return position
 
 
+def spoken_longitude(lon: float) -> str:
+    """「處女座 24 度 47 分」: whole minutes, rounded."""
+    total = round(lon * 60)
+    sign, rest = divmod(total, 30 * 60)
+    return f"{SIGNS[sign]}座 {rest // 60} 度 {rest % 60} 分"
+
+
 def indent(block: str, prefix: str = "    ") -> str:
     """A whole SVG placed inside a <figure>: every line indented once."""
     return "\n".join(prefix + line for line in block.splitlines())
@@ -75,3 +82,15 @@ def product_charts() -> Iterator[Any]:
             return response.json()
 
         yield post
+
+
+def zh(value: int) -> str:
+    """A count in Chinese numerals, as the pages write it (「十一」)."""
+    from scripts.frontend.build_pages import zh_count
+
+    return zh_count(value)
+
+
+def zh_quantity(value: int) -> str:
+    """The same before a measure word, where two is 「兩」(「兩套」)."""
+    return "兩" if value == 2 else zh(value)

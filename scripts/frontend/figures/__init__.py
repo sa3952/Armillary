@@ -1,9 +1,11 @@
-"""Check or regenerate the blog articles' figures from their computations.
+"""Check or regenerate the figures and quoted numbers of the blog articles and
+the site's pages from their computations.
 
-Each article module computes its numbers (Swiss Ephemeris with the bundled
-ephemeris files, the product's own tables and chart answers, or the pinned tz
+Each module computes its numbers (Swiss Ephemeris with the bundled ephemeris
+files, the product's own tables, limits and chart answers, or the pinned tz
 data) and returns its figure blocks (inline SVG, bar rows, table rows) plus the
-strings its prose quotes.  In the page fragment every block sits between
+strings its prose quotes.  The article modules are named after their topic,
+the page modules `page_<fragment>`.  In the page fragment every block sits between
 
     <!-- figure:NAME -->
     ...
@@ -34,6 +36,12 @@ def articles() -> tuple:
     from . import birth_time, bounds, houses, nodes, rising_tables, solar_time, taiwan_time, unknown_time
 
     return (birth_time, taiwan_time, houses, bounds, nodes, unknown_time, rising_tables, solar_time)
+
+
+def pages() -> tuple:
+    from . import page_features, page_home, page_methods, page_methods_time_lords, page_roadmap, page_validation
+
+    return (page_home, page_features, page_methods, page_methods_time_lords, page_roadmap, page_validation)
 
 
 def blocks_in(fragment: str) -> dict[str, str]:
@@ -67,37 +75,42 @@ def problems(fragment_name: str, fragment: str, blocks: dict[str, str], quoted: 
     return out
 
 
-def main(argv: list[str] | None = None) -> int:
+def check(modules, write: bool = False) -> list[str]:
+    """Every failure the modules' blocks and quoted strings find in the page
+    fragments; with `write`, the blocks are rewritten first."""
     from scripts.frontend import build_pages
 
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--check", action="store_true")
-    mode.add_argument("--write", action="store_true")
-    args = parser.parse_args(argv)
     failures: list[str] = []
-    count = 0
-    modules = articles()
     for module in modules:
         path = build_pages.PAGES / f"{module.FRAGMENT}.html"
         fragment = path.read_text(encoding="utf-8")
         blocks, quoted = module.build()
-        if not blocks or not quoted:
-            raise RuntimeError(f"{module.__name__} produced no figure or no quoted number")
-        count += len(blocks)
-        if args.write:
+        if not quoted:
+            raise RuntimeError(f"{module.__name__} quotes no number")
+        if write:
             if set(blocks_in(fragment)) != set(blocks):
                 raise RuntimeError(f"{module.FRAGMENT}: the page's figure markers do not name {sorted(blocks)}")
             fragment = _replace(fragment, blocks)
             if path.read_text(encoding="utf-8") != fragment:
                 path.write_text(fragment, encoding="utf-8")
         failures += problems(module.FRAGMENT, fragment, blocks, quoted)
-        # Numbers the article computes that other prose repeats.
+        # Numbers the module computes that other prose repeats.
         for name, texts in getattr(module, "elsewhere", lambda _: {})(fragment).items():
             page = (build_pages.PAGES / f"{name}.html").read_text(encoding="utf-8")
             failures += [f"{name}: the prose no longer says {text!r}" for text in texts if text not in page]
+    return failures
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--check", action="store_true")
+    mode.add_argument("--write", action="store_true")
+    args = parser.parse_args(argv)
+    modules = articles() + pages()
+    failures = check(modules, write=args.write)
     if failures:
-        print("ARTICLE FIGURES STALE:\n  " + "\n  ".join(failures))
+        print("PAGE FIGURES STALE:\n  " + "\n  ".join(failures))
         return 1
-    print(f"ARTICLE FIGURES {'WRITTEN' if args.write else 'CURRENT'}: {count} blocks in {len(modules)} articles")
+    print(f"PAGE FIGURES {'WRITTEN' if args.write else 'CURRENT'}: {len(modules)} articles and pages")
     return 0

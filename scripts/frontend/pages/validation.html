@@ -53,10 +53,11 @@
       <h2>涵蓋到哪裡，沒有涵蓋哪裡</h2>
       <div class="validation-coverage">
         <div class="covered"><h3>已有強證據</h3><ul><li>七個天體的地心主要位置</li><li>指定年代與欄位的逐小時比較</li><li>五大行星站留附近的方向分類</li><li>星曆檔與恆星表的exact SHA-256</li></ul></div>
-        <div class="partial"><h3>部分涵蓋</h3><ul><li>星座、旬、Egyptian bounds與exact aspect邊界</li><li>日夜盤與部分station案例</li><li>升降、中天與日月食的具名小型驗證</li><li>恆星：在同一份 sefstars 記錄上以獨立轉換鏈核對演算法、與 SIMBAD 現值比對只量目錄漂移；目錄本身未以 Gaia／Hipparcos 獨立核對</li></ul></div>
+        <div class="partial"><h3>部分涵蓋</h3><ul><li>星座、旬、Egyptian bounds與exact aspect邊界</li><li>日夜盤與部分station案例</li><li>升降、中天與日月食的具名小型驗證</li><li>恆星：每一顆都以不呼叫 Swiss Ephemeris 的獨立換算，在 1900、2026、2100 年三個日期核對：對同一筆星表記錄、對 Hipparcos 衛星星表的 2007 年新歸算，並與 SIMBAD 天文資料庫的現值比對星表本身的變動；少數記錄不是 Hipparcos 2007 的值（例如南門二是整個雙星系統的值），另記它們差多少；沒有逐星對 Gaia 核對</li></ul></div>
         <div class="uncovered"><h3>不能從本批外推</h3><ul><li>所有宮位制與quadrant cusp</li><li>所有center、frame與position mode</li><li>所有固定星方法與日月食shadow</li><li>全系統天文正確性認證</li></ul></div>
       </div>
       <p class="validation-scope">幾角秒的整體差異通常不改變分類，但落在星座、界、宮頭、station或orb邊界附近時仍可能翻轉；因此邊界驗證與大規模平均結果分開處理。</p>
+      <p class="validation-scope">恆星的核對用到 SIMBAD 資料庫與 VizieR 星表服務，兩者都由法國史特拉斯堡天文資料中心（CDS）維運。This research has made use of the SIMBAD database and the VizieR catalogue access tool, operated at CDS, Strasbourg, France.</p>
     </div>
   </section>
 

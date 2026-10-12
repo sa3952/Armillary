@@ -28,8 +28,7 @@ MAX_HOSTED_HEADER_BYTES: Final = 16 * 1024
 MAX_HOSTED_REQUESTS_PER_WORKER: Final = 32
 # Chart computation, serialized on the Swiss lock.  Per worker: the workers
 # accept connections independently, so simultaneous charts are not spread
-# evenly and only one worker's pool is guaranteed (measured:
-# docs/operations/CAPACITY_MEASUREMENT_2026-10-04.md §8.1).
+# evenly and only one worker's pool is guaranteed (measured on 2026-10-04).
 MAX_HOSTED_COMPUTE_REQUESTS_PER_WORKER: Final = 4
 # Place lookup and time conversion.  They are neither page traffic nor chart
 # computation: an admitted place lookup holds a worker thread for up to the
@@ -70,9 +69,8 @@ EDGE_CHART_READ_TIMEOUT_SECONDS: Final = 30.0
 # itself is computed, and only the search modules, whose windows run past the
 # bundled segments, are refused out-of-coverage before any Swiss call), and
 # ~2.9 s for the worst-options chart under amd64 emulation on 2026-10-04,
-# doubled when the two workers share one CPU
-# (docs/operations/CAPACITY_MEASUREMENT_2026-10-04.md §4.2).  Revisit with a
-# measurement on the production host.
+# doubled when the two workers share one CPU.  Revisit with a measurement on
+# the production host.
 COMPUTE_P99_ESTIMATE_SECONDS: Final = 8.0
 # Serialization, compression and the edge hop after the calculation returns
 # (tens of milliseconds measured), plus the page's own request set-up inside
@@ -87,6 +85,11 @@ API_PATH_PREFIX: Final = "/api/"
 # "Takes a bounded JSON body" and "which admission pool" are separate
 # questions with separate sets.
 _BOUNDED_JSON_PATHS: Final = frozenset({CHART_ROUTE, PLACE_SEARCH_ROUTE, TIME_CONVERT_ROUTE})
+# The calculation pool.  An application that registers another calculation
+# route (the flagged annual route) passes both sets with it; a route it did not
+# register is never bounded or admitted here, so it reaches the API boundary's
+# unknown_api_path like any other undeclared path.
+_COMPUTE_PATHS: Final = frozenset({CHART_ROUTE})
 _LOOKUP_PATHS: Final = frozenset({PLACE_SEARCH_ROUTE, TIME_CONVERT_ROUTE})
 # The liveness probe returns a constant on the event loop and is never charged
 # to a pool: a full pool of any class must not make the container look dead.
@@ -313,6 +316,7 @@ class RequestCapacityBoundary:
         max_concurrent: int = MAX_HOSTED_REQUESTS_PER_WORKER,
         max_compute_concurrent: int = MAX_HOSTED_COMPUTE_REQUESTS_PER_WORKER,
         max_search_concurrent: int = MAX_HOSTED_SEARCH_REQUESTS_PER_WORKER,
+        compute_paths: frozenset[str] = _COMPUTE_PATHS,
     ) -> None:
         if max_concurrent <= 0:
             raise ValueError("max_concurrent must be positive")
@@ -324,6 +328,7 @@ class RequestCapacityBoundary:
         self.max_concurrent = max_concurrent
         self.max_compute_concurrent = max_compute_concurrent
         self.max_search_concurrent = max_search_concurrent
+        self.compute_paths = frozenset(compute_paths)
         self._active = 0
         self._active_compute = 0
         self._active_search = 0
@@ -340,7 +345,7 @@ class RequestCapacityBoundary:
             await self.app(scope, receive, send)
             return
 
-        compute = path == CHART_ROUTE
+        compute = path in self.compute_paths
         search = path in _LOOKUP_PATHS
         with self._lock:
             if compute:
@@ -528,10 +533,12 @@ class ChartRequestBoundary:
         *,
         expected_host: str | None = None,
         max_body_bytes: int = MAX_CHART_REQUEST_BYTES,
+        bounded_json_paths: frozenset[str] = _BOUNDED_JSON_PATHS,
     ) -> None:
         if max_body_bytes <= 0:
             raise ValueError("max_body_bytes must be positive")
         self.app = app
+        self.bounded_json_paths = frozenset(bounded_json_paths)
         self.expected_host = (expected_host or "").strip().lower() or None
         # The whole header is compared: a split at the first colon accepted
         # `host:anything`.  Only the scheme default ports may be spelled out.
@@ -568,7 +575,7 @@ class ChartRequestBoundary:
         if (
             scope["type"] != "http"
             or scope.get("method") != "POST"
-            or scope.get("path") not in _BOUNDED_JSON_PATHS
+            or scope.get("path") not in self.bounded_json_paths
         ):
             await self.app(scope, receive, send)
             return

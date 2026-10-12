@@ -19,7 +19,7 @@ services:
     memswap_limit: 512m
     cpus: 1.0
     # The event log goes to the host journal, so it shares the
-    # journal's bound (deploy/staging/host/journald-armillary.conf) instead
+    # journal's bound (the host's journald drop-in) instead
     # of size-only rotation with no time limit.  verify_staging_http checks the
     # driver on the host; Gate D declares why it cannot run this driver.
     logging:

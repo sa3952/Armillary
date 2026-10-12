@@ -379,7 +379,7 @@ def test_api_json_other_than_the_chart_result_is_never_compressed():
     """Place search echoes the submitted terms and refusals are small: none is encoded,
     and no blanket compression middleware exists that could reach them."""
 
-    application = create_app(AppSettings())
+    application = create_app(AppSettings(enable_annual_route=True))
     assert not any(
         "gzip" in getattr(middleware.cls, "__name__", "").casefold()
         for middleware in application.user_middleware
@@ -390,9 +390,16 @@ def test_api_json_other_than_the_chart_result_is_never_compressed():
             "places": client.post("/api/places/search", json={"query": "Tainan"}, headers=gzip_only),
             "health": client.get("/api/health", headers=gzip_only),
             "rejected": client.post("/api/chart", json={"unexpected": True}, headers=gzip_only),
+            "annual_rejected": client.post("/api/chart/annual", json={"unexpected": True}, headers=gzip_only),
         }
+    with TestClient(create_app(AppSettings())) as client:
+        # Without its flag the annual path is an unknown API path like any other.
+        observations["annual_unregistered"] = client.post(
+            "/api/chart/annual", json={**_payload(), "annual": {"target_kind": "completed_years",
+                                                               "target_value": 1}}, headers=gzip_only)
 
-    assert observations["rejected"].status_code == 422
+    assert observations["rejected"].status_code == observations["annual_rejected"].status_code == 422
+    assert observations["annual_unregistered"].status_code == 404
     for name, response in observations.items():
         assert "content-encoding" not in response.headers, name
         assert "accept-encoding" not in response.headers.get("vary", "").lower(), name
@@ -417,17 +424,27 @@ def test_gzip_is_chosen_only_for_a_valid_nonzero_qvalue(accept_encoding, expecte
     assert accepts_gzip(Headers({"accept-encoding": accept_encoding})) is expected
 
 
-def test_chart_result_is_gzip_encoded_only_for_clients_that_name_gzip():
+# The annual route answers the same kind of body as the chart (a function of
+# the request alone, tens to hundreds of KB of JSON) and is encoded the same way.
+_ANNUAL_SELECTION = {"target_kind": "completed_years", "target_value": 30, "include_firdaria": True,
+                     "firdaria_scope": "full_cycle", "include_zodiacal_releasing": True}
+
+
+@pytest.mark.parametrize(("route", "body"), (
+    ("/api/chart", _payload()),
+    ("/api/chart/annual", {**_payload(), "annual": _ANNUAL_SELECTION}),
+))
+def test_chart_result_is_gzip_encoded_only_for_clients_that_name_gzip(route, body):
     """Decoding gives exactly the identity bytes, encoding is deterministic, and both
     representations carry the same Vary, Cache-Control and security headers."""
 
     def raw(client: TestClient, accept_encoding: str) -> tuple[int, dict, bytes]:
         with client.stream(
-            "POST", "/api/chart", json=_payload(), headers={"Accept-Encoding": accept_encoding}
+            "POST", route, json=body, headers={"Accept-Encoding": accept_encoding}
         ) as response:
             return response.status_code, dict(response.headers), b"".join(response.iter_raw())
 
-    with _client() as client:
+    with TestClient(create_app(AppSettings(enable_annual_route=True))) as client:
         status, identity_headers, identity = raw(client, "identity")
         refused_status, refused_headers, refused = raw(client, "gzip;q=0")
         encoded_status, encoded_headers, encoded = raw(client, "gzip, deflate, br")
@@ -456,14 +473,35 @@ def test_generated_pages_version_every_asset_by_its_served_content_digest():
     """Every `?v=` in every generated page is the first sixteen hex digits of the
     SHA-256 of the file served at that path, and that URL earns the immutable lifetime."""
 
-    # data-* carries a module a page loads later (calculate.js's view-model).
-    reference = re.compile(r'(?:src|href|data-[a-z]+(?:-[a-z]+)*)="/(zh-TW/[^"?#]+)(\?[^"#]*)?"')
+    from html.parser import HTMLParser
+    from urllib.parse import urlsplit
+
+    class References(HTMLParser):
+        """Every src, href and data-* attribute value, as an HTML parser reads it;
+        data-* carries a module a page loads later (calculate.js's view-model)."""
+
+        def __init__(self) -> None:
+            super().__init__(convert_charrefs=True)
+            self.values: list[str] = []
+
+        def handle_starttag(self, tag, attrs):
+            self.values.extend(value for name, value in attrs
+                               if value and (name in {"src", "href"} or name.startswith("data-")))
+
+        handle_startendtag = handle_starttag
+
     pages = sorted((_FRONTEND_ROOT / "zh-TW").rglob("*.html"))
     assert len(pages) >= 14
     versioned: dict[tuple[str, str], str] = {}
     for page in pages:
-        for match in reference.finditer(page.read_text(encoding="utf-8")):
-            name, query = match.group(1), match.group(2)
+        parser = References()
+        parser.feed(page.read_text(encoding="utf-8"))
+        parser.close()
+        for value in parser.values:
+            url = urlsplit(value)
+            if url.scheme or url.netloc or not url.path.startswith("/zh-TW/"):
+                continue
+            name, query = url.path.removeprefix("/"), f"?{url.query}" if url.query else ""
             if Path(name).suffix not in {".css", ".js", ".mjs", ".svg"}:
                 continue
             label = f"{page.relative_to(_FRONTEND_ROOT)} -> {name}"
@@ -506,7 +544,7 @@ def test_content_version_follows_the_bytes_not_the_process_start(tmp_path):
 
 
 def test_importing_the_application_module_builds_no_application():
-    """Arch I-01: the image runs `uvicorn --factory app.main:create_app`, which
+    """The image runs `uvicorn --factory app.main:create_app`, which
     imports app.main and then calls the factory; a module-level `app =
     create_app()` built a second, unused application in every worker.  The module
     builds `app` only when something reads it (`uvicorn app.main:app`, tests)."""

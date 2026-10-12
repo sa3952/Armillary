@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Gate D's three resilience drills, run against the exact built image (C-1007 #19).
+"""Gate D's three resilience drills, run against the exact built image.
 
 Each drill runs in a disposable container of the image with no network and
 the run settings of ``deploy/compose.yaml`` (read-only root, tmpfs, no
@@ -26,8 +26,7 @@ readback instead.
 
 Every response and each container's log stream is searched for the canary.
 
-Gate D runs this module after the image artifact acceptance
-(``scripts/verification/delivery_tiers._run_image_gate``).  The module exits 1
+Gate D runs this module after the image artifact acceptance.  The module exits 1
 unless all three drills passed and the canary matched nothing.
 """
 from __future__ import annotations
@@ -38,6 +37,7 @@ from enum import Enum
 from functools import reduce
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 from typing import Any, Iterator, Protocol
@@ -52,7 +52,7 @@ from scripts.verification.verify_container_runtime import (
     _compose_run_arguments, _compose_service_model, _wait_healthy,
 )
 
-RECEIPT_SCHEMA_VERSION = 2
+RECEIPT_SCHEMA_VERSION = 3
 # The disposable fault runtime holds the compute lock this long.  It must
 # exceed the application's queue wait, which the drill observes rather than
 # restates: the queued chart has to be refused before the holder returns.
@@ -68,6 +68,7 @@ DRILL_ENVIRONMENT = (
     f"CLASSICAL_ASTROLOGY_EXPECTED_HOST={DRILL_EXPECTED_HOST}",
     "CLASSICAL_ASTROLOGY_REQUIRE_FRONTEND_RELEASE=",
 )
+ROOT = Path(__file__).resolve().parents[2]
 CONTAINER_PYTHON = "/opt/venv/bin/python"
 CONTAINER_APP_DIR = "/app/backend"
 CONTAINER_PORT = 8000
@@ -353,10 +354,19 @@ class _DockerDisposable:
 
 
 class ImageRuntime:
-    """Disposable containers of one exact image, with compose's run settings and no network."""
+    """Disposable containers of one exact image, with the run settings of
+    `source_root`'s compose (Gate D's: the image's revision) and no network.
 
-    def __init__(self, image: str, platform: str | None = None) -> None:
-        self.image, self.platform = image, platform
+    The reference is resolved to an image ID once; every container runs that
+    ID and must report it."""
+
+    def __init__(self, image: str, platform: str | None = None, *, source_root: Path = ROOT) -> None:
+        resolved = _docker("image", "inspect", "--format", "{{.Id}}", image)
+        image_id = resolved.stdout.strip()
+        if resolved.returncode != 0 or not re.fullmatch(r"sha256:[0-9a-f]{64}", image_id):
+            raise RuntimeError(f"cannot resolve {image} to an image ID")
+        self.identity = {"reference": image, "id": image_id}
+        self.image, self.platform, self.source_root = image_id, platform, source_root
 
     @contextmanager
     def disposable(self, kind: Where, canary: Canary) -> Iterator[_DockerDisposable]:
@@ -364,7 +374,7 @@ class ImageRuntime:
             _docker("rm", "--force", leftover)
         arguments = [
             "run", "--detach", *(("--platform", self.platform) if self.platform else ()),
-            *_compose_run_arguments(_compose_service_model({}, DRILL_COMPOSE_FILES)),
+            *_compose_run_arguments(_compose_service_model({}, DRILL_COMPOSE_FILES, self.source_root)),
             "--network", "none", "--label", DRILL_LABEL,
         ]
         for item in DRILL_ENVIRONMENT:
@@ -382,7 +392,8 @@ class ImageRuntime:
             _wait_healthy(container)
             inspection = json.loads(_docker("inspect", container).stdout)[0]
             host_config = inspection.get("HostConfig") or {}
-            if host_config.get("NetworkMode") != "none" or host_config.get("PortBindings"):
+            if (host_config.get("NetworkMode") != "none" or host_config.get("PortBindings")
+                    or inspection.get("Image") != self.image):
                 raise RuntimeError("disposable container is not an unexposed container of the image")
             yield _DockerDisposable(
                 container, _probe_input(canary, host=DRILL_EXPECTED_HOST, port=CONTAINER_PORT))
@@ -391,8 +402,9 @@ class ImageRuntime:
 
 
 # --- the receipt ---------------------------------------------------------------------------
-def run_image_drills(runtime: Runtime) -> dict[str, Any]:
-    """Run the three drills and search every disposable log stream for the canary."""
+def run_image_drills(runtime: Runtime, image: dict[str, str] | None = None) -> dict[str, Any]:
+    """Run the three drills and search every disposable log stream for the canary;
+    `image` is the reference and the ID the containers ran."""
     canary = scan_canary(generate_canary())
     drills, sinks = run_disposable_drills(runtime, canary)
     for name, drill in drills.items():
@@ -402,6 +414,7 @@ def run_image_drills(runtime: Runtime) -> dict[str, Any]:
     passed = all(drills[name]["result"] == DrillResult.PASSED.value for name in DRILLS)
     return {
         "schema_version": RECEIPT_SCHEMA_VERSION,
+        "image": image,
         "drills": {name: drills[name] for name in DRILLS},
         "privacy_canary": {"result": privacy, "total_match_count": matches, "sinks": sinks},
         "result": "pass" if passed and privacy == "pass" else "fail",
@@ -412,6 +425,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--image", required=True, help="the exact built image (ID or reference)")
     parser.add_argument("--platform", choices=("linux/amd64", "linux/arm64"))
+    parser.add_argument("--source-root", type=Path, default=ROOT,
+                        help="the checkout whose deploy/compose.yaml sets the run settings "
+                             "(Gate D: the image's revision)")
     parser.add_argument("--output", type=Path, help="receipt path (repository-external); stdout when absent")
     parser.add_argument("--plan", action="store_true", help="print the drills and start nothing")
     args = parser.parse_args()
@@ -419,7 +435,8 @@ def main() -> None:
         print(json.dumps({"mode": "plan", "image": args.image, "containers_started": False,
                           "drills": {name: DRILL_LOCATIONS[name].value for name in DRILLS}}, indent=2))
         return
-    receipt = run_image_drills(ImageRuntime(args.image, args.platform))
+    runtime = ImageRuntime(args.image, args.platform, source_root=args.source_root.resolve())
+    receipt = run_image_drills(runtime, runtime.identity)
     for name, drill in receipt["drills"].items():
         print(f"DRILL {name}: {drill['result']} ({drill['where']})", file=sys.stderr)
     print(f"DRILL privacy canary: {receipt['privacy_canary']['result']}", file=sys.stderr)

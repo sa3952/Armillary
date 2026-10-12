@@ -48,7 +48,7 @@ REGIONS: Final[dict[str, str]] = {
     "taiwan": "臺灣",
     "hong_kong": "香港",
     "macau": "澳門",
-    "mainland_china": "中國大陸",
+    "mainland_china": "中國",
 }
 # The zone each rule is kept under, with its region.
 RULE_ZONES: Final[dict[str, str]] = {

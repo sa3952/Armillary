@@ -31,7 +31,7 @@ from .module_state import (
 )
 
 
-DOSSIER_VERSION = "0.8.0"
+DOSSIER_VERSION = "0.9.0"
 
 # The six-field vocabulary (MODULE_STATUSES, EVENT_SEARCH_REASON_CODES
 # and the builders) lives in module_state; the Dossier copies what each
@@ -154,7 +154,18 @@ _MODULE_ORDER = (
     "outer_planets", "chiron", "south_nodes", "anti_vertex", "lunar_apsides",
     "parallax_moon", "essential_dignities", "antiscia", "sect", "lots",
     "void_of_course", "declination_aspects", "lunar_phases", "eclipses",
-    "rise_set_transits", "planetary_hours",
+    "rise_set_transits", "planetary_hours", "dodecatemoria", "lunar_mansions",
+    "solar_phase",
+    "prenatal_syzygy",
+    "classical_classifications",
+)
+# The derived_methods containers that carry a module state and a method
+# receipt, in the order the states and the methodology receipt list them.
+_DERIVED_METHOD_MODULES = (
+    "house_division", "planet_in_house", "aspects", "sect", "lots",
+    "void_of_course", "declination_aspects", "essential_dignities",
+    "planetary_hours", "dodecatemoria", "lunar_mansions", "solar_phase",
+    "classical_classifications",
 )
 # The classical bodies are always computed, or the request fails outright.
 _CORE_POSITIONS_STATE = module_state(
@@ -183,11 +194,7 @@ def _module_states(
     extra_angles = astronomical_data.get("extra_angles") or {}
     states = {
         name: _state_of(derived_methods.get(name))
-        for name in (
-            "house_division", "planet_in_house", "aspects", "sect", "lots",
-            "void_of_course", "declination_aspects", "essential_dignities",
-            "planetary_hours",
-        )
+        for name in _DERIVED_METHOD_MODULES
     }
     states.update({
         "antiscia": _state_of(derived_geometry.get("antiscia")),
@@ -222,24 +229,14 @@ def _module_states(
             ],
         ),
     })
-    for name in ("lunar_phases", "eclipses", "rise_set_transits"):
+    for name in ("lunar_phases", "eclipses", "rise_set_transits", "prenatal_syzygy"):
         states[name] = _state_of(event_module_availability.get(name))
     return states
 
 
 def _methodology_receipt(derived_methods: dict, modules: dict) -> dict:
     items = {}
-    for name in (
-        "house_division",
-        "planet_in_house",
-        "aspects",
-        "sect",
-        "lots",
-        "void_of_course",
-        "declination_aspects",
-        "essential_dignities",
-        "planetary_hours",
-    ):
+    for name in _DERIVED_METHOD_MODULES:
         value = derived_methods[name]
         execution_status = modules[name]
         has_method_receipt = isinstance(value, dict) and bool(value)
@@ -333,6 +330,12 @@ def _option_state_receipts(request, states: dict, response_parts: dict) -> dict:
         "include_aspects": ("aspects", "derived_methods.aspects"),
         "include_anti_vertex": ("anti_vertex", "astronomical_data.extra_angles.angles.anti_vertex"),
         "include_extra_angles": ("extra_angles", "astronomical_data.extra_angles"),
+        "include_dodecatemoria": ("dodecatemoria", "derived_methods.dodecatemoria"),
+        "include_lunar_mansions": ("lunar_mansions", "derived_methods.lunar_mansions"),
+        "include_solar_phase": ("solar_phase", "derived_methods.solar_phase"),
+        "include_classical_classifications": (
+            "classical_classifications", "derived_methods.classical_classifications",
+        ),
     }
     # Every module container an option writes is named here, so a
     # consumer can resolve each null container to the option that owns it.
@@ -385,6 +388,8 @@ def _option_state_receipts(request, states: dict, response_parts: dict) -> dict:
         "bounds_profile": (options.bounds_profile is not None, "essential_dignities", profile_path),
         "decan_profile": (options.decan_profile is not None, "essential_dignities", profile_path),
         "triplicity_profile": (options.triplicity_profile is not None, "essential_dignities", profile_path),
+        "dodecatemoria_profile": (options.include_dodecatemoria, "dodecatemoria", "derived_methods.dodecatemoria"),
+        "solar_phase_profile": (options.include_solar_phase, "solar_phase", "derived_methods.solar_phase"),
     }
     for name, (selected, module, path) in configurations.items():
         add(
@@ -407,6 +412,7 @@ def _option_state_receipts(request, states: dict, response_parts: dict) -> dict:
         "include_aspect_perfection": ("aspects", "derived_methods.aspects.perfection"),
         "aspect_include_angles": ("aspects", angle_path),
         "triplicity_include_research_comparison": ("essential_dignities", profile_path),
+        "solar_phase_disc_cazimi": ("solar_phase", "derived_methods.solar_phase.disc_cazimi"),
     }
     for name, (parent, path) in dependents.items():
         add(
@@ -785,6 +791,7 @@ def _fixed_module_frames(context, states: dict) -> dict:
             "geocentric_apparent_tropical_of_date",
             states["lunar_phases"],
             states["eclipses"],
+            states["prenatal_syzygy"],
         ),
         # 升降事件模組使用自己的固定框架，不跟隨 computation_mode，
         # 且真位置模式的視高度抑制不及於它——折射是升降事件的定義，
@@ -907,6 +914,12 @@ def _event_module_provenance(event_module_availability: dict) -> dict:
             "source_policy": _SWISS_FILES_REQUIRED,
             "detail_path": "birth_time_sensitivity",
         },
+        # Its own two-event search, so it can survive a refused phase search.
+        "prenatal_syzygy": {
+            **event_module_availability["prenatal_syzygy"],
+            "source_policy": _SWISS_FILES_REQUIRED,
+            "detail_path": "astronomical_data.lunar_events.prenatal_syzygy",
+        },
     }
 
 
@@ -1026,6 +1039,7 @@ def build_calculation_dossier(
     )
     warnings = structured_warnings(
         request=request,
+        effective_request=effective_request,
         time_conversion=time_conversion,
         full_ephemeris_files_available=full_ephemeris_files_available,
         input_files_unchanged_during_chart=input_files_unchanged_during_chart,
@@ -1045,6 +1059,8 @@ def build_calculation_dossier(
         latitude_regime=latitude_regime,
         sect=derived_methods["sect"],
         essential_dignities=derived_methods.get("essential_dignities"),
+        lunar_mansions=derived_methods.get("lunar_mansions"),
+        classical_classifications=derived_methods.get("classical_classifications"),
         sensitivity_coverage=sensitivity_coverage,
         aspect_participants_present=bool(
             (derived_methods.get("aspects") or {}).get("participants")

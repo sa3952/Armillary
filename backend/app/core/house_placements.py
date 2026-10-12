@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fractions import Fraction
+from functools import lru_cache
 
 from .frame_compatibility import method_frame_state
 from .module_state import PRODUCT_FORMULA_SOURCE, computed_receipt, unavailable_state
@@ -37,6 +38,18 @@ def _house_for_longitude(longitude: float, cusps: list[float]) -> int:
     """
 
     point = Fraction(longitude) % _FULL_CIRCLE
+    spans = _cusp_spans(tuple(cusps))
+    for index in range(12):
+        if (point - Fraction(cusps[index])) % _FULL_CIRCLE < spans[index]:
+            return index + 1
+    raise RuntimeError("longitude did not match any house interval")
+
+
+@lru_cache(maxsize=256)
+def _cusp_spans(cusps: tuple[float, ...]) -> tuple[Fraction, ...]:
+    """The exact width of each house interval, checked once per cusp set (a
+    chart places every body and lot against the same twelve cusps)."""
+
     spans = []
     for index in range(12):
         span = _exact_forward_distance(cusps[index], cusps[(index + 1) % 12])
@@ -45,10 +58,7 @@ def _house_for_longitude(longitude: float, cusps: list[float]) -> int:
         spans.append(span)
     if sum(spans) != _FULL_CIRCLE:
         raise ValueError("house cusps do not run once around the zodiac in order")
-    for index in range(12):
-        if (point - Fraction(cusps[index])) % _FULL_CIRCLE < spans[index]:
-            return index + 1
-    raise RuntimeError("longitude did not match any house interval")
+    return tuple(spans)
 
 
 def compute_planet_house_placements(
@@ -143,3 +153,59 @@ def compute_planet_house_placements(
         ),
     )
     return receipt
+
+
+# The lunar nodes and the lunar apsides are not planets and stay out of
+# `placements`.  Under whole-sign houses a place is the sign itself, so these
+# points get their place there without any further method claim; under the
+# cusp-based systems this product gives them none.
+POINT_PLACEMENT_RULE = "whole_sign_place_of_the_point_sign_v1"
+
+
+def whole_sign_point_placements(
+    points: list[dict],
+    houses: dict | None,
+    planet_in_house: dict,
+    trace: Trace,
+) -> dict:
+    """The whole-sign place of each node and lunar apsis, or a named refusal."""
+
+    def refused(reason_code: str | None) -> dict:
+        return {
+            "execution_status": "not_applicable",
+            "reason_code": reason_code,
+            "rule": POINT_PLACEMENT_RULE,
+            "placements": [],
+        }
+
+    if planet_in_house.get("execution_status") != "computed" or houses is None:
+        # The planets' own refusal is the reason: one premise, one code.
+        return refused(planet_in_house.get("reason_code"))
+    if houses.get("system_code") != "W":
+        return refused("not_whole_sign_house_system")
+    cusps = houses["cusps"]
+    placements = []
+    for point in points:
+        longitude = point.get("longitude")
+        if longitude is None:
+            continue
+        house = _house_for_longitude(longitude, cusps)
+        placements.append({
+            "key": point["key"],
+            "name": point["name"],
+            "longitude": longitude,
+            "house": house,
+            "on_cusp": _exact_forward_distance(cusps[house - 1], longitude) == 0,
+        })
+    trace.add(
+        "月交點與月球拱點的整宮落宮",
+        formula="點的黃經 ∈ [第 n 宮宮頭, 第 n+1 宮宮頭)，整宮制宮頭是星座起點",
+        result={item["key"]: item["house"] for item in placements},
+        note="只在整宮制給：整宮制的宮就是星座；其他宮位制不給這些點落宮。",
+    )
+    return {
+        "execution_status": "computed",
+        "reason_code": None,
+        "rule": POINT_PLACEMENT_RULE,
+        "placements": placements,
+    }

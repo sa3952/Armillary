@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import lru_cache
 import hashlib
 import json
 from pathlib import Path
@@ -56,7 +57,7 @@ RANKING_STEPS = (
     (
         "CASE match_tier WHEN 'exact_name' THEN 0 "
         "WHEN 'name_prefix' THEN 1 ELSE 2 END ASC",
-        "1. match_tier (exact_name → 0, name_prefix → 1, other_field → 2) ASC; "
+        "1. match_tier (exact_name → 0, name_prefix → 1, other_field and spelling_fallback → 2) ASC; "
         "the tier compares the name, the Traditional-Chinese name, a Taiwan county's "
         "short and English names and a Taiwan GeoNames row's Chinese aliases, with 台 read as 臺",
     ),
@@ -87,6 +88,25 @@ _ORDER_BY_SQL = ",\n                    ".join(
 # abort an already-running statement.
 SEARCH_STATEMENT_BUDGET_SECONDS = 2.0
 _PROGRESS_HANDLER_INSTRUCTION_INTERVAL = 10_000
+
+# Spelling fallback.  A search that found nothing is retried, inside the same
+# budget, against the names the match tier compares (each row's match_keys):
+# rows with a name within Levenshtein distance SPELLING_FALLBACK_MAX_DISTANCE of
+# the query are returned, ordered by the unchanged ranking, each with match_tier
+# "spelling_fallback".  Only a query of Latin letters (spaces allowed) with at
+# least SPELLING_FALLBACK_MIN_LETTERS letters is retried: shorter words sit
+# within two edits of too many names to mean anything.
+SPELLING_FALLBACK_MAX_DISTANCE = 2
+SPELLING_FALLBACK_MIN_LETTERS = 5
+SPELLING_FALLBACK_TIER = "spelling_fallback"
+# Closed: whether the fallback ran and what it found.
+SPELLING_FALLBACK_NOT_NEEDED = "not_needed"
+SPELLING_FALLBACK_NOT_ELIGIBLE = "not_eligible"
+SPELLING_FALLBACK_NO_NAME = "no_name_within_distance"
+SPELLING_FALLBACK_APPLIED = "applied"
+# How often the name scan, which runs in Python and not under the progress
+# handler, looks at the clock.
+_SPELLING_SCAN_CLOCK_INTERVAL = 4096
 
 
 # How every search ran: the bundled read-only catalog, no network.
@@ -401,6 +421,187 @@ def _artifact_digest(path: Path) -> dict:
     }
 
 
+def _spelling_fallback_receipt(status: str) -> dict:
+    return {
+        "status": status,
+        "edit_distance": "levenshtein",
+        "max_edit_distance": SPELLING_FALLBACK_MAX_DISTANCE,
+        "min_latin_letters": SPELLING_FALLBACK_MIN_LETTERS,
+    }
+
+
+@lru_cache(maxsize=4096)
+def _is_latin_letter(character: str) -> bool:
+    return unicodedata.category(character)[0] == "L" and unicodedata.name(character, "").startswith("LATIN ")
+
+
+def _latin_name_key(key: str) -> bool:
+    letters = key.replace(" ", "")
+    if key.isascii():
+        return letters.isalpha()
+    return bool(letters) and all(_is_latin_letter(character) for character in letters)
+
+
+def _spelling_fallback_eligible(key: str) -> bool:
+    return len(key.replace(" ", "")) >= SPELLING_FALLBACK_MIN_LETTERS and _latin_name_key(key)
+
+
+_SPELLING_VOCABULARY_LOCK = threading.Lock()
+_SPELLING_VOCABULARY_CACHE: dict[tuple[str, int, int], dict[int, str]] = {}
+
+
+def _spelling_vocabulary(path: Path) -> dict[int, str]:
+    """The catalogue's Latin match keys, per key length, read once per file identity.
+
+    Each length's keys are sorted and packed into one string of fixed-width
+    slots, which holds about 200,000 names in a few megabytes instead of one
+    Python object per name.  The read (about half a second of CPU) runs on its
+    own connection, outside a search's progress handler: a search that runs
+    out of budget while it is read still leaves it for the next one, and the
+    search itself checks its deadline before and during the scan.
+    """
+
+    resolved = path.resolve()
+    status = resolved.stat()
+    identity = (str(resolved), status.st_size, status.st_mtime_ns)
+    with _SPELLING_VOCABULARY_LOCK:
+        cached = _SPELLING_VOCABULARY_CACHE.get(identity)
+        if cached is not None:
+            return cached
+        keys: set[str] = set()
+        connection = sqlite3.connect(f"{resolved.as_uri()}?mode=ro&immutable=1", uri=True, timeout=1.0)
+        try:
+            for (stored,) in connection.execute("SELECT match_keys FROM places"):
+                for key in stored.split(MATCH_KEY_SEPARATOR):
+                    if key and key not in keys and _latin_name_key(key):
+                        keys.add(key)
+        finally:
+            connection.close()
+        by_length: dict[int, list[str]] = {}
+        for key in keys:
+            by_length.setdefault(len(key), []).append(key)
+        packed = {length: "".join(sorted(group)) for length, group in by_length.items()}
+        _SPELLING_VOCABULARY_CACHE.clear()
+        _SPELLING_VOCABULARY_CACHE[identity] = packed
+        return packed
+
+
+def _within_edit_distance(left: str, right: str, limit: int) -> bool:
+    """Levenshtein distance of left and right is at most limit (a band of width 2·limit+1)."""
+
+    if abs(len(left) - len(right)) > limit:
+        return False
+    beyond = limit + 1
+    previous = list(range(len(right) + 1))
+    for row in range(1, len(left) + 1):
+        character = left[row - 1]
+        current = [beyond] * (len(right) + 1)
+        low = max(1, row - limit)
+        high = min(len(right), row + limit)
+        if low == 1:
+            current[0] = row
+        best = current[0]
+        for column in range(low, high + 1):
+            value = previous[column - 1] + (character != right[column - 1])
+            if previous[column] + 1 < value:
+                value = previous[column] + 1
+            if current[column - 1] + 1 < value:
+                value = current[column - 1] + 1
+            current[column] = value
+            if value < best:
+                best = value
+        if best > limit:
+            return False
+        previous = current
+    return previous[-1] <= limit
+
+
+def _names_within_edit_distance(vocabulary: dict[int, str], key: str, *, deadline: float) -> list[str]:
+    """Every vocabulary key within SPELLING_FALLBACK_MAX_DISTANCE of key, sorted.
+
+    A key k edits away from the query changes its set of characters by at most
+    2·k (a substitution drops one character and adds one), so the cheap set test
+    discards most names before the edit distance is computed.
+    """
+
+    limit = SPELLING_FALLBACK_MAX_DISTANCE
+    characters = set(key)
+    found: list[str] = []
+    seen = 0
+    for length in range(max(1, len(key) - limit), len(key) + limit + 1):
+        packed = vocabulary.get(length, "")
+        for start in range(0, len(packed), length):
+            seen += 1
+            if seen % _SPELLING_SCAN_CLOCK_INTERVAL == 0 and time.monotonic() > deadline:
+                raise PlaceSearchBudgetExceededError("place search exceeded its statement budget")
+            name = packed[start:start + length]
+            if len(characters.symmetric_difference(name)) <= 2 * limit and _within_edit_distance(key, name, limit):
+                found.append(name)
+    if time.monotonic() > deadline:
+        raise PlaceSearchBudgetExceededError("place search exceeded its statement budget")
+    return sorted(found)
+
+
+def _search_sql(*, spelling_fallback: bool) -> str:
+    """The search statement; the fallback differs only in which rows it keeps and their tier."""
+
+    if spelling_fallback:
+        keep = (
+            "AND EXISTS (SELECT 1 FROM fallback_names AS f "
+            "WHERE instr(p.match_keys, :separator || f.name || :separator) > 0)"
+        )
+        tier = f"'{SPELLING_FALLBACK_TIER}'"
+        names = "fallback_names(name) AS MATERIALIZED (SELECT value FROM json_each(:fallback_names)),\n                "
+    else:
+        keep = ""
+        tier = """CASE
+                        WHEN instr(match_keys, :exact_key) > 0 THEN 'exact_name'
+                        WHEN instr(match_keys, :key_prefix) > 0 THEN 'name_prefix'
+                        ELSE 'other_field'
+                    END"""
+        names = ""
+    return f"""
+                WITH {names}matched AS MATERIALIZED (
+                    SELECT
+                        p.source,
+                        p.source_record_id,
+                        p.name,
+                        p.display_name,
+                        p.country_code,
+                        p.admin1,
+                        p.admin2,
+                        p.admin1_name,
+                        p.admin3,
+                        p.name_zh,
+                        p.disambiguator,
+                        p.latitude,
+                        p.longitude,
+                        p.timezone,
+                        p.location_precision,
+                        p.population,
+                        p.source_priority,
+                        p.match_keys,
+                        bm25(place_search, {_BM25_SQL}) AS bm25_rank
+                    FROM place_search
+                    JOIN places AS p ON p.rowid = place_search.rowid
+                    WHERE place_search MATCH :match
+                      AND (:country IS NULL OR p.country_code = :country)
+                      {keep}
+                )
+                SELECT
+                    *,
+                    {tier} AS match_tier
+                FROM matched
+                ORDER BY
+                    {_ORDER_BY_SQL}
+                LIMIT :limit
+                """
+
+
+_SEARCH_SQL = _search_sql(spelling_fallback=False)
+_SPELLING_FALLBACK_SQL = _search_sql(spelling_fallback=True)
+
+
 class PlaceCatalog:
     def __init__(self, path: str | Path | None = None):
         self.path = Path(path) if path is not None else DEFAULT_CATALOG_PATH
@@ -531,6 +732,7 @@ class PlaceCatalog:
             if not match_query:
                 # Nothing reached FTS5: say so in a closed field and keep the
                 # response the same shape as a search that found nothing.
+                query_receipt["spelling_fallback"] = _spelling_fallback_receipt(SPELLING_FALLBACK_NOT_ELIGIBLE)
                 return self._response([], metadata, query_receipt)
             # Tier classification must describe the same sanitized, bounded
             # token sequence that reached FTS5.  Comparing the raw normalized
@@ -544,45 +746,7 @@ class PlaceCatalog:
             # refuse.  The producer already stored each row's key; runtime
             # Python normalizes only the query and SQL reads the stored value.
             rows = connection.execute(
-                f"""
-                WITH matched AS MATERIALIZED (
-                    SELECT
-                        p.source,
-                        p.source_record_id,
-                        p.name,
-                        p.display_name,
-                        p.country_code,
-                        p.admin1,
-                        p.admin2,
-                        p.admin1_name,
-                        p.admin3,
-                        p.name_zh,
-                        p.disambiguator,
-                        p.latitude,
-                        p.longitude,
-                        p.timezone,
-                        p.location_precision,
-                        p.population,
-                        p.source_priority,
-                        p.match_keys,
-                        bm25(place_search, {_BM25_SQL}) AS bm25_rank
-                    FROM place_search
-                    JOIN places AS p ON p.rowid = place_search.rowid
-                    WHERE place_search MATCH :match
-                      AND (:country IS NULL OR p.country_code = :country)
-                )
-                SELECT
-                    *,
-                    CASE
-                        WHEN instr(match_keys, :exact_key) > 0 THEN 'exact_name'
-                        WHEN instr(match_keys, :key_prefix) > 0 THEN 'name_prefix'
-                        ELSE 'other_field'
-                    END AS match_tier
-                FROM matched
-                ORDER BY
-                    {_ORDER_BY_SQL}
-                LIMIT :limit
-                """,
+                _SEARCH_SQL,
                 {
                     "match": match_query,
                     "country": country_code,
@@ -594,6 +758,29 @@ class PlaceCatalog:
                     "limit": limit,
                 },
             ).fetchall()
+            if rows:
+                fallback = SPELLING_FALLBACK_NOT_NEEDED
+            elif not _spelling_fallback_eligible(tier_query):
+                fallback = SPELLING_FALLBACK_NOT_ELIGIBLE
+            else:
+                names = _names_within_edit_distance(
+                    _spelling_vocabulary(self.path), tier_query, deadline=deadline
+                )
+                if names:
+                    rows = connection.execute(
+                        _SPELLING_FALLBACK_SQL,
+                        {
+                            # Each name as an exact FTS5 phrase; a Latin match
+                            # key holds only letters and single spaces.
+                            "match": " OR ".join(f'"{name}"' for name in names),
+                            "country": country_code,
+                            "fallback_names": json.dumps(names, ensure_ascii=False),
+                            "separator": MATCH_KEY_SEPARATOR,
+                            "limit": limit,
+                        },
+                    ).fetchall()
+                fallback = SPELLING_FALLBACK_APPLIED if rows else SPELLING_FALLBACK_NO_NAME
+            query_receipt["spelling_fallback"] = _spelling_fallback_receipt(fallback)
         except (sqlite3.Error, PlaceCatalogUnavailableError) as exc:
             if interrupted:
                 raise PlaceSearchBudgetExceededError(

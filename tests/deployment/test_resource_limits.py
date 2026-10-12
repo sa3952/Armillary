@@ -13,7 +13,6 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
-import re
 
 import pytest
 from fastapi.testclient import TestClient
@@ -136,8 +135,8 @@ def test_capacity_boundary_wraps_unsupported_api_method_boundary():
             seen.append(type(current))
         current = current.app
     # Outermost first.  Header-decidable refusals and the bounded body come
-    # before any admission slot; only a complete body is charged to a pool
-    # (API-12／ASTRO-41／OPS-05).  The body phase is bounded by size and by a
+    # before any admission slot; only a complete body is charged to a pool.
+    # The body phase is bounded by size and by a
     # total deadline, not by count: that is the edge's `limit_conn`.
     assert seen == [ChartRequestBoundary, RequestCapacityBoundary, ApiMethodBoundary]
 
@@ -184,7 +183,7 @@ def test_capacity_boundary_refuses_a_second_active_compute_request():
 
 def test_request_boundary_preserves_client_disconnect_and_answers_once():
     """A client gone before its body is complete gets no fabricated response
-    (the boundary used to forward the disconnect and log a server 500, AR-2);
+    (the boundary used to forward the disconnect and log a server 500);
     a late oversize after the application answered starts no second response."""
     from app.request_limits import ChartRequestBoundary, client_disconnected
 
@@ -246,7 +245,7 @@ def test_every_post_api_route_is_declared_to_both_request_boundaries():
     for route in application.routes:
         path, methods = getattr(route, "path", None), getattr(route, "methods", None)
         if isinstance(path, str) and path.startswith("/api/") and methods:
-            # HEAD is served wherever GET is (W4-A, API-03) and may be its own route.
+            # HEAD is served wherever GET is and may be its own route.
             registered[path] = registered.get(path, frozenset()) | frozenset(methods)
     assert registered, "no /api/ routes were discovered"
     declared = next(dict(middleware.kwargs["route_methods"]) for middleware in application.user_middleware
@@ -266,10 +265,15 @@ def test_e014_pids_limit_covers_the_threads_and_the_declared_request_capacity():
         MAX_HOSTED_SEARCH_REQUESTS_PER_WORKER,
     )
 
-    compose = (ROOT / "deploy/compose.yaml").read_text(encoding="utf-8")
-    limit = int(re.search(r"^\s*pids_limit:\s*(\d+)\s*$", compose, re.MULTILINE).group(1))
-    workers = int(re.search(r'"--workers",\s*"(\d+)"',
-                            (ROOT / "deploy/Dockerfile").read_text(encoding="utf-8")).group(1))
+    # The limit as Docker Compose resolves the production files; the workers as
+    # uvicorn's own parser reads the image's CMD (not regexes over either file).
+    from tests.deployment.test_production_runtime_contract import (
+        image_command, production_compose_service, uvicorn_options,
+    )
+
+    limit = int(production_compose_service()["pids_limit"])
+    workers = uvicorn_options(image_command())["workers"]
+    assert isinstance(workers, int) and workers >= 1, workers
 
     async def pool_size() -> int:
         return int(anyio.to_thread.current_default_thread_limiter().total_tokens)

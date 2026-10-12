@@ -1,6 +1,6 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const ClientContext = require("../zh-TW/client-context.js");
+const ClientContext = require("../../scripts/frontend/scripts/client-context.js");
 const {
   formatApiError, apiErrorActions, networkErrorMessage, placeQueryNotice, fieldControlIds, KNOWN_CONTROL_IDS,
 } = ClientContext;
@@ -64,12 +64,20 @@ test("拒絕文案必須說出的與不得說出的", () => {
     // 地理極點上整宮也無法計算。
     [{ code: "house_system_unavailable", reason_code: "unique_ascendant_undefined", latitude: 90 }, 422,
       ["「不計算宮位」"], ["「整宮」"]],
+    // 中天沉到地平線下：說清楚為什麼（四段不再是地平線上下各兩段），以及改選什麼。
+    [{ code: "house_system_unavailable", reason_code: "mc_below_horizon_rejected" }, 422,
+      ["中天（MC", "地平線下", "極圈", "四段", "Porphyry", "Alcabitius", "「整宮」", "「等分宮」", "「不計算宮位」"],
+      ["天頂點", "無法在這個緯度計算"]],
     // 本頁到不了這個組合，不得點名控制項。
     [issue("sidereal_with_j2000_frame_not_supported", "computation_mode"), 422, ["J2000"], [/「[^」]+」/]],
     [{ code: "place_search_timeout" }, 503, ["「改為手動輸入座標與時區」"], ["目錄暫時無法讀取"]],
     // 星曆拒絕重送不會改變結果。
     [{ code: "swiss_ephemeris_error", message: "server text" }, 500, [], ["重試"]],
     [{ code: "full_ephemeris_required", message: "server text" }, 422, [], ["重試"]],
+    // 時間主星區塊會送年度請求：出生在可計算範圍尾端時，要算的那一年可能在 2399 年之後。
+    // 輸入沒有錯，頁面也沒有過期，不得叫人重新載入。
+    [issue("solar_return_outside_supported_year_range", "annual", "target_value"), 422,
+      ["2399", "超出本站能計算的範圍", "沒有問題"], ["重新載入", "版本", "請檢查", "請核對"]],
   ]) {
     const message = formatApiError(detail, status);
     includes.forEach((pattern) => assert.ok(holds(message, pattern), `${JSON.stringify(detail)} 缺 ${pattern}：${message}`));

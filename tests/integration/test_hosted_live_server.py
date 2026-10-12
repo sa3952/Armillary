@@ -8,6 +8,7 @@ They say nothing about NGINX, which buffers bodies in the deployed path.
 from __future__ import annotations
 
 import json
+import os
 import socket
 import subprocess
 import sys
@@ -28,11 +29,12 @@ TRACEBACK = "Traceback (most recent call last)"
 
 
 @contextmanager
-def _hosted_server(*setup: str, scripted: bool = False):
+def _hosted_server(*setup: str, scripted: bool = False, environment: dict[str, str] | None = None):
     """A ready server; `.output` holds its stdout+stderr after the block exits.
 
     By default it is the plain `uvicorn app.main:app` command the deployment
     runs; a scripted process runs `setup` lines before `create_app(AppSettings())`.
+    `environment` adds process variables, as the deployment's compose file does.
     """
 
     port = unused_local_port()
@@ -53,6 +55,7 @@ def _hosted_server(*setup: str, scripted: bool = False):
         ]
     process = subprocess.Popen(
         command, cwd=BACKEND_ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+        env=None if environment is None else {**os.environ, **environment},
     )
     server = SimpleNamespace(port=port, url=f"http://127.0.0.1:{port}", output="")
     try:
@@ -167,6 +170,28 @@ def test_real_hosted_server_success_rejections_and_process_output_are_bounded():
         assert leaked not in output, leaked
     assert output.count('"route":"/api/chart"') == 8
     assert output.count('"route":"frontend_or_unmatched"') == 5
+
+
+def test_real_hosted_server_logs_the_flagged_annual_route_under_its_label_without_its_input():
+    """The deployment's command with the annual flag set: an annual answer and an
+    annual refusal carrying a canary are two events of the annual label, and
+    neither the canary nor the birth data reaches the process output."""
+
+    annual = {"target_kind": "completed_years", "target_value": 2}
+    success = {**_payload(), "annual": annual}
+    invalid = {**_payload(), "annual": {**annual, CANARY: CANARY}}
+    with _hosted_server(environment={"ARMILLARY_ENABLE_ANNUAL_ROUTE": "1"}) as server:
+        answered = _post(server, json.dumps(success).encode(), path="/api/chart/annual")
+        refused = _post(server, json.dumps(invalid).encode(), path="/api/chart/annual")
+    output = server.output
+
+    assert answered[0] == 200
+    assert refused[0] == 422 and CANARY not in refused[1].decode()
+    assert output.count('"route":"/api/chart/annual"') == 2
+    assert '"route":"frontend_or_unmatched"' not in output
+    birth = success["datetime"]
+    for leaked in (CANARY, TRACEBACK, '"annual"', f'"year":{birth["year"]}', str(success["location"]["latitude"])):
+        assert leaked not in output, leaked
 
 
 def test_real_hosted_server_fuzzed_refusals_do_not_echo_or_log_the_input():

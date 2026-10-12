@@ -6,6 +6,8 @@ display modes such as heliocentric, sidereal, J2000, or true position.
 """
 
 import math
+from collections.abc import Callable
+from functools import cache
 
 import swisseph as swe
 
@@ -69,7 +71,12 @@ PHASE_DIRECTION_POLICY = {
 }
 
 
-def _refine_phase(guess_jd_ut: float, target_degrees: float) -> tuple[float, int, int]:
+PhaseState = Callable[[float], tuple[float, float, int, int]]
+
+
+def _refine_phase(
+    guess_jd_ut: float, target_degrees: float, phase_state: PhaseState = _phase_state,
+) -> tuple[float, int, int]:
     """The converged root nearest the guess: (jd_ut, Moon retflag, Sun retflag).
 
     A root counts only with |residual| <= 1e-7 degrees, so a returned event is
@@ -81,7 +88,7 @@ def _refine_phase(guess_jd_ut: float, target_degrees: float) -> tuple[float, int
         window_start = guess_jd_ut - half_window
 
         def separation_at(offset_days: float) -> float:
-            elongation = _phase_state(window_start + offset_days)[0]
+            elongation = phase_state(window_start + offset_days)[0]
             return _signed_degrees(elongation - target_degrees)
 
         roots = find_crossings_detailed(
@@ -93,7 +100,7 @@ def _refine_phase(guess_jd_ut: float, target_degrees: float) -> tuple[float, int
         valid = []
         for root in roots:
             jd_ut = window_start + root["t"]
-            elongation, _speed, moon_retflag, sun_retflag = _phase_state(jd_ut)
+            elongation, _speed, moon_retflag, sun_retflag = phase_state(jd_ut)
             residual = _signed_degrees(elongation - target_degrees)
             if abs(residual) <= 1e-7:
                 valid.append((jd_ut, moon_retflag, sun_retflag))
@@ -101,16 +108,18 @@ def _refine_phase(guess_jd_ut: float, target_degrees: float) -> tuple[float, int
             return min(valid, key=lambda value: abs(value[0] - guess_jd_ut))
         half_window *= 2
 
-    elongation, _relative_speed, moon_retflag, sun_retflag = _phase_state(guess_jd_ut)
+    elongation, _relative_speed, moon_retflag, sun_retflag = phase_state(guess_jd_ut)
     residual = _signed_degrees(elongation - target_degrees)
     if abs(residual) > 1e-7:
         raise swe.Error(f"Lunar phase root did not converge; residual={residual} degrees")
     return guess_jd_ut, moon_retflag, sun_retflag
 
 
-def _phase_event(reference_jd_ut: float, phase: str, direction: str) -> dict:
+def _phase_event(
+    reference_jd_ut: float, phase: str, direction: str, phase_state: PhaseState = _phase_state,
+) -> dict:
     target = PHASES[phase]
-    elongation, relative_speed, _moon_retflag, _sun_retflag = _phase_state(
+    elongation, relative_speed, _moon_retflag, _sun_retflag = phase_state(
         reference_jd_ut
     )
     if not math.isfinite(relative_speed) or relative_speed <= 0:
@@ -119,7 +128,7 @@ def _phase_event(reference_jd_ut: float, phase: str, direction: str) -> dict:
         )
     synodic_guess_days = 360.0 / relative_speed
     if abs(_signed_degrees(elongation - target)) < _PHASE_NEAR_REFERENCE_DEGREES:
-        near_jd_ut = _refine_phase(reference_jd_ut, target)[0]
+        near_jd_ut = _refine_phase(reference_jd_ut, target, phase_state)[0]
         near_is_previous = near_jd_ut <= reference_jd_ut + _PHASE_TOLERANCE_DAYS
         if direction == "previous":
             guess = (
@@ -138,7 +147,7 @@ def _phase_event(reference_jd_ut: float, phase: str, direction: str) -> dict:
     else:
         guess = reference_jd_ut - ((elongation - target) % 360.0) / relative_speed
 
-    jd_ut, moon_retflag, sun_retflag = _refine_phase(guess, target)
+    jd_ut, moon_retflag, sun_retflag = _refine_phase(guess, target, phase_state)
     return {
         "phase": phase,
         "target_elongation_degrees": target,
@@ -153,11 +162,17 @@ def _phase_event(reference_jd_ut: float, phase: str, direction: str) -> dict:
 
 
 def compute_primary_phases(reference_jd_ut: float, trace: Trace) -> dict:
+    # Each root is rescanned and bisected again at every refinement depth on
+    # grids that share points, and every event first reads the reference
+    # instant: one Swiss read per instant for this call.  The state is a pure
+    # function of the instant under PHASE_FLAGS; a refused read raises and is
+    # not cached, and the cache ends with the call.
+    phase_state = cache(_phase_state)
     results = {}
     for phase in PHASES:
         results[phase] = {
-            "previous": _phase_event(reference_jd_ut, phase, "previous"),
-            "next": _phase_event(reference_jd_ut, phase, "next"),
+            "previous": _phase_event(reference_jd_ut, phase, "previous", phase_state),
+            "next": _phase_event(reference_jd_ut, phase, "next", phase_state),
         }
 
     previous_new = results["new_moon"]["previous"]
@@ -359,7 +374,7 @@ CLASSIFICATION_BORDERLINE_REASON_CLAUSES_ZH = {
 CLASSIFICATION_BORDERLINE_EXPLANATIONS_ZH = {
     "inside_classification_margin": (
         "分類近邊界。原因：{reasons}。這種情況下，本站使用的 Swiss Ephemeris 與 NASA"
-        "《五千年日食典》可能把這次日食判成不同類型（或一個判中心食、一個判非中心食），"
+        "《五千年日食典》（Five Millennium Canon of Solar Eclipses）可能把這次日食判成不同類型（或一個判中心食、一個判非中心食），"
         "兩種判法在目前的計算精度內都說得通；食甚時刻不受影響。若要引用這次日食的類型，"
         "請註明它是邊界情況，或一併對照 NASA 日食典。"
     ),

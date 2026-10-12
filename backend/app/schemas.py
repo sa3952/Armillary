@@ -36,9 +36,13 @@ from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import PydanticCustomError, core_schema
 
 from .core.civil_time_basis import CIVIL_TIME_BASIS_ZONES, CivilTimeBasis
+from .core.dodecatemoria import DEFAULT_DODECATEMORIA_PROFILE, DodecatemoriaProfile
+from .core.solar_phase import DEFAULT_SOLAR_PHASE_PROFILE, SolarPhaseProfile
 from .core.frame_compatibility import (
     REQUEST_FRAME_REFUSAL_CODES,
+    SOLAR_RETURN_FRAME_REFUSAL_CODES,
     request_frame_refusal,
+    solar_return_frame_refusal,
 )
 from .refusals import REFUSAL_DETAIL_EXTRAS, REFUSALS
 
@@ -74,6 +78,19 @@ REQUEST_VALIDATION_RULES: dict[str, str] = {
     "moon_profile_center_conflict": "ChartRequest",
     "approximate_hour_requires_zero_subhour": "ChartRequest",
     "date_only_requires_zero_time": "ChartRequest",
+    "annual_request_selects_no_technique": "AnnualInput",
+    "year_of_life_must_be_positive": "AnnualInput",
+    "firdaria_option_not_applicable": "AnnualInput",
+    "zodiacal_releasing_option_not_applicable": "AnnualInput",
+    "decennials_option_not_applicable": "AnnualInput",
+    "decennials_start_planet_required": "AnnualInput",
+    "decennials_start_planet_not_applicable": "AnnualInput",
+    "monthly_profection_option_not_applicable": "AnnualInput",
+    # Raised by the annual route once the year's start (the N-th solar return)
+    # is known to fall after 2399; a rule about the requested year, so
+    # it arrives as request_validation_failed like the other annual rules.
+    "solar_return_outside_supported_year_range": "AnnualInput",
+    **{code: "AnnualRequest" for code in SOLAR_RETURN_FRAME_REFUSAL_CODES},
     "fold_not_accepted_by_time_conversion": "TimeConversionRequest",
     "leap_second_not_accepted_by_time_conversion": "TimeConversionRequest",
 }
@@ -578,11 +595,11 @@ def _default_aspect_orb_profile(validated: dict[str, Any]) -> OrbProfileKey | No
 
 
 class OptionsInput(StrictInputModel):
-    # 一次只計算一種宮位制。選擇何種宮位制屬方法決策，不宣稱四種系統具有相同權威地位。
+    # 一次只計算一種宮位制。選擇何種宮位制屬方法決策，不宣稱各宮位制具有相同權威地位。
     # `False` 是真正的無宮位模式：不得先算完再從 response 隱藏。
     # house_system 在此時只保留為未執行的 request 欄位，不得出現在 effective receipt。
     include_houses: bool = True
-    house_system: Literal["B", "R", "W", "P"] = "W"
+    house_system: Literal["B", "R", "W", "P", "O", "E", "C"] = "W"
     include_fixed_stars: bool = False
     # 產品核心是可驗證的天文數值；需要古典方法選擇的判斷一律 opt-in，
     # 不因 Swiss Ephemeris 能提供原料就假裝方法已獲採用。
@@ -711,6 +728,21 @@ class OptionsInput(StrictInputModel):
     ] = None
     triplicity_include_research_comparison: bool = False
 
+    # --- 十二分部（dodecatemoria）---
+    # 本命盤的選用技法：每個點在星座內的度數放大後對應到另一個星座。名單與規則在
+    # core/dodecatemoria.py；文獻有兩種算法並存，具名 profile 平等提供。
+    include_dodecatemoria: bool = False
+    dodecatemoria_profile: DodecatemoriaProfile = DEFAULT_DODECATEMORIA_PROFILE
+    # 月宿：月亮落在黃道二十八等分的哪一宿。只計算位置，不解讀。
+    include_lunar_mansions: bool = False
+    # 各行星離太陽多遠：日輪內、焦傷、在光束下。門檻與分法在 core/solar_phase.py；
+    # 文獻有三套數值，具名 profile 提供；落在太陽圓面內的日輪內判法是選用旗標，不設預設。
+    include_solar_phase: bool = False
+    solar_phase_profile: SolarPhaseProfile = DEFAULT_SOLAR_PHASE_PROFILE
+    solar_phase_disc_cazimi: bool = False
+    # 行星與宮的古典分類：吉凶、日夜區、喜樂宮、hayz／halb、十二宮的名稱與分類，各標出處。
+    include_classical_classifications: bool = False
+
     @model_validator(mode="after")
     def check_body_selection_preset(self):
         if self.body_selection_preset != "classical_seven_v1":
@@ -749,6 +781,62 @@ class OptionsInput(StrictInputModel):
         return self
 
 
+def _check_leap_second(model) -> None:
+    if model.datetime.second != 60:
+        return
+    utc_label = _leap_second_label_in_utc(model.datetime, model.timezone)
+    if model.datetime.year < 1972 or (
+        utc_label is not None and utc_label.year < 1972
+    ):
+        raise _rule_error(
+            "leap_second_not_applicable_to_pre_1972_scale", "datetime", "second"
+        )
+    # The local `:59` must be exactly 23:59:59 UTC.  An offset that is
+    # not whole minutes has no `:60` label for the leap second; checking
+    # only the hour and minute let one through to Swiss as 23:58:60.
+    if (
+        model.birth_time_precision != "exact"
+        or utc_label is None
+        or (utc_label.hour, utc_label.minute, utc_label.second) != (23, 59, 59)
+        or utc_label.microsecond != 0
+    ):
+        raise _rule_error(
+            "leap_second_requires_exact_utc_2359", "datetime", "second"
+        )
+    if (
+        utc_label.year,
+        utc_label.month,
+        utc_label.day,
+    ) not in KNOWN_UTC_LEAP_SECOND_DATES:
+        raise _rule_error(
+            "leap_second_not_in_bundled_table", "datetime", "second"
+        )
+
+
+def _check_precision_clock(model) -> None:
+    # approximate_hour is the stated civil hour read as the
+    # half-open interval [H:00,H+1:00) in the named fold ("born in the 14
+    # o'clock hour"), not "around 14:00" and not "rounded to the nearest
+    # hour".  The sensitivity pass samples exactly that interval, which is
+    # why minute and second must stay zero.
+    if model.birth_time_precision == "approximate_hour" and (
+        model.datetime.minute != 0 or model.datetime.second != 0
+    ):
+        raise _rule_error("approximate_hour_requires_zero_subhour")
+    if model.birth_time_precision == "date_only":
+        if (
+            model.datetime.hour != 0
+            or model.datetime.minute != 0
+            or model.datetime.second != 0
+        ):
+            raise _rule_error("date_only_requires_zero_time")
+        # The request is kept as sent.  Rewriting
+        # include_houses here fabricated an explicit input in the receipt and
+        # told the user they had not asked for houses.  Houses are not
+        # computed without a birth time; the house module says so itself
+        # (not_applicable, reason date_only_no_birth_time).
+
+
 class ChartRequest(StrictInputModel):
     birth_time_precision: Literal[
         "exact", "approximate_hour", "date_only"
@@ -762,61 +850,145 @@ class ChartRequest(StrictInputModel):
 
     @model_validator(mode="after")
     def check_birth_time_precision(self):
-        if self.datetime.second == 60:
-            utc_label = _leap_second_label_in_utc(self.datetime, self.timezone)
-            if self.datetime.year < 1972 or (
-                utc_label is not None and utc_label.year < 1972
-            ):
-                raise _rule_error(
-                    "leap_second_not_applicable_to_pre_1972_scale", "datetime", "second"
-                )
-            # The local `:59` must be exactly 23:59:59 UTC.  An offset that is
-            # not whole minutes has no `:60` label for the leap second; checking
-            # only the hour and minute let one through to Swiss as 23:58:60.
-            if (
-                self.birth_time_precision != "exact"
-                or utc_label is None
-                or (utc_label.hour, utc_label.minute, utc_label.second) != (23, 59, 59)
-                or utc_label.microsecond != 0
-            ):
-                raise _rule_error(
-                    "leap_second_requires_exact_utc_2359", "datetime", "second"
-                )
-            if (
-                utc_label.year,
-                utc_label.month,
-                utc_label.day,
-            ) not in KNOWN_UTC_LEAP_SECOND_DATES:
-                raise _rule_error(
-                    "leap_second_not_in_bundled_table", "datetime", "second"
-                )
+        _check_leap_second(self)
         if (
             self.options.moon_position_profile
             == "moon_only_topocentric_v1"
             and self.computation_mode.center != "geocentric"
         ):
             raise _rule_error("moon_profile_center_conflict")
-        # approximate_hour is the stated civil hour read as the
-        # half-open interval [H:00,H+1:00) in the named fold ("born in the 14
-        # o'clock hour"), not "around 14:00" and not "rounded to the nearest
-        # hour".  The sensitivity pass samples exactly that interval, which is
-        # why minute and second must stay zero.
-        if self.birth_time_precision == "approximate_hour" and (
-            self.datetime.minute != 0 or self.datetime.second != 0
+        _check_precision_clock(self)
+        return self
+
+
+# The nocturnal node profiles are app.core.firdaria.NOCTURNAL_NODE_PROFILES
+# (the schema cannot import that module: it imports time_utils, which imports
+# this one); tests/backend/test_annual_route.py binds the two.
+NocturnalNodeProfile = Literal[
+    "abu_mashar_nodes_after_mercury_v1",
+    "bonatti_reading_nodes_after_mars_v1",
+]
+# The same binding for core.zodiacal_releasing's year models and scopes.
+ZodiacalReleasingYearModel = Literal["zr_year_360_days_v1", "zr_year_365_25_days_v1"]
+ZodiacalReleasingScope = Literal[
+    "intersecting_year", "from_birth_through_year", "lifetime_window"
+]
+FirdariaScope = Literal["intersecting_year", "full_cycle", "lifetime_window"]
+# And for core.decennials: the start profiles, its scopes and the seven
+# planets (core.planetary_years.SEVEN_PLANETS) a user-selected start may name.
+DecennialsStartProfile = Literal[
+    "firmicus_sect_light_v1",
+    "valens_first_after_asc_v1",
+    "user_selected_planet_v1",
+]
+DecennialsScope = Literal["intersecting_year", "from_birth_through_year", "lifetime_window"]
+# And for core.monthly_profections' month-boundary profiles.
+MonthlyProfectionProfile = Literal[
+    "monthly_profection_solar_30_degree_months_v1",
+    "monthly_profection_return_year_twelfths_v1",
+]
+ClassicalPlanet = Literal["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn"]
+
+
+class AnnualInput(StrictInputModel):
+    """Which year and which annual techniques; no "today" and no server clock."""
+
+    # completed_years N is the return year [SR_N, SR_N+1); year_of_life is N+1.
+    # No lifetime cap: a cap would itself be a lifespan claim.  A year whose
+    # start falls after 2399 is refused by the route
+    # (solar_return_outside_supported_year_range), not here.
+    target_kind: Literal["completed_years", "year_of_life"]
+    target_value: int = Field(ge=0, le=500)
+    include_profection: bool = True
+    include_firdaria: bool = False
+    firdaria_nocturnal_node_profile: NocturnalNodeProfile = (
+        "abu_mashar_nodes_after_mercury_v1"
+    )
+    firdaria_scope: FirdariaScope = "intersecting_year"
+    include_zodiacal_releasing: bool = False
+    # The 360-day year of the distribution is the default; another year model
+    # is a named alternative the response labels, never merged with it.
+    zr_year_model: ZodiacalReleasingYearModel = "zr_year_360_days_v1"
+    zr_scope: ZodiacalReleasingScope = "intersecting_year"
+    include_natal_lots: bool = False
+    # The lifetime window's year boundaries with their profections
+    # (core.year_boundary.lifetime_window); not a technique of its own.
+    include_year_boundaries: bool = False
+    include_decennials: bool = False
+    # The sect light (Firmicus) is the default start; the others are named
+    # profiles, and only the user-selected one takes a planet.
+    decennials_start_profile: DecennialsStartProfile = "firmicus_sect_light_v1"
+    decennials_start_planet: Optional[ClassicalPlanet] = None
+    decennials_scope: DecennialsScope = "intersecting_year"
+    # The twelve months of year N (core.monthly_profections); year N only, so
+    # another year's months are asked for by that year.
+    include_monthly_profection: bool = False
+    # The Sun's 30-degree steps are the default month boundaries; equal
+    # twelfths of the return year are a named alternative.
+    monthly_profection_profile: MonthlyProfectionProfile = (
+        "monthly_profection_solar_30_degree_months_v1"
+    )
+
+    @model_validator(mode="after")
+    def check_annual_selection(self):
+        if self.target_kind == "year_of_life" and self.target_value < 1:
+            raise _rule_error("year_of_life_must_be_positive", "target_value")
+        if not (
+            self.include_profection or self.include_firdaria
+            or self.include_zodiacal_releasing or self.include_natal_lots
+            or self.include_decennials or self.include_monthly_profection
         ):
-            raise _rule_error("approximate_hour_requires_zero_subhour")
-        if self.birth_time_precision == "date_only":
-            if (
-                self.datetime.hour != 0
-                or self.datetime.minute != 0
-                or self.datetime.second != 0
-            ):
-                raise _rule_error("date_only_requires_zero_time")
-            # The request is kept as sent.  Rewriting
-            # include_houses here fabricated an explicit input in the receipt and
-            # told the user they had not asked for houses.  Houses are not
-            # computed without a birth time; the house module says so itself
-            # (not_applicable, reason date_only_no_birth_time).
+            raise _rule_error("annual_request_selects_no_technique")
+        if not self.include_firdaria and self.model_fields_set & {
+            "firdaria_nocturnal_node_profile", "firdaria_scope",
+        }:
+            raise _rule_error("firdaria_option_not_applicable")
+        if not self.include_zodiacal_releasing and self.model_fields_set & {
+            "zr_year_model", "zr_scope",
+        }:
+            raise _rule_error("zodiacal_releasing_option_not_applicable")
+        if not self.include_decennials and self.model_fields_set & {
+            "decennials_start_profile", "decennials_start_planet", "decennials_scope",
+        }:
+            raise _rule_error("decennials_option_not_applicable")
+        if not self.include_monthly_profection and self.model_fields_set & {
+            "monthly_profection_profile",
+        }:
+            raise _rule_error("monthly_profection_option_not_applicable")
+        user_selected = self.decennials_start_profile == "user_selected_planet_v1"
+        if user_selected and self.decennials_start_planet is None:
+            raise _rule_error("decennials_start_planet_required", "decennials_start_planet")
+        if not user_selected and self.decennials_start_planet is not None:
+            raise _rule_error("decennials_start_planet_not_applicable", "decennials_start_planet")
+        return self
+
+    @property
+    def completed_years(self) -> int:
+        return self.target_value - (1 if self.target_kind == "year_of_life" else 0)
+
+
+class AnnualRequest(StrictInputModel):
+    """The flagged annual route: the natal fields of ChartRequest plus `annual`."""
+
+    birth_time_precision: Literal[
+        "exact", "approximate_hour", "date_only"
+    ] = "exact"
+    datetime: DateTimeInput
+    timezone: TimezoneInput
+    location: LocationInput
+    atmosphere: AtmosphereInput = Field(default_factory=AtmosphereInput)
+    computation_mode: ComputationModeInput = Field(default_factory=ComputationModeInput)
+    annual: AnnualInput
+
+    @model_validator(mode="after")
+    def check_annual_request(self):
+        _check_leap_second(self)
+        _check_precision_clock(self)
+        # Every annual technique reads the solar-return year boundary, so the
+        # frame its root needs is the route's (central table).
+        refusal = solar_return_frame_refusal(self.computation_mode)
+        if refusal is not None:
+            raise _rule_error(refusal, "computation_mode")
         return self
 
 
@@ -926,7 +1098,7 @@ def _declared_field_names(*models: type[BaseModel]) -> frozenset[str]:
 # Derived from the models; the hand-kept list it replaces lived in main.py and
 # had to be edited by every package that added a field.
 REQUEST_FIELD_NAMES: frozenset[str] = _declared_field_names(
-    ChartRequest, PlaceSearchRequest, TimeConversionRequest
+    ChartRequest, PlaceSearchRequest, AnnualRequest, TimeConversionRequest
 )
 _REQUEST_ROOTS = frozenset({"body", "query"})
 UNDECLARED_KEY = "input"

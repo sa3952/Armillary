@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """The chart wheel's astrological glyphs, as SVG path strings.
 
-`frontend/zh-TW/chart-glyphs.js` holds one path per symbol the wheel draws
-(the planets, Chiron, the lunar nodes, the twelve signs and the retrograde
+`scripts/frontend/scripts/chart-glyphs.js` (shipped minified as
+`frontend/zh-TW/chart-glyphs.js`, its `/*!` licence header kept) holds one path per symbol the wheel draws
+(the planets, Chiron, Black Moon Lilith, the lunar nodes, the twelve signs and the retrograde
 mark).  The same string feeds an SVG `<path d>` on the page and in the SVG
 download, and a Canvas `Path2D` in the PNG download, so no system font or
 emoji presentation decides what a symbol looks like.
@@ -36,7 +37,7 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[2]
-OUTPUT = ROOT / "frontend" / "zh-TW" / "chart-glyphs.js"
+OUTPUT = ROOT / "scripts" / "frontend" / "scripts" / "chart-glyphs.js"
 LICENCES = (
     ROOT / "third_party" / "noto-fonts" / "OFL-noto-sans-symbols.txt",
     ROOT / "third_party" / "noto-fonts" / "OFL-noto-sans.txt",
@@ -67,6 +68,7 @@ GLYPHS: dict[str, tuple[int, str]] = {
     "neptune": (0x2646, SYMBOLS),
     "pluto": (0x2647, SYMBOLS),
     "chiron": (0x26B7, SYMBOLS),
+    "lilith": (0x26B8, SYMBOLS),
     "north_node": (0x260A, SYMBOLS),
     "south_node": (0x260B, SYMBOLS),
     "retrograde": (0x211E, SANS),
@@ -306,7 +308,7 @@ def render(glyphs: dict[str, dict[str, object]]) -> str:
             f"      d: {json.dumps(glyph['d'])} }}),"
         )
     fonts = "\n".join(f" *   {name}  sha256 {digest}" for name, digest in FONTS.items())
-    return f"""/*
+    return f"""/*!
  * 星盤圖的符號：每個符號一條 SVG path，同一份字串給頁面與下載 SVG 的 <path d>，
  * 也給 PNG 下載的 Canvas Path2D。不用系統字型或 emoji，所以各平台畫出來一樣。
  *

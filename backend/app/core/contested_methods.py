@@ -29,8 +29,8 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
         "technique_family": "void_of_course",
         "response_path": "derived_methods.void_of_course",
         "note_zh": (
-            "月空亡的定義，古典文獻本身就不一致，同一張盤可能得到不同結論：Porphyry 名下的"
-            "《Introduction》ch.23 看月亮在接下來 30° 內是否與行星接合，不管是否換座；"
+            "月空亡的定義有兩種，同一張盤可能得到不同結論：Porphyry 名下的"
+            "《占星四書導論》（Eisagōgē）第 23 章看月亮在接下來 30° 內是否與行星接合，不管是否換座；"
             "Lilly《Christian Astrology》（1647）p.112 以月亮離開本星座前是否再入相位為準。"
             "本產品採「離開本星座前沒有任何相位精確完成」。"
             "要求換座前精確完成：後人文獻歸於 Al H. Morrison（AFA Journal 1966 年 10 月有專文，原文未讀）；"
@@ -53,8 +53,8 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
         "technique_family": "lots",
         "response_path": "derived_methods.lots",
         "note_zh": (
-            "命運點與精神點的公式，古典文獻本身就不一致：Ptolemy《Tetrabiblos》III.10 主張"
-            "命運點日夜都由太陽量到月亮；Valens《Anthologies》III.11（Pingree 編號；Kroll／Riley 為 III.14）記載夜盤另依月亮是否已"
+            "命運點與精神點的公式有兩種：Ptolemy《占星四書》（Tetrabiblos）III.10 主張"
+            "命運點日夜都由太陽量到月亮；Valens《占星選集》（Anthologiae）III.11（Pingree 編號；Kroll／Riley 為 III.14）記載夜盤另依月亮是否已"
             "落下而改式。本產品採夜盤反轉的公式。"
         ),
         "sources": [
@@ -71,7 +71,7 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
         "response_path": "derived_methods.essential_dignities",
         "technique_key": "bounds",
         "note_zh": (
-            "界有多套表並存，同一度數可能歸給不同行星：Ptolemy《Tetrabiblos》I.20–21 並列"
+            "界有多套表並存，同一度數可能歸給不同行星：Ptolemy《占星四書》（Tetrabiblos）I.20–21 並列"
             "埃及界與迦勒底界並加以評比，書中所附的完整界表是否出自 Ptolemy，學界也有爭議。"
             "所以本產品不預設任何一套，由你選表。"
         ),
@@ -87,8 +87,8 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
         "response_path": "derived_methods.aspects",
         "technique_key": "degree_based.in_orb",
         "note_zh": (
-            "容許度的數字與算法，前現代文本本身就不一致：Lilly《Christian Astrology》（1647）"
-            "p.107 並列兩組容許度，並說自己兩組交替使用；al-Bīrūnī《Book of Instruction》"
+            "容許度的數字與算法有好幾種：Lilly《Christian Astrology》（1647）"
+            "p.107 並列兩組容許度，並說自己兩組交替使用；al-Bīrūnī《占星術入門》（Kitāb al-Tafhīm）"
             "§490 記下六種不同說法。「是否在容許度內」因此取決於所選的表。"
             "另外，本產品的逐度層不要求兩星先在星座上相見，Lilly 1647 p.109 與 al-Bīrūnī "
             "§446 則以此為前提；整宮層另列在同一表。"
@@ -108,7 +108,7 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
         "response_path": "derived_methods.aspects",
         "technique_key": "degree_based.partile",
         "note_zh": (
-            "「同度」的定義也不一致：Lilly《Christian Astrology》（1647）p.106 指兩星恰好相差"
+            "「同度」的定義有幾種：Lilly《Christian Astrology》（1647）p.106 指兩星恰好相差"
             "構成相位的度數；載於 Lilly 名下的 1677 年曆格言第 25 條，以相差 3 度內為同度；"
             "「1 度以內」的用法則沒有找到具名出處。本產品預設採同一整數度，而且只在兩星的"
             "星座先構成該相位時才判定同度。"
@@ -120,6 +120,61 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
             "William Lilly)",
             "Deborah Houlding, Skyscript glossary 'Partile / Platick' (secondary; "
             "the within-one-degree usage, no named author)",
+        ],
+    },
+    "dodecatemoria_formula": {
+        "technique_family": "dodecatemoria",
+        "response_path": "derived_methods.dodecatemoria",
+        "note_zh": (
+            "十二分部有兩種算法：乘以 12（Firmicus）或乘以 13（Paulus），同一個點常落在不同星座。"
+            "本產品預設乘以 12，另一種可在選項裡改選。"
+        ),
+        "sources": [
+            "Firmicus Maternus, Mathesis II.13 (Kroll-Skutsch numbering): degrees and "
+            "minutes times 12 from the start of the sign; example Sun Aries 5 deg 05 min, "
+            "first degree of Gemini (Latin read)",
+            "Paulus Alexandrinus, Introduction ch.22: degrees times 13; example Aries "
+            "11 deg, Leo 23 deg (via Greenbaum and Jones, ISAW Papers 12, 2017, "
+            "para. 185; the Greek not checked)",
+        ],
+    },
+    "solar_phase_limits": {
+        "technique_family": "solar_phase",
+        "response_path": "derived_methods.solar_phase",
+        "note_zh": (
+            "日輪內、焦傷與在光束下的界線有三套數值：Lilly《Christian Astrology》"
+            "（1647）p.113 寫 17′、8°30′、17°，同書格言第 26 條又寫光束下 12°、日輪內 16′；"
+            "al-Bīrūnī《占星術入門》（Kitāb al-Tafhīm）§481–484 寫日輪內不到 16′、焦傷 6°，"
+            "光束下依行星與東西側不同，從 12° 到 18°；希臘化作者只有一條 15° 的線。"
+            "本站預設 Lilly p.113，三種分法的結果都列出。"
+        ),
+        "sources": [
+            "William Lilly, Christian Astrology (1647) p.113: 17 minutes, 8 deg 30 min, "
+            "17 degrees; aphorism 26 (p.300 per Houlding): 12 degrees and 16 minutes",
+            "al-Biruni, Book of Instruction, trans. Wright (1934) §481-484: under 16 "
+            "minutes, 6 degrees (7 for Mercury and Venus direct), under the rays 12-18 "
+            "degrees by planet and side",
+            "Porphyry, Introduction ch.2; Antiochus (via Brennan 2017, secondary): "
+            "one band of 15 degrees",
+        ],
+    },
+    "hayz_definition": {
+        "technique_family": "classical_classifications",
+        "response_path": "derived_methods.classical_classifications",
+        "note_zh": (
+            "hayz 的定義：al-Bīrūnī《占星術入門》（Kitāb al-Tafhīm）第 496 節說，夜行星要夜裡在地平上、"
+            "白天在地平下，只合這一條叫 halb，再加上行星與星座的陰陽相合才叫 hayyiz（al-Qabīṣī、"
+            "Bonatti 相同）；Lilly《Christian Astrology》（1647）第 113 頁說陰性夜行星要夜裡在地平下，"
+            "而且沒有 halb 這一層，火星與水星也不在他的定義裡。同一張盤兩種說法常常結果不同，"
+            "本產品兩種都列出，不替你挑。"
+        ),
+        "sources": [
+            "al-Bīrūnī, Kitāb al-tafhīm §496 (Wright 1934, read in the archive.org OCR text): "
+            "a nocturnal planet above the earth by night and below it by day; halb, and hayyiz "
+            "with the sign's gender",
+            "William Lilly, Christian Astrology (1647) p.113 (read in an archive.org OCR text "
+            "of a modern reset edition): a feminine nocturnal planet by night under the earth "
+            "in a feminine sign; no halb",
         ],
     },
 }

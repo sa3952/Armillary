@@ -6,7 +6,7 @@ daylight saving that year), the same instant as the home page demonstration.
 """
 from __future__ import annotations
 
-from ._common import SIGNS, calc_ut, indent, swiss
+from ._common import SIGNS, calc_ut, indent, spoken_longitude as _spoken, swiss
 
 
 FRAGMENT = "blog-birth-time-sensitivity"
@@ -86,13 +86,6 @@ def _data(swe) -> dict:
     if not before < 180 <= after:
         raise RuntimeError(f"the ascendant does not cross 180° between {CROSSING}: {before}, {after}")
     return out
-
-
-def _spoken(lon: float) -> str:
-    """「處女座 24 度 47 分」: whole minutes, rounded."""
-    total = round(lon * 60)
-    sign, rest = divmod(total, 30 * 60)
-    return f"{SIGNS[sign]}座 {rest // 60} 度 {rest % 60} 分"
 
 
 def _hero(d: dict) -> str:

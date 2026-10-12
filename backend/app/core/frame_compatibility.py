@@ -59,7 +59,6 @@ _NUTATION_ON = ("nutation", frozenset({True}))
 _NUTATION_ON_OR_SIDEREAL = (_NUTATION_ON, ("zodiac", frozenset({"sidereal"})))
 
 NON_EARTH_OBSERVER_CENTER = "non_earth_observer_center"
-ANGLE_FRAME_INCOMPATIBLE = "angle_frame_incompatible_with_body_longitudes"
 EARTH_OBSERVER_PHENOMENA_NOT_APPLICABLE = (
     "earth_observer_phenomena_not_applicable_for_center"
 )
@@ -71,8 +70,7 @@ REPORT_ALL = "every_failing_requirement"
 
 # Each row: ordered (requirement, reason_code) pairs.  A requirement is
 # (request axis, accepted values), or a tuple of such pairs of which any one
-# suffices.  ``parent`` makes a sub-method inherit its
-# parent's refusal, so a refused module never also reports a child reason.
+# suffices.
 METHOD_FRAME_TABLE: dict[str, dict[str, Any]] = {
     # Phase angle, illuminated fraction, elongation, apparent diameter and
     # magnitude are Earth-observer quantities; Swiss pheno_ut ignores the
@@ -108,14 +106,6 @@ METHOD_FRAME_TABLE: dict[str, dict[str, Any]] = {
             (_EARTH_CENTRE, NON_EARTH_OBSERVER_CENTER),
             (_OF_DATE, "j2000_aspects_basis_not_authorized"),
             (_NUTATION_ON_OR_SIDEREAL, "nutation_off_aspects_basis_not_authorized"),
-        ),
-    },
-    "aspect_angle_participation": {
-        "parent": "aspects",
-        "requirements": (
-            (_EARTH_CENTRE, ANGLE_FRAME_INCOMPATIBLE),
-            (_OF_DATE, ANGLE_FRAME_INCOMPATIBLE),
-            (_NUTATION_ON_OR_SIDEREAL, ANGLE_FRAME_INCOMPATIBLE),
         ),
     },
     "lots": {
@@ -155,6 +145,45 @@ METHOD_FRAME_TABLE: dict[str, dict[str, Any]] = {
             (_NUTATION_ON, "nutation_off_dignity_basis_not_authorized"),
         ),
     },
+    # Twelfth-parts read the degree inside the sign of date, as the Lots do; a
+    # sidereal longitude is unchanged by the nutation flag, so it stays allowed.
+    "dodecatemoria": {
+        "requirements": (
+            (_EARTH_CENTRE, NON_EARTH_OBSERVER_CENTER),
+            (_OF_DATE, "j2000_dodecatemoria_basis_not_authorized"),
+            (_NUTATION_ON_OR_SIDEREAL, "nutation_off_dodecatemoria_basis_not_authorized"),
+        ),
+    },
+    # Planet and place classifications read the horizon (sect, above or under
+    # the earth) and the sign of date, as the Lots do.
+    "classical_classifications": {
+        "requirements": (
+            (_EARTH_CENTRE, NON_EARTH_OBSERVER_CENTER),
+            (_OF_DATE, "j2000_classical_classification_basis_not_authorized"),
+            (_NUTATION_ON_OR_SIDEREAL, "nutation_off_classical_classification_basis_not_authorized"),
+        ),
+    },
+    # The mansions start at the vernal point of date: a sidereal zodiac, the
+    # J2000 ecliptic or a mean equinox moves the zero point, and a chart seen
+    # from the Sun or the barycentre has no Moon's station to name.
+    "lunar_mansions": {
+        "requirements": (
+            (_EARTH_CENTRE, NON_EARTH_OBSERVER_CENTER),
+            (_TROPICAL, "sidereal_lunar_mansion_basis_not_authorized"),
+            (_OF_DATE, "j2000_lunar_mansion_basis_not_authorized"),
+            (_NUTATION_ON, "nutation_off_lunar_mansion_basis_not_authorized"),
+        ),
+    },
+    # The distance from the Sun is a difference of two longitudes of date as
+    # seen from the Earth; a sidereal zodiac subtracts the same ayanamsa from
+    # both, so only the frame and the centre are restricted.
+    "solar_phase": {
+        "requirements": (
+            (_EARTH_CENTRE, NON_EARTH_OBSERVER_CENTER),
+            (_OF_DATE, "j2000_solar_phase_basis_not_authorized"),
+            (_NUTATION_ON_OR_SIDEREAL, "nutation_off_solar_phase_basis_not_authorized"),
+        ),
+    },
 }
 
 FRAME_REASON_CODES = tuple(
@@ -181,6 +210,32 @@ def request_frame_refusal(mode) -> str | None:
     return None
 
 
+# The annual route's request-level frame.  Its year boundary is a solar
+# return root, and three frames move that root while still returning a number:
+# a topocentric Sun moves it with the place (+38 s Taipei to -289 s Santiago,
+# measured), the J2000 ecliptic turns it into the sidereal return (identical to
+# 0.0 s), and nutation off moves it by -760 to +81 s over the 18.6-year cycle.
+# Every annual technique reads that boundary, so the route refuses them all.
+_GEOCENTRE = ("center", frozenset({"geocentric"}))
+SOLAR_RETURN_FRAME_REQUIREMENTS = (
+    (_GEOCENTRE, "solar_return_requires_geocentric_center"),
+    (_OF_DATE, "solar_return_requires_ecliptic_of_date"),
+    (_NUTATION_ON, "solar_return_requires_nutation"),
+)
+SOLAR_RETURN_FRAME_REFUSAL_CODES = tuple(
+    code for _requirement, code in SOLAR_RETURN_FRAME_REQUIREMENTS
+)
+
+
+def solar_return_frame_refusal(mode) -> str | None:
+    """The first closed reason the annual route refuses this frame for, if any."""
+
+    for requirement, code in SOLAR_RETURN_FRAME_REQUIREMENTS:
+        if not _requirement_met(requirement, mode):
+            return code
+    return None
+
+
 def _requirement_met(requirement, mode) -> bool:
     alternatives = (
         requirement if isinstance(requirement[0], tuple) else (requirement,)
@@ -196,11 +251,6 @@ def method_frame_state(method: str, mode) -> dict:
     """
 
     row = METHOD_FRAME_TABLE[method]
-    parent = row.get("parent")
-    if parent is not None:
-        parent_state = method_frame_state(parent, mode)
-        if not parent_state["applicable"]:
-            return parent_state
     failing: list[str] = []
     for requirement, code in row["requirements"]:
         if not _requirement_met(requirement, mode) and code not in failing:

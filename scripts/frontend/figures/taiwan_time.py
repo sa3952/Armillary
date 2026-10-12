@@ -12,10 +12,11 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 import json
+import re
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from ._common import SIGNS, indent, swiss
+from ._common import SIGNS, indent, swiss, zh
 
 
 FRAGMENT = "blog-taiwan-time-zone-history"
@@ -199,6 +200,7 @@ def build() -> tuple[dict[str, str], list[str]]:
         asc_right, asc_wrong = asc(right[0]), asc(wrong)
     quoted = [
         f"<b>{summers}</b><span>個實施日光節約時間的夏季",
+        f"{zh(summers)}個撥快一小時的夏天",
         f"<b>{gaps}</b><span>個不存在的鐘點",
         f"<b>{hour_folds}</b><span>個出現兩次的鐘點",
         f'<td class="n">{right[0]:%H:%M}</td><td>{_deg_min(asc_right)}</td>',
@@ -206,3 +208,11 @@ def build() -> tuple[dict[str, str], list[str]]:
         f"上升點差了 {(asc_wrong - asc_right) % 360:.0f} 度",
     ]
     return {"clock-offset": _figure(pin), "dst-summers": _rows(pin)}, quoted
+
+
+def elsewhere(fragment: str) -> dict[str, list[str]]:
+    """The blog index repeats the article's §02 heading."""
+    summers = re.search(r"<b>(\d+)</b><span>個實施日光節約時間的夏季", fragment)
+    if summers is None:
+        raise RuntimeError(f"{FRAGMENT}: the stat block no longer prints the number of summers")
+    return {"blog": [f"{zh(int(summers.group(1)))}個撥快一小時的夏天"]}

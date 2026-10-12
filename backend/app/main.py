@@ -28,6 +28,7 @@ from .ephemeris import (
     release_ephemeris_for_thread,
 )
 from .schemas import (
+    AnnualRequest,
     ChartRequest,
     PlaceSearchRequest,
     RefusalResponse,
@@ -38,6 +39,7 @@ from .schemas import (
     validation_issues,
 )
 from .refusals import (
+    ANNUAL_ROUTE,
     CHART_ROUTE,
     HEALTH_ROUTE,
     PLACE_SEARCH_ROUTE,
@@ -65,6 +67,7 @@ from .response_projection import (
     ChartProjection,
     project_chart_response,
 )
+from .annual_projection import DEFAULT_ANNUAL_PROJECTION, project_annual_response
 from .core.place_catalog import (
     PlaceCatalog,
     PlaceCatalogUnavailableError,
@@ -77,6 +80,8 @@ from .privacy_logging import (
     silence_server_access_log,
 )
 from .request_limits import (
+    _BOUNDED_JSON_PATHS,
+    _COMPUTE_PATHS,
     COMPUTE_QUEUE_WAIT_BUDGET_SECONDS,
     ApiMethodBoundary,
     ChartRequestBoundary,
@@ -95,6 +100,10 @@ from .settings import AppSettings, load_settings
 # Imported last: importing the pipeline binds the bundled ephemeris path and
 # reads the bundled file set once, after every other module has loaded.
 from .chart_pipeline import SCHEMA_VERSION, compute_chart_response
+from .annual_pipeline import (
+    SolarReturnOutsideSupportedYearRangeError,
+    compute_annual_response,
+)
 
 
 async def health_check() -> dict[str, object]:
@@ -191,6 +200,18 @@ async def _handle_request_validation(
     return _refuse(request, "request_validation_failed", issues=issues)
 
 
+async def _handle_annual_year_out_of_range(
+    request: Request, exc: SolarReturnOutsideSupportedYearRangeError
+):
+    # Known only once the N-th return is found, but a fact about the requested
+    # year: the same closed refusal as the other annual rules, at its field.
+    return _refuse(
+        request,
+        "request_validation_failed",
+        issues=[{"type": exc.code, "loc": ["body", "annual", "target_value"]}],
+    )
+
+
 async def _handle_strict_json_body(request: Request, exc: StrictJsonBodyError):
     return _refuse(request, exc.code, issues=exc.issues)
 
@@ -254,7 +275,22 @@ def _compute_chart_in_worker(req: ChartRequest):
         release_ephemeris_for_thread()
 
 
+def _compute_annual_in_worker(req: AnnualRequest):
+    try:
+        return _compute_annual_locked(req)
+    finally:
+        release_ephemeris_for_thread()
+
+
 async def compute_chart_for_request(req: ChartRequest, request: Request):
+    return await _compute_in_line(_compute_chart_in_worker, req, request)
+
+
+async def compute_annual_for_request(req: AnnualRequest, request: Request):
+    return await _compute_in_line(_compute_annual_in_worker, req, request)
+
+
+async def _compute_in_line(work: Callable[[Any], Any], req: Any, request: Request):
     """Wait in line for Swiss, then compute; cancel only queued work.
 
     The line is first come, first served, and the wait is bounded from arrival.
@@ -274,7 +310,7 @@ async def compute_chart_for_request(req: ChartRequest, request: Request):
         if isinstance(scope, dict):
             mark_compute_entered(scope)
 
-        worker = asyncio.create_task(run_in_threadpool(_compute_chart_in_worker, req))
+        worker = asyncio.create_task(run_in_threadpool(work, req))
         # The place in line is released when the worker exits, not when this
         # request returns, so a cancelled request cannot let the next one in
         # while Swiss is still running.
@@ -303,6 +339,17 @@ def _compute_chart_locked(req: ChartRequest):
     )
 
 
+def _compute_annual_locked(req: AnnualRequest):
+    return compute_annual_response(
+        req,
+        build_identity=_BUILD_IDENTITY_CONTEXT.get() or {
+            "status": "unavailable",
+            "source_revision": None,
+            "revision_source": None,
+        },
+    )
+
+
 def _declared_refusals(route: str) -> dict[int | str, dict[str, Any]]:
     # Every status a route can refuse with, and the closed codes
     # that arrive under it, read from the one refusal table.
@@ -320,8 +367,13 @@ def _add_api_routes(
     *,
     place_catalog: PlaceCatalog,
     runtime_build_identity: dict,
+    enable_annual_route: bool = False,
 ) -> dict[str, frozenset[str]]:
-    """The four API routes; returns the methods each one serves."""
+    """The API routes; returns the methods each one serves.
+
+    The annual route is a candidate: without its flag it is not registered,
+    so it is an unknown API path and absent from the OpenAPI document.
+    """
 
     async def identified_compute_chart(
         req: ChartRequest,
@@ -405,6 +457,36 @@ def _add_api_routes(
         ),
         responses=_declared_refusals(TIME_CONVERT_ROUTE),
     )
+    if enable_annual_route:
+        async def identified_compute_annual(
+            req: AnnualRequest,
+            request: Request,
+            projection: ChartProjection = DEFAULT_ANNUAL_PROJECTION,
+        ):
+            # The same natal input as /api/chart, so the same question first.
+            await run_in_threadpool(check_civil_time_basis, req, place_catalog.record_zone)
+            token = _BUILD_IDENTITY_CONTEXT.set(runtime_build_identity)
+            try:
+                # page is derived from this one detailed response.
+                return project_annual_response(
+                    await compute_annual_for_request(req, request), projection
+                )
+            finally:
+                _BUILD_IDENTITY_CONTEXT.reset(token)
+
+        application.add_api_route(
+            ANNUAL_ROUTE,
+            identified_compute_annual,
+            methods=["POST"],
+            name="compute_annual",
+            response_model=dict[str, Any],
+            response_description=(
+                "Annual-techniques response (year boundary, profection, "
+                "firdaria, extended lots, zodiacal releasing); see output_contract."
+            ),
+            responses=_declared_refusals(ANNUAL_ROUTE),
+        )
+        api_method_routes[ANNUAL_ROUTE] = frozenset({"POST"})
     return api_method_routes
 
 
@@ -423,6 +505,7 @@ def _add_refusal_handlers(application: FastAPI) -> None:
         (StrictJsonBodyError, _handle_strict_json_body),
         (RequestValidationError, _handle_request_validation),
         (ComputeCapacityExhaustedError, _handle_domain_error),
+        (SolarReturnOutsideSupportedYearRangeError, _handle_annual_year_out_of_range),
         (swe.Error, _handle_domain_error),
         (StarletteHTTPException, _handle_http_exception),
     ):
@@ -464,6 +547,7 @@ def _add_boundary_middleware(
     application: FastAPI,
     *,
     api_method_routes: dict[str, frozenset[str]],
+    compute_paths: frozenset[str],
     expected_host: Any,
     event_emitter: Callable[[dict], bool] | None,
     static_asset_version: Callable[[str], str | None] | None,
@@ -481,8 +565,12 @@ def _add_boundary_middleware(
     # check, header-decidable refusals and the bounded body (size and total
     # deadline) come before admission, so a body still arriving holds no
     # compute or lookup slot.
-    application.add_middleware(RequestCapacityBoundary)
-    application.add_middleware(ChartRequestBoundary, expected_host=expected_host)
+    application.add_middleware(RequestCapacityBoundary, compute_paths=compute_paths)
+    application.add_middleware(
+        ChartRequestBoundary,
+        expected_host=expected_host,
+        bounded_json_paths=_BOUNDED_JSON_PATHS | compute_paths,
+    )
 
     # Privacy remains the outer user middleware so it can contain downstream
     # response-lifecycle failures and apply headers to request-boundary errors.
@@ -529,6 +617,7 @@ def create_app(
         application,
         place_catalog=place_catalog,
         runtime_build_identity=runtime_build_identity,
+        enable_annual_route=resolved_settings.enable_annual_route,
     )
     _add_refusal_handlers(application)
     frontend_dir = str(
@@ -542,6 +631,9 @@ def create_app(
     _add_boundary_middleware(
         application,
         api_method_routes=api_method_routes,
+        compute_paths=_COMPUTE_PATHS | (
+            {ANNUAL_ROUTE} if resolved_settings.enable_annual_route else frozenset()
+        ),
         expected_host=resolved_settings.expected_host,
         event_emitter=event_emitter,
         static_asset_version=static_asset_version,

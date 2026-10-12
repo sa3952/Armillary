@@ -2,7 +2,9 @@
 """Build the production image from one exact Git revision (Gate D input).
 
 The build context is a `git archive` snapshot of HEAD, never the working tree,
-after the `.dockerignore` whitelist check.  A release candidate is built by an
+plus a `wheelhouse/` of the locked wheels, downloaded here with their lock
+hashes checked, from which the builder's pip installs with `--no-index` in a
+RUN step without network; then the `.dockerignore` whitelist check.  A release candidate is built by an
 ephemeral BuildKit container (pinned image, no cache) and needs a verified
 Corresponding Source publication receipt for its revision; a diagnostic build
 uses the default builder and is labelled provisional.  The receipt written to
@@ -24,8 +26,9 @@ import time
 from typing import Any
 
 from scripts.deployment.frontend_release import validate_publication_receipt
+from scripts.publication.prepare_third_party_sources import SourcePreparationError, parse_lock
 from scripts.tools.output_confinement import external_output_path
-from scripts.tools.source_tree_identity import materialize_git_snapshot
+from scripts.tools.source_tree_identity import materialize_git_snapshot, sha256_file
 from scripts.verification.verify_docker_context import DockerContextFailure, verify as verify_context
 
 
@@ -40,6 +43,90 @@ BUILD_PURPOSES = ("diagnostic", "release-candidate")
 
 class BuildTransactionFailure(RuntimeError):
     pass
+
+
+# Written into the snapshot; deploy/Dockerfile copies it and installs from it only.
+WHEELHOUSE = "wheelhouse"
+# Built in the image from the vendored source deploy/Dockerfile copies, so no wheel is downloaded for it.
+SOURCE_BUILT_PACKAGES = frozenset({"pyswisseph"})
+# The two entries of the build lock the image build installs: pyswisseph's backend.
+BUILD_BACKEND = ("setuptools", "wheel")
+# glibc (2.N) of the Debian release the pinned base image names.  pip download
+# matches only the platform tags it is given, so every manylinux_2_N down to
+# 2_5 is given, newest first: the order of preference pip in the image has.
+BASE_GLIBC_MINOR = {"trixie": 41}
+WHEEL_ARCHITECTURES = {"amd64": "x86_64", "arm64": "aarch64"}
+_BASE_IMAGE = re.compile(r"^FROM python:(\d+)\.(\d+)\.\d+-slim-([a-z]+)@sha256:[0-9a-f]{64}", re.M)
+
+
+def prepare_wheelhouse(context: Path, platform: str) -> dict[str, str]:
+    """Download into `context`/wheelhouse exactly one wheel for every entry of
+    deploy/requirements.lock that is not built from source, and the build
+    lock's setuptools and wheel, for the base image's CPython, glibc and
+    `platform`; pip checks each against the lock hashes, and so does this.
+    Returns {wheel filename: sha256}."""
+
+    _os, architecture = platform_contract(platform)
+    base = _BASE_IMAGE.search((context / "deploy/Dockerfile").read_text(encoding="utf-8"))
+    if base is None or base.group(3) not in BASE_GLIBC_MINOR:
+        raise BuildTransactionFailure("deploy/Dockerfile names no supported pinned Python base")
+    major, minor, release = base.groups()
+    try:
+        packages = [
+            package for package in parse_lock(context / "deploy/requirements.lock", "production")
+            if package["name"].lower() not in SOURCE_BUILT_PACKAGES
+        ] + [
+            package for package in parse_lock(context / "deploy/build-requirements.lock", "build")
+            if package["name"].lower() in BUILD_BACKEND
+        ]
+    except SourcePreparationError as error:
+        raise BuildTransactionFailure(str(error)) from None
+    if sorted(package["name"].lower() for package in packages if package["name"].lower() in BUILD_BACKEND) \
+            != sorted(BUILD_BACKEND):
+        raise BuildTransactionFailure("the build lock does not pin exactly one setuptools and one wheel")
+    wheelhouse = context / WHEELHOUSE
+    wheelhouse.mkdir()
+    requested = context.parent / "wheelhouse.lock"
+    requested.write_text("".join(
+        f"{package['name']}=={package['version']} "
+        + " ".join(f"--hash=sha256:{digest}" for digest in package["allowed_sha256"]) + "\n"
+        for package in packages
+    ), encoding="utf-8")
+    try:
+        _run([
+            sys.executable, "-m", "pip", "download", "--disable-pip-version-check", "--no-cache-dir",
+            "--no-deps", "--require-hashes", "--only-binary=:all:",
+            *(word for glibc in range(BASE_GLIBC_MINOR[release], 4, -1)
+              for word in ("--platform", f"manylinux_2_{glibc}_{WHEEL_ARCHITECTURES[architecture]}")),
+            "--implementation", "cp", "--python-version", f"{major}.{minor}", "--abi", f"cp{major}{minor}",
+            "--dest", str(wheelhouse), "--requirement", str(requested),
+        ], timeout=900)
+    finally:
+        requested.unlink(missing_ok=True)
+    from packaging.utils import InvalidWheelFilename, canonicalize_name, parse_wheel_filename
+
+    allowed: dict[tuple[str, str], set[str]] = {
+        (str(canonicalize_name(package["name"])), str(package["version"])): set(package["allowed_sha256"])
+        for package in packages
+    }
+    downloaded: dict[str, str] = {}
+    found: set[tuple[str, str]] = set()
+    for path in sorted(wheelhouse.iterdir()):
+        try:
+            name, version, _build, _tags = parse_wheel_filename(path.name)
+        except InvalidWheelFilename:
+            name, version = canonicalize_name(path.name), None
+        key = (str(name), str(version))
+        if not path.is_file() or sha256_file(path) not in allowed.get(key, set()):
+            raise BuildTransactionFailure(f"wheelhouse file is not authorized by the locks: {path.name}")
+        found.add(key)
+        downloaded[path.name] = sha256_file(path)
+    if found != set(allowed) or len(downloaded) != len(allowed):
+        raise BuildTransactionFailure(
+            "the wheelhouse does not hold exactly one wheel per locked entry: "
+            f"missing={sorted(set(allowed) - found)}"
+        )
+    return downloaded
 
 
 def platform_args(platform: str | None) -> list[str]:
@@ -138,6 +225,7 @@ def build_image(
     started = time.time()
     with tempfile.TemporaryDirectory(prefix="armillary-build-") as raw:
         context = materialize_git_snapshot(source_root, revision, Path(raw) / "context")
+        wheelhouse = prepare_wheelhouse(context, platform)
         try:
             verify_context(context)
         except DockerContextFailure as error:
@@ -179,6 +267,7 @@ def build_image(
         "platform": platform,
         "purpose": purpose,
         "publication_status": publication_status,
+        "wheelhouse_sha256": wheelhouse,
         "builder_isolation": (
             "ephemeral_docker_container_builder_no_cache" if builder else "diagnostic_default_builder"
         ),

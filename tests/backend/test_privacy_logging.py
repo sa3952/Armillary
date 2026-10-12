@@ -154,6 +154,40 @@ def test_structured_event_schema_is_closed_and_discards_attacker_controlled_text
     conversion = _event(path="/api/time/convert", content_length="120")
     assert conversion["route"] == "/api/time/convert"
     assert "datetime" not in conversion and "timezone" not in conversion
+    # The annual route has its own label, not the page fetches' bucket.
+    annual = _event(path="/api/chart/annual", content_length="300")
+    assert annual["route"] == "/api/chart/annual"
+    assert "annual" not in annual and "datetime" not in annual
+
+
+@pytest.mark.parametrize("enabled", (True, False))
+def test_the_annual_route_is_logged_under_its_own_label_with_or_without_its_flag(enabled):
+    """Through the real application: a computed annual answer (flag on) and the
+    unknown-path refusal the same path gets with the flag off are both events of
+    the annual label, carrying no input; a child path the application never
+    declares stays unmatched."""
+    from app.main import create_app
+    from app.settings import AppSettings
+
+    events: list[dict] = []
+    application = create_app(
+        AppSettings(enable_annual_route=enabled),
+        event_emitter=lambda event: events.append(event) or True,
+    )
+    payload = minimal_chart_payload(year=1987, minute=41)
+    payload["annual"] = {"target_kind": "completed_years", "target_value": 3}
+    with TestClient(application, raise_server_exceptions=False) as client:
+        answered = client.post("/api/chart/annual", json=payload)
+        undeclared = client.post("/api/chart/annual/next", json=payload)
+    assert answered.status_code == (200 if enabled else 404), answered.text[:200]
+    assert undeclared.status_code == 404
+    annual, other = events
+    assert annual["route"] == "/api/chart/annual" and annual["method"] == "POST"
+    assert annual["status_code"] == answered.status_code
+    assert annual["error_code"] == (None if enabled else "unknown_api_path")
+    assert other["route"] == "frontend_or_unmatched"
+    encoded = json.dumps(events)
+    assert "1987" not in encoded and "121.56" not in encoded
 
 
 def test_duration_bucket_rejects_non_finite_values():

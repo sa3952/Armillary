@@ -1,4 +1,16 @@
-"""Exact maintained-source identity shared by delivery and mutation gates."""
+"""Source-tree identity for the delivery and publication tools.
+
+`observe_source_tree` digests a tree: in a Git checkout its maintained paths
+(tracked plus untracked, not ignored) with their bytes, symlink targets and
+executable bits, and the index; in a checkout without `.git`, the published
+tree against its PUBLICATION_FILES.json (`observe_publication_tree`).  The
+public tree's verify_delivery is its consumer.
+
+The mutation gate (`make mutation`, private) does not use that
+identity: it takes only the path list, `maintained_source_paths`, and copies
+those paths from the working tree as it is, dirty or not; only its `--receipt`
+mode requires a clean checkout and names its revision.
+"""
 
 from __future__ import annotations
 

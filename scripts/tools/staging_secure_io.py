@@ -33,12 +33,12 @@ def require_trusted_parent(path: Path, *, role: str) -> None:
         )
 
 
-# OPS-47: privileged commands run `sudo python3 -m scripts...` and
-# `sudo bash scripts/deployment/host_install.sh` from a checkout.  Root then
+# Privileged commands run `sudo python3 -m scripts...` and
+# the host installer under `sudo bash` from a checkout.  Root then
 # reads from it: the Python it imports (scripts/, and backend/app/ through
 # backend/, which goes first on sys.path), and the deploy/ files it hands to
 # Docker Compose (the compose files and their project directory's .env),
-# renders (NGINX and Certbot templates), installs into /etc (deploy/staging/host,
+# renders (NGINX and Certbot templates), installs into /etc (the host configuration files,
 # nginx.conf) or reads as input (the frontend contract, the synthetic chart).
 # tests/deployment/test_privileged_checkout.py observes that set.  These trees
 # must be root-owned, not group/world writable, without symlinks; so must the
@@ -209,7 +209,7 @@ def emit_json_receipt(receipt: dict, output: Path | None) -> None:
 
 
 # --- privileged environment --------------------------------------------------
-# OPS-19: a privileged action keeps only these inherited variables.  Anything
+# A privileged action keeps only these inherited variables.  Anything
 # else is routing or loader input the operator's shell happened to carry:
 # DOCKER_HOST/DOCKER_CONTEXT/DOCKER_CONFIG and BUILDKIT_HOST choose which daemon
 # the root actions talk to, COMPOSE_* changes the model compose deploys, proxy

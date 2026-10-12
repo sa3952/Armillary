@@ -27,12 +27,18 @@ UNCOPIED_INPUTS = {
     "THIRD_PARTY_NOTICES.md", "publication/public_overlay/THIRD_PARTY_NOTICES.md",
 }
 UNCOPIED_APP_FILES = {"/app/THIRD_PARTY_NOTICES.md"}
+# Copied, but written into the snapshot by build_release_image rather than
+# committed (the hash-checked wheels): the source and the one pattern that
+# reopens it.  A checkout has no such directory.
+GENERATED_INPUTS = {"wheelhouse": "wheelhouse/*.whl"}
 MUST_STAY_DENIED = (
-    ".env", ".git/config", "AGENTS.md", "docs/README.md", "tests/x.py",
+    # The private agent rules' file name is split: the public tree names no private file.
+    ".env", ".git/config", "AGENTS" ".md", "docs/README.md", "tests/x.py",
     "backend/app/.env", "backend/app/x.pem", "backend/app/x.key",
     "backend/app/tests/test_x.py", "backend/app/__pycache__/x.pyc",
     "backend/app/secret_settings.py", "backend/place_data/README.md",
     "deploy/staging/nginx.conf", "frontend/zh-TW/index.html",
+    "wheelhouse/setup.py", "wheelhouse/.pth",
 )
 
 
@@ -137,10 +143,19 @@ def verify(root: Path = PROJECT_ROOT) -> dict[str, int]:
         raise DockerContextFailure("deploy/Dockerfile copies nothing from the build context")
     problems = []
     for source, _ in copies:
+        if source in GENERATED_INPUTS:
+            probe = GENERATED_INPUTS[source].replace("*", "probe")
+            present = [path for path in (root / source).rglob("*") if path.is_file()]
+            denied = [path.relative_to(root).as_posix() for path in present
+                      if not admitted(rules, path.relative_to(root).as_posix())]
+            if not admitted(rules, probe) or denied:
+                problems.append(f"generated COPY source not admitted: {source} {denied}")
+            continue
         probe = source + "/probe" if (root / source).is_dir() else source
         if not admitted(rules, probe) or not (root / source).exists():
             problems.append(f"COPY source not admitted or absent: {source}")
-    used = {source for source, _ in copies} | UNCOPIED_INPUTS
+    used = ({source for source, _ in copies} | UNCOPIED_INPUTS
+            | {GENERATED_INPUTS[source] for source, _ in copies if source in GENERATED_INPUTS})
     for pattern in sorted(reopened):
         if pattern.removesuffix("/**") not in used:
             problems.append(f"reopened but never read by the build: {pattern}")

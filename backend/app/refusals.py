@@ -15,8 +15,8 @@ Content-Length) is a plain-text 400 outside this shape.
 
 This table owns, for each code, the HTTP status, the one fixed message, whether
 the refusal is retryable (and so carries ``Retry-After``), and which declared
-routes can emit it.  The refusal table in docs/contracts/OUTPUT_CONTRACT.md is
-generated from it (scripts/publication/generate_output_contract.py), and the
+routes can emit it.  The refusal table of the output contract document is
+generated from it, and the
 OpenAPI document built offline by the tests (never served: ``openapi_url`` is
 None), the privacy event vocabulary and the front-end copy coverage test read
 it; none of them keeps its own list.
@@ -37,6 +37,9 @@ from typing import Any, Final, Mapping, NamedTuple
 from starlette.responses import JSONResponse
 
 CHART_ROUTE: Final = "/api/chart"
+# Registered only when the deployment sets ARMILLARY_ENABLE_ANNUAL_ROUTE=1
+# (settings.py); otherwise it is an unknown API path like any other.
+ANNUAL_ROUTE: Final = "/api/chart/annual"
 PLACE_SEARCH_ROUTE: Final = "/api/places/search"
 HEALTH_ROUTE: Final = "/api/health"
 TIME_CONVERT_ROUTE: Final = "/api/time/convert"
@@ -50,10 +53,15 @@ RETRY_AFTER_SECONDS: Final = 5
 # cut and the refusal says so, so the answer cannot outgrow the request.
 MAX_REFUSAL_ISSUES: Final = 32
 
-_JSON_BODY_ROUTES: Final = frozenset({CHART_ROUTE, PLACE_SEARCH_ROUTE, TIME_CONVERT_ROUTE})
-_API_ROUTES: Final = frozenset({
-    CHART_ROUTE, PLACE_SEARCH_ROUTE, HEALTH_ROUTE, TIME_CONVERT_ROUTE,
+_JSON_BODY_ROUTES: Final = frozenset({
+    CHART_ROUTE, PLACE_SEARCH_ROUTE, ANNUAL_ROUTE, TIME_CONVERT_ROUTE,
 })
+_API_ROUTES: Final = frozenset({
+    CHART_ROUTE, PLACE_SEARCH_ROUTE, HEALTH_ROUTE, ANNUAL_ROUTE, TIME_CONVERT_ROUTE,
+})
+_COMPUTE_ROUTES: Final = frozenset({CHART_ROUTE, ANNUAL_ROUTE})
+# Every route that reads a birth record's civil time: both calculations and the converter.
+_CIVIL_TIME_ROUTES: Final = _COMPUTE_ROUTES | {TIME_CONVERT_ROUTE}
 _EVERY_ROUTE: Final = _API_ROUTES | {FRONTEND_ASSETS}
 
 
@@ -78,7 +86,7 @@ REFUSALS: Final[Mapping[str, Refusal]] = MappingProxyType({
         retryable=True,
     ),
     "compute_capacity_exhausted": Refusal(
-        503, "服務目前忙碌，請稍後重試。", frozenset({CHART_ROUTE}), retryable=True,
+        503, "服務目前忙碌，請稍後重試。", _COMPUTE_ROUTES, retryable=True,
     ),
     "request_headers_too_large": Refusal(431, "請求標頭超過 16 KiB 上限。", _EVERY_ROUTE),
     "unsupported_media_type": Refusal(
@@ -117,11 +125,11 @@ REFUSALS: Final[Mapping[str, Refusal]] = MappingProxyType({
     ),
     # ── Domain (main.py handlers) ────────────────────────────────────────────
     "nonexistent_local_time": Refusal(
-        422, "這個本地時間在所選時區不存在（時鐘跳過了這段時間）。", frozenset({CHART_ROUTE}),
+        422, "這個本地時間在所選時區不存在（時鐘跳過了這段時間）。", _COMPUTE_ROUTES,
     ),
     "ambiguous_local_time_choice_required": Refusal(
         422, "這個本地時間在所選時區出現兩次；請以 fold 指定是哪一次。",
-        frozenset({CHART_ROUTE}),
+        _COMPUTE_ROUTES,
     ),
     # A catalogue place that keeps Beijing time and Xinjiang time is computed
     # only once the request names the birth record's clock (core.civil_time_basis).
@@ -129,18 +137,18 @@ REFUSALS: Final[Mapping[str, Refusal]] = MappingProxyType({
         422,
         "這個出生地的紀錄可能用北京時間，也可能用新疆時間；"
         "請以 timezone.civil_time_basis 指明出生紀錄用的是哪一種。",
-        frozenset({CHART_ROUTE, TIME_CONVERT_ROUTE}),
+        _CIVIL_TIME_ROUTES,
     ),
     "civil_time_basis_not_applicable": Refusal(
         422,
         "timezone.civil_time_basis 只適用於目錄標示為同時使用北京時間與新疆時間的地點。",
-        frozenset({CHART_ROUTE, TIME_CONVERT_ROUTE}),
+        _CIVIL_TIME_ROUTES,
     ),
     # The helper answers only where its source table has rows
     # (core.civil_time_sources); elsewhere it would give an offset without a source.
     "time_conversion_zone_not_covered": Refusal(
         422,
-        "換算助手目前只涵蓋臺灣、香港、澳門與中國大陸的 IANA 時區；其他時區請直接計算，卷宗會記下換算結果。",
+        "換算助手目前只涵蓋臺灣、香港、澳門與中國的 IANA 時區；其他時區請直接計算，卷宗會記下換算結果。",
         frozenset({TIME_CONVERT_ROUTE}),
     ),
     "house_system_unavailable": Refusal(
@@ -155,15 +163,15 @@ REFUSALS: Final[Mapping[str, Refusal]] = MappingProxyType({
         422,
         "這次計算需要的完整 Swiss Ephemeris 資料不在服務的覆蓋範圍內；"
         "服務不改用較低精度的替代結果，重送同一請求不會改變結果。",
-        frozenset({CHART_ROUTE}),
+        _COMPUTE_ROUTES,
     ),
     "swiss_ephemeris_error": Refusal(
-        500, "Swiss Ephemeris 無法完成這次計算；錯誤內容不對外輸出。", frozenset({CHART_ROUTE}),
+        500, "Swiss Ephemeris 無法完成這次計算；錯誤內容不對外輸出。", _COMPUTE_ROUTES,
     ),
     # The chart route reads the catalogue to learn whether a catalogue place
     # keeps two clocks; it refuses rather than guess when it cannot.
     "place_catalog_unavailable": Refusal(
-        503, "內建地名目錄無法讀取。", frozenset({PLACE_SEARCH_ROUTE, CHART_ROUTE}),
+        503, "內建地名目錄無法讀取。", frozenset({PLACE_SEARCH_ROUTE, CHART_ROUTE, ANNUAL_ROUTE}),
     ),
     "place_search_timeout": Refusal(
         503, "地名查詢超過語句時間預算而中止；請稍後重試，或改用較具體的查詢。",

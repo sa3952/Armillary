@@ -30,9 +30,6 @@ from __future__ import annotations
 import datetime as dtmod
 import math
 from typing import Final
-from zoneinfo import ZoneInfo
-
-import swisseph as swe
 
 from ..config import CLASSICAL_BODIES
 from .horizon_events import (
@@ -44,12 +41,8 @@ from .horizon_events import (
 )
 from .module_state import computed_receipt, module_state
 from .method_status import method_receipt
-from .time_utils import (
-    _utc_offset_text,
-    civil_time_label,
-    jd_ut_to_iso_utc,
-    time_scale_for_jd_ut,
-)
+from .time_utils import civil_date as _local_date
+from .time_utils import civil_instant as _instant
 from .trace import Trace
 
 METHOD: Final = "chaldean_unequal_hours_from_sunrise_v1"
@@ -79,7 +72,6 @@ SEARCH_WINDOW_DAYS: Final = 2.0
 
 _NAMES: Final = {body["key"]: body["zh"] for body in CLASSICAL_BODIES}
 _SUN: Final = next(body for body in CLASSICAL_BODIES if body["key"] == "sun")
-_HALF_MILLISECOND_DAYS: Final = 0.0005 / 86400.0
 
 SUNRISE_DEFINITION: Final = {
     "event": "rise_and_set_of_the_sun",
@@ -138,57 +130,6 @@ METHOD_SOURCE_ENTRIES: Final = {
 
 def _ruler(key: str) -> dict:
     return {"ruler": key, "ruler_name": _NAMES[key]}
-
-
-def _utc_parts(jd_ut: float) -> tuple[dtmod.datetime, int]:
-    """The instant as an aware UTC datetime and its millisecond-of-minute count.
-
-    Rounded to the millisecond as ``jd_ut_to_iso_utc`` is; inside a leap second
-    the datetime stops at :59.999 and the count keeps the 60.
-    """
-
-    year, month, day, hour, minute, second = swe.jdut1_to_utc(
-        jd_ut + _HALF_MILLISECOND_DAYS, swe.GREG_CAL
-    )
-    millis = math.floor(second * 1000.0)
-    held = min(millis, 59_999)
-    value = dtmod.datetime(
-        year, month, day, hour, minute, held // 1000, (held % 1000) * 1000,
-        tzinfo=dtmod.timezone.utc,
-    )
-    return value, millis
-
-
-def _local(utc_value: dtmod.datetime, tz_input) -> tuple[dtmod.datetime, float]:
-    if tz_input.mode == "iana":
-        local = utc_value.astimezone(ZoneInfo(tz_input.iana_name))
-        offset = local.utcoffset()
-        assert offset is not None
-        return local.replace(tzinfo=None), offset.total_seconds() / 3600.0
-    offset_hours = tz_input.utc_offset_hours
-    return (utc_value + dtmod.timedelta(hours=offset_hours)).replace(tzinfo=None), offset_hours
-
-
-def _instant(jd_ut: float, tz_input) -> dict:
-    utc_value, millis = _utc_parts(jd_ut)
-    local, offset_hours = _local(utc_value, tz_input)
-    return {
-        "jd_ut": jd_ut,
-        "utc_time": jd_ut_to_iso_utc(jd_ut),
-        "time_scale": time_scale_for_jd_ut(jd_ut),
-        # Inside a positive leap second the label keeps second 60, as the UTC
-        # label does (leap seconds postdate every offset with a seconds part).
-        "local_time": civil_time_label(
-            local.year, local.month, local.day, local.hour, local.minute,
-            millis * 1000 if millis > 59_999
-            else local.second * 1_000_000 + local.microsecond,
-        ),
-        "utc_offset": _utc_offset_text(offset_hours),
-    }
-
-
-def _local_date(jd_ut: float, tz_input) -> dtmod.date:
-    return _local(_utc_parts(jd_ut)[0], tz_input)[0].date()
 
 
 def _hour_at(instant: float, crossings: list[tuple[float, str]]) -> dict | None:

@@ -1,6 +1,6 @@
 # Noto fonts: chart wheel glyph outlines
 
-`frontend/zh-TW/chart-glyphs.js` holds 26 SVG paths taken from the outlines of three fonts licensed under the
+`frontend/zh-TW/chart-glyphs.js` holds 27 SVG paths taken from the outlines of three fonts licensed under the
 SIL Open Font License 1.1. The fonts are not in this repository; only the extracted paths are, and they carry the
 copyright lines and the full licence text in their header. `scripts/frontend/chart_glyphs.py` re-creates the file
 from the three font files and refuses any file whose SHA-256 is not the one below.
@@ -15,7 +15,7 @@ Download URL pattern: `https://raw.githubusercontent.com/google/fonts/<commit>/<
 Each file's Git blob hash was compared with the one the GitHub contents API lists for that path before use.
 
 Glyphs taken: U+2609 ☉ from Noto Sans Symbols 2; U+211E ℞ from Noto Sans; from Noto Sans Symbols U+260A ☊,
-U+260B ☋, U+263D ☽, U+263F ☿, U+2640 ♀, U+2642–U+2647 ♂♃♄♅♆♇, U+26B7 ⚷ and the twelve signs U+2648–U+2653.
+U+260B ☋, U+263D ☽, U+263F ☿, U+2640 ♀, U+2642–U+2647 ♂♃♄♅♆♇, U+26B7 ⚷, U+26B8 ⚸ and the twelve signs U+2648–U+2653.
 Each outline is the default instance's (Regular) TrueType contour, converted without simplification.
 
 Licence texts: `OFL-noto-sans-symbols.txt`（the same file in both Symbols directories, blob

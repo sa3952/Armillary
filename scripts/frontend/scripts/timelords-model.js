@@ -1,0 +1,1714 @@
+(function attachTimelordsModel(root, factory) {
+  const commonJs = typeof module === "object" && module.exports;
+  // 星座名只有一份，在 labels.js；時間主星表的儲存格與 Markdown 中和規則在 exporters.js。
+  // 頁面在本檔之前載入兩者。
+  const api = factory(
+    commonJs ? require("./labels.js") : root.ArmillaryLabels,
+    commonJs ? require("./exporters.js") : root.ChartExport,
+  );
+  if (commonJs) module.exports = api;
+  if (root) root.ArmillaryTimelordsModel = api;
+})(typeof globalThis !== "undefined" ? globalThis : this, function buildTimelordsModel(Labels, ChartExport) {
+  "use strict";
+
+  // 年度時間主星的畫面模型：純函式，不碰 DOM、不發請求、不讀時鐘（「今天」由呼叫端給）。
+  //
+  // 資料流：年度回應 → adaptAnnualSource（唯一認得回應形狀的地方）→ AnnualData
+  //         → buildModel → 泳道、年度、細節、摘要、.ics、時間主星表。
+  // 每一個日期都是伺服器給的出生地日期（YYYY-MM-DD）；本檔只排序、比較與裁切，
+  // 不把任何 UTC 換成日期，也不重算任何邊界。泳道位置用「日序」（日期字串的日曆序數），
+  // 它只決定畫在哪裡，不印在畫面上。
+
+  const FIXED_SENTENCE = "只列計算結果：哪一段時間由哪顆行星或哪個星座輪值。不替你解盤，也不預測。";
+  const ICS_LABEL = "含由出生資料推得的日期";
+  const DATE_NOTE = "出生地的日期，只到日";
+  const ICS_FILENAME = "armillary-time-lords.ics";
+
+  const SIGN_ORDER = Object.freeze(Object.keys(Labels.VOCABULARIES.zodiac_sign));
+  const BODY_NAMES = Object.freeze({
+    ...Labels.VOCABULARIES.body_backend_name,
+    north_node: "北交點",
+    south_node: "南交點",
+  });
+  const LOT_NAMES = Object.freeze({ fortune: "命運點", spirit: "精神點" });
+  const RELEASING_LOTS = Object.freeze(["fortune", "spirit"]);
+  const ANGULARITY = Object.freeze({
+    angular: "角宮位置（第 1、4、7、10 位）",
+    succedent: "續宮位置（第 2、5、8、11 位）",
+    cadent: "果宮位置（第 3、6、9、12 位）",
+  });
+  // 擴充點：五個 Paulus 的點與兩個 Valens 的點；Valens 的兩點加後綴，不與 Paulus 同名點混淆。
+  const EXTENDED_LOT_NAMES = Object.freeze({
+    eros_paulus_hermetic_ch23_v1: "愛慾點",
+    necessity_paulus_hermetic_ch23_v1: "必然點",
+    courage_paulus_hermetic_ch23_v1: "勇氣點",
+    victory_paulus_hermetic_ch23_v1: "勝利點",
+    nemesis_paulus_hermetic_ch23_v1: "復仇點",
+    love_valens_iv25_v1: "愛點（Valens）",
+    necessity_valens_iv25_v1: "必然點（Valens）",
+  });
+  const SAMPLE_ROLES = Object.freeze({
+    interval_start: "這一小時的開頭",
+    representative_anchor: "中間（代表時刻）",
+    interval_end: "這一小時的結尾",
+  });
+  // 出處核到哪一層（後端閉集 ANNUAL_SOURCE_VERIFICATION_STATES）的唯一措辭：細節欄的「核對狀態」
+  // 與〈年度時間主星的規則與出處〉方法頁那一句（由 figures 產生）都取這一張。
+  const SOURCE_VERIFICATION = Object.freeze({
+    translation_and_kroll_greek_read_pingree_not_checked: "讀了英譯與 Kroll 希臘文；Pingree 校勘本未核",
+    biruni_and_bonatti_translations_read_abu_mashar_not_checked: "讀了 al-Bīrūnī 與 Bonatti 的英譯；Abū Maʿshar 原書未核",
+    riley_translation_and_firmicus_latin_read_greek_not_checked: "讀了 Valens 的英譯與 Firmicus 的拉丁文；希臘文校勘本未核",
+    research_notes_checked_edition_not_reread: "依研究筆記；校勘本未重讀",
+    bibliographic_record_only_chapter_not_verified: "只核到書目；章節未核",
+    pingree_translation_read_arabic_not_checked: "讀了 Pingree 的英譯；阿拉伯文原文未核",
+    valens_translation_read_abu_mashar_secondary_only: "讀了 Valens 的英譯；Abū Maʿshar 只讀到 Dykes 的介紹，原書未核",
+  });
+  // 只知日期時三項不算的理由（伺服器的閉集碼）。
+  const NOT_APPLICABLE = Object.freeze({
+    natal_ascendant_unknown_for_date_only: "要從上升星座起算，只知日期算不出上升星座。",
+    sect_unknown_for_date_only: "要先知道是日盤還是夜盤（出生時太陽在不在地平線上），只知日期無法判斷。",
+    lots_not_derivable_for_date_only: "要從命運點或精神點起算，這兩點都需要上升點，只知日期算不出來。",
+  });
+  const WARNINGS = Object.freeze({
+    natal_ascendant_near_sign_boundary_affects_profection:
+      "上升點離星座邊界很近：出生時間稍有出入，上升星座就會換，年度小限與月小限從頭到尾都會不同。",
+    sect_near_horizon_band_affects_firdaria:
+      "出生時太陽貼近地平線：日盤或夜盤可能判斷不同，法達的起點與順序會跟著不同。",
+    sect_near_horizon_band_affects_decennials:
+      "出生時太陽貼近地平線：日盤或夜盤可能判斷不同，十年期從太陽或月亮起算會跟著不同，整條順序也會不同。",
+    sect_near_horizon_band_affects_zodiacal_releasing:
+      "出生時太陽貼近地平線：日盤或夜盤可能判斷不同，命運點與精神點的位置會跟著不同，黃道釋放的起點星座也會換，大期與小期從頭到尾都會不同。",
+    extended_lot_near_sign_boundary:
+      "有延伸的阿拉伯點離星座邊界很近：出生時間稍有出入，它就會落在相鄰的星座。",
+    year_boundary_delta_t_extrapolated:
+      "這一年的年界落在地球自轉資料的外推範圍：年界的時刻有幾秒到幾十秒的不確定。",
+    zr_start_lot_near_sign_boundary:
+      "黃道釋放的起點（命運點或精神點）離星座邊界很近：出生時間稍有出入，它就會落在相鄰的星座，這一條的大期與小期從頭到尾都會不同。",
+  });
+
+  const signName = (key) => Labels.label("zodiac_sign", key);
+  const bodyName = (key) => (Object.prototype.hasOwnProperty.call(BODY_NAMES, key) ? BODY_NAMES[key] : `未識別（${key}）`);
+
+  function fail(message) {
+    throw new Error(`年度回應形狀不符：${message}`);
+  }
+
+  const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+  /** 日期字串的日曆序數（1970-01-01 為 0）。只用來排位置與比先後。 */
+  function dayNumber(localDate) {
+    const match = DATE_PATTERN.exec(localDate || "");
+    if (!match) fail(`不是 YYYY-MM-DD 的日期：${localDate}`);
+    return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])) / 86400000;
+  }
+
+  // ══ adapter：唯一認得回應形狀的地方 ══════════════════════════
+  //
+  // 讀年度路由的頁面投影（POST /api/chart/annual?projection=page；輸出契約
+  // 「Annual route」）：year_boundaries 給一生的年界，annual_timeline.lanes[] 給泳道與期間（期間的
+  // 起訖是出生地日期 "YYYY-MM-DD"）。投影形狀若再調整，只改這一段；輸出 AnnualData 是本檔其餘
+  // 部分唯一讀的形狀。
+
+  const SAMPLE_ORDER = Object.freeze(["interval_start", "representative_anchor", "interval_end"]);
+  const SAMPLE_SHORT = Object.freeze({ interval_start: "開頭", representative_anchor: "中間", interval_end: "結尾" });
+  const RELEASING_LANE = /^zr_(fortune|spirit)_level_\d+$/;
+  // 按需取的細分期間：黃道釋放（命運點、精神點）與十年期的第二層，以及月小限。第一層的每一段，
+  // 第二層只隨「與所請求年度相交」的那一段一起來，其他段的第二層另外請求；月小限每次只來所請求的
+  // 那一年，其他年度選到時另外請求。
+  const ON_DEMAND_LEVEL_2 = /^((zr_(fortune|spirit)|decennials)_level_2|monthly_profection)$/;
+  const MONTHLY_LANE = "monthly_profection";
+  const LANE_GROUP = /^(.*)_level_\d+$/;
+
+  function checkedDate(value, where) {
+    if (typeof value !== "string") fail(`${where} 缺少日期`);
+    dayNumber(value);
+    return value;
+  }
+
+  /** 年界的時刻只到分鐘："2026-08-17 09:43:55.660" → "09:43"。 */
+  function minuteOf(localTime) {
+    const match = /^\d{4}-\d{2}-\d{2}[ T](\d{2}:\d{2})/.exec(localTime || "");
+    return match ? match[1] : null;
+  }
+
+  function adaptAnnualSource(source) {
+    if (!source || typeof source !== "object" || Array.isArray(source)) fail("不是物件");
+    const timeline = source.annual_timeline;
+    if (!timeline || !Array.isArray(timeline.lanes)) fail("缺少 annual_timeline.lanes");
+    const precision = source.birth_time_precision;
+    if (!Labels.VOCABULARIES.birth_time_precision[precision]) fail(`未知的出生時刻精度 ${precision}`);
+    const methods = source.annual_methods || {};
+    const anchor = source.natal_anchor || {};
+    const requested = source.year_boundary || null;
+    // 只有所請求的那一年（year_boundary）帶時刻；它的終點是下一年的起點。
+    const times = new Map();
+    if (requested && requested.start_status === "computed") {
+      times.set(requested.completed_years, {
+        start: minuteOf(requested.start && requested.start.local_time),
+        end: requested.end_status === "computed" ? minuteOf(requested.end && requested.end.local_time) : null,
+      });
+    }
+    const boundaries = source.year_boundaries;
+    const years = (boundaries && Array.isArray(boundaries.years) ? boundaries.years : [])
+      .filter((year) => year.end_status === "computed" && year.end)
+      .map((year, index) => {
+        if (!Number.isInteger(year.completed_years)) fail(`year_boundaries.years[${index}].completed_years`);
+        const own = times.get(year.completed_years) || {};
+        const previous = times.get(year.completed_years - 1) || {};
+        return Object.freeze({
+          n: year.completed_years,
+          start: Object.freeze({
+            localDate: checkedDate(year.start && year.start.local_date, `year_boundaries.years[${index}].start`),
+            localTime: own.start || previous.end || null,
+          }),
+          end: Object.freeze({
+            localDate: checkedDate(year.end.local_date, `year_boundaries.years[${index}].end`),
+            localTime: own.end || null,
+          }),
+        });
+      });
+    years.forEach((year, index) => {
+      if (index && year.n !== years[index - 1].n + 1) fail("year_boundaries 不是連續的足歲");
+    });
+    const lanes = timeline.lanes.map((lane, laneIndex) => {
+      if (!lane.lane_id) fail(`lanes[${laneIndex}] 缺少 lane_id`);
+      const releasing = RELEASING_LANE.exec(lane.lane_id);
+      const group = LANE_GROUP.exec(lane.lane_id);
+      const segments = (lane.status === "computed" && Array.isArray(lane.segments) ? lane.segments : [])
+        // 起訖有一端算不出來（例如超出支援年份）的期間沒有日期可畫，不畫。
+        .filter((segment) => segment.status === "computed" && segment.start && segment.end)
+        .map((segment) => {
+          if (!segment.id) fail(`${lane.lane_id} 有期間缺少 id`);
+          const flags = Array.isArray(segment.flags) ? segment.flags : [];
+          return Object.freeze({
+            id: `${lane.lane_id}/${segment.id}`,
+            periodId: segment.id,
+            laneId: lane.lane_id,
+            sampleRole: segment.sample_role || null,
+            parentId: segment.parent_id && lane.parent_lane_id ? `${lane.parent_lane_id}/${segment.parent_id}` : null,
+            labelKey: segment.label_key || null,
+            lordKey: segment.lord_key || null,
+            start: Object.freeze({ localDate: checkedDate(segment.start, `${lane.lane_id}/${segment.id}.start`), localTime: null }),
+            end: Object.freeze({ localDate: checkedDate(segment.end, `${lane.lane_id}/${segment.id}.end`), localTime: null }),
+            loosing: flags.includes("loosing_of_the_bond"),
+            truncated: flags.includes("truncated"),
+            node: flags.includes("node_period"),
+            flags: Object.freeze(flags.slice()),
+            detail: Object.freeze({ ...(segment.detail || {}) }),
+          });
+        });
+      // 月小限在畫面上是年度小限的下一層：同一組（年表同一欄），畫成第二層。
+      const under = lane.lane_id === MONTHLY_LANE;
+      return Object.freeze({
+        laneId: lane.lane_id,
+        technique: lane.technique,
+        level: under ? 2 : lane.level || 1,
+        group: under ? lane.parent_lane_id : group ? group[1] : lane.lane_id,
+        lot: releasing ? releasing[1] : null,
+        status: lane.status,
+        reason: lane.reason_code || null,
+        basis: lane.segments_basis || null,
+        sensitivity: lane.sensitivity_state || null,
+        unit: lane.unit || null,
+        parentLaneId: lane.parent_lane_id || null,
+        segments: Object.freeze(segments),
+      });
+    });
+    const techniqueState = (technique) => {
+      const head = methods[technique] || null;
+      const own = lanes.filter((lane) => lane.technique === technique);
+      const computed = own.find((lane) => lane.status === "computed");
+      const notApplicable = own.find((lane) => lane.status === "not_applicable");
+      return Object.freeze({
+        status: computed ? "computed" : notApplicable ? "not_applicable" : "not_requested",
+        reason: computed ? null : notApplicable ? notApplicable.reason : null,
+        sensitivity: (computed || notApplicable || {}).sensitivity || null,
+        head,
+      });
+    };
+    // 年長與月長只取回應的 year_model：畫面上寫的「每年 N 日」「每月 N 日」都是這幾個數字，
+    // 缺了就是形狀不符，不用預設值補。
+    const yearModelFields = Object.freeze({
+      zodiacal_releasing: ["days_per_year", "days_per_level_2_unit"],
+      decennials: ["days_per_year", "days_per_month", "months_per_level_1"],
+    });
+    Object.entries(yearModelFields).forEach(([technique, fields]) => {
+      if (techniqueState(technique).status !== "computed") return;
+      const yearModel = (methods[technique] || {}).year_model;
+      fields.forEach((field) => {
+        const value = yearModel ? yearModel[field] : undefined;
+        if (typeof value !== "number" || !(value > 0)) fail(`annual_methods.${technique}.year_model.${field}`);
+      });
+    });
+    const startSigns = {};
+    ((methods.zodiacal_releasing && methods.zodiacal_releasing.releases) || []).forEach((release) => {
+      startSigns[release.releasing_from] = release.start_sign;
+    });
+    const level2LoadedFor = new Set();
+    lanes.filter((lane) => ON_DEMAND_LEVEL_2.test(lane.laneId)).forEach((lane) => {
+      lane.segments.forEach((segment) => { if (segment.parentId) level2LoadedFor.add(segment.parentId); });
+    });
+    const dossier = source.calculation_dossier || {};
+    const policy = dossier.annual_policy || {};
+    const lotsBlock = source.natal_lots;
+    return Object.freeze({
+      precision,
+      requestedYears: requested ? requested.completed_years : null,
+      natal: Object.freeze({
+        ascendantSign: anchor.ascendant && anchor.ascendant.status === "computed" ? anchor.ascendant.sign : null,
+        isDay: anchor.sect && typeof anchor.sect.is_day === "boolean" ? anchor.sect.is_day : null,
+      }),
+      years: Object.freeze(years),
+      yearBoundary: requested ? Object.freeze({ profile: requested.solar_return_profile || null }) : null,
+      profection: techniqueState("annual_profection"),
+      firdaria: techniqueState("firdaria"),
+      releasing: Object.freeze({ ...techniqueState("zodiacal_releasing"), startSigns: Object.freeze(startSigns) }),
+      decennials: techniqueState("decennials"),
+      monthly: techniqueState("monthly_profection"),
+      lanes: Object.freeze(lanes),
+      level2LoadedFor: Object.freeze(level2LoadedFor),
+      lots: Object.freeze(lotsBlock && lotsBlock.status === "computed" && Array.isArray(lotsBlock.lots)
+        ? lotsBlock.lots.map((lot) => Object.freeze({ id: lot.lot_method_id, sign: lot.sign, house: lot.house })) : []),
+      // 年界的警告只說請求的那一年；記下是哪一年，按需併入別年的回應時才不會被當成同一則。
+      warnings: Object.freeze((dossier.warnings || []).map((warning) => Object.freeze(
+        String(warning.path || "").startsWith("year_boundary") && requested && Number.isInteger(requested.year_of_life)
+          && !Object.prototype.hasOwnProperty.call(warning, "year_of_life")
+          ? { ...warning, year_of_life: requested.year_of_life } : { ...warning }))),
+      samples: Object.freeze(Array.isArray(policy.representative_samples) ? policy.representative_samples.map((sample) => Object.freeze({
+        role: sample.sample_role,
+        localTime: minuteOf(sample.reference_local_time) ? sample.reference_local_time.slice(11, 19) : null,
+      })) : []),
+    });
+  }
+
+  /**
+   * 按需取得的細分期間併入既有資料：只把黃道釋放與十年期第二層、月小限泳道裡尚未有的期間加進去，其餘不動。
+   * 回傳新的 AnnualData（原物件不變）。
+   * monthsFor：要哪幾年的月小限（那一年年度小限期間的 id）。每個按需回應都會順帶那個請求年度的月小限；
+   * 不在這裡面的一律不收，也不記為已載入——月小限只列選過的年度，與回應先後無關。
+   */
+  function mergeLevel2(data, extra, { monthsFor = [] } = {}) {
+    const wanted = new Set(monthsFor);
+    const keep = (segment) => segment.laneId !== MONTHLY_LANE || wanted.has(segment.parentId);
+    const incoming = new Map();
+    extra.lanes.filter((lane) => ON_DEMAND_LEVEL_2.test(lane.laneId)).forEach((lane) => incoming.set(lane.laneId, lane.segments));
+    const lanes = data.lanes.map((lane) => {
+      const more = incoming.get(lane.laneId);
+      if (!more || lane.basis === "each_sample") return lane;
+      const known = new Set(lane.segments.map((segment) => segment.id));
+      const added = more.filter((segment) => !known.has(segment.id) && !segment.sampleRole && keep(segment));
+      if (!added.length) return lane;
+      const segments = lane.segments.concat(added)
+        .sort((a, b) => dayNumber(a.start.localDate) - dayNumber(b.start.localDate) || compareIds(a.id, b.id));
+      return Object.freeze({ ...lane, segments: Object.freeze(segments) });
+    });
+    // 月小限的「已載入」只記收下的那幾年；其他年度的月小限沒收，選到那一年時照常去取。
+    const monthParents = new Set();
+    extra.lanes.filter((lane) => lane.laneId === MONTHLY_LANE)
+      .forEach((lane) => lane.segments.forEach((segment) => { if (segment.parentId) monthParents.add(segment.parentId); }));
+    const loaded = new Set([...data.level2LoadedFor,
+      ...[...extra.level2LoadedFor].filter((id) => !monthParents.has(id) || wanted.has(id))]);
+    // 新回應的警告跟著它的期間一起收下：內容完全相同的只留一則，主體不同（path、年度、對象）的各自保留。
+    const warningKey = (warning) => JSON.stringify(Object.keys(warning).sort().map((key) => [key, warning[key]]));
+    const knownWarnings = new Set(data.warnings.map(warningKey));
+    const warnings = data.warnings.concat((extra.warnings || []).filter((warning) => {
+      const key = warningKey(warning);
+      return !knownWarnings.has(key) && knownWarnings.add(key);
+    }));
+    return Object.freeze({
+      ...data, lanes: Object.freeze(lanes), level2LoadedFor: Object.freeze(loaded), warnings: Object.freeze(warnings),
+    });
+  }
+
+  function compareIds(a, b) {
+    return a < b ? -1 : a > b ? 1 : 0;
+  }
+
+  // ══ 請求 ══════════════════════════════════════════════════
+
+  // 年度路由收的出生欄位：與計算頁送出的請求同名的那幾個，其餘（選項）不送。
+  const NATAL_KEYS = Object.freeze([
+    "birth_time_precision", "datetime", "timezone", "location", "atmosphere", "computation_mode",
+  ]);
+
+  // 十年期的起點（伺服器的閉集）：預設是 Firmicus 的日夜盤光體，另兩種是 Valens「上升點之後的
+  // 第一顆」與自己指定一顆行星。預設不送欄位，回應就記為 defaulted。
+  const DECENNIALS_START_PROFILES = Object.freeze([
+    "firmicus_sect_light_v1", "valens_first_after_asc_v1", "user_selected_planet_v1",
+  ]);
+  const DECENNIALS_PLANETS = Object.freeze(["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn"]);
+
+  function decennialsFields(choice) {
+    const fields = { include_decennials: true, decennials_scope: "lifetime_window" };
+    const profile = choice && choice.profile ? choice.profile : DECENNIALS_START_PROFILES[0];
+    if (!DECENNIALS_START_PROFILES.includes(profile)) throw new Error("十年期的起點不在選項裡。");
+    if (profile === DECENNIALS_START_PROFILES[0]) return fields;
+    fields.decennials_start_profile = profile;
+    if (profile === DECENNIALS_START_PROFILES[2]) {
+      if (!DECENNIALS_PLANETS.includes(choice.planet)) throw new Error("自己指定起點時要選一顆行星。");
+      fields.decennials_start_planet = choice.planet;
+    }
+    return fields;
+  }
+
+  /**
+   * 由畫面上那份本命盤的請求組出年度請求；不另收任何出生資料。
+   * level2Only：只要黃道釋放、十年期與月小限（按需取某個第一層期間的第二層，或某一年的月小限）。
+   * decennials：十年期的起點 { profile, planet }，省略時用預設。
+   */
+  function annualRequestBody(chartPayload, completedYears, scope = {}) {
+    if (!chartPayload || typeof chartPayload !== "object") throw new Error("沒有本命盤的請求可用。");
+    if (!Number.isInteger(completedYears) || completedYears < 0) throw new Error("年度必須是非負整數。");
+    const body = {};
+    NATAL_KEYS.forEach((key) => {
+      if (chartPayload[key] !== undefined) body[key] = JSON.parse(JSON.stringify(chartPayload[key]));
+    });
+    body.annual = scope.level2Only === true ? {
+      target_kind: "completed_years",
+      target_value: completedYears,
+      include_profection: false,
+      include_zodiacal_releasing: true,
+      zr_scope: "lifetime_window",
+      include_monthly_profection: true,
+      ...decennialsFields(scope.decennials),
+    } : {
+      target_kind: "completed_years",
+      target_value: completedYears,
+      include_firdaria: true,
+      firdaria_scope: "lifetime_window",
+      include_zodiacal_releasing: true,
+      zr_scope: "lifetime_window",
+      include_natal_lots: true,
+      include_year_boundaries: true,
+      include_monthly_profection: true,
+      ...decennialsFields(scope.decennials),
+    };
+    return body;
+  }
+
+  /**
+   * 「今天」大約落在第幾個足歲年度：依民用生日與裝置日期估，只用來選第一次請求的年度。
+   * 真正的年界由伺服器回答；估錯一年時呼叫端依回應再請求一次。
+   */
+  function estimateCompletedYears(datetime, todayLocalDate) {
+    const match = DATE_PATTERN.exec(todayLocalDate || "");
+    if (!match || !datetime) return 0;
+    const [ty, tm, td] = [Number(match[1]), Number(match[2]), Number(match[3])];
+    let n = ty - datetime.year;
+    if (tm < datetime.month || (tm === datetime.month && td < datetime.day)) n -= 1;
+    return Math.max(0, Math.min(500, n));
+  }
+
+  /** 第一次回應裡請求的那一年與今天的關係。 */
+  function locateToday(data, todayLocalDate) {
+    const year = data.years.find((candidate) => candidate.n === data.requestedYears);
+    if (!year) return "year_missing";
+    const today = dayNumber(todayLocalDate);
+    if (today < dayNumber(year.start.localDate)) return "today_before_year";
+    if (today >= dayNumber(year.end.localDate)) return "today_after_year";
+    return "today_in_year";
+  }
+
+  // ══ 模型 ══════════════════════════════════════════════════
+
+  const LANE_META = Object.freeze({
+    annual_profection: Object.freeze({ title: "年度小限", short: "小限", subtitle: "每年一個星座", prefix: "" }),
+    monthly_profection: Object.freeze({ title: "月小限", short: "月小限", subtitle: "每月一個星座", prefix: "月小限" }),
+    firdaria_level_1: Object.freeze({ title: "法達・主期", short: "法達 1", subtitle: "主期主星", prefix: "主" }),
+    firdaria_level_2: Object.freeze({ title: "法達・子期", short: "法達 2", subtitle: "子期主星", prefix: "子" }),
+    zr_fortune_level_1: Object.freeze({ title: "命運點・第一層", short: "命運 1", subtitle: "黃道釋放・大期", prefix: "大期" }),
+    zr_fortune_level_2: Object.freeze({ title: "命運點・第二層", short: "命運 2", subtitle: "黃道釋放・小期", prefix: "小期" }),
+    zr_spirit_level_1: Object.freeze({ title: "精神點・第一層", short: "精神 1", subtitle: "黃道釋放・大期", prefix: "大期" }),
+    zr_spirit_level_2: Object.freeze({ title: "精神點・第二層", short: "精神 2", subtitle: "黃道釋放・小期", prefix: "小期" }),
+    decennials_level_1: Object.freeze({ title: "十年期・第一層", short: "十年期 1", subtitle: "每段 10 年 9 個月", prefix: "第一層" }),
+    decennials_level_2: Object.freeze({ title: "十年期・第二層", short: "十年期 2", subtitle: "依小年分月", prefix: "第二層" }),
+  });
+
+  function laneMeta(laneId) {
+    return LANE_META[laneId] || { title: laneId, short: laneId, subtitle: "", prefix: "" };
+  }
+
+  /**
+   * 時間軸格子在這個寬度（px）下顯示什麼：full（符號＋名稱）、name（只寫名稱）、glyph（只畫符號）、
+   * none。字級 .8rem 的一個中文字約 13px，符號 13px，左右留白合計約 10px（timelords.css）。
+   * 寫得下名稱就寫名稱：沒學過的人認不出星座符號。
+   */
+  function segmentSize(width, labelLength) {
+    const text = 13 * Math.max(1, labelLength);
+    if (width >= 10 + 13 + 3 + text) return "full";
+    if (width >= 10 + text) return "name";
+    return width >= 17 ? "glyph" : "none";
+  }
+
+  function labelOf(key) {
+    if (!key) return "";
+    return SIGN_ORDER.includes(key) ? signName(key) : bodyName(key);
+  }
+
+  function makeItem(fields) {
+    return Object.freeze({
+      startDay: dayNumber(fields.start.localDate),
+      endDay: dayNumber(fields.end.localDate),
+      kind: "regular",
+      truncated: false,
+      parentId: null,
+      aside: null,
+      lot: null,
+      sampleRole: null,
+      ...fields,
+    });
+  }
+
+  function segmentItem(lane, segment) {
+    // 年度小限與月小限的格子旁附上那個星座的守護行星（年主星、月主星）。
+    const profection = lane.technique === "annual_profection" || lane.technique === MONTHLY_LANE;
+    return makeItem({
+      id: segment.id,
+      technique: lane.technique,
+      level: lane.level,
+      lot: lane.lot,
+      sampleRole: segment.sampleRole,
+      glyph: segment.labelKey,
+      label: labelOf(segment.labelKey),
+      aside: profection && segment.lordKey ? Object.freeze({ glyph: segment.lordKey, label: bodyName(segment.lordKey) }) : null,
+      kind: segment.loosing ? "loosing" : "regular",
+      truncated: segment.truncated,
+      parentId: segment.parentId,
+      start: segment.start,
+      end: segment.end,
+      record: segment,
+    });
+  }
+
+  /**
+   * 泳道是通用的：由回應的 lanes[] 依序產生（不寫死清單），每條有 id、group、title、short、
+   * subtitle、prefix、technique、level 與依起點排序的期間。分樣本的泳道拆成每個樣本一條並列
+   * （不合併、不替你挑）。新的技法（例如十年期）只要在 LANE_META 加名稱、在 describeItem 加一個分支；
+   * 沒有名稱的泳道以 lane_id 為名照樣畫出。
+   */
+  function buildLanes(data) {
+    const lanes = [];
+    data.lanes.filter((lane) => lane.status === "computed").forEach((lane) => {
+      const meta = laneMeta(lane.laneId);
+      const base = { technique: lane.technique, level: lane.level, group: lane.group, lot: lane.lot, unit: lane.unit, ...meta };
+      if (lane.basis === "each_sample") {
+        SAMPLE_ORDER.forEach((role) => {
+          const segments = lane.segments.filter((segment) => segment.sampleRole === role);
+          if (!segments.length) return;
+          lanes.push({
+            ...base,
+            id: `${lane.laneId}@${role}`,
+            sampleRole: role,
+            title: `${meta.title}（${SAMPLE_SHORT[role]}）`,
+            short: `${meta.short}・${SAMPLE_SHORT[role]}`,
+            subtitle: SAMPLE_ROLES[role],
+            prefix: meta.prefix ? `${SAMPLE_SHORT[role]}・${meta.prefix}` : SAMPLE_SHORT[role],
+            items: segments.map((segment) => segmentItem(lane, segment)),
+          });
+        });
+        return;
+      }
+      const items = lane.segments.map((segment) => segmentItem(lane, segment));
+      // 法達的交點期不分子期：在子期那一條畫一段說明，與主期等長；它不是期間，不進 .ics。
+      if (lane.technique === "firdaria" && lane.parentLaneId) {
+        const parent = data.lanes.find((candidate) => candidate.laneId === lane.parentLaneId);
+        (parent ? parent.segments : []).filter((segment) => segment.node).forEach((segment) => {
+          items.push(makeItem({
+            id: `${segment.id}#no-sub-periods`, technique: lane.technique, level: lane.level, kind: "node",
+            glyph: null, label: "交點期不分子期", parentId: segment.id,
+            start: segment.start, end: segment.end, record: segment,
+          }));
+        });
+      }
+      lanes.push({ ...base, id: lane.laneId, sampleRole: null, items });
+    });
+    return lanes.map((lane) => Object.freeze({
+      ...lane,
+      items: Object.freeze(lane.items.slice().sort((a, b) => a.startDay - b.startDay || compareIds(a.id, b.id))),
+    }));
+  }
+
+  function releasingDiffersBetweenSamples(data) {
+    return data.lanes.some((lane) => lane.lot && lane.status === "computed" && lane.basis === "each_sample");
+  }
+
+  function buildModel(data, todayLocalDate) {
+    const todayDay = dayNumber(todayLocalDate);
+    const years = Object.freeze(data.years.map((year) => Object.freeze({
+      ...year,
+      startDay: dayNumber(year.start.localDate),
+      endDay: dayNumber(year.end.localDate),
+    })));
+    const currentIndex = years.findIndex((year) => year.startDay <= todayDay && todayDay < year.endDay);
+    const lanes = Object.freeze(buildLanes(data));
+    const byId = new Map();
+    lanes.forEach((lane) => lane.items.forEach((item) => byId.set(item.id, Object.freeze({ ...item, laneId: lane.id }))));
+    const starts = lanes.flatMap((lane) => lane.items.map((item) => item.startDay));
+    const ends = lanes.flatMap((lane) => lane.items.map((item) => item.endDay));
+    return Object.freeze({
+      data,
+      precision: data.precision,
+      today: todayLocalDate,
+      todayDay,
+      years,
+      currentIndex,
+      lanes,
+      byId,
+      domain: Object.freeze({
+        startDay: years.length ? years[0].startDay : (starts.length ? Math.min(...starts) : todayDay),
+        // 一生的時間軸畫到最後一個年度的終點；更遠的期間（例如法達第二輪的尾段）只露出開頭。
+        endDay: years.length ? years[years.length - 1].endDay : (ends.length ? Math.max(...ends) : todayDay + 1),
+      }),
+    });
+  }
+
+  function laneById(model, laneId) {
+    return model.lanes.find((lane) => lane.id === laneId) || null;
+  }
+
+  /** 某一天輪值的期間（在該條泳道裡）；沒有回 null。 */
+  function itemAt(model, laneId, day) {
+    const lane = laneById(model, laneId);
+    if (!lane) return null;
+    return lane.items.find((item) => item.startDay <= day && day < item.endDay) || null;
+  }
+
+  /** 與第 index 個年度相交的期間，依起點排序。 */
+  function itemsInYear(model, laneId, index) {
+    const lane = laneById(model, laneId);
+    const year = model.years[index];
+    if (!lane || !year) return [];
+    return lane.items.filter((item) => item.startDay < year.endDay && item.endDay > year.startDay);
+  }
+
+  /** 摘要卡看的那一天：今年看今天，其他年度看那一年的起點。 */
+  function referenceDay(model, index) {
+    return index === model.currentIndex ? model.todayDay : model.years[index].startDay;
+  }
+
+  // ══ 文字 ══════════════════════════════════════════════════
+  //
+  // 文字片段是陣列：字串、{ glyph }（符號鍵）、{ strong }、{ mono }、{ small }。畫面逐段建元素，
+  // 不經過 HTML 字串。
+
+  const g = (key) => (key ? { glyph: key } : "");
+  const named = (key, name) => [g(key), name];
+  const formatYears = (value, digits) => Number(value).toFixed(digits);
+
+  function dateRange(moments, withTime) {
+    // 時刻只在兩端都有時才印，不讓一端到分鐘、另一端只到日。
+    const timed = withTime && moments.start.localTime && moments.end.localTime;
+    const part = (moment) => (timed ? `${moment.localDate} ${moment.localTime}` : moment.localDate);
+    return { mono: `${part(moments.start)} → ${part(moments.end)}` };
+  }
+
+  function pairAt(model, lot, day, role) {
+    const suffix = role ? `@${role}` : "";
+    return {
+      l1: itemAt(model, `zr_${lot}_level_1${suffix}`, day),
+      l2: itemAt(model, `zr_${lot}_level_2${suffix}`, day),
+    };
+  }
+
+  function pairRuns(entry) {
+    return [
+      ...(entry.l1 ? named(entry.l1.glyph, entry.l1.label) : ["—"]),
+      "／",
+      ...(entry.l2 ? named(entry.l2.glyph, entry.l2.label) : ["（小期未載入）"]),
+    ];
+  }
+
+  /** 某一天的小限：精確時刻或三樣本一致時一段；三樣本不同時每個樣本一段。 */
+  function profectionAt(model, day) {
+    const single = itemAt(model, "annual_profection", day);
+    if (single) return { single, samples: [] };
+    const samples = SAMPLE_ORDER.map((role) => itemAt(model, `annual_profection@${role}`, day)).filter(Boolean);
+    return { single: null, samples };
+  }
+
+  const PROFECTION_GLOSS = "年度小限：出生那一刻從東方地平線升起的星座叫「上升星座」。年度小限從它開始，每過一歲往後換一個星座，12 年繞一圈。古書替每個星座指定一顆行星來「管」它；今年輪到的星座由哪顆行星管，那顆行星就叫「年主星」。月小限（monthly profection）把這一年再分成 12 個月，每月往後換一個星座。";
+  const RELEASING_GLOSS = "黃道釋放（zodiacal releasing；現代名稱，Valens 本人沒有用這個詞）：從命運點（Lot of Fortune，也譯福點、幸運點）或精神點（Lot of Spirit）所在的星座起，依各星座的年數往後分期；第一層是大期，第二層是大期內的小期。";
+
+  function summaryTiles(model, index) {
+    const year = model.years[index];
+    if (!year) return [];
+    const day = referenceDay(model, index);
+    const data = model.data;
+    const tiles = [];
+    const profection = profectionAt(model, day);
+    tiles.push({
+      key: "age",
+      select: profection.single ? profection.single.id : null,
+      title: "年齡",
+      value: [`${year.n} 足歲`],
+      sub: [`第 ${year.n + 1} 年・`, { mono: year.start.localDate }, " 起"],
+      gloss: "年齡依太陽回歸計：每次太陽回到出生時的位置，就滿一歲。",
+    });
+    if (profection.single) {
+      const item = profection.single;
+      const month = itemAt(model, MONTHLY_LANE, day);
+      tiles.push({
+        key: "profection",
+        select: item.id,
+        title: "年度小限・年主星",
+        value: named(item.glyph, item.label),
+        sub: [`從上升星座數第 ${item.record.detail.profected_place} 個・`,
+          ...(item.aside ? ["年主星 ", ...named(item.aside.glyph, item.aside.label)] : ["年主星：這次沒有列出（用恆星黃道時不列）"]),
+          ...(month ? [`；月小限第 ${month.record.detail.month_of_year} 個月 `, ...named(month.glyph, month.label),
+            ...(month.aside ? ["（月主星 ", ...named(month.aside.glyph, month.aside.label), "）"] : [])] : [])],
+        gloss: PROFECTION_GLOSS,
+      });
+    } else if (profection.samples.length) {
+      tiles.push({
+        key: "profection",
+        select: profection.samples[0].id,
+        title: "年度小限・年主星",
+        value: ["三個時刻不同"],
+        sub: profection.samples.flatMap((item, position) => [
+          position ? "；" : "", `${SAMPLE_SHORT[item.sampleRole]} `, ...named(item.glyph, item.label),
+        ]),
+        gloss: PROFECTION_GLOSS,
+      });
+    } else {
+      tiles.push(unavailableTile("profection", "年度小限・年主星", data.profection));
+    }
+    const fird1 = itemAt(model, "firdaria_level_1", day);
+    const fird2 = itemAt(model, "firdaria_level_2", day);
+    if (data.firdaria.status === "computed" && fird1) {
+      tiles.push({
+        key: "firdaria",
+        select: fird2 && fird2.kind !== "node" ? fird2.id : fird1.id,
+        title: "法達・主期／子期",
+        value: named(fird1.glyph, fird1.label),
+        sub: fird2 && fird2.kind !== "node"
+          ? ["子期 ", ...named(fird2.glyph, fird2.label), "（", { mono: fird2.start.localDate }, " 起）"]
+          : ["這一段由月交點輪值，不再細分"],
+        gloss: "法達（firdaria）：把人生依古書定好的年數，輪流分給七顆行星（太陽、月亮、水星、金星、火星、木星、土星）和兩個月交點（月亮軌道和太陽軌道相交的兩點），一輪 75 年。每顆行星分到的一大段叫「主期」，再平分成七小段叫「子期」；輪值的行星分別叫主期主星、子期主星。",
+      });
+    } else {
+      tiles.push(unavailableTile("firdaria", "法達・主期／子期", data.firdaria));
+    }
+    if (data.releasing.status === "computed" && !releasingDiffersBetweenSamples(data)) {
+      const fortune = pairAt(model, "fortune", day, null);
+      const spirit = pairAt(model, "spirit", day, null);
+      tiles.push({
+        key: "releasing",
+        select: (fortune.l2 || fortune.l1 || {}).id || null,
+        title: "黃道釋放・大期／小期",
+        value: [{ small: "命運點 " }, ...pairRuns(fortune)],
+        sub: ["精神點 ", ...pairRuns(spirit)],
+        gloss: RELEASING_GLOSS,
+      });
+    } else if (data.releasing.status === "computed") {
+      const sub = [];
+      SAMPLE_ORDER.forEach((role) => {
+        const fortune = pairAt(model, "fortune", day, role);
+        if (!fortune.l1 && !fortune.l2) return;
+        if (sub.length) sub.push("；");
+        sub.push(`${SAMPLE_SHORT[role]} `, ...pairRuns(fortune));
+      });
+      tiles.push({
+        key: "releasing",
+        select: null,
+        title: "黃道釋放・大期／小期",
+        value: ["三個時刻不同"],
+        sub: sub.length ? ["命運點：", ...sub] : ["見時間軸上並列的三組"],
+        gloss: RELEASING_GLOSS,
+      });
+    } else {
+      tiles.push(unavailableTile("releasing", "黃道釋放・大期／小期", data.releasing));
+    }
+    return tiles;
+  }
+
+  /**
+   * 一頁摘要的一行：第幾年由誰輪值（年度小限與年主星、法達、命運點的黃道釋放、十年期）。只寫輪值，
+   * 不寫任何日期；三個時刻不同的照實寫，沒有算的技法略過。第二層還沒取到時只寫第一層。
+   */
+  function briefLine(model, index) {
+    const year = model.years[index];
+    if (!year) return null;
+    const day = referenceDay(model, index);
+    const data = model.data;
+    const pair = (first, second) => `${first.label}${second ? `／${second.label}` : ""}`;
+    const parts = [];
+    const profection = profectionAt(model, day);
+    if (profection.single) {
+      const item = profection.single;
+      parts.push(`年度小限 ${item.label}${item.aside ? `（年主星 ${item.aside.label}）` : ""}`);
+    } else if (profection.samples.length) {
+      parts.push("年度小限：三個時刻不同");
+    }
+    const fird1 = itemAt(model, "firdaria_level_1", day);
+    const fird2 = itemAt(model, "firdaria_level_2", day);
+    if (data.firdaria.status === "computed" && fird1) {
+      parts.push(`法達 ${pair(fird1, fird2 && fird2.kind !== "node" ? fird2 : null)}`);
+    }
+    if (data.releasing.status === "computed") {
+      const fortune = pairAt(model, "fortune", day, null);
+      if (releasingDiffersBetweenSamples(data)) parts.push("黃道釋放：三個時刻不同");
+      else if (fortune.l1) parts.push(`黃道釋放（命運點）${pair(fortune.l1, fortune.l2)}`);
+    }
+    const decennial = itemAt(model, "decennials_level_1", day);
+    if (decennial) parts.push(`十年期 ${pair(decennial, itemAt(model, "decennials_level_2", day))}`);
+    if (!parts.length) return null;
+    return `時間主星，第 ${year.n + 1} 年（${year.n} 足歲）的輪值：${parts.join("・")}`;
+  }
+
+  function unavailableTile(key, title, state) {
+    return {
+      key,
+      select: null,
+      title,
+      value: ["沒有算"],
+      sub: [state.status === "not_applicable" ? (NOT_APPLICABLE[state.reason] || `理由碼 ${state.reason}`) : "這次沒有請求。"],
+      gloss: "",
+    };
+  }
+
+  function referenceNote(model, index) {
+    const year = model.years[index];
+    if (!year) return "";
+    return index === model.currentIndex
+      ? `上面四格依「今天（${model.today}，依你的裝置日期）」列出年齡與當時輪值的期間；十年期見下方的時間軸或年表。`
+      : `上面四格依「第 ${year.n + 1} 年起點（${year.start.localDate}）」列出年齡與當時輪值的期間；十年期見下方的時間軸或年表。`;
+  }
+
+  function yearTitle(model, index) {
+    const year = model.years[index];
+    return year ? `第 ${year.n + 1} 年（${year.n} 足歲）` : "";
+  }
+
+  function yearRange(model, index) {
+    const year = model.years[index];
+    if (!year) return [];
+    const timed = year.start.localTime && year.end.localTime;
+    return ["本年度 ", dateRange(year, true), timed ? "（太陽回歸的時刻，出生地時間）" : `（太陽回歸那一天，${DATE_NOTE}）`];
+  }
+
+  function firdariaSequence(data) {
+    const lane = data.lanes.find((candidate) => candidate.laneId === "firdaria_level_1");
+    if (!lane || !lane.segments.length) return "";
+    const cycle = lane.segments.filter((segment) => segment.periodId.split(".")[0] === lane.segments[0].periodId.split(".")[0]);
+    return cycle.map((segment) => `${bodyName(segment.labelKey)} ${formatYears(segment.detail.end_year - segment.detail.start_year, 0)}`).join("、");
+  }
+
+  const SOURCES = Object.freeze({
+    annual_profection: Object.freeze([
+      "依古希臘占星家 Valens 的書《占星選集》（Anthologiae，第四卷第 11 章）：書裡用「第 35 年」舉例；我們對照希臘原文，那是滿 34 歲的那一年，和本站的數法相同。",
+      "古羅馬作家 Firmicus 的《Mathesis》（書名原意「學問」，第二卷第 27–28 章）也寫了這個方法；這一條依本站的研究筆記，還沒有重讀原書。",
+      "每一年從太陽回到出生時位置的那一刻算起；這個時刻由本站的星曆程式算出，測試另拿美國太空總署噴射推進實驗室（JPL）公開的星曆核對。",
+    ]),
+    firdaria: Object.freeze([
+      "al-Bīrūnī《占星術入門》（Kitāb al-Tafhīm）§438–439（Wright 英譯，1934）：期間表、日夜順序；交點不分子期。",
+      "Bonatti《天文學之書》（Decem tractatus astronomiae）Tr.9 Ch.3（Dykes 英譯）：各期年數、日盤順序、75 年後重來；夜盤「一切照日盤」。",
+      "Abū Maʿshar《論本命年的回歸》（Kitāb taḥāwīl sinī al-mawālīd；Dykes 英譯，Persian Nativities IV）：現存最完整的操作說明；本書未核。",
+    ]),
+    firdariaNight: "夜盤兩個月交點排在火星之後，是 Zoller 對 Bonatti 的讀法，不是 Bonatti 的原文；本站預設排在水星之後。",
+    zodiacal_releasing: Object.freeze([
+      "Vettius Valens《占星選集》（Anthologiae）IV.4（起點、星座年數、小期、解鎖到對宮）、IV.7（從命運點數位置）、IV.8（例盤）、IV.9（分配年 360 日）、IV.10（更細的層級）：Riley 英譯，並對照 Kroll 的希臘文。",
+      "「黃道釋放」這個名稱與「第一層」「第二層」的分層名稱，是現代（Schmidt、Brennan）的整理，不是 Valens 的用語。",
+    ]),
+    decennials: Object.freeze([
+      "Vettius Valens《占星選集》（Anthologiae）VI.6–VI.7：每段 10 年 9 個月、依出生時的黃道順序、分配年 360 日；Riley 英譯。",
+      "Firmicus Maternus《Mathesis》II.26–27：日盤從太陽、夜盤從月亮起，每段再依小年分成月；拉丁文本。",
+    ]),
+    monthly_profection: Object.freeze([
+      "古希臘占星家 Valens 的《占星選集》（Anthologiae，第四卷第 28 章）：看此刻的太陽離出生時的太陽多遠，從年度小限的星座數同樣的距離，就是這個月；夜盤改用月亮，本站沒有採用。",
+      "中世紀占星家 Abū Maʿshar 的《論本命年的回歸》（Kitāb taḥāwīl sinī al-mawālīd）：年度小限的星座也是第 1 個月，太陽每多走 30 度換下一個月；我們只讀到英譯者 Dykes 的介紹，原書未核。",
+      "al-Bīrūnī 的《占星術入門》（Kitāb al-Tafhīm，第 522 節）：每個月從太陽走到出生時同一度數算起；同一節另有一年 13 個月的分法，本站沒有算。",
+      "Ptolemy 的《占星四書》（Tetrabiblos）第四卷第 10 章：每 28 天推一個星座，和太陽回歸對不齊，本站沒有算。",
+    ]),
+  });
+
+  // 十年期這次用的起點（回應的 start_profile.profile），白話一句。
+  const DECENNIALS_START_TEXT = Object.freeze({
+    firmicus_sect_light_v1: "這次的起點是日盤從太陽、夜盤從月亮（Firmicus 的做法，本站預設）。",
+    valens_first_after_asc_v1: "這次的起點是上升點之後的第一顆行星（Valens 在兩個光體都不合用時的做法；本站不判斷光體合不合用）。",
+    user_selected_planet_v1: "這次的起點是你自己指定的行星。",
+  });
+
+  // 「校勘本」第一次出現時的白話註解。細節欄一次只顯示一段、一行核對狀態，所以在這一行附一次；
+  // 表本身不帶註解，方法頁在全頁第一次出現的地方另附。
+  const EDITION_GLOSS = "校勘本（學者比對多份古抄本後整理出的版本）";
+
+  function verificationLine(head) {
+    const code = head && head.source_verification;
+    if (!code) return null;
+    return `核對狀態：${(SOURCE_VERIFICATION[code] || code).replace("校勘本", EDITION_GLOSS)}`;
+  }
+
+  /** 收據：回應裡這一段的原值（頁面投影的期間只帶出生地日期；UTC 與儒略日在 detailed 回應）。 */
+  function segmentReceipt(segment) {
+    return {
+      lane_id: segment.laneId,
+      id: segment.periodId,
+      sample_role: segment.sampleRole,
+      label_key: segment.labelKey,
+      lord_key: segment.lordKey,
+      start: segment.start.localDate,
+      end: segment.end.localDate,
+      flags: segment.flags,
+      ...Object.fromEntries(Object.entries(segment.detail).map(([key, value]) => [`detail.${key}`, value])),
+    };
+  }
+
+  function headReceipt(head, keys) {
+    const out = {};
+    keys.forEach((key) => { if (head && head[key] !== undefined) out[key] = head[key]; });
+    return out;
+  }
+
+  /**
+   * 一段期間的細節：類別、標題、欄位、白話算法、出處與收據（回應原值）。
+   * 角宮位置只出現在這裡，不畫在時間軸上。
+   */
+  function describeItem(model, id) {
+    const item = model.byId.get(id);
+    if (!item) return null;
+    const data = model.data;
+    const detail = { id, technique: item.technique, kind: "", title: [], rows: [], explanation: [], sources: [], receipt: {} };
+    const sampleNote = item.sampleRole ? `（出生時刻取${SAMPLE_ROLES[item.sampleRole]}）` : "";
+    if (item.technique === "annual_profection") {
+      const facts = item.record.detail;
+      const n = facts.completed_years;
+      const year = model.years.find((candidate) => candidate.n === n);
+      const range = year || item;
+      detail.kind = `年度小限${sampleNote}`;
+      detail.title = [`第 ${n + 1} 年：`, ...named(item.glyph, item.label)];
+      if (item.aside) detail.title.push("（年主星 ", ...named(item.aside.glyph, item.aside.label), "）");
+      detail.rows.push(["起訖", [dateRange(range, true)]]);
+      detail.rows.push(["長度", ["一年：從太陽回到出生時位置的那一刻，到下一次回到同一位置"]]);
+      detail.rows.push(["落在", [`從上升星座數第 ${facts.profected_place} 個星座（第 ${facts.profected_place} 宮；這裡一個星座算一宮，叫「整宮」）`]]);
+      if (item.aside) detail.rows.push(["年主星", [...named(item.aside.glyph, item.aside.label), `（古書指定管${item.label}的行星）`]]);
+      const asc = data.natal.ascendantSign;
+      detail.explanation = [
+        "你出生那一刻，從東方地平線升起的星座是", { strong: asc ? signName(asc) : "（未知）" },
+        `（上升星座）。年度小限從它開始：出生後第一年就是上升星座本身，之後每滿一歲往後換一個星座，12 年繞一圈。這一年你已滿 ${n} 歲，數到第 ${facts.profected_place} 個星座`,
+        { strong: item.label },
+        "；古書指定管這個星座的行星，就是這一年的年主星。",
+        year && year.start.localTime
+          ? "這一年從太陽回到出生時位置的那一刻開始，到下一次回到同一位置為止；這裡列到分鐘。"
+          : "這一年從太陽回到出生時位置的那一天開始，到下一次回到同一位置的那一天為止。",
+      ];
+      detail.sources = SOURCES.annual_profection.slice();
+      const head = data.profection.head || {};
+      detail.receipt = {
+        ...segmentReceipt(item.record),
+        solar_return_profile: data.yearBoundary ? data.yearBoundary.profile : null,
+        ...headReceipt(head, ["profile", "method_status", "method_provenance"]),
+        interpretation: null,
+      };
+      const line = verificationLine(head);
+      if (line) detail.sources.push(line);
+    } else if (item.technique === MONTHLY_LANE) {
+      const facts = item.record.detail;
+      const n = facts.completed_years;
+      const month = facts.month_of_year;
+      const head = data.monthly.head || {};
+      const parent = item.parentId ? model.byId.get(item.parentId) : null;
+      const yearSign = parent ? parent.label : "";
+      const solar = head.profile !== "monthly_profection_return_year_twelfths_v1";
+      detail.kind = `月小限${sampleNote}`;
+      detail.title = [`第 ${n + 1} 年第 ${month} 個月：`, ...named(item.glyph, item.label)];
+      if (item.aside) detail.title.push("（月主星 ", ...named(item.aside.glyph, item.aside.label), "）");
+      detail.rows.push(["起訖", [dateRange(item, false)]]);
+      detail.rows.push(["長度", [solar
+        ? "太陽在黃道上走 30 度的時間（約 29 到 32 天，太陽走得快慢不同）"
+        : "一年的十二分之一：從這次太陽回到出生時位置，到下一次回到同一位置，平均分成 12 段"]]);
+      detail.rows.push(["落在", [`這一年的第 ${month} 個月：從年度小限星座數第 ${month} 個星座（從上升星座數是第 ${facts.profected_place} 個）`]]);
+      if (item.aside) detail.rows.push(["月主星", [...named(item.aside.glyph, item.aside.label), `（古書指定管${item.label}的行星，也就是它的守護行星）`]]);
+      detail.explanation = [
+        "月小限把年度小限再細分到「月」。這一年的年度小限星座是", { strong: yearSign || "（見年度小限）" },
+        "，它也是這一年的第 1 個月；之後每個月往後換一個星座，12 個月繞一圈，下一次太陽回歸時再從新一年的年度小限星座數起。",
+        solar
+          ? "每個月從太陽比出生時的位置再往前走 30 度的那一刻開始：第 1 個月從太陽回到出生時位置的那一刻開始，太陽多走 30 度就進入第 2 個月，以此類推。所以這裡的「月」是太陽走 30 度的時間，和日曆上的月份無關。"
+          : "這次選的是另一種分法：把這一年（從這次太陽回歸到下一次）平均分成 12 段，每段一個月，和日曆上的月份無關。",
+        `這是第 ${month} 個月，數到`, { strong: item.label },
+        "；古書指定管這個星座的行星（守護行星），就是這個月的月主星。",
+      ];
+      detail.sources = SOURCES.monthly_profection.slice();
+      const line = verificationLine(head);
+      if (line) detail.sources.push(line);
+      detail.receipt = {
+        ...segmentReceipt(item.record),
+        solar_return_profile: data.yearBoundary ? data.yearBoundary.profile : null,
+        ...headReceipt(head, ["profile", "method_status", "method_provenance"]),
+        boundary_rule: (head.month_model || {}).boundary_rule || null,
+        interpretation: null,
+      };
+    } else if (item.technique === "firdaria") {
+      const levelOne = item.level === 1;
+      const node = item.kind === "node";
+      const parentItem = levelOne || node ? null : model.byId.get(item.parentId);
+      const parent = node ? item.record : levelOne ? item.record : (parentItem ? parentItem.record : null);
+      const head = data.firdaria.head || {};
+      const parentName = parent ? bodyName(parent.labelKey) : "";
+      detail.kind = `${levelOne ? "法達・主期" : "法達・子期"}${sampleNote}`;
+      if (node) detail.title = [`${parentName}期：不分子期`];
+      else if (levelOne) detail.title = [...named(item.glyph, item.label), "主期"];
+      else detail.title = [...named(item.glyph, item.label), `子期（屬${parentName}主期）`];
+      detail.rows.push(["起訖", [dateRange(item, false)]]);
+      if (levelOne || node) {
+        detail.rows.push(["足歲", [{ mono: `${formatYears(parent.detail.start_year, 0)} → ${formatYears(parent.detail.end_year, 0)}` }]]);
+        detail.rows.push(["主期主星", named(parent.labelKey, parentName)]);
+      } else {
+        detail.rows.push(["主期主星", parent ? named(parent.labelKey, parentName) : ["—"]]);
+        detail.rows.push(["子期主星", named(item.glyph, item.label)]);
+      }
+      const day = data.natal.isDay;
+      const sectText = day === false
+        ? "你出生時太陽在地平線下（古書叫「夜盤」），所以法達從月亮開始"
+        : "你出生時太陽在地平線上（古書叫「日盤」），所以法達從太陽開始";
+      if (levelOne) {
+        detail.explanation = [
+          `${sectText}，依序輪下去；每一段的年數是古書定好的：${firdariaSequence(data)} 年，加起來 75 年。75 年後照同一個順序再輪一次（中世紀占星家 Bonatti 的寫法）。`,
+          `${item.label}這一段從滿 ${formatYears(parent.detail.start_year, 0)} 歲到滿 ${formatYears(parent.detail.end_year, 0)} 歲。換成日期時，「滿幾歲」那一天，就是那一年太陽回到出生時位置的那一刻。`,
+        ];
+      } else if (node) {
+        detail.explanation = ["月交點的期間不再細分（交點期不分子期）。"];
+      } else {
+        detail.explanation = [
+          `主期${parentName}${parent ? `（${formatYears(parent.detail.start_year, 0)} 到 ${formatYears(parent.detail.end_year, 0)} 足歲）` : ""}平均切成 7 段。第一段給主期行星自己，其餘依迦勒底序（土、木、火、日、金、水、月）往下輪。`,
+          "不是整數的年份，在所屬的那一個太陽回歸年內按比例換成日期（本站的計算慣例）。",
+        ];
+      }
+      detail.sources = SOURCES.firdaria.slice();
+      if (day === false) detail.sources.push(SOURCES.firdariaNight);
+      const line = verificationLine(head);
+      if (line) detail.sources.push(line);
+      detail.receipt = {
+        ...segmentReceipt(node ? parent : item.record),
+        ...headReceipt(head, ["profile", "nocturnal_node_profile", "nocturnal_node_profile_applies", "method_status", "method_provenance"]),
+        interpretation: null,
+      };
+    } else if (item.technique === "zodiacal_releasing") {
+      const segment = item.record;
+      const facts = segment.detail;
+      const lot = item.lot;
+      const head = data.releasing.head || {};
+      const levelOne = item.level === 1;
+      const yearModel = head.year_model || {};
+      const daysPerYear = yearModel.days_per_year;
+      const daysPerMonth = yearModel.days_per_level_2_unit;
+      detail.kind = `黃道釋放・${LOT_NAMES[lot]}・${levelOne ? "第一層（大期）" : "第二層（小期）"}${sampleNote}`;
+      detail.title = [...named(item.glyph, item.label)];
+      if (segment.lordKey) detail.title.push("（主星 ", ...named(segment.lordKey, bodyName(segment.lordKey)), "）");
+      detail.rows.push(["起訖", [dateRange(item, false)]]);
+      const unit = levelOne ? "年" : " 個月";
+      const unitNote = levelOne ? `（每年 ${daysPerYear} 日，不是日曆年）` : `（每月 ${daysPerMonth} 日）`;
+      detail.rows.push(["長度", [`${facts.nominal_units}${unit}${unitNote}`
+        + (item.truncated ? `；${levelOne ? "上一層" : "所屬的大期"}先結束，這一段實際只走了 ${facts.effective_units}${unit}` : "")]]);
+      if (segment.lordKey) detail.rows.push(["主星", [...named(segment.lordKey, bodyName(segment.lordKey)), `（古書指定管${item.label}的行星）`]]);
+      const position = [`從命運點所在星座數第 ${facts.position_from_fortune} 個・${ANGULARITY[facts.angularity_from_fortune] || facts.angularity_from_fortune}`];
+      if (lot === "spirit") position.push(`；從精神點數第 ${facts.position_from_start_lot} 個`);
+      position.push({ small: "Valens《占星選集》（Anthologiae）IV.7 說，從命運點數第 1、4、7、10 個星座的位置最有力。本站照列位置，不另標現代的「高峰期」分級。" });
+      detail.rows.push(["位置", position]);
+      const parent = levelOne ? null : model.byId.get(item.parentId);
+      const parentSign = parent ? parent.label : "";
+      if (levelOne) {
+        const startSign = data.releasing.startSigns[lot];
+        detail.explanation = [
+          `從${LOT_NAMES[lot]}所在的`, { strong: startSign ? signName(startSign) : "星座" },
+          `起，依黃道順序每個星座分到固定年數。這裡的「年」是 ${daysPerYear} 日`,
+          yearModel.profile === "zr_year_360_days_v1" ? "（Valens 的分配年）" : "",
+          `，不是日曆年：${item.label}分到 ${facts.nominal_units} 年。`,
+        ];
+      } else if (item.kind === "loosing") {
+        detail.explanation = [
+          "在大期", { strong: parentSign }, `裡，小期從${parentSign}起依序輪過十二個星座。輪完一圈時大期還沒結束，下一段不回到起點，而是跳到${parentSign}的對宮`,
+          { strong: item.label }, "繼續，古典稱為", { strong: "解鎖" }, "（輪完一圈跳到對宮；loosing of the bond，Valens IV.4）。",
+        ];
+      } else {
+        detail.explanation = [
+          "大期", { strong: parentSign },
+          `裡面再切成小段（小期）：從${parentSign}開始，照十二星座的固定順序（牡羊、金牛、雙子……到雙魚）一個接一個輪。每個星座分到的月數，和它當大期時分到的年數相同，每月 ${daysPerMonth} 日；${item.label}分到 ${facts.nominal_units} 個月。`,
+          item.truncated ? "大期在這一段還沒走完時就結束了，所以這一段比原本的月數短。" : "",
+        ];
+      }
+      detail.sources = SOURCES.zodiacal_releasing.slice();
+      const line = verificationLine(head);
+      if (line) detail.sources.push(line);
+      detail.receipt = {
+        releasing_from: lot,
+        ...segmentReceipt(segment),
+        ...headReceipt(head, ["profile", "period_table_profile", "method_status", "method_provenance"]),
+        year_model: yearModel.profile || null,
+        interpretation: null,
+      };
+    } else if (item.technique === "decennials") {
+      const facts = item.record.detail;
+      const head = data.decennials.head || {};
+      const levelOne = item.level === 1;
+      const parent = levelOne ? null : model.byId.get(item.parentId);
+      detail.kind = `${levelOne ? "十年期・第一層" : "十年期・第二層"}${sampleNote}`;
+      detail.title = levelOne
+        ? [...named(item.glyph, item.label), "輪值"]
+        : [...named(item.glyph, item.label), `（屬${parent ? parent.label : ""}的十年期）`];
+      detail.rows.push(["起訖", [dateRange(item, false)]]);
+      const yearModel = head.year_model;
+      detail.rows.push(["長度", [`${facts.months} 個分配月（每月 ${yearModel.days_per_month} 日）`]]);
+      detail.rows.push(["輪值行星", named(item.glyph, item.label)]);
+      if (levelOne) {
+        detail.rows.push(["順序", [`第 ${facts.cycle_index + 1} 輪的第 ${facts.position_in_order} 位`]]);
+      } else if (parent) {
+        detail.rows.push(["第一層", named(parent.glyph, parent.label)]);
+      }
+      const start = DECENNIALS_START_TEXT[(head.start_profile || {}).profile] || "";
+      detail.explanation = levelOne ? [
+        `十年期把出生之後的時間切成每段 ${yearModel.months_per_level_1} 個月（一個月 ${yearModel.days_per_month} 日、一年 ${yearModel.days_per_year} 日的「分配年」），每段由一顆行星輪值。${start}`,
+        "之後依出生時七顆行星在黃道上的實際順序往下排，七段輪完再從頭開始。",
+      ] : [
+        `每一段第一層再分成七小段，由這一段的輪值行星${parent ? `（${parent.label}）` : ""}自己先開始，其餘依同一個黃道順序；每顆行星分到的月數等於它的「小年」（古書給每顆行星的固定年數），七個加起來正好 ${yearModel.months_per_level_1} 個月。`,
+      ];
+      detail.sources = SOURCES.decennials.slice();
+      const line = verificationLine(head);
+      if (line) detail.sources.push(line);
+      detail.methodHref = "/zh-TW/methods/decennials";
+      detail.receipt = {
+        ...segmentReceipt(item.record),
+        ...headReceipt(head, ["profile", "order_rule", "method_status", "method_provenance"]),
+        start_profile: (head.start_profile || {}).profile || null,
+        start_planet: head.start_planet || null,
+        interpretation: null,
+      };
+    } else {
+      // 還沒有專屬說明的泳道：起訖與回應原值照列。
+      detail.kind = laneMeta(item.record.laneId).title;
+      detail.title = [...named(item.glyph, item.label)];
+      detail.rows.push(["起訖", [dateRange(item, false)]]);
+      detail.receipt = { ...segmentReceipt(item.record), interpretation: null };
+    }
+    if (!detail.methodHref) detail.methodHref = "/zh-TW/methods/time-lords";
+    detail.dateNote = item.technique === "annual_profection"
+      ? `日期是${DATE_NOTE}；所選的那一年另附年界的時刻（到分鐘）。`
+      : item.technique === MONTHLY_LANE
+        ? `日期是${DATE_NOTE}；每個月從哪一天開始，看那一刻落在出生地的哪一天。`
+        : `日期是${DATE_NOTE}。`;
+    return Object.freeze(detail);
+  }
+
+  /** 「本工具採用的約定」：每條是 [粗體標題, 內文]。 */
+  function conventions(model) {
+    const data = model.data;
+    const list = [
+      ["一年從哪一刻算起：", "每年太陽回到出生時黃經位置的那一刻（太陽回歸），不是生日日期；兩者最多可差將近一天。年度小限與法達共用這個年界。"],
+      ["法達：", "日盤從太陽起、夜盤從月亮起；夜盤時兩個月交點擺在哪裡有兩種讀法（在水星之後，或在火星之後），本站預設前者，收據每次印出所用的一種。75 年後同一順序重來。"],
+      ["黃道釋放的「年」：", "360 日（Valens 原文的分配年），不是日曆年；部分現代軟體改用 365.25 日，本頁不並列兩種。"],
+      ["黃道釋放的層級：", "只算第一層（大期）與第二層（小期）。Valens 書中還有以日、以時計的更細層級，本頁沒有算；也不標「高峰期」。"],
+      ["命運點與精神點同一星座時：", "Valens 說行動類的要從下一個星座起算；本站不套用，只標示。"],
+      ["主星：", "傳統七顆行星（日、月、水、金、火、木、土）的守護（天蠍＝火星、水瓶＝土星、雙魚＝木星）。"],
+      ["十年期（decennials）：", "每段 129 個分配月（一年 360 日），依出生時的黃道順序輪值，只算兩層；起點預設日盤從太陽、夜盤從月亮（Firmicus），可改用 Valens 的「上升點之後第一顆」或自己指定，本站不判斷光體好壞。"],
+      ["月小限：", "第 1 個月是年度小限星座，之後每月往後一個星座，每年在太陽回歸時重新數起；每個月從太陽比出生時的位置多走 30 度的那一刻開始（中世紀 Abū Maʿshar 的做法），夜盤也用太陽。Ptolemy 的每 28 日一個星座與 al-Bīrūnī 的一年 13 個月，本站沒有算。只列你選過的年度；換到還沒取過的年度時另外取。"],
+      ["日期精度：", `年界到分鐘；法達、黃道釋放與十年期的期間只到「日」（原典只給年數，分秒是假精度）。日期是${DATE_NOTE}。`],
+    ];
+    const head = data.releasing.head;
+    if (head && head.fortune_spirit_same_sign === true) {
+      list.push(["這張盤：", "命運點與精神點在同一個星座，上面那條 Valens 的規則本站沒有套用。"]);
+    }
+    return list;
+  }
+
+  /** 回應警告的白話說明；未知的代碼照列代碼，不吞掉。 */
+  function warningNotices(model) {
+    // 同一則警告可以掛在兩個技法上（上升點近邊界：年度小限與月小限），畫面只說一次。
+    const seen = new Set();
+    return model.data.warnings.filter((warning) => !seen.has(warning.code) && seen.add(warning.code)).map((warning) => ({
+      code: warning.code,
+      text: WARNINGS[warning.code] || "回應附了一則這個頁面還不認得的警告。",
+    }));
+  }
+
+  /** 只知日期或不適用時，各技法沒有算的原因。 */
+  function unavailableTechniques(model) {
+    const data = model.data;
+    return [
+      ["annual_profection", "年度小限", data.profection],
+      ["monthly_profection", "月小限", data.monthly],
+      ["firdaria", "法達", data.firdaria],
+      ["zodiacal_releasing", "黃道釋放", data.releasing],
+      ["decennials", "十年期", data.decennials],
+    ].filter(([, , state]) => state.status === "not_applicable").map(([key, title, state]) => ({
+      key, title, code: state.reason, text: NOT_APPLICABLE[state.reason] || "伺服器說這一項不適用。",
+    }));
+  }
+
+  /** 約略到小時：哪些技法三個時刻相同、哪些不同；樣本的在地時刻有就附上。 */
+  function sampleSummary(model) {
+    const data = model.data;
+    if (data.precision !== "approximate_hour") return null;
+    const state = (technique) => data[technique].sensitivity;
+    return {
+      techniques: [
+        ["年度小限", state("profection")],
+        ["月小限", state("monthly")],
+        ["法達", state("firdaria")],
+        ["黃道釋放", state("releasing")],
+        ["十年期", state("decennials")],
+      ].filter(([, value]) => value).map(([title, value]) => ({ title, differs: value === "differs_between_samples" })),
+      samples: SAMPLE_ORDER.map((role) => {
+        const found = data.samples.find((sample) => sample.role === role);
+        return { role, title: SAMPLE_ROLES[role], localTime: found ? found.localTime : null };
+      }),
+    };
+  }
+
+  function extendedLots(model) {
+    return model.data.lots.map((lot) => ({
+      id: lot.id,
+      name: EXTENDED_LOT_NAMES[lot.id] || `未識別（${lot.id}）`,
+      sign: lot.sign,
+      house: lot.house,
+    }));
+  }
+
+  /**
+   * 第二層還沒有的第一層期間（黃道釋放的大期、十年期的第一層）：與 [startDay, endDay) 相交、
+   * 而第二層尚未載入的那些。回傳 [{ id, n }]，n 是落在該期間裡的一個足歲年度（按需請求用它）。
+   * 三個時刻不同的技法不按需取（並列的三組各自是完整回應）。
+   */
+  function missingLevel2(model, startDay, endDay) {
+    const data = model.data;
+    const levelOneLanes = [];
+    if (data.releasing.status === "computed" && !releasingDiffersBetweenSamples(data)) {
+      RELEASING_LOTS.forEach((lot) => levelOneLanes.push(`zr_${lot}_level_1`));
+    }
+    if (data.decennials.status === "computed" && data.decennials.sensitivity !== "differs_between_samples") {
+      levelOneLanes.push("decennials_level_1");
+    }
+    const missing = [];
+    levelOneLanes.forEach((laneId) => {
+      const lane = laneById(model, laneId);
+      if (!lane) return;
+      lane.items.forEach((item) => {
+        if (item.endDay <= startDay || item.startDay >= endDay) return;
+        if (data.level2LoadedFor.has(item.id)) return;
+        const inside = model.years.find((year) => year.startDay >= item.startDay && year.endDay <= item.endDay)
+          || model.years.find((year) => year.startDay < item.endDay && year.endDay > item.startDay);
+        if (inside) missing.push({ id: item.id, n: inside.n });
+      });
+    });
+    return missing;
+  }
+
+  /** 第 index 個年度的年度小限期間 id（它的月小限掛在這一段下）；沒有月小限或沒有這一段時回 null。 */
+  function monthsParentId(model, index) {
+    const year = model.years[index];
+    if (!year || model.data.monthly.status !== "computed") return null;
+    const parent = itemAt(model, "annual_profection", year.startDay);
+    return parent ? parent.id : null;
+  }
+
+  /**
+   * 第 index 個年度的月小限還沒有時，回傳 [{ id, n }]（id 是那一年年度小限的期間，n 是那一年）；
+   * 已經有、沒有算月小限，或三個時刻不同（並列的三組各自是完整回應）時回傳空陣列。
+   * 只看選定的那一年：時間軸捲動或展開十年不會逐年去取。
+   */
+  function missingMonths(model, index) {
+    const lane = model.data.lanes.find((candidate) => candidate.laneId === MONTHLY_LANE);
+    if (!lane || lane.basis === "each_sample") return [];
+    const id = monthsParentId(model, index);
+    if (!id || model.data.level2LoadedFor.has(id)) return [];
+    return [{ id, n: model.years[index].n }];
+  }
+
+  // ══ .ics ═══════════════════════════════════════════════════
+  //
+  // 只由畫面上的期間產生：選定年度裡、各泳道與該年相交的期間（「交點期不分子期」只是說明，
+  // 不是期間，不列）。全日事件，DTSTART／DTEND 是伺服器給的出生地日期（DTEND 依 RFC 5545
+  // 不含當日，正好是下一段的起點）。UID 是每次匯出隨機產生的識別碼加序號，不含任何出生資料；
+  // 不加提醒（VALARM），不提供訂閱網址。
+
+  function escapeText(text) {
+    return String(text)
+      .replace(/\\/g, "\\\\")
+      .replace(/;/g, "\\;")
+      .replace(/,/g, "\\,")
+      .replace(/\r\n|\r|\n/g, "\\n");
+  }
+
+  function utf8Length(character) {
+    const code = character.codePointAt(0);
+    return code < 0x80 ? 1 : code < 0x800 ? 2 : code < 0x10000 ? 3 : 4;
+  }
+
+  /** RFC 5545 3.1：每行最多 75 個位元組（不含 CRLF），續行以一個空白開頭，不切開多位元組字元。 */
+  function foldLine(line) {
+    const out = [];
+    let current = "";
+    let bytes = 0;
+    for (const character of line) {
+      const size = utf8Length(character);
+      const limit = out.length ? 74 : 75;
+      if (bytes + size > limit) {
+        out.push(current);
+        current = "";
+        bytes = 0;
+      }
+      current += character;
+      bytes += size;
+    }
+    out.push(current);
+    return out.map((part, index) => (index ? ` ${part}` : part)).join("\r\n");
+  }
+
+  const icsDate = (localDate) => localDate.replace(/-/g, "");
+
+  function icsStamp(now) {
+    const pad = (value) => String(value).padStart(2, "0");
+    return `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
+  }
+
+  function plain(runs) {
+    return runs.map((run) => (typeof run === "string" ? run
+      : run.mono || run.strong || run.small || "")).join("");
+  }
+
+  /** 選定年度要匯出的期間（畫面上同一年看得到的那些）。 */
+  function icsPeriods(model, index) {
+    return model.lanes.flatMap((lane) => itemsInYear(model, lane.id, index)
+      .filter((item) => item.kind !== "node")
+      .map((item) => ({ lane, item })));
+  }
+
+  function eventSummary(lane, item) {
+    if (item.technique === "annual_profection") {
+      return item.aside ? `年度小限：${item.label}（年主星 ${item.aside.label}）` : `年度小限：${item.label}`;
+    }
+    if (item.technique === MONTHLY_LANE) {
+      return item.aside ? `月小限：${item.label}（月主星 ${item.aside.label}）` : `月小限：${item.label}`;
+    }
+    return `${lane.title}：${item.label}${item.kind === "loosing" ? "（解鎖）" : ""}`;
+  }
+
+  /**
+   * @param {object} options now：產生時刻（DTSTAMP，Date）；token：隨機識別碼（字串）。
+   * @returns {{ filename, mime_type, content, count }}
+   */
+  function buildIcs(model, index, options) {
+    const year = model.years[index];
+    if (!year) throw new Error("沒有選定的年度。");
+    const now = options && options.now instanceof Date ? options.now : null;
+    const token = options && typeof options.token === "string" ? options.token : "";
+    if (!now || !/^[0-9a-f]{16,}$/.test(token)) throw new Error("行事曆檔需要產生時刻與隨機識別碼。");
+    const stamp = icsStamp(now);
+    // 畫面上的警告也進行事曆檔：行事曆的說明一份，每個事件的說明各一份（匯入後事件常與行事曆分開）。
+    const warningLines = warningNotices(model).map((notice) => `注意［${notice.code}］：${notice.text}`);
+    const lines = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Armillary//Time lords//ZH-TW",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
+      `X-WR-CALNAME:${escapeText(`渾儀・時間主星（${ICS_LABEL}）`)}`,
+      `X-WR-CALDESC:${escapeText([`${ICS_LABEL}。${FIXED_SENTENCE}`, ...warningLines].join("\n"))}`,
+    ];
+    const periods = icsPeriods(model, index);
+    periods.forEach(({ lane, item }, position) => {
+      const description = [
+        `起訖（${DATE_NOTE}）：${item.start.localDate} → ${item.end.localDate}`,
+        `${ICS_LABEL}。`,
+        FIXED_SENTENCE,
+        ...warningLines,
+      ].join("\n");
+      lines.push(
+        "BEGIN:VEVENT",
+        `UID:${token}-${position + 1}@armillary`,
+        `DTSTAMP:${stamp}`,
+        `DTSTART;VALUE=DATE:${icsDate(item.start.localDate)}`,
+      );
+      if (item.endDay > item.startDay) lines.push(`DTEND;VALUE=DATE:${icsDate(item.end.localDate)}`);
+      lines.push(
+        `SUMMARY:${escapeText(eventSummary(lane, item))}`,
+        `DESCRIPTION:${escapeText(description)}`,
+        "TRANSP:TRANSPARENT",
+        "END:VEVENT",
+      );
+    });
+    lines.push("END:VCALENDAR");
+    return Object.freeze({
+      filename: ICS_FILENAME,
+      mime_type: "text/calendar;charset=utf-8",
+      content: lines.map(foldLine).join("\r\n") + "\r\n",
+      count: periods.length,
+    });
+  }
+
+  // ══ 時間主星表（Markdown／CSV／JSON）═══════════════════════════
+  //
+  // 另一份匯出檔，不併進本命盤的匯出：期間取自畫面模型（與時間軸、年表同一份；「交點期不分子期」
+  // 只是說明，不是期間），每一列附回應裡的代碼；JSON 另附頁面收到的每一份原始回應。只由頁面
+  // 已經收到的回應產生，不發請求。儲存格與 Markdown 的中和、CSV 欄名都用本命盤匯出那一套，
+  // 版本身分照本命盤匯出的規則：API 版本不在相容清單、或幾份回應的版本與出處清單不一致，就拒絕。
+
+  const TIME_LORD_TABLE_TITLE = "渾儀・時間主星表";
+  const TIME_LORD_TABLE_FILE = "armillary-time-lords";
+  const TIME_LORD_TABLE_KIND = "time_lord_table";
+  const TABLE_FORMAT_DEFINITIONS = Object.freeze({
+    md: Object.freeze({ name: "Markdown", mime_type: "text/markdown;charset=utf-8", prefix: "" }),
+    csv: Object.freeze({ name: "CSV", mime_type: "text/csv;charset=utf-8", prefix: "﻿" }),
+    json: Object.freeze({ name: "JSON", mime_type: "application/json;charset=utf-8", prefix: "" }),
+  });
+  const TIME_LORD_TABLE_FORMATS = Object.freeze(Object.keys(TABLE_FORMAT_DEFINITIONS));
+  const TIME_LORD_TABLE_FORMAT_NAMES = Object.freeze(Object.fromEntries(
+    Object.entries(TABLE_FORMAT_DEFINITIONS).map(([format, definition]) => [format, definition.name])));
+  // 表裡的技法順序與回應 lanes[] 的順序相同；右欄是 AnnualData 上的鍵。
+  const TABLE_TECHNIQUES = Object.freeze([
+    ["annual_profection", "profection", "年度小限"],
+    ["monthly_profection", "monthly", "月小限"],
+    ["firdaria", "firdaria", "法達"],
+    ["zodiacal_releasing", "releasing", "黃道釋放"],
+    ["decennials", "decennials", "十年期"],
+  ]);
+  const TECHNIQUE_STATUS = Object.freeze({ computed: "已計算", not_applicable: "不適用", not_requested: "未請求" });
+  const FLAG_LABELS = Object.freeze({
+    loosing_of_the_bond: "解鎖",
+    truncated: "被上一層截斷",
+    node_period: "交點期不分子期",
+  });
+  // 按需取的下一層（黃道釋放與十年期的第二層、月小限）：上一層的每一段，下一層有沒有取到。
+  // 沒有取到不等於沒有這一層，所以不寫成空白。
+  const SUBDIVISION = Object.freeze({ listed: "已列出", not_fetched: "未取得" });
+  const PERIOD_COLUMNS = Object.freeze([
+    ["period_id", "期間代碼"],
+    ["start", "起（出生地日期）"],
+    ["end", "迄（出生地日期）"],
+    ["ruler", "輪值"],
+    ["domicile_lord", "守護行星"],
+    ["marks", "標記"],
+    ["parent_period_id", "上一層期間代碼"],
+    ["subdivision", "下一層"],
+  ]);
+  const tableText = (value) => (value === null || value === undefined || value === "" ? "—" : String(value));
+  const withoutLane = (id) => (id ? id.slice(id.indexOf("/") + 1) : null);
+
+  const SHA256_HEX = /^[0-9a-f]{64}$/;
+  const nonEmpty = (value) => (typeof value === "string" && value.length > 0) || Number.isInteger(value);
+
+  /** 收到的每一份回應都在相容清單、彼此同版本、同一份出處清單、各有計算軌跡收據；否則拒絕，不猜哪一份對。 */
+  function tableIdentity(sources) {
+    if (!Array.isArray(sources) || !sources.length) throw new Error("沒有年度回應，不能產生時間主星表。");
+    const versions = new Set();
+    const registers = new Set();
+    sources.forEach((source) => {
+      const version = source && source.schema_version;
+      if (!version) throw new Error("缺少 API schema 版本，不能建立可追溯輸出。");
+      if (!ChartExport.SUPPORTED_API_SCHEMA_VERSIONS.includes(version)) {
+        throw new Error(`不相容的 API schema 版本：${version}。`);
+      }
+      versions.add(version);
+      const dossier = source.calculation_dossier || {};
+      const register = dossier.method_source_register || {};
+      if (!nonEmpty(register.register_id) || !nonEmpty(register.version) || !SHA256_HEX.test(String(register.sha256))) {
+        throw new Error("年度回應不完整：缺少出處清單的代號、版本或摘要，不能建立可追溯輸出。");
+      }
+      const trace = dossier.trace_receipt || {};
+      if (!SHA256_HEX.test(String(trace.python_json_serialization_sha256))) {
+        throw new Error("年度回應不完整：缺少計算軌跡收據的摘要，不能建立可追溯輸出。");
+      }
+      registers.add(JSON.stringify([register.register_id || null, register.version || null, register.sha256 || null]));
+    });
+    if (versions.size !== 1) throw new Error("幾份年度回應的 API schema 版本不一致，不能合成一份表。");
+    if (registers.size !== 1) throw new Error("幾份年度回應的出處清單不一致，不能合成一份表。");
+    const register = (sources[0].calculation_dossier || {}).method_source_register || {};
+    return {
+      export_contract_version: ChartExport.EXPORT_CONTRACT_VERSION,
+      api_schema_version: sources[0].schema_version,
+      method_source_register: {
+        register_id: register.register_id || null,
+        version: register.version || null,
+        sha256: register.sha256 || null,
+      },
+      responses: sources.map((source) => ({
+        year_of_life: source.year_boundary && Number.isInteger(source.year_boundary.year_of_life)
+          ? source.year_boundary.year_of_life : null,
+        trace_receipt_sha256: ((source.calculation_dossier || {}).trace_receipt || {}).python_json_serialization_sha256 || null,
+      })),
+    };
+  }
+
+  function tablePeriods(model) {
+    const data = model.data;
+    // 上一層泳道 → 按需取的下一層泳道（算出的那些）。
+    const onDemandChildren = new Map();
+    data.lanes.filter((lane) => lane.status === "computed" && lane.parentLaneId && ON_DEMAND_LEVEL_2.test(lane.laneId))
+      .forEach((lane) => onDemandChildren.set(lane.parentLaneId, (onDemandChildren.get(lane.parentLaneId) || []).concat([lane])));
+    return model.lanes.flatMap((lane) => lane.items.filter((item) => item.kind !== "node").map((item) => {
+      const record = item.record;
+      const children = onDemandChildren.get(record.laneId);
+      let subdivision = null;
+      if (children && !record.node) {
+        const listed = data.level2LoadedFor.has(item.id)
+          || children.some((child) => child.segments.some((segment) => segment.parentId === item.id));
+        subdivision = listed ? "listed" : "not_fetched";
+      }
+      return {
+        table: lane.title,
+        lane_id: record.laneId,
+        technique: lane.technique,
+        level: lane.level,
+        sample_role: record.sampleRole,
+        period_id: record.periodId,
+        parent_period_id: withoutLane(record.parentId),
+        start: record.start.localDate,
+        end: record.end.localDate,
+        ruler_key: record.labelKey,
+        ruler: record.labelKey ? labelOf(record.labelKey) : null,
+        domicile_lord_key: record.lordKey,
+        domicile_lord: record.lordKey ? bodyName(record.lordKey) : null,
+        flags: record.flags.slice(),
+        marks: record.flags.map((flag) => FLAG_LABELS[flag] || flag),
+        subdivision,
+        subdivision_label: subdivision ? SUBDIVISION[subdivision] : null,
+      };
+    }));
+  }
+
+  function tableTechniques(model) {
+    const notApplicable = new Map(unavailableTechniques(model).map((entry) => [entry.key, entry.text]));
+    return TABLE_TECHNIQUES.map(([technique, key, title]) => {
+      const state = model.data[key];
+      const head = state.head || {};
+      const verification = head.source_verification || null;
+      return {
+        technique,
+        title,
+        status: state.status,
+        status_label: TECHNIQUE_STATUS[state.status] || state.status,
+        reason_code: state.reason || null,
+        reason: state.reason ? notApplicable.get(technique) || null : null,
+        profile: head.profile || null,
+        source_verification: verification,
+        source_verification_label: verification
+          ? (Object.prototype.hasOwnProperty.call(SOURCE_VERIFICATION, verification) ? SOURCE_VERIFICATION[verification] : verification)
+          : null,
+      };
+    });
+  }
+
+  /**
+   * 時間主星表的文件：三種格式都由這一份產生。
+   * @param {object} model buildModel 的結果（含按需併入的期間）。
+   * @param {object[]} sources 頁面收到的年度回應，原樣，依收到的先後。
+   */
+  function buildTimeLordTable(model, sources) {
+    const identity = tableIdentity(sources);
+    return {
+      export_contract_version: identity.export_contract_version,
+      export_kind: TIME_LORD_TABLE_KIND,
+      title: TIME_LORD_TABLE_TITLE,
+      label: ICS_LABEL,
+      statement: FIXED_SENTENCE,
+      date_basis: DATE_NOTE,
+      identity,
+      input_assumptions: [{
+        key: "birth_time_precision", label: "出生時刻把握程度",
+        value: Labels.label("birth_time_precision", model.data.precision), code: model.data.precision,
+      }],
+      warnings: warningNotices(model).map((notice) => ({ code: notice.code, message: notice.text })),
+      techniques: tableTechniques(model),
+      periods: tablePeriods(model),
+      conventions: conventions(model).map(([term, text]) => ({ term: term.replace(/：$/, ""), text })),
+      source_responses: sources,
+    };
+  }
+
+  /** 一段期間在 Markdown／CSV 裡的各欄：[欄名, 值, 代碼]。 */
+  function periodCells(period) {
+    const values = {
+      period_id: [period.period_id, period.lane_id],
+      start: [period.start, ""],
+      end: [period.end, ""],
+      ruler: [period.ruler, period.ruler_key],
+      domicile_lord: [period.domicile_lord, period.domicile_lord_key],
+      marks: [period.marks.join("、"), period.flags.join(",")],
+      parent_period_id: [period.parent_period_id, ""],
+      subdivision: [period.subdivision_label, period.subdivision],
+    };
+    return PERIOD_COLUMNS.map(([key, header]) => [header, tableText(values[key][0]), values[key][1] || ""]);
+  }
+
+  function groupedPeriods(document) {
+    const groups = [];
+    document.periods.forEach((period) => {
+      const last = groups[groups.length - 1];
+      if (last && last.title === period.table) last.periods.push(period);
+      else groups.push({ title: period.table, periods: [period] });
+    });
+    return groups;
+  }
+
+  function identityEntries(identity) {
+    const register = identity.method_source_register;
+    return [
+      ["Export contract", identity.export_contract_version, "export_contract_version"],
+      ["API schema", identity.api_schema_version, "api_schema_version"],
+      ["出處清單", register.register_id, "method_source_register.register_id"],
+      ["出處清單版本", register.version, "method_source_register.version"],
+      ["出處清單 SHA-256", register.sha256, "method_source_register.sha256"],
+    ];
+  }
+
+  const yearOfLife = (value) => (value === null ? "—" : `第 ${value} 年`);
+
+  function renderTimeLordMarkdown(document) {
+    const escape = ChartExport.escapeMarkdownText;
+    const code = ChartExport.markdownInlineCode;
+    const row = (cells) => `| ${cells.map(escape).join(" | ")} |`;
+    const tableLines = (headers, rows) => [row(headers), `| ${headers.map(() => "---").join(" | ")} |`, ...rows.map(row)];
+    const lines = [
+      `# ${escape(document.title)}`,
+      "",
+      `> ${escape(document.label)}。${escape(document.statement)}`,
+      "",
+      "## 版本與收據",
+      "",
+      ...identityEntries(document.identity).map(([label, value]) => `- ${escape(label)}: ${code(tableText(value))}`),
+      "",
+      `這份表由 ${document.identity.responses.length} 份伺服器回應組成：`,
+      "",
+      ...tableLines(["請求的年度", "計算軌跡摘要（SHA-256）"],
+        document.identity.responses.map((response) => [yearOfLife(response.year_of_life), tableText(response.trace_receipt_sha256)])),
+      "",
+      "## 輸入假設",
+      "",
+      ...document.input_assumptions.map((entry) => `- ${escape(entry.label)}［${code(entry.code)}］: ${escape(entry.value)}`),
+      `- 日期: ${escape(document.date_basis)}`,
+      "",
+      "## 注意事項",
+      "",
+      ...(document.warnings.length
+        ? document.warnings.map((warning) => `- 注意［${code(warning.code)}］: ${escape(warning.message)}`)
+        : ["- 注意事項: 無"]),
+      "",
+      "## 各技法",
+      "",
+      ...tableLines(["技法", "狀態", "沒有算的原因", "算法代碼", "出處核對"], document.techniques.map((entry) => [
+        entry.title, entry.status_label, tableText(entry.reason), tableText(entry.profile), tableText(entry.source_verification_label),
+      ])),
+      "",
+      "## 期間",
+      "",
+      `> 日期是${escape(document.date_basis)}。「下一層」寫「未取得」的，是畫面還沒有取那一段的細分期間，不代表那一段沒有細分。`,
+    ];
+    groupedPeriods(document).forEach((group) => {
+      const cells = group.periods.map(periodCells);
+      lines.push("", `### ${escape(group.title)}`, "",
+        ...tableLines(PERIOD_COLUMNS.map(([, header]) => header), cells.map((list) => list.map(([, value]) => value))));
+    });
+    lines.push("", "## 本工具採用的約定", "",
+      ...document.conventions.map((entry) => `- **${escape(entry.term)}**：${escape(entry.text)}`), "");
+    return lines.join("\n");
+  }
+
+  function renderTimeLordCsv(document) {
+    const rows = [ChartExport.CSV_HEADER.slice()];
+    const push = (section, title, tableName, index, field, value, code = "") =>
+      rows.push([section, title, tableName, index, field, tableText(value), code || ""]);
+    push("_about", "說明", "說明", 1, "標示", document.label);
+    push("_about", "說明", "說明", 2, "說明", document.statement);
+    identityEntries(document.identity).forEach(([label, value, key], index) => {
+      push("_identity", "版本與收據", "版本與收據", index + 1, label, value, key);
+    });
+    document.identity.responses.forEach((response, index) => {
+      push("_identity", "版本與收據", "伺服器回應", index + 1, "請求的年度", yearOfLife(response.year_of_life), "year_of_life");
+      push("_identity", "版本與收據", "伺服器回應", index + 1, "計算軌跡摘要（SHA-256）",
+        response.trace_receipt_sha256, "trace_receipt_sha256");
+    });
+    document.input_assumptions.forEach((entry, index) => {
+      push("_input", "輸入假設", "輸入假設", index + 1, entry.label, entry.value, entry.code);
+    });
+    push("_input", "輸入假設", "輸入假設", document.input_assumptions.length + 1, "日期", document.date_basis);
+    (document.warnings.length ? document.warnings : [{ code: "", message: "無" }]).forEach((warning, index) => {
+      push("_warnings", "注意事項", "注意事項", index + 1, "注意事項", warning.message, warning.code);
+    });
+    document.techniques.forEach((entry, index) => {
+      const add = (field, value, code) => push("techniques", "各技法", "各技法", index + 1, field, value, code);
+      add("技法", entry.title, entry.technique);
+      add("狀態", entry.status_label, entry.status);
+      if (entry.reason_code) add("沒有算的原因", entry.reason, entry.reason_code);
+      add("算法代碼", entry.profile, "");
+      add("出處核對", entry.source_verification_label, entry.source_verification);
+    });
+    groupedPeriods(document).forEach((group) => {
+      group.periods.forEach((period, index) => {
+        periodCells(period).forEach(([header, value, code]) => push("periods", "期間", group.title, index + 1, header, value, code));
+      });
+    });
+    document.conventions.forEach((entry, index) => {
+      push("conventions", "本工具採用的約定", "本工具採用的約定", index + 1, entry.term, entry.text);
+    });
+    return rows.map((row) => row.map(ChartExport.csvCell).join(",")).join("\r\n");
+  }
+
+  function renderTimeLordJson(document) {
+    return JSON.stringify(document, null, 2) + "\n";
+  }
+
+  const TABLE_RENDERERS = Object.freeze({ md: renderTimeLordMarkdown, csv: renderTimeLordCsv, json: renderTimeLordJson });
+
+  /**
+   * @param {object} model buildModel 的結果。
+   * @param {object[]} sources 頁面收到的年度回應，原樣。
+   * @param {string} format md｜csv｜json。
+   * @returns {{ filename, mime_type, content, count, format_name }}
+   */
+  function buildTimeLordTableArtifact(model, sources, format) {
+    if (!Object.prototype.hasOwnProperty.call(TABLE_FORMAT_DEFINITIONS, format)) {
+      throw new Error(`不支援的時間主星表格式：${format}`);
+    }
+    const definition = TABLE_FORMAT_DEFINITIONS[format];
+    const document = buildTimeLordTable(model, sources);
+    return Object.freeze({
+      filename: `${TIME_LORD_TABLE_FILE}.${format}`,
+      mime_type: definition.mime_type,
+      content: definition.prefix + TABLE_RENDERERS[format](document),
+      count: document.periods.length,
+      format_name: definition.name,
+    });
+  }
+
+  return Object.freeze({
+    FIXED_SENTENCE,
+    ICS_LABEL,
+    DATE_NOTE,
+    SAMPLE_ORDER,
+    DECENNIALS_START_PROFILES,
+    DECENNIALS_PLANETS,
+    SOURCE_VERIFICATION,
+    adaptAnnualSource,
+    mergeLevel2,
+    annualRequestBody,
+    estimateCompletedYears,
+    locateToday,
+    buildModel,
+    itemsInYear,
+    referenceDay,
+    summaryTiles,
+    briefLine,
+    referenceNote,
+    yearTitle,
+    yearRange,
+    describeItem,
+    conventions,
+    warningNotices,
+    unavailableTechniques,
+    sampleSummary,
+    laneMeta,
+    extendedLots,
+    missingLevel2,
+    missingMonths,
+    monthsParentId,
+    buildIcs,
+    TIME_LORD_TABLE_FORMATS,
+    TIME_LORD_TABLE_FORMAT_NAMES,
+    buildTimeLordTable,
+    buildTimeLordTableArtifact,
+    foldLine,
+    escapeText,
+    plain,
+    bodyName,
+    signName,
+    segmentSize,
+  });
+});

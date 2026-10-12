@@ -7,7 +7,7 @@ import datetime as dtmod
 from typing import Any, TypedDict
 from zoneinfo import ZoneInfo
 
-from ..config import BODY_ID_BY_KEY
+from ..config import BODY_ID_BY_KEY, LUNAR_APSIDES, NODE_BODIES
 from ..ephemeris import require_full_ephemeris, require_object_coverage
 from .bodies import (
     DATE_ONLY_NO_BIRTH_TIME_REASON,
@@ -16,13 +16,15 @@ from .bodies import (
     compute_bodies,
     withhold_horizontal_coordinates,
     derive_node_antipode,
+    effective_participants,
     geocentric_sun_true_altitude,
     make_longitude_sampler,
 )
 from .computation_mode import ComputationContext
+from .dodecatemoria import compute_dodecatemoria
 from .formatting import ANGLE_KEYS, attach_sign_positions, zodiac_sign_index
 from .frame_compatibility import method_frame_state
-from .house_placements import compute_planet_house_placements
+from .house_placements import compute_planet_house_placements, whole_sign_point_placements
 from .houses import (
     HouseSystemUnavailableError,
     compute_houses,
@@ -82,7 +84,6 @@ SENSITIVITY_STATES = (
     SAME_AT_ALL_SAMPLES,
     DIFFERS_BETWEEN_SAMPLES,
 ) = SENSITIVITY_STATES
-_OBSERVED_STATES = (SAME_AT_ALL_SAMPLES, DIFFERS_BETWEEN_SAMPLES)
 
 # Which response paths a sensitivity pass can speak about, and which dossier
 # receipt says whether the module behind each one was requested and applicable.
@@ -113,6 +114,8 @@ ASSESSABLE_RESPONSE_PATHS: dict[str, tuple[str, tuple[str, ...]]] = {
     "derived_methods.planet_in_house": ("modules", ("planet_in_house",)),
     "derived_methods.sect": ("modules", ("sect",)),
     "derived_methods.void_of_course": ("modules", ("void_of_course",)),
+    "derived_methods.dodecatemoria": ("modules", ("dodecatemoria",)),
+    "derived_methods.classical_classifications": ("modules", ("classical_classifications",)),
 }
 
 # Which response paths each pass recomputes at every sample when the owning
@@ -130,12 +133,15 @@ RESAMPLED_PATHS_BY_PRECISION: dict[str, tuple[str, ...]] = {
         "derived_methods.planet_in_house",
         "derived_methods.sect",
         "derived_methods.void_of_course",
+        "derived_methods.dodecatemoria",
     ),
     "date_only": (
         "astronomical_data.bodies",
         "astronomical_data.nodes",
+        "derived_methods.dodecatemoria",
     ),
 }
+DODECATEMORIA_PATH = "derived_methods.dodecatemoria"
 # The void-of-course probe recomputes only the flag; the separating sign exit,
 # the next perfected aspect, its time and the solver evidence are not
 # re-evaluated at the samples, so they stay among the path's classifications
@@ -173,12 +179,20 @@ def _unevaluable_reason(error: Exception) -> str:
 # only sampled evidence is implemented, and no invariant argument is used to go
 # beyond it.  The text is the same for every chart of a precision, so it is a
 # method source register entry and the response names it (`method_source_ref`).
+# date_only Moon sign transitions: the two samples lie in one stretch of the
+# date, or in two stretches with another date's clock time between them.
+MOON_TRANSITION_WITHIN_ONE_STRETCH = "crossing_exists_between_adjacent_samples_exact_time_not_solved"
+MOON_TRANSITION_ACROSS_ANOTHER_DATE = (
+    "crossing_exists_between_adjacent_samples_across_another_date_exact_time_not_solved"
+)
+
 SENSITIVITY_METHOD = {
     "approximate_hour": (
         "Classifications (every non-numeric value each resampled path prints: "
         "the sign of every longitude, angle, cusp and Lot; house placements of "
         "planets and Lots; motion direction; sect and its near-horizon band; the "
-        "Lot formula basis; the void-of-course flag only) are recomputed at the "
+        "Lot formula basis; the void-of-course flag only; the twelfth-part of every "
+        "point the chart lists) are recomputed at the "
         "listed sampled instants of the stated civil hour [H:00,H+1:00) in the named "
         "fold: a quarter-hour grid plus the seconds either side of any UTC-offset "
         "change inside the hour, located by a one-minute UTC scan refined to the "
@@ -187,6 +201,8 @@ SENSITIVITY_METHOD = {
         "no invariant is applied to exclude a change and reversal between "
         "adjacent samples. Adjacent samples that differ are bisected to at most "
         "15 s; each bracket holds at least one change, not necessarily one. "
+        "A twelfth-part's own sign change is not bisected: its signs are those "
+        "seen at the samples and at the midpoints other changes needed. "
         "Inside the polar circle the Ascendant can reverse between samples, so "
         "every path read off it is at most partially evaluated. "
         "Numeric values are sampled envelopes, not states. Every sample fails "
@@ -194,7 +210,8 @@ SENSITIVITY_METHOD = {
     ),
     "date_only": (
         "Classifications of bodies and nodes (every non-numeric value they print: "
-        "sign, motion direction, reason codes) are recomputed at the listed "
+        "sign, motion direction, reason codes) and of the planets' twelfth-parts "
+        "are recomputed at the listed "
         "sampled instants of the local civil day, every instant the zone labels "
         "with the date (one or more UTC stretches): every existing hourly clock "
         "label on both folds, the first and last second of each stretch, and "
@@ -203,7 +220,10 @@ SENSITIVITY_METHOD = {
         "same_at_all_samples means only that those "
         "sampled instants agree; it is not proof that the classification holds "
         "between them, and no invariant is applied to exclude a change and "
-        "reversal between adjacent samples. Numeric values are sampled "
+        "reversal between adjacent samples. A Moon sign transition between the "
+        "last sample of one stretch and the first of the next is marked as "
+        "across another date: part of the time between them is labelled with "
+        "another date. Numeric values are sampled "
         "envelopes, not states. Every sample fails closed when its calculation "
         "did not use the Swiss files."
     ),
@@ -480,6 +500,35 @@ def _compute_effective_bodies(
     return bodies, moon_context
 
 
+def _probe_points(request, jd_ut: float, context, trace: Trace) -> list[dict]:
+    """The nodes and lunar apsides a chart with this request emits, at a probe."""
+
+    node_defs = [{"id": b["id"], "key": b["key"], "zh": b["zh"]} for b in NODE_BODIES]
+    defs = node_defs + (
+        [dict(body) for body in LUNAR_APSIDES] if request.options.include_lilith_priapus else []
+    )
+    _require_sample_coverage(defs, jd_ut, context)
+    points = compute_bodies(
+        defs, jd_ut, context, request.atmosphere, trace, physical=False, moon_relative=True,
+    )
+    if request.options.include_south_nodes:
+        by_key = {item["key"]: item for item in points}
+        points.extend(
+            derive_node_antipode(
+                by_key[north_key],
+                key=south_key,
+                name=south_name,
+                body_id=BODY_ID_BY_KEY[north_key],
+                jd_ut=jd_ut,
+                ctx=context,
+                atmosphere=request.atmosphere,
+                trace=trace,
+            )
+            for north_key, south_key, south_name in SOUTH_NODE_DERIVATIONS
+        )
+    return points
+
+
 def _extract_probe(
     *,
     offset_seconds: int,
@@ -528,6 +577,15 @@ def _extract_probe(
             context,
             trace,
         )
+        # The nodes' and apsides' whole-sign places, as the chart prints them.
+        placements["point_placements"] = whole_sign_point_placements(
+            _probe_points(probe_request, jd_ut, context, trace)
+            if probe_request.options.house_system == "W"
+            else [],
+            house_receipt,
+            placements,
+            trace,
+        )
     else:
         placements = {
             "execution_status": "not_requested",
@@ -553,6 +611,9 @@ def _extract_probe(
                 trace,
                 houses=houses,
             )
+    dodecatemoria = _sample_dodecatemoria(
+        probe_request, bodies, angles=houses, lots=lots, trace=trace
+    )
     if evaluate_void_of_course and probe_request.options.include_void_of_course:
         voc = (
             # The chart's own VOC producer and participants (moon.py).
@@ -578,8 +639,72 @@ def _extract_probe(
         "placements": placements,
         "sect": sect,
         "lots": lots,
+        "dodecatemoria": dodecatemoria,
         "void_of_course": voc,
     }
+
+
+def _sample_dodecatemoria(
+    request, bodies: list[dict], *, angles: dict | None, lots: dict | None, trace: Trace
+) -> dict | None:
+    """The twelfth-parts one sample prints, from the chart's own producer.
+
+    The same points as the chart: the seven planets, the ascendant when the
+    sample has houses, the Lots when they were computed.  None when the chart
+    does not compute the module, so a sample never prints what the chart lacks.
+    """
+
+    if not request.options.include_dodecatemoria:
+        return None
+    if not method_frame_state("dodecatemoria", request.computation_mode)["applicable"]:
+        return None
+    return compute_dodecatemoria(
+        planets=effective_participants(
+            bodies, include_nodes=False, include_outer_planets=False
+        ),
+        angles=angles,
+        lots=lots if _usable(lots) else None,
+        profile=request.options.dodecatemoria_profile,
+        trace=trace,
+    )
+
+
+def _dodecatemoria_signs(representative: dict | None, samples: list[dict | None]) -> list[dict] | None:
+    """Per listed point: the twelfth-part signs the samples showed.
+
+    The rows follow the chart's own points.  A twelfth-part jumps whenever its
+    point enters a new sign, so no longitude envelope is given, only the signs
+    seen at the listed instants; a sign between two samples is not in the set.
+    """
+
+    if representative is None or not _usable(representative):
+        return None
+    rows = []
+    for point in representative["points"]:
+        seen = [
+            next(
+                (row["longitude"] for row in sample["points"] if row["key"] == point["key"]),
+                None,
+            )
+            if sample is not None and _usable(sample)
+            else None
+            for sample in samples
+        ]
+        signs = sorted({zodiac_sign_index(value) for value in seen if value is not None})
+        rows.append(
+            {
+                "key": point["key"],
+                "name": point["name"],
+                "representative_sign_index": zodiac_sign_index(point["longitude"]),
+                "sampled_sign_indices": signs,
+                "status": (
+                    _state(signs)
+                    if all(value is not None for value in seen)
+                    else PARTIALLY_EVALUATED_STATE
+                ),
+            }
+        )
+    return rows
 
 
 # Lots 包絡的不連續狀態閉集。
@@ -595,7 +720,9 @@ UNAVAILABLE_COORDINATE_STATUS = NOT_APPLICABLE_STATE
 # A sign is printed as the first member of a sign position; the other two
 # members render the longitude itself (in-sign DMS and decimal text) and move
 # with it, like the float they render.
-SIGN_POSITION_KEYS = frozenset({"sign_position", "sign_positions", "cusp_sign_positions"})
+SIGN_POSITION_KEYS = frozenset(
+    {"sign_position", "sign_positions", "cusp_sign_positions", "point_sign_position"}
+)
 
 
 def printed_classifications(value: Any, path: str) -> dict[str, Any]:
@@ -673,6 +800,7 @@ def _approximate_hour_printed_objects(probe: dict, request) -> dict[str, Any]:
     for path, module in (
         ("derived_methods.sect", probe["sect"]),
         ("derived_methods.lots", probe["lots"]),
+        (DODECATEMORIA_PATH, probe.get("dodecatemoria")),
     ):
         if _usable(module):
             objects[path] = module
@@ -908,10 +1036,14 @@ def _refine_transitions(
         if left_state == right_state:
             continue
 
+        # A twelfth-part changes sign twelve times faster than its point, so
+        # bisecting each change would multiply the probes; its signs are read
+        # at the samples and at the midpoints other changes need, not bisected.
         changed_paths = sorted(
             key
             for key in set(left_state) | set(right_state)
             if left_state.get(key, missing) != right_state.get(key, missing)
+            and not key.startswith(DODECATEMORIA_PATH)
         )
         for path in changed_paths:
             left_offset = segment_left
@@ -1022,6 +1154,7 @@ def build_approximate_hour_sensitivity(
     representative_void_of_course: dict | None,
     representative_offset_seconds: int,
     representative_semantics: str,
+    representative_dodecatemoria: dict | None = None,
 ) -> dict:
     """Build governed probes and reuse the selected real representative chart."""
 
@@ -1039,6 +1172,7 @@ def build_approximate_hour_sensitivity(
         "placements": representative_placements,
         "sect": representative_sect,
         "lots": representative_lots,
+        "dodecatemoria": representative_dodecatemoria,
         "void_of_course": representative_void_of_course,
         "void_of_course_evaluated": representative_void_of_course is not None,
     }
@@ -1345,6 +1479,10 @@ def build_approximate_hour_sensitivity(
         "sect": sect_summary,
         "lots": lots_summary,
         "void_of_course": voc_summary,
+        "dodecatemoria_signs": _dodecatemoria_signs(
+            representative_dodecatemoria,
+            [probe.get("dodecatemoria") for probe in evaluated],
+        ),
     }
 
 
@@ -1444,6 +1582,7 @@ def build_date_only_sensitivity(
     civil_day: dict,
     representative_local_time: str,
     representative_semantics: str,
+    representative_dodecatemoria: dict | None = None,
 ) -> dict:
     """Return sampled daily longitude envelopes without inventing a birth time.
 
@@ -1460,6 +1599,9 @@ def build_date_only_sensitivity(
     context = ComputationContext(request.computation_mode, request.location)
     sampled_objects: dict[str, dict] = {}
     sample_states: list[dict[str, Any]] = []
+    sample_dodecatemoria: list[dict | None] = []
+    representative_twelfth_parts: dict = representative_dodecatemoria or {}
+    dodecatemoria_printed = _usable(representative_twelfth_parts)
 
     for sample in sample_instants:
         jd_ut = utc_datetime_to_jd_ut(sample["utc_datetime"])
@@ -1500,15 +1642,32 @@ def build_date_only_sensitivity(
         # The anchor prints no horizon position for a date; neither does a sample.
         for record in effective_bodies + nodes:
             withhold_horizontal_coordinates(record, DATE_ONLY_NO_BIRTH_TIME_REASON)
+        sample_objects: dict[str, Any] = {
+            "astronomical_data.bodies": effective_bodies,
+            "astronomical_data.nodes": nodes,
+        }
+        if dodecatemoria_printed:
+            # A date has no ascendant and no Lots: the planets only, as on the chart.
+            dodecatemoria = _sample_dodecatemoria(
+                request, effective_bodies, angles=None, lots=None, trace=trace
+            )
+            sample_dodecatemoria.append(dodecatemoria)
+            if dodecatemoria is not None and _usable(dodecatemoria):
+                # The chart labels its date-only result with the anchor it was
+                # read at; that label describes the chart, not a value a
+                # sample could change, so a sample carries the same one.
+                sample_objects[DODECATEMORIA_PATH] = {
+                    **dodecatemoria,
+                    **{
+                        key: representative_twelfth_parts[key]
+                        for key in ("time_basis",)
+                        if key in representative_twelfth_parts
+                    },
+                }
         sample_states.append(
             {
                 leaf: value
-                for leaves in _classifications_by_path(
-                    {
-                        "astronomical_data.bodies": effective_bodies,
-                        "astronomical_data.nodes": nodes,
-                    }
-                ).values()
+                for leaves in _classifications_by_path(sample_objects).values()
                 for leaf, value in leaves.items()
             }
         )
@@ -1532,10 +1691,12 @@ def build_date_only_sensitivity(
                 }
             )
 
-    printed = {
+    printed: dict[str, Any] = {
         "astronomical_data.bodies": representative_bodies,
         "astronomical_data.nodes": representative_nodes,
     }
+    if dodecatemoria_printed:
+        printed[DODECATEMORIA_PATH] = representative_twelfth_parts
     # date_only has no bisection: its samples are the whole evidence.
     classification_coverage = _classification_coverage(
         printed, _classifications_by_path(printed), sample_states, []
@@ -1578,6 +1739,18 @@ def build_date_only_sensitivity(
     position_ranges.sort(key=lambda item: item["key"])
 
     moon_values = sampled_objects["moon"]["values"]
+    # A date can be more than one UTC stretch (a clock set back just after
+    # midnight labels the next hour with the previous date).  The last second of
+    # one stretch and the first of the next are adjacent samples, but the
+    # crossing between them may lie in time the clock gave to another date.
+    stretch_of = {
+        sample["utc_time"]: next(
+            index
+            for index, (start, end) in enumerate(civil_day["spans"])
+            if start <= sample["utc_datetime"] < end
+        )
+        for sample in sample_instants
+    }
     moon_transitions = []
     for left, right in zip(moon_values, moon_values[1:]):
         left_sign = _sign_index(left["longitude"])
@@ -1589,7 +1762,11 @@ def build_date_only_sensitivity(
                     "to_sign_index": right_sign,
                     "lower_sample_local": left["local_time"],
                     "upper_sample_local": right["local_time"],
-                    "semantics": "crossing_exists_between_adjacent_samples_exact_time_not_solved",
+                    "semantics": (
+                        MOON_TRANSITION_WITHIN_ONE_STRETCH
+                        if stretch_of[left["utc_time"]] == stretch_of[right["utc_time"]]
+                        else MOON_TRANSITION_ACROSS_ANOTHER_DATE
+                    ),
                 }
             )
     minimum_boundary_distance = min(
@@ -1636,6 +1813,9 @@ def build_date_only_sensitivity(
         ],
         "classification_coverage": classification_coverage,
         "position_ranges": position_ranges,
+        "dodecatemoria_signs": _dodecatemoria_signs(
+            representative_dodecatemoria, sample_dodecatemoria
+        ),
         # The Moon's signs and envelope are its position_ranges row; this adds
         # only what that row cannot say.
         "moon_boundary_assessment": {
