@@ -33,15 +33,19 @@ _BLOCK = re.compile(
 
 
 def articles() -> tuple:
-    from . import birth_time, bounds, houses, nodes, rising_tables, solar_time, taiwan_time, unknown_time
+    from . import (birth_time, bounds, combustion, dodecatemoria, house_sphere, houses, mansions, nodes,
+                   rising_tables, solar_time, syzygy, taiwan_time, time_lords, unknown_time)
 
-    return (birth_time, taiwan_time, houses, bounds, nodes, unknown_time, rising_tables, solar_time)
+    return (birth_time, taiwan_time, houses, bounds, nodes, unknown_time, rising_tables, solar_time, time_lords,
+            dodecatemoria, combustion, mansions, syzygy, house_sphere)
 
 
 def pages() -> tuple:
-    from . import page_features, page_home, page_methods, page_methods_time_lords, page_roadmap, page_validation
+    from . import (page_features, page_home, page_methods, page_methods_glossary, page_methods_time_lords,
+                   page_roadmap, page_validation)
 
-    return (page_home, page_features, page_methods, page_methods_time_lords, page_roadmap, page_validation)
+    return (page_home, page_features, page_methods, page_methods_time_lords, page_roadmap, page_validation,
+            page_methods_glossary)
 
 
 def blocks_in(fragment: str) -> dict[str, str]:

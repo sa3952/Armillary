@@ -691,7 +691,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 .more[open] summary{border-bottom:1px solid var(--hair-soft); margin-bottom:var(--s2)}
 .more > *:last-child{margin-bottom:var(--s2)}
 
-/* @pages features home legal-privacy roadmap security security-verify methods-birth-time-conversion methods-time-lords methods-decennials */
+/* @pages features home legal-privacy roadmap security security-verify methods-birth-time-conversion methods-time-lords methods-decennials methods-glossary */
 /* ─── 表格：可讀性優先 ─── */
 .spec-scroll{
   width:100%; max-width:100%; min-width:0; box-sizing:border-box;
@@ -1640,7 +1640,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   .cite-x{display:block; margin-left:0; margin-top:.3rem; white-space:normal}
 }
 
-/* @pages security security-verify methods-birth-time-conversion methods-time-lords methods-decennials */
+/* @pages security security-verify methods-birth-time-conversion methods-time-lords methods-decennials methods-glossary */
 /* ═══════════════════════════════════════════════════════════════
    /security · 規格表 datasheet
    ───────────────────────────────────────────────────────────────
@@ -1677,10 +1677,10 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 }
 .datasheet .ds-note b,.datasheet .lede b{color:var(--plate-fg)}
 
-/* @pages security contact security-verify methods-birth-time-conversion methods-time-lords methods-decennials */
+/* @pages security contact security-verify methods-birth-time-conversion methods-time-lords methods-decennials methods-glossary */
 /* ─── 段落與段頭 ─── */
 .ds-sec{padding:var(--s5) 0 0}
-/* @pages security security-verify methods-birth-time-conversion methods-time-lords methods-decennials */
+/* @pages security security-verify methods-birth-time-conversion methods-time-lords methods-decennials methods-glossary */
 /* 段頭由 <p> 改成 <h2>。改的是語意，不是外觀：選擇器提高到
    (0,2,0) 以壓過 .page-body h2，並把原本 <p> 實際生效的值寫明——
    .page-body p 的 margin-bottom、.datasheet p 的 line-height／max-width／color
@@ -1887,7 +1887,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 .vf-arrow{stroke:var(--paper-2); stroke-width:1.5}
 .vf-arrow-head{fill:var(--paper-2)}
 
-/* @pages methods-birth-time-conversion methods-time-lords methods-decennials */
+/* @pages methods-birth-time-conversion methods-time-lords methods-decennials methods-glossary */
 /* ═══════════════════════════════════════════════════════════════
    /methods/birth-time-conversion、/methods/time-lords、/methods/decennials · 紙面參考頁
    ───────────────────────────────────────────────────────────────
@@ -2001,6 +2001,15 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   /* 逐段轉換表欄位短、要上下對照，保留表格，在框內橫向捲動。 */
   .ct-sheet .ct-transitions .spec{min-width:36rem}
 }
+
+/* @pages methods-glossary */
+/* 名詞解釋子頁：詞條與計算頁的抽屜同一份，排成一欄閱讀。 */
+.gl-list{margin:var(--s2) 0 0; max-width:42rem}
+.gl-list dt{font-family:var(--serif); font-size:1.15rem; color:var(--ink); margin-top:var(--s3); scroll-margin-top:var(--s3)}
+.gl-list dt .en{font-family:var(--sans); font-size:.86rem; color:var(--ink-dim)}
+.gl-list dd{margin:.3rem 0 0}
+.gl-list dd p{margin:0; line-height:1.85}
+.gl-list .gl-where{margin-top:.2rem; font-size:.82rem; color:var(--ink-faint)}
 
 /* @pages methods-decennials */
 /* ─── /methods/decennials：驗算表與來歷註記 ───

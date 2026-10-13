@@ -125,6 +125,19 @@
   --pad-card:     1.1rem 1.25rem 1.2rem;
   --pad-panel:    1rem 1.25rem 1.25rem;
 
+  /* ── 文章圖版（甲・銅版星圖，figures.css）─────────────────────
+   * 圖上只用墨色，分層靠線的粗細與排線；--fx-hi（朱紅）只給目前指著的那一個。
+   * 圖上的字先用拉丁襯線：宋體把 ° ′ 排成全形，16°34′ 會被拆開；中文落到同一組宋體。 */
+  --serif-latin: "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman",
+                 "Liberation Serif", "DejaVu Serif", "Songti TC", "Noto Serif TC",
+                 "Noto Serif CJK TC", "Source Han Serif TC", serif;
+  --fx-ink:     var(--ink);
+  --fx-dim:     var(--ink-faint);
+  --fx-hi:      var(--accent);
+  --fx-hi-wash: rgba(160, 58, 34, .07);   /* --accent 的淡底：指著的那一列 */
+  --fx-face:    var(--serif-latin);
+  --fx-num:     var(--serif-latin);
+
   /* ── 版面 ───────────────────────────────────────────── */
   --pad:     4.5rem;
   --measure: 36rem;

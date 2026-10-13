@@ -1,0 +1,158 @@
+/* 文章圖版元件（甲・銅版星圖）。只由宣告了圖版（figure[data-fx]）的文章載入，接在 article.css 之後，
+ * 同一個樣式檔。顏色與字體一律來自 tokens.css 的 --fx-*。
+ *
+ * 每張圖有兩張 SVG：寬版（viewBox 880 或 600）與為手機重排的直版（viewBox 340），依圖本身的寬度
+ * 切換，不是縮放；列印一律用寬版。圖上的字級只由 .fx-t／.fx-small 決定，產生器不寫 font-size，
+ * scripts/frontend/figures/_fx.py 從這裡讀字級、核對 375 px 不小於 12 px、1440 px 不小於 13 px。
+ * 距離帶靠排線區分（實心、交叉線、單線），不靠顏色；朱紅只給目前指著的那一個。 */
+
+.fx{container-type:inline-size}
+.fx-art{position:relative}
+.fx-title{position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
+.fx-art svg.fx-wide, .fx-art svg.fx-narrow{display:block; width:100%; height:auto; margin:0 auto; overflow:hidden}
+.fx-art svg.fx-wide{max-width:880px}
+.fx-art svg.fx-narrow{display:none; max-width:480px}
+@container (max-width: 679px){
+  .fx-art svg.fx-wide{display:none}
+  .fx-art svg.fx-narrow{display:block}
+}
+/* 正文欄只有 40rem：圖跨到右側空欄，寬版才放得下 */
+.ar-body > .fx{grid-column:2 / -1}
+@media (max-width:60rem){
+  .ar-body > .fx{grid-column:1}
+}
+/* 手機上圖版伸到 16px 邊距，直版在 375 px 寬時約 343 px，字不小於 12 px */
+@media (max-width:640px){
+  .fx:not(.ar-hero) .fx-art{margin-left:calc(16px - var(--pad)); margin-right:calc(16px - var(--pad))}
+  .ar-hero.fx{margin-left:calc(16px - var(--pad)); margin-right:calc(16px - var(--pad)); padding-left:0; padding-right:0}
+  .ar-hero.fx > :not(.fx-art){margin-left:var(--s1); margin-right:var(--s1)}
+}
+.fx-sprite{position:absolute; width:0; height:0; overflow:hidden}
+.fx-sprite .fx-hp{stroke:var(--fx-ink); stroke-width:.7}
+.fx-sprite .fx-hpf{fill:var(--fx-dim)}
+
+/* 控制項：HTML 裡帶 hidden，有 JS 才顯示 */
+.fx-switch{display:flex; flex-wrap:wrap; gap:.4rem; margin:0 0 .7rem}
+.fx-switch[hidden], .fx-scrub[hidden], .fx-readout[hidden], [data-fx-notes][hidden]{display:none}
+.fx-switch button{font:inherit; font-size:.9rem; min-height:44px; padding:.35rem .9rem; border:1px solid var(--fx-ink);
+  background:transparent; color:var(--fx-ink); border-radius:var(--radius); cursor:pointer}
+.fx-switch button[aria-pressed="true"]{background:var(--fx-ink); color:var(--paper)}
+.fx-switch button:focus-visible, .fx-scrub input:focus-visible{outline:3px solid var(--fx-hi); outline-offset:2px}
+.fx-scrub{display:flex; align-items:center; gap:.8rem; margin:0 0 .7rem; font-size:.9rem}
+.fx-scrub input{flex:1; max-width:28rem; min-height:44px; accent-color:var(--fx-hi)}
+.fx-readout{min-height:3.7em; margin:.6rem 0 0; padding:.55rem .8rem; font-size:.92rem; line-height:1.75;
+  background:var(--paper); border-left:3px solid var(--fx-hi); max-width:var(--measure-cjk)}
+.ar-fig.fx figcaption{font-family:var(--fx-face)}
+.fx-data{margin-top:var(--s1); font-size:.88rem}
+.fx-data summary{cursor:pointer; color:var(--ink-dim); min-height:44px; padding:.6rem 0; box-sizing:border-box}
+.fx-data .ar-scroll{margin:0}
+.fx-table tr.is-active th, .fx-table tr.is-active td{background:var(--paper)}
+
+/* SVG 的角色 */
+.fx .fx-off{display:none}
+.fx .fx-t{font-family:var(--fx-face); fill:var(--fx-ink)}
+.fx-wide .fx-t{font-size:17px}
+.fx-wide .fx-small{font-size:15px}
+.fx-narrow .fx-t{font-size:13.5px}
+.fx-narrow .fx-small{font-size:12px}
+.fx .fx-num{font-family:var(--fx-num); font-variant-numeric:tabular-nums}
+.fx .fx-dim{fill:var(--fx-dim)}
+.fx .fx-rub{fill:var(--fx-ink)}
+.fx .fx-frame{fill:none; stroke:var(--fx-ink); stroke-width:2.2}
+.fx .fx-frame-in{fill:none; stroke:var(--fx-ink); stroke-width:.6}
+.fx .fx-track, .fx .fx-fill-blank{fill:var(--paper); stroke:var(--fx-ink); stroke-width:.6}
+.fx .fx-axis, .fx .fx-hair{stroke:var(--fx-ink); stroke-width:1; fill:none}
+.fx .fx-hair{stroke:var(--fx-dim); stroke-width:.6}
+.fx .fx-hit{fill:transparent}
+.fx .fx-row{outline:none}
+/* 填法：焦傷圖的距離帶名（caz／com／beam）與中性的別名（實心、交叉線、單線、點、空白）同值，
+ * 其他文章的圖用中性的別名 */
+.fx .fx-b-caz, .fx .fx-fill-solid{fill:var(--fx-ink)}
+.fx .fx-b-com, .fx .fx-fill-cross{fill:url(#fx-h2)}
+.fx .fx-b-beam, .fx .fx-fill-hatch{fill:url(#fx-h1)}
+.fx .fx-b-edge{stroke:var(--fx-ink); stroke-width:.8}
+.fx .fx-b-caz-in{fill:var(--fx-ink); fill-opacity:.82}
+.fx .fx-exc{fill:var(--paper); fill-opacity:.85}
+.fx .fx-exc-edge{stroke:var(--fx-ink); stroke-width:1.2; stroke-dasharray:5 3}
+.fx .fx-inset-bg, .fx .fx-fill-dot{fill:url(#fx-dots)}
+.fx .fx-inset-frame{fill:none; stroke:var(--fx-ink); stroke-width:1}
+.fx .fx-lens{fill:none; stroke:var(--fx-ink); stroke-width:1}
+.fx .fx-leader{stroke:var(--fx-dim); stroke-width:.8; fill:none}
+.fx .fx-disc{fill:var(--paper); stroke:var(--fx-ink); stroke-width:1.4}
+.fx .fx-mk{fill:var(--paper); stroke:var(--fx-ink); stroke-width:1.2}
+.fx .fx-mk-gl, .fx .fx-sun-gl{fill:var(--fx-ink)}
+.fx .fx-off-scale .fx-mk{stroke-dasharray:3 2}
+.fx .fx-out-arrow{fill:none; stroke:var(--fx-ink); stroke-width:1.6}
+.fx .fx-arrow{fill:var(--fx-ink)}
+.fx .fx-sunline{stroke:var(--fx-ink); stroke-width:.8; stroke-dasharray:2 3}
+/* 星盤（整宮制與四分宮制）：整宮制的宮界是實線，四分宮制的宮頭是虛線；落宮與整宮制不同的行星畫成實心 */
+.fx .fx-wh-ring{fill:var(--paper); stroke:var(--fx-ink); stroke-width:1.4}
+.fx .fx-wh-line{fill:none; stroke:var(--fx-ink); stroke-width:.8}
+.fx .fx-wh-whole{stroke:var(--fx-ink); stroke-width:1}
+.fx .fx-wh-cusp{stroke:var(--fx-ink); stroke-width:1.1; stroke-dasharray:6 4}
+.fx .fx-wh-axis{stroke:var(--fx-ink); stroke-width:1.8}
+.fx .fx-wh-hub{fill:var(--paper); stroke:var(--fx-ink); stroke-width:1}
+.fx .fx-wh-dot{fill:var(--fx-ink)}
+.fx .fx-mk-on{fill:var(--fx-ink); stroke:var(--fx-ink); stroke-width:1.2}
+.fx .fx-mk-gl-on{fill:var(--paper)}
+.fx .fx-row.is-active .fx-mk-on, .fx .fx-row:focus-visible .fx-mk-on{stroke:var(--fx-hi); stroke-width:3}
+/* 天球（宮位制文章的天球腳本畫的幾何）：地平線下打點，球背面的線用虛線淡墨 */
+.fx polyline{fill:none; stroke-linecap:round; stroke-linejoin:round}
+.fx .fx-sph-ball{fill:var(--paper); stroke:var(--fx-ink); stroke-width:1.2}
+.fx .fx-sph-ground{fill:url(#fx-dots); stroke:none}
+.fx .fx-sph-hor{stroke:var(--fx-ink); stroke-width:1.6}
+.fx .fx-sph-line{stroke:var(--fx-ink); stroke-width:1.1}
+.fx .fx-sph-faint{stroke:var(--fx-dim); stroke-width:.8}
+.fx .fx-sph-cut{stroke:var(--fx-ink); stroke-width:.9; stroke-dasharray:5 3}
+.fx .fx-sph-dim{stroke:var(--fx-dim)}
+.fx .fx-sph-arc{stroke:var(--fx-ink); stroke-width:2.2}
+.fx .fx-sph-ecl{stroke:var(--fx-ink); stroke-width:3.4}
+.fx .fx-sph-ecl-b{stroke:var(--fx-ink); stroke-width:3.4; stroke-dasharray:1.5 2.5; stroke-linecap:butt}
+.fx .fx-sph-back{stroke:var(--fx-dim); stroke-dasharray:3 4; stroke-width:1}
+.fx .fx-sph-pt{fill:var(--fx-ink); stroke:none}
+.fx .fx-sph-pt-dim{fill:var(--fx-dim); stroke:none}
+.fx .fx-sph-pt-open{fill:var(--paper); stroke:var(--fx-ink); stroke-width:1}
+.fx .fx-sph-pt.fx-sph-back, .fx .fx-sph-pt-open.fx-sph-back{fill:none; stroke:var(--fx-dim); stroke-dasharray:none}
+/* 曲線與另一地的淡色虛線曲線、虛線（規線或只畫外框的格，與 fx-exc-edge 同樣的虛線）、
+ * 示意圖的點紋平面、階梯線、紙底細框的格子 */
+.fx .fx-curve{fill:none; stroke:var(--fx-ink); stroke-width:1.6; stroke-linejoin:round}
+.fx .fx-curve-dim{fill:none; stroke:var(--fx-dim); stroke-width:1.2; stroke-dasharray:5 3; stroke-linejoin:round}
+.fx .fx-dash{fill:none; stroke:var(--fx-ink); stroke-width:1.2; stroke-dasharray:5 3}
+.fx .fx-plane{fill:url(#fx-dots); stroke:var(--fx-ink); stroke-width:1}
+.fx .fx-step{fill:none; stroke:var(--fx-ink); stroke-width:2.2; stroke-linejoin:miter}
+.fx .fx-cell{fill:var(--paper); stroke:var(--fx-ink); stroke-width:.8}
+/* 拖拉條選到的那一步（那一刻、那一年）：朱紅，等同指著 */
+.fx .fx-cursor{fill:none; stroke:var(--fx-hi); stroke-width:2.5}
+.fx .fx-cursor-t{fill:var(--fx-hi); font-weight:700}
+/* 壓在排線上的字加一圈紙色外框，才讀得清楚 */
+.fx .fx-key, .fx .fx-inset-t{paint-order:stroke; stroke:var(--paper); stroke-width:4px; stroke-linejoin:round}
+
+/* 指著的那一個：朱紅；其餘的字與星改用淡墨（明示的字色 token，不以 opacity 淡化） */
+.fx .fx-row.is-active .fx-mk, .fx .fx-row:focus-visible .fx-mk{stroke:var(--fx-hi); stroke-width:3}
+.fx .fx-row.is-active .fx-hit, .fx .fx-row:focus-visible .fx-hit{stroke:var(--fx-hi); stroke-width:2; fill:var(--fx-hi-wash)}
+.fx .fx-row-echo.is-active .fx-arrow{fill:var(--fx-hi)}
+.fx.has-active .fx-row:not(.is-active) .fx-t, .fx.has-active .fx-row:not(.is-active) .fx-mk-gl{fill:var(--fx-dim)}
+.fx.has-active .fx-row:not(.is-active) .fx-mk{stroke:var(--fx-dim)}
+.fx .fx-row .fx-t, .fx .fx-row .fx-mk, .fx .fx-row .fx-mk-gl{transition:fill .15s, stroke .15s}
+@media (prefers-reduced-motion: reduce){
+  .fx .fx-row .fx-t, .fx .fx-row .fx-mk, .fx .fx-row .fx-mk-gl{transition:none}
+}
+
+/* 列印：白紙黑字、寬版、不印控制項與即時說明；互動造成的淡化恢復 */
+@media print{
+  .fx-art svg.fx-narrow{display:none}
+  .fx-art svg.fx-wide{display:block; max-width:100%}
+  .fx-switch, .fx-scrub, .fx-readout{display:none}
+  .fx{break-inside:avoid}
+  .fx.has-active .fx-row:not(.is-active) .fx-t, .fx.has-active .fx-row:not(.is-active) .fx-mk-gl{fill:var(--fx-ink)}
+  .fx.has-active .fx-row:not(.is-active) .fx-mk{stroke:var(--fx-ink)}
+  .fx .fx-row.is-active .fx-mk{stroke:var(--fx-ink); stroke-width:1.2}
+  .fx .fx-row.is-active .fx-hit{stroke:none; fill:transparent}
+  .fx .fx-track, .fx .fx-fill-blank, .fx .fx-mk, .fx .fx-disc, .fx .fx-exc, .fx .fx-cell{fill:var(--print-bg)}
+  .fx .fx-wh-ring, .fx .fx-wh-hub, .fx .fx-sph-ball, .fx .fx-sph-pt-open{fill:var(--print-bg)}
+  .fx .fx-mk-gl-on{fill:var(--print-bg)}
+  .fx .fx-row.is-active .fx-mk-on{stroke:var(--fx-ink); stroke-width:1.2}
+  .fx .fx-key, .fx .fx-inset-t{stroke:var(--print-bg)}
+  .fx .fx-cursor{stroke:var(--fx-ink); stroke-width:2}
+  .fx .fx-cursor-t{fill:var(--fx-ink)}
+}

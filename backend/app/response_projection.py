@@ -194,7 +194,7 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     "sampled_sign_indices}",
     "birth_time_sensitivity.body_signs[].{key,name,status,representative_sign_index,"
     "sampled_sign_indices}",
-    "birth_time_sensitivity.dodecatemoria_signs[].{key,sampled_sign_indices}",
+    "birth_time_sensitivity.dodecatemoria_signs[].{key,sampled_sign_indices,status}",
     "birth_time_sensitivity.planet_in_house[].{name,status,representative_house,"
     "sampled_houses}",
     "birth_time_sensitivity.angles.*.status",
@@ -287,7 +287,7 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     f"derived_methods.dodecatemoria.{{{_RECEIPT},profile,scope.not_listed}}",
     "derived_methods.dodecatemoria.points[].{key,name,category,point_sign_position,"
     "sign_position,domicile_lord,sign_differs_under_other_sect,comparison_sign}",
-    f"derived_methods.classical_classifications.{{{_RECEIPT},not_evaluated}}",
+    f"derived_methods.classical_classifications.{{{_RECEIPT},not_evaluated,time_basis}}",
     "derived_methods.classical_classifications.chart_sect.{is_day,in_near_horizon_band}",
     "derived_methods.classical_classifications.planets[].{name,nature,gender,sect_membership,"
     "of_chart_sect,sign,sign_gender,above_horizon,altitude_in_near_horizon_band,house,joys,hayz}",

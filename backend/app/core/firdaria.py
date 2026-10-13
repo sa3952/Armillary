@@ -24,6 +24,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from fractions import Fraction
 
+from .source_reading import SOURCE_READING_LEVELS
 from .time_utils import jd_ut_to_iso_utc
 from .year_boundary import lifetime_window
 
@@ -200,30 +201,62 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         ),
         "method_provenance": dict(_METHOD_PROVENANCE),
         "sources": [
-            "Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, "
-            "Persian Nativities IV (2019); Latin abridgement in Persian Nativities III "
-            "(2010): the fullest surviving operational account per the research notes, "
-            "nocturnal nodes after Mercury; chapter located as PN IV IV.8 via secondary "
-            "sources, book not consulted",
-            "al-Biruni, Book of Instruction in the Elements of the Art of Astrology "
-            "§438-439 (tr. R. R. Wright, 1934, p.48, read on the page image): the "
-            "table of periods and sequences; the nodes, 3 and 2 years for day and "
-            "night alike, follow the seven planets, so by night they come after "
-            "Mercury; the nodes have no sub-periods",
-            "al-Qabisi, Introduction: an abridged nocturnal sequence, named by the "
-            "research notes as the source of the Latin divergence; not verified",
-            "Bonatti, Liber astronomiae Tr.9 Ch.3 (tr. B. Dykes, 2007, read): the "
-            "periods, the diurnal sequence and the return after 75 years; for the "
-            "night the text starts from the Moon and says 'all as for the day'; "
-            "nocturnal nodes after Mars is Zoller's reading, not Bonatti's words",
-            "Schoener (Renaissance): keeps the nodes-last order per the research notes; "
-            "not verified",
+            {
+                "citation": (
+                    "Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, "
+                    "Persian Nativities IV (2019); Latin abridgement in Persian Nativities III (2010)"
+                ),
+                "says": (
+                    "the fullest surviving operational account per the research notes, "
+                    "nocturnal nodes after Mercury; chapter located as PN IV IV.8 via secondary "
+                    "sources"
+                ),
+                "reading": SOURCE_READING_LEVELS[2],
+                "read_at": "secondary sources and the research notes; the book not consulted",
+            },
+            {
+                "citation": (
+                    "al-Biruni, Book of Instruction in the Elements of the Art of Astrology "
+                    "§438-439 (tr. R. R. Wright, 1934, p.48)"
+                ),
+                "says": (
+                    "the table of periods and sequences; the nodes, 3 and 2 years for day and "
+                    "night alike, follow the seven planets, so by night they come after "
+                    "Mercury; the nodes have no sub-periods"
+                ),
+                "reading": SOURCE_READING_LEVELS[1],
+                "read_at": "Wright's English translation, the scanned 1934 printing",
+            },
+            {
+                "citation": "al-Qabisi, Introduction",
+                "says": (
+                    "an abridged nocturnal sequence, named by the research notes as the source "
+                    "of the Latin divergence"
+                ),
+                "reading": SOURCE_READING_LEVELS[2],
+                "read_at": "the research notes only; not verified",
+            },
+            {
+                "citation": "Bonatti, Liber astronomiae Tr.9 Ch.3 (tr. B. Dykes, 2007)",
+                "says": (
+                    "the periods, the diurnal sequence and the return after 75 years; for the "
+                    "night the text starts from the Moon and says 'all as for the day'; "
+                    "nocturnal nodes after Mars is Zoller's reading, not Bonatti's words"
+                ),
+                "reading": SOURCE_READING_LEVELS[1],
+                "read_at": "Dykes's English translation",
+            },
+            {
+                "citation": "Schoener (Renaissance)",
+                "says": "keeps the nodes-last order",
+                "reading": SOURCE_READING_LEVELS[2],
+                "read_at": "the research notes only; not verified",
+            },
         ],
         "naming_note": (
             "Neither nocturnal profile is marked the only correct one; the "
             "provenance says 'tradition, explicit profile per Abu Ma'shar', not that "
             "Abu Ma'shar invented the technique."
         ),
-        "source_verification": "biruni_and_bonatti_translations_read_abu_mashar_not_checked",
     },
 }

@@ -1827,6 +1827,9 @@
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     if (attemptState !== ATTEMPT.IDLE) return;
+    // 「加算」送出的這一次，結果到了把焦點交給新加的那一區；其他任何一次送出都不帶。
+    const addedFocus = addRequested;
+    addRequested = null;
     hideError();
     clearAllFieldInvalid();
     const built = buildPayload();
@@ -1854,6 +1857,7 @@
       return;
     }
     const generation = beginAttempt();
+    resultFocusOptions = addedFocus;
     // 結果綁定送出當下的輸入快照：回來的結果只對這一份
     // payload 成立，表單之後任何改動都會讓它被標為 stale。
     const signature = inputSignature(built.payload);
@@ -2277,6 +2281,15 @@
   // 畫面上多了什麼。只 focus() 時瀏覽器只捲到剛好看得見標題，畫面大半仍是表單。
   // 偏好減少動態效果時直接跳到位置，不做平滑捲動。
   function revealResults() {
+    const added = addedSectionNode();
+    if (added) {
+      unfoldTarget(added);
+      if (typeof added.scrollIntoView === "function") {
+        added.scrollIntoView({ block: "start", behavior: prefersReducedMotion() ? "auto" : "smooth" });
+      }
+      focusSectionHeading(added);
+      return;
+    }
     const heading = el("results-heading");
     if (typeof heading.scrollIntoView === "function") {
       heading.scrollIntoView({ block: "start", behavior: prefersReducedMotion() ? "auto" : "smooth" });
@@ -3125,10 +3138,24 @@
     return block;
   }
 
+  // 「加算」：按下時記下要打開的選項；送出時移到 resultFocusOptions（只屬於那一次送出），結果到了
+  // 由 revealResults 把焦點與捲動交給新加的那一區的標題，不回到頁首。
+  let addRequested = null;
+  let resultFocusOptions = null;
+  function addedSectionNode() {
+    const wanted = resultFocusOptions;
+    resultFocusOptions = null;
+    if (!wanted) return null;
+    const row = Chapters.SECTION_CHAPTERS.find((entry) => Chapters.enableOptions(entry.section).join(" ") === wanted
+      && document.getElementById(`section-${entry.section}`));
+    return row ? document.getElementById(`section-${row.section}`) : null;
+  }
+
   function addFromChapter(event) {
     const target = event.target.closest ? event.target : null;
     const add = target && target.closest("button.chapter-add");
     if (add && !add.disabled) {
+      addRequested = add.dataset.enable;
       add.dataset.enable.split(" ").forEach((key) => { optionValues = { ...optionValues, [key]: true }; });
       refreshOptionUi();
       noteFormChanged();
@@ -3314,7 +3341,48 @@
         sources.appendChild(line);
       }
     });
+    linkGlossaryTerms(host, section.id);
     return host;
+  }
+
+  // 區段說明裡第一次出現、名詞解釋有條目的詞，做成與章節導言同一種可點的詞（.term，點了打開名詞解釋
+  // 並捲到那一條，glossary.js 在 document 上接線）。只換畫面上的節點，字一個不改；匯出讀 canonical
+  // sections，不經過這裡。找不到那個詞（例如這次的說明沒有提到）就不加，不另外補字。
+  const SECTION_TERMS = Object.freeze({
+    fixed_stars: [["fixed_stars", "恆星"]],
+    prenatal_points: [["prenatal_syzygy", "產前朔望"]],
+    antiscia: [["antiscia", "反照點"]],
+    dodecatemoria: [["dodecatemoria", "十二分部"]],
+    aspects: [["aversion", "不合意"]],
+    lunar_mansions: [["lunar_mansions", "月宿"]],
+    void_of_course: [["void_of_course", "月空亡"]],
+    solar_phase: [["cazimi", "日輪內"], ["combust", "焦傷"], ["under_beams", "在光束下"]],
+    classical_classifications: [["benefic_malefic", "吉星"], ["joys", "喜樂"], ["hayz", "Hayz 與 halb"],
+      ["house_triad", "始宮"]],
+  });
+  function linkGlossaryTerms(host, sectionId) {
+    const glossary = window.ArmillaryGlossary;
+    const terms = SECTION_TERMS[sectionId];
+    if (!terms || !glossary) return;
+    const known = new Set(glossary.ENTRIES.map((entry) => entry.key));
+    // 先找摺疊外看得到的說明，再找「說明與原典」摺疊裡的：收起的摺疊裡的詞點不到。
+    const all = [...host.querySelectorAll("p.section-note")];
+    const notes = all.filter((note) => !note.closest("details")).concat(all.filter((note) => note.closest("details")));
+    terms.forEach(([key, word]) => {
+      if (!known.has(key)) return;
+      for (const note of notes) {
+        const text = [...note.childNodes].find((node) => node.nodeType === 3 && node.data.includes(word));
+        if (!text) continue;
+        const hit = text.splitText(text.data.indexOf(word));
+        hit.splitText(word.length);
+        const button = make("button", "term");
+        button.type = "button";
+        button.dataset.term = key;
+        button.textContent = word;
+        hit.replaceWith(button);
+        return;
+      }
+    });
   }
 
   // 結果頂端的敏感度結論：一行，連到區段本身。null 時清空並隱藏。
@@ -3483,27 +3551,31 @@
     });
   }
 
-  // 名稱 → 符號鍵。天體、交點與月球拱點的名稱取 labels.js 的後端名稱表（與後端一對一，整合
-  // 測試對照），名稱 → 符號沿用星盤圖的同一張對照（ChartWheelModel.POINTS）；星座的鍵就是符號鍵。
-  // 對照不到的名稱（Priapus、恆星、阿拉伯點…）不加符號，不猜。
+  // 天體、交點與月球拱點的符號：表格帶點鍵（圖表連動的那幾張）時照每一列的鍵取，與星盤圖用同一張
+  // 對照（ChartWheelModel.POINTS）；鍵只認 labels.js 後端名稱表裡的天體、交點與拱點（軸點不加符號）。
+  // 沒有點鍵的表（與一頁摘要）才退回用名稱對照，名稱取同一張後端名稱表。星座的鍵就是符號鍵。
+  // 對照不到的（Priapus、恆星、阿拉伯點…）不加符號，不猜。
   const TABLE_GLYPHS = (() => {
     const glyphs = window.ArmillaryChartGlyphs;
     const labels = window.ArmillaryLabels;
     const points = window.ChartWheelModel && window.ChartWheelModel.POINTS;
     const bodies = new Map();
+    const keys = new Map();
     const signs = new Map();
-    if (!glyphs || !labels || !points) return { bodies, signs, glyphs: null };
+    if (!glyphs || !labels || !points) return { bodies, keys, signs, glyphs: null };
     const vocabulary = labels.VOCABULARIES;
     [vocabulary.body_backend_name, vocabulary.node_backend_name, vocabulary.lunar_apsis_backend_name].forEach((table) => {
       Object.entries(table).forEach(([key, name]) => {
         const point = points[key];
-        if (point && glyphs.GLYPHS[point.glyph]) bodies.set(name, point.glyph);
+        if (!point || !glyphs.GLYPHS[point.glyph]) return;
+        bodies.set(name, point.glyph);
+        keys.set(key, point.glyph);
       });
     });
     Object.entries(vocabulary.zodiac_sign).forEach(([key, name]) => {
       if (glyphs.GLYPHS[key]) signs.set(name, key);
     });
-    return { bodies, signs, glyphs: glyphs.GLYPHS };
+    return { bodies, keys, signs, glyphs: glyphs.GLYPHS };
   })();
   const SIGN_AT_START = new RegExp(`^(${[...TABLE_GLYPHS.signs.keys()].join("|") || "(?!)"}) (?=\\d)`);
   // 相位表的組合欄「太陽 — 月亮」：兩邊各自對照。
@@ -3525,11 +3597,26 @@
     return svg;
   }
 
-  /** 填入一格：文字原樣；認得的天體名稱或星座度數前加符號。 */
-  function fillCell(node, text, withBodies) {
+  /**
+   * 填入一格：文字原樣；認得的天體或星座度數前加符號。cellKeys：這一格的點鍵（表格帶點鍵時；
+   * 相位組合欄「太陽 — 月亮」是兩個），有就照鍵取符號，不看名稱；null 時才照名稱對照。
+   */
+  function fillCell(node, text, withBodies, cellKeys = null) {
     if (!TABLE_GLYPHS.glyphs) {
       node.textContent = text;
       return;
+    }
+    if (withBodies && Array.isArray(cellKeys)) {
+      const parts = cellKeys.length > 1 ? text.split(PAIR_SEPARATOR) : [text];
+      if (parts.length === cellKeys.length) {
+        parts.forEach((part, index) => {
+          if (index > 0) node.append(PAIR_SEPARATOR);
+          const glyph = TABLE_GLYPHS.keys.get(cellKeys[index]);
+          if (glyph) node.append(tableGlyph(glyph));
+          node.append(part);
+        });
+        return;
+      }
     }
     if (withBodies) {
       const parts = text.split(PAIR_SEPARATOR);
@@ -3576,21 +3663,23 @@
       const th = document.createElement("th");
       th.scope = "col";
       if (numeric[index]) th.className = "num";
-      fillCell(th, column, isGrid && index > 0);
+      const columnKey = isGrid && model.points && Array.isArray(model.points.columns) ? model.points.columns[index] : null;
+      fillCell(th, column, isGrid && index > 0, columnKey ? [columnKey] : null);
       headRow.appendChild(th);
     });
     thead.appendChild(headRow);
     table.appendChild(thead);
     const tbody = document.createElement("tbody");
-    model.rows.forEach((row) => {
+    model.rows.forEach((row, rowIndex) => {
       const tr = document.createElement("tr");
+      const rowKeys = model.points && Array.isArray(model.points.rows) ? model.points.rows[rowIndex] : null;
       row.forEach((cell, index) => {
         // 第一格說明這一列是什麼（天體、步驟、項目），做成列標頭；報讀器讀到
         // 後面的數值時才知道屬於哪一列。
         const node = document.createElement(index === 0 ? "th" : "td");
         if (index === 0) node.scope = "row";
         if (numeric[index]) node.className = "num";
-        fillCell(node, String(cell == null ? "" : cell), index === 0);
+        fillCell(node, String(cell == null ? "" : cell), index === 0, index === 0 && Array.isArray(rowKeys) ? rowKeys : null);
         tr.appendChild(node);
       });
       tbody.appendChild(tr);

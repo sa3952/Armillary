@@ -1,5 +1,39 @@
 {
  "entries": {
+  "annual_profection": {
+   "applies_to": "annual_methods.annual_profection",
+   "counting_note": "Valens's '35th year' is an ordinal, so it is 34 completed years: Kroll's Greek (1908, p.174) has the singular with the article, 'ἐν τῷ λε' ἔτει', where a cardinal count would be the plural ἔτη. Supporting: at IV.9 (p.169) Kroll's note on the 33rd year reads the 31st and 32nd as complete and the 33rd as not yet complete. Pingree's edition not checked.",
+   "lord_table": "traditional_seven_domicile_v1",
+   "method_provenance": "hellenistic_annual_profection_from_ascendant_v1",
+   "named_disagreement_not_adopted": {
+    "citation": "Ptolemy, Tetrabiblos IV.10 (Robbins, Loeb p.453)",
+    "read_at": "Robbins's English (Loeb 1940): the whole of IV.10 read in the LacusCurtius transcription; the Greek not checked",
+    "reading": "translation_read",
+    "says": "profections from each of several releasing places; v1 profects the ascendant only and is not Ptolemy's procedure"
+   },
+   "profile": "annual_profection_ascendant_sign_v1",
+   "sources": [
+    {
+     "citation": "Vettius Valens, Anthologies IV.11 (Kroll p.174, Pingree p.165)",
+     "read_at": "Kroll's Greek (1908, p.174) for the sentence on the 35th year (see counting_note); the rest in Riley's English; Pingree's edition not checked",
+     "reading": "original_language_read",
+     "says": "in Riley's English: 'We are investigating the 35th year. I divide <35> by 12 ... remainder 11 ... 11 signs from the Ascendant and Mars <in Virgo> to Saturn in Cancer'"
+    },
+    {
+     "citation": "Firmicus Maternus, Mathesis II.27.3-4, II.28.3 (Kroll-Skutsch 1897 vol.1 pp.76-77)",
+     "read_at": "as checked by the project's research notes, not re-read for this entry",
+     "reading": "secondary_only",
+     "says": "annual profection and lord of the year"
+    },
+    {
+     "citation": "Paulus Alexandrinus ch.31",
+     "read_at": "as cited by the research notes after their correction, not re-read for this entry",
+     "reading": "secondary_only",
+     "says": "profection"
+    }
+   ],
+   "statement": "Year of life Y profects the natal ascendant sign by Y-1 signs in zodiacal order; the place is ((Y-1) mod 12) + 1 counted inclusively from the ascendant sign; the lord of the year is that sign's seven-planet domicile lord. Whole signs only: the house system does not enter. No degree, no topic of the place and no verdict is emitted."
+  },
   "aspects/minor_aspects": {
    "applies_to": "derived_methods.aspects.degree_based (modern minor aspects)",
    "kepler_status_by_aspect": {
@@ -11,43 +45,113 @@
     "sesquiquadrate": "later_downgraded"
    },
    "sources": [
-    "Kepler, De fundamentis astrologiae certioribus (Pragae: Schumann, 1602), Thesis XXXVIII, sig. C1v of the 1602 printing (unpaginated; image 21 of the Royal Library Copenhagen copy, archive.org den-kbd-pil-20002065-001): quintile, biquintile and sesquiquadrate added to the five aspects of the ancients (Frisch, Opera omnia I (1858) p.428 not checked)",
-    "Kepler, Harmonices mundi (Linz 1619) Lib. IV cap. V, Prop. XII p.145 (third grade: trine, sextile, semisextile), Prop. XIII pp.147-148 (fourth grade: quintile, biquintile, quincunx), Prop. XIV p.148 (fifth, weakest grade: decile, tridecile, octile = semisquare, trioctile = sesquiquadrate)",
-    "Kepler, Harmonices mundi (1619) Lib. IV cap. VI p.155: octile and sesquiquadrate have no power unless the primary aspects are long absent"
+    {
+     "citation": "Kepler, De fundamentis astrologiae certioribus (Pragae: Schumann, 1602), Thesis XXXVIII, sig. C1v of the 1602 printing (unpaginated)",
+     "read_at": "the 1602 printing, image 21 of the Royal Library Copenhagen copy, archive.org den-kbd-pil-20002065-001; Frisch, Opera omnia I (1858) p.428 not checked",
+     "reading": "original_language_read",
+     "says": "quintile, biquintile and sesquiquadrate added to the five aspects of the ancients"
+    },
+    {
+     "citation": "Kepler, Harmonices mundi (Linz 1619) Lib. IV cap. V, Prop. XII p.145, Prop. XIII pp.147-148, Prop. XIV p.148",
+     "read_at": "level pending: the record gives the 1619 printing's page numbers but does not say whether the Latin text was read; only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "third grade: trine, sextile, semisextile (Prop. XII); fourth grade: quintile, biquintile, quincunx (Prop. XIII); fifth, weakest grade: decile, tridecile, octile = semisquare, trioctile = sesquiquadrate (Prop. XIV)"
+    },
+    {
+     "citation": "Kepler, Harmonices mundi (1619) Lib. IV cap. VI p.155",
+     "read_at": "level pending: the record gives the 1619 printing's page numbers but does not say whether the Latin text was read; only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "octile and sesquiquadrate have no power unless the primary aspects are long absent"
+    }
    ]
   },
   "aspects/orb/abu_mashar_lineage_v1": {
    "applies_to": "derived_methods.aspects.degree_based.orb_profile_detail",
+   "evidence_standard": "secondary_tabulation_permitted_when_disclosed",
+   "independence_claim_withdrawn": "Holden notes a probable derivation relationship between the Porphyry chapter and Sahl; Pingree regards chs. 53-55 as a later insertion. Repetition across medieval authors evidences transmission, not independent attestation.",
    "pair_combination_rule_note": "The pair threshold is the average of the two orbs. al-Bīrūnī, Book of Instruction §490, lists it as one of several views on where application begins (others: 5°, 6°, 12°, 15° the Sun's orb, exact conjunction only). Abū Maʿshar, Great Introduction (2019 ed.), gives the seven values in VII.3 lines 204-210 and treats application and separation in VII.5 lines 443-465, in terms of each planet's own orb; those lines state no averaging formula. The product applies the average to this table: one attested view chosen among several.",
-   "source_verification": {
-    "evidence_standard": "secondary_tabulation_permitted_when_disclosed",
-    "independence_claim_withdrawn": "Holden notes a probable derivation relationship between the Porphyry chapter and Sahl; Pingree regards chs. 53-55 as a later insertion. Repetition across medieval authors evidences transmission, not independent attestation.",
-    "primary_texts_independently_transcribed": false,
-    "renamed_from": "abu_mashar_consensus_v1",
-    "retracted_claim": "five_independent_pre_modern_sources_in_agreement",
-    "tabulated_from": "Steven Birchfield, 'Orbs of Influence', 2nd ed. 2013 (secondary)"
-   },
+   "primary_texts_independently_transcribed": false,
+   "renamed_from": "abu_mashar_consensus_v1",
+   "retracted_claim": "five_independent_pre_modern_sources_in_agreement",
    "sources": [
-    "Porphyry, Introduction to the Tetrabiblos §55 (trans. Holden, AFA 2009)",
-    "Abū Maʿshar, Abbreviation of the Introduction to Astrology II.11-12 (Burnett-Yamamoto-Yano, Brill 1994; ARHAT ed. 1997, 2nd printing 2000); Dykes, ITA (2010) §II.6 pp.90-91",
-    "Abū Maʿshar, The Great Introduction to Astrology, ed. Yamamoto, Burnett and Pingree (2019), English translation: VII.3 lines 204-210 (the seven values) and VII.5 lines 443-465 (application and separation); the Arabic text and the Dykes ITA (2010) locators are not compared",
-    "Sahl ibn Bishr, Introduction ch.3 §§13-18, trans. Dykes, The Astrology of Sahl b. Bishr vol. I (Cazimi 2019), via Birchfield, The Planets Degrees of Influence (rev. 2019) pp.5-6 n.12",
-    "Ibn Ezra, The Beginning of Wisdom ch. IV (trans. Epstein, ARHAT 1998)",
-    "Bonatti, Liber Astronomiae Tract III chs. LXV-LXXI (trans. Zoller, 1994; values not checked; publisher and chapters to be confirmed)",
-    "al-Bīrūnī, The Book of Instruction in the Elements of the Art of Astrology, trans. R. Ramsay Wright (London: Luzac 1934) §436: the same seven values (archive.org typescript reproduction, whose page numbers differ from the Luzac print; cited by section)"
+    {
+     "citation": "Porphyry, Introduction to the Tetrabiblos §55 (trans. Holden, AFA 2009)",
+     "read_at": "as tabulated by Steven Birchfield, 'Orbs of Influence' (2nd ed. 2013); the primary text was not independently transcribed",
+     "reading": "secondary_only",
+     "says": "the seven orb values of this table"
+    },
+    {
+     "citation": "Abū Maʿshar, Abbreviation of the Introduction to Astrology II.11-12 (Burnett-Yamamoto-Yano, Brill 1994; ARHAT ed. 1997, 2nd printing 2000); Dykes, ITA (2010) §II.6 pp.90-91",
+     "read_at": "as tabulated by Steven Birchfield, 'Orbs of Influence' (2nd ed. 2013); the primary text was not independently transcribed",
+     "reading": "secondary_only",
+     "says": "the seven orb values of this table"
+    },
+    {
+     "citation": "Abū Maʿshar, The Great Introduction to Astrology, ed. Yamamoto, Burnett and Pingree (2019), VII.3 lines 204-210 and VII.5 lines 443-465",
+     "read_at": "the edition's English translation; the Arabic text and the Dykes ITA (2010) locators are not compared",
+     "reading": "translation_read",
+     "says": "the seven values (VII.3 lines 204-210); application and separation (VII.5 lines 443-465)"
+    },
+    {
+     "citation": "Sahl ibn Bishr, Introduction ch.3 §§13-18, trans. Dykes, The Astrology of Sahl b. Bishr vol. I (Cazimi 2019)",
+     "read_at": "via Birchfield, The Planets Degrees of Influence (rev. 2019) pp.5-6 n.12",
+     "reading": "secondary_only",
+     "says": "the seven orb values of this table"
+    },
+    {
+     "citation": "Ibn Ezra, The Beginning of Wisdom ch. IV (trans. Epstein, ARHAT 1998)",
+     "read_at": "as tabulated by Steven Birchfield, 'Orbs of Influence' (2nd ed. 2013); the primary text was not independently transcribed",
+     "reading": "secondary_only",
+     "says": "the seven orb values of this table"
+    },
+    {
+     "citation": "Bonatti, Liber Astronomiae Tract III chs. LXV-LXXI (trans. Zoller, 1994)",
+     "read_at": "the reference only; values not checked; publisher and chapters to be confirmed",
+     "reading": "bibliographic_only",
+     "says": "listed for the same seven values"
+    },
+    {
+     "citation": "al-Bīrūnī, The Book of Instruction in the Elements of the Art of Astrology, trans. R. Ramsay Wright (London: Luzac 1934) §436",
+     "read_at": "Wright's translation in the archive.org typescript reproduction, whose page numbers differ from the Luzac print; cited by section",
+     "reading": "translation_read",
+     "says": "the same seven values"
+    }
+   ],
+   "tabulated_from": [
+    {
+     "citation": "Steven Birchfield, 'Orbs of Influence', 2nd ed. 2013",
+     "read_at": "Birchfield's secondary tabulation, from which the table was taken; the primary texts were not independently transcribed",
+     "reading": "secondary_only",
+     "says": "the seven orb values of this table"
+    }
    ]
   },
   "aspects/orb/lilly_1647_experience_v1": {
    "applies_to": "derived_methods.aspects.degree_based.orb_profile_detail",
+   "evidence_standard": "checked_against_first_edition_page_images",
+   "primary_texts_independently_transcribed": true,
    "second_set_not_used": "p.107 prints a second set beside the first (Saturn 9, Jupiter 9, Mars 7, Sun 15, Venus 7, Mercury 7, Moon 12; rows marked 'According to others', 'All consent' and the like), and Lilly says he uses one or the other as memory serves; his separation example on p.110 uses the second set. The product offers only the first set, the one he gives as 'the best Authors and my owne Experience'.",
-   "source_verification": {
-    "evidence_standard": "checked_against_first_edition_page_images",
-    "note": "The 1659 second edition has the same pagination and readings.",
-    "primary_texts_independently_transcribed": true,
-    "tabulated_from": "William Lilly, Christian Astrology (1647) p.107, first column, read in the first edition (archive.org/details/b30338724); agrees with Steven Birchfield, 'Orbs of Influence', 2nd ed. 2013 (secondary)"
-   },
    "sources": [
-    "William Lilly, Christian Astrology (1647) Book I ch. XIX p.107, first column"
+    {
+     "citation": "William Lilly, Christian Astrology (1647) Book I ch. XIX p.107, first column",
+     "read_at": "the first edition (archive.org/details/b30338724)",
+     "reading": "original_language_read",
+     "says": "the planets' orbs, the first column given as those of 'the best Authors and my owne Experience'"
+    }
+   ],
+   "tabulated_from": [
+    {
+     "citation": "William Lilly, Christian Astrology (1647) p.107, first column",
+     "read_at": "the first edition (archive.org/details/b30338724); the 1659 second edition has the same pagination and readings",
+     "reading": "original_language_read",
+     "says": "the seven orbs of this table"
+    },
+    {
+     "citation": "Steven Birchfield, 'Orbs of Influence', 2nd ed. 2013",
+     "read_at": "Birchfield's secondary tabulation; it agrees with p.107",
+     "reading": "secondary_only",
+     "says": "the same values as p.107's first column"
+    }
    ]
   },
   "aspects/orb_boundary": {
@@ -56,44 +160,100 @@
    "boundary_provenance": "product_convention",
    "note": "No checked pre-modern text states whether an offset exactly equal to the orb is inside it. The product keeps <= because exact equality practically never occurs on a real chart.",
    "sources": [
-    "William Lilly, Christian Astrology (1647) p.110: the planets are not totally separated until 'fully 9 degrees distant' (indirect; reads as leaning exclusive, not a stated rule)"
+    {
+     "citation": "William Lilly, Christian Astrology (1647) p.110",
+     "read_at": "reading level as recorded; the record does not say which copy of the 1647 English text was read",
+     "reading": "original_language_read",
+     "says": "the planets are not totally separated until 'fully 9 degrees distant' (indirect; reads as leaning exclusive, not a stated rule)"
+    }
    ]
   },
   "aspects/partile": {
    "applies_to": "derived_methods.aspects.degree_based.partile_source_verification",
-   "source_verification": {
-    "evidence_standard": "secondary_tabulation_permitted_when_disclosed",
-    "primary_texts_independently_transcribed": false,
-    "tabulated_from": "Deborah Houlding, Skyscript glossary 'Partile / Platick' (secondary; she cites Lilly's Christian Astrology p.107 - the definition runs pp.106-107 of the 1647 printing, the example is on p.106) and Merlini Anglici 1677"
-   },
+   "evidence_standard": "secondary_tabulation_permitted_when_disclosed",
+   "primary_texts_independently_transcribed": false,
+   "tabulated_from": [
+    {
+     "citation": "Deborah Houlding, Skyscript glossary 'Partile / Platick'",
+     "read_at": "the online glossary entry, a secondary work",
+     "reading": "secondary_only",
+     "says": "the partile conventions; she cites Lilly's Christian Astrology p.107 - the definition runs pp.106-107 of the 1647 printing, the example is on p.106"
+    },
+    {
+     "citation": "Merlini Anglici Ephemeris ... for the Year 1677",
+     "read_at": "level pending: the record does not say whether the 1677 volume itself was read; only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "partile within three degrees (aphorism no. 25)"
+    }
+   ],
    "valid_aspect_rule": "lilly_1647_same_degree_requires_whole_sign_configuration_angle_pairs_use_in_orb;degree_offset_profiles_use_their_threshold_only",
    "valid_aspect_rule_profiles": [
     "same_degree_number_v1"
    ],
    "valid_aspect_sources": [
-    "William Lilly, Christian Astrology (1647) Book I ch. XIX p.106: both partile examples (Venus 9 Aries / Jupiter 9 Leo, Sun 1 Taurus / Moon 1 Cancer) are sign aspects first",
-    "William Lilly, Christian Astrology (1647) p.109: signs that do not behold one another 'cannot have any aspect'",
-    "al-Bīrūnī, The Book of Instruction, trans. R. Ramsay Wright (1934) §446: partile defined among planets in signs that aspect each other"
+    {
+     "citation": "William Lilly, Christian Astrology (1647) Book I ch. XIX p.106",
+     "read_at": "reading level as recorded; the record does not say which copy of the 1647 English text was read",
+     "reading": "original_language_read",
+     "says": "both partile examples (Venus 9 Aries / Jupiter 9 Leo, Sun 1 Taurus / Moon 1 Cancer) are sign aspects first"
+    },
+    {
+     "citation": "William Lilly, Christian Astrology (1647) p.109",
+     "read_at": "reading level as recorded; the record does not say which copy of the 1647 English text was read",
+     "reading": "original_language_read",
+     "says": "signs that do not behold one another 'cannot have any aspect'"
+    },
+    {
+     "citation": "al-Bīrūnī, The Book of Instruction, trans. R. Ramsay Wright (1934) §446",
+     "read_at": "R. Ramsay Wright's English translation (1934)",
+     "reading": "translation_read",
+     "says": "partile defined among planets in signs that aspect each other"
+    }
    ]
   },
   "aspects/partile/lilly_1677_three_degrees_v1": {
    "applies_to": "derived_methods.aspects.degree_based.partile_profile_detail",
    "sources": [
-    "Merlini Anglici Ephemeris ... for the Year 1677 (London: J. Macock for the Company of Stationers), 'Useful Astrological Aphorisms for Young Students and others', no. 25",
-    "Deborah Houlding, Skyscript glossary 'Partile / Platick'"
+    {
+     "citation": "Merlini Anglici Ephemeris ... for the Year 1677 (London: J. Macock for the Company of Stationers), 'Useful Astrological Aphorisms for Young Students and others', no. 25",
+     "read_at": "level pending: the record does not say whether the 1677 volume itself was read; only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "partile within the difference of three degrees"
+    },
+    {
+     "citation": "Deborah Houlding, Skyscript glossary 'Partile / Platick'",
+     "read_at": "the online glossary entry, a secondary work",
+     "reading": "secondary_only",
+     "says": "cited beside the 1677 aphorism for the three-degree usage"
+    }
    ]
   },
   "aspects/partile/same_degree_number_v1": {
    "applies_to": "derived_methods.aspects.degree_based.partile_profile_detail",
    "sources": [
-    "William Lilly, Christian Astrology (1647) Book I ch. XIX p.106 (partile definition and examples; Lilly writes 'exactly so many degrees ... as make a perfect aspect', not 'same degree': the same-degree reading is Houlding's)",
-    "Deborah Houlding, Skyscript glossary 'Partile / Platick'"
+    {
+     "citation": "William Lilly, Christian Astrology (1647) Book I ch. XIX p.106",
+     "read_at": "reading level as recorded; the record does not say which copy of the 1647 English text was read",
+     "reading": "original_language_read",
+     "says": "partile definition and examples; Lilly writes 'exactly so many degrees ... as make a perfect aspect', not 'same degree': the same-degree reading is Houlding's"
+    },
+    {
+     "citation": "Deborah Houlding, Skyscript glossary 'Partile / Platick'",
+     "read_at": "the online glossary entry, a secondary work",
+     "reading": "secondary_only",
+     "says": "partile read as the same degree, the usage she records as the commonest"
+    }
    ]
   },
   "aspects/partile/within_one_degree_v1": {
    "applies_to": "derived_methods.aspects.degree_based.partile_profile_detail",
    "sources": [
-    "Deborah Houlding, Skyscript glossary 'Partile / Platick'（記為 traditional authors 的用法，未點名個別作者）"
+    {
+     "citation": "Deborah Houlding, Skyscript glossary 'Partile / Platick'",
+     "read_at": "the online glossary entry, a secondary work",
+     "reading": "secondary_only",
+     "says": "partile within one degree, recorded as the usage of traditional authors without naming any individual author"
+    }
    ]
   },
   "aspects/whole_sign": {
@@ -112,9 +272,24 @@
    "applies_to": "astronomical_data.bodies[key=chiron].apparent_diameter, apparent_magnitude and physical_parameters",
    "note": "Apparent diameter and magnitude use the parameters built into Swiss Ephemeris, not the current JPL SBDB solution: the diameter is about 63.5% larger and the magnitude about 0.96 mag fainter than SBDB values. Published Chiron diameters differ between sources, so the built-in values are disclosed rather than replaced. The position comes from the Swiss seas_18 file; measured against JPL#171 relative to the Sun it agrees within 0.04 arcsec at 1987, 2000 and 2024 and differs by up to 1.48 arcsec at 2399. This is a measurement, not an accuracy claim.",
    "sources": [
-    "Swiss Ephemeris 2.10.03 sweph.h pla_diam[] (Chiron 271370 m) and swecl.c mag_elem[] (Chiron H 6.5, G 0.15, \"from Bowell data base\"), used by swe_pheno",
-    "JPL Small-Body Database, 2060 Chiron, physical parameters retrieved 2026-10-04: diameter 166 km (Dunham 1998), H 5.54",
-    "JPL Horizons, 2060 Chiron orbit solution JPL#171"
+    {
+     "citation": "Swiss Ephemeris 2.10.03 sweph.h pla_diam[] and swecl.c mag_elem[], used by swe_pheno",
+     "read_at": "the Swiss Ephemeris 2.10.03 source files",
+     "reading": "original_language_read",
+     "says": "pla_diam[]: Chiron 271370 m; mag_elem[]: Chiron H 6.5, G 0.15, \"from Bowell data base\""
+    },
+    {
+     "citation": "JPL Small-Body Database, 2060 Chiron, physical parameters",
+     "read_at": "the database record, retrieved 2026-10-04",
+     "reading": "original_language_read",
+     "says": "diameter 166 km (Dunham 1998), H 5.54"
+    },
+    {
+     "citation": "JPL Horizons, 2060 Chiron orbit solution JPL#171",
+     "read_at": "the Horizons service, solution JPL#171",
+     "reading": "original_language_read",
+     "says": "the orbit solution the Swiss position is measured against"
+    }
    ]
   },
   "classical_classifications": {
@@ -225,69 +400,186 @@
   "contested/bounds_tables": {
    "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=bounds_tables; marks derived_methods.essential_dignities)",
    "sources": [
-    "Ptolemy, Tetrabiblos I.20-21, trans. Robbins (Loeb 1940) pp.91-107: Egyptian terms (table p.97), Chaldaean terms rule (pp.99-101), complete table p.107",
-    "Authorship of the complete table disputed: Tolsa, Philologus 162.2 (2018) 247-264 (abstract only checked)"
+    {
+     "citation": "Ptolemy, Tetrabiblos I.20-21, trans. Robbins (Loeb 1940) pp.91-107",
+     "read_at": "Robbins's English translation (Loeb 1940)",
+     "reading": "translation_read",
+     "says": "Egyptian terms (table p.97), Chaldaean terms rule (pp.99-101), complete table p.107"
+    },
+    {
+     "citation": "Tolsa, Philologus 162.2 (2018) 247-264",
+     "read_at": "abstract only checked",
+     "reading": "bibliographic_only",
+     "says": "the authorship of the complete table is disputed"
+    }
    ],
    "technique_family": "bounds"
   },
   "contested/degree_aspect_orbs": {
    "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=degree_aspect_orbs; marks derived_methods.aspects)",
    "sources": [
-    "William Lilly, Christian Astrology (1647) p.107: two sets of orbs printed side by side; he uses one or the other as memory serves",
-    "al-Bīrūnī, The Book of Instruction, trans. R. Ramsay Wright (1934) §490: 5°, 6°, 12°, 15° (the Sun's orb), the average of the two orbs, or exact conjunction only",
-    "William Lilly, Christian Astrology (1647) p.109; al-Bīrūnī §446: aspects presuppose signs that behold one another"
+    {
+     "citation": "William Lilly, Christian Astrology (1647) p.107",
+     "read_at": "reading level as recorded; the record does not say which copy of the 1647 English text was read",
+     "reading": "original_language_read",
+     "says": "two sets of orbs printed side by side; he uses one or the other as memory serves"
+    },
+    {
+     "citation": "al-Bīrūnī, The Book of Instruction, trans. R. Ramsay Wright (1934) §490",
+     "read_at": "R. Ramsay Wright's English translation (1934)",
+     "reading": "translation_read",
+     "says": "5°, 6°, 12°, 15° (the Sun's orb), the average of the two orbs, or exact conjunction only"
+    },
+    {
+     "citation": "William Lilly, Christian Astrology (1647) p.109",
+     "read_at": "reading level as recorded; the record does not say which copy of the 1647 English text was read",
+     "reading": "original_language_read",
+     "says": "aspects presuppose signs that behold one another"
+    },
+    {
+     "citation": "al-Bīrūnī, The Book of Instruction §446",
+     "read_at": "R. Ramsay Wright's English translation (1934)",
+     "reading": "translation_read",
+     "says": "aspects presuppose signs that behold one another"
+    }
    ],
    "technique_family": "aspect_orbs"
   },
   "contested/dodecatemoria_formula": {
    "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=dodecatemoria_formula; marks derived_methods.dodecatemoria)",
    "sources": [
-    "Firmicus Maternus, Mathesis II.13 (Kroll-Skutsch numbering): degrees and minutes times 12 from the start of the sign; example Sun Aries 5 deg 05 min, first degree of Gemini (Latin read)",
-    "Paulus Alexandrinus, Introduction ch.22: degrees times 13; example Aries 11 deg, Leo 23 deg (via Greenbaum and Jones, ISAW Papers 12, 2017, para. 185; the Greek not checked)"
+    {
+     "citation": "Firmicus Maternus, Mathesis II.13 (Kroll-Skutsch numbering)",
+     "read_at": "the Latin text",
+     "reading": "original_language_read",
+     "says": "degrees and minutes times 12 from the start of the sign; example Sun Aries 5 deg 05 min, first degree of Gemini"
+    },
+    {
+     "citation": "Paulus Alexandrinus, Introduction ch.22",
+     "read_at": "via Greenbaum and Jones, ISAW Papers 12, 2017, para. 185; the Greek not checked",
+     "reading": "secondary_only",
+     "says": "degrees times 13; example Aries 11 deg, Leo 23 deg"
+    }
    ],
    "technique_family": "dodecatemoria"
   },
   "contested/hayz_definition": {
    "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=hayz_definition; marks derived_methods.classical_classifications)",
    "sources": [
-    "al-Bīrūnī, Kitāb al-tafhīm §496 (Wright 1934, read in the archive.org OCR text): a nocturnal planet above the earth by night and below it by day; halb, and hayyiz with the sign's gender",
-    "William Lilly, Christian Astrology (1647) p.113 (read in an archive.org OCR text of a modern reset edition): a feminine nocturnal planet by night under the earth in a feminine sign; no halb"
+    {
+     "citation": "al-Bīrūnī, Kitāb al-tafhīm §496 (Wright 1934)",
+     "read_at": "Wright's English translation, in the archive.org OCR text",
+     "reading": "translation_read",
+     "says": "a nocturnal planet above the earth by night and below it by day; halb, and hayyiz with the sign's gender"
+    },
+    {
+     "citation": "William Lilly, Christian Astrology (1647) p.113",
+     "read_at": "an archive.org OCR text of a modern reset edition",
+     "reading": "original_language_read",
+     "says": "a feminine nocturnal planet by night under the earth in a feminine sign; no halb"
+    }
    ],
    "technique_family": "classical_classifications"
   },
   "contested/lot_formulas": {
    "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=lot_formulas; marks derived_methods.lots)",
    "sources": [
-    "Ptolemy, Tetrabiblos III.10 (Robbins numbering; = Hübner III.11): the Lot of Fortune from Sun to Moon by day and by night",
-    "Vettius Valens, Anthologies III.11 (Pingree; = III.14 Kroll/Riley, '14K;11P'): at night the formula changes with whether the Moon has set",
-    "Paulus Alexandrinus ch.23: reversal at night (the product's formula); read in the Greek-Latin first printing (Wittenberg 1586); Boer 1958 not checked"
+    {
+     "citation": "Ptolemy, Tetrabiblos III.10 (Robbins numbering; = Hübner III.11)",
+     "read_at": "Robbins's English (Loeb 1940): the whole of III.10 read in the LacusCurtius transcription, the Lot of Fortune at pp.275-277; the Greek not checked",
+     "reading": "translation_read",
+     "says": "the Lot of Fortune from Sun to Moon by day and by night"
+    },
+    {
+     "citation": "Vettius Valens, Anthologies III.11 (Pingree; = III.14 Kroll/Riley, '14K;11P')",
+     "read_at": "level pending: the record does not say whether the Greek, Pingree's or Riley's translation, or a secondary report was read; only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "at night the formula changes with whether the Moon has set"
+    },
+    {
+     "citation": "Paulus Alexandrinus, Introduction ch.23",
+     "read_at": "the Greek-Latin first printing (Wittenberg 1586); Boer 1958 not checked; level pending: the record does not say whether the Greek or the Latin translation of that printing was read, so only the translation level is claimed",
+     "reading": "translation_read",
+     "says": "reversal at night (the product's formula)"
+    }
    ],
    "technique_family": "lots"
   },
   "contested/partile_definition": {
    "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=partile_definition; marks derived_methods.aspects)",
    "sources": [
-    "William Lilly, Christian Astrology (1647) Book I ch. XIX p.106",
-    "Merlini Anglici Ephemeris ... for the Year 1677, 'Useful Astrological Aphorisms', no. 25 (aphorism section unsigned; prefatory letter signed William Lilly)",
-    "Deborah Houlding, Skyscript glossary 'Partile / Platick' (secondary; the within-one-degree usage, no named author)"
+    {
+     "citation": "William Lilly, Christian Astrology (1647) Book I ch. XIX p.106",
+     "read_at": "reading level as recorded; the record does not say which copy of the 1647 English text was read",
+     "reading": "original_language_read",
+     "says": "partile: exactly so many degrees apart as make a perfect aspect"
+    },
+    {
+     "citation": "Merlini Anglici Ephemeris ... for the Year 1677, 'Useful Astrological Aphorisms', no. 25",
+     "read_at": "level pending: the record does not say whether the 1677 volume itself was read; only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "partile within three degrees; the aphorism section is unsigned and the prefatory letter is signed William Lilly"
+    },
+    {
+     "citation": "Deborah Houlding, Skyscript glossary 'Partile / Platick'",
+     "read_at": "the online glossary entry, a secondary work",
+     "reading": "secondary_only",
+     "says": "the within-one-degree usage, no named author"
+    }
    ],
    "technique_family": "partile"
   },
   "contested/solar_phase_limits": {
    "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=solar_phase_limits; marks derived_methods.solar_phase)",
    "sources": [
-    "William Lilly, Christian Astrology (1647) p.113: 17 minutes, 8 deg 30 min, 17 degrees; aphorism 26 (p.300 per Houlding): 12 degrees and 16 minutes",
-    "al-Biruni, Book of Instruction, trans. Wright (1934) §481-484: under 16 minutes, 6 degrees (7 for Mercury and Venus direct), under the rays 12-18 degrees by planet and side",
-    "Porphyry, Introduction ch.2; Antiochus (via Brennan 2017, secondary): one band of 15 degrees"
+    {
+     "citation": "William Lilly, Christian Astrology (1647) p.113",
+     "read_at": "reading level as recorded; the record does not say which copy of the 1647 English text was read",
+     "reading": "original_language_read",
+     "says": "17 minutes, 8 deg 30 min, 17 degrees"
+    },
+    {
+     "citation": "William Lilly, Christian Astrology, aphorism 26 (p.300 per Houlding)",
+     "read_at": "the English text; the page number is Houlding's",
+     "reading": "original_language_read",
+     "says": "12 degrees and 16 minutes"
+    },
+    {
+     "citation": "al-Biruni, Book of Instruction, trans. Wright (1934) §481-484",
+     "read_at": "R. Ramsay Wright's English translation (1934)",
+     "reading": "translation_read",
+     "says": "under 16 minutes, 6 degrees (7 for Mercury and Venus direct), under the rays 12-18 degrees by planet and side"
+    },
+    {
+     "citation": "Porphyry, Introduction ch.2; Antiochus",
+     "read_at": "via Brennan 2017, a secondary work",
+     "reading": "secondary_only",
+     "says": "one band of 15 degrees"
+    }
    ],
    "technique_family": "solar_phase"
   },
   "contested/void_of_course_definition": {
    "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=void_of_course_definition; marks derived_methods.void_of_course)",
    "sources": [
-    "Ps.-Porphyry, Introduction ch.23 (Boer-Weinstock, CCAG V/4, 1940, p.202; read in an online Greek transcription and Holden 2009 trans. p.18, the CCAG page itself not checked): the Moon joins no planet, by sign, degree, aspect or kollesis, within the next 30 degrees, regardless of the sign boundary",
-    "William Lilly, Christian Astrology (1647) p.112 'Voyd of course': bounded by the sign",
-    "Requiring exact perfection before the sign exit: attributed by later literature to Al H. Morrison (an article in the AFA Journal, October 1966; the article was not read); an earlier origin has not been checked"
+    {
+     "citation": "Ps.-Porphyry, Introduction ch.23 (Boer-Weinstock, CCAG V/4, 1940, p.202)",
+     "read_at": "an online Greek transcription and Holden 2009 trans. p.18, the CCAG page itself not checked; level pending: the record does not say whether the Greek was read closely enough to count as the original language, so only the translation is claimed",
+     "reading": "translation_read",
+     "says": "the Moon joins no planet, by sign, degree, aspect or kollesis, within the next 30 degrees, regardless of the sign boundary"
+    },
+    {
+     "citation": "William Lilly, Christian Astrology (1647) p.112 'Voyd of course'",
+     "read_at": "reading level as recorded; the record does not say which copy of the 1647 English text was read",
+     "reading": "original_language_read",
+     "says": "bounded by the sign"
+    },
+    {
+     "citation": "Al H. Morrison, an article in the AFA Journal, October 1966",
+     "read_at": "the article was not read",
+     "reading": "bibliographic_only",
+     "says": "requiring exact perfection before the sign exit: attributed to him by later literature; an earlier origin has not been checked"
+    }
    ],
    "technique_family": "void_of_course"
   },
@@ -308,6 +600,131 @@
     "sect_boundary": "Checked texts (Valens III.5, Ptolemy I.7) treat day and night births as given classes and set no boundary; the 0° rule is a product convention explained on the methods page (§05.3), not a classical dispute."
    },
    "policy": "marked_only_where_named_pre_modern_texts_give_rules_that_change_the_output"
+  },
+  "decennials": {
+   "applies_to": "annual_methods.decennials",
+   "equal_longitude_rule": "product_body_order_sun_moon_mercury_venus_mars_jupiter_saturn",
+   "known_variants": {
+    "cells": [
+     {
+      "difference_hours": -1.006,
+      "period_lord": "saturn",
+      "printed": [
+       6,
+       29,
+       6.25
+      ],
+      "printed_hours": 5022.25,
+      "rule_hours": 5023.256,
+      "sub_lord": "saturn"
+     },
+     {
+      "difference_hours": 19.942,
+      "period_lord": "jupiter",
+      "printed": [
+       1,
+       23,
+       20.5
+      ],
+      "printed_hours": 1292.5,
+      "rule_hours": 1272.558,
+      "sub_lord": "sun"
+     },
+     {
+      "difference_hours": 7.942,
+      "period_lord": "sun",
+      "printed": [
+       1,
+       23,
+       8.5
+      ],
+      "printed_hours": 1280.5,
+      "rule_hours": 1272.558,
+      "sub_lord": "jupiter"
+     },
+     {
+      "difference_hours": -0.773,
+      "period_lord": "venus",
+      "printed": [
+       1,
+       7,
+       4.25
+      ],
+      "printed_hours": 892.25,
+      "rule_hours": 893.023,
+      "sub_lord": "mercury"
+     },
+     {
+      "difference_hours": 8.942,
+      "period_lord": "mercury",
+      "printed": [
+       3,
+       3,
+       9.5
+      ],
+      "printed_hours": 2241.5,
+      "rule_hours": 2232.558,
+      "sub_lord": "mercury"
+     }
+    ],
+    "note": "These five printed cells are treated as known manuscript variants: the rule, not the printed cell, is what the product computes and tests. Which stage introduced them (the re-typeset, Riley's translation or the Greek manuscripts) is not checked against Pingree's edition.",
+    "rule": "a cell is the level-2 period's months times the receiving planet's minor years over 129; 44 of the 49 printed cells agree with it within 0.2 hours",
+    "table": "Valens VI.6a (Kroll p.255, Pingree p.244), the third-stage sub-division"
+   },
+   "levels_emitted": [
+    1,
+    2
+   ],
+   "method_provenance": "valens_vi6_vi7_firmicus_ii26_27_with_modern_level_labels",
+   "minor_years_ref": "planetary_years",
+   "not_emitted": "level 3 and below: Valens gives three mutually incompatible rules (the proportional table of VI.6a, the 129-day cycles from the level-2 start in the VI.6 example, the continuous 129-day cycles from birth in VI.7), which give different lords for the same day of his own example",
+   "not_from_the_sources": [
+    "the names 'level 1' and 'level 2' and the profile names: modern labels",
+    "ordering planets of exactly equal longitude by the product's body order: a product convention"
+   ],
+   "order_rule": "natal_zodiacal_order_from_start_v1",
+   "profile": "valens_firmicus_decennials_v1",
+   "sources": [
+    {
+     "citation": "Vettius Valens, Anthologies VI.6 (Kroll pp.252-254, Pingree pp.241-243)",
+     "read_at": "Riley's English translation via the public re-typeset janegca/latex-valens",
+     "reading": "translation_read",
+     "says": "the sect light as starting point if well situated, else the first star after the ascendant; 10 years 9 months each, then the next star in the zodiacal circle of the nativity; the night example (Greek Horoscopes L132): Moon, Venus, Jupiter, Saturn 43 years, then Mars, with Mars 15, Sun 19, Mercury 20, Moon 25, Venus 8, Jupiter 12, Saturn 30 months (44 years 3 months, 51 years 3 months, 53 years 9 months); 52 years and 124 days is 53 distribution years and 37 days, the 667th day of Saturn's sub-period; days and cycles counted in 360-day years"
+    },
+    {
+     "citation": "Valens VI.6a (Kroll p.255, Pingree p.244)",
+     "read_at": "Riley's English translation via the public re-typeset; the Greek not checked",
+     "reading": "translation_read",
+     "says": "the third-stage sub-division table, 49 cells, listed in the Chaldean order"
+    },
+    {
+     "citation": "Valens VI.7 (Kroll pp.256-257, Pingree pp.245-246)",
+     "read_at": "Riley's English translation via the public re-typeset",
+     "reading": "translation_read",
+     "says": "the lord of the day by 129-day cycles; ordering by the stars' actual signs and degrees at the nativity, not by the Chaldean order from Saturn"
+    },
+    {
+     "citation": "Firmicus Maternus, Mathesis II.26-27 (Kroll-Skutsch Teubner)",
+     "read_at": "the Latin text of the Kroll-Skutsch Teubner edition, LacusCurtius",
+     "reading": "original_language_read",
+     "says": "by day from the Sun, by night from the Moon, no condition; 10 years 9 months each, passed on in the order of the signs; each star shares its period among the seven, itself first, in months equal to the minor years; VI.33-39 describe each star's decennial"
+    }
+   ],
+   "start_condition_assessment": "luminary_condition_not_assessed_modern_simplification",
+   "start_condition_note": "Valens VI.6 starts from the sect light only if it is well situated, and from the first star after the ascendant if both lights are badly situated. That is a judgement this product does not make: no profile assesses the lights, and the reader chooses the profile. Treating the start as a fixed rule is a modern simplification.",
+   "start_profiles": {
+    "firmicus_sect_light_v1": "attested_firmicus_ii26",
+    "user_selected_planet_v1": "user_choice_not_a_source_rule",
+    "valens_first_after_asc_v1": "attested_valens_vi6_fallback_without_its_condition"
+   },
+   "start_rules": {
+    "firmicus_sect_light_v1": "day chart the Sun, night chart the Moon, unconditionally: Firmicus Mathesis II.26",
+    "user_selected_planet_v1": "the planet named by the request",
+    "valens_first_after_asc_v1": "the first planet after the ascendant in zodiacal order: Valens VI.6 when both lights are badly situated; whether they are is not assessed"
+   },
+   "statement": "Each planet in turn rules 129 months of 30 days (10 years 9 months of the 360-day year), starting from the profile's planet and following the natal zodiacal order of the seven planets by longitude; after the seventh the first rules again. Inside each level-1 period the lord itself comes first, then the others in the same natal order, each for its minor years as months (the seven minor years total 129, so level 2 fills level 1 exactly). Boundaries are the birth JD(UT) plus the accumulated days. Levels 1 and 2 only. The Chaldean order is never used.",
+   "table_order_note": "The VI.6a table lists the sub-periods in the Chaldean order (Saturn, Jupiter, Mars, Sun, Venus, Mercury, Moon from each lord); Valens's own worked example (VI.6) runs them in the natal zodiacal order, and VI.7 rejects the Chaldean order for finding the lord. The product follows the example and VI.7.",
+   "year_model": "zr_year_360_days_v1"
   },
   "declination_aspects": {
    "applies_to": "derived_methods.declination_aspects.method_provenance_attribution",
@@ -578,7 +995,7 @@
    "default_basis": "The only text read in its own words that states the rule and works an example is Firmicus II.13, and it multiplies by 12 from the start of the sign; the 2 deg 30 min division of Manilius and Ptolemy gives the same sign. The 13-fold rule is attested by the examples of Paulus and Olympiodorus as reported by Greenbaum and Jones; both are offered.",
    "default_profile": "twelvefold_from_sign_start_v1",
    "documentary_evidence": "P.Berl. 9825 (horoscope of 319 CE) gives the twelfth-part signs only; Greenbaum and Jones 2017 para. 188 find five of its planets fit the 13-fold rule and Mercury, the nodes and the prenatal full Moon fit the 12-fold rule.",
-   "lord_rule": "The lord listed is the domicile lord of the twelfth-part's sign in the traditional seven-planet scheme (the product's domicile table). Paulus and Firmicus then look at which planets occupy or aspect that sign; this product lists positions and lords only.",
+   "lord_rule": "The lord listed is the domicile lord of the twelfth-part's sign in the traditional seven-planet scheme (the product's domicile table). Later steps that look at which planets occupy or aspect that sign are not computed; this product lists positions and lords only.",
    "not_computed": "Manilius's further division of each part among the five planets; the midheaven (no witness read); judgements of which planets occupy or aspect the twelfth-part.",
    "profiles": {
     "thirteenfold_from_sign_start_v1": "Multiply the degrees inside the sign by 13 and count on from the start of the same sign; the same as multiplying by 12 and counting on from the point's own degree.",
@@ -661,8 +1078,18 @@
     "shadow_axis_grazes_earth_limb": "a central or non-central eclipse with 0.99 <= |gamma| <= 1.005"
    },
    "sources": [
-    "Swiss Ephemeris 2.10.03 swecl.c: eclipse_where, sol_eclipse_when_glob, swe_sol_eclipse_where",
-    "NASA GSFC Five Millennium Canon of Solar Eclipses (Espenak & Meeus, NASA/TP-2006-214141): type, gamma and magnitude columns"
+    {
+     "citation": "Swiss Ephemeris 2.10.03 swecl.c: eclipse_where, sol_eclipse_when_glob, swe_sol_eclipse_where",
+     "read_at": "the Swiss Ephemeris 2.10.03 source file swecl.c",
+     "reading": "original_language_read",
+     "says": "the functions that find the eclipse type and its maximum"
+    },
+    {
+     "citation": "NASA GSFC Five Millennium Canon of Solar Eclipses (Espenak & Meeus, NASA/TP-2006-214141)",
+     "read_at": "the canon's type, gamma and magnitude columns",
+     "reading": "original_language_read",
+     "says": "type, gamma and magnitude columns"
+    }
    ],
    "states": [
     "inside_classification_margin",
@@ -704,9 +1131,24 @@
    },
    "note": "The three definitions name different instants; external comparison with NASA greatest eclipse differs by seconds.",
    "sources": [
-    "Swiss Ephemeris Programming Interface (2.10.03) §8.3, §8.10, and swecl.c: time of maximum eclipse",
-    "NASA GSFC, Key to Solar Eclipse Maps and Glossary: greatest eclipse is the instant the shadow axis passes closest to Earth's centre, in dynamical time",
-    "IMCCE, Éclipses de Soleil: maximum is the instant of largest magnitude"
+    {
+     "citation": "Swiss Ephemeris Programming Interface (2.10.03) §8.3, §8.10, and swecl.c",
+     "read_at": "the Swiss Ephemeris 2.10.03 documentation and source file swecl.c",
+     "reading": "original_language_read",
+     "says": "time of maximum eclipse"
+    },
+    {
+     "citation": "NASA GSFC, Key to Solar Eclipse Maps and Glossary",
+     "read_at": "NASA GSFC's own text",
+     "reading": "original_language_read",
+     "says": "greatest eclipse is the instant the shadow axis passes closest to Earth's centre, in dynamical time"
+    },
+    {
+     "citation": "IMCCE, Éclipses de Soleil",
+     "read_at": "IMCCE's own French text",
+     "reading": "original_language_read",
+     "says": "maximum is the instant of largest magnitude"
+    }
    ]
   },
   "eclipses/prenatal_selection": {
@@ -738,6 +1180,197 @@
    ],
    "visibility": "whether the eclipse could be seen at the birthplace is not evaluated"
   },
+  "extended_lots/paulus_hermetic_ch23": {
+   "applies_to": "natal_lots.lots[source_ref=extended_lots/paulus_hermetic_ch23]",
+   "courage_direction_note": "Courage is ASC + Fortune - Mars by day: an earlier research draft wrote it reversed, which the research notes found to be their own error against the 1588 printing and the papyrus",
+   "lot_methods": [
+    {
+     "arc_policy": "reverse_arc",
+     "day_rule": {
+      "minus": "spirit",
+      "plus": "venus"
+     },
+     "dependencies": [
+      "spirit"
+     ],
+     "display_name_key": "lot_eros_paulus",
+     "lot_method_id": "eros_paulus_hermetic_ch23_v1",
+     "night_rule": {
+      "minus": "venus",
+      "plus": "spirit"
+     },
+     "projector": "ascendant",
+     "source_author": "Paulus Alexandrinus",
+     "source_passage": "ch.23 (seven lots of the Hermetic tradition)",
+     "source_ref": "extended_lots/paulus_hermetic_ch23",
+     "source_work": "Eisagogika"
+    },
+    {
+     "arc_policy": "reverse_arc",
+     "day_rule": {
+      "minus": "mercury",
+      "plus": "fortune"
+     },
+     "dependencies": [
+      "fortune"
+     ],
+     "display_name_key": "lot_necessity_paulus",
+     "lot_method_id": "necessity_paulus_hermetic_ch23_v1",
+     "night_rule": {
+      "minus": "fortune",
+      "plus": "mercury"
+     },
+     "projector": "ascendant",
+     "source_author": "Paulus Alexandrinus",
+     "source_passage": "ch.23 (seven lots of the Hermetic tradition)",
+     "source_ref": "extended_lots/paulus_hermetic_ch23",
+     "source_work": "Eisagogika"
+    },
+    {
+     "arc_policy": "reverse_arc",
+     "day_rule": {
+      "minus": "mars",
+      "plus": "fortune"
+     },
+     "dependencies": [
+      "fortune"
+     ],
+     "display_name_key": "lot_courage_paulus",
+     "lot_method_id": "courage_paulus_hermetic_ch23_v1",
+     "night_rule": {
+      "minus": "fortune",
+      "plus": "mars"
+     },
+     "projector": "ascendant",
+     "source_author": "Paulus Alexandrinus",
+     "source_passage": "ch.23 (seven lots of the Hermetic tradition)",
+     "source_ref": "extended_lots/paulus_hermetic_ch23",
+     "source_work": "Eisagogika"
+    },
+    {
+     "arc_policy": "reverse_arc",
+     "day_rule": {
+      "minus": "spirit",
+      "plus": "jupiter"
+     },
+     "dependencies": [
+      "spirit"
+     ],
+     "display_name_key": "lot_victory_paulus",
+     "lot_method_id": "victory_paulus_hermetic_ch23_v1",
+     "night_rule": {
+      "minus": "jupiter",
+      "plus": "spirit"
+     },
+     "projector": "ascendant",
+     "source_author": "Paulus Alexandrinus",
+     "source_passage": "ch.23 (seven lots of the Hermetic tradition)",
+     "source_ref": "extended_lots/paulus_hermetic_ch23",
+     "source_work": "Eisagogika"
+    },
+    {
+     "arc_policy": "reverse_arc",
+     "day_rule": {
+      "minus": "saturn",
+      "plus": "fortune"
+     },
+     "dependencies": [
+      "fortune"
+     ],
+     "display_name_key": "lot_nemesis_paulus",
+     "lot_method_id": "nemesis_paulus_hermetic_ch23_v1",
+     "night_rule": {
+      "minus": "fortune",
+      "plus": "saturn"
+     },
+     "projector": "ascendant",
+     "source_author": "Paulus Alexandrinus",
+     "source_passage": "ch.23 (seven lots of the Hermetic tradition)",
+     "source_ref": "extended_lots/paulus_hermetic_ch23",
+     "source_work": "Eisagogika"
+    }
+   ],
+   "output_policy": "positions only; no topic, no lord, no aspect, no descriptive word (Courage and Nemesis included)",
+   "sources": [
+    {
+     "citation": "Paulus Alexandrinus, Eisagogika ch.23 (Boer 1958; Schmidt/Hand 1995 pp.43-45)",
+     "read_at": "citation as corrected by the research notes after checking; the editions not checked again for this entry",
+     "reading": "secondary_only",
+     "says": "Eros, Necessity, Courage, Victory, Nemesis with Fortune and Spirit"
+    },
+    {
+     "citation": "P.Berol. 9825 (AD 319; Greenbaum 2015, MHNH 15:85-116)",
+     "read_at": "per the research notes; the papyrus and the article not checked",
+     "reading": "secondary_only",
+     "says": "a papyrus computing the seven lots"
+    },
+    {
+     "citation": "al-Bīrūnī, Kitāb al-Tafhīm §476 (Wright 1934; he says after Abū Maʿshar)",
+     "read_at": "Wright's English translation (1934)",
+     "reading": "translation_read",
+     "says": "the list of planetary lots whose meanings the annual methods page translates by name (Eros: friendship and love; Necessity: despair, poverty and fraud; Courage: valour and daring; Victory: victory, triumph and help; Nemesis: captivity, prison and escape); the meanings are on the methods page only and not output on a chart"
+    }
+   ]
+  },
+  "extended_lots/valens_iv25": {
+   "algebra_note": "Under one sect candidate both reduce to ASC +/- 2(Sun - Moon), so their day and night values coincide",
+   "applies_to": "natal_lots.lots[source_ref=extended_lots/valens_iv25]",
+   "lot_methods": [
+    {
+     "arc_policy": "reverse_arc",
+     "day_rule": {
+      "minus": "fortune",
+      "plus": "spirit"
+     },
+     "dependencies": [
+      "fortune",
+      "spirit"
+     ],
+     "display_name_key": "lot_love_valens",
+     "lot_method_id": "love_valens_iv25_v1",
+     "night_rule": {
+      "minus": "spirit",
+      "plus": "fortune"
+     },
+     "projector": "ascendant",
+     "source_author": "Vettius Valens",
+     "source_passage": "IV.25 (Kroll main text p.202; Riley marks it as a marginal note)",
+     "source_ref": "extended_lots/valens_iv25",
+     "source_work": "Anthologies"
+    },
+    {
+     "arc_policy": "reverse_arc",
+     "day_rule": {
+      "minus": "spirit",
+      "plus": "fortune"
+     },
+     "dependencies": [
+      "fortune",
+      "spirit"
+     ],
+     "display_name_key": "lot_necessity_valens",
+     "lot_method_id": "necessity_valens_iv25_v1",
+     "night_rule": {
+      "minus": "fortune",
+      "plus": "spirit"
+     },
+     "projector": "ascendant",
+     "source_author": "Vettius Valens",
+     "source_passage": "IV.25 (Kroll main text p.202; Riley marks it as a marginal note)",
+     "source_ref": "extended_lots/valens_iv25",
+     "source_work": "Anthologies"
+    }
+   ],
+   "separate_tradition_note": "Listed beside the Paulus lots of the same name, never merged with them and never substituted for them.",
+   "sources": [
+    {
+     "citation": "Vettius Valens, Anthologies IV.25 (Kroll 1908, p.202)",
+     "read_at": "Kroll's Greek (1908, p.202); Pingree's treatment not checked",
+     "reading": "original_language_read",
+     "says": "the formulas (Riley: 'from Fortune to the Daimon, counted from the Ascendant; at night the reverse') are in Kroll's main text; Riley marks the passage as a marginal note"
+    }
+   ]
+  },
   "extra_angles": {
    "applies_to": "astronomical_data.extra_angles",
    "calculation_source_labels": {
@@ -745,6 +1378,95 @@
     "vertex_longitude_antipode": "由 Vertex 黃經對蹠導出"
    },
    "note": "皆非古典占星的四角。本產品輸出其數值，不對其占星用途表示任何立場。"
+  },
+  "firdaria": {
+   "applies_to": "annual_methods.firdaria",
+   "cycle_rule": "after 75 years the same sequence starts again: explicit in Bonatti Tr.9 Ch.3 for the diurnal sequence (after the South Node it returns to the Sun and runs on in order); the nocturnal sequence follows the diurnal one, since Bonatti says 'all as for the day'",
+   "diurnal_sequence": [
+    "sun",
+    "venus",
+    "mercury",
+    "moon",
+    "saturn",
+    "jupiter",
+    "mars",
+    "north_node",
+    "south_node"
+   ],
+   "level_2_rule": "a planet's period is cut into seven equal parts; the first partner is the period lord, the rest follow the Chaldean order (Saturn, Jupiter, Mars, Sun, Venus, Mercury, Moon); node periods are not subdivided",
+   "method_provenance": {
+    "abu_mashar_nodes_after_mercury_v1": "persian_arabic_tradition_explicit_profile_abu_mashar_v1",
+    "bonatti_reading_nodes_after_mars_v1": "latin_transmission_interpretive_reading_of_bonatti_v1"
+   },
+   "naming_note": "Neither nocturnal profile is marked the only correct one; the provenance says 'tradition, explicit profile per Abu Ma'shar', not that Abu Ma'shar invented the technique.",
+   "nocturnal_sequences": {
+    "abu_mashar_nodes_after_mercury_v1": [
+     "moon",
+     "saturn",
+     "jupiter",
+     "mars",
+     "sun",
+     "venus",
+     "mercury",
+     "north_node",
+     "south_node"
+    ],
+    "bonatti_reading_nodes_after_mars_v1": [
+     "moon",
+     "saturn",
+     "jupiter",
+     "mars",
+     "north_node",
+     "south_node",
+     "sun",
+     "venus",
+     "mercury"
+    ]
+   },
+   "period_years": {
+    "jupiter": 12,
+    "mars": 7,
+    "mercury": 13,
+    "moon": 9,
+    "north_node": 3,
+    "saturn": 11,
+    "south_node": 2,
+    "sun": 10,
+    "venus": 8
+   },
+   "profile": "firdaria_small_periods_v1",
+   "sources": [
+    {
+     "citation": "Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, Persian Nativities IV (2019); Latin abridgement in Persian Nativities III (2010)",
+     "read_at": "secondary sources and the research notes; the book not consulted",
+     "reading": "secondary_only",
+     "says": "the fullest surviving operational account per the research notes, nocturnal nodes after Mercury; chapter located as PN IV IV.8 via secondary sources"
+    },
+    {
+     "citation": "al-Biruni, Book of Instruction in the Elements of the Art of Astrology §438-439 (tr. R. R. Wright, 1934, p.48)",
+     "read_at": "Wright's English translation, the scanned 1934 printing",
+     "reading": "translation_read",
+     "says": "the table of periods and sequences; the nodes, 3 and 2 years for day and night alike, follow the seven planets, so by night they come after Mercury; the nodes have no sub-periods"
+    },
+    {
+     "citation": "al-Qabisi, Introduction",
+     "read_at": "the research notes only; not verified",
+     "reading": "secondary_only",
+     "says": "an abridged nocturnal sequence, named by the research notes as the source of the Latin divergence"
+    },
+    {
+     "citation": "Bonatti, Liber astronomiae Tr.9 Ch.3 (tr. B. Dykes, 2007)",
+     "read_at": "Dykes's English translation",
+     "reading": "translation_read",
+     "says": "the periods, the diurnal sequence and the return after 75 years; for the night the text starts from the Moon and says 'all as for the day'; nocturnal nodes after Mars is Zoller's reading, not Bonatti's words"
+    },
+    {
+     "citation": "Schoener (Renaissance)",
+     "read_at": "the research notes only; not verified",
+     "reading": "secondary_only",
+     "says": "keeps the nodes-last order"
+    }
+   ]
   },
   "fixed_stars/policy": {
    "applies_to": "astronomical_data.fixed_star_policy",
@@ -1346,7 +2068,7 @@
    ],
    "names_note": "Arabic names as al-Biruni lists them (Sachau's translation, read in a scanned text); the Arabic script and the forms al-Fargh al-Muqaddam and al-Fargh al-Mu'akhkhar were not checked against a printed source; no. 1 is also called al-Nath. The names are given in the original only (Arabic script and transliteration), with no translated name",
    "not_the_chinese_xiu": "the 二十八宿 of ancient China are unequal lodges measured in right ascension from determinative stars; this module does not compute them and gives no Chinese lodge name",
-   "points_note": "every source read gives a mansion only to the Moon; none places the ascendant or another planet in them",
+   "points_note": "every source read gives a mansion on a chart only to the Moon; none places the ascendant or another planet in them",
    "source_note": "Agrippa, De occulta philosophia II.33 (English translation, London 1651): 28 mansions of 12°51′ and almost 26″ each, after Abraham; mansions 1, 8, 15 and 22 begin at the heads of Aries, Cancer, Libra and Capricorn, but Agrippa places them in the zodiac of the eighth sphere. al-Biruni, Chronology of Ancient Nations ch. XXI (tr. Sachau 1879, pp. 335-366): the Arabs divided the sphere into 28 parts, 2 1/3 to a sign, beginning with al-Sharatan because its stars stood in the first part of Aries in their time, and the stars have since moved. Counting from the tropical vernal point of date is the product's convention for these equal parts. Picatrix, Ibn Abi al-Rijal and al-Biruni's Book of Instruction were not read. No page numbers for Agrippa",
    "sources": [
     {
@@ -1361,6 +2083,55 @@
     }
    ],
    "zero_point_basis": "product_convention"
+  },
+  "monthly_profection": {
+   "applies_to": "annual_methods.monthly_profection",
+   "default_profile": "monthly_profection_solar_30_degree_months_v1",
+   "lord_table": "traditional_seven_domicile_v1",
+   "method_provenance": "medieval_monthly_profection_from_the_year_sign_v1",
+   "named_disagreement_not_adopted": {
+    "citation": "Ptolemy, Tetrabiblos IV.10 (Robbins, Loeb p.453 and note 82)",
+    "read_at": "Robbins's English (Loeb 1940): the whole of IV.10 read in the LacusCurtius transcription; the Greek not checked",
+    "reading": "translation_read",
+    "says": "months of 28 days to a sign counted from the places that govern the year, and days of 2 1/3 days to a sign; the note records 30 days to a sign (Bouche-Leclercq, Cardanus, without manuscript support) and 2 1/2 days (two manuscripts). About 13.04 such months fall in a year and they do not restart at the return, so they do not fit the return year; not computed"
+   },
+   "not_from_the_sources": [
+    "the Sun's 30-degree steps for a night birth: Valens IV.28 uses the Moon by night; the product uses the Sun for every chart, as Abu Ma'shar is reported to do",
+    "the equal-twelfths profile: no classical source for it was found; it is the arrangement common in modern software",
+    "the profile names and the word 'month' for a 30-degree step of the Sun"
+   ],
+   "profiles": {
+    "monthly_profection_return_year_twelfths_v1": "modern_convention_no_classical_source_found",
+    "monthly_profection_solar_30_degree_months_v1": "abu_mashar_as_reported_by_dykes_and_valens_iv28_day_rule_for_every_chart"
+   },
+   "sources": [
+    {
+     "citation": "Vettius Valens, Anthologies IV.28 (Kroll p.204, Pingree p.194)",
+     "read_at": "Riley's English translation via the public re-typeset janegca/latex-valens",
+     "reading": "translation_read",
+     "says": "for a day birth, the distance from the Sun at the moment in question to the natal Sun, counted from the sign allotted the year, gives the month; for a night birth the Moon's distance; no worked example with numbers. The Greek is not checked, so whether the distance is counted in whole signs or in 30-degree steps is not settled from it"
+    },
+    {
+     "citation": "Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, Persian Nativities IV (2019)",
+     "read_at": "known only from Dykes's spoken summary (The Astrology Podcast, episode 218, 2019); the book is not checked",
+     "reading": "secondary_only",
+     "says": "the year's sign is also the first month's sign and each following sign the next month; the monthly revolution charts are cast when the Sun reaches the natal Sun's degree in each following sign, the solar return being also the first month; Ptolemy's monthly method rejected. Timing the profected months by those same instants is the product's reading of that summary"
+    },
+    {
+     "citation": "al-Biruni, Book of Instruction in the Elements of the Art of Astrology, tr. R. R. Wright (1934), section 522",
+     "read_at": "Wright's English translation",
+     "reading": "translation_read",
+     "says": "the monthly revolution is taken each time the Sun reaches the degree and minute it held at the nativity or the revolution; the same section divides the profection year into thirteen months of 28 days 1 hour 51 minutes, the thirteenth repeating the year's sign, which the product does not compute"
+    },
+    {
+     "citation": "Guido Bonatti, Liber astronomiae Tr.9 (Dykes translation)",
+     "read_at": "Dykes's English translation",
+     "reading": "translation_read",
+     "says": "profection by equal degrees, 30 degrees a year, 2 degrees 30 minutes a month, 5 minutes a day, counted from birth; a different method the product does not compute"
+    }
+   ],
+   "statement": "Month k (k = 1-12) of year of life N+1 is the annual profection sign moved k-1 signs on in zodiacal order, so the first month is the year's own sign and the count starts again at every solar return; the lord of the month is that sign's seven-planet domicile lord. By default month k begins when the Sun has moved 30(k-1) degrees past its natal longitude, so the first month begins at the return and the twelfth ends at the next one; the named alternative cuts the return year into twelve equal parts. Whole signs only; the sect is not read. No degree, no topic of the place and no verdict is emitted.",
+   "worked_example": "none: no source read gives a monthly profection with numbers; the tests check the rule against Swiss Ephemeris's own solar crossing and hand-typed sign tables"
   },
   "planetary_hours": {
    "applies_to": "derived_methods.planetary_hours",
@@ -1379,6 +2150,190 @@
    "source_status": "standard_tradition",
    "sunrise_definition": "the horizon module's event: refracted upper limb crossing the apparent horizon, topocentric, request atmosphere, no dip (USNO standard definition; Swiss swe_rise_trans default)"
   },
+  "planetary_years": {
+   "applies_to": "annual_methods.decennials.minor_years_ref",
+   "columns": {
+    "greater": {
+     "note": "Venus 82 as printed in IV.30; the re-typeset's note at III.10 says Venus's greater years are 'usually 82, not 84' (an editor's note, not Valens's text)",
+     "sources": [
+      {
+       "citation": "Valens, Anthologies IV.30",
+       "read_at": "Riley's English translation via the re-typeset",
+       "reading": "translation_read",
+       "says": "the row he calls 'maximum', i.e. the periods usually called the greater years; III.10 mentions giving the greatest, the mean or the least years as the case requires"
+      }
+     ],
+     "verification": "attested_hellenistic_text_read"
+    },
+    "greatest": {
+     "note": "no value is given: later (medieval) literature tabulates greatest years, but no Hellenistic source was found and no primary text was checked, so the cells stay empty until one is",
+     "sources": [],
+     "verification": "later_literature_hellenistic_source_not_confirmed"
+    },
+    "middle": {
+     "note": "computed here as (minor + greater) / 2; no Hellenistic text giving these values or naming the 'middle' years has been found",
+     "sources": [],
+     "verification": "derived_mean_hellenistic_source_not_confirmed"
+    },
+    "minor": {
+     "sources": [
+      {
+       "citation": "Vettius Valens, Anthologies IV.1 and IV.30",
+       "read_at": "Riley's English translation via the public re-typeset janegca/latex-valens",
+       "reading": "translation_read",
+       "says": "the quarter periods are a quarter of these least periods (Saturn 7 1/2, Jupiter 3, Mars 3 3/4, Venus 2, Mercury 5, Sun 4 3/4, Moon 6 1/4)"
+      },
+      {
+       "citation": "Firmicus Maternus, Mathesis II.27 (Kroll-Skutsch Teubner)",
+       "read_at": "the Latin text of the Kroll-Skutsch Teubner edition, LacusCurtius",
+       "reading": "original_language_read",
+       "says": "the months of the decennial sub-periods, Sun 19, Moon 25, Saturn 30, Jupiter 12, Mars 15, Venus 8, Mercury 20"
+      },
+      {
+       "citation": "Dorotheus, Carmen Astrologicum I.23 (Pingree 1976)",
+       "read_at": "Pingree's English translation (1976); the Arabic not checked",
+       "reading": "translation_read",
+       "says": "the same years for a benefic on an angle; the Moon in a masculine sign only 25 months"
+      }
+     ],
+     "verification": "attested_hellenistic_text_read"
+    }
+   },
+   "statement": "The planets' minor, middle, greater and greatest years, every cell with its verification state. Only the minor years are used in a computation (the decennial sub-period months). Firdaria periods and the zodiacal-releasing sign periods are their own tables and are not derived from this one.",
+   "table": {
+    "jupiter": {
+     "greater": {
+      "verification": "attested_hellenistic_text_read",
+      "years": 79.0
+     },
+     "greatest": {
+      "verification": "later_literature_hellenistic_source_not_confirmed",
+      "years": null
+     },
+     "middle": {
+      "verification": "derived_mean_hellenistic_source_not_confirmed",
+      "years": 45.5
+     },
+     "minor": {
+      "verification": "attested_hellenistic_text_read",
+      "years": 12.0
+     }
+    },
+    "mars": {
+     "greater": {
+      "verification": "attested_hellenistic_text_read",
+      "years": 66.0
+     },
+     "greatest": {
+      "verification": "later_literature_hellenistic_source_not_confirmed",
+      "years": null
+     },
+     "middle": {
+      "verification": "derived_mean_hellenistic_source_not_confirmed",
+      "years": 40.5
+     },
+     "minor": {
+      "verification": "attested_hellenistic_text_read",
+      "years": 15.0
+     }
+    },
+    "mercury": {
+     "greater": {
+      "verification": "attested_hellenistic_text_read",
+      "years": 76.0
+     },
+     "greatest": {
+      "verification": "later_literature_hellenistic_source_not_confirmed",
+      "years": null
+     },
+     "middle": {
+      "verification": "derived_mean_hellenistic_source_not_confirmed",
+      "years": 48.0
+     },
+     "minor": {
+      "verification": "attested_hellenistic_text_read",
+      "years": 20.0
+     }
+    },
+    "moon": {
+     "greater": {
+      "verification": "attested_hellenistic_text_read",
+      "years": 108.0
+     },
+     "greatest": {
+      "verification": "later_literature_hellenistic_source_not_confirmed",
+      "years": null
+     },
+     "middle": {
+      "verification": "derived_mean_hellenistic_source_not_confirmed",
+      "years": 66.5
+     },
+     "minor": {
+      "verification": "attested_hellenistic_text_read",
+      "years": 25.0
+     }
+    },
+    "saturn": {
+     "greater": {
+      "verification": "attested_hellenistic_text_read",
+      "years": 57.0
+     },
+     "greatest": {
+      "verification": "later_literature_hellenistic_source_not_confirmed",
+      "years": null
+     },
+     "middle": {
+      "verification": "derived_mean_hellenistic_source_not_confirmed",
+      "years": 43.5
+     },
+     "minor": {
+      "verification": "attested_hellenistic_text_read",
+      "years": 30.0
+     }
+    },
+    "sun": {
+     "greater": {
+      "verification": "attested_hellenistic_text_read",
+      "years": 120.0
+     },
+     "greatest": {
+      "verification": "later_literature_hellenistic_source_not_confirmed",
+      "years": null
+     },
+     "middle": {
+      "verification": "derived_mean_hellenistic_source_not_confirmed",
+      "years": 69.5
+     },
+     "minor": {
+      "verification": "attested_hellenistic_text_read",
+      "years": 19.0
+     }
+    },
+    "venus": {
+     "greater": {
+      "verification": "attested_hellenistic_text_read",
+      "years": 82.0
+     },
+     "greatest": {
+      "verification": "later_literature_hellenistic_source_not_confirmed",
+      "years": null
+     },
+     "middle": {
+      "verification": "derived_mean_hellenistic_source_not_confirmed",
+      "years": 45.0
+     },
+     "minor": {
+      "verification": "attested_hellenistic_text_read",
+      "years": 8.0
+     }
+    }
+   },
+   "verification_states": [
+    "attested_hellenistic_text_read",
+    "derived_mean_hellenistic_source_not_confirmed",
+    "later_literature_hellenistic_source_not_confirmed"
+   ]
+  },
   "sect": {
    "applies_to": "derived_methods.sect",
    "method_provenance": "product_convention_sources_checked_do_not_specify_boundary",
@@ -1388,6 +2343,27 @@
    "applies_to": "derived_methods.sect.near_horizon_band",
    "geometric_reason": "標準視日出（上緣初現）時太陽中心約在幾何地平下 50′（折射約 34′＋太陽半徑約 16′），故 −50′ < h ≤ 0° 是幾何中心判準與視日出判準會分歧的區間；本產品對稱擴成 ±50′ 作為敏感提示帶。",
    "time_span_note": "依緯度與季節而異：低緯每次穿越約數分鐘，60°N 至點約 20 分鐘，更高緯可達數十分鐘，近極圈時太陽可能整夜停在帶內；不給固定分鐘數。"
+  },
+  "sect_light_triplicity_lords": {
+   "applies_to": "annual_methods.decennials.sect_light_triplicity_lords",
+   "periods_note": "Dorotheus (Pingree's translation, I.22, p.183) divides life into two parts: the first lord stands for the earlier part, the second for the later, and the third has no part of life assigned in that chapter. He gives no age at which one lord hands over to the next, so no boundary can be computed. The division of life into three equal parts is medieval (Bonatti after al-Qabisi), not Dorotheus.",
+   "periods_reason_code": "dorotheus_gives_no_handover_ages",
+   "sources": [
+    {
+     "citation": "Dorotheus, Carmen Astrologicum I.1 (Pingree 1976 pp.161-162)",
+     "read_at": "Pingree's English translation (1976); the Arabic not checked",
+     "reading": "translation_read",
+     "says": "the triplicity lords and their day and night order"
+    },
+    {
+     "citation": "Dorotheus, Carmen Astrologicum I.22 (Pingree 1976 p.183)",
+     "read_at": "Pingree's English translation (1976); the Arabic not checked",
+     "reading": "translation_read",
+     "says": "the sect light's triplicity lords, the first for the beginning of life, the second for its end"
+    }
+   ],
+   "statement": "The three Dorothean triplicity lords of the sign of the sect light (the Sun by day, the Moon by night), in their order for the chart's sect: first, second, third. Only the lords are listed; no period, age or verdict.",
+   "table": "dorothean_triplicity_three_rulers_v1"
   },
   "solar_phase": {
    "applies_to": "derived_methods.solar_phase",
@@ -1498,6 +2474,12 @@
     "result_when_only_simultaneous": "simultaneous_boundary",
     "tolerance_days": 1e-06
    },
+   "competing_attributions": [
+    "al_h_morrison_20th_century",
+    "medieval_arabic_transmission"
+   ],
+   "consequence": "method_status cannot be raised to adopted until the attribution is settled against a named edition",
+   "exact_perfection": "Later literature attributes requiring exact perfection before the sign exit to Al H. Morrison (an article in the AFA Journal, October 1966; the article was not read); an earlier origin has not been checked.",
    "method": "modern_sign_bounded_exact_perfection_v1",
    "method_provenance": "not_classical_attribution_unresolved",
    "present_instant_policy": {
@@ -1510,29 +2492,173 @@
     "root_tolerance_days": 1e-08,
     "shared_with": "derived_methods.aspects.degree_based.application_policy.exact_residual_epsilon_degrees"
    },
-   "source_verification": {
-    "competing_attributions": [
-     "al_h_morrison_20th_century",
-     "medieval_arabic_transmission"
-    ],
-    "consequence": "method_status cannot be raised to adopted until the attribution is settled against a named edition",
-    "consulted": [
-     "Lilly, Christian Astrology 1647 p.112",
-     "Māshāʾallāh, On Reception ch.1 (Dykes 2008 p.443, in the translator's published excerpt pp.443-446)",
-     "Sahl, 'De cursu planete vacui', in Quadripartitum Ptolomei ... (Venice 1519; Seville copy, archive.org ARes08317, PDF p.246, left column)"
-    ],
-    "exact_perfection": "Later literature attributes requiring exact perfection before the sign exit to Al H. Morrison (an article in the AFA Journal, October 1966; the article was not read); an earlier origin has not been checked.",
-    "not_consulted": [
-     "Al H. Morrison, 'Void of Course Moon Periods: Their Uses and What May Come of Ignoring Them', AFA Journal XXVIII.10 (October 1966) p.10: located through the AFA journal author index; the article was not read",
-     "Māshāʾallāh, On Reception ch.7 (Dykes 2008 p.467)",
-     "Abū Maʿshar, Abbreviation III.21-22 (Brill 1994 / ARHAT 1997)",
-     "al-Qabīṣī, Introduction III (Warburg 2004)",
-     "Sahl, Introduction §5.10 (Dykes 2008 p.35) and the Arabic text",
-     "Bonatti, Tract 3 definition chapter"
-    ],
-    "primary_texts_independently_transcribed": false,
-    "sign_boundary_rule_attribution": "unresolved",
-    "sign_condition": "The Moon not perfecting an aspect before leaving its sign: Māshāʾallāh, On Reception ch.1 (Dykes 2008 p.443; ch.7, p.467, not checked); Lilly, Christian Astrology 1647 p.112 'Voyd of course' (bounded by the sign; the page does not mention moieties). Sahl's definition in the Latin Quadripartitum collection (Venice 1519) is that the Moon joins no planet and none joins it; it names neither the sign boundary nor an orb. An earlier explicit statement is attributed to Abū Maʿshar, Abbreviation III.21-22 (not consulted)."
+   "primary_texts_independently_transcribed": false,
+   "sign_boundary_rule_attribution": "unresolved",
+   "sign_condition": "The Moon not perfecting an aspect before leaving its sign: Māshāʾallāh, On Reception ch.1 (Dykes 2008 p.443; ch.7, p.467, not checked); Lilly, Christian Astrology 1647 p.112 'Voyd of course' (bounded by the sign; the page does not mention moieties). Sahl's definition in the Latin Quadripartitum collection (Venice 1519) is that the Moon joins no planet and none joins it; it names neither the sign boundary nor an orb. An earlier explicit statement is attributed to Abū Maʿshar, Abbreviation III.21-22 (not consulted).",
+   "sources": [
+    {
+     "citation": "Lilly, Christian Astrology 1647 p.112",
+     "read_at": "reading level as recorded; the record does not say which copy of the 1647 English text was read",
+     "reading": "original_language_read",
+     "says": "'Voyd of course': the Moon perfects no aspect before leaving its sign; bounded by the sign; the page does not mention moieties"
+    },
+    {
+     "citation": "Māshāʾallāh, On Reception ch.1 (Dykes 2008 p.443)",
+     "read_at": "Dykes's English translation, in the translator's published excerpt pp.443-446",
+     "reading": "translation_read",
+     "says": "the Moon not perfecting an aspect before leaving its sign"
+    },
+    {
+     "citation": "Sahl, 'De cursu planete vacui', in Quadripartitum Ptolomei ... (Venice 1519)",
+     "read_at": "the medieval Latin translation in the 1519 printing; Seville copy, archive.org ARes08317, PDF p.246, left column",
+     "reading": "translation_read",
+     "says": "the Moon joins no planet and none joins it; it names neither the sign boundary nor an orb"
+    },
+    {
+     "citation": "Al H. Morrison, 'Void of Course Moon Periods: Their Uses and What May Come of Ignoring Them', AFA Journal XXVIII.10 (October 1966) p.10",
+     "read_at": "located through the AFA journal author index; the article was not read",
+     "reading": "bibliographic_only",
+     "says": "later literature attributes to this article the requirement of exact perfection before the sign exit"
+    },
+    {
+     "citation": "Māshāʾallāh, On Reception ch.7 (Dykes 2008 p.467)",
+     "read_at": "not consulted",
+     "reading": "bibliographic_only",
+     "says": "a further statement of the sign condition, not checked"
+    },
+    {
+     "citation": "Abū Maʿshar, Abbreviation III.21-22 (Brill 1994 / ARHAT 1997)",
+     "read_at": "not consulted",
+     "reading": "bibliographic_only",
+     "says": "an earlier explicit statement of the sign condition is attributed to it"
+    },
+    {
+     "citation": "al-Qabīṣī, Introduction III (Warburg 2004)",
+     "read_at": "not consulted",
+     "reading": "bibliographic_only",
+     "says": "a definition of the void course still to be checked"
+    },
+    {
+     "citation": "Sahl, Introduction §5.10 (Dykes 2008 p.35) and the Arabic text",
+     "read_at": "not consulted",
+     "reading": "bibliographic_only",
+     "says": "a definition of the void course still to be checked"
+    },
+    {
+     "citation": "Bonatti, Tract 3 definition chapter",
+     "read_at": "not consulted",
+     "reading": "bibliographic_only",
+     "says": "a definition of the void course still to be checked"
+    }
+   ]
+  },
+  "year_boundary": {
+   "applies_to": "year_boundary",
+   "definition": "solar_return_root_v1",
+   "fractional_year_rule": "solar_return_root_linear_within_year_v1",
+   "measurement_note": "The differences above are Swiss-on-Swiss magnitudes for the method page, not an independent check; the return instant itself is checked against JPL Horizons (DE441) in the test suite.",
+   "method_provenance": "product_convention_shared_by_profections_and_firdaria",
+   "other_year_models_not_used": [
+    "mean tropical year of 365.2422 days: differs from the return root by up to 1.57 h within 100 years (four synthetic births, Swiss Ephemeris)",
+    "civil anniversary (same UTC date and clock time): differs from the return root by up to 21.8 h within 100 years (same probe)",
+    "360-day year: a period unit inside zodiacal releasing, not a year boundary"
+   ],
+   "sources": [
+    {
+     "citation": "Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, Persian Nativities IV (2019)",
+     "read_at": "bibliographic record only; chapter and page not verified",
+     "reading": "bibliographic_only",
+     "says": "revolutions used together with profections and firdaria"
+    },
+    {
+     "citation": "Swiss Ephemeris 2.10.03 swe_solcross_ut",
+     "read_at": "the library's source code and documentation",
+     "reading": "original_language_read",
+     "says": "the crossing the test suite compares the product's own search against (same engine, another algorithm)"
+    }
+   ],
+   "statement": "Year N+1 of life is [SR_N, SR_N+1): from the N-th solar return to the next, SR_0 being the birth instant. A non-whole year y = k + f is SR_k + f (SR_k+1 - SR_k), linear inside its own return year (product convention). The search window is centred on birth + N mean years (365.24219 days tropical, 365.256363 days sidereal); that number places the search and enters no result."
+  },
+  "zodiacal_releasing": {
+   "applies_to": "annual_methods.zodiacal_releasing",
+   "levels_emitted": [
+    1,
+    2
+   ],
+   "lord_table": "traditional_seven_domicile_v1",
+   "method_provenance": "valens_iv4_core_with_modern_level_labels",
+   "not_applied": "Valens IV.4: when Fortune and Daimon share a sign, activity is released from the following sign; the response flags fortune_spirit_same_sign and does not apply the rule",
+   "not_from_valens": [
+    "the names 'zodiacal releasing' and 'level 1'/'level 2': modern systematisation (Schmidt, Brennan)",
+    "a second loosing at level 1 after 422 units: the product applies the same rule again; Valens states it once",
+    "any 'peak' grading: not emitted"
+   ],
+   "period_table_profile": "valens_iv4_sign_periods_capricorn27_v1",
+   "profile": "valens_fortune_spirit_releasing_v1",
+   "sign_period_years": {
+    "aquarius": 30,
+    "aries": 15,
+    "cancer": 25,
+    "capricorn": 27,
+    "gemini": 20,
+    "leo": 19,
+    "libra": 8,
+    "pisces": 12,
+    "sagittarius": 12,
+    "scorpio": 15,
+    "taurus": 8,
+    "virgo": 20
+   },
+   "sources": [
+    {
+     "citation": "Vettius Valens, Anthologies IV.4 (/160K/-/163K/, /152P/-/154P/)",
+     "read_at": "Riley's English translation via the public re-typeset (janegca/latex-valens); Pingree's Greek not checked",
+     "reading": "translation_read",
+     "says": "Fortune and Daimon as starting points; the Aries and Taurus sub-period tables; loosing to the opposite sign after 17 years 7 months; the trine rejected"
+    },
+    {
+     "citation": "Valens IV.6 (the /156P/ marker falls in it)",
+     "read_at": "Riley's English translation via the public re-typeset",
+     "reading": "translation_read",
+     "says": "why Capricorn allots 27 and Aquarius 30"
+    },
+    {
+     "citation": "Valens IV.7 (/165K/-/167K/, /157P/-/158P/)",
+     "read_at": "Riley's English translation via the public re-typeset",
+     "reading": "translation_read",
+     "says": "places counted from Fortune; the places square with the lots"
+    },
+    {
+     "citation": "Valens IV.8 'A Compelling Example' (/167K/-/169K/, /158P/-/160P/)",
+     "read_at": "Riley's English translation via the public re-typeset",
+     "reading": "translation_read",
+     "says": "Fortune in Leo, Daimon in Scorpio, every period length named"
+    },
+    {
+     "citation": "Valens IV.9 'The Universal Year' (Kroll p.169)",
+     "read_at": "Kroll's Greek (1908); Riley's English read beside it",
+     "reading": "original_language_read",
+     "says": "the 360-day year of the distribution and the worked conversion 32 x 365 1/4 + 215 days = 33 distribution years 23 days"
+    },
+    {
+     "citation": "Valens IV.10 'The Breakdown into Longer and Shorter Periods' (/169K/-/171K/, /161P/-/162P/)",
+     "read_at": "Kroll's Greek (1908); Riley's English read beside it",
+     "reading": "original_language_read",
+     "says": "a twelfth of the month gives the days (2 1/2 days a unit), a twelfth of the day the hours (5 hours a unit), with the loosing of the bond at every level and a worked example down to the hours"
+    }
+   ],
+   "statement": "Released from the signs of the Lot of Fortune and the Lot of Spirit (Daimon), both listed. A sign's period is its number from the period table: years at level 1, months (a twelfth of the year model) at level 2. Level-2 periods start in the parent's sign, follow zodiacal order and are cut where the parent ends (nominal length kept beside the effective one). When a circle of twelve signs (211 units) is complete before the parent ends, the next period starts at the sign opposite that circle's start (loosing of the bond), never the trine. Boundaries are the birth JD(UT) plus the accumulated days of the year model. Places are counted from the sign of Fortune for both lots, with the count from the starting lot beside it.",
+   "year_models": {
+    "zr_year_360_days_v1": {
+     "basis": "Valens IV.9 'The Universal Year' (Kroll p.169): the universal year has 365 1/4 days, the year of the distribution 360; IV.4: the 17 years 7 months are allotted 'not counting the intercalary days'; IV.8: 'he takes the allotment of years and converts it to 360 days'",
+     "days_per_year": 360,
+     "provenance": "attested_valens_iv4_iv9"
+    },
+    "zr_year_365_25_days_v1": {
+     "basis": "the same periods measured in Julian years of 365 1/4 days: a single-setting alternative in some modern software (Stellium's documented year_length=365.25 'civil-year variant'; AstroApp's 'Year' setting), never shown beside the 360-day dates there; Valens uses 365 1/4 only for the universal year he converts from, never for the distribution",
+     "days_per_year": 365.25,
+     "provenance": "modern_convention_not_attested_in_valens"
+    }
    }
   }
  },

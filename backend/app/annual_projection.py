@@ -66,22 +66,22 @@ ANNUAL_PAGE_KEPT_PATHS: tuple[str, ...] = (
     # Module heads: state, method identity, the options echoed, sensitivity.
     # The period rows themselves are annual_timeline.segments.
     f"annual_methods.annual_profection.{{{_STATE},profile,method_status,method_provenance,"
-    "source_ref,source_verification,completed_years,year_of_life,natal_ascendant_sign,offset_signs,profected_sign,"
+    "source_ref,completed_years,year_of_life,natal_ascendant_sign,offset_signs,profected_sign,"
     "profected_place,sensitivity_state,candidates,lord.{applicable,reason_code,body_key,table}}",
     f"annual_methods.firdaria.{{{_STATE},profile,nocturnal_node_profile,"
     "nocturnal_node_profile_input,nocturnal_node_profile_applies,method_status,"
-    "method_provenance,source_ref,source_verification,scope,lifetime_window,cycle_index,sensitivity_state,"
+    "method_provenance,source_ref,scope,lifetime_window,cycle_index,sensitivity_state,"
     "year_model.{fractional_year_rule,return_profile},sect.{is_day,sect_status,"
     "sect_in_near_horizon_band}}",
     "annual_methods.firdaria.candidates[].{sample_role,is_day}",
     f"annual_methods.zodiacal_releasing.{{{_STATE},profile,period_table_profile,year_model,"
-    "levels_emitted,method_status,method_provenance,source_ref,source_verification,scope,lifetime_window,"
+    "levels_emitted,method_status,method_provenance,source_ref,scope,lifetime_window,"
     "fortune_spirit_same_sign,sensitivity_state,lords.{applicable,reason_code,table}}",
     "annual_methods.zodiacal_releasing.releases[].{releasing_from,start_sign,"
     "start_lot_longitude_deg,start_sign_differs_under_other_sect,comparison_start_sign}",
     "annual_methods.zodiacal_releasing.candidates[].{sample_role,fortune_sign,spirit_sign}",
     f"annual_methods.decennials.{{{_STATE},profile,start_profile,order_rule,equal_longitude_rule,"
-    "year_model,minor_years_ref,levels_emitted,method_status,method_provenance,source_ref,source_verification,scope,"
+    "year_model,minor_years_ref,levels_emitted,method_status,method_provenance,source_ref,scope,"
     "lifetime_window,start_planet,order,start_differs_under_other_sect,comparison_start_planet,"
     "sensitivity_state}",
     f"annual_methods.decennials.sect_light_triplicity_lords.{{{_STATE},source_ref,table,"
@@ -90,7 +90,7 @@ ANNUAL_PAGE_KEPT_PATHS: tuple[str, ...] = (
     "annual_methods.decennials.candidates[].{sample_role,is_day,start_planet,order}",
     f"annual_methods.monthly_profection.{{{_STATE},profile,profile_input,profile_provenance,"
     "other_profiles,method_status,method_provenance,"
-    "source_ref,source_verification,completed_years,year_of_life,month_model,natal_ascendant_sign,"
+    "source_ref,completed_years,year_of_life,month_model,natal_ascendant_sign,"
     "year_sign,sensitivity_state,lords.{applicable,reason_code,table}}",
     "annual_methods.monthly_profection.candidates[].{sample_role,natal_ascendant_sign,year_sign}",
     f"natal_lots.{{{_STATE},method_status,sect_status,sect_applied,sect_in_near_horizon_band,"
@@ -103,8 +103,7 @@ ANNUAL_PAGE_KEPT_PATHS: tuple[str, ...] = (
     "calculation_dossier.privacy",
     "calculation_dossier.build_identity",
     "calculation_dossier.trace_receipt.{step_count,python_json_serialization_sha256}",
-    "calculation_dossier.method_source_register.{register_id,version,published,sha256,"
-    "digest_semantics}",
+    "calculation_dossier.method_source_register.{register_id,version,sha256,digest_semantics}",
 )
 
 _PAGE_TREE = _kept_tree(ANNUAL_PAGE_KEPT_PATHS)

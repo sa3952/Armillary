@@ -165,7 +165,7 @@ from .core.module_state import (
 from .core.method_status import method_receipt
 
 
-SCHEMA_VERSION = "0.16.0"
+SCHEMA_VERSION = "0.17.0"
 
 _CLASSICAL_KEYS = tuple(body["key"] for body in CLASSICAL_BODIES)
 
@@ -1445,7 +1445,7 @@ def _sect_and_lots(
         "Sect 與 Lots",
         inputs={"include_lots": True, "include_houses": False},
         result={"execution_status": "not_applicable"},
-        note="Lots 依賴 ASC；無宮位模式不以代表時刻產生 ASC 或 Sect 下游判定。",
+        note="Lots 依賴 ASC；無宮位模式不以代表性時刻產生 ASC 或 Sect 下游判定。",
     )
     return (
         {**unavailable, "is_day": None, "sect_status": None},

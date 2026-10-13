@@ -30,6 +30,12 @@ DECIDED_METHODS: frozenset[str] = frozenset({
     "essential_dignities",
     # 十二分部：預設算法、列出的點與守護行星表已追認。
     "dodecatemoria",
+    # 月宿：起點、等分、不適用的口徑、交界門檻、出生時刻不精確時的列法與宿名寫法都已裁定。
+    "lunar_mansions",
+    # 焦傷與光束下：預設分法、界線開閉、7 天門檻與月亮的晨昏側都已裁定。
+    "solar_phase",
+    # 行星與宮的古典分類：地平上下的判準、預設的出處組合與各欄寫法都已裁定。
+    "classical_classifications",
 })
 
 # 維持 provisional 的方法：Lots 隨可用的上升點保留 provisional；月空亡的定義仍未定，
@@ -37,12 +43,6 @@ DECIDED_METHODS: frozenset[str] = frozenset({
 # 輸出不等於採用其定義（日主取日出所在民用日期等）。
 PROVISIONAL_METHODS: frozenset[str] = frozenset({
     "lots", "void_of_course", "aspects", "planetary_hours",
-    # 月宿：等分與起點待方法裁決追認。
-    "lunar_mansions",
-    # 焦傷與光束下：預設分法已裁定，判定細節（開閉、7 天門檻、月亮）待追認。
-    "solar_phase",
-    # 行星與宮的古典分類：地平上下的判準與預設的出處組合待追認。
-    "classical_classifications",
 })
 
 # The flagged annual route's methods: provisional until their "how it is

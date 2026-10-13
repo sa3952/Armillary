@@ -120,6 +120,16 @@ test("錯誤動作：可重試的 503 依 Retry-After 建議重試；星曆拒�
   }
 });
 
+// 宮位制在這個緯度或時刻一定算不出時（422 方法拒收），同一組輸入每次都會被拒；
+// 「若持續發生」的回報指引對它是多餘的。其他錯誤照舊附上。
+test("必然的方法拒收（422 宮位制不可用）不叫人透過聯絡頁回報；其他錯誤照舊", () => {
+  const actions = apiErrorActions(422, null, "house_system_unavailable");
+  assert.ok(!actions.some((action) => action.includes("聯絡頁")), actions.join(" / "));
+  assert.deepStrictEqual(actions, ["修正輸入後再送出一次。"]);
+  assert.ok(apiErrorActions(422, null, "nonexistent_local_time").some((a) => a.includes("聯絡頁")));
+  assert.ok(apiErrorActions(503, null, null).some((a) => a.includes("聯絡頁")));
+});
+
 test("網路錯誤只有一種措辭，沒有私測 profile 或邀請者", () => {
   assert.equal(networkErrorMessage(), "無法連線到命盤計算服務。請確認網路連線後再試；若持續發生，請透過聯絡頁回報。");
   for (const retired of ["PROFILES", "validateClientConfiguration", "resolveProfileBounded"]) {

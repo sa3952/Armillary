@@ -115,7 +115,7 @@
     "trace", "requested_options", "contract", "receipt",
   ]);
   const SUPPORTED_RESPONSE_CONTRACTS = Object.freeze({
-    "0.16.0": Object.freeze(["0.9.0"]),
+    "0.17.0": Object.freeze(["0.10.0"]),
   });
 
   function assertCompatibleSourceResponse(sourceResponse) {

@@ -885,9 +885,15 @@ def _privacy_canaries(payloads: list[dict[str, Any]]) -> frozenset[str]:
     return frozenset(canaries)
 
 
+# The emitter's request id is a random 32-hex value, and a canary as short as a
+# birth year turns up in one now and then; ids are blanked before the search.
+_EMITTED_REQUEST_ID = re.compile(r'"request_id":"[0-9a-f]{32}"')
+
+
 def _verify_container_logs(logs: str, sensitive_values: frozenset[str]) -> dict[str, Any]:
+    searched = _EMITTED_REQUEST_ID.sub('"request_id":""', logs)
     for forbidden in ('"POST /api/chart HTTP/', *sorted(sensitive_values)):
-        if forbidden in logs:
+        if forbidden in searched:
             raise GateFailure("container log disclosed request or canary data")
     events: list[dict[str, Any]] = []
     for line in logs.splitlines():

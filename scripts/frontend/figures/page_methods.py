@@ -50,9 +50,10 @@ _SOLAR_SIDES = {"morning": "西側（晨星）", "evening": "東側（昏星）"
 _SOLAR_MOTIONS = {"direct": "順行", "retrograde": "逆行"}
 
 
-def _solar_limit(limit: dict) -> str:
+def solar_limit_text(limit: dict) -> str:
+    """「≤ 17′」「< 16′」「≤ 8°30′」; a limit split by the planet's own motion lists both."""
     if "direct" in limit:
-        return "；".join(f"{_SOLAR_MOTIONS[m]} {_solar_limit(limit[m])}" for m in ("direct", "retrograde"))
+        return "；".join(f"{_SOLAR_MOTIONS[m]} {solar_limit_text(limit[m])}" for m in ("direct", "retrograde"))
     minutes = round(limit["degrees"] * 60)
     whole, rest = divmod(minutes, 60)
     text = f"{whole}°{rest:02d}′" if whole and rest else (f"{whole}°" if whole else f"{rest}′")
@@ -61,11 +62,13 @@ def _solar_limit(limit: dict) -> str:
 
 def _solar_cell(per_side: dict) -> str:
     return "；".join(
-        f"{label} {_solar_limit(per_side[band])}" for band, label in _SOLAR_BANDS if per_side[band] is not None
+        f"{label} {solar_limit_text(per_side[band])}" for band, label in _SOLAR_BANDS if per_side[band] is not None
     )
 
 
-def _solar_phase_rows() -> str:
+def solar_phase_limit_rows() -> str:
+    """The three traditions' limits per body and side, one table row each; the
+    methods page and the combustion article print the same rows."""
     with backend_on_path():
         from app.core import solar_phase
 
@@ -94,4 +97,4 @@ def build() -> tuple[dict[str, str], list[str]]:
             quoted.append(f'<div class="sl none"><b>{count}</b><span>{label}</span><i>無預設</i></div>')
         else:
             quoted.append(f'<div class="sl"><b>{count}</b><span>{label}</span><i>預設　{names[default]}</i></div>')
-    return {"lunar-mansions": mansion_rows, "solar-phase-limits": _solar_phase_rows()}, quoted
+    return {"lunar-mansions": mansion_rows, "solar-phase-limits": solar_phase_limit_rows()}, quoted

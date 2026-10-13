@@ -17,17 +17,16 @@ Stages, in order (the caller holds the Swiss line):
    shows; its own boundaries are the birth instant plus days of its year model.
 
 No technique emits an interpretation, a verdict or a coincidence between two
-techniques.  The method sources these results cite are carried inline
-(``method_sources.annual_candidate_register``), a register of its own, so the
-register /api/chart names stays unchanged; ``output_contract.route_status``
-says whether the route is public (``method_sources.ANNUAL_ROUTE_STATUS``).
+techniques.  The method sources these results cite resolve in the published
+register /api/chart names (``method_sources.method_source_register_receipt``);
+``output_contract.route_status`` says whether the route is public
+(``method_sources.ANNUAL_ROUTE_STATUS``).
 """
 
 from __future__ import annotations
 
 import datetime as dtmod
 from fractions import Fraction
-from functools import cache
 from typing import Any, Literal
 
 from zoneinfo import ZoneInfo
@@ -103,7 +102,7 @@ from .core.year_boundary import (
     solver_receipt,
     year_boundary_record,
 )
-from .method_sources import ANNUAL_ROUTE_STATUS, annual_candidate_register
+from .method_sources import ANNUAL_ROUTE_STATUS, method_source_register_receipt, resolve
 from .schemas import (
     AnnualInput,
     AnnualRequest,
@@ -279,16 +278,11 @@ def _input_presence(annual: AnnualInput, field: str) -> str:
     return "explicit" if field in annual.model_fields_set else "defaulted"
 
 
-@cache
-def _verification_levels() -> dict[str, str]:
-    return {ref: entry["source_verification"]
-            for ref, entry in annual_candidate_register()["entries"].items()}
-
-
 def _source(ref: str) -> dict[str, str]:
-    """A technique head's register ref and how far that entry's sources were
-    read, the value the dossier's register states for it."""
-    return {"source_ref": ref, "source_verification": _verification_levels()[ref]}
+    """A technique head's register ref; how far each of its citations was read
+    is stated in the published register's entry, which the ref must name."""
+    resolve(ref)
+    return {"source_ref": ref}
 
 
 def _agreement(values: list) -> str:
@@ -1243,7 +1237,7 @@ def compute_annual_response(req: AnnualRequest, *, build_identity: JsonObject) -
             "end_status": year_boundary["end_status"],
         },
         note=(
-            "年度小限與法達共用這一個年界；不做民用日期算術。黃道釋放只用它決定顯示哪些期間，"
+            "年度小限與法達共用這一個年界；不做民用日算術。黃道釋放只用它決定顯示哪些期間，"
             "期間邊界是出生瞬間加上所選年模型的日數。"
         ),
     )
@@ -1281,7 +1275,7 @@ def compute_annual_response(req: AnnualRequest, *, build_identity: JsonObject) -
                 "merge_policy": None if len(samples) == 1 else "side_by_side_not_merged",
             },
             "time_conversion": anchor.time.time_conversion,
-            "method_source_register": annual_candidate_register(),
+            "method_source_register": method_source_register_receipt(),
             "warnings": _warnings(
                 req, anchor, year_boundary, natal_lots, annual_methods["zodiacal_releasing"]
             ),

@@ -414,6 +414,12 @@
     return "無法連線到命盤計算服務。請確認網路連線後再試；若持續發生，請透過聯絡頁回報。";
   }
 
+  // 所選方法在這個緯度或時刻本來就算不出（422）：同一組輸入每次都會被拒，錯誤訊息
+  // 已說明原因與改選什麼，「若持續發生就回報」對它沒有意義。
+  const CERTAIN_METHOD_REFUSALS = Object.freeze([
+    "house_system_unavailable",
+  ]);
+
   // 這兩種拒絕重送不會改變結果；建議「稍後重試」只會讓使用者反覆送出同一個請求。
   const NON_RETRYABLE_SERVER_REFUSALS = Object.freeze([
     "full_ephemeris_required",
@@ -436,7 +442,7 @@
       actions.push("修正輸入後再送出一次。");
     }
     if (statusCode === 413 || statusCode === 415) actions.push("重新載入頁面。");
-    actions.push("若持續發生，請透過聯絡頁回報。");
+    if (!CERTAIN_METHOD_REFUSALS.includes(code)) actions.push("若持續發生，請透過聯絡頁回報。");
     return actions;
   }
 

@@ -49,19 +49,8 @@
   });
   const SAMPLE_ROLES = Object.freeze({
     interval_start: "這一小時的開頭",
-    representative_anchor: "中間（代表時刻）",
+    representative_anchor: "中間（代表性時刻）",
     interval_end: "這一小時的結尾",
-  });
-  // 出處核到哪一層（後端閉集 ANNUAL_SOURCE_VERIFICATION_STATES）的唯一措辭：細節欄的「核對狀態」
-  // 與〈年度時間主星的規則與出處〉方法頁那一句（由 figures 產生）都取這一張。
-  const SOURCE_VERIFICATION = Object.freeze({
-    translation_and_kroll_greek_read_pingree_not_checked: "讀了英譯與 Kroll 希臘文；Pingree 校勘本未核",
-    biruni_and_bonatti_translations_read_abu_mashar_not_checked: "讀了 al-Bīrūnī 與 Bonatti 的英譯；Abū Maʿshar 原書未核",
-    riley_translation_and_firmicus_latin_read_greek_not_checked: "讀了 Valens 的英譯與 Firmicus 的拉丁文；希臘文校勘本未核",
-    research_notes_checked_edition_not_reread: "依研究筆記；校勘本未重讀",
-    bibliographic_record_only_chapter_not_verified: "只核到書目；章節未核",
-    pingree_translation_read_arabic_not_checked: "讀了 Pingree 的英譯；阿拉伯文原文未核",
-    valens_translation_read_abu_mashar_secondary_only: "讀了 Valens 的英譯；Abū Maʿshar 只讀到 Dykes 的介紹，原書未核",
   });
   // 只知日期時三項不算的理由（伺服器的閉集碼）。
   const NOT_APPLICABLE = Object.freeze({
@@ -793,33 +782,70 @@
     return cycle.map((segment) => `${bodyName(segment.labelKey)} ${formatYears(segment.detail.end_year - segment.detail.start_year, 0)}`).join("、");
   }
 
-  const SOURCES = Object.freeze({
+  // 細節欄的出處，一行一條：[方法出處登錄裡那條引文的開頭（一行涵蓋幾條時逐條列出；沒有引文為 null）,
+  // 畫面的字, 核到哪一層（後端閉集）, 句尾補註]。句尾「核到：…」取 labels.js 的 source_reading，
+  // 與結果頁每一條出處同一個說法；整合測試逐行核對層級與公開方法出處登錄裡那幾條引文相同。
+  // 鍵是技法在登錄裡的條目（回應的 source_ref）。
+  const SOURCE_LINES = Object.freeze({
     annual_profection: Object.freeze([
-      "依古希臘占星家 Valens 的書《占星選集》（Anthologiae，第四卷第 11 章）：書裡用「第 35 年」舉例；我們對照希臘原文，那是滿 34 歲的那一年，和本站的數法相同。",
-      "古羅馬作家 Firmicus 的《Mathesis》（書名原意「學問」，第二卷第 27–28 章）也寫了這個方法；這一條依本站的研究筆記，還沒有重讀原書。",
-      "每一年從太陽回到出生時位置的那一刻算起；這個時刻由本站的星曆程式算出，測試另拿美國太空總署噴射推進實驗室（JPL）公開的星曆核對。",
+      ["Vettius Valens, Anthologies IV.11",
+        "依古希臘占星家 Valens 的書《占星選集》（Anthologiae，第四卷第 11 章）：書裡用「第 35 年」舉例；我們對照希臘原文，那是滿 34 歲的那一年，和本站的數法相同。",
+        "original_language_read", "（Kroll 1908 希臘文的這一句；另讀 Riley 英譯；Pingree 校勘本未核）"],
+      ["Firmicus Maternus, Mathesis II.27.3-4, II.28.3",
+        "古羅馬作家 Firmicus 的《Mathesis》（書名原意「學問」，第二卷第 27–28 章）也寫了這個方法。",
+        "secondary_only", "（依本站的研究筆記，還沒有重讀原書）"],
+      [null, "每一年從太陽回到出生時位置的那一刻算起；這個時刻由本站的星曆程式算出，測試另拿美國太空總署噴射推進實驗室（JPL）公開的星曆核對。"],
     ]),
     firdaria: Object.freeze([
-      "al-Bīrūnī《占星術入門》（Kitāb al-Tafhīm）§438–439（Wright 英譯，1934）：期間表、日夜順序；交點不分子期。",
-      "Bonatti《天文學之書》（Decem tractatus astronomiae）Tr.9 Ch.3（Dykes 英譯）：各期年數、日盤順序、75 年後重來；夜盤「一切照日盤」。",
-      "Abū Maʿshar《論本命年的回歸》（Kitāb taḥāwīl sinī al-mawālīd；Dykes 英譯，Persian Nativities IV）：現存最完整的操作說明；本書未核。",
+      ["al-Biruni, Book of Instruction in the Elements of the Art of Astrology §438-439",
+        "al-Bīrūnī《占星術入門》（Kitāb al-Tafhīm）§438–439：期間表、日夜順序；交點不分子期。",
+        "translation_read", "（Wright 1934 英譯，書頁影像）"],
+      ["Bonatti, Liber astronomiae Tr.9 Ch.3",
+        "Bonatti《天文學之書》（Decem tractatus astronomiae）Tr.9 Ch.3：各期年數、日盤順序、75 年後重來；夜盤「一切照日盤」。",
+        "translation_read", "（Dykes 英譯）"],
+      ["Abu Ma'shar, On the Revolutions of the Years of Nativities",
+        "Abū Maʿshar《論本命年的回歸》（Kitāb taḥāwīl sinī al-mawālīd；有 Dykes 英譯，收在 Persian Nativities IV）：現存最完整的操作說明。",
+        "secondary_only", "（本書與英譯都未核）"],
     ]),
-    firdariaNight: "夜盤兩個月交點排在火星之後，是 Zoller 對 Bonatti 的讀法，不是 Bonatti 的原文；本站預設排在水星之後。",
     zodiacal_releasing: Object.freeze([
-      "Vettius Valens《占星選集》（Anthologiae）IV.4（起點、星座年數、小期、解鎖到對宮）、IV.7（從命運點數位置）、IV.8（例盤）、IV.9（分配年 360 日）、IV.10（更細的層級）：Riley 英譯，並對照 Kroll 的希臘文。",
-      "「黃道釋放」這個名稱與「第一層」「第二層」的分層名稱，是現代（Schmidt、Brennan）的整理，不是 Valens 的用語。",
+      [["Vettius Valens, Anthologies IV.4", "Valens IV.7", "Valens IV.8"],
+        "Vettius Valens《占星選集》（Anthologiae）IV.4（起點、星座年數、小期、解鎖到對宮）、IV.7（從命運點數位置）、IV.8（例盤）。",
+        "translation_read", "（Riley 英譯，公開的重排本；Pingree 希臘文未核）"],
+      [["Valens IV.9", "Valens IV.10"],
+        "同書 IV.9（分配年 360 日）、IV.10（更細的層級）。",
+        "original_language_read", "（Kroll 1908 希臘文；另讀 Riley 英譯）"],
+      [null, "「黃道釋放」這個名稱與「第一層」「第二層」的分層名稱，是現代（Schmidt、Brennan）的整理，不是 Valens 的用語。"],
     ]),
     decennials: Object.freeze([
-      "Vettius Valens《占星選集》（Anthologiae）VI.6–VI.7：每段 10 年 9 個月、依出生時的黃道順序、分配年 360 日；Riley 英譯。",
-      "Firmicus Maternus《Mathesis》II.26–27：日盤從太陽、夜盤從月亮起，每段再依小年分成月；拉丁文本。",
+      [["Vettius Valens, Anthologies VI.6", "Valens VI.7"],
+        "Vettius Valens《占星選集》（Anthologiae）VI.6–VI.7：每段 10 年 9 個月、依出生時的黃道順序、分配年 360 日。",
+        "translation_read", "（Riley 英譯，公開的重排本；希臘文未核）"],
+      ["Firmicus Maternus, Mathesis II.26-27",
+        "Firmicus Maternus《Mathesis》II.26–27：日盤從太陽、夜盤從月亮起，每段再依小年分成月。",
+        "original_language_read", "（拉丁文本）"],
     ]),
     monthly_profection: Object.freeze([
-      "古希臘占星家 Valens 的《占星選集》（Anthologiae，第四卷第 28 章）：看此刻的太陽離出生時的太陽多遠，從年度小限的星座數同樣的距離，就是這個月；夜盤改用月亮，本站沒有採用。",
-      "中世紀占星家 Abū Maʿshar 的《論本命年的回歸》（Kitāb taḥāwīl sinī al-mawālīd）：年度小限的星座也是第 1 個月，太陽每多走 30 度換下一個月；我們只讀到英譯者 Dykes 的介紹，原書未核。",
-      "al-Bīrūnī 的《占星術入門》（Kitāb al-Tafhīm，第 522 節）：每個月從太陽走到出生時同一度數算起；同一節另有一年 13 個月的分法，本站沒有算。",
-      "Ptolemy 的《占星四書》（Tetrabiblos）第四卷第 10 章：每 28 天推一個星座，和太陽回歸對不齊，本站沒有算。",
+      ["Vettius Valens, Anthologies IV.28",
+        "古希臘占星家 Valens 的《占星選集》（Anthologiae，第四卷第 28 章）：看此刻的太陽離出生時的太陽多遠，從年度小限的星座數同樣的距離，就是這個月；夜盤改用月亮，本站沒有採用。",
+        "translation_read", "（Riley 英譯；希臘文未核）"],
+      ["Abu Ma'shar, On the Revolutions of the Years of Nativities",
+        "中世紀占星家 Abū Maʿshar 的《論本命年的回歸》（Kitāb taḥāwīl sinī al-mawālīd）：年度小限的星座也是第 1 個月，太陽每多走 30 度換下一個月。",
+        "secondary_only", "（只讀到英譯者 Dykes 的介紹，原書未核）"],
+      ["al-Biruni, Book of Instruction",
+        "al-Bīrūnī 的《占星術入門》（Kitāb al-Tafhīm，第 522 節）：每個月從太陽走到出生時同一度數算起；同一節另有一年 13 個月的分法，本站沒有算。",
+        "translation_read", "（Wright 1934 英譯）"],
+      // 登錄裡這一節只有一條 Ptolemy；只寫作者，書名英文不進畫面字串表。
+      ["Ptolemy",
+        "Ptolemy 的《占星四書》（Tetrabiblos）第四卷第 10 章：每 28 天推一個星座，和太陽回歸對不齊，本站沒有算。",
+        "translation_read", "（Robbins 英譯，在 LacusCurtius 網頁讀了這一章全文）"],
     ]),
   });
+  function sourceLine([, text, reading, note]) {
+    return reading ? `${text}核到：${Labels.label("source_reading", reading)}${note || ""}。` : text;
+  }
+  const SOURCES = Object.freeze(Object.fromEntries(Object.entries(SOURCE_LINES)
+    .map(([ref, rows]) => [ref, Object.freeze(rows.map(sourceLine))])));
+  const FIRDARIA_NIGHT_SOURCE = "夜盤兩個月交點排在火星之後，是 Zoller 對 Bonatti 的讀法，不是 Bonatti 的原文；本站預設排在水星之後。";
 
   // 十年期這次用的起點（回應的 start_profile.profile），白話一句。
   const DECENNIALS_START_TEXT = Object.freeze({
@@ -828,14 +854,14 @@
     user_selected_planet_v1: "這次的起點是你自己指定的行星。",
   });
 
-  // 「校勘本」第一次出現時的白話註解。細節欄一次只顯示一段、一行核對狀態，所以在這一行附一次；
-  // 表本身不帶註解，方法頁在全頁第一次出現的地方另附。
+  // 「校勘本」第一次出現時的白話註解。細節欄一次只顯示一段，所以每一段的出處在第一次出現的地方附一次；
+  // 時間主星表不帶註解，方法頁在全頁第一次出現的地方另附。
   const EDITION_GLOSS = "校勘本（學者比對多份古抄本後整理出的版本）";
 
-  function verificationLine(head) {
-    const code = head && head.source_verification;
-    if (!code) return null;
-    return `核對狀態：${(SOURCE_VERIFICATION[code] || code).replace("校勘本", EDITION_GLOSS)}`;
+  function glossFirstEdition(lines) {
+    const index = lines.findIndex((line) => typeof line === "string" && line.includes("校勘本"));
+    if (index >= 0) lines[index] = lines[index].replace("校勘本", EDITION_GLOSS);
+    return lines;
   }
 
   /** 收據：回應裡這一段的原值（頁面投影的期間只帶出生地日期；UTC 與儒略日在 detailed 回應）。 */
@@ -899,8 +925,7 @@
         ...headReceipt(head, ["profile", "method_status", "method_provenance"]),
         interpretation: null,
       };
-      const line = verificationLine(head);
-      if (line) detail.sources.push(line);
+      glossFirstEdition(detail.sources);
     } else if (item.technique === MONTHLY_LANE) {
       const facts = item.record.detail;
       const n = facts.completed_years;
@@ -928,8 +953,7 @@
         "；古書指定管這個星座的行星（守護行星），就是這個月的月主星。",
       ];
       detail.sources = SOURCES.monthly_profection.slice();
-      const line = verificationLine(head);
-      if (line) detail.sources.push(line);
+      glossFirstEdition(detail.sources);
       detail.receipt = {
         ...segmentReceipt(item.record),
         solar_return_profile: data.yearBoundary ? data.yearBoundary.profile : null,
@@ -974,9 +998,8 @@
         ];
       }
       detail.sources = SOURCES.firdaria.slice();
-      if (day === false) detail.sources.push(SOURCES.firdariaNight);
-      const line = verificationLine(head);
-      if (line) detail.sources.push(line);
+      if (day === false) detail.sources.push(FIRDARIA_NIGHT_SOURCE);
+      glossFirstEdition(detail.sources);
       detail.receipt = {
         ...segmentReceipt(node ? parent : item.record),
         ...headReceipt(head, ["profile", "nocturnal_node_profile", "nocturnal_node_profile_applies", "method_status", "method_provenance"]),
@@ -1027,8 +1050,7 @@
         ];
       }
       detail.sources = SOURCES.zodiacal_releasing.slice();
-      const line = verificationLine(head);
-      if (line) detail.sources.push(line);
+      glossFirstEdition(detail.sources);
       detail.receipt = {
         releasing_from: lot,
         ...segmentReceipt(segment),
@@ -1062,8 +1084,7 @@
         `每一段第一層再分成七小段，由這一段的輪值行星${parent ? `（${parent.label}）` : ""}自己先開始，其餘依同一個黃道順序；每顆行星分到的月數等於它的「小年」（古書給每顆行星的固定年數），七個加起來正好 ${yearModel.months_per_level_1} 個月。`,
       ];
       detail.sources = SOURCES.decennials.slice();
-      const line = verificationLine(head);
-      if (line) detail.sources.push(line);
+      glossFirstEdition(detail.sources);
       detail.methodHref = "/zh-TW/methods/decennials";
       detail.receipt = {
         ...segmentReceipt(item.record),
@@ -1469,7 +1490,7 @@
     return TABLE_TECHNIQUES.map(([technique, key, title]) => {
       const state = model.data[key];
       const head = state.head || {};
-      const verification = head.source_verification || null;
+      const ref = head.source_ref || null;
       return {
         technique,
         title,
@@ -1478,10 +1499,8 @@
         reason_code: state.reason || null,
         reason: state.reason ? notApplicable.get(technique) || null : null,
         profile: head.profile || null,
-        source_verification: verification,
-        source_verification_label: verification
-          ? (Object.prototype.hasOwnProperty.call(SOURCE_VERIFICATION, verification) ? SOURCE_VERIFICATION[verification] : verification)
-          : null,
+        source_ref: ref,
+        sources: ref && SOURCES[ref] ? SOURCES[ref].slice() : [],
       };
     });
   }
@@ -1583,8 +1602,9 @@
       "",
       "## 各技法",
       "",
-      ...tableLines(["技法", "狀態", "沒有算的原因", "算法代碼", "出處核對"], document.techniques.map((entry) => [
-        entry.title, entry.status_label, tableText(entry.reason), tableText(entry.profile), tableText(entry.source_verification_label),
+      ...tableLines(["技法", "狀態", "沒有算的原因", "算法代碼", "出處"], document.techniques.map((entry) => [
+        entry.title, entry.status_label, tableText(entry.reason), tableText(entry.profile),
+        tableText(entry.sources.length ? entry.sources.join(" ") : null),
       ])),
       "",
       "## 期間",
@@ -1628,7 +1648,7 @@
       add("狀態", entry.status_label, entry.status);
       if (entry.reason_code) add("沒有算的原因", entry.reason, entry.reason_code);
       add("算法代碼", entry.profile, "");
-      add("出處核對", entry.source_verification_label, entry.source_verification);
+      entry.sources.forEach((line) => add("出處", line, entry.source_ref));
     });
     groupedPeriods(document).forEach((group) => {
       group.periods.forEach((period, index) => {
@@ -1675,7 +1695,8 @@
     SAMPLE_ORDER,
     DECENNIALS_START_PROFILES,
     DECENNIALS_PLANETS,
-    SOURCE_VERIFICATION,
+    SOURCE_LINES,
+    SOURCES,
     adaptAnnualSource,
     mergeLevel2,
     annualRequestBody,

@@ -222,3 +222,113 @@
 /* 窄螢幕上表格在自己的捲動區裡橫捲：第一欄（名稱）不斷行，圖說不超出視窗寬 */
 .ar-table th:first-child, .ar-table td:first-child{white-space:nowrap}
 .ar-table caption{max-width:min(44rem, 82vw)}
+
+/* ─── 宮位制天球圖（scripts/frontend/scripts/house-sphere.js 畫的互動圖，與 scripts/frontend/figures/house_sphere.py 產生的靜態圖共用） ───
+ * 方向甲（銅版星圖）：只用墨色，圓與線靠粗細、虛實與排線分辨，不靠顏色；朱紅不出現在圖上（這張圖沒有「指著」的標記）。
+ * 圖上的顏色、線寬與字級都只經這組 --hs-* 自訂屬性，指向 tokens.css 的 --fx-*。地平下的半球與極區的黃道段用
+ * figures.css 的排線（頁面的 fx-defs 圖樣）。靜態圖是文章圖版（.fx-wide／.fx-narrow），字級由 .fx-t／.fx-small 決定。 */
+.hs-svg{
+  --hs-ball: var(--paper);
+  --hs-ink: var(--fx-ink);
+  --hs-dim: var(--fx-dim);
+  --hs-w-hair: .8px;
+  --hs-w-line: 1.2px;
+  --hs-w-strong: 2.8px;
+  --hs-w-ecliptic: 5px;
+  --hs-back-opacity: .4;
+  --hs-font: 20px;
+}
+.ar-fig svg.hs-svg{max-width:40rem; margin:0 auto; touch-action:none}
+.hs-svg polyline, .hs-plate line{fill:none; stroke-linecap:round; stroke-linejoin:round}
+.hs-svg .hs-ball{fill:var(--hs-ball); stroke:var(--hs-ink); stroke-width:var(--hs-w-line)}
+.hs-svg .hs-ground{fill:url(#fx-dots); stroke:none}
+.hs-svg .hs-hor{stroke:var(--hs-ink); stroke-width:2px}
+.hs-svg .hs-mer{stroke:var(--hs-dim); stroke-width:var(--hs-w-hair)}
+.hs-svg .hs-equ{stroke:var(--hs-ink); stroke-width:var(--hs-w-line); stroke-dasharray:9 4}
+.hs-svg .hs-pv{stroke:var(--hs-ink); stroke-width:var(--hs-w-line); stroke-dasharray:1.5 3.5}
+.hs-svg .hs-strong{stroke-width:var(--hs-w-strong)}
+.hs-svg .hs-cut{stroke:var(--hs-dim); stroke-width:var(--hs-w-line)}
+.hs-svg .hs-cut-faint{stroke-width:var(--hs-w-hair)}
+.hs-svg .hs-day{stroke:var(--hs-dim); stroke-width:var(--hs-w-hair); stroke-dasharray:3 3}
+.hs-svg .hs-arc{stroke:var(--hs-ink); stroke-width:3.2px; stroke-dasharray:7 4; stroke-linecap:butt}
+.hs-svg .hs-arc-thin{stroke-width:2.4px}
+.hs-svg .hs-none{stroke:url(#fx-h2); stroke-width:11px; stroke-linecap:butt}
+.hs-svg .hs-ecl{stroke-width:var(--hs-w-ecliptic)}
+.hs-svg .hs-ecl-a{stroke:var(--hs-ink)}
+.hs-svg .hs-ecl-b{stroke:var(--hs-dim)}
+.hs-svg .hs-ecl-plain{stroke:var(--hs-ink); stroke-width:2.6px}
+.hs-svg .hs-tick{stroke:var(--hs-ink); stroke-width:1px}
+.hs-svg .hs-back{stroke-dasharray:4 5; stroke-opacity:var(--hs-back-opacity)}
+.hs-svg .hs-pt{stroke-width:1.2px}
+.hs-svg .hs-pt-ink, .hs-svg .hs-pt-acc, .hs-svg .hs-pt-pv{fill:var(--hs-ink); stroke:var(--hs-ink)}
+.hs-svg .hs-pt-dim{fill:var(--hs-dim); stroke:var(--hs-dim)}
+.hs-svg .hs-pt-hor, .hs-svg .hs-pt-equ{fill:var(--hs-ball); stroke:var(--hs-ink)}
+.hs-svg .hs-pt.hs-back{fill:none; stroke-dasharray:none}
+.hs-svg .hs-t, .hs-svg .hs-tx{font-family:var(--fx-face); fill:var(--hs-ink); text-anchor:middle;
+  paint-order:stroke; stroke:var(--hs-ball); stroke-width:4px; stroke-linejoin:round}
+.hs-svg .hs-t{font-size:var(--hs-font)}
+.hs-svg .hs-t-dim, .hs-svg .hs-t-back, .hs-svg .hs-t-sign{fill:var(--hs-dim)}
+.hs-svg .hs-t-axis, .hs-svg .hs-t-hor, .hs-svg .hs-t-flag, .hs-svg .hs-t-num,
+.hs-svg .hs-tx-axis, .hs-svg .hs-tx-hor, .hs-svg .hs-tx-num, .fx .hs-tx-b{font-weight:700}
+.hs-svg .hs-t-num, .hs-svg .hs-tx-num{font-family:var(--fx-num); font-variant-numeric:tabular-nums}
+.hs-svg .hs-t-sign{font-size:18px}
+.hs-svg .hs-title .hs-t{text-anchor:start}
+.hs-svg .hs-t-end, .hs-svg .hs-tx-end{text-anchor:end}
+@media (max-width:640px){
+  .hs-svg{--hs-font:24px}
+  .hs-svg .hs-t-sign{display:none}
+}
+@media print{
+  .hs-svg{--hs-ball:var(--print-bg)}
+}
+
+/* 互動版的版面：圖在左，控制項、說明與宮頭表在右；窄螢幕上下排。 */
+.hs-live{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,21rem); gap:var(--s2) var(--s3); align-items:start}
+.hs-live[hidden], .hs-nojs[hidden], .hs-warn[hidden]{display:none}
+.hs-nojs{font-size:.95rem; color:var(--ink-dim)}
+.hs-help{font-size:var(--fs-note); line-height:var(--lh-note); color:var(--ink-dim); margin:var(--s1) 0}
+.hs-view, .hs-presets{display:flex; flex-wrap:wrap; gap:.4rem}
+.hs-btn{font:inherit; font-size:.86rem; line-height:1.4; color:var(--ink); background:var(--paper);
+  border:1px solid var(--hair); border-radius:var(--radius); padding:.35rem .7rem; cursor:pointer; min-height:2.2rem}
+.hs-btn[aria-pressed="true"]{border-color:var(--fx-ink); background:var(--fx-ink); color:var(--paper)}
+.hs-btn:focus-visible, .hs-svg:focus-visible, .hs-set input:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.hs-set{border:1px solid var(--hair); padding:.5rem .8rem .8rem; margin:0 0 var(--gap-group); min-width:0}
+.hs-set legend{font-size:var(--fs-note); color:var(--ink-dim); padding:0 .3rem}
+.hs-group{font-size:var(--fs-small); color:var(--ink-faint); margin:.3rem 0 .1rem}
+.hs-choices{display:flex; flex-wrap:wrap; gap:.2rem .9rem}
+.hs-choices label{display:inline-flex; align-items:center; gap:.3rem; font-size:.95rem; min-height:2rem; cursor:pointer}
+.hs-choices input{accent-color:var(--accent)}
+.hs-row{display:grid; grid-template-columns:4.5rem minmax(0,1fr); gap:.2rem .6rem; align-items:center; margin:.4rem 0}
+.hs-row input[type="range"]{width:100%; accent-color:var(--accent); min-height:2rem}
+.hs-row output{grid-column:2; font-family:var(--mono); font-size:var(--fs-note); color:var(--ink-dim)}
+.hs-caption{border-left:3px solid var(--accent); padding:.1rem 0 .1rem .8rem; margin:var(--gap-group) 0}
+.hs-caption p{font-size:.92rem; line-height:var(--lh-note); margin:0 0 .3rem}
+.hs-cap-title{font-family:var(--serif); font-size:1.1rem !important; color:var(--ink)}
+.hs-warn{font-size:.9rem; line-height:var(--lh-note); color:var(--state-refused); border:1px solid var(--state-refused);
+  padding:.4rem .7rem; margin:var(--gap-related) 0 var(--gap-group)}
+.hs-strip svg{display:block; width:100%; height:auto; max-width:none}
+.hs-strip .hs-bar-a{fill:var(--fx-ink)}
+.hs-strip .hs-bar-b{fill:url(#fx-h1); stroke:var(--fx-ink); stroke-width:1px}
+.hs-strip .hs-t{font-family:var(--fx-num); font-size:28px; text-anchor:middle; fill:var(--fx-ink)}
+.hs-strip .hs-t-bar-a{fill:var(--paper); font-size:24px}
+.hs-strip .hs-t-bar-b{fill:var(--fx-ink); font-size:24px; paint-order:stroke; stroke:var(--paper); stroke-width:5px}
+.hs-table td{padding:.25rem .6rem .25rem 0}
+.hs-sr{position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
+.hs-gallery{margin:var(--s2) 0 var(--s3)}
+/* 窄螢幕：圖之後緊接宮位制選項，再來是緯度與恆星時、視角按鈕與說明。 */
+@media (max-width:60rem){
+  .hs-live{display:flex; flex-direction:column; align-items:stretch; gap:var(--s1)}
+  .hs-stage, .hs-side{display:contents}
+  .hs-live .hs-svg{order:1}
+  .hs-live .hs-set{order:2; margin-bottom:0}
+  .hs-live .hs-view{order:3}
+  .hs-live .hs-help{order:4}
+  .hs-live .hs-caption{order:5}
+  .hs-live .hs-warn{order:6}
+  .hs-live .hs-strip{order:7}
+  .hs-live .ar-scroll{order:8}
+}
+@media print{
+  .hs-live, .hs-live[hidden]{display:none}
+  .hs-nojs[hidden]{display:block}
+}

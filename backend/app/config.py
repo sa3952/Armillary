@@ -98,7 +98,7 @@ LUNAR_APSIDES = [
     },
     {
         "key": "natural_lilith",
-        "zh": "自然／插值月球遠地點（Lilith）",
+        "zh": "自然黑月 Lilith",
         "id": swe.INTP_APOG,
         "expose_swiss_body_id": True,
         "calculation_source": (
@@ -112,7 +112,7 @@ LUNAR_APSIDES = [
     },
     {
         "key": "natural_priapus",
-        "zh": "自然／插值月球近地點（Priapus）",
+        "zh": "自然月球近地點 Priapus",
         "id": swe.INTP_PERG,
         "expose_swiss_body_id": True,
         "calculation_source": (

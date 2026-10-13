@@ -46,6 +46,7 @@ import swisseph as swe
 
 from ..config import PRODUCT_YEAR_RANGE
 from .root_finding import SOLVER_NAME, find_crossings_detailed, wrap_to_signed_180
+from .source_reading import SOURCE_READING_LEVELS
 from .time_utils import jd_ut_to_iso_utc, time_scale_for_jd_ut
 
 YEAR_BOUNDARY_DEFINITION = "solar_return_root_v1"
@@ -301,8 +302,8 @@ def year_boundary_record(clock: SolarReturnClock, *, completed_years: int) -> di
     }
 
 
-# The annual route carries these in its own response and register
-# (method_sources.annual_candidate_register), not in the /api/chart register.
+# Entries of the published method source register; the annual route's
+# responses name that register, as /api/chart's do.
 METHOD_SOURCE_ENTRIES: dict[str, dict] = {
     "year_boundary": {
         "applies_to": "year_boundary",
@@ -329,12 +330,24 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "Horizons (DE441) in the test suite."
         ),
         "sources": [
-            "Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, "
-            "Persian Nativities IV (2019): revolutions used together with profections and "
-            "firdaria; bibliographic record only, chapter and page not verified",
-            "Swiss Ephemeris 2.10.03 swe_solcross_ut: the crossing the test suite compares "
-            "the product's own search against (same engine, another algorithm)",
+            {
+                "citation": (
+                    "Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, "
+                    "Persian Nativities IV (2019)"
+                ),
+                "says": "revolutions used together with profections and firdaria",
+                "reading": SOURCE_READING_LEVELS[3],
+                "read_at": "bibliographic record only; chapter and page not verified",
+            },
+            {
+                "citation": "Swiss Ephemeris 2.10.03 swe_solcross_ut",
+                "says": (
+                    "the crossing the test suite compares the product's own search against "
+                    "(same engine, another algorithm)"
+                ),
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": "the library's source code and documentation",
+            },
         ],
-        "source_verification": "bibliographic_record_only_chapter_not_verified",
     },
 }

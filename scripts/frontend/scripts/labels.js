@@ -124,8 +124,8 @@
     // 兩邊一致由整合測試對照。
     lunar_apsis_backend_name: Object.freeze({
       mean_lilith: "平均黑月 Lilith",
-      natural_lilith: "自然／插值月球遠地點（Lilith）",
-      natural_priapus: "自然／插值月球近地點（Priapus）",
+      natural_lilith: "自然黑月 Lilith",
+      natural_priapus: "自然月球近地點 Priapus",
     }),
     // 出處核到哪一層（後端 core/source_reading.py 的閉集，依此順序）：結果頁每一條出處的句尾
     // 「核到：…」都取這一組。任何譯本（包括阿拉伯著作的中世紀拉丁文譯本）都是「親讀譯本」，

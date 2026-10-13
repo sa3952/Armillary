@@ -18,6 +18,8 @@ from __future__ import annotations
 
 from fractions import Fraction
 
+from .source_reading import SOURCE_READING_LEVELS
+
 SEVEN_PLANETS = ("sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn")
 
 YEAR_KINDS = ("minor", "middle", "greater", "greatest")
@@ -51,23 +53,48 @@ _SOURCES: dict[str, dict] = {
     "minor": {
         "verification": ATTESTED,
         "sources": [
-            "Vettius Valens, Anthologies IV.1 and IV.30 (Riley translation via the public "
-            "re-typeset janegca/latex-valens): the quarter periods are a quarter of these "
-            "least periods (Saturn 7 1/2, Jupiter 3, Mars 3 3/4, Venus 2, Mercury 5, Sun "
-            "4 3/4, Moon 6 1/4)",
-            "Firmicus Maternus, Mathesis II.27 (Kroll-Skutsch Teubner Latin, LacusCurtius): "
-            "the months of the decennial sub-periods, Sun 19, Moon 25, Saturn 30, Jupiter "
-            "12, Mars 15, Venus 8, Mercury 20",
-            "Dorotheus, Carmen Astrologicum I.23 (Pingree 1976): the same years for a "
-            "benefic on an angle; the Moon in a masculine sign only 25 months",
+            {
+                "citation": "Vettius Valens, Anthologies IV.1 and IV.30",
+                "says": (
+                    "the quarter periods are a quarter of these least periods (Saturn 7 1/2, "
+                    "Jupiter 3, Mars 3 3/4, Venus 2, Mercury 5, Sun 4 3/4, Moon 6 1/4)"
+                ),
+                "reading": SOURCE_READING_LEVELS[1],
+                "read_at": "Riley's English translation via the public re-typeset janegca/latex-valens",
+            },
+            {
+                "citation": "Firmicus Maternus, Mathesis II.27 (Kroll-Skutsch Teubner)",
+                "says": (
+                    "the months of the decennial sub-periods, Sun 19, Moon 25, Saturn 30, "
+                    "Jupiter 12, Mars 15, Venus 8, Mercury 20"
+                ),
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": "the Latin text of the Kroll-Skutsch Teubner edition, LacusCurtius",
+            },
+            {
+                "citation": "Dorotheus, Carmen Astrologicum I.23 (Pingree 1976)",
+                "says": (
+                    "the same years for a benefic on an angle; the Moon in a masculine sign "
+                    "only 25 months"
+                ),
+                "reading": SOURCE_READING_LEVELS[1],
+                "read_at": "Pingree's English translation (1976); the Arabic not checked",
+            },
         ],
     },
     "greater": {
         "verification": ATTESTED,
         "sources": [
-            "Valens, Anthologies IV.30 (Riley translation via the re-typeset): the row he "
-            "calls 'maximum', i.e. the periods usually called the greater years; III.10 "
-            "mentions giving the greatest, the mean or the least years as the case requires",
+            {
+                "citation": "Valens, Anthologies IV.30",
+                "says": (
+                    "the row he calls 'maximum', i.e. the periods usually called the greater "
+                    "years; III.10 mentions giving the greatest, the mean or the least years "
+                    "as the case requires"
+                ),
+                "reading": SOURCE_READING_LEVELS[1],
+                "read_at": "Riley's English translation via the re-typeset",
+            },
         ],
         "note": (
             "Venus 82 as printed in IV.30; the re-typeset's note at III.10 says Venus's "
@@ -76,18 +103,20 @@ _SOURCES: dict[str, dict] = {
     },
     "middle": {
         "verification": DERIVED_MEAN,
-        "sources": [
+        "sources": [],
+        "note": (
             "computed here as (minor + greater) / 2; no Hellenistic text giving these "
-            "values or naming the 'middle' years has been found",
-        ],
+            "values or naming the 'middle' years has been found"
+        ),
     },
     "greatest": {
         "verification": LATER_ONLY,
-        "sources": [
+        "sources": [],
+        "note": (
             "no value is given: later (medieval) literature tabulates greatest years, but "
             "no Hellenistic source was found and no primary text was checked, so the cells "
-            "stay empty until one is",
-        ],
+            "stay empty until one is"
+        ),
     },
 }
 VERIFICATION_BY_KIND = {kind: _SOURCES[kind]["verification"] for kind in YEAR_KINDS}
@@ -128,6 +157,5 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         "table": planetary_years_table(),
         "verification_states": list(VERIFICATION_STATES),
         "columns": {kind: dict(_SOURCES[kind]) for kind in YEAR_KINDS},
-        "source_verification": "riley_translation_and_firmicus_latin_read_greek_not_checked",
     },
 }

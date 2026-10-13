@@ -1010,11 +1010,16 @@ def exercise_requests(base_url: str, canary: Canary) -> dict[str, object]:
             request_ids.append(value)
         return status
 
-    invalid = json.loads(canary.payload_bytes)
+    # A canary derived from the annual smoke body carries its `annual` member, which the
+    # chart route refuses; the chart cases send the chart body it was derived from.
+    chart_payload = json.loads(canary.payload_bytes)
+    chart_payload.pop("annual", None)
+    chart_body = json.dumps(chart_payload, separators=(",", ":")).encode("utf-8")
+    invalid = json.loads(chart_body)
     invalid["datetime"]["month"] = 13
     invalid[canary.marker] = canary.marker
     cases: dict[str, object] = {
-        "success": chart(canary.payload_bytes),
+        "success": chart(chart_body),
         "422": chart(json.dumps(invalid).encode()),
         "malformed": chart(b'{"canary":"' + canary.marker.encode()),
         "413": chart(canary.marker.encode() + b"x" * (17 * 1024)),

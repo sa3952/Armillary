@@ -23,3 +23,7 @@ Licence texts: `OFL-noto-sans-symbols.txt`（the same file in both Symbols direc
 `6843f31878c9945e1e71e1baa275546b4eefead8`）, copied byte for byte except the one trailing space at the end of
 line 21, which the repository's whitespace check refuses. Neither declares a Reserved Font Name; the
 derived glyph set is still not called by any font's name.
+
+The article figures（`scripts/frontend/figures/_fx.py`）reuse the same paths, read from `chart-glyphs.js`：each
+article page with figures carries the glyphs it draws as SVG `<symbol>`s in one sprite, whose `<metadata>`
+holds the copyright lines and the full licence text, as the script's header does.

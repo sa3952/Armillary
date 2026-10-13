@@ -9,6 +9,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 
 from ..config import PRODUCT_YEAR_RANGE
+from .formatting import dms_text
 from .method_status import METHOD_STATUS_PROVISIONAL
 from .module_state import EVENT_SEARCH_REASON_CODES, MODULE_STATUSES
 import datetime as dtmod
@@ -50,7 +51,7 @@ MODULE_NAMES_ZH = {
     "planetary_hours": "行星日與行星時",
     "dodecatemoria": "十二分部",
     "lunar_mansions": "月宿",
-    "solar_phase": "各行星離太陽多遠",
+    "solar_phase": "焦傷與光束下",
     "classical_classifications": "行星與宮的古典分類",
     "extra_angles": "額外角點",
     "birth_time_sensitivity": "出生時刻敏感度",
@@ -304,7 +305,7 @@ def _near_cusp_warnings(planet_in_house: dict) -> Iterator[dict]:
                 "落宮對出生時刻誤差敏感（上升點每約 4 分鐘移動 1°）："
                 + "、".join(
                     f"{item['name']}（第 {item['house']} 宮，"
-                    f"距宮頭黃經差 {item['distance_to_nearest_cusp_degrees']:.4f}°）"
+                    f"距宮頭黃經差 {dms_text(item['distance_to_nearest_cusp_degrees'])}）"
                     for item in near_cusp
                 )
             ),
@@ -348,7 +349,7 @@ def _near_sign_boundary_warnings(
                 "星座歸屬對出生日期／時刻誤差敏感："
                 + "、".join(
                     f"{body['name']}（"
-                    f"{min(body['longitude'] % 30.0, 30.0 - (body['longitude'] % 30.0)):.4f}°）"
+                    f"{dms_text(min(body['longitude'] % 30.0, 30.0 - (body['longitude'] % 30.0)))}）"
                     for body in near_sign_boundary
                 )
             ),
@@ -994,8 +995,8 @@ def _classical_sect_within_hour_warnings(classical: dict | None) -> Iterator[dic
         (
             "你給的出生時刻只到小時，而太陽在這一小時之內越過地平線："
             "這一小時裡有一段是日盤、一段是夜盤。"
-            f"「{MODULE_NAMES_ZH['classical_classifications']}」照代表時刻判為"
-            f"{'日盤' if is_day else '夜盤'}；行星屬日間或夜間一組、halb 與 hayyiz（hayz）"
+            f"「{MODULE_NAMES_ZH['classical_classifications']}」照代表性時刻判為"
+            f"{'日盤' if is_day else '夜盤'}；行星屬白天或夜晚一組、halb 與 hayyiz（hayz）"
             "都跟著日盤或夜盤判定，所以在這一小時內也可能改變。"
         ),
         "derived_methods.classical_classifications",

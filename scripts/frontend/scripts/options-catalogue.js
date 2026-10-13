@@ -36,6 +36,8 @@
     { key: "geometry", in_advanced: true,  label_zh: "幾何推導",   label_en: "Derived geometry" },
     { key: "aspects", in_advanced: true,   label_zh: "相位",       label_en: "Aspects" },
     { key: "dignities", in_advanced: true, label_zh: "本質尊貴",   label_en: "Essential dignities" },
+    // 與結果頁〈古典判斷〉同名：焦傷是偶然的減損，行星與宮的分類也不是本質尊貴。
+    { key: "classical", in_advanced: true, label_zh: "古典判斷",   label_en: "Classical doctrine" },
   ]);
 
   /**
@@ -72,7 +74,7 @@
       label_zh: "凱龍星", label_en: "Chiron", default: false },
     { key: "include_lilith_priapus", group: "bodies", type: "boolean",
       label_zh: "Lilith 與 Priapus（目前一起計算）", label_en: "Lilith and Priapus", default: false,
-      help_zh: "勾選後一次算出三個點，目前無法只取其一；它們都是月球軌道上的點，不是天體。平均黑月 Lilith：月球軌道離地球最遠那一點的平均位置，等速前進。自然／插值月球遠地點（Lilith）：把月亮實際經過最遠點的位置連起來推算（這就是「插值」），會在平均位置前後擺動。自然／插值月球近地點（Priapus）：月球軌道離地球最近的那一點，同樣依實際位置推算；它另外計算，通常不正好在遠地點的對面。本產品不提供第三方軟體常稱 True Lilith 的密切遠地點（把此刻的瞬時軌道當成橢圓求出的最遠點；Swiss Ephemeris 文件說它相對平均位置的擺幅約 ±30°），這裡的 Lilith 也不是小行星 1181 Lilith。" },
+      help_zh: "勾選後一次算出三個點，目前無法只取其一；它們都是月球軌道上的點，不是天體。平均黑月 Lilith：月球軌道離地球最遠那一點的平均位置，等速前進。自然黑月 Lilith：依月亮實際經過最遠點的位置推算，會在平均位置前後擺動。自然月球近地點 Priapus：月球軌道離地球最近的那一點，同樣依實際位置推算；它另外計算，通常不正好在自然黑月 Lilith 的對面。本產品不提供第三方軟體常稱 True Lilith 的密切遠地點（把此刻的瞬時軌道當成橢圓求出的最遠點；Swiss Ephemeris 文件說它相對平均位置的擺幅約 ±30°），這裡的 Lilith 也不是小行星 1181 Lilith。" },
     { key: "include_south_nodes", group: "bodies", type: "boolean",
       label_zh: "南交點", label_en: "South nodes", default: false },
     { key: "moon_position_profile", group: "bodies", type: "choice",
@@ -109,10 +111,10 @@
         { value: "C", label_zh: Labels.VOCABULARIES.house_system.C, label_en: "Campanus",
           help_zh: "把卯酉圈（通過天頂與正東、正西的大圓）每 30 度一分，再用通過地平正南、正北兩點的大圓投到黃道上。" },
       ],
-      // 選單裡的分組只依幾何分類，不表示推薦。四分宮制一組依出現年代排列，組名寫明。
+      // 選單裡的分組只依幾何分類，不表示推薦。四分宮制一組依名稱年代（名字來源人物的年代）排列，組名寫明。
       value_groups: [
         { key: "equal_size", label_zh: "每宮 30 度", values: ["W", "E"] },
-        { key: "quadrant", label_zh: "四分宮制（依出現年代）", values: ["O", "B", "C", "R", "P"] },
+        { key: "quadrant", label_zh: "四分宮制（依名稱年代）", values: ["O", "B", "C", "R", "P"] },
       ],
       help_zh: "整宮與等分宮每宮都是 30 度。四分宮制先用上升點與中天（黃道在上子午圈的那一點；子午圈是通過天頂與正南、正北的大圓）把一圈分成四段，每段再分成三宮，所以宮的大小不一。七種平等提供，本產品不排序其歷史適用性；一次計算一種。" },
 
@@ -132,8 +134,8 @@
 
     // ── 月相與食 ─────────────────────────────────────────
     { key: "include_lunar_phases", group: "lunar", type: "boolean",
-      label_zh: "朔望", label_en: "Lunar phases", default: false,
-      help_zh: "朔望會搜尋出生時刻前後的事件。「產前朔望」是出生前最近一次朔或望；Ptolemy 用它的度數來定上升度數（《占星四書》III.2）。結果列出它的時刻與度數，不拿它去推算上升點或壽命。",
+      label_zh: "朔望", label_en: "New and full moons (syzygies)", default: false,
+      help_zh: "朔望會搜尋出生時刻前後的事件。「產前朔望」是出生前最近一次朔或望；Ptolemy 用它的度數來定上升度數（《占星四書》（Tetrabiblos）III.2）。結果列出它的時刻與度數，不拿它去推算上升點或壽命。",
       availability: {
         range_tail_may_be_unavailable: true,
         unavailable_result_preserves_core_chart: true,
@@ -275,7 +277,7 @@
       help_zh: "並列比較不會改變你選定的那一套；回應中 selected_profiles 與 research_comparison_profiles 分開。" },
 
     // ── 行星與宮的古典分類（本質尊貴一組）──────────────────
-    { key: "include_classical_classifications", group: "dignities", type: "boolean",
+    { key: "include_classical_classifications", group: "classical", type: "boolean",
       label_zh: "行星與宮的古典分類", label_en: "Classical planet and place classifications", default: false,
       help_zh: "列出古書怎麼分類七顆行星（吉星、凶星、屬白天或夜晚一組、喜樂宮、hayz 與 halb）與十二宮（名稱、始宮／續宮／果宮、好壞），每一條寫明出自哪本書、核到哪一層；各書說法不同時並列。想照古書看這張盤的行星屬性時才需要。" },
 
@@ -293,10 +295,10 @@
       help_zh: "兩種都是把星座內的度數放大，再從同一星座的起點往後數；差在乘以 12 還是乘以 13。古書有這兩種算法，同一個點常落在不同星座。兩種平等提供，結果會寫明用的是哪一種。" },
 
     // ── 焦傷與光束下（行星離太陽多近）──────────────────────
-    { key: "include_solar_phase", group: "dignities", type: "boolean",
+    { key: "include_solar_phase", group: "classical", type: "boolean",
       label_zh: "焦傷與光束下", label_en: "Combustion and under the beams (cazimi)", default: false,
       help_zh: "古典占星看行星離太陽多近：日輪內（cazimi）、焦傷（combust）、在光束下。勾選後列出月亮與五顆行星在黃道上離太陽幾度、落在哪一個距離帶，出生前後 7 天內是否升出或隱入光束，並照原典附上各家怎麼說。三種分法的結果都會列出。" },
-    { key: "solar_phase_profile", group: "dignities", type: "choice",
+    { key: "solar_phase_profile", group: "classical", type: "choice",
       label_zh: "焦傷的界線", label_en: "Combustion limits", default: "lilly_1647_p113_v1",
       depends_on: "include_solar_phase",
       values: [
@@ -305,7 +307,7 @@
         { value: "biruni_wright_v1", label_zh: "al-Bīrūnī：16′、6°、依行星 12°–18°", label_en: "al-Bīrūnī: 16′, 6°, 12°–18° by planet" },
       ],
       help_zh: "古書的界線彼此不同，同一顆行星可能在一家算焦傷、在另一家算在光束下。這裡選的那一套放在第一張表；三套的結果都另列在「三種分法對照」。" },
-    { key: "solar_phase_disc_cazimi", group: "dignities", type: "boolean",
+    { key: "solar_phase_disc_cazimi", group: "classical", type: "boolean",
       label_zh: "日輪內改看太陽圓面", label_en: "Cazimi on the solar disc", default: false,
       depends_on: "include_solar_phase",
       help_zh: "改用「行星中心落在太陽圓面內」判定日輪內：看天空中的實際夾角，不看黃經差。古書多半只看黃經，這是另一種讀法，所以不預設；希臘化那一套沒有日輪內，選了也不套用。" },

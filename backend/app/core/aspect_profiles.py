@@ -5,6 +5,8 @@ Tables only: ``core.aspects`` evaluates a chart against them.
 
 from __future__ import annotations
 
+from .source_reading import SOURCE_READING_LEVELS
+
 # 合相＋四種傳統相位（俗稱「托勒密五大相位」，該俗稱是雙重誤稱）：
 # Tetrabiblos I.13 只列四種配置——六分（2 sign／60°）、刑（3／90°）、拱（4／120°）、
 # 沖（6／180°）；合相不在該清單。Ptolemy 於 I.24 另以 bodily conjunction 與
@@ -155,6 +157,12 @@ PAIR_COMBINATION_RULE_PROVENANCE_STATES = (
     "product_normalization",
 )
 
+# The lineage's primary texts were not transcribed: their values are Birchfield's.
+_AS_TABULATED_BY_BIRCHFIELD = (
+    "as tabulated by Steven Birchfield, 'Orbs of Influence' (2nd ed. 2013); the "
+    "primary text was not independently transcribed"
+)
+
 ORB_PROFILES: dict[str, dict] = {
     # 鍵名說「lineage」而非「consensus」：重複出現的數字證明的是傳承，不是彼此獨立的
     # 來源一致（見 source_verification.independence_claim_withdrawn）。
@@ -176,9 +184,6 @@ ORB_PROFILES: dict[str, dict] = {
         "pair_combination_rule_provenance": "one_of_views_recorded_in_named_text",
         "source_verification": {
             "primary_texts_independently_transcribed": False,
-            "tabulated_from": (
-                "Steven Birchfield, 'Orbs of Influence', 2nd ed. 2013 (secondary)"
-            ),
             "independence_claim_withdrawn": (
                 "Holden notes a probable derivation relationship between the "
                 "Porphyry chapter and Sahl; Pingree regards chs. 53-55 as a "
@@ -189,25 +194,93 @@ ORB_PROFILES: dict[str, dict] = {
             "renamed_from": "abu_mashar_consensus_v1",
             "evidence_standard": "secondary_tabulation_permitted_when_disclosed",
         },
+        "tabulated_from": [
+            {
+                "citation": "Steven Birchfield, 'Orbs of Influence', 2nd ed. 2013",
+                "says": "the seven orb values of this table",
+                "reading": SOURCE_READING_LEVELS[2],
+                "read_at": (
+                    "Birchfield's secondary tabulation, from which the table was taken; "
+                    "the primary texts were not independently transcribed"
+                ),
+            },
+        ],
         "sources": [
-            "Porphyry, Introduction to the Tetrabiblos §55 (trans. Holden, AFA 2009)",
-            "Abū Maʿshar, Abbreviation of the Introduction to Astrology II.11-12 "
-            "(Burnett-Yamamoto-Yano, Brill 1994; ARHAT ed. 1997, 2nd printing 2000); "
-            "Dykes, ITA (2010) §II.6 pp.90-91",
-            "Abū Maʿshar, The Great Introduction to Astrology, ed. Yamamoto, Burnett "
-            "and Pingree (2019), English translation: VII.3 lines 204-210 (the seven "
-            "values) and VII.5 lines 443-465 (application and separation); the "
-            "Arabic text and the Dykes ITA (2010) locators are not compared",
-            "Sahl ibn Bishr, Introduction ch.3 §§13-18, trans. Dykes, The Astrology "
-            "of Sahl b. Bishr vol. I (Cazimi 2019), via Birchfield, The Planets "
-            "Degrees of Influence (rev. 2019) pp.5-6 n.12",
-            "Ibn Ezra, The Beginning of Wisdom ch. IV (trans. Epstein, ARHAT 1998)",
-            "Bonatti, Liber Astronomiae Tract III chs. LXV-LXXI (trans. Zoller, 1994; "
-            "values not checked; publisher and chapters to be confirmed)",
-            "al-Bīrūnī, The Book of Instruction in the Elements of the Art of "
-            "Astrology, trans. R. Ramsay Wright (London: Luzac 1934) §436: the same "
-            "seven values (archive.org typescript reproduction, whose page numbers "
-            "differ from the Luzac print; cited by section)",
+            {
+                "citation": (
+                    "Porphyry, Introduction to the Tetrabiblos §55 (trans. Holden, AFA 2009)"
+                ),
+                "says": "the seven orb values of this table",
+                "reading": SOURCE_READING_LEVELS[2],
+                "read_at": _AS_TABULATED_BY_BIRCHFIELD,
+            },
+            {
+                "citation": (
+                    "Abū Maʿshar, Abbreviation of the Introduction to Astrology II.11-12 "
+                    "(Burnett-Yamamoto-Yano, Brill 1994; ARHAT ed. 1997, 2nd printing "
+                    "2000); Dykes, ITA (2010) §II.6 pp.90-91"
+                ),
+                "says": "the seven orb values of this table",
+                "reading": SOURCE_READING_LEVELS[2],
+                "read_at": _AS_TABULATED_BY_BIRCHFIELD,
+            },
+            {
+                "citation": (
+                    "Abū Maʿshar, The Great Introduction to Astrology, ed. Yamamoto, "
+                    "Burnett and Pingree (2019), VII.3 lines 204-210 and VII.5 lines "
+                    "443-465"
+                ),
+                "says": (
+                    "the seven values (VII.3 lines 204-210); application and separation "
+                    "(VII.5 lines 443-465)"
+                ),
+                "reading": SOURCE_READING_LEVELS[1],
+                "read_at": (
+                    "the edition's English translation; the Arabic text and the Dykes "
+                    "ITA (2010) locators are not compared"
+                ),
+            },
+            {
+                "citation": (
+                    "Sahl ibn Bishr, Introduction ch.3 §§13-18, trans. Dykes, The "
+                    "Astrology of Sahl b. Bishr vol. I (Cazimi 2019)"
+                ),
+                "says": "the seven orb values of this table",
+                "reading": SOURCE_READING_LEVELS[2],
+                "read_at": (
+                    "via Birchfield, The Planets Degrees of Influence (rev. 2019) "
+                    "pp.5-6 n.12"
+                ),
+            },
+            {
+                "citation": "Ibn Ezra, The Beginning of Wisdom ch. IV (trans. Epstein, ARHAT 1998)",
+                "says": "the seven orb values of this table",
+                "reading": SOURCE_READING_LEVELS[2],
+                "read_at": _AS_TABULATED_BY_BIRCHFIELD,
+            },
+            {
+                "citation": (
+                    "Bonatti, Liber Astronomiae Tract III chs. LXV-LXXI (trans. Zoller, 1994)"
+                ),
+                "says": "listed for the same seven values",
+                "reading": SOURCE_READING_LEVELS[3],
+                "read_at": (
+                    "the reference only; values not checked; publisher and chapters to "
+                    "be confirmed"
+                ),
+            },
+            {
+                "citation": (
+                    "al-Bīrūnī, The Book of Instruction in the Elements of the Art of "
+                    "Astrology, trans. R. Ramsay Wright (London: Luzac 1934) §436"
+                ),
+                "says": "the same seven values",
+                "reading": SOURCE_READING_LEVELS[1],
+                "read_at": (
+                    "Wright's translation in the archive.org typescript reproduction, "
+                    "whose page numbers differ from the Luzac print; cited by section"
+                ),
+            },
         ],
         "pair_combination_rule_note": (
             "The pair threshold is the average of the two orbs. al-Bīrūnī, Book of "
@@ -238,18 +311,38 @@ ORB_PROFILES: dict[str, dict] = {
             # p.107 was read on first-edition page images and the first column
             # matches; Sebastian ruled the profile checked on that reading.
             "primary_texts_independently_transcribed": True,
-            "tabulated_from": (
-                "William Lilly, Christian Astrology (1647) p.107, first column, read in "
-                "the first edition (archive.org/details/b30338724); agrees with Steven "
-                "Birchfield, 'Orbs of Influence', 2nd ed. 2013 (secondary)"
-            ),
-            "note": (
-                "The 1659 second edition has the same pagination and readings."
-            ),
             "evidence_standard": "checked_against_first_edition_page_images",
         },
+        "tabulated_from": [
+            {
+                "citation": "William Lilly, Christian Astrology (1647) p.107, first column",
+                "says": "the seven orbs of this table",
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": (
+                    "the first edition (archive.org/details/b30338724); the 1659 second "
+                    "edition has the same pagination and readings"
+                ),
+            },
+            {
+                "citation": "Steven Birchfield, 'Orbs of Influence', 2nd ed. 2013",
+                "says": "the same values as p.107's first column",
+                "reading": SOURCE_READING_LEVELS[2],
+                "read_at": "Birchfield's secondary tabulation; it agrees with p.107",
+            },
+        ],
         "sources": [
-            "William Lilly, Christian Astrology (1647) Book I ch. XIX p.107, first column",
+            {
+                "citation": (
+                    "William Lilly, Christian Astrology (1647) Book I ch. XIX p.107, "
+                    "first column"
+                ),
+                "says": (
+                    "the planets' orbs, the first column given as those of 'the best "
+                    "Authors and my owne Experience'"
+                ),
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": "the first edition (archive.org/details/b30338724)",
+            },
         ],
         "second_set_not_used": (
             "p.107 prints a second set beside the first (Saturn 9, Jupiter 9, Mars 7, "
@@ -266,6 +359,7 @@ ORB_PROFILES: dict[str, dict] = {
 # method source register entry.
 _ORB_PROFILE_REGISTER_ONLY_KEYS = frozenset({
     "sources",
+    "tabulated_from",
     "source_verification",
     "pair_combination_rule_note",
     "second_set_not_used",
@@ -279,9 +373,23 @@ SOURCE_VERIFICATION_STATUS_KEYS = (
 # Partile 的三種具名慣例，做成 profile；沒有哪一種是「傳統定義」。三者並存且會給出
 # 不同答案（金牛 29.9° 與處女 0.1° 只在「1 度以內」與「3 度以內」下是 partile），其中
 # 兩種都載於 Lilly 名下而互相矛盾（1647 同一整數度、1677 三度以內）。來源與查核狀態見
-# 各 profile 的 sources 與 _PARTILE_SOURCE_VERIFICATION（二手轉引，原文未獨立轉錄）；
+# 各 profile 的 sources、_PARTILE_SOURCE_VERIFICATION 與 PARTILE_TABULATED_FROM（二手轉引，原文未獨立轉錄）；
 # Houlding 條目裡的編輯意見不是來源，不編入權威欄位。None＝該判準沒有星座相位前置條件。
 PARTILE_PRECONDITION_SIGN_ASPECT = "whole_sign_aspect_or_angle_orb_lilly_1647"
+_HOULDING_PARTILE = "Deborah Houlding, Skyscript glossary 'Partile / Platick'"
+_HOULDING_READ_AT = "the online glossary entry, a secondary work"
+# The record names the 1677 volume and describes its signatures but does not say
+# that the volume itself was read, so only the reference is claimed until that
+# is confirmed.
+MERLINI_1677_READ_AT = (
+    "level pending: the record does not say whether the 1677 volume itself was read; "
+    "only the reference is claimed until that is confirmed"
+)
+# The Lilly citations give the 1647 page but the record does not say which copy was read.
+LILLY_1647_READ_AT = (
+    "reading level as recorded; the record does not say which copy of the 1647 English text "
+    "was read"
+)
 PARTILE_PROFILES: dict[str, dict] = {
     "same_degree_number_v1": {
         "display_name": "同一整數度",
@@ -289,11 +397,22 @@ PARTILE_PROFILES: dict[str, dict] = {
         "threshold_degrees": None,
         "provenance": "lilly_christian_astrology_1647_and_general_usage",
         "sources": [
-            "William Lilly, Christian Astrology (1647) Book I ch. XIX p.106 (partile "
-            "definition and examples; Lilly writes 'exactly so many degrees ... as "
-            "make a perfect aspect', not 'same degree': the same-degree reading is "
-            "Houlding's)",
-            "Deborah Houlding, Skyscript glossary 'Partile / Platick'",
+            {
+                "citation": "William Lilly, Christian Astrology (1647) Book I ch. XIX p.106",
+                "says": (
+                    "partile definition and examples; Lilly writes 'exactly so many "
+                    "degrees ... as make a perfect aspect', not 'same degree': the "
+                    "same-degree reading is Houlding's"
+                ),
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": LILLY_1647_READ_AT,
+            },
+            {
+                "citation": _HOULDING_PARTILE,
+                "says": "partile read as the same degree, the usage she records as the commonest",
+                "reading": SOURCE_READING_LEVELS[2],
+                "read_at": _HOULDING_READ_AT,
+            },
         ],
         "note": (
             "Houlding 記為最通行的用法。兩星必須落在各自星座的同一個整數度，"
@@ -311,8 +430,15 @@ PARTILE_PROFILES: dict[str, dict] = {
         # 就以為已核原典，故降為 secondary_reported。
         "provenance": "secondary_reported_traditional_usage",
         "sources": [
-            "Deborah Houlding, Skyscript glossary 'Partile / Platick'"
-            "（記為 traditional authors 的用法，未點名個別作者）",
+            {
+                "citation": _HOULDING_PARTILE,
+                "says": (
+                    "partile within one degree, recorded as the usage of traditional "
+                    "authors without naming any individual author"
+                ),
+                "reading": SOURCE_READING_LEVELS[2],
+                "read_at": _HOULDING_READ_AT,
+            },
         ],
         "note": "只看距離精確相位的角差，與整數度無關。具名前現代來源至今未定位。",
         "valid_aspect_precondition": None,
@@ -324,10 +450,22 @@ PARTILE_PROFILES: dict[str, dict] = {
         # 格言節未署名，所以 provenance 不說「his own」。
         "provenance": "lilly_attributed_merlini_anglici_1677_differs_from_1647",
         "sources": [
-            "Merlini Anglici Ephemeris ... for the Year 1677 (London: J. Macock for the "
-            "Company of Stationers), 'Useful Astrological Aphorisms for Young Students and "
-            "others', no. 25",
-            "Deborah Houlding, Skyscript glossary 'Partile / Platick'",
+            {
+                "citation": (
+                    "Merlini Anglici Ephemeris ... for the Year 1677 (London: J. Macock for "
+                    "the Company of Stationers), 'Useful Astrological Aphorisms for Young "
+                    "Students and others', no. 25"
+                ),
+                "says": "partile within the difference of three degrees",
+                "reading": SOURCE_READING_LEVELS[3],
+                "read_at": MERLINI_1677_READ_AT,
+            },
+            {
+                "citation": _HOULDING_PARTILE,
+                "says": "cited beside the 1677 aphorism for the three-degree usage",
+                "reading": SOURCE_READING_LEVELS[2],
+                "read_at": _HOULDING_READ_AT,
+            },
         ],
         # 格言第 25 條確有此句，但該節未署名；冊首致讀者書署名
         # William Lilly（1676-09-26）並指定 Coley 為承續者。1675、1676、1678 冊都沒有這句。
@@ -374,10 +512,23 @@ PARTILE_VALID_ASPECT_BASIS = {
 
 _PARTILE_SOURCE_VERIFICATION = {
     "primary_texts_independently_transcribed": False,
-    "tabulated_from": (
-        "Deborah Houlding, Skyscript glossary 'Partile / Platick' (secondary; she cites "
-        "Lilly's Christian Astrology p.107 - the definition runs pp.106-107 of the 1647 "
-        "printing, the example is on p.106) and Merlini Anglici 1677"
-    ),
     "evidence_standard": "secondary_tabulation_permitted_when_disclosed",
 }
+# What the partile conventions were tabulated from (register only).
+PARTILE_TABULATED_FROM = (
+    {
+        "citation": _HOULDING_PARTILE,
+        "says": (
+            "the partile conventions; she cites Lilly's Christian Astrology p.107 - the "
+            "definition runs pp.106-107 of the 1647 printing, the example is on p.106"
+        ),
+        "reading": SOURCE_READING_LEVELS[2],
+        "read_at": _HOULDING_READ_AT,
+    },
+    {
+        "citation": "Merlini Anglici Ephemeris ... for the Year 1677",
+        "says": "partile within three degrees (aphorism no. 25)",
+        "reading": SOURCE_READING_LEVELS[3],
+        "read_at": MERLINI_1677_READ_AT,
+    },
+)

@@ -287,7 +287,7 @@ def compute_classical_classifications(
             }
             for row in rows
         },
-        note="只列各書的分類與條件是否符合；不加總、不打分、不解讀。",
+        note="只列各書的分類與條件是否符合；不加總、不打分，也不替你解盤。",
     )
     return {
         "method": METHOD_NAME,

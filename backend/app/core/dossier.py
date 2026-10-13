@@ -31,7 +31,7 @@ from .module_state import (
 )
 
 
-DOSSIER_VERSION = "0.9.0"
+DOSSIER_VERSION = "0.10.0"
 
 # The six-field vocabulary (MODULE_STATUSES, EVENT_SEARCH_REASON_CODES
 # and the builders) lives in module_state; the Dossier copies what each

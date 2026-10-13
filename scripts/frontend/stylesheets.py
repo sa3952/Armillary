@@ -19,6 +19,11 @@ needs no marker) or `not-found` (the error page).  `build_pages` writes each
 bundle to `frontend/zh-TW/style/<audience>.css` and links it from the page;
 `check_bundle_coverage` refuses a page whose markup or scripts name a class or
 id that page.css styles in a part the page does not receive.
+
+An article whose fragment holds a `<figure data-fx>` (the article figure
+component, scripts/frontend/figures/_fx.py) is the audience
+`blog-article-figures`: the article bundle with figures.css appended, still
+one stylesheet.  Every other article keeps the bundle without it.
 """
 
 from __future__ import annotations
@@ -38,10 +43,12 @@ CALCULATOR = "calculate.css"
 # after calculate.css in the same bundle.
 CALCULATOR_PARTS = (CALCULATOR, "timelords.css")
 ARTICLE = "article.css"
+FIGURES = "figures.css"
 # Where the bundles live, relative to frontend/ and as served.
 BUNDLE_DIRECTORY = f"{DEFAULT_LOCALE}/style"
 SHARED = "all"
 ARTICLE_AUDIENCE = "blog-article"
+FIGURES_AUDIENCE = "blog-article-figures"
 NOT_FOUND_AUDIENCE = "not-found"
 CALCULATOR_AUDIENCE = "calculate"
 
@@ -198,11 +205,26 @@ def regions(items: Iterable[Item]) -> list[tuple[frozenset[str], list[Item]]]:
     return [(audiences, members) for audiences, members in grouped if members]
 
 
-def audience_of(row: Mapping[str, object]) -> str:
-    """The stylesheet audience of a surfaces.json row."""
+_FIGURE_DECLARATION = re.compile(r"<figure\b[^>]*\sdata-fx(?=[\s>])")
+
+
+def declares_figures(fragment: str) -> bool:
+    """Whether a page fragment holds an article figure (`<figure data-fx>`)."""
+
+    return _FIGURE_DECLARATION.search(fragment) is not None
+
+
+def audience_of(row: Mapping[str, object], pages: Path | None = None) -> str:
+    """The stylesheet audience of a surfaces.json row (an article's depends on
+    its fragment, read from `pages`, by default the build's page directory)."""
 
     if isinstance(row.get("article"), dict):
-        return ARTICLE_AUDIENCE
+        if pages is None:
+            from scripts.frontend import build_pages
+
+            pages = build_pages.PAGES
+        fragment = (pages / f"{row['fragment']}.html").read_text(encoding="utf-8")
+        return FIGURES_AUDIENCE if declares_figures(fragment) else ARTICLE_AUDIENCE
     if "status" in row:
         return NOT_FOUND_AUDIENCE
     return str(row["key"])
@@ -217,6 +239,8 @@ def _source(name: str, styles: Path) -> str:
 
 
 def page_items_for(audience: str, styles: Path = STYLES) -> list[Item]:
+    # An article with figures receives exactly the article's parts of page.css.
+    audience = ARTICLE_AUDIENCE if audience == FIGURES_AUDIENCE else audience
     return _items_for(audience, regions(parse(_source(PAGE, styles))))
 
 
@@ -246,6 +270,8 @@ def bundle_source(audience: str, styles: Path = STYLES) -> str:
         parts.extend(_source(name, styles).strip() for name in CALCULATOR_PARTS)
     elif audience == ARTICLE_AUDIENCE:
         parts.append(_source(ARTICLE, styles).strip())
+    elif audience == FIGURES_AUDIENCE:
+        parts.extend(_source(name, styles).strip() for name in (ARTICLE, FIGURES))
     return "\n".join(parts) + "\n"
 
 
@@ -259,7 +285,8 @@ def build_bundles(rows: Iterable[Mapping[str, object]], styles: Path = STYLES) -
     """Every bundle the rows need, keyed by its path under frontend/."""
 
     audiences = {audience_of(row) for row in rows}
-    unknown = declared_audiences(styles) - audiences
+    # The figures bundle carries the article parts of page.css too.
+    unknown = declared_audiences(styles) - audiences - ({ARTICLE_AUDIENCE} if FIGURES_AUDIENCE in audiences else set())
     if unknown:
         raise ValueError(f"page.css names audiences no page has: {sorted(unknown)}")
     return {bundle_path(audience): build_bundle(audience, styles) for audience in sorted(audiences)}

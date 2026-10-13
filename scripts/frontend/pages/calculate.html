@@ -19,7 +19,7 @@
           </label>
           <label>
             <input type="radio" name="calc-mode" value="classical" autocomplete="off">
-            <span><b>古典完整</b><span>我照古典占星的作法讀盤：古典七顆行星、日盤夜盤、廟與旺、命運點、十二分部，算完接著排時間主星。界、面、三分性由你選一套。結果分六章。</span></span>
+            <span><b>古典完整</b><span>我照古典占星的作法讀盤：古典七顆行星、日盤夜盤、廟與旺、命運點與精神點、十二分部，算完接著排時間主星。界、面、三分性由你選一套。結果分六章。</span></span>
           </label>
           <label>
             <input type="radio" name="calc-mode" value="custom" autocomplete="off">
@@ -249,6 +249,7 @@
               <div class="inline-control" id="house-system-slot"></div>
               <span class="hint" id="opt-house_system-detail"></span>
               <span class="hint" id="opt-house_system-hint">整宮與等分宮每宮都是 30 度。四分宮制先用上升點與中天（黃道在上子午圈的那一點；子午圈是通過天頂與正南、正北的大圓）把一圈分成四段，每段再分成三宮，所以宮的大小不一。七種平等提供，本產品不排序其歷史適用性；一次計算一種。</span>
+              <span class="hint" id="opt-house_system-article">七種各怎麼切天空，見〈<a href="/zh-TW/blog/house-systems-explained">宮位制有哪些</a>〉（附可以轉的天球示意圖）。</span>
             </div>
           </div>
           <p class="consequence" id="zodiac-consequence" aria-live="polite"></p>
@@ -333,9 +334,9 @@
       <nav class="chapter-nav" id="chapter-nav" hidden aria-label="結果的章節">
         <div class="eyebrow">本次結果 · 章節</div>
         <ul class="chapter-index" id="chapter-index"></ul>
-        <p class="note chapter-mode-note" id="chapter-mode-note" hidden></p>
         <button type="button" class="ghost small chapters-all" id="chapters-all" aria-pressed="false">全部章節一次展開（列印或搜尋用）</button>
       </nav>
+      <p class="note chapter-mode-note" id="chapter-mode-note" hidden></p>
 
       <section class="chapter" id="chapter-overview" data-chapter="overview" aria-labelledby="chapter-overview-title">
         <div class="chapter-head">
@@ -349,7 +350,7 @@
             <li><b>再看圖。</b>外圈是 12 個星座，裡面的符號是行星，數字 1–12 是宮位。點任何一個符號，會跳到它在「位置」一章的那一列。</li>
             <li><b>看不懂的詞，按「名詞解釋」。</b>想核對數字怎麼來的，到最後一章「收據與匯出」。</li>
           </ol>
-          <p class="note">照原典列出；不替這張盤做個人解讀，也不預測。</p>
+          <p class="note">照原典列出。不替你解盤，也不預測。</p>
         </details>
 
       <!-- 結果首屏：本命盤速覽（calculate.js 建在最前面）、常用匯出、星盤圖。桌機左圖右速覽，窄螢幕依原始碼順序上下排。 -->
@@ -384,7 +385,7 @@
       <section class="chapter" id="chapter-positions" data-chapter="positions" aria-labelledby="chapter-positions-title" hidden>
         <div class="chapter-head">
           <h2 id="chapter-positions-title" tabindex="-1">位置</h2>
-          <p class="chapter-lead">每顆行星與每個點在黃道上的位置，以及由位置直接推出來的點（例如<button type="button" class="term" data-term="dodecatemoria">十二分部</button>）。</p>
+          <p class="chapter-lead">每顆行星與每個點（例如<button type="button" class="term" data-term="node">月交點</button>）在黃道上的位置、是否<button type="button" class="term" data-term="retrograde">逆行</button>，以及由位置直接推出來的點（例如<button type="button" class="term" data-term="dodecatemoria">十二分部</button>）。</p>
         </div>
         <div class="chapter-sections" data-chapter-host="positions"></div>
       </section>
@@ -400,7 +401,7 @@
       <section class="chapter" id="chapter-classical" data-chapter="classical" aria-labelledby="chapter-classical-title" hidden>
         <div class="chapter-head">
           <h2 id="chapter-classical-title" tabindex="-1">古典判斷</h2>
-          <p class="chapter-lead">古典占星讀盤前先要確認的幾件事：<button type="button" class="term" data-term="sect">日盤還是夜盤</button>、行星的<button type="button" class="term" data-term="domicile_exaltation">廟與旺</button>、<button type="button" class="term" data-term="lots">命運點與精神點</button>、<button type="button" class="term" data-term="planetary_hours">行星時</button>。照原典列出；不替這張盤做個人解讀，也不預測。</p>
+          <p class="chapter-lead">古典占星讀盤前先要確認的幾件事：<button type="button" class="term" data-term="sect">日盤還是夜盤</button>、行星的<button type="button" class="term" data-term="domicile_exaltation">廟與旺</button>、<button type="button" class="term" data-term="lots">命運點與精神點</button>、<button type="button" class="term" data-term="planetary_hours">行星時</button>。選了對應的選項時，這一章另列<button type="button" class="term" data-term="bounds_dignity">界</button>、<button type="button" class="term" data-term="face">面／旬</button>與<button type="button" class="term" data-term="triplicity">三分性</button>，<button type="button" class="term" data-term="lunar_mansions">月宿</button>，<button type="button" class="term" data-term="void_of_course">月空亡</button>，<button type="button" class="term" data-term="combust">焦傷</button>與<button type="button" class="term" data-term="under_beams">在光束下</button>（行星離太陽多近），以及行星與宮的古典分類（<button type="button" class="term" data-term="benefic_malefic">吉星與凶星</button>、<button type="button" class="term" data-term="joys">喜樂宮</button>、<button type="button" class="term" data-term="hayz">hayz 與 halb</button>、<button type="button" class="term" data-term="house_triad">始宮／續宮／果宮</button>）。照原典列出。不替你解盤，也不預測。</p>
         </div>
         <div class="chapter-sections" data-chapter-host="classical"></div>
       </section>
@@ -413,7 +414,7 @@
         <div class="ring-tag" data-ring="ring-3">方法判斷</div>
         <h2 id="annual-heading">時間主星：一生的分期與今年</h2>
         <p class="annual-fixed">只列計算結果：哪一段時間由哪顆行星或哪個星座輪值。不替你解盤，也不預測。</p>
-        <p class="note">時間主星（time lords）：把一生切成一段段時期，每段由某顆行星或某個星座「輪值」的一類古典技法。主星：輪值的那顆行星；輪值的是星座時，指這個星座的守護行星（只用傳統七顆行星：日、月、水、金、火、木、土）。年界：每年太陽回到出生時黃經位置的時刻（太陽回歸）；這一區的「一年」都從這一刻算起，不是生日日期。</p>
+        <p class="note"><button type="button" class="term" data-term="time_lords">時間主星</button>（time lords）：把一生切成一段段時期，每段由某顆行星或某個星座「輪值」的一類古典技法。主星：輪值的那顆行星；輪值的是星座時，指這個星座的守護行星（只用傳統七顆行星：日、月、水、金、火、木、土）。年界：每年太陽回到出生時黃經位置的時刻（太陽回歸）；這一區的「一年」都從這一刻算起，不是生日日期。</p>
         <div class="annual-options" id="annual-options">
           <label for="annual-dec-profile">十年期從哪顆行星起算</label>
           <select id="annual-dec-profile">
@@ -437,7 +438,7 @@
         </div>
         <div class="annual-start" id="annual-start">
           <button type="button" class="ghost small" id="annual-load">排出時間主星</button>
-          <p class="note">用上面這張本命盤的出生資料，再請計算服務算一次年度小限、法達（firdaria）、黃道釋放（zodiacal releasing）與十年期（decennials）；不必再填任何資料，伺服器不留副本。</p>
+          <p class="note">用上面這張本命盤的出生資料，再請計算服務算一次<button type="button" class="term" data-term="profection">年度小限</button>（選定某一年時，另外取那一年的<button type="button" class="term" data-term="monthly_profection">月小限</button>）、<button type="button" class="term" data-term="firdaria">法達</button>（firdaria）、<button type="button" class="term" data-term="zodiacal_releasing">黃道釋放</button>（zodiacal releasing）與<button type="button" class="term" data-term="decennials">十年期</button>（decennials）；不必再填任何資料，伺服器不留副本。</p>
         </div>
         <p class="status-line" id="annual-status" role="status" aria-live="polite"></p>
         <div class="annual-body" id="annual-body" hidden></div>

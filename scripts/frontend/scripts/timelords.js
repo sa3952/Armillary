@@ -1051,7 +1051,7 @@
         const more = node("li");
         const link = node("a", null, "方法頁");
         link.href = detail.methodHref || "/zh-TW/methods/time-lords";
-        more.append(doc.createTextNode("完整出處與核對狀態見"), link, doc.createTextNode("。"));
+        more.append(doc.createTextNode("完整出處與每一條核到哪一層見"), link, doc.createTextNode("。"));
         ul.appendChild(more);
         sources.appendChild(ul);
         content.appendChild(sources);

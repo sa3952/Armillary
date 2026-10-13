@@ -142,8 +142,8 @@ METHOD_SOURCE_ENTRIES: Final = {
             "transliteration), with no translated name"
         ),
         "points_note": (
-            "every source read gives a mansion only to the Moon; none places the "
-            "ascendant or another planet in them"
+            "every source read gives a mansion on a chart only to the Moon; none "
+            "places the ascendant or another planet in them"
         ),
         "not_the_chinese_xiu": (
             "the 二十八宿 of ancient China are unequal lodges measured in right ascension "

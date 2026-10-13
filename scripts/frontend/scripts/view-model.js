@@ -706,9 +706,15 @@
     };
   }
 
+  // 〈位置〉章排在〈宮位與相位〉章之前，讀者先讀到這一句，書名原文附在這裡（每份只附一次）。
+  const PRENATAL_SYZYGY_NOTE = "產前朔望是出生前最近一次朔或望。Ptolemy 用它的度數來定出生的上升度數"
+    + "（《占星四書》（Tetrabiblos）III.2），"
+    + "選壽命主宰時也用它（III.10）。本站只列出時刻與度數（見「產前朔望與出生前日月食的度數」一節），"
+    + "不拿它去推算上升點或壽命。";
+
   const AVERSION_NOTE = "不合意（aversion）：兩顆星所在的星座相鄰，或差 5 個星座，"
     + "彼此不成合、六分、四分、三分、對分任何一種相位。"
-    + "Ptolemy《占星四書》（Tetrabiblos）卷一第 16 章把這樣的星座稱為「不相連」（disjunct），"
+    + "Ptolemy《占星四書》卷一第 16 章把這樣的星座稱為「不相連」（disjunct），"
     + "說它們彼此沒有關聯、像是互相背對；這是該書的分類，照原文列出。"
     + "「不合意的組合」一表列出本盤每一組這樣的組合；上升點與中天不參加星座這一層的判斷，不列。";
 
@@ -1787,9 +1793,7 @@
         ? [presentClosedVocabulary(module.contract, LUNAR_CONTRACT_ZH, "契約")]
         : []).concat(
         rows.length
-          ? ["產前朔望是出生前最近一次朔或望。Ptolemy 用它的度數來定出生的上升度數（《占星四書》III.2），"
-            + "選壽命主宰時也用它（III.10）。本站只列出時刻與度數（見「產前朔望與出生前日月食的度數」一節），"
-            + "不拿它去推算上升點或壽命。"]
+          ? [PRENATAL_SYZYGY_NOTE]
           : [],
         eclipseRows.length
           ? ["日月食是全球搜尋的結果，沒有看出生地是否看得見。古典占星用日月食，主要是看它對地區與時局的作用"
@@ -1974,14 +1978,14 @@
    * 月交點與月球拱點（Lilith 等）的落宮：後端只在整宮制給（planet_in_house.point_placements），
    * 整宮制的宮就是星座。其他宮位制後端回具名原因，這裡說一句，不自己用星座補。
    */
-  const POINT_PLACEMENT_TITLE = "月交點與 Lilith 的落宮（整宮制）";
+  const POINT_PLACEMENT_TITLE = "月交點、Lilith 與 Priapus 的落宮（整宮制）";
   function pointPlacementTable(response, module) {
     const points = isRecord(module.point_placements) ? module.point_placements : null;
     if (!points) return { notes: [], tables: [] };
     if (points.execution_status !== "computed") {
       return {
         notes: points.reason_code === "not_whole_sign_house_system"
-          ? ["月交點與 Lilith 不是行星，只在整宮制列出落宮（整宮制的宮就是星座）；本次的宮位制不列。"]
+          ? ["月交點、Lilith 與 Priapus 不是行星，只在整宮制列出落宮（整宮制的宮就是星座）；本次的宮位制不列。"]
           : [],
         tables: [],
       };
@@ -1995,8 +1999,22 @@
     const positionByName = new Map([...(astro.nodes || []), ...apsides]
       .filter((record) => isRecord(record) && record.name)
       .map((record) => [record.name, record.sign_position]));
+    // 約略時辰：出生時間敏感度只逐列列出行星的落宮；各點的落宮在這一小時內換不換，
+    // 讀分類覆蓋裡改變的路徑（後端以鍵命名每一點），在這張表說出來。
+    const sensitivity = isRecord(response.birth_time_sensitivity) ? response.birth_time_sensitivity : {};
+    const moving = new Set(differingClassificationPaths(sensitivity)
+      .map((item) => /^derived_methods\.planet_in_house\.point_placements\.placements\[([^\]]+)\]\.house$/
+        .exec(String(item)))
+      .filter(Boolean)
+      .map((match) => match[1]));
+    const movingNames = placements.filter((place) => moving.has(place.key)).map((place) => place.name || place.key);
     return {
-      notes: ["月交點與 Lilith 不是行星，另列一張；整宮制的宮就是星座，所以只在整宮制列出它們的落宮。"],
+      notes: [
+        "月交點、Lilith 與 Priapus 不是行星，另列一張；整宮制的宮就是星座，所以只在整宮制列出它們的落宮。",
+        ...(movingNames.length
+          ? [`只知道約略時辰：這一小時內${movingNames.join("、")}的落宮會變；表中的宮位依代表性時刻判定。`]
+          : []),
+      ],
       tables: [{
         title: POINT_PLACEMENT_TITLE,
         columns: ["點", LONGITUDE_COLUMN, "宮"],
@@ -2329,8 +2347,8 @@
   });
   const SOLAR_PHASE_LIMIT_SIDE_ZH = Object.freeze({ morning: "西側（晨星）", evening: "東側（昏星）" });
   const SOLAR_PHASE_INTERVAL_ZH = Object.freeze({
-    stated_civil_hour: "所填的那一個鐘點",
-    civil_day: "出生當天（民用日期）",
+    stated_civil_hour: "你填的那一個鐘點",
+    civil_day: "出生那一天（民用日：出生地日曆上的那一天，從午夜到午夜）",
   });
   const SOLAR_PHASE_FIXED_SENTENCE = "照原典列出各分法怎麼說；不替這張盤做個人解讀，也不預測。";
   // 和月宿、十二分部一樣經 sourceBlocks：有引文的一行附方法出處登錄 solar_phase 那條引文的開頭與核到層級。
@@ -2349,7 +2367,7 @@
       "出處：al-Bīrūnī《占星術入門》（Kitāb al-Tafhīm，Wright 1934 英譯）§481–484：不到 16′ 稱 samīm（即 Cazimi）；"
       + "到 6° 稱 muḥtariq（焦傷，字面是「被燒」），水星、金星順行時到 7°；之後在光束下，行星「像被關住的囚犯」，"
       + "在東方升出的界線是金星、水星 12°，土星、木星 15°，火星 16°，在西方隱入的界線是土星、木星 16°，火星 18°；"
-      + "月亮不到 7° 為焦傷，到 12° 為光束下。",
+      + "月亮不到 7° 為焦傷，到 12° 為止在光束下。",
       "translation_read", "（英譯，線上打字稿，1934 年版的頁碼未核）"],
     [null, "出處：al-Bīrūnī 同書 §483：金星在會合時北黃緯超過 7°，不稱 samīm 也不稱焦傷，只稱「伴隨太陽」（muqārina）；"
       + "§486：行星的作用在焦傷時最小。"],
@@ -2365,7 +2383,7 @@
       "出處：Ptolemy《占星四書》III.10（Robbins 1940 英譯 p.285）：在太陽光線下的行星，不採為破壞者，也不採為援助者。",
       "translation_read", "（英譯，LacusCurtius 轉錄）"],
     ["Porphyry, Introduction ch.2 and ch.30",
-      "出處：希臘化時期一條 15° 的線，以及出生前後 7 天內升出或隱入光束：Porphyry《導論》第 2、30 章、Antiochus、"
+      "出處：希臘化時期一條 15° 的線，以及出生前後 7 天內升出或隱入光束：Porphyry 名下的《占星四書導論》（Eisagōgē）第 2、30 章、Antiochus、"
       + "Rhetorius（Brennan 2017；Holden 2009 pp.24、134 經網頁轉引），原文未核。",
       "secondary_only"],
     [null, "出處：完整書目與每一條核到哪一層，見方法頁〈焦傷與光束下〉一節。"],
@@ -2400,7 +2418,7 @@
     if (typeof days !== "number") return DASH;
     const before = days < 0;
     const span = Math.abs(days) < 1 ? `${(Math.abs(days) * 24).toFixed(1)} 小時` : `${Math.abs(days).toFixed(1)} 天`;
-    const base = anchored ? "代表時刻" : "出生";
+    const base = anchored ? "代表性時刻" : "出生";
     return `${base}${before ? "前" : "後"} ${span}`;
   }
 
@@ -2462,7 +2480,8 @@
     }
     if (interval) {
       notes.push(
-        "出生時刻不精確：上方各表讀的是計算用的代表時刻，不是出生時刻；「出生時間範圍內的距離帶」列出"
+        "出生時刻不精確：上方各表用的是代表性時刻，也就是計算時拿來代表這段時間的一個時刻，不是出生時刻；"
+        + "「出生時間範圍內的距離帶」列出"
         + `${presentClosedVocabulary(interval.interval, SOLAR_PHASE_INTERVAL_ZH, "區間")}內每一種分法出現過的每一個距離帶。`
         + "只知時辰時月亮約移動半度，只知日期時約 12°，距離帶可能因此改變。"
       );
@@ -2471,7 +2490,7 @@
     notes.push(SOLAR_PHASE_FIXED_SENTENCE);
 
     const tables = [{
-      title: anchored ? "代表時刻各行星離太陽多遠" : "各行星離太陽多遠",
+      title: anchored ? "代表性時刻各行星離太陽多遠" : "各行星離太陽多遠",
       columns: ["天體", "距離帶", "黃經差（行星減太陽）", "在太陽哪一側", "靠近或離開", "天空中的實際夾角", "黃緯",
         "落在太陽圓面內", "與太陽同星座"],
       rows: rows.map((row) => [
@@ -2540,14 +2559,14 @@
       });
     });
     tables.push({
-      title: `${anchored ? "代表時刻" : "出生"}前後 ${num(search.window_days, 0)} 天內跨過光束界線的時刻（五顆行星）`,
+      title: `${anchored ? "代表性時刻" : "出生"}前後 ${num(search.window_days, 0)} 天內跨過光束界線的時刻（五顆行星）`,
       columns: ["行星", "方向", "界線", "什麼時候", "當地時間"],
       rows: crossingRows,
     });
     const daily = rows.map((row) => (Array.isArray(row.daily_longitude_differences)
       ? row.daily_longitude_differences.filter(isRecord) : []));
     tables.push({
-      title: `${anchored ? "代表時刻" : "出生"}前後 7 天，每天的黃經差（正：東側；負：西側）`,
+      title: `${anchored ? "代表性時刻" : "出生"}前後 7 天，每天的黃經差（正：東側；負：西側）`,
       columns: ["第幾天"].concat(rows.map((row) => row.name || DASH)),
       rows: (daily[0] || []).map((item, index) => [
         item.day_offset === 0 ? "當天" : `${item.day_offset > 0 ? "後" : "前"} ${Math.abs(item.day_offset)} 天`,
@@ -2611,27 +2630,27 @@
     earlier_than_previous_lunar: "比上一列更早",
   });
   const PRENATAL_SOURCES = Object.freeze([
-    "出處：Ptolemy《占星四書》卷三第 2 章（Robbins 英譯，Loeb 1940，頁 231–235；Hübner 校勘本 III.3）："
+    "出處：Ptolemy《占星四書》卷三第 2 章（Robbins 英譯，Loeb 1940，頁 231–235；Hübner 校勘本（學者比對多份古抄本後整理出的版本）III.3）："
       + "取出生前最近一次朔望的度數；朔取兩個發光體共同的度數，望取在地平線上方的那一個；"
-      + "再找在出生時主宰這個度數的行星，以它所在的度數定為上升度數。已讀英譯。",
+      + "再找在出生時主宰這個度數的行星，以它所在的度數定為上升度數。核到：親讀譯本（Robbins 英譯）。",
     "出處：Robbins 英譯本卷三第 2 章註 9：正文依兩個最重要的手抄本與佚名註釋者，看朔望那一刻誰在地平線上方；"
-      + "另一個讀法看出生那一刻。本站採用前者，後者只當資訊列出。",
+      + "另一個讀法看出生那一刻。本站採用前者，後者只當資訊列出。核到：親讀譯本（Robbins 英譯與註）。",
     "出處：Ptolemy《占星四書》卷三第 10 章（Robbins 英譯頁 277–279；Hübner III.11）：定壽命主宰（hyleg）時，"
-      + "日生盤的候選包括前一次朔，夜生盤包括前一次望；書中沒有明說較近的另一種要不要越過。",
+      + "日生盤的候選包括前一次朔，夜生盤包括前一次望；書中沒有明說較近的另一種要不要越過。核到：親讀譯本（Robbins 英譯）。",
     "出處：Lilly《Christian Astrology》（1647）卷三第 104 章，頁 527–529：日生盤取前一次朔、夜生盤取前一次望，"
-      + "較近的是另一種也要越過。引自本站方法頁，這一輪沒有重讀原書。",
+      + "較近的是另一種也要越過。核到：親讀原文（為方法頁讀過，這一條沒有重讀）。",
     "出處：Valens《占星選集》（Anthologiae）卷三第 10、12 章（Riley 英譯的重排本）：用前一次朔或望的度數推算壽命的起點。"
       + "書中其他幾章也用朔或望：用朔或望的主星判斷死因，用望落在陽性或陰性星座判斷父母誰先過世，"
-      + "也用它定月份與關鍵年（卷二第 22、27、33、41 章，卷四第 2、28 章，卷五第 2、6 章）。",
+      + "也用它定月份與關鍵年（卷二第 22、27、33、41 章，卷四第 2、28 章，卷五第 2、6 章）。核到：親讀譯本（Riley 英譯）。",
     "出處：Ptolemy《占星四書》卷二第 4、5、6、8 章（Robbins 英譯）：日月食主要用在世運（地區、城市與時局）；"
       + "第 4 章說，這類普遍事件「第一個、也最有力的原因」是日月在食時的會合；"
       + "第 8 章說，（出生以後發生的）日月食的度數或其對沖度數上正好有某人本命的太陽或月亮時，是「最危險、最難避開」的位置；"
-      + "影響多久看遮蔽持續幾小時，日食一小時算一年，月食一小時算一個月。",
+      + "影響多久看遮蔽持續幾小時，日食一小時算一年，月食一小時算一個月。核到：親讀譯本（Robbins 英譯）。",
     "出處：把出生前最後一次日月食當作命盤要點的二十世紀做法：Jansky《Interpreting the Eclipses》、"
       + "Lineman《Your Prenatal Eclipse》、Brady《Predictive Astrology》（1992）、Graves〈Introduction to Prenatal Eclipses〉（2004）。"
-      + "本站只讀到 Graves 的網頁，其餘只讀到書目或摘要。",
+      + "本站只讀到 Graves 的網頁，其餘只讀到書目或摘要。核到：轉引（只讀到二手）。",
     "出處：半影月食看不看得出來：Espenak〈Visual Appearance of Lunar Eclipses〉（eclipsewise.com）。"
-      + "日月食時刻與類型以 NASA 的日月食表驗證：Eclipse Predictions by Fred Espenak and Jean Meeus (NASA's GSFC)。",
+      + "日月食時刻與類型以 NASA 的日月食表驗證：Eclipse Predictions by Fred Espenak and Jean Meeus (NASA's GSFC)。核到：親讀原文。",
   ]);
 
   /** 「出生前 9.4 天」「出生前 35 分鐘」：後端給的數字，只換單位。 */
@@ -2877,7 +2896,7 @@
       notes.push(...parts.notes);
       tables.push(...parts.tables);
     }
-    notes.push("照原典列出；不替這張盤做個人解讀，也不預測。");
+    notes.push("照原典列出。不替你解盤，也不預測。");
     return {
       id: "prenatal_points",
       title: PRENATAL_TITLE,
@@ -4259,16 +4278,26 @@
 
   const DODECATEMORIA_SAMPLED_NOTE = "標「這段時間內會換星座」的列，在取樣的時刻裡出現過不只一個十二分部星座，"
     + "括號裡列出取樣到的星座；沒有標的列，只表示取樣的時刻都落在同一個星座，不保證取樣點之間沒有換過。"
-    + "度數與守護行星是代表時刻的值。";
+    + "度數與守護行星是代表性時刻的值。「點」一欄名稱後加「※」的，就是這些列。";
 
-  /** 十二分部那一格：代表時刻的位置；取樣到兩個以上星座時，接著列出取樣到的星座。 */
+  /** 取樣到兩個以上十二分部星座的點：表格很寬時（手機），第一欄就看得到記號，不必橫捲到十二分部那一格。 */
+  const DODECATEMORIA_SAMPLED_MARK = " ※";
+  function dodecatemoriaSampledMany(sampled) {
+    return isRecord(sampled) && Array.isArray(sampled.sampled_sign_indices)
+      && sampled.sampled_sign_indices.filter((index) => Number.isInteger(index) && index >= 0 && index < 12).length >= 2;
+  }
+
+  /** 十二分部那一格：代表性時刻的位置；取樣到兩個以上星座時，接著列出取樣到的星座。 */
+  // 後端逐點說取樣比較做到哪裡；有取樣時刻算不出這一點（partially_evaluated）時，照實說只比較了一部分。
+  const DODECATEMORIA_PARTIAL_NOTE = "（部分取樣時刻算不出這一點，只比較了算得出的時刻）";
   function dodecatemoriaCell(sampled, position) {
     const indices = isRecord(sampled) && Array.isArray(sampled.sampled_sign_indices)
       ? sampled.sampled_sign_indices.filter((index) => Number.isInteger(index) && index >= 0 && index < 12)
       : [];
+    const partial = isRecord(sampled) && sampled.status === "partially_evaluated" ? DODECATEMORIA_PARTIAL_NOTE : "";
     const text = signPosition(position);
-    if (indices.length < 2) return text;
-    return `${text}（這段時間內會換星座，取樣到：${zodiacOrder(indices).map((index) => SIGNS[index]).join("、")}）`;
+    if (indices.length < 2) return `${text}${partial}`;
+    return `${text}（這段時間內會換星座，取樣到：${zodiacOrder(indices).map((index) => SIGNS[index]).join("、")}）${partial}`;
   }
 
   function dodecatemoriaTimeNote(response) {
@@ -4353,7 +4382,7 @@
         title: "各點的十二分部",
         columns: ["點", "類別", "原位置", "十二分部", "十二分部星座的守護行星"],
         rows: points.map((point) => [
-          point.name || point.key,
+          `${point.name || point.key}${dodecatemoriaSampledMany(sampledByKey[point.key]) ? DODECATEMORIA_SAMPLED_MARK : ""}`,
           presentClosedVocabulary(point.category, DODECATEMORIA_CATEGORY_ZH, "類別"),
           signPosition(point.point_sign_position),
           dodecatemoriaCell(sampledByKey[point.key], point.sign_position),
@@ -4445,14 +4474,16 @@
 
   const yesNoDash = (value) => (value === true ? "是" : value === false ? "否" : DASH);
 
-  function classicalTimeNote(response) {
+  // 只知日期時，後端在代表性計算時刻算古典分類，並在模組的 time_basis 寫明；這一句照它寫，不由精度推斷。
+  const CLASSICAL_DATE_ONLY_BASIS = "representative_computational_anchor_not_birth_time";
+  function classicalTimeNote(response, module) {
     const precision = (response.birth_time_sensitivity || {}).precision;
-    if (precision === "date_only") {
+    if (module.time_basis === CLASSICAL_DATE_ONLY_BASIS) {
       return "只知道出生日期時沒有出生時刻：日盤或夜盤、在地平上或下，以及落在哪一宮都無法判定，這幾欄寫「—」；"
-        + "吉凶、陰陽與日夜區照列，水星是晨星或昏星依當天的代表時刻。";
+        + "吉凶、陰陽與日夜區照列，水星是晨星或昏星依當天的代表性時刻。";
     }
     if (precision === "approximate_hour") {
-      return "只知道約略時辰時，日盤或夜盤、在地平上或下與落在哪一宮都依代表時刻判定；這一小時內它們可能改變。";
+      return "只知道約略時辰時，日盤或夜盤、在地平上或下與落在哪一宮都依代表性時刻判定；這一小時內它們可能改變。";
     }
     return null;
   }
@@ -4518,7 +4549,7 @@
     if (notEvaluated.includes("houses_not_computed") && (response.birth_time_sensitivity || {}).precision !== "date_only") {
       notes.push("這次沒有計算宮位，所以喜樂宮的「本盤所在的宮」與十二宮表的行星一欄寫「—」。");
     }
-    const timeNote = classicalTimeNote(response);
+    const timeNote = classicalTimeNote(response, module);
     if (timeNote) notes.push(timeNote);
 
     const houseCell = (house) => (Number.isInteger(house) ? `第 ${house} 宮` : DASH);

@@ -21,6 +21,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from .aspect_profiles import LILLY_1647_READ_AT, MERLINI_1677_READ_AT
+from .source_reading import SOURCE_READING_LEVELS
+
+_ORIGINAL, _TRANSLATION, _SECONDARY, _BIBLIOGRAPHIC = SOURCE_READING_LEVELS
+
 MARK_POLICY = "marked_only_where_named_pre_modern_texts_give_rules_that_change_the_output"
 
 # 白名單：key → 對外說明與出處。順序即回應中的順序。
@@ -37,16 +42,40 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
             "更早的起源尚未查證。"
         ),
         "sources": [
-            "Ps.-Porphyry, Introduction ch.23 (Boer-Weinstock, CCAG V/4, 1940, p.202; "
-            "read in an online Greek transcription and Holden 2009 trans. p.18, the "
-            "CCAG page itself not checked): the Moon joins no planet, by sign, degree, "
-            "aspect or kollesis, within the next 30 degrees, regardless of the sign "
-            "boundary",
-            "William Lilly, Christian Astrology (1647) p.112 'Voyd of course': bounded "
-            "by the sign",
-            "Requiring exact perfection before the sign exit: attributed by later "
-            "literature to Al H. Morrison (an article in the AFA Journal, October 1966; "
-            "the article was not read); an earlier origin has not been checked",
+            {
+                "citation": (
+                    "Ps.-Porphyry, Introduction ch.23 (Boer-Weinstock, CCAG V/4, 1940, p.202)"
+                ),
+                "says": (
+                    "the Moon joins no planet, by sign, degree, aspect or kollesis, within "
+                    "the next 30 degrees, regardless of the sign boundary"
+                ),
+                # Both a Greek transcription and Holden's translation were read; the
+                # record does not say the Greek was read closely, so only the
+                # translation is claimed until that is confirmed.
+                "reading": _TRANSLATION,
+                "read_at": (
+                    "an online Greek transcription and Holden 2009 trans. p.18, the CCAG "
+                    "page itself not checked; level pending: the record does not say "
+                    "whether the Greek was read closely enough to count as the original "
+                    "language, so only the translation is claimed"
+                ),
+            },
+            {
+                "citation": "William Lilly, Christian Astrology (1647) p.112 'Voyd of course'",
+                "says": "bounded by the sign",
+                "reading": _ORIGINAL,
+                "read_at": LILLY_1647_READ_AT,
+            },
+            {
+                "citation": "Al H. Morrison, an article in the AFA Journal, October 1966",
+                "says": (
+                    "requiring exact perfection before the sign exit: attributed to him by "
+                    "later literature; an earlier origin has not been checked"
+                ),
+                "reading": _BIBLIOGRAPHIC,
+                "read_at": "the article was not read",
+            },
         ],
     },
     "lot_formulas": {
@@ -58,12 +87,44 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
             "落下而改式。本產品採夜盤反轉的公式。"
         ),
         "sources": [
-            "Ptolemy, Tetrabiblos III.10 (Robbins numbering; = Hübner III.11): the Lot "
-            "of Fortune from Sun to Moon by day and by night",
-            "Vettius Valens, Anthologies III.11 (Pingree; = III.14 Kroll/Riley, '14K;11P'): "
-            "at night the formula changes with whether the Moon has set",
-            "Paulus Alexandrinus ch.23: reversal at night (the product's formula); "
-            "read in the Greek-Latin first printing (Wittenberg 1586); Boer 1958 not checked",
+            {
+                "citation": "Ptolemy, Tetrabiblos III.10 (Robbins numbering; = Hübner III.11)",
+                "says": "the Lot of Fortune from Sun to Moon by day and by night",
+                "reading": _TRANSLATION,
+                "read_at": (
+                    "Robbins's English (Loeb 1940): the whole of III.10 read in the "
+                    "LacusCurtius transcription, the Lot of Fortune at pp.275-277; the Greek "
+                    "not checked"
+                ),
+            },
+            {
+                "citation": (
+                    "Vettius Valens, Anthologies III.11 (Pingree; = III.14 Kroll/Riley, "
+                    "'14K;11P')"
+                ),
+                "says": "at night the formula changes with whether the Moon has set",
+                # The record cites the chapter in two numberings but does not say what
+                # was read; only the reference is claimed until that is confirmed.
+                "reading": _BIBLIOGRAPHIC,
+                "read_at": (
+                    "level pending: the record does not say whether the Greek, Pingree's "
+                    "or Riley's translation, or a secondary report was read; only the "
+                    "reference is claimed until that is confirmed"
+                ),
+            },
+            {
+                "citation": "Paulus Alexandrinus, Introduction ch.23",
+                "says": "reversal at night (the product's formula)",
+                # The first printing is bilingual; which side was read is not recorded,
+                # so the lower of the two levels is claimed.
+                "reading": _TRANSLATION,
+                "read_at": (
+                    "the Greek-Latin first printing (Wittenberg 1586); Boer 1958 not "
+                    "checked; level pending: the record does not say whether the Greek or "
+                    "the Latin translation of that printing was read, so only the "
+                    "translation level is claimed"
+                ),
+            },
         ],
     },
     "bounds_tables": {
@@ -76,10 +137,21 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
             "所以本產品不預設任何一套，由你選表。"
         ),
         "sources": [
-            "Ptolemy, Tetrabiblos I.20-21, trans. Robbins (Loeb 1940) pp.91-107: Egyptian "
-            "terms (table p.97), Chaldaean terms rule (pp.99-101), complete table p.107",
-            "Authorship of the complete table disputed: Tolsa, Philologus 162.2 (2018) "
-            "247-264 (abstract only checked)",
+            {
+                "citation": "Ptolemy, Tetrabiblos I.20-21, trans. Robbins (Loeb 1940) pp.91-107",
+                "says": (
+                    "Egyptian terms (table p.97), Chaldaean terms rule (pp.99-101), "
+                    "complete table p.107"
+                ),
+                "reading": _TRANSLATION,
+                "read_at": "Robbins's English translation (Loeb 1940)",
+            },
+            {
+                "citation": "Tolsa, Philologus 162.2 (2018) 247-264",
+                "says": "the authorship of the complete table is disputed",
+                "reading": _BIBLIOGRAPHIC,
+                "read_at": "abstract only checked",
+            },
         ],
     },
     "degree_aspect_orbs": {
@@ -94,13 +166,38 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
             "§446 則以此為前提；整宮層另列在同一表。"
         ),
         "sources": [
-            "William Lilly, Christian Astrology (1647) p.107: two sets of orbs printed "
-            "side by side; he uses one or the other as memory serves",
-            "al-Bīrūnī, The Book of Instruction, trans. R. Ramsay Wright (1934) §490: "
-            "5°, 6°, 12°, 15° (the Sun's orb), the average of the two orbs, or exact "
-            "conjunction only",
-            "William Lilly, Christian Astrology (1647) p.109; al-Bīrūnī §446: aspects "
-            "presuppose signs that behold one another",
+            {
+                "citation": "William Lilly, Christian Astrology (1647) p.107",
+                "says": (
+                    "two sets of orbs printed side by side; he uses one or the other as "
+                    "memory serves"
+                ),
+                "reading": _ORIGINAL,
+                "read_at": LILLY_1647_READ_AT,
+            },
+            {
+                "citation": (
+                    "al-Bīrūnī, The Book of Instruction, trans. R. Ramsay Wright (1934) §490"
+                ),
+                "says": (
+                    "5°, 6°, 12°, 15° (the Sun's orb), the average of the two orbs, or "
+                    "exact conjunction only"
+                ),
+                "reading": _TRANSLATION,
+                "read_at": "R. Ramsay Wright's English translation (1934)",
+            },
+            {
+                "citation": "William Lilly, Christian Astrology (1647) p.109",
+                "says": "aspects presuppose signs that behold one another",
+                "reading": _ORIGINAL,
+                "read_at": LILLY_1647_READ_AT,
+            },
+            {
+                "citation": "al-Bīrūnī, The Book of Instruction §446",
+                "says": "aspects presuppose signs that behold one another",
+                "reading": _TRANSLATION,
+                "read_at": "R. Ramsay Wright's English translation (1934)",
+            },
         ],
     },
     "partile_definition": {
@@ -114,28 +211,60 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
             "星座先構成該相位時才判定同度。"
         ),
         "sources": [
-            "William Lilly, Christian Astrology (1647) Book I ch. XIX p.106",
-            "Merlini Anglici Ephemeris ... for the Year 1677, 'Useful Astrological "
-            "Aphorisms', no. 25 (aphorism section unsigned; prefatory letter signed "
-            "William Lilly)",
-            "Deborah Houlding, Skyscript glossary 'Partile / Platick' (secondary; "
-            "the within-one-degree usage, no named author)",
+            {
+                "citation": "William Lilly, Christian Astrology (1647) Book I ch. XIX p.106",
+                "says": (
+                    "partile: exactly so many degrees apart as make a perfect aspect"
+                ),
+                "reading": _ORIGINAL,
+                "read_at": LILLY_1647_READ_AT,
+            },
+            {
+                "citation": (
+                    "Merlini Anglici Ephemeris ... for the Year 1677, 'Useful Astrological "
+                    "Aphorisms', no. 25"
+                ),
+                "says": (
+                    "partile within three degrees; the aphorism section is unsigned and "
+                    "the prefatory letter is signed William Lilly"
+                ),
+                "reading": _BIBLIOGRAPHIC,
+                "read_at": MERLINI_1677_READ_AT,
+            },
+            {
+                "citation": "Deborah Houlding, Skyscript glossary 'Partile / Platick'",
+                "says": "the within-one-degree usage, no named author",
+                "reading": _SECONDARY,
+                "read_at": "the online glossary entry, a secondary work",
+            },
         ],
     },
     "dodecatemoria_formula": {
         "technique_family": "dodecatemoria",
         "response_path": "derived_methods.dodecatemoria",
         "note_zh": (
-            "十二分部有兩種算法：乘以 12（Firmicus）或乘以 13（Paulus），同一個點常落在不同星座。"
-            "本產品預設乘以 12，另一種可在選項裡改選。"
+            "十二分部有兩種算法：Firmicus《Mathesis》II.13 乘以 12，Paulus《導論》（Eisagōgika）第 22 章乘以 13，"
+            "同一個點常落在不同星座。本產品預設乘以 12，另一種可在選項裡改選。"
         ),
         "sources": [
-            "Firmicus Maternus, Mathesis II.13 (Kroll-Skutsch numbering): degrees and "
-            "minutes times 12 from the start of the sign; example Sun Aries 5 deg 05 min, "
-            "first degree of Gemini (Latin read)",
-            "Paulus Alexandrinus, Introduction ch.22: degrees times 13; example Aries "
-            "11 deg, Leo 23 deg (via Greenbaum and Jones, ISAW Papers 12, 2017, "
-            "para. 185; the Greek not checked)",
+            {
+                "citation": "Firmicus Maternus, Mathesis II.13 (Kroll-Skutsch numbering)",
+                "says": (
+                    "degrees and minutes times 12 from the start of the sign; example Sun "
+                    "Aries 5 deg 05 min, first degree of Gemini"
+                ),
+                "reading": _ORIGINAL,
+                "read_at": "the Latin text",
+            },
+            {
+                "citation": "Paulus Alexandrinus, Introduction ch.22",
+                "says": "degrees times 13; example Aries 11 deg, Leo 23 deg",
+                "reading": _SECONDARY,
+                "read_at": (
+                    "via Greenbaum and Jones, ISAW Papers 12, 2017, para. 185; the Greek "
+                    "not checked"
+                ),
+            },
         ],
     },
     "solar_phase_limits": {
@@ -149,13 +278,33 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
             "本站預設 Lilly p.113，三種分法的結果都列出。"
         ),
         "sources": [
-            "William Lilly, Christian Astrology (1647) p.113: 17 minutes, 8 deg 30 min, "
-            "17 degrees; aphorism 26 (p.300 per Houlding): 12 degrees and 16 minutes",
-            "al-Biruni, Book of Instruction, trans. Wright (1934) §481-484: under 16 "
-            "minutes, 6 degrees (7 for Mercury and Venus direct), under the rays 12-18 "
-            "degrees by planet and side",
-            "Porphyry, Introduction ch.2; Antiochus (via Brennan 2017, secondary): "
-            "one band of 15 degrees",
+            {
+                "citation": "William Lilly, Christian Astrology (1647) p.113",
+                "says": "17 minutes, 8 deg 30 min, 17 degrees",
+                "reading": _ORIGINAL,
+                "read_at": LILLY_1647_READ_AT,
+            },
+            {
+                "citation": "William Lilly, Christian Astrology, aphorism 26 (p.300 per Houlding)",
+                "says": "12 degrees and 16 minutes",
+                "reading": _ORIGINAL,
+                "read_at": "the English text; the page number is Houlding's",
+            },
+            {
+                "citation": "al-Biruni, Book of Instruction, trans. Wright (1934) §481-484",
+                "says": (
+                    "under 16 minutes, 6 degrees (7 for Mercury and Venus direct), under "
+                    "the rays 12-18 degrees by planet and side"
+                ),
+                "reading": _TRANSLATION,
+                "read_at": "R. Ramsay Wright's English translation (1934)",
+            },
+            {
+                "citation": "Porphyry, Introduction ch.2; Antiochus",
+                "says": "one band of 15 degrees",
+                "reading": _SECONDARY,
+                "read_at": "via Brennan 2017, a secondary work",
+            },
         ],
     },
     "hayz_definition": {
@@ -169,12 +318,24 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
             "本產品兩種都列出，不替你挑。"
         ),
         "sources": [
-            "al-Bīrūnī, Kitāb al-tafhīm §496 (Wright 1934, read in the archive.org OCR text): "
-            "a nocturnal planet above the earth by night and below it by day; halb, and hayyiz "
-            "with the sign's gender",
-            "William Lilly, Christian Astrology (1647) p.113 (read in an archive.org OCR text "
-            "of a modern reset edition): a feminine nocturnal planet by night under the earth "
-            "in a feminine sign; no halb",
+            {
+                "citation": "al-Bīrūnī, Kitāb al-tafhīm §496 (Wright 1934)",
+                "says": (
+                    "a nocturnal planet above the earth by night and below it by day; "
+                    "halb, and hayyiz with the sign's gender"
+                ),
+                "reading": _TRANSLATION,
+                "read_at": "Wright's English translation, in the archive.org OCR text",
+            },
+            {
+                "citation": "William Lilly, Christian Astrology (1647) p.113",
+                "says": (
+                    "a feminine nocturnal planet by night under the earth in a feminine "
+                    "sign; no halb"
+                ),
+                "reading": _ORIGINAL,
+                "read_at": "an archive.org OCR text of a modern reset edition",
+            },
         ],
     },
 }

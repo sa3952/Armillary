@@ -48,15 +48,18 @@ from .module_state import (
 from .method_status import method_receipt
 from .formatting import normalize_longitude, zodiac_sign_index
 from .root_finding import SOLVER_NAME, find_crossings_detailed, wrap_to_signed_180
+from .source_reading import SOURCE_READING_LEVELS
 from .trace import Trace
 from .aspect_profiles import (
     ASPECT_SET_PROFILES,
+    LILLY_1647_READ_AT,
     MINOR_ASPECT_ORIGIN_NOTE,
     MODERN_MINOR_ASPECTS,
     ORB_BOUNDARY_OPERATOR,
     ORB_BOUNDARY_RECEIPT,
     ORB_PROFILES,
     PARTILE_PROFILES,
+    PARTILE_TABULATED_FROM,
     PARTILE_VALID_ASPECT_BASIS,
     PARTILE_VALID_ASPECT_RULE,
     PTOLEMAIC_ASPECTS,
@@ -1290,18 +1293,53 @@ WHOLE_SIGN_SOURCES = (
     "V.4 pp.185-228, chapter not checked). Counts signs between; Firmicus "
     "II.22 counts inclusively (trine = fifth sign)"
 )
+# The Harmonices mundi locators carry the 1619 printing's page numbers, but the
+# record does not say whether the Latin was read; only the reference is claimed
+# until that is confirmed.
+_HARMONICES_MUNDI_READ_AT = (
+    "level pending: the record gives the 1619 printing's page numbers but does not "
+    "say whether the Latin text was read; only the reference is claimed until that "
+    "is confirmed"
+)
 KEPLER_MINOR_ASPECT_SOURCES = [
-    "Kepler, De fundamentis astrologiae certioribus (Pragae: Schumann, 1602), "
-    "Thesis XXXVIII, sig. C1v of the 1602 printing (unpaginated; image 21 of the "
-    "Royal Library Copenhagen copy, archive.org den-kbd-pil-20002065-001): quintile, biquintile and "
-    "sesquiquadrate added to the five aspects of the ancients (Frisch, Opera omnia "
-    "I (1858) p.428 not checked)",
-    "Kepler, Harmonices mundi (Linz 1619) Lib. IV cap. V, Prop. XII p.145 (third "
-    "grade: trine, sextile, semisextile), Prop. XIII pp.147-148 (fourth grade: "
-    "quintile, biquintile, quincunx), Prop. XIV p.148 (fifth, weakest grade: "
-    "decile, tridecile, octile = semisquare, trioctile = sesquiquadrate)",
-    "Kepler, Harmonices mundi (1619) Lib. IV cap. VI p.155: octile and "
-    "sesquiquadrate have no power unless the primary aspects are long absent",
+    {
+        "citation": (
+            "Kepler, De fundamentis astrologiae certioribus (Pragae: Schumann, 1602), "
+            "Thesis XXXVIII, sig. C1v of the 1602 printing (unpaginated)"
+        ),
+        "says": (
+            "quintile, biquintile and sesquiquadrate added to the five aspects of the "
+            "ancients"
+        ),
+        "reading": SOURCE_READING_LEVELS[0],
+        "read_at": (
+            "the 1602 printing, image 21 of the Royal Library Copenhagen copy, "
+            "archive.org den-kbd-pil-20002065-001; Frisch, Opera omnia I (1858) p.428 "
+            "not checked"
+        ),
+    },
+    {
+        "citation": (
+            "Kepler, Harmonices mundi (Linz 1619) Lib. IV cap. V, Prop. XII p.145, "
+            "Prop. XIII pp.147-148, Prop. XIV p.148"
+        ),
+        "says": (
+            "third grade: trine, sextile, semisextile (Prop. XII); fourth grade: "
+            "quintile, biquintile, quincunx (Prop. XIII); fifth, weakest grade: decile, "
+            "tridecile, octile = semisquare, trioctile = sesquiquadrate (Prop. XIV)"
+        ),
+        "reading": SOURCE_READING_LEVELS[3],
+        "read_at": _HARMONICES_MUNDI_READ_AT,
+    },
+    {
+        "citation": "Kepler, Harmonices mundi (1619) Lib. IV cap. VI p.155",
+        "says": (
+            "octile and sesquiquadrate have no power unless the primary aspects are "
+            "long absent"
+        ),
+        "reading": SOURCE_READING_LEVELS[3],
+        "read_at": _HARMONICES_MUNDI_READ_AT,
+    },
 ]
 
 METHOD_SOURCE_ENTRIES: dict[str, dict] = {
@@ -1319,7 +1357,9 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
     **{
         f"aspects/orb/{key}": {
             "applies_to": "derived_methods.aspects.degree_based.orb_profile_detail",
-            "source_verification": dict(profile["source_verification"]),
+            # The status flags the response carries, and the reasons beside them.
+            **profile["source_verification"],
+            "tabulated_from": list(profile["tabulated_from"]),
             "sources": list(profile["sources"]),
             **{
                 note: profile[note]
@@ -1334,9 +1374,15 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         "boundary_operator": ORB_BOUNDARY_OPERATOR,
         "boundary_provenance": "product_convention",
         "sources": [
-            "William Lilly, Christian Astrology (1647) p.110: the planets are not "
-            "totally separated until 'fully 9 degrees distant' (indirect; reads as "
-            "leaning exclusive, not a stated rule)",
+            {
+                "citation": "William Lilly, Christian Astrology (1647) p.110",
+                "says": (
+                    "the planets are not totally separated until 'fully 9 degrees "
+                    "distant' (indirect; reads as leaning exclusive, not a stated rule)"
+                ),
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": LILLY_1647_READ_AT,
+            },
         ],
         "note": (
             "No checked pre-modern text states whether an offset exactly equal to the "
@@ -1346,7 +1392,8 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
     },
     "aspects/partile": {
         "applies_to": "derived_methods.aspects.degree_based.partile_source_verification",
-        "source_verification": dict(_PARTILE_SOURCE_VERIFICATION),
+        **_PARTILE_SOURCE_VERIFICATION,
+        "tabulated_from": list(PARTILE_TABULATED_FROM),
         "valid_aspect_rule": PARTILE_VALID_ASPECT_RULE,
         # These sources ground the precondition of the
         # same-degree profile only; the degree-offset profiles carry none.
@@ -1356,13 +1403,29 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             if profile["valid_aspect_precondition"] is not None
         ),
         "valid_aspect_sources": [
-            "William Lilly, Christian Astrology (1647) Book I ch. XIX p.106: both "
-            "partile examples (Venus 9 Aries / Jupiter 9 Leo, Sun 1 Taurus / Moon 1 "
-            "Cancer) are sign aspects first",
-            "William Lilly, Christian Astrology (1647) p.109: signs that do not behold "
-            "one another 'cannot have any aspect'",
-            "al-Bīrūnī, The Book of Instruction, trans. R. Ramsay Wright (1934) §446: "
-            "partile defined among planets in signs that aspect each other",
+            {
+                "citation": "William Lilly, Christian Astrology (1647) Book I ch. XIX p.106",
+                "says": (
+                    "both partile examples (Venus 9 Aries / Jupiter 9 Leo, Sun 1 Taurus / "
+                    "Moon 1 Cancer) are sign aspects first"
+                ),
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": LILLY_1647_READ_AT,
+            },
+            {
+                "citation": "William Lilly, Christian Astrology (1647) p.109",
+                "says": "signs that do not behold one another 'cannot have any aspect'",
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": LILLY_1647_READ_AT,
+            },
+            {
+                "citation": (
+                    "al-Bīrūnī, The Book of Instruction, trans. R. Ramsay Wright (1934) §446"
+                ),
+                "says": "partile defined among planets in signs that aspect each other",
+                "reading": SOURCE_READING_LEVELS[1],
+                "read_at": "R. Ramsay Wright's English translation (1934)",
+            },
         ],
     },
     **{

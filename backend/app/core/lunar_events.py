@@ -17,6 +17,7 @@ from ..ephemeris import (
     require_object_coverage,
 )
 from .root_finding import find_crossings_detailed
+from .source_reading import SOURCE_READING_LEVELS
 from .trace import Trace
 from .time_utils import jd_ut_to_iso_utc, time_scale_for_jd_ut
 
@@ -61,8 +62,9 @@ _PHASE_TOLERANCE_DAYS = 1e-9
 # the mean relative speed) cannot be placed before or after the reference from
 # the elongation alone (doing so pushes it a whole synodic cycle away in *both*
 # directions).  It is refined as a root and placed by time: an event
-# at the reference instant, within the solver tolerance, is the previous event
-# (and therefore a prenatal-syzygy candidate); the next event is strictly later.
+# at the reference instant, within the solver tolerance, is the previous event;
+# the next event is strictly later.  The prenatal syzygy is stricter still: it
+# lies strictly before birth (previous_phase_strictly_before).
 _PHASE_NEAR_REFERENCE_DEGREES = 1e-7
 PHASE_DIRECTION_POLICY = {
     "previous": "last_event_at_or_before_reference_within_solver_tolerance",
@@ -161,6 +163,23 @@ def _phase_event(
     }
 
 
+def previous_phase_strictly_before(
+    reference_jd_ut: float, phase: str, phase_state: PhaseState = _phase_state,
+) -> dict:
+    """The last `phase` event strictly before the reference.
+
+    The previous event of the direction policy may sit at the reference within
+    the solver tolerance, a hair after it; for a birth at that instant it is
+    the birth's own syzygy, not one before the birth.  The search then starts a
+    day earlier and finds the occurrence a cycle before.
+    """
+
+    event = _phase_event(reference_jd_ut, phase, "previous", phase_state)
+    if event["jd_ut"] >= reference_jd_ut:
+        event = _phase_event(reference_jd_ut - 1.0, phase, "previous", phase_state)
+    return event
+
+
 def compute_primary_phases(reference_jd_ut: float, trace: Trace) -> dict:
     # Each root is rescanned and bisected again at every refinement depth on
     # grids that share points, and every event first reads the reference
@@ -175,9 +194,15 @@ def compute_primary_phases(reference_jd_ut: float, trace: Trace) -> dict:
             "next": _phase_event(reference_jd_ut, phase, "next", phase_state),
         }
 
-    previous_new = results["new_moon"]["previous"]
-    previous_full = results["full_moon"]["previous"]
-    nearest = max((previous_new, previous_full), key=lambda event: event["jd_ut"])
+    nearest = max(
+        (
+            results[phase]["previous"]
+            if results[phase]["previous"]["jd_ut"] < reference_jd_ut
+            else previous_phase_strictly_before(reference_jd_ut, phase, phase_state)
+            for phase in ("new_moon", "full_moon")
+        ),
+        key=lambda event: event["jd_ut"],
+    )
     prenatal_syzygy = {
         **nearest,
         "definition": "nearest_previous_geocentric_new_or_full_moon",
@@ -594,10 +619,24 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             ),
         },
         "sources": [
-            "Swiss Ephemeris 2.10.03 swecl.c: eclipse_where, "
-            "sol_eclipse_when_glob, swe_sol_eclipse_where",
-            "NASA GSFC Five Millennium Canon of Solar Eclipses (Espenak & Meeus, "
-            "NASA/TP-2006-214141): type, gamma and magnitude columns",
+            {
+                "citation": (
+                    "Swiss Ephemeris 2.10.03 swecl.c: eclipse_where, "
+                    "sol_eclipse_when_glob, swe_sol_eclipse_where"
+                ),
+                "says": "the functions that find the eclipse type and its maximum",
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": "the Swiss Ephemeris 2.10.03 source file swecl.c",
+            },
+            {
+                "citation": (
+                    "NASA GSFC Five Millennium Canon of Solar Eclipses (Espenak & Meeus, "
+                    "NASA/TP-2006-214141)"
+                ),
+                "says": "type, gamma and magnitude columns",
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": "the canon's type, gamma and magnitude columns",
+            },
         ],
         "note": (
             "Over 1181 solar eclipses 1900-2399 the Swiss type or centrality "
@@ -611,12 +650,30 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         "applies_to": "astronomical_data.lunar_events.eclipses.previous_*.instant_definition",
         "instant_definitions": dict(ECLIPSE_INSTANT_DEFINITIONS),
         "sources": [
-            "Swiss Ephemeris Programming Interface (2.10.03) §8.3, §8.10, and "
-            "swecl.c: time of maximum eclipse",
-            "NASA GSFC, Key to Solar Eclipse Maps and Glossary: greatest eclipse is "
-            "the instant the shadow axis passes closest to Earth's centre, in "
-            "dynamical time",
-            "IMCCE, Éclipses de Soleil: maximum is the instant of largest magnitude",
+            {
+                "citation": (
+                    "Swiss Ephemeris Programming Interface (2.10.03) §8.3, §8.10, and "
+                    "swecl.c"
+                ),
+                "says": "time of maximum eclipse",
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": "the Swiss Ephemeris 2.10.03 documentation and source file swecl.c",
+            },
+            {
+                "citation": "NASA GSFC, Key to Solar Eclipse Maps and Glossary",
+                "says": (
+                    "greatest eclipse is the instant the shadow axis passes closest to "
+                    "Earth's centre, in dynamical time"
+                ),
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": "NASA GSFC's own text",
+            },
+            {
+                "citation": "IMCCE, Éclipses de Soleil",
+                "says": "maximum is the instant of largest magnitude",
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": "IMCCE's own French text",
+            },
         ],
         "note": (
             "The three definitions name different instants; external comparison "

@@ -1,8 +1,11 @@
 """〈上升星座查詢表為什麼常常不準〉: figure 1 (how often two model lookup
-tables give a different rising sign than the exact computation), figure 2 (a
-table made for 25°N used at other latitudes), table 1 (clock time against
+tables give a different rising sign than the exact computation), figure 2 (the
+minutes each sign takes to rise at Taipei against table A's two hours, a
+switch between the two), figure 3 (a table made for 25°N used at other
+latitudes; pointing at a city writes its share), table 1 (clock time against
 local mean time, abroad and in Taiwan), table 2 (the product's Ascendant for
 one clock time at four Taiwanese places) and the numbers the prose quotes.
+The figures are article figures (`_fx`).
 
 The tables are models the article defines, not anyone's published table:
   A  sun sign plus two-hour blocks: during the two hours that start at clock
@@ -25,8 +28,8 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from . import _noaa
-from ._common import SIGNS, backend_on_path, calc_ut, indent, product_charts, swiss
+from . import _fx, _noaa
+from ._common import SIGNS, backend_on_path, calc_ut, product_charts, swiss
 
 
 FRAGMENT = "blog-rising-sign-tables"
@@ -54,6 +57,14 @@ ABROAD = ("東京", "首爾", "新加坡", "倫敦", "馬德里", "紐約")
 FIG2_MARKS = ("雪梨", "新加坡", "臺北", "東京", "倫敦")
 DST_YEAR = 1975
 TABLE_LATITUDE = 25.0
+# Table A's block: one sign every two hours.
+BLOCK_MINUTES = 120
+# The sidereal-time sweeps step the ARMC by this many degrees.
+ARMC_STEP = 0.25
+SWEEP = round(360 / ARMC_STEP)
+SIGN_KEYS = ("aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius",
+             "capricorn", "aquarius", "pisces")
+CITY_KEYS = {"雪梨": "sydney", "新加坡": "singapore", "臺北": "taipei", "東京": "tokyo", "倫敦": "london"}
 # Table 2: one synthetic clock time, the same at four places.
 EXAMPLE = datetime(YEAR, 3, 21, 6, 0)
 SUNRISE_DAY = date(YEAR, 3, 21)
@@ -102,7 +113,7 @@ def _data() -> dict:
         n = len(rows)
         split = {}
         for start in range(0, 1440, STEP_MINUTES):
-            split[start] = sum((sun + (minute - start) // 120) % 12 != asc for minute, sun, asc, _ in rows) / n
+            split[start] = sum((sun + (minute - start) // BLOCK_MINUTES) % 12 != asc for minute, sun, asc, _ in rows) / n
         best = min(split, key=lambda start: split[start])
         d["table_a"] = (best, split[best])
         d["table_b"] = {name: sum(other[name] != asc for _, _, asc, other in rows) / n for name in ELSEWHERE_IN_TAIWAN}
@@ -117,25 +128,25 @@ def _data() -> dict:
                 summer += 1
                 summer_wrong += truth != table
         d["dst"] = (summer_wrong / summer, wrong / total)
-        # Sidereal-time sweeps: one sidereal day in 0.25° of ARMC, the year's mean obliquity.
+        # Sidereal-time sweeps: one sidereal day in ARMC_STEP degrees of ARMC, the year's mean obliquity.
         eps = sum(swe.calc_ut(swe.julday(YEAR, month, 1, 0.0), swe.ECL_NUT)[0][0] for month in range(1, 13)) / 12
 
         def armc_signs(lat: float, shift: float = 0.0) -> list[int]:
-            return [int(swe.houses_armc((k * 0.25 + shift) % 360, lat, eps, b"W")[1][0] // 30) for k in range(1440)]
+            return [int(swe.houses_armc((k * ARMC_STEP + shift) % 360, lat, eps, b"W")[1][0] // 30) for k in range(SWEEP)]
 
         base = armc_signs(TABLE_LATITUDE)
         lats = sorted(set(range(-40, 61, 5)) | {PLACES[name][1] for name in FIG2_MARKS})
-        d["latitude"] = {lat: sum(a != b for a, b in zip(base, armc_signs(lat))) / 1440 for lat in lats}
+        d["latitude"] = {lat: sum(a != b for a, b in zip(base, armc_signs(lat))) / SWEEP for lat in lats}
         # Rising time of each sign at Taipei, from the same sweep (minutes of a sidereal day).
         def asc_at(armc: float) -> float:
             return swe.houses_armc(armc % 360, tp[1], eps, b"W")[1][0]
 
         crossings = []
         for k in range(12):  # the ARMC at which each sign begins to rise, by bisection
-            lo = next(step * 0.25 for step in range(1440)
-                      if int(asc_at(step * 0.25) // 30) == (k - 1) % 12
-                      and int(asc_at(step * 0.25 + 0.25) // 30) == k)
-            hi = lo + 0.25
+            lo = next(step * ARMC_STEP for step in range(SWEEP)
+                      if int(asc_at(step * ARMC_STEP) // 30) == (k - 1) % 12
+                      and int(asc_at(step * ARMC_STEP + ARMC_STEP) // 30) == k)
+            hi = lo + ARMC_STEP
             for _ in range(40):
                 mid = (lo + hi) / 2
                 if int(asc_at(mid) // 30) == k:
@@ -160,7 +171,7 @@ def _data() -> dict:
                     continue
                 shift = lead * 360 / 1436.0682
                 local = armc_signs(lat)
-                share = sum(a != b for a, b in zip(local, armc_signs(lat, shift))) / 1440
+                share = sum(a != b for a, b in zip(local, armc_signs(lat, shift))) / SWEEP
                 seen.append((month, offset, lead, share))
             offsets.append((name, seen))
         d["offsets"] = offsets
@@ -211,60 +222,277 @@ def _hm(minutes: float) -> str:
     return f"{sign}{m // 60} 小時 {m % 60:02d} 分" if m >= 60 else f"{sign}{m} 分"
 
 
-def _bars(d: dict) -> list[tuple[str, float]]:
-    start, share = d["table_a"]
-    out = [(f"太陽星座＋兩小時時段表，用在臺北（最有利的切法）", share)]
+def _bars(d: dict) -> list[tuple[str, str, str, float]]:
+    """Figure 1's rows: (table, where it is used, its engraving, share of clock times it gets wrong)."""
+    _, share = d["table_a"]
+    out = [("太陽星座＋兩小時時段表", "用在臺北（最有利的切法）", "fx-fill-cross", share)]
     for name in ELSEWHERE_IN_TAIWAN:
-        out.append((f"臺北精算表，用在{name}", d["table_b"][name]))
-    out.append((f"臺北精算表，{DST_YEAR} 年臺北的夏令時間期間", d["dst"][0]))
+        out.append(("臺北精算表", f"用在{name}", "fx-fill-hatch", d["table_b"][name]))
+    out.append(("臺北精算表", f"{DST_YEAR} 年臺北的夏令時間期間", "fx-fill-hatch", d["dst"][0]))
     return out
 
 
-def _hero(d: dict) -> str:
-    W, step, top = 640, 66, 34
+def _width(text: str) -> float:
+    """A rough width in em: a CJK character is one, anything else about half."""
+    return sum(1.0 if ord(ch) > 0x2E80 else 0.52 for ch in text)
+
+
+def _share_drawing(layout: str, fid: str, bars: list, bound: _fx.Bound) -> str:
+    """Figure 1, one layout: a row per table and place, the share of clock times
+    the table gets wrong as a bar on a 0–100% scale."""
+    wide = layout == "fx-wide"
+    W = _fx.WIDE if wide else _fx.NARROW
+    x0, x1 = (24.0, 760.0) if wide else (14.0, 326.0)
+    out = []
+    y = 20.0 if wide else 14.0
+    for table, where, fill, share in bars:
+        label, value = f"{table}，{where}", bound.num(_pct(share))
+        if wide:
+            out.append(_fx.text(x0, y + 20, label, "fx-t"))
+            by, bh = y + 30, 24.0
+            out.append(_fx.text(x1 + 16, by + 18, value, "fx-t fx-num"))
+            y += 66
+        else:
+            lines = [label] if _width(label) * 13.5 < 250 else [f"{table}，", where]
+            for i, line in enumerate(lines):
+                out.append(_fx.text(x0, y + 16 + i * 18, line, "fx-t"))
+            out.append(_fx.text(x1, y + 16, value, "fx-t fx-num", "end"))
+            by, bh = y + 16 + (len(lines) - 1) * 18 + 8, 18.0
+            y = by + bh + 12
+        out.append(_fx.rect(x0, by, x1 - x0, bh, "fx-track"))
+        out.append(_fx.rect(x0, by, max((x1 - x0) * share, 2), bh, fill))
+    axis = y + (2 if wide else 0)
+    out.append(_fx.line(x0, axis, x1, axis, "fx-axis"))
+    for t in (0, 25, 50, 75, 100):
+        x = x0 + (x1 - x0) * t / 100
+        out.append(_fx.line(x, axis, x, axis + 5, "fx-axis"))
+        anchor = "start" if t == 0 else "end" if t == 100 and not wide else "middle"
+        out.append(_fx.text(x, axis + 22, bound.scale(f"{t}%"), "fx-t fx-small fx-num", anchor))
+    note = (f"{bound.num(str(YEAR))} 年（夏令時間一列為 {bound.num(str(DST_YEAR))} 年）",
+            f"每 {bound.num(str(STEP_MINUTES))} 分鐘的鐘面時刻")
+    if wide:
+        out.append(_fx.text(x0, axis + 50, "".join(note), "fx-t fx-small fx-dim"))
+        H = axis + 66
+    else:
+        out.append(_fx.text(x0, axis + 46, note[0], "fx-t fx-small fx-dim"))
+        out.append(_fx.text(x0, axis + 62, note[1], "fx-t fx-small fx-dim"))
+        H = axis + 76
+    return "".join([_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)] + out + ["</svg>"])
+
+
+def _share_figure(d: dict) -> str:
+    bound = _fx.Bound()
     bars = _bars(d)
-    H = top + step * len(bars) + 30
-    span = 470
-    s = [f'<svg viewBox="0 0 {W} {H}" role="img" aria-label="查表與精算給出不同上升星座的時刻佔比：'
-         + "；".join(f"{label} {_pct(share)}" for label, share in bars) + '。">']
-    for i, (label, share) in enumerate(bars):
-        y = top + i * step
-        cls = "f-accent" if i in (0, len(bars) - 1) else "f-ring2"
-        s.append(f'<text class="t-dim" x="10" y="{y}">{label}</text>')
-        s.append(f'<rect class="f-hair" x="10" y="{y + 12}" width="{span}" height="22"/>')
-        s.append(f'<rect class="{cls}" x="10" y="{y + 12}" width="{max(span * share, 2):.1f}" height="22"/>')
-        s.append(f'<text class="t-mono" x="{10 + span + 14}" y="{y + 30}">{_pct(share)}</text>')
-    s.append(f'<text class="t-faint" x="10" y="{H - 6}">{YEAR} 年（夏令時間一列為 {DST_YEAR} 年）每 {STEP_MINUTES} 分鐘的鐘面時刻</text>')
-    s.append("</svg>")
-    return indent("\n".join(s))
+    rows = "".join(f'<tr><th scope="row">{table}，{where}</th><td class="n">{bound.num(_pct(share))}</td></tr>'
+                   for table, where, _, share in bars)
+    table = ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
+             '<table class="ar-table fx-table"><thead><tr><th scope="col">查詢表與用在哪裡</th>'
+             f'<th scope="col" class="n">查錯的時刻佔比</th></tr></thead><tbody>{rows}</tbody></table></div></details>')
+    markup = _fx.figure(
+        fid="fig-share", hero=True,
+        title="兩種模型查詢表與精算給出不同上升星座的時刻佔比",
+        caption=(f"<b>{bound.label('圖 1')}</b>兩種模型查詢表與精算給出不同上升星座的時刻佔比。第一列是只看太陽星座與出生時段的表，"
+                 "已經把時段的切點挑到對臺北最有利、並給它太陽的精確星座；其餘四列是一張照臺北精確算出的表，"
+                 "拿到別的地方或夏令時間的年份去用。兩種表都是本文自己定義的模型，不是任何特定網站或書上的表。"),
+        wide=_share_drawing("fx-wide", "fig-share", bars, bound),
+        narrow=_share_drawing("fx-narrow", "fig-share", bars, bound),
+        notes=[], idle="", table=table,
+    )
+    return _checked(markup, bound)
 
 
-def _curve(d: dict) -> str:
-    W, H = 640, 360
-    L, R, T, B = 70, 610, 30, 290
+def _lat_text(lat: float) -> str:
+    return f"{'南' if lat < 0 else '北'}緯 {abs(lat):.1f}°"
+
+
+def _latitude_drawing(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
+    """Figure 3, one layout: the share of a sidereal day a table made for 25°N
+    gets wrong at each latitude, the five cities as marks."""
+    wide = layout == "fx-wide"
+    W = _fx.WIDE if wide else _fx.NARROW
+    L, R, T, B = (96.0, 846.0, 40.0, 316.0) if wide else (52.0, 322.0, 36.0, 286.0)
+    top_share = 0.7
     X = lambda lat: L + (R - L) * (lat + 40) / 100  # noqa: E731
-    Y = lambda share: B - (B - T) * share / 0.7  # noqa: E731
-    grid = [lat for lat in d["latitude"] if lat in range(-40, 61, 5)]
-    path = "M" + " L".join(f"{X(lat):.1f},{Y(d['latitude'][lat]):.1f}" for lat in grid)
-    marks = "、".join(f"{name}（{PLACES[name][1]:.1f}°）{_pct(d['latitude'][PLACES[name][1]])}" for name in FIG2_MARKS)
-    s = [f'<svg viewBox="0 0 {W} {H}" role="img" aria-label="一張為北緯 25 度精算的上升星座表，用在其他緯度時，'
-         f'一個恆星日裡查錯的時刻佔比：{marks}。緯度離 25 度越遠，錯得越多。">']
+    Y = lambda share: B - (B - T) * share / top_share  # noqa: E731
+    H = B + (74 if wide else 84)
+    out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)]
     for share in (0, 0.2, 0.4, 0.6):
-        s.append(f'<line class="g-hair" x1="{L}" y1="{Y(share):.1f}" x2="{R}" y2="{Y(share):.1f}"/>')
-        s.append(f'<text class="t-faint t-end" x="{L - 10}" y="{Y(share) + 6:.1f}">{share * 100:.0f}%</text>')
+        out.append(_fx.line(L, Y(share), R, Y(share), "fx-hair" if share else "fx-axis"))
+        out.append(_fx.text(L - 8, Y(share) + 5, bound.scale(_pct(share)), "fx-t fx-small fx-num", "end"))
     for lat in (-40, -20, 0, 20, 40, 60):
-        s.append(f'<text class="t-faint t-mid" x="{X(lat):.1f}" y="{B + 28}">{"南" if lat < 0 else "北" if lat > 0 else ""}{abs(lat)}°</text>')
-    s.append(f'<line class="g-ink" x1="{L}" y1="{B}" x2="{R}" y2="{B}"/>')
-    s.append(f'<path class="g-ink" d="{path}"/>')
+        out.append(_fx.line(X(lat), B, X(lat), B + 5, "fx-axis"))
+        name = f"{'南' if lat < 0 else '北' if lat > 0 else ''}{bound.scale(f'{abs(lat)}°')}"
+        anchor = "end" if lat == 60 and not wide else "middle"
+        out.append(_fx.text(X(lat), B + 22, name, "fx-t fx-small fx-num", anchor))
+    table_x = X(TABLE_LATITUDE)
+    out.append(_fx.line(table_x, T, table_x, B, "fx-sunline"))
+    out.append(_fx.text(table_x + 6, T + 14, f"表的緯度：北 {bound.num(f'{TABLE_LATITUDE:g}')}°", "fx-t fx-small fx-key"))
+    grid = [lat for lat in d["latitude"] if lat in range(-40, 61, 5)]
+    out.append(_fx.path("M" + " L".join(f"{_fx.f(X(lat))} {_fx.f(Y(d['latitude'][lat]))}" for lat in grid), "fx-axis"))
     for name in FIG2_MARKS:
-        mark = PLACES[name][1]
-        x, y = X(mark), Y(d["latitude"][mark])
-        s.append(f'<circle class="f-paper" cx="{x:.1f}" cy="{y:.1f}" r="7"/>')
-        s.append(f'<circle class="g-accent-thin" cx="{x:.1f}" cy="{y:.1f}" r="7"/>')
-        s.append(f'<text class="t-accent t-mid" x="{x:.1f}" y="{y - 16:.1f}">{name}</text>')
-    s.append(f'<text class="t-faint" x="{L}" y="{H - 8}">橫軸：出生地緯度　縱軸：上升星座與表不同的時刻佔比</text>')
-    s.append("</svg>")
-    return indent("\n".join(s))
+        place = PLACES[name][1]
+        share = d["latitude"][place]
+        x, y = X(place), Y(share)
+        value = bound.num(_pct(share))
+        out.append(f'<g class="fx-row" data-fx-key="{CITY_KEYS[name]}" tabindex="0" '
+                   f'aria-label="{name}，{bound.num(_lat_text(place))}，查錯 {value}">')
+        out.append(_fx.circle(x, y, 18, "fx-hit"))
+        out.append(_fx.circle(x, y, 7 if wide else 6, "fx-mk"))
+        label = f"{name} {value}"
+        if x > R - 40:
+            out.append(_fx.text(x + 8, y - 14, label, "fx-t fx-key", "end"))
+        elif x < L + 40:
+            out.append(_fx.text(x - 8, y - 14, label, "fx-t fx-key"))
+        else:
+            out.append(_fx.text(x, y - 14, label, "fx-t fx-key", "middle"))
+        out.append("</g>")
+    if wide:
+        out.append(_fx.text(L, B + 52, "橫軸：出生地緯度　縱軸：上升星座與表不同的時刻佔比", "fx-t fx-small fx-dim"))
+    else:
+        out.append(_fx.text(14, B + 50, "橫軸：出生地緯度", "fx-t fx-small fx-dim"))
+        out.append(_fx.text(14, B + 68, "縱軸：上升星座與表不同的時刻佔比", "fx-t fx-small fx-dim"))
+    out.append("</svg>")
+    if max(d["latitude"].values()) > top_share:
+        raise RuntimeError("the latitude curve outgrew figure 3's scale")
+    return "".join(out)
+
+
+def _latitude_figure(d: dict) -> str:
+    bound = _fx.Bound()
+    for label in ("圖 3", "表 1"):
+        bound.label(label)
+    marks = {PLACES[name][1]: name for name in FIG2_MARKS}
+    rows = []
+    for lat in sorted(d["latitude"]):
+        name = marks.get(lat)
+        if name is None and lat not in range(-40, 61, 5):
+            continue
+        key = f' data-fx-key="{CITY_KEYS[name]}"' if name else ""
+        rows.append(f'<tr{key}><th scope="row">{name or ""}</th><td class="n">{bound.num(_lat_text(lat))}</td>'
+                    f'<td class="n">{bound.num(_pct(d["latitude"][lat]))}</td></tr>')
+    table = ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
+             '<table class="ar-table fx-table"><thead><tr><th scope="col">城市</th><th scope="col" class="n">緯度</th>'
+             f'<th scope="col" class="n">查錯的時刻佔比</th></tr></thead><tbody>{"".join(rows)}</tbody></table></div></details>')
+    notes = []
+    for name in FIG2_MARKS:
+        lat = PLACES[name][1]
+        notes.append(_fx.Note(CITY_KEYS[name], None, (
+            f"{name}（{bound.num(_lat_text(lat))}）：拿為北緯 {bound.num(f'{TABLE_LATITUDE:g}')} 度精確算出的表來查，"
+            f"一個恆星日裡有 {bound.num(_pct(d['latitude'][lat]))} 的時刻查錯。")))
+    markup = _fx.figure(
+        fid="fig-latitude",
+        title=f"一張為北緯 {bound.num(f'{TABLE_LATITUDE:g}')} 度精算的上升星座表，用在其他緯度時查錯的時刻佔比",
+        caption=(f"<b>{bound.label('圖 3')}</b>一張為北緯 {bound.num(f'{TABLE_LATITUDE:g}')} 度精確算出的上升星座表，"
+                 "用在其他緯度時，一個恆星日裡查錯的時刻佔比"
+                 f"（恆星時每 {bound.num(f'{ARMC_STEP:g}')} 度取樣一次，黃赤交角取 {bound.num(str(YEAR))} 年的平均）。"
+                 f"只有緯度不同；經度與時鐘的差別另見{bound.label('表 1')}。"),
+        wide=_latitude_drawing("fx-wide", "fig-latitude", d, bound),
+        narrow=_latitude_drawing("fx-narrow", "fig-latitude", d, bound),
+        notes=notes, idle="用 Tab 鍵移到一個城市上，或用滑鼠指著它，這裡會寫出它的緯度與查錯的時刻佔比。",
+        table=table,
+    )
+    return _checked(markup, bound)
+
+
+RISING_VARIANTS = (("actual", f"實際：{YEAR} 年臺北"), ("model", "模型：每個星座兩小時"))
+
+
+def _rising_drawing(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
+    """Figure 2, one layout: the minutes each sign takes to rise, the model's
+    two hours each against Taipei's own; the buttons switch between them."""
+    wide = layout == "fx-wide"
+    W = _fx.WIDE if wide else _fx.NARROW
+    top_minutes = 150
+    minutes = {"actual": d["rising"], "model": [float(BLOCK_MINUTES)] * 12}
+    fills = {"actual": "fx-fill-cross", "model": "fx-fill-hatch"}
+    out = []
+    if wide:
+        L, R, T, B = 96.0, 852.0, 44.0, 300.0
+        col = (R - L) / 12
+        Y = lambda m: B - (B - T) * m / top_minutes  # noqa: E731
+        H = B + 66
+        for t in range(0, top_minutes + 1, 30):
+            out.append(_fx.line(L, Y(t), R, Y(t), "fx-hair" if t else "fx-axis"))
+            out.append(_fx.text(L - 8, Y(t) + 5, bound.scale(str(t)), "fx-t fx-small fx-num", "end"))
+        out.append(_fx.text(L - 8, T - 16, "分鐘", "fx-t fx-small fx-dim", "end"))
+        for s, key in enumerate(SIGN_KEYS):
+            cx = L + (s + 0.5) * col
+            out.append(_fx.glyph(key, cx, B + 20, 16, "fx-mk-gl"))
+            out.append(_fx.text(cx, B + 50, SIGNS[s], "fx-t fx-small", "middle"))
+        for variant, _ in RISING_VARIANTS:
+            body = []
+            for s in range(12):
+                cx = L + (s + 0.5) * col
+                m = minutes[variant][s]
+                body.append(_fx.rect(cx - 17, Y(m), 34, B - Y(m), fills[variant]))
+                body.append(_fx.rect(cx - 17, Y(m), 34, B - Y(m), "fx-inset-frame"))
+                body.append(_fx.text(cx, Y(m) - 8, bound.num(f"{m:.0f}"), "fx-t fx-small fx-num fx-key", "middle"))
+            out.append(_fx.variant_group(variant, RISING_VARIANTS[0][0], "".join(body)))
+        ref = Y(BLOCK_MINUTES)
+        out.append(_fx.line(L, ref, R, ref, "fx-sunline"))
+        out.append(_fx.text(R, T - 16, f"虛線：兩小時（{bound.num(str(BLOCK_MINUTES))} 分鐘）", "fx-t fx-small", "end"))
+    else:
+        L, R, top, rh = 72.0, 284.0, 44.0, 26.0
+        X = lambda m: L + (R - L) * m / top_minutes  # noqa: E731
+        B = top + 12 * rh
+        H = B + 70
+        for s, key in enumerate(SIGN_KEYS):
+            cy = top + (s + 0.5) * rh
+            out.append(_fx.glyph(key, 24, cy, 12, "fx-mk-gl"))
+            out.append(_fx.text(36, cy + 5, SIGNS[s], "fx-t fx-small"))
+        for variant, _ in RISING_VARIANTS:
+            body = []
+            for s in range(12):
+                cy = top + (s + 0.5) * rh
+                m = minutes[variant][s]
+                body.append(_fx.rect(L, cy - 8, X(m) - L, 16, fills[variant]))
+                body.append(_fx.rect(L, cy - 8, X(m) - L, 16, "fx-inset-frame"))
+                body.append(_fx.text(X(m) + 5, cy + 5, bound.num(f"{m:.0f}"), "fx-t fx-small fx-num"))
+            out.append(_fx.variant_group(variant, RISING_VARIANTS[0][0], "".join(body)))
+        ref = X(BLOCK_MINUTES)
+        out.append(_fx.line(ref, top - 6, ref, B, "fx-sunline"))
+        out.append(_fx.text(R + 30, top - 14, f"虛線：兩小時（{bound.num(str(BLOCK_MINUTES))} 分鐘）", "fx-t fx-small", "end"))
+        out.append(_fx.line(L, B, R, B, "fx-axis"))
+        for t in range(0, top_minutes + 1, 30):
+            out.append(_fx.line(X(t), B, X(t), B + 5, "fx-axis"))
+            out.append(_fx.text(X(t), B + 22, bound.scale(str(t)), "fx-t fx-small fx-num", "middle"))
+        out.append(_fx.text(L, B + 48, "分鐘", "fx-t fx-small fx-dim"))
+    if max(d["rising"]) > top_minutes:
+        raise RuntimeError("a sign takes longer than figure 2's scale")
+    return "".join([_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)] + out + ["</svg>"])
+
+
+def _rising_figure(d: dict) -> str:
+    bound = _fx.Bound()
+    for _, label in RISING_VARIANTS:
+        bound.label(label)
+    rows = "".join(f'<tr><th scope="row">{SIGNS[s]}</th><td class="n">{bound.num(str(BLOCK_MINUTES))}</td>'
+                   f'<td class="n">{bound.num(f"{m:.0f}")}</td></tr>' for s, m in enumerate(d["rising"]))
+    table = ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
+             '<table class="ar-table fx-table"><thead><tr><th scope="col">星座</th>'
+             f'<th scope="col" class="n">模型（分鐘）</th><th scope="col" class="n">{bound.num(str(YEAR))} 年臺北（分鐘）</th>'
+             f'</tr></thead><tbody>{rows}</tbody></table></div></details>')
+    markup = _fx.figure(
+        fid="fig-rising",
+        title="每個星座升起要多少分鐘：每兩小時一個星座的模型，與臺北的實際",
+        caption=(f"<b>{bound.label('圖 2')}</b>每個星座從開始升起到整個升完，要多少分鐘的鐘面時間。按鈕切換兩種說法："
+                 "「太陽星座加出生時段」那種表假設每個星座都是兩小時；實際上，在 "
+                 f"{bound.num(str(YEAR))} 年臺北的緯度，有的星座約一個半小時就升完，有的要兩個多小時"
+                 f"（恆星時每 {bound.num(f'{ARMC_STEP:g}')} 度取樣，黃赤交角取 {bound.num(str(YEAR))} 年的平均）。"
+                 "虛線是兩小時。"),
+        wide=_rising_drawing("fx-wide", "fig-rising", d, bound),
+        narrow=_rising_drawing("fx-narrow", "fig-rising", d, bound),
+        notes=[], idle="", variants=RISING_VARIANTS, switch_label="切換模型與實際",
+        table=table,
+    )
+    return _checked(markup, bound)
+
+
+def _checked(markup: str, bound: _fx.Bound) -> str:
+    found = _fx.problems(markup, bound)
+    if found:
+        raise RuntimeError("figure check: " + "; ".join(found))
+    return markup
 
 
 def _offset_rows(d: dict) -> str:
@@ -306,7 +534,7 @@ def build() -> tuple[dict[str, str], list[str]]:
         raise RuntimeError("the fastest and slowest signs are no longer Aries/Pisces and Leo/Scorpio")
     offsets = {name: seen for name, seen in d["offsets"]}
     quoted = [
-        f"{start // 60:02d}:{start % 60:02d} 到 {(start + 120) // 60:02d}:{(start + 120) % 60:02d}",
+        f"{start // 60:02d}:{start % 60:02d} 到 {(start + BLOCK_MINUTES) // 60:02d}:{(start + BLOCK_MINUTES) % 60:02d}",
         f"仍有 {_pct(share)} 的時刻查錯",
         f"金門有 {_pct(d['table_b']['金門'])}、恆春有 {_pct(d['table_b']['恆春'])}、花蓮有 {_pct(d['table_b']['花蓮'])}",
         f"夏令時間期間有 {_pct(d['dst'][0])} 的時刻查錯，全年平均也有 {_pct(d['dst'][1])}",
@@ -319,6 +547,6 @@ def build() -> tuple[dict[str, str], list[str]]:
         f"NOAA 公式在同一刻給出的太陽視黃經是{SIGNS[int(sun // 30)]} {sun % 30:.2f} 度，相差 {gap:.2f} 度",
         f"上升星座與臺北不同的有{'、'.join(differing)}",
     ]
-    blocks = {"table-share": _hero(d), "fixed-latitude": _curve(d), "clock-offsets": _offset_rows(d),
-              "same-clock": _example_rows(d)}
+    blocks = {"fx-defs": _fx.defs(SIGN_KEYS), "table-share": _share_figure(d), "rising-time": _rising_figure(d),
+              "fixed-latitude": _latitude_figure(d), "clock-offsets": _offset_rows(d), "same-clock": _example_rows(d)}
     return blocks, quoted

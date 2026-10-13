@@ -28,6 +28,7 @@ Armillary (渾儀) is a classical Western astrology calculator with a Traditiona
 - [出生時間換算的規則與出處｜渾儀 Armillary](https://projectarmillary.com/zh-TW/methods/birth-time-conversion): 計算頁的換算助手如何把民國年與日本年號換成西元，如何由伺服器回顯鐘面時間在臺灣、香港、澳門與中國當時的 UTC 偏移，以及每一條時區規則的出處與我們核到哪一層。
 - [年度小限、法達、黃道釋放與十年期：年度時間主星的規則與出處｜渾儀 Armillary](https://projectarmillary.com/zh-TW/methods/time-lords): 年度小限、法達、黃道釋放、十年期與七個延伸的阿拉伯點，各照什麼規則算、根據哪些古典文獻、我們核到哪一層，以及文獻說法不同時用的是哪一種。只列哪一段時間由誰輪值；不替你解盤，也不預測。
 - [十年期的規則、出處與驗算｜渾儀 Armillary](https://projectarmillary.com/zh-TW/methods/decennials): 十年期（每段 10 年 9 個月）怎麼算、從哪顆行星開始、出自哪幾本古書，並用古書自己的例盤與細分表逐格驗算；另附行星年數表、人生七齡與三分性主星。
+- [名詞解釋：古典占星的上升、宮位、相位、尊貴、焦傷與時間主星｜渾儀 Armillary](https://projectarmillary.com/zh-TW/methods/glossary): 計算頁與結果頁用到的古典占星詞彙：上升星座、整宮制、相位、不合意、十二分部、廟與旺、界、面、三分性、命運點、月宿、日輪內、焦傷、在光束下、時間主星、法達、黃道釋放等，需要的附英文或原文，原典的說法寫明出處。只解釋名詞，不替你解盤。
 - [古典占星天文計算的驗證方法｜渾儀 Armillary](https://projectarmillary.com/zh-TW/validation): 查看星曆、座標、時間換算、數值比較、計算卷宗與已知驗證範圍，不把抽樣結果外推成全面認證。
 - [計算透明度、隱私與信任邊界｜渾儀 Armillary](https://projectarmillary.com/zh-TW/trust): 了解渾儀如何連結計算結果、版本、來源、隱私控制、驗證證據與尚未完成的限制。
 - [安全、隱私邊界與漏洞回報｜渾儀 Armillary](https://projectarmillary.com/zh-TW/security): 說明渾儀的安全與隱私邊界、負責任漏洞回報方式、禁止提交的敏感資料及非授權測試範圍。
@@ -51,6 +52,12 @@ Armillary (渾儀) is a classical Western astrology calculator with a Traditiona
 - [不知道出生時間，能排星盤嗎？只知道日期或大約幾點時，哪些結果站得住｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/unknown-birth-time): 不知道確切出生時間也能排星盤。以合成範例實算：只知道日期時，哪些行星星座仍然站得住；只知道大約幾點時，上升星座、宮位與日夜盤在一小時裡怎麼翻面。
 - [上升星座查詢表為什麼常常不準｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/rising-sign-tables): 上升星座查詢表只問出生時段或日期，卻默默假設了出生地的緯度、經度與時鐘規則。以實算比較兩種查表做法與精算，看在臺北、金門、夏令時間年份與國外各有多少時刻查錯。
 - [西洋占星要不要換真太陽時？｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/true-solar-time): 西洋占星排盤不用換真太陽時：上升點與宮位由世界時加出生地經度決定。先換真太陽時再輸入，經度會被算兩次。以合成例子逐步列出兩種算法的數字與一年裡的誤差。
+- [年度時間主星入門：小限、月小限、法達、黃道釋放、十年期有什麼不同｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/time-lords-introduction): 時間主星是把人生分段、每段交給一顆行星或一個星座輪值的古典技法。說明年度小限、月小限、法達、黃道釋放與十年期各出自哪本書、怎麼切、文獻說法不同之處，以及時間軸、年表與匯出檔怎麼用。
+- [十二分部（Dodecatemoria）是什麼：乘以 12 與乘以 13 兩種算法｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/dodecatemoria): 十二分部把一個點在星座裡的度數放大十二或十三倍，對應到另一個星座。以例子說明 Firmicus 與 Paulus 兩種算法、古書怎麼看待它，以及它為什麼對出生時間特別敏感、本站怎麼標出會換星座的列。
+- [焦傷、在光束下、日輪內（cazimi）：離太陽多近才算｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/combustion-under-beams-cazimi): 焦傷（combust）、在光束下、日輪內（cazimi）各離太陽多近？Lilly 1647 是 17 角分、8°30′、17°，希臘化只有一條 15° 的線，al-Bīrūnī 依行星 12° 到 18°。三套界線並排，照原典說明各代表什麼。
+- [月宿是什麼？阿拉伯的 28 宿與古中國的二十八宿有什麼不同｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/lunar-mansions): 月宿（Lunar Mansions，阿拉伯文 manāzil al-qamar）把黃道切成 28 段，看月亮落在哪一段。說明等分與起點、宿名為什麼只寫原文、古書拿月宿做什麼、出生時間不精確時怎麼列，以及它和沿赤道劃分、寬窄不一的古中國二十八宿哪裡不同。
+- [產前朔望與產前日月食：出生前最後一次新月或滿月｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/prenatal-syzygy): 產前朔望是出生前最近一次新月或滿月。說明 Ptolemy 用它的度數推上升點、滿月時取在地平線上方的那一個發光體、日生看朔夜生看望的另一種挑法，以及產前日月食為什麼是二十世紀的做法、半影月食算不算。
+- [宮位制有哪些？七種宮位制怎麼把天空切成十二宮｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/house-systems-explained): 宮位制有哪些？整宮、等分宮、Porphyry、Alcabitius、Campanus、Regiomontanus、Placidus 各切天球的哪一個圓，用一顆可以轉的天球畫出來，並整理誰在什麼年代用哪一種，以及極區為什麼有些宮位制不算。
 
 ## Optional
 

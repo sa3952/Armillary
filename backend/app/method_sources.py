@@ -44,21 +44,29 @@ def _module_entries() -> dict[str, dict[str, Any]]:
         civil_time_basis,
         classical_classifications,
         contested_methods,
+        decennials,
         declination,
         dodecatemoria,
         essential_dignities,
+        extended_lots,
+        firdaria,
         fixed_stars,
         horizon_events,
         houses,
         lots,
         lunar_events,
         lunar_mansions,
+        monthly_profections,
         moon,
         planetary_hours,
-        solar_phase,
+        planetary_years,
         prenatal_points,
+        profections,
+        solar_phase,
         time_utils,
         tz_database,
+        year_boundary,
+        zodiacal_releasing,
     )
 
     entries: dict[str, dict[str, Any]] = {}
@@ -84,6 +92,15 @@ def _module_entries() -> dict[str, dict[str, Any]]:
         solar_phase,
         prenatal_points,
         classical_classifications,
+        # The annual route's techniques: its responses name this register too.
+        year_boundary,
+        profections,
+        firdaria,
+        zodiacal_releasing,
+        extended_lots,
+        decennials,
+        planetary_years,
+        monthly_profections,
     ):
         for ref, entry in module.METHOD_SOURCE_ENTRIES.items():
             if ref in entries:
@@ -120,67 +137,11 @@ def _require_closed_readings(value: Any, ref: str) -> None:
             _require_closed_readings(item, ref)
 
 
-ANNUAL_CANDIDATE_REGISTER_ID: Final = "armillary-method-sources-annual-candidate"
-# How far the sources of an annual entry were read: what was read, then what
-# was not.  A closed set, so a new reading level is a new value here first.
-ANNUAL_SOURCE_VERIFICATION_STATES: Final = (
-    "translation_and_kroll_greek_read_pingree_not_checked",
-    "biruni_and_bonatti_translations_read_abu_mashar_not_checked",
-    "research_notes_checked_edition_not_reread",
-    "bibliographic_record_only_chapter_not_verified",
-    "riley_translation_and_firmicus_latin_read_greek_not_checked",
-    "pingree_translation_read_arabic_not_checked",
-    "valens_translation_read_abu_mashar_secondary_only",
-)
-
-
 # Where the annual route stands (closed set).  It was a candidate behind its
 # deployment flag; it is now released to the public, still served only where
-# the deployment sets the flag.  Its response and its register say which.
+# the deployment sets the flag.  Its response says which.
 ANNUAL_ROUTE_STATUSES: Final = ("candidate_behind_flag", "published")
 ANNUAL_ROUTE_STATUS: Final = ANNUAL_ROUTE_STATUSES[1]
-
-
-def annual_candidate_register() -> dict[str, Any]:
-    """The annual route's entries, carried in its own response.
-
-    They are a register of their own (with their own digest), not entries of
-    the register every /api/chart response names: adding them there would
-    change that digest.  ``published`` says whether the route, and so this
-    register, is public.  A ref here may not repeat a ref of the /api/chart
-    register, so the entries can move into _module_entries unchanged.
-    """
-
-    from .core import (
-        decennials,
-        extended_lots,
-        firdaria,
-        monthly_profections,
-        planetary_years,
-        profections,
-        year_boundary,
-        zodiacal_releasing,
-    )
-
-    published = _REGISTER["entries"]
-    entries: dict[str, dict[str, Any]] = {}
-    for module in (
-        year_boundary, profections, firdaria, zodiacal_releasing, extended_lots,
-        decennials, planetary_years, monthly_profections,
-    ):
-        for ref, entry in module.METHOD_SOURCE_ENTRIES.items():
-            if ref in entries or ref in published:
-                raise ValueError(f"duplicate method source ref: {ref}")
-            if entry.get("source_verification") not in ANNUAL_SOURCE_VERIFICATION_STATES:
-                raise ValueError(f"{ref}: source_verification outside the closed set")
-            entries[ref] = entry
-    register = {
-        "register_id": ANNUAL_CANDIDATE_REGISTER_ID,
-        "version": REGISTER_VERSION,
-        "published": ANNUAL_ROUTE_STATUS == ANNUAL_ROUTE_STATUSES[1],
-        "entries": dict(sorted(entries.items())),
-    }
-    return {**register, "sha256": register_digest(register), "digest_semantics": DIGEST_SEMANTICS}
 
 
 def build_register() -> dict[str, Any]:

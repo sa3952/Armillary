@@ -21,6 +21,7 @@ from __future__ import annotations
 from .dignity_tables import SIGNS
 from .formatting import normalize_longitude, zodiac_sign_index
 from .house_placements import _house_for_longitude
+from .source_reading import SOURCE_READING_LEVELS
 
 OPERANDS = (
     "sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn",
@@ -145,12 +146,34 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         "applies_to": "natal_lots.lots[source_ref=extended_lots/paulus_hermetic_ch23]",
         "lot_methods": [m for m in LOT_METHODS if m["source_author"] == "Paulus Alexandrinus"],
         "sources": [
-            "Paulus Alexandrinus, Eisagogika ch.23 (Boer 1958; Schmidt/Hand 1995 "
-            "pp.43-45): Eros, Necessity, Courage, Victory, Nemesis with Fortune and "
-            "Spirit; citation as corrected by the research notes after checking, "
-            "editions not re-read for this entry",
-            "P.Berol. 9825 (AD 319; Greenbaum 2015, MHNH 15:85-116): a papyrus "
-            "computing the seven lots, per the research notes; not checked",
+            {
+                "citation": "Paulus Alexandrinus, Eisagogika ch.23 (Boer 1958; Schmidt/Hand 1995 pp.43-45)",
+                "says": "Eros, Necessity, Courage, Victory, Nemesis with Fortune and Spirit",
+                "reading": SOURCE_READING_LEVELS[2],
+                "read_at": (
+                    "citation as corrected by the research notes after checking; the editions "
+                    "not checked again for this entry"
+                ),
+            },
+            {
+                "citation": "P.Berol. 9825 (AD 319; Greenbaum 2015, MHNH 15:85-116)",
+                "says": "a papyrus computing the seven lots",
+                "reading": SOURCE_READING_LEVELS[2],
+                "read_at": "per the research notes; the papyrus and the article not checked",
+            },
+            {
+                "citation": "al-Bīrūnī, Kitāb al-Tafhīm §476 (Wright 1934; he says after Abū Maʿshar)",
+                "says": (
+                    "the list of planetary lots whose meanings the annual methods page translates "
+                    "by name (Eros: friendship and love; Necessity: despair, poverty and fraud; "
+                    "Courage: valour and daring; Victory: victory, triumph and help; Nemesis: "
+                    "captivity, prison and escape); the meanings are on the methods page only "
+                    "and not output on a chart"
+                ),
+                "reading": SOURCE_READING_LEVELS[1],
+                "read_at": "Wright's English translation (1934)",
+            },
+
         ],
         "courage_direction_note": (
             "Courage is ASC + Fortune - Mars by day: an earlier research draft wrote "
@@ -161,16 +184,21 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "positions only; no topic, no lord, no aspect, no descriptive word "
             "(Courage and Nemesis included)"
         ),
-        "source_verification": "research_notes_checked_edition_not_reread",
     },
     "extended_lots/valens_iv25": {
         "applies_to": "natal_lots.lots[source_ref=extended_lots/valens_iv25]",
         "lot_methods": [m for m in LOT_METHODS if m["source_author"] == "Vettius Valens"],
         "sources": [
-            "Vettius Valens, Anthologies IV.25: the formulas (Riley: 'from Fortune to "
-            "the Daimon, counted from the Ascendant; at night the reverse') are in "
-            "Kroll's main text (1908, p.202), read in the Greek; Riley marks the "
-            "passage as a marginal note; Pingree's treatment not checked",
+            {
+                "citation": "Vettius Valens, Anthologies IV.25 (Kroll 1908, p.202)",
+                "says": (
+                    "the formulas (Riley: 'from Fortune to the Daimon, counted from the "
+                    "Ascendant; at night the reverse') are in Kroll's main text; Riley marks "
+                    "the passage as a marginal note"
+                ),
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": "Kroll's Greek (1908, p.202); Pingree's treatment not checked",
+            },
         ],
         "separate_tradition_note": (
             "Listed beside the Paulus lots of the same name, never merged with them "
@@ -180,6 +208,5 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "Under one sect candidate both reduce to ASC +/- 2(Sun - Moon), so their "
             "day and night values coincide"
         ),
-        "source_verification": "translation_and_kroll_greek_read_pingree_not_checked",
     },
 }

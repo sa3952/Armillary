@@ -387,6 +387,19 @@ def test_container_log_gate_accepts_only_closed_chart_telemetry_and_canaries_fro
     with pytest.raises(module.GateFailure, match="closed schema"):
         module._verify_container_logs("PRIVACY_EVENT " + safe_event[:-1] + ',"unexpected":"x"}', canaries)
 
+    # A random request id can hold the four digits of the birth year; the id is not request data.
+    lucky_id = safe_event.replace('"request_id":"' + "0" * 32, '"request_id":"' + "ab1990" + "0" * 26)
+    assert '"request_id":"ab1990' in lucky_id
+    assert module._verify_container_logs("PRIVACY_EVENT " + lucky_id, canaries)["privacy_event_count"] == 1
+    # The same digits anywhere else, or in a value that is not an emitted id, are still a disclosure.
+    for leaked in ("year 1990\nPRIVACY_EVENT " + safe_event,
+                   "PRIVACY_EVENT " + safe_event.replace('"50_to_249ms"', '"1990_to_249ms"'),
+                   "PRIVACY_EVENT " + lucky_id.replace('"request_id":"ab1990', '"request_id":"AB1990'),
+                   "PRIVACY_EVENT " + lucky_id.replace('"request_id":"ab1990', '"request_id":"ab19900'),
+                   "PRIVACY_EVENT " + safe_event + "\n22.9908"):
+        with pytest.raises(module.GateFailure, match="disclosed"):
+            module._verify_container_logs(leaked, canaries)
+
 
 def test_place_catalog_startup_verifier_rejects_a_corrupted_catalog(tmp_path, monkeypatch):
     module = _load_script("verify_place_catalog", "scripts/verification/verify_place_catalog.py")

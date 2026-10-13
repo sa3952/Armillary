@@ -50,6 +50,7 @@ from .lunar_events import (
     _eclipse_result,
     _phase_event,
     _phase_state,
+    previous_phase_strictly_before,
 )
 from .time_utils import civil_instant
 from .source_reading import SOURCE_READING_LEVELS
@@ -298,7 +299,9 @@ def nearest_previous_syzygy(reference_jd_ut: float) -> dict:
     monotonically): below 180° the new Moon, otherwise the full Moon.  Only that
     event is searched, so a birth soon after the start of the bundled ephemeris
     gets its syzygy although the eight-event phase search reaches out of it.
-    Next to a syzygy the kind is not read from the elongation; both are searched.
+    Next to a syzygy the kind is not read from the elongation; both are searched,
+    each strictly before the reference (a syzygy at the birth instant is not
+    prenatal).
     """
 
     phase_state = cache(_phase_state)
@@ -306,7 +309,7 @@ def nearest_previous_syzygy(reference_jd_ut: float) -> dict:
     near = min(abs(_signed(elongation - target)) for target in (0.0, 180.0))
     if near < _NEAR_REFERENCE_ELONGATION_DEGREES:
         events = [
-            _phase_event(reference_jd_ut, phase, "previous", phase_state)
+            previous_phase_strictly_before(reference_jd_ut, phase, phase_state)
             for phase in ("new_moon", "full_moon")
         ]
         nearest = max(events, key=lambda event: event["jd_ut"])
@@ -325,7 +328,7 @@ def _other_previous_syzygy(reference_jd_ut: float, nearest: dict, place: Prenata
 
     other_phase = "full_moon" if nearest["phase"] == "new_moon" else "new_moon"
     try:
-        event = _phase_event(reference_jd_ut, other_phase, "previous")
+        event = previous_phase_strictly_before(reference_jd_ut, other_phase)
         enrich_syzygy(event, place)
     except FullEphemerisRequiredError as error:
         if error.reason != "segment_out_of_coverage":

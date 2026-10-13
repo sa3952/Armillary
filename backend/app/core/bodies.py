@@ -40,6 +40,7 @@ from .formatting import (
     swiss_azimuth_to_standard,
 )
 from .frame_compatibility import NON_EARTH_OBSERVER_CENTER, method_frame_state
+from .source_reading import SOURCE_READING_LEVELS
 from .trace import Trace
 
 # `position_mode="true"` 時不輸出視高度。
@@ -830,14 +831,37 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "apparent_magnitude and physical_parameters"
         ),
         "sources": [
-            "Swiss Ephemeris 2.10.03 sweph.h pla_diam[] (Chiron 271370 m) and "
-            "swecl.c mag_elem[] (Chiron H 6.5, G 0.15, \"from Bowell data "
-            "base\"), used by swe_pheno",
-            "JPL Small-Body Database, 2060 Chiron, physical parameters retrieved "
-            f"{CHIRON_JPL_SBDB_REFERENCE['retrieved']}: diameter "
-            f"{CHIRON_JPL_SBDB_REFERENCE['diameter_km']:g} km (Dunham 1998), "
-            f"H {CHIRON_JPL_SBDB_REFERENCE['absolute_magnitude_h']:g}",
-            "JPL Horizons, 2060 Chiron orbit solution JPL#171",
+            {
+                "citation": (
+                    "Swiss Ephemeris 2.10.03 sweph.h pla_diam[] and swecl.c mag_elem[], "
+                    "used by swe_pheno"
+                ),
+                "says": (
+                    "pla_diam[]: Chiron 271370 m; mag_elem[]: Chiron H 6.5, G 0.15, "
+                    "\"from Bowell data base\""
+                ),
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": "the Swiss Ephemeris 2.10.03 source files",
+            },
+            {
+                "citation": (
+                    "JPL Small-Body Database, 2060 Chiron, physical parameters"
+                ),
+                "says": (
+                    f"diameter {CHIRON_JPL_SBDB_REFERENCE['diameter_km']:g} km "
+                    f"(Dunham 1998), H {CHIRON_JPL_SBDB_REFERENCE['absolute_magnitude_h']:g}"
+                ),
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": (
+                    f"the database record, retrieved {CHIRON_JPL_SBDB_REFERENCE['retrieved']}"
+                ),
+            },
+            {
+                "citation": "JPL Horizons, 2060 Chiron orbit solution JPL#171",
+                "says": "the orbit solution the Swiss position is measured against",
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": "the Horizons service, solution JPL#171",
+            },
         ],
         "note": (
             "Apparent diameter and magnitude use the parameters built into Swiss "

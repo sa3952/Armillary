@@ -247,9 +247,9 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         ),
         "lord_rule": (
             "The lord listed is the domicile lord of the twelfth-part's sign in the "
-            "traditional seven-planet scheme (the product's domicile table). Paulus "
-            "and Firmicus then look at which planets occupy or aspect that sign; this "
-            "product lists positions and lords only."
+            "traditional seven-planet scheme (the product's domicile table). Later "
+            "steps that look at which planets occupy or aspect that sign are not "
+            "computed; this product lists positions and lords only."
         ),
         "sources": [
             {

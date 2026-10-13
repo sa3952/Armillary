@@ -25,6 +25,7 @@ Morrison（AFA Journal 1966 年 10 月有專文，原文未讀），更早的起
 import math
 
 from ..config import BODY_ID_BY_KEY, CLASSICAL_BODIES, PTOLEMAIC_ASPECTS
+from .aspect_profiles import LILLY_1647_READ_AT
 from .aspects import EXACT_NOW_EPSILON_DEGREES
 from .bodies import memoized_longitudes
 from .module_state import (
@@ -34,6 +35,7 @@ from .module_state import (
 )
 from .method_status import method_receipt
 from .root_finding import SOLVER_NAME, find_crossings_detailed, wrap_to_signed_180
+from .source_reading import SOURCE_READING_LEVELS
 from .trace import Trace
 
 VOC_METHOD_NAME = "modern_sign_bounded_exact_perfection_v1"
@@ -72,7 +74,9 @@ VOC_SOURCE_STATUS = {
     "sign_boundary_rule_attribution": "unresolved",
     "source_ref": "void_of_course",
 }
-# The register entry: the citations behind those codes.
+# The register entry: the citations behind those codes.  Each citation says how
+# far it was read; the ones not consulted are references only.
+_VOC_NOT_CONSULTED = "not consulted"
 VOC_SOURCE_VERIFICATION = {
     "primary_texts_independently_transcribed": False,
     "sign_boundary_rule_attribution": "unresolved",
@@ -95,22 +99,83 @@ VOC_SOURCE_VERIFICATION = {
         "al_h_morrison_20th_century",
         "medieval_arabic_transmission",
     ),
-    "consulted": (
-        "Lilly, Christian Astrology 1647 p.112",
-        "Māshāʾallāh, On Reception ch.1 (Dykes 2008 p.443, in the translator's "
-        "published excerpt pp.443-446)",
-        "Sahl, 'De cursu planete vacui', in Quadripartitum Ptolomei ... (Venice "
-        "1519; Seville copy, archive.org ARes08317, PDF p.246, left column)",
-    ),
-    "not_consulted": (
-        "Al H. Morrison, 'Void of Course Moon Periods: Their Uses and What May "
-        "Come of Ignoring Them', AFA Journal XXVIII.10 (October 1966) p.10: "
-        "located through the AFA journal author index; the article was not read",
-        "Māshāʾallāh, On Reception ch.7 (Dykes 2008 p.467)",
-        "Abū Maʿshar, Abbreviation III.21-22 (Brill 1994 / ARHAT 1997)",
-        "al-Qabīṣī, Introduction III (Warburg 2004)",
-        "Sahl, Introduction §5.10 (Dykes 2008 p.35) and the Arabic text",
-        "Bonatti, Tract 3 definition chapter",
+    "sources": (
+        {
+            "citation": "Lilly, Christian Astrology 1647 p.112",
+            "says": (
+                "'Voyd of course': the Moon perfects no aspect before leaving its sign; "
+                "bounded by the sign; the page does not mention moieties"
+            ),
+            "reading": SOURCE_READING_LEVELS[0],
+            "read_at": LILLY_1647_READ_AT,
+        },
+        {
+            "citation": "Māshāʾallāh, On Reception ch.1 (Dykes 2008 p.443)",
+            "says": "the Moon not perfecting an aspect before leaving its sign",
+            "reading": SOURCE_READING_LEVELS[1],
+            "read_at": (
+                "Dykes's English translation, in the translator's published excerpt "
+                "pp.443-446"
+            ),
+        },
+        {
+            "citation": (
+                "Sahl, 'De cursu planete vacui', in Quadripartitum Ptolomei ... (Venice 1519)"
+            ),
+            "says": (
+                "the Moon joins no planet and none joins it; it names neither the sign "
+                "boundary nor an orb"
+            ),
+            "reading": SOURCE_READING_LEVELS[1],
+            "read_at": (
+                "the medieval Latin translation in the 1519 printing; Seville copy, "
+                "archive.org ARes08317, PDF p.246, left column"
+            ),
+        },
+        {
+            "citation": (
+                "Al H. Morrison, 'Void of Course Moon Periods: Their Uses and What May "
+                "Come of Ignoring Them', AFA Journal XXVIII.10 (October 1966) p.10"
+            ),
+            "says": (
+                "later literature attributes to this article the requirement of exact "
+                "perfection before the sign exit"
+            ),
+            "reading": SOURCE_READING_LEVELS[3],
+            "read_at": (
+                "located through the AFA journal author index; the article was not read"
+            ),
+        },
+        {
+            "citation": "Māshāʾallāh, On Reception ch.7 (Dykes 2008 p.467)",
+            "says": "a further statement of the sign condition, not checked",
+            "reading": SOURCE_READING_LEVELS[3],
+            "read_at": _VOC_NOT_CONSULTED,
+        },
+        {
+            "citation": "Abū Maʿshar, Abbreviation III.21-22 (Brill 1994 / ARHAT 1997)",
+            "says": "an earlier explicit statement of the sign condition is attributed to it",
+            "reading": SOURCE_READING_LEVELS[3],
+            "read_at": _VOC_NOT_CONSULTED,
+        },
+        {
+            "citation": "al-Qabīṣī, Introduction III (Warburg 2004)",
+            "says": "a definition of the void course still to be checked",
+            "reading": SOURCE_READING_LEVELS[3],
+            "read_at": _VOC_NOT_CONSULTED,
+        },
+        {
+            "citation": "Sahl, Introduction §5.10 (Dykes 2008 p.35) and the Arabic text",
+            "says": "a definition of the void course still to be checked",
+            "reading": SOURCE_READING_LEVELS[3],
+            "read_at": _VOC_NOT_CONSULTED,
+        },
+        {
+            "citation": "Bonatti, Tract 3 definition chapter",
+            "says": "a definition of the void course still to be checked",
+            "reading": SOURCE_READING_LEVELS[3],
+            "read_at": _VOC_NOT_CONSULTED,
+        },
     ),
     "consequence": (
         "method_status cannot be raised to adopted until the attribution is "
@@ -626,7 +691,7 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         "applies_to": "derived_methods.void_of_course",
         "method": VOC_METHOD_NAME,
         "method_provenance": VOC_METHOD_PROVENANCE,
-        "source_verification": dict(VOC_SOURCE_VERIFICATION),
+        **VOC_SOURCE_VERIFICATION,
         "present_instant_policy": dict(PRESENT_INSTANT_POLICY),
         "boundary_simultaneity_policy": dict(BOUNDARY_SIMULTANEITY_POLICY),
     },

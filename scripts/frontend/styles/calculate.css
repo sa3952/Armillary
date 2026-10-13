@@ -707,13 +707,13 @@ input[type="checkbox"].option-control:disabled{
 .chapter-link:hover{color:var(--accent)}
 .chapter-link:focus-visible,.index-link:focus-visible{outline-offset:-3px}
 .chapter-link[aria-current]{font-weight:700; border-bottom-color:var(--accent)}
-/* 窄螢幕的分頁列只列章名：各章底下的區塊清單、模式說明與全部展開鈕在寬螢幕的章節欄才出現，
-   窄螢幕上它們排在分頁列之後的一行（.chapter-tools）。 */
+/* 窄螢幕的分頁列只列章名與全部展開鈕；各章底下的區塊清單在寬螢幕的章節欄才出現。
+   模式說明（快速看盤只顯示四章）不在黏性的章節列裡：它排在章節列之後、第一章之前的一行，
+   擠在分頁列裡會要在列內橫捲才讀得完。 */
 .chapter-sections-index{display:none}
-.chapter-mode-note,.chapters-all{flex:0 0 auto; align-self:center; margin:0}
-.chapter-mode-note{max-width:none; white-space:normal; min-width:16rem; font-size:.8rem}
+.chapters-all{flex:0 0 auto; align-self:center; margin:0; white-space:nowrap}
+.chapter-mode-note{max-width:none; margin:var(--s2) 0 0; font-size:.8rem}
 .chapter-mode-note button{margin:0 .3rem}
-.chapters-all{white-space:nowrap}
 .chapters-all[aria-pressed="true"]{background:var(--ink); color:var(--paper)}
 .index-link{
   display:flex; align-items:baseline; flex-wrap:wrap; gap:0 .4rem;
@@ -784,7 +784,11 @@ button.term:hover:not(:disabled){background:none; color:var(--accent)}
 @media (max-width:640px){
   .glossary{top:auto; left:0; width:auto; height:72vh; border-left:0; border-top:1px solid var(--ink); box-shadow:0 -6px 18px rgba(0,0,0,.08)}
 }
-@media print{ .glossary,.first-time,.chapter-nav{display:none !important} }
+@media print{
+  .glossary,.first-time,.chapter-nav,.chapter-mode-note{display:none !important}
+  /* 列印藏起所有按鈕；可點的詞是句子的一部分，照字印出（不畫虛線）。 */
+  button.term{display:inline !important; text-decoration:none}
+}
 
 /* 模式選擇：沿用把握程度那一組的單選卡片；表單上方另有「名詞解釋」。 */
 .mode-choice{border-bottom:0; padding:var(--s3) 0 0}
@@ -835,8 +839,6 @@ fieldset.plan-profiles legend{font-size:1rem}
   .chapter-link{min-height:0; padding:.35rem .5rem .35rem .7rem; border:0; border-left:3px solid var(--hair); font-size:.95rem}
   .chapter-link[aria-current]{border-left-color:var(--accent); background:var(--paper-2)}
   .chapter-sections-index{display:block; list-style:none; margin:.15rem 0 0 .9rem; padding:0}
-  .chapter-mode-note{display:block; min-width:0; margin:var(--s2) 0 0; padding-left:.7rem}
-  .chapter-mode-note button{margin:.3rem 0}
   .chapters-all{display:block; margin:var(--s2) 0 0; white-space:normal; text-align:left; padding:.4rem .7rem}
   .results section.chapter,.results section.result-section,.results section.chapter-wheel,.results .technical-results,.results #export-toolbar{
     scroll-margin-top:calc(var(--results-sticky-top, 0px) + var(--s2));

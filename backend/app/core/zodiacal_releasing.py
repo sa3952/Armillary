@@ -31,6 +31,7 @@ from fractions import Fraction
 from .dignity_tables import SIGNS
 from .firdaria import period_instant
 from .profections import DOMICILE_LORD, LORD_TABLE
+from .source_reading import SOURCE_READING_LEVELS
 
 RELEASING_PROFILE = "valens_fortune_spirit_releasing_v1"
 SIGN_PERIOD_TABLE_PROFILE = "valens_iv4_sign_periods_capricorn27_v1"
@@ -316,25 +317,59 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             },
         },
         "sources": [
-            "Vettius Valens, Anthologies IV.4 (Riley translation, /160K/-/163K/, "
-            "/152P/-/154P/): Fortune and Daimon as starting points; the Aries and "
-            "Taurus sub-period tables; loosing to the opposite sign after 17 years 7 "
-            "months; the trine rejected; read in Riley's English via the public "
-            "re-typeset (janegca/latex-valens), Pingree's Greek not checked",
-            "Valens IV.6 (the /156P/ marker falls in it): why Capricorn allots 27 and "
-            "Aquarius 30",
-            "Valens IV.7 (/165K/-/167K/, /157P/-/158P/): places counted from Fortune; the places "
-            "square with the lots",
-            "Valens IV.8 'A Compelling Example' (/167K/-/169K/, /158P/-/160P/): "
-            "Fortune in Leo, Daimon in Scorpio, every period length named",
-            "Valens IV.9 'The Universal Year' (Kroll p.169): the 360-day year of the "
-            "distribution and the worked conversion 32 x 365 1/4 + 215 days = 33 "
-            "distribution years 23 days",
-            "Valens IV.10 'The Breakdown into Longer and Shorter Periods' "
-            "(/169K/-/171K/, /161P/-/162P/): a twelfth of the month gives the days "
-            "(2 1/2 days a unit), a twelfth of the day the hours (5 hours a unit), with "
-            "the loosing of the bond at every level and a worked example down to the "
-            "hours; read in Riley's English and checked against Kroll's Greek",
+            {
+                "citation": "Vettius Valens, Anthologies IV.4 (/160K/-/163K/, /152P/-/154P/)",
+                "says": (
+                    "Fortune and Daimon as starting points; the Aries and Taurus sub-period "
+                    "tables; loosing to the opposite sign after 17 years 7 months; the trine "
+                    "rejected"
+                ),
+                "reading": SOURCE_READING_LEVELS[1],
+                "read_at": (
+                    "Riley's English translation via the public re-typeset "
+                    "(janegca/latex-valens); Pingree's Greek not checked"
+                ),
+            },
+            {
+                "citation": "Valens IV.6 (the /156P/ marker falls in it)",
+                "says": "why Capricorn allots 27 and Aquarius 30",
+                "reading": SOURCE_READING_LEVELS[1],
+                "read_at": "Riley's English translation via the public re-typeset",
+            },
+            {
+                "citation": "Valens IV.7 (/165K/-/167K/, /157P/-/158P/)",
+                "says": "places counted from Fortune; the places square with the lots",
+                "reading": SOURCE_READING_LEVELS[1],
+                "read_at": "Riley's English translation via the public re-typeset",
+            },
+            {
+                "citation": "Valens IV.8 'A Compelling Example' (/167K/-/169K/, /158P/-/160P/)",
+                "says": "Fortune in Leo, Daimon in Scorpio, every period length named",
+                "reading": SOURCE_READING_LEVELS[1],
+                "read_at": "Riley's English translation via the public re-typeset",
+            },
+            {
+                "citation": "Valens IV.9 'The Universal Year' (Kroll p.169)",
+                "says": (
+                    "the 360-day year of the distribution and the worked conversion 32 x 365 "
+                    "1/4 + 215 days = 33 distribution years 23 days"
+                ),
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": "Kroll's Greek (1908); Riley's English read beside it",
+            },
+            {
+                "citation": (
+                    "Valens IV.10 'The Breakdown into Longer and Shorter Periods' "
+                    "(/169K/-/171K/, /161P/-/162P/)"
+                ),
+                "says": (
+                    "a twelfth of the month gives the days (2 1/2 days a unit), a twelfth of "
+                    "the day the hours (5 hours a unit), with the loosing of the bond at every "
+                    "level and a worked example down to the hours"
+                ),
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": "Kroll's Greek (1908); Riley's English read beside it",
+            },
         ],
         "not_from_valens": [
             "the names 'zodiacal releasing' and 'level 1'/'level 2': modern "
@@ -348,6 +383,5 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "from the following sign; the response flags fortune_spirit_same_sign and "
             "does not apply the rule"
         ),
-        "source_verification": "translation_and_kroll_greek_read_pingree_not_checked",
     },
 }

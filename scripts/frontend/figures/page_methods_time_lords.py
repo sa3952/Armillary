@@ -1,8 +1,6 @@
 """The time-lords methods page: the firdaria periods and sequences, the
 zodiacal releasing sign periods and the seven extended lots' day and night
-formulas, from the backend tables that compute them; each register entry's
-statement of how far its sources were read, in the time-lord screen's own
-wording of that level; and the numbers its prose
+formulas, from the backend tables that compute them; and the numbers its prose
 quotes (the cycle totals, the year lengths and their units, the year-model
 differences the year-boundary register entry measured, and how far a literal
 reading of al-Biruni's month notation lands from the product's dates).
@@ -46,10 +44,8 @@ NOTATION_YEAR_DAYS = 360
 def _backend() -> dict:
     with backend_on_path():
         from app.core import extended_lots, firdaria, profections, year_boundary, zodiacal_releasing
-        from app.method_sources import annual_candidate_register
 
         return {
-            "register": annual_candidate_register()["entries"],
             "firdaria": firdaria,
             "lots": extended_lots,
             "releasing": zodiacal_releasing,
@@ -102,36 +98,6 @@ def _lot_rows(lots) -> str:
             f'<td>{LOT_MEANING[method["lot_method_id"]]}</td></tr>'
         )
     return "\n".join(rows)
-
-
-# The decennials' entries are stated on their own page.
-DECENNIALS_PATH = "annual_methods.decennials"
-# Who the statement speaks of: a technique's rule, or one tradition's group of lots.
-VERIFIED_SUBJECT = {
-    "extended_lots/paulus_hermetic_ch23": "Paulus 這一組",
-    "extended_lots/valens_iv25": "Valens 這一組",
-    "monthly_profection": "月小限這一條規則",
-}
-
-
-def _verification_blocks(register: dict) -> dict[str, str]:
-    """One `verification-<ref>` block per register entry the page covers: the
-    entry's level, said in the one wording the time-lord screen also prints."""
-    wording = frozen_string_table(TIME_LORD_SCRIPT.read_text(encoding="utf-8"), "SOURCE_VERIFICATION")
-    blocks = {}
-    for ref, entry in register.items():
-        if entry["applies_to"].startswith(DECENNIALS_PATH):
-            continue
-        level = entry["source_verification"]
-        if level not in wording:
-            raise RuntimeError(f"{ref}: SOURCE_VERIFICATION has no wording for {level!r}")
-        indent = " " * (6 if ref in VERIFIED_SUBJECT else 4)
-        subject = VERIFIED_SUBJECT.get(ref, "這一條規則")
-        blocks["verification-" + re.sub(r"[_/]", "-", ref)] = (
-            f'{indent}<p data-source-verification="{level}">{subject}整體核到：'
-            f'<span class="mono">{wording[level]}</span>。</p>'
-        )
-    return blocks
 
 
 def _hours(text: str, label: str) -> str:
@@ -195,6 +161,5 @@ def build() -> tuple[dict[str, str], list[str]]:
         "firdaria-periods": _firdaria_rows(firdaria),
         "zr-sign-periods": _releasing_rows(releasing, data["lords"]),
         "extended-lots": _lot_rows(lots),
-        **_verification_blocks(data["register"]),
     }
     return blocks, quoted

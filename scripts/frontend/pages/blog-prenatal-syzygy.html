@@ -1,0 +1,323 @@
+<!-- 文章：產前朔望與產前日月食。圖 1 的時間線、圖 2 的地平高度、表 1、表 2 與內文引用的數字，由
+     scripts/frontend/figures/syzygy.py 以本站計算服務在行程內實際回答的值產生，半影月食的比例以
+     Swiss Ephemeris 在本站年份範圍內重數（python -m scripts.frontend.figures --check 核對）。圖 3 是示意圖。 -->
+<div class="wrap page-body article">
+  <!-- figure:fx-defs -->
+<svg class="fx-sprite" aria-hidden="true" focusable="false"><defs><symbol id="fx-gl-sun" viewBox="51 -737 768 768"><path d="M435 31Q356 31 286 1Q216 -29 163.5 -81.5Q111 -134 81 -204Q51 -274 51 -353Q51 -433 81 -502.5Q111 -572 163.5 -624.5Q216 -677 286 -707Q356 -737 435 -737Q515 -737 584.5 -707Q654 -677 706.5 -624.5Q759 -572 789 -502.5Q819 -433 819 -353Q819 -274 789 -204Q759 -134 706.5 -81.5Q654 -29 584.5 1Q515 31 435 31ZM435 -18Q504 -18 565 -44Q626 -70 672 -116Q718 -162 744 -223Q770 -284 770 -353Q770 -422 744 -483Q718 -544 672 -590Q626 -636 565 -662Q504 -688 435 -688Q366 -688 305 -662Q244 -636 198 -590Q152 -544 126 -483Q100 -422 100 -353Q100 -284 126 -223Q152 -162 198 -116Q244 -70 305 -44Q366 -18 435 -18ZM435 -276Q403 -276 380.5 -299Q358 -322 358 -353Q358 -385 380.5 -407.5Q403 -430 435 -430Q467 -430 489.5 -407.5Q512 -385 512 -353Q512 -322 489.5 -299Q467 -276 435 -276Z"/></symbol><symbol id="fx-gl-moon" viewBox="51 -701 459 694"><path d="M154 -7Q126 -7 100.5 -10Q75 -13 51 -20L51 -53Q139 -53 204.5 -91Q270 -129 306 -197Q342 -265 342 -354Q342 -443 306 -511Q270 -579 205 -617Q140 -655 51 -655L51 -688Q97 -701 154 -701Q232 -701 297.5 -676Q363 -651 410.5 -605.5Q458 -560 484 -496Q510 -432 510 -354Q510 -252 464.5 -173.5Q419 -95 339 -51Q259 -7 154 -7ZM155 -37Q221 -37 278 -62Q335 -87 377 -130.5Q419 -174 442.5 -231.5Q466 -289 466 -354Q466 -420 442.5 -477.5Q419 -535 377 -578.5Q335 -622 278 -646.5Q221 -671 155 -671Q225 -656 277 -610.5Q329 -565 357.5 -499Q386 -433 386 -354Q386 -276 357.5 -209.5Q329 -143 277 -98Q225 -53 155 -37Z"/></symbol><pattern id="fx-h1" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" class="fx-hp"/></pattern><pattern id="fx-h2" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="4" class="fx-hp"/><line x1="0" y1="0" x2="4" y2="0" class="fx-hp"/></pattern><pattern id="fx-dots" width="4" height="4" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r=".7" class="fx-hpf"/></pattern></defs><metadata>Planet and sign glyphs: outlines from chart-glyphs.js, a Modified Version of the Noto Sans Symbols, Noto Sans Symbols 2 and Noto Sans fonts, distributed under the same licence.
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/symbols)
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is copied below, and is also available with a FAQ at:
+https://scripts.sil.org/OFL
+
+
+-----------------------------------------------------------
+SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+-----------------------------------------------------------
+
+PREAMBLE
+The goals of the Open Font License (OFL) are to stimulate worldwide
+development of collaborative font projects, to support the font creation
+efforts of academic and linguistic communities, and to provide a free and
+open framework in which fonts may be shared and improved in partnership
+with others.
+
+The OFL allows the licensed fonts to be used, studied, modified and
+redistributed freely as long as they are not sold by themselves. The
+fonts, including any derivative works, can be bundled, embedded,
+redistributed and/or sold with any software provided that any reserved
+names are not used by derivative works. The fonts and derivatives,
+however, cannot be released under any other type of license. The
+requirement for fonts to remain under this license does not apply
+to any document created using the fonts or their derivatives.
+
+DEFINITIONS
+"Font Software" refers to the set of files released by the Copyright
+Holder(s) under this license and clearly marked as such. This may
+include source files, build scripts and documentation.
+
+"Reserved Font Name" refers to any names specified as such after the
+copyright statement(s).
+
+"Original Version" refers to the collection of Font Software components as
+distributed by the Copyright Holder(s).
+
+"Modified Version" refers to any derivative made by adding to, deleting,
+or substituting -- in part or in whole -- any of the components of the
+Original Version, by changing formats or by porting the Font Software to a
+new environment.
+
+"Author" refers to any designer, engineer, programmer, technical
+writer or other person who contributed to the Font Software.
+
+PERMISSION &amp; CONDITIONS
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of the Font Software, to use, study, copy, merge, embed, modify,
+redistribute, and sell modified and unmodified copies of the Font
+Software, subject to the following conditions:
+
+1) Neither the Font Software nor any of its individual components,
+in Original or Modified Versions, may be sold by itself.
+
+2) Original or Modified Versions of the Font Software may be bundled,
+redistributed and/or sold with any software, provided that each copy
+contains the above copyright notice and this license. These can be
+included either as stand-alone text files, human-readable headers or
+in the appropriate machine-readable metadata fields within text or
+binary files as long as those fields can be easily viewed by the user.
+
+3) No Modified Version of the Font Software may use the Reserved Font
+Name(s) unless explicit written permission is granted by the corresponding
+Copyright Holder. This restriction only applies to the primary font name as
+presented to the users.
+
+4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
+Software shall not be used to promote, endorse or advertise any
+Modified Version, except to acknowledge the contribution(s) of the
+Copyright Holder(s) and the Author(s) or with their explicit written
+permission.
+
+5) The Font Software, modified or unmodified, in part or in whole,
+must be distributed entirely under this license, and must not be
+distributed under any other license. The requirement for fonts to
+remain under this license does not apply to any document created
+using the Font Software.
+
+TERMINATION
+This license becomes null and void if any of the above conditions are
+not met.
+
+DISCLAIMER
+THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
+OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
+DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
+OTHER DEALINGS IN THE FONT SOFTWARE.</metadata></svg>
+  <!-- /figure:fx-defs -->
+
+  <div class="ar-head">
+    <p class="eyebrow"><a href="/zh-TW/blog">文章</a> · JOURNAL</p>
+    <h1>產前朔望與產前日月食：出生前最後一次新月或滿月</h1>
+    <p class="ar-dek">產前朔望是出生前最近一次的新月或滿月。古書用它的度數來推上升點、選壽命主宰；可是滿月時太陽和月亮在黃道上正好相對，該取哪一個的度數，古書的讀法不只一種。這篇說明它是什麼、各種讀法差在哪裡，也說明「產前日月食」其實是二十世紀才有的做法。</p>
+    <p class="ar-byline"><span class="ar-tier">講方法</span><span>發布 <time datetime="{{article_published}}">{{article_published}}</time></span><span>閱讀約 {{article_reading_minutes}} 分鐘</span><span>Sebastian</span></p>
+  </div>
+
+  <!-- figure:timeline -->
+<figure class="fx ar-fig ar-hero" id="fig-timeline" data-fx>
+<div class="fx-art" role="group" aria-labelledby="fig-timeline-title fig-timeline-cap">
+<span class="fx-title" id="fig-timeline-title">出生前的新月、滿月與出生，排在同一條日期線上</span>
+<svg class="fx-wide" viewBox="0 0 880 356" role="group" aria-labelledby="fig-timeline-title"><rect x="1" y="1" width="878" height="354" class="fx-frame"/><rect x="6" y="6" width="868" height="344" class="fx-frame-in"/><line x1="56" y1="150" x2="824" y2="150" class="fx-axis"/><line x1="80.8" y1="150" x2="80.8" y2="156" class="fx-axis"/><text x="80.8" y="212" class="fx-t fx-small fx-num fx-dim" text-anchor="middle">12-05</text><line x1="328.5" y1="150" x2="328.5" y2="156" class="fx-axis"/><text x="328.5" y="212" class="fx-t fx-small fx-num fx-dim" text-anchor="middle">12-15</text><line x1="576.3" y1="150" x2="576.3" y2="156" class="fx-axis"/><text x="576.3" y="212" class="fx-t fx-small fx-num fx-dim" text-anchor="middle">12-25</text><line x1="824" y1="150" x2="824" y2="156" class="fx-axis"/><text x="824" y="212" class="fx-t fx-small fx-num fx-dim" text-anchor="middle">01-04</text><path d="M528.3 104.0 V94.0 H762.1 V104.0" class="fx-axis"/><text x="645.2" y="84" class="fx-t fx-small" text-anchor="middle">最近一次：滿月（出生前 9.4 天）</text><path d="M161.8 224.0 V234.0 H762.1 V224.0" class="fx-hair"/><text x="461.9" y="256" class="fx-t fx-small" text-anchor="middle">日生盤看前一次新月，越過較近的滿月（出生前 24.2 天）</text><circle cx="161.8" cy="150" r="12" class="fx-b-caz"/><text x="161.8" y="128" class="fx-t" text-anchor="middle">新月（朔）</text><text x="161.8" y="186" class="fx-t fx-small fx-num" text-anchor="middle">12-08 06:31</text><circle cx="528.3" cy="150" r="12" class="fx-mk"/><text x="528.3" y="128" class="fx-t" text-anchor="middle">滿月（望）</text><text x="528.3" y="186" class="fx-t fx-small fx-num" text-anchor="middle">12-23 01:31</text><line x1="762.1" y1="130" x2="762.1" y2="170" class="fx-frame"/><text x="762.1" y="124" class="fx-t" text-anchor="middle">出生</text><text x="762.1" y="186" class="fx-t fx-small fx-num" text-anchor="middle">01-01 12:00</text><text x="56" y="296" class="fx-t fx-small fx-dim">最近一次朔望（卷三第 2 章）</text><text x="392" y="296" class="fx-t fx-num">滿月，取在地平線上方的月亮：巨蟹 0°24′55″</text><text x="56" y="330" class="fx-t fx-small fx-dim">日生看朔（卷三第 10 章、Lilly）</text><text x="392" y="330" class="fx-t fx-num">新月：射手 15°22′11″</text></svg>
+<svg class="fx-narrow" viewBox="0 0 340 590" role="group" aria-labelledby="fig-timeline-title"><rect x="1" y="1" width="338" height="588" class="fx-frame"/><rect x="6" y="6" width="328" height="578" class="fx-frame-in"/><line x1="74" y1="64" x2="74" y2="467" class="fx-axis"/><line x1="68" y1="77" x2="74" y2="77" class="fx-axis"/><text x="64" y="81" class="fx-t fx-small fx-num fx-dim" text-anchor="end">12-05</text><line x1="68" y1="207" x2="74" y2="207" class="fx-axis"/><text x="64" y="211" class="fx-t fx-small fx-num fx-dim" text-anchor="end">12-15</text><line x1="68" y1="337" x2="74" y2="337" class="fx-axis"/><text x="64" y="341" class="fx-t fx-small fx-num fx-dim" text-anchor="end">12-25</text><line x1="68" y1="467" x2="74" y2="467" class="fx-axis"/><text x="64" y="471" class="fx-t fx-small fx-num fx-dim" text-anchor="end">01-04</text><text x="14" y="32" class="fx-t fx-small fx-dim">日期往下增加</text><circle cx="74" cy="119.5" r="10" class="fx-b-caz"/><text x="94" y="117.5" class="fx-t">新月（朔）</text><text x="94" y="135.5" class="fx-t fx-small fx-num">12-08 06:31</text><circle cx="74" cy="311.8" r="10" class="fx-mk"/><text x="94" y="309.8" class="fx-t">滿月（望）</text><text x="94" y="327.8" class="fx-t fx-small fx-num">12-23 01:31</text><line x1="58" y1="434.5" x2="90" y2="434.5" class="fx-frame"/><text x="94" y="432.5" class="fx-t">出生</text><text x="94" y="450.5" class="fx-t fx-small fx-num">01-01 12:00</text><path d="M244.0 311.8 H252.0 V434.5 H244.0" class="fx-axis"/><text x="260" y="365.2" class="fx-t fx-small">最近一次：</text><text x="260" y="383.2" class="fx-t fx-small">滿月</text><path d="M218.0 119.5 H226.0 V434.5 H218.0" class="fx-hair"/><text x="234" y="189.5" class="fx-t fx-small">日生盤看</text><text x="234" y="207.5" class="fx-t fx-small">前一次新月</text><text x="234" y="225.5" class="fx-t fx-small">（越過較近</text><text x="234" y="243.5" class="fx-t fx-small">的滿月）</text><text x="14" y="503" class="fx-t fx-small fx-dim">最近一次朔望（卷三第 2 章）</text><text x="14" y="525" class="fx-t fx-num">滿月，取在地平線上方的月亮：巨蟹 0°24′55″</text><text x="14" y="553" class="fx-t fx-small fx-dim">日生看朔（卷三第 10 章、Lilly）</text><text x="14" y="575" class="fx-t fx-num">新月：射手 15°22′11″</text></svg>
+</div>
+<figcaption id="fig-timeline-cap"><b>圖 1</b>同一張盤，兩種挑法挑到不同的朔望。2000 年 1 月 1 日中午在臺北出生的合成例子：出生前最近的一次是滿月，可是這是日生盤，「日生盤看前一次新月」的挑法會越過它，回頭取更早的新月。實心圓是新月，空心圓是滿月；日期與時刻是臺北的鐘面時間。</figcaption>
+</figure>
+  <!-- /figure:timeline -->
+
+  <div class="ar-body">
+    <p class="ar-lead">產前朔望（prenatal syzygy）是出生前最近一次的朔或望，取時間上較近的那一次。朔就是新月，望就是滿月。Ptolemy 在《占星四書》（Tetrabiblos）卷三第 2 章用它的度數來推定出生時的上升度數<a class="ar-cite" href="#ref-1">[1]</a>。</p>
+    <p>這裡的「度數」是黃道上的位置，例如「巨蟹 0°24′」。「發光體」是古書對太陽和月亮的合稱。朔的時候，太陽和月亮在黃道上同一個度數，只有一個答案；望的時候兩者相差 180°，就有兩個度數可選，問題從這裡開始。</p>
+
+    <section class="ar-points" aria-labelledby="points">
+      <h2 id="points">重點</h2>
+      <ul>
+        <li>Ptolemy 卷三第 2 章取出生前最近一次朔望，望的時候取「在地平線上方」那一個發光體的度數；本站照 Robbins 英譯採用的讀法，看<b>朔望那一刻</b>從出生地看出去誰在上方<a class="ar-cite" href="#ref-1">[1]</a>。</li>
+        <li>另一種挑法是日生盤看前一次朔、夜生盤看前一次望（卷三第 10 章；Lilly 明說要越過較近的另一種），本站並列，不當預設<a class="ar-cite" href="#ref-2">[2]</a><a class="ar-cite" href="#ref-4">[4]</a>。</li>
+        <li>古典占星用日月食主要是看地區與時局，把<b>出生前</b>最後一次日月食當作本命盤的要點是二十世紀的做法<a class="ar-cite" href="#ref-3">[3]</a><a class="ar-cite" href="#ref-7">[7]</a>。</li>
+        <li>月食算不算半影月食，答案常常不同：1900–2399 年間每週取一個出生時刻，約四分之一強的「前一次月食」會換成另一次，所以兩個都列<a class="ar-cite" href="#ref-10">[10]</a>。</li>
+      </ul>
+    </section>
+
+    <h2 id="what"><span class="ar-sec">§01</span>產前朔望是什麼，古書拿它做什麼</h2>
+    <p>月亮每個月繞地球一圈，和太陽會合一次（朔），正對一次（望）。從出生那一刻往回找，最先碰到的那一次朔或望，就是產前朔望。本站算的是<b>真朔望</b>：從地心看，太陽和月亮實際位置正好相合或相對的那一刻。古時候也有用平均月行推算的「平朔望」，兩者的時刻最多可差約 14 小時；我沒有找到任何古典本命文獻要用平朔望，所以只做真朔望<a class="ar-cite" href="#ref-9">[9]</a>。</p>
+    <p>古書拿它做的事主要有三種：</p>
+    <ul>
+      <li><b>推上升度數。</b>Ptolemy 卷三第 2 章：找出在出生時刻「主宰」產前朔望度數的行星（主宰看五種關係：三分性、廟、旺、界，以及相位），這顆行星在它星座裡的第幾度，上升點就定在（出生時大致上升的那個星座的）第幾度<a class="ar-cite" href="#ref-1">[1]</a>。後世阿拉伯與拉丁文獻把這套方法叫 animodar，一般認為名稱源自波斯文<a class="ar-cite" href="#ref-6">[6]</a>。</li>
+      <li><b>選壽命主宰。</b>壽命主宰（hyleg，也叫推出點）是古典推算壽命長短時的起點。Ptolemy 卷三第 10 章在選它的時候，日生盤要數各行星和「前一次的合（朔）」有幾種主宰關係，夜生盤數和「前一次的望」的；夜生盤若都不合格，前一次朔望是朔就取上升點，是望就取命運點（Lot of Fortune）<a class="ar-cite" href="#ref-2">[2]</a>。</li>
+      <li><b>其他用途。</b>Valens《占星選集》（Anthologiae）卷三用前一次朔或望的度數推算壽命的起點<a class="ar-cite" href="#ref-5">[5]</a>。Dorotheus 與後來的 al-Qabīṣī、ʿUmar al-Ṭabarī、Ibn Ezra 則把產前朔望的度數本身列為壽命主宰的候選；Ptolemy 不這樣用，只拿它當計數主宰關係的參照<a class="ar-cite" href="#ref-5">[5]</a>。</li>
+    </ul>
+    <p>這些都是古書的教義，寫在這裡讓你知道這個點為什麼重要。本站<b>不算壽命主宰，也不推算壽命</b>，只列出產前朔望的時刻與度數。</p>
+
+    <h2 id="degree"><span class="ar-sec">§02</span>滿月時，取哪一個發光體的度數</h2>
+    <p>卷三第 2 章的規則是：新月取兩個發光體共同的度數；滿月取「在地平線上方」那一個的度數<a class="ar-cite" href="#ref-1">[1]</a>。但「在上方」是哪一刻的上方？英譯者 Robbins 在註 9 說明，他的正文採用兩份最重要的手抄本，也有古代佚名註釋者支持：看<b>朔望那一刻</b>。另一份手抄本的讀法是看<b>出生那一刻</b>。Robbins 認為前者簡單自然得多<a class="ar-cite" href="#ref-1">[1]</a>。</p>
+    <p>本站採用 Robbins 的讀法：從出生地看朔望那一刻的太陽和月亮。判斷「在上方」的方法和日夜盤（日生盤或夜生盤）完全相同：天體中心的地心真高度大於 0°，不計大氣折射<a class="ar-cite" href="#ref-9">[9]</a>。下面三種情況，本站<b>不替你選</b>，兩個度數都列出：</p>
+    <ul>
+      <li><b>有一個貼近地平線</b>，在上下 50′ 以內。月亮從地表看（站心）和從地心看可以差到約 1°，貼近地平線時兩種看法可能給出相反答案。</li>
+      <li><b>兩個都在上方，或兩個都在下方。</b>滿月時月亮常常偏離黃道幾度，所以兩個發光體不一定一上一下；高緯度地方更常見。古書沒有說這時怎麼辦。</li>
+      <li><b>沒有出生地的地平線</b>可以判斷的時候。</li>
+    </ul>
+    <p>出生那一刻的讀法，本站只當資訊列出。結果另附一個交叉檢查：看度數落在下降點經天頂到上升點的那一半黃道。它和高度判斷不一致時會標出，仍以高度為準。</p>
+
+    <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab1-cap">
+      <!-- figure:readings -->
+      <table class="ar-table">
+        <caption id="tab1-cap">表 1　同一張盤，三種讀法。2000 年 1 月 1 日 12:00 臺北出生的合成例子，數字是本站計算服務實際回答的值。</caption>
+        <thead><tr><th>挑法</th><th>出處</th><th>這張盤的結果</th></tr></thead>
+        <tbody>
+          <tr><td>最近一次朔望，朔望那一刻在地平線上方的發光體</td><td>《占星四書》卷三第 2 章，Robbins 採用的讀法（本站的預設）</td><td>滿月（出生前 9.4 天）。那一刻從臺北看，月亮高度 +66.8°、太陽 −67.4°，取月亮：巨蟹 0°24′55″</td></tr>
+          <tr><td>最近一次朔望，出生那一刻在地平線上方的發光體</td><td>Robbins 註 9 記下的另一個手抄本讀法（只當資訊列出）</td><td>出生時太陽高度 +41.9°、月亮 +19.5°，兩個都在上方，這個讀法選不出來</td></tr>
+          <tr><td>日生盤看前一次朔，夜生盤看前一次望</td><td>《占星四書》卷三第 10 章；Lilly 明說越過較近的另一種（具名挑法，不是預設）</td><td>日生盤，取新月（出生前 24.2 天）：射手 15°22′11″</td></tr>
+        </tbody>
+      </table>
+      <!-- /figure:readings -->
+    </div>
+
+    <p>表 1 用一個合成例子把三種讀法並排。這張盤出生前 9.4 天有一次滿月；那一刻從臺北看，月亮高度 +66.8°、太陽 −67.4°，月亮在上方，所以照本站的預設取月亮的度數：巨蟹 0°24′55″，太陽在對面的摩羯 0°24′55″。手抄本的另一個讀法在這張盤上選不出來：出生那一刻，太陽高度 +41.9°、月亮 +19.5°，兩個都在地平線上方。圖 2 把這兩個時刻的地平線畫出來。</p>
+
+    <!-- figure:horizon -->
+<figure class="fx ar-fig" id="fig-horizon" data-fx data-fx-default-variant="syzygy">
+<div class="fx-switch" role="group" aria-label="切換看哪一刻的地平線" data-fx-switch hidden><button type="button" data-fx-set="syzygy" aria-pressed="true">朔望那一刻（本站預設）</button><button type="button" data-fx-set="birth" aria-pressed="false">出生那一刻（另一個手抄本）</button></div>
+<div class="fx-art" role="group" aria-labelledby="fig-horizon-title fig-horizon-cap">
+<span class="fx-title" id="fig-horizon-title">滿月那一刻與出生那一刻，太陽和月亮在臺北地平線上的高度</span>
+<svg class="fx-wide" viewBox="0 0 880 450" role="group" aria-labelledby="fig-horizon-title"><rect x="1" y="1" width="878" height="448" class="fx-frame"/><rect x="6" y="6" width="868" height="438" class="fx-frame-in"/><rect x="114" y="244" width="406" height="180" class="fx-b-beam"/><line x1="114" y1="244" x2="520" y2="244" class="fx-axis"/><text x="514" y="236" class="fx-t fx-small fx-key" text-anchor="end">地平線</text><text x="514" y="414" class="fx-t fx-small fx-key" text-anchor="end">地平線下</text><line x1="108" y1="64" x2="108" y2="424" class="fx-axis"/><line x1="103" y1="64" x2="108" y2="64" class="fx-axis"/><text x="99" y="69" class="fx-t fx-small fx-num" text-anchor="end">+90°</text><line x1="103" y1="154" x2="108" y2="154" class="fx-axis"/><text x="99" y="159" class="fx-t fx-small fx-num" text-anchor="end">+45°</text><line x1="103" y1="244" x2="108" y2="244" class="fx-axis"/><text x="99" y="249" class="fx-t fx-small fx-num" text-anchor="end">0°</text><line x1="103" y1="334" x2="108" y2="334" class="fx-axis"/><text x="99" y="339" class="fx-t fx-small fx-num" text-anchor="end">−45°</text><line x1="103" y1="424" x2="108" y2="424" class="fx-axis"/><text x="99" y="429" class="fx-t fx-small fx-num" text-anchor="end">−90°</text><text x="99" y="42" class="fx-t fx-small fx-dim" text-anchor="end">高度</text><g class="fx-v" data-fx-variant="syzygy"><g class="fx-row" data-fx-key="sun" tabindex="0" aria-label="太陽，滿月那一刻高度 −67.4°"><circle cx="250" cy="378.9" r="20" class="fx-hit"/><circle cx="250" cy="378.9" r="12" class="fx-mk"/><use href="#fx-gl-sun" x="242.5" y="371.4" width="15" height="15" class="fx-mk-gl"/><text x="270" y="376.9" class="fx-t fx-small fx-key">太陽</text><text x="270" y="394.9" class="fx-t fx-small fx-num fx-key">−67.4°</text></g><g class="fx-row" data-fx-key="moon" tabindex="0" aria-label="月亮，滿月那一刻高度 +66.8°"><circle cx="400" cy="110.4" r="20" class="fx-hit"/><circle cx="400" cy="110.4" r="12" class="fx-mk"/><use href="#fx-gl-moon" x="395" y="102.9" width="9.9" height="15" class="fx-mk-gl"/><text x="420" y="108.4" class="fx-t fx-small fx-key">月亮</text><text x="420" y="126.4" class="fx-t fx-small fx-num fx-key">+66.8°</text></g><text x="560" y="84" class="fx-t">滿月那一刻</text><text x="560" y="110" class="fx-t fx-small fx-num">1999-12-23 01:31，臺北</text><text x="560" y="160" class="fx-t">月亮在地平線上方，</text><text x="560" y="188" class="fx-t">太陽在下方：</text><text x="560" y="216" class="fx-t">取月亮的度數</text><text x="560" y="250" class="fx-t fx-num">巨蟹 0°24′55″</text><text x="560" y="330" class="fx-t fx-small fx-dim">《占星四書》卷三第 2 章，</text><text x="560" y="354" class="fx-t fx-small fx-dim">Robbins 採用的讀法</text></g><g class="fx-v fx-off" data-fx-variant="birth"><g class="fx-row" data-fx-key="sun" tabindex="0" aria-label="太陽，出生那一刻高度 +41.9°"><circle cx="250" cy="160.2" r="20" class="fx-hit"/><circle cx="250" cy="160.2" r="12" class="fx-mk"/><use href="#fx-gl-sun" x="242.5" y="152.7" width="15" height="15" class="fx-mk-gl"/><text x="270" y="158.2" class="fx-t fx-small fx-key">太陽</text><text x="270" y="176.2" class="fx-t fx-small fx-num fx-key">+41.9°</text></g><g class="fx-row" data-fx-key="moon" tabindex="0" aria-label="月亮，出生那一刻高度 +19.5°"><circle cx="400" cy="205" r="20" class="fx-hit"/><circle cx="400" cy="205" r="12" class="fx-mk"/><use href="#fx-gl-moon" x="395" y="197.5" width="9.9" height="15" class="fx-mk-gl"/><text x="420" y="203" class="fx-t fx-small fx-key">月亮</text><text x="420" y="221" class="fx-t fx-small fx-num fx-key">+19.5°</text></g><text x="560" y="84" class="fx-t">出生那一刻</text><text x="560" y="110" class="fx-t fx-small fx-num">2000-01-01 12:00，臺北</text><text x="560" y="160" class="fx-t">太陽、月亮都在</text><text x="560" y="188" class="fx-t">地平線上方：</text><text x="560" y="216" class="fx-t">這個讀法選不出來</text><text x="560" y="330" class="fx-t fx-small fx-dim">Robbins 註 9 記下的</text><text x="560" y="354" class="fx-t fx-small fx-dim">另一個手抄本讀法（只當資訊）</text></g></svg>
+<svg class="fx-narrow" viewBox="0 0 340 420" role="group" aria-labelledby="fig-horizon-title"><rect x="1" y="1" width="338" height="418" class="fx-frame"/><rect x="6" y="6" width="328" height="408" class="fx-frame-in"/><rect x="66" y="167" width="260" height="117" class="fx-b-beam"/><line x1="66" y1="167" x2="326" y2="167" class="fx-axis"/><text x="320" y="159" class="fx-t fx-small fx-key" text-anchor="end">地平線</text><text x="320" y="274" class="fx-t fx-small fx-key" text-anchor="end">地平線下</text><line x1="60" y1="50" x2="60" y2="284" class="fx-axis"/><line x1="55" y1="50" x2="60" y2="50" class="fx-axis"/><text x="51" y="55" class="fx-t fx-small fx-num" text-anchor="end">+90°</text><line x1="55" y1="108.5" x2="60" y2="108.5" class="fx-axis"/><text x="51" y="113.5" class="fx-t fx-small fx-num" text-anchor="end">+45°</text><line x1="55" y1="167" x2="60" y2="167" class="fx-axis"/><text x="51" y="172" class="fx-t fx-small fx-num" text-anchor="end">0°</text><line x1="55" y1="225.5" x2="60" y2="225.5" class="fx-axis"/><text x="51" y="230.5" class="fx-t fx-small fx-num" text-anchor="end">−45°</text><line x1="55" y1="284" x2="60" y2="284" class="fx-axis"/><text x="51" y="289" class="fx-t fx-small fx-num" text-anchor="end">−90°</text><text x="14" y="28" class="fx-t fx-small fx-dim">高度</text><g class="fx-v" data-fx-variant="syzygy"><g class="fx-row" data-fx-key="sun" tabindex="0" aria-label="太陽，滿月那一刻高度 −67.4°"><circle cx="128" cy="254.7" r="18" class="fx-hit"/><circle cx="128" cy="254.7" r="10" class="fx-mk"/><use href="#fx-gl-sun" x="121.8" y="248.4" width="12.5" height="12.5" class="fx-mk-gl"/><text x="146" y="252.7" class="fx-t fx-small fx-key">太陽</text><text x="146" y="270.7" class="fx-t fx-small fx-num fx-key">−67.4°</text></g><g class="fx-row" data-fx-key="moon" tabindex="0" aria-label="月亮，滿月那一刻高度 +66.8°"><circle cx="236" cy="80.2" r="18" class="fx-hit"/><circle cx="236" cy="80.2" r="10" class="fx-mk"/><use href="#fx-gl-moon" x="231.9" y="73.9" width="8.3" height="12.5" class="fx-mk-gl"/><text x="254" y="78.2" class="fx-t fx-small fx-key">月亮</text><text x="254" y="96.2" class="fx-t fx-small fx-num fx-key">+66.8°</text></g><text x="14" y="318" class="fx-t fx-small fx-num">滿月那一刻（1999-12-23 01:31）</text><text x="14" y="342" class="fx-t">月亮在地平線上方，太陽在下方：</text><text x="14" y="366" class="fx-t fx-num">取月亮的度數：巨蟹 0°24′55″</text><text x="14" y="392" class="fx-t fx-small fx-dim">《占星四書》卷三第 2 章，Robbins 採用的讀法</text></g><g class="fx-v fx-off" data-fx-variant="birth"><g class="fx-row" data-fx-key="sun" tabindex="0" aria-label="太陽，出生那一刻高度 +41.9°"><circle cx="128" cy="112.6" r="18" class="fx-hit"/><circle cx="128" cy="112.6" r="10" class="fx-mk"/><use href="#fx-gl-sun" x="121.8" y="106.3" width="12.5" height="12.5" class="fx-mk-gl"/><text x="146" y="110.6" class="fx-t fx-small fx-key">太陽</text><text x="146" y="128.6" class="fx-t fx-small fx-num fx-key">+41.9°</text></g><g class="fx-row" data-fx-key="moon" tabindex="0" aria-label="月亮，出生那一刻高度 +19.5°"><circle cx="236" cy="141.7" r="18" class="fx-hit"/><circle cx="236" cy="141.7" r="10" class="fx-mk"/><use href="#fx-gl-moon" x="231.9" y="135.4" width="8.3" height="12.5" class="fx-mk-gl"/><text x="254" y="139.7" class="fx-t fx-small fx-key">月亮</text><text x="254" y="157.7" class="fx-t fx-small fx-num fx-key">+19.5°</text></g><text x="14" y="318" class="fx-t fx-small fx-num">出生那一刻（2000-01-01 12:00）</text><text x="14" y="342" class="fx-t">太陽、月亮都在地平線上方：</text><text x="14" y="366" class="fx-t fx-num">這個讀法選不出來</text><text x="14" y="392" class="fx-t fx-small fx-dim">Robbins 註 9 記下的另一個手抄本讀法（只當資訊）</text></g></svg>
+</div>
+<p class="fx-readout" data-fx-readout aria-live="polite" hidden>用 Tab 鍵移到太陽或月亮上，或用滑鼠指著它，這裡會寫出它的高度與這個讀法取不取它。</p>
+<ul data-fx-notes hidden><li data-fx-key="sun" data-fx-variant="syzygy">太陽：滿月那一刻（1999-12-23 01:31，臺北）高度 −67.4°，在地平線下方。照 Robbins 採用的讀法，不取它的度數（摩羯 0°24′55″）。</li><li data-fx-key="moon" data-fx-variant="syzygy">月亮：滿月那一刻（1999-12-23 01:31，臺北）高度 +66.8°，在地平線上方。照 Robbins 採用的讀法，取月亮的度數：巨蟹 0°24′55″。</li><li data-fx-key="sun" data-fx-variant="birth">太陽：出生那一刻（2000-01-01 12:00，臺北）高度 +41.9°，在地平線上方。月亮也在上方，照出生那一刻的讀法選不出來。</li><li data-fx-key="moon" data-fx-variant="birth">月亮：出生那一刻（2000-01-01 12:00，臺北）高度 +19.5°，在地平線上方。太陽也在上方，照出生那一刻的讀法選不出來。</li></ul>
+<figcaption id="fig-horizon-cap"><b>圖 2</b>表 1 前兩種讀法看的地平線。縱軸是從臺北看出去的高度（天體中心的地心真高度，不計大氣折射），地平線以下畫排線。按鈕切換兩個時刻：滿月那一刻（1999-12-23 01:31），月亮在上方、太陽在下方，所以取月亮的度數；出生那一刻（2000-01-01 12:00），兩個都在上方，這個讀法選不出來。</figcaption>
+</figure>
+    <!-- /figure:horizon -->
+
+    <div class="ar-key">
+      <span class="ar-k">要記住的一句</span>
+      <p>滿月時取哪一個度數，本站看的是<b>朔望那一刻</b>的天空，不是出生那一刻。只要產前朔望是哪一次確定了，這個選擇就不受出生時刻影響。</p>
+    </div>
+
+    <h2 id="sect-pick"><span class="ar-sec">§03</span>另一種挑法：日生看朔，夜生看望</h2>
+    <p>卷三第 10 章在選壽命主宰時，日生盤看的是前一次朔，夜生盤看的是前一次望<a class="ar-cite" href="#ref-2">[2]</a>。如果日生盤出生前最近的是一次望，要不要越過它、回頭取更早的朔？Ptolemy 的原文<b>沒有明說</b>。Lilly 在《Christian Astrology》（1647）說得很死：日生盤即使中間有一次較近的望也要越過，夜生盤即使較近的是合也要越過<a class="ar-cite" href="#ref-4">[4]</a>。</p>
+    <p>本站把這當成一種具名的挑法，和預設並列：前一次朔、前一次望都算出來，再依日夜盤標出這個挑法取哪一次。出生時太陽貼近地平線、日生夜生不定，或沒有出生時刻時，這個挑法不選，兩次都列出<a class="ar-cite" href="#ref-9">[9]</a>。</p>
+    <p>回到圖 1 的例子：出生在中午，是日生盤，這個挑法越過較近的滿月，取出生前 24.2 天的新月，度數是射手 15°22′11″。同一張盤，照卷三第 2 章取的是巨蟹，照這個挑法取的是射手。兩種做法各有出處，用途也不同（一個推上升點，一個選壽命主宰），本站不替你判斷哪一個才對。</p>
+
+    <p class="ar-pull">同一張盤，產前朔望的度數可以有兩個答案，手抄本的異讀還可能給出第三個結果：選不出來。</p>
+
+    <h2 id="eclipses"><span class="ar-sec">§04</span>產前日月食：古書怎麼用日月食</h2>
+    <p>日食發生在朔，月食發生在望，所以談產前朔望常會連帶談到「產前日月食」。可是古典占星書裡的日月食，主要不是用在個人的本命盤上<a class="ar-cite" href="#ref-3">[3]</a>：</p>
+    <ul>
+      <li>《占星四書》卷二第 4 章說，地區與城市這類普遍事件，「第一個、也最有力的原因」是日月在食時的會合。</li>
+      <li>第 5 章看的是「發生在地平線上方、看得見的」日月食；第 6 章用遮蔽持續幾小時來定影響多久：日食一小時算一年，月食一小時算一個月。</li>
+      <li>第 8 章說，事件的性質由主事的行星決定；例如土星單獨主事時，一般帶來因寒冷而起的毀壞。同一章又說，個人命盤裡太陽或月亮正好落在日月食的度數或其對沖度數上的人，是「最危險、最難避開」的位置。這裡說的是<b>出生以後</b>發生、落到本命發光體上的日月食。</li>
+    </ul>
+    <p>把<b>出生前</b>最後一次日月食當作本命盤的一個要點，是二十世紀才有的做法，常被提到的有 Jansky、Lineman、Brady（1992）與 Graves（2004）。我讀過的古書裡沒有這種用法；這幾本現代著作我也只讀到摘要或書目，還不能確定是誰最先提出的<a class="ar-cite" href="#ref-7">[7]</a>。現代的定義也不一致：有人只算日食，有人日食、月食都算。</p>
+    <p>所以本站的介面不用「產前日月食」這個名稱，寫的是中性的「出生前最近一次日食／月食」：列出它的時刻、類型與度數。日食取食甚（食最深的那一刻）時太陽的度數，月亮在同一處；月食取月亮的度數，太陽在正對面。日月食是全球搜尋的結果，本站<b>沒有評估出生地看不看得見</b><a class="ar-cite" href="#ref-9">[9]</a>。</p>
+
+    <h2 id="penumbral"><span class="ar-sec">§05</span>半影月食算不算：兩個都列</h2>
+    <p>地球的影子中間最暗的一塊叫本影，外圍較淡的一圈叫半影。月亮只經過半影、沒有進到本影，叫半影月食。這時月亮只是稍微變暗，常常肉眼看不出來：依 NASA 日月食專家 Espenak 的說明，月亮直徑大約要有六成以上沒入半影，有經驗的觀測者才看得出淡淡的陰影，快要變成偏食時才明顯（圖 3）<a class="ar-cite" href="#ref-8">[8]</a>。</p>
+
+    <!-- figure:shadow -->
+<figure class="fx ar-fig" id="fig-shadow" data-fx>
+<div class="fx-art" role="group" aria-labelledby="fig-shadow-title fig-shadow-cap">
+<span class="fx-title" id="fig-shadow-title">地球的本影與半影，以及月亮經過時的三種月食（示意）</span>
+<svg class="fx-wide" viewBox="0 0 880 340" role="group" aria-labelledby="fig-shadow-title"><rect x="1" y="1" width="878" height="338" class="fx-frame"/><rect x="6" y="6" width="868" height="328" class="fx-frame-in"/><line x1="60" y1="150" x2="300" y2="166" class="fx-hair"/><line x1="60" y1="230" x2="300" y2="214" class="fx-hair"/><line x1="60" y1="150" x2="300" y2="214" class="fx-hair"/><line x1="60" y1="230" x2="300" y2="166" class="fx-hair"/><path d="M300 166 L400 139.3 L400 240.7 L300 214 Z" class="fx-b-beam"/><path d="M300 166 L400 172.7 L400 207.3 L300 214 Z" class="fx-track"/><path d="M300 166 L400 172.7 L400 207.3 L300 214 Z" class="fx-b-com"/><circle cx="60" cy="190" r="40" class="fx-disc"/><use href="#fx-gl-sun" x="42" y="172" width="36" height="36" class="fx-sun-gl"/><circle cx="300" cy="190" r="24" class="fx-disc"/><line x1="360" y1="132" x2="360" y2="248" class="fx-sunline"/><text x="60" y="256" class="fx-t" text-anchor="middle">太陽</text><text x="300" y="240" class="fx-t" text-anchor="middle">地球</text><text x="360" y="124" class="fx-t fx-small" text-anchor="middle">月亮經過這裡</text><text x="390" y="164" class="fx-t fx-small fx-key" text-anchor="end">半影</text><text x="328" y="195" class="fx-t fx-small fx-key">本影</text><text x="600" y="56" class="fx-t fx-small" text-anchor="middle">截面：月亮那一處的影子（從地球看過去）</text><text x="24" y="320" class="fx-t fx-small fx-dim">示意，不按比例</text><text x="24" y="56" class="fx-t fx-small">側面</text><circle cx="600" cy="190" r="100" class="fx-track"/><circle cx="600" cy="190" r="100" class="fx-b-beam"/><circle cx="600" cy="190" r="50" class="fx-track"/><circle cx="600" cy="190" r="50" class="fx-b-com"/><text x="600" y="158" class="fx-t fx-small fx-key" text-anchor="middle">本影</text><text x="645" y="255" class="fx-t fx-small fx-key" text-anchor="middle">半影</text><line x1="464" y1="114" x2="736" y2="114" class="fx-sunline"/><path d="M728 109 L736 114 L728 119" class="fx-out-arrow"/><circle cx="600" cy="114" r="20" class="fx-lens"/><text x="748" y="110" class="fx-t fx-small">只經過半影：</text><text x="748" y="130" class="fx-t fx-small">半影月食</text><line x1="464" y1="190" x2="736" y2="190" class="fx-sunline"/><path d="M728 185 L736 190 L728 195" class="fx-out-arrow"/><circle cx="600" cy="190" r="20" class="fx-lens"/><text x="748" y="186" class="fx-t fx-small">整個進入本影：</text><text x="748" y="206" class="fx-t fx-small">全食</text><line x1="464" y1="238" x2="736" y2="238" class="fx-sunline"/><path d="M728 233 L736 238 L728 243" class="fx-out-arrow"/><circle cx="600" cy="238" r="20" class="fx-lens"/><text x="748" y="234" class="fx-t fx-small">一部分進入本影：</text><text x="748" y="254" class="fx-t fx-small">偏食</text></svg>
+<svg class="fx-narrow" viewBox="0 0 340 392" role="group" aria-labelledby="fig-shadow-title"><rect x="1" y="1" width="338" height="390" class="fx-frame"/><rect x="6" y="6" width="328" height="380" class="fx-frame-in"/><line x1="40" y1="52" x2="240" y2="61.6" class="fx-hair"/><line x1="40" y1="100" x2="240" y2="90.4" class="fx-hair"/><line x1="40" y1="52" x2="240" y2="90.4" class="fx-hair"/><line x1="40" y1="100" x2="240" y2="61.6" class="fx-hair"/><path d="M240 61.6 L326 45.1 L326 106.9 L240 90.4 Z" class="fx-b-beam"/><path d="M240 61.6 L326 65.7 L326 86.3 L240 90.4 Z" class="fx-track"/><path d="M240 61.6 L326 65.7 L326 86.3 L240 90.4 Z" class="fx-b-com"/><circle cx="40" cy="76" r="24" class="fx-disc"/><use href="#fx-gl-sun" x="29.2" y="65.2" width="21.6" height="21.6" class="fx-sun-gl"/><circle cx="240" cy="76" r="14.4" class="fx-disc"/><line x1="290" y1="34" x2="290" y2="118" class="fx-sunline"/><text x="40" y="122" class="fx-t" text-anchor="middle">太陽</text><text x="240" y="112.4" class="fx-t" text-anchor="middle">地球</text><text x="322" y="26" class="fx-t fx-small" text-anchor="end">月亮經過這裡</text><text x="14" y="160" class="fx-t fx-small">截面：月亮那一處的影子（從地球看過去）</text><text x="14" y="376" class="fx-t fx-small fx-dim">示意，不按比例</text><text x="14" y="26" class="fx-t fx-small">側面</text><circle cx="222" cy="272" r="90" class="fx-track"/><circle cx="222" cy="272" r="90" class="fx-b-beam"/><circle cx="222" cy="272" r="45" class="fx-track"/><circle cx="222" cy="272" r="45" class="fx-b-com"/><text x="222" y="245" class="fx-t fx-small fx-key" text-anchor="middle">本影</text><text x="262.5" y="331" class="fx-t fx-small fx-key" text-anchor="middle">半影</text><line x1="126" y1="200" x2="326" y2="200" class="fx-sunline"/><path d="M318 195 L326 200 L318 205" class="fx-out-arrow"/><circle cx="222" cy="200" r="18" class="fx-lens"/><text x="14" y="196" class="fx-t fx-small">只經過半影</text><text x="14" y="214" class="fx-t fx-small">半影月食</text><line x1="126" y1="272" x2="326" y2="272" class="fx-sunline"/><path d="M318 267 L326 272 L318 277" class="fx-out-arrow"/><circle cx="222" cy="272" r="18" class="fx-lens"/><text x="14" y="268" class="fx-t fx-small">整個進入本影</text><text x="14" y="286" class="fx-t fx-small">全食</text><line x1="126" y1="319" x2="326" y2="319" class="fx-sunline"/><path d="M318 314 L326 319 L318 324" class="fx-out-arrow"/><circle cx="222" cy="319" r="18" class="fx-lens"/><text x="14" y="315" class="fx-t fx-small">一部分進入本影</text><text x="14" y="333" class="fx-t fx-small">偏食</text></svg>
+</div>
+<figcaption id="fig-shadow-cap"><b>圖 3</b>本影與半影的示意圖，不按比例。側面：太陽的光被地球擋住，地球後方最暗的一塊是本影（交叉排線），外圍較淡的一圈是半影（單線排線）。截面：在月亮經過的那一處，從地球看過去的影子截面，虛線是月亮可能走的三條路：只經過半影是半影月食，一部分進入本影是偏食，整個進入本影是全食。表 2 的「前一次月食（含半影月食）」三種都算，「前一次本影月食」只算後兩種。</figcaption>
+</figure>
+    <!-- /figure:shadow -->
+
+    <ul>
+      <li><b>算進來的理由：</b>天文上它是一次月食，NASA 的月食表和本站用的 Swiss Ephemeris 都把它列為月食。</li>
+      <li><b>不算的理由：</b>Ptolemy 講的日月食是看得見的遮蔽，而半影月食通常看不見<a class="ar-cite" href="#ref-3">[3]</a>。</li>
+    </ul>
+    <p>我讀到的占星書都沒有明說半影月食算不算。這個選擇影響很大：在本站能計算的 1900–2399 年間每週取一個出生時刻，26,085 個出生時刻裡有 7,264 個（27.8%）的「前一次月食」只是半影食，改成只算本影月食就會換成更早的另一次<a class="ar-cite" href="#ref-10">[10]</a>。本影月食有時隔很久才來一次，例如 1907 年 7 月到 1909 年 6 月之間隔了 680 天。所以本站兩列都給：「前一次月食（含半影月食）」與「前一次本影月食（偏食或全食）」，不替你選。</p>
+
+    <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab2-cap">
+      <!-- figure:eclipses -->
+      <table class="ar-table">
+        <caption id="tab2-cap">表 2　1999 年 3 月 1 日 12:00 臺北出生的合成例子：出生前最近一次日食與月食。時間是臺北的鐘面時間（食甚，也就是食最深的那一刻），度數是食甚時受食的那一個發光體的度數。</caption>
+        <thead><tr><th>列名</th><th>類型</th><th>臺北時間（食甚）</th><th>出生前</th><th>日月食的度數</th></tr></thead>
+        <tbody>
+          <tr><td>前一次日食</td><td>環食</td><td>1999-02-16 14:33</td><td class="n">13 天</td><td>太陽：水瓶 27°07′49″</td></tr>
+          <tr><td>前一次月食（含半影月食）</td><td>半影食</td><td>1999-02-01 00:17</td><td class="n">28 天</td><td>月亮：獅子 11°25′57″</td></tr>
+          <tr><td>前一次本影月食（偏食或全食）</td><td>全食</td><td>1997-09-17 02:46</td><td class="n">530 天</td><td>月亮：雙魚 23°53′31″</td></tr>
+        </tbody>
+      </table>
+      <!-- /figure:eclipses -->
+    </div>
+
+    <p>表 2 的例子裡，兩種算法差了一年半：含半影時是出生前不到一個月的那次半影食，度數在獅子；只算本影時是出生前 530 天的全食，度數在雙魚。</p>
+
+    <h2 id="under-way"><span class="ar-sec">§06</span>出生時天上正在日食或月食</h2>
+    <p>「前一次」以食甚是否在出生之前來定。所以出生時如果有一次日月食已經開始、但最深的那一刻還沒到，它不算「前一次」，本站另列一列「出生時正在進行」。</p>
+    <p>例如 1999 年 8 月 11 日 18:30 在臺北出生：那天有一次日全食，出生時已經開始，食甚在出生之後 33 分鐘（臺北時間 1999-08-11 19:03）。它另列一列；「前一次日食」仍是 1999-02-16 那一次環食。這張盤還有另一個要注意的地方：出生時太陽的高度是 −0.3°，在日夜盤的近地平帶裡，所以 §03 的日夜挑法在這張盤上不選，前一次朔與前一次望都列出。</p>
+
+    <h2 id="not-done"><span class="ar-sec">§07</span>本站不做的事</h2>
+    <ul>
+      <li><b>不校正出生時間。</b>不輸出「依 animodar 改過的上升點」。那等於建議你改出生時間，是另一種技法。</li>
+      <li><b>不做 Hermes 天秤（Trutina Hermetis）。</b>那是用受孕時刻反推出生上升點的古法，也屬於校正出生時間。</li>
+      <li><b>不接到其他技法。</b>產前朔望與日月食的度數不拿去推算壽命主宰、壽命或任何其他結果<a class="ar-cite" href="#ref-9">[9]</a>。</li>
+      <li><b>不評估日月食在出生地看不看得見。</b></li>
+    </ul>
+    <p>這篇照原典說明各家怎麼用；不替你解盤，也不預測。</p>
+
+    <h2 id="read"><span class="ar-sec">§08</span>結果頁怎麼讀</h2>
+    <p>在<a href="/zh-TW/calculate">計算頁</a>選「自訂」，打開「進階選項」，在「月相、食、月空亡與月宿」一組勾選「朔望」與「日月食」。選「古典完整」的話，結果頁「位置」一章最後列出的「加算」也能補算。結果在「位置」一章，有兩個區段：</p>
+    <ul>
+      <li><b>「朔望與日月食」</b>列出出生前後各次月相與日月食的時刻。出生時間只知道日期或大約幾點時，這裡會用三個代表性取樣（區間起點、代表性時刻、區間終點）並列，不合併；這段時間裡如果剛好有一次朔或望，結果會說明產前朔望可能是不同的兩次。</li>
+      <li><b>「產前朔望與出生前日月食的度數」</b>有三張表：出生前的朔與望（含出生地時間、距出生多久、太陽與月亮的度數、取用的度數）；滿月那一刻從出生地看太陽和月亮的高度；出生前最近一次日食與月食（含本影月食那一列，以及正在進行的那一列）。古書出處收在區段裡的「出處」摺疊。</li>
+    </ul>
+    <p>朔望在出生前不到 1 小時時，結果會提醒你：出生時刻若其實早了幾分鐘，產前朔望就是再前一次。只知道日期時，「距出生」、日夜挑法與出生時的地平高度，用的是計算用的代表性時刻，不是出生時刻。</p>
+
+    <h2 id="faq"><span class="ar-sec">§09</span>常見問題</h2>
+    <h3>產前朔望是什麼？</h3>
+    <p>出生前最近一次的新月（朔）或滿月（望），取時間上較近的那一次。古典占星用它的度數推上升度數，也在選壽命主宰時參考它。</p>
+    <h3>滿月時要取太陽還是月亮的度數？</h3>
+    <p>Ptolemy 說取在地平線上方的那一個。本站照 Robbins 英譯的讀法，看朔望那一刻從出生地看誰在上方；貼近地平線、兩個都在上方或都在下方時，兩個度數都列，不替你選。</p>
+    <h3>要看最近一次，還是日生看新月、夜生看滿月？</h3>
+    <p>兩種都有出處。卷三第 2 章取最近一次，是本站的預設；卷三第 10 章與 Lilly 依日夜盤挑，本站當作具名挑法並列。</p>
+    <h3>產前日月食是古典技法嗎？</h3>
+    <p>不是。古書用日月食主要看地區與時局，對個人看的是出生以後的日月食落在本命太陽或月亮上；出生前最後一次日月食當作本命要點，是二十世紀的做法。</p>
+    <h3>半影月食要不要算？</h3>
+    <p>占星書沒有明說。算與不算各有理由，約四分之一強的出生兩種算法答案不同，所以本站兩個都列。</p>
+    <h3>不知道出生時間，算得出產前朔望嗎？</h3>
+    <p>只知道日期也算得出來，但那一天之內可能剛好有一次朔或望，這時產前朔望會有兩個可能，本站都列出。日生或夜生的挑法需要出生時刻，沒有時刻時不選。</p>
+    <h3>渾儀會用產前朔望校正我的出生時間嗎？</h3>
+    <p>不會。本站只列出時刻與度數，不輸出校正後的上升點，也不把它接到任何其他技法。</p>
+
+    <aside class="ar-scope" aria-labelledby="scope-9">
+      <span class="ar-k" id="scope-9">本文的證據範圍</span>
+      <ul>
+        <li>圖 1、圖 2、表 1、表 2 與三個例子的數字，是本站計算服務對這三個合成出生時刻實際回答的值，由產生圖的腳本直接讀出，不是另外抄寫的。</li>
+        <li>27.8% 這個比例，是以 Swiss Ephemeris 在 1900–2399 年間逐次找出月食後重數的；本站另以 NASA 的月食表逐週核對過同一批出生時刻，結果相同。</li>
+        <li>《占星四書》卷二、卷三的引句，是我這次重讀 Robbins 英譯得到的；希臘原文沒有核。Lilly 依本站方法出處清單的記載，這篇沒有重讀原書。Valens、Dorotheus 與中世紀作者的用法，以及二十世紀的幾本書，都是轉引。</li>
+      </ul>
+    </aside>
+  </div>
+
+  <section class="ar-refs" aria-labelledby="refs">
+    <h2 id="refs">出處</h2>
+    <p>每一條後面標明我們核到哪一層：<span class="rs rs-checked">已讀譯本</span>是我們這次親自讀過的譯本（這篇都是 Robbins 英譯）、沒有讀原文；<span class="rs rs-register">本站出處清單</span>是本站公開、每次計算都記下雜湊的方法出處；<span class="rs rs-relayed">轉引</span>是只讀到二手轉述、摘要或書目；<span class="rs rs-computed">本站自算</span>是可以照著重算的結果。</p>
+    <ol>
+      <li id="ref-1"><span>Ptolemy《占星四書》卷三第 2 章〈上升點的度數〉與 Robbins 註 9，trans. F. E. Robbins (Loeb Classical Library, 1940)，pp.&nbsp;231–235。<a href="https://penelope.uchicago.edu/Thayer/E/Roman/Texts/Ptolemy/Tetrabiblos/3A*.html">LacusCurtius 線上本</a><span class="rs rs-checked">已讀譯本</span></span></li>
+      <li id="ref-2"><span>Ptolemy《占星四書》卷三第 10 章〈壽命〉，Robbins pp.&nbsp;271–307，相關段落在 pp.&nbsp;277–279。原文沒有說較近的另一種朔望要不要越過。<a href="https://penelope.uchicago.edu/Thayer/E/Roman/Texts/Ptolemy/Tetrabiblos/3B*.html">LacusCurtius 線上本</a><span class="rs rs-checked">已讀譯本</span></span></li>
+      <li id="ref-3"><span>Ptolemy《占星四書》卷二第 4–8 章，Robbins pp.&nbsp;161–191：普遍事件的第一個原因（p.&nbsp;161）、看得見的日月食（p.&nbsp;165）、以食的時數定年月（p.&nbsp;167）、土星單獨主事（p.&nbsp;179）、「最危險、最難避開」（p.&nbsp;191）。<a href="https://penelope.uchicago.edu/Thayer/E/Roman/Texts/Ptolemy/Tetrabiblos/2B*.html">LacusCurtius 線上本</a><span class="rs rs-checked">已讀譯本</span></span></li>
+      <li id="ref-4"><span>William Lilly《Christian Astrology》(London, 1647)，卷三第 104 章，pp.&nbsp;527–529：日生盤取前一次朔、夜生盤取前一次望，較近的是另一種也要越過。渾儀<a href="/zh-TW/method-sources.json">方法出處清單</a>，條目 <code>lunar_events/prenatal_syzygy_sect_profile</code>。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-5"><span>Vettius Valens《占星選集》卷三第 10、12 章（Kroll 編號），Riley 英譯的重排本；Dorotheus、al-Qabīṣī、ʿUmar al-Ṭabarī、Ibn Ezra 把產前朔望度數列為壽命主宰候選，依 Deborah Houlding〈Notes on Dorotheus III〉（2014）的整理。這篇沒有重讀這些文本。<span class="rs rs-relayed">轉引</span></span></li>
+      <li id="ref-6"><span>animodar 一名的來源：Díaz-Fajardo, “Gestation times correlated with lunar cycles. Ibn al-Kammād’s animodar of conception across North Africa”, <i>Suhayl</i> 15 (2016)，引 Kennedy 之說：源自波斯文，意思是讓上升點明白顯示出來的東西。只讀到摘要與檢索摘要。<a href="https://raco.cat/index.php/Suhayl/article/view/329909">raco.cat</a><span class="rs rs-relayed">轉引</span></span></li>
+      <li id="ref-7"><span>把出生前最後一次日月食當作本命要點的二十世紀做法：Robert C. Jansky《Interpreting the Eclipses》、Rose Lineman《Your Prenatal Eclipse》、Bernadette Brady《Predictive Astrology》（1992）、Philip Graves〈Introduction to Prenatal Eclipses〉（2004 年網文）。Graves 只讀到網頁摘要，其餘只讀到書目或書商說明。<span class="rs rs-relayed">轉引</span></span></li>
+      <li id="ref-8"><span>Fred Espenak〈Visual Appearance of Lunar Eclipses〉，eclipsewise.com；見 [9] 的方法出處清單條目 <code>eclipses/prenatal_selection</code>。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-9"><span>渾儀<a href="/zh-TW/methods#prenatal-syzygy">方法頁 §07.11〈「產前朔望」挑的是哪一次〉</a>與<a href="/zh-TW/method-sources.json">方法出處清單</a>條目 <code>lunar_events/prenatal_syzygy_degree</code>、<code>lunar_events/prenatal_syzygy_sect_profile</code>、<code>eclipses/prenatal_selection</code>。日月食的時刻與類型以 NASA 的日月食表驗證：Eclipse Predictions by Fred Espenak and Jean Meeus (NASA's GSFC)。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-10"><span>本文的例子與比例：三個合成出生時刻（2000-01-01 12:00、1999-08-11 18:30、1999-03-01 12:00，臺北）由本站計算服務回答；半影月食的比例以 Swiss Ephemeris 2.10.03 在 1900-01-01 到 2399-11-30 每 7 天取一個出生時刻（世界時 0 時）重數，2026 年 10 月自算。<span class="rs rs-computed">本站自算</span></span></li>
+    </ol>
+  </section>
+
+  <section class="ar-next" aria-labelledby="next-cta">
+    <div>
+      <h2 id="next-cta">在你的盤上，<br>看產前朔望取的是哪一個度數。</h2>
+      <p>計算頁「自訂」的進階選項裡勾「朔望」與「日月食」。結果會並列兩種挑法、兩種月食算法，並說明為什麼這一次選了或沒選。</p>
+      <p><a class="btn-paper" href="/zh-TW/calculate">排一張盤 →</a></p>
+    </div>
+    <div>
+      <span class="ar-k">延伸閱讀</span>
+      <ul>
+        <li><a href="/zh-TW/methods#prenatal-syzygy">方法頁：「產前朔望」挑的是哪一次</a></li>
+        <li><a href="/zh-TW/blog/unknown-birth-time">不知道出生時間，能排星盤嗎？</a></li>
+        <li><a href="/zh-TW/method-sources.json">方法出處清單（JSON）</a></li>
+      </ul>
+    </div>
+  </section>
+
+</div>

@@ -800,6 +800,28 @@ def fill_article_dates(body: str, item: dict) -> str:
     return _ARTICLE_DATE_PLACEHOLDER.sub(lambda match: item["article"][match.group(1)], body)
 
 
+# An article figure is interactive when it has marks to point at, a variant
+# switch or a slider; only then does the page load article-figures.js.
+FIGURE_SCRIPT = '<script src="/zh-TW/article-figures.js?v={{assets}}" defer></script>'
+_INTERACTIVE_FIGURE = re.compile(r"\sdata-fx-(?:key|set|scrub)[\s=>]")
+
+
+def fill_figure_script(body: str, item: Mapping) -> str:
+    """Append the figure script to an article whose figures are interactive."""
+
+    from scripts.frontend import stylesheets
+
+    if "article-figures.js" in body:
+        raise ValueError(f"page {item['key']!r} loads the figure script itself; the build adds it")
+    if not stylesheets.declares_figures(body):
+        if _INTERACTIVE_FIGURE.search(body):
+            raise ValueError(f"page {item['key']!r} has figure controls outside a figure[data-fx]")
+        return body
+    if not is_article(item):
+        raise ValueError(f"article figure on a page that is not an article: {item['key']!r}")
+    return body + "\n" + FIGURE_SCRIPT if _INTERACTIVE_FIGURE.search(body) else body
+
+
 def stylesheet_link(item: Mapping) -> str:
     """The one bundle a page loads: tokens, its parts of page.css and, on the
     calculator, calculate.css, on an article, article.css
@@ -1220,6 +1242,7 @@ def render(item: dict, origin: str) -> str:
     body = fill_slate_counts(body)
     body = fill_calculation_requests(body, origin)
     body = fill_civil_time_tables(body)
+    body = fill_figure_script(body, item)
     reject_inline_style(body, item["key"])
     headline = (
         page_headline(body, item["key"])

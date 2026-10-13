@@ -22,7 +22,7 @@
     { key: "orb", term: "容許度", chapter: "宮位與相位",
       text: "兩顆行星的角距離與精確的相位角度相差多少度以內，還算有這個相位。古書給的度數不只一套，本站寫明這次用哪一套。" },
     { key: "aspect", term: "相位", en: "Aspect", chapter: "宮位與相位",
-      text: "兩顆行星在黃道上相隔特定的角度：合相 0 度、六分 60 度、刑 90 度、拱 120 度、沖 180 度。原典替相位分了性質：Ptolemy《占星四書》（Tetrabiblos）I.13 說拱與六分是和諧的，刑與沖是不和諧的；al-Bīrūnī《占星術入門》（Book of Instruction）§374 說六分、拱的星座彼此友好，刑不友好，沖是敵對。" },
+      text: "兩顆行星在黃道上相隔特定的角度：合相 0 度、六分 60 度、刑 90 度、拱 120 度、沖 180 度。原典替相位分了性質：Ptolemy《占星四書》（Tetrabiblos）I.13 說拱與六分是和諧的，刑與沖是不和諧的；al-Bīrūnī《占星術入門》（Kitāb al-Tafhīm）§374 說六分、拱的星座彼此友好，刑不友好，沖是敵對。" },
     { key: "aversion", term: "不合意", en: "Aversion", chapter: "宮位與相位",
       text: "兩個星座之間不成任何一種古典相位：彼此相鄰，或相隔第 6、第 8 個星座。al-Bīrūnī《占星術入門》§374 說與牡羊不相見的是金牛、處女、天蠍、雙魚。" },
     { key: "benefic_malefic", term: "吉星與凶星", en: "Benefic / Malefic", chapter: "古典判斷",
@@ -30,7 +30,7 @@
     { key: "sect", term: "日盤／夜盤", chapter: "古典判斷",
       text: "出生時太陽在地平線上方是日盤，在下方是夜盤。古典技法常依此換用不同的規則，例如命運點的公式、法達的起點。" },
     { key: "domicile_exaltation", term: "廟與旺", en: "Domicile / Exaltation", chapter: "古典判斷",
-      text: "古書替每顆行星指定它自己的星座（廟）和它受尊崇的星座（旺）。古書把行星在廟、在旺看作有力（Lilly 稱為 essential fortitudes），在陷、在弱看作減損（debilities）；本站目前只判定廟與旺。" },
+      text: "古書替每顆行星指定它自己的星座（廟）和它受尊崇的星座（旺）。古書把行星在廟、在旺看作有力，在陷（廟對面的星座）、在弱（旺對面的星座）看作減損；Lilly《Christian Astrology》1647 年版 p.115 的表題就叫 Fortitudes and Debilities（力量與減損）。本站目前只判定廟與旺。" },
     { key: "bounds_dignity", term: "界", en: "Bounds", chapter: "古典判斷",
       text: "把每個星座切成五段，每段由一顆行星管。古書有好幾套切法，本站平等提供，不替你選。" },
     { key: "face", term: "面／旬", en: "Face / Decan", chapter: "古典判斷",
@@ -46,7 +46,7 @@
     { key: "planetary_hours", term: "行星時", en: "Planetary hours", chapter: "古典判斷",
       text: "把白天與夜晚各分成 12 段，依固定的順序輪給七顆行星。所以夏天白天的一段比夜晚的一段長。" },
     { key: "time_lords", term: "時間主星", en: "Time lords", chapter: "時間主星",
-      text: "把一生切成一段段時期，每段由某顆行星或某個星座輪值的一類古典技法。本站照原典列出輪值表；不替這張盤做個人解讀，也不預測。" },
+      text: "把一生切成一段段時期，每段由某顆行星或某個星座輪值的一類古典技法。本站照原典列出輪值表。不替你解盤，也不預測。" },
     { key: "profection", term: "年度小限", en: "Annual profections", chapter: "時間主星",
       text: "從上升星座開始，每過一歲往後換一個星座，12 年繞一圈。管那個星座的行星叫年主星。" },
     { key: "monthly_profection", term: "月小限", en: "Monthly profections", chapter: "時間主星",
@@ -57,6 +57,42 @@
       text: "從命運點或精神點所在的星座起，依各星座的年數往後分期。這個名稱是現代人取的，Valens 本人沒有用這個詞。" },
     { key: "decennials", term: "十年期", en: "Decennials", chapter: "時間主星",
       text: "每段 10 年 9 個月，依出生時行星在黃道上的順序輪值；本站算到第二層。" },
+    { key: "cazimi", term: "日輪內", en: "Cazimi", chapter: "古典判斷",
+      text: "行星幾乎落在太陽正中（阿拉伯文「在太陽之心」）。Lilly《Christian Astrology》1647 年版 p.113 定在離太陽 17 角分以內，"
+        + "al-Bīrūnī《占星術入門》§481–484 定在不到 16 角分（1 角分是 1 度的 60 分之 1）。"
+        + "Lilly 說各家都認為行星在日輪內因而得力。" },
+    { key: "combust", term: "焦傷", en: "Combust", chapter: "古典判斷",
+      text: "行星離太陽很近，被太陽的光燒到（阿拉伯文 muḥtariq、拉丁文 combustus，字面是「被燒」）。"
+        + "界線各家不同：Lilly《Christian Astrology》1647 年版 p.113 是 8°30′ 以內，al-Bīrūnī《占星術入門》§481–484 大多是 6° 以內。"
+        + "Lilly 說任何行星的焦傷「是所能有的最大不幸」（p.111）；al-Bīrūnī 說行星的作用在焦傷時最小（§486）。" },
+    { key: "under_beams", term: "在光束下", en: "Under the beams", chapter: "古典判斷",
+      text: "比焦傷再遠一點，行星仍被太陽的光芒蓋住，肉眼看不到。Lilly《Christian Astrology》1647 年版 p.113 到 17° 為止；"
+        + "希臘化時期的作者只用一條 15° 的線。al-Bīrūnī《占星術入門》§481 說行星在光束下「像被關住的囚犯」。" },
+    { key: "void_of_course", term: "月空亡", en: "Void of course", chapter: "古典判斷",
+      text: "月亮離開它所在的星座之前，不再與任何行星完成相位。Lilly《Christian Astrology》1647 年版 p.112 有這一條，"
+        + "並說在卜卦（就一個問題起盤）裡，月亮空亡時事情很少順利進展。本站另要求相位在換星座前精確完成；"
+        + "這兩個條件合起來是誰定的，至今沒有定論，所以名稱不掛古人，見方法頁〈月空亡〉一節。" },
+    { key: "joys", term: "喜樂宮", en: "Joys", chapter: "古典判斷",
+      text: "古書說每顆行星在某一宮特別「喜樂」：水星第 1 宮、月亮第 3 宮、金星第 5 宮、火星第 6 宮、太陽第 9 宮、"
+        + "木星第 11 宮、土星第 12 宮。這一組通常引 Paulus《導論》（Eisagōgika）第 24 章，本站只讀到轉引；"
+        + "Firmicus《Mathesis》卷二第 19 章另說第 8 宮只有月亮喜樂，而且只在夜盤。兩條都列。" },
+    { key: "hayz", term: "hayz 與 halb", chapter: "古典判斷",
+      text: "中世紀阿拉伯語占星書的用詞，沒有通行的中文譯名，照原文寫。說的是一顆行星的所在合不合乎它屬於白天或夜晚一組。"
+        + "al-Bīrūnī《占星術入門》第 496 節：白天一組的行星白天在地平上、夜裡在地平下（夜晚一組相反）叫 halb；"
+        + "再加上陽性行星在陽性星座、陰性行星在陰性星座，叫 hayyiz。Lilly《Christian Astrology》1647 年版 p.113 只有 hayz，"
+        + "對夜晚一組該在地平上或下，說法與 al-Bīrūnī 相反；本站兩種都列。" },
+    { key: "house_triad", term: "始宮／續宮／果宮", en: "Angular / Succedent / Cadent", chapter: "古典判斷",
+      text: "第 1、4、7、10 宮是始宮（又稱角宮），各自的下一宮是續宮，再下一宮是果宮。"
+        + "Ptolemy《占星四書》卷三第 3、10 章把果宮稱為「自始宮下落」的宮。" },
+    { key: "prenatal_syzygy", term: "產前朔望", en: "Prenatal syzygy", chapter: "位置",
+      text: "出生前最近的一次朔或望。朔是新月，太陽和月亮在黃道上同一個度數；望是滿月，兩者正好相對。"
+        + "Ptolemy《占星四書》卷三第 2 章用它的度數來推定出生的上升度數。本站只列時刻與度數，不替你改上升點。" },
+    { key: "fixed_stars", term: "恆星", en: "Fixed stars", chapter: "位置",
+      text: "天上彼此位置幾乎不變的星，相對於在黃道上移動的行星而言。Ptolemy《占星四書》卷一第 9 章用行星來說明亮星的性質，"
+        + "例如畢宿五（Aldebaran）性質如火星。本站只列位置與星等，不判定行星與恆星的合相。" },
+    { key: "antiscia", term: "反照點", en: "Antiscia", chapter: "位置",
+      text: "把一個點對 0° 巨蟹—0° 摩羯這條軸鏡射得到的位置；對 0° 牡羊—0° 天秤鏡射的叫反向反照點（contra-antiscia）。"
+        + "見於 Firmicus《Mathesis》卷二第 29 章與 Lilly《Christian Astrology》1647 年版 pp.90–92。本站只列位置，不做判定。" },
     { key: "receipt", term: "收據", chapter: "收據與匯出",
       text: "這次計算用了哪個時區、哪一版程式與哪種算法的紀錄，讓別人可以照著重算核對。" },
   ]);

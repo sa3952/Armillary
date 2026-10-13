@@ -28,6 +28,7 @@ from fractions import Fraction
 from .dignity_tables import DOROTHEAN, ELEMENTS, SIGNS, TRIPLICITY_IDS
 from .firdaria import period_instant
 from .planetary_years import MINOR_YEARS, SEVEN_PLANETS
+from .source_reading import SOURCE_READING_LEVELS
 # The scopes, their window and the level-2 reason are releasing's, shared as they are;
 # SCOPES is re-exported here as this technique's own scope list.
 from .zodiacal_releasing import (
@@ -350,32 +351,53 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "order for finding the lord. The product follows the example and VI.7."
         ),
         "sources": [
-            "Vettius Valens, Anthologies VI.6 (Kroll pp.252-254, Pingree pp.241-243; Riley "
-            "translation via the public re-typeset janegca/latex-valens): the sect light as "
-            "starting point if well situated, else the first star after the ascendant; 10 "
-            "years 9 months each, then the next star in the zodiacal circle of the "
-            "nativity; the night example (Greek Horoscopes L132): Moon, Venus, Jupiter, "
-            "Saturn 43 years, then Mars, with Mars 15, Sun 19, Mercury 20, Moon 25, Venus 8, "
-            "Jupiter 12, Saturn 30 months (44 years 3 months, 51 years 3 months, 53 years "
-            "9 months); 52 years and 124 days is 53 distribution years and 37 days, the "
-            "667th day of Saturn's sub-period; days and cycles counted in 360-day years",
-            "Valens VI.6a (Kroll p.255, Pingree p.244): the third-stage sub-division table, "
-            "49 cells, listed in the Chaldean order",
-            "Valens VI.7 (Kroll pp.256-257, Pingree pp.245-246): the lord of the day by "
-            "129-day cycles; ordering by the stars' actual signs and degrees at the "
-            "nativity, not by the Chaldean order from Saturn",
-            "Firmicus Maternus, Mathesis II.26-27 (Kroll-Skutsch Teubner Latin, "
-            "LacusCurtius): by day from the Sun, by night from the Moon, no condition; "
-            "10 years 9 months each, passed on in the order of the signs; each star "
-            "shares its period among the seven, itself first, in months equal to the "
-            "minor years; VI.33-39 describe each star's decennial",
+            {
+                "citation": "Vettius Valens, Anthologies VI.6 (Kroll pp.252-254, Pingree pp.241-243)",
+                "says": (
+                    "the sect light as starting point if well situated, else the first star "
+                    "after the ascendant; 10 years 9 months each, then the next star in the "
+                    "zodiacal circle of the nativity; the night example (Greek Horoscopes "
+                    "L132): Moon, Venus, Jupiter, Saturn 43 years, then Mars, with Mars 15, Sun "
+                    "19, Mercury 20, Moon 25, Venus 8, Jupiter 12, Saturn 30 months (44 years 3 "
+                    "months, 51 years 3 months, 53 years 9 months); 52 years and 124 days is 53 "
+                    "distribution years and 37 days, the 667th day of Saturn's sub-period; days "
+                    "and cycles counted in 360-day years"
+                ),
+                "reading": SOURCE_READING_LEVELS[1],
+                "read_at": "Riley's English translation via the public re-typeset janegca/latex-valens",
+            },
+            {
+                "citation": "Valens VI.6a (Kroll p.255, Pingree p.244)",
+                "says": "the third-stage sub-division table, 49 cells, listed in the Chaldean order",
+                "reading": SOURCE_READING_LEVELS[1],
+                "read_at": "Riley's English translation via the public re-typeset; the Greek not checked",
+            },
+            {
+                "citation": "Valens VI.7 (Kroll pp.256-257, Pingree pp.245-246)",
+                "says": (
+                    "the lord of the day by 129-day cycles; ordering by the stars' actual signs "
+                    "and degrees at the nativity, not by the Chaldean order from Saturn"
+                ),
+                "reading": SOURCE_READING_LEVELS[1],
+                "read_at": "Riley's English translation via the public re-typeset",
+            },
+            {
+                "citation": "Firmicus Maternus, Mathesis II.26-27 (Kroll-Skutsch Teubner)",
+                "says": (
+                    "by day from the Sun, by night from the Moon, no condition; 10 years 9 "
+                    "months each, passed on in the order of the signs; each star shares its "
+                    "period among the seven, itself first, in months equal to the minor years; "
+                    "VI.33-39 describe each star's decennial"
+                ),
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": "the Latin text of the Kroll-Skutsch Teubner edition, LacusCurtius",
+            },
         ],
         "not_from_the_sources": [
             "the names 'level 1' and 'level 2' and the profile names: modern labels",
             "ordering planets of exactly equal longitude by the product's body order: a "
             "product convention",
         ],
-        "source_verification": "riley_translation_and_firmicus_latin_read_greek_not_checked",
     },
     "sect_light_triplicity_lords": {
         "applies_to": "annual_methods.decennials.sect_light_triplicity_lords",
@@ -395,11 +417,21 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "al-Qabisi), not Dorotheus."
         ),
         "sources": [
-            "Dorotheus, Carmen Astrologicum I.1 (Pingree 1976 pp.161-162): the triplicity "
-            "lords and their day and night order",
-            "Dorotheus, Carmen Astrologicum I.22 (Pingree 1976 p.183): the sect light's "
-            "triplicity lords, the first for the beginning of life, the second for its end",
+            {
+                "citation": "Dorotheus, Carmen Astrologicum I.1 (Pingree 1976 pp.161-162)",
+                "says": "the triplicity lords and their day and night order",
+                "reading": SOURCE_READING_LEVELS[1],
+                "read_at": "Pingree's English translation (1976); the Arabic not checked",
+            },
+            {
+                "citation": "Dorotheus, Carmen Astrologicum I.22 (Pingree 1976 p.183)",
+                "says": (
+                    "the sect light's triplicity lords, the first for the beginning of life, "
+                    "the second for its end"
+                ),
+                "reading": SOURCE_READING_LEVELS[1],
+                "read_at": "Pingree's English translation (1976); the Arabic not checked",
+            },
         ],
-        "source_verification": "pingree_translation_read_arabic_not_checked",
     },
 }
