@@ -34,6 +34,7 @@ import subprocess
 import sys
 import textwrap
 from xml.sax.saxutils import escape as xml_escape
+from zoneinfo import ZoneInfo
 
 from scripts.frontend.site_locale import DEFAULT_LOCALE
 
@@ -218,20 +219,131 @@ def fill_options_catalogue_counts(body: str) -> str:
     return _OPTIONS_PLACEHOLDER.sub(lambda match: counts[match.group(1)], body)
 
 
-# Several pages state how many fixed stars the calculator offers.  The product's
-# star list (app.config.FIXED_STARS) is the one producer of that number: the
-# pages write {{fixed_star_count}} and the build fills it.
+# Several pages state how many fixed stars and star clusters the calculator
+# offers.  The product's star list (app.config.FIXED_STARS) is the one producer
+# of both numbers: an entry whose magnitude is a cluster's integrated light is a
+# cluster, every other entry a star.  The pages write {{fixed_star_count}} and
+# {{fixed_star_cluster_count}} and the build fills them.
 _FIXED_STAR_COUNT_PLACEHOLDER = "{{fixed_star_count}}"
+_FIXED_STAR_CLUSTER_COUNT_PLACEHOLDER = "{{fixed_star_cluster_count}}"
+
+
+def _is_cluster(entry: dict) -> bool:
+    return entry.get("magnitude_basis") == "cluster_integrated"
 
 
 def fixed_star_count() -> int:
-    return len(_backend("config").FIXED_STARS)
+    return sum(not _is_cluster(entry) for entry in _backend("config").FIXED_STARS)
+
+
+def fixed_star_cluster_count() -> int:
+    return sum(_is_cluster(entry) for entry in _backend("config").FIXED_STARS)
 
 
 def fill_fixed_star_count(body: str) -> str:
-    if _FIXED_STAR_COUNT_PLACEHOLDER not in body:
-        return body
-    return body.replace(_FIXED_STAR_COUNT_PLACEHOLDER, str(fixed_star_count()))
+    if _FIXED_STAR_COUNT_PLACEHOLDER in body:
+        body = body.replace(_FIXED_STAR_COUNT_PLACEHOLDER, str(fixed_star_count()))
+    if _FIXED_STAR_CLUSTER_COUNT_PLACEHOLDER in body:
+        body = body.replace(_FIXED_STAR_CLUSTER_COUNT_PLACEHOLDER, str(fixed_star_cluster_count()))
+    return body
+
+
+# What the calculator computes, as the home page, the calculator's lede,
+# llms.txt and the WebApplication featureList state it.  The time-lord
+# techniques are the annual route's own registry (annual_pipeline
+# .ANNUAL_TECHNIQUES): a technique added there without a name here, or named
+# here and gone from there, fails the build, so no page claims a technique the
+# route does not compute.  Each natal family names the request option that
+# turns it on (OptionsInput) or the method that always runs with the chart
+# (method_status); a name whose owner is gone fails the build too.
+TIME_LORD_TECHNIQUES: tuple[tuple[str, str, str], ...] = (
+    ("annual_profection", "年度小限", "annual profections"),
+    ("monthly_profection", "月小限", "monthly profections"),
+    ("firdaria", "法達", "firdaria"),
+    ("zodiacal_releasing", "黃道釋放", "zodiacal releasing"),
+    ("decennials", "十年期", "decennials"),
+)
+NATAL_FEATURES: tuple[tuple[str, str, str], ...] = (
+    ("include_houses", "行星位置、上升點、中天與行星落宮", "planet positions with the ascendant, midheaven and house placements"),
+    ("include_aspects", "相位", "aspects"),
+    ("essential_dignities", "本質尊貴：廟、旺、界、面、三分性", "essential dignities"),
+    ("sect", "日盤夜盤", "sect"),
+    ("include_lots", "命運點與精神點", "Lots of Fortune and Spirit"),
+    ("include_fixed_stars", "恆星", "fixed stars"),
+    ("include_antiscia", "反照點", "antiscia"),
+    ("include_declination_aspects", "赤緯平行與反平行", "parallels and contra-parallels"),
+    ("include_void_of_course", "月空亡", "void-of-course Moon"),
+    ("include_dodecatemoria", "十二分部", "dodecatemoria"),
+    ("include_lunar_mansions", "月宿", "lunar mansions"),
+    ("include_solar_phase", "焦傷、在光束下與日輪內", "solar phase: combustion, under the beams, cazimi"),
+    ("include_lunar_phases", "月相與產前朔望", "lunar phases and the prenatal syzygy"),
+    ("include_eclipses", "日月食", "eclipses"),
+    ("planetary_hours", "行星時", "planetary hours"),
+)
+_TIME_LORD_PLACEHOLDER = "{{time_lord_techniques}}"
+
+
+def time_lord_techniques() -> tuple[tuple[str, str, str], ...]:
+    """The annual time-lord techniques this site offers, (key, 中文, English)."""
+
+    computed = set(_backend("annual_pipeline").ANNUAL_TECHNIQUES)
+    named = {key for key, _, _ in TIME_LORD_TECHNIQUES}
+    if computed != named:
+        raise ValueError(
+            "time-lord techniques named on the pages do not match the annual route: "
+            f"computed only {sorted(computed - named)}, named only {sorted(named - computed)}"
+        )
+    sources = _backend("method_sources")
+    if sources.ANNUAL_ROUTE_STATUS != "published":
+        raise ValueError("the pages name the time-lord techniques, but the annual route is not published")
+    return TIME_LORD_TECHNIQUES
+
+
+def natal_features() -> tuple[tuple[str, str, str], ...]:
+    """The natal outputs the pages name, each still owned by an option or a method."""
+
+    options = _backend("schemas").OptionsInput.model_fields
+    status = _backend("core.method_status")
+    methods = status.DECIDED_METHODS | status.PROVISIONAL_METHODS
+    missing = [
+        key for key, _, _ in NATAL_FEATURES
+        if not (key in options if key.startswith("include_") else key in methods)
+    ]
+    if missing:
+        raise ValueError("natal features named on the pages have no owner: " + ", ".join(missing))
+    return NATAL_FEATURES
+
+
+def _zh_series(names: list[str]) -> str:
+    return names[0] if len(names) == 1 else "、".join(names[:-1]) + "與" + names[-1]
+
+
+def time_lord_series(with_english: bool = True) -> str:
+    """年度小限（annual profections）、…與十年期（decennials）."""
+
+    return _zh_series([
+        f"{zh}（{en}）" if with_english else zh for _, zh, en in time_lord_techniques()
+    ])
+
+
+def fill_time_lord_techniques(body: str) -> str:
+    if _TIME_LORD_PLACEHOLDER in body:
+        body = body.replace(_TIME_LORD_PLACEHOLDER, html.escape(time_lord_series(), quote=False))
+    return body
+
+
+def application_features() -> list[str]:
+    """The WebApplication featureList: one plain item per computed output."""
+
+    houses = _backend("config").HOUSE_SYSTEMS
+    items = [f"{zh}（{en}）" for _, zh, en in natal_features()]
+    items.insert(1, "七種宮位制：" + "、".join(houses[code] for code in LLMS_HOUSE_SYSTEM_ORDER) + "（house systems）")
+    items += [f"年度時間主星：{zh}（{en}）" for _, zh, en in time_lord_techniques()]
+    items += [
+        "出生時間不確定時標出會變的結果（birth-time sensitivity）",
+        "計算收據與 JSON、Markdown、CSV、純文字匯出（calculation receipt and exports）",
+    ]
+    return items
 
 
 # The home page's armillary plate is gen_armillary's projection, injected where
@@ -887,11 +999,13 @@ def fill_published_article_count(body: str) -> str:
 
 class _SlateTopics(HTMLParser):
     """The blog page's topic slate: how many topics each group lists, keyed by
-    the group's label (`p.gp-k`); a topic is an `li` directly in `ol.slate`."""
+    the group's label (`p.gp-k`); a topic is an `li` directly in `ol.slate`,
+    and a written one carries the 已發表 mark (`span.tp-pub`)."""
 
     def __init__(self) -> None:
         super().__init__()
         self.groups: dict[str, int] = {}
+        self.published = 0
         self._parents: list[tuple[str, list[str]]] = []
         self._label: list[str] | None = None
         self._group = ""
@@ -903,6 +1017,8 @@ class _SlateTopics(HTMLParser):
             self._label = []
         elif tag == "li" and parent[0] == "ol" and "slate" in parent[1]:
             self.groups[self._group] = self.groups.get(self._group, 0) + 1
+        elif tag == "span" and "tp-pub" in classes:
+            self.published += 1
         if tag != "br":
             self._parents.append((tag, classes))
 
@@ -918,18 +1034,21 @@ class _SlateTopics(HTMLParser):
 
 
 _SLATE_COUNT = re.compile(r"\{\{slate_topic_count(?::([^{}]+))?\}\}")
+_SLATE_UNWRITTEN = "{{slate_unwritten_count}}"
 
 
 def fill_slate_counts(body: str) -> str:
     """{{slate_topic_count}} is the number of topics the page's slate lists;
-    {{slate_topic_count:LABEL}} the number listed under the group named LABEL."""
+    {{slate_topic_count:LABEL}} the number listed under the group named LABEL;
+    {{slate_unwritten_count}} the number without the 已發表 mark."""
 
-    if not _SLATE_COUNT.search(body):
+    if not _SLATE_COUNT.search(body) and _SLATE_UNWRITTEN not in body:
         return body
     parser = _SlateTopics()
     parser.feed(body)
     if not parser.groups:
         raise ValueError("slate count placeholder on a page without a topic slate")
+    body = body.replace(_SLATE_UNWRITTEN, str(sum(parser.groups.values()) - parser.published))
 
     def count(match: re.Match) -> str:
         label = match.group(1)
@@ -996,11 +1115,144 @@ def _organization(origin: str) -> dict:
         "alternateName": list(ORGANIZATION_ALTERNATE_NAMES),
         "url": origin + "/",
         "disambiguatingDescription": ORGANIZATION_DISAMBIGUATION,
+        "logo": _organization_logo(origin),
         "sameAs": [_backend("frontend_release").PUBLIC_REPOSITORY_URL],
     }
 
 
-def _json_ld(item: dict, origin: str, headline: str | None = None) -> str:
+def _organization_logo(origin: str, frontend: Path | None = None) -> dict:
+    """The site's mark as its logo: the square, opaque touch icon that
+    scripts/frontend/favicon.py draws, at the root URL every page's head
+    already links; its size is read from the PNG."""
+
+    from scripts.frontend import favicon
+
+    path = (FRONTEND if frontend is None else frontend) / favicon.TOUCH_ASSET
+    if not path.is_file():
+        raise ValueError(f"organization logo is missing: {favicon.TOUCH_ASSET}")
+    width, height = png_dimensions(path.read_bytes())
+    return {"@type": "ImageObject", "url": f"{origin}/{favicon.TOUCH_ASSET}", "width": width, "height": height}
+
+
+# The pages that describe the calculator itself carry the one WebApplication
+# node: the entry page and the calculator page.  Both state the same node, built
+# from the entry page's row, so the two cannot describe two applications.
+CALCULATE_SURFACE = f"/{DEFAULT_LOCALE}/calculate"
+APPLICATION_SURFACES = (HOME_SURFACE, CALCULATE_SURFACE)
+APPLICATION_ID = "/#application"
+
+
+def _web_application(origin: str, home: Mapping) -> dict:
+    # No `creator` (no person is named in the structured data); free to
+    # use, and the license it is published under.
+    return {
+        "@type": "WebApplication",
+        "@id": origin + APPLICATION_ID,
+        "url": origin + home["surface"],
+        "name": SITE_NAME,
+        "alternateName": "Armillary",
+        "description": home["description"],
+        "applicationCategory": "ReferenceApplication",
+        "operatingSystem": "Web",
+        "inLanguage": home["locale"],
+        "isAccessibleForFree": True,
+        # Engines read "free" from an Offer; the pages say 目前全部免費.
+        "offers": {"@type": "Offer", "price": "0", "priceCurrency": "TWD"},
+        "featureList": application_features(),
+        "license": LICENSE_URL,
+        # The public source repository tells this application apart from
+        # same-named ones; it names no person or organisation.
+        "sameAs": [_backend("frontend_release").PUBLIC_REPOSITORY_URL],
+        "publisher": {"@id": origin + ORGANIZATION_ID},
+    }
+
+
+class _GlossaryEntries(HTMLParser):
+    """A glossary page's entries as the reader sees them: each `div.gl-item`
+    inside `dl.gl-list`, with its anchor (the div's id), its term (the `dt`
+    without its original-language span), that span's text, and the entry's
+    explanation (the first `p` of its `dd`)."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.entries: list[dict] = []
+        self._in_list = False
+        self._field: str | None = None
+        self._paragraphs = 0
+
+    def handle_starttag(self, tag, attrs):
+        attributes = dict(attrs)
+        classes = (attributes.get("class") or "").split()
+        if tag == "dl" and "gl-list" in classes:
+            self._in_list = True
+        elif not self._in_list:
+            return
+        elif tag == "div" and "gl-item" in classes:
+            self.entries.append({"id": attributes.get("id") or "", "term": "", "en": "", "text": ""})
+            self._paragraphs = 0
+        elif tag == "dt" and self.entries:
+            self._field = "term"
+        elif tag == "span" and self._field == "term" and "en" in classes:
+            self._field = "en"
+        elif tag == "p" and self.entries:
+            self._paragraphs += 1
+            self._field = "text" if self._paragraphs == 1 else None
+
+    def handle_endtag(self, tag):
+        if tag == "dl":
+            self._in_list = False
+        elif tag == "span" and self._field == "en":
+            self._field = "term"
+        elif tag in {"dt", "p"}:
+            self._field = None
+
+    def handle_data(self, data):
+        if self._field and self.entries:
+            self.entries[-1][self._field] += data
+
+
+def glossary_entries(body: str) -> list[dict]:
+    parser = _GlossaryEntries()
+    parser.feed(body)
+    entries = [{name: re.sub(r"\s+", " ", value).strip() for name, value in entry.items()}
+               for entry in parser.entries]
+    if any(not entry["id"] or not entry["term"] or not entry["text"] for entry in entries):
+        raise ValueError("a glossary entry has no anchor, term or explanation")
+    if len({entry["id"] for entry in entries}) != len(entries):
+        raise ValueError("two glossary entries share an anchor")
+    return entries
+
+
+def _defined_term_set(item: Mapping, origin: str, entries: list[dict]) -> dict:
+    """The glossary as a DefinedTermSet: one DefinedTerm per entry, in the
+    page's words, each at the entry's own anchor on the page."""
+
+    canonical = origin + item["surface"]
+    terms = []
+    for entry in entries:
+        term = {
+            "@type": "DefinedTerm",
+            "@id": f"{canonical}#{entry['id']}",
+            "url": f"{canonical}#{entry['id']}",
+            "name": entry["term"],
+            "description": entry["text"],
+            "inDefinedTermSet": {"@id": canonical + "#terms"},
+        }
+        if entry["en"]:
+            term["alternateName"] = entry["en"]
+        terms.append(term)
+    return {
+        "@type": "DefinedTermSet",
+        "@id": canonical + "#terms",
+        "url": canonical,
+        "name": item["title"].split("｜")[0],
+        "inLanguage": item["locale"],
+        "hasDefinedTerm": terms,
+    }
+
+
+def _json_ld(item: dict, origin: str, headline: str | None = None,
+             updated: str | None = None, body: str | None = None) -> str:
     canonical = origin + item["surface"]
     labels = footer_link_labels()
     graph: list[dict] = [
@@ -1024,32 +1276,20 @@ def _json_ld(item: dict, origin: str, headline: str | None = None) -> str:
             "isPartOf": {"@id": origin + "/#website"},
         },
     ]
-    if item["surface"] == HOME_SURFACE or is_article(item):
+    if updated is not None:
+        # The page's recorded lastmod, the sitemap's date and the footer's.
+        # No datePublished: no page other than an article has a recorded
+        # first-publication date.
+        graph[1]["dateModified"] = updated
+    if item["surface"] in APPLICATION_SURFACES or is_article(item):
         graph.append(_organization(origin))
-    if item["surface"] == HOME_SURFACE:
-        # No `creator` (no person is named in the structured data); free to
-        # use, and the license it is published under.
-        graph.append({
-            "@type": "WebApplication",
-            "@id": origin + "/#application",
-            "url": canonical,
-            "name": SITE_NAME,
-            "alternateName": "Armillary",
-            "description": item["description"],
-            "applicationCategory": "ReferenceApplication",
-            "operatingSystem": "Web",
-            "inLanguage": item["locale"],
-            "isAccessibleForFree": True,
-            # Engines read "free" from an Offer; the pages say 目前全部免費.
-            "offers": {"@type": "Offer", "price": "0", "priceCurrency": "TWD"},
-            "license": LICENSE_URL,
-            # The public source repository tells this application apart from
-            # same-named ones; it names no person or organisation.
-            "sameAs": [_backend("frontend_release").PUBLIC_REPOSITORY_URL],
-            "publisher": {"@id": origin + ORGANIZATION_ID},
-        })
-        graph[1]["about"] = {"@id": origin + "/#application"}
-    else:
+    if item["surface"] in APPLICATION_SURFACES:
+        home = item if item["surface"] == HOME_SURFACE else next(
+            row for row in load_surface_manifest()["surfaces"] if row["surface"] == HOME_SURFACE
+        )
+        graph.append(_web_application(origin, home))
+        graph[1]["about"] = {"@id": origin + APPLICATION_ID}
+    if item["surface"] != HOME_SURFACE:
         # A page's trail is home and the page, named by their footer links; an
         # article's is home, the blog and the article's own headline, and a
         # sub-page's home, its parent and its own headline.
@@ -1079,9 +1319,13 @@ def _json_ld(item: dict, origin: str, headline: str | None = None) -> str:
             ],
         })
         graph[1]["breadcrumb"] = {"@id": canonical + "#breadcrumb"}
+    entries = glossary_entries(body) if body is not None else []
+    if entries:
+        graph.append(_defined_term_set(item, origin, entries))
+        graph[1]["mainEntity"] = {"@id": canonical + "#terms"}
     if is_article(item):
-        # The publisher is the site; no author, because the byline on the page
-        # names a person and the structured data names none.
+        # The site is both publisher and author: the byline on the page names a
+        # person, and the structured data names none.
         post = {
             "@type": "BlogPosting",
             "@id": canonical + "#article",
@@ -1094,6 +1338,7 @@ def _json_ld(item: dict, origin: str, headline: str | None = None) -> str:
             "mainEntityOfPage": {"@id": canonical + "#webpage"},
             "isPartOf": {"@id": origin + BLOG_SURFACE + "#webpage"},
             "publisher": {"@id": origin + ORGANIZATION_ID},
+            "author": {"@id": origin + ORGANIZATION_ID},
         }
         image = og_image_url(origin)
         if image is not None:
@@ -1107,7 +1352,8 @@ def _json_ld(item: dict, origin: str, headline: str | None = None) -> str:
     ).replace("<", "\\u003c")
 
 
-def metadata_values(item: dict, origin: str, headline: str | None = None) -> dict[str, str]:
+def metadata_values(item: dict, origin: str, headline: str | None = None,
+                    updated: str | None = None, body: str | None = None) -> dict[str, str]:
     canonical = origin + item["surface"]
     return {
         "og_type": "article" if is_article(item) else "website",
@@ -1125,7 +1371,7 @@ def metadata_values(item: dict, origin: str, headline: str | None = None) -> dic
         "surface": html.escape(
             f"{item['surface']} · {' ＋ '.join(item['layers'])}", quote=True
         ),
-        "json_ld": _json_ld(item, origin, headline),
+        "json_ld": _json_ld(item, origin, headline, updated, body),
     }
 
 
@@ -1216,9 +1462,45 @@ def fill_civil_time_tables(body: str) -> str:
     return civil_time_tables.fill(body)
 
 
-def render(item: dict, origin: str) -> str:
+# A page other than an article states the day it last changed in its footer
+# and as its WebPage's dateModified: the page's date in the lastmod record,
+# which the sitemap also gives.  An article shows its own row's dates instead,
+# and an error page states none.  The date is left out of the content digest
+# (page_digest of the undated page), so stating it never moves it.
+_PAGE_UPDATED_PLACEHOLDER = "{{page_updated}}"
+
+
+def is_dated(item: Mapping) -> bool:
+    return not is_article(item)
+
+
+def page_updated_line(updated: str) -> str:
+    if not _ISO_DATE.fullmatch(updated):
+        raise ValueError(f"page date must be YYYY-MM-DD: {updated!r}")
+    return f'\n    <span>最後更新：<time datetime="{updated}">{updated}</time></span>'
+
+
+def recorded_page_date(item: Mapping, lastmod: dict | None = None) -> str | None:
+    """The date a page states: its lastmod record entry, if it is dated."""
+
+    if not is_dated(item):
+        return None
+    lastmod = load_page_lastmod() if lastmod is None else lastmod
+    entry = lastmod["pages"].get(item["key"])
+    if entry is None:
+        raise ValueError(f"page has no lastmod record entry: {item['key']}")
+    return entry["lastmod"]
+
+
+def render(item: dict, origin: str, lastmod: dict | None = None) -> str:
+    """The page as shipped, dated from `lastmod` (default: the committed record)."""
+
+    return _render_dated(item, origin, *_render_parts(item, origin),
+                         recorded_page_date(item, lastmod))
+
+
+def _render_parts(item: dict, origin: str) -> tuple[str, str | None]:
     name = item["fragment"]
-    shell = _mark_nav_cta(_template(SHELL), item["surface"])
     body = _template(PAGES / f"{name}.html").rstrip("\n")
     if "{{telemetry_" in body:
         contract = telemetry_contract()
@@ -1234,6 +1516,7 @@ def render(item: dict, origin: str) -> str:
     body = fill_ephemeris_digests(body)
     body = fill_options_catalogue_counts(body)
     body = fill_fixed_star_count(body)
+    body = fill_time_lord_techniques(body)
     body = fill_armillary_svg(body)
     body = fill_article_dates(body, item)
     body = fill_article_reading_time(body, item)
@@ -1249,7 +1532,20 @@ def render(item: dict, origin: str) -> str:
         if is_article(item) or parent_surface(item, load_surface_manifest()["surfaces"])
         else None
     )
-    metadata = metadata_values(item, origin, headline)
+    return body, headline
+
+
+def _render_dated(item: dict, origin: str, body: str, headline: str | None,
+                  updated: str | None) -> str:
+    if updated is not None and not is_dated(item):
+        raise ValueError(f"an article states its own dates, not a page date: {item['key']}")
+    shell = _mark_nav_cta(_template(SHELL), item["surface"])
+    if shell.count(_PAGE_UPDATED_PLACEHOLDER) != 1:
+        raise ValueError("page shell must have exactly one page date placeholder")
+    shell = shell.replace(
+        _PAGE_UPDATED_PLACEHOLDER, "" if updated is None else page_updated_line(updated)
+    )
+    metadata = metadata_values(item, origin, headline, updated, body)
     og_image, twitter_card = og_image_markup(origin)
     # {{body}} 先插入，{{assets}} 後蓋上內容版本，順序不可調換：頁面片段自己
     # 也需要版本鍵。/zh-TW/ 的敏感度示範腳本只屬於該頁，放進 _shell.html 會讓
@@ -1292,6 +1588,7 @@ def render_error_page(item: dict) -> str:
             f"{item['status']} · {' ＋ '.join(item['layers'])}", quote=True
         ))
         .replace("{{stylesheets}}", stylesheet_link(item))
+        .replace(_PAGE_UPDATED_PLACEHOLDER, "")
         .replace("{{body}}", body)
     )
     leftover = re.findall(r"\{\{(?!assets\}\})[^{}]*\}\}", rendered)
@@ -1327,9 +1624,23 @@ def robots_text(payload: dict) -> str:
     ])
 
 
-# Which stylesheets carry a page's rules is delivery, not content: like a
-# `?v=` stamp, it does not move the page's <lastmod>.
-_STYLESHEET_LINK = re.compile(r'<link rel="stylesheet" href="[^"]*">\n?')
+# A page's content, for its <lastmod>, is what a reader reads and a search
+# result shows: the title, the description and what <main> holds.  The shared
+# header and footer, the head's links and the structured data are restated by
+# every build that touches the site's chrome, a `?v=` stamp is the version of a
+# file the page names, not the page, and a class only picks a style; none of
+# them moves the date.
+_MAIN_CONTENT = re.compile(r'<main id="main-content">(.*?)</main>', re.S)
+_PAGE_TITLE = re.compile(r"<title>(.*?)</title>", re.S)
+_PAGE_DESCRIPTION = re.compile(r'<meta name="description" content="([^"]*)">')
+# A version a page prints, whole or shortened to a few digits and an ellipsis
+# (the verify page's request list), and a class attribute, which names a style
+# rather than what the reader reads.
+_PRINTED_VERSION = re.compile(r"\?v=[0-9a-f]{6,16}…?")
+_CLASS_ATTRIBUTE = re.compile(r' class="[^"]*"')
+# The digest scheme the record's content_sha256 values are written under; a
+# record of another scheme has no digest comparable with these.
+PAGE_LASTMOD_SCHEMA = 2
 
 
 def _uncovered_styles(item: Mapping, page: str) -> list[str]:
@@ -1344,20 +1655,26 @@ def _uncovered_styles(item: Mapping, page: str) -> list[str]:
 
 
 def page_digest(page: str) -> str:
-    normalized = _STYLESHEET_LINK.sub("", _ASSET_STAMP.sub("?v=", page))
-    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+    main = _MAIN_CONTENT.findall(page)
+    title = _PAGE_TITLE.findall(page)
+    description = _PAGE_DESCRIPTION.findall(page)
+    if len(main) != 1 or len(title) != 1 or len(description) > 1:
+        raise ValueError("a page to date has one <main id=\"main-content\">, one <title> and at most one description")
+    body = _CLASS_ATTRIBUTE.sub("", _PRINTED_VERSION.sub("?v=", main[0]))
+    content = "\0".join([title[0], *description, body])
+    return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
 
 def load_page_lastmod(path: Path | None = None) -> dict:
     path = PAGE_LASTMOD if path is None else path
     if not path.is_file():
-        return {"schema_version": 1, "pages": {}}
+        return {"schema_version": PAGE_LASTMOD_SCHEMA, "pages": {}}
     record = json.loads(path.read_text(encoding="utf-8"))
     pages = record.get("pages") if isinstance(record, dict) else None
     if (
         not isinstance(record, dict)
         or set(record) != {"schema_version", "pages"}
-        or record["schema_version"] != 1
+        or record["schema_version"] != PAGE_LASTMOD_SCHEMA
         or not isinstance(pages, dict)
         or any(
             not isinstance(entry, dict)
@@ -1383,7 +1700,7 @@ def updated_page_lastmod(previous: dict, digests: dict[str, str], build_date: st
             pages[key] = dict(entry)
         else:
             pages[key] = {"content_sha256": digest, "lastmod": build_date}
-    return {"schema_version": 1, "pages": pages}
+    return {"schema_version": PAGE_LASTMOD_SCHEMA, "pages": pages}
 
 
 def committed_page_lastmod(root: Path = ROOT) -> list[tuple[str, dict]]:
@@ -1415,12 +1732,16 @@ def committed_page_lastmod(root: Path = ROOT) -> list[tuple[str, dict]]:
 def lastmod_binding_errors(record: dict, history: list[tuple[str, dict]], today: str) -> list[str]:
     """A page's date stays what it was committed with while its content digest
     is unchanged, is no later than the commit that introduced that digest
-    (today, if none has yet) and no earlier than the page's previous date."""
+    (today, if none has yet) and no earlier than the page's previous date.
+    History stops at the first record of another digest scheme, whose digests
+    say nothing about these."""
 
     errors = []
     for key, entry in sorted(record["pages"].items()):
         introduced, previous = today, None
         for committed, revision in history:
+            if revision.get("schema_version") != record["schema_version"]:
+                break
             old = revision.get("pages", {}).get(key)
             if not isinstance(old, dict) or old.get("content_sha256") != entry["content_sha256"]:
                 previous = old.get("lastmod") if isinstance(old, dict) else None
@@ -1442,8 +1763,16 @@ def page_lastmod_text(record: dict) -> str:
     return json.dumps(record, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
 
 
+# The calendar every date the site states is a day of: an article's published
+# and modified dates are the Taiwan day of the release that carries them, so a
+# changed page is dated on the same calendar.  A release built in the early
+# Taiwan morning would otherwise date its pages the previous (UTC) day, and the
+# sitemap would name a day before the article's own dateModified.
+SITE_DATE_ZONE = ZoneInfo("Asia/Taipei")
+
+
 def build_date(environment: Mapping[str, str] | None = None) -> str:
-    """Today in UTC, or SOURCE_DATE_EPOCH's date for a reproducible build."""
+    """Today in Taiwan, or SOURCE_DATE_EPOCH's Taiwan date for a reproducible build."""
 
     epoch = (os.environ if environment is None else environment).get("SOURCE_DATE_EPOCH")
     moment = (
@@ -1451,7 +1780,16 @@ def build_date(environment: Mapping[str, str] | None = None) -> str:
         if epoch
         else datetime.now(timezone.utc)
     )
-    return moment.date().isoformat()
+    return moment.astimezone(SITE_DATE_ZONE).date().isoformat()
+
+
+def sitemap_date(item: Mapping, lastmod: dict) -> str:
+    """A page's <lastmod>: its lastmod record date; for an article, the later of
+    that and the article's own modified date, so the sitemap never names a day
+    before the dateModified the page's structured data states."""
+
+    recorded = lastmod["pages"][item["key"]]["lastmod"]
+    return max(recorded, item["article"]["modified"]) if is_article(item) else recorded
 
 
 def sitemap_text(payload: dict, lastmod: dict) -> str:
@@ -1461,7 +1799,7 @@ def sitemap_text(payload: dict, lastmod: dict) -> str:
         if not item["indexable"]:
             continue
         url = xml_escape(origin + item["surface"])
-        date = lastmod["pages"][item["key"]]["lastmod"]
+        date = sitemap_date(item, lastmod)
         entries.append(f"  <url><loc>{url}</loc><lastmod>{date}</lastmod></url>")
     return "\n".join([
         '<?xml version="1.0" encoding="UTF-8"?>',
@@ -1516,7 +1854,7 @@ def footer_tagline(shell: str | None = None) -> str:
 
     shell = SHELL.read_text(encoding="utf-8") if shell is None else shell
     end = shell.find("</footer>")
-    match = re.search(r"<span>([^<>]+)</span>\s*</div>\s*$", shell[:end])
+    match = re.search(r"<span>([^<>]+)</span>(?:\{\{page_updated\}\})?\s*</div>\s*$", shell[:end])
     if end < 0 or match is None:
         raise ValueError("page shell footer has no closing line")
     return html.unescape(match.group(1)).strip()
@@ -1525,8 +1863,9 @@ def footer_tagline(shell: str | None = None) -> str:
 # The facts llms.txt states before its page lists, each read from its owner:
 # the license from LICENSE_URL, the source repository and the engine pin from
 # the backend, the house systems from the backend's table (in the order the
-# calculate page lists them), the phase from PUBLIC_ALPHA_START with the about
-# page's own words for it, and two links.  The known limitations are the
+# calculate page lists them), the time-lord techniques and the natal outputs
+# from time_lord_techniques() and natal_features(), the phase from
+# PUBLIC_ALPHA_START with the about page's own words for it, and two links.  The known limitations are the
 # public repository's docs/KNOWN_LIMITATIONS.md, in English.
 REQUIREMENTS = ROOT / "backend" / "requirements.txt"
 LLMS_HOUSE_SYSTEM_ORDER = ("W", "E", "O", "B", "C", "R", "P")
@@ -1557,6 +1896,8 @@ def llms_facts(origin: str, by_surface: Mapping[str, dict]) -> list[str]:
         ("原始碼", repository),
         ("計算引擎", f"Swiss Ephemeris（pyswisseph {pinned_version('pyswisseph')}）"),
         ("宮位制", "、".join(houses[code] for code in LLMS_HOUSE_SYSTEM_ORDER)),
+        ("時間主星", time_lord_series() + "；只列哪一段時間由哪顆行星或哪個星座輪值"),
+        ("本命盤", "；".join(zh for _, zh, _ in natal_features())),
         ("狀態", f"公開測試（Public Alpha），自{PUBLIC_ALPHA_START.isoformat()}起"),
         ("已知限制（英文）", repository + LLMS_KNOWN_LIMITATIONS_PATH),
     )
@@ -1566,6 +1907,10 @@ def llms_facts(origin: str, by_surface: Mapping[str, dict]) -> list[str]:
     return [f"- {label}：{value}" for label, value in facts]
 
 
+def _english_series(names: list[str]) -> str:
+    return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+
+
 def llms_english_summary() -> str:
     """The one English passage on a Chinese-only site, for crawlers that read
     English: what the site is, its boundary, the licence, no accounts or trackers."""
@@ -1573,7 +1918,11 @@ def llms_english_summary() -> str:
     return (
         "Armillary (渾儀) is a classical Western astrology calculator with a Traditional Chinese interface: "
         "enter a birth date, time and place to get a natal chart, with the method source and a calculation "
-        "receipt for every number. It only calculates; it does not interpret charts or make predictions. "
+        "receipt for every number. It also computes the annual time lords: "
+        + _english_series([en for _, _, en in time_lord_techniques()])
+        + ", listing which planet or sign rules each period. The natal chart covers "
+        + _english_series([en for _, _, en in natal_features()])
+        + ". It only calculates; it does not interpret charts or make predictions. "
         f"The code is licensed {_license_id()}, and the site has no accounts, no cookies and no third-party "
         "analytics or trackers."
     )
@@ -1736,7 +2085,7 @@ def main() -> int:
     parser.add_argument("--check", action="store_true")
     parser.add_argument(
         "--date",
-        help="date a changed page's <lastmod> as YYYY-MM-DD (default: today in UTC, "
+        help="date a changed page's <lastmod> as YYYY-MM-DD (default: today in Taiwan, "
         "or SOURCE_DATE_EPOCH)",
     )
     args = parser.parse_args()
@@ -1778,11 +2127,20 @@ def main() -> int:
     ))
     uncovered: list[str] = []
     digests: dict[str, str] = {}
+    parts: dict[str, tuple[str, str | None]] = {}
+    for item in payload["surfaces"]:
+        parts[item["key"]] = _render_parts(item, payload["origin"])
+        # The digest is of the undated page: a page's date is not its content.
+        digests[item["key"]] = page_digest(
+            _render_dated(item, payload["origin"], *parts[item["key"]], None)
+        )
+
+    lastmod = updated_page_lastmod(load_page_lastmod(), digests, args.date or build_date())
     for item in payload["surfaces"]:
         target = ROOT / "frontend" / item["output"]
-        rendered = render(item, payload["origin"])
+        rendered = _render_dated(item, payload["origin"], *parts[item["key"]],
+                                 recorded_page_date(item, lastmod))
         uncovered.extend(_uncovered_styles(item, rendered))
-        digests[item["key"]] = page_digest(rendered)
         if args.check:
             current = target.read_text(encoding="utf-8") if target.is_file() else ""
             if current != rendered:
@@ -1791,7 +2149,6 @@ def main() -> int:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(rendered, encoding="utf-8")
 
-    lastmod = updated_page_lastmod(load_page_lastmod(), digests, args.date or build_date())
     outputs = dict(_discovery_outputs(payload, lastmod))
     for item in payload["error_pages"]:
         outputs[ROOT / "frontend" / item["output"]] = render_error_page(item)
@@ -1806,7 +2163,7 @@ def main() -> int:
         return 1
     outputs[PAGE_LASTMOD] = page_lastmod_text(lastmod)
     if args.check:
-        # Both calendars: a build dated in UTC or in the committer's zone is not in the future.
+        # Both calendars: a build dated in Taiwan or in the committer's zone is not in the future.
         today = max(build_date(), date.today().isoformat())
         try:
             unbound = lastmod_binding_errors(load_page_lastmod(), committed_page_lastmod(), today)

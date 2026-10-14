@@ -1688,7 +1688,256 @@
     });
   }
 
+  // ══ 太陽回歸盤 ═══════════════════════════════════════════
+  //
+  // 年度路由的 solar_return_chart：選定年度的年界那一刻（SR_N）起的一張星盤。本檔只認形狀、
+  // 組畫面要的字；星盤本體（chart）與 /api/chart 的頁面投影同形，表格由本命盤的同一套
+  // view-model（呼叫端傳入）建出，圖由同一個星盤圖元件畫。本檔不換算任何時刻。
+
+  const SOLAR_RETURN_FIXED = "只列計算結果：太陽回到出生時黃經位置的那一刻，在這個地點起的一張星盤。不替你解盤，也不預測。";
+  const SOLAR_RETURN_HOUSE_SYSTEMS = Object.freeze(["B", "R", "W", "P", "O", "E", "C"]);
+  // 回歸盤畫面列的表：天體、軸點、宮位分割、行星落宮（view-model 的區段 id）。
+  const SOLAR_RETURN_SECTIONS = Object.freeze(["bodies", "angles", "houses", "planet_in_house"]);
+  // 後端 SOLAR_RETURN_CHART_REASON_CODES 的閉集，各一句白話。
+  const SOLAR_RETURN_REASONS = Object.freeze({
+    solar_return_chart_requires_exact_birth_time: "太陽回歸盤需要確切的出生時間。出生時間差一小時，本命太陽約差 2.5′，回歸時刻也差約一小時，回歸盤的上升點會轉過約 15°；本站不並列幾張取樣的回歸盤。",
+    first_year_has_no_solar_return: "第 1 年從出生那一刻開始，那一刻就是本命盤，不是回歸；太陽回歸盤從第 2 年起才有。",
+    solar_return_root_count_unexpected: "這一年找不到唯一的太陽回歸時刻，本站不畫這一年的回歸盤。",
+  });
+  // 後端 year_boundary.SOLAR_RETURN_PROFILES 的閉集（回歸瞬間一律用當日黃道、含章動）。
+  const SOLAR_RETURN_PROFILES = Object.freeze({
+    solar_return_tropical_geocentric_apparent_of_date_v1: "回歸黃道、地心、視位置、當日黃道（含章動）",
+    solar_return_tropical_geocentric_true_of_date_v1: "回歸黃道、地心、真位置、當日黃道（含章動）",
+    solar_return_sidereal_geocentric_apparent_of_date_v1: "恆星黃道、地心、視位置、當日黃道（含章動）",
+    solar_return_sidereal_geocentric_true_of_date_v1: "恆星黃道、地心、真位置、當日黃道（含章動）",
+  });
+  // 改用另一個地點起回歸盤：程式與測試都在，但還沒有開放。關著時頁面不畫那一格、請求不帶
+  // solar_return_location；服務端另有同一道開關（schemas.SOLAR_RETURN_LOCATION_OFFERED）。
+  const SOLAR_RETURN_RELOCATION_OFFERED = false;
+  const SOLAR_RETURN_MORIN = "本站預設在出生地起回歸盤。改用太陽回歸那一刻你所在的地點起盤，是 Morin（《Astrologia Gallica》，1661）的做法。";
+  const SOLAR_RETURN_PRIVACY = "你輸入的地點只隨這一次請求送到計算服務；伺服器不留副本，本頁不寫網址、不存在瀏覽器裡，清除結果或離開頁面時一起丟掉。";
+  const SOLAR_RETURN_OTHER_PLACE_TIME = "另一個地點的當地鐘點本站沒有換算；上面兩行是同一個瞬間。";
+  const SOLAR_RETURN_UTC_NOTE = "這張盤用世界時（UTC）的時刻起盤；出生地時間只是同一瞬間換成出生地鐘點，方便對照。";
+
+  /** 本命盤所選的宮位制（不計宮位時用整宮）；回歸盤沿用它，兩張盤的宮才對得上。 */
+  function solarReturnHouseSystem(chartPayload) {
+    const options = chartPayload && chartPayload.options;
+    if (!options || options.include_houses === false) return "W";
+    return SOLAR_RETURN_HOUSE_SYSTEMS.includes(options.house_system) ? options.house_system : "W";
+  }
+
+  /**
+   * 「在別的地點過這個生日」的兩格：都空著是出生地（回 null）；只填一格、不是數字或超出範圍時
+   * 回 { error }。座標照填的字送出，不另外取整。
+   */
+  function parseSolarReturnLocation(latitudeText, longitudeText) {
+    const lat = String(latitudeText == null ? "" : latitudeText).trim();
+    const lon = String(longitudeText == null ? "" : longitudeText).trim();
+    if (!lat && !lon) return { location: null };
+    if (!lat || !lon) return { error: "緯度與經度要一起填；都空著就用出生地。" };
+    const NUMBER = /^[+-]?(\d+(\.\d*)?|\.\d+)$/;
+    if (!NUMBER.test(lat) || !NUMBER.test(lon)) return { error: "緯度與經度請填十進位的度數，例如 25.0330 與 121.5654。" };
+    const latitude = Number(lat);
+    const longitude = Number(lon);
+    if (latitude < -90 || latitude > 90) return { error: "緯度要在 −90 到 90 度之間（南緯是負數）。" };
+    if (longitude < -180 || longitude > 180) return { error: "經度要在 −180 到 180 度之間（西經是負數）。" };
+    return { location: { latitude, longitude } };
+  }
+
+  /** 使用者在回歸盤一格另選的宮位制；沒選（null）就沿用本命盤的。不在可用的那一組時拒絕。 */
+  function solarReturnChosenHouseSystem(chartPayload, override) {
+    if (override === null || override === undefined || override === "") return solarReturnHouseSystem(chartPayload);
+    if (!SOLAR_RETURN_HOUSE_SYSTEMS.includes(override)) throw new Error("回歸盤的宮位制不在選項裡。");
+    return override;
+  }
+
+  /**
+   * 年度路由的請求：只要選定年度的太陽回歸盤，不另算其他技法。另一個地點只在開放時才送；
+   * relocationOffered 預設是本檔的開關，測試另一個地點的那條路時才明示傳 true。
+   */
+  function solarReturnRequestBody(chartPayload, completedYears, scope = {}, relocationOffered = SOLAR_RETURN_RELOCATION_OFFERED) {
+    if (!chartPayload || typeof chartPayload !== "object") throw new Error("沒有本命盤的請求可用。");
+    if (!Number.isInteger(completedYears) || completedYears < 1) throw new Error("太陽回歸盤從第 2 年起才有。");
+    if (scope.location && !relocationOffered) throw new Error("太陽回歸盤目前只在出生地起盤。");
+    const body = {};
+    NATAL_KEYS.forEach((key) => {
+      if (chartPayload[key] !== undefined) body[key] = JSON.parse(JSON.stringify(chartPayload[key]));
+    });
+    body.annual = {
+      target_kind: "completed_years",
+      target_value: completedYears,
+      include_profection: false,
+      include_solar_return_chart: true,
+      solar_return_house_system: solarReturnChosenHouseSystem(chartPayload, scope.houseSystem),
+      ...(scope.location ? {
+        solar_return_location: { latitude: scope.location.latitude, longitude: scope.location.longitude },
+      } : {}),
+    };
+    return body;
+  }
+
+  /** 年度回應有沒有這一塊（不論是否請求，支援回歸盤的路由都帶這個鍵，沒請求時是 null）。 */
+  function supportsSolarReturn(annualBody) {
+    return Boolean(annualBody) && typeof annualBody === "object"
+      && Object.prototype.hasOwnProperty.call(annualBody, "solar_return_chart");
+  }
+
+  function coordinateText(value, positive, negative) {
+    if (typeof value !== "number" || !Number.isFinite(value)) throw new Error("太陽回歸盤回應形狀不符：座標。");
+    return `${Math.abs(value)}°${value < 0 ? negative : positive}`;
+  }
+
+  function utcText(utc) {
+    const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2}(?:\.\d+)?)Z$/.exec(utc || "");
+    if (!match) throw new Error("太陽回歸盤回應形狀不符：UTC 時刻。");
+    return `${match[1]} ${match[2]} UTC`;
+  }
+
+  /**
+   * 出生地的鐘點：取同一份回應的 year_boundary.start（伺服器換好的出生地時間）。只有它與回歸盤
+   * 是同一年、同一個 jd_ut 時才用；對不上就不列，不在瀏覽器裡換算。
+   */
+  function birthPlaceClock(yearBoundary, block) {
+    if (!yearBoundary || yearBoundary.completed_years !== block.completed_years) return null;
+    const start = yearBoundary.start;
+    if (!start || typeof start.local_time !== "string" || typeof start.jd_ut !== "number") return null;
+    if (start.jd_ut !== block.instant.jd_ut) return null;
+    return `${start.local_time}（${start.utc_offset || "時區未列"}）`;
+  }
+
+  const SOLAR_RETURN_COMPARE_NOTE = Object.freeze({
+    before: "依 Abū Maʿshar 的做法並看三個上升；出處見方法頁〈",
+    link: "太陽回歸盤",
+    href: "/zh-TW/methods#solar-return",
+    after: "〉。",
+  });
+  const isHouseNumber = (value) => Number.isInteger(value) && value >= 1 && value <= 12;
+  const ownLabel = (map, key) => (typeof key === "string" && Object.prototype.hasOwnProperty.call(map, key) ? map[key] : null);
+
+  /**
+   * 「與本命盤對照」：三個上升與回歸盤行星落在本命哪一宮，只列位置。回應沒算（欄位是 null）
+   * 或與同一份回歸盤對不上時回 null，整區不畫；本命上升沒算時只少那一列。
+   * 黃經照回歸盤天體表的原字（後端同一個格式器），不在瀏覽器裡捨入；兩邊數值對不上就不畫。
+   */
+  function solarReturnComparison(annualBody, block) {
+    const houses = block.return_planets_in_natal_houses;
+    const ascendantHouse = block.natal_house_of_return_ascendant;
+    const natalSystem = ownLabel(Labels.VOCABULARIES.house_system, block.natal_house_system_code);
+    const profected = ownLabel(Labels.VOCABULARIES.zodiac_sign, block.profected_sign);
+    if (!Array.isArray(houses) || !houses.length || !isHouseNumber(ascendantHouse) || !natalSystem || !profected) return null;
+    const data = block.chart && block.chart.astronomical_data;
+    const returnAsc = data && data.angles && data.angles.sign_positions && data.angles.sign_positions.asc;
+    if (!Array.isArray(returnAsc) || !SIGN_ORDER[returnAsc[0]]) return null;
+    const bodies = new Map((data.bodies || []).map((body) => [body.key, body.sign_position]));
+    const rows = [];
+    for (const entry of houses) {
+      const name = ownLabel(BODY_NAMES, entry && entry.key);
+      const position = bodies.get(entry && entry.key);
+      if (!name || !isHouseNumber(entry.natal_house) || typeof entry.longitude !== "number"
+        || !Array.isArray(position) || typeof position[1] !== "string" || !SIGN_ORDER[position[0]]
+        || Math.abs(Number(position[2]) - entry.longitude) > 1e-6) return null;
+      rows.push(Object.freeze([name, position[2], `${signName(SIGN_ORDER[position[0]])} ${position[1]}`, `第 ${entry.natal_house} 宮`]));
+    }
+    const anchor = annualBody && annualBody.natal_anchor && annualBody.natal_anchor.ascendant;
+    const natalAsc = anchor && anchor.status === "computed" ? ownLabel(Labels.VOCABULARIES.zodiac_sign, anchor.sign) : null;
+    const systemText = `${natalSystem}${natalSystem.endsWith("宮") ? "制" : ""}`;
+    return Object.freeze({
+      title: "與本命盤對照",
+      ascendants: Object.freeze([
+        ...(natalAsc ? [["本命上升星座", natalAsc]] : []),
+        ["小限星座", profected],
+        ["年之上升（回歸盤上升）星座", signName(SIGN_ORDER[returnAsc[0]])],
+      ]),
+      ascendantHouse: `年之上升落在本命第 ${ascendantHouse} 宮（${systemText}）`,
+      table: Object.freeze({
+        title: "回歸盤行星落在本命哪一宮",
+        columns: Object.freeze(["天體", "回歸盤黃經 λ（度）", "回歸盤星座度數", `本命宮（${systemText}）`]),
+        rows: Object.freeze(rows),
+      }),
+      note: SOLAR_RETURN_COMPARE_NOTE,
+    });
+  }
+
+  /**
+   * 回歸盤一區的畫面模型。annualBody 是年度路由的回應；viewModel 是計算頁的 ChartViewModel
+   * （buildSections 與本命盤同一套）。回 { state: "computed" | "not_applicable", … }；
+   * 形狀不符時丟「太陽回歸盤回應形狀不符」，呼叫端整區不畫。
+   */
+  function solarReturnPanel(annualBody, viewModel) {
+    const block = annualBody && annualBody.solar_return_chart;
+    if (!block || typeof block !== "object") throw new Error("太陽回歸盤回應形狀不符：沒有 solar_return_chart。");
+    if (!Number.isInteger(block.completed_years) || block.year_of_life !== block.completed_years + 1) {
+      throw new Error("太陽回歸盤回應形狀不符：年度。");
+    }
+    const heading = `太陽回歸盤（第 ${block.year_of_life} 年）`;
+    if (block.status === "not_applicable") {
+      const text = SOLAR_RETURN_REASONS[block.reason_code];
+      if (!text) throw new Error("太陽回歸盤回應形狀不符：原因碼。");
+      return Object.freeze({
+        state: "not_applicable", completedYears: block.completed_years, heading, lead: SOLAR_RETURN_FIXED,
+        code: block.reason_code, text,
+      });
+    }
+    if (block.status !== "computed" || block.reason_code !== null || !block.chart || !block.instant
+      || typeof block.instant.jd_ut !== "number" || !block.location) {
+      throw new Error("太陽回歸盤回應形狀不符：狀態。");
+    }
+    const location = block.location;
+    const other = location.source === "solar_return_location";
+    if (!other && location.source !== "birth_location") throw new Error("太陽回歸盤回應形狀不符：地點來源。");
+    const coordinates = `緯度 ${coordinateText(location.latitude, "N", "S")}、經度 ${coordinateText(location.longitude, "E", "W")}`;
+    const local = birthPlaceClock(annualBody.year_boundary, block);
+    const houseName = Labels.VOCABULARIES.house_system[block.house_system_code];
+    if (!houseName) throw new Error("太陽回歸盤回應形狀不符：宮位制。");
+    const sections = viewModel.buildSections(block.chart);
+    const tables = SOLAR_RETURN_SECTIONS.map((id) => sections.find((section) => section.id === id))
+      .filter((section) => section && section.status && section.status.state === "present")
+      // 第一張表用區段名（本命盤的表名寫「本命天體」，不能搬到回歸盤上）；同區的其他表照原名。
+      .flatMap((section) => section.tables.map((table, index) => Object.freeze({
+        section: section.id,
+        title: index === 0 ? section.title : (table.title || section.title),
+        columns: table.columns,
+        rows: table.rows,
+      })));
+    if (!tables.some((table) => table.section === "bodies")) throw new Error("太陽回歸盤回應形狀不符：沒有天體位置。");
+    return Object.freeze({
+      state: "computed",
+      completedYears: block.completed_years,
+      heading,
+      lead: SOLAR_RETURN_FIXED,
+      facts: Object.freeze([
+        ["起盤時刻（UTC，世界時）", utcText(block.instant.utc_time)],
+        ...(local ? [["同一瞬間的出生地時間", local]] : []),
+        ["地點", `${other ? "你輸入的地點" : "出生地（與本命盤相同）"}：${coordinates}`],
+        ["宮位制", houseName],
+        ["算法", SOLAR_RETURN_PROFILES[block.solar_return_profile] || block.solar_return_profile],
+      ]),
+      notes: Object.freeze([
+        SOLAR_RETURN_UTC_NOTE,
+        ...(other ? [SOLAR_RETURN_OTHER_PLACE_TIME] : []),
+      ]),
+      privacy: other ? SOLAR_RETURN_PRIVACY : null,
+      otherPlace: other,
+      tables: Object.freeze(tables),
+      comparison: solarReturnComparison(annualBody, block),
+      chart: block.chart,
+    });
+  }
+
   return Object.freeze({
+    SOLAR_RETURN_FIXED,
+    SOLAR_RETURN_REASONS,
+    SOLAR_RETURN_PRIVACY,
+    SOLAR_RETURN_MORIN,
+    SOLAR_RETURN_RELOCATION_OFFERED,
+    SOLAR_RETURN_HOUSE_SYSTEMS,
+    HOUSE_SYSTEM_NAMES: Labels.VOCABULARIES.house_system,
+    solarReturnHouseSystem,
+    solarReturnChosenHouseSystem,
+    parseSolarReturnLocation,
+    solarReturnRequestBody,
+    supportsSolarReturn,
+    solarReturnPanel,
     FIXED_SENTENCE,
     ICS_LABEL,
     DATE_NOTE,

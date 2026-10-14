@@ -134,8 +134,8 @@ def _box(x: float, y: float, w: float, h: float, step: str, value: str, tag: str
     out = [_fx.rect(x, y, w, h, "fx-track")]
     pad = 14
     if tag.endswith("經度"):
-        out.append(_fx.rect(x, y, 12, h, "fx-b-beam"))
-        out.append(_fx.line(x + 12, y, x + 12, y + h, "fx-b-edge"))
+        out.append(_fx.rect(x, y, 12, h, "fx-fill-hatch"))
+        out.append(_fx.line(x + 12, y, x + 12, y + h, "fx-edge"))
         pad = 24
     if tag == "final":
         out.append(_fx.rect(x + 3, y + 3, w - 6, h - 6, "fx-inset-frame"))
@@ -167,7 +167,7 @@ def _pipelines(layout: str, fid: str, e: dict, gained: str, moved: str, bound: _
                     out += _down(x + bw / 2, y + bh, y + bh + gap)
                 y += bh + gap
         legend = 58 + 4 * (bh + gap) + 18
-        out.append(_fx.rect(24, legend - 14, 12, 18, "fx-b-beam"))
+        out.append(_fx.rect(24, legend - 14, 12, 18, "fx-fill-hatch"))
         out.append(_fx.text(46, legend, "排線：用到出生地經度的一步", "fx-t fx-small"))
         out.append(_fx.text(24, legend + 26, "雙框：最後得到的上升點", "fx-t fx-small"))
         out.append(_fx.text(24, H - 30, f"先換真太陽時，經度就算了兩次：地方恆星時多了約 {gained} 分鐘，上升點差了 {moved} 度",
@@ -186,7 +186,7 @@ def _pipelines(layout: str, fid: str, e: dict, gained: str, moved: str, bound: _
                     out += _down(14 + bw / 2, y + bh, y + bh + gap)
                 y += bh + gap
             y += 26
-        out.append(_fx.rect(14, y - 13, 12, 16, "fx-b-beam"))
+        out.append(_fx.rect(14, y - 13, 12, 16, "fx-fill-hatch"))
         out.append(_fx.text(34, y, "排線：用到出生地經度的一步", "fx-t fx-small"))
         out.append(_fx.text(14, y + 20, "雙框：最後得到的上升點", "fx-t fx-small"))
         out.append(_fx.text(14, y + 50, "先換真太陽時，經度就算了兩次：", "fx-t"))

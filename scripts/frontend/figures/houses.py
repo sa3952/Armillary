@@ -614,8 +614,8 @@ def _polar(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
     for sign in (1, -1):
         yb, hw = lat_y(sign * limit), half(limit)
         out.append(_fx.path(f"M{_fx.f(gx - hw)} {_fx.f(yb)} A{_fx.f(gr)} {_fx.f(gr)} 0 0 {1 if sign == 1 else 0} "
-                            f"{_fx.f(gx + hw)} {_fx.f(yb)} Z", "fx-b-beam"))
-        out.append(_fx.line(gx - hw, yb, gx + hw, yb, "fx-b-edge"))
+                            f"{_fx.f(gx + hw)} {_fx.f(yb)} Z", "fx-fill-hatch"))
+        out.append(_fx.line(gx - hw, yb, gx + hw, yb, "fx-edge"))
     out.append(_fx.line(gx - gr, gy, gx + gr, gy, "fx-hair"))
     out.append(_fx.circle(gx, gy, gr, "fx-axis"))
     out.append(_fx.text(gx, gy - 6, "赤道", small + " fx-dim", "middle"))

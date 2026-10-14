@@ -135,6 +135,61 @@ test("civilHourOccurrences：小時內任一段重複就是模糊；鄰近的小
   assert.equal(RequestInput.civilHourOccurrences({ year: 2025, month: 1, day: 1, hour: NaN }, "UTC"), null);
 });
 
+// Date.UTC 把 0–99 年當成 1900–1999 年：year 50 曾被算成 1950 年，Asia/Taipei 1950-09-30 23 時
+// 的夏令時間重複因此冒出來。期待值是 IANA 的事實：tzdata 在 1896 年以前只有地方平時（LMT），
+// 西元 50 年的任何時刻都只出現一次；世界時也必須落在西元 0050 年，不是 1950 年。
+test("兩位數年份不被當成 19xx：西元 50 年的台北沒有夏令時間的重複，世界時落在 0050 年", () => {
+  const ancient = RequestInput.civilTimeOccurrences(civil(50, 9, 30, 23, 30), "Asia/Taipei");
+  assert.equal(ancient.state, "unique", JSON.stringify(ancient));
+  assert.match(ancient.occurrences[0].utcIso, /^0050-09-30T/);
+  assert.notEqual(ancient.occurrences[0].offsetHours, 9, "1950 年的夏令時間偏移不得套到西元 50 年");
+  assert.equal(
+    RequestInput.civilHourOccurrences({ year: 50, month: 9, day: 30, hour: 23 }, "Asia/Taipei").state,
+    "not_ambiguous",
+  );
+  const utc = RequestInput.civilTimeOccurrences(civil(99, 1, 1, 12, 0), "UTC");
+  assert.equal(utc.occurrences[0].utcIso, "0099-01-01T12:00:00.000Z");
+  // 對照組：同一個鐘面時刻在 1950 年確實重複，所以上面的 unique 不是什麼都回 unique 的實作。
+  assert.equal(RequestInput.civilTimeOccurrences(civil(1950, 9, 30, 23, 30), "Asia/Taipei").state, "ambiguous");
+});
+
+// ── 出生日期欄：表單 novalidate，HTML 的 min／max 只是提示，範圍要在這裡檢查 ──────────
+test("出生日期：格式、日曆與範圍不合就指名拒絕，範圍兩端與一般日期原樣通過", () => {
+  const bounds = { min: "1900-01-01", max: "2399-12-31" };
+  for (const [raw, expected] of [
+    ["1990-05-15", { year: 1990, month: 5, day: 15, iso: "1990-05-15" }],
+    ["1900-01-01", { year: 1900, month: 1, day: 1, iso: "1900-01-01" }],
+    ["2399-12-31", { year: 2399, month: 12, day: 31, iso: "2399-12-31" }],
+    [" 2000-02-29 ", { year: 2000, month: 2, day: 29, iso: "2000-02-29" }],
+  ]) {
+    assert.deepEqual(RequestInput.readBirthDate(raw, bounds), { state: VALUE, value: expected }, raw);
+  }
+  assert.equal(RequestInput.readBirthDate("", bounds).state, EMPTY);
+  assert.equal(RequestInput.readBirthDate("   ", bounds).state, EMPTY);
+  for (const [raw, pattern] of [
+    ["1895-05-15", /1900-01-01 到 2399-12-31/],
+    ["1899-12-31", /1900-01-01 到 2399-12-31/],
+    ["2400-01-01", /1900-01-01 到 2399-12-31/],
+    ["2150-05-15", null],   // 在範圍內：紅隊以為上限是 2099，實際是 2399
+    ["0050-05-15", /1900-01-01 到 2399-12-31/],
+    // 字串比較會讓 21000 年落在 1900 與 2399 之間；範圍必須以數值比較。
+    ["21000-05-15", /1900-01-01 到 2399-12-31/],
+    ["1900-02-29", /不存在/],
+    ["1990-13-01", /不存在/],
+    ["1990/05/15", /YYYY-MM-DD/],
+    ["15-05-1990", /YYYY-MM-DD/],
+    ["abc", /YYYY-MM-DD/],
+  ]) {
+    const read = RequestInput.readBirthDate(raw, bounds);
+    if (pattern === null) {
+      assert.equal(read.state, VALUE, raw);
+      continue;
+    }
+    assert.equal(read.state, INVALID, raw);
+    assert.match(read.reason, pattern, raw);
+  }
+});
+
 // ── 民國年與日本年號 ──────────────────────────────────────────────
 // 期待值是逐條手打的史實，不由被測的年號表推出：民國元年＝1912；明治改元大正在
 // 1912 年 7 月 30 日（明治 45 年 7 月 29 日為明治最後一天），大正改元昭和在 1926 年
@@ -201,6 +256,8 @@ test("年號換算：改元日前後與不存在的日期一律拒絕，並說�
     [["roc", "64.5", 1, 1], /必須是整數/],
     [["roc", 489, 1, 1], /西元 2400 年，超出本計算器的 1900–2399 年範圍/],
     [["meiji", 32, 12, 31], /西元 1899 年，超出本計算器的 1900–2399 年範圍/],
+    // 字串比較會讓五位數的年份（"21000-01-01"）落在 "1900" 與 "2399" 之間。
+    [["roc", 19089, 1, 1], /西元 21000 年，超出本計算器的 1900–2399 年範圍/],
     [["heisei", 1, 1, 8], /請選擇紀年/],
   ]) {
     const read = era(...args);

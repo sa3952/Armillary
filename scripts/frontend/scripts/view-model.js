@@ -1125,6 +1125,11 @@
     };
   }
 
+  // 後端以閉集 magnitude_basis 標明星等是單星還是整團合計；前端不另存星團名單。
+  function isClusterMagnitude(star) {
+    return star.magnitude_basis === "cluster_integrated";
+  }
+
   function fixedStarsSection(response) {
     const stars = (response.astronomical_data || {}).fixed_stars;
     const list = Array.isArray(stars) ? stars : [];
@@ -1145,6 +1150,9 @@
         `目錄收錄 ${policy.catalog_size || DASH} 顆，本次輸出 ${list.length} 顆。`,
         "「星表代碼」是本站星曆程式（Swiss Ephemeris）星表裡這顆星的代碼，多半是拜耳名的縮寫，"
           + "例如 alTau 是金牛座 α 星（畢宿五）；核對或自己重算時用得到。",
+        ...(list.some(isClusterMagnitude)
+          ? ["星團列的是星表給整個星團的一個位置（各星團的記錄離星團中心多遠，見方法頁）；星等是整團合計的亮度，不是一顆星的亮度，所以在星等後標「整團合計」。"]
+          : []),
       ],
       tables: [{
         title: "恆星位置",
@@ -1155,7 +1163,8 @@
           // 中文名只取後端 config.py 的 name，前端不另存星名表。
           star.name || star.key, star.catalog_name || DASH,
           ...positionCells(star.sign_position), dms(star.latitude), dms(star.declination),
-          num(star.magnitude, 2),
+          isClusterMagnitude(star) && star.magnitude != null
+            ? `${num(star.magnitude, 2)}（整團合計）` : num(star.magnitude, 2),
         ]),
       }],
       blocks: [],
@@ -2632,25 +2641,25 @@
   const PRENATAL_SOURCES = Object.freeze([
     "出處：Ptolemy《占星四書》卷三第 2 章（Robbins 英譯，Loeb 1940，頁 231–235；Hübner 校勘本（學者比對多份古抄本後整理出的版本）III.3）："
       + "取出生前最近一次朔望的度數；朔取兩個發光體共同的度數，望取在地平線上方的那一個；"
-      + "再找在出生時主宰這個度數的行星，以它所在的度數定為上升度數。核到：親讀譯本（Robbins 英譯）。",
+      + "再找在出生時主宰這個度數的行星，以它所在的度數定為上升度數。核到：已讀譯本（Robbins 英譯）。",
     "出處：Robbins 英譯本卷三第 2 章註 9：正文依兩個最重要的手抄本與佚名註釋者，看朔望那一刻誰在地平線上方；"
-      + "另一個讀法看出生那一刻。本站採用前者，後者只當資訊列出。核到：親讀譯本（Robbins 英譯與註）。",
+      + "另一個讀法看出生那一刻。本站採用前者，後者只當資訊列出。核到：已讀譯本（Robbins 英譯與註）。",
     "出處：Ptolemy《占星四書》卷三第 10 章（Robbins 英譯頁 277–279；Hübner III.11）：定壽命主宰（hyleg）時，"
-      + "日生盤的候選包括前一次朔，夜生盤包括前一次望；書中沒有明說較近的另一種要不要越過。核到：親讀譯本（Robbins 英譯）。",
+      + "日生盤的候選包括前一次朔，夜生盤包括前一次望；書中沒有明說較近的另一種要不要越過。核到：已讀譯本（Robbins 英譯）。",
     "出處：Lilly《Christian Astrology》（1647）卷三第 104 章，頁 527–529：日生盤取前一次朔、夜生盤取前一次望，"
-      + "較近的是另一種也要越過。核到：親讀原文（為方法頁讀過，這一條沒有重讀）。",
+      + "較近的是另一種也要越過。核到：已讀原文（為方法頁讀過，這一條沒有重讀）。",
     "出處：Valens《占星選集》（Anthologiae）卷三第 10、12 章（Riley 英譯的重排本）：用前一次朔或望的度數推算壽命的起點。"
       + "書中其他幾章也用朔或望：用朔或望的主星判斷死因，用望落在陽性或陰性星座判斷父母誰先過世，"
-      + "也用它定月份與關鍵年（卷二第 22、27、33、41 章，卷四第 2、28 章，卷五第 2、6 章）。核到：親讀譯本（Riley 英譯）。",
+      + "也用它定月份與關鍵年（卷二第 22、27、33、41 章，卷四第 2、28 章，卷五第 2、6 章）。核到：已讀譯本（Riley 英譯）。",
     "出處：Ptolemy《占星四書》卷二第 4、5、6、8 章（Robbins 英譯）：日月食主要用在世運（地區、城市與時局）；"
       + "第 4 章說，這類普遍事件「第一個、也最有力的原因」是日月在食時的會合；"
       + "第 8 章說，（出生以後發生的）日月食的度數或其對沖度數上正好有某人本命的太陽或月亮時，是「最危險、最難避開」的位置；"
-      + "影響多久看遮蔽持續幾小時，日食一小時算一年，月食一小時算一個月。核到：親讀譯本（Robbins 英譯）。",
+      + "影響多久看遮蔽持續幾小時，日食一小時算一年，月食一小時算一個月。核到：已讀譯本（Robbins 英譯）。",
     "出處：把出生前最後一次日月食當作命盤要點的二十世紀做法：Jansky《Interpreting the Eclipses》、"
       + "Lineman《Your Prenatal Eclipse》、Brady《Predictive Astrology》（1992）、Graves〈Introduction to Prenatal Eclipses〉（2004）。"
       + "本站只讀到 Graves 的網頁，其餘只讀到書目或摘要。核到：轉引（只讀到二手）。",
     "出處：半影月食看不看得出來：Espenak〈Visual Appearance of Lunar Eclipses〉（eclipsewise.com）。"
-      + "日月食時刻與類型以 NASA 的日月食表驗證：Eclipse Predictions by Fred Espenak and Jean Meeus (NASA's GSFC)。核到：親讀原文。",
+      + "日月食時刻與類型以 NASA 的日月食表驗證：Eclipse Predictions by Fred Espenak and Jean Meeus (NASA's GSFC)。核到：已讀原文。",
   ]);
 
   /** 「出生前 9.4 天」「出生前 35 分鐘」：後端給的數字，只換單位。 */
@@ -3444,7 +3453,7 @@
       local_time_nonexistent: "時鐘沒有經過這一刻",
       house_system_unavailable_at_sample: "這一刻所選宮位制算不出宮頭",
     };
-    const LEDGER_PATH_ZH = { "astronomical_data.bodies": "天體位置" };
+    const LEDGER_PATH_ZH = SENSITIVITY_LEDGER_ZH;
     const presentSensitivityText = (value) =>
       presentClosedVocabulary(value, sensitivityVocabulary, "語意");
     const notes = [
@@ -3568,16 +3577,6 @@
         ]),
       });
     }
-    // 後端以回應路徑命名每一個比較過的分類（例：astronomical_data.bodies[sun].motion_sign）。
-    // 認得的歸成一類寫中文；認不得的退回「所屬模組：欄位」，不會消失也不會被猜成別的。
-    const classificationLabel = (path) => {
-      const text = String(path);
-      const owner = Object.keys(ledger || {})
-        .filter((prefix) => text.startsWith(`${prefix}.`) || text.startsWith(`${prefix}[`))
-        .sort((a, b) => b.length - a.length)[0];
-      if (!owner) return text;
-      return `${LEDGER_PATH_ZH[owner] || modulePathLabel(owner, bodyNames)}：${text.slice(owner.length + 1)}`;
-    };
     const ledger = ((response.calculation_dossier || {}).birth_time || {}).sensitivity_coverage;
     const summaryRows = [];
     const angles = isRecord(sensitivity.angles) ? sensitivity.angles : {};
@@ -3636,7 +3635,7 @@
       });
     }
     const figure = samplingFigure(sensitivity, ledger, {
-      bodyNames, classificationLabel, ledgerLabel: (path) => LEDGER_PATH_ZH[path] || modulePathLabel(path, bodyNames),
+      bodyNames, ledgerLabel: (path) => LEDGER_PATH_ZH[path] || modulePathLabel(path, bodyNames),
     });
     return section({ state: "present" }, notes, tables, figure ? [figure] : []);
   }
@@ -3661,6 +3660,8 @@
     crossing_exists_between_adjacent_samples_across_another_date_exact_time_not_solved:
       "兩個取樣點之間隔著屬於另一個日期的時間，未再細分",
   });
+  // transitions[].semantics 的第二個值（backend TRANSITION_SEMANTICS）：跨過時鐘撥回、沒有細分的改變。
+  const TRANSITION_ACROSS_UTC_GAP = "sampled_classification_change_across_a_utc_gap_not_bisected";
   const COUNT_ZH = ["零", "一", "兩", "三", "四", "五", "六", "七", "八", "九", "十"];
   function sampleCountWord(count) {
     return count >= 0 && count < COUNT_ZH.length ? COUNT_ZH[count] : ` ${count} `;
@@ -3696,43 +3697,107 @@
   const ANGLE_ORDER = Object.freeze(Object.keys(ANGLE_ZH));
   const LOT_ZH = Object.freeze({ fortune: "命運點", spirit: "精神點" });
 
-  // 後端分類路徑 → 畫面上的一類。成員（天體、角點、宮序）合併成一句，例如「上升、下降的星座」。
+  // 後端分類路徑 → 畫面上的一類（路徑寫法見 birth_time_sensitivity.printed_classifications）。
+  // 成員（天體、角點、宮序、點）合併成一句，例如「上升、下降的星座」。畫面上一律是白話中文：
+  // 認不得的欄位落到「所屬模組：其他附帶項目」，不印方括號、點號或英文鍵名。
+  const MEMBER = "\\[([^\\]:]+)(?::[^\\]]*)?\\]";
+  // 模組附帶的說明欄位（方法名、出處、名稱、語意說明、範圍）：不是計算結果，只會隨模組有無一起變。
+  const MODULE_NOTE_KEYS = [
+    "method", "method_status", "method_provenance", "source", "source_ref", "source_verification",
+    "system_code", "system_name", "angles_source", "house_system_code", "house_system_name",
+    "interval_semantics", "distance_to_nearest_cusp_semantics", "formula", "formula_profile", "formula_bases",
+    "boundary_policy", "near_horizon_band", "display_center", "endpoint_rule", "lord_rule", "profile",
+    "semantics", "scope", "time_basis", "solver", "solver_status",
+  ].join("|");
+  const OWNER_PATTERN = "astronomical_data\\.(?:angles|bodies|nodes)|derived_methods\\."
+    + "(?:house_division|planet_in_house|sect|lots|void_of_course|dodecatemoria)";
   const CLASSIFICATION_KINDS = [
     [/^astronomical_data\.angles\.sign_positions\.(\w+)$/, "angles"],
     [/^derived_methods\.house_division\.cusp_sign_positions\[(\d+)\]$/, "house_cusps"],
-    [/^astronomical_data\.(?:bodies|nodes)\[([^\]:]+)(?::[^\]]*)?\]\.sign_position$/, "body_signs"],
-    [/^astronomical_data\.(?:bodies|nodes)\[([^\]:]+)(?::[^\]]*)?\]\.motion_sign$/, "motion"],
-    [/^derived_methods\.planet_in_house\.placements\[([^\]]+)\]\.house$/, "planet_in_house"],
-    [/^derived_methods\.planet_in_house\.placements\[([^\]]+)\]\.on_cusp$/, "on_cusp"],
-    [/^derived_methods\.lots\.sign_positions\.(\w+)$/, "lot_signs"],
-    [/^derived_methods\.lots\.house_placement\.(\w+)$/, "lot_houses"],
+    [new RegExp(`^astronomical_data\\.(?:bodies|nodes)${MEMBER}\\.sign_position$`), "body_signs"],
+    [new RegExp(`^astronomical_data\\.(?:bodies|nodes)${MEMBER}\\.motion_sign$`), "motion"],
+    [new RegExp(`^derived_methods\\.planet_in_house\\.(?:point_placements\\.)?placements${MEMBER}\\.house$`), "planet_in_house"],
+    [new RegExp(`^derived_methods\\.planet_in_house\\.(?:point_placements\\.)?placements${MEMBER}\\.on_cusp$`), "on_cusp"],
+    [/^derived_methods\.lots\.sign_positions\.(fortune|spirit)$/, "lot_signs"],
+    [/^derived_methods\.lots\.house_placement\.(fortune|spirit)$/, "lot_houses"],
     [/^derived_methods\.lots\.by_sect\./, "lot_comparison"],
     [/^derived_methods\.lots\.(?:formula_basis|sect_applied|sect_status|sect_in_near_horizon_band|sect_named_boundary_disagreement)$/, "lot_formula"],
-    [/^derived_methods\.sect\./, "sect"],
-    [/^derived_methods\.void_of_course\.is_void_of_course$/, "void_of_course"],
+    [/^derived_methods\.sect\.(?:is_day|sect_status|sect_statuses\[\d+\]|in_near_horizon_band|named_boundary_disagreement)$/, "sect"],
+    [/^derived_methods\.void_of_course\.(?:is_void_of_course|verdict)$/, "void_of_course"],
+    [new RegExp(`^derived_methods\\.dodecatemoria\\.points${MEMBER}\\.(?:sign|sign_position|point_sign_position)$`), "dodecatemoria_signs"],
+    [new RegExp(`^derived_methods\\.dodecatemoria\\.points${MEMBER}\\.domicile_lord$`), "dodecatemoria_lords"],
+    [new RegExp(`^derived_methods\\.dodecatemoria\\.points${MEMBER}\\.(?:comparison_sign|sign_differs_under_other_sect)$`), "dodecatemoria_comparison"],
+    [new RegExp(`^astronomical_data\\.(?:bodies|nodes)${MEMBER}\\.(altitude_apparent|apparent_magnitude|azimuth|phenomena)_reason_code$`), "body_reason"],
+    // 模組本身在某些取樣點算不出來（例：那一刻所選宮位制沒有宮頭）時，模組的收據欄位跟著不同。
+    [new RegExp(`^(${OWNER_PATTERN})\\.(?:applicable|available|executed|requested|reason_code|execution_status|availability\\.\\w+|point_placements\\.(?:execution_status|reason_code|rule))$`), "module_state"],
+    // 同一時候，模組附帶的方法說明（方法名、出處、宮位制名稱）也會從有變沒有。
+    [new RegExp(`^(${OWNER_PATTERN})\\.(?:${MODULE_NOTE_KEYS})(?:[.[]|$)`), "module_note"],
   ];
   const SINGLE_CLASSIFICATION_ZH = Object.freeze({
-    lot_comparison: "阿拉伯點另一套公式的比較值",
-    lot_formula: "阿拉伯點採用的公式",
-    sect: "日夜區分",
+    lot_comparison: "阿拉伯點另一套公式（日盤／夜盤）的比較值",
+    lot_formula: "阿拉伯點採用日盤還是夜盤公式",
+    sect: "日夜區分（日盤或夜盤）",
     void_of_course: "是否月空亡",
+  });
+  // 認不得的欄位所屬的模組：只寫模組，不寫欄位鍵名。
+  const PATH_OWNER_ZH = Object.freeze({
+    "astronomical_data.bodies": "天體位置",
+    "astronomical_data.nodes": "月交點",
+    "astronomical_data.angles": "四軸",
+    "derived_methods.house_division": "宮位",
+    "derived_methods.planet_in_house": "落宮",
+    "derived_methods.sect": "日夜區分",
+    "derived_methods.lots": "阿拉伯點",
+    "derived_methods.void_of_course": "月空亡",
+    "derived_methods.dodecatemoria": "十二分部",
+  });
+  // 天體在某些取樣點算得出、某些算不出的附帶量（例：月亮在地平線下時沒有視星等）。
+  const BODY_REASON_ZH = Object.freeze({
+    altitude_apparent: "視地平高度",
+    apparent_magnitude: "亮度（視星等）",
+    azimuth: "方位角",
+    phenomena: "亮面比例與離太陽的角距",
   });
   function classificationKind(path) {
     for (const [pattern, kind] of CLASSIFICATION_KINDS) {
       const match = pattern.exec(String(path));
-      if (match) return { kind, member: match[1] };
+      if (match) return kind === "body_reason" ? { kind: `body_reason_${match[2]}`, member: match[1] } : { kind, member: match[1] };
     }
     return null;
   }
+  /** 成員鍵 → 中文名：回應自己帶的名稱優先，其次是後端名稱表、角點與阿拉伯點；都沒有就寫「另一個點」。 */
+  function memberName(member, names) {
+    const vocabulary = Labels.VOCABULARIES;
+    return (names && names[member])
+      || vocabulary.body_backend_name[member]
+      || vocabulary.node_backend_name[member]
+      || vocabulary.lunar_apsis_backend_name[member]
+      || ANGLE_ZH[member]
+      || LOT_ZH[member]
+      || "另一個點";
+  }
+  /** 認不得的路徑：所屬模組加上成員名（有的話），例如「天體位置：太陽的其他附帶項目」。 */
+  function otherClassificationLabel(path, names) {
+    const text = String(path);
+    const owner = /^[a-z_]+\.[a-z_]+/.exec(text);
+    const ownerKey = owner ? owner[0] : "";
+    const declared = PATH_OWNER_ZH[ownerKey] || (MODULE_COVERAGE[ownerKey] && MODULE_COVERAGE[ownerKey].zh);
+    const member = /\[([^\]:]+)(?::[^\]]*)?\]/.exec(text.slice(ownerKey.length));
+    const who = member && !/^\d+$/.test(member[1]) ? `${memberName(member[1], names)}的` : "";
+    return `${declared || "其他模組"}：${who}其他附帶項目`;
+  }
 
-  /** 把一組改變的分類路徑寫成一行：同類合併（「上升、中天的星座；第 1、7 宮宮頭的星座」）。 */
-  function changedPathsText(paths, labels) {
+  /**
+   * 一組改變的分類路徑，同類合併成白話的幾項：每項 { kind, members, text }。
+   * 十二分部同一點的星座、所在星座與守護行星合成一句，不分開列。
+   */
+  function changedPathGroups(paths, names) {
     const groups = new Map();
     const other = [];
-    paths.forEach((path) => {
+    (paths || []).forEach((path) => {
       const found = classificationKind(path);
       if (!found) {
-        other.push(labels.classificationLabel(path));
+        other.push(otherClassificationLabel(path, names));
         return;
       }
       if (!groups.has(found.kind)) groups.set(found.kind, []);
@@ -3740,33 +3805,56 @@
         groups.get(found.kind).push(found.member);
       }
     });
-    const names = (members, vocabulary) => members.map((member) => vocabulary[member] || member);
+    const named = (members) => members.map((member) => memberName(member, names)).join("、");
     const parts = [];
+    const push = (kind, members, text) => parts.push({ kind, members, text });
     if (groups.has("angles")) {
       const members = groups.get("angles").slice().sort(
         (a, b) => ANGLE_ORDER.indexOf(a) - ANGLE_ORDER.indexOf(b)
       );
-      parts.push(`${names(members, ANGLE_ZH).join("、")}的星座`);
+      push("angles", members, `${named(members)}的星座`);
     }
     if (groups.has("house_cusps")) {
       const houses = groups.get("house_cusps").map((index) => Number(index) + 1).sort((a, b) => a - b);
-      parts.push(`第 ${houses.join("、")} 宮宮頭的星座`);
+      push("house_cusps", houses.map(String), `第 ${houses.join("、")} 宮宮頭的星座`);
     }
-    const perMember = [
-      ["body_signs", labels.bodyNames, "的星座"],
-      ["motion", labels.bodyNames, "的行進方向"],
-      ["planet_in_house", labels.bodyNames, "的落宮"],
-      ["on_cusp", labels.bodyNames, "是否在宮頭上"],
-      ["lot_signs", LOT_ZH, "的星座"],
-      ["lot_houses", LOT_ZH, "的落宮"],
-    ];
-    perMember.forEach(([kind, vocabulary, suffix]) => {
-      if (groups.has(kind)) parts.push(`${names(groups.get(kind), vocabulary).join("、")}${suffix}`);
+    [
+      ["body_signs", "的星座"],
+      ["motion", "是順行還是逆行"],
+      ["planet_in_house", "的落宮"],
+      ["on_cusp", "是否壓在宮頭上"],
+      ["lot_signs", "的星座"],
+      ["lot_houses", "的落宮"],
+    ].forEach(([kind, suffix]) => {
+      if (groups.has(kind)) push(kind, groups.get(kind), `${named(groups.get(kind))}${suffix}`);
     });
+    const twelfth = [...new Set([].concat(groups.get("dodecatemoria_signs") || [], groups.get("dodecatemoria_lords") || []))];
+    if (twelfth.length) {
+      const what = groups.has("dodecatemoria_signs") && groups.has("dodecatemoria_lords") ? "星座與守護行星"
+        : groups.has("dodecatemoria_lords") ? "守護行星" : "星座";
+      push("dodecatemoria", twelfth, `十二分部：${named(twelfth)}的${what}`);
+    }
+    if (groups.has("dodecatemoria_comparison")) {
+      push("dodecatemoria_comparison", groups.get("dodecatemoria_comparison"),
+        `十二分部：${named(groups.get("dodecatemoria_comparison"))}改用另一套日夜公式時的比較值`);
+    }
+    Object.keys(BODY_REASON_ZH).forEach((field) => {
+      const kind = `body_reason_${field}`;
+      if (groups.has(kind)) push(kind, groups.get(kind), `${named(groups.get(kind))}的${BODY_REASON_ZH[field]}算不算得出來`);
+    });
+    const owners = (kind) => (groups.get(kind) || []).map((owner) => PATH_OWNER_ZH[owner]).join("、");
+    if (groups.has("module_state")) push("module_state", groups.get("module_state"), `${owners("module_state")}算不算得出來`);
+    if (groups.has("module_note")) push("module_note", groups.get("module_note"), `${owners("module_note")}附帶的方法說明`);
     Object.keys(SINGLE_CLASSIFICATION_ZH).forEach((kind) => {
-      if (groups.has(kind)) parts.push(SINGLE_CLASSIFICATION_ZH[kind]);
+      if (groups.has(kind)) push(kind, [], SINGLE_CLASSIFICATION_ZH[kind]);
     });
-    return parts.concat([...new Set(other)]).join("；");
+    [...new Set(other)].forEach((text) => push("other", [], text));
+    return parts;
+  }
+
+  /** 把一組改變的分類路徑寫成一行：同類合併（「上升、中天的星座；第 1、7 宮宮頭的星座」）。 */
+  function changedPathsText(paths, names) {
+    return changedPathGroups(paths, names).map((part) => part.text).join("；");
   }
 
   /** 每一個在取樣點之間不同的分類，用與 transitions.changed_paths 相同的路徑寫法。 */
@@ -3800,17 +3888,22 @@
         .filter(isRecord)
         .map((item) => {
           const seconds = Number(item.resolution_seconds);
+          // 兩個取樣點分屬這一小時的兩段 UTC（時鐘離開這一小時又回來）：中間的時間不屬於這一小時，
+          // 後端不細分，只報兩段相對的兩端。沒帶 semantics（page 投影）時照細分的一段寫。
+          const gap = item.semantics === TRANSITION_ACROSS_UTC_GAP;
           return {
             lower: localKey(item.lower_bound_local),
             upper: localKey(item.upper_bound_local),
             paths: Array.isArray(item.changed_paths) ? item.changed_paths : [],
-            resolution: Number.isFinite(seconds) && seconds <= TRANSITION_RESOLUTION_LIMIT_SECONDS
+            gap,
+            resolution: gap ? "時鐘在這兩刻之間撥回，未再細分"
+              : Number.isFinite(seconds) && seconds <= TRANSITION_RESOLUTION_LIMIT_SECONDS
               ? `解析度 ≤${TRANSITION_RESOLUTION_LIMIT_SECONDS} 秒`
               : `解析度 ${Number.isFinite(seconds) ? seconds : DASH} 秒`,
           };
         })
         .map((band) => ({ ...band, range: `${clockLabel(band.lower, day)}–${clockLabel(band.upper, day)}`,
-          text: changedPathsText(band.paths, labels) || DASH }));
+          text: changedPathsText(band.paths, labels.bodyNames) || DASH }));
     }
     const moon = isRecord(sensitivity.moon_boundary_assessment) ? sensitivity.moon_boundary_assessment : {};
     return (Array.isArray(moon.sampled_sign_boundary_transitions) ? moon.sampled_sign_boundary_transitions : [])
@@ -3823,7 +3916,7 @@
           lower, upper, paths,
           range: `${clockLabel(lower, day)}–${clockLabel(upper, day)}`,
           resolution: MOON_TRANSITION_RESOLUTION[item.semantics] || DASH,
-          text: changedPathsText(paths, labels),
+          text: changedPathsText(paths, labels.bodyNames),
         };
       });
   }
@@ -3851,13 +3944,12 @@
       lead = `這${word}個取樣點分類相同。`;
     } else if (status === "differs_between_samples") {
       tone = "differs";
-      // 細分改變時刻時算過的中間時刻也算數：只在那些時刻出現的值同樣計入。
-      const coverage = isRecord(sensitivity.probe_coverage) ? sensitivity.probe_coverage : {};
-      const refined = Array.isArray(coverage.refinement_offsets_seconds) ? coverage.refinement_offsets_seconds.length : 0;
-      lead = `這${word}個取樣點分類不全相同：`
-        + (refined ? `連同細分時加算的 ${refined} 個時刻，` : "")
-        + `有 ${differing.length} 項判定在取樣點之間改變。`;
+      lead = `這${word}個取樣點分類不全相同：本站在這段時間裡實際重算的${word}個時刻（取樣點），`
+        + "算出的結果不完全一樣；下面列出哪些會變、大約在什麼時候變。";
     }
+    // 細分改變時刻時算過的中間時刻也算數：只在那些時刻出現的值同樣計入。
+    const coverage = isRecord(sensitivity.probe_coverage) ? sensitivity.probe_coverage : {};
+    const refined = Array.isArray(coverage.refinement_offsets_seconds) ? coverage.refinement_offsets_seconds.length : 0;
 
     const bands = samplingBands(sensitivity, day, labels);
     const bandsAfter = marks.map(() => 0);
@@ -3883,16 +3975,26 @@
     const banded = new Set(bands.flatMap((band) => band.paths));
     const unbanded = differing.filter((path) => !banded.has(path));
     if (bands.length || differing.length) {
+      const bisected = bands.filter((band) => !band.gap);
+      const notes = sensitivity.precision === "date_only"
+        ? ["日期模式只在取樣點比較，沒有細分改變的時刻。"]
+        : [].concat(
+          bisected.length
+            ? ["每一段是改變發生的時間範圍，不是單一時刻；一段之內至少改變一次，不一定只有一次。"
+              + `「解析度 ≤${TRANSITION_RESOLUTION_LIMIT_SECONDS} 秒」是說這段時間不超過 ${TRANSITION_RESOLUTION_LIMIT_SECONDS} 秒。`]
+            : [],
+          refined ? [`為了找出改變的時間，本站在取樣點之間另外加算了 ${refined} 個時刻。`] : [],
+          bands.some((band) => band.gap)
+            ? ["標「時鐘在這兩刻之間撥回」的一段：鐘面上這兩個時刻看起來相鄰，中間其實隔著一段不屬於這一小時的時間"
+              + "（時鐘撥回，離開這一小時又回來）；改變發生在那段時間裡，沒有再細分。"]
+            : []
+        );
       groups.push({
         tone: "differs",
-        title: "已比較，取樣點之間有改變",
-        note: sensitivity.precision === "date_only"
-          ? "日期模式只在取樣點比較，沒有細分改變的時刻。"
-          : (bands.length
-            ? "每一段是改變發生的時間範圍，不是單一時刻；一段之內至少改變一次，不一定只有一次。"
-            : ""),
+        title: "會變的：取樣點之間結果不同",
+        note: notes.join(""),
         bands: bands.map(({ range, resolution, text }) => ({ range, resolution, text })),
-        items: unbanded.length ? [changedPathsText(unbanded, labels)] : [],
+        items: unbanded.length ? [changedPathsText(unbanded, labels.bodyNames)] : [],
       });
     }
     if (isRecord(ledger)) {
@@ -3901,7 +4003,7 @@
       if (same.length) {
         groups.push({
           tone: "same",
-          title: `已比較，這${word}個取樣點分類相同`,
+          title: `不變的：這${word}個取樣點分類相同`,
           note: "",
           bands: [],
           items: same.map((path) => SAME_GROUP_ZH[path] || labels.ledgerLabel(path)),
@@ -3921,7 +4023,7 @@
       if (unchecked.length) {
         groups.push({
           tone: "unchecked",
-          title: "沒有比較，只算了代表性時刻",
+          title: "沒有比較：只算了代表性時刻（畫面上星盤用的那一刻）",
           note: "這些結果只對代表性時刻成立；在這段時間內會不會改變，沒有檢查。",
           bands: [],
           items: unchecked.map(labels.ledgerLabel),
@@ -3944,6 +4046,184 @@
       legend: representativeIndex >= 0 ? "空心點是代表性時刻。" : "",
       note: "點與點之間沒有計算。",
       groups,
+    };
+  }
+
+  // ═══ 結果頂端：出生時間不確定時的白話摘要 ═══════════════════════
+  //
+  // 只在出生時間是約略時辰或只有日期、而且取樣算完時出現；精確時刻與取樣被拒時為 null。
+  // 每一句都取自同一份回應（取樣點、改變的時間段、各模組的比較帳本、代表性時刻的星座），
+  // 不推論、不解讀：「從 A 換到 B」只在那一項恰好只有一段改變、取樣只見兩個值、而且代表性
+  // 時刻在那一段之外時才寫——那時取樣點在那一段兩側各自只有一個值。
+  const BIRTH_TIME_SUMMARY_TITLE = "出生時間不確定：哪些結果會變";
+  const SENSITIVITY_LEDGER_ZH = Object.freeze({ "astronomical_data.bodies": "天體位置" });
+
+  function sensitivityNames(sensitivity) {
+    return Object.fromEntries(
+      [].concat(sensitivity.body_signs || [], sensitivity.position_ranges || [])
+        .filter((item) => isRecord(item) && item.key && item.name)
+        .map((item) => [item.key, item.name])
+    );
+  }
+  function minuteOf(key) {
+    return key ? key.split("T")[1].slice(0, 5) : DASH;
+  }
+  /** 一段改變的時間，寫成一般人讀的樣子：「約 14:28」「14:00–15:00 之間」。 */
+  function bandWhen(band, precision, day) {
+    if (band.gap) {
+      return `時鐘撥回處（${clockLabel(band.lower, day)} 與 ${clockLabel(band.upper, day)} 之間）`;
+    }
+    if (precision === "date_only") return `${minuteOf(band.lower)}–${minuteOf(band.upper)} 之間`;
+    const lower = minuteOf(band.lower);
+    const upper = minuteOf(band.upper);
+    return lower === upper ? `約 ${lower}` : `約 ${lower}–${upper}`;
+  }
+
+  function birthTimeSummary(response) {
+    const sensitivity = isRecord(response) && isRecord(response.birth_time_sensitivity)
+      ? response.birth_time_sensitivity : null;
+    if (!sensitivity || sensitivity.status !== "computed"
+      || !["approximate_hour", "date_only"].includes(sensitivity.precision)) {
+      return null;
+    }
+    const precision = sensitivity.precision;
+    const marks = samplingMarks(sensitivity).filter((mark) => mark.key);
+    if (!marks.length) return null;
+    const count = marks.length;
+    const day = localKey(sensitivity.interval_start_local)
+      ? localKey(sensitivity.interval_start_local).split("T")[0]
+      : marks[0].key.split("T")[0];
+    const names = sensitivityNames(sensitivity);
+    const representativeKey = localKey(sensitivity.representative_local_time);
+    const representativeClock = clockLabel(representativeKey, day);
+    const ledger = ((response.calculation_dossier || {}).birth_time || {}).sensitivity_coverage;
+    const ledgerLabel = (path) => SENSITIVITY_LEDGER_ZH[path] || modulePathLabel(path, names);
+
+    const intro = precision === "approximate_hour"
+      ? `你填的是「大約幾點」，所以本站在 ${minuteOf(marks[0].key)}–${minuteOf(marks[count - 1].key)} 之間取 ${count} 個時刻`
+        + `（取樣點）各算一次，比較結果。上面的星盤是用 ${representativeClock} 算的。`
+      : `你只填了日期，所以本站在 ${day} 這一天取 ${count} 個時刻（取樣點）各算一次，比較結果。`
+        + `上面的星盤用的是 ${representativeClock}，那只是計算的基準，不是出生時間。`;
+
+    const bands = samplingBands(sensitivity, day, { bodyNames: names });
+    const differing = differingClassificationPaths(sensitivity);
+    const keyOf = (part) => (part.kind === "other" ? `other:${part.text}` : part.kind);
+    // 每一類改變出現在哪幾段。
+    const whenByKind = new Map();
+    bands.forEach((band) => {
+      changedPathGroups(band.paths, names).forEach((part) => {
+        const key = keyOf(part);
+        if (!whenByKind.has(key)) whenByKind.set(key, []);
+        const text = bandWhen(band, precision, day);
+        if (!whenByKind.get(key).includes(text)) whenByKind.get(key).push(text);
+      });
+    });
+    // 一個成員的改變落在哪幾段（路徑的類別與成員都相同）。
+    const bandsOf = (kind, member) => bands.filter((band) => band.paths.some((path) => {
+      const found = classificationKind(path);
+      return found && found.kind === kind && found.member === member;
+    }));
+    const fromTo = (kind, member, representative, values, render) => {
+      const only = bandsOf(kind, member);
+      if (only.length !== 1 || !Array.isArray(values) || values.length !== 2 || !representativeKey) return null;
+      if (representative === null || representative === undefined || !values.includes(representative)) return null;
+      const other = values.find((value) => value !== representative);
+      // 一段的下界是左側的值、上界是右側的值（取樣點或二分時的中間時刻），代表性時刻落在端點上也算在那一側。
+      if (representativeKey <= only[0].lower) return [render(representative), render(other)];
+      if (representativeKey >= only[0].upper) return [render(other), render(representative)];
+      return null;
+    };
+    const sampledSignName = (index) => SIGNS[index] || DASH;
+    const houseName = (house) => `第 ${house} 宮`;
+    const details = (part) => {
+      const found = [];
+      if (part.kind === "angles" && part.members.includes("asc")) {
+        const asc = isRecord(sensitivity.angles) && isRecord(sensitivity.angles.asc) ? sensitivity.angles.asc : {};
+        const printed = (((response.astronomical_data || {}).angles || {}).sign_positions || {}).asc;
+        const pair = fromTo("angles", "asc", Array.isArray(printed) ? printed[0] : null,
+          asc.sampled_sign_indices, sampledSignName);
+        if (pair) found.push(`上升從${pair[0]}換到${pair[1]}`);
+      }
+      if (part.kind === "body_signs") {
+        part.members.forEach((member) => {
+          const row = [].concat(sensitivity.body_signs || [], sensitivity.position_ranges || [])
+            .find((item) => isRecord(item) && item.key === member);
+          if (!row) return;
+          const representative = row.representative_sign_index !== undefined
+            ? row.representative_sign_index
+            : (Array.isArray(row.representative_sign_position) ? row.representative_sign_position[0] : null);
+          const pair = fromTo("body_signs", member, representative, row.sampled_sign_indices, sampledSignName);
+          if (pair) found.push(`${memberName(member, names)}從${pair[0]}換到${pair[1]}`);
+        });
+      }
+      if (part.kind === "planet_in_house") {
+        part.members.forEach((member) => {
+          const name = memberName(member, names);
+          const row = (sensitivity.planet_in_house || []).find((item) => isRecord(item) && item.name === name);
+          if (!row) return;
+          const pair = fromTo("planet_in_house", member, row.representative_house, row.sampled_houses, houseName);
+          if (pair) found.push(`${name}從${pair[0]}換到${pair[1]}`);
+        });
+      }
+      return found;
+    };
+
+    const changes = changedPathGroups(differing.concat(bands.flatMap((band) => band.paths)), names)
+      .map((part) => {
+        const times = whenByKind.get(keyOf(part)) || [];
+        const extra = details(part);
+        return {
+          what: part.text,
+          when: (times.length
+            ? `${times.join("、")}${times[times.length - 1].endsWith("）") ? "" : " "}改變`
+            : "取樣點之間不同，沒有細算是在哪一刻變的")
+            + (extra.length ? `（${extra.join("；")}）` : ""),
+        };
+      });
+
+    const pathsIn = (state) => (isRecord(ledger) ? Object.keys(ledger).filter((path) => ledger[path] === state) : []);
+    const same = pathsIn("same_at_all_samples").map((path) => {
+      const label = SAME_GROUP_ZH[path] || ledgerLabel(path);
+      const asc = isRecord(sensitivity.angles) && isRecord(sensitivity.angles.asc) ? sensitivity.angles.asc : null;
+      if (path === "astronomical_data.angles" && asc && Array.isArray(asc.sampled_sign_indices)
+        && asc.sampled_sign_indices.length === 1) {
+        return `${label}（上升都是${sampledSignName(asc.sampled_sign_indices[0])}）`;
+      }
+      return label;
+    });
+    const partial = pathsIn("partially_evaluated").map((path) => PARTIAL_GROUP_ZH[path] || ledgerLabel(path));
+    const unchecked = pathsIn("not_evaluated").map(ledgerLabel);
+
+    // 第一句是白話：在哪一段時間、會變幾類或都一樣（細節區照 Option D 的「取樣點分類」說法）。
+    const status = sensitivity.classification_status;
+    const span = precision === "approximate_hour"
+      ? `在 ${minuteOf(marks[0].key)}–${minuteOf(marks[count - 1].key)} 之間`
+      : `在 ${day} 這一天裡`;
+    let lead = `${span}，沒有可以互相比較的結果。`;
+    if (count < 2) {
+      lead = "只取到一個時刻，沒有可以互相比較的結果。";
+    } else if (status === "same_at_all_samples") {
+      lead = `${span}，比較過的結果都一樣。`;
+    } else if (status === "differs_between_samples") {
+      lead = `${span}，有 ${changes.length} 類結果會變。`;
+    }
+    return {
+      title: BIRTH_TIME_SUMMARY_TITLE,
+      lead,
+      intro,
+      changes,
+      same,
+      partial,
+      unchecked,
+      caveat: "「不變」只表示取樣到的時刻結果相同，兩個取樣點之間仍可能變了又變回。"
+        + (precision === "approximate_hour"
+          ? "「約幾點改變」指的是一小段時間，這段之內至少變了一次。"
+          : "日期模式只比較取樣點，沒有細算改變的時刻。"),
+      link_text: "看細節",
+      target_id: "section-sensitivity",
+      // 結果最上方、每一章都看得到的一行，連到這個摘要。
+      notice_text: "出生時間不確定，看哪些結果會變",
+      notice_target_id: "sampling-callout",
     };
   }
 
@@ -4396,6 +4676,7 @@
   // ── 行星與宮的古典分類 ─────────────────────────────────────
   // 每一欄是一本書的分類或條件，照原文的用語；各書不同時並列。白話在第一層，出處收進「出處」摺疊。
   const CLASSICAL_TITLE = "行星與宮的古典分類";
+  const CLASSICAL_PLACES_TITLE = "十二宮的名稱與分類";
   const NATURE_ZH = Object.freeze({
     beneficent: "吉星",
     maleficent: "凶星",
@@ -4617,7 +4898,7 @@
           }),
         },
         {
-          title: "十二宮的名稱與分類",
+          title: CLASSICAL_PLACES_TITLE,
           columns: ["宮", "名稱", "原文名稱", "始宮／續宮／果宮", "Firmicus 的分法", "Dorotheus 的分法（轉引）",
             "本盤在這一宮的行星"],
           rows: places.map((place) => [
@@ -4743,6 +5024,34 @@
     }
   }
 
+  // 十二宮表的宮名連到方法頁宮義對照表的那一列（宮義本身不進個人的盤）。連結只給畫面；
+  // 匯出讀 canonical sections，不帶連結。
+  const HOUSE_MEANING_HREF = "/zh-TW/methods#house-meaning-";
+  const HOUSE_NAME_COLUMN = "名稱";
+
+  /**
+   * 一張表要連結的格：{ column, rows: (string|null)[] }；這張表沒有連結時回 null。
+   * 列以回應的 places 逐列核對（宮號與宮名都要對上），對不上的列不連，不由中文名稱反查宮號。
+   */
+  function tableLinks(sectionId, table, sourceResponse) {
+    if (sectionId !== "classical_classifications" || !isRecord(table) || table.title !== CLASSICAL_PLACES_TITLE
+      || !Array.isArray(table.rows) || !Array.isArray(table.columns) || !isRecord(sourceResponse)) return null;
+    const derived = isRecord(sourceResponse.derived_methods) ? sourceResponse.derived_methods : {};
+    const module = derived.classical_classifications;
+    const places = isRecord(module) && Array.isArray(module.places) ? module.places.filter(isRecord) : [];
+    const column = table.columns.indexOf(HOUSE_NAME_COLUMN);
+    if (column < 1 || places.length !== table.rows.length) return null;
+    const rows = places.map((place, index) => {
+      const row = table.rows[index];
+      const number = place.place;
+      const ok = Array.isArray(row) && Number.isInteger(number) && number >= 1 && number <= 12
+        && typeof place.name_zh === "string" && place.name_zh !== ""
+        && row[0] === `第 ${number} 宮` && row[column] === place.name_zh;
+      return ok ? `${HOUSE_MEANING_HREF}${number}` : null;
+    });
+    return rows.some(Boolean) ? { column, rows } : null;
+  }
+
   /**
    * canonical document -> 可渲染的節點樹。
    *
@@ -4787,7 +5096,7 @@
     const warnings = Array.isArray(dossier.warnings) ? dossier.warnings : [];
     return {
       header: {
-        sampling_callout: samplingCallout(exportDocument.sections),
+        birth_time_summary: birthTimeSummary(exportDocument.source_response),
         warnings: warnings.filter(
           (warning) => warning.code !== "provisional_method_result"
         ).map((warning) => ({
@@ -4811,6 +5120,7 @@
           section.notes.map((note) => ({ type: explainFolded(section.id, note) ? "explain" : "note", text: note })),
           section.tables.map((table) => {
             const points = tablePoints(section.id, table, exportDocument.source_response);
+            const links = tableLinks(section.id, table, exportDocument.source_response);
             return {
               type: "table",
               title: table.title,
@@ -4819,6 +5129,8 @@
               ...(table.variant ? { variant: table.variant } : {}),
               // 圖表連動的點鍵（只給畫面）；這張表不連動時沒有這個鍵。
               ...(points ? { points } : {}),
+              // 格內連結（只給畫面）：十二宮表的宮名連到方法頁宮義對照表。
+              ...(links ? { links } : {}),
             };
           }),
           // 出處收進畫面上的「出處」摺疊；匯出讀 canonical sections，照常逐條印出。
@@ -4828,22 +5140,6 @@
           }))
         ),
       })),
-    };
-  }
-
-  /**
-   * 結果頁頂端重述取樣摘要的第一行，連到敏感度區。
-   * 文字直接取自同一張摘要圖，不另寫一份結論；沒有摘要圖（精確時刻、取樣被拒）時為 null。
-   */
-  function samplingCallout(sections) {
-    const section = sections.find((item) => item.id === "sensitivity");
-    const figure = section && Array.isArray(section.figures) ? section.figures[0] : null;
-    if (!figure) return null;
-    return {
-      label: section.title,
-      lead: figure.lead,
-      link_text: "看取樣摘要",
-      target_id: "section-sensitivity",
     };
   }
 
@@ -4929,6 +5225,8 @@
     receiptStatus,
     buildSections,
     buildViewTree,
+    birthTimeSummary,
+    changedPathsText,
     EXPLAIN_FOLDED_PREFIXES,
     markStale,
     printBriefRows,

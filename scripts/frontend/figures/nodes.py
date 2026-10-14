@@ -123,7 +123,7 @@ def _curve_panel(d: dict, spells: list, d0: float, d1: float, box: tuple, wide: 
     for a, b in spells:
         a, b = max(a, d0), min(b, d1)
         if a < b:
-            out.append(_fx.rect(X(a), bar, max(X(b) - X(a), 2), 12 if wide else 10, "fx-b-caz"))
+            out.append(_fx.rect(X(a), bar, max(X(b) - X(a), 2), 12 if wide else 10, "fx-fill-solid"))
     return out
 
 
@@ -146,7 +146,7 @@ def _curve(layout: str, fid: str, d: dict, spells: list, bound: _fx.Bound) -> st
             out += _curve_panel(d, spells, d0, d1, (46, 326, top, top + 118), False, bound)
         legend = 278 + 118 + 64
     x0 = 92 if wide else 14
-    out.append(_fx.rect(x0, legend - 11, 18, 12 if wide else 10, "fx-b-caz"))
+    out.append(_fx.rect(x0, legend - 11, 18, 12 if wide else 10, "fx-fill-solid"))
     out.append(_fx.text(x0 + 26, legend, "實心短條：密切交點往前走（順行）的時段" if wide
                         else "實心短條：密切交點順行的時段", "fx-t fx-small"))
     if wide:
@@ -391,7 +391,7 @@ def _histogram(layout: str, fid: str, dist: dict, texts: dict, bound: _fx.Bound)
         out.append(_fx.rect(a, y, b - a, B - y, "fx-track"))
         hatch_end = min(b, X(median))
         if hatch_end > a:
-            out.append(_fx.rect(a, y, hatch_end - a, B - y, "fx-b-beam"))
+            out.append(_fx.rect(a, y, hatch_end - a, B - y, "fx-fill-hatch"))
     mx = X(median)
     out.append(_fx.line(mx, T - (14 if wide else 8), mx, B, "fx-dash"))
     for t in (0, 0.5, 1, 1.5, 2):

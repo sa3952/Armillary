@@ -31,7 +31,12 @@ from .core.birth_time_sensitivity import (
 )
 from .core import monthly_profections
 from .core.module_state import MODULE_STATUSES
-from .response_projection import DEFAULT_CHART_PROJECTION, _keep, _kept_tree
+from .response_projection import (
+    DEFAULT_CHART_PROJECTION,
+    _keep,
+    _kept_tree,
+    project_chart_response,
+)
 from .schemas import ChartProjection
 
 # The same default as /api/chart: the page view, with the trace by name.
@@ -96,6 +101,13 @@ ANNUAL_PAGE_KEPT_PATHS: tuple[str, ...] = (
     f"natal_lots.{{{_STATE},method_status,sect_status,sect_applied,sect_in_near_horizon_band,"
     "house_system_code,sensitivity_state,samples}",
     "natal_lots.lots[].{lot_method_id,source_ref,longitude,sign,house,same_value_both_candidates}",
+    # The solar-return chart's head; its `chart` is the /api/chart page view of
+    # the detailed chart (project_annual_response), not narrowed here.
+    "solar_return_chart.{status,reason_code,method_status,method_provenance,source_ref,definition,"
+    "solar_return_profile,completed_years,year_of_life,instant,location,relocation_note,"
+    "house_system_code,house_system_note,zodiac_note,chart_options,chart_time_basis,"
+    "natal_house_system_code,natal_house_of_return_ascendant,return_planets_in_natal_houses,"
+    "profected_sign,profected_sign_ref}",
     "calculation_dossier.annual_policy.{year_boundary_definition,fractional_year_rule,"
     "solar_return_profile,house_system_code,period_display_precision,representative_samples,"
     "merge_policy,local_dates}",
@@ -494,6 +506,12 @@ def project_annual_response(response: dict[str, Any], projection: str) -> dict[s
         return response
     if projection == "page":
         page = _keep(response, _PAGE_TREE)
+        solar_return_chart = response.get("solar_return_chart")
+        if solar_return_chart is not None:
+            chart = solar_return_chart["chart"]
+            page["solar_return_chart"]["chart"] = (
+                None if chart is None else project_chart_response(chart, "page")
+            )
         return {
             "schema_version": page["schema_version"],
             "projection": {

@@ -34,16 +34,16 @@
 /* 控制項：HTML 裡帶 hidden，有 JS 才顯示 */
 .fx-switch{display:flex; flex-wrap:wrap; gap:.4rem; margin:0 0 .7rem}
 .fx-switch[hidden], .fx-scrub[hidden], .fx-readout[hidden], [data-fx-notes][hidden]{display:none}
-.fx-switch button{font:inherit; font-size:.9rem; min-height:44px; padding:.35rem .9rem; border:1px solid var(--fx-ink);
+.fx-switch button{font:inherit; font-size:var(--fs-note); min-height:44px; padding:.35rem .9rem; border:1px solid var(--fx-ink);
   background:transparent; color:var(--fx-ink); border-radius:var(--radius); cursor:pointer}
 .fx-switch button[aria-pressed="true"]{background:var(--fx-ink); color:var(--paper)}
 .fx-switch button:focus-visible, .fx-scrub input:focus-visible{outline:3px solid var(--fx-hi); outline-offset:2px}
-.fx-scrub{display:flex; align-items:center; gap:.8rem; margin:0 0 .7rem; font-size:.9rem}
+.fx-scrub{display:flex; align-items:center; gap:.8rem; margin:0 0 .7rem; font-size:var(--fs-note)}
 .fx-scrub input{flex:1; max-width:28rem; min-height:44px; accent-color:var(--fx-hi)}
-.fx-readout{min-height:3.7em; margin:.6rem 0 0; padding:.55rem .8rem; font-size:.92rem; line-height:1.75;
+.fx-readout{min-height:3.7em; margin:.6rem 0 0; padding:.55rem .8rem; font-size:var(--fs-aside); line-height:1.75;
   background:var(--paper); border-left:3px solid var(--fx-hi); max-width:var(--measure-cjk)}
 .ar-fig.fx figcaption{font-family:var(--fx-face)}
-.fx-data{margin-top:var(--s1); font-size:.88rem}
+.fx-data{margin-top:var(--s1); font-size:var(--fs-note)}
 .fx-data summary{cursor:pointer; color:var(--ink-dim); min-height:44px; padding:.6rem 0; box-sizing:border-box}
 .fx-data .ar-scroll{margin:0}
 .fx-table tr.is-active th, .fx-table tr.is-active td{background:var(--paper)}
@@ -65,12 +65,12 @@
 .fx .fx-hair{stroke:var(--fx-dim); stroke-width:.6}
 .fx .fx-hit{fill:transparent}
 .fx .fx-row{outline:none}
-/* 填法：焦傷圖的距離帶名（caz／com／beam）與中性的別名（實心、交叉線、單線、點、空白）同值，
- * 其他文章的圖用中性的別名 */
+/* 填法：焦傷圖的距離帶名（caz／com／beam、帶界線edge、放大框底inset-bg）與中性的別名
+ * （實心、交叉線、單線、點、空白、細界線）同值，其他文章的圖一律用中性的別名 */
 .fx .fx-b-caz, .fx .fx-fill-solid{fill:var(--fx-ink)}
 .fx .fx-b-com, .fx .fx-fill-cross{fill:url(#fx-h2)}
 .fx .fx-b-beam, .fx .fx-fill-hatch{fill:url(#fx-h1)}
-.fx .fx-b-edge{stroke:var(--fx-ink); stroke-width:.8}
+.fx .fx-b-edge, .fx .fx-edge{stroke:var(--fx-ink); stroke-width:.8}
 .fx .fx-b-caz-in{fill:var(--fx-ink); fill-opacity:.82}
 .fx .fx-exc{fill:var(--paper); fill-opacity:.85}
 .fx .fx-exc-edge{stroke:var(--fx-ink); stroke-width:1.2; stroke-dasharray:5 3}

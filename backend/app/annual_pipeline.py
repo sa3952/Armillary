@@ -26,14 +26,23 @@ register /api/chart names (``method_sources.method_source_register_receipt``);
 from __future__ import annotations
 
 import datetime as dtmod
+import hashlib
 from fractions import Fraction
-from typing import Any, Literal
+from typing import Any, Final, Literal
 
 from zoneinfo import ZoneInfo
 
 import swisseph as swe
 
-from .chart_pipeline import SCHEMA_VERSION, JsonObject, NatalAnchor, compute_natal_anchor
+from .chart_pipeline import (
+    SCHEMA_VERSION,
+    JsonObject,
+    NatalAnchor,
+    compute_chart_response,
+    compute_natal_anchor,
+)
+from .ephemeris import FullEphemerisRequiredError, input_files_unchanged_since
+from .frontend_release import canonical_json_bytes
 from .core.birth_time_sensitivity import (
     DIFFERS_BETWEEN_SAMPLES,
     NOT_APPLICABLE_STATE,
@@ -54,6 +63,7 @@ from .core.frame_compatibility import (
     body_longitude_frame_label,
     method_frame_state,
 )
+from .core.house_placements import _house_for_longitude
 from .core.method_status import method_receipt
 from .core.module_state import (
     MODULE_STATUSES,
@@ -100,6 +110,8 @@ from .core.year_boundary import (
     lifetime_window,
     solar_return_profile,
     solver_receipt,
+    ROOT_COUNT_UNEXPECTED,
+    instant_receipt,
     year_boundary_record,
 )
 from .method_sources import ANNUAL_ROUTE_STATUS, method_source_register_receipt, resolve
@@ -111,6 +123,7 @@ from .schemas import (
     OptionsInput,
     TimezoneInput,
 )
+from .response_projection import project_chart_response
 from .settings import ANNUAL_ROUTE_ENVIRONMENT_VARIABLE
 
 # One version sequence with /api/chart: the annual response names the main
@@ -148,6 +161,40 @@ ANNUAL_WARNING_CODES = (
 )
 
 
+# The solar-return chart (cast at SR_N, the start of the requested year).
+SOLAR_RETURN_CHART_PRODUCER = "app.chart_pipeline.compute_chart_response"
+REASON_SR_CHART_REQUIRES_EXACT_BIRTH_TIME = "solar_return_chart_requires_exact_birth_time"
+REASON_FIRST_YEAR_HAS_NO_SOLAR_RETURN = "first_year_has_no_solar_return"
+SOLAR_RETURN_CHART_REASON_CODES = (
+    REASON_SR_CHART_REQUIRES_EXACT_BIRTH_TIME,
+    REASON_FIRST_YEAR_HAS_NO_SOLAR_RETURN,
+    ROOT_COUNT_UNEXPECTED,
+)
+SOLAR_RETURN_LOCATION_SOURCES = ("birth_location", "solar_return_location")
+# The chart's options other than the house system.  A product default kept in
+# one place so the method research can change it: the /api/chart defaults
+# (bodies, nodes, angles, houses, aspects) with the Lots and domicile／exaltation
+# switched on.
+SOLAR_RETURN_CHART_FIXED_OPTIONS: dict[str, Any] = {
+    "include_houses": True,
+    "include_lots": True,
+    "include_domicile_exaltation": True,
+}
+SOLAR_RETURN_METHOD_PROVENANCE = "波斯／阿拉伯回歸傳統"
+SOLAR_RETURN_RELOCATION_NOTE = (
+    "回歸盤改用你填的地點起盤，這是 Morin 的做法（Astrologia Gallica 第 XXIII 卷，1661）；"
+    "較早的回歸傳統用出生地點。"
+)
+SOLAR_RETURN_WHOLE_SIGN_NOTE = (
+    "目前讀過的古典出處（Abū Maʿshar 經 Dykes 英譯、Morin、Gadbury）替回歸盤分宮都用象限制宮頭，"
+    "沒有一本用整宮制；整宮制是本產品的預設，不是這些出處的做法。"
+)
+SOLAR_RETURN_SIDEREAL_NOTE = (
+    "目前讀過的前現代出處沒有給恆星黃道回歸的規則；以恆星黃道計算回歸是本產品的約定。"
+)
+NATAL_PROFECTION_SIGN_REF = "annual_methods.annual_profection.profected_sign"
+
+
 class SolarReturnOutsideSupportedYearRangeError(Exception):
     """The requested year starts after 2399; an end after 2399 is only a status."""
 
@@ -183,22 +230,12 @@ class _Sample:
         return (self.natal.sect or {}).get("is_day")
 
 
-def _natal_request(req: AnnualRequest) -> ChartRequest:
-    return ChartRequest(
-        birth_time_precision=req.birth_time_precision,
-        datetime=req.datetime,
-        timezone=req.timezone,
-        location=req.location,
-        atmosphere=req.atmosphere,
-        computation_mode=req.computation_mode,
-        options=_NATAL_OPTIONS,
-    )
-
-
-def _sample_request(req: AnnualRequest, utc_text: str) -> ChartRequest:
-    # A sample is an instant the time step already resolved, so it is posed as
-    # that UTC instant (fixed offset 0) and not re-validated: a sample of a
-    # 1900-01-01 birth east of Greenwich is a 1899 UTC date.
+def _utc_instant_request(
+    req: AnnualRequest, utc_text: str, *, location, options: OptionsInput,
+) -> ChartRequest:
+    # An instant the route already resolved, posed as that UTC instant (fixed
+    # offset 0) and not re-validated: a sample of a 1900-01-01 birth east of
+    # Greenwich is a 1899 UTC date.
     moment = dtmod.datetime.fromisoformat(utc_text.replace("Z", "+00:00"))
     return ChartRequest.model_construct(
         birth_time_precision="exact",
@@ -213,11 +250,27 @@ def _sample_request(req: AnnualRequest, utc_text: str) -> ChartRequest:
         timezone=TimezoneInput.model_construct(
             mode="fixed_offset", iana_name=None, utc_offset_hours=0.0, fold=0,
         ),
+        location=location,
+        atmosphere=req.atmosphere,
+        computation_mode=req.computation_mode,
+        options=options,
+    )
+
+
+def _natal_request(req: AnnualRequest) -> ChartRequest:
+    return ChartRequest(
+        birth_time_precision=req.birth_time_precision,
+        datetime=req.datetime,
+        timezone=req.timezone,
         location=req.location,
         atmosphere=req.atmosphere,
         computation_mode=req.computation_mode,
         options=_NATAL_OPTIONS,
     )
+
+
+def _sample_request(req: AnnualRequest, utc_text: str) -> ChartRequest:
+    return _utc_instant_request(req, utc_text, location=req.location, options=_NATAL_OPTIONS)
 
 
 def _samples(req: AnnualRequest, anchor: NatalAnchor) -> list[_Sample]:
@@ -364,6 +417,134 @@ def _year_boundary(req: AnnualRequest, samples: list[_Sample]) -> JsonObject:
             for sample in samples
         ],
     }
+
+
+def _utc_text_of_jd(jd_ut: float) -> str:
+    """The UTC label of a Swiss UT instant, to the microsecond (the finest
+    second the time step accepts)."""
+
+    year, month, day, hour, minute, second = swe.jdut1_to_utc(jd_ut, swe.GREG_CAL)
+    moment = dtmod.datetime(year, month, day, hour, minute, tzinfo=dtmod.timezone.utc)
+    moment += dtmod.timedelta(microseconds=round(second * 1e6))
+    return moment.isoformat().replace("+00:00", "Z")
+
+
+def _solar_return_location(req: AnnualRequest) -> tuple[str, Any]:
+    annual = req.annual
+    if annual.solar_return_location is None:
+        return SOLAR_RETURN_LOCATION_SOURCES[0], req.location
+    return SOLAR_RETURN_LOCATION_SOURCES[1], annual.solar_return_location
+
+
+def _solar_return_chart(
+    req: AnnualRequest, samples: list[_Sample], *, build_identity: JsonObject,
+) -> JsonObject | None:
+    """The chart of SR_N at the requested place: /api/chart's own pipeline.
+
+    SR_N is the year boundary's start, read from the same clock, so the chart
+    and the year cannot name two instants.  The chart is posed as that UTC
+    instant; its response is the detailed /api/chart response, unchanged.
+    """
+
+    annual = req.annual
+    if not annual.include_solar_return_chart:
+        return None
+    completed = annual.completed_years
+    source, location = _solar_return_location(req)
+    options = OptionsInput(
+        **SOLAR_RETURN_CHART_FIXED_OPTIONS, house_system=annual.solar_return_house_system,
+    )
+    head: dict[str, Any] = {
+        **method_receipt("solar_return_chart"),
+        "method_provenance": SOLAR_RETURN_METHOD_PROVENANCE,
+        **_source("solar_return_chart"),
+        "definition": YEAR_BOUNDARY_DEFINITION,
+        "solar_return_profile": solar_return_profile(req.computation_mode),
+        "completed_years": completed,
+        "year_of_life": completed + 1,
+        "instant": None,
+        "location": {"source": source, **location.model_dump(mode="json")},
+        "relocation_note": (
+            SOLAR_RETURN_RELOCATION_NOTE if source == SOLAR_RETURN_LOCATION_SOURCES[1] else None
+        ),
+        "house_system_code": annual.solar_return_house_system,
+        "house_system_note": (
+            SOLAR_RETURN_WHOLE_SIGN_NOTE if annual.solar_return_house_system == "W" else None
+        ),
+        "zodiac_note": (
+            SOLAR_RETURN_SIDEREAL_NOTE if req.computation_mode.zodiac == "sidereal" else None
+        ),
+        "chart_options": options.model_dump(mode="json"),
+        "chart_time_basis": "utc_instant",
+        "producer": SOLAR_RETURN_CHART_PRODUCER,
+    }
+    no_comparison = _natal_comparison(None, None, completed)
+
+    def refused(reason_code: str) -> JsonObject:
+        return {
+            "status": "not_applicable", "reason_code": reason_code, **head, **no_comparison,
+            "chart": None,
+        }
+
+    if req.birth_time_precision != "exact":
+        return refused(REASON_SR_CHART_REQUIRES_EXACT_BIRTH_TIME)
+    if completed == 0:
+        return refused(REASON_FIRST_YEAR_HAS_NO_SOLAR_RETURN)
+    anchor = _anchor_sample(samples)
+    root = anchor.clock.root(completed)
+    if root["status"] != COMPUTED:
+        # The year boundary refused an out-of-range start already; what is
+        # left is the clock's own failure status.
+        return refused(root["status"])
+    chart_request = _utc_instant_request(
+        req, _utc_text_of_jd(root["jd_ut"]), location=location, options=options,
+    )
+    chart = compute_chart_response(chart_request, build_identity=build_identity)
+    return {
+        "status": "computed",
+        "reason_code": None,
+        **head,
+        "instant": instant_receipt(root["jd_ut"]),
+        **_natal_comparison(anchor, chart, completed),
+        "chart": chart,
+    }
+
+
+def _natal_comparison(
+    anchor: _Sample | None, chart: JsonObject | None, completed: int,
+) -> JsonObject:
+    """Where the return chart's ascendant and planets fall among the natal
+    houses, and the year's profected sign: positions only, no reading."""
+
+    natal_houses = None if anchor is None else anchor.natal.houses.houses
+    natal_sign = None if anchor is None else anchor.ascendant_sign
+    comparison: dict[str, Any] = {
+        "natal_house_system_code": None if natal_houses is None else natal_houses["system_code"],
+        "natal_house_of_return_ascendant": None,
+        "return_planets_in_natal_houses": None,
+        "profected_sign": None,
+        "profected_sign_ref": NATAL_PROFECTION_SIGN_REF,
+    }
+    if chart is None:
+        return comparison
+    if natal_sign is not None:
+        comparison["profected_sign"] = profect(natal_sign, completed_years=completed)["profected_sign"]
+    if natal_houses is None:
+        return comparison
+    cusps: list[float] = natal_houses["cusps"]
+    asc = chart["astronomical_data"]["angles"].get("asc")
+    if asc is not None:
+        comparison["natal_house_of_return_ascendant"] = _house_for_longitude(asc, cusps)
+    comparison["return_planets_in_natal_houses"] = [
+        {
+            "key": body["key"],
+            "longitude": body["longitude"],
+            "natal_house": _house_for_longitude(body["longitude"], cusps),
+        }
+        for body in chart["astronomical_data"]["bodies"]
+        if body.get("longitude") is not None
+    ]
+    return comparison
 
 
 def _profection(req: AnnualRequest, samples: list[_Sample]) -> JsonObject | None:
@@ -1206,19 +1387,120 @@ def _local_date_policy(req: AnnualRequest, instants: list[float]) -> JsonObject:
     }
 
 
+# FullEphemerisRequiredError.reason when an input file changed while the year
+# was computed: the server's, so it leaves as internal_server_error.
+ANNUAL_INPUT_FILES_CHANGED = "input_files_changed_during_calculation"
+_OPTIONS_STEP_TITLE = "請求選項"
+
+
+def _bind_annual_options(trace, annual: AnnualInput) -> None:
+    """The trace's first step holds the options as sent (the Dossier contract).
+
+    The natal anchor wrote its own first step for the fixed whole-sign options
+    it runs under; on this route the options as sent are ``annual``, so they
+    take the first step and the anchor's options follow, named as fixed.
+    """
+
+    steps = trace.steps
+    assert steps and steps[0]["title"] == _OPTIONS_STEP_TITLE, "natal trace order changed"
+    natal_options = steps[0]["inputs"]
+    steps[0] = {
+        "title": _OPTIONS_STEP_TITLE,
+        "formula": "",
+        "inputs": annual.model_dump(mode="json"),
+        "result": {},
+        "note": "這次年度請求送出的全部選項；它們在計算軌跡裡，所以計算軌跡的 SHA-256 也涵蓋選項。",
+    }
+    steps.insert(1, {
+        "title": "本命錨點選項（本路由固定）",
+        "formula": "",
+        "inputs": natal_options,
+        "result": {},
+        "note": "本命錨點一律以整宮制、開啟阿拉伯點、不算相位來計算；這些不是請求送出的選項。",
+    })
+
+
+def _output_sha256(block: Any) -> str:
+    return hashlib.sha256(canonical_json_bytes(block)).hexdigest()
+
+
+def _technique_steps(
+    trace, annual_methods: dict, natal_lots: JsonObject | None, year_boundaries: JsonObject | None,
+    solar_return_chart: JsonObject | None,
+) -> None:
+    """One step per technique: its status, its profile and its output's digest.
+
+    The digest is over the block the response prints at ``response_path``
+    (Python JSON recipe of the trace receipt), so the trace receipt also binds
+    each technique's output, sample-dependent dates included.
+    """
+
+    blocks = [
+        *((key, f"annual_methods.{key}", block) for key, block in annual_methods.items()),
+        ("natal_lots", "natal_lots", natal_lots),
+        ("year_boundaries", "year_boundaries", year_boundaries),
+        ("solar_return_chart", "solar_return_chart", solar_return_chart),
+    ]
+    for key, path, block in blocks:
+        trace.add(
+            f"年度技法：{key}",
+            formula="輸出 SHA-256 ＝ sha256(Python json.dumps(該區塊, ensure_ascii=False, sort_keys=True, separators=(',', ':')))",
+            inputs={"response_path": path},
+            result={
+                "status": MODULE_STATUSES[0] if block is None else block.get("status", MODULE_STATUSES[1]),
+                "profile": None if block is None else block.get(
+                    "profile", block.get("solar_return_profile")),
+                "output_sha256": None if block is None else _output_sha256(block),
+            },
+        )
+
+
+# The time-lord techniques the route computes, in the order the response
+# prints them under `annual_methods`.  The public pages name the techniques
+# this site offers from these keys (scripts/frontend/build_pages.py).
+ANNUAL_TECHNIQUES: Final = {
+    "annual_profection": _profection,
+    "firdaria": _firdaria,
+    "zodiacal_releasing": _zodiacal_releasing,
+    "decennials": _decennials,
+    "monthly_profection": _monthly_profection,
+}
+
+
+def _solar_return_chart_step(trace, block: JsonObject) -> None:
+    chart = block["chart"]
+    trace.add(
+        "太陽回歸盤",
+        formula="在 SR_N（本年年界的起點）與所選地點，以本命盤同一條計算管線起盤",
+        inputs={
+            "completed_years": block["completed_years"],
+            "location_source": block["location"]["source"],
+            "house_system_code": block["house_system_code"],
+            "chart_time_basis": block["chart_time_basis"],
+        },
+        result={
+            "status": block["status"],
+            "reason_code": block["reason_code"],
+            "instant_jd_ut": (block["instant"] or {}).get("jd_ut"),
+            "chart_jd_ut": None if chart is None else chart["astronomical_data"]["time"]["jd_ut"],
+            "chart_trace_sha256": None if chart is None else (
+                chart["calculation_dossier"]["trace_receipt"]["python_json_serialization_sha256"]),
+        },
+        note=(
+            "回歸瞬間與年界讀同一個太陽回歸時鐘；星盤本身的計算軌跡在 solar_return_chart.chart "
+            "（detailed）裡，這一步記下它的 SHA-256。"
+        ),
+    )
+
+
 def compute_annual_response(req: AnnualRequest, *, build_identity: JsonObject) -> JsonObject:
     anchor = compute_natal_anchor(_natal_request(req))
     samples = _samples(req, anchor)
     year_boundary = _year_boundary(req, samples)
-    annual_methods = {
-        "annual_profection": _profection(req, samples),
-        "firdaria": _firdaria(req, samples),
-        "zodiacal_releasing": _zodiacal_releasing(req, samples),
-        "decennials": _decennials(req, samples),
-        "monthly_profection": _monthly_profection(req, samples),
-    }
+    annual_methods = {key: build(req, samples) for key, build in ANNUAL_TECHNIQUES.items()}
     natal_lots = _natal_lots(req, samples)
     year_boundaries = _year_boundaries(req, samples, annual_methods["annual_profection"])
+    solar_return_chart = _solar_return_chart(req, samples, build_identity=build_identity)
     _localize_year_boundary(year_boundary, req.timezone)
     dated: list[float] = [
         instant["jd_ut"]
@@ -1227,6 +1509,7 @@ def compute_annual_response(req: AnnualRequest, *, build_identity: JsonObject) -
     ]
     _date_periods(annual_methods, req.timezone, dated)
     trace = anchor.time.trace
+    _bind_annual_options(trace, req.annual)
     trace.add(
         "年界（第 N 次太陽回歸）",
         formula="SR_N：太陽黃經第 N 次回到本命太陽黃經的瞬間；第 N+1 年 = [SR_N, SR_N+1)",
@@ -1241,6 +1524,9 @@ def compute_annual_response(req: AnnualRequest, *, build_identity: JsonObject) -
             "期間邊界是出生瞬間加上所選年模型的日數。"
         ),
     )
+    if solar_return_chart is not None:
+        _solar_return_chart_step(trace, solar_return_chart)
+    _technique_steps(trace, annual_methods, natal_lots, year_boundaries, solar_return_chart)
     trace_steps = trace.as_list()
     response: dict[str, Any] = {
         "schema_version": ANNUAL_SCHEMA_VERSION,
@@ -1259,6 +1545,7 @@ def compute_annual_response(req: AnnualRequest, *, build_identity: JsonObject) -
         "year_boundaries": year_boundaries,
         "annual_methods": annual_methods,
         "natal_lots": natal_lots,
+        "solar_return_chart": solar_return_chart,
         "calculation_dossier": {
             "annual_policy": {
                 "year_boundary_definition": YEAR_BOUNDARY_DEFINITION,
@@ -1289,4 +1576,19 @@ def compute_annual_response(req: AnnualRequest, *, build_identity: JsonObject) -
         },
         "calculation_trace": trace_steps,
     }
+    # Every Swiss call of the year (the natal anchor, the other samples, the
+    # solar-return roots, the Sun's 30-degree months) is behind this point.  The
+    # anchor read the input files' identity before Swiss bound them; if a file
+    # was renamed, replaced or rewritten since, which bytes those calls read
+    # cannot be attributed.  /api/chart withdraws its per-object full-ephemeris
+    # claims and warns; this response carries no such claim to withdraw, so it
+    # is refused, as a Swiss fallback the manifest did not predict is
+    # (internal_server_error, main._handle_domain_error).
+    if not input_files_unchanged_since(anchor.time.ephemeris_input_watch):
+        raise FullEphemerisRequiredError(
+            operation="年度計算",
+            jd_ut=anchor.time.jd_ut,
+            retflag=0,
+            reason=ANNUAL_INPUT_FILES_CHANGED,
+        )
     return response

@@ -2,8 +2,9 @@
 
     <section class="compose" aria-labelledby="compose-heading">
       <div class="eyebrow">計算 · COMPOSE</div>
-      <h1 id="compose-heading">排一張本命盤，每一步都能檢查。</h1>
-      <p class="lede">輸入你真正知道的程度；不知道的部分，不替你假裝精確。出生資料只用於本次計算，回應送出後伺服器不留副本。</p>
+      <h1 id="compose-heading">線上排古典西洋占星本命盤<span class="h1-qual">（整宮制等七種宮位制）</span></h1>
+      <p class="kicker">排一張本命盤，每一步都能檢查。</p>
+      <p class="lede">在這裡排古典西洋占星本命盤：輸入出生日期、時間與地點，算出行星位置、上升點、宮位（整宮制等七種宮位制可選）與界、三分性等尊貴，附出生時刻換成世界時的時間收據。輸入你真正知道的程度；不知道的部分，不替你假裝精確。出生資料只用於本次計算，回應送出後伺服器不留副本。</p>
       <p class="status-line" id="bootstrap-status" role="status" aria-live="polite" data-tone="warning">計算介面正在載入。若這段訊息持續顯示，代表頁面未完整載入；請重新整理，仍有問題請稍後再試。</p>
 
       <!-- 三種模式：只是預先勾好的一組選項，送出的仍是同一份選項；收據照舊列出實際生效的每一項。
@@ -26,6 +27,7 @@
             <span><b>自訂</b><span>我要自己挑每個選項：從快速看盤的設定開始，全部選項攤開；匯出預設帶驗算資料。結果分六章。</span></span>
           </label>
         </div>
+        <p class="note mode-choice-timelords" id="mode-choice-timelords">古典完整會在星盤算完後接著排出年度時間主星：{{time_lord_techniques}}。規則與出處見〈<a href="/zh-TW/methods/time-lords">年度時間主星的規則與出處</a>〉。</p>
         <p class="mode-choice-actions"><button type="button" class="ghost small glossary-open" data-glossary-open>名詞解釋</button></p>
       </fieldset>
 
@@ -320,8 +322,8 @@
         <p class="note" id="print-privacy-note">這份紙本含出生時刻與精確座標；即使刪去座標，星盤數值本身也能推回出生時間與地點。</p>
       </section>
 
-      <!-- 出生時刻敏感度的第一行結論；內容由 calculate.js 依 view tree 填入。 -->
-      <p class="sampling-callout" id="sampling-callout" hidden></p>
+      <!-- 出生時間不確定時，結果最上方一行（每一章都看得到），連到星盤圖之後的白話摘要。 -->
+      <p class="birth-time-notice" id="birth-time-notice" hidden></p>
 
       <ul class="warnings" id="warnings" hidden></ul>
 
@@ -372,6 +374,11 @@
         <!-- 一頁摘要的位置表：畫面上不顯示；紙上排在圖的右邊、速覽之下。calculate.js 算完時依畫面上的表格原字填入。 -->
         <div class="print-brief print-brief-tables" id="print-brief-tables"></div>
       </div>
+
+      <!-- 出生時間不確定（約略時辰或只有日期）時的白話摘要：接在星盤圖與速覽之後，哪些結果會變、
+           大約幾點變；細節連到「收據與匯出」一章的出生時刻敏感度。內容（含 h3 標題）由 calculate.js 依 view tree
+           填入，所以這裡是 role=region 的 div：靜態頁上沒有標題的 section 會是無名的大綱項目。 -->
+      <div class="sampling-callout" id="sampling-callout" role="region" hidden aria-labelledby="sampling-callout-title"></div>
 
       <!-- 一頁摘要的隱私句與頁尾：畫面上不顯示。 -->
       <div class="print-brief print-brief-body" id="print-brief-body">
@@ -438,7 +445,7 @@
         </div>
         <div class="annual-start" id="annual-start">
           <button type="button" class="ghost small" id="annual-load">排出時間主星</button>
-          <p class="note">用上面這張本命盤的出生資料，再請計算服務算一次<button type="button" class="term" data-term="profection">年度小限</button>（選定某一年時，另外取那一年的<button type="button" class="term" data-term="monthly_profection">月小限</button>）、<button type="button" class="term" data-term="firdaria">法達</button>（firdaria）、<button type="button" class="term" data-term="zodiacal_releasing">黃道釋放</button>（zodiacal releasing）與<button type="button" class="term" data-term="decennials">十年期</button>（decennials）；不必再填任何資料，伺服器不留副本。</p>
+          <p class="note">用上面這張本命盤的出生資料，再請計算服務算一次<button type="button" class="term" data-term="profection">年度小限</button>（選定某一年時，另外取那一年的<button type="button" class="term" data-term="monthly_profection">月小限</button>）、<button type="button" class="term" data-term="firdaria">法達</button>（firdaria）、<button type="button" class="term" data-term="zodiacal_releasing">黃道釋放</button>（zodiacal releasing）與<button type="button" class="term" data-term="decennials">十年期</button>（decennials）；不必再填任何資料，伺服器不留副本。排出之後，可以再替選定的那一年另外排一張太陽回歸盤（solar return）。</p>
         </div>
         <p class="status-line" id="annual-status" role="status" aria-live="polite"></p>
         <div class="annual-body" id="annual-body" hidden></div>
@@ -472,6 +479,8 @@
         <p class="note" id="export-data-note">匯出檔含出生時刻與計算結果；即使不列座標，星盤數值本身也能推回出生時間與地點，刪掉日期欄位也無法匿名。</p>
         <p class="note">檔名不含這些資料，但內容含有；請自行決定存放位置。</p>
       </div>
+      <!-- 快速看盤沒有「時間主星」一章：結果最後一行指給你看；按了只換模式（自訂只移焦點），不另外送請求。 -->
+      <p class="note chapter-timelords-entry" id="chapter-timelords-entry" hidden>另有時間主星：改選<button type="button" class="ghost small chapter-mode-switch" data-mode="classical">古典完整</button>或<button type="button" class="ghost small chapter-mode-switch" data-mode="custom" data-focus-only>自訂</button>。</p>
       </section>
 
 
@@ -489,28 +498,60 @@
     <section class="calc-faq" aria-labelledby="faq-heading">
       <h2 id="faq-heading">常見問題</h2>
       <details>
+        <summary>上升星座怎麼查？</summary>
+        <p>在本頁填出生日期、出生時間，從目錄選出生地點，按「開始排盤」；結果「總覽」章的第一張表就是太陽、月亮與上升星座。上升點要靠出生時間與地點，時間差幾分鐘就可能換星座，見〈<a href="/zh-TW/blog/birth-time-sensitivity">差五分鐘，上升星座與宮位會怎麼變</a>〉。</p>
+      </details>
+      <details>
         <summary>不知道出生時間，可以排星盤嗎？</summary>
-        <p>可以選「只知道日期」或「只知道約略小時」。只知道約略小時，上升點與宮位會標出這一小時內有沒有換、在哪段時間換；只知道日期，就不給上升點與宮位。行星所在星座通常仍然可用。</p>
+        <p>可以選「只知道日期」或「只知道約略小時」。只知道約略小時，上升點與宮位會標出這一小時內有沒有換、在哪段時間換；只知道日期，就不給上升點與宮位。行星所在星座通常仍然可用。見〈<a href="/zh-TW/blog/unknown-birth-time">不知道出生時間，能排星盤嗎？</a>〉與〈<a href="/zh-TW/blog/approximate-birth-hour">只知道大概幾點，上升與宮位在哪一刻會變</a>〉。</p>
       </details>
       <details>
         <summary>為什麼兩個網站算出的上升星座不一樣？</summary>
-        <p>常見原因有時區、夏令時間、經緯度、回歸或恆星黃道。渾儀會把用了哪一套寫在結果裡。</p>
+        <p>常見原因有時區、夏令時間、經緯度、回歸或恆星黃道。渾儀會把用了哪一套寫在結果裡。各種原因讓上升點差多少，見〈<a href="/zh-TW/blog/chart-calculation-accuracy">線上排盤準不準？</a>〉。</p>
       </details>
       <details>
-        <summary>上升星座查詢表為什麼可能不準？</summary>
-        <p>查表通常假設某個緯度和標準時，沒有計入出生地經度和夏令時間。</p>
+        <summary>上升星座查詢表準嗎？</summary>
+        <p>查表通常假設某個緯度和標準時，沒有計入出生地經度和夏令時間。在臺北、金門、夏令時間年份與國外各會查錯多少，見〈<a href="/zh-TW/blog/rising-sign-tables">上升星座查詢表為什麼常常不準</a>〉。</p>
+      </details>
+      <details>
+        <summary>中天星座是什麼？</summary>
+        <p>中天（MC）是黃道在出生地上方子午圈的那一點，它落在哪個星座就是中天星座。渾儀在結果「位置」章的「軸點」表列出它的星座與度數；它和上升點一樣要靠出生時間，只知道日期時不算。整宮制裡，中天不一定落在第十宮，見〈<a href="/zh-TW/blog/house-systems-explained">宮位制有哪些？</a>〉。</p>
+      </details>
+      <details>
+        <summary>民國年、昭和年怎麼換成西元？</summary>
+        <p>民國年加 1911，昭和年加 1925（大正加 1911、明治加 1867），月與日不變；改元那一年要核對日期。本頁出生日期下方的「換算助手」可以直接換算並填入，農曆與時辰目前不換算。見〈<a href="/zh-TW/blog/taiwan-era-years-birth-time">民國年、昭和年怎麼換算西元？</a>〉。</p>
       </details>
       <details>
         <summary>出生在夏令時間的年份，要先減一小時嗎？</summary>
-        <p>在渾儀不用，照出生紀錄的鐘面時間填。</p>
+        <p>在渾儀不用，照出生紀錄的鐘面時間填。哪些年份實施過、哪些鐘點不存在或出現兩次，見〈<a href="/zh-TW/blog/taiwan-time-zone-history">臺灣夏令時間出生，排盤要減一小時嗎？</a>〉。</p>
       </details>
       <details>
         <summary>西洋占星要換真太陽時嗎？</summary>
-        <p>不用。渾儀把當地鐘面時間換成世界時，再用出生地經度算地方恆星時。先換真太陽時反而會把經度重複計算。</p>
+        <p>不用。渾儀把當地鐘面時間換成世界時，再用出生地經度算地方恆星時。先換真太陽時反而會把經度重複計算。見〈<a href="/zh-TW/blog/true-solar-time">西洋占星要不要換真太陽時？</a>〉。</p>
+      </details>
+      <details>
+        <summary>宮位制有哪些？</summary>
+        <p>渾儀提供七種：整宮、等分宮、Porphyry、Alcabitius、Campanus、Regiomontanus、Placidus，預設整宮制；選「古典完整」或「自訂」後，在「計算口徑」裡切換，一次算一種。七種各怎麼切天空，見〈<a href="/zh-TW/blog/house-systems-explained">宮位制有哪些？七種宮位制怎麼把天空切成十二宮</a>〉。</p>
       </details>
       <details>
         <summary>整宮制和 Placidus 哪個準？</summary>
-        <p>計算上沒有對錯，是兩種不同的切宮規則。渾儀四種都提供，不替你排序。</p>
+        <p>計算上沒有對錯，是兩種不同的切宮規則。渾儀提供包括這兩種在內的七種宮位制，不替你排序。見〈<a href="/zh-TW/blog/whole-sign-vs-placidus">整宮制與 Placidus 差在哪</a>〉。</p>
+      </details>
+      <details>
+        <summary>北交點（龍頭）是真交點還是平均交點？</summary>
+        <p>渾儀的正式技法採平均交點，理由是歷史的，不是精度的；軟體常說的「真交點」其實是密切交點，也並列輸出，兩者最多差將近 2 度。見〈<a href="/zh-TW/blog/mean-vs-osculating-node">北交點的真交點與平均交點差多少</a>〉。</p>
+      </details>
+      <details>
+        <summary>計算準不準？跟什麼比對過？</summary>
+        <p>主要天體位置曾與另一條以 JPL DE442、Astropy 與 ERFA 組成的管線，在 1990–2026 年逐小時比較；比對範圍、門檻與例外列在〈<a href="/zh-TW/validation">驗證</a>〉。讓上升點差上幾度的，通常是出生時間、時區與座標這些輸入，不是星曆，見〈<a href="/zh-TW/blog/chart-calculation-accuracy">線上排盤準不準？星盤計算的誤差從哪裡來</a>〉。</p>
+      </details>
+      <details>
+        <summary>怎麼自己驗算排出來的星盤？</summary>
+        <p>每張盤都附計算收據，在結果最下方的「技術細節與驗算資料」：寫出時間怎麼換算、用了哪一版程式與哪些星曆檔，以及整串計算步驟的雜湊；用同一份輸入再算一次、比對雜湊即可。見〈<a href="/zh-TW/blog/verify-chart-calculation">星盤怎麼驗算？</a>〉。</p>
+      </details>
+      <details>
+        <summary>線上排盤要錢嗎？要註冊嗎？</summary>
+        <p>目前免費，也不需註冊：沒有帳號，不要求 email。出生資料只用於這一次計算，回應送出後伺服器不留副本；各項承諾由哪一層執行，見〈<a href="/zh-TW/trust">信任</a>〉。</p>
       </details>
       <details>
         <summary>可以排印度占星（吠陀）星盤嗎？</summary>
@@ -521,12 +562,12 @@
         <p>不會，只計算。</p>
       </details>
       <details>
-        <summary>有福點（幸運點）嗎？</summary>
-        <p>有，名稱是「命運點」（Lot of Fortune）。依日盤或夜盤採用對應的公式；太陽靠近地平時，日盤和夜盤公式的結果都列出。</p>
+        <summary>福點（幸運點）在哪裡查？</summary>
+        <p>渾儀叫它「命運點」（Lot of Fortune）。選「古典完整」就會一起算，列在結果「古典判斷」章的「阿拉伯點」；用「自訂」時，在進階選項的「點與軸」勾「阿拉伯點」。依日盤或夜盤採用對應的公式；太陽靠近地平時，日盤和夜盤公式的結果都列出。公式與出處見〈<a href="/zh-TW/methods#lots">方法頁：阿拉伯點</a>〉。</p>
       </details>
       <details>
         <summary>可以排合盤、行運或太陽回歸盤嗎？</summary>
-        <p>目前都沒有。</p>
+        <p>太陽回歸盤可以：選「古典完整」或「自訂」，算完本命盤後到「時間主星」一章排出時間主星，選一個年度，再按「排出第 N 年的太陽回歸盤」。太陽回歸盤是太陽回到出生時黃經位置那一刻的星盤，在出生地起盤、宮位制預設與本命盤相同，需要確切的出生時間；只列計算結果，不替你解盤，也不預測。合盤與行運目前沒有。</p>
       </details>
     </section>
 </div>

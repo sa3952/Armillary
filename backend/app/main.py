@@ -36,6 +36,7 @@ from .schemas import (
     StrictJsonBodyError,
     check_strict_json_body,
     check_strict_query,
+    request_field_names,
     validation_issues,
 )
 from .refusals import (
@@ -177,14 +178,10 @@ async def _handle_http_exception(request: Request, exc: Exception):
     )
 
 
-def _declared_parameter_names(request: Request) -> frozenset[str]:
-    # Query parameters are declared by the routes, not by the body models.
-    return frozenset(
-        parameter.name
-        for route in getattr(request.scope.get("app"), "routes", ())
-        if isinstance(route, APIRoute)
-        for parameter in route.dependant.query_params
-    )
+def _declared_request_names(request: Request) -> frozenset[str]:
+    # The answering route's own names only (RT-SEC-03); a route that declared
+    # nothing, or none at all, leaves every name masked.
+    return getattr(request.scope.get("route"), "declared_request_names", frozenset())
 
 
 async def _handle_request_validation(
@@ -192,7 +189,7 @@ async def _handle_request_validation(
     exc: RequestValidationError,
 ):
     issues = validation_issues(
-        exc.errors(), parameter_names=_declared_parameter_names(request)
+        exc.errors(), declared_names=_declared_request_names(request)
     )
     # A body the parser never read is a syntax refusal, not a field finding.
     if any(issue["type"] == "json_invalid" for issue in issues):
@@ -234,14 +231,22 @@ class _StrictJsonRoute(APIRoute):
         declared_query = frozenset(
             parameter.alias for parameter in self.dependant.query_params
         )
+        declared_fields = request_field_names(
+            self.body_field.field_info.annotation if self.body_field is not None else None
+        )
+        # Read back by the validation handler: a refusal names only these.
+        self.declared_request_names = declared_fields | declared_query
 
         # One query rule for every API route.  A GET or HEAD route declares no
         # query, so any parameter is refused, as on the POST routes, without
         # echoing it.
         async def strict_handler(request: Request) -> Response:
-            check_strict_query(request.query_params.multi_items(), declared_query)
+            check_strict_query(
+                request.query_params.multi_items(), declared_query,
+                request.scope.get("query_string", b""),
+            )
             if has_body:
-                check_strict_json_body(await request.body())
+                check_strict_json_body(await request.body(), declared_fields)
             return await handler(request)
 
         return strict_handler

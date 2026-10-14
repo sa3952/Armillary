@@ -233,6 +233,32 @@ def test_a_request_for_an_undeclared_host_is_refused_before_any_budget():
         "/api/chart", json=payload, headers={"host": "anything.example"}).status_code == 200
 
 
+def test_rt_sec_02_more_than_one_host_header_is_refused_as_undeclared():
+    """RFC 9110 §7.2 and RFC 9112 §3.2: a request with more than one Host is
+    refused.  The check once read the last copy while Starlette reads the
+    first, so the two layers could disagree about which host was asked for."""
+    from app.request_limits import ChartRequestBoundary
+
+    declared, other = b"alpha.example.invalid", b"scanner.example"
+    body = ({"type": "http.request", "body": b"{}", "more_body": False},)
+    for hosts in ((other, declared), (declared, other), (declared, declared), ()):
+        scope = _scope(JSON, (b"content-length", b"2"), *((b"host", value) for value in hosts))
+        sent, called = _drive(lambda scope, receive, send: ChartRequestBoundary(
+            _record_call, expected_host="alpha.example.invalid")(scope, receive, send), scope, body)
+        starts = [message for message in sent if message["type"] == "http.response.start"]
+        assert [start["status"] for start in starts] == [404], hosts
+        assert scope["state"]["armillary.boundary_reason.v1"] == "undeclared_host", hosts
+    scope = _scope(JSON, (b"content-length", b"2"), (b"Host", declared))
+    sent, _ = _drive(lambda scope, receive, send: ChartRequestBoundary(
+        _record_call, expected_host="alpha.example.invalid")(scope, receive, send), scope, body)
+    assert [m["status"] for m in sent if m["type"] == "http.response.start"] == [204]
+
+
+async def _record_call(_scope, receive, send):
+    await send({"type": "http.response.start", "status": 204, "headers": []})
+    await send({"type": "http.response.body", "body": b""})
+
+
 def test_every_post_api_route_is_declared_to_both_request_boundaries():
     """The registered routes, `ApiMethodBoundary`'s route table and
     `_BOUNDED_JSON_PATHS` (body ceiling and compute pool) are separate literals;

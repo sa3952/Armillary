@@ -170,7 +170,7 @@ def _walk(layout: str, fid: str, cells: dict, differ: list, bound: _fx.Bound) ->
         out.append(_fx.text(24, band + 17, "落在不同星座", "fx-t fx-small"))
         out.append(_fx.rect(x0, band, x1 - x0, 22, "fx-track"))
         for low, high in differ:
-            out.append(_fx.rect(at(low), band, at(high) - at(low), 22, "fx-b-com"))
+            out.append(_fx.rect(at(low), band, at(high) - at(low), 22, "fx-fill-cross"))
         axis = 222.0
         out.append(_fx.line(x0, axis, x1, axis, "fx-axis"))
         for d in range(0, 31, 5):
@@ -196,7 +196,7 @@ def _walk(layout: str, fid: str, cells: dict, differ: list, bound: _fx.Bound) ->
         out.append(_fx.text(313, 48, "星座", "fx-t fx-small", "middle"))
         out.append(_fx.rect(300, at(0), 26, at(30) - at(0), "fx-track"))
         for low, high in differ:
-            out.append(_fx.rect(300, at(low), 26, at(high) - at(low), "fx-b-com"))
+            out.append(_fx.rect(300, at(low), 26, at(high) - at(low), "fx-fill-cross"))
         out.append(_fx.line(58, at(0), 58, at(30), "fx-axis"))
         for d in range(0, 31, 5):
             out.append(_fx.line(52, at(d), 58, at(d), "fx-axis"))
@@ -255,7 +255,7 @@ def _wheel(layout: str, fid: str, steps: list[dict], bound: _fx.Bound) -> str:
     (cx2, cy2), (dx, dy) = at(30.0 * WALK_SIGN + 30, r_in), at(30.0 * WALK_SIGN, r_in)
     f = _fx.f
     out.append(_fx.path(f"M{f(ax)} {f(ay)} A{f(r_out)} {f(r_out)} 0 0 0 {f(bx)} {f(by)} L{f(cx2)} {f(cy2)} "
-                        f"A{f(r_in)} {f(r_in)} 0 0 1 {f(dx)} {f(dy)} Z", "fx-b-beam"))
+                        f"A{f(r_in)} {f(r_in)} 0 0 1 {f(dx)} {f(dy)} Z", "fx-fill-hatch"))
     out.append(_fx.circle(cx, cy, r_out, "fx-lens") + _fx.circle(cx, cy, r_in, "fx-lens"))
     for sign in range(12):
         (sx, sy), (ex, ey) = at(30.0 * sign, r_in), at(30.0 * sign, r_out)
@@ -263,7 +263,7 @@ def _wheel(layout: str, fid: str, steps: list[dict], bound: _fx.Bound) -> str:
         nx, ny = at(30.0 * sign + 15, (r_in + r_out) / 2)
         out.append(_fx.text(nx, ny + (6 if wide else 5), SIGNS[sign], "fx-t fx-key" if sign == WALK_SIGN else "fx-t",
                             "middle"))
-    out.append(_fx.circle(cx, cy, 2.5, "fx-b-caz"))
+    out.append(_fx.circle(cx, cy, 2.5, "fx-fill-solid"))
     if wide:
         px, label_x = 478.0, 600.0
         rows = {"point": 92.0, TWELVE: 168.0, THIRTEEN: 268.0, "gap": 362.0}
@@ -278,7 +278,7 @@ def _wheel(layout: str, fid: str, steps: list[dict], bound: _fx.Bound) -> str:
         d = step["d"]
         body = []
         x, y = at(step["point"], r_in)
-        body.append(_fx.circle(x, y, 6 if wide else 5, "fx-b-caz"))
+        body.append(_fx.circle(x, y, 6 if wide else 5, "fx-fill-solid"))
         for rule, radius, size in marks:
             lon = step[rule]["longitude"]
             mx, my = at(lon, radius)
@@ -368,7 +368,7 @@ def _ruler(layout: str, fid: str, pair: dict, bound: _fx.Bound) -> str:
         tracks = ((90.0, "point_longitude"), (148.0, "longitude"))
         out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)]
         out.append(_fx.circle(22, 24, 4.5, "fx-mk") + _fx.text(32, 29, times[0], "fx-t fx-small fx-num"))
-        out.append(_fx.circle(98, 24, 4.5, "fx-b-caz") + _fx.text(108, 29, times[1], "fx-t fx-small fx-num"))
+        out.append(_fx.circle(98, 24, 4.5, "fx-fill-solid") + _fx.text(108, 29, times[1], "fx-t fx-small fx-num"))
         out.append(_fx.text((x0 + boundary) / 2, 56, f"天秤・{lords[0]}", "fx-t fx-small", "middle"))
         out.append(_fx.text((boundary + x1) / 2, 56, f"天蠍・{lords[1]}", "fx-t fx-small", "middle"))
         th, r = 16.0, 4.5
@@ -384,7 +384,7 @@ def _ruler(layout: str, fid: str, pair: dict, bound: _fx.Bound) -> str:
         out.append(_fx.text(x0, tracks[1][0] - 8, f"十二分部（{bound.label('乘以 12')}）：走了{jumped}", "fx-t fx-key"))
     for top, field in tracks:
         cy = top + th / 2
-        for item, cls, time, side in ((before, "fx-mk", times[0], "end"), (after, "fx-b-caz", times[1], "start")):
+        for item, cls, time, side in ((before, "fx-mk", times[0], "end"), (after, "fx-fill-solid", times[1], "start")):
             x = at(item[field])
             out.append(_fx.circle(x, cy, r, cls))
             if wide:

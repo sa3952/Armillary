@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="index, follow">
 <title>古典占星計算方法：宮位制、界、三分性與廟旺的來源｜渾儀 Armillary</title>
-<meta name="description" content="說明渾儀採用及可選的宮位制、界、面與旬、三分性、相位、黃道與其他計算規則及來源狀態。">
+<meta name="description" content="說明渾儀採用及可選的宮位制、界（四套具名表，不設預設）、面與旬、三分性、廟旺、相位、阿拉伯點與年度時間主星的計算規則，每條規則寫明來源狀態，也列出目前不算的東西。">
 <link rel="canonical" href="https://projectarmillary.com/zh-TW/methods">
 <link rel="alternate" hreflang="zh-TW" href="https://projectarmillary.com/zh-TW/methods">
 <link rel="alternate" hreflang="x-default" href="https://projectarmillary.com/zh-TW/methods">
@@ -13,7 +13,7 @@
 <meta property="og:site_name" content="渾儀 Armillary">
 <meta property="og:locale" content="zh_TW">
 <meta property="og:title" content="古典占星計算方法：宮位制、界、三分性與廟旺的來源｜渾儀 Armillary">
-<meta property="og:description" content="說明渾儀採用及可選的宮位制、界、面與旬、三分性、相位、黃道與其他計算規則及來源狀態。">
+<meta property="og:description" content="說明渾儀採用及可選的宮位制、界（四套具名表，不設預設）、面與旬、三分性、廟旺、相位、阿拉伯點與年度時間主星的計算規則，每條規則寫明來源狀態，也列出目前不算的東西。">
 <meta property="og:url" content="https://projectarmillary.com/zh-TW/methods">
 <meta property="og:image" content="https://projectarmillary.com/zh-TW/og-card.png?v=16c9900d06168aab">
 <meta property="og:image:type" content="image/png">
@@ -21,11 +21,11 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="渾儀 Armillary：可驗證的古典西洋占星計算器">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/methods#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/methods#breadcrumb"},"description":"說明渾儀採用及可選的宮位制、界、面與旬、三分性、相位、黃道與其他計算規則及來源狀態。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"古典占星計算方法：宮位制、界、三分性與廟旺的來源｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/methods"},{"@id":"https://projectarmillary.com/zh-TW/methods#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/methods","name":"方法","position":2}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/methods#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/methods#breadcrumb"},"dateModified":"2026-10-14","description":"說明渾儀採用及可選的宮位制、界（四套具名表，不設預設）、面與旬、三分性、廟旺、相位、阿拉伯點與年度時間主星的計算規則，每條規則寫明來源狀態，也列出目前不算的東西。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"古典占星計算方法：宮位制、界、三分性與廟旺的來源｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/methods"},{"@id":"https://projectarmillary.com/zh-TW/methods#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/methods","name":"方法","position":2}]}]}</script>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" href="/zh-TW/favicon.svg?v=c95686a2f029d369" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="/zh-TW/style/methods.css?v=cc9d6363aae1b902">
+<link rel="stylesheet" href="/zh-TW/style/methods.css?v=85d1daf484157568">
 </head>
 <body>
 
@@ -118,9 +118,18 @@
     <a href="#not-computed"><b>09</b><span>目前不算的東西</span></a>
   </nav>
 
-  <section class="ap-entry" aria-labelledby="rule-fields">
+  <div class="fold-tools" data-fold-tools hidden>
+    <button type="button" class="fold-all" data-fold-all="open">全部展開</button>
+    <button type="button" class="fold-all" data-fold-all="close">全部收合</button>
+  </div>
+
+  <section class="ap-entry" aria-labelledby="rule-fields" data-fold-host>
     <p class="sig">01</p>
     <h2 id="rule-fields">每一條規則帶三個欄位</h2>
+    <p class="fold-gist"><span class="fold-k">重點</span>需要選定技法的輸出都附三欄：方法版本、來歷、來源狀態。知道規則從哪來，不等於認可它有權威；版本字串隨規則改，舊卷宗永遠對得回當時採用的那條規則。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="rule-fields"><span class="fold-closed">展開全文</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>需要選定技法的輸出，回應裡都附著這三欄。它們分開，是因為它們回答的不是同一個問題。</p>
 
     <div class="readings">
@@ -146,11 +155,17 @@
     <p>一條規則是否已由產品裁決採用，記在回應的方法收據裡；這是給匯出與稽核用的欄位，結果畫面不顯示。<b>裁決是產品的決定，不代表文獻考據已經完成</b>。</p>
 
     <p>版本字串會隨規則改變而改版。<b>你手上的舊卷宗因此永遠對得回它當時採用的那條規則</b>，即使我們後來改了做法。</p>
+      </div>
+    </details>
   </section>
 
-  <section class="ap-entry" aria-labelledby="bounds">
+  <section class="ap-entry" aria-labelledby="bounds" data-fold-host>
     <p class="sig">02</p>
     <h2 id="bounds">界：四套具名表，一套都不預設</h2>
+    <p class="fold-gist"><span class="fold-k">重點</span>四套具名界表（埃及界、迦勒底界、Ptolemy 界、Lilly 1647 承襲界）平等並列，沒有預設，不選就不計算。迦勒底界依日夜盤切換次序，日夜盤未知時並列兩組候選、界主留空。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="bounds"><span class="fold-closed">展開全文</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>四套具名表彼此給出不同的界主：Ptolemy 轉述的埃及界、依 Ptolemy 在 I.21 轉述的規則生成的迦勒底界、作者歸屬有學界爭議的 Robbins 印本完整界表，以及 Lilly 1647 承襲的表。<b>選一套當預設，等於替你做了一次方法裁決，而且不告訴你。</b></p>
 
     <div class="readings">
@@ -184,11 +199,17 @@
     <p>迦勒底界還有一個更麻煩的地方：它的土星／水星次序<b>依日夜盤切換</b>。日夜盤未知時，這套表算不出單一的界主。</p>
     <p>我們的處理是<b>並列日盤與夜盤兩組候選，守護星欄位留空</b>，由你判讀。不偽造一個看起來像答案的答案。</p>
     <p class="cite">計算頁「尊貴」區的〈界〉下拉；回應中該項的 selected_profiles 與並列候選欄位</p>
+      </div>
+    </details>
   </section>
 
-  <section class="ap-entry" aria-labelledby="dignities">
+  <section class="ap-entry" aria-labelledby="dignities" data-fold-host>
     <p class="sig">03</p>
     <h2 id="dignities">面、三分性、廟旺：<br>不同意的地方不壓平</h2>
+    <p class="fold-gist"><span class="fold-k">重點</span>面／旬兩套、三分性三套，一律無預設；Ptolemy 的三分性保留原文的共同主宰結構，不壓成單一主星。廟旺只看古典七政、只判整個星座；陷、弱尚未評估，也不給尊貴總分。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="dignities"><span class="fold-closed">展開全文</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
 
     <p><b>面／旬有兩套，而且不可混名。</b>一套的守護者是行星，另一套的守護者是星座。<b>它們不是同一回事</b>，畫面上分開標示，不共用同一個標籤。兩套都以每星座 0–10°、10–20°、20–30° 的半開區間實作：這是本產品的計算慣例，原典只說各十度；恰 10°00′ 屬下一段；判定用未進位的黃經，畫面上進位後的顯示值不改變判定。</p>
 
@@ -236,11 +257,17 @@
     <p class="cite">陷、弱、外來與接納（含互容）目前是「未評估」，不是「沒有」。恆星黃道下產品會明確拒絕輸出並附原因代碼，見 §07.2</p>
 
     <p class="nodef"><span class="nd-k">為什麼不給總分</span><span>Lilly 在《Christian Astrology》1647 p. 115 替每一項尊貴與減損配了分數，加總比較（我們只讀到掃描辨識的文字，個別分數還沒有對照頁影像核對）。本站不採用：把廟、旺、三分性、界、面折成同一把尺上的分數，等於宣稱它們<b>可以通約</b>，我們不做這個宣稱。</span></p>
+      </div>
+    </details>
   </section>
 
-  <section class="ap-entry" aria-labelledby="aspects">
+  <section class="ap-entry" aria-labelledby="aspects" data-fold-host>
     <p class="sig">04</p>
     <h2 id="aspects">相位分兩層，<br>因為承諾強度不同</h2>
+    <p class="fold-gist"><span class="fold-k">重點</span>第一層看兩星的星座相隔幾個星座，不需要容許度；第二層看逐度角距，是否成相取決於容許度，預設 Lilly 1647 的表，恰好等於也算在內。容許度內的每個相位都列出，入相位、出相位逐一判定。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="aspects"><span class="fold-closed">展開全文</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
 
     <div class="axis">
       <div>
@@ -296,14 +323,25 @@
     <p>你也可以覆寫：按百分比縮放具名表（1–300%），或直接指定一個固定門檻（0.1–30°）。兩者互斥，選了表就不能同時指定固定值，畫面會直接封鎖並說明理由。<b>使用者覆寫不繼承任何歷史來源宣稱。</b>那時候的數字是你的，不是 Abū Maʿshar 的。</p>
     <p>上升點與中天可以選擇加入逐度相位。兩者不互相配對，也不進整宮配置：中天是子午圈與黃道的交點，在整宮制裡不一定落在第 10 個星座。軸點的移動來自地球自轉，不是行星沿黃道的運行，所以不判入相位、出相位。容許度不沿用行星的表，必須另外指定；未指定時只列角距，不判定是否成立。下降點與天底是對蹠點，不另列。軸點相位只在以地球為中心（地心或站心）、當日黃道、含章動，而且有計算宮位時才算；其他組合會略過並附原因代碼。</p>
     <p class="cite">赤緯平行與反平行另計，標為非古典傳統，預設關閉，容許度上限 3°；容許度設為 0 表示只認赤緯完全相等。它不是希臘化或中世紀的相位：17 世紀的 Placidus（《Tabulae primi mobilis》，Padua 1657，卷二論題第 50 條）把 Ptolemy 所說星座之間的相見與命從關係，改以赤緯相等來界定，同在赤道一側為平行，分在兩側為反平行。1657 年以前是否已有人這樣用，我們沒有查證；預設 1° 是本產品的選擇，不歸屬任何作者。黃道相位、赤緯相位與反照點（antiscia）共用同一個參與者選擇器：凱龍星等現代點不會自動加入，交點依各自的選項加入；三王星可依選項加入相位，反照點不含三王星；南交點與所屬北交點的「沖」是定義而非相位，不列入</p>
+      </div>
+    </details>
   </section>
 
-  <section class="ap-entry" aria-labelledby="disclosures">
+  <section class="ap-entry" aria-labelledby="disclosures" data-fold-host>
     <p class="sig">05</p>
     <h2 id="disclosures">三件我們主動說出來的事</h2>
+    <p class="fold-gist"><span class="fold-k">重點</span>三件不主動說就查不到的事：月空亡的規則名稱不掛古人名字，因為歸屬未定；一組容許度數字「多個獨立來源一致」的宣稱已撤回；日夜盤用地心太陽中心的真高度判定，是工程選擇。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="disclosures"><span class="fold-closed">展開全文</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>放在這裡，是因為它們如果不主動說，<b>你大概查不到</b>。</p>
 
-    <h3>05.1　月空亡：我們把名字改了</h3>
+    <div class="fold-sub" data-fold-host>
+    <h3 id="void-of-course">05.1　月空亡：我們把名字改了</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>定義由兩個來歷不同的成分組成，合起來的歷史歸屬沒有定論，所以規則名稱不含「古典」，也不掛古人的名字。本站只判定是否空亡，不替你解盤。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="void-of-course"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>「月亮離開本星座前不再完成相位」這個定義由兩個成分組成，來歷不同。<b>星座條件</b>，也就是月亮仍在本星座期間不再入相位，最晚見於 Lilly《Christian Astrology》1647 年初版 p.112 的「Voyd of cours」一條；研究另稱更早見於 Abū Maʿshar《導論節本》（Mukhtaṣar al-mudkhal）III.21–22，但那是經 Houlding 轉引的英譯，我們沒有持原書核對。<b>要求換座前精確完成</b>：後人文獻歸於 Al H. Morrison（AFA Journal 1966 年 10 月有專文，原文未讀）；更早的起源尚未查證。<b>兩個成分合起來的歷史歸屬，至今沒有定論。</b></p>
     <p>Lilly 在卜卦（horary，就一個問題起盤）的脈絡說，月亮空亡時，事情很少順利進展（1647 p. 112）。本站只判定是否空亡，不替你解盤。</p>
     <p>所以這條規則的名稱裡<b>不含「古典」，也不掛任何古人的名字</b>，來歷欄位標明「非古典、歸屬未定」。來源狀態把兩個成分分開記：星座條件記為「見於 Māshāʾallāh 與 Lilly 1647、最早出處未定」，精確完成記為「後人文獻歸於 Morrison 1966（原文未讀）、更早的起源未查證」；兩者合起來的歸屬另標「未定」。「未定」指的是合起來的歷史歸屬還沒有定論，不是說兩個成分都沒有查過。</p>
@@ -311,8 +349,16 @@
     <p class="cite">求相位完成時刻採兩段式求根（粗掃描分割根區間，再以二分法收斂），回應附括號端點與二分迭代次數；以有限間隔搜尋；間距極近的根或切點可能遺漏</p>
     <p>「盤上時刻恰好成相」和相位表的「此刻精確」用同一個標準：盤上時刻月亮距精確相位 1 角秒以內，剛要完成或剛完成都算。這樣的相位計入判定（月亮不空亡），和未來才完成的相位分開列出。取樣點恰好是根時，同一步長內的下一個根仍會被檢查。某個相位完成的時刻與月亮離開本星座的時刻，若相差不超過求根容差（10<sup>−6</sup> 日，約 0.086 秒）、分不出先後，結果標為 <code>simultaneous_boundary</code>：<b>不判空亡，也不判非空亡</b>，「是否空亡」留空，回應並列該相位與兩個根的括號區間。</p>
     <p class="nodef"><span class="nd-k">來歷</span><span><b>這是本產品的方法裁決，不是古典文獻的規定。</b></span></p>
+      </div>
+    </details>
+    </div>
 
-    <h3>05.2　一組容許度數字的證據強度，我們撤回過</h3>
+    <div class="fold-sub" data-fold-host>
+    <h3 id="orb-evidence-retraction">05.2　一組容許度數字的證據強度，我們撤回過</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>那組容許度數字來自同一條傳承鏈，不是彼此獨立的證人。數值沒有改，撤回的是證據強度的宣稱，識別碼也一併改了。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="orb-evidence-retraction"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <div class="retract">
       <span class="rt-k">撤回</span>
       <p class="rt-was">「多個彼此獨立的前現代來源一致」</p>
@@ -321,8 +367,16 @@
     <p>那些來源<b>不是彼此獨立的證人，而是同一條傳承鏈</b>：中世紀作者之間大量互相轉引。同一組數字重複出現，證明的是<b>傳承</b>，不是<b>獨立驗證</b>。</p>
     <p class="cite">這一系的數值經 Birchfield 二手彙編轉引。另見 Abū Maʿshar《導論節本》II.11–12 經 Dykes《Introductions to Traditional Astrology》(2010) §II.6 pp. 90–91 轉載（含月亮 12）；Sahl《導論》（Introductorium）ch.3 只對太陽說 body 30°，其餘各星寫單側光線值；Bonatti 的數值本輪未核</p>
     <p><b>數值本身沒有改。被撤回的是關於證據強度的宣稱。</b>連識別碼都一併改了。原本的名稱裡有「共識」二字，只改說明而留著舊名，等於<b>讓一個已經撤回的宣稱躲在識別碼裡繼續生效</b>。</p>
+      </div>
+    </details>
+    </div>
 
-    <h3>05.3　日夜盤的判定基準，是我們的工程選擇</h3>
+    <div class="fold-sub" data-fold-host>
+    <h3 id="sect-boundary">05.3　日夜盤的判定基準，是我們的工程選擇</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>日夜盤看地心太陽中心的真高度，大於 0 度為日盤、不計折射，這是產品慣例。太陽在地平上下 50 角分以內時結果會提示，阿拉伯點並列日盤、夜盤兩套公式。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="sect-boundary"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>我們採<b>地心</b>太陽<b>中心</b>、<b>真</b>高度大於 0 度、<b>不計蒙氣折射</b>，恰好 0 度歸夜盤。理由是讓日夜盤不依賴出生當時通常查不到的氣壓、溫度與地形。<b>日夜盤固定用地心高度</b>，切換顯示中心或真／視位置都不會改變日夜盤。</p>
     <p class="nodef"><span class="nd-k">來歷</span><span><b>產品慣例。</b>內部方法研究筆記所列的古代至近代早期段落（Dorotheus、Ptolemy I.7、Valens III.5、Paulus 第 6 章、Firmicus II.7、Rhetorius、Abū Maʿshar、al-Qabīṣī、Lilly p.113；未經第三方核對），多半把日生、夜生當作已知的分類，或以「在地上／地下」描述行星的條件。最接近用太陽判日夜的，是 Valens III.11（Pingree 編號；Kroll／Riley 為 III.14）談月亮時把「在地上」解為「直到它落下」，以及 Lilly p.42 以太陽落在哪一宮核對立盤時段；研究另稱 Abū Maʿshar 把白晝定為日出到日落，未查證。<b>這些段落都沒有明定本產品需要的中心、上緣或折射邊界</b>。恰好 0 度歸夜是工程上的端點約定。</span></p>
 
@@ -344,11 +398,20 @@
     <p>這種並列<b>只用在阿拉伯點</b>。相位與本質尊貴一律沿用主要的日夜盤；其中迦勒底界與三分性本來就在結果裡同時附上日盤與夜盤兩組候選，可以自己對照。依日夜盤選主的尊貴技法，在帶內會就地加一句提示，說明換一種邊界選到的主星可能不同。</p>
     <p>太陽真高度介於 −50 角分與 0 度之間時，結果另外標明「兩種日出日落定義判法不同」：依本產品的規則是夜盤，依天文年鑑的標準日出日落定義，太陽還算在地平線上。</p>
     <p class="cite">50 角分是產品慣例。幾何理由：標準視日出（太陽上緣初現）時，太陽中心約在幾何地平下 50 角分（大氣折射約 34 角分，加太陽半徑約 16 角分），所以太陽真高度介於 −50 角分與 0 度之間時，「以中心判」與「以視日出判」會得到不同的日夜盤（USNO〈Rise, Set, and Twilight Definitions〉：日出時太陽中心的幾何天頂距為 90.8333°）。折射不是定值：實測樣本從約 14 角分到 101 角分都有（Schaefer &amp; Liller 1990），那是特定地點與季節的樣本，不是緯度規律。這條帶換算成出生時刻的寬度依緯度與季節而異：低緯每次穿越約數分鐘，60°N 夏至約 20 分鐘，更高緯可達數十分鐘，接近極圈時太陽可能整夜停在帶內</p>
+      </div>
+    </details>
+    </div>
+      </div>
+    </details>
   </section>
 
-  <section class="ap-entry" aria-labelledby="lots">
+  <section class="ap-entry" aria-labelledby="lots" data-fold-host>
     <p class="sig">06</p>
     <h2 id="lots">阿拉伯點：一個我們照實記錄的分歧</h2>
+    <p class="fold-gist"><span class="fold-k">重點</span>命運點（Lot of Fortune）與精神點（Lot of Spirit）的公式在夜盤反轉，這是 Valens、Paulus 一系的做法；Ptolemy 主張不反轉，本站照實記錄這個分歧。每張盤附日盤、夜盤兩套結果，標明主要值用哪一套。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="lots"><span class="fold-closed">展開全文</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
 
     <div class="axis">
       <div>
@@ -365,14 +428,25 @@
 
     <p class="ax-take">我們沒有因此改變做法，<b>也沒有隱藏這個分歧</b>。排盤只提供命運點與精神點；年度功能另列七個延伸的點，見〈<a href="/zh-TW/methods/time-lords#extended-lots">年度時間主星的規則與出處</a>〉。每張盤都附上日盤與夜盤兩套公式的結果，並標明主要值用的是哪一套；太陽靠近地平時，主要值仍依真高度大於 0 度的規則決定，另一套公式的結果並列為比較值，不隱藏。落宮與相位只用主要值。</p>
     <p>命運點與精神點也標出落在第幾宮，規則和行星落宮是同一條：宮頭算作下一宮的開始。</p>
+      </div>
+    </details>
   </section>
 
-  <section class="ap-entry" aria-labelledby="conventions">
+  <section class="ap-entry" aria-labelledby="conventions" data-fold-host>
     <p class="sig">07</p>
     <h2 id="conventions">幾個口徑的差別</h2>
+    <p class="fold-gist"><span class="fold-k">重點</span>十九項口徑的比較，從宮位制、黃道、交點、時間換算到恆星、焦傷與宮義。每一項寫明本站採哪一種、另一種差在哪裡，以及什麼情況回「不適用」並附原因，不悄悄換一種算法交給你。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="conventions"><span class="fold-closed">展開全文</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>我們不做逐家比較頁。對其他工具的宣稱需要證據，而它們隨時改版；證據會腐爛，宣稱就變假。<b>改做方法比較：常青、對實務有用，而且不會過期。</b></p>
 
-    <h3>07.1　七種宮位制：整宮、等分宮與五種四分宮制</h3>
+    <div class="fold-sub" data-fold-host>
+    <h3 id="house-systems">07.1　七種宮位制：整宮、等分宮與五種四分宮制</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>七種宮位制平等提供：整宮、等分宮，與 Porphyry、Alcabitius、Campanus、Regiomontanus、Placidus 五種四分宮制。無解時回「不適用」並說明原因，不偷換成整宮制；極區帶整帶拒絕 Placidus。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="house-systems"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>宮位制是把天空分成十二宮的方法。我們提供七種，分兩類：<b>每宮 30 度</b>的整宮與等分宮；以及<b>四分宮制</b>：先用上升點（東方地平線上的黃道點）與中天（黃道在上子午圈的那一點；子午圈是通過天頂與正南、正北的大圓）把一圈分成四段，每段再分成三宮，所以宮的大小不一。四分宮制有 Porphyry、Alcabitius、Campanus、Regiomontanus、Placidus 五種，差別在「怎麼分成三宮」。</p>
     <div class="axis">
       <div>
@@ -397,7 +471,7 @@
     <details class="more" id="house-system-sources">
       <summary>出處：等分宮、Porphyry、Campanus</summary>
       <ol>
-        <li><b>等分宮。</b>Ptolemy《占星四書》論壽命的一章，把上升點附近的位置算成 30 度一段，但從地平上方 5 度起算，和我們從上升點本身起算不同（Ashmand 英譯 III.12，Robbins 英譯 III.10）。核到：<span class="mono">親讀譯本</span>（Ashmand 英譯）。</li>
+        <li><b>等分宮。</b>Ptolemy《占星四書》論壽命的一章，把上升點附近的位置算成 30 度一段，但從地平上方 5 度起算，和我們從上升點本身起算不同（Ashmand 英譯 III.12，Robbins 英譯 III.10）。核到：<span class="mono">已讀譯本</span>（Ashmand 英譯）。</li>
         <li><b>Porphyry。</b>把四段各分三份的做法，研究者指出見於 Vettius Valens《占星選集》（Anthologiae）第三卷；名稱來自三世紀的 Porphyry，見傳為他所作的《占星四書導論》（Eisagōgē；Holden 2009 英譯）。另有研究者（R. Schmidt）認為 Valens 那段是在判斷行星強弱，不是在分宮。Valens 那段核到：<span class="mono">轉引（只讀到二手）</span>；Porphyry 那一章核到：<span class="mono">只見書目</span>（章次未核）。</li>
         <li><b>Campanus。</b>名稱來自十三世紀的 Campanus of Novara；更早的阿拉伯文獻已有平分卯酉圈的做法：十一世紀 Ibn Muʿādh 的論文，J. D. North《Horoscopes and History》（1986）pp. 175–176 另提 al-Bīrūnī。核到：<span class="mono">轉引（只讀到二手）</span>。</li>
       </ol>
@@ -405,8 +479,16 @@
     </details>
     <p>行星落宮用黃道半開區間：恰好在宮頭上的行星，歸入該宮頭開始的那一宮。這是本產品的定位慣例；Lilly 把宮頭稱為宮的入口（Christian Astrology 1647 Book I ch. IV p. 33），與此相容。Lilly 另說，距下一個宮頭 5 度以內的行星，它的作用算在那一宮。這是 Lilly 的落宮規則；本站的落宮表不套用，也不改寫，需要時請自行依他的規則調整。結果上「距最近宮頭」的數字是沿黃道量的黃經差，不計黃緯；距宮頭 1 度以內的提示只表示落宮對出生時刻敏感。</p>
     <p>你也可以<b>完全不算宮位</b>。那不是把宮位藏起來，是真的略過計算，並把依賴軸點的方法一併標為不可用。出生時刻只知道日期時，宮位會自動關閉，因為宮位需要已知時刻。</p>
+      </div>
+    </details>
+    </div>
 
-    <h3>07.2　回歸黃道 vs 恆星黃道</h3>
+    <div class="fold-sub" data-fold-host>
+    <h3 id="tropical-sidereal">07.2　回歸黃道 vs 恆星黃道</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>本站主幹是回歸黃道；恆星黃道提供四種 ayanamsa（預設 Fagan–Bradley），供進階與比較。界、面、三分性與廟旺不套用到恆星黃經，請求時明白拒絕並附原因代碼。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="tropical-sidereal"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <div class="axis">
       <div>
         <span class="ax-k">回歸</span>
@@ -424,8 +506,16 @@
     <p class="cite">Astrodienst AG, Swiss Ephemeris General Documentation §2.8.1–2.8.3、§2.8.10–2.8.11</p>
     <p class="nodef"><span class="nd-k">重要</span><span><b>界、面、三分性與廟旺這些歷史表格，不會被套用到恆星黃經上。</b>本產品採用的這些表以回歸黃道為操作框架（Ptolemy 在《占星四書》I.22 主張自分至點起算；Robbins pp. 109–111）；界的更早形成是否在別的框架下，學界仍有討論，所以不靜默套用到恆星黃經。請求時我們會<b>明白拒絕並附原因代碼</b>，而不是給你一個看起來合理的錯誤答案。</span></p>
     <p>恆星黃道只能搭配當日黃道。同時選 J2000 參考框架會被拒絕並附原因代碼，因為在那個組合下，卷宗記下的 ayanamsa 和實際從天體黃經扣掉的量對不上。其他組合下，卷宗裡的 ayanamsa 就是實際扣掉的值，可以拿去自己複算。</p>
+      </div>
+    </details>
+    </div>
 
-    <h3>07.3　視位置 vs 真位置</h3>
+    <div class="fold-sub" data-fold-host>
+    <h3 id="apparent-true">07.3　視位置 vs 真位置</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>預設視位置：地心、不計大氣折射。選真位置時不輸出視高度，因為把折射套到幾何方向，會混合兩個互斥的假設。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="apparent-true"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <div class="axis">
       <div>
         <span class="ax-k">視位置</span>
@@ -440,8 +530,16 @@
     </div>
     <p class="ax-take">選真位置時<b>不輸出視高度</b>，並附上原因：真位置假設光瞬時到達，大氣折射假設光穿過大氣，<b>把折射套到幾何方向上會混合兩個互斥的假設</b>，得到一個既無法正確解讀、也無法被第三方複算的數字。</p>
     <p class="nodef"><span class="nd-k">規則</span><span><b>不輸出，優於輸出一個沒有意義的數。</b></span></p>
+      </div>
+    </details>
+    </div>
 
-    <h3>07.4　密切交點（常被稱為真交點）vs 平均交點</h3>
+    <div class="fold-sub" data-fold-host>
+    <h3 id="lunar-nodes">07.4　密切交點（常被稱為真交點）vs 平均交點</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>正式技法採平均交點，理由是歷史的，不是精度的；密切交點（osculating node）並列輸出，兩者相差最大約 2 度。本站不把其中一個叫作「真」交點。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="lunar-nodes"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <div class="axis">
       <div>
         <span class="ax-k">平均</span>
@@ -458,8 +556,16 @@
     <p class="nodef"><span class="nd-k">用字</span><span>我們不把其中一個叫作「真」交點，<b>那個字會讓人以為另一個是假的。</b>「北交點」（俗稱龍頭）與「南交點」是通行叫法，嚴格說是升交點與降交點：交點上的黃緯恰好是零，並不在北方或南方。</span></p>
     <p>選站心模式時，交點與月亮遠近點<b>仍是地心值</b>：Swiss Ephemeris 不對這些軌道點做視差修正，每筆結果標明實際採用的中心。</p>
     <p>密切交點與平均交點是同一條交點軸的兩種算法，不是兩個天體。所以兩種模型的交點彼此之間（南交點也一樣）<b>不列相位，也不列赤緯平行</b>：它們之間的「合」或「沖」只是兩種算法差了多少，不是關係。兩者各自與行星的相位照常列出。</p>
+      </div>
+    </details>
+    </div>
 
-    <h3>07.5　搜尋區間內沒有升起 vs 永遠不升</h3>
+    <div class="fold-sub" data-fold-host>
+    <h3 id="rising-setting">07.5　搜尋區間內沒有升起 vs 永遠不升</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>升降採 Swiss Ephemeris 的預設定義：上緣連同標準大氣折射越過地平，不計眼高俯角。整段區間都沒有穿越時，寫「搜尋區間內始終在地平線上（下）」，不寫成「永遠不升」。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="rising-setting"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>上升與下降採 Swiss Ephemeris 的預設定義：天體<b>上緣</b>連同標準大氣折射越過觀測地的地平。太陽與月亮的上緣定義與美國海軍天文台（USNO）一致；行星依 Swiss 預設同樣以視盤上緣計算，行星視半徑只有角秒級，與中心之差可忽略。地平取平坦、無遮蔽的數學地平，<b>不計觀測者眼高的俯角</b>；輸入的海拔只用於站心位置與氣壓估算。古典文獻說的「升起」至少有以下幾種用法：黃道度數越過東方地平、天體實際越過地平、脫離日光（例：Ptolemy《占星四書》I.8 的 rising 指偕日升，Robbins p. 45 n.3，LacusCurtius 線上本 n.37）。我們不把現代定義倒套回古典技法。</p>
     <p>每個天體往前、往後各找最近一次升降，最遠各找 200 天，中天各找 3 天。極晝與極夜會回報<b>真正的前一次與下一次穿越</b>。整段區間都沒有穿越時，回報「搜尋區間內始終在地平線上」或「始終在地平線下」，<b>不寫成「永遠不升」</b>：太陽、月亮與行星的赤緯一直在變。沒有搜尋和搜尋後沒找到，也是兩種不同的狀態。</p>
     <p>2399 年 6 月下旬以後的盤（加入凱龍星時是 6 月中旬以後），升降與中天搜尋會超出內附星曆的範圍，所以不計算。</p>
@@ -467,8 +573,16 @@
     <p>「整段區間都沒有穿越」時，貼著地平擦過的天體另標「擦邊」。判定用的是每 30 分鐘一點的取樣，取樣點本身可能離真正的最高或最低點約 0.04 度，所以我們先用最低（最高）的取樣點與左右兩點做拋物線內插，求出極值後再和 0.01 度的門檻比較。</p>
     <p>結果頁上各天體的地平高度，和升降事件用同一個前提：從你輸入的出生地點看出去的<b>站心高度</b>，計入周日視差；黃經仍依你選的中心計算。站心與地心的高度差，太陽不到 9 角秒，月亮可達約 1 度。日夜盤判定是例外，見上段。</p>
     <p class="cite">升降與中天的定義依 Swiss Ephemeris Programming Interface §8.12、USNO〈Rise, Set, and Twilight Definitions〉與《Astronomical Almanac》詞彙表；七種事件狀態是本產品依內部方法研究筆記整理的分類，不是 USNO 的</p>
+      </div>
+    </details>
+    </div>
 
-    <h3>07.6　UTC、UT1 與 ΔT</h3>
+    <div class="fold-sub" data-fold-host>
+    <h3 id="time-scales">07.6　UTC、UT1 與 ΔT</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>1972 年起以閏秒 UTC 換算；1960 年前、1960–1971 年與約 2033 年 9 月以後當作 UT1，不標成 UTC。時區依 IANA 資料庫，1970 年前多為推定；收據標出 ΔT 落在哪一段與不確定度。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="time-scales"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>1972 年起的出生時間以閏秒 UTC 換算。1960 年前還沒有協調世界時，1960–1971 年的舊協調世界時秒長也與今日不同；這兩段 Swiss Ephemeris 都當作 UT1 處理。約 2033 年 9 月 17 日起，Swiss Ephemeris 依自己的 ΔT 模型判定內建的閏秒表可能已經過期，又把輸入與輸出都當作 UT1，切換的瞬間時刻約有 1 秒的不連續。<b>這三段我們都不標成 UTC</b>：時間表、事件時刻與匯出逐筆標出所屬年代。1960 的分界依英美協調播時的起點；Swiss Ephemeris 手冊寫 UTC 自 1961 年起，指的是國際時間局開始國際協調，1960、1961 兩年都以 UT1 計算，結果不變。閏秒依換算成 UTC 後的時刻判定，所以臺北時間 2017-01-01 07:59:60 是合法輸入；1972 年前的第 60 秒一律拒絕，並附專屬原因。</p>
     <p>時區偏移依收據記下版本的 IANA 時區資料庫換算。<b>1970 年前、特別是標為地方平時（LMT）的時段，資料庫自承多為推定</b>，本產品不視為已驗證的歷史鐘面。出生日期以格里曆（西元）解讀；原始紀錄若使用儒略曆（例如 1918 年 2 月前的俄羅斯、1923 年 3 月前的希臘，以及其他東歐、巴爾幹地區），請先換算成格里曆日期。</p>
     <p><b>中國的兩件時間事。</b>新疆同時使用北京時間與新疆時間（慢 2 小時），出生紀錄可能用任一種；從地名目錄選到新疆的地點，或手動輸入座標而時區填新疆時間（Asia/Urumqi）時，計算前必須指明紀錄用的是哪一種，本產品不預設。1988 年夏令時間的起始日說法不一：IANA 時區資料庫依《人民日報》1988 年 4 月 12 日頭版定為 4 月 17 日，部分中文說明表寫 4 月 10 日；出生時間落在這段（北京時間 1988-04-10 00:00 至 04-17 02:00）的盤仍依時區資料庫計算，另附一則警告說明兩說相差 1 小時。</p>
@@ -477,27 +591,67 @@
     <p>ΔT（TT 與 UT1 之差）在 1955 年前取自 Swiss Ephemeris 預設的 Stephenson、Morrison 與 Hohenkerk（2016）模型，1955 年起取自內建表：實測值到 2023 年，2024–2028 年是表內預測，之後是外推。每張盤的收據標出落在哪一段與不確定度的量級：1900 年起約 0.1 秒（Stephenson &amp; Houlden 1986，經 NASA 轉載）。1962～2023 年的 ΔT 誤差約 0.03 秒：本站用逐年表格內插，抓不到地球自轉在一年之中的季節性快慢（量級依 IERS 公報的季節修正式，並已與 IERS 實測值核對）。1972 年起，這相當於上升點與宮頭約 0.5 角秒的不確定。2024–2028 年的表內預測約為秒級，2028 年之後依 Huber (2000) 外推式（2399 年約七分鐘，非權威信賴區間）。1972 年起到約 2033 年 9 月的輸入由 UTC 推得 UT1，<b>ΔT 的誤差移動的是恆星時、宮位與角點，不是天體位置</b>；1972 年前與約 2033 年 9 月以後，輸入直接當作 UT1，誤差移動的反而是天體位置（月亮每秒約半角秒的量級），不移動恆星時與宮位。</p>
     <p>Swiss Ephemeris 的恆星時在 1850 年與 2050 年 1 月 1 日切換模型，兩段不連續；2050 年那次實測跳動約 0.13 秒，折合上升點所依的 ARMC 約 1.9 角秒。收據列出本次落在哪一段。</p>
     <p class="cite">ΔT 與恆星時切換依 Swiss Ephemeris 2.10.03 原始碼（calc_deltat、swe_sidtime0）；不確定度依 F. Espenak〈Uncertainty in Delta T〉（NASA GSFC）、Huber (2000) 與 IERS Bulletin A 的 UT2−UT1 季節式，實測期以 IERS EOP 20 C04 核對；UTC 分界依 D. D. McCarthy, Coordinated Universal Time (BIPM CCTF/09-32, 2009) 與 IANA tz theory；約 2033 年的切換依 Swiss Ephemeris Programming Interface 的閏秒處理一節，切換日期由本產品以內建星曆實測；IANA 對 1970 年前資料的說明見 tz 文件〈Theory and pragmatics〉的 Scope 與 Accuracy 兩節</p>
+      </div>
+    </details>
+    </div>
 
-    <h3>07.7　只知日期、只知時辰時的事件</h3>
+    <div class="fold-sub" data-fold-host>
+    <h3 id="imprecise-time-events">07.7　只知日期、只知時辰時的事件</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>只知日期時，以當地正午為計算錨點。月相、日月食與升降事件在出生時間不精確時，列出區間起點、錨點、終點三個取樣，不合併成一個答案。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="imprecise-time-events"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>只知日期時，代表計算錨點是當地正午；正午若因時區規則變更而根本不存在，改取正午之後第一個真實存在的時刻，並寫進收據。整天被跳過的日期仍然拒絕。</p>
     <p>月相、日月食與升降事件在出生時間不精確時，改為<b>三個代表性取樣並列</b>：區間起點、代表錨點、區間終點。只知日期時區間是當地民用日（出生地日曆上的那一天，從午夜到午夜），只知時辰時區間是那一小時。<b>三個結果不合併成一個答案，也不當成出生時刻的事件。</b></p>
     <p class="cite">依據本產品對非精確出生時間的方法裁決</p>
+      </div>
+    </details>
+    </div>
 
-    <h3>07.8　日月食接觸時刻的名稱</h3>
+    <div class="fold-sub" data-fold-host>
+    <h3 id="eclipse-contacts">07.8　日月食接觸時刻的名稱</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>日食中心相位依類型命名；「最大食」用 Swiss Ephemeris 的定義，和 NASA 相差數秒。日食類型落在分類邊界時標「近分類邊界」；只回報天文事件，不做日月食的占星解讀。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="eclipse-contacts"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>日食的中心相位依類型命名：全食標「全食開始／結束」，環食標「環食開始／結束」，複合日食標「中心相位開始／結束」，因為同一條中心線上一段是全食、一段是環食，Swiss 回報的時刻不區分是哪一段。月食另有半影開始與結束。「最大食」是 Swiss Ephemeris 全球搜尋的 time of maximum eclipse：依其原始碼，日食是地心所見日月邊緣角距最小、月食是月心所見日地邊緣角距最小。這不同於 NASA「影軸最接近地心」（以力學時表示）與 IMCCE「食分最大」的定義；外部比對與 NASA 的 greatest eclipse 相差數秒。本產品只回報天文事件與類型，不提供日月食的占星解讀。</p>
     <p>日食類型有時正好落在分類邊界上：從地面看月亮和太陽幾乎一樣大（全食與環食只差一線）、複合日食，或月影中心線幾乎擦過地球邊緣（算不算中心食只差一線）。這時結果頁的「類型判定」標「近分類邊界」並說明原因：在這種情況下，Swiss Ephemeris 與 NASA《五千年日食典》（Five Millennium Canon of Solar Eclipses）可能判成不同類型，兩者在現有計算精度內都說得通。1900–2399 年的 1181 次日食中，兩者判定不同的有 7 次，全部落在這個邊界內；邊界外兩者一致。月食目前沒有做這項檢查。</p>
     <p class="cite">依據 Swiss Ephemeris Programming Interface §8.3、§8.10 與 2.10.03 swecl.c；NASA GSFC〈Key to Solar Eclipse Maps〉與 Glossary；IMCCE〈Éclipses de Soleil〉</p>
+      </div>
+    </details>
+    </div>
 
-    <h3>07.9　J2000 與不含章動：只給座標，不給方法</h3>
+    <div class="fold-sub" data-fold-host>
+    <h3 id="reference-frames">07.9　J2000 與不含章動：只給座標，不給方法</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>J2000 與不含章動只是輸出座標的選擇。反照點、阿拉伯點、黃道相位、月空亡、尊貴與落宮在這兩種框架下回「不適用」並附原因（恆星黃道關閉章動時有例外），日心、質心也一樣。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="reference-frames"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>J2000 參考框架與「不含章動」是<b>輸出座標的選擇</b>，適合天文核對與歷史比較。反照點、阿拉伯點、黃道相位、月空亡、赤緯平行、界面廟旺與行星落宮，都是在<b>當日的黃道與春分點</b>上定義的：反照點的鏡射軸是當日的至點軸，整宮配置與換座看的是當日的星座界線，上升點與宮頭一律由當日真春分點算出。選這兩種框架時，這些模組<b>回傳「不適用」並附原因代碼</b>，不會悄悄換框架再算，也不替你做座標轉換；天體位置照常輸出。恆星黃道是例外：恆星黃經與宮頭不隨章動開關改變，關閉章動時數值與開啟時完全相同，所以行星落宮、阿拉伯點、黃道相位與月空亡照常計算；反照點的鏡射軸與赤緯平行用的赤道仍隨章動開關改變，這兩項維持不適用。哪些模組適用由同一張相容表決定，卷宗記下本次被拒絕的模組。</p>
     <p>選日心或太陽系質心時，相位角、照明比例、距角、視直徑與視星等不輸出：它們是從地球看出去的量，換了中心就沒有意義。黃道相位、赤緯平行與反照點也是地球上看出去的天空裡的關係，和宮位、阿拉伯點、月空亡一樣<b>回傳「不適用」並附原因代碼</b>，不以古典方法的名稱輸出日心或質心的角距。</p>
     <p class="cite">依據內部方法研究筆記對 J2000、當日框架、章動與反照點鏡射軸的整理，以及本產品對尊貴基準的裁決；未經第三方核對</p>
+      </div>
+    </details>
+    </div>
 
-    <h3>07.10　出生時刻敏感度證明了什麼</h3>
+    <div class="fold-sub" data-fold-host>
+    <h3 id="birth-time-sensitivity">07.10　出生時刻敏感度證明了什麼</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>在區間內幾個時刻重算，結果只有「各取樣點分類相同」與「取樣點之間分類不同」兩種。前者不代表結果穩定：兩個取樣點之間仍可能變了又變回。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="birth-time-sensitivity"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>只知時辰時，「14 點」指 14:00:00 到 14:59:59 這整個鐘點；只知日期時，指當地民用日。我們在區間內幾個列出的時刻重算判定，結果只會是<b>各取樣點分類相同</b>或<b>取樣點之間分類不同</b>。「各取樣點分類相同」<b>不代表結果穩定</b>：兩個取樣點之間仍可能變了又變回，我們沒有用任何推論排除這種情形；黃經與四軸的數值在區間內本來就會移動，另以範圍列出。區間內若有時鐘變更（例如 Lord Howe 島半小時的日光節約），變更前後各加取一秒。</p>
     <p class="cite">取樣證據、列舉轉換點與區間證明的強弱之分，依據內部方法研究筆記（取樣策略與敏感度摘要）；本產品只做到取樣證據這一級，未經第三方核對</p>
+      </div>
+    </details>
+    </div>
 
+    <div class="fold-sub" data-fold-host>
     <h3 id="prenatal-syzygy">07.11　「產前朔望」挑的是哪一次</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>產前朔望（prenatal syzygy）取出生前最近一次真朔或真望，列出時刻與度數，不拿它推算上升點或壽命。另列出生前最近一次日食與月食；以它們為本命要點是二十世紀才有的做法，半影月食算與不算兩種都列。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="prenatal-syzygy"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>結果上的「產前朔望」（prenatal syzygy）是<b>出生前最近一次的朔或望</b>，兩者取較近的那一次；算的是真朔望，也就是從地心看太陽和月亮實際位置的那一刻。我們沒有找到任何古典本命文獻用平均月行算的「平朔望」，兩者的時刻最多可差約 14 小時，所以只做真朔望。Ptolemy 用產前朔望的度數來定出生的上升度數（《占星四書》III.2），選壽命主宰時也用它（III.10）；本站列出時刻與度數，<b>不拿它去推算上升點或壽命，也不接到其他技法</b>。</p>
     <p><b>度數怎麼取。</b>III.2 說：朔的時候取太陽和月亮共同的度數；望的時候取「在地平線上方」那一個發光體的度數。Robbins 英譯採用的讀法看的是朔望那一刻；他在註 9 記下另一個手抄本讀法，看出生那一刻。本站依前者，從出生地看朔望那一刻的太陽和月亮，判斷方法和日夜盤相同（中心的地心真高度大於 0°，不計大氣折射）；有一個在地平線上下 50′ 以內，或兩個都在上方、都在下方時，不替讀者選，兩個度數都列出。出生那一刻的讀法只當資訊列出。另附一個交叉檢查：看度數落在下降點經天頂到上升點的那一半黃道（第 7 到 12 宮）；它和高度判斷不一致時標出，仍以高度為準。月亮的高度用地心值，和日夜盤同一套；從地表看（站心）可以差到約 1°，所以貼近地平線時兩種看法可能不同，這也是近地平時不選的原因之一。</p>
     <p><b>出生時刻接近朔望。</b>朔望在出生前不到 1 小時時，結果會提醒：出生時刻若其實早了幾分鐘，產前朔望就是再前一次。只知日期或時辰時，區間兩端與代表性時刻（也就是計算時拿來代表這段時間的一個時刻，不是出生時刻）各算一次；這段時間內若剛好有一次朔或望，結果會說明兩次都可能。</p>
@@ -508,23 +662,55 @@
     <p><b>出生前最近一次日食與月食。</b>古典占星用日月食，主要是看它對地區與時局的作用：《占星四書》II.4 說，這類普遍事件「第一個、也最有力的原因」是日月在食時的會合；II.8 說，主事行星的性質決定事件的性質，例如土星單獨主事時，帶來因寒冷而起的毀壞；II.8 也說，日月食的度數或其對沖度數上正好有某人本命的太陽或月亮時，是「最危險、最難避開」的位置（這是出生以後發生的日月食）。II.6 用遮蔽持續幾小時決定影響多久：日食一小時算一年，月食一小時算一個月。把<b>出生前</b>最近一次日月食當作本命盤的要點，是二十世紀才有的做法（Jansky、Lineman、Brady、Graves 等），我們讀過的古書裡沒有。本站列出它的時刻、類型與度數：日食取食甚時太陽的度數，月食取月亮的度數。出生的時候若正好有一次日食或月食在進行、而最深的那一刻在出生之後，另列為「出生時正在進行」，「前一次」仍以最深那一刻在出生前來定。沒有評估出生地看不看得見。</p>
     <p><b>半影月食。</b>月亮只經過地球影子外圍較淡的一圈（半影）、沒有進到中間最暗的本影時，叫半影月食。月亮只是稍微變暗，常常肉眼看不出來：Espenak 說月亮直徑要有大約六成以上沒入半影，有經驗的觀測者才看得出淡淡的陰影，到快要變成偏食時才明顯。算進來的理由：天文上它是一次月食，NASA 的月食表與 Swiss Ephemeris 都列它。不算的理由：Ptolemy 講的日月食是看得見的遮蔽（II.5 說的是「發生在地平線上方、看得見的」那些，II.6 用遮蔽持續的時數來算），半影月食通常看不見。我們讀到的占星書都沒有明說半影月食算不算，1900–2399 年間每週取一個出生時刻，約 28% 的出生兩種算法得到的「前一次月食」不同，所以兩個都列，不替讀者選。</p>
     <p class="cite">Ptolemy《占星四書》II.4–II.8，Robbins, Loeb 1940（LacusCurtius 線上本）；Graves, Introduction to Prenatal Eclipses（2004，網頁）；Jansky《Interpreting the Eclipses》、Lineman《Your Prenatal Eclipse》、Brady《Predictive Astrology》（1992）只讀到書目或摘要；Espenak, Visual Appearance of Lunar Eclipses（eclipsewise.com）。日月食的時刻與類型以 NASA 的日月食表驗證：Eclipse Predictions by Fred Espenak and Jean Meeus (NASA's GSFC)</p>
+      </div>
+    </details>
+    </div>
 
-    <h3>07.12　反照點：鏡射，不是判定</h3>
+    <div class="fold-sub" data-fold-host>
+    <h3 id="antiscia">07.12　反照點：鏡射，不是判定</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>反照點把黃經對至點軸鏡射，反向反照點對分點軸鏡射。本站只輸出座標，不做任何判定，也沒有容許度。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="antiscia"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>反照點把黃經對至點軸（0° 巨蟹—0° 摩羯）鏡射；反向反照點對分點軸（0° 牡羊—0° 天秤）鏡射，也就是反照點的對宮。恆星黃道下先換回回歸黃道再鏡射，所以公式多減兩倍 ayanamsa。本產品只輸出座標，<b>不做任何判定，也沒有容許度</b>；參與範圍依方法裁決（七政，交點須另選），軸點與恆星不在範圍內。</p>
     <p class="cite">Firmicus《Mathesis》II.29（Kroll–Skutsch 編號）；Lilly, Christian Astrology 1647 pp. 90–92（定義與例 p. 90，度分換算表 p. 91，反向反照點 p. 92）；Ptolemy《占星四書》I.14–I.15（Robbins pp. 75–77）只到星座層，是前身。Firmicus 在卷 II 序言提到 Fronto 追隨 Hipparchus 的反照點，並評為無效力</p>
+      </div>
+    </details>
+    </div>
 
-    <h3>07.13　行星日與行星時</h3>
+    <div class="fold-sub" data-fold-host>
+    <h3 id="planetary-hours">07.13　行星日與行星時</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>行星日從日出算起，晝、夜各十二等分，依迦勒底序輪值。極晝、極夜等沒有正常日出日落循環時，以及日心、質心，不給行星時，標為不適用。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="planetary-hours"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>行星日從日出算到下一次日出，<b>不從午夜算起</b>：日出到日落十二等分為晝時，日落到下一次日出十二等分為夜時，所以晝時與夜時通常不等長。各時依迦勒底序（土星、木星、火星、太陽、金星、水星、月亮）輪值；第一時之主是這一天的日主，取日出那一刻在出生地時區的民用日是星期幾。日出與日落用「升降與中天」同一個定義：太陽上緣、含標準大氣折射、從地表觀測者看、不計地平俯角。每張盤都列出行星日與行星時；出生時間不精確時，列出區間內每一個可能的行星時。</p>
     <p>前後兩次日出相隔超過 1.5 日、或其間不是恰好一次日落（極區的極晝、極夜與前後幾天）時，<b>不給行星時，標為不適用</b>；不精確的出生時間只要區間內有一段沒有日出日落循環，整個區間都不適用。日心與質心也不適用。</p>
     <p class="cite">Cassius Dio《羅馬史》（Rhōmaikē historia）XXXVII.19：七曜依序配給晝夜各時，從土星起，由此得出星期的名稱（只核英譯）。Dio 沒有定義不等時，也沒有說一天從日出開始；這兩點是後世的標準傳統，沒有引原典，也沒有頁碼</p>
+      </div>
+    </details>
+    </div>
 
+    <div class="fold-sub" data-fold-host>
     <h3 id="dodecatemoria">07.14　十二分部：兩種算法，平等提供</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>十二分部有兩種算法：Firmicus 乘以 12（預設），Paulus 與 Olympiodorus 乘以 13，兩種常落在不同星座，計算頁都可選。只列位置與守護行星，不解盤；對出生時間非常敏感。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="dodecatemoria"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>十二分部（dodecatemoria）是古典占星的細部技法：一個點在星座裡走了幾度，把它放大，再從<b>同一個星座的起點</b>往後數，每 30° 換下一個星座，數到的位置就是這個點的十二分部；接著看那個星座由哪顆行星守護。例如太陽在牡羊 5°05′，乘以 12 得 61°，從牡羊起點數過牡羊、金牛各 30°，落在雙子第 1 度，雙子的守護行星是水星。</p>
     <p>古書在「放大幾倍」上<b>說法不一，而且會改變結果</b>：Firmicus 乘以 12；Paulus 與註解他的 Olympiodorus 乘以 13，等於從這個點自己的位置再往後數 12 倍。兩種常落在不同星座。計算頁兩種都可選，預設是乘以 12：它是讀過原文、而且附例子的那一條，也和 Manilius 把每座分成十二段、每段 2°30′ 的分法在星座上一致。一張西元 319 年的紙草星盤裡，有幾顆行星合乎乘以 13、另幾顆合乎乘以 12；研究者認為可能是混用兩種，也可能是算錯。</p>
     <p>列出的點：七顆行星；有算宮位時加上升點；勾了阿拉伯點時加命運點與精神點。<b>中天不列</b>：讀過的古書沒有算中天的十二分部。結果只列位置與守護行星，<b>不替你解盤，也不預測</b>。十二分部把度數放大十二倍以上，所以對出生時間非常敏感：時間差 4 分鐘，上升點的十二分部常常就差 10° 以上；只知約略時辰時，一小時裡任何一列都可能換星座，最容易換的是上升點、命運點與精神點，其次是月亮；只知日期時，一天裡每一列都可能換星座，月亮最快，太陽、水星、金星、火星也常常換。日心、質心、J2000 與（回歸黃道下）不含章動時，不適用並附原因。</p>
-    <p class="cite">Firmicus《Mathesis》II.13（Kroll–Skutsch 編號；Holden 英譯為 II.17），例為太陽牡羊 5°05′ 得雙子第 1 度，核到：親讀原文（拉丁文）；Manilius《Astronomica》II.693–748，核到：親讀原文（拉丁文）；Ptolemy《占星四書》I.22 描述每座十二段的分法並認為沒有根據，核到：親讀譯本（Robbins 英譯）；Paulus《導論》（Eisagōgika）ch. 22（牡羊 11° 得獅子 23°）與 Olympiodorus 註解 ch. 20（上升天蠍 20° 得巨蟹 20°），據 Greenbaum 與 Jones, ISAW Papers 12（2017）§185–188，核到：轉引（只讀到二手）；Olympiodorus 註解 ch. 21（阿拉伯點），核到：只見書目；Valens《占星選集》I.4 與 Porphyry《占星四書導論》ch. 39，核到：轉引（只讀到二手）</p>
+    <p class="cite">Firmicus《Mathesis》II.13（Kroll–Skutsch 編號；Holden 英譯為 II.17），例為太陽牡羊 5°05′ 得雙子第 1 度，核到：已讀原文（拉丁文）；Manilius《Astronomica》II.693–748，核到：已讀原文（拉丁文）；Ptolemy《占星四書》I.22 描述每座十二段的分法並認為沒有根據，核到：已讀譯本（Robbins 英譯）；Paulus《導論》（Eisagōgika）ch. 22（牡羊 11° 得獅子 23°）與 Olympiodorus 註解 ch. 20（上升天蠍 20° 得巨蟹 20°），據 Greenbaum 與 Jones, ISAW Papers 12（2017）§185–188，核到：轉引（只讀到二手）；Olympiodorus 註解 ch. 21（阿拉伯點），核到：只見書目；Valens《占星選集》I.4 與 Porphyry《占星四書導論》ch. 39，核到：轉引（只讀到二手）</p>
+      </div>
+    </details>
+    </div>
 
+    <div class="fold-sub" data-fold-host>
     <h3 id="lunar-mansions">07.15　月宿（Lunar Mansions）：黃道的二十八等分，不是古中國的二十八宿</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>月宿從回歸黃道牡羊 0° 起把黃道 28 等分，只放月亮，只列落在哪一宿，不解讀。它和古中國沿赤道、寬窄不一的二十八宿不是同一套，本站不換算。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="lunar-mansions"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>月宿（阿拉伯文 manāzil al-qamar，意思是「月亮的停留處」）是中世紀阿拉伯與歐洲占星書的分法：月亮大約 28 天走完黃道一圈，所以把黃道分成 28 份，每一份大約是月亮一天走的路。本產品用<b>等分</b>：從回歸黃道的牡羊 0°（當日的春分點）起，每宿 360°÷28＝12°51′25.71″（古書寫成 12°51′26″）；第 1、8、15、22 宿正好從牡羊、巨蟹、天秤、摩羯 0° 開始。只放月亮，因為我們讀過的書都只講月亮所在的宿。結果列出第幾宿、阿拉伯宿名（拉丁字母轉寫，不譯成中文）、這一宿的起訖，以及月亮在宿內走了多遠；月亮離交界不到 1′（出生時刻差兩分鐘左右）時另外標出。出生時間不精確時，列出那一個鐘點或那一天裡月亮待過的每一宿。</p>
     <p class="nodef"><span class="nd-k">只列，不解讀</span><span><b>只列月亮落在哪一宿。不替你解盤，也不預測。</b>古書用月宿挑日子、做護符、看天氣；這些都不輸出。宿名只寫阿拉伯原名，不譯成中文。</span></p>
     <div class="axis">
@@ -578,22 +764,41 @@
       </table>
     </div>
     <p class="cite">Agrippa《De occulta philosophia》卷二第 33 章（1651 年英譯本）：每宿 12°51′ 又將近 26″，第 1、8、15、22 宿從牡羊、巨蟹、天秤、摩羯之首起算（沒有頁碼）；al-Bīrūnī《古代民族年代學》（al-Āthār al-bāqiya）第 21 章（Sachau 1879 英譯，pp. 335–366）：28 份、每個星座兩又三分之一份，宿名與星。阿拉伯文字形未逐一對照印本；《Picatrix》（Ghāyat al-ḥakīm）、Ibn Abī al-Rijāl 與 al-Bīrūnī《占星術入門》都還沒有讀</p>
+      </div>
+    </details>
+    </div>
 
+    <div class="fold-sub" data-fold-host>
     <h3 id="fixed-stars">07.16　恆星：清單依據哪些古書</h3>
-    <p>勾選「恆星」時，本產品列出 57 顆亮星的位置（黃經、黃緯、赤緯）與星等。<b>只列位置，不判定行星與恆星的合相</b>：古書用恆星的方式不只一種（看黃經是否相合，或看是否和上升點、中天同時升起或過中天），要先選定一種，再定容許度，這些都還沒有裁決。</p>
-    <p>清單分三段，只在後面追加，不重排。第一段是中世紀護符書常用的十五顆星，英文稱 Behenian fixed stars，依 Agrippa《論隱祕哲學》（De occulta philosophia）的星名表；其中「烏鴉之翼」（Ala Corvi）沒有說是烏鴉座哪一顆，所以這一格放軫宿三（δ Crv，Algorab），另把軫宿一（γ Crv，Gienah）列在第三段，兩顆都列。第二段是我們另外挑的常用亮星。第三段是古書點了名、對得到星的亮星，出自 Ptolemy《占星四書》I.9、Lilly《Christian Astrology》第三卷，以及一位西元 379 年的佚名作者（Anonymous of 379）。</p>
-    <p>Ptolemy 在 I.9 逐一用行星說明恆星的性質：畢宿裡那顆明亮、略帶紅色、叫作「火炬」（今稱 Aldebaran，畢宿五）的星，性質如火星；天蠍額上的亮星作用如火星，也有幾分如土星；獅子尾巴上的亮星（今稱 Denebola，五帝座一）與長蛇座的亮星，性質如土星與金星。這是《占星四書》的說法，照原文列出；計算結果只列位置與星等，不另列這些性質。Ptolemy 多半按星座的部位成組點名（例如「天蠍額上的亮星」），組裡是哪幾顆星，是後人的對照；Lilly 與 Anonymous of 379 多半直接寫星名，或寫出單一顆星的位置。每顆星對到哪一條出處，記在內部的來源表，計算結果不逐星標出處。</p>
-    <p>位置來自 Swiss Ephemeris 附的恆星表，每一顆都用獨立換算對 Hipparcos 衛星星表核對過（見<a href="/zh-TW/validation">驗證頁</a>）。南門二的星表記錄是整個雙星系統的值，不是其中最亮的 A 星：在 2026 年兩者相差不到 1 角秒，離 2000 年越遠差得越多，最多到幾十角秒。星團（例如鬼星團）這一批沒有收：星團的星等是整團的亮度，位置也需要另一種核對方法。</p>
+    <p class="fold-gist"><span class="fold-k">重點</span>列出 57 顆亮星與 3 個星團的位置與星等，清單依 Agrippa、Ptolemy、Lilly 與一位西元 379 年的佚名作者。只列位置，不判定合相；古書說恆星的性質、說星團主失明，照原文列出，不放進個人的盤。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="fixed-stars"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
+    <p>勾選「恆星」時，本產品列出 57 顆亮星與 3 個星團的位置（黃經、黃緯、赤緯）與星等。<b>只列位置，不判定行星與恆星的合相</b>：古書用恆星的方式不只一種（看黃經是否相合，或看是否和上升點、中天同時升起或過中天），要先選定一種，再定容許度，這些都還沒有裁決。</p>
+    <p>清單分四段，只在後面追加，不重排。第一段是中世紀護符書常用的十五顆星，英文稱 Behenian fixed stars，依 Agrippa《論隱祕哲學》（De occulta philosophia）的星名表；其中「烏鴉之翼」（Ala Corvi）沒有說是烏鴉座哪一顆，所以這一格放軫宿三（δ Crv，Algorab），另把軫宿一（γ Crv，Gienah）列在第三段，兩顆都列。昴星團（Pleiades）那一格，Agrippa 只寫「the Pleiades, or Seven Stars」，沒有指哪一顆，也沒有給度數；這一格以昴宿六（Alcyone）代表昴星團，是現代慣例，不是 Agrippa 的指定，昴宿六離星團中心約 15′。第二段是我們另外挑的常用亮星。第三段是古書點了名、對得到星的亮星，出自 Ptolemy《占星四書》I.9、Lilly《Christian Astrology》第三卷，以及一位西元 379 年的佚名作者（Anonymous of 379）。第四段是 Ptolemy 在 I.9 點名的 3 個星團：巨蟹胸前的鬼宿星團（Praesepe，拉丁文「馬槽」）；英仙劍柄的星團，星表名 Capulus（拉丁文「劍柄」），本站用的記錄是英仙h星團（NGC 869），Ptolemy 指的是這一團，還是連同旁邊的 NGC 884 一對，沒有定論；天蠍的「所謂雲狀的星團」，星表名 Acumen（拉丁文「尖端」），通常認定為托勒密星團（M7），但有爭議：Ptolemy 在《至大論》（Almagest）星表裡記的位置與 M7 差約 3°，有學者認為指的是別的星。</p>
+    <p>Ptolemy 在 I.9 逐一用行星說明恆星的性質：畢宿裡那顆明亮、略帶紅色、叫作「火炬」（今稱 Aldebaran，畢宿五）的星，性質如火星；天蠍額上的亮星作用如火星，也有幾分如土星；獅子尾巴上的亮星（今稱 Denebola，五帝座一）與長蛇座的亮星，性質如土星與金星；巨蟹胸前叫作「馬槽」的雲狀星團與天蠍的雲狀星團，性質如火星與月亮；英仙劍柄的星團，性質如火星與水星；昴星團，性質如月亮與木星（Ashmand 1822 年依 Proclus 改述本的英譯作「如月亮與火星」，兩個譯本不同）。這是《占星四書》的說法，照原文列出；計算結果只列位置與星等，不另列這些性質。Ptolemy 多半按星座的部位成組點名（例如「天蠍額上的亮星」），組裡是哪幾顆星，是後人的對照；Lilly 與 Anonymous of 379 多半直接寫星名，或寫出單一顆星的位置。每顆星對到哪一條出處，記在內部的來源表，計算結果不逐星標出處。</p>
+    <p>位置來自 Swiss Ephemeris 附的恆星表，每一顆都用獨立換算對 Hipparcos 衛星星表核對過（見<a href="/zh-TW/validation">驗證頁</a>）。南門二的星表記錄是整個雙星系統的值，不是其中最亮的 A 星：在 2026 年兩者相差不到 1 角秒，離 2000 年越遠差得越多，最多到幾十角秒。3 個星團沒有 Hipparcos 編號，改對 SIMBAD 天文資料庫與 Cantat-Gaudin 和 Anders 2020 年星團表的星團中心核對：英仙h星團的記錄離中心不到 1′，托勒密星團約 3′；<b>鬼宿星團的記錄離星團中心約 22′</b>，大多偏在黃緯，黃經約差 7′。這筆記錄來自舊的梅西耶天體（Messier objects）網頁，本站照用 Swiss Ephemeris 附的星表、沒有改它，所以結果裡鬼宿星團的黃經比星團中心小約 7′；這仍在星團一半成員所在的範圍（半徑約 1°）之內。星團的星等是整團合計的亮度，不是一顆星的亮度，結果表在星等後標「整團合計」。</p>
+     <p><b>古書怎麼說星團。</b>Ptolemy《占星四書》III.12（Robbins 英譯的章次）談身體的傷害：月亮在地平的兩個軸點（上升或下降），又趨近黃道上的星團，也就是巨蟹的星團、金牛的昴星團、人馬的箭頭、天蠍的螫，或獅子靠近后髮的部分、水瓶的水罐，主一眼失明。Firmicus《Mathesis》VI.31.88：月亮在巨蟹的雲狀處（nebula Cancri）、金牛的腳（抄本異文作昴星團）、獅子的鬃毛等處，月虧又受土星或火星的相位，使人失明（caecos efficiet），在軸點則全盲。Lilly《Christian Astrology》（1647）p. 581〈論視力衰弱〉：太陽或月亮在銀河，或與雲狀的星（Nebulosis stellis）同處，例如昴星團、鬼宿星團（他寫 Presepe，在獅子 2°13′），又受凶星刑、沖、合，主失明，太陽主右眼，月亮主左眼。這些是古書的說法，照原文列出；計算結果只列星團的位置與星等，不判定合相，也不把這些說法放進個人的盤。</p>
     <details class="more" id="fixed-star-sources">
       <summary>出處：恆星清單</summary>
       <ol>
         <li><b>Behenian 十五星。</b>Agrippa《論隱祕哲學》（De occulta philosophia）I.32 的星名表與 II.47 的星像。核到：<span class="mono">轉引</span>（只讀到二手；Agrippa 原書與他所依的 Hermes《十五星書》（De XV stellis）都還沒讀）。</li>
-        <li><b>Ptolemy。</b>《占星四書》I.9 依星座的部位列出恆星，並用行星說明它們的性質（Robbins 英譯，Loeb 1940，pp. 47–59）。核到：<span class="mono">親讀譯本</span>（Robbins 英譯）。</li>
-        <li><b>Lilly。</b>《Christian Astrology》（1647）第三卷，在格言與例盤的推算裡點名恆星，例如「長蛇座的亮星」「獅子的尾巴」「兩隻驢子」「公牛的南角」「巨蛇的頸」（pp. 649–702）。核到：<span class="mono">親讀原文</span>（1647 年原書的掃描文字）；第一、二卷還沒讀。</li>
+        <li><b>Ptolemy。</b>《占星四書》I.9 依星座的部位列出恆星，並用行星說明它們的性質（Robbins 英譯，Loeb 1940，pp. 47–59）；III.12 談星團與眼疾（pp. 321–323）。核到：<span class="mono">已讀譯本</span>（Robbins 英譯）。</li>
+        <li><b>《至大論》星表裡的雲狀星。</b>Ptolemy《至大論》（Almagest）的星表把鬼宿星團（P 449）、英仙劍柄（P 191）、天蠍螫後（P 567）記為雲狀（nebulous）；P 567 是不是 M7，各家認定不同。核到：<span class="mono">轉引</span>（只讀到二手；依 Verbunt 與 van Gent 2012 年的論文，Toomer 英譯還沒讀）。</li>
+        <li><b>Firmicus。</b>《Mathesis》VI.31.88 與 VIII.4 的「nebula Cancri」（Kroll、Skutsch、Ziegler 校勘本第 2 冊）。核到：<span class="mono">已讀原文</span>（拉丁文校勘本的掃描文字）。</li>
+        <li><b>Lilly。</b>《Christian Astrology》（1647）第三卷，在格言與例盤的推算裡點名恆星，例如「長蛇座的亮星」「獅子的尾巴」「兩隻驢子」「公牛的南角」「巨蛇的頸」（pp. 649–702），並在 p. 581 列出雲狀星與眼疾；第三卷裡沒有寫英仙劍柄與天蠍的星團。核到：<span class="mono">已讀原文</span>（1647 年原書的掃描文字）；第一、二卷還沒讀。</li>
         <li><b>Anonymous of 379。</b>一位西元 379 年的佚名作者列的 28 顆亮星，希臘原文收在《希臘占星抄本目錄》（Catalogus Codicum Astrologorum Graecorum）第五卷第一冊 pp. 194–211。核到：<span class="mono">轉引</span>（只讀到二手；依 Bezza 義大利文譯本與 Dudziak 英譯所做的整理）。</li>
       </ol>
     </details>
+      </div>
+    </details>
+    </div>
+    <div class="fold-sub" data-fold-host>
     <h3 id="solar-phase">07.17　焦傷與光束下：量黃經，三種界線並列</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>日輪內（cazimi）、焦傷、在光束下（under the beams）以黃經差判定，Lilly p.113（預設）、希臘化、al-Bīrūnī 三種界線並列。Lilly 說焦傷是行星所能有的最大不幸，照原典列出；不替你解盤，也不預測。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="solar-phase"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>古典占星看行星離太陽多近。離太陽極近、幾乎落在太陽正中的叫<b>日輪內</b>（cazimi，阿拉伯文「在太陽之心」）；再遠一點叫<b>焦傷</b>（combust；阿拉伯文 muḥtariq、拉丁文 combustus，字面是「被燒」）；再遠一點，行星被太陽的光芒蓋住、肉眼看不到，叫<b>在光束下</b>（under the beams）；超過最後一條線就<b>離開光束</b>。計算頁勾選後，列出月亮與五顆行星各自離太陽幾度、落在哪一帶，出生前後 7 天內是否升出或隱入光束，以及每天的距離。天王星、海王星、冥王星不列，因為古書只談五顆行星與月亮。</p>
     <p class="nodef"><span class="nd-k">原典怎麼說</span><span>Lilly《Christian Astrology》1647 年版 p.111 說：「任何行星的焦傷，是所能有的最大不幸」；p.113 說太陽正在趕上行星時，行星受害比太陽離開時更重，又說「各家都認為行星在 Cazimi 因而得力」。al-Bīrūnī《占星術入門》（Kitāb al-Tafhīm）§481 說行星在光束下「像被關住的囚犯」，§486 說行星的作用在焦傷時最小。Abū Maʿshar《大導論》（Kitāb al-mudkhal al-kabīr）VII.2 說除了 Cazimi，太陽會灼燒與它會合的每一顆星，使它衰弱、敗壞。Ptolemy《占星四書》III.10 不採在太陽光線下的行星當破壞者或援助者。<b>我們照原典列出各分法怎麼說；不替你的盤做個人解讀，也不預測。</b></span></p>
     <p><b>為什麼量黃經，不量天空中的實際距離。</b>古書的界線寫的是黃道上的度數，而且 al-Bīrūnī 與 Abū Maʿshar 都替「北黃緯很高的金星」另立例外：al-Bīrūnī §483 說金星在會合時北黃緯超過 7°，不稱日輪內也不稱焦傷，只稱「伴隨太陽」（muqārina）；Abū Maʿshar 說金星因為黃緯，與太陽在同一度時仍看得見，這時不能稱為焦傷，而稱「顯現」。<b>以下是我們的推論，不是原典的話：</b>這樣的金星在天空中離太陽已有 7°–8°，如果他們量的是實際距離，它本來就在 16′ 與 6° 之外，根本不需要例外；正因為他們量的是黃道上的度數，金星與太陽「在同一度」，才需要另外說明。所以本產品用<b>黃經差</b>判定，天空中的實際夾角與黃緯照列、不拿來判定。2017 年 3 月 25 日的金星就是例子：黃經只差 1′，卻在太陽北方 8°18′——照 Lilly 是日輪內，照 al-Bīrūnī 是伴隨太陽，照希臘化的 15° 是在光束下。</p>
@@ -625,65 +830,163 @@
       <li>日心與質心、J2000 與（回歸黃道下）不含章動時不適用；恆星黃道下距離與距離帶都不變，只有「是否同星座」可能不同。</li>
     </ul>
     <p class="cite">Lilly《Christian Astrology》1647 年版 pp.111、113–114 與格言第 26 條（依 1647 年版與 1659 年轉錄本的線上全文，頁影像未核；p.115 的強弱表只讀到 OCR，不引用）；al-Bīrūnī《占星術入門》Wright 1934 英譯 §481–486（線上打字稿全文；1934 年版頁碼未核）；Abū Maʿshar《大導論》VII.2，Hermann of Carinthia 拉丁譯本（線上全文；Dykes 2020 英譯 p.418 只見轉引）；al-Qabīṣī《導論》第三章（John of Seville 拉丁譯本，線上全文）；Bonatti 經 Dykes 2007 p.211 轉引；Ptolemy《占星四書》III.10（Robbins 1940 英譯 p.285）；Porphyry《占星四書導論》第 2、30 章、Antiochus、Rhetorius 只見 Brennan 2017 與網頁轉引，原文未核</p>
+      </div>
+    </details>
+    </div>
 
+    <div class="fold-sub" data-fold-host>
     <h3 id="classical-classifications">07.18　行星與宮的古典分類：照原文列出，各書不同就並列</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>吉星與凶星、白天與夜晚兩組、喜樂宮、hayz 與 halb、十二宮的名稱與分類，照各書原文列出並寫明出處。書裡說凶就寫凶星；各書不同就並列，不加總成分數。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="classical-classifications"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>勾選「行星與宮的古典分類」時，結果會列出古書怎麼分類七顆行星與十二宮。每一條都寫明出自哪本書哪一章；書裡說吉、說凶，就照字寫吉星、凶星。這是各書的分類，照原文列出；各書說法不同時並列，我們不替你挑，也不把它們加總成分數。</p>
     <p><b>吉星與凶星。</b>Ptolemy《占星四書》卷一第 5 章：木星、金星、月亮是吉星，土星、火星是凶星，太陽與水星兩種力量都有，隨同處的行星。al-Bīrūnī《占星術入門》（Kitāb al-Tafhīm）第 382 節大致相同，但說土星尤凶，太陽相隔而有相位時為吉、相合而靠近時為凶，水星隨最近的行星。Valens《占星選集》（Anthologiae）卷一第 1 章沒有替每顆行星貼吉凶，但說凶星在自己那一組、所在合宜時，反而帶來好處。</p>
     <p><b>白天與夜晚兩組。</b>太陽、木星、土星屬白天一組，月亮、金星、火星屬夜晚一組（Ptolemy 卷一第 7 章、Valens 卷一第 1 章、al-Bīrūnī 第 386 節一致）。水星依 Ptolemy：在太陽之前升起（晨星）時屬白天，在太陽之後落下（昏星）時屬夜晚；我們以黃經在太陽之西或之東判斷。al-Bīrūnī 說水星隨同處的行星或星座而定，這一種我們沒有算。</p>
     <p><b>喜樂宮（joys）。</b>水星第 1 宮、月亮第 3 宮、金星第 5 宮、火星第 6 宮、太陽第 9 宮、木星第 11 宮、土星第 12 宮這一組，通常引 Paulus《導論》（Eisagōgika）第 24 章；我們沒有讀到原文或譯本，只見轉引。我們讀到的 Firmicus《Mathesis》卷二第 19 章與 Valens 卷二，把第 5、6、9、11、12 宮分別稱為金星、火星、太陽、木星、土星的位置（Valens 另把第 3 宮稱為女神月亮的位置），但沒有用「喜樂」這個詞；Firmicus 另說第 8 宮只有月亮喜樂，而且只在夜盤。兩條我們都列。Manilius《Astronomica》卷二用另一套名稱與守護神，我們沒有採用。是否在喜樂宮，看行星在你所選宮位制下的宮。</p>
     <p><b>Hayz 與 halb。</b>中世紀阿拉伯語占星書的用詞，說一顆行星的所在合不合乎它屬白天或夜晚。al-Bīrūnī 第 496 節：白天一組的行星白天在地平上、夜裡在地平下，夜晚一組相反，叫 halb；再加上陽性行星在陽性星座、陰性行星在陰性星座，叫 hayyiz；火星是陽性但屬夜晚一組，要夜裡在地平上、在陽性星座。al-Qabīṣī 與 Bonatti 相同。Lilly《Christian Astrology》（1647）第 113 頁只有 hayz，而且說陰性的夜晚行星要<b>夜裡在地平下</b>，與 al-Bīrūnī 相反；火星與水星不在他的定義裡。兩種都列。古書只說「在地上」「在地下」，沒有說看地平線還是看宮位；我們看行星中心從地心算是否高於地平線，與判日夜盤的規則相同。</p>
     <p><b>十二宮的名稱與分類。</b>名稱沿用希臘化時期的叫法：第 1 宮 Hōroskopos（上升）、第 2 宮冥府之門、第 3 宮女神（Thea）、第 4 宮天底、第 5 宮好運（Agathē Tychē）、第 6 宮惡運（Kakē Tychē）、第 7 宮下降、第 8 宮死亡之始（Valens 稱為怠惰之處）、第 9 宮神（Theos）、第 10 宮中天、第 11 宮善靈（Agathos Daimōn）、第 12 宮惡靈（Kakos Daimōn）。這些中文是我們的譯名，結果裡並列希臘文、拉丁文與英文。第 1、4、7、10 宮是始宮，下一宮是續宮，再下一宮是果宮。好壞有兩種分法：Firmicus 卷二第 15–17 章說第 2、6、8、12 宮與上升沒有關聯，是遲滯、低落的位置；Dorotheus《Carmen Astrologicum》卷一第 5 章（只見轉引）把第 1、10、11、5、7、4、9 宮列為好，第 3、2、8 宮中等，第 6、12 宮壞。</p>
-    <p><b>各宮的含義只在這裡列，不進個人的盤。</b>下表是 Valens《占星選集》卷四〈十二宮的名稱〉逐宮列的事項（Riley 英譯），照書直譯；Firmicus 卷二第 19 章另有一份，比較短，而且與 Valens 卷四第 12 章（IV.12）有實質差異：Firmicus 的第 4 宮有父母，第 10 宮是「生命與氣息、一切行動、故鄉」，第 11 宮沒有列任何事項。其他書的說法與彼此的差異，還在研究。</p>
-    <div class="mansion-scroll" tabindex="0" role="region" aria-labelledby="places-cap">
-    <table class="mansion-table">
-      <caption id="places-cap">Valens《占星選集》卷四：各宮的事項</caption>
-      <thead><tr><th scope="col">宮</th><th scope="col">事項</th></tr></thead>
+    <p><b>各宮的含義</b>（各宮主什麼事）不在這一節，見 07.19 的四本書對照。</p>
+    <p class="cite">Ptolemy《占星四書》I.5–I.7、I.12、III.3、III.10 與 Robbins 注 56（Robbins 英譯，Loeb 1940，LacusCurtius），已核英譯；Valens《占星選集》I.1、卷二、卷四〈十二宮的名稱〉（Riley 英譯的線上重排本），已核英譯；al-Bīrūnī《占星術入門》§382、§385、§386、§496（Wright 1934 英譯的掃描文字），已核英譯；al-Qabīṣī《導論》（al-Mudkhal）I.78（Burnett 等 2004）、Bonatti《天文學之書》（Decem tractatus astronomiae）III.8，已核英譯；Lilly, Christian Astrology 1647 p.113（現代重排本的掃描文字）；Firmicus《Mathesis》II.15–20（Kroll–Skutsch 編號），已核拉丁原文；Paulus《導論》ch.24、Olympiodorus ch.23、Rhetorius ch.54 只見 Brennan（ISAR Journal 2013）轉引；Dorotheus《Carmen Astrologicum》I.5 讀到 2024 年依 Pingree 英譯改寫的本子（轉引），Pingree 原文未核；Manilius《Astronomica》卷二的十二廟與卷三的 athla 已讀拉丁原文，哪一處對到第幾宮是我讀拉丁文所得，未對 Goold 英譯</p>
+      </div>
+    </details>
+    </div>
+    <div class="fold-sub" data-fold-host>
+    <h3 id="house-meanings">07.19　各宮的含義：四本書並列，不合併</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>Valens、Firmicus、al-Bīrūnī、Lilly 四本書逐宮並列，照原文直譯：疾病就寫疾病，死亡就寫死亡。表的內容對每張盤都一樣，不進個人的盤，也不合併成綜合宮義。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="house-meanings"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
+    <p><b>各宮的含義只在這一頁列，不進個人的盤。</b>結果裡每個宮名連到下表那一列；表的內容對每張盤都一樣，不是對任何人的判斷。古書對同一宮常常說法不同，把它們合併成一份「綜合宮義」本身就是重新詮釋，所以本站照書並列，不替你挑。</p>
+    <p>下表四欄依序是希臘化、拉丁、阿拉伯與近代早期各一本逐宮列事項的書，格內照原文直譯：疾病就寫疾病，死亡就寫死亡。Valens《占星選集》卷四第 12 章（IV.12）〈十二宮的名稱〉，核到：<span class="mono">已讀譯本</span>（Riley 英譯）。Firmicus《Mathesis》卷二第 19 章（II.19，Kroll–Skutsch 編號），核到：<span class="mono">已讀原文</span>（拉丁文）。al-Bīrūnī《占星術入門》第 461 節〈本命盤各宮特有的指示〉，核到：<span class="mono">已讀譯本</span>（Wright 1934 英譯的掃描文字）。Lilly《Christian Astrology》（1647）第一卷〈Of the twelve Houses〉pp. 50–56，核到：<span class="mono">已讀原文</span>（附原頁碼的線上轉錄本）。四欄都讀到十二宮，所以沒有「未讀」的格；書裡在某一宮沒有列事項的，照寫「書中沒有列事項」。</p>
+    <p>Firmicus 卷二第 19 章比 Valens 短，而且與 Valens 卷四第 12 章（IV.12）有實質差異：Firmicus 的第 4 宮有父母，Valens IV.12 的第 4 宮沒有；Firmicus 的第 10 宮是「生命與氣息、一切行動、故鄉」，和第 1 宮的「生命、氣息」重複；Firmicus 的第 11 宮沒有列任何事項；第 8 宮 Firmicus 只寫「死亡的性質」，沒有 Valens 的「得自死者的好處」。</p>
+    <div class="mansion-scroll" tabindex="0" role="region" aria-labelledby="house-meanings-cap">
+    <table class="mansion-table house-meanings">
+      <caption id="house-meanings-cap">各宮的事項：Valens、Firmicus、al-Bīrūnī、Lilly 四本書並列</caption>
+      <thead><tr><th scope="col">宮</th><th scope="col">Valens IV.12</th><th scope="col">Firmicus II.19</th><th scope="col">al-Bīrūnī §461</th><th scope="col">Lilly</th></tr></thead>
       <tbody>
-        <tr><td>第 1 宮（上升）</td><td>生命、舵槳、身體、氣息</td></tr>
-        <tr><td>第 2 宮（冥府之門）</td><td>生命、幽暗、給予與收受、結交</td></tr>
-        <tr><td>第 3 宮</td><td>兄弟、出外、王權與權威、朋友、親屬、收入、奴僕</td></tr>
-        <tr><td>第 4 宮</td><td>地位、子女、妻子、長輩、城市、家、財產、遷移、危險、死亡、拘禁、宗教事務</td></tr>
-        <tr><td>第 5 宮（好運）</td><td>子女、友誼、結交、奴僕、解放的奴隸、恩惠</td></tr>
-        <tr><td>第 6 宮</td><td>奴僕、傷害、敵意、疾病</td></tr>
-        <tr><td>第 7 宮（下降）</td><td>婚姻、成功、與女性的事、友誼、出行</td></tr>
-        <tr><td>第 8 宮（怠惰之處）</td><td>死亡、得自死者的好處、法律、疾病</td></tr>
-        <tr><td>第 9 宮</td><td>友誼、出行、外邦人、神、君王、權貴、占星、神諭、神靈顯現、祕儀</td></tr>
-        <tr><td>第 10 宮</td><td>職業、地位、成功、子女、女性、改變、事業上的革新</td></tr>
-        <tr><td>第 11 宮（善靈）</td><td>朋友、希望、贈禮、子女、奴僕、解放的奴隸</td></tr>
-        <tr><td>第 12 宮（惡靈）</td><td>外地、敵意、奴僕、傷害、危險、法庭、疾病、死亡</td></tr>
+        <tr id="house-meaning-1"><th scope="row">第 1 宮<br>上升</th><td>生命、舵槳、身體、氣息</td><td>生命、氣息（vita, spiritus）</td><td>自身、生命、壽命長短、養育、故鄉</td><td>人的生命、身材、膚色、氣質、外形；身體的頭與臉</td></tr>
+        <tr id="house-meaning-2"><th scope="row">第 2 宮<br>冥府之門</th><td>生命、冥府之門、幽暗、給予與收受、結交</td><td>希望與財物的增長；遲滯的位置，「冥府之門」</td><td>哺育與食物、生計、家當、幫手；受剋時傷眼</td><td>財富或貧窮、動產、借出的錢、得失、訴訟中的朋友或幫手；身體的頸</td></tr>
+        <tr id="house-meaning-3"><th scope="row">第 3 宮<br>女神</th><td>兄弟、出外、王權與權威、朋友、親屬、收入、奴僕</td><td>兄弟、朋友、出外旅行；女神（Dea）的位置</td><td>兄弟姊妹、親戚、姻親、朋友、遷徙、短途旅行、智識、對宗教法的專精</td><td>兄弟、姊妹、堂表親或親族、鄰居、短程或內陸的旅行、書信、信差、傳聞；身體的肩、臂、手</td></tr>
+        <tr id="house-meaning-4"><th scope="row">第 4 宮<br>天底</th><td>地位、子女、妻子、長輩、活動、城市、家、財產、住所、遷移、危險、死亡、拘禁、宗教事務（沒有父母）</td><td>父母、祖產、資財、根基、動產，以及隱藏、儲存的資財</td><td>父母、祖父母、後代、田產、水、家世、死後之事</td><td>父親、土地、房屋、遺產、埋藏的寶藏、城鎮與城堡、耕地；任何事的結局；身體的胸與肺</td></tr>
+        <tr id="house-meaning-5"><th scope="row">第 5 宮<br>好運</th><td>子女、友誼、結交、奴僕、解放的奴隸、恩惠</td><td>子女的數目與出身的性質；好運，金星的位置</td><td>子女、朋友、衣物、享樂、小利、父親的財富、父親葬禮上的名聲</td><td>子女、使節、懷孕的婦女、宴會、酒館、戲劇；兒子的健康；身體的胃、肝、心、背</td></tr>
+        <tr id="house-meaning-6"><th scope="row">第 6 宮<br>惡運</th><td>奴僕、傷害、敵意、疾病</td><td>缺陷與疾病的成因；惡運，火星的位置；遲滯</td><td>疾病、身體的缺陷、過勞、腿傷、失去財物、內臟的疾病、奴隸、僕人、牲畜</td><td>僕人、雇工、小牲畜；疾病的性質與成因、主要致病的體液、可治或不可治；父方的叔伯姑母；身體的下腹與腸</td></tr>
+        <tr id="house-meaning-7"><th scope="row">第 7 宮<br>下降</th><td>婚姻、成功、與女性的事、友誼、出行</td><td>婚姻的性質與數量</td><td>女性、婚姻、婚宴、爭執、合夥、損失、訴訟</td><td>婚姻、配偶、一切戀愛的問題、公開的敵人、訴訟、決鬥、盜賊與竊案、逃亡者；身體的臀</td></tr>
+        <tr id="house-meaning-8"><th scope="row">第 8 宮<br>死亡之始</th><td>死亡、得自死者的好處、怠惰之處、法律、疾病</td><td>死亡的性質；遲滯；只有月亮在夜盤於此喜樂</td><td>死亡及其原因、謀殺、下毒、藥物的效力、遺產、配偶的財產、開支、貧窮、假死</td><td>死者的財產、死亡及其性質、遺囑、遺贈、妻子的嫁妝、對手的幫手；恐懼與痛苦；身體的私處、結石與膀胱</td></tr>
+        <tr id="house-meaning-9"><th scope="row">第 9 宮<br>神</th><td>友誼、出行、得自外邦人的好處、神、君王、權貴、占星、神諭、神靈顯現、祕儀與隱祕之事、結交</td><td>人的學派、宗教、出外旅行；神，太陽的位置</td><td>旅行、宗教、虔敬、命運、莊重、占星與占卜、哲學、測量、解夢</td><td>長途航行與海外旅行、宗教人士或任何神職人員、夢、異象、外國、書、學問、教會的職位、妻子的親族；身體的臀與大腿</td></tr>
+        <tr id="house-meaning-10"><th scope="row">第 10 宮<br>中天</th><td>職業、地位、成功、子女、女性、改變、事業上的革新</td><td>生命與氣息、一切行動、故鄉、居所與整個生活方式；技藝、心性的缺陷；最有力的位置</td><td>君主的統治、政府、事業上的成功、職業、慷慨</td><td>君王、王子、公爵、官員、掌權者、母親、榮譽、升遷、職位、行業或職業、王國；身體的膝</td></tr>
+        <tr id="house-meaning-11"><th scope="row">第 11 宮<br>善靈</th><td>朋友、希望、贈禮、子女、奴僕、解放的奴隸</td><td>書中沒有列事項；善靈，木星的位置</td><td>幸福、朋友、敵人（掃描文字如此，未對印本）、對來世的關心、祈禱、女性的友誼、衣著、香料、商業、長壽</td><td>朋友、希望、信任、信心、讚譽與毀謗、朋友的忠誠、君王的庫藏；身體的小腿到腳踝</td></tr>
+        <tr id="house-meaning-12"><th scope="row">第 12 宮<br>惡靈</th><td>外地、敵意、奴僕、傷害、危險、法庭、疾病、死亡</td><td>敵人的性質、奴僕（servorum substantia）、缺陷、疾病；惡靈，土星的位置；遲滯</td><td>敵人、苦難、憂慮、監獄、債務、罰款、恐懼、逆境、疾病、母親的懷孕、牲畜、奴隸、軍隊、流放</td><td>暗中的敵人、女巫、大牲畜、悲傷、苦難、監禁、一切痛苦、自我毀滅、密告者；身體的腳</td></tr>
       </tbody>
     </table>
     </div>
-    <p class="cite">Ptolemy《占星四書》I.5–I.7、I.12、III.3、III.10 與 Robbins 注 56（Robbins 英譯，Loeb 1940，LacusCurtius），已核英譯；Valens《占星選集》I.1、卷二、卷四〈十二宮的名稱〉（Riley 英譯的線上重排本），已核英譯；al-Bīrūnī《占星術入門》§382、§385、§386、§496（Wright 1934 英譯的掃描文字），已核英譯；al-Qabīṣī《導論》（al-Mudkhal）I.78（Burnett 等 2004）、Bonatti《天文學之書》（Decem tractatus astronomiae）III.8，已核英譯；Lilly, Christian Astrology 1647 p.113（現代重排本的掃描文字）；Firmicus《Mathesis》II.15–20（Kroll–Skutsch 編號），已核拉丁原文；Paulus《導論》ch.24、Olympiodorus ch.23、Rhetorius ch.54 只見 Brennan（ISAR Journal 2013）轉引；Dorotheus《Carmen Astrologicum》I.5 只見網路二手整理轉引，Pingree 英譯未核；Manilius《Astronomica》II 部分核過拉丁原文，各宮對應依二手整理</p>
+    <p><b>其餘各書，以及各書彼此不同的地方。</b>照書列，不裁定誰對。</p>
+    <ul>
+      <li><b>Ptolemy 不用宮來分主題。</b>《占星四書》卷三、卷四看行星、點與軸點：父母看太陽與土星、月亮與金星（III.4），死亡的性質看相遇點或西方的軸點本身（IV.9），不看第 8 宮。</li>
+      <li><b>Valens 自己有三套。</b>除了上表的 IV.12，卷九第 3 章（IX.3，他說 Asclepius 是第一位、也是寫十二宮最多的作者）另有一份逐宮表，其中第 2 宮是生計、第 4 宮是「父母的生命」與宗教、隱祕之事；卷二的「九名」表又把神（第 9 宮）對到父親、女神（第 3 宮）對到母親、善靈（第 11 宮）對到子女、好運（第 5 宮）對到婚姻。卷二講第 3 宮的那一章完全沒有提兄弟，講的是祭司、預言、祕儀、神怒與褻瀆。</li>
+      <li><b>第 4 宮有沒有父母。</b>Valens IV.12 沒有；Valens IX.3、Firmicus、al-Bīrūnī、Lilly（父親）、Rhetorius 都有。</li>
+      <li><b>第 3 宮的宗教。</b>Rhetorius 第 57 章的第 3 宮有異鄉、夢、敬拜、兄弟、朋友、王后；al-Bīrūnī 有對宗教法的專精；Bonatti《天文學之書》（Liber astronomiae）第二論引 Alchabitius 加上信仰與宗教，引 Zahel 加上教派與異端。</li>
+      <li><b>第 8 宮的遺產。</b>死亡在每一份逐宮表都有；遺產見於 Valens（得自死者的好處）、al-Bīrūnī、Lilly，Firmicus II.19 沒有。Valens 稱第 8 宮為怠惰之處，Rhetorius 把第 2 宮也稱為怠惰。</li>
+      <li><b>第 10、11 宮。</b>Rhetorius 的第 10 宮有婚姻與子女；Bonatti 與 Lilly 的第 10 宮有母親。第 11 宮在 Rhetorius 是大財富、顯赫的作為、庇護、子女，沒有朋友與希望。</li>
+      <li><b>第 12 宮與女巫。</b>Lilly 的第 12 宮有女巫與自我毀滅。較早的書裡，巫術與咒語見於 al-Bīrūnī 第 462 節卜卦用的逐宮表（第 1 宮），以及 Bonatti 在第 4 宮主星一段講病因時。Rhetorius 的第 12 宮我沒有讀到。</li>
+      <li><b>中世紀的表怎麼變長。</b>Bonatti 逐宮引 Adila、Zahel、Alchabitius、Tiberiadis 等人，把各家說法疊在一起，所以宗教同時出現在第 3、7、9、11 宮，監獄同時出現在第 4、8、12 宮；他自己說這幾處監獄的說法互不矛盾。al-Bīrūnī 也有兩份不同的表：第 461 節給本命，第 462 節給卜卦（例如卜卦的第 7 宮主同輩之死，第 8 宮主朋友的疾病）。</li>
+      <li><b>Manilius 卷二的十二廟（templa）。</b>Manilius《Astronomica》卷二的十二處固定在地平與子午圈上，各有名稱與守護神：婚姻在中天（金星），不在第 7 宮；下降是「冥王之門」，主生命的終結；第 2、8 宮與第 6、12 宮只是成對的凶處，沒有給事項；「神」那一處講的是身體的缺陷。</li>
+      <li><b>Dorotheus 與 Paulus。</b>Dorotheus《Carmen Astrologicum》卷一第 5 章排了各宮的好壞，其餘散見各卷：第 3 宮兄弟、第 4 宮父母與事情的結局、第 6 宮奴僕與疾病、第 12 宮災禍；第 9 宮我只讀到「神」這個名稱，沒有讀到事項。Paulus《導論》第 24 章的逐宮事項：未讀。</li>
+    </ul>
+    <p><b>Manilius 的 athla 不是宮。</b>Manilius 卷三另列十二個 athla（命運的十二個分項）。第一項放在命運點（Lot of Fortune）所在的星座：日生從太陽數到月亮，再從上升點數同樣的距離；夜生從月亮數到太陽（III.188–200 附近）。其餘依星座順序接下去。原文說它們不是固定在天上的同一處（III.77 附近），所以每張盤都跟著命運點移動，和卷二固定在地平與子午圈上的十二廟、和後世的宮都對不上。十二項依序是：1 命運（家業的根基、奴僕、田地、建築）；2 軍旅，以及旅居異城；3 城中的事務與交友；4 訴訟、法律、法官；5 婚姻、夥伴、待客之道；6 財富，以及它能維持多久；7 危險；8 門第與榮銜；9 子女、父母的憂懼、乳母；10 品行，即怎麼過日子；11 健康與疾病（valetudo）；12 願望的實現、學問與技藝（III.96–153）。原文沒有拿 athla 和十二廟對比；「兩套互不相容」是現代注家的說法。本站不計算 athla。</p>
+    <details class="more" id="house-meaning-sources">
+      <summary>出處：各宮的含義</summary>
+      <ol>
+        <li><b>Valens。</b>《占星選集》IV.12（Kroll pp. 179–180；Pingree p. 170）、IX.3（Kroll pp. 334–336；Pingree pp. 321–322）、卷二各宮的章與「九名」表（Kroll p. 69；Pingree p. 67）。Kroll 與 Pingree 的章次不同，Riley 兩者並列。核到：<span class="mono">已讀譯本</span>（Riley 英譯的線上草稿）；九名表另見 Schmidt 英譯，經 Brennan 轉引，兩譯一致。</li>
+        <li><b>Firmicus。</b>《Mathesis》II.14（八個位置）、II.15–II.17、II.19（第 2–13 段依序是第 1–12 宮）、II.20（Kroll–Skutsch 編號；Holden 英譯在這一段的章次多 2，是從一處二手引用推得，Bram 英譯未核）。核到：<span class="mono">已讀原文</span>（拉丁文）。</li>
+        <li><b>al-Bīrūnī。</b>《占星術入門》第 461 節（本命）、第 462 節（卜卦）、第 499 節。核到：<span class="mono">已讀譯本</span>（Wright 1934 英譯的掃描文字，辨識很亂；頁碼是掃描本的，未對印本；第 463–472 節讀不出）。第 11 宮的「敵人」可疑，要對印本。</li>
+        <li><b>Lilly。</b>《Christian Astrology》（1647）第一卷 pp. 50–56：第 1 宮 pp. 50–51、第 2 宮 pp. 51–52、第 3 宮 p. 52、第 4 宮 pp. 52–53、第 5 宮 p. 53、第 6 宮 pp. 53–54、第 7 宮 p. 54、第 8 宮 pp. 54–55、第 9、10 宮 p. 55、第 11、12 宮 p. 56。核到：<span class="mono">已讀原文</span>（附原頁碼的線上轉錄本；部分頁碼由前後的頁碼標記推定）。</li>
+        <li><b>Ptolemy。</b>《占星四書》III.4、III.5、III.12、IV.5–IV.9（Robbins 編號）。核到：<span class="mono">已讀譯本</span>（Robbins 英譯，Loeb 1940）。</li>
+        <li><b>Rhetorius。</b>第 57 章（Holden 的章次），希臘原文收在《希臘占星抄本目錄》第八卷第四冊附錄，Paris. gr. 2425，約 pp. 126–174。核到：<span class="mono">已讀原文</span>（希臘文的掃描文字，辨識很亂，頁碼約略）；第 12 宮：<span class="mono">未讀</span>（這個節本在第 11 宮之後接恆星章）；Holden 英譯未讀。</li>
+        <li><b>Bonatti。</b>《天文學之書》第二論〈十二宮〉（Zoller 英譯、Hand 編，1994，pp. 46–68）。核到：<span class="mono">只見書目</span>。我讀到的只有一份線上掃描，可能未經授權，本站不以它為依據；上面分歧段落裡 Bonatti 的說法出自那份掃描，要等有授權的版本再核。拉丁原文與 Dykes 英譯未讀，章次未核。</li>
+        <li><b>Manilius。</b>《Astronomica》II.788–970（四個樞軸與十二廟）、III.43–202（athla）。核到：<span class="mono">已讀原文</span>（拉丁文；行號可能差一、兩行）；哪一處對到第幾宮，是我讀拉丁文所得，未對 Goold 英譯；「兩套互不相容」是現代注家的說法，<span class="mono">轉引</span>。</li>
+        <li><b>Dorotheus。</b>《Carmen Astrologicum》I.5、I.11、I.14、I.17、I.21、I.24、II.12 與卷五各章。核到：<span class="mono">轉引</span>（讀到 2024 年依 Pingree 英譯改寫的本子，措辭不是 Pingree 的；Pingree 1976 原文未讀）。</li>
+        <li><b>Paulus。</b>《導論》第 24 章。宮名與喜樂只見 Brennan 2013 轉引：<span class="mono">轉引</span>；逐宮事項：<span class="mono">未讀</span>。</li>
+        <li><b>宮義從哪裡來。</b>「地平以上屬太陽與靈魂、以下屬月亮與身體，所以金星喜樂的第 5 宮主子女」這類解釋，是 Brennan 依 Schmidt 的現代詮釋（ISAR Journal 2013，pp. 18–21），不是古典出處。Firmicus III.1 的世界盤（Thema Mundi）自稱是教學用的構造，本身沒有推出各宮的事項。</li>
+        <li><b>讀法的限制。</b>以上都是讀網路上的全文或掃描文字，沒有逐行對過紙本或頁影像；要逐字引用的地方，還要對掃描頁。</li>
+      </ol>
+    </details>
+      </div>
+    </details>
+    </div>
+      </div>
+    </details>
   </section>
 
-  <section class="ap-entry" aria-labelledby="time-lords">
+  <section class="ap-entry" aria-labelledby="time-lords" data-fold-host>
     <p class="sig">08</p>
     <h2 id="time-lords">年度時間主星：<br>哪一段時間由誰輪值</h2>
+    <p class="fold-gist"><span class="fold-k">重點</span>年度功能算年度小限、法達（firdaria）、黃道釋放（zodiacal releasing）、十年期四種時間主星（time lords）技法，另列七個延伸的阿拉伯點。只列哪一段時間由誰輪值，不解讀、不預測；選定的年度可以另排一張太陽回歸盤，在出生地起盤。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="time-lords"><span class="fold-closed">展開全文</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
     <p>年度功能算四種古典的時間主星（time lords）技法：<b>年度小限</b>（每年從上升星座往後推一個星座）、<b>法達</b>（firdaria：把一生依固定年數輪流分給七顆行星與兩個月交點）、<b>黃道釋放</b>（zodiacal releasing：從命運點或精神點所在的星座起，依各星座的年數分期；這是現代的名稱）與<b>十年期</b>（每段 10 年 9 個月，依出生時七顆行星的黃道順序輪值），另列七個延伸的阿拉伯點的位置。</p>
     <p class="nodef"><span class="nd-k">只列，不解讀</span><span><b>只列計算結果：哪一段時間由哪顆行星或哪個星座輪值。不替你解盤，也不預測。</b></span></p>
-    <p>文獻在幾個地方說法不同，我們各維持一種做法並寫明理由：年度小限的年主星是誰、從哪裡起算；法達夜盤的交點排在哪裡、子期怎麼換成日期；黃道釋放從哪一個點起、兩個點同座時怎麼辦、為什麼只算兩層；十年期從哪顆行星起算、第三層用哪一種算法。一年從太陽回歸的那一刻算起，但<b>太陽回歸盤目前沒有提供</b>。每一條規則、出處與我們核到哪一層，見〈<a href="/zh-TW/methods/time-lords">年度時間主星的規則與出處</a>〉。</p>
+    <p>文獻在幾個地方說法不同，我們各維持一種做法並寫明理由：年度小限的年主星是誰、從哪裡起算；法達夜盤的交點排在哪裡、子期怎麼換成日期；黃道釋放從哪一個點起、兩個點同座時怎麼辦、為什麼只算兩層；十年期從哪顆行星起算、第三層用哪一種算法。一年從太陽回歸的那一刻算起；選定某一年後，可以在計算頁的「時間主星」一章另排那一年的太陽回歸盤，在出生地起盤，怎麼算見下方 08.1。每一條規則、出處與我們核到哪一層，見〈<a href="/zh-TW/methods/time-lords">年度時間主星的規則與出處</a>〉。</p>
     <p>十年期的規則、起點的三種選擇，以及用古書自己的例盤逐格驗算，另見〈<a href="/zh-TW/methods/decennials">十年期的規則、出處與驗算</a>〉。</p>
+
+    <div class="fold-sub" data-fold-host>
+    <h3 id="solar-return">08.1　太陽回歸盤</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>太陽回到出生時黃經「度與分」的那一刻，在出生地起的一張盤；宮位制與黃道沿用本命盤。只列計算結果，不替你解盤，也不預測。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="solar-return"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
+    <p><b>太陽回歸盤怎麼算。</b>太陽每年回到你出生時所在的黃經「度與分」的那一刻，就是回歸時刻。本站用精確星曆反推這個時刻，並在同一瞬間立一張盤。這個定義見於 Ibn Ezra《回歸之書》§1:1（Sela 2014 英譯，頁 373）、al-Bīrūnī《占星術入門》§522（Wright 1934 英譯，頁 119），以及託名 Hermes、學界歸於 Abū Maʿshar 的《論本命年度回歸》拉丁本（巴塞爾 1559，頁 211–213）。Lilly（1647，頁 734）提醒，本命太陽位置差 1 分，回歸時刻就會差約 24 分鐘。</p>
+    <p><b>在哪裡立盤。</b>本站在出生地起回歸盤。Ibn Ezra《本命之書》IV 2:3 用出生國家的上升時間表求年初上升（Sela 頁 185）。Morin 也記錄，他那個時代的人通常用出生地；他自己則主張用回歸那一刻本人所在的地點（《法國占星學》第 23 卷第 4 章，1661，頁 600–601），並說古人在這點上「完全沒有規定」。改用另一個地點起盤，我們有計畫，目前還沒有提供。</p>
+    <p><b>宮位制。</b>回歸盤沿用你在計算頁選的宮位制，也可以在回歸盤那一格另選一種。我們讀到的古典作者——學界歸於 Abū Maʿshar 的拉丁本（頁 213–214）、Lilly（頁 735）、Morin（頁 609）、Gadbury（1658，頁 211）——都用象限式宮頭，沒有人在回歸盤上用整宮制。本站預設的整宮制是本站慣例，沒有古典出處。</p>
+    <p><b>三個上升。</b>依 Abū Maʿshar 的做法，一年要同看三個上升：本命上升、小限星座、年之上升，並看年之上升落在本命第幾宮（巴塞爾 1559 頁 213–214；Dykes 2010 導言頁 10）。他也說本命優先：回歸與本命一致時效果最大、不一致時最小，回歸不會取消本命的徵象（同書頁 212）。Morin 說得更重：本命沒有預示的事，回歸不能單獨促成（第 23 卷第 7 章，頁 609）。</p>
+    <p><b>黃道。</b>回歸盤沿用你本命使用的黃道。我們讀過的古典文本都沒有要求對回歸盤做「歲差修正」。</p>
+    <p><b>希臘化時期。</b>Ptolemy《占星四書》IV.10 用小限加行運，沒有回歸盤。Valens 第五卷每年「重鑄」一張盤，但時刻取月亮回到本命度數，不取太陽。Dorotheus 的阿拉伯傳本已有「太陽回到同一分即為年始」一句，但這個傳本經過波斯與阿拉伯的改編。本站的回歸盤屬於波斯／阿拉伯以後的傳統。</p>
+    <p class="nodef"><span class="nd-k">只列，不解讀</span><span><b>只列計算結果：太陽回到出生時黃經位置的那一刻，在出生地起的一張星盤。不替你解盤，也不預測。</b></span></p>
+    <p>每一條出處的章節頁碼與我們核到哪一層，見〈<a href="/zh-TW/methods/time-lords#solar-return-chart">年度時間主星的規則與出處</a>〉的太陽回歸盤一段。</p>
+      </div>
+    </details>
+    </div>
+      </div>
+    </details>
   </section>
 
-  <section class="ap-entry" aria-labelledby="not-computed">
+  <section class="ap-entry" aria-labelledby="not-computed" data-fold-host>
     <p class="sig">09</p>
     <h2 id="not-computed">目前不算的東西</h2>
+    <p class="fold-gist"><span class="fold-k">重點</span>陷、弱、外來、接納、尊貴總分、推運與行運、其餘阿拉伯點、禁止與傳光等目前不算；almuten 已研究，決定不做。也不解讀：進階判定與解盤要等驗證、考據確實後才開放。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="not-computed"><span class="fold-closed">展開全文</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
 
     <ul class="notdone">
-      <li><b>陷、弱、外來、接納（含互容）、almuten、偶然尊貴</b>：「未評估」，不是「沒有」。</li>
+      <li><b>陷、弱、外來、接納（含互容）、偶然尊貴</b>：「未評估」，不是「沒有」。almuten 已研究過，見下。</li>
       <li><b>任何形式的尊貴分數或總分</b>：見 §03 末。</li>
-      <li><b>推運、太陽回歸盤、行運</b>：已提供的時間主星技法見 §08。</li>
+      <li><b>推運、行運</b>：已提供的時間主星技法與太陽回歸盤見 §08。</li>
       <li><b>命運點、精神點與年度功能的七個點以外的阿拉伯點</b></li>
       <li><b>禁止、撤回、挫敗、傳光、集光</b>：「正在評估中」，目前不計算。前四項的定義見 Lilly《Christian Astrology》1647 pp. 110–113，集光見同書稍後。</li>
       <li><b>守護星體系</b>：所有古典程序固定使用七政主宰表，現代外行星主宰不在本產品範圍；出現需要現代主宰的具名功能時再議。星座層的廟已採古典七政，見 §03。</li>
       <li><b>任何形式的解讀</b>：見下。</li>
     </ul>
 
+    <p class="nodef" id="almuten"><span class="nd-k">已研究，不做</span><span><b>Almuten（勝利星）與命主星（Lord of the Geniture）。</b>「整張盤最有力的那顆行星」這個概念是古典的，但各書看哪些點、怎麼比、給幾分都不同，沒有一套公認的算法：Ptolemy 只數支配關係的個數，取最多者，不加權；al-Bīrūnī 定義了勝利星，卻沒有給五個點的計分；Lilly 自己的「Almuten of the Figure」比的是行星本身的本質與偶然力量，不是幾個點上的尊貴加總；軟體常見、歸給 Ibn Ezra 的算法，我只讀到現代網站，沒有讀到他的原典。所有計分式的 almuten 都要把不同的尊貴折成同一把尺上的分數，與 §03 末「不給總分」的理由相衝突，所以本站不做，也不替任何一家開例外。唯一可能的後備是 Lilly 1647 的做法，要先用清楚的頁影像核對 p. 115 的表，並用 pp. 743–745 的例盤重算。</span></p>
+    <details class="more" id="almuten-sources">
+      <summary>出處：almuten 與命主星</summary>
+      <ol>
+        <li><b>Ptolemy。</b>《占星四書》III.2（Robbins, Loeb 1940, pp. 231–235）：五種支配方式（三分、宮、旺、界、相位或相）中具備全部或最多者為主，並列時取度數較近者，只數個數、不加權；III.10（p. 277）選壽命的主星，看與太陽、前一次朔望、上升有最多支配關係者。核到：<span class="mono">已讀譯本</span>（Robbins 英譯）。</li>
+        <li><b>al-Bīrūnī。</b>《占星術入門》第 494 節（Wright 1934 p. 100）：尊貴依宮、旺、界、三分、面排序，有人給 5、4、[3]、2、1 分加總比較（界排在三分前，與 Lilly 相反；界的分數掃描文字讀作 5，依排序應為 3，未對印本）；同節另引一位不具名的權威，上升宮主 30、旺 20、面 10、界 5、三分 3½、時主 4½。第 495、523 節：命盤的勝利星（mubtazz）是出生時占優勢的行星，看上升或其主，或五個推出點，Wright 注說拉丁文的 almuten 即此；這兩節沒有給五個點的計分。核到：<span class="mono">已讀譯本</span>（Wright 英譯的掃描文字）。</li>
+        <li><b>Lilly。</b>《Christian Astrology》（1647）p. 48 的名詞解釋：Almuten of a Figure 是本質與偶然尊貴最有力的行星。第三卷第 105 章〈Of the Lord of the Geniture〉（pp. 531–532）列三種說法：Firmicus 依月亮的星座（Lilly 不取）；別人取在上升、天頂、太陽、月亮、命運點五處本質尊貴最多者（沒有給計分）；Lilly 自己取本質與偶然尊貴最多、位置最好、升得最高者，並說命主星主出生者的行事、體質、性情與習性。例盤 pp. 743–745 算出金星淨得 16 分，p. 749 稱金星為 Almuten of the Figure。p. 115 的力量與減損分數表只讀到掃描辨識的文字，部分數字讀不清。核到：<span class="mono">已讀原文</span>（線上的打字重排本，頁碼與 1647 年版一致）。</li>
+        <li><b>Ibn Ezra。</b>現代網站與軟體常說「Ibn Ezra 法」：日、月、上升、命運點、產前朔望五點，各點依 5-4-3-2-1 給分，加日主 7 分、時主 6 分與宮位分；各網站的細節互相矛盾（第 8、9 宮的分數對調，三分性取一位或三位），能追到的傳承是 Robert Zoller 的教材。核到：<span class="mono">轉引</span>。Ibn Ezra 原典（Sela 的 Brill 2013、2019 年校勘譯本；1485 年威尼斯拉丁文印本）：<span class="mono">未讀</span>。</li>
+        <li><b>其他。</b>al-Qabīṣī《導論》第四章、Abū Maʿshar、Bonatti 第九論、Schöner：<span class="mono">只見書目</span>。James Wilson《A Complete Dictionary of Astrology》（London 1819）p. 33 的定義同 Lilly，p. 355 質疑它的效力：<span class="mono">已讀原文</span>（片段）。</li>
+      </ol>
+    </details>
+
     <p class="nodef"><span class="nd-k">為什麼不解讀</span><span>古書怎麼說，我們照原文列出、附出處；說吉就寫吉，說凶就寫凶。我們不把它綜合成對你這個人的解讀，也不預測。<b>不是因為解盤沒有價值，而是進階判定與解盤要等驗證、考據確實後才開放。</b>這一頁列出的未定歸屬與待考據項目，就是目前尚未跨過那個門檻的原因。</span></p>
 
     <p>另有一條範圍不同的平行規則：<b>市場明確期待、但方法考據未完成的功能，不得提供。</b>這一節其餘六項落在這條規則底下。</p>
     <p>為什麼不先做？<b>在能做對並證明做對之前，我們不提供。</b>階梯與各項的現況見<a href="/zh-TW/roadmap">路線圖</a>。</p>
+      </div>
+    </details>
   </section>
 
   <section class="ap-close">
@@ -695,6 +998,7 @@
   </section>
 
 </div>
+<script src="/zh-TW/fold.js?v=83160ca49494014f" defer></script>
 </main>
 
 <footer>
@@ -728,6 +1032,7 @@
   <div class="wrap">
     <span>渾儀 ARMILLARY</span>
     <span>只計算，不解盤，不預測</span>
+    <span>最後更新：<time datetime="2026-10-14">2026-10-14</time></span>
   </div>
 </footer>
 

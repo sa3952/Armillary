@@ -161,7 +161,8 @@ def test_structured_event_schema_is_closed_and_discards_attacker_controlled_text
 
 
 @pytest.mark.parametrize("enabled", (True, False))
-def test_the_annual_route_is_logged_under_its_own_label_with_or_without_its_flag(enabled):
+def test_the_annual_route_is_logged_under_its_own_label_with_or_without_its_flag(
+        enabled, relocation_offered):
     """Through the real application: a computed annual answer (flag on) and the
     unknown-path refusal the same path gets with the flag off are both events of
     the annual label, carrying no input; a child path the application never
@@ -175,7 +176,11 @@ def test_the_annual_route_is_logged_under_its_own_label_with_or_without_its_flag
         event_emitter=lambda event: events.append(event) or True,
     )
     payload = minimal_chart_payload(year=1987, minute=41)
-    payload["annual"] = {"target_kind": "completed_years", "target_value": 3}
+    payload["annual"] = {
+        "target_kind": "completed_years", "target_value": 3, "include_solar_return_chart": True,
+        "solar_return_location": {"latitude": 47.3769, "longitude": 8.5417,
+                                  "place_label": "sr-location-canary"},
+    }
     with TestClient(application, raise_server_exceptions=False) as client:
         answered = client.post("/api/chart/annual", json=payload)
         undeclared = client.post("/api/chart/annual/next", json=payload)
@@ -188,6 +193,7 @@ def test_the_annual_route_is_logged_under_its_own_label_with_or_without_its_flag
     assert other["route"] == "frontend_or_unmatched"
     encoded = json.dumps(events)
     assert "1987" not in encoded and "121.56" not in encoded
+    assert "47.37" not in encoded and "8.54" not in encoded and "canary" not in encoded
 
 
 def test_duration_bucket_rejects_non_finite_values():

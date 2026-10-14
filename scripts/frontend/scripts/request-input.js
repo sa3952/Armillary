@@ -168,6 +168,18 @@
     return formatter;
   }
 
+  /**
+   * 年月日時分秒 → UTC 毫秒，與 Date.UTC 相同的進位規則，但年份照字面。
+   * Date.UTC 把 0–99 年當成 1900–1999 年（西元 50 年會被算成 1950 年，連帶套上 1950 年的
+   * 夏令時間），所以先設年月日、再設時分秒，各自由 setUTC* 進位。
+   */
+  function civilUtcMillis(year, monthIndex, day, hour = 0, minute = 0, second = 0) {
+    const instant = new Date(0);
+    instant.setUTCFullYear(year, monthIndex, day);
+    instant.setUTCHours(hour, minute, second, 0);
+    return instant.getTime();
+  }
+
   /** 某個 UTC 瞬間在該時區的偏移（分鐘）。 */
   function zoneOffsetMinutes(utcMillis, timeZone) {
     const formatter = zoneFormatter(timeZone);
@@ -175,7 +187,7 @@
     formatter.formatToParts(new Date(utcMillis)).forEach((part) => {
       parts[part.type] = part.value;
     });
-    const asIfUtc = Date.UTC(
+    const asIfUtc = civilUtcMillis(
       Number(parts.year), Number(parts.month) - 1, Number(parts.day),
       Number(parts.hour), Number(parts.minute), Number(parts.second)
     );
@@ -204,7 +216,7 @@
     const wholeSeconds = Math.floor(Number.isFinite(second) ? second : 0);
     let wall;
     try {
-      wall = Date.UTC(year, month - 1, day, hour, minute, wholeSeconds);
+      wall = civilUtcMillis(year, month - 1, day, hour, minute, wholeSeconds);
       // 探一次，時區名稱不合法時 Intl 會丟。
       zoneOffsetMinutes(wall, timeZone);
     } catch (_error) {
@@ -305,7 +317,7 @@
     }
     let wallStart;
     try {
-      wallStart = Date.UTC(year, month - 1, day, hour, 0, 0);
+      wallStart = civilUtcMillis(year, month - 1, day, hour, 0, 0);
       zoneOffsetMinutes(wallStart, timeZone);
     } catch (_error) {
       return null;
@@ -377,9 +389,35 @@
   const compareDates = (a, b) => (a[0] - b[0]) || (a[1] - b[1]) || (a[2] - b[2]);
 
   function realCalendarDate(year, month, day) {
-    const probe = new Date(Date.UTC(2000, month - 1, day));
-    probe.setUTCFullYear(year);
+    const probe = new Date(civilUtcMillis(year, month - 1, day));
     return probe.getUTCFullYear() === year && probe.getUTCMonth() === month - 1 && probe.getUTCDate() === day;
+  }
+
+  // 以數值比較：字串比較會讓五位數的年份（"21000-01-01"）落在 "1900" 與 "2399" 之間。
+  const boundDate = (iso) => (iso ? String(iso).split("-").map(Number) : null);
+  function outsideBounds(date, bounds) {
+    const low = boundDate(bounds.min);
+    const high = boundDate(bounds.max);
+    return Boolean((low && compareDates(date, low) < 0) || (high && compareDates(date, high) > 0));
+  }
+
+  const BIRTH_DATE_PATTERN = /^(\d{4,})-(\d{2})-(\d{2})$/;
+
+  /**
+   * 出生日期欄（type=date，值是 YYYY-MM-DD）。bounds 是欄位自己的 min／max。表單帶
+   * novalidate，瀏覽器不會擋鍵盤打進來的 1895 年或 2400 年，所以範圍在這裡檢查。
+   */
+  function readBirthDate(raw, bounds) {
+    const text = String(raw === undefined || raw === null ? "" : raw).trim();
+    if (text === "") return empty();
+    const match = BIRTH_DATE_PATTERN.exec(text);
+    if (!match) return invalid("必須寫成 YYYY-MM-DD（例：1990-05-15）");
+    const [year, month, day] = match.slice(1).map(Number);
+    if (!realCalendarDate(year, month, day)) return invalid("在日曆上不存在，請核對月與日");
+    if (outsideBounds([year, month, day], bounds)) {
+      return invalid(`必須在 ${bounds.min} 到 ${bounds.max} 之間（本計算器的範圍）`);
+    }
+    return value({ year, month, day, iso: isoDate(year, month, day) });
   }
 
   /**
@@ -411,7 +449,7 @@
       return invalid(`${definition.label}的最後一天是${westernText(definition.last)}；之後是${definition.after}`);
     }
     const iso = isoDate(year, month, day);
-    if ((bounds.min && iso < bounds.min) || (bounds.max && iso > bounds.max)) {
+    if (outsideBounds(date, bounds)) {
       return invalid(
         `換算結果是西元 ${year} 年，超出本計算器的 ${bounds.min.slice(0, 4)}–${bounds.max.slice(0, 4)} 年範圍`
       );
@@ -442,6 +480,7 @@
     etcGmtOffsetText,
     ERAS,
     readEraDate,
+    readBirthDate,
     isoDate,
     civilTimeOccurrences,
     civilHourOccurrences,

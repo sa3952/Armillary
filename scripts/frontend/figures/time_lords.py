@@ -267,7 +267,7 @@ def _firdaria_band(layout: str, fid: str, firdaria, bound: _fx.Bound) -> str:
             p0, p1 = P(start), P(start + years)
             node = lord in firdaria.NODES
             x, y, w, h = (p0, b0, p1 - p0, b1 - b0) if wide else (b0, p0, b1 - b0, p1 - p0)
-            body.append(_fx.rect(x, y, w, h, "fx-b-beam" if node else "fx-cell"))
+            body.append(_fx.rect(x, y, w, h, "fx-fill-hatch" if node else "fx-cell"))
             if node:
                 body.append(_fx.rect(x, y, w, h, "fx-inset-frame"))
             if not node:
@@ -349,7 +349,7 @@ def _minor_years(layout: str, fid: str, releasing, lords: dict, minor: dict, dec
         years = releasing.SIGN_PERIOD_YEARS[key]
         sweep = years / total * 360
         differs = years != minor[lords[key]]
-        out.append(_fx.path(_wedge(cx, cy, r_in, r_out, a, a + sweep), "fx-b-beam" if differs else "fx-cell"))
+        out.append(_fx.path(_wedge(cx, cy, r_in, r_out, a, a + sweep), "fx-fill-hatch" if differs else "fx-cell"))
         mid = a + sweep / 2
         x, y = _polar(cx, cy, r_name, mid)
         out.append(_fx.text(x, y + 5, SIGN[key], small + (" fx-key" if differs else ""), "middle"))

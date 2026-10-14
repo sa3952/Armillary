@@ -17,16 +17,35 @@
     <p>年度小限與法達都要先知道「一年」從哪一刻開始。我們用<b>太陽回歸</b>的瞬間：出生後太陽第 N 次回到出生時的黃經，那一刻就是第 N 次太陽回歸。第 N＋1 年從第 N 次太陽回歸開始，到第 N＋1 次為止；第 1 年從出生那一刻開始。所以 2 月 29 日出生、生日前後一天這類問題都不存在：回歸落在哪一天，新的一年就從哪一天開始。</p>
     <p>選恆星黃道時，回歸也照恆星黃道算，每年大約晚 20 分鐘。黃道釋放不用這個年界，它有自己的年長（見第 04 節）。</p>
     <p><b>「第幾年」與「已滿幾歲」。</b>第 N 年就是已滿 N−1 歲；出生後的第一年（已滿 0 歲）也算得出。下面年度小限一節的「第 35 年」，就是這樣對應的。</p>
-    <p><b>不同的年界差多少。</b>有些軟體用固定長度的年（均勻回歸年，365.2422 日），或用民用週年（每年同一個日期與鐘點）。我們以四個合成的出生時刻，各量了 100 年的回歸：太陽回歸的瞬間與均勻回歸年最多相差 1.57 小時，與民用週年最多相差 21.8 小時。這兩個數字是同一個星曆引擎內部的比較，只說明量級；回歸瞬間本身另與 JPL Horizons 的星曆核對過。</p>
-    <p><b>太陽回歸盤目前沒有提供。</b>這裡只用太陽回歸的那一刻來切分年份，不排那一刻的星盤。</p>
+    <p><b>不同的年界差多少。</b>有些軟體用固定長度的年（均勻回歸年，365.2422 日），或用民用週年（每年同一個日期與鐘點）。我們以四個合成的出生時刻，各量了 100 年的回歸：太陽回歸的瞬間與均勻回歸年最多相差 1.57 小時，與民用週年最多相差 21.8 小時。這兩個數字是同一個星曆引擎內部的比較，只說明量級；回歸瞬間本身另與 JPL Horizons 的星曆核對過。回歸瞬間用星曆程式庫預設歲差模型的當日黃道來定；如果改用 IAU 1976 的歲差模型，相隔 63 年的回歸瞬間大約會差 5 秒（獨立對照實測：1900 年出生、1963 年那次回歸差 4.7 秒）。</p>
     <p><b>出生時間不精確時。</b>只知道日期時，沒有上升點，也判不出日盤或夜盤，所以年度小限、法達、黃道釋放、十年期與延伸的阿拉伯點都不產生，畫面寫出原因。只知道約略小時時，在那一小時的起點、代表性時刻（也就是計算時拿來代表這段時間的一個時刻，不是出生時刻）與終點各算一次，三個結果並列，並標出它們是否一致。只知道日期或約略小時時，那一天或那一小時的頭、中、尾三個時刻都要算；接近西元 2399 年（本站能算的最後一年）時，只要其中一個時刻算出的那一年在 2399 年之後才開始，這一整年就不算，畫面直接說明原因，不只列出算得出來的部分。</p>
     <p><b>期間只到日。</b>原典只給年數與月數，算到分秒是假精度。畫面上的日期是出生地當地的日期；完整的瞬間仍留在驗算資料裡，可以重算。</p>
     <h3>出處</h3>
     <ol class="ct-notes">
       <li data-source="Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, Persian Nativities IV">Abū Maʿshar《論本命年的回歸》（Kitāb taḥāwīl sinī al-mawālīd；Dykes 英譯，Persian Nativities IV，2019）：太陽回歸與小限、法達一起使用。核到：<span class="mono">只見書目</span>（章節與頁碼未核）。</li>
-      <li data-source="Swiss Ephemeris 2.10.03 swe_solcross_ut">Swiss Ephemeris 2.10.03 的 <code>swe_solcross_ut</code>：測試以它對照我們自己的回歸求根（同一個引擎、另一套算法）。核到：<span class="mono">親讀原文</span>（程式原始碼與文件）。</li>
+      <li data-source="Swiss Ephemeris 2.10.03 swe_solcross_ut">Swiss Ephemeris 2.10.03 的 <code>swe_solcross_ut</code>：測試以它對照我們自己的回歸求根（同一個引擎、另一套算法）。核到：<span class="mono">已讀原文</span>（程式原始碼與文件）。</li>
     </ol>
     <p>以太陽回歸切分年份，是我們和小限、法達共用的產品慣例。</p>
+    <div id="solar-return-chart" data-register-entry="solar_return_chart">
+    <h3>太陽回歸盤</h3>
+    <p>這裡用太陽回歸的那一刻切分年份。那一刻的星盤可以在計算頁的「時間主星」一章另外排：選定年度的第 N 次太陽回歸那一瞬間，在出生地起盤，宮位制與黃道沿用本命盤。只列計算結果，不替你解盤，也不預測。怎麼算、在哪裡立盤、宮位制與黃道的理由，見方法頁〈<a href="/zh-TW/methods#solar-return">08.1 太陽回歸盤</a>〉；下面是它的出處。</p>
+    <h3>太陽回歸盤的出處</h3>
+    <ol class="ct-notes">
+      <li data-source="Abraham Ibn Ezra, The Book of the Revolution">Ibn Ezra《回歸之書》（Sefer ha-Tequfah）§1:1（Sela 2014，頁 373）：回歸是太陽回到本命的度與分。核到：<span class="mono">已讀譯本</span>（Sela 英譯）。</li>
+      <li data-source="Abraham Ibn Ezra, The Book of Nativities">Ibn Ezra《本命之書》（Sefer ha-Moladot）IV 1:9、IV 2:3（Sela 2014，頁 185）：用出生國家的上升時間表求年初上升；他採的每年增量 87°15′ 屬回歸年長度。核到：<span class="mono">已讀譯本</span>（Sela 英譯）。</li>
+      <li data-source="al-Bīrūnī, The Book of Instruction in the Elements of the Art of Astrology, trans. R. Ramsay Wright">al-Bīrūnī《占星術入門》§522（Wright 1934，頁 119）：太陽回到本命時所在的度與分，就是回歸（taḥwīl）。核到：<span class="mono">已讀譯本</span>（Wright 英譯）。</li>
+      <li data-source="[Abū Maʿshar], De revolutionibus nativitatum I.1, I.3-6, Latin translation printed under the name of Hermes">學界歸於 Abū Maʿshar 的《論本命年度回歸》，拉丁本託名 Hermes（巴塞爾 1559）I.1、I.3–I.6，頁 211–214：太陽回到原位開始一年；回歸不推翻本命；回歸盤分十二宮、用象限式宮頭，同盤標出本命上升、小限星座與年之上升；沒有談在哪裡立盤。核到：<span class="mono">已讀譯本</span>（中世紀拉丁譯本；歸屬 Abū Maʿshar 是學界通說，論證未讀）。</li>
+      <li data-source="Guido Bonatti, De astronomia, Pars IV preface">Bonatti《De astronomia》第四部序言（巴塞爾 1550，第 489–490 欄）：本命的年度回歸從本命太陽那一分算起，到太陽回到同一點。核到：<span class="mono">已讀原文</span>（拉丁文；判讀回歸的專章未找到）。</li>
+      <li data-source="William Lilly, Christian Astrology">Lilly《Christian Astrology》（1647）第 172 章，頁 734–736：回歸是太陽回到本命的度與分；本命太陽差 1 分，回歸時刻差約 24 分鐘；例盤用出生地緯度的宮位表，沒有談換地點。核到：<span class="mono">已讀原文</span>（1647 初版；這一章沒有寫宮位制的名稱）。</li>
+      <li data-source="J.-B. Morin, Astrologia Gallica XXIII">Morin《法國占星學》（Astrologia Gallica，1661）第 23 卷第 4 章頁 600–601、第 5 章頁 602、第 7 章頁 609、第 9 章頁 634：回歸盤應在回歸那一刻本人所在的地點起盤；古人對此沒有規定，當時通行用出生地；回歸不推翻本命。核到：<span class="mono">已讀原文</span>（拉丁文）。</li>
+      <li data-source="John Gadbury, The Doctrine of Nativities">Gadbury《The Doctrine of Nativities》（1658）第 32 章，頁 209–211：回歸是太陽回到本命的星座、度與分；宮頭查所在緯度的宮位表。核到：<span class="mono">已讀原文</span>（宮位制的名稱沒有寫）。</li>
+      <li data-source="B. Dykes, Persian Nativities III">Dykes《Persian Nativities III》（2010）導言頁 6、10：Abū Maʿshar 的回歸盤用象限式宮頭，同看本命上升、小限星座與年之上升三個上升。核到：<span class="mono">轉引</span>（Dykes 的介紹；他所譯的阿拉伯原文未讀）。</li>
+      <li data-source="Ptolemy, Tetrabiblos IV.10">Ptolemy《占星四書》（Tetrabiblos）IV.10：用小限與行運入點，沒有回歸盤。核到：<span class="mono">已讀譯本</span>。</li>
+      <li data-source="Vettius Valens, Anthologies V">Valens《占星選集》第五卷（Riley 英譯「5K」，頁 97）：每年重鑄一張盤，但時刻取月亮回到本命度數，不取太陽。核到：<span class="mono">已讀譯本</span>。</li>
+      <li data-source="Dorotheus, Carmen Astrologicum IV 1.4">Dorotheus《Carmen Astrologicum》IV 1.4（阿拉伯傳本）：太陽進入出生時那一分即為年始；這個傳本經過波斯與阿拉伯的改編。核到：<span class="mono">轉引</span>（讀到依 Pingree 1976 英譯改寫的本子；Pingree 原頁未讀）。</li>
+    </ol>
+    <p>回歸盤預設用整宮制、選恆星黃道時照恆星黃道算回歸、只在出生地起盤，這三點是本站的慣例；我們讀到的古典作者在回歸盤上都用象限式宮頭，也都沒有要求對回歸盤做歲差修正。</p>
+    </div>
   </section>
 
   <section class="ds-sec" id="profection" data-register-entry="annual_profection">
@@ -37,14 +56,14 @@
     <h3>文獻說法不同的兩處</h3>
     <ul>
       <li><b>年主星是誰。</b>Valens 的做法是：小限星座裡有行星，就由那顆行星接手；星座是空的，才交給星座的主星。Ptolemy 與 Bonatti 只取主星。我們<b>只輸出守護行星</b>，不判斷星座裡的行星接不接手。</li>
-      <li><b>從哪裡起算。</b>Ptolemy《占星四書》（Tetrabiblos）IV.10 從好幾個起點（上升、太陽、月亮、命運點 Lot of Fortune、中天）各推一次；Valens 也從太陽、月亮起算。我們<b>只從上升星座起算</b>，所以這不是 Ptolemy 的做法。Bonatti 另有以度數推進的小限（每個太陽年推 30 度），那是另一種方法，目前沒有提供；每日推一宮的日小限也還沒有。每月推一宮的月小限見本節最後。</li>
+      <li><b>從哪裡起算。</b>Ptolemy《占星四書》IV.10 從好幾個起點（上升、太陽、月亮、命運點 Lot of Fortune、中天）各推一次；Valens 也從太陽、月亮起算。我們<b>只從上升星座起算</b>，所以這不是 Ptolemy 的做法。Bonatti 另有以度數推進的小限（每個太陽年推 30 度），那是另一種方法，目前沒有提供；每日推一宮的日小限也還沒有。每月推一宮的月小限見本節最後。</li>
     </ul>
     <h3>出處</h3>
     <ol class="ct-notes">
-      <li data-source="Vettius Valens, Anthologies IV.11">Vettius Valens《占星選集》IV.11（Riley 英譯，Kroll 頁碼 174）：第 35 年的例子。核到：<span class="mono">親讀原文</span>（Kroll 1908 希臘文的這一句；另讀英譯；Pingree 校勘本未核）。</li>
+      <li data-source="Vettius Valens, Anthologies IV.11">Vettius Valens《占星選集》IV.11（Riley 英譯，Kroll 頁碼 174）：第 35 年的例子。核到：<span class="mono">已讀原文</span>（Kroll 1908 希臘文的這一句；另讀英譯；Pingree 校勘本未核）。</li>
       <li data-source="Firmicus Maternus, Mathesis II.27.3-4, II.28.3">Firmicus Maternus《Mathesis》（原意「學問」，即占星學）II.27.3–4、II.28.3（Kroll–Skutsch 1897 第一冊 pp.76–77）：年度小限與年主星。核到：<span class="mono">轉引</span>（只讀到二手；依我們的研究筆記，這一條未重讀）。</li>
       <li data-source="Paulus Alexandrinus ch.31">Paulus Alexandrinus《導論》（Eisagōgika）第 31 章：小限。核到：<span class="mono">轉引</span>（只讀到二手）。</li>
-      <li data-source="Ptolemy, Tetrabiblos IV.10">Ptolemy《占星四書》IV.10（Robbins 英譯，Loeb p.453）：從多個起點推進；我們沒有採用。核到：<span class="mono">親讀譯本</span>（Robbins 英譯，在 LacusCurtius 網頁讀了這一章全文）。</li>
+      <li data-source="Ptolemy, Tetrabiblos IV.10">Ptolemy《占星四書》IV.10（Robbins 英譯，Loeb p.453）：從多個起點推進；我們沒有採用。核到：<span class="mono">已讀譯本</span>（Robbins 英譯，在 LacusCurtius 網頁讀了這一章全文）。</li>
     </ol>
     <div data-register-entry="monthly_profection" id="monthly-profection">
       <h3>月小限</h3>
@@ -63,11 +82,11 @@
       </ul>
       <p>畫面只列你選過的年度的月小限；換到還沒取過的年度時，另外向伺服器取那一年的月小限。沒有找到任何文獻給出帶數字的月小限例子，所以測試改拿星曆程式另一套算法求出的「太陽走到某一度」的時刻核對。</p>
       <ol class="ct-notes">
-        <li data-source="Vettius Valens, Anthologies IV.28">Vettius Valens《占星選集》IV.28（Riley 英譯，Kroll 頁碼 204）：日盤看此刻的太陽離出生時的太陽多遠，從年度小限的星座數同樣的距離；夜盤改用月亮。核到：<span class="mono">親讀譯本</span>（英譯，希臘文未核）。</li>
+        <li data-source="Vettius Valens, Anthologies IV.28">Vettius Valens《占星選集》IV.28（Riley 英譯，Kroll 頁碼 204）：日盤看此刻的太陽離出生時的太陽多遠，從年度小限的星座數同樣的距離；夜盤改用月亮。核到：<span class="mono">已讀譯本</span>（英譯，希臘文未核）。</li>
         <li data-source="Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, Persian Nativities IV">Abū Maʿshar《論本命年的回歸》（Dykes 英譯，Persian Nativities IV，2019）：年度小限的星座也是第 1 個月；每月的回歸盤取太陽走到出生時度數的下一個星座同一度數的時刻；拒絕 Ptolemy 的做法。核到：<span class="mono">轉引</span>（只讀到二手：Dykes 在 The Astrology Podcast 第 218 集的口頭介紹，原書未核）。</li>
-        <li data-source="al-Biruni, Book of Instruction in the Elements of the Art of Astrology, tr. R. R. Wright">al-Bīrūnī《占星術入門》（Kitāb al-Tafhīm）§522（Wright 英譯，1934）：每月的回歸取太陽回到出生時同一度數的時刻；小限的一年分成 13 個月。核到：<span class="mono">親讀譯本</span>（英譯）。</li>
-        <li data-source="Guido Bonatti, Liber astronomiae Tr.9">Guido Bonatti《天文學之書》（Decem tractatus astronomiae）Tr.9（Dykes 英譯）：以度數推進的小限，每年 30 度、每月 2 度 30 分。核到：<span class="mono">親讀譯本</span>（英譯）。</li>
-        <li data-source="Ptolemy, Tetrabiblos IV.10">Ptolemy《占星四書》IV.10（Robbins 英譯，Loeb p.453 與注 82，LacusCurtius）：每 28 天推一個星座、每 2⅓ 天推一個星座的日小限；我們沒有採用。核到：<span class="mono">親讀譯本</span>（Robbins 英譯，在 LacusCurtius 網頁讀了這一章全文）。</li>
+        <li data-source="al-Biruni, Book of Instruction in the Elements of the Art of Astrology, tr. R. R. Wright">al-Bīrūnī《占星術入門》（Kitāb al-Tafhīm）§522（Wright 英譯，1934）：每月的回歸取太陽回到出生時同一度數的時刻；小限的一年分成 13 個月。核到：<span class="mono">已讀譯本</span>（英譯）。</li>
+        <li data-source="Guido Bonatti, Liber astronomiae Tr.9">Guido Bonatti《天文學之書》（Decem tractatus astronomiae）Tr.9（Dykes 英譯）：以度數推進的小限，每年 30 度、每月 2 度 30 分。核到：<span class="mono">已讀譯本</span>（英譯）。</li>
+        <li data-source="Ptolemy, Tetrabiblos IV.10">Ptolemy《占星四書》IV.10（Robbins 英譯，Loeb p.453 與注 82，LacusCurtius）：每 28 天推一個星座、每 2⅓ 天推一個星座的日小限；我們沒有採用。核到：<span class="mono">已讀譯本</span>（Robbins 英譯，在 LacusCurtius 網頁讀了這一章全文）。</li>
       </ol>
     </div>
   </section>
@@ -104,9 +123,9 @@
     <h3>出處</h3>
     <ol class="ct-notes">
       <li data-source="Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, Persian Nativities IV">Abū Maʿshar《論本命年的回歸》（Dykes 英譯，Persian Nativities IV，2019；拉丁節本在 Persian Nativities III，2010）：現存最完整的法達操作說明，夜盤交點在水星後。核到：<span class="mono">轉引</span>（只讀到二手；章節依二手資料為 IV.8，原書未讀）。</li>
-      <li data-source="al-Biruni, Book of Instruction in the Elements of the Art of Astrology §438-439">al-Bīrūnī《占星術入門》§438–439（Wright 1934 英譯 p.48）：各段年數與日夜順序的表；交點不分日夜都是 3 年與 2 年，排在七顆行星之後，交點不分子期。核到：<span class="mono">親讀譯本</span>（英譯，書頁影像）。</li>
+      <li data-source="al-Biruni, Book of Instruction in the Elements of the Art of Astrology §438-439">al-Bīrūnī《占星術入門》§438–439（Wright 1934 英譯 p.48）：各段年數與日夜順序的表；交點不分日夜都是 3 年與 2 年，排在七顆行星之後，交點不分子期。核到：<span class="mono">已讀譯本</span>（英譯，書頁影像）。</li>
       <li data-source="al-Qabisi, Introduction">al-Qabīṣī《導論》（al-Mudkhal）：較簡略的夜盤序列，研究筆記認為拉丁傳承的分歧由此而來。核到：<span class="mono">轉引</span>（只讀到二手；原書未核）。</li>
-      <li data-source="Bonatti, Liber astronomiae Tr.9 Ch.3">Bonatti《天文學之書》第 9 論第 3 章（Dykes 2007 英譯）：各段年數、日盤順序與 75 年後重新開始；夜盤從月亮起，「一切照日盤」。交點在火星之後是 Zoller 的讀法，不是 Bonatti 的原話。核到：<span class="mono">親讀譯本</span>（英譯）。</li>
+      <li data-source="Bonatti, Liber astronomiae Tr.9 Ch.3">Bonatti《天文學之書》第 9 論第 3 章（Dykes 2007 英譯）：各段年數、日盤順序與 75 年後重新開始；夜盤從月亮起，「一切照日盤」。交點在火星之後是 Zoller 的讀法，不是 Bonatti 的原話。核到：<span class="mono">已讀譯本</span>（英譯）。</li>
       <li data-source="Schoener">Schöner（文藝復興時期）：據研究筆記，保留交點在最後的順序。核到：<span class="mono">轉引</span>（只讀到二手；原書未核）。</li>
     </ol>
   </section>
@@ -151,12 +170,12 @@
     </ul>
     <h3>出處</h3>
     <ol class="ct-notes">
-      <li data-source="Vettius Valens, Anthologies IV.4">Vettius Valens《占星選集》IV.4（Riley 英譯，Kroll 頁碼 160–163）：以命運點與精神點為起點、牡羊與金牛的小期例表、17 年 7 個月後解鎖到對宮、不用三分。核到：<span class="mono">親讀譯本</span>（英譯，公開的重排本；Pingree 希臘文未核）。</li>
-      <li data-source="Valens IV.6">Valens IV.6：摩羯分 27、水瓶分 30 的由來。核到：<span class="mono">親讀譯本</span>（英譯）。</li>
-      <li data-source="Valens IV.7">Valens IV.7（Kroll 頁碼 165–167）：從命運點數位置；與兩個點成四分的位置。核到：<span class="mono">親讀譯本</span>（英譯）。</li>
-      <li data-source="Valens IV.8 'A Compelling Example'">Valens IV.8〈一個有力的例子〉（Kroll 頁碼 167–169）：命運點在獅子、精神點在天蠍，每一段的長度都寫出。核到：<span class="mono">親讀譯本</span>（英譯）。</li>
-      <li data-source="Valens IV.9 'The Universal Year'">Valens IV.9〈普遍年〉（Kroll p.169）：分配用的一年 360 日，與 32 × 365¼ ＋ 215 日 ＝ 分配年 33 年 23 日的換算。核到：<span class="mono">親讀原文</span>（Kroll 希臘文；另讀英譯）。</li>
-      <li data-source="Valens IV.10 'The Breakdown into Longer and Shorter Periods'">Valens IV.10〈分成長短的期間〉（Kroll 頁碼 169–171）：月取十二分之一為日（每單位 2½ 日）、日取十二分之一為時（每單位 5 小時），每一層都解鎖，例盤算到時。核到：<span class="mono">親讀原文</span>（Kroll 希臘文；另讀英譯）。</li>
+      <li data-source="Vettius Valens, Anthologies IV.4">Vettius Valens《占星選集》IV.4（Riley 英譯，Kroll 頁碼 160–163）：以命運點與精神點為起點、牡羊與金牛的小期例表、17 年 7 個月後解鎖到對宮、不用三分。核到：<span class="mono">已讀譯本</span>（英譯，公開的重排本；Pingree 希臘文未核）。</li>
+      <li data-source="Valens IV.6">Valens IV.6：摩羯分 27、水瓶分 30 的由來。核到：<span class="mono">已讀譯本</span>（英譯）。</li>
+      <li data-source="Valens IV.7">Valens IV.7（Kroll 頁碼 165–167）：從命運點數位置；與兩個點成四分的位置。核到：<span class="mono">已讀譯本</span>（英譯）。</li>
+      <li data-source="Valens IV.8 'A Compelling Example'">Valens IV.8〈一個有力的例子〉（Kroll 頁碼 167–169）：命運點在獅子、精神點在天蠍，每一段的長度都寫出。核到：<span class="mono">已讀譯本</span>（英譯）。</li>
+      <li data-source="Valens IV.9 'The Universal Year'">Valens IV.9〈普遍年〉（Kroll p.169）：分配用的一年 360 日，與 32 × 365¼ ＋ 215 日 ＝ 分配年 33 年 23 日的換算。核到：<span class="mono">已讀原文</span>（Kroll 希臘文；另讀英譯）。</li>
+      <li data-source="Valens IV.10 'The Breakdown into Longer and Shorter Periods'">Valens IV.10〈分成長短的期間〉（Kroll 頁碼 169–171）：月取十二分之一為日（每單位 2½ 日）、日取十二分之一為時（每單位 5 小時），每一層都解鎖，例盤算到時。核到：<span class="mono">已讀原文</span>（Kroll 希臘文；另讀英譯）。</li>
     </ol>
   </section>
 
@@ -185,7 +204,7 @@
       <li><b>Valens 的兩個點日夜相同。</b>在同一個日夜判定下，它們都化簡成上升點加減兩倍的（太陽−月亮），所以日盤與夜盤的值一樣。</li>
       <li><b>夜盤公式照文獻寫明。</b>這七個點的夜盤公式恰好都是日盤公式兩端互換；我們逐一寫出，不由日盤公式推導。日盤與夜盤兩套的結果都列出，主要值用排盤同一條日夜判定。</li>
       <li><b>只出位置。</b>星座與整宮的宮位，不輸出主星、主題、相位或任何描述字。</li>
-      <li><b>古書說的含義。</b>表的最後一欄照 al-Bīrūnī《占星術入門》（Kitāb al-Tafhīm）§476 的行星點清單（他說依 Abū Maʿshar；Wright 1934 英譯）逐條翻出，按名稱對應：愛慾點是友誼與愛，必然點是絕望、貧困與詐欺，勇氣點是英勇與膽量，勝利點是勝利、凱旋與援助，復仇點是囚禁、牢獄與脫逃。核到：<span class="mono">親讀譯本</span>（Wright 1934 英譯）。Paulus 第 23 章本身怎麼說這幾個點，我們還沒有讀到；Valens IV.25 那兩個點，al-Bīrūnī 這份清單沒有，我們也還沒有核 Valens 的說法。這一欄只在方法頁；你的盤只出位置。</li>
+      <li><b>古書說的含義。</b>表的最後一欄照 al-Bīrūnī《占星術入門》（Kitāb al-Tafhīm）§476 的行星點清單（他說依 Abū Maʿshar；Wright 1934 英譯）逐條翻出，按名稱對應：愛慾點是友誼與愛，必然點是絕望、貧困與詐欺，勇氣點是英勇與膽量，勝利點是勝利、凱旋與援助，復仇點是囚禁、牢獄與脫逃。核到：<span class="mono">已讀譯本</span>（Wright 1934 英譯）。Paulus 第 23 章本身怎麼說這幾個點，我們還沒有讀到；Valens IV.25 那兩個點，al-Bīrūnī 這份清單沒有，我們也還沒有核 Valens 的說法。這一欄只在方法頁；你的盤只出位置。</li>
       <li><b>兩個公式方向的說明。</b>勇氣點：我們早期的研究草稿把方向寫反了，之後對照 1588 年印本與莎草紙改正為日盤「上升點＋命運點−火星」。必然點（Paulus）：二手資料多數作日盤「上升點＋命運點−水星」，但一份公開的 Valens 英譯重排本在註腳寫成相反方向；那是重排者的註，不是譯文正文。Paulus 的希臘原文我們還沒有讀到，在讀到之前，這兩個點的出處都只到轉引。</li>
     </ul>
     <h3>出處</h3>
@@ -193,12 +212,12 @@
       <ol class="ct-notes">
         <li data-source="Paulus Alexandrinus, Eisagogika ch.23">Paulus Alexandrinus《導論》第 23 章（Boer 1958；Schmidt／Hand 1995 英譯 pp.43–45）：愛慾點、必然點、勇氣點、勝利點、復仇點，連同命運點與精神點。核到：<span class="mono">轉引</span>（只讀到二手；章次依研究筆記核對後的更正；校勘本這一條未重讀）。</li>
         <li data-source="P.Berol. 9825">柏林莎草紙 P.Berol. 9825（西元 319 年；Greenbaum 2015, MHNH 15:85–116）：一份算出這七個點的莎草紙。核到：<span class="mono">轉引</span>（只讀到二手；原書未核）。</li>
-        <li data-source="al-Bīrūnī, Kitāb al-Tafhīm §476">al-Bīrūnī《占星術入門》§476（他說依 Abū Maʿshar；Wright 1934 英譯）：上表最後一欄「古書說的含義」逐條譯出的行星點清單。核到：<span class="mono">親讀譯本</span>（Wright 1934 英譯）。</li>
+        <li data-source="al-Bīrūnī, Kitāb al-Tafhīm §476">al-Bīrūnī《占星術入門》§476（他說依 Abū Maʿshar；Wright 1934 英譯）：上表最後一欄「古書說的含義」逐條譯出的行星點清單。核到：<span class="mono">已讀譯本</span>（Wright 1934 英譯）。</li>
       </ol>
     </div>
     <div data-register-entry="extended_lots/valens_iv25">
       <ol class="ct-notes">
-        <li data-source="Vettius Valens, Anthologies IV.25">Vettius Valens《占星選集》IV.25：愛點與必然點的公式（日盤從命運點量到精神點，同樣的距離從上升點量起；夜盤相反）在 Kroll 1908 的正文（p.202），Riley 英譯把這段標成旁注。核到：<span class="mono">親讀原文</span>（Kroll 希臘文；Pingree 的處理未核）。</li>
+        <li data-source="Vettius Valens, Anthologies IV.25">Vettius Valens《占星選集》IV.25：愛點與必然點的公式（日盤從命運點量到精神點，同樣的距離從上升點量起；夜盤相反）在 Kroll 1908 的正文（p.202），Riley 英譯把這段標成旁注。核到：<span class="mono">已讀原文</span>（Kroll 希臘文；Pingree 的處理未核）。</li>
       </ol>
     </div>
   </section>
@@ -227,7 +246,6 @@
     <h2 class="hdr"><span>07</span>還沒有算的時間技法</h2>
     <p>十年期（每段 10 年 9 個月）已經提供，規則與驗算見〈<a href="/zh-TW/methods/decennials">十年期的規則、出處與驗算</a>〉。下面幾種還沒有算：</p>
     <ul>
-      <li><b>太陽回歸盤</b>：只用回歸的瞬間切分年份，不排那一刻的星盤。</li>
       <li><b>黃道釋放的第三、四層</b>：理由見第 04 節。</li>
       <li><b>日小限與 Bonatti 的度數小限</b>（月小限已經提供，見第 02 節）。</li>
       <li><b>行運、推運與主限向運</b>（主限向運：以天球周日旋轉推算的一種古典推運）。</li>
@@ -237,8 +255,8 @@
   <section class="ds-sec" id="verification-levels">
     <h2 class="hdr"><span>08</span>「核到哪一層」是什麼意思</h2>
     <ul>
-      <li><b>親讀原文</b>：我們讀過那一段的原文本身（包括書頁影像），寫明讀的是哪一個版本。</li>
-      <li><b>親讀譯本</b>：我們讀過那一段的譯本本身（包括書頁影像），寫明讀的是哪一個譯本、譯成哪一種語言（英譯、拉丁文譯本等）；原文沒有讀。中世紀把阿拉伯文著作譯成拉丁文的譯本，也算譯本。</li>
+      <li><b>已讀原文</b>：我們讀過那一段的原文本身（包括書頁影像），寫明讀的是哪一個版本。</li>
+      <li><b>已讀譯本</b>：我們讀過那一段的譯本本身（包括書頁影像），寫明讀的是哪一個譯本、譯成哪一種語言（英譯、拉丁文譯本等）；原文沒有讀。中世紀把阿拉伯文著作譯成拉丁文的譯本，也算譯本。</li>
       <li><b>轉引</b>：只讀到二手。我們只透過研究筆記或其他人的引述得知，沒有讀到那一段本身。</li>
       <li><b>只見書目</b>：我們只確認了書目，沒有讀到內容。</li>
     </ul>

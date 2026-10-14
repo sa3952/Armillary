@@ -17,7 +17,9 @@ pp.194–211），再定 orb 與歲差政策，這些都未裁決。
 /api/chart 三個日期核對黃經黃緯，容差與實測最大值寫在來源表：同一記錄、Hipparcos
 2007 由 J1991.25 推算、SIMBAD 現值（部分星 SIMBAD 已改用 Gaia DR3，屬目錄漂移）。
 不是 Hipparcos 2007 的記錄（α Cen 是雙星系統的值、θ¹ Eri 精度較低）逐星記下與
-Hipparcos、SIMBAD 的差。沒有逐星對 Gaia 核對。
+Hipparcos、SIMBAD 的差。星團沒有 HIP 號：記錄對 SIMBAD 與 Cantat-Gaudin & Anders 2020
+的星團中心逐筆記下差距並設上限（鬼宿星團的記錄偏離中心約 22′），星等是整團合計，
+輸出以 `magnitude_basis` 標明。沒有逐星對 Gaia 核對。
 
 安全約束：星名為硬編碼常數，使用者無法控制傳入 Swiss Ephemeris
 的字串。若未來開放自訂星名，必須先以 ASan 受控輸入重新評估 `libswe/sweph.c` 的
@@ -42,6 +44,9 @@ FIXED_STAR_SOURCE = "Swiss Ephemeris fixstar2_ut"
 # Every star failing is not a computed module; some
 # failing is still usable but says so.
 FIXED_STAR_REASON_CODES = ("fixed_star_query_failed", "fixed_star_query_partially_failed")
+# What `magnitude` measures. Closed set: one star's V magnitude, or a cluster's
+# integrated magnitude (the whole cluster's light summed, not one star).
+FIXED_STAR_MAGNITUDE_BASES = ("single_star", "cluster_integrated")
 
 
 def _canonical_catalog_name(query: str, matched: str) -> str:
@@ -116,34 +121,77 @@ def fixed_star_receipt(star_defs: list, requested: bool, results: list) -> dict:
     }
 
 
+def _failed_star_record(star: dict, magnitude_basis: str) -> dict:
+    """A star Swiss could not answer: the computed record's fields, all null.
+
+    `error` is the closed reason code, never Swiss's message, which can name
+    the ephemeris directory and the instant asked for.
+    """
+
+    reason_code = FIXED_STAR_REASON_CODES[0]
+    return {
+        "key": star["key"],
+        "name": star["zh"],
+        "input_name": star["name"],
+        "catalog_name": None,
+        "error": reason_code,
+        "longitude": None,
+        "latitude": None,
+        "distance_au": None,
+        "right_ascension": None,
+        "declination": None,
+        "azimuth": None,
+        "azimuth_reason_code": reason_code,
+        "altitude_true": None,
+        "altitude_apparent": None,
+        "altitude_apparent_reason_code": reason_code,
+        "magnitude": None,
+        "magnitude_basis": magnitude_basis,
+        "retflag_ecliptic": None,
+        "retflag_equatorial": None,
+        "retflag_horizontal_source": None,
+        "used_full_ephemeris": None,
+    }
+
+
 def compute_fixed_stars(star_defs: list, jd_ut: float, ctx, atmosphere, trace: Trace) -> list:
     flags = ctx.base_flags
+    equatorial_flags = ctx.equatorial_source_flags | swe.FLG_EQUATORIAL
     results = []
     for star in star_defs:
         name = star["name"]
+        magnitude_basis = star.get("magnitude_basis", FIXED_STAR_MAGNITUDE_BASES[0])
+        # Every Swiss call of one star is inside the one guard: a star Swiss
+        # cannot answer is one failed star, never a failed chart.
         try:
             ecl, matched_name, retflag_ecl = swe.fixstar2_ut(name, jd_ut, flags)
-            equatorial_flags = ctx.equatorial_source_flags | swe.FLG_EQUATORIAL
             equ, _matched_name2, retflag_eq = swe.fixstar2_ut(
                 name,
                 jd_ut,
                 equatorial_flags,
             )
             mag, _ = swe.fixstar2_mag(name)
-        except swe.Error as exc:
+            az = az_raw = true_alt = app_alt = None
+            horizontal_retflag = None
+            if ctx.horizon_meaningful:
+                horizontal_flags = ctx.horizontal_source_flags
+                if horizontal_flags == flags:
+                    horizontal_ecl, horizontal_retflag = ecl, retflag_ecl
+                else:
+                    horizontal_ecl, _horizontal_name, horizontal_retflag = swe.fixstar2_ut(
+                        name, jd_ut, horizontal_flags
+                    )
+                az, az_raw, true_alt, app_alt = horizontal_position(
+                    jd_ut, ctx, atmosphere, horizontal_ecl
+                )
+        except swe.Error:
             trace.add(
                 f"恆星 {star['zh']}({name}) 查詢失敗",
-                note=f"⚠ {exc}（可能缺少 sefstars.txt 或名稱不在星表中，已略過）",
+                result={"reason_code": FIXED_STAR_REASON_CODES[0]},
+                note="⚠ Swiss Ephemeris 回報錯誤（可能缺少 sefstars.txt 或名稱不在星表中），已略過；"
+                     "錯誤內容不對外輸出。",
             )
-            results.append({
-                "key": star["key"], "name": star["zh"], "input_name": name,
-                "catalog_name": None, "error": str(exc),
-                "longitude": None, "latitude": None, "distance_au": None,
-                "right_ascension": None, "declination": None,
-                "azimuth": None, "altitude_true": None, "altitude_apparent": None,
-                "altitude_apparent_reason_code": "fixed_star_query_failed",
-                "magnitude": None, "retflag_horizontal_source": None, "used_full_ephemeris": None,
-            })
+            results.append(_failed_star_record(star, magnitude_basis))
             continue
 
         ecl_lon, ecl_lat, dist, _speed_lon, _speed_lat, _speed_dist = ecl
@@ -156,22 +204,11 @@ def compute_fixed_stars(star_defs: list, jd_ut: float, ctx, atmosphere, trace: T
         ) and object_used_full_ephemeris(
             retflag_eq, body=FIXED_STAR, flags=equatorial_flags, jd_ut=jd_ut,
         )
-
-        az = az_raw = true_alt = app_alt = None
-        horizontal_retflag = None
         if ctx.horizon_meaningful:
-            horizontal_flags = ctx.horizontal_source_flags
-            if horizontal_flags == flags:
-                horizontal_ecl, horizontal_retflag = ecl, retflag_ecl
-            else:
-                horizontal_ecl, _horizontal_name, horizontal_retflag = swe.fixstar2_ut(
-                    name, jd_ut, horizontal_flags
-                )
+            assert horizontal_retflag is not None  # set in the guarded block above
             used_full_ephemeris = used_full_ephemeris and object_used_full_ephemeris(
-                horizontal_retflag, body=FIXED_STAR, flags=horizontal_flags, jd_ut=jd_ut,
-            )
-            az, az_raw, true_alt, app_alt = horizontal_position(
-                jd_ut, ctx, atmosphere, horizontal_ecl
+                horizontal_retflag, body=FIXED_STAR, flags=ctx.horizontal_source_flags,
+                jd_ut=jd_ut,
             )
 
         trace.add(
@@ -187,7 +224,7 @@ def compute_fixed_stars(star_defs: list, jd_ut: float, ctx, atmosphere, trace: T
                 "黃經": ecl_lon, "黃緯": ecl_lat,
                 "赤經": ra, "赤緯": dec,
                 **({"方位角Az(北=0,順時針)": az, "方位角Az(Swiss原始,南=0,向西)": az_raw, "真高度Alt": true_alt} if ctx.horizon_meaningful else {}),
-                "星等": mag,
+                ("星等(整團合計)" if magnitude_basis == "cluster_integrated" else "星等"): mag,
             },
         )
 
@@ -204,6 +241,7 @@ def compute_fixed_stars(star_defs: list, jd_ut: float, ctx, atmosphere, trace: T
             "declination": dec,
             **horizontal_fields(ctx, az, true_alt, app_alt),
             "magnitude": mag,
+            "magnitude_basis": magnitude_basis,
             "retflag_ecliptic": retflag_ecl,
             "retflag_equatorial": retflag_eq,
             "retflag_horizontal_source": horizontal_retflag,
@@ -219,6 +257,9 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "座標為天文計算結果（fixstar2_ut＋sefstars.txt）。每顆星的位置已用獨立換算，"
             "對 Hipparcos 衛星星表 2007 年新歸算與 SIMBAD 現值核對；少數記錄不是 Hipparcos "
             "2007 的值（例如南門二是整個雙星系統的值），另記差距；沒有逐星對 Gaia 核對。"
+            "三個星團沒有 Hipparcos 編號，改對 SIMBAD 與 Cantat-Gaudin & Anders 2020 的星團中心"
+            "核對：鬼宿星團的星表記錄偏離中心約 22′（黃經約 7′），照用；另兩個在 3′ 以內。"
+            "星團的星等是整團合計（magnitude_basis），不是一顆星的亮度。"
             "不輸出合相判定：要先選幾何（黃道合相、同升或中天、地平事件），再定容許度"
             "與歲差。清單依據的古典文本見方法頁，計算結果不逐星標出處。"
         ),

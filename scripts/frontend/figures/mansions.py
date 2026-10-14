@@ -174,7 +174,7 @@ def _wheel(layout: str, fid: str, t: dict, bound: _fx.Bound) -> str:
     pt = _polar(cx, cy)
     out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)]
     for k in range(12):
-        out.append(_fx.path(_ring(pt, 30 * k, 30 * (k + 1), r_sign, r_ring), "fx-inset-bg" if k % 2 else "fx-track"))
+        out.append(_fx.path(_ring(pt, 30 * k, 30 * (k + 1), r_sign, r_ring), "fx-fill-dot" if k % 2 else "fx-track"))
     for i, start in enumerate(t["starts"]):
         end = start + t["width"]
         key, number = f"m{i + 1}", bound.scale(str(i + 1))
@@ -213,7 +213,7 @@ def _wheel(layout: str, fid: str, t: dict, bound: _fx.Bound) -> str:
         cards = "、".join(bound.scale(str(n)) for n in quarters)
         legend = (
             (lambda y: _fx.rect(lx, y - 14, 34, 18, "fx-track"), f"外圈：十二星座，各 {bound.scale('30')}°"),
-            (lambda y: _fx.rect(lx, y - 14, 34, 18, "fx-inset-bg") + _fx.rect(lx, y - 14, 34, 18, "fx-inset-frame"),
+            (lambda y: _fx.rect(lx, y - 14, 34, 18, "fx-fill-dot") + _fx.rect(lx, y - 14, 34, 18, "fx-inset-frame"),
              "（兩種底紋交替）"),
             (lambda y: _fx.line(lx, y - 5, lx + 34, y - 5, "fx-frame"), "粗線：宿界正落在星座起點"),
             (lambda y: "", f"（第 {cards} 宿）"),
@@ -271,7 +271,7 @@ def _count_row(x, y: float, h: float, shift: float, hit: int, active: bool, xm: 
         n = k % 28 + 1
         if b > a:
             if n == hit:
-                out.append(_fx.rect(x(a), y, x(b) - x(a), h, "fx-b-beam" if active else "fx-inset-bg"))
+                out.append(_fx.rect(x(a), y, x(b) - x(a), h, "fx-fill-hatch" if active else "fx-fill-dot"))
             if x(b) - x(a) > (24 if wide else 20):
                 tx = (x(a) + x(b)) / 2
                 if abs(tx - xm) < (20 if wide else 14):  # keep the number clear of the Moon's line
@@ -470,7 +470,7 @@ def _day(layout: str, fid: str, t: dict, rows: list[dict], bound: _fx.Bound) -> 
         anchor = "start" if i == 0 else "end" if i == len(shown) else "middle"
         out.append(_fx.text(x(edge), top + strip + 20, bound.num(_sign_text(t["positions"][(n - 1) % 28])),
                             "fx-t fx-small fx-num fx-key", anchor))
-    fills = {"day": "fx-b-beam", "hour": "fx-b-caz", "exact": ""}
+    fills = {"day": "fx-fill-hatch", "hour": "fx-fill-solid", "exact": ""}
     for y, row in zip(ys, rows):
         a, b, cls = row["start"], row["end"], fills[row["key"]]
         if _span_mansions(a, b, t["width"]) != row["numbers"]:
@@ -481,8 +481,8 @@ def _day(layout: str, fid: str, t: dict, rows: list[dict], bound: _fx.Bound) -> 
                  _fx.text(x0, y - (12 if wide else 10), row["label"], "fx-t fx-key" if wide else small + " fx-key")]
         if cls:
             parts.append(_fx.rect(x(a), y, max(x(b) - x(a), 3.0), bar, cls))
-            parts.append(_fx.line(x(a), y - 4, x(a), y + bar + 4, "fx-b-edge")
-                         + _fx.line(x(b), y - 4, x(b), y + bar + 4, "fx-b-edge"))
+            parts.append(_fx.line(x(a), y - 4, x(a), y + bar + 4, "fx-edge")
+                         + _fx.line(x(b), y - 4, x(b), y + bar + 4, "fx-edge"))
             end = x(b)
         else:
             parts.append(_fx.circle(x(a), y + bar / 2, 10 if wide else 9, "fx-mk")

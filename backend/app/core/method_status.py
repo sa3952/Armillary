@@ -50,7 +50,7 @@ PROVISIONAL_METHODS: frozenset[str] = frozenset({
 # test can name the methods /api/chart emits.
 ANNUAL_PROVISIONAL_METHODS: frozenset[str] = frozenset({
     "annual_profection", "firdaria", "zodiacal_releasing", "extended_lots", "decennials",
-    "monthly_profection",
+    "monthly_profection", "solar_return_chart",
 })
 
 # 列為研究用途的 profile；被選為主要 profile 時也要標出。

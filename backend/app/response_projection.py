@@ -138,7 +138,8 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     f"astronomical_data.parallax_moon.{{{_RECEIPT},longitude_delta_degrees}}",
     "astronomical_data.parallax_moon.{geocentric_reference,topocentric_effective}.sign_position",
     "astronomical_data.fixed_star_policy.catalog_size",
-    "astronomical_data.fixed_stars[].{name,catalog_name,magnitude,latitude,declination,sign_position}",
+    "astronomical_data.fixed_stars[].{name,catalog_name,magnitude,magnitude_basis,latitude,declination,"
+    "sign_position}",
     f"astronomical_data.angles.{{{_RECEIPT},sign_positions}}",
     f"astronomical_data.extra_angles.{{{_RECEIPT}}}",
     "astronomical_data.extra_angles.angles.*.{zh,sign_position}",
@@ -207,7 +208,7 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     "birth_time_sensitivity.probes[].{input_local_time,fold}",
     "birth_time_sensitivity.samples[].{local_time,fold}",
     "birth_time_sensitivity.transitions[].{lower_bound_local,upper_bound_local,changed_paths,"
-    "resolution_seconds}",
+    "resolution_seconds,semantics}",
     "birth_time_sensitivity.moon_boundary_assessment.sampled_sign_boundary_transitions[]."
     "{lower_sample_local,upper_sample_local,semantics}",
     # Methods.

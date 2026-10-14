@@ -203,7 +203,7 @@ def _hour(layout: str, fid: str, d: dict, p: dict, bound: _fx.Bound) -> str:
     Y = lambda v: B - (B - T) * (v - YMIN) / (YMAX - YMIN)  # noqa: E731
     out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)]
     out.append(_fx.text(L if wide else 14, 34 if wide else 28, "上升點在星座內的度數", "fx-t fx-small fx-dim"))
-    out.append(_fx.rect(L, T, R - L, Y(180) - T, "fx-inset-bg"))
+    out.append(_fx.rect(L, T, R - L, Y(180) - T, "fx-fill-dot"))
     out.append(_fx.rect(L, T, R - L, B - T, "fx-inset-frame"))
     for m in (15, 30, 45):
         out.append(_fx.line(X(m), T, X(m), B, "fx-hair"))
@@ -326,7 +326,7 @@ def _five(layout: str, fid: str, rows: list[tuple[str, str, float, str]], bound:
             out.append(_fx.text(gx, y + 16, name, "fx-t"))
             out.append(_fx.text(x1, y + 16, bound.num(value), "fx-t fx-num", "end"))
         out.append(_fx.rect(x0, track, x1 - x0, th, "fx-track"))
-        out.append(_fx.rect(x0, track, max(arcmin * k, 1.0), th, "fx-b-caz"))
+        out.append(_fx.rect(x0, track, max(arcmin * k, 1.0), th, "fx-fill-solid"))
     bottom = top + len(rows) * rh
     axis = bottom + 6
     out.append(_fx.line(x0, axis, x1, axis, "fx-axis"))
@@ -342,7 +342,7 @@ def _five(layout: str, fid: str, rows: list[tuple[str, str, float, str]], bound:
     ih = 2 * (th + gap) + (8 if wide else 0)
     out.append(_fx.line(x0 - 3, bottom - 4, x0, iy, "fx-leader"))
     out.append(_fx.line(x0 + LENS * k + 3, bottom - 4, x1, iy, "fx-leader"))
-    out.append(_fx.rect(x0, iy, x1 - x0, ih, "fx-inset-bg"))
+    out.append(_fx.rect(x0, iy, x1 - x0, ih, "fx-fill-dot"))
     out.append(_fx.rect(x0, iy, x1 - x0, ih, "fx-inset-frame"))
     times = bound.scale(f"{round(m / k)}")
     out.append(_fx.text(x0 + 6 if not wide else 24, iy - 10 if not wide else iy + ih / 2 + 6,
@@ -355,7 +355,7 @@ def _five(layout: str, fid: str, rows: list[tuple[str, str, float, str]], bound:
             y = iy + 24 + j * (th + gap)
             out.append(_fx.text(x0 + 6, y - 6, f"{name} {value}", "fx-t fx-small fx-num fx-key"))
         out.append(_fx.rect(x0, y, x1 - x0, th, "fx-track"))
-        out.append(_fx.rect(x0, y, arcmin * m, th, "fx-b-caz"))
+        out.append(_fx.rect(x0, y, arcmin * m, th, "fx-fill-solid"))
     for t in range(0, int(LENS) + 1):
         out.append(_fx.line(x0 + t * m, iy + ih, x0 + t * m, iy + ih + 5, "fx-axis"))
         anchor = "start" if t == 0 else "end" if t == LENS else "middle"
@@ -430,7 +430,7 @@ def _rise(layout: str, fid: str, minutes: dict, bound: _fx.Bound) -> str:
             out.append(_fx.rect(8, y + 1, W - 16, rh - 2, "fx-hit"))
             out.append(_fx.glyph(SIGN_KEYS[s], (30 if wide else 22), cy, 15 if wide else 13, "fx-mk-gl"))
             out.append(_fx.text(48 if wide else 36, cy + 6 if wide else cy + 5, SIGNS[s], "fx-t"))
-            fill = "fx-b-caz" if s in EMPHASIS else "fx-b-beam"
+            fill = "fx-fill-solid" if s in EMPHASIS else "fx-fill-hatch"
             for variant, _ in VARIANTS:
                 value = minutes[variant][s]
                 text = bound.num(f"{value:.0f}") + " 分"

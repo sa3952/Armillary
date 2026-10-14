@@ -172,7 +172,7 @@ def _eras(pin: dict, bound: _fx.Bound) -> list[dict]:
     years = lambda run: [s[0].year for s in run]  # noqa: E731
     eras = [
         {"key": "lmt", "start": datetime(AXIS[0], 1, 1), "end": t1896, "offset": tr[0]["from"],
-         "name": "地方平時", "fill": "fx-inset-bg",
+         "name": "地方平時", "fill": "fx-fill-dot",
          "label": f"地方平時，快 {b(lmt_h)} 小時 {b(lmt_m)} 分",
          "sentence": (f"{b(t1896.year)} 年以前：沒有官定的標準時。時區資料庫用臺北的地方平時代表這一段，"
                       f"比世界時快 {b(lmt_h)} 小時 {b(lmt_m)} 分，這只是依經度推算的代表值。"),
@@ -186,7 +186,7 @@ def _eras(pin: dict, bound: _fx.Bound) -> list[dict]:
          "from": _date_b(t1896, bound), "to": _date_b(t1937, bound), "offset_text": utc8,
          "spoken": f"西部標準時，{_date_b(t1896, bound)}到 {_date_b(t1937, bound)}，鐘面是 {utc8}"},
         {"key": "jst", "start": t1937, "end": back[0], "offset": japan, "name": "中央標準時",
-         "fill": "fx-b-com", "label": utc9,
+         "fill": "fx-fill-cross", "label": utc9,
          "sentence": (f"{_date_b(t1937, bound)}起：臺灣改用日本的中央標準時 {utc9}。"
                       f"時鐘在那天午夜直接從 {jump[0]} 跳到 {jump[1]}。"),
          "from": _date_b(t1937, bound), "to": _date_b(back[0], bound), "offset_text": utc9,
@@ -312,7 +312,7 @@ def _offsets(layout: str, fid: str, eras: list[dict], bound: _fx.Bound) -> str:
 
     # The summers: a solid bar from +8 to +9 for each, the run's years beside it.
     for era in eras[4:]:
-        bars = "".join(_fx.rect(*_min_bar(box(_year(s), _year(e), L(standard), L(eras[2]["offset"])), wide), "fx-b-caz")
+        bars = "".join(_fx.rect(*_min_bar(box(_year(s), _year(e), L(standard), L(eras[2]["offset"])), wide), "fx-fill-solid")
                        for s, e in era["run"])
         t0, t1 = _span(era)
         if wide:
@@ -410,7 +410,7 @@ def _mapping(x0: float, top: float, k: float, record: dict, bound: _fx.Bound, wi
     # The hour without a counterpart, or with two.
     hour_start = _local_before(record) if skipped else _local_after(record)
     hour_end = hour_start + timedelta(hours=1)
-    band = "fx-b-beam" if skipped else "fx-b-com"
+    band = "fx-fill-hatch" if skipped else "fx-fill-cross"
     out.append(_fx.rect(C(hour_start), yc - 22, C(hour_end) - C(hour_start), 22, band))
     # The mapping lines, every quarter hour; at the change itself both readings.
     t = u0
@@ -513,7 +513,7 @@ def _revisions(layout: str, fid: str, pin: dict, bound: _fx.Bound) -> str:
         bar_y = top + 52
     for s, e in summers:
         if a <= s.year <= b:
-            out.append(_fx.rect(X(_year(s)), bar_y, X(_year(e)) - X(_year(s)), 26, "fx-b-caz"))
+            out.append(_fx.rect(X(_year(s)), bar_y, X(_year(e)) - X(_year(s)), 26, "fx-fill-solid"))
     moved = (last[0].replace(year=old_year), last[1].replace(year=old_year))
     out.append(_fx.rect(X(_year(moved[0])), bar_y, X(_year(moved[1])) - X(_year(moved[0])), 26, "fx-dash"))
     out.append(_fx.path(f"M{_fx.f(X(_year(moved[0])) - 4)} {_fx.f(bar_y + 13)} "
@@ -538,7 +538,7 @@ def _revisions(layout: str, fid: str, pin: dict, bound: _fx.Bound) -> str:
         out.append(_fx.text(x0, top + 14, head + "：依官報與公報改寫", small))
         bar_y = top + 44
     start, end = _year(_local_before(rewritten[0])), _year(_local_before(rewritten[-1]))
-    out.append(_fx.rect(X(start), bar_y, X(end) - X(start), 26, "fx-b-beam"))
+    out.append(_fx.rect(X(start), bar_y, X(end) - X(start), 26, "fx-fill-hatch"))
     for record in rewritten:
         x = X(_year(_local_before(record)))
         out.append(_fx.line(x, bar_y - 6, x, bar_y + 32, "fx-axis"))

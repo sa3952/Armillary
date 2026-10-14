@@ -75,7 +75,8 @@ distributed with the service.
   （Wenger et al. 2000, A&AS 143, 9）.
 - This research has made use of the VizieR catalogue access tool, CDS, Strasbourg, France
   （Ochsenbein et al. 2000, A&AS 143, 23）, for the Hipparcos new reduction（van Leeuwen 2007, A&A 474,
-  653; VizieR I/311）.
+  653; VizieR I/311）and, for the three star clusters, the cluster centres of Cantat-Gaudin and Anders
+  （2020, A&A 640, A1; VizieR J/A+A/640/A1）.
 
 ## Source location
 

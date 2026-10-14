@@ -195,7 +195,7 @@
     leap_second_not_in_bundled_table: (
       "這個時刻換算成 UTC 後不是服務內建表中的閏秒；" + LEAP_SECOND_GUIDANCE
     ),
-    // 時間主星區塊組出的年度請求不會觸發以下十一個代碼（它總會選技法、只送已完成年數、
+    // 時間主星區塊組出的年度請求不會觸發以下十二個代碼（它總會選技法、只送已完成年數、
     // 只在選了對應技法時才送其選項、不送計算中心與黃道座標框架）；只有頁面與服務版本不一致時才會出現。
     annual_request_selects_no_technique: STALE_PAGE_REQUEST,
     year_of_life_must_be_positive: STALE_PAGE_REQUEST,
@@ -205,9 +205,14 @@
     decennials_start_planet_required: STALE_PAGE_REQUEST,
     decennials_start_planet_not_applicable: STALE_PAGE_REQUEST,
     monthly_profection_option_not_applicable: STALE_PAGE_REQUEST,
+    solar_return_chart_option_not_applicable: STALE_PAGE_REQUEST,
     solar_return_requires_geocentric_center: STALE_PAGE_REQUEST,
     solar_return_requires_ecliptic_of_date: STALE_PAGE_REQUEST,
     solar_return_requires_nutation: STALE_PAGE_REQUEST,
+    // 本頁不送另選的地點；收到這一項表示頁面版本與服務不一致。
+    solar_return_location_not_yet_offered: (
+      "太陽回歸盤目前只在出生地起盤，改用另一個地點還沒有開放；請重新載入頁面後再排一次。"
+    ),
     // 這一項是正常輸入就會遇到的：出生在可計算範圍的尾端時，時間軸上較晚的年度會落在 2399 年之後。
     solar_return_outside_supported_year_range: (
       "要算的那一年在西元 2399 年之後才開始，超出本站能計算的範圍（到 2399 年為止）；"

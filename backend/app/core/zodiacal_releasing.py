@@ -72,7 +72,8 @@ class ScopeWindow:
     `lifetime_window` every level-1 period meeting [lifetime start, lifetime
     end) and the whole level 2 of the ones listed.  Outside
     `intersecting_year`, level 2 is listed only inside a period meeting the
-    window.  A window without an end keeps only what holds its start.
+    window.  A window without an end keeps, from birth, every period
+    starting by its start and, otherwise, only what holds its start.
     """
 
     scope: str
@@ -114,7 +115,11 @@ class ScopeWindow:
         return self.to_jd(start) < self.window_end_jd_ut and self.to_jd(end) > self.window_start_jd_ut
 
     def _kept(self, start: Fraction, end: Fraction) -> bool:
-        if self.scope == SCOPES[1] and self.window_end_jd_ut is not None:
+        if self.scope == SCOPES[1]:
+            if self.window_end_jd_ut is None:
+                # The end lies after the supported years: keep everything from
+                # birth through the window start, the same bound `past` uses.
+                return self.to_jd(start) <= self.window_start_jd_ut
             return self.to_jd(start) < self.window_end_jd_ut
         return self.meets(start, end)
 
@@ -193,8 +198,9 @@ def releasing_periods(
     `lifetime_window` every level-1 period meeting [lifetime start, lifetime
     end), with the whole level 2 of the ones meeting the window: a reader
     asks for a year inside the level-1 period whose level 2 it wants.
-    A window without an end (its end lies outside the supported years) keeps
-    only what holds its start.
+    A window without an end (its end lies outside the supported years) keeps,
+    from birth, every period starting by its start; otherwise only what holds
+    its start.
     """
 
     days_per_year = YEAR_MODELS[year_model]["days_per_year"]

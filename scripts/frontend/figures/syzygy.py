@@ -116,7 +116,7 @@ def _timeline(layout: str, fid: str, r: dict, bound: _fx.Bound) -> str:
     """Figure 1, one layout: wide, the days run across; narrow, they run down."""
     wide = layout == "fx-wide"
     W = _fx.WIDE if wide else _fx.NARROW
-    events = (("new", r["new_local"], "新月（朔）", "fx-b-caz"), ("full", r["full_local"], "滿月（望）", "fx-mk"))
+    events = (("new", r["new_local"], "新月（朔）", "fx-fill-solid"), ("full", r["full_local"], "滿月（望）", "fx-mk"))
     when = {key: bound.num(local[5:16]) for key, local, _, _ in events}
     birth = bound.num(BIRTH_LOCAL[5:])
     near = f"最近一次：滿月（出生前 {bound.num(f'{r['full_days']:.1f}')} 天）"
@@ -259,7 +259,7 @@ def _horizon(layout: str, fid: str, data: dict, bound: _fx.Bound) -> str:
     horizon_y = top + 90 * per
     y = lambda alt: horizon_y - alt * per  # noqa: E731
     out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)]
-    out.append(_fx.rect(ax + 6, horizon_y, right - ax - 6, 90 * per, "fx-b-beam"))
+    out.append(_fx.rect(ax + 6, horizon_y, right - ax - 6, 90 * per, "fx-fill-hatch"))
     out.append(_fx.line(ax + 6, horizon_y, right, horizon_y, "fx-axis"))
     out.append(_fx.text(right - 6, horizon_y - 8, "地平線", "fx-t fx-small fx-key", "end"))
     out.append(_fx.text(right - 6, y(-90) - 10, "地平線下", "fx-t fx-small fx-key", "end"))
@@ -347,11 +347,11 @@ def _shadow(layout: str, fid: str, bound: _fx.Bound) -> str:
     for a, b in ((-s, -e), (s, e), (-s, e), (s, -e)):
         out.append(_fx.line(xs, cy + a, xe, cy + b, "fx-hair"))
     out.append(_fx.path(f"M{f(xe)} {f(cy - e)} L{f(end)} {f(cy - penumbra(end))} L{f(end)} {f(cy + penumbra(end))} "
-                        f"L{f(xe)} {f(cy + e)} Z", "fx-b-beam"))
+                        f"L{f(xe)} {f(cy + e)} Z", "fx-fill-hatch"))
     out.append(_fx.path(f"M{f(xe)} {f(cy - e)} L{f(end)} {f(cy - umbra(end))} L{f(end)} {f(cy + umbra(end))} "
                         f"L{f(xe)} {f(cy + e)} Z", "fx-track"))
     out.append(_fx.path(f"M{f(xe)} {f(cy - e)} L{f(end)} {f(cy - umbra(end))} L{f(end)} {f(cy + umbra(end))} "
-                        f"L{f(xe)} {f(cy + e)} Z", "fx-b-com"))
+                        f"L{f(xe)} {f(cy + e)} Z", "fx-fill-cross"))
     out.append(_fx.circle(xs, cy, s, "fx-disc") + _fx.glyph("sun", xs, cy, s * 0.9, "fx-sun-gl"))
     out.append(_fx.circle(xe, cy, e, "fx-disc"))
     out.append(_fx.line(xm, cy - penumbra(xm) - 18, xm, cy + penumbra(xm) + 18, "fx-sunline"))
@@ -372,8 +372,8 @@ def _shadow(layout: str, fid: str, bound: _fx.Bound) -> str:
         out.append(_fx.text(14, H - 16, "示意，不按比例", "fx-t fx-small fx-dim"))
         out.append(_fx.text(14, 26, "側面", "fx-t fx-small"))
     # The cross-section: the penumbra, the umbra inside it, and three paths of the Moon.
-    out.append(_fx.circle(sx, sy, pen, "fx-track") + _fx.circle(sx, sy, pen, "fx-b-beam"))
-    out.append(_fx.circle(sx, sy, umb, "fx-track") + _fx.circle(sx, sy, umb, "fx-b-com"))
+    out.append(_fx.circle(sx, sy, pen, "fx-track") + _fx.circle(sx, sy, pen, "fx-fill-hatch"))
+    out.append(_fx.circle(sx, sy, umb, "fx-track") + _fx.circle(sx, sy, umb, "fx-fill-cross"))
     out.append(_fx.text(sx, sy - umb + 18, "本影", "fx-t fx-small fx-key", "middle"))
     ring = (umb + pen) / 2
     out.append(_fx.text(sx + ring * 0.6, sy + ring * 0.8 + 5, "半影", "fx-t fx-small fx-key", "middle"))

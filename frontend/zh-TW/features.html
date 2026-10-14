@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="index, follow">
 <title>星盤計算功能：上升點、宮位、界與三分性、恆星與匯出｜渾儀 Armillary</title>
-<meta name="description" content="查看渾儀提供的天文座標、古典方法、出生時間敏感度、計算卷宗與多格式匯出功能。">
+<meta name="description" content="渾儀的計算功能：上升點與宮位、四套界表與三分性、恆星、時區資料庫版本，出生時間不確定時標出會變的結果，三套座標一起輸出、時間主星輪值表，以及計算卷宗與多格式匯出；只計算，不解盤。">
 <link rel="canonical" href="https://projectarmillary.com/zh-TW/features">
 <link rel="alternate" hreflang="zh-TW" href="https://projectarmillary.com/zh-TW/features">
 <link rel="alternate" hreflang="x-default" href="https://projectarmillary.com/zh-TW/features">
@@ -13,7 +13,7 @@
 <meta property="og:site_name" content="渾儀 Armillary">
 <meta property="og:locale" content="zh_TW">
 <meta property="og:title" content="星盤計算功能：上升點、宮位、界與三分性、恆星與匯出｜渾儀 Armillary">
-<meta property="og:description" content="查看渾儀提供的天文座標、古典方法、出生時間敏感度、計算卷宗與多格式匯出功能。">
+<meta property="og:description" content="渾儀的計算功能：上升點與宮位、四套界表與三分性、恆星、時區資料庫版本，出生時間不確定時標出會變的結果，三套座標一起輸出、時間主星輪值表，以及計算卷宗與多格式匯出；只計算，不解盤。">
 <meta property="og:url" content="https://projectarmillary.com/zh-TW/features">
 <meta property="og:image" content="https://projectarmillary.com/zh-TW/og-card.png?v=16c9900d06168aab">
 <meta property="og:image:type" content="image/png">
@@ -21,11 +21,11 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="渾儀 Armillary：可驗證的古典西洋占星計算器">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/features#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/features#breadcrumb"},"description":"查看渾儀提供的天文座標、古典方法、出生時間敏感度、計算卷宗與多格式匯出功能。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"星盤計算功能：上升點、宮位、界與三分性、恆星與匯出｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/features"},{"@id":"https://projectarmillary.com/zh-TW/features#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/features","name":"功能","position":2}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/features#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/features#breadcrumb"},"dateModified":"2026-10-14","description":"渾儀的計算功能：上升點與宮位、四套界表與三分性、恆星、時區資料庫版本，出生時間不確定時標出會變的結果，三套座標一起輸出、時間主星輪值表，以及計算卷宗與多格式匯出；只計算，不解盤。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"星盤計算功能：上升點、宮位、界與三分性、恆星與匯出｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/features"},{"@id":"https://projectarmillary.com/zh-TW/features#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/features","name":"功能","position":2}]}]}</script>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" href="/zh-TW/favicon.svg?v=c95686a2f029d369" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="/zh-TW/style/features.css?v=00159970a1ca970d">
+<link rel="stylesheet" href="/zh-TW/style/features.css?v=da04ee62c5e06d40">
 </head>
 <body>
 
@@ -187,19 +187,20 @@
     </div>
     <p class="spec-note">同一顆太陽，同一個時刻。這條驗證管道是刻意留的。</p>
 
-    <p>涵蓋七政、三王星、凱龍星、平均與密切交點（密切交點即 osculating node，常被稱為真交點；兩者都含南交點）、Lilith 與 Priapus，以及 <b>57 顆</b>恆星。相位分兩層輸出：整宮配置層（純算術）與逐度層（角距離、距精確相位差、入相位方向）；逐度層另排成一張相位方格，每格列出容許度內的相位、距精確的度數與入相位或出相位，不另計算。四套相位集合（預設合相＋四種傳統相位）、兩套具名容許度表（預設 Lilly 1647），都可切換，<b>每一次的預設值都印在卷宗裡</b>。</p>
+    <p>涵蓋七政、三王星、凱龍星、平均與密切交點（密切交點即 osculating node，常被稱為真交點；兩者都含南交點）、Lilith 與 Priapus，以及 <b>57 顆</b>恆星與 <b>3 個</b>星團。相位分兩層輸出：整宮配置層（純算術）與逐度層（角距離、距精確相位差、入相位方向）；逐度層另排成一張相位方格，每格列出容許度內的相位、距精確的度數與入相位或出相位，不另計算。四套相位集合（預設合相＋四種傳統相位）、兩套具名容許度表（預設 Lilly 1647），都可切換，<b>每一次的預設值都印在卷宗裡</b>。</p>
 
-    <p class="limit"><b>邊界：</b>恆星只輸出座標與星等，不判定合相——那要先選定幾何（黃道合相、與角點同升或中天、地平事件），再定容許度與歲差政策，這些都還沒裁決。行運、推運、太陽回歸盤（solar return）、合盤目前一項都沒有。</p>
+    <p class="limit"><b>邊界：</b>恆星只輸出座標與星等，不判定合相——那要先選定幾何（黃道合相、與角點同升或中天、地平事件），再定容許度與歲差政策，這些都還沒裁決。行運、推運與合盤目前一項都沒有；太陽回歸盤（solar return）可以在計算頁另外排（見下方第 06 節），在出生地起盤。</p>
   </section>
 
   <section class="feat">
     <p class="feat-num"><span class="dnum">06</span> 時間主星</p>
-    <h2>哪一段時間由誰輪值。<br>只列輪值表，不替你解盤。</h2>
+    <h2>時間主星：哪一段時間由誰輪值。<br>只列輪值表，不替你解盤。</h2>
 
-    <p class="verdict">年度小限、法達（firdaria）、黃道釋放（zodiacal releasing）與十年期（decennials），都是把人生分成一段一段、每段交給一顆行星或一個星座的古典做法。<br><b>只列計算結果：哪一段時間由哪顆行星或哪個星座輪值。不替你解盤，也不預測。</b></p>
+    <p class="verdict">本站排出的年度時間主星（time lords）有年度小限（annual profection）、月小限（monthly profection）、法達（firdaria）、黃道釋放（zodiacal releasing）與十年期（decennials），都是把人生分成一段一段、每段交給一顆行星或一個星座的古典做法。<br><b>只列計算結果：哪一段時間由哪顆行星或哪個星座輪值。不替你解盤，也不預測。</b></p>
 
     <ul class="ticks">
       <li><b>年度小限</b>：每年從上升星座往後推一個星座，那個星座的主星是這一年的「年主星」。</li>
+      <li><b>月小限</b>：把年度小限的那一年再分成 12 個月，每個月往後推一個星座；那個月推到的星座的守護行星是「月主星」。</li>
       <li><b>法達</b>：把一生依固定的年數，輪流分給七顆行星與兩個月交點；每個行星的期間再分成七段。夜盤的交點排在哪裡，古典文獻說法不一，兩種排法都可以選，結果上印出用的是哪一種。</li>
       <li><b>黃道釋放</b>：從命運點（Lot of Fortune，也譯福點、幸運點）與精神點（Lot of Spirit）各起一條，依各星座的年數分成兩層期間，一圈輪完就「解鎖」（loosing of the bond），跳到對宮繼續。這個名稱是現代的，規則出自 Valens。</li>
       <li><b>十年期</b>：每段 10 年 9 個月，依出生時七顆行星的黃道順序輪值；起點預設日盤從太陽、夜盤從月亮，可改。</li>
@@ -208,7 +209,7 @@
 
     <p>一年從太陽回歸的那一刻算起；期間的日期是<b>出生地的日期，只到日</b>。每一條規則用了哪一份文獻、我們核到哪一層、文獻說法不同時用哪一種，見〈<a href="/zh-TW/methods/time-lords">年度時間主星的規則與出處</a>〉。</p>
 
-    <p class="limit"><b>邊界：</b>太陽回歸盤目前沒有：這裡只用回歸的那一刻切分年份，不排那一刻的星盤。只知道出生日期時，這幾種都不產生；黃道釋放與十年期都只算兩層。</p>
+    <p class="limit"><b>邊界：</b>選定某一年後，可以另外排那一年的太陽回歸盤（在出生地起盤，需要確切的出生時間）。只知道出生日期時，這幾種都不產生；黃道釋放與十年期都只算兩層。</p>
   </section>
 
   <section class="feat">
@@ -330,11 +331,11 @@
           <tr><td>計算引擎</td><td>Swiss Ephemeris 2.10.03（套件與 C 函式庫版本分開輸出）</td></tr>
           <tr><td>內建星曆</td><td>基於 JPL DE441</td></tr>
           <tr><td>可計算年份</td><td>1900–2399</td></tr>
-          <tr><td>天體與點</td><td>古典七政 · 三王星 · 凱龍星 · 平均／密切交點與南交點 · Lilith 與 Priapus · 恆星 57 顆</td></tr>
+          <tr><td>天體與點</td><td>古典七政 · 三王星 · 凱龍星 · 平均／密切交點與南交點 · Lilith 與 Priapus · 恆星 57 顆與星團 3 個</td></tr>
           <tr><td>宮位制</td><td>7 種，另可完全不計算宮位</td></tr>
           <tr><td>界、面／旬、三分性</td><td>4 套／2 套／3 套，全部具名到作品與章節、行號或頁碼，全部無預設</td></tr>
           <tr><td>相位</td><td>整宮層 ＋ 逐度層，另附相位方格；4 套相位集合、2 套具名容許度表、3 種同度判準</td></tr>
-          <tr><td>時間主星（time lords）</td><td>年度小限 · 法達（夜盤交點兩種排法）· 黃道釋放（兩層）· 十年期（兩層）· 七個延伸的阿拉伯點；只列輪值，不解讀</td></tr>
+          <tr><td>時間主星（time lords）</td><td>年度小限 · 月小限 · 法達（夜盤交點兩種排法）· 黃道釋放（兩層）· 十年期（兩層）· 七個延伸的阿拉伯點；只列輪值，不解讀</td></tr>
           <tr><td>行星日與行星時</td><td>每張盤都列：從日出起算，晝夜各十二等分，依迦勒底序輪值；極區沒有日出日落時不適用</td></tr>
           <tr><td>進階選項</td><td>40 項，分九組，全部可個別開關並回顯於卷宗</td></tr>
           <tr><td>出生時刻精度</td><td>3 種：精確到分鐘 · 只知道小時 · 只知道日期</td></tr>
@@ -390,6 +391,7 @@
   <div class="wrap">
     <span>渾儀 ARMILLARY</span>
     <span>只計算，不解盤，不預測</span>
+    <span>最後更新：<time datetime="2026-10-14">2026-10-14</time></span>
   </div>
 </footer>
 

@@ -86,6 +86,8 @@ REQUEST_VALIDATION_RULES: dict[str, str] = {
     "decennials_start_planet_required": "AnnualInput",
     "decennials_start_planet_not_applicable": "AnnualInput",
     "monthly_profection_option_not_applicable": "AnnualInput",
+    "solar_return_chart_option_not_applicable": "AnnualInput",
+    "solar_return_location_not_yet_offered": "AnnualInput",
     # Raised by the annual route once the year's start (the N-th solar return)
     # is known to fall after 2399; a rule about the requested year, so
     # it arrives as request_validation_failed like the other annual rules.
@@ -594,12 +596,17 @@ def _default_aspect_orb_profile(validated: dict[str, Any]) -> OrbProfileKey | No
     return _PRODUCT_DEFAULT_ORB_PROFILE
 
 
+# The house systems /api/chart casts; the annual route's solar-return chart
+# accepts the same set.
+HouseSystemCode = Literal["B", "R", "W", "P", "O", "E", "C"]
+
+
 class OptionsInput(StrictInputModel):
     # 一次只計算一種宮位制。選擇何種宮位制屬方法決策，不宣稱各宮位制具有相同權威地位。
     # `False` 是真正的無宮位模式：不得先算完再從 response 隱藏。
     # house_system 在此時只保留為未執行的 request 欄位，不得出現在 effective receipt。
     include_houses: bool = True
-    house_system: Literal["B", "R", "W", "P", "O", "E", "C"] = "W"
+    house_system: HouseSystemCode = "W"
     include_fixed_stars: bool = False
     # 產品核心是可驗證的天文數值；需要古典方法選擇的判斷一律 opt-in，
     # 不因 Swiss Ephemeris 能提供原料就假裝方法已獲採用。
@@ -890,6 +897,12 @@ MonthlyProfectionProfile = Literal[
 ClassicalPlanet = Literal["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn"]
 
 
+# Casting the solar-return chart for a place other than the birth place is
+# built and tested but not yet offered: while this is False the route refuses
+# `solar_return_location` with a closed-set code instead of computing it.
+SOLAR_RETURN_LOCATION_OFFERED: bool = False
+
+
 class AnnualInput(StrictInputModel):
     """Which year and which annual techniques; no "today" and no server clock."""
 
@@ -928,6 +941,14 @@ class AnnualInput(StrictInputModel):
     monthly_profection_profile: MonthlyProfectionProfile = (
         "monthly_profection_solar_30_degree_months_v1"
     )
+    # The chart cast at SR_N (annual_pipeline._solar_return_chart).  This route
+    # has no natal house-system input, so the calculate page sends the house
+    # system its natal chart uses; absent, whole sign as /api/chart's default.
+    # No location means the birth location; another place is refused until
+    # SOLAR_RETURN_LOCATION_OFFERED is switched on.
+    include_solar_return_chart: bool = False
+    solar_return_house_system: HouseSystemCode = "W"
+    solar_return_location: Optional[LocationInput] = None
 
     @model_validator(mode="after")
     def check_annual_selection(self):
@@ -937,6 +958,7 @@ class AnnualInput(StrictInputModel):
             self.include_profection or self.include_firdaria
             or self.include_zodiacal_releasing or self.include_natal_lots
             or self.include_decennials or self.include_monthly_profection
+            or self.include_solar_return_chart
         ):
             raise _rule_error("annual_request_selects_no_technique")
         if not self.include_firdaria and self.model_fields_set & {
@@ -955,6 +977,12 @@ class AnnualInput(StrictInputModel):
             "monthly_profection_profile",
         }:
             raise _rule_error("monthly_profection_option_not_applicable")
+        if not self.include_solar_return_chart and self.model_fields_set & {
+            "solar_return_house_system", "solar_return_location",
+        }:
+            raise _rule_error("solar_return_chart_option_not_applicable")
+        if self.solar_return_location is not None and not SOLAR_RETURN_LOCATION_OFFERED:
+            raise _rule_error("solar_return_location_not_yet_offered", "solar_return_location")
         user_selected = self.decennials_start_profile == "user_selected_planet_v1"
         if user_selected and self.decennials_start_planet is None:
             raise _rule_error("decennials_start_planet_required", "decennials_start_planet")
@@ -1094,12 +1122,14 @@ def _declared_field_names(*models: type[BaseModel]) -> frozenset[str]:
     return frozenset(names)
 
 
-# The only request-shaped text a refusal may carry: names the models declare.
-# Derived from the models; the hand-kept list it replaces lived in main.py and
-# had to be edited by every package that added a field.
-REQUEST_FIELD_NAMES: frozenset[str] = _declared_field_names(
-    ChartRequest, PlaceSearchRequest, AnnualRequest, TimeConversionRequest
-)
+def request_field_names(model: type[BaseModel] | None) -> frozenset[str]:
+    """The only request-shaped text a refusal on one route may carry: the names
+    that route's own body model declares (RT-SEC-03).  A union over every
+    model let a place search echo a chart or annual field name back."""
+
+    return frozenset() if model is None else _declared_field_names(model)
+
+
 _REQUEST_ROOTS = frozenset({"body", "query"})
 UNDECLARED_KEY = "input"
 
@@ -1113,16 +1143,17 @@ def _declared_segment(item: object, declared: frozenset[str]) -> str | int:
 def validation_issues(
     errors: Iterable[Mapping[str, Any]],
     *,
-    parameter_names: frozenset[str] = frozenset(),
+    declared_names: frozenset[str],
 ) -> list[dict[str, object]]:
     """Reduce Pydantic errors to closed codes and declared field paths.
 
     Pydantic's `input`, `msg` and `ctx` never leave: they can carry the rejected
     birth values.  Only a rule's own `field_path` is read from the context, and
-    only declared names survive in any location.
+    only the names the answering route declares (its body model's fields and
+    its query parameters) survive in any location.
     """
 
-    declared = REQUEST_FIELD_NAMES | _REQUEST_ROOTS | parameter_names
+    declared = declared_names | _REQUEST_ROOTS
     issues: list[dict[str, object]] = []
     for error in errors:
         raw_type = error.get("type")
@@ -1225,7 +1256,7 @@ def _refuse_json_constant(_name: str) -> None:
 
 
 def check_strict_query(
-    items: Iterable[tuple[str, str]], declared: frozenset[str],
+    items: Iterable[tuple[str, str]], declared: frozenset[str], raw: bytes = b"",
 ) -> None:
     """Refuse a query a route does not declare, or a declared name given twice.
 
@@ -1234,11 +1265,16 @@ def check_strict_query(
     a request could carry data the receipt never names.  A repeated declared
     name was resolved silently (the last `projection` won).  Unknown names are
     reported as the undeclared placeholder, never echoed.
+
+    `raw` is the query as sent.  The parsed items drop empty segments, so
+    `?&&&` read as no query at all (RT-SEC-03); a segment that names nothing
+    is undeclared like any other.
     """
 
     counts = Counter(name for name, _value in items)
     issues: list[dict[str, object]] = []
-    if any(name not in declared for name in counts):
+    empty_segment = bool(raw) and b"" in raw.split(b"&")
+    if empty_segment or any(name not in declared for name in counts):
         issues.append({"type": "extra_forbidden", "loc": ["query", UNDECLARED_KEY]})
     for name in sorted(name for name, seen in counts.items() if name in declared and seen > 1):
         issues.append({"type": "duplicate_query_parameter", "loc": ["query", name]})
@@ -1246,7 +1282,7 @@ def check_strict_query(
         raise StrictJsonBodyError("request_validation_failed", issues)
 
 
-def check_strict_json_body(raw: bytes) -> None:
+def check_strict_json_body(raw: bytes, declared_names: frozenset[str] = frozenset()) -> None:
     """Refuse a body two JSON readers could read differently.
 
     `json.loads` on bytes detects UTF-16 and UTF-32 and skips a BOM, and a dict
@@ -1284,7 +1320,7 @@ def check_strict_json_body(raw: bytes) -> None:
                 "type": "duplicate_json_key",
                 "loc": [
                     "body",
-                    *(_declared_segment(item, REQUEST_FIELD_NAMES) for item in path),
+                    *(_declared_segment(item, declared_names) for item in path),
                 ],
             }],
         )

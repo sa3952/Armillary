@@ -298,10 +298,10 @@ def _day(layout: str, fid: str, d: dict, out: dict, segs: dict, bound: _fx.Bound
         body.append(_fx.rect(x0, track, x1 - x0, th, "fx-track"))
     for hour in out["quiet_hours"]:
         if wide:
-            body.append(_fx.rect(X(hour * 3600), plot_top, X(3600) - X(0), plot_bottom - plot_top, "fx-inset-bg"))
+            body.append(_fx.rect(X(hour * 3600), plot_top, X(3600) - X(0), plot_bottom - plot_top, "fx-fill-dot"))
         else:
             # on a phone the label lines sit between the tracks: dot the tracks only
-            body += [_fx.rect(X(hour * 3600), track, X(3600) - X(0), th, "fx-inset-bg") for *_, track in tracks]
+            body += [_fx.rect(X(hour * 3600), track, X(3600) - X(0), th, "fx-fill-dot") for *_, track in tracks]
     for key, name, y, track in tracks:
         if key == "others":
             if wide:
@@ -310,7 +310,7 @@ def _day(layout: str, fid: str, d: dict, out: dict, segs: dict, bound: _fx.Bound
         marks = segs[key][1:]
         for start, end, label in segs[key]:
             if start:
-                body.append(_fx.rect(X(start) - 1.5, track - 5, 3, th + 10, "fx-b-caz"))
+                body.append(_fx.rect(X(start) - 1.5, track - 5, 3, th + 10, "fx-fill-solid"))
             if not wide:
                 continue
             if key in ("asc", "sect"):
@@ -329,11 +329,11 @@ def _day(layout: str, fid: str, d: dict, out: dict, segs: dict, bound: _fx.Bound
             anchor = "start" if hour == 0 and not wide else "end" if hour == 24 and not wide else "middle"
             body.append(_fx.text(X(hour * 3600), axis + 23, bound.scale(f"{hour:02d}:00"), "fx-t fx-small fx-num", anchor))
     ly = axis + (54 if wide else 52)
-    body.append(_fx.rect(x0 if wide else 14, ly - 13, 3, 16, "fx-b-caz"))
+    body.append(_fx.rect(x0 if wide else 14, ly - 13, 3, 16, "fx-fill-solid"))
     body.append(_fx.text((x0 if wide else 14) + 10, ly, "翻面的時刻", "fx-t fx-small"))
     lx = (x0 + 140) if wide else 14
     ly2 = ly if wide else ly + 24
-    body.append(_fx.rect(lx, ly2 - 13, 22, 16, "fx-inset-bg"))
+    body.append(_fx.rect(lx, ly2 - 13, 22, 16, "fx-fill-dot"))
     body.append(_fx.rect(lx, ly2 - 13, 22, 16, "fx-inset-frame"))
     body.append(_fx.text(lx + 30, ly2, "所有判定在各取樣點都相同的鐘點", "fx-t fx-small"))
     H = ly2 + 26
@@ -374,8 +374,8 @@ def _day_figure(d: dict, out: dict) -> str:
     ), bound)
 
 
-DECADE = (("none", "七顆都不換", "fx-track"), ("moon_only", "只有月亮換", "fx-b-beam"),
-          ("other", "有其他行星換", "fx-b-com"))
+DECADE = (("none", "七顆都不換", "fx-track"), ("moon_only", "只有月亮換", "fx-fill-hatch"),
+          ("other", "有其他行星換", "fx-fill-cross"))
 
 
 def _decade(layout: str, fid: str, ten: dict, bound: _fx.Bound) -> str:
@@ -445,8 +445,8 @@ def _decade_figure(ten: dict) -> str:
     ), bound)
 
 
-HOUR_ROWS = (("asc", "上升星座會換", "fx-b-caz"), ("other", "上升不換，其他判定翻面", "fx-b-beam"),
-             ("quiet", "所有判定在各取樣點都相同", "fx-inset-bg"))
+HOUR_ROWS = (("asc", "上升星座會換", "fx-fill-solid"), ("other", "上升不換，其他判定翻面", "fx-fill-hatch"),
+             ("quiet", "所有判定在各取樣點都相同", "fx-fill-dot"))
 
 
 def _flipped(paths: set[str]) -> list[str]:

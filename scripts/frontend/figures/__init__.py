@@ -33,11 +33,13 @@ _BLOCK = re.compile(
 
 
 def articles() -> tuple:
-    from . import (birth_time, bounds, combustion, dodecatemoria, house_sphere, houses, mansions, nodes,
-                   rising_tables, solar_time, syzygy, taiwan_time, time_lords, unknown_time)
+    from . import (accuracy, approximate_hour, birth_time, bounds, combustion, dodecatemoria, era_time,
+                   house_sphere, houses, mansions, nodes, receipt, rising_tables, solar_time, syzygy,
+                   taiwan_time, time_lords, unknown_time)
 
-    return (birth_time, taiwan_time, houses, bounds, nodes, unknown_time, rising_tables, solar_time, time_lords,
-            dodecatemoria, combustion, mansions, syzygy, house_sphere)
+    return (birth_time, taiwan_time, houses, bounds, nodes, unknown_time, rising_tables, solar_time,
+            time_lords, dodecatemoria, combustion, mansions, syzygy, house_sphere, era_time, accuracy,
+            approximate_hour, receipt)
 
 
 def pages() -> tuple:

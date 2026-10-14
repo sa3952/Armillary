@@ -40,6 +40,7 @@ from .time_utils import (
     _to_utc_datetime,
     _wall_label,
     MICROSECONDS_PER_SECOND,
+    civil_hour_spans,
     civil_time_label,
     compute_time_conversion,
     repeated_wall_clock_stretches,
@@ -285,6 +286,13 @@ def coverage_ledger(
 
 PROBE_OFFSETS_SECONDS = (0, 900, 1800, 2700, 3599)
 TRANSITION_RESOLUTION_SECONDS = 15
+# transitions[].semantics.  Two adjacent probes in different UTC stretches of
+# the hour (the clock left the hour and came back) are not bisected: the
+# instants between them are not in the hour, so the change lies outside it.
+TRANSITION_SEMANTICS = (
+    "bounded_bisection_of_a_sampled_classification_change",
+    "sampled_classification_change_across_a_utc_gap_not_bisected",
+)
 
 
 def representative_semantics_for_offset(representative_offset_seconds: int) -> str:
@@ -991,15 +999,20 @@ def _refine_transitions(
     request,
     body_defs: list[dict],
     probes_by_offset: dict[int, dict],
+    stretch_of: dict[int, int],
 ) -> tuple[list[dict], dict[int, dict]]:
     """Refine only sampled classification changes; hidden reversals remain possible.
 
     Returns the brackets and every midpoint probe the bisection computed, so
     the classifications those midpoints printed are not thrown away.
+    ``stretch_of`` gives each probe offset's UTC stretch of the hour; a change
+    between two stretches is reported at their facing ends, not bisected, since
+    the clock seconds between them name instants outside the hour.
     """
 
     missing = object()
     brackets: dict[tuple[int, int], set[str]] = {}
+    gap_brackets: dict[tuple[int, int], set[str]] = {}
     refinement: dict[int, dict] = {}
     states: dict[int, dict] = {}
 
@@ -1045,6 +1058,10 @@ def _refine_transitions(
             if left_state.get(key, missing) != right_state.get(key, missing)
             and not key.startswith(DODECATEMORIA_PATH)
         )
+        if stretch_of[segment_left] != stretch_of[segment_right]:
+            if changed_paths:
+                gap_brackets[(segment_left, segment_right)] = set(changed_paths)
+            continue
         for path in changed_paths:
             left_offset = segment_left
             right_offset = segment_right
@@ -1064,15 +1081,20 @@ def _refine_transitions(
     # Paths that change at the same instant bisect through the same midpoints
     # and land in the same bracket (under whole-sign houses one Ascendant sign
     # change moves every placement and cusp at once), so one record names them.
+    records = [
+        (bounds, paths, TRANSITION_SEMANTICS[0]) for bounds, paths in brackets.items()
+    ] + [(bounds, paths, TRANSITION_SEMANTICS[1]) for bounds, paths in gap_brackets.items()]
     transitions = [
         {
             "lower_bound_local": _format_local_offset(request, left_offset),
             "upper_bound_local": _format_local_offset(request, right_offset),
             "resolution_seconds": right_offset - left_offset,
             "changed_paths": sorted(paths),
-            "semantics": "bounded_bisection_of_a_sampled_classification_change",
+            "semantics": semantics,
         }
-        for (left_offset, right_offset), paths in sorted(brackets.items())
+        for (left_offset, right_offset), paths, semantics in sorted(
+            records, key=lambda record: record[0]
+        )
     ]
     return transitions, refinement
 
@@ -1102,13 +1124,25 @@ def _probe_fold(request, offset_seconds: int) -> int:
     return _wall_label(utc_value, request.timezone)[1]
 
 
+def _probe_utc(request, offset_seconds: int) -> dtmod.datetime:
+    probe = _probe_request(request, offset_seconds)
+    return _to_utc_datetime(probe.datetime, probe.timezone)[0]
+
+
+def _stretch_index(spans: list, moment: dtmod.datetime) -> int:
+    return next(index for index, (start, end) in enumerate(spans) if start <= moment < end)
+
+
 def _clock_change_edge_offsets(request) -> list[int]:
     """Seconds into the stated hour on either side of a UTC-offset change.
 
     The quarter-hour grid assumes the hour is one unbroken stretch
     of clock time.  When the zone changes offset inside it, the first and last
     existing seconds of each stretch are sampled too, keeping only those that
-    belong to the fold the request named.
+    belong to the fold the request named: both sides of each change, and both
+    ends of each UTC stretch the hour covers (``civil_hour_spans``), so where
+    the clock leaves the hour and comes back each stretch is bounded by its own
+    probes.
     """
 
     timezone_input = request.timezone
@@ -1124,21 +1158,29 @@ def _clock_change_edge_offsets(request) -> list[int]:
     ]
     margin = dtmod.timedelta(hours=1)
     offsets: set[int] = set()
-    for change in utc_offset_changes(zone, min(bounds) - margin, max(bounds) + margin):
-        for moment in (change - _ONE_SECOND, change):
-            label, _fold = _wall_label(moment, timezone_input)
-            if not hour_start <= label < hour_end:
-                continue
-            offset_seconds = int((label - hour_start).total_seconds())
-            try:
-                resolved, _offset, _label, _warning = _to_utc_datetime(
-                    _probe_request(request, offset_seconds).datetime,
-                    timezone_input,
-                )
-            except NonexistentLocalTimeError:
-                continue
-            if resolved == moment:
-                offsets.add(offset_seconds)
+    candidates = [
+        moment
+        for change in utc_offset_changes(zone, min(bounds) - margin, max(bounds) + margin)
+        for moment in (change - _ONE_SECOND, change)
+    ] + [
+        moment
+        for start, end in civil_hour_spans(timezone_input, hour_start)
+        for moment in (start, end - _ONE_SECOND)
+    ]
+    for moment in candidates:
+        label, _fold = _wall_label(moment, timezone_input)
+        if not hour_start <= label < hour_end:
+            continue
+        offset_seconds = int((label - hour_start).total_seconds())
+        try:
+            resolved, _offset, _label, _warning = _to_utc_datetime(
+                _probe_request(request, offset_seconds).datetime,
+                timezone_input,
+            )
+        except NonexistentLocalTimeError:
+            continue
+        if resolved == moment:
+            offsets.add(offset_seconds)
     return sorted(offsets)
 
 
@@ -1219,10 +1261,15 @@ def build_approximate_hour_sensitivity(
             "no instant in the stated civil hour exists in this time zone"
         )
     probes = [probes_by_offset[offset] for offset in usable_offsets]
+    spans = civil_hour_spans(request.timezone, _hour_start(request))
     transitions, refinement = _refine_transitions(
         request=request,
         body_defs=body_defs,
         probes_by_offset=probes_by_offset,
+        stretch_of={
+            offset: _stretch_index(spans, _probe_utc(request, offset))
+            for offset in probes_by_offset
+        },
     )
     # The bisection computes every classification at each midpoint; what those
     # midpoints showed joins the sets, envelopes and states instead of being

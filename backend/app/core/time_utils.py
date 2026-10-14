@@ -1191,6 +1191,66 @@ def repeated_wall_clock_stretches(tz_input, hour_start: dtmod.datetime) -> list:
     return sorted(stretches)
 
 
+def _subtract(pieces: list, removed: tuple) -> list:
+    cut_from, cut_to = removed
+    kept = []
+    for start, end in pieces:
+        if cut_to <= start or end <= cut_from:
+            kept.append((start, end))
+            continue
+        if start < cut_from:
+            kept.append((start, cut_from))
+        if cut_to < end:
+            kept.append((cut_to, end))
+    return kept
+
+
+def civil_hour_spans(tz_input, hour_start: dtmod.datetime) -> list:
+    """Every maximal UTC stretch [start, end) the stated hour covers in its fold.
+
+    An instant belongs when its wall label lies in [H:00, H+1:00) and, where
+    the zone shows that label twice, it is the occurrence ``timezone.fold``
+    names (PEP 495: fold 1 is the label's later reading).  Such an hour need not
+    be one stretch: in America/St_Johns 2005-10-30 00h, fold 0 is
+    00:00:00-00:00:59 NDT and, an hour later in UTC, 00:01-00:59:59 NST.  Inside
+    each constant-offset segment the labels run with UTC; a label another
+    segment also shows is kept only from the segment that is its named reading.
+    """
+
+    hour_end = hour_start + dtmod.timedelta(hours=1)
+    anchor = hour_start.replace(tzinfo=dtmod.timezone.utc)
+    segments = _offset_segments(
+        tz_input,
+        anchor - _LABEL_WINDOW_MARGIN,
+        anchor + dtmod.timedelta(hours=1) + _LABEL_WINDOW_MARGIN,
+    )
+    labelled = [
+        (left.replace(tzinfo=None) + offset, right.replace(tzinfo=None) + offset)
+        for left, right, offset in segments
+    ]
+    fold = tz_input.fold if tz_input.mode == "iana" else 0
+    spans: list[list[dtmod.datetime]] = []
+    for index, (_left, _right, offset) in enumerate(segments):
+        label_from, label_to = labelled[index]
+        pieces = [(max(label_from, hour_start), min(label_to, hour_end))]
+        if pieces[0][0] >= pieces[0][1]:
+            continue
+        # Fold 0 is a repeated label's earlier reading, so a segment drops the
+        # labels an earlier segment already showed; fold 1 drops those a later
+        # segment shows again.
+        others = labelled[:index] if fold == 0 else labelled[index + 1:]
+        for other in others:
+            pieces = _subtract(pieces, other)
+        for piece_from, piece_to in sorted(pieces):
+            start = (piece_from - offset).replace(tzinfo=dtmod.timezone.utc)
+            end = (piece_to - offset).replace(tzinfo=dtmod.timezone.utc)
+            if spans and spans[-1][1] == start:
+                spans[-1][1] = end
+            else:
+                spans.append([start, end])
+    return [(start, end) for start, end in spans]
+
+
 def resolve_date_only_anchor(dt_input, tz_input) -> dict:
     """Local noon, or the first instant after it that the zone actually has.
 

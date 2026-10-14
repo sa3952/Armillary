@@ -153,7 +153,8 @@ def decennial_periods(
     end, with level 2 only inside the ones meeting the window;
     `lifetime_window` every level-1 period meeting [lifetime start, lifetime
     end), with the whole level 2 of the ones meeting the window, as zodiacal
-    releasing does.  A window without an end keeps only what holds its start.
+    releasing does.  A window without an end keeps, from birth, every period
+    starting by its start; otherwise only what holds its start.
     """
 
     month_days = days_per_month()

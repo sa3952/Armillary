@@ -162,9 +162,10 @@ BODY_ID_BY_KEY = {
 
 # 產品恆星清單（名稱需與 sefstars.txt 內拼寫完全一致，大小寫不拘）。前 15 顆依
 # Agrippa, De occulta philosophia I.32（星名表）與 II.47（Behenian 星像）的 Behenian
-# 十五星（Pleiades 以 Alcyone 代表；Ala Corvi 取 δ Crv Algorab，Agrippa 未指明，
-# γ Crv Gienah 另列在表尾）；接著是產品自選的星；表尾是 Ptolemy《占星四書》I.9、
-# Lilly《Christian Astrology》與 Anonymous of 379 點名、可唯一指認的星。只在表尾追加，
+# 十五星（Agrippa 只寫 Pleiades，以 Alcyone 代表是現代慣例；Ala Corvi 取 δ Crv Algorab，
+# Agrippa 未指明，γ Crv Gienah 另列在表尾）；接著是產品自選的星；再來是 Ptolemy《占星四書》
+# I.9、Lilly《Christian Astrology》與 Anonymous of 379 點名、可唯一指認的星；最後是
+# Ptolemy I.9 點名的三個星團（星表記錄是星團中心，星等是整團合計）。只在表尾追加，
 # 不重排：內部來源表依位置記錄每顆星的來歷。計算輸出不逐星標來歷。
 FIXED_STARS = [
     {"key": "algol", "zh": "大陵五", "name": "Algol"},
@@ -233,6 +234,13 @@ FIXED_STARS = [
     {"key": "markab", "zh": "室宿一", "name": "Markab,alPeg"},
     {"key": "scheat", "zh": "室宿二", "name": "Scheat"},
     {"key": "alrescha", "zh": "外屏七", "name": "Alrescha"},
+    # 星團：magnitude_basis 標明星等是整團合計，不是單星。單寫 "Praesepe" 查不到記錄。
+    {"key": "praesepe", "zh": "鬼宿星團", "name": "Praesepe Cluster,M44",
+     "magnitude_basis": "cluster_integrated"},
+    {"key": "capulus", "zh": "英仙h星團(NGC 869)", "name": "Capulus",
+     "magnitude_basis": "cluster_integrated"},
+    {"key": "acumen", "zh": "托勒密星團(通常認定為M7，有爭議)", "name": "Acumen",
+     "magnitude_basis": "cluster_integrated"},
 ]
 
 # 恆星中文名的查證狀態。閉集。
@@ -256,6 +264,7 @@ FIXED_STAR_ZH_NAME_TABLES = {
         "〈不可思議的星星：蒭藁增二〉"
     ),
     "zh_wikipedia_star_name_table": "zh.wikipedia〈中西星名對照表〉",
+    "zh_wikipedia_cluster_articles": "zh.wikipedia 星團條目〈鬼宿星團〉〈托勒密星團〉",
 }
 FIXED_STAR_ZH_NAME_CORRECTIONS: dict[str, dict[str, Any]] = {
     "algorab": {
@@ -300,6 +309,9 @@ _ZH_NAME_TABLES_BY_KEY: dict[tuple[str, ...], tuple[str, ...]] = {
         "alkes", "gienah", "unukalhai", "markab", "scheat", "alrescha",
     ),
     ("zh_wikipedia_star_name_table",): ("tianguan", "prima_hyadum"),
+    # 星團不在星名對照表裡，依 zh.wikipedia 條目名核對。英仙h星團是裁定的標籤，
+    # zh.wikipedia〈NGC 869〉寫「英仙座h」，〈雙星團〉說這個叫法常被誤用，所以不列為已核對。
+    ("zh_wikipedia_cluster_articles",): ("praesepe", "acumen"),
 }
 FIXED_STAR_ZH_NAME_CHECKED: dict[str, dict[str, Any]] = {
     key: {

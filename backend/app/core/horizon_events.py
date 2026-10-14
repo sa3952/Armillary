@@ -87,6 +87,9 @@ SIDE_STATUSES: Final = (
     "numerically_unavailable",
     "not_searched",
 )
+# The one value of a side's `error`, present only beside numerically_unavailable:
+# the response's closed code for a Swiss failure, never Swiss's own message.
+SEARCH_SWISS_ERROR_CODE: Final = "swiss_ephemeris_error"
 # Body-level statement about the reference instant, derived from the rise/set
 # search plus sampled altitudes.  Interval-aware by construction.
 VISIBILITY_STATES: Final = (
@@ -824,9 +827,11 @@ def _searched_pair(
                 reference_jd_ut, body_id, event_name, geopos, pressure_hpa, temperature_c,
                 probe_cache,
             )
-        except swe.Error as exc:
+        except swe.Error:
+            # A closed code only: Swiss messages can name the ephemeris
+            # directory and the instant asked for.
             search[side]["status"] = "numerically_unavailable"
-            search[side]["error"] = str(exc)
+            search[side]["error"] = SEARCH_SWISS_ERROR_CODE
             continue
         search[side]["status"] = status
         values[side] = _event_value(jd) if jd is not None else None

@@ -128,11 +128,11 @@
       natural_priapus: "自然月球近地點 Priapus",
     }),
     // 出處核到哪一層（後端 core/source_reading.py 的閉集，依此順序）：結果頁每一條出處的句尾
-    // 「核到：…」都取這一組。任何譯本（包括阿拉伯著作的中世紀拉丁文譯本）都是「親讀譯本」，
+    // 「核到：…」都取這一組。任何譯本（包括阿拉伯著作的中世紀拉丁文譯本）都是「已讀譯本」，
     // 譯成哪一種語言寫在每一條句尾的括號裡（英譯、拉丁文譯本）。
     source_reading: Object.freeze({
-      original_language_read: "親讀原文",
-      translation_read: "親讀譯本",
+      original_language_read: "已讀原文",
+      translation_read: "已讀譯本",
       secondary_only: "轉引（只讀到二手）",
       bibliographic_only: "只見書目",
     }),

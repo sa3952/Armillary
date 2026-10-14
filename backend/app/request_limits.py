@@ -560,7 +560,11 @@ class ChartRequestBoundary:
         send: Send,
     ) -> None:
         if self.expected_host is not None and scope.get("type") == "http":
-            raw = dict(scope.get("headers") or ()).get(b"host", b"").decode("latin-1")
+            # RFC 9110 §7.2 / RFC 9112 §3.2: more than one Host is refused.
+            # A dict over the headers kept the last copy while Starlette reads
+            # the first, so the check and the application could disagree.
+            hosts = _header_values(scope, b"host")
+            raw = hosts[0].decode("latin-1") if len(hosts) == 1 else ""
             if raw.strip().lower() not in self.accepted_hosts:
                 await _refuse(scope, receive, send, "undeclared_host")
                 return

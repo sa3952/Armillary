@@ -18,7 +18,7 @@
       ],
       "indexable": true,
       "title": "可驗證的古典西洋占星計算器｜渾儀 Armillary",
-      "description": "目前免費、不需註冊：輸入出生日期、時間與地點，排出古典西洋占星本命盤，查看太陽、月亮與上升點所在星座、中天、行星落宮、界與三分性等本質尊貴與相位；每個數字附方法來源與計算收據。只計算，不解盤。"
+      "description": "目前免費、不需註冊：輸入出生日期、時間與地點，排出古典西洋占星本命盤，查看太陽、月亮與上升點所在星座、中天、行星落宮、界與三分性等本質尊貴與相位，並排出年度小限、法達、黃道釋放與十年期等時間主星；每個數字附方法來源與計算收據。只計算，不解盤。"
     },
     {
       "key": "calculate",
@@ -46,7 +46,7 @@
       ],
       "indexable": true,
       "title": "星盤計算功能：上升點、宮位、界與三分性、恆星與匯出｜渾儀 Armillary",
-      "description": "查看渾儀提供的天文座標、古典方法、出生時間敏感度、計算卷宗與多格式匯出功能。"
+      "description": "渾儀的計算功能：上升點與宮位、四套界表與三分性、恆星、時區資料庫版本，出生時間不確定時標出會變的結果，三套座標一起輸出、時間主星輪值表，以及計算卷宗與多格式匯出；只計算，不解盤。"
     },
     {
       "key": "methods",
@@ -59,7 +59,7 @@
       ],
       "indexable": true,
       "title": "古典占星計算方法：宮位制、界、三分性與廟旺的來源｜渾儀 Armillary",
-      "description": "說明渾儀採用及可選的宮位制、界、面與旬、三分性、相位、黃道與其他計算規則及來源狀態。"
+      "description": "說明渾儀採用及可選的宮位制、界（四套具名表，不設預設）、面與旬、三分性、廟旺、相位、阿拉伯點與年度時間主星的計算規則，每條規則寫明來源狀態，也列出目前不算的東西。"
     },
     {
       "key": "methods-birth-time-conversion",
@@ -124,7 +124,7 @@
       ],
       "indexable": true,
       "title": "古典占星天文計算的驗證方法｜渾儀 Armillary",
-      "description": "查看星曆、座標、時間換算、數值比較、計算卷宗與已知驗證範圍，不把抽樣結果外推成全面認證。"
+      "description": "渾儀怎麼驗證計算：主要位置曾與另一條以 JPL DE442、Astropy 與 ERFA 組成的管線逐小時比較；結論、方法、例外與沒有涵蓋的地方一併列出，不把抽樣結果外推成全面認證。"
     },
     {
       "key": "trust",
@@ -137,7 +137,7 @@
       ],
       "indexable": true,
       "title": "計算透明度、隱私與信任邊界｜渾儀 Armillary",
-      "description": "了解渾儀如何連結計算結果、版本、來源、隱私控制、驗證證據與尚未完成的限制。"
+      "description": "渾儀的應用程式裡沒有帳號資料庫、命盤資料庫、工作階段儲存或請求快取，出生資料沒有地方可以存。本頁說明各項承諾由哪一層執行、「已驗證」的四種意思、有人來要資料時會怎樣，以及你怎麼自己驗。"
     },
     {
       "key": "security",
@@ -150,7 +150,7 @@
       ],
       "indexable": true,
       "title": "安全、隱私邊界與漏洞回報｜渾儀 Armillary",
-      "description": "說明渾儀的安全與隱私邊界、負責任漏洞回報方式、禁止提交的敏感資料及非授權測試範圍。"
+      "description": "逐項說明渾儀的七項安全保護、各自擋住什麼、你怎麼自己查證，並列出出生資料的完整路徑、伺服器日誌的完整欄位、送到瀏覽器的標頭、已知攻擊面與漏洞回報方式。"
     },
     {
       "key": "security-verify",
@@ -203,7 +203,7 @@
       ],
       "indexable": true,
       "title": "產品現況與後續方向｜渾儀 Armillary",
-      "description": "區分渾儀已提供的能力、正在驗證的工作與尚未承諾的後續方向。"
+      "description": "渾儀的產品現況與後續方向：用三階成熟度區分天文層、方法層與產品營運各自已提供的能力、正在驗證的工作與尚未承諾的方向，並列出未決問題與不打算做的事。"
     },
     {
       "key": "blog",
@@ -217,7 +217,7 @@
       ],
       "indexable": true,
       "title": "古典占星計算文章與研究筆記｜渾儀 Armillary",
-      "description": "渾儀公開的選題清單：古典占星計算、方法差異、驗證與出生時間敏感度，包括我們自己算錯的地方。"
+      "description": "渾儀已發表的古典占星計算文章：臺灣夏令時間、不知道出生時間、真太陽時、宮位制、四套界表、真交點與平均交點、焦傷與日輪內、十二分部、時間主星等；還在寫的題目也列在頁上。"
     },
     {
       "key": "legal-privacy",
@@ -243,7 +243,7 @@
       ],
       "indexable": true,
       "title": "使用條款｜渾儀 Armillary",
-      "description": "渾儀的使用範圍、計算資訊性質、責任邊界、禁止行為及適用法律說明。"
+      "description": "渾儀的使用條款：服務做什麼與不做什麼、出生資料與計算結果的歸屬、計算資訊的性質與責任邊界、可用性與變更、禁止行為，以及準據法與管轄。"
     },
     {
       "key": "legal-copyright",
@@ -256,7 +256,7 @@
       ],
       "indexable": true,
       "title": "著作權、授權與對應原始碼｜渾儀 Armillary",
-      "description": "查看渾儀、Swiss Ephemeris、地名資料、第三方依賴及AGPLv3對應原始碼資訊。"
+      "description": "渾儀的著作權與授權：怎麼取得你正在使用那一版的 AGPLv3 對應原始碼與它的範圍，以及 Swiss Ephemeris、地名資料、Debian 基底與其他第三方依賴的授權揭露。"
     },
     {
       "key": "blog-birth-time-sensitivity",
@@ -291,6 +291,24 @@
       "description": "1896 年以來臺灣換過三種標準時，並在十九個夏天實施日光節約時間。依 IANA 時區資料庫整理這些年份的換算、不存在與重複的鐘點，以及資料本身仍不確定之處。",
       "article": {
         "published": "2026-10-11",
+        "modified": "2026-10-14"
+      }
+    },
+    {
+      "key": "blog-taiwan-era-years-birth-time",
+      "fragment": "blog-taiwan-era-years-birth-time",
+      "output": "zh-TW/blog/taiwan-era-years-birth-time.html",
+      "surface": "/zh-TW/blog/taiwan-era-years-birth-time",
+      "locale": "zh-TW",
+      "layers": [
+        "L2",
+        "L3"
+      ],
+      "indexable": true,
+      "title": "民國年、昭和年怎麼換算西元？日治時期出生的排盤與臺灣時區｜渾儀 Armillary",
+      "description": "民國年加 1911、昭和年加 1925、大正年加 1911 就是西元年；改元那一年要看日期。日治時期出生還要看鐘：1937 年 10 月到 1945 年 9 月臺灣用 UTC+9。附逐年對照與計算服務的實際換算。",
+      "article": {
+        "published": "2026-10-14",
         "modified": "2026-10-14"
       }
     },
@@ -341,7 +359,7 @@
         "L3"
       ],
       "indexable": true,
-      "title": "真交點與平均交點差多少：『真交點』其實是密切交點｜渾儀 Armillary",
+      "title": "北交點的真交點與平均交點差多少：『真交點』其實是密切交點｜渾儀 Armillary",
       "description": "北交點（俗稱龍頭）有兩種算法：排盤軟體的「真交點」與平均交點最多差將近 2 度。說明「真交點」其實是密切交點、兩者差多少、Tycho 怎麼看交點的不均勻，以及古典技法該用哪一個這個問題要怎麼問。",
       "article": {
         "published": "2026-10-11",
@@ -363,6 +381,24 @@
       "description": "不知道確切出生時間也能排星盤。以合成範例實算：只知道日期時，哪些行星星座仍然站得住；只知道大約幾點時，上升星座、宮位與日夜盤在一小時裡怎麼翻面。",
       "article": {
         "published": "2026-10-11",
+        "modified": "2026-10-14"
+      }
+    },
+    {
+      "key": "blog-approximate-birth-hour",
+      "fragment": "blog-approximate-birth-hour",
+      "output": "zh-TW/blog/approximate-birth-hour.html",
+      "surface": "/zh-TW/blog/approximate-birth-hour",
+      "locale": "zh-TW",
+      "layers": [
+        "L2",
+        "L3"
+      ],
+      "indexable": true,
+      "title": "出生時間不確定怎麼排盤？只知道大概幾點，上升與宮位在哪一刻會變｜渾儀 Armillary",
+      "description": "只知道大概幾點也能排星盤。本站在那一小時取五個時刻各算一次，把改變的時刻對半找到 15 秒以內，時鐘撥回或跳過的鐘點也照實處理，再用白話列出哪些結果會變、約幾點變。本站不做出生時間校正。",
+      "article": {
+        "published": "2026-10-14",
         "modified": "2026-10-14"
       }
     },
@@ -485,7 +521,7 @@
         "L3"
       ],
       "indexable": true,
-      "title": "產前朔望與產前日月食：出生前最後一次新月或滿月｜渾儀 Armillary",
+      "title": "產前朔望（占星）與產前日月食：出生前最後一次新月或滿月｜渾儀 Armillary",
       "description": "產前朔望是出生前最近一次新月或滿月。說明 Ptolemy 用它的度數推上升點、滿月時取在地平線上方的那一個發光體、日生看朔夜生看望的另一種挑法，以及產前日月食為什麼是二十世紀的做法、半影月食算不算。",
       "article": {
         "published": "2026-10-14",
@@ -505,6 +541,42 @@
       "indexable": true,
       "title": "宮位制有哪些？七種宮位制怎麼把天空切成十二宮｜渾儀 Armillary",
       "description": "宮位制有哪些？整宮、等分宮、Porphyry、Alcabitius、Campanus、Regiomontanus、Placidus 各切天球的哪一個圓，用一顆可以轉的天球畫出來，並整理誰在什麼年代用哪一種，以及極區為什麼有些宮位制不算。",
+      "article": {
+        "published": "2026-10-14",
+        "modified": "2026-10-14"
+      }
+    },
+    {
+      "key": "blog-verify-chart-calculation",
+      "fragment": "blog-verify-chart-calculation",
+      "output": "zh-TW/blog/verify-chart-calculation.html",
+      "surface": "/zh-TW/blog/verify-chart-calculation",
+      "locale": "zh-TW",
+      "layers": [
+        "L2",
+        "L3"
+      ],
+      "indexable": true,
+      "title": "星盤怎麼驗算？讀懂計算收據與卷宗，自己確認排盤結果｜渾儀 Armillary",
+      "description": "排盤結果怎麼確認？渾儀每張星盤都附計算收據：時間怎麼換算、用了哪一版程式與哪些星曆檔、軌跡雜湊綁住了什麼。一步步讀收據、請別人用卷宗重算比對，並說明它說得出與說不出的事。",
+      "article": {
+        "published": "2026-10-14",
+        "modified": "2026-10-14"
+      }
+    },
+    {
+      "key": "blog-chart-calculation-accuracy",
+      "fragment": "blog-chart-calculation-accuracy",
+      "output": "zh-TW/blog/chart-calculation-accuracy.html",
+      "surface": "/zh-TW/blog/chart-calculation-accuracy",
+      "locale": "zh-TW",
+      "layers": [
+        "L2",
+        "L3"
+      ],
+      "indexable": true,
+      "title": "線上排盤準不準？星盤計算的誤差從哪裡來｜渾儀 Armillary",
+      "description": "線上排盤準不準？星盤的誤差多半來自出生時間、時區與夏令時間、座標，而不是星曆。用合成星盤量出每一種誤差讓上升點移動多少，並列出本站與 JPL、NASA 的比對、容許值，以及怎麼用收據自己重算。",
       "article": {
         "published": "2026-10-14",
         "modified": "2026-10-14"

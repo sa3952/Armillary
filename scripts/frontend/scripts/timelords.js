@@ -44,6 +44,8 @@
   const isMonths = (id) => id.startsWith(MONTHS_PREFIX);
   /** 一份結果的按需狀態從空的開始：排隊、失敗、要收下月小限的年度、暫時失敗的再試次數。 */
   const freshLevel2 = () => ({ level2Queue: [], level2Failed: new Set(), monthsWanted: new Set(), level2Retries: new Map() });
+  /** 太陽回歸盤一格的狀態：另一個地點的兩格字、請求中、取到的那一年（n）與畫面模型。 */
+  const freshSolar = () => ({ latitude: "", longitude: "", houseSystem: "", loading: false, generation: 0, result: null });
   const ICS_MONTHS_PENDING = "這一年的月小限還在取；取到之後才能存檔，檔案裡才會有月小限。";
   const ICS_MONTHS_FAILED = "這一年的月小限沒有取到，存下的檔案裡不會有月小限。";
 
@@ -61,6 +63,10 @@
     });
     // 按需的第二層另用一個請求槽：同一個槽裡新請求會中止舊請求，共用時第二層會中止使用者按下的重排。
     const level2Lifecycle = Lifecycle.createSensitiveDataLifecycle({
+      revokeObjectUrl: (url) => win.URL.revokeObjectURL(url),
+    });
+    // 太陽回歸盤也另用一個請求槽：與重排、第二層互不中止。
+    const solarLifecycle = Lifecycle.createSensitiveDataLifecycle({
       revokeObjectUrl: (url) => win.URL.revokeObjectURL(url),
     });
 
@@ -92,6 +98,7 @@
       decennials: null,
       // 年表各段十年使用者自己打開或收起的狀態（以該段第一個年度的索引為鍵）；重畫時照舊。
       openDecades: new Map(),
+      solar: freshSolar(),
     };
     // 伺服器沒有開年度路由（回 404／405）：這是部署狀態，不是這次輸入的問題。記住它，之後同一頁
     // 的每一張盤都直接顯示「尚未開放」，不再送出。
@@ -526,7 +533,8 @@
       detail.id = "annual-detail";
       detail.setAttribute("aria-labelledby", "annual-detail-title");
       layout.append(main, detail);
-      body.append(layout, exportBox(), tableExportBox(), conventionsBox(), lotsBox());
+      body.append(layout, ...(Model.supportsSolarReturn(state.sources[0]) ? [solarReturnBox()] : []),
+        exportBox(), tableExportBox(), conventionsBox(), lotsBox());
       renderDetail();
       refreshControls();
       if (state.view === "timeline") positionTimeline(keepLeft);
@@ -1222,6 +1230,309 @@
       return box;
     }
 
+    // ── 太陽回歸盤 ─────────────────────────────────────
+    // 選定年度的年界那一刻起的星盤：按了才請求（同一條年度路由，只要這一張盤），預設在出生地。
+    // 結果只對那一年；換到別的年度時這一格回到按鈕。清除、過期或離開頁面時跟著丟棄。
+    const SOLAR_IDS = Object.freeze({
+      box: "annual-sr", title: "annual-sr-title", status: "annual-sr-status", load: "annual-sr-load",
+      latitude: "annual-sr-latitude", longitude: "annual-sr-longitude", privacy: "annual-sr-privacy",
+      house: "annual-sr-house", houseNote: "annual-sr-house-note",
+    });
+
+    function selectedYear() {
+      return state.model && state.yearIndex >= 0 ? state.model.years[state.yearIndex] : null;
+    }
+
+    /** 這一年不能請求的原因（白話）；可以請求時是 null。 */
+    function solarBlocked(year) {
+      if (!year) return "";
+      if (year.n < 1) return Model.SOLAR_RETURN_REASONS.first_year_has_no_solar_return;
+      if (!state.payload || state.payload.birth_time_precision !== "exact") {
+        return Model.SOLAR_RETURN_REASONS.solar_return_chart_requires_exact_birth_time;
+      }
+      return null;
+    }
+
+    function solarReturnBox() {
+      const year = selectedYear();
+      const solar = state.solar;
+      const shown = solar.result && year && solar.result.n === year.n ? solar.result : null;
+      const [box, heading] = titledSection("tl-box tl-sr", SOLAR_IDS.title,
+        shown ? shown.panel.heading : `太陽回歸盤（第 ${year ? year.n + 1 : "—"} 年）`);
+      box.id = SOLAR_IDS.box;
+      heading.tabIndex = -1;
+      box.append(heading, node("p", "annual-fixed tl-sr-lead", Model.SOLAR_RETURN_FIXED));
+      const blocked = solarBlocked(year);
+      if (blocked) {
+        box.appendChild(node("p", "note tl-sr-blocked", blocked));
+      } else {
+        box.appendChild(solarControls(year));
+      }
+      const status = node("p", "status-line tl-sr-status");
+      status.id = SOLAR_IDS.status;
+      status.setAttribute("role", "status");
+      status.setAttribute("aria-live", "polite");
+      box.appendChild(status);
+      if (shown) box.appendChild(solarPanel(shown.panel));
+      return box;
+    }
+
+    function solarControls(year) {
+      const solar = state.solar;
+      const wrap = node("div", "tl-sr-controls");
+      wrap.appendChild(solarHouseControl());
+      const button = node("button", "ghost small", `排出第 ${year.n + 1} 年的太陽回歸盤`);
+      button.type = "button";
+      button.id = SOLAR_IDS.load;
+      button.disabled = state.stale || solar.loading || !state.payload;
+      button.addEventListener("click", loadSolarReturn);
+      // 另選地點還沒有開放：不畫那一格，也不提它的說明。
+      if (Model.SOLAR_RETURN_RELOCATION_OFFERED) wrap.appendChild(solarPlaceControl());
+      wrap.appendChild(button);
+      return wrap;
+    }
+
+    /** 「太陽回歸時不在出生地」那一格（只在開放另選地點時畫）。 */
+    function solarPlaceControl() {
+      const solar = state.solar;
+      const place = node("details", "tl-sr-place");
+      // 填過另一個地點時，重畫後照樣展開，看得到送出去的是什麼。
+      place.open = Boolean(solar.latitude || solar.longitude);
+      place.appendChild(node("summary", null, "太陽回歸時不在出生地？改用另一個地點"));
+      place.appendChild(node("p", "note", Model.SOLAR_RETURN_MORIN));
+      place.appendChild(node("p", "note", "回歸盤的宮位與四軸依地點而變；兩格都空著就用出生地。座標用十進位度數，南緯與西經填負數。"));
+      const fields = node("div", "tl-sr-fields");
+      [["latitude", "緯度（度）", "例如 25.0330"], ["longitude", "經度（度）", "例如 121.5654"]].forEach(([key, label, hint]) => {
+        const field = node("span", "tl-sr-field");
+        const labelNode = node("label", null, label);
+        labelNode.htmlFor = SOLAR_IDS[key];
+        const input = doc.createElement("input");
+        input.type = "text";
+        input.inputMode = "decimal";
+        input.autocomplete = "off";
+        input.spellcheck = false;
+        input.id = SOLAR_IDS[key];
+        input.placeholder = hint;
+        input.value = solar[key];
+        input.setAttribute("aria-describedby", SOLAR_IDS.privacy);
+        input.addEventListener("input", () => { state.solar[key] = input.value; });
+        field.append(labelNode, input);
+        fields.appendChild(field);
+      });
+      const privacy = node("p", "note", Model.SOLAR_RETURN_PRIVACY);
+      privacy.id = SOLAR_IDS.privacy;
+      place.append(fields, privacy);
+      return place;
+    }
+
+    /** 宮位制：預設與本命盤相同（選單第一項），可以另選一種。 */
+    function solarHouseControl() {
+      const names = Model.HOUSE_SYSTEM_NAMES;
+      const natal = Model.solarReturnHouseSystem(state.payload);
+      const field = node("span", "tl-sr-field tl-sr-house");
+      const label = node("label", null, "回歸盤的宮位制");
+      label.htmlFor = SOLAR_IDS.house;
+      const houseSelect = doc.createElement("select");
+      houseSelect.id = SOLAR_IDS.house;
+      houseSelect.setAttribute("aria-describedby", SOLAR_IDS.houseNote);
+      const same = doc.createElement("option");
+      same.value = "";
+      same.textContent = `與本命盤相同（${names[natal] || natal}）`;
+      houseSelect.appendChild(same);
+      Model.SOLAR_RETURN_HOUSE_SYSTEMS.forEach((code) => {
+        const option = doc.createElement("option");
+        option.value = code;
+        option.textContent = names[code] || code;
+        houseSelect.appendChild(option);
+      });
+      houseSelect.value = state.solar.houseSystem;
+      houseSelect.addEventListener("change", () => { state.solar.houseSystem = houseSelect.value; });
+      const note = node("p", "note", "回歸盤預設用本命盤所選的宮位制，兩張盤的宮才對得上；也可以另選一種。");
+      note.id = SOLAR_IDS.houseNote;
+      field.append(label, houseSelect, note);
+      return field;
+    }
+
+    function setSolarStatus(message, tone) {
+      const line = el(SOLAR_IDS.status);
+      if (!line) return;
+      line.textContent = message;
+      line.dataset.tone = tone || "info";
+    }
+
+    /** 只換掉回歸盤這一格（不重畫時間軸，捲動與焦點留在原處）。 */
+    function refreshSolarBox(message, tone, focusId) {
+      const old = el(SOLAR_IDS.box);
+      if (!old || !state.model) return;
+      const fresh = solarReturnBox();
+      old.replaceWith(fresh);
+      if (message) setSolarStatus(message, tone);
+      const target = focusId ? el(focusId) : null;
+      if (target && !target.disabled) target.focus();
+    }
+
+    function stopSolarReturn() {
+      state.solar.generation += 1;
+      solarLifecycle.abortActiveRequest();
+      if (!state.solar.loading) return;
+      state.solar.loading = false;
+      refreshSolarBox("表單已改動，這次的太陽回歸盤計算已停止。", "info");
+    }
+
+    function loadSolarReturn() {
+      const year = selectedYear();
+      if (!year || state.stale || state.solar.loading || solarBlocked(year)) return;
+      const parsed = Model.SOLAR_RETURN_RELOCATION_OFFERED
+        ? Model.parseSolarReturnLocation(state.solar.latitude, state.solar.longitude)
+        : { location: null };
+      if (parsed.error) {
+        setSolarStatus(parsed.error, "error");
+        const input = el(SOLAR_IDS.latitude);
+        if (input) input.focus();
+        return;
+      }
+      let requestBody;
+      try {
+        requestBody = Model.solarReturnRequestBody(state.payload, year.n, {
+          location: parsed.location, houseSystem: state.solar.houseSystem,
+        });
+      } catch (error) {
+        setSolarStatus(error.message, "error");
+        return;
+      }
+      state.solar.generation += 1;
+      const generation = state.solar.generation;
+      state.solar.loading = true;
+      refreshSolarBox("正在排太陽回歸盤…", "info", SOLAR_IDS.load);
+      post(solarLifecycle, requestBody).then((result) => {
+        // 唯一的守衛：清除、表單過期或又按了一次時 generation 已前進。
+        if (generation !== state.solar.generation) return;
+        state.solar.loading = false;
+        let message;
+        let tone = "error";
+        let focusId = SOLAR_IDS.load;
+        if (!result.error && (result.response.status === 404 || result.response.status === 405)) {
+          message = "這個伺服器還沒有開放太陽回歸盤；本命盤與時間主星的結果不受影響。";
+        } else if (result.error || !result.response.ok || !result.body) {
+          message = failureMessage(result);
+        } else {
+          try {
+            const panel = Model.solarReturnPanel(result.body, win.ChartViewModel);
+            // 回來的那一年必須是請求的那一年；對不上就當形狀不符，不把別一年的盤掛在這一年下。
+            if (panel.completedYears !== year.n) throw new Error("太陽回歸盤回應形狀不符：年度與請求不同。");
+            state.solar.result = { n: year.n, panel };
+            message = panel.state === "computed" ? `第 ${year.n + 1} 年的太陽回歸盤已算出。` : `第 ${year.n + 1} 年沒有太陽回歸盤：${panel.text}`;
+            tone = "info";
+            focusId = SOLAR_IDS.title;
+          } catch (_error) {
+            // 形狀不符或畫面模型失敗：整格不畫，例外原文不上畫面。
+            state.solar.result = null;
+            message = "這個版本的頁面無法呈現這次的太陽回歸盤回應。請重新載入頁面。";
+          }
+        }
+        refreshSolarBox(message, tone, focusId);
+      });
+    }
+
+    function solarPanel(panel) {
+      const wrap = node("div", "tl-sr-panel");
+      if (panel.state !== "computed") {
+        const refusal = node("p", "tl-na");
+        refusal.append(node("strong", null, "沒有算。"), doc.createTextNode(panel.text));
+        refusal.appendChild(node("span", "tl-code mono", panel.code));
+        wrap.appendChild(refusal);
+        return wrap;
+      }
+      const facts = node("dl", "tl-sr-facts");
+      panel.facts.forEach(([term, value]) => facts.append(node("dt", null, term), node("dd", null, value)));
+      wrap.appendChild(facts);
+      panel.notes.forEach((text) => wrap.appendChild(node("p", "note", text)));
+      if (panel.privacy) wrap.appendChild(node("p", "note tl-sr-privacy", panel.privacy));
+      const tableIds = panel.tables.map((_table, index) => `annual-sr-table-${index}`);
+      wrap.appendChild(solarWheel(panel, tableIds));
+      panel.tables.forEach((table, index) => wrap.appendChild(solarTable(table, tableIds[index])));
+      if (panel.comparison) wrap.appendChild(solarComparison(panel.comparison));
+      return wrap;
+    }
+
+    /** 「與本命盤對照」：三個上升、年之上升落在本命第幾宮、回歸盤行星落在本命哪一宮；只列位置。 */
+    function solarComparison(comparison) {
+      const section = node("section", "tl-sr-compare");
+      section.setAttribute("aria-labelledby", "annual-sr-compare-title");
+      const heading = node("h4", "tl-sr-compare-title", comparison.title);
+      heading.id = "annual-sr-compare-title";
+      const ascendants = node("dl", "tl-sr-ascendants");
+      comparison.ascendants.forEach(([term, value]) => ascendants.append(node("dt", null, term), node("dd", null, value)));
+      const house = node("p", "tl-sr-asc-house", comparison.ascendantHouse);
+      section.append(heading, ascendants, house, solarTable(comparison.table, "annual-sr-compare-table"));
+      const note = node("p", "note tl-sr-compare-note", comparison.note.before);
+      const link = node("a", null, comparison.note.link);
+      link.href = comparison.note.href;
+      note.append(link, doc.createTextNode(comparison.note.after));
+      section.appendChild(note);
+      return section;
+    }
+
+    /** 星盤圖：與本命盤同一個元件（ChartWheel）依回歸盤的回應畫出；表格是它的文字替代。 */
+    function solarWheel(panel, tableIds) {
+      const figure = node("figure", "tl-sr-wheel");
+      const holder = node("div", "chart-wheel-figure");
+      const caption = node("figcaption", "note", `${panel.heading}的星盤圖。數值與下方表格同源；表格是完整版。`);
+      caption.id = "annual-sr-wheel-caption";
+      const Wheel = win.ChartWheel;
+      try {
+        const base = Wheel.buildModel(panel.chart);
+        const draw = (model) => {
+          const svg = Wheel.renderSvg(doc, model, { variant: "page" });
+          svg.setAttribute("aria-label", `${panel.heading}：${model.ariaLabel}`);
+          svg.setAttribute("aria-describedby", ["annual-sr-wheel-caption", ...tableIds].join(" "));
+          holder.replaceChildren(svg);
+        };
+        draw(base);
+        // 字級依圖在畫面上的寬度：放上頁面、量到寬度後若該換字級就重畫一次。
+        const WheelModel = win.ChartWheelModel;
+        if (WheelModel && typeof WheelModel.presetForWidth === "function" && typeof base.forPreset === "function") {
+          win.requestAnimationFrame(() => {
+            if (holder.isConnected && holder.clientWidth > 0) draw(base.forPreset(WheelModel.presetForWidth(holder.clientWidth)));
+          });
+        }
+      } catch (_error) {
+        holder.appendChild(node("p", "note", "這張回歸盤的星盤圖無法繪製；數值見下方表格。"));
+      }
+      figure.append(holder, caption);
+      return figure;
+    }
+
+    function solarTable(table, id) {
+      const wrap = node("div", "table-wrap tl-sr-table");
+      const label = `${state.solar.result ? state.solar.result.panel.heading : "太陽回歸盤"}：${table.title}`;
+      // 窄螢幕上表格在自己的框裡橫捲，框可以用鍵盤捲動（calculate.js 依實際溢出再調整一次）。
+      wrap.dataset.regionLabel = label;
+      wrap.setAttribute("role", "region");
+      wrap.setAttribute("aria-label", label);
+      wrap.tabIndex = 0;
+      const element = node("table");
+      element.id = id;
+      element.appendChild(node("caption", null, table.title));
+      const head = node("tr");
+      table.columns.forEach((column) => { const th = node("th", null, column); th.scope = "col"; head.appendChild(th); });
+      const thead = node("thead");
+      thead.appendChild(head);
+      const tbody = node("tbody");
+      table.rows.forEach((row) => {
+        const tr = node("tr");
+        row.forEach((cell, index) => {
+          const cellNode = node(index === 0 ? "th" : "td", null, String(cell == null ? "" : cell));
+          if (index === 0) cellNode.scope = "row";
+          tr.appendChild(cellNode);
+        });
+        tbody.appendChild(tr);
+      });
+      element.append(thead, tbody);
+      wrap.appendChild(element);
+      return wrap;
+    }
+
     // ── 狀態與控制項 ───────────────────────────────────
     const START_LABEL = startButton.textContent;
     function showUnavailable() {
@@ -1237,6 +1548,8 @@
       const ics = el("annual-ics");
       if (ics) ics.disabled = state.stale || !state.model || months === "pending";
       body.querySelectorAll("[data-annual-table]").forEach((button) => { button.disabled = state.stale || !state.model; });
+      const solarButton = el(SOLAR_IDS.load);
+      if (solarButton) solarButton.disabled = state.stale || state.solar.loading || !state.payload;
       const note = el("annual-ics-months");
       if (note) {
         note.hidden = months === "ready";
@@ -1259,12 +1572,14 @@
       state.level2Generation += 1;
       lifecycle.clear();
       level2Lifecycle.clear();
+      solarLifecycle.clear();
       if (scrollTimer !== null) { win.clearTimeout(scrollTimer); scrollTimer = null; }
       clearLevel2Timers();
       Object.assign(state, {
         payload: null, stale: false, loading: false, data: null, model: null, sources: [], view: null,
         zoom: "decade", yearIndex: -1, selected: null, level2Busy: false, ...freshLevel2(),
         returnFocus: null, decennials: null, openDecades: new Map(),
+        solar: { ...freshSolar(), generation: state.solar.generation + 1 },
       });
       body.replaceChildren();
       body.hidden = true;
@@ -1286,6 +1601,7 @@
         }
         lifecycle.abortActiveRequest();
         stopLevel2();
+        stopSolarReturn();
         if (busy) setStatus("表單已改動，這次的年度計算已停止。", "info");
       }
       refreshControls();

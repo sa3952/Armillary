@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="index, follow">
 <title>古典占星天文計算的驗證方法｜渾儀 Armillary</title>
-<meta name="description" content="查看星曆、座標、時間換算、數值比較、計算卷宗與已知驗證範圍，不把抽樣結果外推成全面認證。">
+<meta name="description" content="渾儀怎麼驗證計算：主要位置曾與另一條以 JPL DE442、Astropy 與 ERFA 組成的管線逐小時比較；結論、方法、例外與沒有涵蓋的地方一併列出，不把抽樣結果外推成全面認證。">
 <link rel="canonical" href="https://projectarmillary.com/zh-TW/validation">
 <link rel="alternate" hreflang="zh-TW" href="https://projectarmillary.com/zh-TW/validation">
 <link rel="alternate" hreflang="x-default" href="https://projectarmillary.com/zh-TW/validation">
@@ -13,7 +13,7 @@
 <meta property="og:site_name" content="渾儀 Armillary">
 <meta property="og:locale" content="zh_TW">
 <meta property="og:title" content="古典占星天文計算的驗證方法｜渾儀 Armillary">
-<meta property="og:description" content="查看星曆、座標、時間換算、數值比較、計算卷宗與已知驗證範圍，不把抽樣結果外推成全面認證。">
+<meta property="og:description" content="渾儀怎麼驗證計算：主要位置曾與另一條以 JPL DE442、Astropy 與 ERFA 組成的管線逐小時比較；結論、方法、例外與沒有涵蓋的地方一併列出，不把抽樣結果外推成全面認證。">
 <meta property="og:url" content="https://projectarmillary.com/zh-TW/validation">
 <meta property="og:image" content="https://projectarmillary.com/zh-TW/og-card.png?v=16c9900d06168aab">
 <meta property="og:image:type" content="image/png">
@@ -21,11 +21,11 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="渾儀 Armillary：可驗證的古典西洋占星計算器">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/validation#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/validation#breadcrumb"},"description":"查看星曆、座標、時間換算、數值比較、計算卷宗與已知驗證範圍，不把抽樣結果外推成全面認證。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"古典占星天文計算的驗證方法｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/validation"},{"@id":"https://projectarmillary.com/zh-TW/validation#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/validation","name":"驗證","position":2}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/validation#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/validation#breadcrumb"},"dateModified":"2026-10-14","description":"渾儀怎麼驗證計算：主要位置曾與另一條以 JPL DE442、Astropy 與 ERFA 組成的管線逐小時比較；結論、方法、例外與沒有涵蓋的地方一併列出，不把抽樣結果外推成全面認證。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"古典占星天文計算的驗證方法｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/validation"},{"@id":"https://projectarmillary.com/zh-TW/validation#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/validation","name":"驗證","position":2}]}]}</script>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" href="/zh-TW/favicon.svg?v=c95686a2f029d369" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="/zh-TW/style/validation.css?v=6eeffa0f6efe6fee">
+<link rel="stylesheet" href="/zh-TW/style/validation.css?v=610f9ad3a8ffa4b2">
 </head>
 <body>
 
@@ -111,7 +111,7 @@
       <h2>涵蓋到哪裡，沒有涵蓋哪裡</h2>
       <div class="validation-coverage">
         <div class="covered"><h3>已有強證據</h3><ul><li>七個天體的地心主要位置</li><li>指定年代與欄位的逐小時比較</li><li>五大行星站留附近的方向分類</li><li>星曆檔與恆星表的exact SHA-256</li></ul></div>
-        <div class="partial"><h3>部分涵蓋</h3><ul><li>星座、旬、Egyptian bounds與exact aspect邊界</li><li>日夜盤與部分station案例</li><li>升降、中天與日月食的具名小型驗證</li><li>恆星：每一顆都以不呼叫 Swiss Ephemeris 的獨立換算，在 1900、2026、2100 年三個日期核對：對同一筆星表記錄、對 Hipparcos 衛星星表的 2007 年新歸算，並與 SIMBAD 天文資料庫的現值比對星表本身的變動；少數記錄不是 Hipparcos 2007 的值（例如南門二是整個雙星系統的值），另記它們差多少；沒有逐星對 Gaia 核對</li></ul></div>
+        <div class="partial"><h3>部分涵蓋</h3><ul><li>星座、旬、Egyptian bounds與exact aspect邊界</li><li>日夜盤與部分station案例</li><li>升降、中天與日月食的具名小型驗證</li><li>恆星：每一顆都以不呼叫 Swiss Ephemeris 的獨立換算，在 1900、2026、2100 年三個日期核對：對同一筆星表記錄、對 Hipparcos 衛星星表的 2007 年新歸算，並與 SIMBAD 天文資料庫的現值比對星表本身的變動；少數記錄不是 Hipparcos 2007 的值（例如南門二是整個雙星系統的值），另記它們差多少；3 個星團沒有 Hipparcos 編號，改對 SIMBAD 與 Cantat-Gaudin 和 Anders 2020 年星團表的星團中心逐一記下差距（鬼宿星團的記錄差約 22′，另兩個在 3′ 以內）；沒有逐星對 Gaia 核對</li></ul></div>
         <div class="uncovered"><h3>不能從本批外推</h3><ul><li>所有宮位制與quadrant cusp</li><li>所有center、frame與position mode</li><li>所有固定星方法與日月食shadow</li><li>全系統天文正確性認證</li></ul></div>
       </div>
       <p class="validation-scope">幾角秒的整體差異通常不改變分類，但落在星座、界、宮頭、station或orb邊界附近時仍可能翻轉；因此邊界驗證與大規模平均結果分開處理。</p>
@@ -164,6 +164,7 @@
   <div class="wrap">
     <span>渾儀 ARMILLARY</span>
     <span>只計算，不解盤，不預測</span>
+    <span>最後更新：<time datetime="2026-10-14">2026-10-14</time></span>
   </div>
 </footer>
 

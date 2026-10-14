@@ -55,6 +55,7 @@ from .core.frame_compatibility import method_frame_states
 from .core.time_utils import (
     REPRESENTATIVE_SAMPLE_ROLES,
     civil_day_receipt,
+    civil_hour_spans,
     civil_instant,
     compute_time_conversion,
     representative_policy,
@@ -165,7 +166,7 @@ from .core.module_state import (
 from .core.method_status import method_receipt
 
 
-SCHEMA_VERSION = "0.17.0"
+SCHEMA_VERSION = "0.18.0"
 
 _CLASSICAL_KEYS = tuple(body["key"] for body in CLASSICAL_BODIES)
 
@@ -1586,15 +1587,13 @@ def _essential_dignities(
     )
 
 
-_ONE_SECOND = dtmod.timedelta(seconds=1)
-
-
 def _birth_time_interval_spans(time: TimeResolution) -> tuple[str | None, list | None]:
     """The half-open JD(UT) stretches a non-exact birth time may lie in.
 
-    approximate_hour: the stated civil hour's first to last existing second
-    (the representative samples' own ends); date_only: every UTC stretch the
-    zone labels with the date.
+    approximate_hour: every UTC stretch the zone labels with the stated hour in
+    the named fold (``civil_hour_spans``), which is two stretches when the clock
+    leaves the hour and comes back to it; date_only: every UTC stretch the zone
+    labels with the date.
     """
 
     input_request = time.input_request
@@ -1606,18 +1605,11 @@ def _birth_time_interval_spans(time: TimeResolution) -> tuple[str | None, list |
             for start, end in time.civil_day["spans"]
         ]
     if precision == "approximate_hour":
-        assert time.anchor_utc is not None  # resolved for every non-exact chart
-        samples = representative_sample_instants(
-            input_request.datetime,
-            input_request.timezone,
-            precision=precision,
-            anchor_utc=time.anchor_utc,
-        )
-        first, last = samples[0]["reference_utc_time"], samples[-1]["reference_utc_time"]
-        start = dtmod.datetime.fromisoformat(first.replace("Z", "+00:00"))
-        end = dtmod.datetime.fromisoformat(last.replace("Z", "+00:00")) + _ONE_SECOND
+        value = input_request.datetime
+        hour_start = dtmod.datetime(value.year, value.month, value.day, value.hour)
         return "stated_civil_hour", [
             (utc_datetime_to_jd_ut(start), utc_datetime_to_jd_ut(end))
+            for start, end in civil_hour_spans(input_request.timezone, hour_start)
         ]
     return None, None
 

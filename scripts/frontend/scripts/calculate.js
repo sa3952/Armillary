@@ -47,6 +47,7 @@
   );
   const warningsHost = el("warnings");
   const samplingCalloutHost = el("sampling-callout");
+  const birthTimeNoticeHost = el("birth-time-notice");
   // 本命盤速覽排在警告之後、匯出工具列之前：算完不必捲過工具列與區塊索引就看得到。
   // 它是結果首屏（#result-lead）的第一個子元素，接著是常用匯出與星盤圖；窄螢幕依這個順序
   // 上下排，桌機由 calculate.css 排成左圖右速覽。內容是 view tree 的 summary 區段，畫法與其他區段相同。
@@ -1030,11 +1031,20 @@
     { state: "ambiguous", source: "service", occurrences: [{ fold: 0 }, { fold: 1 }] }
   );
 
+  // 出生日期欄的讀取只有這一個出處：格式、日曆與範圍（欄位自己的 min／max）。表單帶
+  // novalidate，鍵盤打進來的 1895 年或 2400 年不會被瀏覽器擋下。
+  function readDateField() {
+    const input = el("date");
+    return RI.readBirthDate(String(input.value), { min: input.min, max: input.max });
+  }
+
   function currentAmbiguity() {
     const dateValue = String(el("date").value).trim();
     const timezone = String(el("timezone").value).trim();
-    if (!dateValue || !timezone) return null;
-    const [year, month, day] = dateValue.split("-").map(Number);
+    const dateRead = readDateField();
+    // 範圍外或不成日期的值不問 fold：送出守衛會先指名日期本身的問題。
+    if (dateRead.state !== RI.STATES.VALUE || !timezone) return null;
+    const { year, month, day } = dateRead.value;
     const precision = currentPrecision();
     // date_only 由後端對整個民用日取樣，不需要這個選擇。exact 與
     // approximate_hour 都需要：後端對兩者都要求指明是重複小時的哪一次，
@@ -1247,8 +1257,9 @@
 
   /** 從目前的表單組出核對請求，或說出還缺什麼。不動 DOM。 */
   function timeCheckRequest() {
-    const dateValue = String(el("date").value).trim();
-    if (!dateValue) return { problem: "請先填出生日期（或用上面的年號換算）。" };
+    const dateRead = readDateField();
+    if (dateRead.state === RI.STATES.EMPTY) return { problem: "請先填出生日期（或用上面的年號換算）。" };
+    if (dateRead.state === RI.STATES.INVALID) return { problem: `出生日期${dateRead.reason}。` };
     const precision = currentPrecision();
     if (precision === "date_only") {
       return { problem: "「只知道日期」沒有單一的鐘面時刻可以核對；請填上時刻並改選較精確的出生時間，或直接計算。" };
@@ -1275,7 +1286,7 @@
     if (!TimezoneNames.accepts(timezone)) {
       return { problem: "時區名稱不在服務接受的 IANA 名單內（例如 Asia/Taipei，大小寫須相符）。" };
     }
-    const [year, month, day] = dateValue.split("-").map(Number);
+    const { year, month, day } = dateRead.value;
     return {
       approximate: precision === "approximate_hour",
       body: {
@@ -1553,8 +1564,13 @@
       fields.push(input);
       messages.set(input, missingMessage(label));
     };
-    const dateValue = String(el("date").value).trim();
-    if (!dateValue) requireField(el("date"), "出生日期");
+    const dateRead = readDateField();
+    if (dateRead.state === RI.STATES.EMPTY) requireField(el("date"), "出生日期");
+    else if (dateRead.state === RI.STATES.INVALID) {
+      invalid.push(`出生日期${dateRead.reason}`);
+      fields.push(el("date"));
+      messages.set(el("date"), `出生日期${dateRead.reason}。`);
+    }
     const timezone = String(el("timezone").value).trim();
     // 新疆的地點在選定鐘點前時區欄是空的：指向那一組選項，不叫人去填時區欄。
     const civilTime = chosenCivilTime();
@@ -1612,7 +1628,7 @@
       return { ok: false, missing, invalid, fields: fields.slice().sort(documentOrder), messages };
     }
 
-    const [year, month, day] = dateValue.split("-").map(Number);
+    const { year, month, day } = dateRead.value;
     return {
       ok: true,
       payload: {
@@ -2162,7 +2178,7 @@
     const tree = window.ChartViewModel.buildViewTree(canonical);
     currentViewTree = tree;
 
-    renderSamplingCallout(tree.header.sampling_callout);
+    renderBirthTimeSummary(tree.header.birth_time_summary);
 
     warningsHost.replaceChildren();
     warningsHost.hidden = tree.header.warnings.length === 0;
@@ -2262,6 +2278,7 @@
     }
     buildChapterNav(entries);
     renderModeNote(hiddenTitles);
+    el("chapter-timelords-entry").hidden = resultMode.chapters.includes("timelords");
 
     showAnnualPanel(payload);
     results.hidden = false;
@@ -3061,18 +3078,23 @@
     }
   }
 
-  // 章節欄底下「改用古典完整」：只是換模式（表單的選項換成那一組，畫面上的結果因此標成過期），
-  // 再把焦點交給表單上的模式選擇，由使用者按「開始排盤」。
+  // 章節欄底下「改用古典完整」與結果最後「另有時間主星」：只是換模式（表單的選項換成那一組，
+  // 畫面上的結果因此標成過期），再把焦點交給表單上的模式選擇，由使用者按「開始排盤」；不另外計算。
+  // 「自訂」只把焦點移到那一格、不替你選：選了自訂，匯出預設帶驗算資料，會為畫面上的結果再取一次。
   function switchModeFromNote(event) {
     const button = event.target.closest ? event.target.closest("button.chapter-mode-switch") : null;
     if (!button) return;
-    const radio = document.querySelector('input[name="calc-mode"][value="classical"]');
-    radio.checked = true;
-    applyMode("classical");
+    const mode = button.dataset.mode || "classical";
+    const radio = document.querySelector(`input[name="calc-mode"][value="${mode}"]`);
+    if (button.dataset.focusOnly === undefined) {
+      radio.checked = true;
+      applyMode(mode);
+    }
     radio.scrollIntoView({ block: "center", behavior: prefersReducedMotion() ? "auto" : "smooth" });
     radio.focus({ preventScroll: true });
   }
   el("chapter-mode-note").addEventListener("click", switchModeFromNote);
+  el("chapter-timelords-entry").addEventListener("click", switchModeFromNote);
 
   function toggleAllChapters() {
     chapterNav.all = !chapterNav.all;
@@ -3385,24 +3407,56 @@
     });
   }
 
-  // 結果頂端的敏感度結論：一行，連到區段本身。null 時清空並隱藏。
-  function renderSamplingCallout(callout) {
+  // 出生時間不確定時的白話摘要，放在星盤圖與速覽之後：第一行是結論，接著說取了哪些時刻、
+  // 哪些結果會變（大約幾點變）、哪些不變、哪些沒有比較，最後連到敏感度區的細節。null 時清空並隱藏。
+  function renderBirthTimeSummary(summary) {
     samplingCalloutHost.replaceChildren();
-    samplingCalloutHost.hidden = !callout;
-    if (!callout) return;
-    const link = document.createElement("a");
-    link.href = `#${callout.target_id}`;
-    link.textContent = callout.link_text;
-    // 三段在畫面上靠 flex 間距分開，輔助科技讀的是連在一起的文字，
-    // 「出生時刻敏感度這五個取樣點…」會讀成一句。標籤後補一個只給輔助科技的「：」，
-    // 版面不變。
-    const label = figureText("span", "sampling-callout-label", callout.label);
-    label.append(figureText("span", "visually-hidden", "："));
+    samplingCalloutHost.hidden = !summary;
+    birthTimeNoticeHost.replaceChildren();
+    birthTimeNoticeHost.hidden = !summary;
+    if (!summary) return;
+    // 結果最上方的一行（每一章都看得到）：整行是連到摘要的連結。
+    const notice = document.createElement("a");
+    notice.href = `#${summary.notice_target_id}`;
+    notice.textContent = summary.notice_text;
+    birthTimeNoticeHost.appendChild(notice);
+    const title = figureText("h3", "sampling-callout-title", summary.title);
+    title.id = "sampling-callout-title";
     samplingCalloutHost.append(
-      label,
-      figureText("span", "sampling-callout-lead", callout.lead),
-      link,
+      title,
+      figureText("p", "sampling-callout-lead", summary.lead),
+      figureText("p", "sampling-callout-intro", summary.intro),
     );
+    if (summary.changes.length) {
+      samplingCalloutHost.appendChild(figureText("h4", "sampling-callout-heading", "會變的"));
+      const list = document.createElement("ul");
+      list.className = "sampling-callout-changes";
+      summary.changes.forEach((change) => {
+        const item = document.createElement("li");
+        const what = figureText("span", "sampling-callout-what", `${change.what}：`);
+        item.append(what, figureText("span", "sampling-callout-when", change.when));
+        list.appendChild(item);
+      });
+      samplingCalloutHost.appendChild(list);
+    }
+    [
+      ["不變的", summary.same],
+      ["只比較了一部分", summary.partial],
+      ["沒有比較，只算了上面那一刻", summary.unchecked],
+    ].forEach(([label, items]) => {
+      if (!items.length) return;
+      const line = figureText("p", "sampling-callout-line", "");
+      line.append(figureText("b", "sampling-callout-line-label", `${label}：`), document.createTextNode(`${items.join("、")}。`));
+      samplingCalloutHost.appendChild(line);
+    });
+    samplingCalloutHost.appendChild(figureText("p", "note sampling-callout-caveat", summary.caveat));
+    const link = document.createElement("a");
+    link.className = "sampling-callout-link";
+    link.href = `#${summary.target_id}`;
+    link.textContent = summary.link_text;
+    // 連結字只有「看細節」，給輔助科技補上看的是什麼。
+    link.setAttribute("aria-label", "看細節：出生時刻敏感度");
+    samplingCalloutHost.appendChild(link);
   }
 
   // 本命盤速覽。表後那一行的〈區段標題〉換成連到畫面上那一區的連結，文字不變
@@ -3679,7 +3733,15 @@
         const node = document.createElement(index === 0 ? "th" : "td");
         if (index === 0) node.scope = "row";
         if (numeric[index]) node.className = "num";
-        fillCell(node, String(cell == null ? "" : cell), index === 0, index === 0 && Array.isArray(rowKeys) ? rowKeys : null);
+        // 格內連結（十二宮表的宮名連到方法頁宮義對照表的那一列）：文字照原字，包在連結裡。
+        const href = index > 0 && model.links && model.links.column === index && Array.isArray(model.links.rows)
+          ? model.links.rows[rowIndex] : null;
+        const host = typeof href === "string" && href.startsWith("/zh-TW/") ? document.createElement("a") : node;
+        if (host !== node) {
+          host.href = href;
+          node.appendChild(host);
+        }
+        fillCell(host, String(cell == null ? "" : cell), index === 0, index === 0 && Array.isArray(rowKeys) ? rowKeys : null);
         tr.appendChild(node);
       });
       tbody.appendChild(tr);
@@ -4041,7 +4103,7 @@
     Object.assign(pointLink, { selected: null, preview: null });
     clearChapterNav();
     warningsHost.replaceChildren();
-    renderSamplingCallout(null);
+    renderBirthTimeSummary(null);
     renderSummary(null, []);
     renderTimeBrief(null);
     dropAnnualPanel();

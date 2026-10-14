@@ -2,71 +2,26 @@
 
   <section class="dk-head">
     <p class="eyebrow">文章 · JOURNAL</p>
-    <h1>我們把研究過程寫出來。<br>包括算錯的時候。</h1>
+    <h1>古典占星計算文章與研究筆記</h1>
+    <p class="kicker">我們把研究過程寫出來。<br>包括算錯的時候。</p>
 
     <div class="dk-count">
       <div><b>{{published_article_count}}</b><span>已發表</span></div>
-      <div><b>{{slate_topic_count}}</b><span>清單上的題目</span></div>
+      <div><b>{{slate_unwritten_count}}</b><span>還在寫的題目</span></div>
       <div><b>{{slate_topic_count:主角是我們自己的錯}}</b><span>主角是我們自己的錯</span></div>
     </div>
 
-    <p class="lede"><b>第一個數字，是已經寫完、公開的篇數。</b>這一頁不是一般的文章列表，而是一份<b>公開的選題清單</b>：先說要寫什麼，包括要寫哪些自己的錯。寫完的題目直接連到文章；還沒寫的照樣留在清單上，寫不出來你看得到。</p>
+    <p class="lede"><b>第一個數字，是已經寫完、公開的篇數</b>，下面依主題列出每一篇。還沒寫完的題目也列在後面，包括要寫哪些自己的錯；寫不出來你看得到。</p>
   </section>
 
-  <!-- ═══ 選題 ═══ -->
-  <section class="dk-sec" id="slate">
-    <h2>選題清單</h2>
-    <p class="dk-sub">下列每一題我們手上都已經有材料。<b>這是清單，不是承諾。</b>順序會變，題目可能合併或撤掉。撤掉的時候，這一頁會少一行。</p>
-
-    <div class="group">
-      <p class="gp-k">主角是我們自己的錯</p>
-      <ol class="slate">
-        <li>
-          <span class="tp-n">{{slate_topic_number}}</span>
-          <div>
-            <b>我們拿 NASA 的星曆去對自己的產品，然後發現錯的是我們的尺</b>
-            <span class="tp-why">月亮速度異常一路追到閏秒分母錯誤的完整過程。</span>
-          </div>
-          <span class="tp-tier">帶數據</span>
-        </li>
-        <li>
-          <span class="tp-n">{{slate_topic_number}}</span>
-          <div>
-            <b>我們撤回過一組數字的證據強度</b>
-            <span class="tp-why">原本記成「多個獨立來源」，查下去發現那些來源其實是同一條傳承鏈。<b>降級的是我們自己的宣稱。</b></span>
-          </div>
-          <span class="tp-tier">帶數據</span>
-        </li>
-        <li>
-          <span class="tp-n">{{slate_topic_number}}</span>
-          <div>
-            <b>月空亡的「離座前精確完成」可能是 20 世紀才加上的</b>
-            <span class="tp-why">星座條件最晚見於 Lilly 1647；「必須在離開星座前精確完成」後人文獻歸於 Al H. Morrison（AFA Journal 1966 年 10 月有專文，原文未讀），更早的起源尚未查證，兩者合起來的歸屬仍未定。<b>我們的輸出把它標成「未定」，這篇說明為什麼。</b></span>
-          </div>
-          <span class="tp-tier">帶數據</span>
-        </li>
-      </ol>
-    </div>
+  <!-- ═══ 已發表 ═══ -->
+  <section class="dk-sec" id="articles">
+    <h2>已發表文章</h2>
+    <p class="dk-sub">依主題分組；每一篇旁邊標著它屬於哪一種，三種各自的要求寫在下面「每一篇都會標清楚它是哪一種」。</p>
 
     <div class="group">
       <p class="gp-k">同一顆行星，為什麼兩個答案</p>
       <ol class="slate">
-        <li>
-          <span class="tp-n">{{slate_topic_number}}</span>
-          <div>
-            <b>「DE442 真值」是一種誤導的說法</b>
-            <span class="tp-why">為什麼 JPL 核心不是唯一答案；視位置管線的選擇是由使用端施加的，不是星曆給的。</span>
-          </div>
-          <span class="tp-tier">帶數據</span>
-        </li>
-        <li>
-          <span class="tp-n">{{slate_topic_number}}</span>
-          <div>
-            <b>行星躲在太陽後面的時候，它的視位置是什麼？</b>
-            <span class="tp-why">太陽視圓面內不存在可觀測位置。兩套軟體各自延伸的規則不同，而那個差別沒有人會告訴你。</span>
-          </div>
-          <span class="tp-tier">帶數據</span>
-        </li>
         <li>
           <span class="tp-n">{{slate_topic_number}}</span>
           <div>
@@ -157,20 +112,6 @@
     </div>
 
     <div class="group">
-      <p class="gp-k">為什麼不做</p>
-      <ol class="slate">
-        <li>
-          <span class="tp-n">{{slate_topic_number}}</span>
-          <div>
-            <b>為什麼我們不給尊貴分數</b>
-            <span class="tp-why">通約性問題：把不同來源、不同性質的判定加總成一個數字，那個數字沒有意義，但它很好賣。</span>
-          </div>
-          <span class="tp-tier">講方法</span>
-        </li>
-      </ol>
-    </div>
-
-    <div class="group">
       <p class="gp-k">排盤之前</p>
       <ol class="slate">
         <li>
@@ -180,6 +121,14 @@
             <span class="tp-why"><span class="tp-pub">已發表</span>只知道日期時，行星星座大多站得住，上升與宮位站不住。<b>只知道大約幾點時，逐項標出那一小時裡翻面的判定。</b></span>
           </div>
           <span class="tp-tier">帶數據</span>
+        </li>
+        <li>
+          <span class="tp-n">{{slate_topic_number}}</span>
+          <div>
+            <b><a href="/zh-TW/blog/approximate-birth-hour">出生時間不確定怎麼排盤？只知道大概幾點，上升與宮位在哪一刻會變</a></b>
+            <span class="tp-why"><span class="tp-pub">已發表</span>一小時取五個時刻，對半找把改變夾到 15 秒以內。<b>時鐘撥回或跳過的鐘點怎麼算、結果頁那一塊摘要每一句的意思；不替你猜出生時間。</b></span>
+          </div>
+          <span class="tp-tier">講方法</span>
         </li>
         <li>
           <span class="tp-n">{{slate_topic_number}}</span>
@@ -204,6 +153,102 @@
             <span class="tp-why"><span class="tp-pub">已發表</span>1896 年以來的三種標準時與十九個撥快一小時的夏天。<b>出生證明上的鐘面時間，要先換對世界時。</b></span>
           </div>
           <span class="tp-tier">帶數據</span>
+        </li>
+        <li>
+          <span class="tp-n">{{slate_topic_number}}</span>
+          <div>
+            <b><a href="/zh-TW/blog/taiwan-era-years-birth-time">民國年、昭和年怎麼換算西元？日治時期出生的排盤，還要看當年的鐘</a></b>
+            <span class="tp-why"><span class="tp-pub">已發表</span>年號換西元是加法，改元那一年要看日期。<b>昭和 12 年與 13 年同樣上午 10 點，世界時差一小時。</b></span>
+          </div>
+          <span class="tp-tier">帶數據</span>
+        </li>
+        <li>
+          <span class="tp-n">{{slate_topic_number}}</span>
+          <div>
+            <b><a href="/zh-TW/blog/chart-calculation-accuracy">線上排盤準不準？星盤的誤差從哪裡來，本站怎麼核對</a></b>
+            <span class="tp-why"><span class="tp-pub">已發表</span>從鐘面時間到宮位，每一步各差多少；本站拿什麼和什麼比對，還有哪些沒比對。<b>星盤算錯，很少是錯在星曆。</b></span>
+          </div>
+          <span class="tp-tier">帶數據</span>
+        </li>
+        <li>
+          <span class="tp-n">{{slate_topic_number}}</span>
+          <div>
+            <b><a href="/zh-TW/blog/verify-chart-calculation">怎麼自己驗算一張星盤：計算收據與卷宗</a></b>
+            <span class="tp-why"><span class="tp-pub">已發表</span>每張盤都附一份收據：時間怎麼換算、用了哪些檔、整串步驟的雜湊。<b>請別人用同一份輸入重算，比一串雜湊就知道是不是同一個計算。</b></span>
+          </div>
+          <span class="tp-tier">帶數據</span>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ═══ 還在寫 ═══ -->
+  <section class="dk-sec" id="slate">
+    <h2>還在寫的題目</h2>
+    <p class="dk-sub">下列每一題我們手上都已經有材料。<b>這是預告，不是承諾。</b>順序會變，題目可能合併或撤掉。撤掉的時候，這一頁會少一行；寫完的題目會移到上面。</p>
+
+    <div class="group">
+      <p class="gp-k">主角是我們自己的錯</p>
+      <ol class="slate">
+        <li>
+          <span class="tp-n">{{slate_topic_number}}</span>
+          <div>
+            <b>我們拿 NASA 的星曆去對自己的產品，然後發現錯的是我們的尺</b>
+            <span class="tp-why">月亮速度異常一路追到閏秒分母錯誤的完整過程。</span>
+          </div>
+          <span class="tp-tier">帶數據</span>
+        </li>
+        <li>
+          <span class="tp-n">{{slate_topic_number}}</span>
+          <div>
+            <b>我們撤回過一組數字的證據強度</b>
+            <span class="tp-why">原本記成「多個獨立來源」，查下去發現那些來源其實是同一條傳承鏈。<b>降級的是我們自己的宣稱。</b></span>
+          </div>
+          <span class="tp-tier">帶數據</span>
+        </li>
+        <li>
+          <span class="tp-n">{{slate_topic_number}}</span>
+          <div>
+            <b>月空亡的「離座前精確完成」可能是 20 世紀才加上的</b>
+            <span class="tp-why">星座條件最晚見於 Lilly 1647；「必須在離開星座前精確完成」後人文獻歸於 Al H. Morrison（AFA Journal 1966 年 10 月有專文，原文未讀），更早的起源尚未查證，兩者合起來的歸屬仍未定。<b>我們的輸出把它標成「未定」，這篇說明為什麼。</b></span>
+          </div>
+          <span class="tp-tier">帶數據</span>
+        </li>
+      </ol>
+    </div>
+
+    <div class="group">
+      <p class="gp-k">同一顆行星，為什麼兩個答案</p>
+      <ol class="slate">
+        <li>
+          <span class="tp-n">{{slate_topic_number}}</span>
+          <div>
+            <b>「DE442 真值」是一種誤導的說法</b>
+            <span class="tp-why">為什麼 JPL 核心不是唯一答案；視位置管線的選擇是由使用端施加的，不是星曆給的。</span>
+          </div>
+          <span class="tp-tier">帶數據</span>
+        </li>
+        <li>
+          <span class="tp-n">{{slate_topic_number}}</span>
+          <div>
+            <b>行星躲在太陽後面的時候，它的視位置是什麼？</b>
+            <span class="tp-why">太陽視圓面內不存在可觀測位置。兩套軟體各自延伸的規則不同，而那個差別沒有人會告訴你。</span>
+          </div>
+          <span class="tp-tier">帶數據</span>
+        </li>
+      </ol>
+    </div>
+
+    <div class="group">
+      <p class="gp-k">為什麼不做</p>
+      <ol class="slate">
+        <li>
+          <span class="tp-n">{{slate_topic_number}}</span>
+          <div>
+            <b>為什麼我們不給尊貴分數</b>
+            <span class="tp-why">通約性問題：把不同來源、不同性質的判定加總成一個數字，那個數字沒有意義，但它很好賣。</span>
+          </div>
+          <span class="tp-tier">講方法</span>
         </li>
       </ol>
     </div>
