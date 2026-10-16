@@ -32,8 +32,7 @@ UNCOPIED_APP_FILES = {"/app/THIRD_PARTY_NOTICES.md"}
 # reopens it.  A checkout has no such directory.
 GENERATED_INPUTS = {"wheelhouse": "wheelhouse/*.whl"}
 MUST_STAY_DENIED = (
-    # The private agent rules' file name is split: the public tree names no private file.
-    ".env", ".git/config", "AGENTS" ".md", "docs/README.md", "tests/x.py",
+    ".env", ".git/config", "NOTES.md", "docs/README.md", "tests/x.py",
     "backend/app/.env", "backend/app/x.pem", "backend/app/x.key",
     "backend/app/tests/test_x.py", "backend/app/__pycache__/x.pyc",
     "backend/app/secret_settings.py", "backend/place_data/README.md",

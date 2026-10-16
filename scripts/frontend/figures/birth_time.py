@@ -17,11 +17,11 @@ import math
 from typing import Any
 
 from . import _fx
-from ._common import SIGNS, calc_ut, product_charts, swiss
+from ._common import SIGNS, TAIPEI, calc_ut, hms as _hms, product_charts, sign_degree_minute, swiss
 
 
 FRAGMENT = "blog-birth-time-sensitivity"
-LAT, LON = 25.05306, 121.52639
+LAT, LON = TAIPEI
 # The article's second latitude (London); a sign's rising time depends on the
 # latitude and the obliquity, not on the longitude.
 LONDON = (51.5, -0.1275)
@@ -54,10 +54,6 @@ def _clock(local: str) -> tuple[int, int, int]:
     return int(h), int(m), int(s)
 
 
-def _hms(clock: tuple[int, int, int]) -> str:
-    return f"{clock[0]:02d}:{clock[1]:02d}:{clock[2]:02d}"
-
-
 def _hm(clock: tuple[int, int, int]) -> str:
     return _hms(clock) if clock[2] else f"{clock[0]:02d}:{clock[1]:02d}"
 
@@ -68,9 +64,8 @@ def _minutes(clock: tuple[int, int, int]) -> float:
 
 def _dm(longitude: float) -> tuple[str, str]:
     """(sign, 「0°49′」) rounded to the whole arcminute."""
-    total = round(longitude * 60)
-    sign, rest = divmod(total, 30 * 60)
-    return SIGNS[sign % 12], f"{rest // 60}°{rest % 60:02d}′"
+    sign, degree, minute = sign_degree_minute(longitude)
+    return sign, f"{degree}°{minute:02d}′"
 
 
 def _product() -> dict:

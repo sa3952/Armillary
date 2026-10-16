@@ -21,11 +21,10 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from . import _fx, _noaa
-from ._common import SIGNS, product_charts, swiss
+from ._common import SIGNS, TAIPEI, product_charts, swiss
 
 
 FRAGMENT = "blog-true-solar-time"
-TAIPEI = (25.05306, 121.52639)
 JINCHENG = (24.43415, 118.31712)
 ZONE_MERIDIAN = 120.0
 EXAMPLE = datetime(1990, 11, 3, 14, 0, 0)

@@ -4,8 +4,19 @@
       <div class="eyebrow">計算 · COMPOSE</div>
       <h1 id="compose-heading">線上排古典西洋占星本命盤<span class="h1-qual">（整宮制等七種宮位制）</span></h1>
       <p class="kicker">排一張本命盤，每一步都能檢查。</p>
-      <p class="lede">在這裡排古典西洋占星本命盤：輸入出生日期、時間與地點，算出行星位置、上升點、宮位（整宮制等七種宮位制可選）與界、三分性等尊貴，附出生時刻換成世界時的時間收據。輸入你真正知道的程度；不知道的部分，不替你假裝精確。出生資料只用於本次計算，回應送出後伺服器不留副本。</p>
-      <p class="status-line" id="bootstrap-status" role="status" aria-live="polite" data-tone="warning">計算介面正在載入。若這段訊息持續顯示，代表頁面未完整載入；請重新整理，仍有問題請稍後再試。</p>
+      <!-- 引言：第一句與最後一句（伺服器不留副本）常駐；中間那一句在 <details> 裡（預設收起，不靠 JavaScript
+           也點得開）。手機上「更多說明」排在兩句之後（calculate.css）；寬螢幕把三句攤成原來的同一段、不顯示「更多」
+           那一行（::details-content），不支援的瀏覽器照舊是一行可點開的「更多」。標籤之間不留空白：攤成同一段時，
+           句號後不多一個空格。 -->
+      <div class="lede calc-lede">
+        <p class="calc-lede-first">在這裡排古典西洋占星本命盤：輸入出生日期、時間與地點，算出行星位置、上升點、宮位（整宮制等七種宮位制可選）與界、三分性等尊貴，附出生時刻換成世界時的時間收據。</p><details class="calc-lede-more"><summary>更多說明</summary><p>輸入你真正知道的程度；不知道的部分，不替你假裝精確。</p></details><p class="calc-lede-privacy">出生資料只用於本次計算，回應送出後伺服器不留副本。</p>
+      </div>
+      <!-- 手機上表單在引言、模式說明之後；這一行直接跳到第一個要填的地方（寬螢幕不顯示）。 -->
+      <p class="skip-to-form"><a href="#mode-choice">直接開始填 ↓</a></p>
+      <!-- 載入提示不寫成頁面文字（搜尋引擎曾拿它當這一頁的摘要）：calculate.css 在 calculate.js 把它藏起來之前，
+           從 data-message 畫出這句；沒有 JavaScript 時不畫，改由 noscript 那一句說明。 -->
+      <p class="status-line" id="bootstrap-status" role="status" aria-live="polite" data-tone="warning" data-message="計算介面正在載入。若這段訊息持續顯示，代表頁面未完整載入；請重新整理，仍有問題請稍後再試。"></p>
+      <noscript><p class="status-line calc-noscript" data-tone="warning">這個計算器需要 JavaScript 才能計算：請在瀏覽器開啟 JavaScript 後重新整理這一頁。</p></noscript>
 
       <!-- 三種模式：只是預先勾好的一組選項，送出的仍是同一份選項；收據照舊列出實際生效的每一項。
            不記住選了哪一種（不用任何瀏覽器儲存）；站內連結帶的 ?mode= 由 calculate.js 讀一次就從網址拿掉。
@@ -58,8 +69,11 @@
           <div class="grid four">
             <div class="field">
               <label for="date">出生日期</label>
-              <input type="date" id="date" aria-describedby="date-hint" min="1900-01-01" max="2399-12-31" autocomplete="off">
-              <span class="hint" id="date-hint">西元 1900–2399，以格里曆解讀；原始紀錄若是儒略曆，請先換算。民國年與日本年號可用下方的換算助手；農曆請先換算成西元國曆。</span>
+              <input type="date" id="date" aria-describedby="date-hint date-hint-more" min="1900-01-01" max="2399-12-31" autocomplete="off">
+              <!-- 說明的第一句常駐；其餘收在「?」裡（窄螢幕），寬螢幕攤成同一段。兩段都是日期欄的描述。 -->
+              <div class="hint-group">
+                <span class="hint" id="date-hint">西元 1900–2399，以格里曆解讀；</span><details class="hint-more"><summary aria-label="出生日期的其餘說明">?</summary><span class="hint" id="date-hint-more">原始紀錄若是儒略曆，請先換算。民國年與日本年號可用下方的換算助手；農曆請先換算成西元國曆。</span></details>
+              </div>
             </div>
             <div class="field" id="field-hour">
               <label for="hour">小時 <span class="en" lang="en">hour</span></label>
@@ -93,7 +107,7 @@
             <div class="grid four">
               <div class="field">
                 <label for="era-name">紀年</label>
-                <select id="era-name">
+                <select id="era-name" autocomplete="off">
                   <option value="roc">民國</option>
                   <option value="meiji">明治</option>
                   <option value="taisho">大正</option>
@@ -132,7 +146,7 @@
             <div class="field grow">
               <label for="place-query">地名查詢</label>
               <div class="row">
-                <input type="search" id="place-query" aria-describedby="place-query-hint" autocomplete="off" placeholder="例如：臺南、Taipei、Zurich">
+                <input type="search" id="place-query" aria-describedby="place-query-hint" enterkeyhint="search" autocomplete="off" placeholder="例如：臺南、Taipei、Zurich">
                 <button type="button" id="place-search-button">查詢</button>
               </div>
               <span class="hint" id="place-query-hint">讀取內建的唯讀離線目錄，不發出對外請求。中文行政區請用空格分開，例如「臺南 北區」。</span>
@@ -305,11 +319,12 @@
       </div>
 
       <!-- 一頁摘要的標頭與收據身分：畫面上不顯示，只在按「列印一頁摘要」時印出。收據身分由 calculate.js
-           算完時填入（三個契約版本、計算模式、出生時刻把握程度），不含任何輸入。 -->
+           算完時填入（三個契約版本、計算模式、出生時刻把握程度），不含任何輸入；空的 dd 只為讓 dl 合法，
+           calculate.js 每次填入前先移除所有 dd。 -->
       <div class="print-brief print-brief-head" id="print-brief-head">
         <p class="print-brief-title">星盤摘要</p>
         <p class="print-brief-subtitle">渾儀 Armillary　計算資料，不是占星解讀</p>
-        <dl class="print-brief-receipt" id="print-brief-receipt"><dt>收據身分</dt></dl>
+        <dl class="print-brief-receipt" id="print-brief-receipt"><dt>收據身分</dt><dd></dd></dl>
       </div>
 
       <!-- 時間收據的一行重點（本地時間、時區、UTC），由 calculate.js 從「時間轉換」區的表格列填入；
@@ -325,7 +340,11 @@
       <!-- 出生時間不確定時，結果最上方一行（每一章都看得到），連到星盤圖之後的白話摘要。 -->
       <p class="birth-time-notice" id="birth-time-notice" hidden></p>
 
-      <ul class="warnings" id="warnings" hidden></ul>
+      <!-- 注意事項：寬螢幕整張清單常駐（摘要那一行不顯示）；窄螢幕先收成一行，點開看全文。開合由 calculate.js 依寬度設定，列印前一律展開。 -->
+      <details class="warnings-fold" id="warnings-fold" hidden>
+        <summary class="warnings-summary" id="warnings-summary"></summary>
+        <ul class="warnings" id="warnings" hidden></ul>
+      </details>
 
       <!-- 表單改動後結果不再對應目前輸入：標示並停用複製／下載。 -->
       <p class="stale-notice" id="stale-notice" hidden role="status">表單已改動，這份結果對應的是改動前的輸入。複製與下載已停用；請重新計算，或把欄位改回原值。</p>
@@ -336,7 +355,7 @@
       <nav class="chapter-nav" id="chapter-nav" hidden aria-label="結果的章節">
         <div class="eyebrow">本次結果 · 章節</div>
         <ul class="chapter-index" id="chapter-index"></ul>
-        <button type="button" class="ghost small chapters-all" id="chapters-all" aria-pressed="false">全部章節一次展開（列印或搜尋用）</button>
+        <button type="button" class="ghost small chapters-all" id="chapters-all" aria-pressed="false">全部章節<span class="chapters-all-more">一次展開（列印或搜尋用）</span></button>
       </nav>
       <p class="note chapter-mode-note" id="chapter-mode-note" hidden></p>
 
@@ -355,8 +374,10 @@
           <p class="note">照原典列出。不替你解盤，也不預測。</p>
         </details>
 
-      <!-- 結果首屏：本命盤速覽（calculate.js 建在最前面）、常用匯出、星盤圖。桌機左圖右速覽，窄螢幕依原始碼順序上下排。 -->
+      <!-- 結果首屏：本命盤速覽（calculate.js 建在最前面）、星盤圖、常用匯出。桌機左圖右速覽，窄螢幕依原始碼順序上下排：
+           速覽之後緊接著圖，匯出在圖之後。 -->
       <div class="result-lead" id="result-lead">
+        <div class="result-lead-wheel" id="chart-wheel-host"></div>
         <div class="toolbar quick-toolbar" role="group" aria-labelledby="quick-toolbar-title">
           <div class="eyebrow" id="quick-toolbar-title">常用匯出</div>
           <!-- 每顆的名稱以看得見的字開頭再接「（常用匯出）」：與結果最下方同字的按鈕在按鈕清單裡分得開（WCAG 2.5.3）。 -->
@@ -370,7 +391,6 @@
           <p class="note" id="quick-export-data-note">匯出檔含出生時刻與計算結果；即使不列座標，星盤數值本身也能推回出生時間與地點，刪掉日期欄位也無法匿名。</p>
           <p class="note"><a href="#export-toolbar">純文字、JSON、CSV 與『運算結果＋驗算資料』在「收據與匯出」一章的匯出工具列。</a></p>
         </div>
-        <div class="result-lead-wheel" id="chart-wheel-host"></div>
         <!-- 一頁摘要的位置表：畫面上不顯示；紙上排在圖的右邊、速覽之下。calculate.js 算完時依畫面上的表格原字填入。 -->
         <div class="print-brief print-brief-tables" id="print-brief-tables"></div>
       </div>

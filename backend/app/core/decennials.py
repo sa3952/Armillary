@@ -332,7 +332,10 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "give different lords for the same day of his own example"
         ),
         "known_variants": {
-            "table": "Valens VI.6a (Kroll p.255, Pingree p.244), the third-stage sub-division",
+            "table": (
+                "Valens VI.6a (Riley's label; Kroll VI.6, in Pingree part of VI.6; Kroll "
+                "p.255, Pingree p.244), the third-stage sub-division"
+            ),
             "rule": (
                 "a cell is the level-2 period's months times the receiving planet's minor "
                 "years over 129; 44 of the 49 printed cells agree with it within 0.2 hours"
@@ -353,7 +356,10 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         ),
         "sources": [
             {
-                "citation": "Vettius Valens, Anthologies VI.6 (Kroll pp.252-254, Pingree pp.241-243)",
+                "citation": (
+                    "Vettius Valens, Anthologies VI.6 (Pingree's chapter number; Kroll VI.5; "
+                    "Kroll pp.252-254, Pingree pp.241-243)"
+                ),
                 "says": (
                     "the sect light as starting point if well situated, else the first star "
                     "after the ascendant; 10 years 9 months each, then the next star in the "
@@ -368,13 +374,16 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
                 "read_at": "Riley's English translation via the public re-typeset janegca/latex-valens",
             },
             {
-                "citation": "Valens VI.6a (Kroll p.255, Pingree p.244)",
+                "citation": (
+                    "Valens VI.6a (Riley's label; Kroll VI.6, in Pingree part of VI.6; "
+                    "Kroll p.255, Pingree p.244)"
+                ),
                 "says": "the third-stage sub-division table, 49 cells, listed in the Chaldean order",
                 "reading": SOURCE_READING_LEVELS[1],
                 "read_at": "Riley's English translation via the public re-typeset; the Greek not checked",
             },
             {
-                "citation": "Valens VI.7 (Kroll pp.256-257, Pingree pp.245-246)",
+                "citation": "Valens VI.7 (VI.7 in both Kroll and Pingree; Kroll pp.256-257, Pingree pp.245-246)",
                 "says": (
                     "the lord of the day by 129-day cycles; ordering by the stars' actual signs "
                     "and degrees at the nativity, not by the Chaldean order from Saturn"

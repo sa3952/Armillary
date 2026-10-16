@@ -14,8 +14,6 @@ firdaria notation gap is the methods page's own computation.
 """
 from __future__ import annotations
 
-import math
-
 from . import _fx, page_methods_time_lords
 from ._common import SIGNS, backend_on_path, swiss
 from ._demo import DEMO
@@ -192,14 +190,10 @@ def _years(lifetime: dict) -> list[dict]:
 def _wedge(cx: float, cy: float, r0: float, r1: float, a0: float, a1: float) -> str:
     """An annular sector from angle a0 to a1 (degrees, counter-clockwise from 3 o'clock)."""
     def at(r: float, a: float) -> str:
-        return f"{_fx.f(cx + r * math.cos(math.radians(a)))} {_fx.f(cy - r * math.sin(math.radians(a)))}"
+        return " ".join(map(_fx.f, _fx.wheel_point(cx, cy, r, a)))
     large = 1 if a1 - a0 > 180 else 0
     return (f"M{at(r1, a0)} A{_fx.f(r1)} {_fx.f(r1)} 0 {large} 0 {at(r1, a1)} L{at(r0, a1)} "
             f"A{_fx.f(r0)} {_fx.f(r0)} 0 {large} 1 {at(r0, a0)} Z")
-
-
-def _polar(cx: float, cy: float, r: float, a: float) -> tuple[float, float]:
-    return cx + r * math.cos(math.radians(a)), cy - r * math.sin(math.radians(a))
 
 
 def _profection_wheel(layout: str, fid: str, signs: list[dict], bound: _fx.Bound) -> str:
@@ -227,9 +221,9 @@ def _profection_wheel(layout: str, fid: str, signs: list[dict], bound: _fx.Bound
                  + "、".join(bound.num(str(y)) for y in item["years"]) + " 年")
         body = [f'<g class="fx-row" data-fx-key="{item["key"]}" tabindex="0" aria-label="{label}">',
                 _fx.path(_wedge(cx, cy, r_in, r_out, a - 15, a + 15), "fx-hit"),
-                _fx.line(*_polar(cx, cy, r_in, a - 15), *_polar(cx, cy, r_out, a - 15), "fx-hair")]
-        body.append(_fx.glyph(item["key"], *_polar(cx, cy, (r_out + r_ring) / 2, a), gl, "fx-mk-gl"))
-        x, y = _polar(cx, cy, r_block, a)
+                _fx.line(*_fx.wheel_point(cx, cy, r_in, a - 15), *_fx.wheel_point(cx, cy, r_out, a - 15), "fx-hair")]
+        body.append(_fx.glyph(item["key"], *_fx.wheel_point(cx, cy, (r_out + r_ring) / 2, a), gl, "fx-mk-gl"))
+        x, y = _fx.wheel_point(cx, cy, r_block, a)
         body.append(_fx.text(x, y + lines[0], item["name"], "fx-t", "middle"))
         body.append(_fx.text(x, y + lines[1], item["lord_name"], "fx-t fx-small fx-dim", "middle"))
         body.append(_fx.text(x, y + lines[2], "·".join(bound.num(str(v)) for v in years), "fx-t fx-small fx-num", "middle"))
@@ -351,9 +345,9 @@ def _minor_years(layout: str, fid: str, releasing, lords: dict, minor: dict, dec
         differs = years != minor[lords[key]]
         out.append(_fx.path(_wedge(cx, cy, r_in, r_out, a, a + sweep), "fx-fill-hatch" if differs else "fx-cell"))
         mid = a + sweep / 2
-        x, y = _polar(cx, cy, r_name, mid)
+        x, y = _fx.wheel_point(cx, cy, r_name, mid)
         out.append(_fx.text(x, y + 5, SIGN[key], small + (" fx-key" if differs else ""), "middle"))
-        x, y = _polar(cx, cy, r_years, mid)
+        x, y = _fx.wheel_point(cx, cy, r_years, mid)
         out.append(_fx.text(x, y + 5, bound.num(str(years)), small + " fx-num" + (" fx-key" if differs else ""),
                             "middle"))
         a += sweep

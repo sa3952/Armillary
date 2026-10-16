@@ -1,6 +1,6 @@
 """恆星位置與星等（含完整赤緯相關資料），套用統一計算模式。
 
-清單（config.FIXED_STARS）上的恆星全部標為 `research_only`，
+清單（domain_catalog.FIXED_STARS）上的恆星全部標為 `research_only`，
 維持預設關閉、明示勾選才計算。逐星的幾何方法、orb 與歲差政策未裁決；清單依據哪些
 古典文本記在內部來源表與方法頁，計算輸出不逐星標出處。
 
@@ -28,7 +28,8 @@ Hipparcos、SIMBAD 的差。星團沒有 HIP 號：記錄對 SIMBAD 與 Cantat-G
 
 import swisseph as swe
 
-from ..config import (
+from .invariants import InternalInvariantError
+from ..domain_catalog import (
     FIXED_STAR_ZH_NAME_CHECKED,
     FIXED_STAR_ZH_NAME_CORRECTIONS,
     FIXED_STAR_ZH_NAME_STATES,
@@ -205,7 +206,8 @@ def compute_fixed_stars(star_defs: list, jd_ut: float, ctx, atmosphere, trace: T
             retflag_eq, body=FIXED_STAR, flags=equatorial_flags, jd_ut=jd_ut,
         )
         if ctx.horizon_meaningful:
-            assert horizontal_retflag is not None  # set in the guarded block above
+            if horizontal_retflag is None:  # set in the guarded block above
+                raise InternalInvariantError("horizontal_retflag is not None")
             used_full_ephemeris = used_full_ephemeris and object_used_full_ephemeris(
                 horizontal_retflag, body=FIXED_STAR, flags=ctx.horizontal_source_flags,
                 jd_ut=jd_ut,

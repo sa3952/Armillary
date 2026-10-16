@@ -31,11 +31,8 @@ IGNORABLE_LOCAL_ARTIFACT_NAMES = frozenset({".DS_Store"})
 
 
 def _digest(path: Path) -> str:
-    hasher = hashlib.sha256()
     with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            hasher.update(chunk)
-    return hasher.hexdigest()
+        return hashlib.file_digest(handle, "sha256").hexdigest()
 
 
 def verify(manifest_path: Path) -> list[str]:

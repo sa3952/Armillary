@@ -25,8 +25,7 @@
     if (!value) return null;
     const era = timeConversion.time_scale_era;
     const modern = !era || era === "modern_leap_second_utc";
-    const scale = modern ? "UTC" : Object.prototype.hasOwnProperty.call(TIME_SCALE_ZH, era)
-      ? TIME_SCALE_ZH[era] : `未識別的時間尺度（${era}）`;
+    const scale = modern ? "UTC" : Labels.closedLabel(era, TIME_SCALE_ZH, "時間尺度");
     const label = precision && precision !== "exact" ? `代表性錨點（非出生時刻，${scale}）` : scale;
     return { label, value: modern ? value : String(value).replace(/Z$/, "") };
   }
@@ -78,7 +77,7 @@
     const mode = sourceResponse && sourceResponse.computation_mode;
     if (!mode || typeof mode !== "object" || Array.isArray(mode)) return [];
     return COMPUTATION_MODE_FIELDS
-      .filter(([key]) => Object.prototype.hasOwnProperty.call(mode, key))
+      .filter(([key]) => Object.hasOwn(mode, key))
       .filter(([key]) => key !== "ayanamsa" || mode.zodiac === "sidereal")
       .map(([key, label]) => ({
         key,
@@ -182,7 +181,7 @@
       throw new Error("section status 必須是物件。");
     }
     const state = text(status.state);
-    if (!Object.prototype.hasOwnProperty.call(SECTION_STATES, state)) {
+    if (!Object.hasOwn(SECTION_STATES, state)) {
       // Fail closed：把未知狀態當成 present 會讓「被拒絕」看起來像「算出來了」。
       throw new Error(`不支援的 section status.state: ${state}`);
     }
@@ -286,7 +285,7 @@
   function resolveResponsePath(response, dottedPath) {
     let current = response;
     for (const part of String(dottedPath).split(".")) {
-      if (!isRecord(current) || !Object.prototype.hasOwnProperty.call(current, part)) {
+      if (!isRecord(current) || !Object.hasOwn(current, part)) {
         return { found: false, value: undefined };
       }
       current = current[part];
@@ -316,7 +315,7 @@
     if (!nonEmptyString(sourceResponse.computation_mode.zodiac)) {
       throw incompleteResponse("computation_mode 缺少 zodiac");
     }
-    if (Object.prototype.hasOwnProperty.call(sourceResponse, "projection")) {
+    if (Object.hasOwn(sourceResponse, "projection")) {
       const projection = sourceResponse.projection;
       if (!isRecord(projection) || projection.name !== "page") {
         throw incompleteResponse("projection 不是已知的投影");
@@ -406,7 +405,7 @@
   // 頁面版本的文件不得冒充（它沒有軌跡、契約與收據）。
   function holdsVerificationDetail(document) {
     const source = document && document.source_response;
-    return Boolean(source) && !Object.prototype.hasOwnProperty.call(source, "projection");
+    return Boolean(source) && !Object.hasOwn(source, "projection");
   }
 
   /**
@@ -432,7 +431,7 @@
   }
 
   function projectOutputDocument(document, mode = OUTPUT_MODES.reproducibility_detail) {
-    if (!Object.prototype.hasOwnProperty.call(OUTPUT_MODES, mode)) {
+    if (!Object.hasOwn(OUTPUT_MODES, mode)) {
       throw new Error(`不支援的輸出詳細度: ${mode}`);
     }
     const detailed = mode === OUTPUT_MODES.reproducibility_detail;
@@ -934,6 +933,7 @@
   return {
     EXPORT_CONTRACT_VERSION,
     INCOMPLETE_RESPONSE,
+    isRecord,
     incompleteResponse,
     assertRenderableResponse,
     OUTPUT_MODES,
@@ -964,6 +964,5 @@
     csvCell,
     escapeMarkdownText,
     markdownInlineCode,
-    markdownCodeFence,
   };
 });

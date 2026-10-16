@@ -240,7 +240,7 @@
     const label = fieldLabel(location);
     const type = issue && typeof issue.type === "string" ? issue.type : "";
 
-    if (Object.prototype.hasOwnProperty.call(VALIDATION_REASON_MESSAGES, type)) {
+    if (Object.hasOwn(VALIDATION_REASON_MESSAGES, type)) {
       return VALIDATION_REASON_MESSAGES[type];
     }
 
@@ -329,7 +329,7 @@
       detail
       && typeof detail === "object"
       && typeof detail.code === "string"
-      && Object.prototype.hasOwnProperty.call(ERROR_CODE_MESSAGES, detail.code)
+      && Object.hasOwn(ERROR_CODE_MESSAGES, detail.code)
     ) {
       return ERROR_CODE_MESSAGES[detail.code];
     }
@@ -381,7 +381,7 @@
   function issueControlIds(issue) {
     if (!issue || typeof issue !== "object") return [];
     const type = typeof issue.type === "string" ? issue.type : "";
-    if (Object.prototype.hasOwnProperty.call(REASON_CONTROL_IDS, type)) {
+    if (Object.hasOwn(REASON_CONTROL_IDS, type)) {
       return REASON_CONTROL_IDS[type];
     }
     const location = Array.isArray(issue.loc) ? issue.loc.map(String) : [];
@@ -389,11 +389,11 @@
     if (section === "timezone") return [TIMEZONE_CONTROL_ID];
     if (section === "datetime") {
       if (!field) return [DATE_CONTROL_ID];
-      return Object.prototype.hasOwnProperty.call(DATETIME_CONTROL_IDS, field)
+      return Object.hasOwn(DATETIME_CONTROL_IDS, field)
         ? [DATETIME_CONTROL_IDS[field]] : [];
     }
     if (section === "location") {
-      return Object.prototype.hasOwnProperty.call(LOCATION_CONTROL_IDS, field)
+      return Object.hasOwn(LOCATION_CONTROL_IDS, field)
         ? [LOCATION_CONTROL_IDS[field]] : [];
     }
     if (section === "options" && field && /^[a-z][a-z0-9_]*$/.test(field)) {
@@ -408,7 +408,7 @@
     validationIssues(detail).forEach((issue) => add(issueControlIds(issue)));
     if (
       detail && typeof detail === "object" && typeof detail.code === "string"
-      && Object.prototype.hasOwnProperty.call(CODE_CONTROL_IDS, detail.code)
+      && Object.hasOwn(CODE_CONTROL_IDS, detail.code)
     ) {
       add(CODE_CONTROL_IDS[detail.code]);
     }

@@ -1,0 +1,132 @@
+<!-- 文章：回歸黃道與恆星黃道、歲差值（ayanamsa）。表 1、表 2 與正文引用的數字由 scripts/frontend/figures/sidereal.py
+     以計算服務本身（行程內呼叫）對合成時刻產生（1990-05-15 14:30 臺北，與四個年份 1 月 1 日中午的臺北）；
+     python -m scripts.frontend.figures --check 核對。四種歲差值的來歷照方法頁 §07.2。 -->
+<div class="wrap page-body article">
+
+  <div class="ar-head">
+    <p class="eyebrow"><a href="/zh-TW/blog">文章</a> · JOURNAL</p>
+    <h1>回歸黃道和恆星黃道差在哪？<br>歲差值（ayanamsa）是什麼</h1>
+    <p class="ar-dek">同一個出生時刻，換成恆星黃道，太陽常常退回前一個星座。兩種黃道都把黃道切成十二個 30 度的星座，差別只在 0 度從哪裡算起，而兩個起點之間的距離，就是歲差值（ayanamsa）。這篇說明兩種起點、本站提供的四種歲差值各是什麼來歷、換黃道時哪些結果會變、哪些不會，以及哪些古典表格本站不套到恆星黃道上。</p>
+    {{article_byline:講方法}}
+  </div>
+
+  <div class="ar-body">
+    <p class="ar-lead"><b>回歸黃道以春分點為牡羊 0 度；恆星黃道以某個相對恆星固定的約定點為起點，等於從回歸黃經扣掉一個歲差值（ayanamsa）。</b>春分點相對背景恆星緩慢移動，所以兩者的差距隨日期變大，目前接近一個星座<a class="ar-cite" href="#ref-1">[1]</a>。本站的主幹是回歸黃道；恆星黃道提供四種歲差值，預設 Fagan–Bradley，這是慣例，不是推薦<a class="ar-cite" href="#ref-1">[1]</a>。</p>
+
+    <section class="ar-points" aria-labelledby="points">
+      <h2 id="points">重點</h2>
+      <ul>
+        <li>兩種黃道只差起點：以本站的合成例子來說，Fagan–Bradley 扣掉 24°37′，太陽從金牛 24°11′變成牡羊 29°34′<a class="ar-cite" href="#ref-5">[5]</a>。</li>
+        <li>四種歲差值的來歷不同：一種是 20 世紀西方恆星派最常用的定義，一種是現代以畢宿五定出的定義，兩種是 Swiss Ephemeris 依研究整理出的重建；四種之間最多相差約 4.8°<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-5">[5]</a>。</li>
+        <li>換黃道時，每一個黃經扣掉同一個值：度數差與逐度相位不變，星座、整宮制的宮位與整宮相位可能變<a class="ar-cite" href="#ref-2">[2]</a><a class="ar-cite" href="#ref-5">[5]</a>。</li>
+        <li>界、面、三分性、廟旺與月宿，本站不套到恆星黃經上，選恆星黃道時明白拒絕並附原因代碼<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-2">[2]</a>。</li>
+      </ul>
+    </section>
+
+    <h2 id="zero"><span class="ar-sec">§01</span>兩個起點</h2>
+    <p><b>回歸黃道</b>以春分點為 0 度起點，也就是太陽每年春分時所在的那一點。春分點會歲差，所以相對背景的恆星緩慢移動<a class="ar-cite" href="#ref-1">[1]</a>。本站採用的界、面、三分性與廟旺這些表，都以回歸黃道為操作框架：Ptolemy 在《占星四書》I.22 主張自分至點起算<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-3">[3]</a>。</p>
+    <p><b>恆星黃道</b>則以某個約定點為錨，讓星座和恆星綁在一起。做法是從回歸黃經扣掉一個值，這個值就叫歲差值（ayanamsa）<a class="ar-cite" href="#ref-1">[1]</a>。不同的定義把錨放在不同的地方，所以同一天會有不同的歲差值；同一個定義，歲差值也逐年變大。</p>
+    <p>本站把每一次計算實際扣掉的歲差值，寫在卷宗的時間資料裡；你可以拿它自己複算<a class="ar-cite" href="#ref-1">[1]</a>。下面表 2 是 Fagan–Bradley 在四個日期的值：從 1900 到 2000 年增加了約 1.39°<a class="ar-cite" href="#ref-5">[5]</a>。</p>
+  </div>
+
+  <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab1-cap">
+    <table class="ar-table">
+      <caption id="tab1-cap">表 1　同一個合成時刻（1990 年 5 月 15 日 14:30，臺北），回歸黃道與本站的四種恆星黃道。「歲差值」是那一次計算實際扣掉的量；整宮制的第 1 宮就是上升點所在的星座<a class="ar-cite" href="#ref-5">[5]</a>。</caption>
+      <thead><tr><th scope="col">黃道</th><th scope="col">歲差值</th><th scope="col">太陽</th><th scope="col">月亮</th><th scope="col">上升點</th><th scope="col">整宮制第 1 宮</th></tr></thead>
+      <tbody>
+        <!-- figure:zodiacs -->
+          <tr><th scope="row">回歸黃道</th><td class="n">—</td><td class="n">金牛 24°11′</td><td class="n">摩羯 24°20′</td><td class="n">天秤 1°36′</td><td>天秤</td></tr>
+          <tr><th scope="row">恆星：Fagan–Bradley</th><td class="n">24°37′</td><td class="n">牡羊 29°34′</td><td class="n">射手 29°44′</td><td class="n">處女 6°59′</td><td>處女</td></tr>
+          <tr><th scope="row">恆星：Hipparchos</th><td class="n">20°07′</td><td class="n">金牛 4°04′</td><td class="n">摩羯 4°13′</td><td class="n">處女 11°29′</td><td>處女</td></tr>
+          <tr><th scope="row">恆星：Sassanian</th><td class="n">19°52′</td><td class="n">金牛 4°19′</td><td class="n">摩羯 4°29′</td><td class="n">處女 11°44′</td><td>處女</td></tr>
+          <tr><th scope="row">恆星：Aldebaran 15° 金牛</th><td class="n">24°38′</td><td class="n">牡羊 29°33′</td><td class="n">射手 29°43′</td><td class="n">處女 6°58′</td><td>處女</td></tr>
+        <!-- /figure:zodiacs -->
+      </tbody>
+    </table>
+  </div>
+
+  <div class="ar-body">
+    <p>在這張盤上，Fagan–Bradley 扣掉 24°37′：太陽從金牛 24°11′變成牡羊 29°34′，上升點從天秤 1°36′變成處女 6°59′，整宮制的第 1 宮也跟著從天秤換成處女<a class="ar-cite" href="#ref-5">[5]</a>。Hipparchos 與 Sassanian 扣得少一些，太陽仍留在金牛。四種之間最多相差約 4.8°，所以「恆星黃道的太陽在哪個星座」，要先說是哪一種歲差值。</p>
+
+    <h2 id="ayanamsas"><span class="ar-sec">§02</span>四種歲差值是什麼來歷</h2>
+    <p>本站提供的四種，身分各不相同<a class="ar-cite" href="#ref-1">[1]</a>：</p>
+    <ul>
+      <li><b>Fagan–Bradley。</b>20 世紀西方恆星派最常用的定義。本站以它為恆星黃道的預設，<b>這是慣例，不是推薦</b>。</li>
+      <li><b>Aldebaran 15° 金牛。</b>Swiss Ephemeris 依 Fagan 轉述 Bradley 的意見，以畢宿五（Aldebaran）在西元前 100 年位於金牛 15° 定出的現代定義。在表 1 裡它和 Fagan–Bradley 幾乎一樣。</li>
+      <li><b>Hipparchos 與 Sassanian。</b>Swiss Ephemeris 依 Mercier 的研究整理出的重建，不是 Hipparchus 或薩珊天文表留下的常數；Swiss 自己註明，Sassanian 這一式並非 Mercier 明文。</li>
+    </ul>
+    <p>這四種的說明，方法頁依據的是 Swiss Ephemeris 的說明文件<a class="ar-cite" href="#ref-1">[1]</a>。印度占星常用的 Lahiri，本站目前沒有提供<a class="ar-cite" href="#ref-4">[4]</a>。</p>
+  </div>
+
+  <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab2-cap">
+    <table class="ar-table">
+      <caption id="tab2-cap">表 2　Fagan–Bradley 歲差值在四個日期的值：各年 1 月 1 日中午，臺北，計算服務實際扣掉的量<a class="ar-cite" href="#ref-5">[5]</a>。</caption>
+      <thead><tr><th scope="col">日期</th><th scope="col">歲差值</th></tr></thead>
+      <tbody>
+        <!-- figure:years -->
+          <tr><th scope="row">1900 年 1 月 1 日</th><td class="n">23°21′</td></tr>
+          <tr><th scope="row">1950 年 1 月 1 日</th><td class="n">24°02′</td></tr>
+          <tr><th scope="row">2000 年 1 月 1 日</th><td class="n">24°44′</td></tr>
+          <tr><th scope="row">2026 年 1 月 1 日</th><td class="n">25°06′</td></tr>
+        <!-- /figure:years -->
+      </tbody>
+    </table>
+  </div>
+
+  <div class="ar-body">
+    <h2 id="changes"><span class="ar-sec">§03</span>換黃道時，哪些會變、哪些不會</h2>
+    <p>換成恆星黃道，等於每一個黃經都扣掉同一個值。所以：</p>
+    <ul>
+      <li><b>度數差不變。</b>兩顆行星相距幾度，扣掉同一個值後還是一樣，看度數與容許度的逐度相位也就不變。表 1 那張盤共評估 45 組配對，其中 9 組在容許度內，換成四種恆星黃道，一組都沒有變<a class="ar-cite" href="#ref-5">[5]</a>。</li>
+      <li><b>星座可能變，整宮相位也跟著變。</b>行星扣掉歲差值後，多半退回前一個星座，但離星座起點夠遠的不會。同一張盤換成 Fagan–Bradley，土星從摩羯 25°15′變成摩羯 0°39′，是唯一留在原星座的天體；於是凡是和土星配對的，星座之間的距離都變了，有 9 組的整宮相位變了<a class="ar-cite" href="#ref-5">[5]</a>。</li>
+      <li><b>宮位跟著恆星黃道的星座走。</b>整宮制的宮界落在恆星黃道 30 度的整數倍上，不是先算回歸黃道的宮再扣歲差值；四分宮制的宮頭也直接在恆星黃道上算出<a class="ar-cite" href="#ref-2">[2]</a>。</li>
+      <li><b>日夜盤不變。</b>日夜盤看的是太陽在天上的高度，和黃道從哪裡起算無關<a class="ar-cite" href="#ref-2">[2]</a>。</li>
+    </ul>
+
+    <h2 id="refused"><span class="ar-sec">§04</span>本站不套到恆星黃道上的東西</h2>
+    <p><b>界、面、三分性與廟旺這些歷史表格，本站不套用到恆星黃經上。</b>這些表以回歸黃道為操作框架；界的更早形成是否在別的框架下，學界仍有討論，所以不靜默套用<a class="ar-cite" href="#ref-1">[1]</a>。選恆星黃道時，結果會把它們標為不適用，並附原因代碼說明是恆星黃道的緣故，而不是給你一個看起來合理的錯誤答案<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-5">[5]</a>。</p>
+    <p>月宿也一樣：本站的月宿從當日春分點起等分，恆星黃道會移動這個起點，所以同樣標為不適用並附原因代碼。起點換了差多少，見〈<a href="/zh-TW/blog/lunar-mansions">月宿是什麼？</a>〉<a class="ar-cite" href="#ref-2">[2]</a><a class="ar-cite" href="#ref-5">[5]</a>。</p>
+    <p>另外，恆星黃道只能搭配當日黃道。同時選 J2000 參考框架，整個請求會被拒絕並附原因代碼，因為在那個組合下，卷宗記下的歲差值和實際從黃經扣掉的量對不上；其他組合下，卷宗裡的歲差值就是實際扣掉的值<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-5">[5]</a>。</p>
+
+    <h2 id="choose"><span class="ar-sec">§05</span>該選哪一種</h2>
+    <p>本站不替你選。回歸黃道是本站的主幹，恆星黃道供進階與比較使用<a class="ar-cite" href="#ref-1">[1]</a>。如果你依循的傳統用恆星黃道，先確認它用的是哪一種歲差值；兩份星盤的星座對不上時，先看兩邊是不是同一種黃道、同一種歲差值。本站把用了哪一種寫在每一次的結果與卷宗裡。</p>
+
+    <aside class="ar-scope" aria-labelledby="scope-1">
+      <span class="ar-k" id="scope-1">本文的範圍</span>
+      <ul>
+        <li>本文只談兩種黃道怎麼算、本站提供什麼；不比較哪一種解盤比較準，本站也不解盤。</li>
+        <li>文中的時刻是合成的，不是任何人的出生資料。</li>
+      </ul>
+    </aside>
+  </div>
+
+  <section class="ar-refs" aria-labelledby="refs">
+    <h2 id="refs">出處</h2>
+    {{source_legend}}
+    <ol>
+      <li id="ref-1"><span>渾儀<a href="/zh-TW/methods#tropical-sidereal">方法頁</a> §07.2〈回歸黃道 vs 恆星黃道〉與 §07.9〈J2000 與不含章動〉：兩種起點、四種歲差值的來歷（方法頁依 Astrodienst AG, Swiss Ephemeris General Documentation §2.8.1–2.8.3、§2.8.10–2.8.11）、預設是慣例、歷史表格不套到恆星黃經與其理由、恆星黃道與 J2000 不能合用、卷宗記下的歲差值。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-2"><span>本站公開的原始碼：<code>backend/app/core/frame_compatibility.py</code>（哪些模組在恆星黃道下適用、拒絕的原因代碼）、<code>backend/app/core/houses.py</code>（恆星黃道的宮頭直接以恆星黃道算出）、<code>backend/app/core/bodies.py</code> 與 <code>backend/app/core/lots.py</code>（日夜盤固定看回歸黃道當日的太陽位置與地平高度）。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-3"><span>Ptolemy《占星四書》I.22，trans. F. E. Robbins (Loeb Classical Library, 1940)，LacusCurtius 線上本；方法頁引 pp.&nbsp;109–111。<span class="rs rs-checked">已讀譯本</span></span></li>
+      <li id="ref-4"><span>渾儀<a href="/zh-TW/calculate">計算頁</a>的歲差校正選項與常見問題：四種歲差值，目前沒有 Lahiri。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-5"><span>表 1、表 2 與正文的數字：本站計算服務對合成請求的回應，1990 年 5 月 15 日 14:30 臺北（北緯 25.05306°、東經 121.52639°、Asia/Taipei），整宮制，回歸黃道與四種恆星黃道各一次，並勾選廟旺與月宿；以及 1900、1950、2000、2026 年 1 月 1 日 12:00 臺北的 Fagan–Bradley 歲差值；另以恆星黃道加 J2000 的請求讀回拒絕的原因代碼。2026 年 10 月以本機的同版服務自算。<span class="rs rs-computed">本站自算</span></span></li>
+    </ol>
+  </section>
+
+  <section class="ar-next" aria-labelledby="next-cta">
+    <div>
+      <h2 id="next-cta">同一張盤，<br>換一種黃道看看。</h2>
+      <p>在計算頁的「計算口徑」把黃道切到恆星，再選一種歲差值。結果與卷宗會寫出這一次實際扣掉的歲差值。</p>
+      <p><a class="btn-paper" href="/zh-TW/calculate">排一張盤 →</a></p>
+    </div>
+    <div>
+      <span class="ar-k">延伸閱讀</span>
+      <ul>
+        <li><a href="/zh-TW/blog/lunar-mansions">月宿是什麼？阿拉伯的 28 宿，不是古中國的二十八宿</a></li>
+        <li><a href="/zh-TW/blog/four-bounds-tables">四套界表，四個答案</a></li>
+        <li><a href="/zh-TW/blog/chart-calculation-accuracy">線上排盤準不準？星盤計算的誤差從哪裡來</a></li>
+        <li><a href="/zh-TW/methods#tropical-sidereal">方法頁：回歸黃道 vs 恆星黃道</a></li>
+      </ul>
+    </div>
+  </section>
+
+</div>

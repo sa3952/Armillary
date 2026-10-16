@@ -431,8 +431,6 @@ MANILIUS_SIGN_DECANS = (
     ("libra", "scorpio", "sagittarius"),    # aquarius
     ("capricorn", "aquarius", "pisces"),    # pisces: IV.359-360 corrected
 )
-# Raw witness: Pisces as the text transmits it (IV.358-362).
-MANILIUS_TRANSMITTED_PISCES = ("aries", "taurus", "pisces")
 DECAN_READING_STATES = ("transmitted_text", "editorial_correction")
 
 DECAN_SOURCE_DETAILS: dict[str, dict[str, Any]] = {

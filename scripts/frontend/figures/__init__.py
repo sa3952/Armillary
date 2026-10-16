@@ -34,12 +34,12 @@ _BLOCK = re.compile(
 
 def articles() -> tuple:
     from . import (accuracy, approximate_hour, birth_time, bounds, combustion, dodecatemoria, era_time,
-                   house_sphere, houses, mansions, nodes, receipt, rising_tables, solar_time, syzygy,
-                   taiwan_time, time_lords, unknown_time)
+                   house_sphere, houses, lots, mansions, nodes, receipt, rising_tables, sect, sidereal, solar_time,
+                   syzygy, taiwan_time, time_lords, unknown_time)
 
     return (birth_time, taiwan_time, houses, bounds, nodes, unknown_time, rising_tables, solar_time,
             time_lords, dodecatemoria, combustion, mansions, syzygy, house_sphere, era_time, accuracy,
-            approximate_hour, receipt)
+            approximate_hour, receipt, lots, sect, sidereal)
 
 
 def pages() -> tuple:
@@ -81,16 +81,39 @@ def problems(fragment_name: str, fragment: str, blocks: dict[str, str], quoted: 
     return out
 
 
+def _build_named(name: str) -> tuple[dict[str, str], list[str]]:
+    import importlib
+
+    return importlib.import_module(name).build()
+
+
+def _build_all(modules) -> dict[str, tuple[dict[str, str], list[str]]]:
+    """Every module's blocks and quoted strings, the modules built side by
+    side in worker processes when there are several (each opens its own
+    Swiss Ephemeris and application in-process client)."""
+    import os
+
+    jobs = min(len(modules), os.cpu_count() or 1)
+    if jobs <= 1:
+        return {module.__name__: module.build() for module in modules}
+    from concurrent.futures import ProcessPoolExecutor
+
+    names = [module.__name__ for module in modules]
+    with ProcessPoolExecutor(max_workers=jobs) as pool:
+        return dict(zip(names, pool.map(_build_named, names), strict=True))
+
+
 def check(modules, write: bool = False) -> list[str]:
     """Every failure the modules' blocks and quoted strings find in the page
     fragments; with `write`, the blocks are rewritten first."""
     from scripts.frontend import build_pages
 
     failures: list[str] = []
+    built = _build_all(modules)
     for module in modules:
         path = build_pages.PAGES / f"{module.FRAGMENT}.html"
         fragment = path.read_text(encoding="utf-8")
-        blocks, quoted = module.build()
+        blocks, quoted = built[module.__name__]
         if not quoted:
             raise RuntimeError(f"{module.__name__} quotes no number")
         if write:

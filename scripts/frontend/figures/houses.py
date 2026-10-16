@@ -21,7 +21,7 @@ import shutil
 import subprocess
 
 from . import _fx, house_sphere
-from ._common import ROOT, SIGNS, backend_on_path, spoken_longitude as _spoken, swiss
+from ._common import ROOT, SIGNS, TAIPEI, backend_on_path, spoken_longitude as _spoken, swiss
 
 
 FRAGMENT = "blog-whole-sign-vs-placidus"
@@ -43,7 +43,7 @@ IDLE = "用 Tab 鍵移到一顆行星上，或用滑鼠指著它，這裡會寫�
 
 
 def _request(system: str, *, polar: bool = False, houses: bool = True) -> dict:
-    lat, lon, hour, zone = (69.6496, 18.9560, 12, "Europe/Oslo") if polar else (25.05306, 121.52639, 11,
+    lat, lon, hour, zone = (69.6496, 18.9560, 12, "Europe/Oslo") if polar else (*TAIPEI, 11,
                                                                                 "Asia/Taipei")
     options: dict[str, object] = {"house_system": system}
     if houses:
@@ -145,12 +145,6 @@ def _check_drawn_houses(d: dict) -> None:
                 raise RuntimeError(f"{system} {key}: drawn in house {drawn}, the product says {placements[key]}")
 
 
-def _width(value: str, size: float) -> float:
-    """A generous estimate of a label's drawn width: a CJK character is one em,
-    anything else 0.55 em."""
-    return sum(size if ord(ch) > 0x2E7F else 0.55 * size for ch in value)
-
-
 _TEXT = re.compile(r'<text x="([-0-9.]+)" y="([-0-9.]+)" class="([^"]+)"(?: text-anchor="(\w+)")?>([^<]*)</text>')
 
 
@@ -159,7 +153,7 @@ def _inside_plate(markup: str, layout: str, width: float, height: float) -> None
     sizes = _fx.text_sizes()
     for x, y, cls, anchor, value in _TEXT.findall(markup):
         size = sizes[(layout, "fx-small" if "fx-small" in cls.split() else "fx-t")]
-        w = _width(value.replace("&amp;", "&"), size)
+        w = _fx.text_width(value.replace("&amp;", "&"), size)
         left = float(x) - {"middle": w / 2, "end": w}.get(anchor, 0.0)
         if left < 6 or left + w > width - 6 or float(y) - size < 6 or float(y) > height - 6:
             raise RuntimeError(f"{layout}: the label {value!r} runs past the plate")
@@ -400,7 +394,7 @@ SPHERE_CROP = (20.0, 95.0, 620.0, 605.0)
 # The sphere script's roles, drawn in the engraved-plate style.
 SPHERE_ROLES = (
     ("hs-ball", "fx-sph-ball"), ("hs-ground", "fx-sph-ground"), ("hs-hor", "fx-sph-hor"),
-    ("hs-strong", "fx-sph-line"), ("hs-mer", "fx-sph-faint"), ("hs-equ", "fx-sph-faint"),
+    ("hs-mer", "fx-sph-faint"), ("hs-equ", "fx-sph-faint"),
     ("hs-pv", "fx-sph-faint"), ("hs-cut-faint", "fx-sph-cut fx-sph-dim"), ("hs-cut", "fx-sph-cut"),
     ("hs-arc", "fx-sph-arc"), ("hs-day", "fx-sph-faint"), ("hs-ecl-a", "fx-sph-ecl"), ("hs-ecl-b", "fx-sph-ecl-b"),
     ("hs-tick", "fx-axis"), ("hs-pt-hor", "fx-sph-pt-open"), ("hs-pt-equ", "fx-sph-pt-open"),
@@ -477,7 +471,7 @@ def _sphere_panel(scene: dict, layout: str, ox: float, oy: float, s: float, boun
         if not wide and "hs-t-sign" in a["class"]:
             continue  # the narrow drawing leaves the sign names out, as the article's own figure does
         size = size_of[(layout, "fx-small" if "fx-small" in cls else "fx-t")]
-        w = _width(value, size)
+        w = _fx.text_width(value, size)
         for dx, dy in ((0, 0), (0, -size), (0, size), (size, 0), (-size, 0)):
             x, y = X(a["x"]) + dx, Y(float(a["y"]) - 2) + dy
             left = x - (w if anchor == "end" else w / 2)

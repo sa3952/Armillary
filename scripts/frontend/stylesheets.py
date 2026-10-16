@@ -29,6 +29,7 @@ one stylesheet.  Every other article keeps the bundle without it.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 import re
 from pathlib import Path
 from typing import Iterable, Mapping
@@ -238,10 +239,21 @@ def _source(name: str, styles: Path) -> str:
     return (styles / name).read_text(encoding="utf-8")
 
 
+@lru_cache(maxsize=8)
+def _regions_of(css: str) -> list[tuple[frozenset[str], list[Item]]]:
+    return regions(parse(css))
+
+
+def _page_regions(styles: Path) -> list[tuple[frozenset[str], list[Item]]]:
+    """page.css split into its audiences' regions, parsed once per text."""
+
+    return _regions_of(_source(PAGE, styles))
+
+
 def page_items_for(audience: str, styles: Path = STYLES) -> list[Item]:
     # An article with figures receives exactly the article's parts of page.css.
     audience = ARTICLE_AUDIENCE if audience == FIGURES_AUDIENCE else audience
-    return _items_for(audience, regions(parse(_source(PAGE, styles))))
+    return _items_for(audience, _page_regions(styles))
 
 
 def _items_for(audience: str, grouped: list[tuple[frozenset[str], list[Item]]]) -> list[Item]:
@@ -254,7 +266,7 @@ def _items_for(audience: str, grouped: list[tuple[frozenset[str], list[Item]]]) 
 
 def declared_audiences(styles: Path = STYLES) -> set[str]:
     named: set[str] = set()
-    for audiences, _members in regions(parse(_source(PAGE, styles))):
+    for audiences, _members in _page_regions(styles):
         named |= audiences
     return named - {SHARED}
 
@@ -349,18 +361,18 @@ def style_rules(items: Iterable[Item]) -> Iterable[Item]:
             yield from style_rules(item.children)
 
 
-def _present(name: str, names: frozenset[str] | set[str]) -> bool:
-    """A name is present when named exactly, or when a script names a prefix
+def _presence(names: frozenset[str] | set[str]):
+    """Whether a name is present: named exactly, or a script names a prefix
     ending in `-` (`"sd-at-" + n` may build any `sd-at-*`)."""
 
-    return name in names or any(
-        other.endswith("-") and name.startswith(other) for other in names
-    )
+    prefixes = tuple(other for other in names if other.endswith("-"))
+    return lambda name: name in names or name.startswith(prefixes)
 
 
-def could_match(rule: Item, names: frozenset[str] | set[str]) -> bool:
+def could_match(rule: Item, names: frozenset[str] | set[str], present=None) -> bool:
+    present = _presence(names) if present is None else present
     return any(
-        all(_present(name, names) for name in required_names(part))
+        all(present(name) for name in required_names(part))
         for part in split_selector_list(rule.prelude)
     )
 
@@ -369,14 +381,49 @@ def uncovered_rules(audience: str, names: set[str], styles: Path = STYLES) -> li
     """page.css rules that could match a page naming `names` but that the
     page's bundle leaves out."""
 
-    grouped = regions(parse(_source(PAGE, styles)))
+    grouped = _page_regions(styles)
     received = {id(rule) for rule in style_rules(_items_for(audience, grouped))}
+    present = _presence(names)
     return [
         rule.prelude
         for _audiences, members in grouped
         for rule in style_rules(members)
-        if id(rule) not in received and could_match(rule, names)
+        if id(rule) not in received and could_match(rule, names, present)
     ]
+
+
+# A rule no page could match although it reaches the page's bundle, by
+# "<sheet>: <selector>", kept on purpose.  Empty: every unused rule was removed.
+UNUSED_RULES_KEPT: frozenset[str] = frozenset()
+
+
+def _receivers(audiences: frozenset[str], served: set[str]) -> set[str]:
+    if SHARED in audiences:
+        return set(served)
+    # The figures bundle carries the article parts of page.css.
+    return set(audiences) | ({FIGURES_AUDIENCE} if ARTICLE_AUDIENCE in audiences else set())
+
+
+def unused_rules(names_by_audience: Mapping[str, set[str]], styles: Path = STYLES) -> list[str]:
+    """Rules of every sheet that no page receiving them could match, as
+    "<sheet>: <selector>", outside `UNUSED_RULES_KEPT`; and any kept entry
+    that is no longer unused, so the list cannot go stale."""
+
+    served = set(names_by_audience)
+    sheets: list[tuple[str, set[str], Iterable[Item]]] = [
+        (PAGE, _receivers(audiences, served), members) for audiences, members in _page_regions(styles)
+    ]
+    sheets.append((DESIGN_SHEET, served, parse(_source(DESIGN_SHEET, styles))))
+    sheets.extend((name, {CALCULATOR_AUDIENCE}, parse(_source(name, styles))) for name in CALCULATOR_PARTS)
+    sheets.append((ARTICLE, {ARTICLE_AUDIENCE, FIGURES_AUDIENCE}, parse(_source(ARTICLE, styles))))
+    sheets.append((FIGURES, {FIGURES_AUDIENCE}, parse(_source(FIGURES, styles))))
+    unused: set[str] = set()
+    for sheet, receivers, items in sheets:
+        names: set[str] = set().union(*(names_by_audience.get(audience, set()) for audience in receivers))
+        present = _presence(names)
+        unused.update(f"{sheet}: {rule.prelude}" for rule in style_rules(items)
+                      if not could_match(rule, names, present))
+    return sorted((unused - UNUSED_RULES_KEPT) | {f"kept but used: {kept}" for kept in UNUSED_RULES_KEPT - unused})
 
 
 _SCRIPT_SOURCE = re.compile(r'<script src="/(' + re.escape(DEFAULT_LOCALE) + r'/[^"?#]+)')
@@ -388,8 +435,13 @@ def names_on_page(markup: str, frontend: Path) -> set[str]:
 
     names = names_in_markup(markup)
     for source in _SCRIPT_SOURCE.findall(markup):
-        names |= names_in_script((frontend / source).read_text(encoding="utf-8"))
+        names |= _script_names((frontend / source).read_text(encoding="utf-8"))
     return names
+
+
+@lru_cache(maxsize=64)
+def _script_names(source: str) -> frozenset[str]:
+    return frozenset(names_in_script(source))
 
 
 _NAME = re.compile(r"-?[A-Za-z_][A-Za-z0-9_-]*")

@@ -20,6 +20,7 @@ import datetime as dtmod
 from types import SimpleNamespace
 from zoneinfo import ZoneInfo
 
+from .invariants import InternalInvariantError
 from .civil_time_basis import check_zone_civil_time_basis
 from .civil_time_sources import CIVIL_TIME_SOURCES, REGIONS, RULE_ZONES, rule_zone
 from .dossier_warnings import prc_1988_dst_dispute_warnings
@@ -59,7 +60,8 @@ def _reading(fold: int, utc: dtmod.datetime, offset_hours: float, zone: ZoneInfo
     local = utc.astimezone(zone)
     offset = local.utcoffset()
     abbreviation = local.tzname()
-    assert offset is not None and abbreviation is not None
+    if offset is None or abbreviation is None:
+        raise InternalInvariantError("offset is not None and abbreviation is not None")
     return {
         "fold": fold,
         "utc_iso_8601": _utc_iso(utc),
@@ -80,15 +82,18 @@ def _gap(naive: dtmod.datetime, zone: ZoneInfo, kept_under: str) -> dict:
     # fold=1 the one after; the instant the first gives lies after the change.
     before = naive.replace(tzinfo=zone, fold=0).utcoffset()
     after = naive.replace(tzinfo=zone, fold=1).utcoffset()
-    assert before is not None and after is not None
+    if before is None or after is None:
+        raise InternalInvariantError("before is not None and after is not None")
     period = CIVIL_TIME_SOURCES.period_at(
         kept_under, (naive - before).replace(tzinfo=dtmod.timezone.utc)
     )
     transition = period.from_utc
-    assert transition is not None
+    if transition is None:
+        raise InternalInvariantError("transition is not None")
     local_after = transition.astimezone(zone)
     abbreviation = local_after.tzname()
-    assert abbreviation is not None
+    if abbreviation is None:
+        raise InternalInvariantError("abbreviation is not None")
     return {
         "skipped_local_start": _wall_label((transition + before).replace(tzinfo=None)),
         "skipped_local_end": _wall_label((transition + after).replace(tzinfo=None)),

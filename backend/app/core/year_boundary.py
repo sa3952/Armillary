@@ -44,7 +44,7 @@ from functools import cache
 
 import swisseph as swe
 
-from ..config import PRODUCT_YEAR_RANGE
+from ..domain_catalog import PRODUCT_YEAR_RANGE
 from .root_finding import SOLVER_NAME, find_crossings_detailed, wrap_to_signed_180
 from .source_reading import SOURCE_READING_LEVELS
 from .time_utils import jd_ut_to_iso_utc, time_scale_for_jd_ut

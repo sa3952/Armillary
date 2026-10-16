@@ -1,0 +1,106 @@
+<!-- 文章：挑一個占星排盤工具時可以自己檢查的事。只寫檢查方法與渾儀自己的做法和限制；不點名、不描述任何其他產品或網站。
+     渾儀的每一項做法都取自本站已公開的頁面（功能、方法、驗證、信任、安全、著作權、出生時間換算），出處一律標「本站出處清單」。 -->
+<div class="wrap page-body article">
+
+  <div class="ar-head">
+    <p class="eyebrow"><a href="/zh-TW/blog">文章</a> · JOURNAL</p>
+    <h1>占星排盤工具怎麼挑？<br>七件可以自己檢查的事</h1>
+    <p class="ar-dek">排盤工具算出來的星盤看起來都很像，差別在看不到的地方：用了哪一版星曆、出生時間怎麼換成世界時、你填的資料去了哪裡。這篇列出挑工具時可以自己動手檢查的七件事，每一件也照實寫出渾儀目前做到哪裡、還沒做到哪裡。</p>
+    {{article_byline:講方法}}
+  </div>
+
+  <div class="ar-body">
+    <p class="ar-lead">「哪一個排盤網站比較準？」這個問題很難直接回答。同一筆出生資料，兩個工具給出不同的上升星座，常常不是哪一邊算錯，而是兩邊用了不同的設定：不同的宮位制、不同的黃道、不同的時區規則。比較回答得了的問題是：這個工具讓不讓你知道它用了什麼設定，你能不能自己核對。</p>
+
+    <section class="ar-points" aria-labelledby="points">
+      <h2 id="points">重點</h2>
+      <ul>
+        <li>挑排盤工具，先看它讓不讓你核對：每次計算有沒有寫出星曆與時區資料庫的版本、出生時間怎麼換成世界時、每條規則出自哪裡<a class="ar-cite" href="#ref-1">[1]</a>。</li>
+        <li>再看資料去了哪裡：要不要帳號、出生資料存不存、頁面有沒有載入第三方的分析或追蹤程式；後兩件可以用瀏覽器的開發者工具自己數<a class="ar-cite" href="#ref-3">[3]</a><a class="ar-cite" href="#ref-4">[4]</a>。</li>
+        <li>下面 7 件事各附檢查方法，也逐項寫出渾儀目前的做法與限制。</li>
+      </ul>
+    </section>
+
+    <p>下面 7 件事沒有先後的高下，看你最在意哪一件。每一節先寫你可以怎麼檢查，再寫渾儀的做法；渾儀做不到的地方也寫在同一節，不另收在文末。</p>
+
+    <h2 id="verify"><span class="ar-sec">§01</span>算出來的數字，能不能驗算</h2>
+    <p><b>怎麼檢查。</b>看結果頁或匯出檔有沒有寫出：用的是哪一個星曆函式庫、哪一版；時區資料庫是哪一版；你填的鐘面時間被換成哪一個世界時；這次用了哪一種宮位制與黃道。寫出來，你就能拿同一組設定到別的地方重算；沒寫，兩個結果不同時，你無從知道差在哪裡。</p>
+    <p><b>渾儀的做法。</b>每次計算都回報星曆套件、星曆函式庫與時區資料庫三個版本號，附一份時間收據，列出鐘面時間怎麼換成世界時；選「運算結果＋驗算資料」匯出，會帶走逐步的計算軌跡、完整的設定與一組 SHA-256 收據<a class="ar-cite" href="#ref-1">[1]</a>。每一條方法規則寫明出自哪本書、我們核到哪一層<a class="ar-cite" href="#ref-6">[6]</a>；哪些部分對過外部基準、哪些還沒有，在〈驗證證據〉頁分開列出<a class="ar-cite" href="#ref-2">[2]</a>。怎麼一步步讀收據，見〈<a href="/zh-TW/blog/verify-chart-calculation">星盤怎麼驗算？讀懂計算收據與卷宗</a>〉。</p>
+    <p><b>限制。</b>收據裡的 SHA-256 只對計算軌跡這一段計算，沒有金鑰：它只能偵測意外損壞，不證明來源，也不證明這個占星方法是對的<a class="ar-cite" href="#ref-1">[1]</a>。</p>
+
+    <h2 id="data"><span class="ar-sec">§02</span>出生資料存不存，要不要帳號</h2>
+    <p><b>怎麼檢查。</b>用之前要不要註冊、留 email；隱私政策有沒有寫出生資料存在哪裡、存多久；伺服器記不記你的 IP。出生日期、時間與地點合在一起，幾乎足以認出一個人，存得越少，能外洩的就越少。</p>
+    <p><b>渾儀的做法。</b>免費、免註冊。沒有帳號資料庫、沒有命盤資料庫；出生資料只用於本次計算，回應送出後伺服器不留副本<a class="ar-cite" href="#ref-3">[3]</a>。伺服器的存取日誌關閉，不記你的 IP，也不記出生資料<a class="ar-cite" href="#ref-4">[4]</a>。匯出檔的檔名固定，不嵌入出生日期、時間或座標<a class="ar-cite" href="#ref-3">[3]</a>。</p>
+    <p><b>限制。</b>這是目前公開測試（Public Alpha）階段的架構陳述，不是對未來所有階段的無限期承諾；你按下下載之後，檔案就在你的裝置上，我們無法撤回<a class="ar-cite" href="#ref-3">[3]</a>。完整的說法見〈<a href="/zh-TW/legal/privacy">隱私政策</a>〉與〈<a href="/zh-TW/trust">信任中心</a>〉。</p>
+
+    <h2 id="trackers"><span class="ar-sec">§03</span>頁面有沒有第三方追蹤</h2>
+    <p><b>怎麼檢查。</b>打開瀏覽器的開發者工具，切到 Network（網路）分頁，重新整理後算一張盤：看有沒有送到別的網域的請求，例如外部字型、分析或廣告腳本。再到 Application（應用程式）分頁看 cookie 與瀏覽器儲存。每一個外部請求，都會把你的 IP 交給另一家。</p>
+    <p><b>渾儀的做法。</b>不放 cookie，也不用 localStorage、sessionStorage、IndexedDB 或 Service Worker；計算頁載入的每一個檔案都來自本站，沒有外部字型、沒有 CDN、沒有分析腳本<a class="ar-cite" href="#ref-3">[3]</a>。〈<a href="/zh-TW/security/verify">親手驗證本站的隱私說明</a>〉列出算一次盤會發出的每一個請求，你可以對著開發者工具逐條比對<a class="ar-cite" href="#ref-4">[4]</a>。</p>
+    <p><b>限制。</b>我們沒有第三方安全認證，沒有專業滲透測試，也沒有漏洞獎金計畫；有哪些保護、哪些控制不了，寫在〈<a href="/zh-TW/security">安全</a>〉<a class="ar-cite" href="#ref-4">[4]</a>。</p>
+
+    <h2 id="source"><span class="ar-sec">§04</span>原始碼公不公開</h2>
+    <p><b>怎麼檢查。</b>工具有沒有寫出原始碼放在哪裡、用什麼授權；公開的程式碼對不對得上你正在用的那一版。原始碼公開，別人才查得到它到底怎麼算，而不只是聽它怎麼說。</p>
+    <p><b>渾儀的做法。</b>開源（AGPL-3.0）：對應原始碼公開在 <a href="https://github.com/sa3952/Armillary">github.com/sa3952/Armillary</a>；你這一次用的是哪一版，寫在計算收據上<a class="ar-cite" href="#ref-5">[5]</a>。</p>
+    <p><b>限制。</b>後端會持續更新，線上跑的版本不必然等於公開程式庫的最新提交，所以要對照的是收據上那一版，不是最新的一版<a class="ar-cite" href="#ref-5">[5]</a>。</p>
+
+    <h2 id="options"><span class="ar-sec">§05</span>宮位制、黃道與技法，有沒有你要的</h2>
+    <p><b>怎麼檢查。</b>工具支援哪些宮位制、回歸黃道還是恆星黃道、預設是哪一種；你要用的古典技法有沒有，例如界、三分性與時間主星（time lord），用的是誰的表。也看它遇到算不出來的情形怎麼辦：例如極區的出生地，有些宮位制在數學上算不出宮頭，工具應該明說，而不是悄悄換一種給你。</p>
+    <p><b>渾儀的做法。</b>七種宮位制：整宮制（whole sign）、等分宮制、Porphyry、Alcabitius、Campanus、Regiomontanus、Placidus，也可以完全不算宮位；黃道可選回歸黃道或四種恆星黃道<a class="ar-cite" href="#ref-1">[1]</a>。界有四套具名的表，不設預設<a class="ar-cite" href="#ref-6">[6]</a>。年度時間主星有年度小限（annual profection）、月小限（monthly profection）、法達（firdaria）、黃道釋放（zodiacal releasing）與十年期（decennials）；其中年度小限、黃道釋放與十年期是希臘化（Hellenistic）時期的技法，法達依據中世紀阿拉伯文著作，不是希臘化技法<a class="ar-cite" href="#ref-6">[6]</a>。Placidus 在極區整帶拒絕，其他宮位制算不出合法宮頭時回錯誤並說明原因，不會偷偷換一種<a class="ar-cite" href="#ref-4">[4]</a>。</p>
+    <p><b>限制。</b>行運、推運與合盤目前都沒有；本站只計算，不解盤，也不預測<a class="ar-cite" href="#ref-1">[1]</a>。介面目前只有繁體中文。</p>
+
+    <h2 id="time-zones"><span class="ar-sec">§06</span>時區歷史怎麼處理</h2>
+    <p><b>怎麼檢查。</b>挑一個你知道的特殊年份試算，例如臺灣實施日光節約時間的夏天，或日治時期出生，看工具換出的世界時對不對、有沒有把換算過程寫出來。出生證明上記的是當年牆上的鐘，同一個鐘點在不同年份對應不同的世界時；查錯一小時，上升星座就可能整個換掉。</p>
+    <p><b>渾儀的做法。</b>依 IANA 時區資料庫把鐘面時間換成世界時，資料庫的版本印在每次的卷宗裡<a class="ar-cite" href="#ref-1">[1]</a>。臺灣、香港、澳門與中國各時期的時鐘規則，逐條列出根據哪一份文件、我們核到哪一層<a class="ar-cite" href="#ref-7">[7]</a>；時鐘撥快那天不存在的鐘點，計算服務會拒絕並說明原因；撥回那晚出現兩次的鐘點，計算頁會請你指明是哪一次，不替你猜。臺灣的例子見〈<a href="/zh-TW/blog/taiwan-time-zone-history">臺灣夏令時間出生，排盤要減一小時嗎？</a>〉與〈<a href="/zh-TW/blog/taiwan-era-years-birth-time">民國年、昭和年怎麼換算西元？</a>〉。</p>
+    <p><b>限制。</b>時區資料庫由作業系統提供，不由本站固定；資料庫更新後，同一組輸入可能換出不同的世界時。1970 年以前、特別是標為地方平時的時段，資料庫自承多為推定<a class="ar-cite" href="#ref-1">[1]</a>。</p>
+
+    <h2 id="birth-time"><span class="ar-sec">§07</span>出生時間不確定時怎麼辦</h2>
+    <p><b>怎麼檢查。</b>工具讓不讓你說「我只知道大約幾點」或「我只知道日期」；不知道時間時，它是默默拿中午或零點排一張盤，還是告訴你哪些結果會因此改變。上升點每四分鐘左右走一度，出生時間差幾分鐘，宮位就可能整組換掉。</p>
+    <p><b>渾儀的做法。</b>出生時刻分三種：精確到分鐘、只知道小時、只知道日期。只知道小時時，在那一小時裡取五個時刻各算一次，把結果改變的時刻夾到 15 秒以內，列出哪些結果會變、約幾點變；只知道日期時，不給上升點、中天、宮位與日夜盤，改給全日的位置範圍<a class="ar-cite" href="#ref-1">[1]</a>。做法見〈<a href="/zh-TW/blog/unknown-birth-time">不知道出生時間，能排星盤嗎？</a>〉與〈<a href="/zh-TW/blog/approximate-birth-hour">只知道大概幾點出生，怎麼排盤？</a>〉。</p>
+    <p><b>限制。</b>取樣加二分法不是對整個連續小時的數學證明，各取樣點都相同只能說「各取樣點分類相同」<a class="ar-cite" href="#ref-1">[1]</a>。本站不做出生時間校正，不替你猜出生時間。</p>
+
+    <div class="ar-key">
+      <span class="ar-k">要記住的一句</span>
+      <p>好的排盤工具不只給你一張盤，<b>還告訴你這張盤是怎麼算出來的</b>：用了什麼設定、哪一版資料、你的資料去了哪裡。說得出這些，你才有辦法自己判斷它準不準。</p>
+    </div>
+
+    <aside class="ar-scope" aria-labelledby="scope-1">
+      <span class="ar-k" id="scope-1">本文的範圍</span>
+      <ul>
+        <li>本文只談計算工具，不談解盤；不評比、也不點名任何其他工具或網站。</li>
+        <li>渾儀的每一項做法，以本文發表時的公開測試版為準，出處是本站已公開的頁面；做法改了，以那些頁面為準。</li>
+      </ul>
+    </aside>
+  </div>
+
+  <section class="ar-refs" aria-labelledby="refs">
+    <h2 id="refs">出處</h2>
+    {{source_legend}}
+    <ol>
+      <li id="ref-1"><span>渾儀〈<a href="/zh-TW/features">功能</a>〉頁 §02〈精準度〉至 §07〈出處〉：每次計算回報的三個版本號、時間收據與卷宗、SHA-256 收據的範圍、可選的宮位制與黃道、出生時刻的三種精度與取樣方法，以及目前沒有的功能。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-2"><span>渾儀〈<a href="/zh-TW/validation">驗證證據</a>〉頁：已對過外部基準與尚未對過的部分。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-3"><span>渾儀〈<a href="/zh-TW/features">功能</a>〉頁 §08〈隱私〉、計算頁的引言與〈<a href="/zh-TW/trust">信任中心</a>〉：不放 cookie 與瀏覽器儲存、沒有第三方主機、沒有帳號與命盤資料庫、匯出檔名，以及這些陳述的範圍。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-4"><span>渾儀〈<a href="/zh-TW/security">安全</a>〉頁與〈<a href="/zh-TW/security/verify">親手驗證本站的隱私說明</a>〉：日誌不記 IP 與出生資料、算一次盤送出的請求、極區宮位制的處理，以及沒有第三方安全認證這件事。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-5"><span>渾儀〈<a href="/zh-TW/legal/copyright">著作權、授權與對應原始碼</a>〉：AGPL-3.0 授權、公開原始碼的位置，以及線上版本與公開程式庫最新提交的關係。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-6"><span>渾儀〈<a href="/zh-TW/methods">方法</a>〉頁與〈<a href="/zh-TW/methods/time-lords">年度時間主星的規則與出處</a>〉：每條規則的來源狀態、四套界表，以及各種時間主星出自哪些文獻。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-7"><span>渾儀〈<a href="/zh-TW/methods/birth-time-conversion">出生時間換算的規則與出處</a>〉：臺灣、香港、澳門與中國各時期的時鐘規則與文件出處。<span class="rs rs-register">本站出處清單</span></span></li>
+    </ol>
+  </section>
+
+  <section class="ar-next" aria-labelledby="next-cta">
+    <div>
+      <h2 id="next-cta">挑好了，<br>就拿你的出生資料試一次。</h2>
+      <p>在計算頁填出生日期、時間與地點；不確定的部分照實選。結果頁的時間收據與版本號，就是上面每一節說的那些東西。</p>
+      <p><a class="btn-paper" href="/zh-TW/calculate">排一張盤 →</a></p>
+    </div>
+    <div>
+      <span class="ar-k">延伸閱讀</span>
+      <ul>
+        <li><a href="/zh-TW/blog/chart-calculation-accuracy">線上排盤準不準？星盤計算的誤差從哪裡來</a></li>
+        <li><a href="/zh-TW/blog/verify-chart-calculation">星盤怎麼驗算？讀懂計算收據與卷宗</a></li>
+        <li><a href="/zh-TW/blog/house-systems-explained">宮位制有哪些？七種宮位制怎麼把天空切成十二宮</a></li>
+        <li><a href="/zh-TW/trust">信任中心：計算透明度、隱私與信任邊界</a></li>
+      </ul>
+    </div>
+  </section>
+
+</div>

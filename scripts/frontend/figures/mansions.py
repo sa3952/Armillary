@@ -20,13 +20,13 @@ from html import escape
 import math
 
 from . import _fx
-from ._common import SIGNS, backend_on_path, calc_ut, indent, product_charts, swiss
+from ._common import SIGNS, TAIPEI, backend_on_path, calc_ut, indent, product_charts, swiss
 
 
 FRAGMENT = "blog-lunar-mansions"
 DAY = (1990, 11, 3)
 HOUR = 14
-LAT, LON = 25.05306, 121.52639
+LAT, LON = TAIPEI
 SIDEREAL = {"zodiac": "sidereal", "ayanamsa": "fagan_bradley"}
 
 
@@ -141,10 +141,7 @@ def _position(p: list) -> str:
 
 def _polar(cx: float, cy: float):
     """Longitude 0 (the vernal point) at the left, counting counter-clockwise, as a chart wheel."""
-    def pt(lon: float, r: float) -> tuple[float, float]:
-        a = math.radians(180 + lon)
-        return cx + r * math.cos(a), cy - r * math.sin(a)
-    return pt
+    return lambda lon, r: _fx.wheel_point(cx, cy, r, 180 + lon)
 
 
 def _ring(pt, lon0: float, lon1: float, outer: float, inner: float) -> str:

@@ -15,8 +15,6 @@ from .source_reading import SOURCE_READING_LEVELS
 # 已把古人歸為五個 vulgo dictos aspectus（含合相）並另加三相位；László（Aestimatio 13,
 # p.111 勘誤清單第 (23) 條）稱「Ptolemaic aspects」是雙重誤稱，此稱呼在 17 世紀 Kepler 小
 # 相位之後才出現。最早書證未窮盡。故合相的 classification 與其餘四者區分。
-# 此清單與 config.PTOLEMAIC_ASPECTS 的數值相同，但這裡需要名稱與星座距離，故獨立定義；
-# 兩者的一致性由測試看守。
 _TETRABIBLOS_I13 = (
     "Ptolemy, Tetrabiblos I.13 (Robbins LCL 435, 1940; 1964 reprint, same pagination; pp.73-75, "
     "editor's note p.72 n.2 [LacusCurtius n.76]; = Hübner 1998 I.14)"
@@ -208,7 +206,9 @@ ORB_PROFILES: dict[str, dict] = {
         "sources": [
             {
                 "citation": (
-                    "Porphyry, Introduction to the Tetrabiblos §55 (trans. Holden, AFA 2009)"
+                    "Introduction to the Tetrabiblos under Porphyry's name, §55, a later "
+                    "added passage (chs. 53-55, regarded by Pingree as a later insertion; "
+                    "Holden notes a probable derivation link with Sahl) (trans. Holden, AFA 2009)"
                 ),
                 "says": "the seven orb values of this table",
                 "reading": SOURCE_READING_LEVELS[2],
@@ -259,14 +259,12 @@ ORB_PROFILES: dict[str, dict] = {
                 "read_at": _AS_TABULATED_BY_BIRCHFIELD,
             },
             {
-                "citation": (
-                    "Bonatti, Liber Astronomiae Tract III chs. LXV-LXXI (trans. Zoller, 1994)"
-                ),
+                "citation": "Bonatti, Liber Astronomiae Tract III chs. LXV-LXXI",
                 "says": "listed for the same seven values",
                 "reading": SOURCE_READING_LEVELS[3],
                 "read_at": (
-                    "the reference only; values not checked; publisher and chapters to "
-                    "be confirmed"
+                    "the reference only; no edition or translation is named, the values "
+                    "and the chapters not checked"
                 ),
             },
             {
@@ -277,8 +275,8 @@ ORB_PROFILES: dict[str, dict] = {
                 "says": "the same seven values",
                 "reading": SOURCE_READING_LEVELS[1],
                 "read_at": (
-                    "Wright's translation in the archive.org typescript reproduction, "
-                    "whose page numbers differ from the Luzac print; cited by section"
+                    "Wright's translation in the archive.org reproduction of the 1934 "
+                    "typescript; cited by section"
                 ),
             },
         ],

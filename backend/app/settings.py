@@ -25,9 +25,9 @@ BUILD_ENVIRONMENT_REVISION_SOURCE = (
     "build_environment:CLASSICAL_ASTROLOGY_SOURCE_REVISION"
 )
 _SOURCE_REVISION_PATTERN = re.compile(r"^[0-9a-f]{40}$")
-# A candidate route not yet released: unset (or "0") the annual route is not
-# registered at all, so it answers 404 unknown_api_path and is absent from the
-# OpenAPI document.  Only "1" registers it; any other value fails start-up
+# The annual route is switched on per deployment (the release compose file
+# sets it): unset (or "0") it is not registered at all, so it answers 404
+# unknown_api_path and is absent from the OpenAPI document.  Only "1" registers it; any other value fails start-up
 # rather than guessing which state was meant.
 ANNUAL_ROUTE_ENVIRONMENT_VARIABLE = "ARMILLARY_ENABLE_ANNUAL_ROUTE"
 _FLAG_VALUES = {None: False, "": False, "0": False, "1": True}

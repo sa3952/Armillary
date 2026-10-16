@@ -132,7 +132,7 @@ SOURCE_TIMEZONE_CORRECTIONS: dict[str, dict[str, str]] = {
         "corrected": "Pacific/Auckland",
         "reason": (
             "Windsor Park, Auckland (-36.73966, 174.7423) lies on the North "
-            "Island; Pacific/Chatham is the Chatham Islands zone (ASTRO-34)"
+            "Island; Pacific/Chatham is the Chatham Islands zone"
         ),
     },
     "13631317": {
@@ -140,7 +140,7 @@ SOURCE_TIMEZONE_CORRECTIONS: dict[str, dict[str, str]] = {
         "corrected": "Pacific/Auckland",
         "reason": (
             "Wairau Valley, Auckland (-36.77235, 174.74107) lies on the North "
-            "Island; Pacific/Chatham is the Chatham Islands zone (ASTRO-34)"
+            "Island; Pacific/Chatham is the Chatham Islands zone"
         ),
     },
     "13535832": {
@@ -692,9 +692,7 @@ def _open_bounded_input(path: Path) -> BoundedInput:
             raise ValueError(f"input must be a regular non-symlink file: {path}")
         if status.st_size > MAX_INPUT_BYTES:
             raise ValueError(f"input exceeds bounded byte limit: {path.name}")
-        digest = hashlib.sha256()
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
+        digest = hashlib.file_digest(handle, "sha256")
         handle.seek(0)
     except Exception:
         handle.close()

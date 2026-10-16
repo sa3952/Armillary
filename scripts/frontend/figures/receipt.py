@@ -81,11 +81,6 @@ def fixture() -> dict:
 
 # --- text width, for laying a row out on one line or two ------------------------
 
-def _width(value: str, size: float) -> float:
-    """Rough drawn width: a CJK character is one em, anything else about 0.56 em."""
-    return sum(size if ord(ch) > 0x2E7F else size * 0.56 for ch in value)
-
-
 # --- figure 1: the receipt, annotated ------------------------------------------
 
 GROUPS = (
@@ -175,7 +170,7 @@ def _receipt(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
                 part.append(_fx.text(262, y, value, "fx-t fx-small fx-num"))
                 y += 25
             elif (label and key != "trace" or label == "逐步軌跡步數" or label == "跨語言可攜") \
-                    and _width(label, small) + _width(value, small) + 14 <= W - 70:
+                    and _fx.text_width(label, small, 0.56) + _fx.text_width(value, small, 0.56) + 14 <= W - 70:
                 part.append(_fx.text(40, y, label, "fx-t fx-small"))
                 part.append(_fx.text(W - 16, y, value, "fx-t fx-small fx-num", "end"))
                 y += 20

@@ -6,9 +6,9 @@ services:
     # The image is in the local store; nothing is pulled.
     image: "${BACKEND_IMAGE_ID:?set BACKEND_IMAGE_ID}"
     environment:
-      # The host this deployment answers for.  Admission is the proxy's, which
-      # strips Authorization before forwarding, so the application has no
-      # authorization of its own; this only lets it notice that it was reached
+      # The host this deployment answers for.  The site is public and the
+      # application has no authorization of its own (the proxy strips
+      # Authorization before forwarding); this only lets it notice that it was reached
       # by a route the deployment never declared — the shape a published
       # container port produces.  It is an accident catcher, not a boundary.
       CLASSICAL_ASTROLOGY_EXPECTED_HOST: "${STAGING_SERVER_NAME:?set STAGING_SERVER_NAME}"

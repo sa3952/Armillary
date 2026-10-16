@@ -10,6 +10,8 @@ from typing import Any, Iterator
 ROOT = Path(__file__).resolve().parents[3]
 BACKEND = ROOT / "backend"
 SIGNS = "牡羊 金牛 雙子 巨蟹 獅子 處女 天秤 天蠍 射手 摩羯 水瓶 雙魚".split()
+# The synthetic place every Taipei demonstration uses (latitude, longitude).
+TAIPEI = (25.05306, 121.52639)
 
 
 @contextmanager
@@ -53,11 +55,21 @@ def calc_ut(swe, jd: float, body: int, flags: int | None = None) -> tuple:
     return position
 
 
+def sign_degree_minute(lon: float) -> tuple[str, int, int]:
+    """(sign, degree, minute) of an ecliptic longitude, rounded to the whole arcminute."""
+    sign, rest = divmod(round(lon * 60), 30 * 60)
+    return SIGNS[sign % 12], rest // 60, rest % 60
+
+
 def spoken_longitude(lon: float) -> str:
     """「處女座 24 度 47 分」: whole minutes, rounded."""
-    total = round(lon * 60)
-    sign, rest = divmod(total, 30 * 60)
-    return f"{SIGNS[sign]}座 {rest // 60} 度 {rest % 60} 分"
+    sign, degree, minute = sign_degree_minute(lon)
+    return f"{sign}座 {degree} 度 {minute} 分"
+
+
+def hms(clock: tuple[int, int, int]) -> str:
+    """「14:05:09」."""
+    return f"{clock[0]:02d}:{clock[1]:02d}:{clock[2]:02d}"
 
 
 def indent(block: str, prefix: str = "    ") -> str:

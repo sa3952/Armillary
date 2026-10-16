@@ -26,6 +26,7 @@ from typing import Final
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from .core.invariants import InternalInvariantError
 from .refusals import (
     ANNUAL_ROUTE,
     CHART_ROUTE,
@@ -118,7 +119,12 @@ def failure_class(error: BaseException | None) -> str | None:
 
     if error is None:
         return None
-    name = type(error).__name__
+    # A broken internal guarantee keeps the name of the assertion it replaced.
+    name = (
+        "AssertionError"
+        if isinstance(error, InternalInvariantError)
+        else type(error).__name__
+    )
     return name if name in _ALLOWED_FAILURE_CLASSES else _UNCLASSIFIED_FAILURE_CLASS
 
 

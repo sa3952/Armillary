@@ -33,6 +33,9 @@
     node.className = className;
     return node;
   };
+  // 手機版面（calculate.css 的 640px 斷點）：只決定預設開合與捲動，不決定內容。
+  const NARROW_QUERY = "(max-width:640px)";
+  const narrowScreen = () => typeof window.matchMedia === "function" && window.matchMedia(NARROW_QUERY).matches;
   const form = el("chart-form");
   const statusLine = el("status-line");
   const errorPanel = el("error-panel");
@@ -46,6 +49,7 @@
     [...document.querySelectorAll("[data-chapter-host]")].map((node) => [node.dataset.chapterHost, node])
   );
   const warningsHost = el("warnings");
+  const warningsFold = el("warnings-fold");
   const samplingCalloutHost = el("sampling-callout");
   const birthTimeNoticeHost = el("birth-time-notice");
   // 本命盤速覽排在警告之後、匯出工具列之前：算完不必捲過工具列與區塊索引就看得到。
@@ -624,6 +628,11 @@
     searchPlaces();
   });
 
+  function revealPlaceResults() {
+    if (typeof placeResults.scrollIntoView !== "function") return;
+    placeResults.scrollIntoView({ block: "nearest", behavior: prefersReducedMotion() ? "auto" : "smooth" });
+  }
+
   function searchPlaces() {
     placeSearchLifecycle.abortActiveRequest();
     const query = placeQuery.value.trim();
@@ -708,6 +717,8 @@
         }
         found.forEach((place) => placeResults.appendChild(buildPlaceRow(place)));
         placeResults.hidden = false;
+        // 手機上清單常落在視窗下緣之外，看起來像沒反應：捲到剛好看得見（已看得見就不動）。焦點留在查詢欄。
+        revealPlaceResults();
       })
       .catch((error) => {
         if (!placeSearchLifecycle.isCurrentRequest(token)) return;
@@ -1653,7 +1664,7 @@
           selectedPlace,
         }),
         // 不送 atmosphere。折射用的溫度與氣壓預設值只在伺服器
-        // （app.config.DEFAULT_ATMOSPHERE_TEMPERATURE_C 與 AtmosphereInput），
+        // （app.domain_catalog.DEFAULT_ATMOSPHERE_TEMPERATURE_C 與 AtmosphereInput），
         // 頁面不另寫一份；實際採用的值由回應的 astronomical_data.atmosphere 顯示。
         computation_mode: zodiacSelect.value === "sidereal"
           ? { zodiac: "sidereal", ayanamsa: ayanamsaSelect.value }
@@ -1897,29 +1908,10 @@
    */
   const REQUEST_TIMEOUT_MS = 30000;
 
-  function isJsonResponse(response) {
-    const mediaType = (response.headers.get("Content-Type") || "")
-      .split(";", 1)[0].trim().toLowerCase();
-    return mediaType === "application/json" || mediaType.endsWith("+json");
-  }
-
-  /**
-   * 三個 POST 端點共用的一次往返：送 JSON、收 JSON。2xx 但 media type 不是 JSON
-   * 時不讀 body，標成 invalidJsonMedia；body 解析失敗為 null。怎麼對使用者說由呼叫端決定。
-   */
+  // 往返本身在 privacy-lifecycle.js（時間主星一區共用）；網址照字寫在每一個呼叫點，
+  // 自我檢查頁依那些字面列出本頁會送的請求。
   function postJson(url, payload, signal) {
-    return fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify(payload),
-      signal,
-    }).then((response) => {
-      if (response.ok && !isJsonResponse(response)) {
-        return { response, body: null, invalidJsonMedia: true };
-      }
-      return response.json().catch(() => null)
-        .then((body) => ({ response, body, invalidJsonMedia: false }));
-    });
+    return window.PrivacyLifecycle.postJson(window, url, payload, signal);
   }
 
   // 連不上本站（請求沒送到，或呈現結果的模組沒抓到）：同一句說明、同一行狀態。
@@ -1930,9 +1922,16 @@
 
   function submitPayload(payload, generation, signature) {
     dropResultsForNewAttempt();
-    const { controller, token, timeout } = lifecycle.beginTimedRequest(
-      REQUEST_TIMEOUT_MS, window.setTimeout.bind(window)
-    );
+    // 上限屬於整次嘗試，不只屬於計算請求：請求已回來而呈現結果的模組還在載入時，到期一樣
+    // 結束這一次。到期時除了中止請求，也讓 deadline 以 AbortError 落定，下面的 race 因此結束；
+    // 之後才完成的請求或模組被 race 丟棄，碰不到畫面，也碰不到下一次嘗試。
+    let expire = null;
+    const deadline = new Promise((_resolve, reject) => { expire = reject; });
+    const scheduleDeadline = (abortRequest, delay) => window.setTimeout(() => {
+      abortRequest();
+      expire(new window.DOMException("等待計算結果逾時。", "AbortError"));
+    }, delay);
+    const { controller, token, timeout } = lifecycle.beginTimedRequest(REQUEST_TIMEOUT_MS, scheduleDeadline);
     const finishAttempt = () => {
       window.clearTimeout(timeout.handle);
       cancelButton.hidden = true;
@@ -1942,9 +1941,12 @@
     cancelButton.hidden = false;
     setStatus("計算中…", "info");
 
-    Promise.all([
-      postJson("/api/chart", payload, controller.signal),
-      loadViewModel().then(() => true, () => false),
+    Promise.race([
+      Promise.all([
+        postJson("/api/chart", payload, controller.signal),
+        loadViewModel().then(() => true, () => false),
+      ]),
+      deadline,
     ])
       .then(([{ response, body, invalidJsonMedia }, viewModelReady]) => {
         if (!lifecycle.isCurrentRequest(token)) return;   // late response 丟棄
@@ -2050,7 +2052,7 @@
     const invalid = window.ClientContext.fieldControlIds(detail)
       .map((id) => {
         const key = id.startsWith("opt-") ? id.slice(4) : null;
-        const option = key && Object.prototype.hasOwnProperty.call(Catalogue.BY_KEY, key)
+        const option = key && Object.hasOwn(Catalogue.BY_KEY, key)
           ? Catalogue.BY_KEY[key] : null;
         return el(option && option.rendered_by ? `opt-${option.rendered_by}` : id);
       })
@@ -2151,6 +2153,65 @@
     if (panel && typeof panel.load === "function") panel.load();
   }
 
+  // 注意事項：寬螢幕整張清單常駐（摘要那一行由 calculate.css 藏起）。窄螢幕只在每一則都只是提醒時才先收成
+  // 一行——則數與第一則的開頭，點開看全文；只要有一則可能影響時間、時區或方法，就和寬螢幕一樣整張打開。
+  // 「只是提醒」是下面這張閉集：後端一律標 notice、只說哪些結果對出生時刻敏感或哪個模組這次不適用的代碼。
+  // 預設的 page 回應不帶嚴重度，所以靠代碼（契約：比對 code，不比對 message）；不在表上的代碼（含新代碼）一律不收。
+  // 清單本身（#warnings）與匯出讀的是同一份，開合只是畫面。
+  const INFORMATIONAL_NOTICES = new Set([
+    "body_near_house_cusp", "body_near_sign_boundary", "moon_near_lunar_mansion_boundary",
+    "module_not_applicable", "module_not_applicable_in_mode",
+  ]);
+  const informational = (warning) => INFORMATIONAL_NOTICES.has(warning.code);
+  function renderWarnings(warnings) {
+    warningsHost.replaceChildren();
+    warningsHost.hidden = warnings.length === 0;
+    warningsFold.hidden = warningsHost.hidden;
+    warnings.forEach((warning) => {
+      const item = document.createElement("li");
+      item.textContent = warning.message;
+      warningsHost.appendChild(item);
+    });
+    el("warnings-summary").textContent = warnings.length
+      ? `注意事項 ${warnings.length} 則：${warnings[0].message}` : "";
+    warningsFold.dataset.fold = warnings.every(informational) ? "notices" : "attention";
+    warningsFold.open = !narrowScreen() || warningsFold.dataset.fold === "attention";
+  }
+  // 轉成寬螢幕（轉向、拉寬視窗）時摘要那一行不見了，清單必須是打開的；轉回窄螢幕不替使用者收起。
+  if (typeof window.matchMedia === "function") {
+    const narrowQuery = window.matchMedia(NARROW_QUERY);
+    if (typeof narrowQuery.addEventListener === "function") {
+      narrowQuery.addEventListener("change", (event) => { if (!event.matches) warningsFold.open = true; });
+    }
+  }
+
+  /** 「技術細節與驗算資料」一區。頁面文件本身不含技術區段；這一區照樣建出，打開時才取得完整回應。 */
+  function technicalDetailsBlock(technicalSections) {
+    const details = make("details", "technical-results");
+    details.id = "technical-results";
+    const summary = document.createElement("summary");
+    summary.textContent = "技術細節與驗算資料";
+    const note = make("p", "note");
+    note.textContent = "版本、來源、選項、計算軌跡與完整收據。一般閱讀不需要展開。";
+    details.append(summary, note);
+    // 列印只印已在畫面上的東西：驗算資料還沒取得時，這一區只有一句
+    // 「打開這一區…」的操作說明，而列印藏起了 summary——紙上會留下指向不存在
+    // 控制項的孤兒文字。calculate.css 的 print 規則依這個狀態把整區收起來。
+    details.dataset.detail = verification.state === DETAIL.READY ? "ready" : "pending";
+    if (verification.state === DETAIL.READY) {
+      technicalSections.forEach(
+        (section) => details.appendChild(materializeSection(section))
+      );
+    } else {
+      details.appendChild(detailStatusBlock("technical"));
+      // 只有使用者自己點開才取得：列印前的全部展開（beforeprint）不觸發第二次計算。
+      summary.addEventListener("click", () => {
+        if (!details.open) loadVerificationDetail();
+      });
+    }
+    return details;
+  }
+
   function renderResponse(response, signature, payload) {
     let canonical;
     try {
@@ -2180,13 +2241,7 @@
 
     renderBirthTimeSummary(tree.header.birth_time_summary);
 
-    warningsHost.replaceChildren();
-    warningsHost.hidden = tree.header.warnings.length === 0;
-    tree.header.warnings.forEach((warning) => {
-      const item = document.createElement("li");
-      item.textContent = warning.message;
-      warningsHost.appendChild(item);
-    });
+    renderWarnings(tree.header.warnings);
 
     // 結果頁有三十個區塊、三百多列，所以分章，一次看一章。章節欄同時顯示每一區的收據狀態，
     // 讓「哪些被拒絕」在捲之前就看得到；這次沒有算的區塊不畫，在它那一章的最後列一行「加算」。
@@ -2203,7 +2258,7 @@
     const timeSection = resultSections.find((section) => section.id === TIME_SECTION_ID) || null;
     resultMode = Chapters.mode(currentModeId);
     if (lastRenderedMode !== resultMode.id) {
-      el("first-time").open = resultMode.firstTimeOpen;
+      el("first-time").open = Chapters.firstTimeOpen(resultMode.id, narrowScreen());
       lastRenderedMode = resultMode.id;
     }
     el("result-mode-name").textContent = resultMode.label;
@@ -2239,32 +2294,10 @@
     // 預設回應不含驗算資料；技術區塊等使用者打開時才取得。
     // 回應若本來就是完整版（沒有 projection 鍵），技術區塊照舊直接畫出。
     beginDetailBinding(canonical, payload);
-    // 頁面文件本身不含技術區段；這一區照樣建出，打開時才取得完整回應。
-    const details = make("details", "technical-results");
-    details.id = "technical-results";
-    const summary = document.createElement("summary");
-    summary.textContent = "技術細節與驗算資料";
-    const note = make("p", "note");
-    note.textContent = "版本、來源、選項、計算軌跡與完整收據。一般閱讀不需要展開。";
-    details.append(summary, note);
+    const details = technicalDetailsBlock(technicalSections);
     technicalHost = details;
-    // 列印只印已在畫面上的東西：驗算資料還沒取得時，這一區只有一句
-    // 「打開這一區…」的操作說明，而列印藏起了 summary——紙上會留下指向不存在
-    // 控制項的孤兒文字。calculate.css 的 print 規則依這個狀態把整區收起來。
-    details.dataset.detail = verification.state === DETAIL.READY ? "ready" : "pending";
-    if (verification.state === DETAIL.READY) {
-      technicalSections.forEach(
-        (section) => details.appendChild(materializeSection(section))
-      );
-    } else {
-      details.appendChild(detailStatusBlock("technical"));
-      // 只有使用者自己點開才取得：列印前的全部展開（beforeprint）不觸發第二次計算。
-      summary.addEventListener("click", () => {
-        if (!details.open) loadVerificationDetail();
-      });
-    }
     chapterHosts.get("receipt").appendChild(details);
-    addEntry("receipt", { node: details, title: summary.textContent, status: null });
+    addEntry("receipt", { node: details, title: details.querySelector("summary").textContent, status: null });
     addEntry("receipt", { node: el("export-toolbar"), title: el("export-mode-title").textContent, status: null });
 
     // 這次沒有算、勾一個選項就能加算的區塊：古典完整與自訂列在各章最後；快速看盤只顯示四章，不列。
@@ -2282,6 +2315,8 @@
 
     showAnnualPanel(payload);
     results.hidden = false;
+    // 結果區打開之後分頁列才量得到寬度。
+    paintChapterFade();
     boundInputSignature = signature;
     refreshResultBinding();
     applyOverflowRegions();
@@ -2291,7 +2326,37 @@
     // 回應已到，中止鈕已無事可做：先收起再捲動。手機上它在送出鈕下自成一列，等 finally 才收起，
     // 結果標題會在捲動途中往上移，停在視窗頂端之外。finally 照舊再收一次。
     cancelButton.hidden = true;
+    enterResultView();
     revealResults();
+  }
+
+  // 返回鍵：算出結果時新增一筆歷史紀錄（網址不變，state 只有固定的 {view:"result"}，不含任何輸入），
+  // 手機的返回手勢因此先回到表單，而不是直接離開本頁。已在結果那一筆時（重新計算、加算）不再新增。
+  // 回到表單那一筆：表單內容與結果都留著（返回不是清除；要清除有「清除」兩顆鈕），捲回表單、焦點交給
+  // 模式選擇。再按前進：結果還在就捲回結果標題。換章不碰歷史紀錄。
+  const RESULT_VIEW = "result";
+  const inResultView = (state) => Boolean(state) && state.view === RESULT_VIEW;
+  function enterResultView() {
+    if (inResultView(window.history.state)) return;
+    // 兩筆是同一頁：瀏覽器自己的捲動還原會在 popstate 之後把畫面拉回送出當時的位置，蓋掉下面的捲動。
+    if ("scrollRestoration" in window.history) window.history.scrollRestoration = "manual";
+    window.history.pushState({ view: RESULT_VIEW }, "", window.location.pathname);
+  }
+  window.addEventListener("popstate", (event) => {
+    const behavior = prefersReducedMotion() ? "auto" : "smooth";
+    if (inResultView(event.state)) {
+      if (results.hidden) return;
+      const heading = el("results-heading");
+      heading.scrollIntoView({ block: "start", behavior });
+      heading.focus({ preventScroll: true });
+      return;
+    }
+    el("mode-choice").scrollIntoView({ block: "start", behavior });
+    focusCheckedMode();
+  });
+  function focusCheckedMode() {
+    const mode = document.querySelector('input[name="calc-mode"]:checked');
+    if (mode) mode.focus({ preventScroll: true });
   }
 
   // 結果到達時把結果標題捲到視窗頂端，焦點交給它（HTML 帶 tabindex="-1"），使用者才知道
@@ -2400,7 +2465,7 @@
       section = window.ChartWheel.createSection(document, model, {
         describedBy, onDownload: downloadChartWheel, link: POINT_LINK_CALLBACKS,
         // 方盤：同一份回應的另一種畫法；畫不出來（沒有宮位）時是 null，區塊上就沒有切換鈕。
-        alternate: window.ChartSquare ? window.ChartSquare.sectionOption(canonical.source_response) : null,
+        alternate: window.ChartSquare.sectionOption(canonical.source_response),
       });
     } catch (_error) {
       section = window.ChartWheel.createFailureSection(document);
@@ -2434,7 +2499,9 @@
   // 相位方格）的列或格都帶 data-points（後端的點鍵，view tree 的 points 給的）。標示只做一件事：
   // 對 #results 裡相關的 [data-points] 加 is-linked，圖與符號對照的外框加 is-linking；選取時另加
   // is-selected 與 has-selection。外觀全在 calculate.css（只認 class）。滑過是預覽，選取會一直留著，
-  // 直到按 Esc、「清除標示」、選另一點或結果被清掉。標示只是視覺輔助，不另對螢幕閱讀器宣告。
+  // 直到按 Esc、「清除標示」、選另一點或結果被清掉。選取不捲動、不移焦點（手機沒有滑過預覽，捲走就
+  // 看不到圖上標了哪一點）；要到表格那一列另按「到表格看這一顆」。選取與清除由符號對照裡的
+  // role="status" 宣告；滑過與焦點的預覽不宣告。
   const POINT_KEY = /^[a-z][a-z_]*$/;
   // 跳表的目標：每個點鍵在這四張位置表裡只有一列，列的 id 是 point-<區塊>-<鍵>。
   const POINT_TABLES = new Set(["bodies", "nodes", "lunar_apsides", "angles"]);
@@ -2468,7 +2535,27 @@
       node.classList.toggle("is-linking", Boolean(shown));
       node.classList.toggle("has-selection", Boolean(selected));
     });
-    results.querySelectorAll(".chart-wheel-symbols-clear").forEach((button) => { button.hidden = !selected; });
+    results.querySelectorAll(".chart-wheel-symbols").forEach((block) => paintSymbolActions(block, selected));
+  }
+
+  /** 符號對照下方的兩顆鈕與選取宣告。名稱取自那一點的按鈕（看得見的那個字），方盤上沒有那一點時不給跳表鈕。 */
+  function paintSymbolActions(block, selected) {
+    const nameNode = selected
+      && block.querySelector(`.chart-wheel-symbol[data-points="${selected[0]}"] .chart-wheel-symbol-name`);
+    const name = nameNode ? nameNode.textContent : "";
+    const clear = block.querySelector(".chart-wheel-symbols-clear");
+    if (clear) clear.hidden = !selected;
+    const jump = block.querySelector(".chart-wheel-symbols-jump");
+    if (jump) {
+      jump.hidden = !name;
+      if (name) jump.setAttribute("aria-label", `${jump.textContent}：${name}`);
+      else jump.removeAttribute("aria-label");
+    }
+    const status = block.querySelector(".chart-wheel-symbols-status");
+    if (!status) return;
+    // 只在內容真的變了才寫：重畫（換字級）不重念一次。
+    const next = name ? `已標示${name}，圖與表格同步標示。` : selected || !status.textContent ? "" : "已清除標示。";
+    if (status.textContent !== next) status.textContent = next;
   }
 
   function previewPoint(value) {
@@ -2501,11 +2588,15 @@
     pointLink.selected = keys[0];
     pointLink.preview = null;
     paintPointLink();
-    revealPointRow(keys[0]);
+  }
+
+  function revealSelectedPoint() {
+    if (pointLink.selected) revealPointRow(pointLink.selected);
   }
 
   const POINT_LINK_CALLBACKS = Object.freeze({
-    onPreview: previewPoint, onActivate: selectPoint, onClear: clearPointLink, onRedraw: paintPointLink,
+    onPreview: previewPoint, onActivate: selectPoint, onClear: clearPointLink, onReveal: revealSelectedPoint,
+    onRedraw: paintPointLink,
   });
 
   /** 表格這一側：view tree 的 points 寫成列（相位方格是欄標頭、列標頭與下三角的格）的 data-points。 */
@@ -2586,7 +2677,7 @@
     }
     if (format === "svg") {
       const svg = window.ChartWheel.renderSvg(document, model, { variant: "download" });
-      deliverBlob(new Blob([window.ChartWheel.serializeSvg(svg)], { type: "image/svg+xml" }), files.svg);
+      lifecycle.deliverDownload(document, new Blob([window.ChartWheel.serializeSvg(svg)], { type: "image/svg+xml" }), files.svg);
       reportAt(button, "已產生 SVG 檔案。", "info");
       return;
     }
@@ -2609,7 +2700,7 @@
         reportAt(button, "下載失敗：無法產生 PNG。", "error");
         return;
       }
-      deliverBlob(blob, files.png);
+      lifecycle.deliverDownload(document, blob, files.png);
       reportAt(button, "已產生 PNG 檔案。", "info");
     }, "image/png");
   }
@@ -2981,13 +3072,15 @@
     paintChapters();
     // 隱藏的章裡表格寬 0，量不到溢出：換章後重量，可橫捲的表才保有 region／tabindex／標籤。
     applyOverflowRegions();
+    // 換到的那一章置中在分頁列裡（點或觸控已放開，這時捲動不會點錯），兩旁的章也看得到。
     const link = chapterNav.links.get(id);
-    if (link && !el("chapter-index").contains(document.activeElement)) revealIndexLink(link);
+    if (link) revealIndexLink(link, { center: true });
     return true;
   }
 
   function clearChapterNav() {
     el("chapter-index").replaceChildren();
+    delete el("chapter-index").dataset.more;
     chapterNav.links.clear();
     chapterNav.shown = new Set();
     el("chapter-nav").hidden = true;
@@ -3045,6 +3138,13 @@
       const name = make("span", "chapter-name");
       name.textContent = chapterTitle(node);
       link.append(count, name);
+      // 很窄的螢幕只顯示短章名（calculate.css）；連結的名稱仍是完整章名，短名不給輔助科技重念一次。
+      if (Chapters.SHORT_TITLES[id]) {
+        const short = make("span", "chapter-name-short");
+        short.textContent = Chapters.SHORT_TITLES[id];
+        short.setAttribute("aria-hidden", "true");
+        link.appendChild(short);
+      }
       item.appendChild(link);
       const own = entries.get(id) || [];
       if (own.length) {
@@ -3061,7 +3161,22 @@
     });
     el("chapter-nav").hidden = false;
     paintChapters();
+    paintChapterFade();
   }
+
+  // 分頁列在自己的範圍裡橫捲：左右哪一邊還有章節，那一邊的邊緣淡出（calculate.css 依 data-more 畫）。
+  // 寬螢幕的章節欄不橫捲，兩邊都不標。
+  function paintChapterFade() {
+    const strip = el("chapter-index");
+    const room = strip.scrollWidth - strip.clientWidth;
+    const more = [];
+    if (room > 1 && strip.scrollLeft > 1) more.push("start");
+    if (room > 1 && strip.scrollLeft < room - 1) more.push("end");
+    if (more.length) strip.dataset.more = more.join(" ");
+    else delete strip.dataset.more;
+  }
+  el("chapter-index").addEventListener("scroll", paintChapterFade, { passive: true });
+  window.addEventListener("resize", () => { if (!el("chapter-nav").hidden) paintChapterFade(); });
 
   /** 快速看盤只顯示四章：說明另外兩章在哪裡，這次算了卻不在畫面上的區塊照列名稱。 */
   function renderModeNote(hiddenTitles) {
@@ -3094,6 +3209,15 @@
     radio.focus({ preventScroll: true });
   }
   el("chapter-mode-note").addEventListener("click", switchModeFromNote);
+
+  // 手機上的「直接開始填 ↓」：跳到模式選擇、焦點給選中的那一格。不走瀏覽器的錨點跳轉，網址不留 #片段、
+  // 不多一筆歷史紀錄；沒有 JavaScript 時它照常是頁內連結。
+  document.querySelector(".skip-to-form a").addEventListener("click", (event) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    el("mode-choice").scrollIntoView({ block: "start", behavior: prefersReducedMotion() ? "auto" : "smooth" });
+    focusCheckedMode();
+  });
   el("chapter-timelords-entry").addEventListener("click", switchModeFromNote);
 
   function toggleAllChapters() {
@@ -3204,12 +3328,13 @@
   }
 
   // 目錄比視窗高、或分頁列比螢幕寬時，把那一項捲進章節欄自己的可見範圍；只動章節欄的捲動位置，不動頁面。
-  function revealIndexLink(link) {
+  // center：已經看得見也置中（換章時）；否則只在露出不全時捲。
+  function revealIndexLink(link, { center = false } = {}) {
     const inner = link.getBoundingClientRect();
     [el("chapter-index"), el("chapter-nav")].forEach((scroller) => {
       const outer = scroller.getBoundingClientRect();
       if (scroller.scrollWidth > scroller.clientWidth
-        && (inner.left < outer.left || inner.right > outer.right)) {
+        && (center || inner.left < outer.left || inner.right > outer.right)) {
         scroller.scrollLeft += inner.left - outer.left - (outer.width - inner.width) / 2;
       }
       if (scroller.scrollHeight > scroller.clientHeight
@@ -3611,13 +3736,11 @@
   // 對照不到的（Priapus、恆星、阿拉伯點…）不加符號，不猜。
   const TABLE_GLYPHS = (() => {
     const glyphs = window.ArmillaryChartGlyphs;
-    const labels = window.ArmillaryLabels;
-    const points = window.ChartWheelModel && window.ChartWheelModel.POINTS;
+    const points = window.ChartWheelModel.POINTS;
     const bodies = new Map();
     const keys = new Map();
     const signs = new Map();
-    if (!glyphs || !labels || !points) return { bodies, keys, signs, glyphs: null };
-    const vocabulary = labels.VOCABULARIES;
+    const vocabulary = Labels.VOCABULARIES;
     [vocabulary.body_backend_name, vocabulary.node_backend_name, vocabulary.lunar_apsis_backend_name].forEach((table) => {
       Object.entries(table).forEach(([key, name]) => {
         const point = points[key];
@@ -3656,10 +3779,6 @@
    * 相位組合欄「太陽 — 月亮」是兩個），有就照鍵取符號，不看名稱；null 時才照名稱對照。
    */
   function fillCell(node, text, withBodies, cellKeys = null) {
-    if (!TABLE_GLYPHS.glyphs) {
-      node.textContent = text;
-      return;
-    }
     if (withBodies && Array.isArray(cellKeys)) {
       const parts = cellKeys.length > 1 ? text.split(PAIR_SEPARATOR) : [text];
       if (parts.length === cellKeys.length) {
@@ -3843,21 +3962,7 @@
   });
 
   function deliverArtifact(artifact) {
-    deliverBlob(new Blob([artifact.content], { type: artifact.mime_type }), artifact.filename);
-  }
-
-  function deliverBlob(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    lifecycle.registerObjectUrl(url);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = filename;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    // 同一個 task 內 revoke 會讓部分瀏覽器取消下載；排到下一個 task。
-    // release 是冪等的，因此使用者若先按清除也不會重複撤銷。
-    setTimeout(() => lifecycle.releaseObjectUrl(url), 0);
+    lifecycle.deliverDownload(document, new Blob([artifact.content], { type: artifact.mime_type }), artifact.filename);
   }
 
   // 列印鈕：完整結果或一頁摘要。按下時寫下這次要印哪一種，beforeprint 取用；瀏覽器選單與
@@ -4042,7 +4147,7 @@
   function renderBriefTimelords() {
     printBriefTables.querySelectorAll(".print-brief-timelords").forEach((node) => node.remove());
     const panel = annualPanel();
-    const line = panel && typeof panel.briefLine === "function" ? panel.briefLine() : null;
+    const line = panel ? panel.briefLine() : null;
     if (line) printBriefTables.appendChild(figureText("p", "print-brief-timelords", line));
   }
 
@@ -4068,10 +4173,9 @@
   // ══ 年度時間主星的接點 ══════════════════════════════════
   //
   // 年度一區（timelords.js）只讀畫面上這份結果的請求，不另收出生資料；結果換掉或清除時
-  // 跟著丟棄，表單改動時跟著停用。頁面沒有載入那支程式時三者都不做事。
+  // 跟著丟棄，表單改動時跟著停用。頁面上沒有那一區時三者都不做事。
   function annualPanel() {
-    const module = window.ArmillaryTimelords;
-    return module && typeof module.forPage === "function" ? module.forPage(document) : null;
+    return window.ArmillaryTimelords.forPage(document);
   }
   function showAnnualPanel(payload) {
     const panel = annualPanel();

@@ -75,7 +75,7 @@
    "retracted_claim": "five_independent_pre_modern_sources_in_agreement",
    "sources": [
     {
-     "citation": "Porphyry, Introduction to the Tetrabiblos §55 (trans. Holden, AFA 2009)",
+     "citation": "Introduction to the Tetrabiblos under Porphyry's name, §55, a later added passage (chs. 53-55, regarded by Pingree as a later insertion; Holden notes a probable derivation link with Sahl) (trans. Holden, AFA 2009)",
      "read_at": "as tabulated by Steven Birchfield, 'Orbs of Influence' (2nd ed. 2013); the primary text was not independently transcribed",
      "reading": "secondary_only",
      "says": "the seven orb values of this table"
@@ -105,14 +105,14 @@
      "says": "the seven orb values of this table"
     },
     {
-     "citation": "Bonatti, Liber Astronomiae Tract III chs. LXV-LXXI (trans. Zoller, 1994)",
-     "read_at": "the reference only; values not checked; publisher and chapters to be confirmed",
+     "citation": "Bonatti, Liber Astronomiae Tract III chs. LXV-LXXI",
+     "read_at": "the reference only; no edition or translation is named, the values and the chapters not checked",
      "reading": "bibliographic_only",
      "says": "listed for the same seven values"
     },
     {
      "citation": "al-Bīrūnī, The Book of Instruction in the Elements of the Art of Astrology, trans. R. Ramsay Wright (London: Luzac 1934) §436",
-     "read_at": "Wright's translation in the archive.org typescript reproduction, whose page numbers differ from the Luzac print; cited by section",
+     "read_at": "Wright's translation in the archive.org reproduction of the 1934 typescript; cited by section",
      "reading": "translation_read",
      "says": "the same seven values"
     }
@@ -548,7 +548,7 @@
      "citation": "al-Biruni, Book of Instruction, trans. Wright (1934) §481-484",
      "read_at": "R. Ramsay Wright's English translation (1934)",
      "reading": "translation_read",
-     "says": "under 16 minutes, 6 degrees (7 for Mercury and Venus direct), under the rays 12-18 degrees by planet and side"
+     "says": "under 16 minutes, 6 degrees (§481; 7 for Mercury and Venus direct, §482), under the rays 12-18 degrees by planet and side (§481: rising in the east 12 Venus and Mercury, 15 Saturn and Jupiter, 16 Mars; setting in the west 16 Saturn and Jupiter, 18 Mars)"
     },
     {
      "citation": "Porphyry, Introduction ch.2; Antiochus",
@@ -575,7 +575,7 @@
      "says": "bounded by the sign"
     },
     {
-     "citation": "Al H. Morrison, an article in the AFA Journal, October 1966",
+     "citation": "Al H. Morrison, a talk at the AFA's 1966 meeting, printed in the AFA Bulletin vol. 28 no. 10 (October 1966) and later as the AFA booklet The Void of Course Moon",
      "read_at": "the article was not read",
      "reading": "bibliographic_only",
      "says": "requiring exact perfection before the sign exit: attributed to him by later literature; an earlier origin has not been checked"
@@ -669,7 +669,7 @@
     ],
     "note": "These five printed cells are treated as known manuscript variants: the rule, not the printed cell, is what the product computes and tests. Which stage introduced them (the re-typeset, Riley's translation or the Greek manuscripts) is not checked against Pingree's edition.",
     "rule": "a cell is the level-2 period's months times the receiving planet's minor years over 129; 44 of the 49 printed cells agree with it within 0.2 hours",
-    "table": "Valens VI.6a (Kroll p.255, Pingree p.244), the third-stage sub-division"
+    "table": "Valens VI.6a (Riley's label; Kroll VI.6, in Pingree part of VI.6; Kroll p.255, Pingree p.244), the third-stage sub-division"
    },
    "levels_emitted": [
     1,
@@ -686,19 +686,19 @@
    "profile": "valens_firmicus_decennials_v1",
    "sources": [
     {
-     "citation": "Vettius Valens, Anthologies VI.6 (Kroll pp.252-254, Pingree pp.241-243)",
+     "citation": "Vettius Valens, Anthologies VI.6 (Pingree's chapter number; Kroll VI.5; Kroll pp.252-254, Pingree pp.241-243)",
      "read_at": "Riley's English translation via the public re-typeset janegca/latex-valens",
      "reading": "translation_read",
      "says": "the sect light as starting point if well situated, else the first star after the ascendant; 10 years 9 months each, then the next star in the zodiacal circle of the nativity; the night example (Greek Horoscopes L132): Moon, Venus, Jupiter, Saturn 43 years, then Mars, with Mars 15, Sun 19, Mercury 20, Moon 25, Venus 8, Jupiter 12, Saturn 30 months (44 years 3 months, 51 years 3 months, 53 years 9 months); 52 years and 124 days is 53 distribution years and 37 days, the 667th day of Saturn's sub-period; days and cycles counted in 360-day years"
     },
     {
-     "citation": "Valens VI.6a (Kroll p.255, Pingree p.244)",
+     "citation": "Valens VI.6a (Riley's label; Kroll VI.6, in Pingree part of VI.6; Kroll p.255, Pingree p.244)",
      "read_at": "Riley's English translation via the public re-typeset; the Greek not checked",
      "reading": "translation_read",
      "says": "the third-stage sub-division table, 49 cells, listed in the Chaldean order"
     },
     {
-     "citation": "Valens VI.7 (Kroll pp.256-257, Pingree pp.245-246)",
+     "citation": "Valens VI.7 (VI.7 in both Kroll and Pingree; Kroll pp.256-257, Pingree pp.245-246)",
      "read_at": "Riley's English translation via the public re-typeset",
      "reading": "translation_read",
      "says": "the lord of the day by 129-day cycles; ordering by the stars' actual signs and degrees at the nativity, not by the Chaldean order from Saturn"
@@ -1153,7 +1153,7 @@
   },
   "eclipses/prenatal_selection": {
    "applies_to": "astronomical_data.lunar_events.eclipses.{previous_umbral_lunar,selection_profile} and eclipses_at_birth",
-   "classical_use": "Ptolemy, Tetrabiblos II.4-II.8 (Robbins) uses eclipses chiefly for regions, cities and public affairs: II.4 calls the conjunctions of the Sun and Moon at eclipse 'the first and most potent cause' of such events; II.8 calls the positions in which a luminary of a nativity holds the degree of an eclipse (one after the birth) or the opposite degree 'most dangerous and hardest to avoid'; II.6 times the effect by the hours the obscuration lasts. Treating the last eclipse before birth as a point of the nativity is a twentieth-century practice (Jansky, Lineman, Brady, Graves 2004; secondary only). No source read says whether a penumbral lunar eclipse counts",
+   "classical_use": "Ptolemy, Tetrabiblos II.4-II.8 (Robbins) uses eclipses chiefly for regions, cities and public affairs: II.4 calls the conjunctions of the Sun and Moon at eclipse 'the first and most potent cause' of such events; II.8 calls the positions in which a luminary of a nativity holds the degree of an eclipse (one after the birth) or the opposite degree 'most dangerous and hardest to avoid'; II.6 times the effect by the hours the obscuration lasts. Treating the last eclipse before birth as a point of the nativity is a twentieth-century practice (Jansky 1977, Lineman 1984 and 1992, Brady 1992, Graves 2004; secondary only). No source read says whether a penumbral lunar eclipse counts",
    "definition": "the last solar and lunar eclipse whose Swiss maximum is before birth, as astronomical events. The lunar one includes penumbral eclipses; the last eclipse in which the Moon enters the umbra (partial or total) is listed beside it. The eclipse degree is the Sun's longitude at a solar eclipse and the Moon's at a lunar one, at the maximum. An eclipse whose first contact is at or before birth and whose maximum is after it is listed as under way",
    "penumbral_note": "In a penumbral lunar eclipse the Moon passes only through the Earth's outer, partial shadow (the penumbra) and never reaches the dark core (the umbra). Espenak (eclipsewise.com, Visual Appearance of Lunar Eclipses): a penumbral magnitude above about 0.6 is needed before skilled observers can detect faint shading, the early and late stages are invisible, and it becomes readily apparent only within about 0.05 magnitude of a partial eclipse. For including it: it is an eclipse in the astronomical catalogues (NASA's lunar catalogue lists it, type N) and in Swiss Ephemeris's default search. For excluding it: Ptolemy's eclipses are visible obscurations (II.5: those 'in which the eclipse, since it took place above the earth, was visible'; II.6 times their effects by how many hours 'the obscuration' lasts). No astrological source read states a rule for penumbral eclipses; both are listed and none is chosen",
    "sources": [
@@ -1173,8 +1173,8 @@
      "reading": "translation_read"
     },
     {
-     "citation": "the last eclipse before birth as a point of the nativity: Jansky, Lineman, Brady, Graves 2004",
-     "read_at": "secondary reports only; none of the works read",
+     "citation": "the last eclipse before birth as a point of the nativity: Robert C. Jansky, Interpreting the Eclipses (Para Research 1977); Rose Lineman, Eclipses (AFA 1984) and Your Prenatal Eclipse (AFA 1992); Bernadette Brady, The Eagle and the Lark (Weiser 1992); Philip Graves, Introduction to Prenatal Eclipses (web article, 2004)",
+     "read_at": "secondary reports only: Graves's web article seen only in summary; the books known only from bibliographies and publishers' descriptions",
      "reading": "secondary_only"
     }
    ],
@@ -1299,10 +1299,10 @@
      "says": "Eros, Necessity, Courage, Victory, Nemesis with Fortune and Spirit"
     },
     {
-     "citation": "P.Berol. 9825 (AD 319; Greenbaum 2015, MHNH 15:85-116)",
-     "read_at": "per the research notes; the papyrus and the article not checked",
+     "citation": "P.Berol. 9825 (AD 319; Greenbaum and Jones, ISAW Papers 12, 2017, paras. 135, 203-205)",
+     "read_at": "Greenbaum and Jones's article, read in its open-access online text; the papyrus's Greek not checked",
      "reading": "secondary_only",
-     "says": "a papyrus computing the seven lots"
+     "says": "a papyrus computing the seven lots by Paulus's formulae, the only documentary horoscope known to contain all seven"
     },
     {
      "citation": "al-Bīrūnī, Kitāb al-Tafhīm §476 (Wright 1934; he says after Abū Maʿshar)",
@@ -2011,7 +2011,7 @@
      "definition_source": "this product's definition (methods page §07.1)",
      "history": [
       {
-       "citation": "Vettius Valens, Anthology V.6 (Pingree 1986 pp. 215-216): a chart whose degree-based MC falls in the ninth sign, cited on the methods page and not re-read for this entry",
+       "citation": "Vettius Valens, Anthology V.6 (Pingree 1986 numbering and pages, pp. 215-216; Kroll V.9, p.227): a chart whose degree-based MC falls in the ninth sign, cited on the methods page and not re-read for this entry",
        "reading": "bibliographic_only"
       }
      ]
@@ -2039,7 +2039,7 @@
    "not_done": "the ascendant corrected by this degree (the animodar) is not computed and the degree is not an input to any other technique. The Trutina Hermetis is a different, birth-time rectification method (from the conception) and is not provided",
    "sources": [
     {
-     "citation": "Ptolemy, Tetrabiblos III.2 (Robbins, Loeb 1940, pp. 231-235; Hübner III.3)",
+     "citation": "Ptolemy, Tetrabiblos III.2 (Robbins, Loeb 1940, pp. 229-235, the syzygy rule on pp. 231-233; Hübner III.3)",
      "read_at": "Robbins's English translation; the Greek not checked",
      "reading": "translation_read",
      "says": "take the degree of the most recent syzygy before birth, at a new Moon the degree of both luminaries, at a full Moon that of the luminary above the earth; then find the planet that rules that degree"
@@ -2423,7 +2423,7 @@
      "reading": "translation_read"
     },
     {
-     "citation": "Abu Ma'shar, Great Introduction VII.2, Latin of Hermann of Carinthia (Liber introductorius maior), Wurzburg Arabic-Latin Corpus lines 130_123-126; English: Dykes 2020 p.418",
+     "citation": "Abu Ma'shar, Great Introduction VII.2, Latin of Hermann of Carinthia (Liber introductorius maior), Wurzburg Arabic-Latin Corpus lines 130_123-126; English: Dykes's translation p.418, publication year not checked",
      "read_at": "Hermann's Latin translation read online, the Arabic not read; Dykes's English only as cited by Tony Louis",
      "reading": "translation_read"
     },
@@ -2577,7 +2577,7 @@
     "medieval_arabic_transmission"
    ],
    "consequence": "method_status cannot be raised to adopted until the attribution is settled against a named edition",
-   "exact_perfection": "Later literature attributes requiring exact perfection before the sign exit to Al H. Morrison (an article in the AFA Journal, October 1966; the article was not read); an earlier origin has not been checked.",
+   "exact_perfection": "Later literature attributes requiring exact perfection before the sign exit to Al H. Morrison (a talk at the AFA's 1966 meeting, printed in the AFA Bulletin vol. 28 no. 10, October 1966, and later as the AFA booklet The Void of Course Moon; the text was not read); an earlier origin has not been checked.",
    "method": "modern_sign_bounded_exact_perfection_v1",
    "method_provenance": "not_classical_attribution_unresolved",
    "present_instant_policy": {
@@ -2613,8 +2613,8 @@
      "says": "the Moon joins no planet and none joins it; it names neither the sign boundary nor an orb"
     },
     {
-     "citation": "Al H. Morrison, 'Void of Course Moon Periods: Their Uses and What May Come of Ignoring Them', AFA Journal XXVIII.10 (October 1966) p.10",
-     "read_at": "located through the AFA journal author index; the article was not read",
+     "citation": "Al H. Morrison, a talk at the AFA's 1966 meeting, printed in the AFA Bulletin vol. 28 no. 10 (October 1966) and later as the AFA booklet The Void of Course Moon",
+     "read_at": "located through an AFA author index; the periodical's name and the booklet as given by a bibliography of the booklet, which we have not seen ourselves; the text was not read",
      "reading": "bibliographic_only",
      "says": "later literature attributes to this article the requirement of exact perfection before the sign exit"
     },

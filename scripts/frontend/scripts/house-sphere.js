@@ -103,6 +103,62 @@
   // 球在圖上的位置與大小。頁面上可以轉的那一張用 LIVE；文章圖版（寬版與手機直版）的靜態圖由
   // house_sphere.py 傳入自己的 frame（plate: true），字改用圖版元件的字級 class。
   const LIVE = Object.freeze({ cx: 320, cy: 350, radius: 236, lift: 7, signs: true, plate: false });
+  // 頁面上那張的字級（viewBox 單位）：桌機的 --hs-font 與 .hs-t-sign。標題區在球頂以上能用的高度。
+  const BASE_FONT = 20;
+  const SIGN_FONT = 18;
+  const TITLE_ROOM = 92;
+  // 互相壓到時誰留在原位：數字小的先放，後放的讓開。
+  const RANK = Object.freeze({ 上升: 0, 中天: 0, 天頂: 1, 北: 2, 東: 2, 南: 2, 西: 2, 下降: 3, 天底: 3, 北黃極: 5, 北天極: 5 });
+
+  /** 估字寬：漢字與全形符號一個字級寬，數字與拉丁字母約六成。 */
+  function textWidth(text, font) {
+    let width = 0;
+    for (const ch of String(text)) width += ch.codePointAt(0) >= 0x2e80 ? font : 0.6 * font;
+    return width;
+  }
+
+  /**
+   * 把互相壓到的字推開。依 rank 先後放：每個字先試原位，再由近而遠試幾個位置（沿自己往外、往內、
+   * 左右兩側，每步 0.3 個字高，最遠 3 個字高），取第一個不壓到已放的字、也不出 viewBox 的位置；
+   * 都不行就取壓到面積最小的那個。字框含描邊的留白。
+   */
+  function declutter(items, font, fmt, obstacles, top) {
+    const placed = obstacles.slice();
+    const pad = 3;
+    const boxAt = (item, x, y) => {
+      const size = item.size || font;
+      const width = textWidth(item.node.text, size);
+      const left = item.anchor === "end" ? x - width : x - width / 2;
+      return { left: left - pad, right: left + width + pad, top: y - 0.88 * size - pad, bottom: y + 0.12 * size + pad };
+    };
+    const overlap = (box) => placed.reduce((sum, other) => {
+      const w = Math.min(box.right, other.right) - Math.max(box.left, other.left);
+      const h = Math.min(box.bottom, other.bottom) - Math.max(box.top, other.top);
+      return w > 0 && h > 0 ? sum + w * h : sum;
+    }, 0);
+    const fits = (box) => box.left >= 0 && box.right <= SIZE && box.top >= top && box.bottom <= SIZE + 40;
+    for (const item of [...items].sort((a, b) => a.rank - b.rank)) {
+      const ways = [[item.ux, item.uy], [-item.ux, -item.uy], [-item.uy, item.ux], [item.uy, -item.ux]];
+      let best = null;
+      for (let k = 0; k <= 10 && !(best && best.cost === 0); k += 1) {
+        for (const [wx, wy] of k ? ways : ways.slice(0, 1)) {
+          const x = item.x + wx * k * 0.3 * font;
+          const y = item.y + wy * k * 0.3 * font;
+          const box = boxAt(item, x, y);
+          if (!fits(box)) continue;
+          const cost = overlap(box);
+          if (!best || cost < best.cost) best = { x, y, box, cost };
+          if (cost === 0) break;
+        }
+      }
+      if (!best) best = { x: item.x, y: item.y, box: boxAt(item, item.x, item.y) };
+      if (best.x !== item.x || best.y !== item.y) {
+        item.node.attrs.x = fmt(best.x);
+        item.node.attrs.y = fmt(best.y);
+      }
+      placed.push(best.box);
+    }
+  }
 
   const node = (tag, attrs, content) => ({
     tag, attrs: attrs || {},
@@ -152,6 +208,8 @@
     const fmt = frame.plate ? whole : f1;
     const fmtR = frame.plate && frame.radius < 150 ? whole : f1;
     const layers = { base: [], back: [], front: [], top: [], labels: [] };
+    // 每個字的位置與「往外」的方向，給頁面上那張避開重疊用（declutter）；圖版不用。
+    const tagged = [];
 
     function poly(points, cls) {
       let run = [];
@@ -199,9 +257,12 @@
       dx = (dx / length) * offset;
       dy = (dy / length) * offset;
       if (length < 8) { dx = 0; dy = -offset; }
-      layers.labels.push(node("text", {
-        class: tc(q[2] >= 0 ? cls : `${cls} hs-t-back`), x: fmt(q[0] + dx), y: fmt(q[1] + dy + frame.lift),
-      }, text));
+      const x = q[0] + dx;
+      const y = q[1] + dy + frame.lift;
+      const labelText = node("text", { class: tc(q[2] >= 0 ? cls : `${cls} hs-t-back`), x: fmt(x), y: fmt(y) }, text);
+      layers.labels.push(labelText);
+      const unit = Math.hypot(dx, dy) || 1;
+      tagged.push({ node: labelText, x, y, ux: dx / unit, uy: dy / unit, anchor: "middle", rank: RANK[text] ?? 4 });
     }
 
     const sys = state.sys;
@@ -311,9 +372,11 @@
         const dx = CX - middle[0];
         const dy = CY - middle[1];
         const length = Math.hypot(dx, dy) || 1;
-        layers.labels.push(node("text", {
-          class: tc("hs-t hs-t-sign"), x: fmt(middle[0] + (dx / length) * 22 * zoom), y: fmt(middle[1] + (dy / length) * 22 * zoom + frame.lift - 1),
-        }, SIGNS[s]));
+        const x = middle[0] + (dx / length) * 22 * zoom;
+        const y = middle[1] + (dy / length) * 22 * zoom + frame.lift - 1;
+        const sign = node("text", { class: tc("hs-t hs-t-sign"), x: fmt(x), y: fmt(y) }, SIGNS[s]);
+        layers.labels.push(sign);
+        tagged.push({ node: sign, x, y, ux: dx / length, uy: dy / length, anchor: "middle", rank: 6, size: SIGN_FONT });
       }
     }
     // 軸點、方位與天頂
@@ -330,25 +393,46 @@
     dot3(F.Z, "hs-pt hs-pt-ink");
     // 天頂的字放在點的左上，避開常在附近的中天。
     const zenith = proj(F.Z);
-    layers.labels.push(node("text", {
+    const zenithText = node("text", {
       class: tc(zenith[2] >= 0 ? "hs-t hs-t-end" : "hs-t hs-t-end hs-t-back"), x: fmt(zenith[0] - 10 * zoom), y: fmt(zenith[1] - 10 * zoom),
-    }, "天頂"));
+    }, "天頂");
+    layers.labels.push(zenithText);
+    tagged.push({ node: zenithText, x: zenith[0] - 10 * zoom, y: zenith[1] - 10 * zoom, ux: -Math.SQRT1_2, uy: -Math.SQRT1_2, anchor: "end", rank: RANK["天頂"] });
     const group = (name) => node("g", { class: `hs-layer-${name}` }, layers[name]);
-    return { evaluated, layers: [group("base"), group("back"), group("front"), group("top"), group("labels")] };
+    return { evaluated, tagged, fmt, layers: [group("base"), group("back"), group("front"), group("top"), group("labels")] };
   }
 
-  function scene(state) {
-    const { evaluated, layers } = sphere(state, LIVE);
+  /**
+   * 頁面上可以轉的那一張。view 是頁面量到的字級（article.css 的 --hs-font，以 viewBox 單位計）：
+   *   · 沒給 view 時就是桌機的 20，標題兩行在原位；
+   *   · 窄螢幕字放大（compact）：不畫星座名（窄螢幕本來就藏起來）、副標太長就拆兩行，
+   *     標題區放不下時把 viewBox 往上延伸，而不是把球縮小。
+   * 頁面上那張（有 view）會把互相壓到的字沿各自「往外」的方向推開（declutter）。
+   */
+  function scene(state, view) {
+    const font = (view && view.font) || BASE_FONT;
+    const compact = Boolean(view && view.compact);
+    const { evaluated, layers, tagged, fmt } = sphere(state, compact ? { ...LIVE, signs: false } : LIVE);
     const sys = state.sys;
 
-    const title = [
-      node("text", { class: "hs-t hs-t-flag", x: 12, y: 30 }, FLAG),
-      node("text", { class: "hs-t hs-t-dim", x: 12, y: 58 },
-        `${NAMES[sys]}｜${fmtLat(state.lat)}｜恆星時 ${fmtLst(state.armc)}${state.inside ? "｜從裡面看" : ""}`),
-    ];
-    if (evaluated.refused) title.push(node("text", { class: "hs-t hs-t-flag", x: 12, y: 86 }, "本站在這種情形不算這種宮位制"));
+    const dim = "hs-t hs-t-dim";
+    const flag = "hs-t hs-t-flag";
+    const inside = state.inside ? "｜從裡面看" : "";
+    const subtitle = `${NAMES[sys]}｜${fmtLat(state.lat)}｜恆星時 ${fmtLst(state.armc)}${inside}`;
+    const lines = [[FLAG, flag]];
+    if (compact && textWidth(subtitle, font) > SIZE - 24) {
+      lines.push([`${NAMES[sys]}｜${fmtLat(state.lat)}`, dim], [`恆星時 ${fmtLst(state.armc)}${inside}`, dim]);
+    } else lines.push([subtitle, dim]);
+    if (evaluated.refused) lines.push(["本站在這種情形不算這種宮位制", flag]);
+    // 基線：20 的字是 30、58、86（原本的位置）；字放大時等比放寬。
+    const baselines = lines.map((_line, i) => Math.round(font * (1.5 + 1.4 * i)));
+    const extra = Math.max(0, Math.ceil(baselines[baselines.length - 1] + 0.3 * font - TITLE_ROOM));
+    const title = lines.map(([text, cls], i) => node("text", { class: cls, x: 12, y: baselines[i] - extra }, text));
+    const obstacles = lines.map(([text], i) => ({ left: 12, right: 12 + textWidth(text, font), top: baselines[i] - extra - 0.88 * font, bottom: baselines[i] - extra + 0.12 * font }));
+    // 文章裡用同一個場景產生的靜態圖（不給 view）維持原樣，只有頁面上那張推開字。
+    if (view) declutter(tagged, font, fmt, obstacles, -extra);
     return node("svg", {
-      class: "hs-svg", viewBox: `0 0 ${SIZE} ${SIZE + 40}`, role: "img", "aria-label": describe(state, evaluated),
+      class: "hs-svg", viewBox: extra ? `0 ${-extra} ${SIZE} ${SIZE + 40 + extra}` : `0 0 ${SIZE} ${SIZE + 40}`, role: "img", "aria-label": describe(state, evaluated),
     }, [...layers, node("g", { class: "hs-title" }, title)]);
   }
 
@@ -359,14 +443,17 @@
   }
 
   /** 宮的大小：沿黃道的寬度條，寬度與度數成正比。 */
-  function stripScene(sizes) {
+  function stripScene(sizes, compact) {
+    // 窄螢幕的字較大（article.css），窄的宮就不寫字，免得字超出色條。
+    const numberRoom = compact ? 38 : 30;
+    const degreeRoom = compact ? 70 : 56;
     const parts = [];
     let x = 0;
     sizes.forEach((size, i) => {
       const width = size * 2;
       parts.push(node("rect", { class: i % 2 ? "hs-bar hs-bar-b" : "hs-bar hs-bar-a", x: f1(x + 0.5), y: 4, width: f1(Math.max(0, width - 1)), height: 34 }));
-      if (width > 30) parts.push(node("text", { class: `hs-t ${i % 2 ? "hs-t-bar-b" : "hs-t-bar-a"}`, x: f1(x + width / 2), y: 30 }, String(i + 1)));
-      if (width > 56) parts.push(node("text", { class: "hs-t", x: f1(x + width / 2), y: 70 }, `${Math.round(size)}°`));
+      if (width > numberRoom) parts.push(node("text", { class: `hs-t ${i % 2 ? "hs-t-bar-b" : "hs-t-bar-a"}`, x: f1(x + width / 2), y: 30 }, String(i + 1)));
+      if (width > degreeRoom) parts.push(node("text", { class: "hs-t", x: f1(x + width / 2), y: 70 }, `${Math.round(size)}°`));
       x += width;
     });
     return node("svg", { class: "hs-strip", viewBox: "0 0 720 76", "aria-hidden": "true" }, parts);
@@ -415,8 +502,18 @@
       announceTimer = window.setTimeout(() => { $("summary").textContent = text; }, 700);
     }
 
+    // 圖上的字級跟著 article.css 的 --hs-font（窄螢幕較大）；量到不同就照新的字級重畫一次。
+    const view = { font: BASE_FONT, compact: false };
+    function measureFont(svg) {
+      const font = parseFloat(window.getComputedStyle(svg).getPropertyValue("--hs-font"));
+      if (!(font > 0) || font === view.font) return;
+      view.font = font;
+      view.compact = font > BASE_FONT;
+      schedule();
+    }
+
     function render() {
-      const tree = scene(state);
+      const tree = scene(state, view);
       const svg = toElement(document, tree);
       svg.setAttribute("tabindex", "0");
       svg.setAttribute("aria-describedby", $("help").id);
@@ -429,6 +526,7 @@
       else stage.prepend(svg);
       bindSvg(svg);
       side();
+      measureFont(svg);
     }
     function schedule() {
       if (pending) return;
@@ -460,7 +558,7 @@
           }
           body.appendChild(row);
         });
-        strip.appendChild(toElement(document, stripScene(evaluated.sizes)));
+        strip.appendChild(toElement(document, stripScene(evaluated.sizes, view.compact)));
       } else {
         const row = document.createElement("tr");
         const cell = document.createElement("td");
@@ -496,7 +594,10 @@
         if (!drag) return;
         const k = 300 / (svg.getBoundingClientRect().width || 300);
         const dx = (event.clientX - drag[0]) * 0.45 * k;
-        rotate(state.inside ? dx : -dx, (event.clientY - drag[1]) * 0.45 * k);
+        // 觸控只拿左右的位移轉天球：上下滑交給頁面捲動（article.css 的 touch-action:pan-y），
+        // 瀏覽器接手捲動之前送來的幾個 pointermove 也不該把視角拉高拉低。
+        const dy = event.pointerType === "touch" ? 0 : (event.clientY - drag[1]) * 0.45 * k;
+        rotate(state.inside ? dx : -dx, dy);
         drag = [event.clientX, event.clientY];
       });
       const stop = () => { drag = null; };
@@ -559,6 +660,8 @@
       }
     });
 
+    window.addEventListener("resize", () => { const svg = $("svg"); if (svg) measureFont(svg); });
+
     live.hidden = false;
     const fallback = $("nojs");
     if (fallback) fallback.hidden = true;
@@ -573,7 +676,7 @@
   }
 
   return Object.freeze({
-    NAMES, CAPTIONS, WARNINGS, FLAG, DEFAULT_VIEW, START, fmtLon, fmtLat, fmtLst,
-    evaluate, describe, scene, plate, stripScene, toMarkup, mount, mountAll,
+    NAMES, CAPTIONS, WARNINGS, FLAG, DEFAULT_VIEW, START, fmtLat, fmtLst,
+    evaluate, describe, scene, plate, toMarkup, mount, mountAll,
   });
 });

@@ -440,7 +440,7 @@
    "holder": {
     "name": "澳門檔案館公報影像",
     "url": "https://igallery.icm.gov.mo/",
-    "note": "我們沒有讀到這幾份原件。公報影像在澳門檔案館的影像庫，沒有索引，需依年月逐頁翻找；時區資料庫引用的 LegisMac 查詢系統已失效。"
+    "note": "我們沒有讀到這幾份原件。公報影像在澳門檔案館的影像庫，沒有索引，需依年月逐頁翻找；時區資料庫引用的 LegisMac 查詢系統已失效。影像庫首頁 2026-10-16 查核時無法開啟（本表 2026-10-11 整理），網際網路檔案館只存有 2007 年的一個轉址頁，不是影像庫本身；其他各列引用的公報影像直連仍可開啟。"
    }
   },
   "mo-1946-1979": {
@@ -572,7 +572,7 @@
    "read": [
     {
      "label": "《浙江政報》1986 年第 8 期影像",
-     "url": "http://www.zj.gov.cn/attach/zfgb/198608.pdf"
+     "url": "https://www.zj.gov.cn/attach/zfgb/198608.pdf"
     },
     {
      "label": "IANA 時區資料庫 2026d 版 asia 檔，China 一節，P Chan 2018-05-07 註記",
@@ -581,7 +581,7 @@
    ],
    "holder": {
     "name": "浙江省人民政府",
-    "url": "http://www.zj.gov.cn/attach/zfgb/198608.pdf",
+    "url": "https://www.zj.gov.cn/attach/zfgb/198608.pdf",
     "note": "PDF 是掃描影像，網址會轉到雲端儲存位址；發文日期這次沒有在影像中讀到。"
    }
   },

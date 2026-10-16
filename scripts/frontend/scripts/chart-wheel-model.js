@@ -517,7 +517,7 @@
         const position = readPosition(body.sign_position);
         if (!position) continue;
         const key = typeof body.key === "string" ? body.key : null;
-        const spec = key && Object.prototype.hasOwnProperty.call(POINTS, key) && POINTS[key].list === list
+        const spec = key && Object.hasOwn(POINTS, key) && POINTS[key].list === list
           ? POINTS[key] : null;
         if (!spec) {
           omitted.push(typeof body.name === "string" && body.name ? body.name : String(body.key));
@@ -816,7 +816,7 @@
    */
   function build(response, options = {}) {
     if (!isRecord(response)) throw new Error("星盤圖需要一份回應。");
-    const presetName = Object.prototype.hasOwnProperty.call(PRESETS, options.preset) ? options.preset : "standard";
+    const presetName = Object.hasOwn(PRESETS, options.preset) ? options.preset : "standard";
     const preset = PRESETS[presetName];
     const { points, omitted, dateOnly } = readPoints(response);
     const houses = readHouses(response);
@@ -873,23 +873,11 @@
       })) },
       { group: "footer", items: foot.items },
     ];
-    // 放大檢視開啟時要對準的地方：標籤最密的那一段（以 60° 的窗數標籤），沒有標籤時是上升。
-    let focusAngle = 0;
-    let focusCount = -1;
-    for (const angle of packed.placed) {
-      const count = packed.placed.filter((other) => Math.abs(signedGap(angle, other)) <= 30).length;
-      if (count > focusCount) {
-        focusCount = count;
-        focusAngle = angle;
-      }
-    }
-    const focus = polar(focusAngle, (G.rLabelTop + preset.rHouseOut) / 2);
     return {
       width: G.width,
       height: foot.height,
       preset: presetName,
       center: { x: G.c, y: G.c },
-      focus: { x: round3(focus.x), y: round3(focus.y) },
       frame: hasAngles ? "ascendant" : "aries",
       ariaLabel: asc
         ? `星盤圖：上升 ${SIGN_NAMES[asc.sign]} ${asc.deg}${asc.min}；各天體位置見下方表格`

@@ -40,7 +40,7 @@
     { key: "lots", term: "命運點與精神點", en: "Lot of Fortune, Lot of Spirit", chapter: "古典判斷",
       text: "用太陽、月亮與上升點的位置算出來的點，不是天體。日盤與夜盤的公式不同。命運點也叫福點、幸運點。" },
     { key: "dodecatemoria", term: "十二分部", en: "Dodecatemoria", chapter: "位置",
-      text: "把一個點在星座裡走了幾度乘以 12，從同一個星座的起點往後數，數到的位置。古羅馬與希臘化時期的作者用過；另有乘以 13 的算法。" },
+      text: "把一個點在星座裡走了幾度乘以 12，從同一個星座的起點往後數，數到的位置。Firmicus《Mathesis》II.13 用乘以 12，Manilius《Astronomica》II.693–748 把每個星座分成十二段，落到的星座相同；Paulus《導論》第 22 章另用乘以 13（Paulus 這一條只讀到二手轉述）。" },
     { key: "lunar_mansions", term: "月宿", en: "Lunar mansions", chapter: "古典判斷",
       text: "把月亮繞黃道一圈的路分成 28 段，看月亮落在哪一段。阿拉伯與中世紀歐洲的文獻常用；分法有好幾種。" },
     { key: "planetary_hours", term: "行星時", en: "Planetary hours", chapter: "古典判斷",
@@ -233,5 +233,5 @@
     return Object.freeze({ open, close: shut, element: drawer });
   }
 
-  return Object.freeze({ ENTRIES, TEXT, NARROW_SHEET_QUERY, mount });
+  return Object.freeze({ ENTRIES, TEXT, mount });
 });

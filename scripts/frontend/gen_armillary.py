@@ -124,6 +124,7 @@ CX, CY, R = 248.0, 260.0, 196.0
 ANCHOR_XMIN = 30      # 錨點至少要在球心右方這麼多，否則水平段會橫穿儀器
 ANCHOR_GAP = 22       # 相鄰兩條引線的錨點 y 至少差這麼多
 POLE_CLEAR = 22       # 引線與兩極標記的最小距離
+CLEAR_CAP = 34        # 離其他環超過這麼遠，評分不再加分
 
 ROWS = (52, 156, 260, 364, 468)          # 引線終點 y；與 .legend 五等分列中心對齊
 LEAD_END = 598.0
@@ -190,6 +191,29 @@ def pick_anchors(ns, P, basis, step=0.25):
 
     _, pa, pb = _axis_samples(P, basis)
 
+    # The score counts clearance only up to CLEAR_CAP, so each candidate needs
+    # the exact distance to the nearest other sample only when it is nearer than
+    # that.  Samples are bucketed in CLEAR_CAP-wide cells: any sample nearer than
+    # CLEAR_CAP lies in the candidate's cell or one of its eight neighbours, so
+    # the minimum over those cells is the minimum over all samples whenever it
+    # matters, and the result is the exhaustive search's.
+    cells: dict[str, dict[tuple[int, int], list[tuple[float, float]]]] = {}
+    for key in pools:
+        grid: dict[tuple[int, int], list[tuple[float, float]]] = {}
+        for o, pool in pools.items():
+            if o == key:
+                continue
+            for _, (qx, qy) in pool:
+                grid.setdefault((math.floor(qx / CLEAR_CAP), math.floor(qy / CLEAR_CAP)), []).append((qx, qy))
+        cells[key] = grid
+
+    def clearance(key, x, y):
+        cx, cy = math.floor(x / CLEAR_CAP), math.floor(y / CLEAR_CAP)
+        grid = cells[key]
+        return min((math.hypot(x - qx, y - qy)
+                    for gx in (cx - 1, cx, cx + 1) for gy in (cy - 1, cy, cy + 1)
+                    for qx, qy in grid.get((gx, gy), ())), default=CLEAR_CAP)
+
     cands = []
     for idx, key in enumerate(ORDER):
         y_t = min(max(ROWS[idx], 96), 424)
@@ -197,16 +221,14 @@ def pick_anchors(ns, P, basis, step=0.25):
         for _, (x, y) in pools[key]:
             if x < CX + ANCHOR_XMIN:
                 continue
-            clear = min(math.hypot(x - qx, y - qy)
-                        for o, pool in pools.items() if o != key
-                        for _, (qx, qy) in pool)
+            clear = clearance(key, x, y)
             if clear < 10:
                 continue
             # 引線本身也不能擦過兩極標記，否則看起來像指著極點
             if min(_path_clearance(leader_path_points((x, y), ROWS[idx]), q)
                    for q in (pa, pb)) < POLE_CLEAR:
                 continue
-            rows.append(((x, y), x * 0.55 - abs(y - y_t) * 1.15 + min(clear, 34) * 1.5))
+            rows.append(((x, y), x * 0.55 - abs(y - y_t) * 1.15 + min(clear, CLEAR_CAP) * 1.5))
         assert rows, f"{key} 找不到合格的引線錨點"
         rows.sort(key=lambda r: r[0][1])
         cands.append(rows)

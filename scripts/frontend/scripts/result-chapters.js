@@ -20,6 +20,10 @@
 
   const CHAPTER_IDS = Object.freeze(["overview", "positions", "houses_aspects", "classical", "timelords", "receipt"]);
 
+  // 很窄的螢幕（400px 以下）分頁列上的短章名。短名必須是完整章名裡連續的一段：看得見的字要在
+  // 輔助科技念的名稱裡（WCAG 2.5.3）；完整章名照舊是連結的名稱。沒有列的章本來就夠短。
+  const SHORT_TITLES = Object.freeze({ classical: "古典", receipt: "收據" });
+
   const MODES = Object.freeze({
     quick: Object.freeze({
       id: "quick",
@@ -130,6 +134,13 @@
     return MODES[id] || MODES.quick;
   }
 
+  /**
+   * 「第一次看星盤？」預設打開與否：看模式，但窄螢幕（手機）一律先收起，星盤圖才不被它推到好幾個螢幕之後。
+   */
+  function firstTimeOpen(id, narrow) {
+    return mode(id).firstTimeOpen && !narrow;
+  }
+
   /** 這個模式的起始選項：產品預設，再蓋上模式預先勾好的那幾項。 */
   function modeOptions(id, defaults) {
     return { ...defaults, ...mode(id).options };
@@ -156,7 +167,7 @@
   }
 
   return Object.freeze({
-    MODE_IDS, CHAPTER_IDS, MODES, SECTION_CHAPTERS,
-    modeFromQuery, mode, modeOptions, assign, enableOptions,
+    MODE_IDS, CHAPTER_IDS, MODES, SECTION_CHAPTERS, SHORT_TITLES,
+    modeFromQuery, mode, modeOptions, firstTimeOpen, assign, enableOptions,
   });
 });

@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from fractions import Fraction
-from functools import lru_cache
+from collections.abc import Sequence
 
+from .invariants import InternalInvariantError
 from .frame_compatibility import method_frame_state
 from .module_state import PRODUCT_FORMULA_SOURCE, computed_receipt, unavailable_state
 from .method_status import method_receipt
@@ -26,7 +27,11 @@ def _exact_forward_distance(start: float, end: float) -> Fraction:
     return (Fraction(end) - Fraction(start)) % _FULL_CIRCLE
 
 
-def _house_for_longitude(longitude: float, cusps: list[float]) -> int:
+def _house_for_longitude(
+    longitude: float,
+    cusps: Sequence[float],
+    spans: tuple[Fraction, ...] | None = None,
+) -> int:
     """Return the 1-based house for [cusp_n, cusp_n+1) in zodiacal order.
 
     The comparison is done in exact rational arithmetic.  Shifting a
@@ -35,20 +40,27 @@ def _house_for_longitude(longitude: float, cusps: list[float]) -> int:
     which no half-open interval contains.  Every float is an exact binary
     rational, so measuring each interval and the point from its start cusp with
     Fraction partitions the circle with no gaps and no overlaps.
+
+    ``spans`` is ``_cusp_spans(cusps)`` when the caller places several points
+    against the same cusps; it is never kept beyond that caller's loop.
     """
 
     point = Fraction(longitude) % _FULL_CIRCLE
-    spans = _cusp_spans(tuple(cusps))
+    if spans is None:
+        spans = _cusp_spans(cusps)
     for index in range(12):
         if (point - Fraction(cusps[index])) % _FULL_CIRCLE < spans[index]:
             return index + 1
     raise RuntimeError("longitude did not match any house interval")
 
 
-@lru_cache(maxsize=256)
-def _cusp_spans(cusps: tuple[float, ...]) -> tuple[Fraction, ...]:
-    """The exact width of each house interval, checked once per cusp set (a
-    chart places every body and lot against the same twelve cusps)."""
+def _cusp_spans(cusps: Sequence[float]) -> tuple[Fraction, ...]:
+    """The exact width of each house interval, checked.
+
+    Not memoized across calls: cusps follow from the birth instant and place,
+    and a process-wide memo would keep them in worker memory after the request.
+    A caller placing many points computes this once and passes it down.
+    """
 
     spans = []
     for index in range(12):
@@ -109,13 +121,15 @@ def compute_planet_house_placements(
         )
         return receipt
 
-    assert houses is not None  # the refusal above is the only path without them
+    if houses is None:  # the refusal above is the only path without them
+        raise InternalInvariantError("houses is not None")
     cusps = houses["cusps"]
+    spans = _cusp_spans(cusps)
     for body in bodies:
         longitude = body.get("longitude")
         if longitude is None:
             continue
-        house = _house_for_longitude(longitude, cusps)
+        house = _house_for_longitude(longitude, cusps, spans)
         start = cusps[house - 1] % 360.0
         end = cusps[house % 12] % 360.0
         # Exact, like the assignment: a float forward distance one ulp below a
@@ -184,12 +198,13 @@ def whole_sign_point_placements(
     if houses.get("system_code") != "W":
         return refused("not_whole_sign_house_system")
     cusps = houses["cusps"]
+    spans = _cusp_spans(cusps)
     placements = []
     for point in points:
         longitude = point.get("longitude")
         if longitude is None:
             continue
-        house = _house_for_longitude(longitude, cusps)
+        house = _house_for_longitude(longitude, cusps, spans)
         placements.append({
             "key": point["key"],
             "name": point["name"],

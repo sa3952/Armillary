@@ -84,10 +84,13 @@ button{
   border:1px solid var(--ink); background:var(--ink); color:var(--paper);
   padding:.8rem 1.8rem; cursor:pointer;
 }
-button:hover:not(:disabled){background:var(--accent); border-color:var(--accent)}
 button:disabled{opacity:.45; cursor:not-allowed}
 button.ghost{background:transparent; color:var(--ink)}
-button.ghost:hover:not(:disabled){background:var(--ink); color:var(--paper)}
+/* 滑過的樣式只給真的能滑過的指標：觸控點過一下，:hover 會一直留在那顆鈕上，看起來像還按著。 */
+@media (hover:hover){
+  button:hover:not(:disabled){background:var(--accent); border-color:var(--accent)}
+  button.ghost:hover:not(:disabled){background:var(--ink); color:var(--paper)}
+}
 button.small{font-size:var(--fs-note); padding:.45rem 1rem}
 
 .status-line{font-size:var(--fs-note); color:var(--ink-dim); overflow-wrap:anywhere}
@@ -99,6 +102,9 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
    但它不涵蓋使用者打的全部內容。若與 info 同色，這個區別就等於沒說。
    借用 unavailable 的赭色——比 error 輕，比 info 重。 */
 .status-line[data-tone="warning"]{color:var(--state-unavailable)}
+/* 載入提示的字在 data-message（見 calculate.html）；沒有 JavaScript 時改由 noscript 說明，不畫這句。 */
+#bootstrap-status:not([hidden])::before{content:attr(data-message)}
+@media (scripting: none){#bootstrap-status{display:none}}
 
 /* ── 錯誤 ───────────────────────────────────────── */
 .error-panel{
@@ -114,6 +120,20 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
 .result-head h2{font-family:var(--serif); font-weight:400; font-size:1.6rem}
 
 .warnings{border:1px solid var(--hair); padding:var(--s2) var(--s3); margin-bottom:var(--s3)}
+/* 注意事項的摺疊：寬螢幕只有清單（calculate.js 讓它一直打開），窄螢幕先是一行摘要。 */
+.warnings-fold > summary{
+  display:block; list-style:none; cursor:pointer; margin-bottom:var(--s3);
+  border:1px solid var(--hair); padding:.6rem var(--s2);
+  font-size:var(--fs-note); color:var(--ink-dim);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.warnings-fold > summary::-webkit-details-marker{display:none}
+.warnings-fold > summary::before{content:"＋　"; color:var(--accent)}
+.warnings-fold[open] > summary::before{content:"−　"}
+.warnings-fold[open] > summary{margin-bottom:0; border-bottom:0}
+/* 有一則影響時間、時區或方法時（calculate.js 標 data-fold="attention"），手機也和寬螢幕一樣整張打開、沒有摘要行。 */
+@media (min-width:641px){ .warnings-fold > summary{display:none} }
+.warnings-fold[data-fold="attention"] > summary{display:none}
 .warnings li{list-style:none; font-size:var(--fs-note); color:var(--ink-dim); overflow-wrap:anywhere}
 @media screen{
   .warnings li{max-width:var(--measure-cjk)}
@@ -158,6 +178,10 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
 /* 結果首屏：速覽、常用匯出、星盤圖。窄螢幕照原始碼順序上下排；寬螢幕左邊是圖，
    右邊上速覽、下常用匯出。--chart-wheel-max 是星盤圖外框的寬度上限（圖本身由 chart-wheel.js 畫）。 */
 .result-lead{--chart-wheel-max:740px}
+/* 橫拿的手機：圖（高約為寬的 1.08 倍）不超過一個視窗高，整張圖一眼看得完。 */
+@media (orientation:landscape) and (max-height:540px){
+  .result-lead{--chart-wheel-max:min(740px, calc((100svh - 2rem) * .92))}
+}
 .quick-toolbar{padding:var(--s2) 0 var(--s3)}
 .quick-toolbar .export-actions{margin-top:.6rem}
 /* 常用匯出因等驗算資料而停用時的那一行說明（與下方匯出工具列同一句）。 */
@@ -507,7 +531,7 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
   display:block; width:100%; text-align:left; background:transparent; color:var(--ink);
   border:0; padding:.7rem .9rem; cursor:pointer; border-radius:0;
 }
-.place-option:hover{background:var(--paper-2)}
+@media (hover:hover){ .place-option:hover{background:var(--paper-2)} }
 .place-option b{display:block; font-weight:600; font-size:var(--fs-aside); overflow-wrap:anywhere}
 .place-meta{display:block; font-size:var(--fs-note); color:var(--ink-faint); margin-top:.2rem; overflow-wrap:anywhere}
 .place-receipt{border:1px solid var(--hair); background:var(--paper-2); padding:var(--s2) var(--s3); margin-top:var(--s2)}
@@ -551,7 +575,7 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
 .clear-zone{border-top:1px solid var(--ink); margin-top:var(--s3); padding-top:var(--s3)}
 .clear-zone .row{margin:var(--s2) 0}
 button.danger{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
-button.danger:hover{background:var(--ink); border-color:var(--ink)}
+@media (hover:hover){ button.danger:hover{background:var(--ink); border-color:var(--ink)} }
 
 @media (max-width:900px){
   /* `.place-receipt dl` 在本檔後段的同一個中斷點已有一條規則，不重複宣告。 */
@@ -707,14 +731,21 @@ input[type="checkbox"].option-control:disabled{
   display:flex; align-items:stretch; gap:var(--s1);
   margin:var(--s3) calc(-1 * var(--pad)) 0; padding:0 var(--pad);
   background:var(--paper); border-top:1px solid var(--hair); border-bottom:1px solid var(--hair);
-  overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:thin;
 }
 .chapter-nav > .eyebrow{
   position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
   overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap;
 }
 /* position:relative：狀態前只給輔助科技的「：」是絕對定位，包含塊必須是這個捲動容器。 */
-.chapter-index{list-style:none; display:flex; align-items:stretch; margin:0; padding:0; position:relative; white-space:nowrap}
+/* 橫捲的是章名這一列本身；「全部章節」鈕在列外、固定在右端，不會被捲出畫面。還有章節在視窗外的那一邊
+   邊緣淡出（calculate.js 依捲動位置標 data-more）。 */
+.chapter-index{
+  list-style:none; display:flex; align-items:stretch; margin:0; padding:0; position:relative; white-space:nowrap;
+  flex:1 1 auto; min-width:0; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:thin;
+}
+.chapter-index[data-more="end"]{mask-image:linear-gradient(to left, transparent, #000 2rem)}
+.chapter-index[data-more="start"]{mask-image:linear-gradient(to right, transparent, #000 2rem)}
+.chapter-index[data-more="start end"]{mask-image:linear-gradient(to right, transparent, #000 2rem, #000 calc(100% - 2rem), transparent)}
 .chapter-item{flex:0 0 auto; display:flex}
 .chapter-link{
   display:flex; align-items:center; gap:.45rem; min-height:var(--index-bar-h);
@@ -730,6 +761,18 @@ input[type="checkbox"].option-control:disabled{
    擠在分頁列裡會要在列內橫捲才讀得完。 */
 .chapter-sections-index{display:none}
 .chapters-all{flex:0 0 auto; align-self:center; margin:0; white-space:nowrap}
+/* 窄螢幕的分頁列只寫「全部章節」；寬一點的視窗與左側章節欄寫全名。 */
+@media (max-width:900px){ .chapters-all-more{display:none} }
+/* 很窄的螢幕：章名之間收窄，有短名的章只顯示短名（完整章名仍是連結的名稱，只給輔助科技）。 */
+.chapter-name-short{display:none}
+@media (max-width:400px){
+  .chapter-link{padding:0 .5rem; gap:.3rem}
+  .chapter-link:has(> .chapter-name-short) > .chapter-name{
+    position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
+    overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap;
+  }
+  .chapter-name-short{display:inline}
+}
 .chapter-mode-note{max-width:none; margin:var(--s2) 0 0; font-size:var(--fs-note)}
 .chapter-mode-note button{margin:0 .3rem}
 .chapter-timelords-entry{margin-top:var(--s3)}
@@ -785,7 +828,7 @@ button.term{
   font:inherit; color:inherit; line-height:inherit; cursor:help;
   text-decoration:underline dotted var(--accent); text-underline-offset:.22em;
 }
-button.term:hover:not(:disabled){background:none; color:var(--accent)}
+@media (hover:hover){ button.term:hover:not(:disabled){background:none; color:var(--accent)} }
 .glossary{
   position:fixed; z-index:30; top:0; right:0; bottom:0; width:min(26rem, 100%);
   display:flex; flex-direction:column; background:var(--paper);
@@ -816,6 +859,44 @@ button.term:hover:not(:disabled){background:none; color:var(--accent)}
 .mode-cards label{flex:1 1 16rem}
 .mode-cards b{font-size:var(--fs-lead)}
 .mode-choice-actions{margin-top:var(--s2)}
+
+/* 引言的「更多說明」與日期說明的「?」：預設收起的 <details>，沒有 JavaScript 也點得開。寬螢幕把收起的內容
+   直接攤在同一段裡、不顯示摘要那一行（::details-content）；不支援的瀏覽器照舊看到一行可點開的摘要。 */
+.calc-lede-more > summary{cursor:pointer; margin-top:.3rem; font-size:var(--fs-note); color:var(--ink-dim)}
+.calc-lede-more > summary::marker{color:var(--accent)}
+.calc-lede-more > p{margin-top:.3rem}
+/* 說明拆成兩段後仍是同一段字：外框用說明的字級與行距，行高不被內文撐高。 */
+.hint-group{font-size:var(--fs-note); line-height:1.6}
+.hint-more{display:inline}
+.hint-more > summary{
+  display:inline-flex; align-items:center; justify-content:center; vertical-align:middle;
+  width:1.6rem; height:1.6rem; margin-left:.2rem; list-style:none; cursor:pointer;
+  border:1px solid var(--ink-faint); border-radius:50%; font-family:var(--mono); font-size:var(--fs-note); color:var(--ink-dim);
+}
+.hint-more > summary::-webkit-details-marker{display:none}
+.hint-more[open] > summary{border-color:var(--ink); color:var(--ink)}
+@supports selector(::details-content){
+  @media (min-width:641px){
+    .calc-lede-more > summary,.hint-more > summary{display:none}
+    .calc-lede-more::details-content,.hint-more::details-content{display:inline; content-visibility:visible}
+    .calc-lede-first,.calc-lede-more,.calc-lede-more > p,.calc-lede-privacy{display:inline; margin:0}
+  }
+}
+/* 「直接開始填 ↓」只在手機上：那裡表單在引言與模式說明之後。 */
+.skip-to-form{display:none}
+@media (max-width:640px){
+  /* 引言：兩句常駐的字連在一起讀，「更多說明」排在最後（只有它能點，焦點順序不受影響）。 */
+  .calc-lede{display:flex; flex-direction:column}
+  .calc-lede-more{order:1}
+  /* 出生日期自成一列：日期欄與它的一行說明不被擠成兩欄寬（時、分、秒照舊兩兩一列）。 */
+  .grid.four > .field:has(> #date){grid-column:1 / -1}
+  .skip-to-form{display:block; margin-top:var(--s1)}
+  .skip-to-form a{display:inline-flex; align-items:center; min-height:44px; font-size:var(--fs-note)}
+  /* 模式卡片：沒選的只留標題與一行說明；選中的那張照全文。全文仍在無障礙樹裡，選了就看得到。 */
+  .mode-cards label:not(:has(input:checked)) > span > span{
+    display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:1; line-clamp:1; overflow:hidden;
+  }
+}
 .mode-choice-timelords{margin-top:var(--s2)}
 /* 這次會算什麼：快速看盤只有一行；古典完整多一層勾選與三個流派選單。 */
 .plan-summary{max-width:var(--measure-cjk); color:var(--ink-dim)}
@@ -854,7 +935,7 @@ fieldset.plan-profiles legend{font-size:var(--fs-body)}
     position:static; width:auto; height:auto; margin:0 0 .4rem; overflow:visible;
     clip:auto; clip-path:none; white-space:normal; font-size:var(--fs-small); letter-spacing:.12em;
   }
-  .chapter-index{display:block; white-space:normal}
+  .chapter-index{display:block; white-space:normal; overflow:visible; mask-image:none}
   .chapter-item{display:block}
   .chapter-item + .chapter-item{margin-top:.5rem}
   .chapter-link{min-height:0; padding:.35rem .5rem .35rem .7rem; border:0; border-left:3px solid var(--hair); font-size:var(--fs-aside)}
@@ -1184,17 +1265,22 @@ section.chart-wheel > .note{margin-top:var(--s1)}
 .cw-aspects-off .cw-aspects,.cw-aspects-off .cw-legend-aspects{display:none}
 
 /* 放大檢視：手機上保留完整資訊，放大看。 */
+/* 高度用 svh：手機瀏覽器的網址列收放時，vh 會比看得到的視窗高。 */
 .chart-wheel-dialog{margin:auto; padding:0; border:1px solid var(--ink); background:var(--paper); color:var(--ink);
-  width:min(96vw, 100rem); max-width:96vw; max-height:96vh}
+  width:min(96vw, 100rem); max-width:96vw; max-height:96svh}
 .chart-wheel-dialog::backdrop{background:color-mix(in srgb, var(--plate) 72%, transparent)}
 .chart-wheel-dialog-body{padding:var(--s1) var(--s1) var(--s2)}
 .chart-wheel-dialog-head{display:flex; align-items:baseline; justify-content:space-between; gap:var(--s1); margin-bottom:var(--s1)}
 .chart-wheel-dialog-head h3{font-family:var(--serif); font-weight:400; font-size:var(--fs-subhead)}
-.chart-wheel-dialog-view{overflow:auto; max-height:calc(96vh - 5rem); -webkit-overflow-scrolling:touch}
-/* 桌機：整張圖放進視窗高度。手機：圖放大到約 900px 寬，在 .chart-wheel-dialog-view 裡捲動看。 */
-.chart-wheel-dialog .chart-wheel-svg{width:min(100%, calc((96vh - 6rem) * .916)); height:auto; margin:0 auto; cursor:default}
+.chart-wheel-dialog-view{overflow:auto; max-height:calc(96svh - 5rem); -webkit-overflow-scrolling:touch}
+/* 桌機：整張圖放進視窗高度。手機：圖放大到約 900px 寬，在 .chart-wheel-dialog-view 裡捲動看。
+   橫拿的手機（矮視窗）照視窗高度會縮到比頁面上的圖還小，改照寬度、上下捲動看。 */
+.chart-wheel-dialog .chart-wheel-svg{width:min(100%, calc((96svh - 6rem) * .916)); height:auto; margin:0 auto; cursor:default}
 @media (max-width:640px){
   .chart-wheel-dialog .chart-wheel-svg{width:56rem; max-width:none}
+}
+@media (orientation:landscape) and (max-height:540px){
+  .chart-wheel-dialog .chart-wheel-svg{width:100%}
 }
 
 @media (max-width:900px){
@@ -1239,6 +1325,8 @@ section.chart-wheel > .note{margin-top:var(--s1)}
 .results tbody th[scope="row"][tabindex="-1"]:focus{outline:2px solid var(--ink); outline-offset:-2px}
 
 .chart-wheel-symbols{margin-top:var(--s2)}
+/* 標題那一行也放選取後才出現的兩顆鈕：在按鈕列之上、緊接在圖下方，手機上選了就看得到。 */
+.chart-wheel-symbols-head{display:flex; flex-wrap:wrap; align-items:center; column-gap:var(--s2)}
 .chart-wheel-symbols-title{font-family:var(--sans); font-size:var(--fs-aside); font-weight:600; color:var(--ink)}
 .chart-wheel-symbols > .note{margin-top:.2rem}
 .chart-wheel-symbols-bar{display:flex; flex-wrap:wrap; gap:.4rem; margin-top:var(--s1)}
@@ -1246,13 +1334,20 @@ button.chart-wheel-symbol{
   display:inline-flex; align-items:baseline; gap:.3rem; padding:.35rem .6rem;
   font-size:var(--fs-note); line-height:1.4; background:transparent; color:var(--ink);
   border:1px solid var(--hair); font-variant-numeric:tabular-nums}
-button.chart-wheel-symbol:hover:not(:disabled){background:var(--paper-2); color:var(--ink); border-color:var(--ink)}
+@media (hover:hover){
+  button.chart-wheel-symbol:hover:not(:disabled){background:var(--paper-2); color:var(--ink); border-color:var(--ink)}
+}
 /* 符號與表格名稱前的符號同一套 path、同一個框（基線上 810、下 240 單位）。 */
 .chart-wheel-symbol-glyph{display:inline-block; width:1.05em; height:1.05em; vertical-align:-.24em; fill:currentColor; align-self:center}
 .chart-wheel-symbol-position{font-family:var(--mono); font-size:var(--fs-small); color:var(--ink-dim)}
 .chart-wheel-symbol-retro{color:var(--ink-dim)}
 button.chart-wheel-symbol[aria-current="true"]{border:2px solid var(--ink); padding:calc(.35rem - 1px) calc(.6rem - 1px)}
-.chart-wheel-symbols-clear{margin-top:var(--s1)}
+/* 選取後才出現的兩顆：清除與跳到表格那一列。後者是連結樣式（它帶人離開這裡），點擊範圍仍有按鈕的高度。 */
+.chart-wheel-symbols-actions{display:flex; flex-wrap:wrap; align-items:center; column-gap:var(--s2)}
+button.chart-wheel-symbols-jump{
+  padding:.45rem .2rem; border:0; border-radius:0; background:none; color:var(--ink);
+  font-size:var(--fs-note); text-decoration:underline; text-underline-offset:.22em}
+@media (hover:hover){ button.chart-wheel-symbols-jump:hover:not(:disabled){background:none; color:var(--accent)} }
 /* 手機：只留符號與名稱（位置仍在按鈕名稱裡，念得到），一列約三到四個。 */
 @media (max-width:640px){
   .chart-wheel-symbol-position,.chart-wheel-symbol-retro{display:none}
@@ -1263,4 +1358,24 @@ button.chart-wheel-symbol[aria-current="true"]{border:2px solid var(--ink); padd
 /* 紙上沒有符號對照可按，也沒有滑鼠：兩者連同指向它們的那一條讀圖說明都不印。 */
 @media print{
   .chart-wheel-symbols,.chart-wheel-legend-link{display:none}
+}
+
+/* ═══ 觸控：可以點的東西至少 44px ═══════════════════════
+   只在粗指標（手指）上放大；滑鼠與觸控板的版面不變。內文裡的連結與可點的詞是句子的一部分，不在此列。 */
+@media (pointer:coarse){
+  button.small,button.chart-wheel-symbol,button.chart-wheel-symbols-jump{min-height:44px}
+  button.chart-wheel-symbol{min-width:44px; align-items:center}
+  .calc-body input:not([type="radio"]):not([type="checkbox"]),.calc-body select{min-height:44px}
+  .plan-checks label,.plan-timelords,.print-brief-input,.chart-wheel-input,.chart-wheel-aspects-toggle,
+  .chart-wheel-style label{min-height:44px}
+  /* 「?」：圈的大小不變，可點的範圍是圈外的整個 44px 方塊。 */
+  .hint-more > summary{
+    width:44px; height:44px; margin:0; border:0; border-radius:0;
+    background:radial-gradient(circle, transparent calc(.8rem - 1px), var(--ink-faint) calc(.8rem - 1px) .8rem, transparent .8rem);
+  }
+  .hint-more[open] > summary{background:radial-gradient(circle, transparent calc(.8rem - 1px), var(--ink) calc(.8rem - 1px) .8rem, transparent .8rem)}
+  .advanced summary,.long-section > summary,.section-sources > summary,.section-explain > summary,
+  .manual-place summary,.time-helper summary,.receipt-codes summary,.calc-lede-more > summary,
+  .warnings-fold > summary{min-height:44px}
+  .sampling-callout-link,.time-brief-link{display:inline-flex; align-items:center; min-height:44px}
 }

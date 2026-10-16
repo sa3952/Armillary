@@ -48,8 +48,9 @@ from typing import Final, Literal
 
 import swisseph as swe
 
+from .invariants import InternalInvariantError
 from ..ephemeris import require_full_ephemeris, require_object_coverage
-from .formatting import dms_text
+from .formatting import dms_text, zodiac_sign_index
 from .method_status import method_receipt
 from .module_state import (
     PRODUCT_FORMULA_SOURCE,
@@ -372,7 +373,8 @@ def _beam_crossings(
 
     def threshold(dl: float) -> float:
         value = _limit_degrees(profile, "under_beams", key, _side(dl))
-        assert value is not None
+        if value is None:
+            raise InternalInvariantError("value is not None")
         return value
 
     def outside_by(t: float) -> float:
@@ -625,7 +627,7 @@ def compute_solar_phase(
             "ecliptic_latitude_degrees": body["latitude"],
             "side": side,
             "relative_motion": _relative_motion(dl, body["speed_longitude"], sun["speed_longitude"]),
-            "same_sign_as_sun": int(body["longitude"] // 30) % 12 == int(sun["longitude"] // 30) % 12,
+            "same_sign_as_sun": zodiac_sign_index(body["longitude"]) == zodiac_sign_index(sun["longitude"]),
             "within_solar_disc": (
                 separation <= sun_semidiameter if sun_semidiameter is not None else None
             ),
@@ -641,7 +643,8 @@ def compute_solar_phase(
             ],
         })
         if interval is not None:
-            assert interval_spans is not None
+            if interval_spans is None:
+                raise InternalInvariantError("interval_spans is not None")
             record = _interval_record(
                 sample, body_id, key, interval_spans,
                 disc_requested=disc_cazimi, sun_flags=sun_flags,
@@ -866,7 +869,7 @@ METHOD_SOURCE_ENTRIES: Final = {
                 "citation": (
                     "Abu Ma'shar, Great Introduction VII.2, Latin of Hermann of Carinthia "
                     "(Liber introductorius maior), Wurzburg Arabic-Latin Corpus lines 130_123-126; "
-                    "English: Dykes 2020 p.418"
+                    "English: Dykes's translation p.418, publication year not checked"
                 ),
                 "reading": SOURCE_READING_LEVELS[1],
                 "read_at": (

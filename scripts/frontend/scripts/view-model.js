@@ -18,6 +18,11 @@
   // 渲染與匯出必須是 sections 的兩個平行下游，而不是渲染完再回頭刮畫面。
   // 把「回應 -> sections」與「sections -> 可渲染樹」都放在這裡，
   // 是為了讓這兩步能在 Node 測試裡直接斷言，不必先有瀏覽器。
+  //
+  // 檔內分區（依出現順序）：共用的格式與收據攤平；模組狀態；時間、天體、軸點、反照點、宮位、
+  // 相位與尊貴；其餘各模組（月交點到產前朔望）；阿拉伯點、月空亡與赤緯相位；尊貴的各套分配法；
+  // 驗算區段；出生時刻敏感度與取樣摘要；結果頂端的白話摘要；計算收據；速覽；回應 → sections；
+  // 十二分部；古典分類；圖表連動的點鍵；sections → view tree。
 
   // layer 是區段的 layer_label（畫面與匯出都印）；畫面依它找回環的 key。
   const RING = Object.freeze({
@@ -88,10 +93,10 @@
   const SIGN_BY_KEY = Labels.VOCABULARIES.zodiac_sign;
   /** 依黃經序（0＝牡羊）的同一組名字。 */
   const SIGNS = Object.freeze(Object.values(SIGN_BY_KEY));
-  const PLANET_BY_KEY = Object.freeze({
-    sun: "太陽", moon: "月亮", mercury: "水星", venus: "金星",
-    mars: "火星", jupiter: "木星", saturn: "土星",
-  });
+  const PLANET_BY_KEY = Object.freeze(Object.fromEntries(
+    ["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn"]
+      .map((key) => [key, Labels.VOCABULARIES.body_backend_name[key]]),
+  ));
 
   function signName(key) {
     if (!key) return DASH;
@@ -101,13 +106,11 @@
   function rulerName(key) {
     if (!key) return DASH;
     const normalized = String(key).toLowerCase();
-    if (Object.prototype.hasOwnProperty.call(PLANET_BY_KEY, normalized)) return PLANET_BY_KEY[normalized];
+    if (Object.hasOwn(PLANET_BY_KEY, normalized)) return PLANET_BY_KEY[normalized];
     return presentClosedVocabulary(normalized, SIGN_BY_KEY, "守護");
   }
 
-  function isRecord(value) {
-    return value !== null && typeof value === "object" && !Array.isArray(value);
-  }
+  const isRecord = exportPipeline.isRecord;
 
   function num(value, digits) {
     if (typeof value !== "number" || !Number.isFinite(value)) return DASH;
@@ -318,62 +321,51 @@
     const value = modules[moduleKey];
     return typeof value === "string" ? value : null;
   }
+  // calculation_policy.modules 的值對應的狀態；computed 不在表裡：它不推翻任何來源。
+  const POLICY_MODULE_STATUS = Object.freeze({
+    not_requested: Object.freeze({ state: "not_requested" }),
+    not_applicable: Object.freeze({ state: "refused", reason_code: "" }),
+  });
   /**
+   * 一區的狀態。優先序：模組容器自己的收據、option_states、modules，依序取第一個「不是
+   * present」的來源；三者都是 present 或沒說，才是 present。容器的收據不是權威（輸出契約）：
+   * option_states 與 modules 都沒有這一區時拒絕整份回應（heliocentric 下 sect／lots 物件沒有
+   * 收據欄位，只有 option_states 帶 module_not_applicable）。之後兩步只補細節：被拒絕卻沒有
+   * 理由時依序取 option_states、容器的 reason_code；present 而容器沒有可畫的內容時降為
+   * executed_unavailable。
    * @param {object} response 後端回應
    * @param {{option?: string, module?: string}} keys 這個 section 對應的選項鍵與模組鍵
    * @param {*} container 模組容器（物件或陣列）
    * @param {boolean} hasContent 容器是否真的有可渲染內容
    */
   function moduleState(response, keys, container, hasContent) {
-    const own = isRecord(container) && "requested" in container
-      && typeof container.requested === "boolean"
-      ? receiptStatus(container)
-      : null;
-    const fromOption = optionState(response, keys.option);
+    // 先問鍵在不在再讀值：沒有收據欄位的容器不讀那個鍵（module_coverage 的負控制記下每一次讀取）。
+    const own = isRecord(container) && "requested" in container && typeof container.requested === "boolean"
+      ? receiptStatus(container) : null;
+    const option = optionState(response, keys.option);
     const fromModules = policyModuleState(response, keys.module);
-    // 容器自己的收據不是權威（輸出契約）：權威裡沒有這一區，就沒有可核對的狀態。
-    if (!fromOption && !fromModules) {
+    if (!option && !fromModules) {
       throw exportPipeline.incompleteResponse(
         `${keys.option || keys.module || "未具名模組"} 沒有可核對的狀態`
       );
     }
-    let status;
-    if (own) {
-      status = own;
-    } else if (fromOption) {
-      status = receiptStatus(fromOption);
-    } else if (fromModules === "not_requested") {
-      status = { state: "not_requested" };
-    } else if (fromModules === "not_applicable") {
-      status = { state: "refused", reason_code: "" };
-    } else {
-      // modules 的值是閉集（assertRenderableResponse 已檢查），剩下的只有 computed。
-      status = { state: "present" };
-    }
-    // 模組自己的收據說 present，但單一產生器說不是：以後者為準（heliocentric 下
-    // sect／lots 物件沒有收據欄位，只有 option_states 帶 module_not_applicable）。
-    if (status.state === "present" && fromOption) {
-      const optionStatus = receiptStatus(fromOption);
-      if (optionStatus.state !== "present") {
-        status = optionStatus;
-      }
-    }
-    if (status.state === "present" && fromModules === "not_applicable") {
-      status = { state: "refused", reason_code: (own && own.reason_code) || "" };
-    }
-    if (status.state === "present" && fromModules === "not_requested") {
-      status = { state: "not_requested" };
+    const sources = [
+      () => own,
+      () => (option ? receiptStatus(option) : null),
+      () => { const found = Labels.ownLabel(POLICY_MODULE_STATUS, fromModules); return found && { ...found }; },
+    ];
+    let status = { state: "present" };
+    for (const source of sources) {
+      const found = source();
+      if (found && found.state !== "present") { status = found; break; }
     }
     if (status.state === "refused" && !status.reason_code) {
-      const fallback = (fromOption && fromOption.reason_code)
+      const fallback = (option && option.reason_code)
         || (isRecord(container) && "reason_code" in container && container.reason_code) || "";
-      status = { state: "refused", reason_code: fallback };
+      return { state: "refused", reason_code: fallback };
     }
     if (status.state === "present" && !hasContent) {
-      return {
-        state: "executed_unavailable",
-        reason_code: (own && own.reason_code) || (fromOption && fromOption.reason_code) || "",
-      };
+      return { state: "executed_unavailable", reason_code: (option && option.reason_code) || "" };
     }
     return status;
   }
@@ -390,22 +382,23 @@
       note = "已請求這個模組，但後端沒有回可用結果。"
         + `原因：${moduleReason(reason)}。`;
     }
-    return { ...absentSection(id, title, ring, note), status: status || { state: "not_requested" } };
+    return makeSection(id, title, ring, status || { state: "not_requested" }, { notes: [note] });
   }
 
   /** 未請求的模組仍然要出現在畫面上，帶著「未請求」而不是被靜默省略。 */
   function absentSection(id, title, ring, note) {
-    return {
-      id,
-      title,
-      layer_label: ring.layer,
-      status: { state: "not_requested" },
-      notes: [note],
-      tables: [],
-      blocks: [],
-    };
+    return makeSection(id, title, ring, { state: "not_requested" }, { notes: [note] });
   }
 
+  /**
+   * 一區的共同欄位：層級標籤取自環，notes／tables／blocks 沒給就是空的。匯出的鍵序由
+   * exporters 的 normalizeSection 決定，不由這裡。
+   */
+  function makeSection(id, title, ring, status, body = {}) {
+    return { id, title, layer_label: ring.layer, status, notes: [], tables: [], blocks: [], ...body };
+  }
+
+  // ── 時間、天體、軸點、反照點、宮位、相位與尊貴 ─────────────────────
   // 時間尺度依時代標示：1930 年、2040 年的盤不是 UTC（方法頁 §07.6）。
   // 標籤與匯出共用 exporters.js 的那一份。
   const TIME_SCALE_ZH = exportPipeline.TIME_SCALE_ZH;
@@ -442,8 +435,8 @@
   }
 
   function timeSection(response) {
-    const time = (response.astronomical_data || {}).time || {};
-    const atmosphere = (response.astronomical_data || {}).atmosphere || {};
+    const time = response.astronomical_data.time || {};
+    const atmosphere = response.astronomical_data.atmosphere || {};
     const anchored = time.input_semantics
       && time.input_semantics !== "exact_birth_time";
     const scale = timeScaleLabel(time.time_scale_era);
@@ -458,11 +451,7 @@
         "這一欄是計算用的代表性時刻，不是出生時刻。"
       );
     }
-    return {
-      id: "time",
-      title: "時間轉換",
-      layer_label: RING.ASTRONOMICAL.layer,
-      status: { state: "present" },
+    return makeSection("time", "時間轉換", RING.ASTRONOMICAL, { state: "present" }, {
       notes,
       tables: [{
         title: "時間",
@@ -486,17 +475,12 @@
           ["折射模型", presentClosedVocabulary(atmosphere.refraction, REFRACTION_MODEL_ZH, "折射模型")],
         ],
       }],
-      blocks: [],
-    };
+    });
   }
 
   function bodiesSection(response) {
-    const bodies = (response.astronomical_data || {}).bodies || [];
-    return {
-      id: "bodies",
-      title: "天體位置",
-      layer_label: RING.ASTRONOMICAL.layer,
-      status: { state: bodies.length ? "present" : "executed_unavailable" },
+    const bodies = response.astronomical_data.bodies || [];
+    return makeSection("bodies", "天體位置", RING.ASTRONOMICAL, { state: bodies.length ? "present" : "executed_unavailable" }, {
       notes: [
         "黃道、赤道、地平三套座標一次輸出，不必換工具重填生辰。",
         "星座與宮內度數由後端黃經以 30° 分段換寫，非另一次計算；完整精度在『運算結果＋驗算資料』的 JSON 匯出中。",
@@ -505,7 +489,7 @@
           ? "站心速度為 Swiss FLG_SPEED 解析值；太陽／月亮部分欄位已知不等於同次位置的有限差分導數，請勿把它當作已驗證的導數精度。"
           : null,
         // 後端對只有日期的請求不輸出地平座標（reason_code date_only_no_birth_time）。
-        (response.birth_time_sensitivity || {}).precision === "date_only"
+        response.birth_time_sensitivity.precision === "date_only"
           ? "只有出生日期：沒有出生時刻就沒有對應的地平位置，方位角與高度不列出。"
           : null,
       ].filter(Boolean),
@@ -514,8 +498,7 @@
         columns: BODY_COLUMNS,
         rows: bodyRows(bodies),
       }],
-      blocks: [],
-    };
+    });
   }
 
   function anglesSection(response) {
@@ -533,19 +516,14 @@
     }
     const rows = Object.entries(Labels.VOCABULARIES.angle_label)
       .map(([key, label]) => [label, ...positionCells(positions[key])]);
-    return {
-      id: "angles",
-      title: "軸點",
-      layer_label: RING.ASTRONOMICAL.layer,
-      status,
+    return makeSection("angles", "軸點", RING.ASTRONOMICAL, status, {
       notes: ["軸點由地方恆星時與觀測地緯度決定，與宮位制的選擇無關。"],
       tables: [{
         title: "四軸",
         columns: ["軸點", LONGITUDE_COLUMN, "星座度數"],
         rows,
       }],
-      blocks: [],
-    };
+    });
   }
 
   /**
@@ -554,7 +532,7 @@
    * 使用者拿畫面上的恆星黃經照算會差兩倍 ayanamsa。
    */
   function antisciaFormulaNotes(response) {
-    const ayanamsa = ((response.astronomical_data || {}).time || {}).ayanamsa;
+    const ayanamsa = (response.astronomical_data.time || {}).ayanamsa;
     if (typeof ayanamsa === "number" && Number.isFinite(ayanamsa) && ayanamsa !== 0) {
       return [
         `反照點 λ′ = 180° − λ − 2×ayanamsa；反向反照點 λ″ = 360° − λ − 2×ayanamsa（本次 ayanamsa = ${num(ayanamsa, 6)}°）。`,
@@ -567,7 +545,7 @@
   }
 
   function antisciaSection(response) {
-    const antiscia = (response.derived_geometry || {}).antiscia;
+    const antiscia = response.derived_geometry.antiscia;
     const direct = isRecord(antiscia) && Array.isArray(antiscia.antiscia) ? antiscia.antiscia : [];
     const contra = isRecord(antiscia) && Array.isArray(antiscia.contra_antiscia)
       ? antiscia.contra_antiscia : [];
@@ -590,11 +568,7 @@
       entry.contra = p.sign_position;
       byKey.set(p.key, entry);
     });
-    return {
-      id: "antiscia",
-      title: "反照點 Antiscia",
-      layer_label: RING.GEOMETRY.layer,
-      status: antisciaStatus,
+    return makeSection("antiscia", "反照點 Antiscia", RING.GEOMETRY, antisciaStatus, {
       notes: antisciaFormulaNotes(response).concat([
         "只提供幾何鏡像位置，不自動作關係或容許度判定。",
       ]),
@@ -607,8 +581,7 @@
           ...positionCells(e.contra),
         ]),
       }],
-      blocks: [],
-    };
+    });
   }
 
   /** 宮位制的名稱（labels.js；星盤圖頁尾同一句）。 */
@@ -629,7 +602,7 @@
   }
 
   function housesSection(response) {
-    const houses = (response.derived_methods || {}).house_division;
+    const houses = response.derived_methods.house_division;
     const cusps = isRecord(houses) && Array.isArray(houses.cusps) ? houses.cusps : [];
     const housesStatus = moduleState(
       response, { option: "include_houses", module: "house_division" }, houses,
@@ -640,11 +613,7 @@
         "houses", "宮位分割", RING.METHOD, "本次未請求宮位。", housesStatus
       );
     }
-    return {
-      id: "houses",
-      title: "宮位分割",
-      layer_label: RING.METHOD.layer,
-      status: housesStatus,
+    return makeSection("houses", "宮位分割", RING.METHOD, housesStatus, {
       notes: houseNotes(houses),
       tables: [{
         title: "宮頭",
@@ -656,8 +625,7 @@
           ),
         ]),
       }],
-      blocks: [],
-    };
+    });
   }
 
   // 每一格讀後端 aspects.py 的閉集（APPLYING_STATES、PERFECTION_STATUSES）
@@ -750,7 +718,7 @@
     if (target.partile === true) return "是";
     if (target.partile === false) {
       return target.partile_reason_code
-        && Object.prototype.hasOwnProperty.call(PARTILE_FALSE_REASON_ZH, target.partile_reason_code)
+        && Object.hasOwn(PARTILE_FALSE_REASON_ZH, target.partile_reason_code)
         ? PARTILE_FALSE_REASON_ZH[target.partile_reason_code]
         : "否";
     }
@@ -775,7 +743,7 @@
     }
     // 完成時刻只對此刻入相位者搜尋；其餘三種相態各自說出為何沒搜尋。
     if (status === "not_applying"
-      && Object.prototype.hasOwnProperty.call(NOT_APPLYING_PHASE_ZH, target.applying)) {
+      && Object.hasOwn(NOT_APPLYING_PHASE_ZH, target.applying)) {
       return NOT_APPLYING_PHASE_ZH[target.applying];
     }
     return presentClosedVocabulary(status, PERFECTION_STATUS_ZH, "完成狀態");
@@ -897,7 +865,7 @@
   }
 
   function aspectsSection(response) {
-    const aspects = (response.derived_methods || {}).aspects;
+    const aspects = response.derived_methods.aspects;
     // pairs 在 aspects 的**頂層**，不在 degree_based 底下。取錯層級的
     // `a || b || []` 會永遠回空陣列且永遠不報錯，表格就靜靜地空著。
     if (isRecord(aspects) && "pairs" in aspects && !Array.isArray(aspects.pairs)) {
@@ -979,20 +947,13 @@
       tables.push(aversionRows);
       notes.push(AVERSION_NOTE);
     }
-    return {
-      id: "aspects",
-      title: "相位",
-      layer_label: RING.METHOD.layer,
-      // orb 未選定不是「相位模組被拒絕」；相位算出來了，少的是一層判定。
-      status: orbReceipt.requested === true ? receiptStatus(orbReceipt) : aspectsStatus,
-      notes,
-      tables,
-      blocks: [],
-    };
+    // orb 未選定不是「相位模組被拒絕」；相位算出來了，少的是一層判定。
+    const status = orbReceipt.requested === true ? receiptStatus(orbReceipt) : aspectsStatus;
+    return makeSection("aspects", "相位", RING.METHOD, status, { notes, tables });
   }
 
   function dignitiesSection(response) {
-    const dignities = (response.derived_methods || {}).essential_dignities;
+    const dignities = response.derived_methods.essential_dignities;
     const status = moduleState(
       response, { module: "essential_dignities" }, dignities,
       isRecord(dignities) && isRecord(dignities.selected_profiles)
@@ -1026,15 +987,11 @@
       );
     }
 
-    return {
-      id: "dignities",
-      title: "本質尊貴與分配法",
-      layer_label: RING.METHOD.layer,
-      status,
+    return makeSection("dignities", "本質尊貴與分配法", RING.METHOD, status, {
       notes,
       tables,
       blocks: ["評估基礎：回歸黃道、地心位置、當日黃道框架。"],
-    };
+    });
   }
 
   // ── 各模組的承接區塊 ────────────────────────────────────────────
@@ -1115,14 +1072,10 @@
       return absentSectionFor("nodes", "月交點", RING.ASTRONOMICAL, "",
         { state: "executed_unavailable", reason_code: "" });
     }
-    return {
-      id: "nodes", title: "月交點",
-      layer_label: RING.ASTRONOMICAL.layer,
-      status: { state: "present" },
+    return makeSection("nodes", "月交點", RING.ASTRONOMICAL, { state: "present" }, {
       notes: ["密切交點與平均交點分列，不替使用者擇一。"],
       tables: [{ title: "交點", columns: BODY_COLUMNS, rows: bodyRows(nodes) }],
-      blocks: [],
-    };
+    });
   }
 
   // 後端以閉集 magnitude_basis 標明星等是單星還是整團合計；前端不另存星團名單。
@@ -1131,7 +1084,7 @@
   }
 
   function fixedStarsSection(response) {
-    const stars = (response.astronomical_data || {}).fixed_stars;
+    const stars = response.astronomical_data.fixed_stars;
     const list = Array.isArray(stars) ? stars : [];
     const status = moduleState(
       response, { option: "include_fixed_stars", module: "fixed_stars" }, stars, list.length > 0
@@ -1140,11 +1093,8 @@
       return absentSectionFor("fixed_stars", "恆星", RING.ASTRONOMICAL,
         "本次未請求恆星。目錄內的恆星全部列為研究用途，勾選才計算。", status);
     }
-    const policy = (response.astronomical_data || {}).fixed_star_policy || {};
-    return {
-      id: "fixed_stars", title: "恆星",
-      layer_label: RING.ASTRONOMICAL.layer,
-      status,
+    const policy = response.astronomical_data.fixed_star_policy || {};
+    return makeSection("fixed_stars", "恆星", RING.ASTRONOMICAL, status, {
       notes: [
         "本項只提供位置與星等，不自動判定恆星合相。",
         `目錄收錄 ${policy.catalog_size || DASH} 顆，本次輸出 ${list.length} 顆。`,
@@ -1167,12 +1117,11 @@
             ? `${num(star.magnitude, 2)}（整團合計）` : num(star.magnitude, 2),
         ]),
       }],
-      blocks: [],
-    };
+    });
   }
 
   function lunarApsidesSection(response) {
-    const module = (response.astronomical_data || {}).lunar_apsides;
+    const module = response.astronomical_data.lunar_apsides;
     const status = moduleState(
       response, { option: "include_lilith_priapus", module: "lunar_apsides" }, module,
       isRecord(module) && Array.isArray(module.points) && module.points.length > 0
@@ -1181,18 +1130,14 @@
       return absentSectionFor("lunar_apsides", "Lilith 與 Priapus", RING.ASTRONOMICAL,
         "本次未請求。", status);
     }
-    return {
-      id: "lunar_apsides", title: "Lilith 與 Priapus",
-      layer_label: RING.ASTRONOMICAL.layer,
-      status,
+    return makeSection("lunar_apsides", "Lilith 與 Priapus", RING.ASTRONOMICAL, status, {
       notes: ["三個點都是月球軌道的幾何點，不是物理天體；本項顯示位置，不自動加入相位判定。"],
       tables: [{ title: "月球拱點", columns: BODY_COLUMNS, rows: bodyRows(module.points) }],
-      blocks: [],
-    };
+    });
   }
 
   function parallaxMoonSection(response) {
-    const module = (response.astronomical_data || {}).parallax_moon;
+    const module = response.astronomical_data.parallax_moon;
     const status = moduleState(
       response, { module: "parallax_moon" }, module,
       isRecord(module) && isRecord(module.topocentric_effective)
@@ -1201,10 +1146,7 @@
       return absentSectionFor("parallax_moon", "站心月亮", RING.ASTRONOMICAL,
         "本次未請求。月亮位置口徑維持跟隨整體計算中心。", status);
     }
-    return {
-      id: "parallax_moon", title: "站心月亮",
-      layer_label: RING.ASTRONOMICAL.layer,
-      status,
+    return makeSection("parallax_moon", "站心月亮", RING.ASTRONOMICAL, status, {
       notes: [
         "畫面上同時出現兩個月亮不是錯誤，是明示的座標政策："
         + "地心參考值保留，站心值另計。",
@@ -1220,8 +1162,7 @@
           ["差值（度）", num(module.longitude_delta_degrees, 6)],
         ],
       }],
-      blocks: [],
-    };
+    });
   }
 
   /**
@@ -1246,7 +1187,7 @@
   }
 
   function extraAnglesSection(response) {
-    const module = (response.astronomical_data || {}).extra_angles;
+    const module = response.astronomical_data.extra_angles;
     // 額外角點模組由 include_extra_angles 與 include_anti_vertex 共用。只以前者
     // 判斷時，只勾反宿命點的請求在後端算出並回傳了它，畫面卻會寫「本次未請求」。
     const status = moduleState(
@@ -1259,10 +1200,7 @@
       return absentSectionFor("extra_angles", "額外角點", RING.ASTRONOMICAL, "本次未請求。", status);
     }
     const angles = module.angles || {};
-    return {
-      id: "extra_angles", title: "額外角點",
-      layer_label: RING.ASTRONOMICAL.layer,
-      status,
+    return makeSection("extra_angles", "額外角點", RING.ASTRONOMICAL, status, {
       notes: [
         "五個角點由Swiss Ephemeris的宮位計算附帶取得；反宿命點由宿命點的精確對蹠位置導出。這些都不是古典占星的四軸。",
       ],
@@ -1274,8 +1212,7 @@
           ...positionCells(isRecord(value) ? value.sign_position : null),
         ]),
       }],
-      blocks: [],
-    };
+    });
   }
 
   // 後端的鍵與列舉值不是顯示字串（sun、內部狀態碼、planet_in_house.jupiter）。
@@ -1543,14 +1480,7 @@
   });
   // 封閉詞彙一律走這裡。有對應印中文；沒有對應印「未識別的<角色>（原值）」——
   // 缺對應是看得見的缺陷，不是資料。只認自身屬性，原型鏈上的名字不是閉集成員。
-  function presentClosedVocabulary(value, vocabulary, role) {
-    if (typeof value === "string" && Object.prototype.hasOwnProperty.call(vocabulary, value)) {
-      return vocabulary[value];
-    }
-    return /^[a-z][a-z0-9_.]*$/.test(String(value || ""))
-      ? `未識別的${role}（${value}）`
-      : `未識別的${role}`;
-  }
+  const presentClosedVocabulary = Labels.closedLabel;
 
   // 出生時間不精確時，事件模組在
   // 區間兩端與代表性時刻各算一次，三個結果並列、不合併。上方各表是代表性時刻的結果；
@@ -1713,7 +1643,7 @@
   }
 
   function lunarEventsSection(response) {
-    const module = (response.astronomical_data || {}).lunar_events;
+    const module = response.astronomical_data.lunar_events;
     const phasesState = moduleState(
       response, { option: "include_lunar_phases", module: "lunar_phases" }, module,
       isRecord(module) && isRecord(module.primary_phases)
@@ -1794,10 +1724,7 @@
     const samplesDiffer = Boolean(samplesTable)
       && samplesTable.rows.some((row) => new Set(row.slice(1)).size > 1);
     if (samplesDiffer) tables.push(samplesTable);
-    return {
-      id: "lunar_events", title: "朔望與日月食",
-      layer_label: RING.ASTRONOMICAL.layer,
-      status: { state: "present" },
+    return makeSection("lunar_events", "朔望與日月食", RING.ASTRONOMICAL, { state: "present" }, {
       notes: (module.contract
         ? [presentClosedVocabulary(module.contract, LUNAR_CONTRACT_ZH, "契約")]
         : []).concat(
@@ -1817,8 +1744,7 @@
           : []
       ),
       tables,
-      blocks: [],
-    };
+    });
   }
 
   // 升降狀態的顯示名稱。鍵是後端 core/horizon_events.py 的 VISIBILITY_STATES 與
@@ -1845,15 +1771,6 @@
     method_not_applicable: "此天體不適用",
   });
 
-  /** 閉集狀態：有對應印中文；沒有對應印未識別標記，缺對應是可見的缺陷而不是資料。 */
-  function presentHorizonState(value, vocabulary, role) {
-    if (typeof value === "string" && Object.prototype.hasOwnProperty.call(vocabulary, value)) {
-      return vocabulary[value];
-    }
-    return /^[a-z][a-z0-9_]*$/.test(String(value || ""))
-      ? `未識別的${role}（${value}）`
-      : `未識別的${role}`;
-  }
 
   // 後端事件鍵是 rise／set／upper_transit／lower_transit（horizon_events.py）。
   const HORIZON_EVENTS = Object.freeze([
@@ -1869,19 +1786,19 @@
 
   /** 升降的一側：有時刻印時刻；沒有時刻印那一側的搜尋狀態，不折成 —。 */
   function horizonSideCell(entry, side, table) {
-    if (!isRecord(entry)) return presentHorizonState(undefined, HORIZON_EVENT_STATUS_ZH, "事件狀態");
+    if (!isRecord(entry)) return presentClosedVocabulary(undefined, HORIZON_EVENT_STATUS_ZH, "事件狀態");
     const instant = entry[side];
     if (isRecord(instant) && instant.utc_time) {
       return table ? table.cell(instant.utc_time, instant.time_scale) : instant.utc_time;
     }
     const search = isRecord(entry.search) ? entry.search[side] : null;
-    return presentHorizonState(
+    return presentClosedVocabulary(
       isRecord(search) ? search.status : undefined, HORIZON_SIDE_STATUS_ZH, "搜尋狀態"
     );
   }
 
   function horizonEventsSection(response) {
-    const module = (response.astronomical_data || {}).horizon_events;
+    const module = response.astronomical_data.horizon_events;
     const bodies = isRecord(module) && Array.isArray(module.bodies) ? module.bodies : [];
     const status = moduleState(
       response, { option: "include_rise_set_transits", module: "rise_set_transits" }, module,
@@ -1910,24 +1827,21 @@
           ? "「三個代表性取樣」表只列三個取樣之間不同的事件；沒列出的事件，三個取樣的結果相同。"
           : "三個代表性取樣的地平事件結果全部相同，因此不另列表。"]
       : [];
-    return {
-      id: "horizon_events", title: "升降與中天",
-      layer_label: RING.ASTRONOMICAL.layer,
-      status,
+    return makeSection("horizon_events", "升降與中天", RING.ASTRONOMICAL, status, {
       notes: horizonContractNotes(module.contract).concat(samplingNotes),
       tables: [{
         title: timed.title,
         columns: ["天體", "可見性", "事件", "狀態", "前一次", "下一次"],
         rows: bodies.flatMap((body) => {
           const events = isRecord(body.events) ? body.events : {};
-          const visibility = presentHorizonState(body.visibility, HORIZON_VISIBILITY_ZH, "可見性");
+          const visibility = presentClosedVocabulary(body.visibility, HORIZON_VISIBILITY_ZH, "可見性");
           return HORIZON_EVENTS.map(([key, label]) => {
             const entry = events[key];
             return [
               body.name || body.key,
               visibility,
               label,
-              presentHorizonState(
+              presentClosedVocabulary(
                 isRecord(entry) ? entry.status : undefined, HORIZON_EVENT_STATUS_ZH, "事件狀態"
               ),
               horizonSideCell(entry, "previous", timed),
@@ -1936,14 +1850,13 @@
           });
         }),
       }].concat(samplesTable && samplesTable.rows.length ? [samplesTable] : []),
-      blocks: [],
-    };
+    });
   }
 
   function planetInHouseSection(response) {
-    const module = (response.derived_methods || {}).planet_in_house;
+    const module = response.derived_methods.planet_in_house;
     const bodyByKey = new Map(
-      ((response.astronomical_data || {}).bodies || [])
+      (response.astronomical_data.bodies || [])
         .filter((body) => isRecord(body) && body.key)
         .map((body) => [body.key, body])
     );
@@ -1957,10 +1870,7 @@
         "本次未請求宮位，因此沒有落宮。", status);
     }
     const points = pointPlacementTable(response, module);
-    return {
-      id: "planet_in_house", title: "行星落宮",
-      layer_label: RING.METHOD.layer,
-      status,
+    return makeSection("planet_in_house", "行星落宮", RING.METHOD, status, {
       notes: [
         `宮位制：${houseSystemText(module.house_system_code, module.house_system_name)}。`,
         "距最近宮頭的黃經差一律列出（沿黃道量，不計黃緯），讓你自己判斷這個落宮對出生時刻有多敏感。",
@@ -1979,8 +1889,7 @@
           place.on_cusp === true ? "是" : "否",
         ]),
       }, ...points.tables],
-      blocks: [],
-    };
+    });
   }
 
   /**
@@ -2047,7 +1956,7 @@
   }
 
   function sectSection(response) {
-    const module = (response.derived_methods || {}).sect;
+    const module = response.derived_methods.sect;
     const status = moduleState(
       response, { module: "sect" }, module, isRecord(module) && typeof module.is_day === "boolean"
     );
@@ -2056,10 +1965,7 @@
     }
     const bandArcmin = typeof module.near_horizon_band_half_width_degrees === "number"
       ? num(module.near_horizon_band_half_width_degrees * 60, 0) : DASH;
-    return {
-      id: "sect", title: "日夜盤",
-      layer_label: RING.METHOD.layer,
-      status,
+    return makeSection("sect", "日夜盤", RING.METHOD, status, {
       notes: (
         module.in_near_horizon_band === true
           ? [`此盤太陽真高度在近地平敏感帶（±${bandArcmin}′）內。`
@@ -2081,8 +1987,7 @@
           ["兩種日出日落定義判法不同", yesNo(module.named_boundary_disagreement)],
         ],
       }],
-      blocks: [],
-    };
+    });
   }
 
   // core/planetary_hours.py WEEKDAYS 與 PERIODS 的閉集。
@@ -2110,7 +2015,7 @@
   }
 
   function planetaryHoursSection(response) {
-    const module = (response.derived_methods || {}).planetary_hours;
+    const module = response.derived_methods.planetary_hours;
     const status = moduleState(
       response, { module: "planetary_hours" }, module,
       isRecord(module) && isRecord(module.chart_instant)
@@ -2185,14 +2090,10 @@
         ]),
       });
     }
-    return {
-      id: "planetary_hours", title: "行星日與行星時",
-      layer_label: RING.METHOD.layer,
-      status,
+    return makeSection("planetary_hours", "行星日與行星時", RING.METHOD, status, {
       notes,
       tables,
-      blocks: [],
-    };
+    });
   }
 
   // core/lunar_mansions.py INTERVALS 的閉集。
@@ -2211,7 +2112,7 @@
   const LUNAR_MANSIONS_TITLE = "月宿 Lunar Mansions";
 
   function lunarMansionsSection(response) {
-    const module = (response.derived_methods || {}).lunar_mansions;
+    const module = response.derived_methods.lunar_mansions;
     const placements = isRecord(module) && Array.isArray(module.placements) ? module.placements : [];
     const status = moduleState(
       response, { option: "include_lunar_mansions", module: "lunar_mansions" }, module,
@@ -2222,7 +2123,7 @@
     }
     const width = isRecord(module.division) ? module.division.width_text : DASH;
     const interval = isRecord(module.birth_time_interval) ? module.birth_time_interval : null;
-    const bodies = ((response.astronomical_data || {}).bodies || []).filter(isRecord);
+    const bodies = (response.astronomical_data.bodies || []).filter(isRecord);
     const notes = [
       `月宿是把黃道從牡羊 0°（春分點）起分成 28 等分，每宿 ${width}，看月亮落在哪一宿。`
       + "這是中世紀阿拉伯與歐洲占星書的分法；宿名是阿拉伯星名，照原名的拉丁字母轉寫，不譯成中文。",
@@ -2269,23 +2170,17 @@
         ]),
       });
     }
-    return {
-      id: "lunar_mansions", title: LUNAR_MANSIONS_TITLE,
-      layer_label: RING.METHOD.layer,
-      status,
+    return makeSection("lunar_mansions", LUNAR_MANSIONS_TITLE, RING.METHOD, status, {
       notes,
       tables,
       blocks: LUNAR_MANSION_SOURCES.slice(),
-    };
+    });
   }
 
-  // 出處的一行：[方法出處登錄裡那條引文的開頭（登錄以鍵列出處時用鍵）, 畫面的字, 核到哪一層（後端閉集）, 句尾補註]。
-  // 句尾「核到：…」取 labels.js 的 source_reading，每一種層級全站同一個說法；整合測試
-  // 逐行核對層級與登錄裡那條引文相同。沒有引文的一行（指向方法頁）不寫層級。
+  // 出處的一行由 labels.js 的 sourceLine 組成（登錄以鍵列出處時第一欄用鍵）；整合測試
+  // 逐行核對層級與登錄裡那條引文相同。
   function sourceBlocks(lines) {
-    return Object.freeze(lines.map(([, text, reading, note]) => (reading
-      ? `${text}核到：${Labels.label("source_reading", reading)}${note || ""}。`
-      : text)));
+    return Object.freeze(lines.map(Labels.sourceLine));
   }
 
   // 月宿的出處：章節加一句白話，與方法出處登錄 lunar_mansions 同一組來源；
@@ -2384,7 +2279,7 @@
       "出處：Abū Maʿshar《大導論》（Kitāb al-mudkhal al-kabīr）VII.2，Hermann of Carinthia 的拉丁譯本：除了 zamim（Cazimi），"
       + "太陽會灼燒與它會合的每一顆星，使它衰弱、敗壞；金星因為黃緯，與太陽在同一度時仍看得見，"
       + "這時不能稱為焦傷，而稱「顯現」。",
-      "translation_read", "（Hermann 的拉丁文譯本，線上讀；阿拉伯原本未讀，Dykes 2020 年英譯 p.418 只見轉引）"],
+      "translation_read", "（Hermann 的拉丁文譯本，線上讀；阿拉伯原本未讀，Dykes 英譯 p.418 只見轉引）"],
     [null, "出處（本站的推論，不是原典的話）：為什麼判定用黃經差。上面兩位作者都替「北黃緯很高的金星」另立例外。"
       + "這樣的金星在天空中離太陽已有 7°–8°，若他們量的是天空中的實際距離，它本來就在 16′ 與 6° 之外，"
       + "根本不需要例外；正因為他們量的是黃道上的度數，金星與太陽「在同一度」，才需要另外說明它看得見、不算焦傷。"],
@@ -2431,27 +2326,8 @@
     return `${base}${before ? "前" : "後"} ${span}`;
   }
 
-  function solarPhaseSection(response) {
-    const module = (response.derived_methods || {}).solar_phase;
-    const rows = isRecord(module) && Array.isArray(module.rows) ? module.rows.filter(isRecord) : [];
-    const status = moduleState(
-      response, { option: "include_solar_phase", module: "solar_phase" }, module, rows.length > 0
-    );
-    if (status.state !== "present") {
-      return absentSectionFor(
-        "solar_phase", SOLAR_PHASE_TITLE, RING.METHOD,
-        "本次未請求。古典占星看行星離太陽多近：日輪內（cazimi）、焦傷（combust）、在光束下；勾選後列出月亮與五顆行星的距離與所屬距離帶。",
-        status
-      );
-    }
-    const results = isRecord(module.profile_results) ? module.profile_results : {};
-    const selected = isRecord(results[module.profile]) ? results[module.profile] : {};
-    const bandsOf = (profile) => (isRecord(results[profile]) && isRecord(results[profile].bands) ? results[profile].bands : {});
-    const band = (value) => presentClosedVocabulary(value, SOLAR_PHASE_BAND_ZH, "距離帶");
-    const disc = isRecord(module.disc_cazimi) ? module.disc_cazimi : {};
-    const sun = isRecord(module.sun) ? module.sun : {};
-    const interval = isRecord(module.birth_time_interval) ? module.birth_time_interval : null;
-    const anchored = module.time_basis !== "birth_instant";
+  /** 焦傷區的說明：原典怎麼說、所選分法、量法、例外與這次的時間基準。 */
+  function solarPhaseNotes(response, module, { selected, sun, disc, interval }) {
     const notes = [
       "古典占星看行星離太陽多近：太近時，行星被太陽的光芒蓋住，肉眼看不到。這一區列出月亮與五顆行星在黃道上離太陽幾度，"
       + "以及照所選分法落在哪一個距離帶。（黃道：太陽一年在天上走的路線，星座度數就是沿著它量的。）",
@@ -2497,6 +2373,89 @@
     }
     notes.push(...classicalDisagreementNotes(response, "derived_methods.solar_phase"));
     notes.push(SOLAR_PHASE_FIXED_SENTENCE);
+    return notes;
+  }
+
+  /** 三種分法的界線並列；一顆星兩側的界線在三種分法裡都相同時只寫一列。 */
+  function solarPhaseLimitTable(rows, results, profiles) {
+    const limitText = (profile, key, side) => {
+      const table = isRecord(results[profile]) && isRecord(results[profile].limits) ? results[profile].limits : {};
+      const perSide = isRecord(table[key]) && isRecord(table[key][side]) ? table[key][side] : {};
+      return [["cazimi", "日輪內"], ["combust", "焦傷"], ["under_beams", "在光束下"]]
+        .filter(([name]) => perSide[name] !== null)
+        .map(([name, label]) => `${label} ${solarPhaseLimitText(perSide[name])}`)
+        .join("；");
+    };
+    const limitRows = [];
+    rows.forEach((row) => {
+      const morning = profiles.map((profile) => limitText(profile, row.key, "morning"));
+      const evening = profiles.map((profile) => limitText(profile, row.key, "evening"));
+      if (morning.join("|") === evening.join("|")) {
+        limitRows.push([row.name || DASH, "兩側相同"].concat(morning));
+      } else {
+        limitRows.push([row.name || DASH, SOLAR_PHASE_LIMIT_SIDE_ZH.morning].concat(morning));
+        limitRows.push([row.name || DASH, SOLAR_PHASE_LIMIT_SIDE_ZH.evening].concat(evening));
+      }
+    });
+    return {
+      title: "三種分法的界線（黃經差）",
+      columns: ["天體", "太陽哪一側"].concat(profiles.map((profile) => SOLAR_PHASE_PROFILE_ZH[profile])),
+      rows: limitRows,
+    };
+  }
+
+  /** 前後幾天內跨過光束界線的時刻（月亮不搜尋）。 */
+  function solarPhaseCrossingTable(rows, module, selected, anchored) {
+    const search = isRecord(module.seven_day_search) ? module.seven_day_search : {};
+    const crossings = isRecord(selected.beam_crossings_within_7_days) ? selected.beam_crossings_within_7_days : {};
+    const crossingRows = [];
+    rows.forEach((row) => {
+      const found = crossings[row.key];
+      if (!Array.isArray(found)) return;  // 月亮不搜尋（null）
+      if (!found.length) {
+        crossingRows.push([row.name || DASH, "這段時間內沒有跨過", DASH, DASH, DASH]);
+        return;
+      }
+      found.filter(isRecord).forEach((item) => {
+        const instant = isRecord(item.instant) ? item.instant : {};
+        crossingRows.push([
+          row.name || DASH,
+          presentClosedVocabulary(item.direction, SOLAR_PHASE_CROSSING_ZH, "方向"),
+          typeof item.threshold_degrees === "number" ? `${item.threshold_degrees}°` : DASH,
+          solarPhaseOffsetText(item.day_offset, anchored),
+          instant.local_time ? `${instant.local_time} ${instant.utc_offset || ""}`.trim() : DASH,
+        ]);
+      });
+    });
+    return {
+      title: `${anchored ? "代表性時刻" : "出生"}前後 ${num(search.window_days, 0)} 天內跨過光束界線的時刻（五顆行星）`,
+      columns: ["行星", "方向", "界線", "什麼時候", "當地時間"],
+      rows: crossingRows,
+    };
+  }
+
+  function solarPhaseSection(response) {
+    const module = response.derived_methods.solar_phase;
+    const rows = isRecord(module) && Array.isArray(module.rows) ? module.rows.filter(isRecord) : [];
+    const status = moduleState(
+      response, { option: "include_solar_phase", module: "solar_phase" }, module, rows.length > 0
+    );
+    if (status.state !== "present") {
+      return absentSectionFor(
+        "solar_phase", SOLAR_PHASE_TITLE, RING.METHOD,
+        "本次未請求。古典占星看行星離太陽多近：日輪內（cazimi）、焦傷（combust）、在光束下；勾選後列出月亮與五顆行星的距離與所屬距離帶。",
+        status
+      );
+    }
+    const results = isRecord(module.profile_results) ? module.profile_results : {};
+    const selected = isRecord(results[module.profile]) ? results[module.profile] : {};
+    const bandsOf = (profile) => (isRecord(results[profile]) && isRecord(results[profile].bands) ? results[profile].bands : {});
+    const band = (value) => presentClosedVocabulary(value, SOLAR_PHASE_BAND_ZH, "距離帶");
+    const disc = isRecord(module.disc_cazimi) ? module.disc_cazimi : {};
+    const sun = isRecord(module.sun) ? module.sun : {};
+    const interval = isRecord(module.birth_time_interval) ? module.birth_time_interval : null;
+    const anchored = module.time_basis !== "birth_instant";
+    const notes = solarPhaseNotes(response, module, { selected, sun, disc, interval });
 
     const tables = [{
       title: anchored ? "代表性時刻各行星離太陽多遠" : "各行星離太陽多遠",
@@ -2521,57 +2480,8 @@
         + (isRecord(results[profile]) && results[profile].disc_cazimi_applied === true ? "，日輪內看太陽圓面" : ""))),
       rows: rows.map((row) => [row.name || DASH].concat(profiles.map((profile) => band(bandsOf(profile)[row.key])))),
     });
-    // 三種分法的界線並列；一顆星兩側的界線在三種分法裡都相同時只寫一列。
-    const limitText = (profile, key, side) => {
-      const table = isRecord(results[profile]) && isRecord(results[profile].limits) ? results[profile].limits : {};
-      const perSide = isRecord(table[key]) && isRecord(table[key][side]) ? table[key][side] : {};
-      return [["cazimi", "日輪內"], ["combust", "焦傷"], ["under_beams", "在光束下"]]
-        .filter(([name]) => perSide[name] !== null)
-        .map(([name, label]) => `${label} ${solarPhaseLimitText(perSide[name])}`)
-        .join("；");
-    };
-    const limitRows = [];
-    rows.forEach((row) => {
-      const morning = profiles.map((profile) => limitText(profile, row.key, "morning"));
-      const evening = profiles.map((profile) => limitText(profile, row.key, "evening"));
-      if (morning.join("|") === evening.join("|")) {
-        limitRows.push([row.name || DASH, "兩側相同"].concat(morning));
-      } else {
-        limitRows.push([row.name || DASH, SOLAR_PHASE_LIMIT_SIDE_ZH.morning].concat(morning));
-        limitRows.push([row.name || DASH, SOLAR_PHASE_LIMIT_SIDE_ZH.evening].concat(evening));
-      }
-    });
-    tables.push({
-      title: "三種分法的界線（黃經差）",
-      columns: ["天體", "太陽哪一側"].concat(profiles.map((profile) => SOLAR_PHASE_PROFILE_ZH[profile])),
-      rows: limitRows,
-    });
-    const search = isRecord(module.seven_day_search) ? module.seven_day_search : {};
-    const crossings = isRecord(selected.beam_crossings_within_7_days) ? selected.beam_crossings_within_7_days : {};
-    const crossingRows = [];
-    rows.forEach((row) => {
-      const found = crossings[row.key];
-      if (!Array.isArray(found)) return;  // 月亮不搜尋（null）
-      if (!found.length) {
-        crossingRows.push([row.name || DASH, "這段時間內沒有跨過", DASH, DASH, DASH]);
-        return;
-      }
-      found.filter(isRecord).forEach((item) => {
-        const instant = isRecord(item.instant) ? item.instant : {};
-        crossingRows.push([
-          row.name || DASH,
-          presentClosedVocabulary(item.direction, SOLAR_PHASE_CROSSING_ZH, "方向"),
-          typeof item.threshold_degrees === "number" ? `${item.threshold_degrees}°` : DASH,
-          solarPhaseOffsetText(item.day_offset, anchored),
-          instant.local_time ? `${instant.local_time} ${instant.utc_offset || ""}`.trim() : DASH,
-        ]);
-      });
-    });
-    tables.push({
-      title: `${anchored ? "代表性時刻" : "出生"}前後 ${num(search.window_days, 0)} 天內跨過光束界線的時刻（五顆行星）`,
-      columns: ["行星", "方向", "界線", "什麼時候", "當地時間"],
-      rows: crossingRows,
-    });
+    tables.push(solarPhaseLimitTable(rows, results, profiles));
+    tables.push(solarPhaseCrossingTable(rows, module, selected, anchored));
     const daily = rows.map((row) => (Array.isArray(row.daily_longitude_differences)
       ? row.daily_longitude_differences.filter(isRecord) : []));
     tables.push({
@@ -2604,14 +2514,11 @@
         }))),
       });
     }
-    return {
-      id: "solar_phase", title: SOLAR_PHASE_TITLE,
-      layer_label: RING.METHOD.layer,
-      status,
+    return makeSection("solar_phase", SOLAR_PHASE_TITLE, RING.METHOD, status, {
       notes,
       tables,
       blocks: SOLAR_PHASE_SOURCES.slice(),
-    };
+    });
   }
 
   // ── 產前朔望與出生前日月食的度數 ─────────────────────────────
@@ -2638,28 +2545,39 @@
     same_eclipse_as_previous_lunar: "與上一列是同一次",
     earlier_than_previous_lunar: "比上一列更早",
   });
-  const PRENATAL_SOURCES = Object.freeze([
-    "出處：Ptolemy《占星四書》卷三第 2 章（Robbins 英譯，Loeb 1940，頁 231–235；Hübner 校勘本（學者比對多份古抄本後整理出的版本）III.3）："
+  const PRENATAL_SOURCES = sourceBlocks([
+    [null, "出處：Ptolemy《占星四書》卷三第 2 章（Robbins 英譯，Loeb 1940，頁 229–235，朔望這一句在頁 231–233；Hübner 校勘本（學者比對多份古抄本後整理出的版本）III.3）："
       + "取出生前最近一次朔望的度數；朔取兩個發光體共同的度數，望取在地平線上方的那一個；"
-      + "再找在出生時主宰這個度數的行星，以它所在的度數定為上升度數。核到：已讀譯本（Robbins 英譯）。",
-    "出處：Robbins 英譯本卷三第 2 章註 9：正文依兩個最重要的手抄本與佚名註釋者，看朔望那一刻誰在地平線上方；"
-      + "另一個讀法看出生那一刻。本站採用前者，後者只當資訊列出。核到：已讀譯本（Robbins 英譯與註）。",
-    "出處：Ptolemy《占星四書》卷三第 10 章（Robbins 英譯頁 277–279；Hübner III.11）：定壽命主宰（hyleg）時，"
-      + "日生盤的候選包括前一次朔，夜生盤包括前一次望；書中沒有明說較近的另一種要不要越過。核到：已讀譯本（Robbins 英譯）。",
-    "出處：Lilly《Christian Astrology》（1647）卷三第 104 章，頁 527–529：日生盤取前一次朔、夜生盤取前一次望，"
-      + "較近的是另一種也要越過。核到：已讀原文（為方法頁讀過，這一條沒有重讀）。",
-    "出處：Valens《占星選集》（Anthologiae）卷三第 10、12 章（Riley 英譯的重排本）：用前一次朔或望的度數推算壽命的起點。"
+      + "再找在出生時主宰這個度數的行星，以它所在的度數定為上升度數。",
+      "translation_read", "（Robbins 英譯）"],
+    [null, "出處：Robbins 英譯本卷三第 2 章註 9：正文依兩個最重要的手抄本與佚名註釋者，看朔望那一刻誰在地平線上方；"
+      + "另一個讀法看出生那一刻。本站採用前者，後者只當資訊列出。",
+      "translation_read", "（Robbins 英譯與註）"],
+    [null, "出處：Ptolemy《占星四書》卷三第 10 章（Robbins 英譯頁 277–279；Hübner III.11）：定壽命主宰（hyleg）時，"
+      + "日生盤的候選包括前一次朔，夜生盤包括前一次望；書中沒有明說較近的另一種要不要越過。",
+      "translation_read", "（Robbins 英譯）"],
+    [null, "出處：Lilly《Christian Astrology》（1647）卷三第 104 章，頁 527–529：日生盤取前一次朔、夜生盤取前一次望，"
+      + "較近的是另一種也要越過。",
+      "original_language_read", "（為方法頁讀過，這一條沒有重讀）"],
+    [null, "出處：Valens《占星選集》（Anthologiae）卷三第 10、12 章（Riley 英譯的重排本）：用前一次朔或望的度數推算壽命的起點。"
       + "書中其他幾章也用朔或望：用朔或望的主星判斷死因，用望落在陽性或陰性星座判斷父母誰先過世，"
-      + "也用它定月份與關鍵年（卷二第 22、27、33、41 章，卷四第 2、28 章，卷五第 2、6 章）。核到：已讀譯本（Riley 英譯）。",
-    "出處：Ptolemy《占星四書》卷二第 4、5、6、8 章（Robbins 英譯）：日月食主要用在世運（地區、城市與時局）；"
+      + "也用它定月份與關鍵年（卷二第 22、27、33、41 章，卷四第 2、28 章，卷五第 2、6 章）。"
+      + "這些章號照 Kroll 校勘本與 Riley；Pingree 校勘本的卷三第 10、12 章是第 7、9 章，"
+      + "卷二第 22、27、33 章是第 23、28、34 章，卷五第 6 章是第 4 章。",
+      "translation_read", "（Riley 英譯）"],
+    [null, "出處：Ptolemy《占星四書》卷二第 4、5、6、8 章（Robbins 英譯）：日月食主要用在世運（地區、城市與時局）；"
       + "第 4 章說，這類普遍事件「第一個、也最有力的原因」是日月在食時的會合；"
       + "第 8 章說，（出生以後發生的）日月食的度數或其對沖度數上正好有某人本命的太陽或月亮時，是「最危險、最難避開」的位置；"
-      + "影響多久看遮蔽持續幾小時，日食一小時算一年，月食一小時算一個月。核到：已讀譯本（Robbins 英譯）。",
-    "出處：把出生前最後一次日月食當作命盤要點的二十世紀做法：Jansky《Interpreting the Eclipses》、"
-      + "Lineman《Your Prenatal Eclipse》、Brady《Predictive Astrology》（1992）、Graves〈Introduction to Prenatal Eclipses〉（2004）。"
-      + "本站只讀到 Graves 的網頁，其餘只讀到書目或摘要。核到：轉引（只讀到二手）。",
-    "出處：半影月食看不看得出來：Espenak〈Visual Appearance of Lunar Eclipses〉（eclipsewise.com）。"
-      + "日月食時刻與類型以 NASA 的日月食表驗證：Eclipse Predictions by Fred Espenak and Jean Meeus (NASA's GSFC)。核到：已讀原文。",
+      + "影響多久看遮蔽持續幾小時，日食一小時算一年，月食一小時算一個月。",
+      "translation_read", "（Robbins 英譯）"],
+    [null, "出處：把出生前最後一次日月食當作命盤要點的二十世紀做法：Jansky《Interpreting the Eclipses》（Para Research 1977）、"
+      + "Lineman《Eclipses》（AFA 1984）與《Your Prenatal Eclipse》（AFA 1992）、Brady《The Eagle and the Lark》（Weiser 1992）、"
+      + "Graves〈Introduction to Prenatal Eclipses〉（2004 年網文）。"
+      + "Graves 只讀到網頁摘要，其餘只讀到書目或書商說明。",
+      "secondary_only"],
+    [null, "出處：半影月食看不看得出來：Espenak〈Visual Appearance of Lunar Eclipses〉（eclipsewise.com）。"
+      + "日月食時刻與類型以 NASA 的日月食表驗證：Eclipse Predictions by Fred Espenak and Jean Meeus (NASA's GSFC)。",
+      "original_language_read"],
   ]);
 
   /** 「出生前 9.4 天」「出生前 35 分鐘」：後端給的數字，只換單位。 */
@@ -2877,7 +2795,7 @@
   }
 
   function prenatalPointsSection(response) {
-    const module = (response.astronomical_data || {}).lunar_events;
+    const module = response.astronomical_data.lunar_events;
     const syzygyState = moduleState(
       response, { module: "prenatal_syzygy" }, null,
       isRecord(module) && isRecord(module.prenatal_syzygy) && isRecord(module.prenatal_syzygy.degree_selection)
@@ -2906,19 +2824,16 @@
       tables.push(...parts.tables);
     }
     notes.push("照原典列出。不替你解盤，也不預測。");
-    return {
-      id: "prenatal_points",
-      title: PRENATAL_TITLE,
-      layer_label: RING.METHOD.layer,
-      status: { state: "present" },
+    return makeSection("prenatal_points", PRENATAL_TITLE, RING.METHOD, { state: "present" }, {
       notes,
       tables,
       blocks: PRENATAL_SOURCES.slice(),
-    };
+    });
   }
 
+  // ── 阿拉伯點、月空亡與赤緯相位 ─────────────────────────────────
   function lotsSection(response) {
-    const module = (response.derived_methods || {}).lots;
+    const module = response.derived_methods.lots;
     const status = moduleState(
       response, { option: "include_lots", module: "lots" }, module,
       isRecord(module) && typeof module.fortune === "number"
@@ -2966,30 +2881,22 @@
         return `${signPosition(position)}，黃經 ${longitudeText(position)}°`
           + (house === DASH ? "" : `，${house}`);
       };
-      return {
-        id: "lots", title: "阿拉伯點",
-        layer_label: RING.METHOD.layer,
-        status,
+      return makeSection("lots", "阿拉伯點", RING.METHOD, status, {
         notes,
         tables: [{
           title: "點位",
           columns: ["點", header("day", "若為日盤"), header("night", "若為夜盤")],
           rows: LOTS.map(([lot, label]) => [label, cell("day", lot), cell("night", lot)]),
         }],
-        blocks: [],
-      };
+      });
     }
     const rows = LOTS.map(([lot, label]) => [
       label, ...positionCells(lotPosition(module, lot)), houseCell(placement[lot]),
     ]);
-    return {
-      id: "lots", title: "阿拉伯點",
-      layer_label: RING.METHOD.layer,
-      status,
+    return makeSection("lots", "阿拉伯點", RING.METHOD, status, {
       notes,
       tables: [{ title: "點位", columns: ["點", LONGITUDE_COLUMN, "星座度數", "宮位"], rows }],
-      blocks: [],
-    };
+    });
   }
 
   // 「邊界判定」一列依閉集 verdict（core/moon.py VOC_VERDICTS）。同時刻的容差與
@@ -3005,7 +2912,7 @@
   });
 
   function voidOfCourseSection(response) {
-    const module = (response.derived_methods || {}).void_of_course;
+    const module = response.derived_methods.void_of_course;
     const status = moduleState(
       response, { option: "include_void_of_course", module: "void_of_course" }, module,
       isRecord(module) && "is_void_of_course" in module
@@ -3016,10 +2923,7 @@
     // all_candidates 依完成時刻排序，第一個就是下一個完成的相位。
     const candidates = Array.isArray(module.all_candidates) ? module.all_candidates : [];
     const next = isRecord(candidates[0]) ? candidates[0] : {};
-    return {
-      id: "void_of_course", title: "月空亡",
-      layer_label: RING.METHOD.layer,
-      status,
+    return makeSection("void_of_course", "月空亡", RING.METHOD, status, {
       // 這段限制由回應自帶的求解器欄位導出，不打字。打字的限制在後端改掉之後
       // 仍會留在畫面上，而它旁邊就印著證明它已經過時的那個欄位。
       notes: [
@@ -3033,7 +2937,7 @@
           ["是否空亡", module.is_void_of_course === true ? "是"
             : (module.is_void_of_course === false ? "否" : DASH)],
           // 同時刻（simultaneous_boundary）時「是否空亡」為空白，理由就在這一列。
-          ["邊界判定", Object.prototype.hasOwnProperty.call(VOC_VERDICT_ZH, module.verdict)
+          ["邊界判定", Object.hasOwn(VOC_VERDICT_ZH, module.verdict)
             ? VOC_VERDICT_ZH[module.verdict] : DASH],
           ["離開本星座尚需（小時）", num(module.time_to_sign_exit_hours, 4)],
           ["下一個完成的相位", next.body || DASH],
@@ -3041,12 +2945,11 @@
           ["尚需（日）", num(next.time_days, 6)],
         ],
       }],
-      blocks: [],
-    };
+    });
   }
 
   function declinationAspectsSection(response) {
-    const module = (response.derived_methods || {}).declination_aspects;
+    const module = response.derived_methods.declination_aspects;
     const status = moduleState(
       response, { option: "include_declination_aspects", module: "declination_aspects" }, module,
       isRecord(module) && Array.isArray(module.aspects)
@@ -3056,10 +2959,7 @@
         "本次未請求。這是 17 世紀 Placidus 的界定，非古典傳統。", status);
     }
     const pairs = module.aspects;
-    return {
-      id: "declination_aspects", title: "赤緯平行與反平行",
-      layer_label: RING.GEOMETRY.layer,
-      status,
+    return makeSection("declination_aspects", "赤緯平行與反平行", RING.GEOMETRY, status, {
       notes: [
         `這是 17 世紀 Placidus 的界定，非古典傳統；本次使用 ${num((module.orb_receipt || {}).effective_orb_degrees, 3)}° 容許度。`,
       ],
@@ -3074,10 +2974,10 @@
           num(pair.diff, 4),
         ]),
       }],
-      blocks: [],
-    };
+    });
   }
 
+  // ── 尊貴的各套分配法 ─────────────────────────────────────
   const TECHNIQUE_LABELS = Object.freeze({
     domicile_exaltation: "廟與旺 Domicile / Exaltation",
     bounds: "界 Bounds",
@@ -3284,15 +3184,13 @@
         ));
       });
 
-      return {
-        id: sectionId, title: TECHNIQUE_LABELS[technique],
-        layer_label: RING.METHOD.layer,
-        status,
+      return makeSection(sectionId, TECHNIQUE_LABELS[technique], RING.METHOD, status, {
         notes, tables, blocks: [],
-      };
+      });
     });
   }
 
+  // ── 驗算區段：軌跡、請求選項與輸出契約（只由完整回應建）──────────────
   /**
    * 逐步計算軌跡。
    *
@@ -3305,11 +3203,8 @@
       return absentSection("trace", "逐步計算軌跡", RING.VERIFICATION,
         "本次回應沒有軌跡。");
     }
-    const receipt = (response.calculation_dossier || {}).trace_receipt || {};
-    return {
-      id: "trace", title: "逐步計算軌跡",
-      layer_label: RING.VERIFICATION.layer,
-      status: { state: "present" },
+    const receipt = response.calculation_dossier.trace_receipt || {};
+    return makeSection("trace", "逐步計算軌跡", RING.VERIFICATION, { state: "present" }, {
       notes: [
         `本次共 ${trace.length} 步。步數隨你勾選的模組而變，不是固定值。`,
         "整份可複製貼出去逐步對照；每一步都列出算式、輸入與結果。",
@@ -3331,8 +3226,7 @@
           step.note || DASH,
         ]),
       }],
-      blocks: [],
-    };
+    });
   }
 
   /** 把 inputs／result 的物件壓成一行可讀文字，數值不改精度。 */
@@ -3352,16 +3246,13 @@
    * 所以這是「請求了什麼」，不是「實際算了什麼」；後者看各模組自己的狀態。
    */
   function requestedOptionsSection(response) {
-    const requested = response.requested_options || {};
+    const requested = response.requested_options;
     const keys = Object.keys(requested);
     if (!keys.length) {
       return absentSection("requested_options", "本次請求的選項", RING.VERIFICATION,
         "回應沒有回報請求的選項。");
     }
-    return {
-      id: "requested_options", title: "本次請求的選項",
-      layer_label: RING.VERIFICATION.layer,
-      status: { state: "present" },
+    return makeSection("requested_options", "本次請求的選項", RING.VERIFICATION, { state: "present" }, {
       notes: [
         "這是後端回報的本次請求值，含你沒有明示送出、由後端帶入的預設；"
         + "某個模組是否實際計算，看該模組自己的狀態。",
@@ -3375,18 +3266,14 @@
           requested[key] === null ? "null（未選定）" : String(requested[key]),
         ]),
       }],
-      blocks: [],
-    };
+    });
   }
 
   /** 輸出契約：三層的定義與其 provisional 狀態。 */
   function contractSection(response) {
-    const contract = response.output_contract || {};
+    const contract = response.output_contract;
     const layers = contract.layers || {};
-    return {
-      id: "contract", title: "輸出契約",
-      layer_label: RING.VERIFICATION.layer,
-      status: { state: "present" },
+    return makeSection("contract", "輸出契約", RING.VERIFICATION, { state: "present" }, {
       notes: [
         `契約狀態：${presentClosedVocabulary(contract.status, CONTRACT_STATUS_ZH, "契約狀態")}。`,
         `相容性政策：${presentClosedVocabulary(contract.compatibility, CONTRACT_COMPATIBILITY_ZH, "相容性政策")}。`,
@@ -3396,66 +3283,41 @@
         columns: ["層", "定義"],
         rows: Object.entries(layers).map(([key, text_]) => [key, text_]),
       }],
-      blocks: [],
-    };
+    });
   }
 
-  function sensitivitySection(response) {
-    const sensitivity = response.birth_time_sensitivity;
-    // 精確時刻不取樣；其餘一律看模組自己的 status。兩個欄位缺一個都不能猜成「未取樣」或「被拒」。
-    if (typeof sensitivity.precision !== "string"
-      || (sensitivity.precision !== "exact" && typeof sensitivity.status !== "string")) {
-      throw exportPipeline.incompleteResponse("出生時刻敏感度缺少 precision 或 status");
-    }
-    const section = (status, notes, tables, figures = []) => ({
-      id: "sensitivity",
-      title: "出生時刻敏感度",
-      layer_label: RING.VERIFICATION.layer,
-      status,
-      figures,
-      notes,
-      tables,
-      blocks: [],
-    });
-    if (sensitivity.precision === "exact") {
-      return section({ state: "not_requested" }, [
-        "出生時刻標記為精確到分鐘，因此沒有進行區間取樣。"
-        + "若你其實只記得大約時辰，改選較寬的把握度，這裡會列出哪些判定會跟著改變。",
-      ], []);
-    }
-    // 模組狀態沿用事件模組的詞彙：不是 computed，就沒有任何取樣結果可列，
-    // 不能落成一張看起來「什麼都沒變」的空表。
-    if (sensitivity.status !== "computed") {
-      return section(
-        { state: "refused", reason_code: sensitivity.reason_code || "" },
-        ["這次沒有完成出生時刻的區間取樣，因此不列任何取樣結果；代表性時刻的命盤本身不受影響。"
-          + `原因：${moduleReason(sensitivity.reason_code || "")}。`],
-        []
-      );
-    }
-    const sensitivityVocabulary = {
-      representative_midpoint_not_exact_birth_time:
-        "代表性時刻是取樣區間中點，不代表出生發生在第 30 分鐘。",
-      representative_first_available_probe_not_exact_birth_time:
-        "區間中點在這個時區不存在，因此代表性時刻採用本小時第一個可取樣時刻；它仍不是精確出生時刻。",
-      local_noon_computational_anchor_not_birth_time:
-        "代表性時刻是當地正午的計算錨點，不是出生時刻。",
-      local_noon_or_first_existing_instant_after:
-        "當地正午在這一天因時鐘變更而不存在，代表性時刻採用正午之後第一個真實存在的時刻作為計算錨點；它不是出生時刻。",
-      discrete_probes_not_continuous_hour_proof:
-        "取樣點是每 15 分鐘一點；這一小時內若有時鐘變更，另加變更前後各一秒。"
-        + "它們能找出取樣到的變動，但不能證明取樣點之間每一刻都相同。",
-      hourly_local_clock_samples_plus_day_end_not_continuous_extrema_proof:
-        "取樣點是當天每個存在的整點（重複的整點兩次都取）、當天每一段的第一秒與最後一秒，"
-        + "以及每次時鐘變更前後落在當天的各一秒。它們能找出取樣到的星座變動，但不能證明取樣點之間每一刻都相同。",
-    };
-    const SKIP_REASON_ZH = {
-      local_time_nonexistent: "時鐘沒有經過這一刻",
-      house_system_unavailable_at_sample: "這一刻所選宮位制算不出宮頭",
-    };
-    const LEDGER_PATH_ZH = SENSITIVITY_LEDGER_ZH;
+  // ── 出生時刻敏感度 ─────────────────────────────────────────
+  const SENSITIVITY_SEMANTICS_ZH = Object.freeze({
+    representative_midpoint_not_exact_birth_time:
+      "代表性時刻是取樣區間中點，不代表出生發生在第 30 分鐘。",
+    representative_first_available_probe_not_exact_birth_time:
+      "區間中點在這個時區不存在，因此代表性時刻採用本小時第一個可取樣時刻；它仍不是精確出生時刻。",
+    local_noon_computational_anchor_not_birth_time:
+      "代表性時刻是當地正午的計算錨點，不是出生時刻。",
+    local_noon_or_first_existing_instant_after:
+      "當地正午在這一天因時鐘變更而不存在，代表性時刻採用正午之後第一個真實存在的時刻作為計算錨點；它不是出生時刻。",
+    discrete_probes_not_continuous_hour_proof:
+      "取樣點是每 15 分鐘一點；這一小時內若有時鐘變更，另加變更前後各一秒。"
+      + "它們能找出取樣到的變動，但不能證明取樣點之間每一刻都相同。",
+    hourly_local_clock_samples_plus_day_end_not_continuous_extrema_proof:
+      "取樣點是當天每個存在的整點（重複的整點兩次都取）、當天每一段的第一秒與最後一秒，"
+      + "以及每次時鐘變更前後落在當天的各一秒。它們能找出取樣到的星座變動，但不能證明取樣點之間每一刻都相同。",
+  });
+  const SKIP_REASON_ZH = Object.freeze({
+    local_time_nonexistent: "時鐘沒有經過這一刻",
+    house_system_unavailable_at_sample: "這一刻所選宮位制算不出宮頭",
+  });
+  // 後端標出的評估限制：取樣點在這種情形下界不住結果，受影響的路徑只算部分比較。
+  const EVALUATION_LIMIT_ZH = Object.freeze({
+    polar_ascendant_can_reverse_between_samples:
+      "出生地在極圈內，上升點可能在兩個取樣時刻之間翻轉半個黃道再回來，"
+      + "取樣點與細分時刻都可能漏掉其間的星座與宮位",
+  });
+
+  /** 敏感度區的說明：取樣區間、代表性時刻、取樣語意與限制、沒取樣的時刻、當天的時鐘變更。 */
+  function sensitivityNotes(sensitivity) {
     const presentSensitivityText = (value) =>
-      presentClosedVocabulary(value, sensitivityVocabulary, "語意");
+      presentClosedVocabulary(value, SENSITIVITY_SEMANTICS_ZH, "語意");
     const notes = [
       `取樣區間：${sensitivity.interval_start_local || DASH} 至 `
       + `${sensitivity.interval_end_exclusive_local || DASH}（不含結尾）。`,
@@ -3486,12 +3348,6 @@
     if (skipped.some((item) => isRecord(item) && item.reason_code === "local_time_nonexistent")) {
       notes.push("這個民用小時只有一部分實際存在；以下範圍只涵蓋可取樣的時刻。");
     }
-    // 後端標出的評估限制：取樣點在這種情形下界不住結果，受影響的路徑只算部分比較。
-    const EVALUATION_LIMIT_ZH = {
-      polar_ascendant_can_reverse_between_samples:
-        "出生地在極圈內，上升點可能在兩個取樣時刻之間翻轉半個黃道再回來，"
-        + "取樣點與細分時刻都可能漏掉其間的星座與宮位",
-    };
     const limits = Array.isArray(sensitivity.evaluation_limits) ? sensitivity.evaluation_limits : [];
     limits.filter(isRecord).forEach((limit) => {
       const affected = (Array.isArray(limit.affected_paths) ? limit.affected_paths : [])
@@ -3523,7 +3379,11 @@
     if (schedule && Array.isArray(schedule.absent_hourly_labels) && schedule.absent_hourly_labels.length) {
       notes.push(`這些整點在這個時區當天不存在，沒有取樣：${schedule.absent_hourly_labels.join("、")}。`);
     }
+    return notes;
+  }
 
+  /** 敏感度區的表格：每一種精度回的形狀各一張，加上其他判定與各模組的取樣涵蓋。 */
+  function sensitivityTables(response, sensitivity) {
     // 每一種精度回的是不同的形狀，畫面必須各自承接。只讀其中一種而讓另一種
     // 落成空表，讀起來會像「沒有東西變動」——在後端剛好回報有變動時，那是把
     // 訊息反過來說。
@@ -3577,7 +3437,7 @@
         ]),
       });
     }
-    const ledger = ((response.calculation_dossier || {}).birth_time || {}).sensitivity_coverage;
+    const ledger = (response.calculation_dossier.birth_time || {}).sensitivity_coverage;
     const summaryRows = [];
     const angles = isRecord(sensitivity.angles) ? sensitivity.angles : {};
     Object.keys(ANGLE_ZH).forEach((key) => {
@@ -3629,13 +3489,44 @@
         title: "各模組的取樣涵蓋",
         columns: ["模組", "狀態"],
         rows: Object.entries(ledger).map(([path, state]) => [
-          LEDGER_PATH_ZH[path] || modulePathLabel(path, bodyNames),
+          SENSITIVITY_LEDGER_ZH[path] || modulePathLabel(path, bodyNames),
           samplingStatus(state),
         ]),
       });
     }
+    return { tables, ledger, bodyNames };
+  }
+
+  function sensitivitySection(response) {
+    const sensitivity = response.birth_time_sensitivity;
+    // 精確時刻不取樣；其餘一律看模組自己的 status。兩個欄位缺一個都不能猜成「未取樣」或「被拒」。
+    if (typeof sensitivity.precision !== "string"
+      || (sensitivity.precision !== "exact" && typeof sensitivity.status !== "string")) {
+      throw exportPipeline.incompleteResponse("出生時刻敏感度缺少 precision 或 status");
+    }
+    const section = (status, notes, tables, figures = []) => makeSection(
+      "sensitivity", "出生時刻敏感度", RING.VERIFICATION, status, { figures, notes, tables },
+    );
+    if (sensitivity.precision === "exact") {
+      return section({ state: "not_requested" }, [
+        "出生時刻標記為精確到分鐘，因此沒有進行區間取樣。"
+        + "若你其實只記得大約時辰，改選較寬的把握度，這裡會列出哪些判定會跟著改變。",
+      ], []);
+    }
+    // 模組狀態沿用事件模組的詞彙：不是 computed，就沒有任何取樣結果可列，
+    // 不能落成一張看起來「什麼都沒變」的空表。
+    if (sensitivity.status !== "computed") {
+      return section(
+        { state: "refused", reason_code: sensitivity.reason_code || "" },
+        ["這次沒有完成出生時刻的區間取樣，因此不列任何取樣結果；代表性時刻的命盤本身不受影響。"
+          + `原因：${moduleReason(sensitivity.reason_code || "")}。`],
+        []
+      );
+    }
+    const notes = sensitivityNotes(sensitivity);
+    const { tables, ledger, bodyNames } = sensitivityTables(response, sensitivity);
     const figure = samplingFigure(sensitivity, ledger, {
-      bodyNames, ledgerLabel: (path) => LEDGER_PATH_ZH[path] || modulePathLabel(path, bodyNames),
+      bodyNames, ledgerLabel: (path) => SENSITIVITY_LEDGER_ZH[path] || modulePathLabel(path, bodyNames),
     });
     return section({ state: "present" }, notes, tables, figure ? [figure] : []);
   }
@@ -4227,15 +4118,16 @@
     };
   }
 
+  // ── 計算收據 ─────────────────────────────────────────────
   function receiptSection(response) {
-    const dossier = response.calculation_dossier || {};
+    const dossier = response.calculation_dossier;
     const engine = dossier.engine || {};
     const privacy = dossier.privacy || {};
     const receipt = dossier.input_receipt || {};
     const place = dossier.location_resolution || {};
     const policy = dossier.calculation_policy || {};
     const traceReceipt = dossier.trace_receipt || {};
-    const time = (response.astronomical_data || {}).time || {};
+    const time = response.astronomical_data.time || {};
     const trace = response.calculation_trace || [];
     const buildIdentity = dossier.build_identity || {};
     const releaseIdentity = buildIdentity.release_identity || {};
@@ -4250,11 +4142,7 @@
       ["前端公開原始碼修訂", (releaseIdentity.frontend || {}).public_source_revision],
       ["前端原始碼網址", (releaseIdentity.frontend || {}).source_url],
     ] : [];
-    return {
-      id: "receipt",
-      title: "計算收據",
-      layer_label: RING.VERIFICATION.layer,
-      status: { state: "present" },
+    return makeSection("receipt", "計算收據", RING.VERIFICATION, { state: "present" }, {
       notes: [
         "這是本次計算的可重現證據，不是占星解讀，也不是任何外部天文、方法、"
         + "資安或法規認證。",
@@ -4358,13 +4246,9 @@
           ],
         },
       ],
-      blocks: [],
-    };
+    });
   }
 
-  /**
-   * 回應 -> sections。這是唯一一處把後端形狀翻成顯示投影的地方。
-   */
   // ═══ 本命盤速覽 ═════════════════════════════════════════
   //
   // 太陽、月亮與上升的星座，排在結果最前面。不另算：單一星座照印天體表與軸點表
@@ -4412,7 +4296,7 @@
         .filter((item) => isRecord(item) && item.key)
         .map((item) => [item.key, item])
     );
-    const bodies = (response.astronomical_data || {}).bodies || [];
+    const bodies = response.astronomical_data.bodies || [];
     const bodyRow = (key, label) => {
       const body = bodies.find((item) => isRecord(item) && item.key === key);
       return [label, summaryCell(samplesByKey[key], body ? body.sign_position : null)];
@@ -4443,12 +4327,8 @@
       notes.push("上升星座需要出生時刻；知道大約幾點時，可改選「只知道約略小時」。");
     }
 
-    const sidereal = (response.computation_mode || {}).zodiac === "sidereal";
-    return {
-      id: "summary",
-      title: SUMMARY_TITLE,
-      layer_label: RING.ASTRONOMICAL.layer,
-      status: { state: "present" },
+    const sidereal = response.computation_mode.zodiac === "sidereal";
+    return makeSection("summary", SUMMARY_TITLE, RING.ASTRONOMICAL, { state: "present" }, {
       notes,
       tables: [{
         title: "太陽、月亮與上升",
@@ -4459,9 +4339,11 @@
       blocks: [angles.status.state === "present"
         ? "完整數值見〈天體位置〉與〈軸點〉。"
         : "完整數值見〈天體位置〉。"],
-    };
+    });
   }
 
+  // ═══ 回應 → sections ═══════════════════════════════════════
+  /** 這是唯一一處把後端形狀翻成顯示投影的地方。 */
   function buildSections(response) {
     if (!isRecord(response)) throw new Error("缺少可用的 backend response。");
     // 先確認版本與狀態權威；之後各區只讀，不再替缺席的權威猜狀態。
@@ -4469,7 +4351,7 @@
     const angles = anglesSection(response);
     // 頁面投影（帶 projection 鍵）沒有軌跡、請求選項、輸出契約與完整收據。這四區只由完整回應
     // 建出；頁面文件不建，而不是以缺鍵推定「未請求」。
-    const verification = Object.prototype.hasOwnProperty.call(response, "projection") ? [] : [
+    const verification = Object.hasOwn(response, "projection") ? [] : [
       requestedOptionsSection(response),
       traceSection(response),
       contractSection(response),
@@ -4581,7 +4463,7 @@
   }
 
   function dodecatemoriaTimeNote(response) {
-    const precision = (response.birth_time_sensitivity || {}).precision;
+    const precision = response.birth_time_sensitivity.precision;
     if (precision === "date_only") {
       return "只知道出生日期時，這一區用當天的代表性時刻計算。十二分部把度數放大十二倍以上，"
         + "所以同一天裡早一點或晚一點出生，任何一列都可能換到另一個星座：月亮最快，一天就繞過大半圈；"
@@ -4610,7 +4492,7 @@
   }
 
   function dodecatemoriaSection(response) {
-    const module = (response.derived_methods || {}).dodecatemoria;
+    const module = response.derived_methods.dodecatemoria;
     const points = isRecord(module) && Array.isArray(module.points) ? module.points : [];
     const status = moduleState(
       response, { option: "include_dodecatemoria", module: "dodecatemoria" }, module, points.length > 0
@@ -4631,7 +4513,7 @@
       presentClosedVocabulary(module.profile, DODECATEMORIA_PROFILE_ZH, "算法"),
       ...classicalDisagreementNotes(response, "derived_methods.dodecatemoria"),
       ...notListed.map((code) => (code === "lots_not_requested_or_not_computed"
-        && (response.birth_time_sensitivity || {}).precision === "date_only"
+        && response.birth_time_sensitivity.precision === "date_only"
         ? DODECATEMORIA_LOTS_NEED_TIME_NOTE
         : presentClosedVocabulary(code, DODECATEMORIA_NOT_LISTED_ZH, "未列原因"))),
       "中天不列：讀過的古書沒有算中天的十二分部。只列位置與守護行星。不替你解盤，也不預測。",
@@ -4652,11 +4534,7 @@
         .map((item) => [item.key, item])
     );
     if (Object.keys(sampledByKey).length) notes.push(DODECATEMORIA_SAMPLED_NOTE);
-    return {
-      id: "dodecatemoria",
-      title: DODECATEMORIA_TITLE,
-      layer_label: RING.METHOD.layer,
-      status,
+    return makeSection("dodecatemoria", DODECATEMORIA_TITLE, RING.METHOD, status, {
       notes,
       tables: [{
         title: "各點的十二分部",
@@ -4670,7 +4548,7 @@
         ]),
       }],
       blocks: DODECATEMORIA_SOURCES.slice(),
-    };
+    });
   }
 
   // ── 行星與宮的古典分類 ─────────────────────────────────────
@@ -4758,7 +4636,7 @@
   // 只知日期時，後端在代表性計算時刻算古典分類，並在模組的 time_basis 寫明；這一句照它寫，不由精度推斷。
   const CLASSICAL_DATE_ONLY_BASIS = "representative_computational_anchor_not_birth_time";
   function classicalTimeNote(response, module) {
-    const precision = (response.birth_time_sensitivity || {}).precision;
+    const precision = response.birth_time_sensitivity.precision;
     if (module.time_basis === CLASSICAL_DATE_ONLY_BASIS) {
       return "只知道出生日期時沒有出生時刻：日盤或夜盤、在地平上或下，以及落在哪一宮都無法判定，這幾欄寫「—」；"
         + "吉凶、陰陽與日夜區照列，水星是晨星或昏星依當天的代表性時刻。";
@@ -4770,7 +4648,7 @@
   }
 
   function classicalClassificationsSection(response) {
-    const module = (response.derived_methods || {}).classical_classifications;
+    const module = response.derived_methods.classical_classifications;
     const planets = isRecord(module) && Array.isArray(module.planets) ? module.planets.filter(isRecord) : [];
     const places = isRecord(module) && Array.isArray(module.places) ? module.places.filter(isRecord) : [];
     const status = moduleState(
@@ -4787,7 +4665,7 @@
     }
     const sect = isRecord(module.chart_sect) ? module.chart_sect : null;
     const notEvaluated = Array.isArray(module.not_evaluated) ? module.not_evaluated : [];
-    const housesModule = (response.derived_methods || {}).planet_in_house;
+    const housesModule = response.derived_methods.planet_in_house;
     const notes = [
       "這一區照古書原文列出分類：哪本書把哪顆行星歸為吉星或凶星、屬於白天還是夜晚一組、在哪一宮「喜樂」，"
         + "以及這張盤合不合乎書中的條件。各書說法不同時並列，不替你挑。本站只列分類與條件，不加總、不打分。",
@@ -4827,7 +4705,7 @@
       notes.push(`${near.join("、")}貼近地平線（離地平線不到 50′）：出生時刻差幾分鐘，或改用計入大氣折射的判法，`
         + "在地平上或下就可能不同。");
     }
-    if (notEvaluated.includes("houses_not_computed") && (response.birth_time_sensitivity || {}).precision !== "date_only") {
+    if (notEvaluated.includes("houses_not_computed") && response.birth_time_sensitivity.precision !== "date_only") {
       notes.push("這次沒有計算宮位，所以喜樂宮的「本盤所在的宮」與十二宮表的行星一欄寫「—」。");
     }
     const timeNote = classicalTimeNote(response, module);
@@ -4847,11 +4725,7 @@
       });
     }
     const placesDrawn = residents.size > 0;
-    return {
-      id: "classical_classifications",
-      title: CLASSICAL_TITLE,
-      layer_label: RING.METHOD.layer,
-      status,
+    return makeSection("classical_classifications", CLASSICAL_TITLE, RING.METHOD, status, {
       notes,
       tables: [
         {
@@ -4913,7 +4787,7 @@
         },
       ],
       blocks: CLASSICAL_SOURCES.slice(),
-    };
+    });
   }
 
   /** 非「已計算」區段的原因代碼帶上中文說法，匯出（CSV 的值欄）讀這一份，不另查表。 */
@@ -5088,6 +4962,7 @@
     return Boolean(prefixes) && typeof note === "string" && prefixes.some((prefix) => note.startsWith(prefix));
   }
 
+  // ═══ sections → view tree（畫面）════════════════════════════
   function buildViewTree(exportDocument) {
     if (!isRecord(exportDocument) || !Array.isArray(exportDocument.sections)) {
       throw new Error("缺少可用的 canonical export document。");
@@ -5223,6 +5098,7 @@
     signPosition,
     longitudeText,
     receiptStatus,
+    moduleState,
     buildSections,
     buildViewTree,
     birthTimeSummary,

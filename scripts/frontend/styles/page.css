@@ -19,6 +19,10 @@ h1,h2,h3,h4{font-feature-settings:"palt" 1}
 .skip-link:focus{transform:translateY(0)}
 .wrap{max-width:var(--wrap); margin:0 auto; padding:0 var(--pad)}
 .mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
+/* 段落與清單裡的長網址、雜湊在窄螢幕上放不下一行時可以斷開（驗證頁的計算頁網址原本把整頁
+   撐寬 17 px）。只限直接放在段落或清單項裡的：表格裡的等寬字一加上斷行規則，Chrome 算欄寬
+   時會把 /legal/copyright 的授權表撐到 876 px。 */
+:where(p, li) > .mono{overflow-wrap:anywhere}
 
 /* ─── 內文連結 ───────────────────────────────────────────
    在這之前全站沒有基礎 a 規則，於是每一個內文連結都吃到瀏覽器預設的
@@ -33,7 +37,9 @@ a{
   text-decoration-style:dotted; text-decoration-thickness:1px;
   text-underline-offset:.22em;
 }
-a:hover{text-decoration-style:solid}
+/* 本檔所有 :hover 規則都包在 (hover:hover) 裡：觸控螢幕點過之後會一直停在 hover 狀態，
+   按鈕因此一直是赭色。滑鼠與觸控板照舊。 */
+@media (hover:hover){a:hover{text-decoration-style:solid}}
 a:focus-visible,summary:focus-visible,button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 
 /* ─── 銘牌 ─── */
@@ -85,12 +91,17 @@ header .wrap{
 .hero{background:var(--plate); color:var(--plate-fg); padding:var(--s6) 0 var(--s5)}
 .hero .eyebrow{color:var(--plate-dim)}
 .hero .eyebrow b{color:var(--accent-rev); font-weight:400}
+/* h1 寫這一頁是什麼，比原本的文學句長，字級因此比照驗證頁縮小；文學句改放 h1 正下方的副題，
+   在黑底上用亮色，強調詞仍是赭色。keep-all 讓標題只在冒號後與 <wbr> 處換行，不把「排盤」拆在兩行；
+   螢幕窄到一段放不下時，overflow-wrap 才在段內斷開，不撐寬整頁。 */
 .hero h1{
   font-family:var(--sans); font-weight:700;
-  font-size:clamp(2.3rem,6vw,4.5rem); line-height:1.2;
-  letter-spacing:.004em; margin:var(--s3) 0;
+  font-size:clamp(2rem,4.2vw,3.4rem); line-height:1.3;
+  letter-spacing:.004em; margin:var(--s3) 0 var(--s2);
+  word-break:keep-all; overflow-wrap:anywhere;
 }
-.hero h1 em{font-style:normal; color:var(--accent-rev)}
+.hero .kicker{color:var(--plate-fg); font-size:clamp(1.25rem,2.2vw,1.6rem); line-height:1.5}
+.hero .kicker em{font-style:normal; color:var(--accent-rev)}
 .hero .lede{max-width:var(--measure); color:var(--plate-dim); font-size:var(--fs-lead)}
 
 /* @pages home features */
@@ -100,7 +111,7 @@ header .wrap{
 .hero-act{display:flex; flex-wrap:wrap; align-items:center; gap:var(--s3); margin-top:var(--s3)}
 /* @pages home */
 .btn.rev{background:var(--paper); color:var(--plate)}
-.btn.rev:hover{background:var(--accent-rev); color:var(--paper)}
+@media (hover:hover){.btn.rev:hover{background:var(--accent-rev); color:var(--paper)}}
 
 /* ─── 首屏憑證列（借候選 A 的 hero 底標、C 的授權徽章）───
    三個詞把商業姿態、授權與追蹤立場擺在首屏，不必先讀一段文字。
@@ -184,6 +195,12 @@ p{max-width:var(--measure); color:var(--ink-dim)}
 .s-lead{stroke:var(--ink-faint); stroke-width:.6}
 .s-num{font-family:var(--mono); font-size:11px; fill:var(--ink-faint)}
 .s-dot{fill:var(--ink)}
+/* 手機上圖版只有 300–400 px 寬，11 的編號只剩 5–7 px。放大到 28（約 13.5–17 px），
+   並往下移 6 讓數字的中線仍對齊引線終點（y＝列中心＋4 是按 11 的字算的）。桌機不變。 */
+@media (max-width:640px){
+  .s-num{font-size:28px}
+  .s-num text{transform:translateY(6px)}
+}
 
 /* ─── 兩把尺 ─── */
 .rules{margin-top:var(--s3); border-top:1px solid var(--hair); border-bottom:1px solid var(--hair)}
@@ -354,7 +371,7 @@ p{max-width:var(--measure); color:var(--ink-dim)}
   background-size:1px 12px;
   background-position:8px 11px, 11px 11px, 14px 11px;
 }
-.sd-track:hover .sd-handle{box-shadow:0 0 0 4px rgba(160,58,34,.16), 0 1px 3px rgba(28,25,19,.34)}
+@media (hover:hover){.sd-track:hover .sd-handle{box-shadow:0 0 0 4px rgba(160,58,34,.16), 0 1px 3px rgba(28,25,19,.34)}}
 .sd-handle:active{cursor:grabbing}
 .sd-handle:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
 .sd[data-phase="after"] .sd-handle{background-color:var(--accent)}
@@ -372,6 +389,15 @@ p{max-width:var(--measure); color:var(--ink-dim)}
 @media (prefers-reduced-motion:reduce){
   .sd[data-seen]:not([data-touched]) .sd-handle{animation:none}
 }
+/* 觸控：軌道與把手放大到 44 px 高（把手 28×44），其餘元件整體下移 3px，中線仍對齊（22px）。 */
+@media (pointer:coarse){
+  .sd-track{height:44px}
+  .sd-track::before{top:18px}
+  .sd-fill{top:19px}
+  .sd-flip{top:10px}
+  .sd-probe{top:18px}
+  .sd-handle{top:0; width:28px; height:44px; margin-left:-14px; background-size:1px 16px; background-position:11px 14px, 14px 14px, 17px 14px}
+}
 
 .sd-scale{
   display:flex; justify-content:space-between; gap:var(--s2);
@@ -383,8 +409,15 @@ p{max-width:var(--measure); color:var(--ink-dim)}
   color:var(--accent); font:inherit; background:none; cursor:pointer;
   border:0; border-bottom:1px dotted var(--accent); padding:0;
 }
-.sd-flipcap:hover{border-bottom-style:solid}
+@media (hover:hover){.sd-flipcap:hover{border-bottom-style:solid}}
 .sd-flipcap:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+/* 觸控：上下各加 10px 可按範圍、再以負邊界抵銷，版面不動；點線改用文字底線，才會留在字下。 */
+@media (pointer:coarse){
+  .sd-flipcap{
+    padding:10px 0; margin:-10px 0; border-bottom:0;
+    text-decoration:underline dotted var(--accent); text-decoration-thickness:1px; text-underline-offset:.25em;
+  }
+}
 
 .sd-asc{
   margin-top:var(--s2); font-family:var(--mono); font-size:var(--fs-note);
@@ -475,7 +508,7 @@ p{max-width:var(--measure); color:var(--ink-dim)}
   display:inline-block; font-family:var(--sans); font-size:var(--fs-aside);
   background:var(--ink); color:var(--paper); padding:1.05rem 2.4rem; text-decoration:none;
 }
-.btn:hover{background:var(--accent)}
+@media (hover:hover){.btn:hover{background:var(--accent)}}
 
 /* @pages all */
 footer{border-top:1px solid var(--ink); padding:var(--s3) 0 var(--s5)}
@@ -512,7 +545,7 @@ main{display:block}
    範圍，否則同名同分數的後者會覆蓋前者。 */
 .page-body .cta{display:inline-block; background:var(--ink); color:var(--paper);
   padding:.95rem 2.4rem; text-decoration:none; margin-top:var(--s2)}
-.page-body .cta:hover{background:var(--accent)}
+@media (hover:hover){.page-body .cta:hover{background:var(--accent)}}
 .draft-flag{max-width:var(--measure-cjk); border-left:3px solid var(--accent);
   padding:.75rem 0 .75rem 1.1rem; color:var(--ink-dim); font-size:var(--fs-note); line-height:var(--lh-body)}
 
@@ -522,7 +555,7 @@ main{display:block}
 .page-body li{margin-bottom:.5rem}
 .page-body li::marker{color:var(--ink-faint)}
 .page-body a{color:var(--ink); text-decoration:none; border-bottom:1px solid var(--hair)}
-.page-body a:hover{color:var(--accent); border-bottom-color:var(--accent)}
+@media (hover:hover){.page-body a:hover{color:var(--accent); border-bottom-color:var(--accent)}}
 .page-body a.cta{border-bottom:0; color:var(--paper)}
 .page-body pre.flow{font-family:var(--mono); font-size:var(--fs-small); line-height:1.9;
   color:var(--ink-dim); border-left:1px solid var(--hair); padding:var(--s2) 0 var(--s2) var(--s2);
@@ -533,7 +566,7 @@ main{display:block}
 code{font-family:var(--mono); font-size:.88em}
 
 /* 外殼把品牌字做成連結，而候選稿裡它是 div；不還原顏色會變成預設的藍色底線。 */
-a.brand:hover{color:var(--plate-fg)}
+@media (hover:hover){a.brand:hover{color:var(--plate-fg)}}
 
 /* ═══ 全站識別：渾儀環組 ════════════════════════════════
    每一頁的頁首都帶同一枚環組標記，頁尾帶同一條四環色帶。
@@ -542,9 +575,9 @@ a.brand{color:inherit; text-decoration:none;display:inline-flex; align-items:cen
 .mark{width:2rem; height:2rem; flex:0 0 auto; overflow:visible}
 .mark circle,.mark ellipse,.mark line{fill:none; stroke:var(--plate-dim); stroke-width:1}
 .mark .mark-ecliptic{stroke:var(--accent-rev); stroke-width:1.2}
-a.brand:hover .mark circle,
+@media (hover:hover){a.brand:hover .mark circle,
 a.brand:hover .mark ellipse,
-a.brand:hover .mark line{stroke:var(--plate-fg)}
+a.brand:hover .mark line{stroke:var(--plate-fg)}}
 .footer-rule{padding-bottom:var(--s2)}
 .ring-strip{display:block; height:2px; width:100%;
   background:linear-gradient(to right,
@@ -560,14 +593,14 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
    像是浮在旁邊，跟誰都沒有關係。置中之後六個項目共用同一條文字中線。 */
 .site-nav{margin-left:auto; display:flex; align-items:center; gap:1.25rem; flex-wrap:wrap}
 .site-nav a{color:var(--plate-dim); text-decoration:none; font-size:var(--fs-note); white-space:nowrap}
-.site-nav a:hover{color:var(--plate-fg)}
+@media (hover:hover){.site-nav a:hover{color:var(--plate-fg)}}
 /* 導覽列常駐入口：捲到哪一段都看得到。深底上用實心紙色，
    與首屏的主按鈕同一個材質，不另立一種按鈕語彙。 */
 .site-nav a.nav-cta{
   background:var(--paper); color:var(--plate);
   padding:.5rem 1.15rem; margin-left:.6rem;
 }
-.site-nav a.nav-cta:hover{background:var(--accent-rev); color:var(--paper)}
+@media (hover:hover){.site-nav a.nav-cta:hover{background:var(--accent-rev); color:var(--paper)}}
 /* 在入口自己的目的地（計算頁），build_pages 替它加上 aria-current="page"：
    不再是待按的實心按鈕，改為髮絲框的「你在這裡」。 */
 .site-nav a.nav-cta[aria-current="page"]{
@@ -580,7 +613,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 .sitemap-col h2{font-family:var(--mono); font-size:var(--fs-small); letter-spacing:.2em;
   text-transform:uppercase; color:var(--ink-faint); margin:0 0 .3rem; font-weight:400}
 .sitemap-col a{color:var(--ink-dim); text-decoration:none; font-size:var(--fs-note)}
-.sitemap-col a:hover{color:var(--accent)}
+@media (hover:hover){.sitemap-col a:hover{color:var(--accent)}}
 @media (max-width:900px){
   /* margin-left:auto 要留著。先前這裡把它歸零，導覽因此不再被推到右邊，
      而是緊接在招牌後面。 */
@@ -589,16 +622,42 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   .sitemap{grid-template-columns:1fr 1fr}
 }
 /* 窄螢幕：頁首的 height:78px 是為單行導覽設定的；導覽換行後那個固定高度
-   反而讓頁首吃掉三成視窗高度。改為由內容決定，並收緊行距。 */
+   反而讓頁首吃掉三成視窗高度。改為由內容決定，並收緊行距。
+   「排一張盤」原本自己掉到第三行（頁首高 154 px）；改放在招牌那一行的右端，頁首只剩
+   兩行（招牌＋入口、導覽）。DOM 順序不動，鍵盤焦點仍是招牌、導覽、入口。 */
 @media (max-width:640px){
   header .wrap{
-    min-height:0; padding-top:.9rem; padding-bottom:.9rem;
+    min-height:0; padding-top:.5rem; padding-bottom:.5rem;
+    position:relative; row-gap:.15rem;
   }
   .brand{font-size:1.2rem; letter-spacing:.12em}
   .brand small{font-size:var(--fs-small); letter-spacing:.22em; margin-left:.5rem}
   .mark{width:1.6rem; height:1.6rem}
+  a.brand{min-height:44px}
   .site-nav{width:100%; margin-left:0; gap:.85rem}
   .site-nav a{font-size:var(--fs-small)}
+  .site-nav a.nav-cta{
+    position:absolute; top:.5rem; right:var(--pad); margin-left:0;
+    display:inline-flex; align-items:center; min-height:44px;
+  }
+}
+/* 340 px 以下（含 400% 縮放）招牌連同 ARMILLARY 與入口並排放不下，只留「渾儀」兩字。 */
+@media (max-width:340px){
+  .brand small{display:none}
+}
+/* 觸控：頁首導覽、招牌與頁尾網站地圖的每個連結至少 44×44 px 可按範圍。
+   導覽連結之間的間距改由 44 px 的連結盒本身提供（欄距歸零），導覽列總寬才不會變寬而換行；
+   窄螢幕上文字靠左，第一個連結對齊招牌。 */
+@media (pointer:coarse){
+  a.brand{min-height:44px}
+  .site-nav{column-gap:0}
+  .site-nav a{display:inline-flex; align-items:center; justify-content:center; min-height:44px; min-width:44px}
+  .sitemap-col{gap:0}
+  .sitemap-col a{display:flex; align-items:center; min-height:44px; min-width:44px}
+}
+@media (pointer:coarse) and (max-width:640px){
+  .site-nav{gap:0}
+  .site-nav a{justify-content:flex-start}
 }
 
 /* @pages features */
@@ -702,7 +761,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   cursor:pointer; padding:var(--s2) 0; font-family:var(--mono);
   font-size:var(--fs-aside); letter-spacing:.06em; color:var(--ink-dim);
 }
-.more summary:hover{color:var(--accent)}
+@media (hover:hover){.more summary:hover{color:var(--accent)}}
 .more[open] summary{border-bottom:1px solid var(--hair-soft); margin-bottom:var(--s2)}
 .more > *:last-child{margin-bottom:var(--s2)}
 
@@ -1183,7 +1242,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   border-bottom:1px solid var(--hair-soft);
   text-decoration:none; color:var(--ink);
 }
-.ap-index a:hover{background:var(--paper-2)}
+@media (hover:hover){.ap-index a:hover{background:var(--paper-2)}}
 .ap-index b{
   display:block; font-family:var(--mono); font-weight:400;
   font-size:var(--fs-small); letter-spacing:.16em; color:var(--ink-faint);
@@ -1347,7 +1406,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 }
 .apparatus .ap-close p{color:var(--plate-dim); margin:0; max-width:36rem}
 .apparatus .ap-close .btn{background:var(--accent-rev); color:var(--plate)}
-.apparatus .ap-close .btn:hover{background:var(--paper); color:var(--plate)}
+@media (hover:hover){.apparatus .ap-close .btn:hover{background:var(--paper); color:var(--plate)}}
 
 /* @pages methods trust */
 @media (max-width:48rem){
@@ -1399,7 +1458,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   transform:translateY(-.15rem) rotate(45deg);
 }
 .sec-fold[open] > summary::before{transform:translateY(.12rem) rotate(-135deg)}
-.sec-fold > summary:hover{background:var(--paper-2)}
+@media (hover:hover){.sec-fold > summary:hover{background:var(--paper-2)}}
 .fold-opened{display:none}
 .sec-fold[open] > summary .fold-closed{display:none}
 .sec-fold[open] > summary .fold-opened{display:inline}
@@ -1418,7 +1477,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   min-height:2.75rem; padding:.35rem .9rem; cursor:pointer;
   background:var(--paper); color:var(--ink); border:1px solid var(--ink); border-radius:0;
 }
-.fold-all:hover{background:var(--paper-2)}
+@media (hover:hover){.fold-all:hover{background:var(--paper-2)}}
 /* 有 script 時，段頭也可以點來開合（鍵盤仍用 summary）。 */
 .fold-js [data-fold-host] > :is(.sig, h2, h3, .fold-gist, [data-fold-head]){cursor:pointer}
 /* 錨點捲到目標時留一點呼吸空間（方法頁的同一條在 .apparatus [id]）。 */
@@ -1427,7 +1486,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 .audit .fold-gist{color:var(--plate-fg)}
 .audit .fold-k{color:var(--plate); background:var(--accent-rev)}
 .audit .sec-fold > summary{border-color:var(--plate-fg); color:var(--plate-fg)}
-.audit .sec-fold > summary:hover{background:var(--plate); color:var(--accent-rev)}
+@media (hover:hover){.audit .sec-fold > summary:hover{background:var(--plate); color:var(--accent-rev)}}
 /* 列印一律全開：fold.js 在 beforeprint 打開每一段；這裡是沒有 script 時的後備
    （::details-content 是較新的選擇器，不認得它的瀏覽器只會略過這一條）。 */
 @media print{
@@ -1609,7 +1668,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 }
 .strata .tr-close p{color:var(--plate-dim); margin:0; max-width:34rem}
 .strata .tr-close .btn{background:var(--accent-rev); color:var(--plate)}
-.strata .tr-close .btn:hover{background:var(--paper); color:var(--plate)}
+@media (hover:hover){.strata .tr-close .btn:hover{background:var(--paper); color:var(--plate)}}
 
 /* .page-body 既有規則在本頁的還原（特異性衝突，非新樣式） */
 .strata .btn,.strata .btn:hover{color:var(--paper)}
@@ -1781,7 +1840,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 .datasheet p{max-width:var(--measure-cjk); line-height:1.9; color:var(--paper-2)}
 .datasheet b{color:var(--plate-fg)}
 .datasheet a{color:var(--plate-fg); border-bottom-color:var(--stratum-3)}
-.datasheet a:hover{color:var(--accent-rev); border-bottom-color:var(--accent-rev)}
+@media (hover:hover){.datasheet a:hover{color:var(--accent-rev); border-bottom-color:var(--accent-rev)}}
 .datasheet .mono{color:var(--accent-rev)}
 /* 既有的 `.limit` 自己帶 `background:var(--paper-2)`——在紙面頁上那是淡底標註，
    搬到深底頁就變成一塊亮底，裡面所有淺色字全部失效（實測 2.47 與 1.12）。
@@ -1904,7 +1963,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 }
 .datasheet .ds-close p{color:var(--plate-dim); margin:0}
 .datasheet .ds-close .btn{background:var(--accent-rev); color:var(--plate)}
-.datasheet .ds-close .btn:hover{background:var(--paper); color:var(--plate)}
+@media (hover:hover){.datasheet .ds-close .btn:hover{background:var(--paper); color:var(--plate)}}
 
 /* @pages security security-verify */
 @media (max-width:48rem){
@@ -2033,7 +2092,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 /* ─── 逐段轉換時刻（收合）─── */
 .ct-transitions{margin:0 0 var(--s3); border-top:1px solid var(--hair); border-bottom:1px solid var(--hair)}
 .ct-transitions summary{cursor:pointer; padding:.8rem 0; font-size:var(--fs-aside); line-height:1.7; color:var(--ink-dim)}
-.ct-transitions summary:hover{color:var(--accent)}
+@media (hover:hover){.ct-transitions summary:hover{color:var(--accent)}}
 .ct-transitions[open] summary{border-bottom:1px solid var(--hair-soft)}
 .ct-sheet .ct-transitions .spec-scroll{margin:var(--s1) 0 var(--s2)}
 
@@ -2909,7 +2968,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
    使用者判斷驗證範圍所需的數字、方法、例外與未涵蓋項。 */
 .validation-page{max-width:74rem}
 .validation-hero{padding:4rem 0 3rem; border-top:0}
-.validation-hero h1{max-width:48rem; margin-bottom:var(--s3); font-size:clamp(3rem,5.5vw,4.7rem); line-height:1.02}
+.validation-hero h1{max-width:48rem; margin-bottom:var(--s2); font-size:clamp(2rem,4vw,3.2rem); line-height:1.3}
 .validation-hero .lede{max-width:42rem}
 .validation-metrics{display:grid; grid-template-columns:repeat(3,1fr); margin-top:var(--s4); border-top:1px solid var(--ink); border-bottom:1px solid var(--hair)}
 .validation-metrics > div{padding:var(--s3) var(--s2) var(--s3) 0}
@@ -2932,6 +2991,18 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 .validation-details dl{display:grid; grid-template-columns:8rem 1fr; gap:.5rem var(--s2); padding:0 0 var(--s2)}
 .validation-details dt{color:var(--ink-faint)}
 .validation-details dd{color:var(--ink-dim)}
+.validation-details > p{max-width:var(--measure-cjk); color:var(--ink-dim)}
+/* 比對總表：六欄在手機上放不下，整張表在自己的捲動框裡橫向捲動，欄寬不被擠成一兩個字。 */
+.validation-scroll{overflow-x:auto; margin:var(--s3) 0; border-top:2px solid var(--ink)}
+.validation-scroll:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.validation-table{border-collapse:collapse; width:100%; min-width:56rem; font-size:var(--fs-note); line-height:1.7}
+.validation-table caption{caption-side:bottom; text-align:left; padding-top:var(--s1); color:var(--ink-faint); font-size:var(--fs-small)}
+.validation-table th,.validation-table td{padding:.6rem .8rem .6rem 0; border-bottom:1px solid var(--hair-soft); text-align:left; vertical-align:top; color:var(--ink-dim)}
+.validation-table thead th{font-family:var(--mono); font-weight:400; font-size:var(--fs-small); letter-spacing:.08em; color:var(--ink-faint)}
+.validation-table tbody th{color:var(--ink); font-weight:400; min-width:8rem}
+.validation-table .num{font-variant-numeric:tabular-nums; min-width:6rem}
+.validation-steps{max-width:var(--measure-cjk); color:var(--ink-dim); padding-left:1.3rem}
+.validation-steps li + li{margin-top:var(--s1)}
 .validation-findings{display:grid; grid-template-columns:1fr 1fr; gap:0 var(--s4)}
 .validation-findings article{padding:var(--s3) 0; border-top:1px solid var(--hair-soft)}
 .validation-findings h3{font-size:var(--fs-lead); margin:0 0 .6rem}
@@ -2950,10 +3021,11 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
 .validation-links a::after{content:" →"; color:var(--accent)}
 @media (max-width:48rem){
   /* 手機字級寫在標題本身的規則之後：同權重，後寫的勝出。 */
-  .validation-hero h1{font-size:2.3rem; line-height:1.08}
+  .validation-hero h1{font-size:1.75rem; line-height:1.3}
   .validation-metrics,.validation-coverage,.validation-meaning,.validation-findings{grid-template-columns:1fr}
   .validation-metrics > div + div{border-left:0; border-top:1px solid var(--hair); padding-left:0}
-  .validation-section{grid-template-columns:1fr; gap:var(--s1)}
+  /* minmax(0,…)：比對總表的最小寬度留在它自己的捲動框裡，不撐寬整頁。 */
+  .validation-section{grid-template-columns:minmax(0,1fr); gap:var(--s1)}
   .validation-pipelines{grid-template-columns:1fr}
   .validation-pipelines i{justify-self:start}
   .validation-details dl{grid-template-columns:1fr}
@@ -2999,7 +3071,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}
   cursor:pointer; padding:.7rem 0 .2rem; font-family:var(--mono); font-size:var(--fs-note);
   letter-spacing:.06em; color:var(--plate-dim);
 }
-.proof summary:hover{color:var(--accent-rev)}
+@media (hover:hover){.proof summary:hover{color:var(--accent-rev)}}
 .datasheet .proof p{font-size:var(--fs-note); margin:var(--s2) 0 0}
 @media (max-width:40rem){
   .prot{padding:var(--s2)}

@@ -76,7 +76,7 @@
   });
 
   const signName = (key) => Labels.label("zodiac_sign", key);
-  const bodyName = (key) => (Object.prototype.hasOwnProperty.call(BODY_NAMES, key) ? BODY_NAMES[key] : `未識別（${key}）`);
+  const bodyName = (key) => Labels.closedLabel(key, BODY_NAMES, "天體");
 
   function fail(message) {
     throw new Error(`年度回應形狀不符：${message}`);
@@ -120,8 +120,39 @@
     return match ? match[1] : null;
   }
 
+  const SHA256_HEX = /^[0-9a-f]{64}$/;
+  const nonEmpty = (value) => (typeof value === "string" && value.length > 0) || Number.isInteger(value);
+
+  /**
+   * 年度回應的相容規則，畫面模型、按需併入、.ics 與時間主星表共用這一條：API 版本在相容清單、
+   * 出處清單有代號、版本與 SHA-256 摘要、有計算軌跡收據的摘要。不符時回一句原因，符合時回 null。
+   */
+  function compatibilityProblem(source) {
+    const version = source && source.schema_version;
+    if (!version) return "缺少 API schema 版本，不能建立可追溯輸出。";
+    if (!ChartExport.SUPPORTED_API_SCHEMA_VERSIONS.includes(version)) return `不相容的 API schema 版本：${version}。`;
+    const dossier = source.calculation_dossier || {};
+    const register = dossier.method_source_register || {};
+    if (!nonEmpty(register.register_id) || !nonEmpty(register.version) || !SHA256_HEX.test(String(register.sha256))) {
+      return "年度回應不完整：缺少出處清單的代號、版本或摘要，不能建立可追溯輸出。";
+    }
+    const trace = dossier.trace_receipt || {};
+    if (!SHA256_HEX.test(String(trace.python_json_serialization_sha256))) {
+      return "年度回應不完整：缺少計算軌跡收據的摘要，不能建立可追溯輸出。";
+    }
+    return null;
+  }
+
+  /** 相容的回應彼此要同一個 API 版本與同一份出處清單；這個鍵就是那兩者。 */
+  function identityKey(source) {
+    const register = source.calculation_dossier.method_source_register;
+    return JSON.stringify([source.schema_version, register.register_id, register.version, register.sha256]);
+  }
+
   function adaptAnnualSource(source) {
     if (!source || typeof source !== "object" || Array.isArray(source)) fail("不是物件");
+    const problem = compatibilityProblem(source);
+    if (problem) fail(problem);
     const timeline = source.annual_timeline;
     if (!timeline || !Array.isArray(timeline.lanes)) fail("缺少 annual_timeline.lanes");
     const precision = source.birth_time_precision;
@@ -241,6 +272,7 @@
     const policy = dossier.annual_policy || {};
     const lotsBlock = source.natal_lots;
     return Object.freeze({
+      identity: identityKey(source),
       precision,
       requestedYears: requested ? requested.completed_years : null,
       natal: Object.freeze({
@@ -261,7 +293,7 @@
       // 年界的警告只說請求的那一年；記下是哪一年，按需併入別年的回應時才不會被當成同一則。
       warnings: Object.freeze((dossier.warnings || []).map((warning) => Object.freeze(
         String(warning.path || "").startsWith("year_boundary") && requested && Number.isInteger(requested.year_of_life)
-          && !Object.prototype.hasOwnProperty.call(warning, "year_of_life")
+          && !Object.hasOwn(warning, "year_of_life")
           ? { ...warning, year_of_life: requested.year_of_life } : { ...warning }))),
       samples: Object.freeze(Array.isArray(policy.representative_samples) ? policy.representative_samples.map((sample) => Object.freeze({
         role: sample.sample_role,
@@ -277,6 +309,8 @@
    * 不在這裡面的一律不收，也不記為已載入——月小限只列選過的年度，與回應先後無關。
    */
   function mergeLevel2(data, extra, { monthsFor = [] } = {}) {
+    // 按需的回應要與已載入的同一個 API 版本、同一份出處清單；否則整份不收，不混成一份。
+    if (!data.identity || extra.identity !== data.identity) fail("按需取得的回應與已載入的版本或出處清單不同");
     const wanted = new Set(monthsFor);
     const keep = (segment) => segment.laneId !== MONTHLY_LANE || wanted.has(segment.parentId);
     const incoming = new Map();
@@ -326,6 +360,12 @@
     "firmicus_sect_light_v1", "valens_first_after_asc_v1", "user_selected_planet_v1",
   ]);
   const DECENNIALS_PLANETS = Object.freeze(["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn"]);
+  // 十年期起點選單在手機上的短字（option 的 label）：完整的字仍在頁面的 option 裡。
+  const DECENNIALS_START_SHORT = Object.freeze({
+    firmicus_sect_light_v1: "日盤太陽、夜盤月亮（預設）",
+    valens_first_after_asc_v1: "上升後第一顆（Valens）",
+    user_selected_planet_v1: "自己指定一顆行星",
+  });
 
   function decennialsFields(choice) {
     const fields = { include_decennials: true, decennials_scope: "lifetime_window" };
@@ -522,6 +562,8 @@
   }
 
   function buildModel(data, todayLocalDate) {
+    // 只收 adaptAnnualSource 由相容回應做出的資料：畫面、.ics 與表都從這個模型出來。
+    if (!data || typeof data.identity !== "string") fail("資料不是由相容的年度回應建成");
     const todayDay = dayNumber(todayLocalDate);
     const years = Object.freeze(data.years.map((year) => Object.freeze({
       ...year,
@@ -818,7 +860,7 @@
     ]),
     decennials: Object.freeze([
       [["Vettius Valens, Anthologies VI.6", "Valens VI.7"],
-        "Vettius Valens《占星選集》（Anthologiae）VI.6–VI.7：每段 10 年 9 個月、依出生時的黃道順序、分配年 360 日。",
+        "Vettius Valens《占星選集》（Anthologiae）VI.6–VI.7（Pingree 的章號；Kroll 校勘本為 VI.5–VI.7）：每段 10 年 9 個月、依出生時的黃道順序、分配年 360 日。",
         "translation_read", "（Riley 英譯，公開的重排本；希臘文未核）"],
       ["Firmicus Maternus, Mathesis II.26-27",
         "Firmicus Maternus《Mathesis》II.26–27：日盤從太陽、夜盤從月亮起，每段再依小年分成月。",
@@ -840,11 +882,8 @@
         "translation_read", "（Robbins 英譯，在 LacusCurtius 網頁讀了這一章全文）"],
     ]),
   });
-  function sourceLine([, text, reading, note]) {
-    return reading ? `${text}核到：${Labels.label("source_reading", reading)}${note || ""}。` : text;
-  }
   const SOURCES = Object.freeze(Object.fromEntries(Object.entries(SOURCE_LINES)
-    .map(([ref, rows]) => [ref, Object.freeze(rows.map(sourceLine))])));
+    .map(([ref, rows]) => [ref, Object.freeze(rows.map(Labels.sourceLine))])));
   const FIRDARIA_NIGHT_SOURCE = "夜盤兩個月交點排在火星之後，是 Zoller 對 Bonatti 的讀法，不是 Bonatti 的原文；本站預設排在水星之後。";
 
   // 十年期這次用的起點（回應的 start_profile.profile），白話一句。
@@ -1177,7 +1216,7 @@
   function extendedLots(model) {
     return model.data.lots.map((lot) => ({
       id: lot.id,
-      name: EXTENDED_LOT_NAMES[lot.id] || `未識別（${lot.id}）`,
+      name: Labels.closedLabel(lot.id, EXTENDED_LOT_NAMES, "阿拉伯點"),
       sign: lot.sign,
       house: lot.house,
     }));
@@ -1403,34 +1442,17 @@
   const tableText = (value) => (value === null || value === undefined || value === "" ? "—" : String(value));
   const withoutLane = (id) => (id ? id.slice(id.indexOf("/") + 1) : null);
 
-  const SHA256_HEX = /^[0-9a-f]{64}$/;
-  const nonEmpty = (value) => (typeof value === "string" && value.length > 0) || Number.isInteger(value);
-
-  /** 收到的每一份回應都在相容清單、彼此同版本、同一份出處清單、各有計算軌跡收據；否則拒絕，不猜哪一份對。 */
-  function tableIdentity(sources) {
+  /**
+   * 收到的每一份回應都過同一條相容規則（compatibilityProblem），而且與畫面模型同一個 API 版本、
+   * 同一份出處清單；否則拒絕，不猜哪一份對。
+   */
+  function tableIdentity(sources, expected) {
     if (!Array.isArray(sources) || !sources.length) throw new Error("沒有年度回應，不能產生時間主星表。");
-    const versions = new Set();
-    const registers = new Set();
     sources.forEach((source) => {
-      const version = source && source.schema_version;
-      if (!version) throw new Error("缺少 API schema 版本，不能建立可追溯輸出。");
-      if (!ChartExport.SUPPORTED_API_SCHEMA_VERSIONS.includes(version)) {
-        throw new Error(`不相容的 API schema 版本：${version}。`);
-      }
-      versions.add(version);
-      const dossier = source.calculation_dossier || {};
-      const register = dossier.method_source_register || {};
-      if (!nonEmpty(register.register_id) || !nonEmpty(register.version) || !SHA256_HEX.test(String(register.sha256))) {
-        throw new Error("年度回應不完整：缺少出處清單的代號、版本或摘要，不能建立可追溯輸出。");
-      }
-      const trace = dossier.trace_receipt || {};
-      if (!SHA256_HEX.test(String(trace.python_json_serialization_sha256))) {
-        throw new Error("年度回應不完整：缺少計算軌跡收據的摘要，不能建立可追溯輸出。");
-      }
-      registers.add(JSON.stringify([register.register_id || null, register.version || null, register.sha256 || null]));
+      const problem = compatibilityProblem(source);
+      if (problem) throw new Error(problem);
+      if (identityKey(source) !== expected) throw new Error("幾份年度回應的 API schema 版本或出處清單不一致，不能合成一份表。");
     });
-    if (versions.size !== 1) throw new Error("幾份年度回應的 API schema 版本不一致，不能合成一份表。");
-    if (registers.size !== 1) throw new Error("幾份年度回應的出處清單不一致，不能合成一份表。");
     const register = (sources[0].calculation_dossier || {}).method_source_register || {};
     return {
       export_contract_version: ChartExport.EXPORT_CONTRACT_VERSION,
@@ -1511,7 +1533,7 @@
    * @param {object[]} sources 頁面收到的年度回應，原樣，依收到的先後。
    */
   function buildTimeLordTable(model, sources) {
-    const identity = tableIdentity(sources);
+    const identity = tableIdentity(sources, model.data.identity);
     return {
       export_contract_version: identity.export_contract_version,
       export_kind: TIME_LORD_TABLE_KIND,
@@ -1674,7 +1696,7 @@
    * @returns {{ filename, mime_type, content, count, format_name }}
    */
   function buildTimeLordTableArtifact(model, sources, format) {
-    if (!Object.prototype.hasOwnProperty.call(TABLE_FORMAT_DEFINITIONS, format)) {
+    if (!Object.hasOwn(TABLE_FORMAT_DEFINITIONS, format)) {
       throw new Error(`不支援的時間主星表格式：${format}`);
     }
     const definition = TABLE_FORMAT_DEFINITIONS[format];
@@ -1718,6 +1740,9 @@
   const SOLAR_RETURN_PRIVACY = "你輸入的地點只隨這一次請求送到計算服務；伺服器不留副本，本頁不寫網址、不存在瀏覽器裡，清除結果或離開頁面時一起丟掉。";
   const SOLAR_RETURN_OTHER_PLACE_TIME = "另一個地點的當地鐘點本站沒有換算；上面兩行是同一個瞬間。";
   const SOLAR_RETURN_UTC_NOTE = "這張盤用世界時（UTC）的時刻起盤；出生地時間只是同一瞬間換成出生地鐘點，方便對照。";
+  // 起盤時刻的時間尺度：閉集與中文名與本命盤時間表、匯出同一份（exporters.js 的 TIME_SCALE_ZH）。
+  // 1972 年前與約 2033-09 以後的時刻是 UT1，不是 UTC；這時標籤寫出尺度，時刻去掉 Z、不加 UTC。
+  const MODERN_UTC = "modern_leap_second_utc";
 
   /** 本命盤所選的宮位制（不計宮位時用整宮）；回歸盤沿用它，兩張盤的宮才對得上。 */
   function solarReturnHouseSystem(chartPayload) {
@@ -1779,7 +1804,7 @@
   /** 年度回應有沒有這一塊（不論是否請求，支援回歸盤的路由都帶這個鍵，沒請求時是 null）。 */
   function supportsSolarReturn(annualBody) {
     return Boolean(annualBody) && typeof annualBody === "object"
-      && Object.prototype.hasOwnProperty.call(annualBody, "solar_return_chart");
+      && Object.hasOwn(annualBody, "solar_return_chart");
   }
 
   function coordinateText(value, positive, negative) {
@@ -1787,21 +1812,41 @@
     return `${Math.abs(value)}°${value < 0 ? negative : positive}`;
   }
 
-  function utcText(utc) {
-    const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2}(?:\.\d+)?)Z$/.exec(utc || "");
+  /** 起盤時刻一列與它的說明：照 instant.time_scale；缺鍵或不在閉集時拒絕，不預設成 UTC。 */
+  function instantFact(instant) {
+    const scale = ownLabel(ChartExport.TIME_SCALE_ZH, instant.time_scale);
+    if (!scale) throw new Error("太陽回歸盤回應形狀不符：時間尺度。");
+    const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2}(?:\.\d+)?)Z$/.exec(instant.utc_time || "");
     if (!match) throw new Error("太陽回歸盤回應形狀不符：UTC 時刻。");
-    return `${match[1]} ${match[2]} UTC`;
+    if (instant.time_scale === MODERN_UTC) {
+      return { fact: ["起盤時刻（UTC，世界時）", `${match[1]} ${match[2]} UTC`], note: SOLAR_RETURN_UTC_NOTE };
+    }
+    return {
+      fact: [`起盤時刻（${scale}）`, `${match[1]} ${match[2]}`],
+      note: `這張盤的起盤時刻屬於「${scale}」，不是以閏秒維持的現代 UTC（見方法頁 §07.6）；`
+        + "出生地時間只是同一瞬間換成出生地鐘點，方便對照。",
+    };
+  }
+
+  /** 回應附的方法說明（整宮制、恆星黃道）：鍵一定在，值是 null 或一句話；其他形狀拒絕。 */
+  function methodNote(block, key) {
+    if (!Object.hasOwn(block, key)) throw new Error("太陽回歸盤回應形狀不符：方法說明。");
+    const text = block[key];
+    if (text === null) return [];
+    if (typeof text !== "string" || !text.trim()) throw new Error("太陽回歸盤回應形狀不符：方法說明。");
+    return [text];
   }
 
   /**
    * 出生地的鐘點：取同一份回應的 year_boundary.start（伺服器換好的出生地時間）。只有它與回歸盤
-   * 是同一年、同一個 jd_ut 時才用；對不上就不列，不在瀏覽器裡換算。
+   * 是同一年時才用；別一年或沒有年界就不列，不在瀏覽器裡換算。同一年而 jd_ut 不同，表示回應自相矛盾，
+   * 整區拒絕。比的是完全相等：伺服器把同一個 double 寫進兩處，JSON 來回不改值。
    */
   function birthPlaceClock(yearBoundary, block) {
     if (!yearBoundary || yearBoundary.completed_years !== block.completed_years) return null;
     const start = yearBoundary.start;
     if (!start || typeof start.local_time !== "string" || typeof start.jd_ut !== "number") return null;
-    if (start.jd_ut !== block.instant.jd_ut) return null;
+    if (start.jd_ut !== block.instant.jd_ut) throw new Error("太陽回歸盤回應形狀不符：年界與回歸時刻不同。");
     return `${start.local_time}（${start.utc_offset || "時區未列"}）`;
   }
 
@@ -1812,7 +1857,7 @@
     after: "〉。",
   });
   const isHouseNumber = (value) => Number.isInteger(value) && value >= 1 && value <= 12;
-  const ownLabel = (map, key) => (typeof key === "string" && Object.prototype.hasOwnProperty.call(map, key) ? map[key] : null);
+  const ownLabel = Labels.ownLabel;
 
   /**
    * 「與本命盤對照」：三個上升與回歸盤行星落在本命哪一宮，只列位置。回應沒算（欄位是 null）
@@ -1860,11 +1905,18 @@
 
   /**
    * 回歸盤一區的畫面模型。annualBody 是年度路由的回應；viewModel 是計算頁的 ChartViewModel
-   * （buildSections 與本命盤同一套）。回 { state: "computed" | "not_applicable", … }；
+   * （buildSections 與本命盤同一套）；expectedIdentity 是畫面上時間主星模型的 identity。回 { state: "computed" | "not_applicable", … }；
    * 形狀不符時丟「太陽回歸盤回應形狀不符」，呼叫端整區不畫。
    */
-  function solarReturnPanel(annualBody, viewModel) {
-    const block = annualBody && annualBody.solar_return_chart;
+  function solarReturnPanel(annualBody, viewModel, expectedIdentity) {
+    // 回歸盤的回應也是年度回應：與時間主星同一條相容規則，而且要與畫面上已排出的模型同一個身分。
+    if (!annualBody || typeof annualBody !== "object") fail("不是物件");
+    const problem = compatibilityProblem(annualBody);
+    if (problem) fail(problem);
+    if (typeof expectedIdentity !== "string" || identityKey(annualBody) !== expectedIdentity) {
+      fail("太陽回歸盤的回應與已排出的時間主星版本或出處清單不同");
+    }
+    const block = annualBody.solar_return_chart;
     if (!block || typeof block !== "object") throw new Error("太陽回歸盤回應形狀不符：沒有 solar_return_chart。");
     if (!Number.isInteger(block.completed_years) || block.year_of_life !== block.completed_years + 1) {
       throw new Error("太陽回歸盤回應形狀不符：年度。");
@@ -1882,6 +1934,11 @@
       || typeof block.instant.jd_ut !== "number" || !block.location) {
       throw new Error("太陽回歸盤回應形狀不符：狀態。");
     }
+    // 回歸盤這張星盤必須就是起盤那一瞬間的盤（完全相等，理由同 birthPlaceClock）。
+    const chartTime = block.chart.astronomical_data && block.chart.astronomical_data.time;
+    if (!chartTime || chartTime.jd_ut !== block.instant.jd_ut) {
+      throw new Error("太陽回歸盤回應形狀不符：星盤時刻與回歸時刻不同。");
+    }
     const location = block.location;
     const other = location.source === "solar_return_location";
     if (!other && location.source !== "birth_location") throw new Error("太陽回歸盤回應形狀不符：地點來源。");
@@ -1889,6 +1946,8 @@
     const local = birthPlaceClock(annualBody.year_boundary, block);
     const houseName = Labels.VOCABULARIES.house_system[block.house_system_code];
     if (!houseName) throw new Error("太陽回歸盤回應形狀不符：宮位制。");
+    const moment = instantFact(block.instant);
+    const methodNotes = [...methodNote(block, "house_system_note"), ...methodNote(block, "zodiac_note")];
     const sections = viewModel.buildSections(block.chart);
     const tables = SOLAR_RETURN_SECTIONS.map((id) => sections.find((section) => section.id === id))
       .filter((section) => section && section.status && section.status.state === "present")
@@ -1906,14 +1965,15 @@
       heading,
       lead: SOLAR_RETURN_FIXED,
       facts: Object.freeze([
-        ["起盤時刻（UTC，世界時）", utcText(block.instant.utc_time)],
+        moment.fact,
         ...(local ? [["同一瞬間的出生地時間", local]] : []),
         ["地點", `${other ? "你輸入的地點" : "出生地（與本命盤相同）"}：${coordinates}`],
         ["宮位制", houseName],
         ["算法", SOLAR_RETURN_PROFILES[block.solar_return_profile] || block.solar_return_profile],
       ]),
       notes: Object.freeze([
-        SOLAR_RETURN_UTC_NOTE,
+        moment.note,
+        ...methodNotes,
         ...(other ? [SOLAR_RETURN_OTHER_PLACE_TIME] : []),
       ]),
       privacy: other ? SOLAR_RETURN_PRIVACY : null,
@@ -1933,7 +1993,6 @@
     SOLAR_RETURN_HOUSE_SYSTEMS,
     HOUSE_SYSTEM_NAMES: Labels.VOCABULARIES.house_system,
     solarReturnHouseSystem,
-    solarReturnChosenHouseSystem,
     parseSolarReturnLocation,
     solarReturnRequestBody,
     supportsSolarReturn,
@@ -1943,6 +2002,7 @@
     DATE_NOTE,
     SAMPLE_ORDER,
     DECENNIALS_START_PROFILES,
+    DECENNIALS_START_SHORT,
     DECENNIALS_PLANETS,
     SOURCE_LINES,
     SOURCES,

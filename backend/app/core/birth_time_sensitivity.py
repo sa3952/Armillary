@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import copy
+from collections.abc import Callable
 import datetime as dtmod
 from typing import Any, TypedDict
 from zoneinfo import ZoneInfo
 
-from ..config import BODY_ID_BY_KEY, LUNAR_APSIDES, NODE_BODIES
+from .invariants import InternalInvariantError
+from ..domain_catalog import BODY_ID_BY_KEY, LUNAR_APSIDES, NODE_BODIES
 from ..ephemeris import require_full_ephemeris, require_object_coverage
 from .bodies import (
     DATE_ONLY_NO_BIRTH_TIME_REASON,
@@ -366,9 +368,6 @@ def _resolved_instant(request, utc_value: dtmod.datetime) -> _ResolvedLocalInsta
     }
 
 
-_sign_index = zodiac_sign_index
-
-
 def _state(sampled_values: list) -> str:
     """Agreed at every sample or not: the only two things sampling observes."""
 
@@ -385,7 +384,7 @@ def _state(sampled_values: list) -> str:
 # of sampled values, so neither can include a sample the other left out.
 def _sampled_signs(values: list[float]) -> tuple[list[int], dict]:
     envelope = _circular_envelope(values)
-    return sorted({_sign_index(value) for value in envelope["sampled_values"]}), envelope
+    return sorted({zodiac_sign_index(value) for value in envelope["sampled_values"]}), envelope
 
 
 def _classified_envelope(values: list[float]) -> dict:
@@ -1184,6 +1183,45 @@ def _clock_change_edge_offsets(request) -> list[int]:
     return sorted(offsets)
 
 
+def _sampled_sign_row(
+    key: str,
+    name: str,
+    values: list[float] | None,
+    *,
+    representative: tuple[str, Callable[[list[float]], Any]],
+    envelope_key: str,
+) -> dict:
+    """One object's sampled signs; `values` is None when a sample had no longitude."""
+    representative_key, representative_of = representative
+    if values is None:
+        return {
+            "key": key,
+            "name": name,
+            representative_key: None,
+            "sampled_sign_indices": [],
+            "status": UNAVAILABLE_COORDINATE_STATUS,
+            envelope_key: None,
+        }
+    sampled_signs, envelope = _sampled_signs(values)
+    return {
+        "key": key,
+        "name": name,
+        representative_key: representative_of(values),
+        "sampled_sign_indices": sampled_signs,
+        "status": _state(sampled_signs),
+        envelope_key: envelope,
+    }
+
+
+def _probe_receipt(request, probe: dict) -> dict:
+    return {
+        "minute": probe["minute"],
+        "second": probe["second"],
+        "input_local_time": probe["input_local_time"],
+        "fold": _probe_fold(request, probe["minute"] * 60 + probe["second"]),
+    }
+
+
 def build_approximate_hour_sensitivity(
     *,
     request,
@@ -1326,31 +1364,15 @@ def build_approximate_hour_sensitivity(
             )
             for probe in evaluated
         ]
-        if any(value is None for value in values):
-            body_signs.append(
-                {
-                    "key": body_def["key"],
-                    "name": body_def["zh"],
-                    "representative_sign_index": None,
-                    "sampled_sign_indices": [],
-                    "status": UNAVAILABLE_COORDINATE_STATUS,
-                    "longitude_envelope": None,
-                }
-            )
-            continue
-        sampled_signs, envelope = _sampled_signs(values)
-        body_signs.append(
-            {
-                "key": body_def["key"],
-                "name": body_def["zh"],
-                "representative_sign_index": _sign_index(
-                    values[representative_index]
-                ),
-                "sampled_sign_indices": sampled_signs,
-                "status": _state(sampled_signs),
-                "longitude_envelope": envelope,
-            }
-        )
+        body_signs.append(_sampled_sign_row(
+            body_def["key"], body_def["zh"],
+            None if any(value is None for value in values) else values,
+            representative=(
+                "representative_sign_index",
+                lambda found: zodiac_sign_index(found[representative_index]),
+            ),
+            envelope_key="longitude_envelope",
+        ))
 
     planet_in_house = []
     if representative_placements["execution_status"] == "computed":
@@ -1408,7 +1430,8 @@ def build_approximate_hour_sensitivity(
 
     sect_summary = None
     if "derived_methods.sect" in classification_coverage:
-        assert representative_sect is not None  # usable, so sect ran
+        if representative_sect is None:  # usable, so sect ran
+            raise InternalInvariantError("representative_sect is not None")
         sect_summary = {
             "representative_is_day": representative_sect["is_day"],
             "sampled_is_day": list(
@@ -1425,7 +1448,8 @@ def build_approximate_hour_sensitivity(
 
     lots_summary: dict[str, Any] | None = None
     if "derived_methods.lots" in classification_coverage:
-        assert representative_lots is not None  # usable, so the Lots ran
+        if representative_lots is None:  # usable, so the Lots ran
+            raise InternalInvariantError("representative_lots is not None")
         lots_summary = {}
         for key in ("fortune", "spirit"):
             houses_at_samples = sorted(
@@ -1465,7 +1489,8 @@ def build_approximate_hour_sensitivity(
 
     voc_summary = None
     if voc_usable:
-        assert representative_void_of_course is not None
+        if representative_void_of_course is None:
+            raise InternalInvariantError("representative_void_of_course is not None")
         sampled = list(
             dict.fromkeys(
                 probe["void_of_course"]["is_void_of_course"]
@@ -1495,21 +1520,10 @@ def build_approximate_hour_sensitivity(
         "sampling_semantics": "discrete_probes_not_continuous_hour_proof",
         "probe_coverage": probe_coverage,
         "evaluation_limits": evaluation_limits,
-        "probes": [
-            {
-                "minute": probe["minute"],
-                "second": probe["second"],
-                "input_local_time": probe["input_local_time"],
-                "fold": _probe_fold(request, probe["minute"] * 60 + probe["second"]),
-            }
-            for probe in probes
-        ],
+        "probes": [_probe_receipt(request, probe) for probe in probes],
         "refinement_probes": [
             {
-                "minute": probe["minute"],
-                "second": probe["second"],
-                "input_local_time": probe["input_local_time"],
-                "fold": _probe_fold(request, probe["minute"] * 60 + probe["second"]),
+                **_probe_receipt(request, probe),
                 "void_of_course_evaluated": probe["void_of_course_evaluated"],
             }
             for probe in refinement_probes
@@ -1756,33 +1770,12 @@ def build_date_only_sensitivity(
     for key, record in sampled_objects.items():
         values = [item["longitude"] for item in record["values"]]
         representative = representative_map.get(key)
-        if not values:
-            position_ranges.append(
-                {
-                    "key": key,
-                    "name": record["name"],
-                    "representative_longitude": None,
-                    "sampled_sign_indices": [],
-                    "status": UNAVAILABLE_COORDINATE_STATUS,
-                    "sampled_longitude_envelope": None,
-                }
-            )
-            continue
-        sampled_signs, envelope = _sampled_signs(values)
-        position_ranges.append(
-            {
-                "key": key,
-                "name": record["name"],
-                "representative_longitude": (
-                    representative.get("longitude")
-                    if representative is not None
-                    else None
-                ),
-                "sampled_sign_indices": sampled_signs,
-                "status": _state(sampled_signs),
-                "sampled_longitude_envelope": envelope,
-            }
-        )
+        longitude = representative.get("longitude") if representative is not None else None
+        position_ranges.append(_sampled_sign_row(
+            key, record["name"], values or None,
+            representative=("representative_longitude", lambda _found: longitude),
+            envelope_key="sampled_longitude_envelope",
+        ))
     position_ranges.sort(key=lambda item: item["key"])
 
     moon_values = sampled_objects["moon"]["values"]
@@ -1800,8 +1793,8 @@ def build_date_only_sensitivity(
     }
     moon_transitions = []
     for left, right in zip(moon_values, moon_values[1:]):
-        left_sign = _sign_index(left["longitude"])
-        right_sign = _sign_index(right["longitude"])
+        left_sign = zodiac_sign_index(left["longitude"])
+        right_sign = zodiac_sign_index(right["longitude"])
         if left_sign != right_sign:
             moon_transitions.append(
                 {

@@ -10,8 +10,8 @@ from pathlib import Path
 import pytest
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-GUARD = PROJECT_ROOT / "scripts" / "verification" / "verify_privacy_dependencies.py"
+ROOT = Path(__file__).resolve().parents[2]
+GUARD = ROOT / "scripts" / "verification" / "verify_privacy_dependencies.py"
 
 
 @pytest.fixture
@@ -51,7 +51,7 @@ def test_the_guard_keeps_the_stdlib_siblings_and_the_reviewed_sqlite_module(tmp_
         "import json\nfrom pathlib import Path\nfrom urllib.parse import urlsplit\n"
         "from http import HTTPStatus\nimport logging\n", encoding="utf-8")
     guard.check_python_source(tmp_path / "candidate.py")
-    guard.check_python_source(PROJECT_ROOT / "backend/app/core/place_catalog.py")
+    guard.check_python_source(ROOT / "backend/app/core/place_catalog.py")
 
 
 @pytest.mark.parametrize(("files", "refusal"), [

@@ -18,6 +18,18 @@ def on():
 
 
 @pytest.fixture
+def bundled_ephemeris() -> None:
+    """Bind the product's own ephemeris files before the test.
+
+    Per test: the ephemeris path is process-global Swiss state, and another
+    file's test on the same xdist worker can leave it elsewhere, making Swiss
+    fall back to Moshier (moves a sidereal comparison by ~1e-8 degrees)."""
+    from app import ephemeris
+
+    ephemeris.init_ephemeris()
+
+
+@pytest.fixture
 def relocation_offered(monkeypatch):
     """Casting the solar return at another place, switched on for one test.
 

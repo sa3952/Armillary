@@ -101,7 +101,6 @@
 .fx .fx-sph-ball{fill:var(--paper); stroke:var(--fx-ink); stroke-width:1.2}
 .fx .fx-sph-ground{fill:url(#fx-dots); stroke:none}
 .fx .fx-sph-hor{stroke:var(--fx-ink); stroke-width:1.6}
-.fx .fx-sph-line{stroke:var(--fx-ink); stroke-width:1.1}
 .fx .fx-sph-faint{stroke:var(--fx-dim); stroke-width:.8}
 .fx .fx-sph-cut{stroke:var(--fx-ink); stroke-width:.9; stroke-dasharray:5 3}
 .fx .fx-sph-dim{stroke:var(--fx-dim)}

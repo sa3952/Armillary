@@ -27,14 +27,10 @@ from scripts.tools.source_tree_identity import observe_source_tree
 SOURCE_ROOT = Path.cwd().resolve()
 
 
+# The candidate is verified once, after every consumer ran: the tree is the
+# same one throughout (the identity check before and after proves it), so the
+# last verification also says that no consumer left anything behind.
 FULL_COMMANDS = (
-    [
-        sys.executable,
-        "-m",
-        "scripts.publication.verify_publication_candidate",
-        "--root",
-        ".",
-    ],
     [
         sys.executable,
         "-m",
@@ -52,6 +48,11 @@ FULL_COMMANDS = (
         "anyio.pytest_plugin",
         "-p",
         "_hypothesis_pytestplugin",
+        # One worker per core (pytest-xdist, in the development lock).
+        "-p",
+        "xdist.plugin",
+        "-n",
+        "auto",
         # Every published test runs.  There is no exclusion list: pytest ignores
         # a --deselect for a node that does not exist, so such a list fails open
         # and stops describing the tree the moment a test is renamed.
@@ -78,13 +79,6 @@ FULL_COMMANDS = (
 )
 
 FRONTEND_COMMANDS = (
-    [
-        sys.executable,
-        "-m",
-        "scripts.publication.verify_publication_candidate",
-        "--root",
-        ".",
-    ],
     [sys.executable, "-m", "scripts.frontend.build_pages", "--check"],
     ["node", "--test"],
     [

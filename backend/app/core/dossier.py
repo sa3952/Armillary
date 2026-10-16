@@ -6,10 +6,10 @@ import hashlib
 
 import swisseph as swe
 
-from ..config import OUTER_BODIES, PRODUCT_YEAR_RANGE
+from ..domain_catalog import OUTER_BODIES, PRODUCT_YEAR_RANGE
 from ..ephemeris import input_file_inventory
 from ..method_sources import method_source_register_receipt
-from ..frontend_release import (
+from ..canonical_json import (
     CANONICAL_JSON_ENSURE_ASCII,
     CANONICAL_JSON_SEPARATORS,
     CANONICAL_JSON_SORT_KEYS,
@@ -23,6 +23,9 @@ from .frame_compatibility import frame_policy_receipt
 from .dossier_warnings import structured_warnings
 from .module_state import (
     EVENT_SEARCH_REASON_CODES,
+    MODULE_COMPUTED,
+    MODULE_NOT_APPLICABLE,
+    MODULE_NOT_REQUESTED,
     MODULE_STATUSES,
     module_state,
     module_status_word,
@@ -145,8 +148,8 @@ def _frame_label(label: str, *module_states: dict) -> str:
     if any(state["available"] for state in module_states):
         return label
     if not any(state["requested"] for state in module_states):
-        return MODULE_STATUSES[0]
-    return MODULE_STATUSES[2]
+        return MODULE_NOT_REQUESTED
+    return MODULE_NOT_APPLICABLE
 
 
 _MODULE_ORDER = (
@@ -1016,7 +1019,7 @@ def build_calculation_dossier(
         event_module_availability,
     )
     modules = {
-        "core_positions": MODULE_STATUSES[1],
+        "core_positions": MODULE_COMPUTED,
         **{name: module_status_word(states[name]) for name in _MODULE_ORDER},
     }
     option_states = _option_state_receipts(

@@ -386,7 +386,7 @@
     if (!isRecord(response)) throw new Error("方盤需要一份回應。");
     const division = readCusps(response);
     if (!division) throw new Error("方盤需要 12 個宮頭。");
-    const presetName = Object.prototype.hasOwnProperty.call(PRESETS, options.preset) ? options.preset : "standard";
+    const presetName = Object.hasOwn(PRESETS, options.preset) ? options.preset : "standard";
     const preset = PRESETS[presetName];
     const { points, omitted } = R.readPoints(response);
     const placements = R.readHouses(response);
@@ -458,15 +458,6 @@
       { group: "footer", items: foot.items },
     ];
 
-    // 放大檢視開啟時要對準的地方：天體最多的那一格（同樣多取宮號小的）。
-    let focusCell = 0;
-    cells.forEach((cell, index) => { if (cell.items.length > cells[focusCell].items.length) focusCell = index; });
-    const focusPolygon = cellPolygon(focusCell + 1);
-    const focus = {
-      x: round3(focusPolygon.reduce((sum, p) => sum + p.x, 0) / 3),
-      y: round3(focusPolygon.reduce((sum, p) => sum + p.y, 0) / 3),
-    };
-
     const asc = angles.find((angle) => angle.key === "asc");
     const L = TEXT.legend;
     const placedKeys = new Set(labels.map((label) => label.key));
@@ -484,7 +475,6 @@
       width: G.width,
       height: foot.height,
       preset: presetName,
-      focus,
       ariaLabel: asc
         ? `方盤：第 1 宮在左；上升 ${SIGN_NAMES[asc.sign]} ${asc.deg}${asc.min}；各天體位置見下方表格`
         : "方盤：第 1 宮在左；各天體位置見下方表格",
@@ -557,6 +547,6 @@
   }
 
   return Object.freeze({
-    build, buildModel, sectionOption, styleControl, cellPolygon, TEXT, FILES, PRESETS: Object.keys(PRESETS),
+    build, buildModel, sectionOption, styleControl, TEXT, FILES, PRESETS: Object.keys(PRESETS),
   });
 });

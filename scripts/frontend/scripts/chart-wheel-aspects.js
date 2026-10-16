@@ -146,7 +146,7 @@
           if (!endB) missing.set(pair.body_b, typeof pair.body_b_name === "string" ? pair.body_b_name : pair.body_b);
         } else if (endA.anchorOnly || endB.anchorOnly) {
           omitted.push({ ...record, reason: OMIT_REASON.ENDPOINT_ANCHOR_ONLY });
-        } else if (!Object.prototype.hasOwnProperty.call(STYLES, target.key)) {
+        } else if (!Object.hasOwn(STYLES, target.key)) {
           omitted.push({ ...record, reason: OMIT_REASON.STYLE_UNKNOWN });
         } else {
           lines.push({

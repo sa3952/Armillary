@@ -56,9 +56,6 @@ FRONTEND = ROOT / "frontend"
 PAGE_LASTMOD_PATH = "scripts/frontend/page_lastmod.json"
 PAGE_LASTMOD = ROOT / PAGE_LASTMOD_PATH
 _ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-# A content digest ignores `?v=` stamps: a stylesheet edit re-stamps every page
-# but changes no page's content, and must not advance every <lastmod>.
-_ASSET_STAMP = re.compile(r"\?v=[0-9a-f]{16}")
 
 SITE_NAME = "渾儀 Armillary"
 # The application declares that it is free to use and the
@@ -220,7 +217,7 @@ def fill_options_catalogue_counts(body: str) -> str:
 
 
 # Several pages state how many fixed stars and star clusters the calculator
-# offers.  The product's star list (app.config.FIXED_STARS) is the one producer
+# offers.  The product's star list (app.domain_catalog.FIXED_STARS) is the one producer
 # of both numbers: an entry whose magnitude is a cluster's integrated light is a
 # cluster, every other entry a star.  The pages write {{fixed_star_count}} and
 # {{fixed_star_cluster_count}} and the build fills them.
@@ -233,11 +230,11 @@ def _is_cluster(entry: dict) -> bool:
 
 
 def fixed_star_count() -> int:
-    return sum(not _is_cluster(entry) for entry in _backend("config").FIXED_STARS)
+    return sum(not _is_cluster(entry) for entry in _backend("domain_catalog").FIXED_STARS)
 
 
 def fixed_star_cluster_count() -> int:
-    return sum(_is_cluster(entry) for entry in _backend("config").FIXED_STARS)
+    return sum(_is_cluster(entry) for entry in _backend("domain_catalog").FIXED_STARS)
 
 
 def fill_fixed_star_count(body: str) -> str:
@@ -335,7 +332,7 @@ def fill_time_lord_techniques(body: str) -> str:
 def application_features() -> list[str]:
     """The WebApplication featureList: one plain item per computed output."""
 
-    houses = _backend("config").HOUSE_SYSTEMS
+    houses = _backend("domain_catalog").HOUSE_SYSTEMS
     items = [f"{zh}（{en}）" for _, zh, en in natal_features()]
     items.insert(1, "七種宮位制：" + "、".join(houses[code] for code in LLMS_HOUSE_SYSTEM_ORDER) + "（house systems）")
     items += [f"年度時間主星：{zh}（{en}）" for _, zh, en in time_lord_techniques()]
@@ -645,6 +642,11 @@ def _common_row_fields_valid(item: dict, locales: list[str]) -> bool:
     )
 
 
+# A surface row's optional fields and their defaults: the fragment is named
+# like the key, the locale is the manifest's default, and a page is indexed.
+SURFACE_DEFAULTS: dict[str, object] = {"fragment": None, "locale": None, "indexable": True}
+
+
 def load_surface_manifest() -> dict:
     payload = json.loads(SURFACE_MANIFEST.read_text(encoding="utf-8"))
     if set(payload) != {
@@ -665,14 +667,14 @@ def load_surface_manifest() -> dict:
     ):
         raise ValueError("frontend locale is invalid")
     default = payload["default_locale"]
-    expected_fields = {
-        "key", "fragment", "output", "surface", "locale", "layers",
-        "indexable", "title", "description",
-    }
+    expected_fields = {"key", "output", "surface", "layers", "title", "description"}
     seen: dict[str, set[str]] = {name: set() for name in ("key", "output", "surface")}
     for item in payload["surfaces"]:
-        if not isinstance(item, dict) or set(item) - {"article"} != expected_fields:
+        if not isinstance(item, dict) or set(item) - {"article", *SURFACE_DEFAULTS} != expected_fields:
             raise ValueError("frontend surface row field set is invalid")
+        # A field a row leaves out takes its default.
+        for field, value in SURFACE_DEFAULTS.items():
+            item.setdefault(field, item["key"] if field == "fragment" else default if field == "locale" else value)
         if (
             not _common_row_fields_valid(item, locales)
             or not isinstance(item["indexable"], bool)
@@ -910,6 +912,107 @@ def fill_article_dates(body: str, item: dict) -> str:
     if "{{article_published}}" not in body:
         raise ValueError(f"article {item['key']!r} must show {{{{article_published}}}}")
     return _ARTICLE_DATE_PLACEHOLDER.sub(lambda match: item["article"][match.group(1)], body)
+
+
+# The byline every article carries under its headline: its tier, as the blog
+# page lists it, then the dates, the reading time and the one signer.
+_ARTICLE_BYLINE = re.compile(r"\{\{article_byline:([^{}]*)\}\}")
+ARTICLE_TIERS = ("講方法", "帶數據")
+ARTICLE_SIGNER = "Sebastian"
+
+
+def fill_article_byline(body: str, item: Mapping) -> str:
+    def byline(match: re.Match) -> str:
+        if match.group(1) not in ARTICLE_TIERS:
+            raise ValueError(f"article {item['key']!r} names tier {match.group(1)!r}, not one of {ARTICLE_TIERS}")
+        return (f'<p class="ar-byline"><span class="ar-tier">{match.group(1)}</span>'
+                '<span>發布 <time datetime="{{article_published}}">{{article_published}}</time></span>'
+                f"<span>閱讀約 {{{{article_reading_minutes}}}} 分鐘</span><span>{ARTICLE_SIGNER}</span></p>")
+
+    found = len(_ARTICLE_BYLINE.findall(body))
+    if found > (1 if is_article(item) else 0):
+        raise ValueError(f"{item['key']!r} has {found} article bylines; an article has at most one, any other page none")
+    return _ARTICLE_BYLINE.sub(byline, body)
+
+
+# The reading level each cited source is marked with, in the order the legend
+# above an article's sources explains them: (class, label, what it means).
+SOURCE_LEVELS = (
+    ("rs-checked", "已讀原件", "是我讀過當年刊載它的原件或原件影像"),
+    ("rs-checked", "已讀原文", "是我親自讀過的原文"),
+    ("rs-checked", "已讀轉錄本", "是我讀過別人轉錄的全文、沒有讀原件影像"),
+    ("rs-checked", "已讀譯本", "是我讀過的譯本、沒有讀原文"),
+    ("rs-relayed", "轉引", "是我只讀到別人的引述、摘要或整理，沒有讀到原書"),
+    ("rs-relayed", "只見書目", "是我只確認了書目"),
+    ("rs-register", "本站出處清單", "是本站公開的方法說明與原始碼"),
+    ("rs-computed", "本站自算", "是本站計算服務或我依標明版本的程式算出、可以照著重算的結果"),
+)
+# `{{source_legend}}`, or `{{source_legend|補充句}}` with one sentence of the
+# article's own after the shared legend (which versions, which documents).
+_SOURCE_LEGEND = re.compile(r"\{\{source_legend(?:\|([^{}]*))?\}\}")
+_SOURCE_SECTION = re.compile(r'<section class="ar-refs".*?</section>', re.DOTALL)
+_SOURCE_LEVEL = re.compile(r'<span class="rs (rs-[a-z]+)">([^<]*)</span>')
+
+
+def _legend_supplement(text: str) -> str:
+    """One plain sentence in the legend's voice: ends with its only 「。」,
+    no markup, and 我 rather than 我們."""
+
+    if (not text.endswith("。") or text.count("。") != 1 or len(text) < 2
+            or any(mark in text for mark in "<>|") or "我們" in text):
+        raise ValueError(f"a source legend supplement is one plain sentence ending in 。 without 我們: {text!r}")
+    return text
+
+
+def source_legend(sources: str, supplement: str | None = None) -> str:
+    """The legend for the reading levels the sources section marks, each
+    explained once, in `SOURCE_LEVELS` order, then the article's own
+    sentence if it gives one."""
+
+    known = {(cls, label): meaning for cls, label, meaning in SOURCE_LEVELS}
+    used = set(_SOURCE_LEVEL.findall(sources))
+    unknown = sorted(used - set(known))
+    if unknown:
+        raise ValueError(f"source level not in SOURCE_LEVELS: {unknown}")
+    if not used:
+        raise ValueError("a source legend with no marked source")
+    entries = "；".join(f'<span class="rs {cls}">{label}</span>{meaning}'
+                       for cls, label, meaning in SOURCE_LEVELS if (cls, label) in used)
+    extra = "" if supplement is None else _legend_supplement(supplement)
+    return f"<p>每一條後面標明我核到哪一層：{entries}。{extra}</p>"
+
+
+def fill_source_legend(body: str, item: Mapping) -> str:
+    """An article's sources section states its legend as `{{source_legend}}`
+    (or `{{source_legend|補充句}}`), built from the levels the section marks;
+    a page marks no source level without it."""
+
+    sections = _SOURCE_SECTION.findall(body)
+    marked = [section for section in sections if _SOURCE_LEVEL.search(section)]
+    if (len(_SOURCE_LEGEND.findall(body)) != len(marked)
+            or any(len(_SOURCE_LEGEND.findall(section)) != 1 for section in marked)):
+        raise ValueError(f"{item['key']!r}: each sources section that marks a reading level holds one "
+                         "{{source_legend}}, and no other place does")
+    return _SOURCE_SECTION.sub(
+        lambda section: _SOURCE_LEGEND.sub(
+            lambda legend: source_legend(section.group(0), legend.group(1)), section.group(0)
+        ),
+        body,
+    )
+
+
+_FX_DEFS = re.compile(r"\{\{fx_defs(?::([a-z_ ]+))?\}\}")
+
+
+def fill_fx_defs(body: str) -> str:
+    """The figure sprite a figure generator asks for as `{{fx_defs:KEYS}}`
+    (scripts/frontend/figures/_fx.defs), drawn with the glyphs it names."""
+
+    if not _FX_DEFS.search(body):
+        return body
+    from scripts.frontend.figures import _fx
+
+    return _FX_DEFS.sub(lambda match: _fx.sprite(tuple((match.group(1) or "").split())), body)
 
 
 # An article figure is interactive when it has marks to point at, a variant
@@ -1167,6 +1270,25 @@ def _web_application(origin: str, home: Mapping) -> dict:
     }
 
 
+SOURCE_CODE_ID = "/#source-code"
+SOURCE_CODE_LANGUAGES = ("Python", "JavaScript")
+
+
+def _source_code(origin: str) -> dict:
+    # The application's public source: the repository, its licence and the
+    # languages its code is written in, published by the site; no person.
+    return {
+        "@type": "SoftwareSourceCode",
+        "@id": origin + SOURCE_CODE_ID,
+        "name": f"{SITE_NAME} 原始碼",
+        "codeRepository": _backend("frontend_release").PUBLIC_REPOSITORY_URL,
+        "license": LICENSE_URL,
+        "programmingLanguage": list(SOURCE_CODE_LANGUAGES),
+        "targetProduct": {"@id": origin + APPLICATION_ID},
+        "publisher": {"@id": origin + ORGANIZATION_ID},
+    }
+
+
 class _GlossaryEntries(HTMLParser):
     """A glossary page's entries as the reader sees them: each `div.gl-item`
     inside `dl.gl-list`, with its anchor (the div's id), its term (the `dt`
@@ -1212,6 +1334,8 @@ class _GlossaryEntries(HTMLParser):
 
 
 def glossary_entries(body: str) -> list[dict]:
+    if "gl-list" not in body:
+        return []  # the parser only collects inside a dl.gl-list
     parser = _GlossaryEntries()
     parser.feed(body)
     entries = [{name: re.sub(r"\s+", " ", value).strip() for name, value in entry.items()}
@@ -1288,6 +1412,7 @@ def _json_ld(item: dict, origin: str, headline: str | None = None,
             row for row in load_surface_manifest()["surfaces"] if row["surface"] == HOME_SURFACE
         )
         graph.append(_web_application(origin, home))
+        graph.append(_source_code(origin))
         graph[1]["about"] = {"@id": origin + APPLICATION_ID}
     if item["surface"] != HOME_SURFACE:
         # A page's trail is home and the page, named by their footer links; an
@@ -1518,6 +1643,9 @@ def _render_parts(item: dict, origin: str) -> tuple[str, str | None]:
     body = fill_fixed_star_count(body)
     body = fill_time_lord_techniques(body)
     body = fill_armillary_svg(body)
+    body = fill_fx_defs(body)
+    body = fill_article_byline(body, item)
+    body = fill_source_legend(body, item)
     body = fill_article_dates(body, item)
     body = fill_article_reading_time(body, item)
     body = fill_published_article_count(body)
@@ -1549,7 +1677,7 @@ def _render_dated(item: dict, origin: str, body: str, headline: str | None,
     og_image, twitter_card = og_image_markup(origin)
     # {{body}} 先插入，{{assets}} 後蓋上內容版本，順序不可調換：頁面片段自己
     # 也需要版本鍵。/zh-TW/ 的敏感度示範腳本只屬於該頁，放進 _shell.html 會讓
-    # 另外十一頁載入一個對它們無用的檔案；留在片段裡，就必須讓片段也能寫
+    # 其他每一頁都載入一個對它們無用的檔案；留在片段裡，就必須讓片段也能寫
     # ?v={{assets}}。每個靜態資產引用都帶正確的內容版本，由
     # tests/integration/test_hosted_profile.py 逐頁檢查。
     return stamp_asset_versions(
@@ -1643,14 +1771,16 @@ _CLASS_ATTRIBUTE = re.compile(r' class="[^"]*"')
 PAGE_LASTMOD_SCHEMA = 2
 
 
-def _uncovered_styles(item: Mapping, page: str) -> list[str]:
+def _uncovered_styles(item: Mapping, page: str, names_by_audience: dict[str, set[str]]) -> list[str]:
     """A page.css rule the page's markup or scripts could match but its
-    bundle leaves out, as "<page>: <selector>"."""
+    bundle leaves out, as "<page>: <selector>"; the page's names are added to
+    its audience's in `names_by_audience`."""
 
     from scripts.frontend import stylesheets
 
     audience = stylesheets.audience_of(item)
     names = stylesheets.names_on_page(page, FRONTEND)
+    names_by_audience.setdefault(audience, set()).update(names)
     return [f"{item['key']}: {selector}" for selector in stylesheets.uncovered_rules(audience, names)]
 
 
@@ -1865,8 +1995,9 @@ def footer_tagline(shell: str | None = None) -> str:
 # the backend, the house systems from the backend's table (in the order the
 # calculate page lists them), the time-lord techniques and the natal outputs
 # from time_lord_techniques() and natal_features(), the phase from
-# PUBLIC_ALPHA_START with the about page's own words for it, and two links.  The known limitations are the
-# public repository's docs/KNOWN_LIMITATIONS.md, in English.
+# PUBLIC_ALPHA_START with the about page's own words for it, and three links.  The known limitations are the
+# public repository's docs/KNOWN_LIMITATIONS.md, in English; the plain-text
+# companion is llms_full_text's output.
 REQUIREMENTS = ROOT / "backend" / "requirements.txt"
 LLMS_HOUSE_SYSTEM_ORDER = ("W", "E", "O", "B", "C", "R", "P")
 LLMS_KNOWN_LIMITATIONS_PATH = "/blob/main/docs/KNOWN_LIMITATIONS.md"
@@ -1886,7 +2017,7 @@ def _license_id() -> str:
 
 
 def llms_facts(origin: str, by_surface: Mapping[str, dict]) -> list[str]:
-    houses = _backend("config").HOUSE_SYSTEMS
+    houses = _backend("domain_catalog").HOUSE_SYSTEMS
     if set(houses) != set(LLMS_HOUSE_SYSTEM_ORDER):
         raise ValueError("llms.txt house-system order does not match the backend's table")
     repository = _backend("frontend_release").PUBLIC_REPOSITORY_URL
@@ -1900,6 +2031,7 @@ def llms_facts(origin: str, by_surface: Mapping[str, dict]) -> list[str]:
         ("本命盤", "；".join(zh for _, zh, _ in natal_features())),
         ("狀態", f"公開測試（Public Alpha），自{PUBLIC_ALPHA_START.isoformat()}起"),
         ("已知限制（英文）", repository + LLMS_KNOWN_LIMITATIONS_PATH),
+        ("方法頁全文與文章重點（純文字）", f"{origin}/{LLMS_FULL_NAME}"),
     )
     check = by_surface.get(LLMS_PRIVACY_CHECK_SURFACE)
     if check is not None and check["indexable"]:
@@ -1990,6 +2122,175 @@ def llms_text(payload: dict, shell: str | None = None) -> str:
     return "\n".join(lines)
 
 
+# llms-full.txt: the long companion llms.txt links, for a reader that wants
+# the text rather than the index.  It holds the methods page as a reader sees
+# it and, for each published article, its summary, its opening paragraph and
+# its key points (`p.ar-lead` and `section.ar-points`, which every article
+# fragment has).  Each part is the rendered page body turned into plain text,
+# so it can only say what the pages say.
+LLMS_FULL_NAME = "llms-full.txt"
+LLMS_FULL = FRONTEND / LLMS_FULL_NAME
+LLMS_FULL_PAGE_KEYS = ("methods",)
+# Interface text with no meaning outside the page: the fold toggles' 展開／收合,
+# the fold-all buttons, the in-page section index and the numbered citation
+# marks, whose sources are not carried here.
+_PLAIN_SKIPPED_TAGS = frozenset({"script", "style", "svg", "button", "summary", "template", "nav"})
+_PLAIN_SKIPPED_CLASSES = frozenset({"ar-cite"})
+_PLAIN_VOID_TAGS = frozenset({"br", "hr", "img", "input", "meta", "link", "source", "wbr", "col", "area"})
+_PLAIN_BLOCK_TAGS = frozenset({
+    "p", "div", "section", "article", "header", "footer", "nav", "aside", "main", "ul", "ol",
+    "li", "dl", "dt", "dd", "table", "thead", "tbody", "tr", "caption", "figure", "figcaption",
+    "details", "blockquote", "h1", "h2", "h3", "h4", "h5", "h6", "pre",
+})
+_PLAIN_HEADING_MARKS = {"h2": "### ", "h3": "#### ", "h4": "#### "}
+
+
+class _PlainText(HTMLParser):
+    """A page body as lines of plain text: one line per block, list items
+    marked `- `, table cells joined by `｜`, h2 and h3 as Markdown headings.
+    Hidden elements and interface text are left out."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.lines: list[str] = []
+        self._line: list[str] = []
+        self._skip: list[str] = []
+        self._labels: list[bool] = []
+        self._cell = False
+        # Two inline elements with nothing between them (a number and its
+        # label in a tally) get a space, so they do not read as one word.
+        self._after_inline = False
+
+    def _break(self) -> None:
+        text = re.sub(r"\s+", " ", "".join(self._line)).strip()
+        if text and text not in {"-", "- "}:
+            self.lines.append(text)
+        self._line = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag in _PLAIN_VOID_TAGS:
+            return
+        attributes = dict(attrs)
+        classes = set((attributes.get("class") or "").split())
+        if self._skip or tag in _PLAIN_SKIPPED_TAGS or classes & _PLAIN_SKIPPED_CLASSES \
+                or "hidden" in attributes or attributes.get("aria-hidden") == "true":
+            self._skip.append(tag)
+            return
+        if tag not in _PLAIN_BLOCK_TAGS and tag not in {"td", "th"}:
+            if self._after_inline and self._line and not self._line[-1].endswith(" "):
+                self._line.append(" ")
+        self._after_inline = False
+        if tag in {"td", "th"}:
+            if self._cell:
+                self._line.append(" ｜ ")
+            self._cell = True
+        elif tag in _PLAIN_BLOCK_TAGS:
+            self._break()
+            if tag == "tr":
+                self._cell = False
+            elif tag == "li":
+                self._line.append("- ")
+            elif tag in _PLAIN_HEADING_MARKS:
+                self.lines.append("")
+                self._line.append(_PLAIN_HEADING_MARKS[tag])
+        # The 重點 label opening a fold's gist reads as a label, not as the
+        # first word of the sentence after it.
+        self._labels.append("fold-k" in classes)
+
+    def handle_endtag(self, tag):
+        if tag in _PLAIN_VOID_TAGS:
+            return
+        if self._skip:
+            if self._skip[-1] == tag:
+                self._skip.pop()
+            return
+        if self._labels and self._labels.pop():
+            self._line.append("：")
+        self._after_inline = tag not in _PLAIN_BLOCK_TAGS and tag not in {"td", "th"}
+        if tag in _PLAIN_BLOCK_TAGS:
+            self._break()
+            if tag in _PLAIN_HEADING_MARKS:
+                self.lines.append("")
+
+    def handle_data(self, data):
+        if not self._skip:
+            self._line.append(data)
+            if data.strip():
+                self._after_inline = False
+
+    def text(self) -> str:
+        self._break()
+        lines: list[str] = []
+        for line in self.lines:
+            if line == "" and (not lines or lines[-1] == ""):
+                continue
+            lines.append(line)
+        while lines and lines[-1] == "":
+            lines.pop()
+        return "\n".join(lines)
+
+
+def plain_text(markup: str) -> str:
+    parser = _PlainText()
+    parser.feed(markup)
+    parser.close()
+    return parser.text()
+
+
+def _article_summary_parts(body: str, key: str) -> tuple[str, str]:
+    """An article's opening paragraph and its key points, as plain text."""
+
+    lead = re.findall(r'<p class="ar-lead">.*?</p>', body, re.DOTALL)
+    points = re.findall(r'<section class="ar-points"[^<>]*>.*?(<ul>.*?</ul>)\s*</section>', body, re.DOTALL)
+    if len(lead) != 1 or len(points) != 1:
+        raise ValueError(f"article {key!r} needs exactly one p.ar-lead and one list in section.ar-points")
+    return plain_text(lead[0]), plain_text(points[0])
+
+
+def llms_full_text(payload: dict, bodies: Mapping[str, str] | None = None) -> str:
+    """/llms-full.txt: the methods page in full and every published article's
+    summary, opening and key points, in plain text.  `bodies` maps a surface
+    key to its rendered page body (main() passes the bodies it has already
+    rendered); a missing body is rendered here."""
+
+    origin = payload["origin"]
+
+    def body(item: dict) -> str:
+        if bodies is not None and item["key"] in bodies:
+            return bodies[item["key"]]
+        return _render_parts(item, origin)[0]
+
+    by_key = {item["key"]: item for item in payload["surfaces"]}
+    lines = [
+        f"# {SITE_NAME}：方法頁全文與文章重點", "",
+        f"> {_markdown_text(by_key['home']['description'])}", "",
+        f"這是 {origin}/llms.txt 的全文版：方法頁的全部文字，以及每一篇已發表文章的摘要、開頭一段與重點，"
+        "由網站的建置程式從頁面本身轉成純文字。圖表與表單沒有收錄；完整內容與出處請看各頁網址。", "",
+    ]
+    for key in LLMS_FULL_PAGE_KEYS:
+        item = by_key[key]
+        lines += [
+            f"## {_markdown_text(item['title'])}", "",
+            f"網址：{origin}{item['surface']}", "",
+            plain_text(body(item)), "",
+        ]
+    articles = [item for item in payload["surfaces"] if is_article(item) and item["indexable"]]
+    if articles:
+        lines += ["## 文章", ""]
+    for item in articles:
+        lead, points = _article_summary_parts(body(item), item["key"])
+        dates = item["article"]
+        lines += [
+            f"### {_markdown_text(item['title'])}", "",
+            f"網址：{origin}{item['surface']}",
+            f"發表：{dates['published']}；更新：{dates['modified']}", "",
+            f"摘要：{_markdown_text(item['description'])}", "",
+            lead, "",
+            "重點：", points, "",
+        ]
+    return "\n".join(lines).rstrip("\n") + "\n"
+
+
 def _discovery_outputs(payload: dict, lastmod: dict) -> dict[Path, str]:
     assets = _frontend_assets_module()
     return {
@@ -2053,6 +2354,19 @@ def _method_source_register_output() -> tuple[Path, str]:
     )
 
 
+def _emit(target: Path, text: str, label: str, drift: list[str], *, check: bool) -> None:
+    """Write `text` to `target`; with `check`, write nothing and add `label`
+    to `drift` when the file differs."""
+
+    if check:
+        current = target.read_text(encoding="utf-8") if target.is_file() else ""
+        if current != text:
+            drift.append(label)
+    else:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(text, encoding="utf-8")
+
+
 def _write_or_compare(outputs: Mapping[str, str], directory: Path, pattern: str, *, check: bool) -> list[str]:
     """Write `outputs` (keyed by path under frontend/) and delete any other
     file of `directory` matching `pattern`; with `check`, write nothing and
@@ -2065,14 +2379,7 @@ def _write_or_compare(outputs: Mapping[str, str], directory: Path, pattern: str,
     )
     drift: list[str] = []
     for name, text in outputs.items():
-        target = FRONTEND / name
-        if check:
-            current = target.read_text(encoding="utf-8") if target.is_file() else ""
-            if current != text:
-                drift.append(name)
-        else:
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(text, encoding="utf-8")
+        _emit(FRONTEND / name, text, name, drift, check=check)
     if check:
         return drift + stale
     for name in stale:
@@ -2104,16 +2411,7 @@ def main() -> int:
     # Written before the pages: a page's `?v=` stamp is the content version of
     # the shipped script as it is on disk.  The time-zone list's readable
     # script comes first, then every shipped script from its readable source.
-    zone_script = timezone_names_script()
-    if args.check:
-        current = (
-            TIMEZONE_NAMES_SCRIPT.read_text(encoding="utf-8")
-            if TIMEZONE_NAMES_SCRIPT.is_file() else ""
-        )
-        if current != zone_script:
-            drift.append(TIMEZONE_NAMES_SCRIPT.name)
-    else:
-        TIMEZONE_NAMES_SCRIPT.write_text(zone_script, encoding="utf-8")
+    _emit(TIMEZONE_NAMES_SCRIPT, timezone_names_script(), TIMEZONE_NAMES_SCRIPT.name, drift, check=args.check)
     from scripts.frontend import javascript
 
     drift.extend(_write_or_compare(
@@ -2126,6 +2424,7 @@ def main() -> int:
         stylesheets.build_bundles(rows), FRONTEND / stylesheets.BUNDLE_DIRECTORY, "*", check=args.check,
     ))
     uncovered: list[str] = []
+    names_by_audience: dict[str, set[str]] = {}
     digests: dict[str, str] = {}
     parts: dict[str, tuple[str, str | None]] = {}
     for item in payload["surfaces"]:
@@ -2137,27 +2436,32 @@ def main() -> int:
 
     lastmod = updated_page_lastmod(load_page_lastmod(), digests, args.date or build_date())
     for item in payload["surfaces"]:
-        target = ROOT / "frontend" / item["output"]
         rendered = _render_dated(item, payload["origin"], *parts[item["key"]],
                                  recorded_page_date(item, lastmod))
-        uncovered.extend(_uncovered_styles(item, rendered))
-        if args.check:
-            current = target.read_text(encoding="utf-8") if target.is_file() else ""
-            if current != rendered:
-                drift.append(item["key"])
-        else:
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(rendered, encoding="utf-8")
+        uncovered.extend(_uncovered_styles(item, rendered, names_by_audience))
+        _emit(ROOT / "frontend" / item["output"], rendered, item["key"], drift, check=args.check)
 
     outputs = dict(_discovery_outputs(payload, lastmod))
+    outputs[LLMS_FULL] = llms_full_text(
+        payload, {key: body for key, (body, _) in parts.items()}
+    )
     for item in payload["error_pages"]:
         outputs[ROOT / "frontend" / item["output"]] = render_error_page(item)
-        uncovered.extend(_uncovered_styles(item, outputs[ROOT / "frontend" / item["output"]]))
+        uncovered.extend(_uncovered_styles(item, outputs[ROOT / "frontend" / item["output"]], names_by_audience))
     if uncovered:
         print("UNCOVERED STYLE: " + "; ".join(uncovered), file=sys.stderr)
         print(
             "add the page to the @pages marker above these rules in "
             "scripts/frontend/styles/page.css",
+            file=sys.stderr,
+        )
+        return 1
+    unused = stylesheets.unused_rules(names_by_audience)
+    if unused:
+        print("UNUSED STYLE: " + "; ".join(unused), file=sys.stderr)
+        print(
+            "no page these rules reach names their classes or ids: delete them, or list them in "
+            "stylesheets.UNUSED_RULES_KEPT",
             file=sys.stderr,
         )
         return 1
@@ -2176,12 +2480,7 @@ def main() -> int:
     register_target, register_text = _method_source_register_output()
     outputs[register_target] = register_text
     for target, rendered in outputs.items():
-        if args.check:
-            current = target.read_text(encoding="utf-8") if target.is_file() else ""
-            if current != rendered:
-                drift.append(target.name)
-        else:
-            target.write_text(rendered, encoding="utf-8")
+        _emit(target, rendered, target.name, drift, check=args.check)
 
     if OG_IMAGE_ASSET is not None:
         from scripts.frontend import og_card
@@ -2200,7 +2499,7 @@ def main() -> int:
     print(
         f"PAGES {'CHECKED' if args.check else 'BUILT'}: "
         f"{len(payload['surfaces'])} surfaces + {len(payload['error_pages'])} error page(s) "
-        "+ 4 discovery assets + page lastmod record + method source register"
+        "+ 5 discovery assets + page lastmod record + method source register"
         " + time-zone name list + shipped scripts"
     )
     return 0

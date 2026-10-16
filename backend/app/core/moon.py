@@ -7,7 +7,8 @@
 本模組實作的是「月亮離開現在的星座前不完成合相與四種傳統相位中的任何一個」＋要求相位
 精確完成。兩個成分來歷不同：星座條件最晚見於 Lilly, Christian Astrology 1647 p.112，
 更早亦見於 Māshāʾallāh；「必須在離座前精確完成、不採容許度」，後人文獻歸於 Al H.
-Morrison（AFA Journal 1966 年 10 月有專文，原文未讀），更早的起源尚未查證。兩者
+Morrison（AFA Bulletin 第 28 卷第 10 期，1966 年 10 月；原是當年 AFA 大會的演講，後來
+印成 AFA 小冊《The Void of Course Moon》；原文未讀），更早的起源尚未查證。兩者
 合起來的歷史歸屬仍未定（VOC_SOURCE_VERIFICATION；方法登記 `void_of_course`）。其他具名
 定義：Ps.-Porphyry 的「未來 30° 內不與行星接合」（方法登記
 `contested/void_of_course_definition`）；Antiochus 名下「一日一夜（約 13°）內不與任何行星
@@ -23,9 +24,10 @@ Morrison（AFA Journal 1966 年 10 月有專文，原文未讀），更早的起
 """
 
 import math
+from typing import cast
 
-from ..config import BODY_ID_BY_KEY, CLASSICAL_BODIES, PTOLEMAIC_ASPECTS
-from .aspect_profiles import LILLY_1647_READ_AT
+from ..domain_catalog import BODY_ID_BY_KEY, CLASSICAL_BODIES
+from .aspect_profiles import LILLY_1647_READ_AT, PTOLEMAIC_ASPECTS
 from .aspects import EXACT_NOW_EPSILON_DEGREES
 from .bodies import memoized_longitudes
 from .module_state import (
@@ -37,6 +39,11 @@ from .method_status import method_receipt
 from .root_finding import SOLVER_NAME, find_crossings_detailed, wrap_to_signed_180
 from .source_reading import SOURCE_READING_LEVELS
 from .trace import Trace
+
+# The conjunction and the four traditional aspects, in the aspect table's order.
+_ASPECT_ANGLES: tuple[float, ...] = tuple(
+    cast(float, aspect["angle"]) for aspect in PTOLEMAIC_ASPECTS
+)
 
 VOC_METHOD_NAME = "modern_sign_bounded_exact_perfection_v1"
 
@@ -58,7 +65,9 @@ VOC_METHOD_PROVENANCE = "not_classical_attribution_unresolved"
 VOC_SIGN_CONDITION_ATTRIBUTIONS = (
     "attested_masha_allah_and_lilly_1647_earliest_unresolved",
 )
-# The publisher's index locates Morrison's 1966 article; its text, and any
+# An AFA author index locates Morrison's 1966 piece; a bibliography of the later
+# AFA booklet, not seen by us, names the periodical as the AFA Bulletin (vol. 28
+# no. 10) and the piece as a talk at the AFA's 1966 meeting.  Its text, and any
 # earlier origin of the requirement, are not checked, so the code claims only
 # that later literature attributes the requirement to him (the code's wording,
 # "found in 20th-century literature", names where the attribution is found).
@@ -92,8 +101,9 @@ VOC_SOURCE_VERIFICATION = {
     ),
     "exact_perfection": (
         "Later literature attributes requiring exact perfection before the sign exit "
-        "to Al H. Morrison (an article in the AFA Journal, October 1966; the article "
-        "was not read); an earlier origin has not been checked."
+        "to Al H. Morrison (a talk at the AFA's 1966 meeting, printed in the AFA "
+        "Bulletin vol. 28 no. 10, October 1966, and later as the AFA booklet The Void "
+        "of Course Moon; the text was not read); an earlier origin has not been checked."
     ),
     "competing_attributions": (
         "al_h_morrison_20th_century",
@@ -134,8 +144,9 @@ VOC_SOURCE_VERIFICATION = {
         },
         {
             "citation": (
-                "Al H. Morrison, 'Void of Course Moon Periods: Their Uses and What May "
-                "Come of Ignoring Them', AFA Journal XXVIII.10 (October 1966) p.10"
+                "Al H. Morrison, a talk at the AFA's 1966 meeting, printed in the AFA "
+                "Bulletin vol. 28 no. 10 (October 1966) and later as the AFA booklet The "
+                "Void of Course Moon"
             ),
             "says": (
                 "later literature attributes to this article the requirement of exact "
@@ -143,7 +154,9 @@ VOC_SOURCE_VERIFICATION = {
             ),
             "reading": SOURCE_READING_LEVELS[3],
             "read_at": (
-                "located through the AFA journal author index; the article was not read"
+                "located through an AFA author index; the periodical's name and the "
+                "booklet as given by a bibliography of the booklet, which we have not "
+                "seen ourselves; the text was not read"
             ),
         },
         {
@@ -324,7 +337,7 @@ def _find_aspect_perfections(
     body_id = body["body_id"]
     half_window = _EXACT_NOW_ROOT_HALF_WINDOW_DAYS
 
-    for aspect_angle in PTOLEMAIC_ASPECTS:
+    for aspect_angle in _ASPECT_ANGLES:
         # 合(0°)與沖(180°)的 +angle 與 −angle 在 (-180,180] 上重合，用集合自動去重。
         targets = {
             wrap_to_signed_180(aspect_angle),
@@ -519,7 +532,7 @@ def find_voc_candidates(
              "以有限間隔搜尋；間距極近的根或切點可能遺漏。"
              "此搜尋仍內含「用哪些天體/哪些相位角」的技法假設，屬方法假設而非純天文事實。"
              "定義為星座界線＋精確完成：星座條件最晚見於 Lilly 1647 p.112；"
-             "要求換座前精確完成：後人文獻歸於 Al H. Morrison（AFA Journal 1966 年 10 月有專文，原文未讀）；"
+             "要求換座前精確完成：後人文獻歸於 Al H. Morrison（AFA Bulletin 第 28 卷第 10 期，1966 年 10 月；原是當年 AFA 大會的演講，後來印成 AFA 小冊《The Void of Course Moon》；原文未讀）；"
              "更早的起源尚未查證。兩者合起來的歷史歸屬未定；與 Porphyry 名下《占星四書導論》（Eisagōgē）第 23 章的 30° 定義、"
              "以及 Lilly 1647 以容許度判入相位的做法都不同。",
     )

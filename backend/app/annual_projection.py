@@ -30,7 +30,7 @@ from .core.birth_time_sensitivity import (
     SAME_AT_ALL_SAMPLES,
 )
 from .core import monthly_profections
-from .core.module_state import MODULE_STATUSES
+from .core.module_state import MODULE_COMPUTED, MODULE_NOT_REQUESTED
 from .response_projection import (
     DEFAULT_CHART_PROJECTION,
     _keep,
@@ -44,7 +44,6 @@ DEFAULT_ANNUAL_PROJECTION: ChartProjection = DEFAULT_CHART_PROJECTION
 
 SEGMENTS_BASES = ("single_instant", "representative_anchor_sample", "each_sample")
 EVENT_KINDS = ("year_start", "period_start")
-_COMPUTED = MODULE_STATUSES[1]
 _STATE = "status,requested,applicable,available,reason_code"
 # A segment is drawn to the day: its boundaries are the birth-place dates.
 # The Julian days and UTC labels they were dated from are in `detailed`.
@@ -402,7 +401,7 @@ def _profection_segments(response: dict) -> tuple[list[dict], str, str]:
 
 def _status(module: dict | None) -> tuple[str, str | None]:
     if module is None:
-        return MODULE_STATUSES[0], None
+        return MODULE_NOT_REQUESTED, None
     return module["status"], module["reason_code"]
 
 
@@ -424,7 +423,7 @@ def annual_timeline(response: dict) -> dict:
 
     def lane_entry(lane_id, technique, level, label_kind, unit, parent, module, built):
         status, reason = _status(module)
-        computed = status == _COMPUTED
+        computed = status == MODULE_COMPUTED
         return {
             "lane_id": lane_id,
             "technique": technique,
@@ -442,14 +441,14 @@ def annual_timeline(response: dict) -> dict:
         }
 
     profection = methods["annual_profection"]
-    computed = profection is not None and profection["status"] == _COMPUTED
+    computed = profection is not None and profection["status"] == MODULE_COMPUTED
     lanes.append(lane_entry(
         PROFECTION_LANE_ID, "annual_profection", 1, "sign", "return_year", None, profection,
         _profection_segments(response) if computed else ([], None, None),
     ))
     for lane in LANES:
         module = methods.get(lane.technique)
-        computed = module is not None and module["status"] == _COMPUTED
+        computed = module is not None and module["status"] == MODULE_COMPUTED
         built = (*_period_segments(lane, module), f"annual_methods.{lane.technique}") if computed \
             else ([], None, None)
         unit = lane.unit
@@ -483,7 +482,7 @@ def annual_timeline(response: dict) -> dict:
     for lane in lanes:
         for segment in lane["segments"]:
             del segment[_START_JD]
-    states = [lane["sensitivity_state"] for lane in lanes if lane["status"] == _COMPUTED]
+    states = [lane["sensitivity_state"] for lane in lanes if lane["status"] == MODULE_COMPUTED]
     if DIFFERS_BETWEEN_SAMPLES in states:
         sensitivity = DIFFERS_BETWEEN_SAMPLES
     elif SAME_AT_ALL_SAMPLES in states:

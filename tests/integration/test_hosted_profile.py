@@ -309,7 +309,7 @@ def test_hosted_boundary_rejects_oversized_headers_before_chart_parsing():
     ("GET", "/zh-TW/style/home.css"), ("GET", "/api/not-a-route"),
 ))
 def test_header_budget_holds_on_every_path_not_only_the_json_posts(method, path):
-    """SEC-R2-02: the 16 KiB header budget was applied to the two JSON POST
+    """The 16 KiB header budget was applied to the two JSON POST
     routes only; a page or health request with 64 KB of headers was a 200,
     and the only bound left was the edge's."""
     with _client() as client:
@@ -410,7 +410,7 @@ def test_api_json_other_than_the_chart_result_is_never_compressed():
     ("gzip", True), ("GZIP", True), ("gzip;q=1", True), ("gzip; q=1.000", True),
     ("gzip;q=0.001", True), ("br, gzip;q=0.5", True),
     ("gzip;q=0", False), ("gzip;q=0.000", False), ("*", False), ("identity", False),
-    # SEC-R2-06: RFC 9110 §12.4.2 qvalues are 0–1 with at most three decimals;
+    # RFC 9110 §12.4.2 qvalues are 0–1 with at most three decimals;
     # anything else is not a quality, and `float` read `inf` as a preference.
     ("gzip;q=inf", False), ("gzip;q=nan", False), ("gzip;q=1e0", False),
     ("gzip;q=1_0", False), ("gzip;q=2", False), ("gzip;q=-1", False),

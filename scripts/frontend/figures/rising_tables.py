@@ -25,11 +25,12 @@ on the ecliptic and on the horizon).
 """
 from __future__ import annotations
 
+from collections import Counter
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from . import _fx, _noaa
-from ._common import SIGNS, backend_on_path, calc_ut, product_charts, swiss
+from ._common import SIGNS, TAIPEI, backend_on_path, calc_ut, product_charts, swiss
 
 
 FRAGMENT = "blog-rising-sign-tables"
@@ -37,7 +38,7 @@ YEAR = 2025
 STEP_MINUTES = 10
 # name: (GeoNames id, latitude, longitude, IANA zone)
 PLACES = {
-    "臺北": ("1668341", 25.05306, 121.52639, "Asia/Taipei"),
+    "臺北": ("1668341", *TAIPEI, "Asia/Taipei"),
     "金門": ("1678008", 24.43415, 118.31712, "Asia/Taipei"),
     "花蓮": ("1674504", 23.97694, 121.60444, "Asia/Taipei"),
     "恆春": ("1676242", 22.00417, 120.74389, "Asia/Taipei"),
@@ -111,9 +112,12 @@ def _data() -> dict:
             rows.append((minute, int(calc_ut(swe, j, swe.SUN)[0] // 30), sign(j, tp[1], tp[2]),
                          {name: sign(j, PLACES[name][1], PLACES[name][2]) for name in ELSEWHERE_IN_TAIWAN}))
         n = len(rows)
+        # The same (clock minute, Sun sign, rising sign) recurs on many days; count each once.
+        triples = Counter((minute, sun, asc) for minute, sun, asc, _ in rows)
         split = {}
         for start in range(0, 1440, STEP_MINUTES):
-            split[start] = sum((sun + (minute - start) // BLOCK_MINUTES) % 12 != asc for minute, sun, asc, _ in rows) / n
+            split[start] = sum(count for (minute, sun, asc), count in triples.items()
+                               if (sun + (minute - start) // BLOCK_MINUTES) % 12 != asc) / n
         best = min(split, key=lambda start: split[start])
         d["table_a"] = (best, split[best])
         d["table_b"] = {name: sum(other[name] != asc for _, _, asc, other in rows) / n for name in ELSEWHERE_IN_TAIWAN}
@@ -232,11 +236,6 @@ def _bars(d: dict) -> list[tuple[str, str, str, float]]:
     return out
 
 
-def _width(text: str) -> float:
-    """A rough width in em: a CJK character is one, anything else about half."""
-    return sum(1.0 if ord(ch) > 0x2E80 else 0.52 for ch in text)
-
-
 def _share_drawing(layout: str, fid: str, bars: list, bound: _fx.Bound) -> str:
     """Figure 1, one layout: a row per table and place, the share of clock times
     the table gets wrong as a bar on a 0–100% scale."""
@@ -253,7 +252,7 @@ def _share_drawing(layout: str, fid: str, bars: list, bound: _fx.Bound) -> str:
             out.append(_fx.text(x1 + 16, by + 18, value, "fx-t fx-num"))
             y += 66
         else:
-            lines = [label] if _width(label) * 13.5 < 250 else [f"{table}，", where]
+            lines = [label] if _fx.text_width(label, latin=0.52) * 13.5 < 250 else [f"{table}，", where]
             for i, line in enumerate(lines):
                 out.append(_fx.text(x0, y + 16 + i * 18, line, "fx-t"))
             out.append(_fx.text(x1, y + 16, value, "fx-t fx-num", "end"))

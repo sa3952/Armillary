@@ -1,7 +1,8 @@
 <div class="wrap page-body validation-page">
   <section class="validation-hero">
-    <h1>驗證不是口號。<br>範圍才是答案。</h1>
-    <p class="lede">渾儀的主要位置結果曾與另一條以JPL DE442、Astropy與ERFA組成的管線逐小時比較。底下直接列結論、方法與沒有涵蓋的地方。</p>
+    <h1>渾儀怎麼驗證星盤計算：與 JPL 星曆比對的範圍與誤差</h1>
+    <p class="kicker">驗證不是口號。<br>範圍才是答案。</p>
+    <p class="lede">渾儀的主要位置結果曾與另一條以JPL DE442、Astropy與ERFA組成的管線逐小時比較，另有一組常設測試拿 JPL Horizons、NASA 日食典與美國海軍天文臺的數值核對。底下直接列結論、方法、每一組比對的範圍與差距，以及沒有涵蓋的地方。</p>
     <div class="validation-metrics" role="group" aria-label="歷史驗證批次摘要">
       <div><b>2,244,088</b><span>天體—小時比對列</span><small>1990–2026，七個天體，每列含多個欄位</small></div>
       <div><b>99.96%</b><span>落在工程門檻內</span><small>位置與速度合計；門檻是比對設定，不是物理精度</small></div>
@@ -47,8 +48,74 @@
     </div>
   </section>
 
-  <section class="validation-section" id="coverage">
+  <section class="validation-section" id="comparisons">
     <p class="validation-number">03</p>
+    <div>
+      <h2>每一組比對：比什麼、和誰比、差多少</h2>
+      <p>上面的逐小時比對是規模最大的一批，但不是唯一的一批。下表列出本站目前每一組拿外部數值或另一套算法核對的地方：比的是哪一個量、對照的答案從哪裡來、涵蓋哪些年代、有幾個樣本、容許差多少、實際差多少，以及要怎麼重現。</p>
+      <p>「容許」是測試寫死的界線，超出就算失敗、不能交付；「實測」是最近一次跑出來的最大差。兩者都不是物理上的精度保證：沒有超出容許，只表示在這些樣本上沒有被抓到錯，不表示其他時刻、其他模式也一樣。</p>
+      <div class="validation-scroll" tabindex="0" role="region" aria-labelledby="comparisons-caption">
+        <table class="validation-table">
+          <caption id="comparisons-caption">表 1　渾儀的天文與時間計算拿什麼核對（容許與實測）</caption>
+          <thead><tr><th scope="col">比什麼</th><th scope="col">和誰比</th><th scope="col">範圍</th><th scope="col">樣本</th><th scope="col">容許與實測</th><th scope="col">怎麼重現</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">七個天體逐小時的位置與速度</th><td>JPL DE442 加上 Astropy／ERFA 的參考管線</td><td>1990 到 2026 年，逐小時</td><td class="num">2,244,088 列</td><td>位置門檻 5 角秒（月亮 15 角秒）；99.96% 落在門檻內，五大行星位置沒有一項超出，代表性最大差是水星赤緯 4.8 角秒</td><td>一次歷史批次（2026-07-28）；比對程式與原始結果放在原始碼庫之外，不能從公開原始碼重跑</td></tr>
+            <tr><th scope="row">日月與五顆行星的地心視黃經、黃緯</th><td>JPL Horizons（DE441）</td><td>1900 到 2399 年之間</td><td class="num">8 個時刻</td><td>黃經容許 0.4 角秒（2100 年以後 1.5 角秒），黃緯 0.15 角秒，扣掉太陽的共同偏移之後 0.05 角秒；實測最大 0.24 角秒；2100 年以後最大 1.18 角秒</td><td>站內自動測試；你也可以在 JPL Horizons 查同一時刻的地心視黃經</td></tr>
+            <tr><th scope="row">世界時換成地球時</th><td>JPL Horizons 列出的時間差</td><td>1972 到 2026 年（有閏秒的年代）</td><td class="num">3 個時刻</td><td>容許 5 毫秒</td><td>站內自動測試</td></tr>
+            <tr><th scope="row">日食的時刻與種類</th><td>NASA 五千年日食典</td><td>1900 到 2399 年</td><td class="num">1181 次</td><td>食甚時刻容許 30 秒，實測最大 12.1 秒（中位數 1.3 秒）；種類或是否中心食有 7 次與日食典不同，都在分類邊界附近</td><td>全面比對做過一次（2026-10-04）；常設測試保留那 7 次與邊界附近的案例</td></tr>
+            <tr><th scope="row">上升點、中天與十二宮頭</th><td>測試裡另外寫的球面三角公式（Placidus 用逐宮半弧迭代，不用 Swiss 的解法）</td><td>1900 到 2150 年，南北半球、赤道與北緯 64 度</td><td class="num">7 種宮位制 × 10 個地點與年代</td><td>差小於 0.01 角秒</td><td>站內自動測試</td></tr>
+            <tr><th scope="row">恆星時、日出日落與一張盤的宮頭</th><td>美國海軍天文臺（USNO）</td><td>2000 年元旦中午，臺北</td><td class="num">1 個時刻</td><td>恆星時容許 0.01 秒；宮頭容許 0.5 角秒；日出、中天、日落容許 2 分鐘（USNO 只列到分鐘）</td><td>站內自動測試；USNO 的數值可以自己查</td></tr>
+            <tr><th scope="row">太陽回歸的時刻</th><td>測試裡另外寫的求根程式（不經產品的搜尋程式）</td><td>出生 1900 到 2399 年，0 到 100 歲</td><td class="num">333 筆出生、584 個回歸時刻</td><td>容許 0.01 秒；實測最大 40 微秒，中位數 0</td><td>站內自動測試</td></tr>
+            <tr><th scope="row">回歸時刻的太陽方向</th><td>JPL Horizons（DE441）的向量</td><td>1900、2000、2380 年的出生</td><td class="num">3 對出生與回歸</td><td>方向差容許 0.002 角秒</td><td>站內自動測試</td></tr>
+            <tr><th scope="row">回歸盤的上升點與中天</th><td>同一套球面三角公式，並對 Swiss 的宮位函式</td><td>從極圈內到赤道</td><td class="num">8 個地點</td><td>差小於 0.01 角秒</td><td>站內自動測試</td></tr>
+            <tr><th scope="row">出生時間換成世界時（時區、夏令時間）</th><td>測試裡另外寫的換算：逐秒沿世界時走，不用產品的區段算法</td><td>1900 到 2100 年，每個時區檔的每一次偏移變動</td><td class="num">每次變動前後的日期與時刻</td><td>要求完全相同</td><td>站內自動測試</td></tr>
+            <tr><th scope="row">恆星位置</th><td>不呼叫 Swiss 的獨立換算；Hipparcos 2007 星表；SIMBAD 現值</td><td>1900、2026、2100 年</td><td class="num">每一顆產品恆星</td><td>同一筆星表記錄容許 0.01 角秒（實測 0.0009 角秒）；對 Hipparcos 2007 容許 0.02 角秒（實測 0.0075 角秒）；SIMBAD 已改用 Gaia DR3 的星容許 0.5 角秒（實測 0.2831 角秒）</td><td>站內自動測試</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>「站內自動測試」是本站每次改動程式都要重跑的測試；超出容許值就不能交付。這些測試與它們的固定資料目前不在公開原始碼裡，所以你沒辦法直接執行它們，但可以照最後一節的方法，拿 JPL Horizons、USNO 或 NASA 的公開數值核對任何一張盤。</p>
+      <details class="validation-details">
+        <summary>為什麼 Horizons 的差有 0.24 角秒，卻說星曆本身只差 0.05 角秒</summary>
+        <p>同一個時刻，七個天體對 Horizons 的黃經差幾乎一樣：往同一個方向、差同一個量。這不是哪一顆行星算錯，而是兩邊用來定春分點的歲差章動模型不同。Horizons 的黃道座標用較舊的 IAU 1976／1980 模型，Swiss Ephemeris 預設用較新的模型；兩者在 2000 年附近幾乎一致，離 2000 年越遠，春分點的位置差得越多，所以 1900 年約差 0.24 角秒，2399 年約差 1.18 角秒。</p>
+        <p>因此測試分兩層：一層是絕對差，把這個共同偏移包在容許值裡；另一層把每個天體的差先扣掉太陽的差，留下的才是天體彼此之間的相對位置，這一層要求不超過 0.05 角秒。後者才是在檢查星曆本身。</p>
+      </details>
+      <details class="validation-details">
+        <summary>為什麼回歸時刻的最大差是 40 微秒</summary>
+        <p>本站以儒略日記錄時刻：天文計算用的連續日數，存成一個雙精度浮點數。這個年代的儒略日約兩百四十多萬，這個大小的浮點數，最小能分辨的間隔約 40 微秒。產品與獨立程式各自把回歸時刻求到十億分之一日以內，最後的差就剩下這一格：584 個回歸時刻中，一半以上完全相同，最大差正好是一格。</p>
+        <p>測試的容許值是 0.01 秒，比這一格大兩個數量級，又遠小於任何占星上的用途。這個比對證明的是「產品的搜尋程式找到的根，和另一個寫法完全不同的搜尋程式找到的根是同一個」；它不證明回歸的定義本身。回歸時刻取決於用哪一套歲差章動模型定義黃道：若改用 Horizons 黃道座標所用的 IAU 1976／1980 模型，在測試舉的例子裡，回歸時刻最多差約 4.7 秒。這是座標系的選擇，不是星曆的錯，本站在方法頁寫明採用哪一種。</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="validation-section" id="independence">
+    <p class="validation-number">04</p>
+    <div>
+      <h2>每一組比對獨立到哪裡</h2>
+      <p>「和外部比過」有好幾種強度。最強的是兩邊從資料到演算法都不同；最弱的是同一套程式算兩次。本站的比對介於兩者之間，各組共用的東西不一樣，所以能排除的錯也不一樣。</p>
+      <div class="validation-findings">
+        <article><h3>星曆不同、標準相同</h3><p>逐小時比對與 Horizons 比對，對照的是 JPL 的星曆。Swiss Ephemeris 附帶的星曆檔本身也是由 JPL 的 DE441 轉成，兩邊又共用國際天文聯合會與國際地球自轉服務的標準。這兩組能抓出轉檔、座標換算、光行時與章動等環節的錯，抓不出 JPL 星曆本身的系統誤差。</p></article>
+        <article><h3>演算法不同、引擎相同</h3><p>宮頭與太陽回歸的比對，答案由測試裡另外寫的公式或求根程式算出，不經產品的程式；但這些程式仍向 Swiss Ephemeris 取恆星時、黃赤交角與太陽位置。它們能抓出產品自己的公式、迭代與邊界處理寫錯，抓不出 Swiss 本身算錯。後者另由 Horizons 與 USNO 的比對覆蓋一部分。</p></article>
+        <article><h3>資料相同、走法不同</h3><p>時區換算的比對，獨立程式沿世界時逐秒走、看每一秒在當地是哪一天哪一刻，不假設「一天在下一個午夜結束」，也不用產品的區段算法；但它讀的是同一份時區資料庫。它證明產品忠實地照資料庫換算，不證明資料庫對某地某年的民用時間記錄正確。時區資料庫自己說明，1970 年以前的段落多為推定。</p></article>
+        <article><h3>完全外部的答案</h3><p>NASA 日食典、USNO 的恆星時與日出日落、Hipparcos 與 SIMBAD 的恆星位置，都是本站以外的機構發布的數值，本站只取來對照。即使如此，日食典與本站對「食甚」的定義不同（一個看影軸離地心最近，一個看日月邊緣距離最小），所以容許值寫的是 30 秒，而不是零。</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="validation-section" id="time-and-houses">
+    <p class="validation-number">05</p>
+    <div>
+      <h2>天體以外：時間換算與宮位</h2>
+      <p>一張星盤最常出錯的地方不是行星位置，而是出生時間換成世界時的那一步。時區或夏令時間差一小時，上升點會移動十幾度，遠比任何星曆誤差大。因此時間換算有自己的一組比對：每一個時區檔，從 1900 到 2100 年，每一次 UTC 偏移的變動（夏令時間開始與結束、改時區、撥快撥慢），變動前後的日期與被重複或跳過的鐘點，都拿獨立程式的答案逐一核對。鐘點重複時（例如夏令時間結束的那一小時），產品不替你猜：會寫出兩種解讀，或要求你指定是哪一次；鐘點不存在時（例如撥快跳過的那一小時），產品拒絕並說明原因。臺灣與其他地區的歷史規則，各自有出處表，寫在〈<a href="/zh-TW/methods/birth-time-conversion">出生時間換算的規則與出處</a>〉。</p>
+      <p>宮位的比對涵蓋本站提供的七種宮位制、每一個宮頭，以及南北半球、赤道、高緯度與三個世紀的時刻。極區是宮位最容易出問題的地方：本站的 Placidus 在極區帶整帶拒絕，其他宮位制算不出合法宮頭時回錯誤並說明原因，不會偷偷換一個宮位制。這個拒絕本身有測試，但極區與高緯度宮頭還沒有外部機構的對照答案，所以列在下面「部分涵蓋」與「不能外推」之間。</p>
+      <details class="validation-details">
+        <summary>計算引擎與星曆檔怎麼固定</summary>
+        <p>本站的計算引擎是 Swiss Ephemeris 2.10.03（Python 介面 pyswisseph 2.10.3.2），接受 1900 到 2399 年的日期。預設是地心、回歸黃道、視位置、當日春分點，並計入章動。每一個星曆檔的 SHA-256 雜湊值都寫在部署設定裡，映像建置時與伺服器啟動時各核對一次；不相符就不啟動。雜湊只能看出檔案有沒有被換掉，看不出檔案的內容對不對；內容是否正確，靠的是上面那幾組外部比對。</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="validation-section" id="coverage">
+    <p class="validation-number">06</p>
     <div>
       <h2>涵蓋到哪裡，沒有涵蓋哪裡</h2>
       <div class="validation-coverage">
@@ -62,14 +129,30 @@
   </section>
 
   <section class="validation-section" id="meaning">
-    <p class="validation-number">04</p>
+    <p class="validation-number">07</p>
     <div>
-      <h2>這些證據能證明什麼</h2>
+      <h2>這些證據能證明什麼、不能證明什麼</h2>
       <div class="validation-meaning">
         <p><b>能證明：</b>在上列範圍內，產品與另一條參考管線的主要位置結果高度一致；資料檔若被替換，exact hash控制會失敗。</p>
         <p><b>不能證明：</b>所有占星方法都正確、所有年代與模式都已驗、目前每一次計算都重新跑過外部驗證，或本產品取得第三方安全與天文認證。</p>
       </div>
+      <p>換成白話，這一頁能讓你放心的是：在 1900 到 2399 年之間，本站算出的日月五星位置，和 JPL 的星曆只差零點幾角秒到一角秒多；以〈排盤準不準〉的示範盤來說，這比出生時間差一秒造成的上升點移動還小。宮頭、太陽回歸的時刻與時區換算，各自有另一套寫法的程式核對，而且每次改動程式都要重跑。</p>
+      <p>這一頁不能讓你放心的是：你的出生時間本身準不準、出生證明上的時刻有沒有被人換算過，任何程式都驗不了；交點、日心、恆星黃道等模式，以及極區的宮頭，只有較小的核對或還沒有外部答案；逐小時那一批比對，早於後來修正的驗證器分母問題，修正後沒有整批重跑，只做了有範圍的抽查。至於天文位置算對之後，某一種占星解讀對不對，是另一回事，本站不替你解盤。</p>
       <div class="validation-links"><a href="/zh-TW/methods">查看方法與來源</a><a href="/zh-TW/trust">查看證據層級</a><a href="/zh-TW/legal/copyright">取得對應原始碼</a></div>
+    </div>
+  </section>
+
+  <section class="validation-section" id="check-yourself">
+    <p class="validation-number">08</p>
+    <div>
+      <h2>你可以怎麼自己核對</h2>
+      <p>不必相信這一頁的數字。每一張盤的結果頁最下方都有「技術細節與驗算資料」，寫著這次計算用的世界時、儒略日、ΔT、時區資料庫版本、Swiss Ephemeris 版本與計算政策。拿這些數值，你可以做三件事：</p>
+      <ol class="validation-steps">
+        <li><b>對 JPL Horizons 查行星位置。</b>用收據上的世界時，在 Horizons 查同一時刻的地心視黃經，和結果頁的位置相減。差多少，可以對照上面的表 1：在 2000 年附近，應該只差零點幾角秒。</li>
+        <li><b>請別人用同一份卷宗重算。</b>匯出時選「運算結果＋驗算資料」，把卷宗交給另一個人，用同一版 Swiss Ephemeris 與收據上的旗標重算行星與宮位。步驟寫在〈<a href="/zh-TW/blog/verify-chart-calculation">星盤怎麼驗算？</a>〉。卷宗含有你的出生資料，交出去之前請先想清楚。</li>
+        <li><b>看瀏覽器送出了什麼。</b>計算在本站的伺服器上進行；瀏覽器送出什麼、送到哪裡，可以照〈<a href="/zh-TW/security/verify">自己檢查瀏覽器送出什麼</a>〉用開發者工具親手看。</li>
+      </ol>
+      <p>各種誤差來源（星曆、ΔT、座標、時區）各自會讓位置移動多少，〈<a href="/zh-TW/blog/chart-calculation-accuracy">排盤準不準</a>〉用同一張示範盤逐項算給你看；每一條規則採用哪一種口徑、出自哪一本書，列在〈<a href="/zh-TW/methods">方法</a>〉。</p>
     </div>
   </section>
 </div>

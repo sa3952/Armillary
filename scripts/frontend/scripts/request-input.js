@@ -51,7 +51,7 @@
   }
 
   // 一個數在最短十進位寫法下的小數位數。JSON.stringify 送出的就是這個寫法，
-  // 後端 schemas.exact_second_microseconds 也以 Python 的同一種寫法（repr）計數，
+  // 後端 core/time_utils.exact_second_microseconds 也以 Python 的同一種寫法（repr）計數，
   // 兩邊因此對同一個值得到同一個答案：String(1e-7) 是 "1e-7"，算七位。
   const SHORTEST_DECIMAL = /^\d+(?:\.(\d+))?(?:e([+-]\d+))?$/;
 
@@ -427,7 +427,7 @@
   function readEraDate(fields, bounds) {
     const reads = [fields.year, fields.month, fields.day].map(readInteger);
     if (reads.every((read) => read.state === EMPTY)) return empty();
-    const definition = Object.prototype.hasOwnProperty.call(ERAS, fields.era) ? ERAS[fields.era] : null;
+    const definition = Object.hasOwn(ERAS, fields.era) ? ERAS[fields.era] : null;
     if (!definition) return invalid("請選擇紀年");
     const [yearRead, monthRead, dayRead] = reads;
     if (reads.some((read) => read.state === EMPTY)) return invalid("年、月、日都要填");

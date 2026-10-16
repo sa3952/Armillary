@@ -100,7 +100,8 @@ _VERSIONED_ASSET_REFERENCE = re.compile(rb'(?:src|href)="(/zh-TW/[^"?#]+)\?v=([0
 # (scripts/deployment/submit_indexnow.py).
 _INDEXNOW_KEY_PATH = "/" + INDEXNOW_KEY_FILE
 _PUBLIC_DISCOVERY_FILES = (
-    "/robots.txt", "/sitemap.xml", "/llms.txt", "/.well-known/security.txt", _INDEXNOW_KEY_PATH,
+    "/robots.txt", "/sitemap.xml", "/llms.txt", "/llms-full.txt", "/.well-known/security.txt",
+    _INDEXNOW_KEY_PATH,
 )
 
 
@@ -202,6 +203,7 @@ _UNKNOWN_API_PROBE_PATH = "/api/armillary-verifier-no-such-route"
 _DISCOVERY_MEDIA_TYPES = {
     "/robots.txt": ("text/plain",),
     "/llms.txt": ("text/plain",),
+    "/llms-full.txt": ("text/plain",),
     "/.well-known/security.txt": ("text/plain",),
     "/sitemap.xml": ("application/xml", "text/xml"),
     _INDEXNOW_KEY_PATH: ("text/plain",),
@@ -263,6 +265,8 @@ def _public_discovery_cases(base_url: str, page: bytes) -> dict[str, bool]:
         typed.append(status == 200 and kind in accepted and parameters.get("charset") == "utf-8")
         if path == "/llms.txt":
             cases["llms_txt_served"] = status == 200 and body.startswith(b"# ")
+        if path == "/llms-full.txt":
+            cases["llms_full_txt_served"] = status == 200 and body.startswith(b"# ")
         if path == _INDEXNOW_KEY_PATH:
             # Exactly the key: an engine compares the file with the key it was sent.
             cases["indexnow_key_served"] = status == 200 and body == INDEXNOW_KEY.encode("ascii")
@@ -425,7 +429,7 @@ def verify(base_url: str, *, approved_hostname: str | None = None, noindex: bool
 
 # --- edge configuration: NGINX parser and the closed log sink model -------------
 # The edge's log sinks, closed, with this module as their one producer; the
-# (private) configuration generator's --verify applies it to `nginx -T`.  Every directive that can write request data to a file, a socket or
+# configuration generator's --verify applies it to `nginx -T`.  Every directive that can write request data to a file, a socket or
 # syslog is listed with the only arguments the deployment approves; any other
 # value anywhere in the configuration is a refusal.  Absence is not silence:
 # NGINX's compiled-in defaults log every request (`access_log logs/access.log

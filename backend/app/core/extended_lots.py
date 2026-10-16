@@ -156,10 +156,19 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
                 ),
             },
             {
-                "citation": "P.Berol. 9825 (AD 319; Greenbaum 2015, MHNH 15:85-116)",
-                "says": "a papyrus computing the seven lots",
+                "citation": (
+                    "P.Berol. 9825 (AD 319; Greenbaum and Jones, ISAW Papers 12, 2017, "
+                    "paras. 135, 203-205)"
+                ),
+                "says": (
+                    "a papyrus computing the seven lots by Paulus's formulae, the only "
+                    "documentary horoscope known to contain all seven"
+                ),
                 "reading": SOURCE_READING_LEVELS[2],
-                "read_at": "per the research notes; the papyrus and the article not checked",
+                "read_at": (
+                    "Greenbaum and Jones's article, read in its open-access online text; "
+                    "the papyrus's Greek not checked"
+                ),
             },
             {
                 "citation": "al-Bīrūnī, Kitāb al-Tafhīm §476 (Wright 1934; he says after Abū Maʿshar)",

@@ -19,7 +19,7 @@ from fractions import Fraction
 from typing import Any
 
 from . import _fx
-from ._common import SIGNS, backend_on_path, product_charts
+from ._common import SIGNS, TAIPEI, backend_on_path, product_charts
 
 
 FRAGMENT = "blog-dodecatemoria"
@@ -44,7 +44,7 @@ EXAMPLES = (
 )
 
 DEMO_DAY = {"year": 1990, "month": 5, "day": 15}
-LOCATION = {"latitude": 25.05306, "longitude": 121.52639}
+LOCATION = {"latitude": TAIPEI[0], "longitude": TAIPEI[1]}
 OPTIONS = {"house_system": "W", "include_houses": True, "include_lots": True, "include_dodecatemoria": True}
 HOUR = 14
 
@@ -209,13 +209,7 @@ def _walk(layout: str, fid: str, cells: dict, differ: list, bound: _fx.Bound) ->
 def _polar(cx: float, cy: float):
     """Screen position of an ecliptic longitude on a wheel with Aries 0° on the
     left and the signs following counterclockwise, as the result page's wheel."""
-    import math
-
-    def at(longitude: float, r: float) -> tuple[float, float]:
-        a = math.radians(longitude)
-        return cx - r * math.cos(a), cy + r * math.sin(a)
-
-    return at
+    return lambda longitude, r: _fx.wheel_point(cx, cy, r, 180 + longitude)
 
 
 def _walk_steps(twelfth_part, lords: dict[str, str]) -> list[dict]:

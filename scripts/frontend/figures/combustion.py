@@ -17,7 +17,7 @@ from __future__ import annotations
 from html import escape
 
 from . import _fx
-from ._common import calc_ut, product_charts, swiss
+from ._common import TAIPEI, calc_ut, product_charts, swiss
 from .page_methods import solar_limit_text, solar_phase_limit_rows
 
 
@@ -25,7 +25,7 @@ FRAGMENT = "blog-combustion-under-beams-cazimi"
 MOMENT = {"year": 2017, "month": 3, "day": 25, "hour": 18, "minute": 0, "second": 0}
 REQUEST = {
     "datetime": MOMENT,
-    "location": {"latitude": 25.05306, "longitude": 121.52639},
+    "location": {"latitude": TAIPEI[0], "longitude": TAIPEI[1]},
     "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"},
     "options": {"include_solar_phase": True},
 }
@@ -193,12 +193,6 @@ def _sentence(row: dict, profile_label: str, band: str, bound: _fx.Bound, latitu
     return text
 
 
-def _width(value: str, size: float) -> float:
-    """A generous estimate of a label's drawn width: a CJK character is one em,
-    anything else 0.55 em."""
-    return sum(size if ord(ch) > 0x2E7F else 0.55 * size for ch in value)
-
-
 def _band_labels(evening: dict[str, float | None], x, cx: float, limit: float, top: float, wide: bool) -> str:
     """The band names over figure 1, each with its original on the line below:
     日輪內 to the left of the Sun's line (its strip is a hairline), the others
@@ -217,7 +211,7 @@ def _band_labels(evening: dict[str, float | None], x, cx: float, limit: float, t
         if edge is None:
             continue
         start = max(x(inner) + pad, end + 2 * pad)
-        end = start + max(_width(name, size), _width(ORIGINAL[band], size))
+        end = start + max(_fx.text_width(name, size), _fx.text_width(ORIGINAL[band], size))
         if end > limit:
             raise RuntimeError(f"figure 1: the {band} label runs past the plate")
         out.append(_fx.text(start, zh_y, name, cls) + _fx.text(start, en_y, ORIGINAL[band], cls))

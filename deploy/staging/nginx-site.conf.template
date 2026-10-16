@@ -168,9 +168,6 @@ server {
     # OpenSSL still offers SHA-224 (and, below its security level, SHA-1)
     # signatures under TLS 1.2.  Only SHA-256 or stronger, for either key type.
     ssl_conf_command SignatureAlgorithms ECDSA+SHA256:ECDSA+SHA384:ECDSA+SHA512:ed25519:ed448:RSA-PSS+SHA256:RSA-PSS+SHA384:RSA-PSS+SHA512:rsa_pss_pss_sha256:rsa_pss_pss_sha384:rsa_pss_pss_sha512:RSA+SHA256:RSA+SHA384:RSA+SHA512;
-    ssl_session_tickets off;
-    ssl_session_cache shared:armillary_tls:10m;
-    ssl_session_timeout 10m;
     access_log off;
     error_log /var/log/nginx/error.log emerg;
     server_tokens off;
@@ -196,9 +193,6 @@ server {
     # OpenSSL still offers SHA-224 (and, below its security level, SHA-1)
     # signatures under TLS 1.2.  Only SHA-256 or stronger, for either key type.
     ssl_conf_command SignatureAlgorithms ECDSA+SHA256:ECDSA+SHA384:ECDSA+SHA512:ed25519:ed448:RSA-PSS+SHA256:RSA-PSS+SHA384:RSA-PSS+SHA512:rsa_pss_pss_sha256:rsa_pss_pss_sha384:rsa_pss_pss_sha512:RSA+SHA256:RSA+SHA384:RSA+SHA512;
-    ssl_session_tickets off;
-    ssl_session_cache shared:armillary_tls:10m;
-    ssl_session_timeout 10m;
 
     access_log off;
     error_log /var/log/nginx/error.log emerg;
@@ -359,7 +353,7 @@ server {
     # not static content: it queries the bundled FTS5 catalog and its cost
     # varies with the submitted terms.  Without its own location it fell through
     # to `location /` and inherited the static zone's 600 r/m, the loosest limit
-    # in this file, while being the most cost-amplifying route measured.  It is
+    # in this file, although each request costs a catalogue query.  It is
     # bounded here at the chart rate and given a shorter read timeout, because
     # the application now caps its own statement budget below that.
     location ~ ^/api/places/search(?:/|$) {

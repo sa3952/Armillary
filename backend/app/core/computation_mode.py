@@ -8,7 +8,7 @@
 
 import swisseph as swe
 
-from ..config import AYANAMSA_OPTIONS
+from ..domain_catalog import AYANAMSA_OPTIONS
 from ..ephemeris import configure_chart_swiss_state
 from .trace import Trace
 

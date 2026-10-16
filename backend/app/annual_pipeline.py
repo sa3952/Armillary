@@ -34,6 +34,7 @@ from zoneinfo import ZoneInfo
 
 import swisseph as swe
 
+from .core.invariants import InternalInvariantError
 from .chart_pipeline import (
     SCHEMA_VERSION,
     JsonObject,
@@ -42,7 +43,7 @@ from .chart_pipeline import (
     compute_natal_anchor,
 )
 from .ephemeris import FullEphemerisRequiredError, input_files_unchanged_since
-from .frontend_release import canonical_json_bytes
+from .canonical_json import CANONICAL_JSON_DUMPS_ARGUMENTS, canonical_json_bytes
 from .core.birth_time_sensitivity import (
     DIFFERS_BETWEEN_SAMPLES,
     NOT_APPLICABLE_STATE,
@@ -63,10 +64,11 @@ from .core.frame_compatibility import (
     body_longitude_frame_label,
     method_frame_state,
 )
-from .core.house_placements import _house_for_longitude
+from .core.house_placements import _cusp_spans, _house_for_longitude
 from .core.method_status import method_receipt
 from .core.module_state import (
-    MODULE_STATUSES,
+    MODULE_COMPUTED,
+    MODULE_NOT_REQUESTED,
     PRODUCT_FORMULA_SOURCE,
     computed_receipt,
     module_status_word,
@@ -186,8 +188,9 @@ SOLAR_RETURN_RELOCATION_NOTE = (
     "較早的回歸傳統用出生地點。"
 )
 SOLAR_RETURN_WHOLE_SIGN_NOTE = (
-    "目前讀過的古典出處（Abū Maʿshar 經 Dykes 英譯、Morin、Gadbury）替回歸盤分宮都用象限制宮頭，"
-    "沒有一本用整宮制；整宮制是本產品的預設，不是這些出處的做法。"
+    "目前讀過的古典作者（Abū Maʿshar 經 Dykes 英譯、Morin、Gadbury）替回歸盤分宮時，"
+    "都用依天球四象限切分的宮位（例如 Regiomontanus），沒有一本用整宮制；"
+    "整宮是本站的預設，不是這些書的做法。"
 )
 SOLAR_RETURN_SIDEREAL_NOTE = (
     "目前讀過的前現代出處沒有給恆星黃道回歸的規則；以恆星黃道計算回歸是本產品的約定。"
@@ -279,7 +282,8 @@ def _samples(req: AnnualRequest, anchor: NatalAnchor) -> list[_Sample]:
     zodiac = req.computation_mode.zodiac
     if req.birth_time_precision == "exact":
         return [_Sample(_ANCHOR_ROLE, anchor, zodiac)]
-    assert anchor.time.anchor_utc is not None  # resolved for every non-exact chart
+    if anchor.time.anchor_utc is None:  # resolved for every non-exact chart
+        raise InternalInvariantError("anchor.time.anchor_utc is not None")
     instants = representative_sample_instants(
         req.datetime,
         req.timezone,
@@ -396,9 +400,12 @@ def _year_boundary(req: AnnualRequest, samples: list[_Sample]) -> JsonObject:
     starts = [sample.clock.root(completed)["status"] for sample in samples]
     if OUTSIDE_RANGE in starts:
         raise SolarReturnOutsideSupportedYearRangeError()
-    for status in starts:
-        if status != COMPUTED:
-            raise RuntimeError(f"year boundary start: {status}")
+    # The Sun never turns back, so the search window holds exactly one root
+    # (year_boundary); any other count leaves every technique without a year
+    # start, and the solar-return chart's own not_applicable status could not
+    # be reached past them.  It is the server's fault, not the request's.
+    if any(status != COMPUTED for status in starts):
+        raise InternalInvariantError("every sample's year start is computed")
     return {
         **record,
         "time_basis": anchor.natal.time.time_conversion["input_semantics"],
@@ -419,16 +426,6 @@ def _year_boundary(req: AnnualRequest, samples: list[_Sample]) -> JsonObject:
     }
 
 
-def _utc_text_of_jd(jd_ut: float) -> str:
-    """The UTC label of a Swiss UT instant, to the microsecond (the finest
-    second the time step accepts)."""
-
-    year, month, day, hour, minute, second = swe.jdut1_to_utc(jd_ut, swe.GREG_CAL)
-    moment = dtmod.datetime(year, month, day, hour, minute, tzinfo=dtmod.timezone.utc)
-    moment += dtmod.timedelta(microseconds=round(second * 1e6))
-    return moment.isoformat().replace("+00:00", "Z")
-
-
 def _solar_return_location(req: AnnualRequest) -> tuple[str, Any]:
     annual = req.annual
     if annual.solar_return_location is None:
@@ -442,8 +439,9 @@ def _solar_return_chart(
     """The chart of SR_N at the requested place: /api/chart's own pipeline.
 
     SR_N is the year boundary's start, read from the same clock, so the chart
-    and the year cannot name two instants.  The chart is posed as that UTC
-    instant; its response is the detailed /api/chart response, unchanged.
+    and the year cannot name two instants.  The chart is computed at that
+    JD(UT) itself, labelled at UTC+00:00; its response is the detailed
+    /api/chart response, unchanged.
     """
 
     annual = req.annual
@@ -496,10 +494,16 @@ def _solar_return_chart(
         # The year boundary refused an out-of-range start already; what is
         # left is the clock's own failure status.
         return refused(root["status"])
+    # The chart is computed at the root's JD itself.  A civil label of it can
+    # name another instant (a positive leap second; Swiss's far-future rule
+    # reads input by date and writes output by instant), so the label in the
+    # request is a placeholder only.
     chart_request = _utc_instant_request(
-        req, _utc_text_of_jd(root["jd_ut"]), location=location, options=options,
+        req, utc_parts_of_jd(root["jd_ut"])[0].isoformat(), location=location, options=options,
     )
-    chart = compute_chart_response(chart_request, build_identity=build_identity)
+    chart = compute_chart_response(
+        chart_request, build_identity=build_identity, instant_jd_ut=root["jd_ut"],
+    )
     return {
         "status": "computed",
         "reason_code": None,
@@ -532,14 +536,15 @@ def _natal_comparison(
     if natal_houses is None:
         return comparison
     cusps: list[float] = natal_houses["cusps"]
+    spans = _cusp_spans(cusps)
     asc = chart["astronomical_data"]["angles"].get("asc")
     if asc is not None:
-        comparison["natal_house_of_return_ascendant"] = _house_for_longitude(asc, cusps)
+        comparison["natal_house_of_return_ascendant"] = _house_for_longitude(asc, cusps, spans)
     comparison["return_planets_in_natal_houses"] = [
         {
             "key": body["key"],
             "longitude": body["longitude"],
-            "natal_house": _house_for_longitude(body["longitude"], cusps),
+            "natal_house": _house_for_longitude(body["longitude"], cusps, spans),
         }
         for body in chart["astronomical_data"]["bodies"]
         if body.get("longitude") is not None
@@ -1059,7 +1064,8 @@ def _monthly_profection(req: AnnualRequest, samples: list[_Sample]) -> JsonObjec
         }
 
     def months_of(sample: _Sample) -> list[dict]:
-        assert sample.ascendant_sign is not None
+        if sample.ascendant_sign is None:
+            raise InternalInvariantError("sample.ascendant_sign is not None")
         clock = sample.clock
 
         def boundary_at(step: int) -> dict:
@@ -1271,7 +1277,7 @@ def _year_boundaries(
     first, last = lifetime_window(annual.completed_years)
     anchor = _anchor_sample(samples)
     if profection is None:
-        status, reason = MODULE_STATUSES[0], None
+        status, reason = MODULE_NOT_REQUESTED, None
     else:
         status, reason = profection["status"], profection["reason_code"]
     signs = [sample.ascendant_sign for sample in samples]
@@ -1279,7 +1285,8 @@ def _year_boundaries(
     lord_named = lord_frame_state(req.computation_mode)["applicable"]
 
     def profection_of(sign: str | None, completed: int) -> tuple[str, str | None]:
-        assert sign is not None  # computed: every sample has its ascendant
+        if sign is None:  # computed: every sample has its ascendant
+            raise InternalInvariantError("sign is not None")
         result = profect(sign, completed_years=completed)
         return result["profected_sign"], result["lord_body_key"] if lord_named else None
 
@@ -1301,7 +1308,7 @@ def _year_boundaries(
             "profection_sign": None, "profected_place": None, "year_lord": None,
             "candidates": None,
         }
-        if status == MODULE_STATUSES[1]:
+        if status == MODULE_COMPUTED:
             entry["profected_place"] = completed % 12 + 1
             if agreed:
                 entry["profection_sign"], entry["year_lord"] = profection_of(signs[0], completed)
@@ -1359,7 +1366,8 @@ def _source_table_check(tz_input, instants: list[float]) -> str:
         utc_value = utc_parts_of_jd(jd_ut)[0]
         local = utc_value.astimezone(ZoneInfo(tz_input.iana_name))
         offset, abbreviation = local.utcoffset(), local.tzname()
-        assert offset is not None and abbreviation is not None
+        if offset is None or abbreviation is None:
+            raise InternalInvariantError("offset is not None and abbreviation is not None")
         receipt = CIVIL_TIME_SOURCES.rule_receipt(
             kept_under, utc_value, offset=offset, abbreviation=abbreviation,
             summer_time=bool(local.dst()),
@@ -1402,7 +1410,8 @@ def _bind_annual_options(trace, annual: AnnualInput) -> None:
     """
 
     steps = trace.steps
-    assert steps and steps[0]["title"] == _OPTIONS_STEP_TITLE, "natal trace order changed"
+    if not steps or steps[0]["title"] != _OPTIONS_STEP_TITLE:
+        raise InternalInvariantError("natal trace order changed")
     natal_options = steps[0]["inputs"]
     steps[0] = {
         "title": _OPTIONS_STEP_TITLE,
@@ -1444,10 +1453,10 @@ def _technique_steps(
     for key, path, block in blocks:
         trace.add(
             f"年度技法：{key}",
-            formula="輸出 SHA-256 ＝ sha256(Python json.dumps(該區塊, ensure_ascii=False, sort_keys=True, separators=(',', ':')))",
+            formula=f"輸出 SHA-256 ＝ sha256(Python json.dumps(該區塊, {CANONICAL_JSON_DUMPS_ARGUMENTS}))",
             inputs={"response_path": path},
             result={
-                "status": MODULE_STATUSES[0] if block is None else block.get("status", MODULE_STATUSES[1]),
+                "status": MODULE_NOT_REQUESTED if block is None else block.get("status", MODULE_COMPUTED),
                 "profile": None if block is None else block.get(
                     "profile", block.get("solar_return_profile")),
                 "output_sha256": None if block is None else _output_sha256(block),

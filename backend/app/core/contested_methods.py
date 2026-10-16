@@ -38,7 +38,7 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
             "《占星四書導論》（Eisagōgē）第 23 章看月亮在接下來 30° 內是否與行星接合，不管是否換座；"
             "Lilly《Christian Astrology》（1647）p.112 以月亮離開本星座前是否再入相位為準。"
             "本產品採「離開本星座前沒有任何相位精確完成」。"
-            "要求換座前精確完成：後人文獻歸於 Al H. Morrison（AFA Journal 1966 年 10 月有專文，原文未讀）；"
+            "要求換座前精確完成：後人文獻歸於 Al H. Morrison（AFA Bulletin 第 28 卷第 10 期，1966 年 10 月；原是當年 AFA 大會的演講，後來印成 AFA 小冊《The Void of Course Moon》；原文未讀）；"
             "更早的起源尚未查證。"
         ),
         "sources": [
@@ -68,7 +68,11 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
                 "read_at": LILLY_1647_READ_AT,
             },
             {
-                "citation": "Al H. Morrison, an article in the AFA Journal, October 1966",
+                "citation": (
+                    "Al H. Morrison, a talk at the AFA's 1966 meeting, printed in the AFA "
+                    "Bulletin vol. 28 no. 10 (October 1966) and later as the AFA booklet The "
+                    "Void of Course Moon"
+                ),
                 "says": (
                     "requiring exact perfection before the sign exit: attributed to him by "
                     "later literature; an earlier origin has not been checked"
@@ -293,8 +297,10 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
             {
                 "citation": "al-Biruni, Book of Instruction, trans. Wright (1934) §481-484",
                 "says": (
-                    "under 16 minutes, 6 degrees (7 for Mercury and Venus direct), under "
-                    "the rays 12-18 degrees by planet and side"
+                    "under 16 minutes, 6 degrees (§481; 7 for Mercury and Venus direct, "
+                    "§482), under the rays 12-18 degrees by planet and side (§481: rising "
+                    "in the east 12 Venus and Mercury, 15 Saturn and Jupiter, 16 Mars; "
+                    "setting in the west 16 Saturn and Jupiter, 18 Mars)"
                 ),
                 "reading": _TRANSLATION,
                 "read_at": "R. Ramsay Wright's English translation (1934)",

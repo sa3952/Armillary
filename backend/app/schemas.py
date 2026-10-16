@@ -13,7 +13,6 @@ nonexistent_local_time／ambiguous_local_time_choice_required（refusals.py）�
 
 import datetime as _dt
 import json
-from decimal import Decimal
 import re
 import typing
 import unicodedata
@@ -38,6 +37,7 @@ from pydantic_core import PydanticCustomError, core_schema
 from .core.civil_time_basis import CIVIL_TIME_BASIS_ZONES, CivilTimeBasis
 from .core.dodecatemoria import DEFAULT_DODECATEMORIA_PROFILE, DodecatemoriaProfile
 from .core.solar_phase import DEFAULT_SOLAR_PHASE_PROFILE, SolarPhaseProfile
+from .core.time_utils import exact_second_microseconds
 from .core.frame_compatibility import (
     REQUEST_FRAME_REFUSAL_CODES,
     SOLAR_RETURN_FRAME_REFUSAL_CODES,
@@ -134,7 +134,7 @@ KNOWN_UTC_LEAP_SECOND_DATES = frozenset({
     (2012, 6, 30), (2015, 6, 30), (2016, 12, 31),
 })
 
-from .config import (
+from .domain_catalog import (
     AYANAMSA_OPTIONS,
     DEFAULT_ATMOSPHERE_TEMPERATURE_C,
     PRODUCT_YEAR_RANGE,
@@ -309,24 +309,6 @@ class DateTimeInput(StrictInputModel):
         if exact_second_microseconds(self.second) is None:
             raise _rule_error("second_finer_than_microsecond", "second")
         return self
-
-
-def exact_second_microseconds(second: float) -> int | None:
-    """The request second as exact integer microseconds, or None if it is finer.
-
-    The value is read from its shortest decimal spelling — the literal a JSON
-    client wrote — so 0.3 is 300 000 µs, not the binary float's 299 999.99….
-    Gap, fold and leap-second decisions are then made on this exact value and
-    nothing is rounded before them; a finer literal is refused rather than
-    rounded, because rounding 59.9999999 carries it into another minute, day
-    or year (or across a clock gap or a leap second) before any of those
-    decisions is made.
-    """
-
-    exact = Decimal(repr(float(second))).scaleb(6)
-    if exact != exact.to_integral_value():
-        return None
-    return int(exact)
 
 
 def _conditional_rules(
@@ -1124,7 +1106,7 @@ def _declared_field_names(*models: type[BaseModel]) -> frozenset[str]:
 
 def request_field_names(model: type[BaseModel] | None) -> frozenset[str]:
     """The only request-shaped text a refusal on one route may carry: the names
-    that route's own body model declares (RT-SEC-03).  A union over every
+    that route's own body model declares.  A union over every
     model let a place search echo a chart or annual field name back."""
 
     return frozenset() if model is None else _declared_field_names(model)
@@ -1267,7 +1249,7 @@ def check_strict_query(
     reported as the undeclared placeholder, never echoed.
 
     `raw` is the query as sent.  The parsed items drop empty segments, so
-    `?&&&` read as no query at all (RT-SEC-03); a segment that names nothing
+    `?&&&` read as no query at all; a segment that names nothing
     is undeclared like any other.
     """
 

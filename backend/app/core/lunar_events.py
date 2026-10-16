@@ -16,7 +16,7 @@ from ..ephemeris import (
     require_full_ephemeris,
     require_object_coverage,
 )
-from .root_finding import find_crossings_detailed
+from .root_finding import find_crossings_detailed, wrap_to_signed_180
 from .source_reading import SOURCE_READING_LEVELS
 from .trace import Trace
 from .time_utils import jd_ut_to_iso_utc, time_scale_for_jd_ut
@@ -29,10 +29,6 @@ PHASES = {
     "last_quarter": 270.0,
 }
 PHASE_FLAGS = swe.FLG_SWIEPH | swe.FLG_SPEED
-
-
-def _signed_degrees(value: float) -> float:
-    return (value + 180.0) % 360.0 - 180.0
 
 
 def _phase_state(jd_ut: float) -> tuple[float, float, int, int]:
@@ -91,7 +87,7 @@ def _refine_phase(
 
         def separation_at(offset_days: float) -> float:
             elongation = phase_state(window_start + offset_days)[0]
-            return _signed_degrees(elongation - target_degrees)
+            return wrap_to_signed_180(elongation - target_degrees)
 
         roots = find_crossings_detailed(
             separation_at,
@@ -103,7 +99,7 @@ def _refine_phase(
         for root in roots:
             jd_ut = window_start + root["t"]
             elongation, _speed, moon_retflag, sun_retflag = phase_state(jd_ut)
-            residual = _signed_degrees(elongation - target_degrees)
+            residual = wrap_to_signed_180(elongation - target_degrees)
             if abs(residual) <= 1e-7:
                 valid.append((jd_ut, moon_retflag, sun_retflag))
         if valid:
@@ -111,7 +107,7 @@ def _refine_phase(
         half_window *= 2
 
     elongation, _relative_speed, moon_retflag, sun_retflag = phase_state(guess_jd_ut)
-    residual = _signed_degrees(elongation - target_degrees)
+    residual = wrap_to_signed_180(elongation - target_degrees)
     if abs(residual) > 1e-7:
         raise swe.Error(f"Lunar phase root did not converge; residual={residual} degrees")
     return guess_jd_ut, moon_retflag, sun_retflag
@@ -129,7 +125,7 @@ def _phase_event(
             f"Lunar phase search requires positive relative speed; got {relative_speed}"
         )
     synodic_guess_days = 360.0 / relative_speed
-    if abs(_signed_degrees(elongation - target)) < _PHASE_NEAR_REFERENCE_DEGREES:
+    if abs(wrap_to_signed_180(elongation - target)) < _PHASE_NEAR_REFERENCE_DEGREES:
         near_jd_ut = _refine_phase(reference_jd_ut, target, phase_state)[0]
         near_is_previous = near_jd_ut <= reference_jd_ut + _PHASE_TOLERANCE_DAYS
         if direction == "previous":

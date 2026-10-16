@@ -25,7 +25,8 @@ import math
 
 import swisseph as swe
 
-from ..config import HOUSE_SYSTEMS, PRODUCT_YEAR_RANGE
+from .invariants import InternalInvariantError
+from ..domain_catalog import HOUSE_SYSTEMS, PRODUCT_YEAR_RANGE
 from .method_status import method_receipt
 from .module_state import computed_receipt
 from .source_reading import SOURCE_READING_LEVELS
@@ -162,7 +163,8 @@ class HouseSystemUnavailableError(Exception):
         reason: str | None = None,
         reason_code: str = "swiss_house_fallback_rejected",
     ):
-        assert reason_code in HOUSE_AVAILABILITY_REASONS, reason_code
+        if reason_code not in HOUSE_AVAILABILITY_REASONS:
+            raise InternalInvariantError(reason_code)
         self.house_system = code
         self.latitude = latitude
         self.reason_code = reason_code
@@ -475,8 +477,10 @@ def house_availability(regime: dict) -> dict:
         state, reason = "available_polar_geometry", "polar_band_geometry"
     else:
         state, reason = "available", None
-    assert state in HOUSE_AVAILABILITY_STATES
-    assert reason is None or reason in HOUSE_AVAILABILITY_REASONS
+    if state not in HOUSE_AVAILABILITY_STATES:
+        raise InternalInvariantError("state in HOUSE_AVAILABILITY_STATES")
+    if reason is not None and reason not in HOUSE_AVAILABILITY_REASONS:
+        raise InternalInvariantError("reason is None or reason in HOUSE_AVAILABILITY_REASONS")
     return {
         "state": state,
         "reason_code": reason,
@@ -488,7 +492,7 @@ def house_availability(regime: dict) -> dict:
 
 HOUSE_SYSTEM_SOURCE_REF = "houses/systems"
 _ORIGINAL, _TRANSLATION, _SECONDARY, _BIBLIOGRAPHIC = SOURCE_READING_LEVELS
-# One row per code in config.HOUSE_SYSTEMS.  `definition` is the geometry the
+# One row per code in domain_catalog.HOUSE_SYSTEMS.  `definition` is the geometry the
 # product computes (through swe.houses_ex); `history` says where the name and the
 # idea come from, each citation with how far it was read.  Nothing here ranks
 # the systems.
@@ -499,7 +503,8 @@ HOUSE_SYSTEM_SOURCES: dict[str, dict] = {
         "history": [
             {
                 "citation": (
-                    "Vettius Valens, Anthology V.6 (Pingree 1986 pp. 215-216): a chart whose "
+                    "Vettius Valens, Anthology V.6 (Pingree 1986 numbering and pages, pp. 215-216; "
+                    "Kroll V.9, p.227): a chart whose "
                     "degree-based MC falls in the ninth sign, cited on the methods page and "
                     "not re-read for this entry"
                 ),

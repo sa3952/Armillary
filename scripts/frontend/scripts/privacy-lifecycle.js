@@ -49,6 +49,23 @@
       return url;
     }
 
+    /**
+     * 檔案交給瀏覽器下載：Blob 網址登記在這個生命週期，清除時一併收回。同一個 task 內撤銷會讓
+     * 部分瀏覽器取消下載，所以排到下一個 task；release 是冪等的，先按清除也不會重複撤銷。
+     */
+    function deliverDownload(doc, blob, filename) {
+      const win = doc.defaultView;
+      const url = registerObjectUrl(win.URL.createObjectURL(blob));
+      const anchor = doc.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      anchor.hidden = true;
+      doc.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      win.setTimeout(() => releaseObjectUrl(url), 0);
+    }
+
     function releaseObjectUrl(url) {
       if (!objectUrls.delete(url)) return false;
       try {
@@ -181,6 +198,7 @@
       registerSectionNode,
       registerObjectUrl,
       releaseObjectUrl,
+      deliverDownload,
       beginRequest,
       isCurrentRequest,
       finishRequest,
@@ -192,5 +210,30 @@
     });
   }
 
-  return Object.freeze({ createSensitiveDataLifecycle });
+  function isJsonResponse(response) {
+    const mediaType = (response.headers.get("Content-Type") || "")
+      .split(";", 1)[0].trim().toLowerCase();
+    return mediaType === "application/json" || mediaType.endsWith("+json");
+  }
+
+  /**
+   * 頁面每一個 POST 端點共用的一次往返：送 JSON、收 JSON。2xx 但 media type 不是 JSON 時不讀
+   * body，標成 invalidJsonMedia；body 解析失敗為 null。怎麼對使用者說由呼叫端決定。
+   */
+  function postJson(win, url, payload, signal) {
+    return win.fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(payload),
+      signal,
+    }).then((response) => {
+      if (response.ok && !isJsonResponse(response)) {
+        return { response, body: null, invalidJsonMedia: true };
+      }
+      return response.json().catch(() => null)
+        .then((body) => ({ response, body, invalidJsonMedia: false }));
+    });
+  }
+
+  return Object.freeze({ createSensitiveDataLifecycle, postJson });
 });

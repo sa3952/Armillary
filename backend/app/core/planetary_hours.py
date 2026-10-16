@@ -31,7 +31,7 @@ import datetime as dtmod
 import math
 from typing import Final
 
-from ..config import CLASSICAL_BODIES
+from ..domain_catalog import CLASSICAL_BODIES
 from .horizon_events import (
     DIURNAL_REGIME_MAX_DAYS,
     FRAME_DECLARATION,

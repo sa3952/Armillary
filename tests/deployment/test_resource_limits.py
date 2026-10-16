@@ -70,7 +70,7 @@ def _refusal(sent: list[dict]) -> tuple[int, str]:
 @pytest.mark.parametrize(("content_type", "status"), (
     (None, 415), ("text/plain", 415), ("application/json; charset=utf-8; charset=utf-8", 415),
     ("application/json; charset=latin-1", 415), ("application/json; charset=UTF-8", 200),
-    # SEC-R2-05: a quoted value must be quoted on both sides.
+    # A quoted value must be quoted on both sides.
     ('application/json; charset="utf-8"', 200), ('application/json; charset="utf-8', 415),
     ('application/json; charset=utf-8"', 415), ('application/json; charset=""utf-8""', 415),
 ))
@@ -222,7 +222,7 @@ def test_a_request_for_an_undeclared_host_is_refused_before_any_budget():
     for host, expected in (("alpha.example.invalid", 200), ("alpha.example.invalid:443", 200),
                            ("ALPHA.example.invalid:80", 200),
                            ("172.31.240.2", 404), ("scanner.example", 404),
-                           # SEC-R2-01: the text after the colon is part of the
+                           # The text after the colon is part of the
                            # host; only the two default ports may follow it.
                            ("alpha.example.invalid:evil", 404), ("alpha.example.invalid:", 404),
                            ("alpha.example.invalid:8000", 404), ("alpha.example.invalid:443:1", 404),

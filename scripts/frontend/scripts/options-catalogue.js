@@ -346,7 +346,7 @@
 
   function ruleMatches(rule, current) {
     const forms = ["value", "values", "any_non_null"]
-      .filter((key) => Object.prototype.hasOwnProperty.call(rule, key));
+      .filter((key) => Object.hasOwn(rule, key));
     if (forms.length !== 1) {
       throw new Error("conflicts_when 必須恰好宣告一種比對形式");
     }

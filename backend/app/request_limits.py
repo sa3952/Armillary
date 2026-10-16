@@ -514,9 +514,11 @@ class ChartRequestBoundary:
     """Refuse an undeclared host, then bound hosted JSON POST bodies.
 
     The host check comes first, before any budget is spent on the request.
-    Admission belongs to the proxy, which strips `Authorization` before
-    forwarding; the application therefore has no authorization of its own and
-    that is deliberate.  What it can do cheaply is notice that it was reached by
+    The service is public and asks no caller to authenticate.  The proxy in
+    front of it sets the host it declares and strips `Authorization`,
+    `Proxy-Authorization` and the forwarding headers before the request reaches
+    the application, which has no authorization of its own; that is
+    deliberate.  What the application can do cheaply is notice that it was reached by
     a route the deployment never declared — the shape a published container port
     produces, where a scanner sends the address as the host.  A caller who can
     reach the socket can also set this header, so this catches the accident, not

@@ -94,7 +94,7 @@
       leo: "獅子", virgo: "處女", libra: "天秤", scorpio: "天蠍",
       sagittarius: "射手", capricorn: "摩羯", aquarius: "水瓶", pisces: "雙魚",
     }),
-    // 後端對同一組代碼給的英文名（app.config.HOUSE_SYSTEMS，一對一）。回應只帶名稱
+    // 後端對同一組代碼給的英文名（app.domain_catalog.HOUSE_SYSTEMS，一對一）。回應只帶名稱
     // 不帶代碼時，由這一組找回代碼；兩邊一致由整合測試對照。
     house_system_backend_name: Object.freeze({
       W: "Whole Sign",
@@ -112,7 +112,7 @@
       jupiter: "木星", saturn: "土星", uranus: "天王星", neptune: "海王星", pluto: "冥王星",
       chiron: "凱龍星",
     }),
-    // 後端月交點的名稱（app.config.NODE_BODIES 與 core/bodies.py 的南交點，一對一）。認點一律讀回應
+    // 後端月交點的名稱（app.domain_catalog.NODE_BODIES 與 core/bodies.py 的南交點，一對一）。認點一律讀回應
     // 的 key；這一組只給表格的名稱格補符號（calculate.js）。兩邊一致由整合測試對照。
     node_backend_name: Object.freeze({
       true_node: "北交點(密切)",
@@ -120,7 +120,7 @@
       true_south_node: "南交點(密切)",
       mean_south_node: "南交點(平均)",
     }),
-    // 後端月球拱點的名稱（app.config.LUNAR_APSIDES，一對一）。同上，只給表格的名稱格補符號。
+    // 後端月球拱點的名稱（app.domain_catalog.LUNAR_APSIDES，一對一）。同上，只給表格的名稱格補符號。
     // 兩邊一致由整合測試對照。
     lunar_apsis_backend_name: Object.freeze({
       mean_lilith: "平均黑月 Lilith",
@@ -145,18 +145,56 @@
     }),
   });
 
+  // 每一組詞彙表在「未識別的<角色>（代碼）」裡的角色名。
+  const ROLES = Object.freeze({
+    birth_time_precision: "出生時刻把握程度",
+    place_source: "目錄來源",
+    place_source_short: "目錄來源",
+    location_precision: "位置精度",
+    coordinate_semantics: "座標語義",
+    match_tier: "比對層級",
+    civil_time_basis: "鐘點依據",
+    civil_time_regime: "時制",
+    house_system: "宮位制",
+    timezone_place: "時區",
+    zodiac_sign: "星座",
+    house_system_backend_name: "宮位制",
+    body_backend_name: "天體",
+    node_backend_name: "月交點",
+    lunar_apsis_backend_name: "月球拱點",
+    source_reading: "核對層級",
+    angle_label: "軸點",
+  });
+
+  /** 表裡自身屬性的值；原型鏈上的名字不是閉集成員。不在表裡回 null。 */
+  function ownLabel(table, code) {
+    return typeof code === "string" && Object.hasOwn(table, code) ? table[code] : null;
+  }
+
   /**
-   * 代碼的中文標籤。未知的詞彙表是程式錯誤，直接拒絕；詞彙表裡沒有的代碼不猜，照實說
-   * 「未識別」並附上代碼，讀者至少知道那不是一個已知值。
+   * 閉集代碼的中文。有對應印中文；沒有對應印「未識別的<角色>（代碼）」——缺對應是看得見的
+   * 缺陷，不是資料。值不像代碼（例如一段後端原文）時只寫「未識別的<角色>」，原文不上畫面。
    */
+  function closedLabel(code, table, role) {
+    const found = ownLabel(table, code);
+    if (found !== null) return found;
+    return /^[A-Za-z][A-Za-z0-9_.]*$/.test(String(code || "")) ? `未識別的${role}（${code}）` : `未識別的${role}`;
+  }
+
+  /** 代碼的中文標籤。未知的詞彙表是程式錯誤，直接拒絕；詞彙表裡沒有的代碼不猜（closedLabel）。 */
   function label(vocabulary, code) {
-    if (!Object.prototype.hasOwnProperty.call(VOCABULARIES, vocabulary)) {
+    if (!Object.hasOwn(VOCABULARIES, vocabulary)) {
       throw new Error(`沒有這個代碼詞彙表：${vocabulary}`);
     }
-    const table = VOCABULARIES[vocabulary];
-    return typeof code === "string" && Object.prototype.hasOwnProperty.call(table, code)
-      ? table[code]
-      : `未識別（${code}）`;
+    return closedLabel(code, VOCABULARIES[vocabulary], ROLES[vocabulary]);
+  }
+
+  /**
+   * 出處的一行：[方法出處登錄裡那條引文的開頭, 畫面的字, 核到哪一層（後端閉集）, 句尾補註]。
+   * 句尾「核到：…」取 source_reading，每一種層級全站同一個說法。沒有層級的一行（指向方法頁）照印。
+   */
+  function sourceLine([, text, reading, note]) {
+    return reading ? `${text}核到：${label("source_reading", reading)}${note || ""}。` : text;
   }
 
   /** 由後端名稱找回它在這一組裡的代碼或鍵；不在表裡回 null。 */
@@ -182,10 +220,8 @@
 
   /** 時區列的寫法：表裡有中文地名時寫「臺北（Asia/Taipei）」，否則照印原值。 */
   function timezoneText(name) {
-    const table = VOCABULARIES.timezone_place;
-    return typeof name === "string" && Object.prototype.hasOwnProperty.call(table, name)
-      ? `${table[name]}（${name}）`
-      : name;
+    const place = ownLabel(VOCABULARIES.timezone_place, name);
+    return place ? `${place}（${name}）` : name;
   }
 
   /**
@@ -204,7 +240,7 @@
   }
 
   return Object.freeze({
-    VOCABULARIES, label, houseSystemCodeForName, houseSystemText,
+    VOCABULARIES, ROLES, label, ownLabel, closedLabel, sourceLine, houseSystemCodeForName, houseSystemText,
     timezoneText, regionName,
   });
 });

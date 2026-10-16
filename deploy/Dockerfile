@@ -103,15 +103,20 @@ ENV CLASSICAL_ASTROLOGY_REQUIRE_FRONTEND_RELEASE="1" \
 
 WORKDIR /app
 
+# /bin/sh has no pipefail: each dpkg-query result is captured on its own, so
+# that `set -e` stops the build when the package database cannot be read
+# instead of an empty list meaning "nothing to purge, nothing survived".
 RUN set -eux; \
-    removable="$(dpkg-query -W -f='${binary:Package}\t${Essential}\n' \
+    packages="$(dpkg-query -W -f='${binary:Package}\t${Essential}\n')"; \
+    removable="$(printf '%s\n' "$packages" \
         | awk '$2 != "yes" && ($1 == "perl" || $1 ~ /^perl-/ || $1 ~ /^libperl/ || $1 ~ /-perl(:[^:]+)?$/) { print $1 }')"; \
     if [ -n "$removable" ]; then \
         apt-get purge --yes $removable; \
     fi; \
-    dpkg-query -W -f='${db:Status-Abbrev} ${Essential}\n' perl-base \
-        | grep -q '^ii  yes$'; \
-    if dpkg-query -W -f='${binary:Package}\t${Essential}\n' \
+    perl_base="$(dpkg-query -W -f='${db:Status-Abbrev} ${Essential}\n' perl-base)"; \
+    [ "$perl_base" = "ii  yes" ]; \
+    packages="$(dpkg-query -W -f='${binary:Package}\t${Essential}\n')"; \
+    if printf '%s\n' "$packages" \
         | awk '$2 != "yes" && ($1 == "perl" || $1 ~ /^perl-/ || $1 ~ /^libperl/ || $1 ~ /-perl(:[^:]+)?$/) { found=1 } END { exit !found }'; then \
         echo "non-essential Perl survived the purge" >&2; exit 1; \
     fi; \

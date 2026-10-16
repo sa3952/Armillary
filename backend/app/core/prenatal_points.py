@@ -44,6 +44,7 @@ from .bodies import geocentric_sun_true_altitude, horizontal_position
 from .computation_mode import ComputationContext
 from .formatting import normalize_longitude, sign_position
 from .lots import SECT_NEAR_CRITICAL_DEGREES, classify_sect
+from .root_finding import wrap_to_signed_180
 from .lunar_events import (
     PHASE_FLAGS,
     PHASES,
@@ -100,10 +101,6 @@ class PrenatalPlace:
     atmosphere: object
     timezone: object
     precision: str
-
-
-def _signed(value: float) -> float:
-    return (value + 180.0) % 360.0 - 180.0
 
 
 def _luminaries(jd_ut: float, operation: str) -> tuple[tuple, tuple]:
@@ -306,7 +303,7 @@ def nearest_previous_syzygy(reference_jd_ut: float) -> dict:
 
     phase_state = cache(_phase_state)
     elongation = phase_state(reference_jd_ut)[0]
-    near = min(abs(_signed(elongation - target)) for target in (0.0, 180.0))
+    near = min(abs(wrap_to_signed_180(elongation - target)) for target in (0.0, 180.0))
     if near < _NEAR_REFERENCE_ELONGATION_DEGREES:
         events = [
             previous_phase_strictly_before(reference_jd_ut, phase, phase_state)
@@ -600,7 +597,10 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         ),
         "sources": [
             {
-                "citation": "Ptolemy, Tetrabiblos III.2 (Robbins, Loeb 1940, pp. 231-235; Hübner III.3)",
+                "citation": (
+                    "Ptolemy, Tetrabiblos III.2 (Robbins, Loeb 1940, pp. 229-235, the syzygy "
+                    "rule on pp. 231-233; Hübner III.3)"
+                ),
                 "says": (
                     "take the degree of the most recent syzygy before birth, at a new Moon the "
                     "degree of both luminaries, at a full Moon that of the luminary above the "
@@ -686,8 +686,9 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "(one after the birth) or the opposite degree 'most dangerous and hardest to "
             "avoid'; II.6 times the effect by the hours the obscuration lasts. Treating "
             "the last eclipse before birth as a point "
-            "of the nativity is a twentieth-century practice (Jansky, Lineman, Brady, "
-            "Graves 2004; secondary only). No source read says whether a penumbral "
+            "of the nativity is a twentieth-century practice (Jansky 1977, Lineman "
+            "1984 and 1992, Brady 1992, Graves 2004; secondary only). No source read "
+            "says whether a penumbral "
             "lunar eclipse counts"
         ),
         "penumbral_note": (
@@ -730,11 +731,17 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             },
             {
                 "citation": (
-                    "the last eclipse before birth as a point of the nativity: Jansky, "
-                    "Lineman, Brady, Graves 2004"
+                    "the last eclipse before birth as a point of the nativity: Robert C. "
+                    "Jansky, Interpreting the Eclipses (Para Research 1977); Rose Lineman, "
+                    "Eclipses (AFA 1984) and Your Prenatal Eclipse (AFA 1992); Bernadette "
+                    "Brady, The Eagle and the Lark (Weiser 1992); Philip Graves, "
+                    "Introduction to Prenatal Eclipses (web article, 2004)"
                 ),
                 "reading": SOURCE_READING_LEVELS[2],
-                "read_at": "secondary reports only; none of the works read",
+                "read_at": (
+                    "secondary reports only: Graves's web article seen only in summary; "
+                    "the books known only from bibliographies and publishers' descriptions"
+                ),
             },
         ],
     },

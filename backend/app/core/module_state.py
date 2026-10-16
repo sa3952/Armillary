@@ -14,6 +14,7 @@ STATE_FIELDS = (
     "requested", "executed", "applicable", "available", "source", "reason_code",
 )
 MODULE_STATUSES = ("not_requested", "computed", "not_applicable")
+MODULE_NOT_REQUESTED, MODULE_COMPUTED, MODULE_NOT_APPLICABLE = MODULE_STATUSES
 # Why an event search that was attempted produced nothing (containment, not a
 # failed chart): the chart pipeline writes one of these, the dossier warnings
 # read them.
@@ -118,5 +119,5 @@ def module_status_word(state: dict) -> str:
     """Project one recorded state onto the closed module-status vocabulary."""
 
     if not state["requested"]:
-        return MODULE_STATUSES[0]
-    return MODULE_STATUSES[1] if state["available"] else MODULE_STATUSES[2]
+        return MODULE_NOT_REQUESTED
+    return MODULE_COMPUTED if state["available"] else MODULE_NOT_APPLICABLE

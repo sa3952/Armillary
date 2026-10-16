@@ -250,11 +250,8 @@ def reset_swiss_state_for_thread() -> None:
 
 
 def _sha256(path: str) -> str:
-    digest = hashlib.sha256()
     with open(path, "rb") as handle:
-        for chunk in iter(lambda: handle.read(1 << 16), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+        return hashlib.file_digest(handle, "sha256").hexdigest()
 
 
 def _input_files() -> tuple[str, ...]:

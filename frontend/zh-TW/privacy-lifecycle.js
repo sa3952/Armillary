@@ -6,6 +6,7 @@ function registerSectionNode(node){if(!node||typeof node!=="object"||Array.isArr
 sectionNodes.add(node);}
 function registerObjectUrl(url){if(typeof url!=="string"||!url){throw new Error("無法登記空白的 Blob URL。");}
 objectUrls.add(url);return url;}
+function deliverDownload(doc,blob,filename){const win=doc.defaultView;const url=registerObjectUrl(win.URL.createObjectURL(blob));const anchor=doc.createElement("a");anchor.href=url;anchor.download=filename;anchor.hidden=true;doc.body.appendChild(anchor);anchor.click();anchor.remove();win.setTimeout(()=>releaseObjectUrl(url),0);}
 function releaseObjectUrl(url){if(!objectUrls.delete(url))return false;try{revokeObjectUrl(url);}catch(_error){}
 return true;}
 function beginRequest(controller){if(!controller||typeof controller.abort!=="function"){throw new Error("敏感 request 必須使用可中止的 AbortController。");}
@@ -23,5 +24,8 @@ function clear(){const receipt={canonical_document_cleared:canonicalDocument!==n
 sectionNodes.clear();for(const url of Array.from(objectUrls)){releaseObjectUrl(url);}
 return receipt;}
 function inspect(){return{has_canonical_document:canonicalDocument!==null,active_object_url_count:objectUrls.size,registered_section_count:sectionNodes.size,request_active:activeRequest!==null,};}
-return Object.freeze({setCanonicalDocument,requireCanonicalDocument,registerSectionNode,registerObjectUrl,releaseObjectUrl,beginRequest,isCurrentRequest,finishRequest,scheduleAbort,beginTimedRequest,abortActiveRequest,clear,inspect,});}
-return Object.freeze({createSensitiveDataLifecycle});});
+return Object.freeze({setCanonicalDocument,requireCanonicalDocument,registerSectionNode,registerObjectUrl,releaseObjectUrl,deliverDownload,beginRequest,isCurrentRequest,finishRequest,scheduleAbort,beginTimedRequest,abortActiveRequest,clear,inspect,});}
+function isJsonResponse(response){const mediaType=(response.headers.get("Content-Type")||"").split(";",1)[0].trim().toLowerCase();return mediaType==="application/json"||mediaType.endsWith("+json");}
+function postJson(win,url,payload,signal){return win.fetch(url,{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify(payload),signal,}).then((response)=>{if(response.ok&&!isJsonResponse(response)){return{response,body:null,invalidJsonMedia:true};}
+return response.json().catch(()=>null).then((body)=>({response,body,invalidJsonMedia:false}));});}
+return Object.freeze({createSensitiveDataLifecycle,postJson});});

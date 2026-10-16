@@ -16,12 +16,12 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 
 from . import _fx, _noaa
-from ._common import SIGNS, calc_ut, product_charts, swiss
+from ._common import SIGNS, TAIPEI, calc_ut, hms as _hms, product_charts, swiss
 
 
 FRAGMENT = "blog-unknown-birth-time"
 DAY = (1988, 7, 22)
-LAT, LON = 25.05306, 121.52639
+LAT, LON = TAIPEI
 CLASSICAL = ("sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn")
 NAMES = {"sun": "太陽", "moon": "月亮", "mercury": "水星", "venus": "金星", "mars": "火星", "jupiter": "木星",
          "saturn": "土星"}
@@ -121,10 +121,6 @@ def decade() -> dict:
 
 def _seconds(clock: tuple[int, int, int]) -> int:
     return clock[0] * 3600 + clock[1] * 60 + clock[2]
-
-
-def _hms(clock: tuple[int, int, int]) -> str:
-    return f"{clock[0]:02d}:{clock[1]:02d}:{clock[2]:02d}"
 
 
 def _crossings(d: dict, path: str) -> list[tuple]:

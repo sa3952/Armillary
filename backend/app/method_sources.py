@@ -25,7 +25,7 @@ import hashlib
 import json
 from typing import Any, Final
 
-from .frontend_release import canonical_json_bytes
+from .canonical_json import canonical_json_bytes
 
 REGISTER_ID: Final = "armillary-method-sources"
 REGISTER_VERSION: Final = "1"

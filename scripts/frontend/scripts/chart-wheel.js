@@ -257,9 +257,10 @@
     }),
     symbols: Object.freeze({
       title: "符號對照",
-      lead: "滑過或選取符號，圖上與表格會一起標示；點一下跳到表格中那一列。",
-      help: "跳到表格中這一列，並在圖、表與相位方格上標示。",
+      lead: "滑過或選取符號，圖上與表格會一起標示，畫面不移動；要看表格中那一列，按「到表格看這一顆」。",
+      help: "在圖、表與相位方格上標示這一顆，畫面不移動。",
       clear: "清除標示",
+      jump: "到表格看這一顆",
       retro: "逆行",
     }),
     showAspects: "顯示相位線",
@@ -327,8 +328,10 @@
     return { control: label, readAspects: () => box.checked };
   }
 
-  function pageSvg(doc, model, describedBy) {
+  // ariaLabel（可省略）：model → 頁面上這張圖的名稱，取代模型自己的 ariaLabel（例如另一張盤要冠上它的名字）。
+  function pageSvg(doc, model, describedBy, ariaLabel = null) {
     const svg = renderSvg(doc, model, { variant: "page" });
+    if (typeof ariaLabel === "function") svg.setAttribute("aria-label", ariaLabel(model));
     if (describedBy.length) svg.setAttribute("aria-describedby", describedBy.join(" "));
     return svg;
   }
@@ -395,8 +398,8 @@
   const hitOf = (node) => (node && typeof node.closest === "function" ? node.closest(".cw-hit") : null);
 
   /**
-   * 圖上的指標：滑鼠滑過感應框＝預覽，滑鼠點感應框＝選取並跳表；觸控、筆與其他地方的點擊照舊放大。
-   * 回傳一個判斷函式給 click：這一下若已當作跳表處理就回 true。
+   * 圖上的指標：滑鼠滑過感應框＝預覽，滑鼠點感應框＝選取（不捲動）；觸控、筆與其他地方的點擊照舊放大。
+   * 回傳一個判斷函式給 click：這一下若已當作選取處理就回 true。
    */
   function linkFigure(figure, link) {
     let pointer = "";
@@ -432,7 +435,11 @@
 
   /**
    * 符號對照：圖上畫的每一點一顆按鈕（順序與表格相同），一個 role="toolbar"，Tab 只停一次，
-   * 方向鍵在按鈕間移動。焦點或滑鼠停在按鈕上＝預覽；按下（Enter、空白鍵、點、觸控）＝選取並跳表。
+   * 方向鍵在按鈕間移動。焦點或滑鼠停在按鈕上＝預覽；按下（Enter、空白鍵、點、觸控）＝選取：圖與表格
+   * 一起標示，畫面不捲動、焦點留在按鈕上——手機上沒有滑過預覽，一捲走就看不到圖上標了哪一點。
+   * 選取後「符號對照」標題那一行（按鈕列之上、緊接在圖下方）出現「清除標示」與「到表格看這一顆」——手機上
+   * 按鈕列有好幾行，放在列下方會落在視窗外；後者才打開摺疊、捲到表格那一列並交出焦點。
+   * 兩顆的顯示、後者含天體名的名稱與選取的宣告（role="status"）由呼叫端依選取狀態設定。
    * 按鈕名稱以看得見的字開頭，再接宮位與逆行；宮位只在有落宮時寫。
    */
   function symbolBar(doc, model, link) {
@@ -495,7 +502,17 @@
     clear.type = "button";
     clear.hidden = true;
     clear.addEventListener("click", () => link.onClear());
-    block.append(title, htmlElement(doc, "p", "note", T.lead), help, bar, clear);
+    const jump = htmlElement(doc, "button", "chart-wheel-symbols-jump", T.jump);
+    jump.type = "button";
+    jump.hidden = true;
+    jump.addEventListener("click", () => link.onReveal());
+    const actions = htmlElement(doc, "div", "chart-wheel-symbols-actions");
+    actions.append(clear, jump);
+    const head = htmlElement(doc, "div", "chart-wheel-symbols-head");
+    head.append(title, actions);
+    const status = htmlElement(doc, "p", "visually-hidden chart-wheel-symbols-status");
+    status.setAttribute("role", "status");
+    block.append(head, htmlElement(doc, "p", "note", T.lead), help, bar, status);
     return block;
   }
 
@@ -503,32 +520,44 @@
    * 結果頁的星盤圖區塊：圖、圖說、讀圖說明、放大檢視（<dialog>，Esc 關閉）與下載。
    * 下載交給呼叫端（它持有結果是否仍對應目前輸入的守衛、Blob URL 與輸入摘要）：
    * onDownload(format, includeInput, button, showAspects)。
-   * link（可省略）：圖表連動的回呼 { onPreview(keys|null), onActivate(key), onClear(), onRedraw() }；
+   * link（可省略）：圖表連動的回呼 { onPreview(keys|null), onActivate(key), onClear(), onReveal(), onRedraw() }；
+   * onActivate 只選取不捲動，onReveal 跳到所選那一點的表格列；
    * 有它時圖上的點帶 data-points 與感應框，圖下方多一列符號對照。
    * alternate（可省略）：另一種畫法（方盤，chart-square.js 的 sectionOption）{ model, lead, control(doc, onChange) }；
    * 有它時工具列多一組「圓盤／方盤」，圖、放大檢視、讀圖說明與下載都跟著選的那一種，預設圓盤。
    * 下載的回呼多帶第五個參數：目前的畫法（"wheel" 或 "square"）。
+   * 同一頁上的第二張盤（例如太陽回歸盤）用下面幾項換掉本命盤那一份的 id 與字，預設就是本命盤：
+   * idPrefix（預設 "chart-wheel"）：區塊、標題、圖說、隱私句與放大檢視標題的 id 都以它開頭，
+   * 圖的 aria-describedby 第一項是它的圖說；title、dialogTitle：區塊標題與放大檢視的標題字；
+   * headingLevel（預設 3）：區塊標題的層級；ariaLabel(model)：頁面上（含放大檢視）那張圖的名稱；
+   * includeInput（預設 true）：false 時不列「下載加上輸入摘要」的勾選框，下載回呼的 includeInput 一律 false。
    */
   /** 區塊外框、標題列與一句說明：正常的區塊與失敗時的那一句共用。 */
-  function sectionShell(doc, note) {
+  function sectionShell(doc, note, { idPrefix = "chart-wheel", title = SECTION_TEXT.title, headingLevel = 3 } = {}) {
     const section = htmlElement(doc, "section", "chart-wheel");
-    section.id = "chart-wheel";
-    section.setAttribute("aria-labelledby", "chart-wheel-title");
+    section.id = idPrefix;
+    section.setAttribute("aria-labelledby", `${idPrefix}-title`);
     const head = htmlElement(doc, "div", "head");
-    const title = htmlElement(doc, "h3", null, SECTION_TEXT.title);
-    title.id = "chart-wheel-title";
-    head.appendChild(title);
+    const level = Number.isInteger(headingLevel) && headingLevel >= 2 && headingLevel <= 6 ? headingLevel : 3;
+    const heading = htmlElement(doc, `h${level}`, null, title);
+    heading.id = `${idPrefix}-title`;
+    head.appendChild(heading);
     section.append(head, htmlElement(doc, "p", "section-note", note));
     return section;
   }
 
-  function createSection(doc, model, { describedBy = [], onDownload, link = null, alternate = null } = {}) {
+  function createSection(doc, model, {
+    describedBy = [], onDownload, link = null, alternate = null,
+    idPrefix = "chart-wheel", title = SECTION_TEXT.title, dialogTitle: dialogText = SECTION_TEXT.dialogTitle,
+    headingLevel = 3, ariaLabel = null, includeInput = true,
+  } = {}) {
     const drawsAspects = Boolean(model.aspects) && model.aspects.status === WheelModel.ASPECT_STATUS.DRAWN;
-    const section = sectionShell(doc, drawsAspects ? SECTION_TEXT.leadWithAspects : SECTION_TEXT.lead);
+    const section = sectionShell(doc, drawsAspects ? SECTION_TEXT.leadWithAspects : SECTION_TEXT.lead,
+      { idPrefix, title, headingLevel });
 
     const caption = htmlElement(doc, "p", "chart-wheel-caption", SECTION_TEXT.caption);
-    caption.id = "chart-wheel-caption";
-    const description = ["chart-wheel-caption", ...describedBy];
+    caption.id = `${idPrefix}-caption`;
+    const description = [caption.id, ...describedBy];
 
     // 字級依圖在畫面上的寬度（WheelModel.presetForWidth）：先畫 calculate 交來的那一份，量到寬度後
     // 若該換字級就重畫；視窗或轉向改變寬度時同樣重畫。讀圖說明跟著畫出來的那一份。
@@ -545,7 +574,7 @@
     const show = (next) => {
       if (next === shown) return;
       shown = next;
-      const svg = pageSvg(doc, shown, description);
+      const svg = pageSvg(doc, shown, description, ariaLabel);
       if (link) annotatePoints(doc, svg, shown);
       figure.replaceChildren(svg);
       legend.replaceChildren(...(shown.legend || legendItems(shown)).map((item) => htmlElement(doc, "li", null, item)),
@@ -579,13 +608,13 @@
     inputBox.className = "option-control";
     inputLabel.append(inputBox, doc.createTextNode(SECTION_TEXT.includeInput));
     const privacy = htmlElement(doc, "p", "note", SECTION_TEXT.privacy);
-    privacy.id = "chart-wheel-privacy";
+    privacy.id = `${idPrefix}-privacy`;
     const downloads = [["svg", SECTION_TEXT.downloadSvg], ["png", SECTION_TEXT.downloadPng]].map(([format, label]) => {
       const button = htmlElement(doc, "button", "ghost small chart-wheel-download", label);
       button.type = "button";
-      button.setAttribute("aria-describedby", "chart-wheel-privacy");
+      button.setAttribute("aria-describedby", privacy.id);
       button.addEventListener("click", () => {
-        if (typeof onDownload === "function") onDownload(format, inputBox.checked, button, aspects.readAspects(), style);
+        if (typeof onDownload === "function") onDownload(format, includeInput && inputBox.checked, button, aspects.readAspects(), style);
       });
       return button;
     });
@@ -613,14 +642,14 @@
         : drawsAspects ? SECTION_TEXT.leadWithAspects : SECTION_TEXT.lead;
       show(modelFor(WheelModel.presetForWidth(figure.clientWidth)));
     }) : null;
-    actions.append(...(aspects.control ? [aspects.control] : []), enlarge, inputLabel, ...downloads);
+    actions.append(...(aspects.control ? [aspects.control] : []), enlarge, ...(includeInput ? [inputLabel] : []), ...downloads);
 
     // 放大檢視：原生 <dialog> 的 showModal 提供焦點圈限、背景 inert 與 Esc 關閉；關閉後焦點回到開啟它的按鈕。
     const dialog = htmlElement(doc, "dialog", "chart-wheel-dialog");
-    dialog.setAttribute("aria-labelledby", "chart-wheel-dialog-title");
+    dialog.setAttribute("aria-labelledby", `${idPrefix}-dialog-title`);
     const dialogHead = htmlElement(doc, "div", "chart-wheel-dialog-head");
-    const dialogTitle = htmlElement(doc, "h3", null, SECTION_TEXT.dialogTitle);
-    dialogTitle.id = "chart-wheel-dialog-title";
+    const dialogTitle = htmlElement(doc, "h3", null, dialogText);
+    dialogTitle.id = `${idPrefix}-dialog-title`;
     const close = htmlElement(doc, "button", "ghost small", SECTION_TEXT.close);
     close.type = "button";
     dialogHead.append(dialogTitle, close);
@@ -637,17 +666,13 @@
       opener = from;
       // 放大的圖在畫面上大於 680px，用相對較小的字級：同一群標籤攤得較窄。
       const zoomed = modelFor("wide");
-      const svg = pageSvg(doc, zoomed, description);
+      const svg = pageSvg(doc, zoomed, description, ariaLabel);
       dialogView.replaceChildren(svg);
       if (typeof dialog.showModal === "function") dialog.showModal();
       else dialog.setAttribute("open", "");
-      // 放大後比視窗大時，對準標籤最密的那一段（沒有標籤時是上升），不停在空白的圓心。
-      const frame = dialogView.getBoundingClientRect();
-      const box = svg.getBoundingClientRect();
-      if (box.width > 0 && box.height > 0) {
-        dialogView.scrollLeft = box.left - frame.left + (zoomed.focus.x / zoomed.width) * box.width - dialogView.clientWidth / 2;
-        dialogView.scrollTop = box.top - frame.top + (zoomed.focus.y / zoomed.height) * box.height - dialogView.clientHeight / 2;
-      }
+      // 放大後比視窗大時從正中央看起：四周哪一邊都只差半個視窗，往哪個方向捲都一樣近。
+      dialogView.scrollLeft = (dialogView.scrollWidth - dialogView.clientWidth) / 2;
+      dialogView.scrollTop = (dialogView.scrollHeight - dialogView.clientHeight) / 2;
       close.focus();
     };
     const shut = () => {
@@ -656,9 +681,9 @@
     };
     enlarge.addEventListener("click", () => open(enlarge));
     // 手機上點圖就放大；鍵盤使用者用「放大檢視」按鈕。圖會隨字級重畫，所以聽在外框上。
-    // 連動時，滑鼠點在點的標籤上是跳表，不放大。
-    const jumped = link ? linkFigure(figure, link) : () => false;
-    figure.addEventListener("click", (event) => { if (!jumped(event)) open(enlarge); });
+    // 連動時，滑鼠點在點的標籤上是選取，不放大。
+    const picked = link ? linkFigure(figure, link) : () => false;
+    figure.addEventListener("click", (event) => { if (!picked(event)) open(enlarge); });
     close.addEventListener("click", shut);
     // 點對話框外的背景（事件落在 dialog 本身）也關閉。
     dialog.addEventListener("click", (event) => { if (event.target === dialog) shut(); });

@@ -24,12 +24,12 @@ import re
 from typing import Any
 
 from . import _fx, page_validation
-from ._common import ROOT, SIGNS, backend_on_path, product_charts, swiss
+from ._common import ROOT, SIGNS, TAIPEI, backend_on_path, product_charts, swiss
 from . import _site
 
 
 FRAGMENT = "blog-chart-calculation-accuracy"
-LAT, LON = 25.05306, 121.52639
+LAT, LON = TAIPEI
 BASE: dict[str, Any] = {
     "datetime": {"year": 1990, "month": 5, "day": 15, "hour": 14, "minute": 0, "second": 0},
     "location": {"latitude": LAT, "longitude": LON},
@@ -484,11 +484,11 @@ def build() -> tuple[dict[str, str], list[str]]:
     with swiss() as swe:
         moon = _swiss(swe, p)
         with backend_on_path():
-            from app import config, ephemeris
+            from app import domain_catalog, ephemeris
 
             coverage = {name: tuple(_jd_year(swe, jd) for jd in ephemeris.SEGMENT_MANIFEST[name]["jd_ut_coverage"])
                         for name in ephemeris.CORE_SEGMENTS}
-            years = config.PRODUCT_YEAR_RANGE
+            years = domain_catalog.PRODUCT_YEAR_RANGE
     rows = _rows(p, moon)
     shifts = [abs(_wrap(a["asc"] - p["base"]["asc"])) * 3600 for a in p["late"]]
     if shifts != sorted(shifts):
@@ -555,5 +555,11 @@ def build() -> tuple[dict[str, str], list[str]]:
 
 
 def elsewhere(fragment: str) -> dict[str, list[str]]:
-    """The validation run's observations the article repeats: the validation page must still say them."""
-    return {"validation": ["<b>99.96%</b>", "水星赤緯4.8角秒", "<dt>位置門檻</dt><dd>5角秒；月亮15角秒</dd>"]}
+    """The validation run's observations the article repeats, and the largest Horizons residuals the
+    article measures, which the validation page repeats (the fixture's own note places them at 1900
+    and 2399): the validation page must still say them."""
+    measured = re.search(r"實測最大 ([0-9.]+) 角秒；2100 年以後最大 ([0-9.]+) 角秒", fragment)
+    if measured is None:
+        raise RuntimeError("the article no longer states its largest Horizons residuals")
+    return {"validation": ["<b>99.96%</b>", "水星赤緯4.8角秒", "<dt>位置門檻</dt><dd>5角秒；月亮15角秒</dd>",
+                           measured[0], f"1900 年約差 {measured[1]} 角秒，2399 年約差 {measured[2]} 角秒"]}

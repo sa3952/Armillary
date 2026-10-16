@@ -34,6 +34,7 @@ from dataclasses import dataclass, field
 from html import escape
 from html.parser import HTMLParser
 from pathlib import Path
+import math
 import re
 
 from ._common import ROOT
@@ -67,6 +68,17 @@ def f(value: float) -> str:
     """A coordinate: one decimal, no trailing zero."""
     text = f"{value:.1f}".rstrip("0").rstrip(".")
     return "0" if text == "-0" else text
+
+
+def text_width(text: str, size: float = 1.0, latin: float = 0.55) -> float:
+    """A generous estimate of a label's drawn width: a CJK character is one em,
+    anything else `latin` em."""
+    return sum(size if ord(ch) > 0x2E7F else latin * size for ch in text)
+
+
+def wheel_point(cx: float, cy: float, r: float, degrees: float) -> tuple[float, float]:
+    """The point at `degrees` counter-clockwise from 3 o'clock, `r` from the centre."""
+    return cx + r * math.cos(math.radians(degrees)), cy - r * math.sin(math.radians(degrees))
 
 
 # --- numbers -------------------------------------------------------------------
@@ -158,6 +170,12 @@ def _licence_text() -> str:
 
 
 def defs(keys: tuple[str, ...]) -> str:
+    """The page's sprite as the fragment holds it: the placeholder that
+    `build_pages` replaces with `sprite(keys)`."""
+    return "{{fx_defs" + (":" + " ".join(keys) if keys else "") + "}}"
+
+
+def sprite(keys: tuple[str, ...]) -> str:
     """The page's one sprite: the glyphs its figures use, the engraving
     patterns, and, when it holds any glyph, the glyphs' copyright and licence."""
     outlines = glyphs()
@@ -242,7 +260,7 @@ def figure(
                    f'data-fx-scrub></div>')
     out.append(f'<div class="fx-art" role="group" aria-labelledby="{fid}-title {fid}-cap">')
     out.append(f'<span class="fx-title" id="{fid}-title">{escape(title)}</span>')
-    out += [wide, narrow, "</div>"]
+    out += [_marks_as_images(wide), _marks_as_images(narrow), "</div>"]
     # A figure with nothing to point at and no slider has no readout and no
     # sentence list: article-figures.js reveals every readout on its page, so
     # a static figure next to an interactive one would show an empty box.
@@ -253,11 +271,24 @@ def figure(
             + (f' data-fx-variant="{n.variant}"' if n.variant else "")
             + f">{escape(n.text)}</li>" for n in notes)
         out.append(f"<ul data-fx-notes hidden>{items}</ul>")
-    out.append(f'<figcaption id="{fid}-cap">{caption}</figcaption>')
+    # The caption closes the figure: HTML lets nothing follow a figcaption
+    # that is not the figure's first child, so the table comes before it.
     if table:
         out.append(table)
+    out.append(f'<figcaption id="{fid}-cap">{caption}</figcaption>')
     out.append("</figure>")
     return "\n".join(out)
+
+
+_FOCUSABLE_MARK = re.compile(r'<g (?![^>]*\brole=)([^>]*\btabindex="0"[^>]*)>')
+
+
+def _marks_as_images(drawing: str) -> str:
+    """Each focusable mark is an image named by its aria-label: an SVG `<g>`
+    has no role of its own, and ARIA prohibits a label on such an element.
+    `img` rather than `graphics-symbol`: screen readers map both to an image,
+    and `img` is the one every one of them has long supported."""
+    return _FOCUSABLE_MARK.sub(r'<g \1 role="img">', drawing)
 
 
 def svg_open(layout: str, width: float, height: float, fid: str) -> str:
@@ -418,6 +449,9 @@ def problems(markup: str, bound: Bound, stylesheet: Path = STYLESHEET) -> list[s
                  if item.get("tabindex") == "0" and item.get("aria-label")}
     for key in sorted({item["data-fx-key"] for item in r.keyed} - focusable):
         out.append(f"{fid}: key {key!r} has no focusable mark with a label")
+    for item in r.keyed:
+        if item.get("tabindex") == "0" and item.get("role") != "img":
+            out.append(f"{fid}: the focusable mark {item['data-fx-key']!r} has no role (its label needs role=img)")
     keys = sorted({k["data-fx-key"] for k in r.keyed})
     variants = [key for key, _ in r.buttons]
     # A figure without a switch has one unnamed variant.

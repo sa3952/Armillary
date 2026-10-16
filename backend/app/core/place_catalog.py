@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from functools import lru_cache
 import hashlib
 import json
 from pathlib import Path
@@ -405,11 +404,8 @@ def _artifact_digest(path: Path) -> dict:
     with _ARTIFACT_DIGEST_LOCK:
         digest = _ARTIFACT_DIGEST_CACHE.get(key)
     if digest is None:
-        hasher = hashlib.sha256()
         with resolved.open("rb") as handle:
-            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-                hasher.update(chunk)
-        digest = hasher.hexdigest()
+            digest = hashlib.file_digest(handle, "sha256").hexdigest()
         with _ARTIFACT_DIGEST_LOCK:
             _ARTIFACT_DIGEST_CACHE.clear()
             _ARTIFACT_DIGEST_CACHE[key] = digest
@@ -430,7 +426,7 @@ def _spelling_fallback_receipt(status: str) -> dict:
     }
 
 
-@lru_cache(maxsize=4096)
+# Not memoized: the characters come from the typed place query.
 def _is_latin_letter(character: str) -> bool:
     return unicodedata.category(character)[0] == "L" and unicodedata.name(character, "").startswith("LATIN ")
 

@@ -14,7 +14,7 @@ ecliptic-of-date/J2000、章動開關。地平座標/物理現象等在 heliocen
 
 地平座標計算 (swe.azalt) 會傳入使用者的 `pressure_hpa` 與 `temperature_c`。氣壓未指定時傳入
 0 hPa，讓 Swiss Ephemeris 依海拔估算；氣溫仍使用 request 值（未指定時即
-config.DEFAULT_ATMOSPHERE_TEMPERATURE_C；數值只寫在該常數，不在註解另抄）。這些大氣參數只影響
+domain_catalog.DEFAULT_ATMOSPHERE_TEMPERATURE_C；數值只寫在該常數，不在註解另抄）。這些大氣參數只影響
 視高度(altitude_apparent)的蒙氣折射修正，真高度(altitude_true，未計蒙氣差)不受影響。
 """
 
@@ -22,7 +22,7 @@ from typing import Final
 
 import swisseph as swe
 
-from ..config import (
+from ..domain_catalog import (
     CHIRON_JPL_SBDB_REFERENCE,
     CHIRON_PHYSICAL_PARAMETERS_SOURCE_REF,
 )
@@ -235,7 +235,7 @@ def _null_body_record(
     }
 
 
-# Definition metadata a body record carries over from its config entry.
+# Definition metadata a body record carries over from its catalog entry.
 _DEFINITION_METADATA_KEYS = ("calculation_source", "method_classification", "naming_note")
 
 
@@ -705,7 +705,7 @@ PARTICIPANT_CATEGORIES = ("classical_planet", "lunar_node", "outer_planet")
 
 
 def _body_key_sets() -> tuple[frozenset[str], frozenset[str]]:
-    from ..config import CLASSICAL_BODIES, OUTER_BODIES
+    from ..domain_catalog import CLASSICAL_BODIES, OUTER_BODIES
 
     return (
         frozenset(body["key"] for body in CLASSICAL_BODIES),

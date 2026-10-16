@@ -10,14 +10,19 @@
 
 from collections.abc import Callable
 import datetime as dtmod
+from decimal import Decimal
 import functools
 import math
+from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
 import swisseph as swe
 
-from ..schemas import DateTimeInput, TimezoneInput, exact_second_microseconds
+from .invariants import InternalInvariantError
 from .trace import Trace
+
+if TYPE_CHECKING:
+    from ..schemas import DateTimeInput, TimezoneInput
 
 
 # --- ΔT ------------------------------------------------
@@ -412,7 +417,8 @@ def local_wall_time(utc_value: dtmod.datetime, tz_input) -> tuple[dtmod.datetime
     if tz_input.mode == "iana":
         local = utc_value.astimezone(ZoneInfo(tz_input.iana_name))
         offset = local.utcoffset()
-        assert offset is not None
+        if offset is None:
+            raise InternalInvariantError("offset is not None")
         return local.replace(tzinfo=None), offset.total_seconds() / 3600.0
     offset = dtmod.timedelta(hours=tz_input.utc_offset_hours)
     return (utc_value + offset).replace(tzinfo=None), tz_input.utc_offset_hours
@@ -565,7 +571,7 @@ def utc_offset_text(offset_hours: float) -> str:
     return f"{text}:{secs:02d}" if secs else text
 
 
-def _input_local_label(dt_input: DateTimeInput) -> str:
+def _input_local_label(dt_input: "DateTimeInput") -> str:
     return civil_time_label(
         dt_input.year,
         dt_input.month,
@@ -576,6 +582,24 @@ def _input_local_label(dt_input: DateTimeInput) -> str:
     )
 
 
+def exact_second_microseconds(second: float) -> int | None:
+    """The request second as exact integer microseconds, or None if it is finer.
+
+    The value is read from its shortest decimal spelling — the literal a JSON
+    client wrote — so 0.3 is 300 000 µs, not the binary float's 299 999.99….
+    Gap, fold and leap-second decisions are then made on this exact value and
+    nothing is rounded before them; a finer literal is refused rather than
+    rounded, because rounding 59.9999999 carries it into another minute, day
+    or year (or across a clock gap or a leap second) before any of those
+    decisions is made.
+    """
+
+    exact = Decimal(repr(float(second))).scaleb(6)
+    if exact != exact.to_integral_value():
+        return None
+    return int(exact)
+
+
 def exact_second_microseconds_or_raise(second: float) -> int:
     microseconds = exact_second_microseconds(second)
     if microseconds is None:
@@ -584,8 +608,8 @@ def exact_second_microseconds_or_raise(second: float) -> int:
 
 
 def _to_utc_datetime(
-    dt_input: DateTimeInput,
-    tz_input: TimezoneInput,
+    dt_input: "DateTimeInput",
+    tz_input: "TimezoneInput",
     *,
     require_explicit_fold: bool = False,
 ) -> tuple[dtmod.datetime, float, str, str | None]:
@@ -697,7 +721,23 @@ def compute_time_conversion(
     # resolves the fold itself and says so.
     require_explicit_fold: bool = True,
     input_semantics: str = "exact_birth_time",
+    instant_jd_ut: float | None = None,
 ) -> dict:
+    """The chart instant from the civil request, or from ``instant_jd_ut``.
+
+    ``instant_jd_ut`` is an instant the caller already holds as JD(UT) (a
+    solar return).  It is used as is: its civil label is printed from it, never
+    read back through Swiss.  A label can name two instants (a positive leap
+    second carried into the next day; Swiss's far-future rule, which reads input
+    by date and writes output by instant), so a round trip through it can move
+    the instant by a second.  The request's datetime then is only a placeholder
+    for that instant at UTC+00:00.
+    """
+
+    if instant_jd_ut is not None:
+        return _time_conversion_of_jd(
+            instant_jd_ut, tz_input, location, trace, input_semantics=input_semantics,
+        )
     utc_dt, offset_hours, tz_label, dst_warning = _to_utc_datetime(
         dt_input,
         tz_input,
@@ -740,17 +780,8 @@ def compute_time_conversion(
         "ut1_future_leap_table_stale_swiss_rule": TIME_SCALE_ERAS[3],
         "utc": TIME_SCALE_ERAS[2],
     }.get(swiss_time_input_semantics) or time_scale_for_jd_ut(jd_ut)
-    civil_scale_label = _CIVIL_SCALE_LABELS[time_scale_era]
-    trace.add(
-        f"本地時間 -> {civil_scale_label}",
-        formula=f"{civil_scale_label} = 本地時間 - 時區偏移",
-        inputs={
-            "本地時間": _input_local_label(dt_input),
-            "時區": tz_label,
-            "時區偏移(小時)": round(offset_hours, 4),
-        },
-        result={f"{civil_scale_label}時間": utc_label},
-        note=_CIVIL_SCALE_NOTES[time_scale_era],
+    _trace_civil_label(
+        trace, time_scale_era, _input_local_label(dt_input), tz_label, offset_hours, utc_label,
     )
 
     ut1_input = swiss_time_input_semantics != "utc"
@@ -775,6 +806,119 @@ def compute_time_conversion(
             else ""
         ),
     )
+    return _time_conversion_from_jd_ut(
+        jd_ut,
+        utc_to_jd_et=jd_et,
+        utc_dt=utc_dt,
+        location=location,
+        trace=trace,
+        receipt={
+            "input_local_time": _input_local_label(dt_input),
+            "input_semantics": input_semantics,
+            "timezone_label": tz_label,
+            "utc_offset_hours": offset_hours,
+            "offset_status": offset_status(tz_input.mode, utc_dt, dst_warning is not None),
+            "utc_time": utc_label,
+            "swiss_time_input_semantics": swiss_time_input_semantics,
+            "leap_second_input": leap_second,
+        },
+        time_scale_era=time_scale_era,
+        input_semantics=input_semantics,
+        dst_warning=dst_warning,
+    )
+
+
+def _trace_civil_label(
+    trace: Trace,
+    time_scale_era: str,
+    local_label: str,
+    tz_label: str,
+    offset_hours: float,
+    utc_label: str,
+) -> None:
+    civil_scale_label = _CIVIL_SCALE_LABELS[time_scale_era]
+    trace.add(
+        f"本地時間 -> {civil_scale_label}",
+        formula=f"{civil_scale_label} = 本地時間 - 時區偏移",
+        inputs={
+            "本地時間": local_label,
+            "時區": tz_label,
+            "時區偏移(小時)": round(offset_hours, 4),
+        },
+        result={f"{civil_scale_label}時間": utc_label},
+        note=_CIVIL_SCALE_NOTES[time_scale_era],
+    )
+
+
+# How a label printed by swe_jdut1_to_utc relates to the instant, per era:
+# Swiss writes UT1 before 1972 and under its far-future rule, UTC between.
+_LABEL_SEMANTICS_OF_ERA = {
+    TIME_SCALE_ERAS[0]: "ut1_before_1972_swiss_rule",
+    TIME_SCALE_ERAS[1]: "ut1_before_1972_swiss_rule",
+    TIME_SCALE_ERAS[2]: "utc",
+    TIME_SCALE_ERAS[3]: "ut1_future_leap_table_stale_swiss_rule",
+}
+
+
+def _time_conversion_of_jd(
+    jd_ut: float, tz_input, location, trace: Trace, *, input_semantics: str,
+) -> dict:
+    if tz_input.mode != "fixed_offset" or tz_input.utc_offset_hours != 0.0:
+        raise ValueError("an instant given as JD(UT) is labelled at UTC+00:00 only")
+    utc_dt, label_millis = utc_parts_of_jd(jd_ut)
+    utc_label = civil_time_label(
+        utc_dt.year, utc_dt.month, utc_dt.day, utc_dt.hour, utc_dt.minute,
+        label_millis * _LABEL_MICROSECONDS,
+    )
+    time_scale_era = time_scale_for_jd_ut(jd_ut)
+    tz_label = utc_offset_text(0.0)
+    _trace_civil_label(trace, time_scale_era, utc_label, tz_label, 0.0, utc_label)
+    civil_scale_label = _CIVIL_SCALE_LABELS[time_scale_era]
+    trace.add(
+        f"儒略日 -> {civil_scale_label}標示 (swe.jdut1_to_utc)",
+        formula=f"{civil_scale_label}標示 = swe.jdut1_to_utc(JD_UT, 格里曆)，取到毫秒",
+        inputs={"JD(UT)": jd_ut},
+        result={f"{civil_scale_label}時間": utc_label},
+        note=(
+            "這個時刻由計算直接以儒略日給出，計算用的就是這個儒略日；上面的時間只是它的標示，"
+            "不再換算回儒略日。閏秒中的時刻標示為第 60 秒。"
+        ),
+    )
+    return _time_conversion_from_jd_ut(
+        jd_ut,
+        utc_to_jd_et=None,
+        utc_dt=utc_dt,
+        location=location,
+        trace=trace,
+        receipt={
+            "input_local_time": utc_label,
+            "input_semantics": input_semantics,
+            "timezone_label": tz_label,
+            "utc_offset_hours": 0.0,
+            "offset_status": offset_status(tz_input.mode, utc_dt, False),
+            "utc_time": utc_label,
+            "swiss_time_input_semantics": _LABEL_SEMANTICS_OF_ERA[time_scale_era],
+            "leap_second_input": label_millis >= 60 * 1000,
+        },
+        time_scale_era=time_scale_era,
+        input_semantics=input_semantics,
+        dst_warning=None,
+    )
+
+
+def _time_conversion_from_jd_ut(
+    jd_ut: float,
+    *,
+    utc_to_jd_et: float | None,
+    utc_dt: dtmod.datetime,
+    location,
+    trace: Trace,
+    receipt: dict,
+    time_scale_era: str,
+    input_semantics: str,
+    dst_warning: str | None,
+) -> dict:
+    swiss_time_input_semantics = receipt["swiss_time_input_semantics"]
 
     # The receipted ΔT and TT are the ones the positions use: swe_calc_ut takes
     # TT = JD_UT + swe_deltat_ex(JD_UT, iflag), and only the ephemeris bits of
@@ -782,9 +926,9 @@ def compute_time_conversion(
     # tidal acceleration before 1955 (0.037 s apart in 1900), so it is not the TT.
     delta_t_days = swe.deltat_ex(jd_ut, swe.FLG_SWIEPH)
     delta_t_seconds = delta_t_days * 86400.0
-    utc_to_jd_et = jd_et
     jd_et = jd_ut + delta_t_days
-    utc_to_jd_gap_seconds = (utc_to_jd_et - jd_et) * 86400.0
+    # An instant given as JD(UT) never passed through utc_to_jd: no gap to note.
+    utc_to_jd_gap_seconds = 0.0 if utc_to_jd_et is None else (utc_to_jd_et - jd_et) * 86400.0
     delta_t_model = delta_t_model_receipt(jd_ut, swiss_time_input_semantics)
     trace.add(
         "地球時與世界時之差 ΔT",
@@ -870,14 +1014,7 @@ def compute_time_conversion(
     )
 
     return {
-        "input_local_time": _input_local_label(dt_input),
-        "input_semantics": input_semantics,
-        "timezone_label": tz_label,
-        "utc_offset_hours": offset_hours,
-        "offset_status": offset_status(tz_input.mode, utc_dt, dst_warning is not None),
-        "utc_time": utc_label,
-        "swiss_time_input_semantics": swiss_time_input_semantics,
-        "leap_second_input": leap_second,
+        **receipt,
         "jd_ut": jd_ut,
         "jd_et": jd_et,
         "delta_t_seconds": delta_t_seconds,
@@ -1297,7 +1434,8 @@ def representative_sample_instants(
     """
 
     if precision == "date_only":
-        assert civil_day is not None  # the time step resolves it for every date_only chart
+        if civil_day is None:  # the time step resolves it for every date_only chart
+            raise InternalInvariantError("civil_day is not None")
         start_utc = civil_day["start_utc"]
         end_utc = civil_day["last_second_utc"]
     elif precision == "approximate_hour":

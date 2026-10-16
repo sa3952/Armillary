@@ -6,12 +6,25 @@ project keeps.  syft cannot see the C sources the build compiles into the
 pyswisseph extension (Swiss Ephemeris and Swephelp, plus Swephelp's bundled
 SQLite when the extension was built without the system libsqlite3), so they
 are added to it from the vendored sdist the image was built from.  Grype
-scans it after a positive control proves the scanner can see a vulnerability at all, pip-audit checks the production lock, and the
-image's Python inventory must equal the marker-evaluated lock.
+scans it; with --with-trivy (Gate D always passes it), Trivy also scans the
+same saved image archive on its own detection and database, and the findings
+are united by vulnerability ID: each scanner has reported advisories the other
+missed.  Without the flag only Grype runs, so an outside verifier needs no
+Trivy.  Each scanner runs only after a positive
+control proves it can see a vulnerability at all.  pip-audit checks the
+production lock, and the image's Python inventory must equal the
+marker-evaluated lock.
+
+A High or Critical rating from either scanner gates (the higher rating wins).
+An advisory no scanner rates (Unknown) is listed in the receipt as unrated and
+does not gate: the triage judges rated findings, and an unrated advisory is a
+prompt to review, not a verdict.
 
 Exit codes: 0 no High/Critical finding; 3 every High/Critical is covered by a
-current reviewed triage entry (recorded acceptance); 2 a High/Critical finding
-is not covered, or the triage is absent or expired; 1 the evidence failed.
+current reviewed triage entry (recorded acceptance) and the image's runtime base
+is the base the triage was reviewed for; 2 a High/Critical finding is not
+covered, or the triage is absent, expired, or for another or an unprovable base;
+1 the evidence failed.
 """
 
 from __future__ import annotations
@@ -41,6 +54,18 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_PRODUCTION_LOCK = PROJECT_ROOT / "deploy" / "requirements.lock"
 DEFAULT_PYSWISSEPH_SDIST = PROJECT_ROOT / "third_party/pyswisseph/pyswisseph-2.10.3.2.tar.gz"
 MAX_GRYPE_DB_AGE_HOURS = 72
+MAX_TRIVY_DB_AGE_HOURS = MAX_GRYPE_DB_AGE_HOURS
+# The Trivy release this gate was verified against, and the database schema
+# generation that release reads.
+TRIVY_VERSION = "0.76.0"
+TRIVY_DB_SCHEMA = 2
+# Every Trivy run reads only the database already downloaded and checked;
+# nothing else is fetched during a scan.
+TRIVY_SCAN_OPTIONS = (
+    "--skip-db-update", "--skip-java-db-update", "--offline-scan", "--skip-version-check", "--quiet",
+    "--scanners", "vuln", "--severity", "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL", "--format", "json",
+)
+RATED_SEVERITIES = ("Negligible", "Low", "Medium", "High", "Critical")
 REQUIRED = {"fastapi", "pydantic", "pyswisseph", "starlette", "uvicorn"}
 # Why a known-bad distribution is bad; the closed lock comparison decides.
 FORBIDDEN = {
@@ -48,6 +73,7 @@ FORBIDDEN = {
     "python-dotenv", "pyyaml", "uvloop", "watchfiles", "websockets",
 }
 TRIAGE_SCHEMA = "image-cve-triage-v1"
+_DIGEST_PINNED_BASE = re.compile(r"[^\s@$]+@sha256:[0-9a-f]{64}")
 EXIT_UNTRIAGED_HIGH = 2
 EXIT_ALL_TRIAGED = 3
 GATING_SEVERITIES = ("High", "Critical")
@@ -200,7 +226,8 @@ def image_archive_identity(archive: Path) -> tuple[set[str], str]:
 
 
 def image_sbom(image_id: str, syft: str, sbom_path: Path, workspace: Path) -> str:
-    """syft's SBOM of a `docker save` of the image ID: syft reads that archive
+    """syft's SBOM of a `docker save` of the image ID (left at
+    workspace/image.tar for the second scanner): syft reads that archive
     and resolves no reference of its own.  The archive must be the image (its
     index names the ID, or, in Docker's classic store, its config is the ID)
     and the SBOM must be of the archive's config.  Returns that config digest."""
@@ -210,7 +237,6 @@ def image_sbom(image_id: str, syft: str, sbom_path: Path, workspace: Path) -> st
     if image_id not in manifests | {config}:
         raise AuditFailure(f"docker save of {image_id} wrote another image: {sorted(manifests)} / {config}")
     _run([syft, f"docker-archive:{archive}", "-o", f"syft-json={sbom_path}"])
-    archive.unlink()
     scanned = ((json.loads(sbom_path.read_text(encoding="utf-8")).get("source") or {})
                .get("metadata") or {}).get("imageID")
     if scanned != config:
@@ -301,6 +327,7 @@ def load_cve_triage(path: Path) -> dict[str, Any]:
     if (
         not isinstance(triage, dict) or set(triage) != keys
         or triage.get("schema_version") != TRIAGE_SCHEMA
+        or not _DIGEST_PINNED_BASE.fullmatch(str(triage.get("base_image")))
         or not isinstance(entries, list) or not entries
         or any(
             not isinstance(triage.get(key), str) or not triage[key].strip()
@@ -331,39 +358,128 @@ def load_cve_triage(path: Path) -> dict[str, Any]:
     return triage
 
 
-def gating_findings(matches: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
-    """High/Critical matches by vulnerability ID, with every affected package."""
+def dockerfile_runtime_base(dockerfile: Path | None) -> str | None:
+    """The digest-pinned base of the runtime stage of the Dockerfile the image
+    was built from, or None when that cannot be proven (no Dockerfile, or a
+    stage that is unpinned or chosen by a build argument).
 
+    The Dockerfile, not an image label, is the identity: Gate D binds the
+    image's revision label and build transaction to the clean checkout it
+    passes, while a label is whatever the build wrote and the base's own layers
+    are not available offline to compare against."""
+
+    if dockerfile is None:
+        return None
+    # Imported here: the container gate imports this module.
+    from scripts.verification.verify_container_runtime import GateFailure, pinned_base_reference
+
+    try:
+        return pinned_base_reference(dockerfile)
+    except GateFailure:
+        return None
+
+
+def trivy_matches(path: Path, config: str) -> list[dict[str, Any]]:
+    """Trivy's findings for the saved image whose config is `config`, in the
+    shape of grype matches.  A report of another image, or one in which Trivy
+    detected no operating-system packages, is not "no findings"."""
+
+    document = json.loads(path.read_text(encoding="utf-8"))
+    metadata = document.get("Metadata") if isinstance(document, dict) else None
+    if not isinstance(metadata, dict) or document.get("ArtifactType") != "container_image":
+        raise AuditFailure(f"{path.name} is not a Trivy container image report")
+    if metadata.get("ImageID") != config:
+        raise AuditFailure(f"Trivy scanned image config {metadata.get('ImageID')!r}, not the saved image's {config}")
+    results = document.get("Results")
+    if not isinstance(results, list) or not any(
+        isinstance(result, dict) and result.get("Class") == "os-pkgs" for result in results
+    ):
+        raise AuditFailure(f"{path.name}: Trivy detected no operating-system packages")
+    matches: list[dict[str, Any]] = []
+    for result in results:
+        vulnerabilities = result.get("Vulnerabilities") or [] if isinstance(result, dict) else None
+        if not isinstance(vulnerabilities, list):
+            raise AuditFailure(f"{path.name} carries a malformed result")
+        for item in vulnerabilities:
+            if not isinstance(item, dict):
+                raise AuditFailure(f"{path.name} carries a malformed vulnerability")
+            matches.append({
+                "vulnerability": {
+                    "id": item.get("VulnerabilityID"),
+                    # Trivy writes HIGH, grype High.
+                    "severity": str(item.get("Severity") or "UNKNOWN").capitalize(),
+                    "fix": {"state": item.get("Status") or ""},
+                },
+                "artifact": {"name": item.get("PkgName"), "version": item.get("InstalledVersion")},
+                "scanner": "trivy",
+            })
+    return matches
+
+
+def _findings_by_id(matches: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     found: dict[str, dict[str, Any]] = {}
     for match in matches:
         vulnerability = match.get("vulnerability", {}) if isinstance(match, dict) else {}
-        severity = vulnerability.get("severity")
-        if severity not in GATING_SEVERITIES:
-            continue
-        artifact = match.get("artifact", {})
-        row = found.setdefault(str(vulnerability.get("id") or "unidentified"), {
-            "id": str(vulnerability.get("id") or "unidentified"), "severity": severity,
-            "packages": set(), "package_names": set(),
-            "fix_state": str((vulnerability.get("fix") or {}).get("state") or ""),
+        artifact = match.get("artifact", {}) if isinstance(match, dict) else {}
+        identifier = str(vulnerability.get("id") or "unidentified")
+        row = found.setdefault(identifier, {
+            "id": identifier, "severities": set(), "packages": set(), "package_names": set(),
+            "fix_states": set(), "scanners": set(),
         })
-        if _SEVERITY_RANK[severity] > _SEVERITY_RANK[row["severity"]]:
-            row["severity"] = severity
+        row["severities"].add(str(vulnerability.get("severity") or "Unknown"))
         row["packages"].add(f"{artifact.get('name') or ''}@{artifact.get('version') or ''}")
         row["package_names"].add(str(artifact.get("name") or ""))
+        row["fix_states"].add(str((vulnerability.get("fix") or {}).get("state") or ""))
+        row["scanners"].add(str(match.get("scanner") or "grype") if isinstance(match, dict) else "grype")
     return found
+
+
+def _public_row(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": row["id"], "fix_state": ",".join(sorted(state for state in row["fix_states"] if state)),
+        "packages": sorted(row["packages"]), "scanners": sorted(row["scanners"]),
+    }
+
+
+def gating_findings(matches: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """High/Critical findings by vulnerability ID, across every scanner's
+    matches: the highest rating any scanner gives, every affected package."""
+
+    found: dict[str, dict[str, Any]] = {}
+    for identifier, row in _findings_by_id(matches).items():
+        gating = [severity for severity in row["severities"] if severity in GATING_SEVERITIES]
+        if gating:
+            found[identifier] = {**row, "severity": max(gating, key=_SEVERITY_RANK.__getitem__)}
+    return found
+
+
+def unrated_findings(matches: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Advisories no scanner rates: reported, never gating."""
+
+    return [
+        _public_row(row) for identifier, row in sorted(_findings_by_id(matches).items())
+        if not row["severities"] & set(RATED_SEVERITIES)
+    ]
 
 
 def triage_decision(
     found: dict[str, dict[str, Any]], triage: dict[str, Any] | None, *, today: date,
+    image_base: str | None,
 ) -> tuple[str, list[dict[str, Any]], str]:
     """A finding is accepted only by an entry with its ID, a severity at least as
-    high and every affected package named; an expired triage accepts nothing."""
+    high and every affected package named; an expired triage, or one reviewed
+    for another base than `image_base` or with that base unproven, accepts
+    nothing."""
 
     entries: dict[str, dict[str, Any]]
     if triage is None:
         status, entries = "absent", {}
     elif today > date.fromisoformat(triage["recheck_by"]):
         status, entries = "expired", {}
+    elif image_base is None:
+        status, entries = "base_unproven", {}
+    elif image_base != triage["base_image"]:
+        status, entries = "base_mismatch", {}
     else:
         status, entries = "current", {entry["id"]: entry for entry in triage["entries"]}
     rows = []
@@ -375,8 +491,7 @@ def triage_decision(
             and row["package_names"] <= set(entry["packages"])
         )
         rows.append({
-            "id": identifier, "severity": row["severity"], "fix_state": row["fix_state"],
-            "packages": sorted(row["packages"]),
+            **_public_row(row), "severity": row["severity"],
             "triage": "accepted_unreachable" if accepted else "untriaged",
         })
     if not rows:
@@ -400,6 +515,7 @@ def _database(grype: str) -> dict[str, Any]:
     """Fresh, checksummed, and of the schema generation this grype reads."""
 
     status = json.loads(_run([grype, "db", "status", "-o", "json"]))
+    grype_version = re.search(r"^Version:\s*(\S+)", _run([grype, "version"]), re.MULTILINE)
     built = status.get("built") or status.get("buildDate") or status.get("database", {}).get("built")
     checksum = status.get("checksum") or parse_qs(urlparse(status.get("from", "")).query).get(
         "checksum", [None]
@@ -414,17 +530,40 @@ def _database(grype: str) -> dict[str, Any]:
         raise AuditFailure(f"Grype database age {age:.1f}h is outside 0..{MAX_GRYPE_DB_AGE_HOURS}h")
     schema = status.get("schemaVersion") or status.get("schema_version")
     supported = re.search(r"Supported DB Schema:\s*(\d+)", _run([grype, "version"]))
+    if grype_version is None:
+        raise AuditFailure("grype did not report its version")
     generation = re.fullmatch(r"v?(\d+)(?:\.\d+)*", str(schema or ""))
     if supported is None or generation is None or supported.group(1) != generation.group(1):
         raise AuditFailure(f"Grype database schema {schema!r} is not the generation grype reads")
     return {"database_built": built, "age_hours": round(max(age, 0), 3),
-            "schema_version": schema, "checksum": checksum}
+            "schema_version": schema, "checksum": checksum, "grype_version": grype_version.group(1)}
 
 
-def _scanner_positive_control(grype: str, workspace: Path) -> dict[str, Any]:
-    """An empty database, a wrong target or a failed load all report clean, so a
-    zero on the real image means nothing until the scanner reports a known match."""
+def _trivy_database(trivy: str) -> dict[str, Any]:
+    """The pinned Trivy release, with a fresh database of the schema it reads."""
 
+    _run([trivy, "image", "--download-db-only", "--skip-java-db-update", "--skip-version-check", "--quiet"])
+    try:
+        status = json.loads(_run([trivy, "version", "--format", "json"]))
+        database = status["VulnerabilityDB"]
+        version, schema, updated = status["Version"], database["Version"], database["UpdatedAt"]
+        updated_at = datetime.fromisoformat(str(updated).replace("Z", "+00:00"))
+    except (TypeError, KeyError, ValueError) as error:
+        raise AuditFailure(f"Trivy did not report its version and database: {error}") from None
+    if version != TRIVY_VERSION:
+        raise AuditFailure(f"Trivy {version!r} is not the pinned {TRIVY_VERSION}")
+    if schema != TRIVY_DB_SCHEMA:
+        raise AuditFailure(f"Trivy database schema {schema!r} is not {TRIVY_DB_SCHEMA}")
+    if updated_at.tzinfo is None:
+        raise AuditFailure("Trivy database update time omitted timezone")
+    age = (datetime.now(timezone.utc) - updated_at).total_seconds() / 3600
+    if not -1 <= age <= MAX_TRIVY_DB_AGE_HOURS:
+        raise AuditFailure(f"Trivy database age {age:.1f}h is outside 0..{MAX_TRIVY_DB_AGE_HOURS}h")
+    return {"trivy_version": version, "schema_version": schema, "database_updated": updated,
+            "downloaded_at": database.get("DownloadedAt"), "age_hours": round(max(age, 0), 3)}
+
+
+def _positive_control_sbom(workspace: Path) -> Path:
     name, version = POSITIVE_CONTROL_PACKAGE
     control = workspace / "positive-control.sbom.json"
     control.write_text(json.dumps({
@@ -432,12 +571,42 @@ def _scanner_positive_control(grype: str, workspace: Path) -> dict[str, Any]:
         "components": [{"type": "library", "name": name, "version": version,
                         "purl": f"pkg:pypi/{name}@{version}"}],
     }), encoding="utf-8")
+    return control
+
+
+def _scanner_positive_control(grype: str, workspace: Path) -> dict[str, Any]:
+    """An empty database, a wrong target or a failed load all report clean, so a
+    zero on the real image means nothing until the scanner reports a known match."""
+
+    name, version = POSITIVE_CONTROL_PACKAGE
+    control = _positive_control_sbom(workspace)
     output = workspace / "positive-control.grype.json"
     _run([grype, f"sbom:{control}", "-o", "json", "--file", str(output)])
     found = len(grype_matches(output))
     if found < 1:
         raise AuditFailure(f"scanner positive control failed: no match for {name} {version}")
     return {"package": f"{name}@{version}", "matches": found}
+
+
+def _trivy_positive_control(trivy: str, workspace: Path) -> dict[str, Any]:
+    name, version = POSITIVE_CONTROL_PACKAGE
+    output = workspace / "positive-control.trivy.json"
+    _run([trivy, "sbom", *TRIVY_SCAN_OPTIONS, "--output", str(output), str(_positive_control_sbom(workspace))])
+    document = json.loads(output.read_text(encoding="utf-8"))
+    results = document.get("Results") if isinstance(document, dict) else None
+    found = sum(len(result.get("Vulnerabilities") or []) for result in results or [] if isinstance(result, dict))
+    if found < 1:
+        raise AuditFailure(f"Trivy positive control failed: no match for {name} {version}")
+    return {"package": f"{name}@{version}", "matches": found}
+
+
+def _severity_counts(matches: list[dict[str, Any]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for match in matches:
+        severity = str(((match.get("vulnerability") or {}) if isinstance(match, dict) else {}).get("severity")
+                       or "Unknown")
+        counts[severity] = counts.get(severity, 0) + 1
+    return dict(sorted(counts.items()))
 
 
 def _verify_python_inventory(sbom: dict[str, Any], audited: list[Any], lock: Path) -> dict[str, str]:
@@ -469,6 +638,9 @@ def main() -> int:
     parser.add_argument("--image", required=True)
     parser.add_argument("--syft", default="syft")
     parser.add_argument("--grype", default="grype")
+    parser.add_argument("--trivy", default="trivy")
+    parser.add_argument("--with-trivy", action="store_true",
+                        help="also scan with the pinned Trivy and unite its findings with Grype's")
     parser.add_argument("--pip-audit", default="pip-audit")
     parser.add_argument("--production-lock", type=Path, default=DEFAULT_PRODUCTION_LOCK)
     parser.add_argument("--pyswisseph-sdist", type=Path, default=DEFAULT_PYSWISSEPH_SDIST,
@@ -476,13 +648,15 @@ def main() -> int:
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--receipt", type=Path)
     parser.add_argument("--triage", type=Path, help="reviewed CVE triage (image-cve-triage-v1)")
+    parser.add_argument("--dockerfile", type=Path,
+                        help="the Dockerfile the image was built from; without it no triage accepts anything")
     args = parser.parse_args()
     try:
         output = external_output_path(args.output_dir, source_root=PROJECT_ROOT, role="supply-chain output")
         output.mkdir(parents=True, exist_ok=True)
         lock = args.production_lock.resolve()
-        sbom_path, grype_path, audit_path = (
-            output / "sbom.syft.json", output / "grype.json", output / "pip-audit.json"
+        sbom_path, grype_path, trivy_path, audit_path = (
+            output / "sbom.syft.json", output / "grype.json", output / "trivy.json", output / "pip-audit.json"
         )
         # The reference is read once; every scan below reads that image ID.
         image = json.loads(_run(["docker", "image", "inspect", args.image]))[0]
@@ -491,8 +665,13 @@ def main() -> int:
             raise AuditFailure(f"{args.image} has no image ID")
         _run([args.grype, "db", "update"])
         positive_control = _scanner_positive_control(args.grype, output)
+        trivy_database = _trivy_database(args.trivy) if args.with_trivy else None
+        trivy_positive_control = _trivy_positive_control(args.trivy, output) if args.with_trivy else None
         with tempfile.TemporaryDirectory(prefix="image-archive-") as workspace:
             sbom_config = image_sbom(image_id, args.syft, sbom_path, Path(workspace))
+            if args.with_trivy:
+                _run([args.trivy, "image", *TRIVY_SCAN_OPTIONS, "--output", str(trivy_path),
+                      "--input", str(Path(workspace) / "image.tar")])
         sqlite_linkage = pyswisseph_sqlite_linkage(
             image_swisseph_extension(image_id), args.pyswisseph_sdist,
         )
@@ -505,17 +684,20 @@ def main() -> int:
             "--output", str(audit_path), "--requirement", str(lock),
         ])
         sbom = json.loads(sbom_path.read_text(encoding="utf-8"))
-        matches = grype_matches(grype_path)
+        matches = [{**match, "scanner": "grype"} if isinstance(match, dict) else match
+                   for match in grype_matches(grype_path)]
+        trivy_found = trivy_matches(trivy_path, sbom_config) if args.with_trivy else []
         audit = json.loads(audit_path.read_text(encoding="utf-8"))
         dependencies = audit if isinstance(audit, list) else audit.get("dependencies", [])
         versions = _verify_python_inventory(sbom, dependencies, lock)
         database = _database(args.grype)
         triage = load_cve_triage(args.triage) if args.triage is not None else None
+        image_base = dockerfile_runtime_base(args.dockerfile)
         decision, rows, triage_status = triage_decision(
-            gating_findings(matches), triage, today=datetime.now(timezone.utc).date()
+            gating_findings([*matches, *trivy_found]), triage, today=datetime.now(timezone.utc).date(), image_base=image_base,
         )
         receipt = {
-            "schema_version": "image-supply-chain-summary-v4",
+            "schema_version": "image-supply-chain-summary-v6",
             "created_at": datetime.now(timezone.utc).isoformat(),
             "image": {
                 "reference": args.image, "id": image_id, "architecture": image["Architecture"],
@@ -525,22 +707,33 @@ def main() -> int:
                 ),
             },
             "grype_database": database,
+            "scanners": ["grype", "trivy"] if args.with_trivy else ["grype"],
+            "trivy_database": trivy_database,
             "pyswisseph_sqlite_linkage": sqlite_linkage,
-            "scanner_positive_control": positive_control,
+            "scanner_positive_control": {"grype": positive_control,
+                                         **({"trivy": trivy_positive_control} if args.with_trivy else {})},
             "artifact_sha256": {
                 "sbom_syft_json": _sha256(sbom_path), "grype_json": _sha256(grype_path),
+                **({"trivy_json": _sha256(trivy_path)} if args.with_trivy else {}),
                 "pip_audit_json": _sha256(audit_path), "production_lock": _sha256(lock),
             },
             "lock_bound_python_versions": dict(sorted(versions.items())),
             "pip_audit_known_vulnerabilities": sum(len(item.get("vulns", [])) for item in dependencies),
             "grype_matches_total": len(matches),
+            "trivy_findings_total": len(trivy_found) if args.with_trivy else None,
+            "severity_counts": {"grype": _severity_counts(matches),
+                                **({"trivy": _severity_counts(trivy_found)} if args.with_trivy else {})},
             "high_or_critical_findings": rows,
+            "unrated_findings": unrated_findings([*matches, *trivy_found]),
             "cve_triage": {
                 "status": triage_status,
                 # The file name only: never a local absolute path.
                 "record": args.triage.name if args.triage is not None else None,
                 "sha256": _sha256(args.triage) if args.triage is not None else None,
                 "recheck_by": triage["recheck_by"] if triage else None,
+                # The identities compared: the base the triage was reviewed
+                # for and the runtime base of the Dockerfile the image was built from.
+                "base_image": {"triage": triage["base_image"] if triage else None, "image": image_base},
             },
             "decision": decision,
         }

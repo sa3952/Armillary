@@ -210,7 +210,7 @@
   return Object.freeze({
     OBLIQUITY, D, SYSTEMS, QUADRANT, ALPHA, EASTERN_CUSPS,
     mod360, dot, cross, scale, add, sub, neg, norm,
-    frame, eclVec, raDecVec, lonFromRA, decOfLon, lonOfVec, semiArc, ascOf, mcOf,
+    frame, eclVec, raDecVec, decOfLon, semiArc,
     placidusHourAngle, cusps, siteStatus,
   });
 });

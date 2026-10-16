@@ -9,12 +9,12 @@ from __future__ import annotations
 import functools
 from typing import Any
 
-from ._common import SIGNS, product_charts
+from ._common import SIGNS, TAIPEI, product_charts
 
 
 DEMO: dict[str, Any] = {
     "datetime": {"year": 1990, "month": 5, "day": 15, "hour": 14, "minute": 30, "second": 0},
-    "location": {"latitude": 25.05306, "longitude": 121.52639},
+    "location": {"latitude": TAIPEI[0], "longitude": TAIPEI[1]},
     "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"},
     "options": {"house_system": "W", "include_houses": True,
                 "include_outer_planets": True, "include_chiron": True},

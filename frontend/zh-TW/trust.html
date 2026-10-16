@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="index, follow">
-<title>計算透明度、隱私與信任邊界｜渾儀 Armillary</title>
+<title>排盤不存資料：星盤隱私與信任邊界｜渾儀 Armillary</title>
 <meta name="description" content="渾儀的應用程式裡沒有帳號資料庫、命盤資料庫、工作階段儲存或請求快取，出生資料沒有地方可以存。本頁說明各項承諾由哪一層執行、「已驗證」的四種意思、有人來要資料時會怎樣，以及你怎麼自己驗。">
 <link rel="canonical" href="https://projectarmillary.com/zh-TW/trust">
 <link rel="alternate" hreflang="zh-TW" href="https://projectarmillary.com/zh-TW/trust">
@@ -12,7 +12,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="渾儀 Armillary">
 <meta property="og:locale" content="zh_TW">
-<meta property="og:title" content="計算透明度、隱私與信任邊界｜渾儀 Armillary">
+<meta property="og:title" content="排盤不存資料：星盤隱私與信任邊界｜渾儀 Armillary">
 <meta property="og:description" content="渾儀的應用程式裡沒有帳號資料庫、命盤資料庫、工作階段儲存或請求快取，出生資料沒有地方可以存。本頁說明各項承諾由哪一層執行、「已驗證」的四種意思、有人來要資料時會怎樣，以及你怎麼自己驗。">
 <meta property="og:url" content="https://projectarmillary.com/zh-TW/trust">
 <meta property="og:image" content="https://projectarmillary.com/zh-TW/og-card.png?v=16c9900d06168aab">
@@ -21,11 +21,11 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="渾儀 Armillary：可驗證的古典西洋占星計算器">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/trust#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/trust#breadcrumb"},"dateModified":"2026-10-14","description":"渾儀的應用程式裡沒有帳號資料庫、命盤資料庫、工作階段儲存或請求快取，出生資料沒有地方可以存。本頁說明各項承諾由哪一層執行、「已驗證」的四種意思、有人來要資料時會怎樣，以及你怎麼自己驗。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"計算透明度、隱私與信任邊界｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/trust"},{"@id":"https://projectarmillary.com/zh-TW/trust#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/trust","name":"信任","position":2}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/trust#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/trust#breadcrumb"},"dateModified":"2026-10-16","description":"渾儀的應用程式裡沒有帳號資料庫、命盤資料庫、工作階段儲存或請求快取，出生資料沒有地方可以存。本頁說明各項承諾由哪一層執行、「已驗證」的四種意思、有人來要資料時會怎樣，以及你怎麼自己驗。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"排盤不存資料：星盤隱私與信任邊界｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/trust"},{"@id":"https://projectarmillary.com/zh-TW/trust#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/trust","name":"信任","position":2}]}]}</script>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" href="/zh-TW/favicon.svg?v=c95686a2f029d369" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="/zh-TW/style/trust.css?v=91c018f4b6b9307e">
+<link rel="stylesheet" href="/zh-TW/style/trust.css?v=116250375d726e4c">
 </head>
 <body>
 
@@ -60,7 +60,8 @@
 
   <section class="tr-hero">
     <p class="eyebrow">信任 · TRUST</p>
-    <h1>你的出生資料，<br>我們沒有地方可以存。</h1>
+    <h1>星盤隱私：渾儀為什麼不儲存你的出生資料</h1>
+    <p class="kicker">你的出生資料，<br>我們沒有地方可以存。</p>
     <p class="lede">不是「我們承諾不保存」。是應用程式裡<b>沒有一個可以保存的位置</b>——沒有帳號資料庫、沒有命盤資料庫、沒有工作階段儲存、沒有請求快取。</p>
     <div class="facts">
       <div><b>0</b><span>個帳號</span><i>免註冊、免 email、無帳號密碼；公開測試（Public Alpha）階段也沒有存取憑證</i></div>
@@ -415,7 +416,7 @@
   <div class="wrap">
     <span>渾儀 ARMILLARY</span>
     <span>只計算，不解盤，不預測</span>
-    <span>最後更新：<time datetime="2026-10-14">2026-10-14</time></span>
+    <span>最後更新：<time datetime="2026-10-16">2026-10-16</time></span>
   </div>
 </footer>
 

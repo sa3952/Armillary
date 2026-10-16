@@ -2,9 +2,9 @@
 """Fail closed on a public source tree that leaks private material or is incomplete.
 
 Checked here: the closed file list (PUBLICATION_FILES.json), no symlink or
-private path, no private marker, personal data, secret or private-record
-reference in any byte, no ticket or ruling id in a comment, no named path
-the tree does not carry, the vendored pyswisseph source against the committed
+secret-looking path, no local path or secret in any byte, no ticket or
+ruling id in a comment, Python string or JSON file, no named path the tree
+does not carry, the vendored pyswisseph source against the committed
 source lock, and no dependency bundle: the other dependencies are named by
 their locked hashes and fetched from PyPI, not shipped.  Whether the tree
 builds and its tests pass is the public repository CI's job (its
@@ -25,16 +25,14 @@ import subprocess
 import sys
 import tokenize
 from pathlib import Path
+from typing import Callable
 
 from scripts.tools.source_tree_identity import (
     is_public_release_record, observe_publication_tree, sha256_file as _sha256,
 )
 
 
-FORBIDDEN_PATH_PARTS = {
-    ".DS_Store", ".env", ".pytest_cache", "__pycache__",
-    "docs/archive", "docs/development", "docs/red_team",
-}
+FORBIDDEN_PATH_PARTS = {".DS_Store", ".env", ".pytest_cache", "__pycache__"}
 # Names that hold credentials, keys or private notes.  The exporter and this
 # verifier refuse a public path with any of them through refused_public_path,
 # the one path rule both gates apply.
@@ -43,76 +41,13 @@ REFUSED_NAME = re.compile(
     r"|\.(?:pem|key|p12|pfx|jks|keystore)$|^id_(?:rsa|dsa|ecdsa|ed25519)(?:\.|$)",
     re.IGNORECASE,
 )
-# The one denylist of the public tree.  The exporter, this verifier and the
-# publication tests all scan with these four tables: FORBIDDEN_TEXT (literals,
-# every file), PRIVATE_RECORD_PATTERNS and SECRET_PATTERNS (text files), and
-# PUBLIC_FILE_PATTERNS (text files; data an API answer may legitimately carry).
-# Split so that this public verifier does not match itself.
+# The generic content rules of a public tree: no local home or temporary path
+# (FORBIDDEN_TEXT, every file) and no secret (SECRET_PATTERNS, text files).
+# The exporter adds the project's own list, which is not published.  Split so
+# that this verifier does not match itself.
 FORBIDDEN_TEXT = {
     "/" + "Users" + "/",
-    "treatment" + "-resistant",
-    "@" + "gmail.com",
-    "信任說明草案待 " + "Sebastian 定稿",
-    # Internal-record references and operator remarks: public files cite public
-    # method-source ids and published documents, never the private evidence
-    # folders, research notes, agent work areas or ruling records.
-    "local" + "-evidence",
-    "docs/" + "decisions/",
-    "internal" + " record:",
-    "(internal" + " record)",
-    "（內部" + "紀錄）",
-    "RULINGS" + "_",
     "/private" + "/tmp",
-    "work" + "trees/",
-    "codex" + "-review",
-    "open_items" + ".json",
-    # The private contracts, register and agent rules: a public file names
-    # what they hold in words ("the output contract"), not the file.
-    "OUTPUT_CONTRACT" + ".md",
-    "EXPORT_CONTRACT" + ".md",
-    "DECISION_REGISTER" + ".md",
-    "AGENTS" + ".md",
-    "UNIFIED" + "_REGISTER",
-    "ALL" + "_VERIFIED",
-    "CURRENT" + "_HANDOFF",
-    "Sebastian" + " wanted",
-    "Sebastian" + " 的要求",
-    "Sebastian" + "'s request",
-    "依 Sebastian" + " 指示",
-    # The private configuration generator: published files say "(private)
-    # configuration generator", never its module name.
-    "render_staging" + "_nginx",
-}
-PRIVATE_RECORD_PATTERNS = {
-    "agent evidence folder": re.compile(
-        rb"claude-(?:opus|fable|sonnet|haiku)-[0-9]", re.IGNORECASE
-    ),
-    "wave work area": re.compile(rb"\bwave-[0-9]+/", re.IGNORECASE),
-    "private research folder": re.compile(rb"/research/(?:sources|[A-Z_]+_20[0-9]{2})"),
-    "numbered research-note entry": re.compile(
-        "(?:research notes?|研究筆記) ?Q[0-9]".encode("utf-8"), re.IGNORECASE
-    ),
-    # A ruling cited by the owner's name and a date, by a month-day and an item
-    # number or by its list number; a decision-register row; a numbered
-    # research-list entry; a code value that carries a ruling date.
-    "decision-list reference": re.compile(
-        (
-            r"Sebastian(?:'s)?,? ?(?:ruling )?(?:R[0-9]|[0-9]{4}-[0-9]{2}-[0-9]{2}|\([0-9]{4})"
-            r"|(?<![0-9-])(?:[0-9]{4}-)?[01][0-9]-[0-3][0-9] ?(?:#|R|P)[0-9]"
-            r"|裁決 ?(?:#|[A-Z]+-?)[0-9]|ruling #[0-9]|Decision" r" Register"
-            r"|\b(?:SD|MTH|MTH-Q|BD|PUB|PRIV|GOV-RULE|DEC-DIR|RUL)-[0-9]{2,3}\b"
-            r"|\blit[AB] [A-Za-z]-?[0-9]|sebastian_[a-z_]*[0-9]{4}"
-        ).encode("utf-8")
-    ),
-}
-# A specific former example place stood for the calculator's synthetic
-# example; published files use the catalog's Tainan point.  The binary place
-# catalog lists every place and is not searched for patterns.
-PUBLIC_FILE_PATTERNS = {
-    "former example place": re.compile(
-        "tai" "chung|臺" "中|台" "中|24\\.14(?:77|69)|120\\.6(?:736|839)".encode("utf-8"),
-        re.IGNORECASE,
-    ),
 }
 _CREDENTIAL_NAME = (
     rb"[A-Za-z0-9_.-]*"
@@ -170,24 +105,19 @@ class CandidateFailure(RuntimeError):
 BINARY_SNIFF_BYTES = 8192
 
 
-# Ticket and ruling ids of the private project.  A comment keeps the reason and
+# A ticket or ruling id: an upper-case word of two or more letters, then any
+# hyphenated letter groups (each may end in one round digit), then a hyphen and
+# a number of up to four digits.  A comment or a string keeps the reason and
 # drops the id: a reader of the public tree cannot open the record it names.
-# The private tests bind this list to every id prefix the project's decision
-# register and open items use; DH and AR label review findings, T the time-lord
-# specification's items and D the questions a review puts to the owner.  A prefix may carry one round digit (R2, CX2)
-# and must start a word, so SHA-256, UTC-10, Etc/GMT-8 and a 2D-3 grid do not match.
-INTERNAL_CODE_PREFIXES = (
-    "GOV-RULE", "GOV-C", "GOV-Q", "GOV", "MTH-Q", "MTH", "PUB-Q", "PUB", "DEC-DIR",
-    "R-FIX", "FRONTEND", "RECEIPT", "SUPPLY", "ASTRO", "CONST", "XDOM", "I18N", "PRIV",
-    "GATE", "TIME", "OPS", "API", "CLN", "SEC", "RUL", "FE", "CX", "GK", "SD", "BD", "RT",
-    "DH", "AR", "R", "C", "V", "T", "D",
+# Standard names of the same shape (SHA-256, UTF-8, GPL-2, UTC-10, CC-BY-4.0)
+# are not ids, and neither is a path or URL segment (Etc/GMT-8, NASA/TP-2006).
+STANDARD_IDENTIFIERS = (
+    "AGPL", "BSD", "CC", "CVE", "CWE", "GMT", "GPL", "HTTP", "IEEE", "ISO", "LGPL",
+    "MIT", "OFL", "RFC", "SHA", "UTC", "UTF",
 )
-INTERNAL_CODE = re.compile(
-    r"(?<![A-Za-z0-9_-])(?:" + "|".join(map(re.escape, INTERNAL_CODE_PREFIXES))
-    + r")[0-9]?-[0-9]{1,4}(?![0-9])"
-    r"|(?<![A-Za-z0-9_])r[0-9]ops-[0-9]"
-    r"|(?:裁決|ruling)\s*#\s*[0-9]"
-    r"|Claude Security F[0-9]"
+TICKET_ID = re.compile(
+    r"(?<![A-Za-z0-9_/.-])(?!(?:" + "|".join(STANDARD_IDENTIFIERS) + r")[0-9]?-)"
+    r"[A-Z]{2,}[0-9]?(?:-[A-Z]+[0-9]?)*-[0-9]{1,4}(?![0-9])"
 )
 # Where a file's comments are.  Prose (Markdown, plain text, LICENSE) is read
 # whole; data (JSON, images, catalogues) carries no comment.
@@ -224,7 +154,15 @@ def _python_comments(text: str) -> list[tuple[int, str]]:
 
 
 def _matches(pattern: re.Pattern[str], text: str) -> list[tuple[int, str]]:
-    return [(text.count("\n", 0, match.start()) + 1, match.group(0)) for match in pattern.finditer(text)]
+    # Matches come in order, so each counts only the line breaks since the one
+    # before it rather than recounting from the start of the file.
+    found: list[tuple[int, str]] = []
+    line, counted = 1, 0
+    for match in pattern.finditer(text):
+        line += text.count("\n", counted, match.start())
+        counted = match.start()
+        found.append((line, match.group(0)))
+    return found
 
 
 def comment_parts(relative: str, data: bytes) -> list[tuple[int, str]] | None:
@@ -250,34 +188,72 @@ def comment_parts(relative: str, data: bytes) -> list[tuple[int, str]] | None:
     return [(1, text)]
 
 
+def _python_strings(text: str) -> list[tuple[int, str]]:
+    """Every string literal of a Python file (f-string text included), with its line."""
+    kinds = {tokenize.STRING} | {
+        kind for name in ("FSTRING_MIDDLE", "TSTRING_MIDDLE")
+        if (kind := getattr(tokenize, name, None)) is not None
+    }
+    try:
+        return [(token.start[0], token.string)
+                for token in tokenize.generate_tokens(io.StringIO(text).readline)
+                if token.type in kinds]
+    except (tokenize.TokenError, SyntaxError) as error:
+        raise CandidateFailure(f"cannot read the strings of a Python file: {error}") from None
+
+
+def id_parts(relative: str, data: bytes) -> list[tuple[int, str]]:
+    """Where a ticket id may not stand: comment_parts, every string literal of a
+    Python file and the whole text of a JSON file."""
+    parts = comment_parts(relative, data) or []
+    if relative.endswith((".py", ".json")) and b"\0" not in data[:BINARY_SNIFF_BYTES]:
+        try:
+            text = data.decode("utf-8")
+        except UnicodeDecodeError:
+            return parts
+        parts += _python_strings(text) if relative.endswith(".py") else [(1, text)]
+    return parts
+
+
 def comment_code_lines(
-    relative: str, data: bytes, pattern: re.Pattern[str] = INTERNAL_CODE,
+    relative: str, data: bytes, pattern: re.Pattern[str] = TICKET_ID,
 ) -> list[tuple[int, str]]:
     """(line, id) for every match of `pattern` in the comments (or prose) of one file."""
+    return matches_in_parts(comment_parts(relative, data) or [], pattern)
+
+
+def matches_in_parts(parts: list[tuple[int, str]], pattern: re.Pattern[str]) -> list[tuple[int, str]]:
+    """(line, match) for every match of `pattern` in comment_parts' (line, text) pairs."""
     return [
         (line + part.count("\n", 0, match.start()), match.group(0))
-        for line, part in comment_parts(relative, data) or []
+        for line, part in parts
         for match in pattern.finditer(part)
     ]
 
 
-def comment_codes(relative: str, data: bytes) -> list[str]:
-    """Internal ids in the comments (or prose) of one file; [] for a data file."""
-    return [code for _line, code in comment_code_lines(relative, data)]
+def ticket_ids(relative: str, data: bytes) -> list[str]:
+    """Ticket ids in the comments, prose, Python strings or JSON of one file."""
+    return [code for _line, code in matches_in_parts(id_parts(relative, data), TICKET_ID)]
 
 
-def scan_comment_codes(root: Path) -> None:
-    """Fail on a ticket or ruling id in a comment of any file outside third_party/."""
+def scan_comment_codes(
+    root: Path,
+    *,
+    pattern: re.Pattern[str] = TICKET_ID,
+    parts: Callable[[str, bytes], list[tuple[int, str]] | None] = id_parts,
+) -> None:
+    """Fail on a ticket or ruling id where `parts` looks (by default a comment,
+    a Python string or JSON) in any file outside third_party/."""
     scanned = 0
     for path in sorted(root.rglob("*")):
         relative = path.relative_to(root)
         if not path.is_file() or relative.parts[0] in {".git", "third_party"}:
             continue
         scanned += 1
-        codes = comment_codes(relative.as_posix(), path.read_bytes())
+        codes = matches_in_parts(parts(relative.as_posix(), path.read_bytes()) or [], pattern)
         if codes:
             raise CandidateFailure(
-                f"internal ticket or ruling id {codes[0]!r} in a comment of {relative.as_posix()}"
+                f"internal ticket or ruling id {codes[0][1]!r} in {relative.as_posix()}"
             )
     if not scanned:
         raise CandidateFailure(f"no file to scan under {root}")
@@ -288,7 +264,7 @@ def scan_comment_codes(root: Path) -> None:
 # every exception with its reason (strings split so this file names no path).
 _REPOSITORY_PATH = re.compile(
     r"(?<![\w.-])((?:backend|deploy|docs|frontend|publication|scripts|tests|third_party)"
-    r"/[\w./*{},-]*[\w/*}]|AGENTS\.md|CLAUDE\.md)"
+    r"/[\w./*{},-]*[\w/*}])"
 )
 _MODULE_PATH = re.compile(
     r"(?<![\w.])scripts\.(?:deployment|frontend|publication|tools|validation|verification)"
@@ -299,14 +275,10 @@ UNPUBLISHED_PATH_CLASSES = {
     "frontend/" "tests/": "frontend tests and response fixtures the public tree does not carry",
 }
 UNPUBLISHED_REFERENCE_SITES = {
-    "scripts/publication/verify_publication_candidate.py": (
-        "the private directories this denylist refuses",
-        frozenset({"docs/" "archive", "docs/" "development", "docs/" "red_team"}),
-    ),
     "scripts/verification/verify_docker_context.py": (
         "probes: paths the image build context must deny or never copy",
         frozenset({
-            "AGENTS" ".md", "docs/" "README.md", "backend/" "app/.env", "backend/" "app/x.pem",
+            "docs/" "README.md", "backend/" "app/.env", "backend/" "app/x.pem",
             "backend/" "app/x.key", "backend/" "app/tests/test_x.py",
             "backend/" "app/__pycache__/x.pyc", "backend/" "app/secret_settings.py",
             "publication/" "public_overlay/THIRD_PARTY_NOTICES.md",
@@ -401,10 +373,7 @@ def scan_candidate_content(
     (paths, addresses, record names) still cover them.
     """
 
-    patterns = tuple((
-        {**SECRET_PATTERNS, **PRIVATE_RECORD_PATTERNS, **PUBLIC_FILE_PATTERNS}
-        if secret_patterns is None else secret_patterns
-    ).items())
+    patterns = tuple((SECRET_PATTERNS if secret_patterns is None else secret_patterns).items())
     literals = tuple(
         (marker, marker.encode("utf-8").lower()) for marker in sorted(forbidden_markers)
     )

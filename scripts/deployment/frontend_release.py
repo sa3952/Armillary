@@ -35,6 +35,7 @@ try:
 except ModuleNotFoundError:
     # Clean public checkouts run this without backend/ on the path.
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "backend"))
+from app.canonical_json import canonical_json_bytes
 from app.frontend_assets import discover_source_assets
 from app.frontend_release import (
     DIGEST_RE,
@@ -42,7 +43,6 @@ from app.frontend_release import (
     REVISION_RE,
     SOURCE_URL_PREFIX,
     artifact_digest as _runtime_artifact_digest,
-    canonical_json_bytes,
     combined_release_id,
     exact_contract as _runtime_exact_contract,
     source_url_for,

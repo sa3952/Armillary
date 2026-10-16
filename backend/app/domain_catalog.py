@@ -1,4 +1,4 @@
-"""古典占星計算所需的固定設定：星體清單、恆星清單、宮位制代碼、ayanamsa選項、預設容許誤差。"""
+"""領域目錄：古典占星計算所需的固定設定——星體清單、恆星清單、宮位制代碼、ayanamsa選項、預設容許誤差。"""
 
 from typing import Any
 
@@ -343,9 +343,6 @@ AYANAMSA_OPTIONS = {
 
 # 預設容許誤差 (度)
 DECLINATION_ASPECT_ORB = 1.0
-
-# 月空亡(VOC)判斷用的合相與四種傳統相位角度（常數名是既有識別碼，不宣稱五者皆出自 Ptolemy）
-PTOLEMAIC_ASPECTS = [0.0, 60.0, 90.0, 120.0, 180.0]
 
 # One declared default for the refraction atmosphere.  The bundled client sent
 # 15 and the schema defaulted to 0.0, so anyone reproducing a published chart

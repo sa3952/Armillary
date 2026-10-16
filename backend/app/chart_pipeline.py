@@ -26,7 +26,8 @@ from typing import Any
 
 import swisseph as swe
 
-from .config import (
+from .core.invariants import InternalInvariantError
+from .domain_catalog import (
     BODY_ID_BY_KEY,
     CLASSICAL_BODIES,
     NODE_BODIES,
@@ -155,7 +156,7 @@ from .core.solar_phase import (
 from .core.root_finding import wrap_to_signed_180
 from .core.dossier import EVENT_SEARCH_REASON_CODES, build_calculation_dossier
 from .core.module_state import (
-    MODULE_STATUSES as EVENT_MODULE_STATUSES,
+    MODULE_NOT_APPLICABLE,
     SEARCH_EPHEMERIS_REFUSALS,
     computed_receipt,
     module_state,
@@ -419,7 +420,7 @@ def _event_search_refusal(module_label: str, error: Exception, trace: Trace) -> 
             requested=True, executed=True, applicable=applicable, available=False,
             reason_code=reason_code,
         ),
-        "status": EVENT_MODULE_STATUSES[2],
+        "status": MODULE_NOT_APPLICABLE,
     }
 
 
@@ -636,7 +637,8 @@ def _label_event_identity(
     if precision == "exact":
         return
 
-    assert time.anchor_utc is not None  # resolved for every non-exact chart
+    if time.anchor_utc is None:  # resolved for every non-exact chart
+        raise InternalInvariantError("time.anchor_utc is not None")
     instants = representative_sample_instants(
         input_request.datetime,
         input_request.timezone,
@@ -740,7 +742,11 @@ def _effective_request(
     return req, representative_offset_seconds, date_only_anchor, anchor_utc
 
 
-def _resolve_time(input_request: ChartRequest) -> TimeResolution:
+def _resolve_time(
+    input_request: ChartRequest, *, instant_jd_ut: float | None = None,
+) -> TimeResolution:
+    if instant_jd_ut is not None and input_request.birth_time_precision != "exact":
+        raise InternalInvariantError("an instant given as JD(UT) is an exact instant")
     req, representative_offset_seconds, date_only_anchor, anchor_utc = (
         _effective_request(input_request)
     )
@@ -790,6 +796,7 @@ def _resolve_time(input_request: ChartRequest) -> TimeResolution:
             if input_request.birth_time_precision == "approximate_hour"
             else "exact_birth_time"
         ),
+        instant_jd_ut=instant_jd_ut,
     )
     jd_ut = time_conv["jd_ut"]
 
@@ -1599,7 +1606,8 @@ def _birth_time_interval_spans(time: TimeResolution) -> tuple[str | None, list |
     input_request = time.input_request
     precision = input_request.birth_time_precision
     if precision == "date_only":
-        assert time.civil_day is not None  # resolved for every date_only chart
+        if time.civil_day is None:  # resolved for every date_only chart
+            raise InternalInvariantError("time.civil_day is not None")
         return "civil_day", [
             (utc_datetime_to_jd_ut(start), utc_datetime_to_jd_ut(end))
             for start, end in time.civil_day["spans"]
@@ -1723,7 +1731,8 @@ def _sect_across_stated_hour(time: TimeResolution) -> JsonObject:
     input_request = time.input_request
     if input_request.birth_time_precision != "approximate_hour":
         return {"across_stated_hour": None, "sample_is_day": None}
-    assert time.anchor_utc is not None  # resolved for every non-exact chart
+    if time.anchor_utc is None:  # resolved for every non-exact chart
+        raise InternalInvariantError("time.anchor_utc is not None")
     instants = representative_sample_instants(
         input_request.datetime,
         input_request.timezone,
@@ -1995,7 +2004,8 @@ def _birth_time_sensitivity(
                 representative_dodecatemoria=methods.dodecatemoria,
             )
         elif input_request.birth_time_precision == "date_only":
-            assert time.civil_day is not None  # resolved for every date_only chart
+            if time.civil_day is None:  # resolved for every date_only chart
+                raise InternalInvariantError("time.civil_day is not None")
             birth_time_sensitivity = build_date_only_sensitivity(
                 request=input_request,
                 body_defs=positions.body_defs,
@@ -2135,10 +2145,17 @@ _DERIVED_METHODS_LAYER_TEXT = (
 )
 
 
-def compute_chart_response(req: ChartRequest, *, build_identity: JsonObject) -> JsonObject:
-    """Every stage in order, for one request; the caller holds the Swiss line."""
+def compute_chart_response(
+    req: ChartRequest, *, build_identity: JsonObject, instant_jd_ut: float | None = None,
+) -> JsonObject:
+    """Every stage in order, for one request; the caller holds the Swiss line.
 
-    time = _resolve_time(req)
+    ``instant_jd_ut``: an exact instant the caller already holds as JD(UT) (the
+    annual route's solar return), computed at that JD rather than at the
+    request's civil datetime, which is then only its UTC+00:00 placeholder.
+    """
+
+    time = _resolve_time(req, instant_jd_ut=instant_jd_ut)
     facts = _astronomical_facts(time)
     methods = _derived_chart(facts)
     return _assemble_chart_response(facts, methods, build_identity=build_identity)

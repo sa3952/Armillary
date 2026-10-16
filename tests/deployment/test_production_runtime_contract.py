@@ -20,12 +20,12 @@ from types import SimpleNamespace
 import pytest
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[2]
 CONTAINER_GATE = "scripts/verification/verify_container_runtime.py"
 
 
 def _load_script(name: str, relative: str):
-    spec = importlib.util.spec_from_file_location(name, PROJECT_ROOT / relative)
+    spec = importlib.util.spec_from_file_location(name, ROOT / relative)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)
@@ -230,8 +230,8 @@ def test_the_ephemeris_verifier_rejects_a_changed_digest_and_an_extra_input(tmp_
     """The committed manifest is held against the committed ephemeris files here,
     in `make check`; before, only the image entrypoint and Gate D compared them."""
     module = _load_script("verify_ephemeris_integrity", "scripts/verification/verify_ephemeris_integrity.py")
-    assert module.verify(PROJECT_ROOT / "deploy/ephemeris.sha256") == []
-    lines = (PROJECT_ROOT / "deploy/ephemeris.sha256").read_text(encoding="utf-8").splitlines()
+    assert module.verify(ROOT / "deploy/ephemeris.sha256") == []
+    lines = (ROOT / "deploy/ephemeris.sha256").read_text(encoding="utf-8").splitlines()
     digest, relative_path = lines[0].split(maxsplit=1)
     lines[0] = f"{'0' if digest[0] != '0' else '1'}{digest[1:]}  {relative_path}"
     (tmp_path / "tampered.sha256").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -404,7 +404,7 @@ def test_container_log_gate_accepts_only_closed_chart_telemetry_and_canaries_fro
 def test_place_catalog_startup_verifier_rejects_a_corrupted_catalog(tmp_path, monkeypatch):
     module = _load_script("verify_place_catalog", "scripts/verification/verify_place_catalog.py")
     for name in ("catalog_manifest.json", "places.sqlite3"):
-        shutil.copy2(PROJECT_ROOT / "backend/place_data" / name, tmp_path / name)
+        shutil.copy2(ROOT / "backend/place_data" / name, tmp_path / name)
     with (tmp_path / "places.sqlite3").open("r+b") as handle:
         first = handle.read(1)
         handle.seek(0)
@@ -426,8 +426,8 @@ def test_dockerfile_perl_survivor_check_fails_the_build_under_set_e(tmp_path, in
     shell = shutil.which("sh")
     if shell is None:
         pytest.skip("no POSIX shell")
-    text = (PROJECT_ROOT / "deploy/Dockerfile").read_text(encoding="utf-8")
-    start = text.index("| grep -q '^ii  yes$'; \\\n") + len("| grep -q '^ii  yes$'; \\\n")
+    text = (ROOT / "deploy/Dockerfile").read_text(encoding="utf-8")
+    start = text.index('[ "$perl_base" = "ii  yes" ]; \\\n') + len('[ "$perl_base" = "ii  yes" ]; \\\n')
     end = text.index("    python -m pip uninstall --yes pip", start)
     snippet = text[start:end].replace("\\\n", " ")
     fake = tmp_path / "dpkg-query"
@@ -441,6 +441,67 @@ def test_dockerfile_perl_survivor_check_fails_the_build_under_set_e(tmp_path, in
         assert "non-essential Perl survived" in result.stderr
     else:
         assert result.returncode == 0 and "reached" in result.stdout
+
+
+def _perl_purge_program(tmp_path, listing: str, listing_status: int) -> str:
+    """The Dockerfile's Perl purge step, from `set -eux` up to the pip removal,
+    with stand-ins: dpkg-query prints `listing` and exits `listing_status` for
+    the package list and reports perl-base installed; apt-get records its call."""
+    text = (ROOT / "deploy/Dockerfile").read_text(encoding="utf-8")
+    start = text.index("RUN set -eux; \\\n") + len("RUN ")
+    end = text.index("    python -m pip uninstall --yes pip", start)
+    snippet = text[start:end].replace("\\\n", " ")
+    (tmp_path / "listing").write_text(listing, encoding="utf-8")
+    fake = tmp_path / "dpkg-query"
+    fake.write_text(
+        "#!/bin/sh\n"
+        'case "$*" in *perl-base*) printf \'ii  yes\\n\'; exit 0 ;; esac\n'
+        f"cat '{tmp_path / 'listing'}'\nexit {listing_status}\n",
+        encoding="utf-8",
+    )
+    apt = tmp_path / "apt-get"
+    apt.write_text(f"#!/bin/sh\necho \"$*\" >> '{tmp_path / 'apt-calls'}'\n", encoding="utf-8")
+    fake.chmod(0o755)
+    apt.chmod(0o755)
+    return f"PATH='{tmp_path}':$PATH\n{snippet}\necho reached\n"
+
+
+@pytest.mark.parametrize("shell_name", ("sh", "dash", "bash"))
+def test_dockerfile_perl_purge_fails_when_the_package_list_cannot_be_read(tmp_path, shell_name):
+    """A pipeline's status is its last command's under /bin/sh: a failing
+    dpkg-query piped into awk listed nothing to purge and nothing that
+    survived, so the build went on with Perl installed."""
+    import subprocess
+
+    shell = shutil.which(shell_name)
+    if shell is None:
+        pytest.skip(f"no {shell_name}")
+    # The list breaks off before the Perl packages and dpkg-query reports the failure.
+    program = _perl_purge_program(tmp_path, "perl-base\tyes\nlibc6\tyes\n", 2)
+    result = subprocess.run([shell, "-c", program], capture_output=True, text=True, timeout=10)
+    assert result.returncode != 0 and "reached" not in result.stdout, result.stderr[-500:]
+
+
+@pytest.mark.parametrize(("listing", "purged"), (
+    ("perl-base\tyes\nperl\tno\nlibperl5.40\tno\nlibc6\tyes\n", "purge --yes perl libperl5.40"),
+    ("perl-base\tyes\nlibc6\tyes\n", None),
+))
+def test_dockerfile_perl_purge_still_purges_and_passes_a_clean_list(tmp_path, listing, purged):
+    import subprocess
+
+    shell = shutil.which("sh")
+    if shell is None:
+        pytest.skip("no POSIX shell")
+    program = _perl_purge_program(tmp_path, listing, 0)
+    if purged:
+        # After the purge the stand-in still lists Perl, so the survivor check fails the step.
+        result = subprocess.run([shell, "-c", program], capture_output=True, text=True, timeout=10)
+        assert result.returncode != 0 and "non-essential Perl survived" in result.stderr
+        assert (tmp_path / "apt-calls").read_text(encoding="utf-8").strip() == purged
+    else:
+        result = subprocess.run([shell, "-c", program], capture_output=True, text=True, timeout=10)
+        assert result.returncode == 0 and "reached" in result.stdout, result.stderr[-500:]
+        assert not (tmp_path / "apt-calls").exists()
 
 
 def dockerfile_instructions(text: str) -> list[tuple[str, str]]:
@@ -476,7 +537,7 @@ def dockerfile_instructions(text: str) -> list[tuple[str, str]]:
 def image_command() -> list[str]:
     """The final stage's CMD, which deploy/entrypoint.sh execs: exec form is JSON."""
 
-    instructions = dockerfile_instructions((PROJECT_ROOT / "deploy/Dockerfile").read_text(encoding="utf-8"))
+    instructions = dockerfile_instructions((ROOT / "deploy/Dockerfile").read_text(encoding="utf-8"))
     last_from = max(index for index, (keyword, _) in enumerate(instructions) if keyword == "FROM")
     commands = [arguments for keyword, arguments in instructions[last_from:] if keyword == "CMD"]
     assert commands, "the final stage has no CMD"
@@ -514,7 +575,7 @@ def production_compose_service() -> dict:
 
     command = [docker, "compose"]
     for name in ("deploy/compose.yaml", "deploy/compose.frontend-release.yaml"):
-        command += ["--file", str(PROJECT_ROOT / name)]
+        command += ["--file", str(ROOT / name)]
     environment = {key: value for key, value in os.environ.items()
                    if not key.startswith("COMPOSE_") and key not in _COMPOSE_INTERPOLATION}
     completed = subprocess.run([*command, "config", "--format", "json"], capture_output=True, text=True,
@@ -588,9 +649,9 @@ def test_the_product_reaches_swiss_fixed_stars_only_through_fixstar2():
     premise (the product calls only fixstar2_ut and fixstar2_mag); an AST scan of the
     backend replaces the grep that used to be its only evidence."""
     uses, fixstar2_calls = [], 0
-    for path in sorted((PROJECT_ROOT / "backend").rglob("*.py")):
+    for path in sorted((ROOT / "backend").rglob("*.py")):
         source = path.read_text(encoding="utf-8")
-        relative = path.relative_to(PROJECT_ROOT).as_posix()
+        relative = path.relative_to(ROOT).as_posix()
         uses.extend(_old_fixed_star_api_uses(source, relative))
         fixstar2_calls += sum(
             isinstance(node, ast.Attribute) and node.attr in {"fixstar2_ut", "fixstar2_mag"}
@@ -611,17 +672,17 @@ def test_bundled_star_catalogue_fits_the_fixed_star_name_buffer():
     """libswe copies up to SE_MAX_STNAME (256) bytes of a catalogue name into
     a SWI_STAR_LENGTH + 1 buffer.  The bundled, hash-verified catalogue must never
     reach that path with a longer field."""
-    archive = PROJECT_ROOT / "third_party/pyswisseph/pyswisseph-2.10.3.2.tar.gz"
+    archive = ROOT / "third_party/pyswisseph/pyswisseph-2.10.3.2.tar.gz"
     with tarfile.open(archive, "r:gz") as source:
         header = source.extractfile("pyswisseph-2.10.3.2/libswe/sweph.h").read().decode()
     limit = int(re.search(r"#define SWI_STAR_LENGTH (\d+)", header).group(1))
     assert limit == 40
-    catalogue = PROJECT_ROOT / "backend/ephe/sefstars.txt"
+    catalogue = ROOT / "backend/ephe/sefstars.txt"
     longest = max(
         len(line.split(",", 1)[0])
         for line in catalogue.read_text(encoding="latin-1").splitlines()
         if line and not line.startswith("#") and "," in line
     )
     assert longest <= limit, longest
-    pinned = (PROJECT_ROOT / "deploy/ephemeris.sha256").read_text(encoding="utf-8")
+    pinned = (ROOT / "deploy/ephemeris.sha256").read_text(encoding="utf-8")
     assert "sefstars.txt" in pinned

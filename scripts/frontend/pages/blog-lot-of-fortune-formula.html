@@ -1,0 +1,150 @@
+<!-- 文章：命運點與精神點的公式，日盤夜盤為什麼相反。所有星盤數字都來自合成時刻（1990-05-15 臺北 14:30 與 22:30），
+     不是任何人的出生資料。圖 1 與表 1 由 scripts/frontend/figures/lots.py 以計算服務本身（行程內呼叫）產生；
+     python -m scripts.frontend.figures --check 核對。古書的說法與核到哪一層，一律照方法頁與方法出處清單。 -->
+<div class="wrap page-body article">
+  <!-- figure:fx-defs -->
+{{fx_defs:sun moon}}
+  <!-- /figure:fx-defs -->
+
+  <div class="ar-head">
+    <p class="eyebrow"><a href="/zh-TW/blog">文章</a> · JOURNAL</p>
+    <h1>命運點（福點、幸運點）怎麼算？<br>日盤與夜盤的公式為什麼相反</h1>
+    <p class="ar-dek">命運點與精神點，都是把太陽與月亮之間的距離，從上升點量出去得到的點。日盤與夜盤的公式相反，這是 Valens、Paulus 一系的做法；Ptolemy 則主張命運點日夜都用同一式。這篇照出處說明兩套公式、本站用哪一套、太陽靠近地平線時怎麼辦，並用一張合成的夜盤把兩個點畫出來。</p>
+    {{article_byline:講方法}}
+  </div>
+
+  <!-- figure:wheel -->
+<figure class="fx ar-fig ar-hero" id="fig-lot-wheel" data-fx data-fx-default-variant="night">
+<div class="fx-switch" role="group" aria-label="切換用哪一套公式替兩個點命名" data-fx-switch hidden><button type="button" data-fx-set="night" aria-pressed="true">夜盤公式（本站用在夜盤）</button><button type="button" data-fx-set="day" aria-pressed="false">日盤公式（Ptolemy 日夜都用）</button></div>
+<div class="fx-art" role="group" aria-labelledby="fig-lot-wheel-title fig-lot-wheel-cap">
+<span class="fx-title" id="fig-lot-wheel-title">一張合成的夜盤（1990 年 5 月 15 日 22:30，臺北）：上升點在左，黃道依逆時針排列。月亮到太陽的弧是 116°03′，從上升點沿黃道順序量一次落在金牛 15°38′，逆著量一次落在處女 23°32′。夜盤公式把前者叫命運點（Lot of Fortune）、後者叫精神點（Lot of Spirit）；日盤公式把兩個名字對調。</span>
+<svg class="fx-wide" viewBox="0 0 880 540" role="group" aria-labelledby="fig-lot-wheel-title"><rect x="1" y="1" width="878" height="538" class="fx-frame"/><rect x="6" y="6" width="868" height="528" class="fx-frame-in"/><path d="M195.6 501.8 A246 246 0 0 0 322.5 511.9 L315.6 474.6 A208 208 0 0 1 208.3 466 Z" class="fx-track"/><path d="M322.5 511.9 A246 246 0 0 0 437.5 457.3 L412.9 428.4 A208 208 0 0 1 315.6 474.6 Z" class="fx-fill-dot"/><path d="M437.5 457.3 A246 246 0 0 0 509.8 352.4 L474 339.7 A208 208 0 0 1 412.9 428.4 Z" class="fx-track"/><path d="M509.8 352.4 A246 246 0 0 0 519.9 225.5 L482.6 232.4 A208 208 0 0 1 474 339.7 Z" class="fx-fill-dot"/><path d="M519.9 225.5 A246 246 0 0 0 465.3 110.5 L436.4 135.1 A208 208 0 0 1 482.6 232.4 Z" class="fx-track"/><path d="M465.3 110.5 A246 246 0 0 0 360.4 38.2 L347.7 74 A208 208 0 0 1 436.4 135.1 Z" class="fx-fill-dot"/><path d="M360.4 38.2 A246 246 0 0 0 233.5 28.1 L240.4 65.4 A208 208 0 0 1 347.7 74 Z" class="fx-track"/><path d="M233.5 28.1 A246 246 0 0 0 118.5 82.7 L143.1 111.6 A208 208 0 0 1 240.4 65.4 Z" class="fx-fill-dot"/><path d="M118.5 82.7 A246 246 0 0 0 46.2 187.6 L82 200.3 A208 208 0 0 1 143.1 111.6 Z" class="fx-track"/><path d="M46.2 187.6 A246 246 0 0 0 36.1 314.5 L73.4 307.6 A208 208 0 0 1 82 200.3 Z" class="fx-fill-dot"/><path d="M36.1 314.5 A246 246 0 0 0 90.7 429.5 L119.6 404.9 A208 208 0 0 1 73.4 307.6 Z" class="fx-track"/><path d="M90.7 429.5 A246 246 0 0 0 195.6 501.8 L208.3 466 A208 208 0 0 1 119.6 404.9 Z" class="fx-fill-dot"/><circle cx="278" cy="270" r="246" class="fx-axis"/><circle cx="278" cy="270" r="208" class="fx-axis"/><text x="259.9" y="501.3" class="fx-t fx-small fx-key" text-anchor="middle">牡羊</text><text x="375.4" y="480" class="fx-t fx-small fx-key" text-anchor="middle">金牛</text><text x="464.9" y="403.8" class="fx-t fx-small fx-key" text-anchor="middle">雙子</text><text x="504.3" y="293.1" class="fx-t fx-small fx-key" text-anchor="middle">巨蟹</text><text x="483" y="177.6" class="fx-t fx-small fx-key" text-anchor="middle">獅子</text><text x="406.8" y="88.1" class="fx-t fx-small fx-key" text-anchor="middle">處女</text><text x="296.1" y="48.7" class="fx-t fx-small fx-key" text-anchor="middle">天秤</text><text x="180.6" y="70" class="fx-t fx-small fx-key" text-anchor="middle">天蠍</text><text x="91.1" y="146.2" class="fx-t fx-small fx-key" text-anchor="middle">射手</text><text x="51.7" y="256.9" class="fx-t fx-small fx-key" text-anchor="middle">摩羯</text><text x="73" y="372.4" class="fx-t fx-small fx-key" text-anchor="middle">水瓶</text><text x="149.2" y="461.9" class="fx-t fx-small fx-key" text-anchor="middle">雙魚</text><path d="M133.7 292.5 A146 146 0 0 0 361.6 389.7" class="fx-curve"/><path d="M194 270 A84 84 0 0 0 314.9 345.5" class="fx-dash"/><path d="M314.9 194.5 A84 84 0 0 0 194 270" class="fx-dash"/><g class="fx-row" data-fx-key="asc" tabindex="0" aria-label="上升點，摩羯 19°35′" role="img"><rect x="-2" y="260" width="280" height="20" class="fx-hit"/><line x1="2" y1="270" x2="278" y2="270" class="fx-wh-axis"/><text x="76" y="261" class="fx-t fx-small fx-key">上升點</text></g><g class="fx-row" data-fx-key="sun" tabindex="0" aria-label="太陽，金牛 24°30′" role="img"><circle cx="378.7" cy="414.3" r="22" class="fx-hit"/><circle cx="378.7" cy="414.3" r="15" class="fx-mk"/><use href="#fx-gl-sun" x="369.4" y="404.9" width="18.8" height="18.8" class="fx-mk-gl"/></g><g class="fx-row" data-fx-key="moon" tabindex="0" aria-label="月亮，摩羯 28°27′" role="img"><circle cx="104.1" cy="297.1" r="22" class="fx-hit"/><circle cx="104.1" cy="297.1" r="15" class="fx-mk"/><use href="#fx-gl-moon" x="97.9" y="287.8" width="12.4" height="18.8" class="fx-mk-gl"/></g><g class="fx-row" data-fx-key="fwd" tabindex="0" aria-label="從上升點沿黃道順序量出的點，金牛 15°38′" role="img"><circle cx="327.2" cy="370.6" r="22" class="fx-hit"/><circle cx="327.2" cy="370.6" r="8.2" class="fx-mk-on"/></g><g class="fx-row" data-fx-key="back" tabindex="0" aria-label="從上升點逆黃道順序量出的點，處女 23°32′" role="img"><circle cx="327.2" cy="169.4" r="22" class="fx-hit"/><circle cx="327.2" cy="169.4" r="8.2" class="fx-mk-on"/></g><g class="fx-v" data-fx-variant="night"><text x="316.6" y="354.1" class="fx-t fx-key" text-anchor="middle">命運點</text><text x="316.6" y="195.9" class="fx-t fx-key" text-anchor="middle">精神點</text><text x="566" y="70" class="fx-t">夜盤公式（Valens、Paulus）</text><text x="566" y="104" class="fx-t fx-small">命運點＝上升點＋太陽−月亮</text><text x="566" y="130" class="fx-t fx-small">精神點＝上升點＋月亮−太陽</text></g><g class="fx-v fx-off" data-fx-variant="day"><text x="316.6" y="354.1" class="fx-t fx-key" text-anchor="middle">精神點</text><text x="316.6" y="195.9" class="fx-t fx-key" text-anchor="middle">命運點</text><text x="566" y="70" class="fx-t">日盤公式</text><text x="566" y="104" class="fx-t fx-small">命運點＝上升點＋月亮−太陽</text><text x="566" y="130" class="fx-t fx-small">精神點＝上升點＋太陽−月亮</text></g><line x1="566" y1="211" x2="600" y2="211" class="fx-curve"/><text x="612" y="216" class="fx-t fx-small">實線：月亮到太陽的弧</text><text x="612" y="240" class="fx-t fx-small">（這張盤是 116°03′）</text><line x1="566" y1="277" x2="600" y2="277" class="fx-dash"/><text x="612" y="282" class="fx-t fx-small">虛線：同一段弧，</text><text x="612" y="306" class="fx-t fx-small">從上升點往兩邊各量一次</text><text x="566" y="366" class="fx-t fx-small">兩套公式算出的是同兩個點，</text><text x="566" y="390" class="fx-t fx-small">只是名字對調。</text></svg>
+<svg class="fx-narrow" viewBox="0 0 340 560" role="group" aria-labelledby="fig-lot-wheel-title"><rect x="1" y="1" width="338" height="558" class="fx-frame"/><rect x="6" y="6" width="328" height="548" class="fx-frame-in"/><path d="M117 316.9 A158 158 0 0 0 198.6 323.4 L194.2 299.8 A134 134 0 0 1 125.1 294.3 Z" class="fx-track"/><path d="M198.6 323.4 A158 158 0 0 0 272.4 288.3 L256.9 270 A134 134 0 0 1 194.2 299.8 Z" class="fx-fill-dot"/><path d="M272.4 288.3 A158 158 0 0 0 318.9 221 L296.3 212.9 A134 134 0 0 1 256.9 270 Z" class="fx-track"/><path d="M318.9 221 A158 158 0 0 0 325.4 139.4 L301.8 143.8 A134 134 0 0 1 296.3 212.9 Z" class="fx-fill-dot"/><path d="M325.4 139.4 A158 158 0 0 0 290.3 65.6 L272 81.1 A134 134 0 0 1 301.8 143.8 Z" class="fx-track"/><path d="M290.3 65.6 A158 158 0 0 0 223 19.1 L214.9 41.7 A134 134 0 0 1 272 81.1 Z" class="fx-fill-dot"/><path d="M223 19.1 A158 158 0 0 0 141.4 12.6 L145.8 36.2 A134 134 0 0 1 214.9 41.7 Z" class="fx-track"/><path d="M141.4 12.6 A158 158 0 0 0 67.6 47.7 L83.1 66 A134 134 0 0 1 145.8 36.2 Z" class="fx-fill-dot"/><path d="M67.6 47.7 A158 158 0 0 0 21.1 115 L43.7 123.1 A134 134 0 0 1 83.1 66 Z" class="fx-track"/><path d="M21.1 115 A158 158 0 0 0 14.6 196.6 L38.2 192.2 A134 134 0 0 1 43.7 123.1 Z" class="fx-fill-dot"/><path d="M14.6 196.6 A158 158 0 0 0 49.7 270.4 L68 254.9 A134 134 0 0 1 38.2 192.2 Z" class="fx-track"/><path d="M49.7 270.4 A158 158 0 0 0 117 316.9 L125.1 294.3 A134 134 0 0 1 68 254.9 Z" class="fx-fill-dot"/><circle cx="170" cy="168" r="158" class="fx-axis"/><circle cx="170" cy="168" r="134" class="fx-axis"/><text x="158.3" y="317.5" class="fx-t fx-small fx-key" text-anchor="middle">牡羊</text><text x="232.7" y="303.9" class="fx-t fx-small fx-key" text-anchor="middle">金牛</text><text x="290.2" y="254.9" class="fx-t fx-small fx-key" text-anchor="middle">雙子</text><text x="315.5" y="183.7" class="fx-t fx-small fx-key" text-anchor="middle">巨蟹</text><text x="301.9" y="109.3" class="fx-t fx-small fx-key" text-anchor="middle">獅子</text><text x="252.9" y="51.8" class="fx-t fx-small fx-key" text-anchor="middle">處女</text><text x="181.7" y="26.5" class="fx-t fx-small fx-key" text-anchor="middle">天秤</text><text x="107.3" y="40.1" class="fx-t fx-small fx-key" text-anchor="middle">天蠍</text><text x="49.8" y="89.1" class="fx-t fx-small fx-key" text-anchor="middle">射手</text><text x="24.5" y="160.3" class="fx-t fx-small fx-key" text-anchor="middle">摩羯</text><text x="38.1" y="234.7" class="fx-t fx-small fx-key" text-anchor="middle">水瓶</text><text x="87.1" y="292.2" class="fx-t fx-small fx-key" text-anchor="middle">雙魚</text><path d="M79.1 182.2 A92 92 0 0 0 222.7 243.4" class="fx-curve"/><path d="M120 168 A50 50 0 0 0 192 212.9" class="fx-dash"/><path d="M192 123.1 A50 50 0 0 0 120 168" class="fx-dash"/><g class="fx-row" data-fx-key="asc" tabindex="0" aria-label="上升點，摩羯 19°35′" role="img"><rect x="0" y="158" width="170" height="20" class="fx-hit"/><line x1="2" y1="168" x2="170" y2="168" class="fx-wh-axis"/><text x="42" y="159" class="fx-t fx-small fx-key">上升點</text></g><g class="fx-row" data-fx-key="sun" tabindex="0" aria-label="太陽，金牛 24°30′" role="img"><circle cx="234.1" cy="259.8" r="18" class="fx-hit"/><circle cx="234.1" cy="259.8" r="11" class="fx-mk"/><use href="#fx-gl-sun" x="227.2" y="253" width="13.8" height="13.8" class="fx-mk-gl"/></g><g class="fx-row" data-fx-key="moon" tabindex="0" aria-label="月亮，摩羯 28°27′" role="img"><circle cx="59.3" cy="185.3" r="18" class="fx-hit"/><circle cx="59.3" cy="185.3" r="11" class="fx-mk"/><use href="#fx-gl-moon" x="54.8" y="178.4" width="9.1" height="13.8" class="fx-mk-gl"/></g><g class="fx-row" data-fx-key="fwd" tabindex="0" aria-label="從上升點沿黃道順序量出的點，金牛 15°38′" role="img"><circle cx="200.7" cy="230.9" r="18" class="fx-hit"/><circle cx="200.7" cy="230.9" r="6.1" class="fx-mk-on"/></g><g class="fx-row" data-fx-key="back" tabindex="0" aria-label="從上升點逆黃道順序量出的點，處女 23°32′" role="img"><circle cx="200.7" cy="105.1" r="18" class="fx-hit"/><circle cx="200.7" cy="105.1" r="6.1" class="fx-mk-on"/></g><g class="fx-v" data-fx-variant="night"><text x="192.8" y="219.7" class="fx-t fx-small fx-key" text-anchor="middle">命運點</text><text x="192.8" y="126.3" class="fx-t fx-small fx-key" text-anchor="middle">精神點</text><text x="18" y="362" class="fx-t">夜盤公式（Valens、Paulus）</text><text x="18" y="386" class="fx-t fx-small">命運點＝上升點＋太陽−月亮</text><text x="18" y="406" class="fx-t fx-small">精神點＝上升點＋月亮−太陽</text></g><g class="fx-v fx-off" data-fx-variant="day"><text x="192.8" y="219.7" class="fx-t fx-small fx-key" text-anchor="middle">精神點</text><text x="192.8" y="126.3" class="fx-t fx-small fx-key" text-anchor="middle">命運點</text><text x="18" y="362" class="fx-t">日盤公式</text><text x="18" y="386" class="fx-t fx-small">命運點＝上升點＋月亮−太陽</text><text x="18" y="406" class="fx-t fx-small">精神點＝上升點＋太陽−月亮</text></g><line x1="18" y1="435" x2="48" y2="435" class="fx-curve"/><text x="58" y="440" class="fx-t fx-small">實線：月亮到太陽的弧</text><text x="58" y="460" class="fx-t fx-small">（這張盤是 116°03′）</text><line x1="18" y1="485" x2="48" y2="485" class="fx-dash"/><text x="58" y="490" class="fx-t fx-small">虛線：同一段弧，</text><text x="58" y="510" class="fx-t fx-small">從上升點往兩邊各量一次</text><text x="18" y="546" class="fx-t fx-small">兩套公式算出的是同兩個點，只是名字對調。</text></svg>
+</div>
+<p class="fx-readout" data-fx-readout aria-live="polite" hidden>用 Tab 鍵移到上升點、太陽、月亮或兩個點上，或用滑鼠指著它，這裡會寫出它的位置與它在這套公式裡的名字。</p>
+<ul data-fx-notes hidden><li data-fx-key="asc" data-fx-variant="night">上升點在摩羯 19°35′。兩個點都從這裡量起。</li><li data-fx-key="sun" data-fx-variant="night">太陽在金牛 24°30′。出生時太陽在地平線下，這是一張夜盤。</li><li data-fx-key="moon" data-fx-variant="night">月亮在摩羯 28°27′。從月亮沿黃道順序量到太陽是 116°03′。</li><li data-fx-key="fwd" data-fx-variant="night">從上升點沿黃道順序量 116°03′，落在金牛 15°38′：本站對這張夜盤輸出的命運點。</li><li data-fx-key="back" data-fx-variant="night">從上升點逆黃道順序量 116°03′，落在處女 23°32′：本站對這張夜盤輸出的精神點。</li><li data-fx-key="asc" data-fx-variant="day">上升點在摩羯 19°35′。兩個點都從這裡量起。</li><li data-fx-key="sun" data-fx-variant="day">太陽在金牛 24°30′。出生時太陽在地平線下，這是一張夜盤。</li><li data-fx-key="moon" data-fx-variant="day">月亮在摩羯 28°27′。從月亮沿黃道順序量到太陽是 116°03′。</li><li data-fx-key="fwd" data-fx-variant="day">從上升點沿黃道順序量 116°03′，落在金牛 15°38′：日盤公式的精神點；Ptolemy 沒有給精神點的公式。</li><li data-fx-key="back" data-fx-variant="day">從上升點逆黃道順序量 116°03′，落在處女 23°32′：Ptolemy 的命運點（他日夜都用日盤公式）。</li></ul>
+<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll"><table class="ar-table fx-table"><thead><tr><th scope="col">點</th><th scope="col">位置</th><th scope="col">夜盤公式下</th><th scope="col">日盤公式下</th></tr></thead><tbody><tr data-fx-key="asc"><th scope="row">上升點</th><td class="n">摩羯 19°35′</td><td>兩個點的起量點</td><td>同左</td></tr><tr data-fx-key="sun"><th scope="row">太陽</th><td class="n">金牛 24°30′</td><td></td><td></td></tr><tr data-fx-key="moon"><th scope="row">月亮</th><td class="n">摩羯 28°27′</td><td></td><td></td></tr><tr data-fx-key="fwd"><th scope="row">沿黃道順序量出的點</th><td class="n">金牛 15°38′</td><td>命運點</td><td>精神點</td></tr><tr data-fx-key="back"><th scope="row">逆黃道順序量出的點</th><td class="n">處女 23°32′</td><td>精神點</td><td>命運點</td></tr></tbody></table></div></details>
+<figcaption id="fig-lot-wheel-cap"><b>圖 1</b>一張合成的夜盤（1990 年 5 月 15 日 22:30，臺北，整宮制）。月亮到太陽的弧（實線）從上升點往兩邊各量一次，得到兩個點（虛線的終點）。按鈕切換用哪一套公式替它們命名：夜盤公式是本站對夜盤的做法，日盤公式是 Ptolemy 日夜都用的命運點。兩套公式算出的位置相同，只有名字對調<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-10">[10]</a>。</figcaption>
+</figure>
+  <!-- /figure:wheel -->
+
+  <div class="ar-body">
+    <p class="ar-lead"><b>日盤：命運點＝上升點＋月亮−太陽，精神點＝上升點＋太陽−月亮；夜盤，兩式對調。</b>本站照 Paulus《導論》第 23 章這一系，夜盤反轉<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-3">[3]</a>。Ptolemy《占星四書》III.10 主張命運點日夜都從太陽量到月亮、不反轉；本站照實記下這個分歧，但不採用<a class="ar-cite" href="#ref-4">[4]</a>。</p>
+
+    <section class="ar-points" aria-labelledby="points">
+      <h2 id="points">重點</h2>
+      <ul>
+        <li>日盤的命運點是上升點＋月亮−太陽，精神點是上升點＋太陽−月亮，夜盤兩式對調；「＋A−B」就是把從 B 量到 A 的弧，從上升點再量一次<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-7">[7]</a>。</li>
+        <li>兩套公式只算出同兩個點：夜盤公式的命運點就是日盤公式的精神點，Ptolemy 的命運點在夜盤上也正好落在反轉一系的精神點上<a class="ar-cite" href="#ref-6">[6]</a><a class="ar-cite" href="#ref-10">[10]</a>。</li>
+        <li>太陽在地平上下 50 角分以內時，兩套公式的結果並列，主要值仍依太陽真高度大於 0 度的規則，落宮與相位只用主要值<a class="ar-cite" href="#ref-1">[1]</a>。</li>
+        <li>本站只算位置與落宮，不輸出這兩個點的含義，不替你解盤，也不預測。</li>
+      </ul>
+    </section>
+
+    <h2 id="formula"><span class="ar-sec">§01</span>公式：把日月之間的距離，從上升點量出去</h2>
+    <p>命運點（Lot of Fortune；希臘文 klēros tychēs，tychē 是「機運、運氣」；阿拉伯文稱 sahm al-saʿāda，「福祉之點」；中文常見譯名為福點、幸運點）與精神點（Lot of Spirit）都不是天體，而是用上升點、太陽與月亮三個位置算出來的點<a class="ar-cite" href="#ref-1">[1]</a>。本站計算頁把這類點稱為「阿拉伯點」。</p>
+    <p>公式寫成「上升點＋A−B」，意思是：先量出從 B 沿黃道順序走到 A 有多少度，再從上升點沿黃道順序量出同樣的度數<a class="ar-cite" href="#ref-7">[7]</a>。所以四個式子其實只有一個動作：把太陽與月亮之間的弧，搬到上升點上。差別只在從哪一顆量到哪一顆。</p>
+  </div>
+
+  <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab-formula-cap">
+    <table class="ar-table">
+      <caption id="tab-formula-cap">命運點與精神點的公式（Valens、Paulus 一系，本站採用）。夜盤的兩式，是日盤兩式的對調<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-3">[3]</a>。</caption>
+      <thead><tr><th scope="col"></th><th scope="col">日盤</th><th scope="col">夜盤</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">命運點</th><td>上升點＋月亮−太陽<br>（從太陽量到月亮）</td><td>上升點＋太陽−月亮<br>（從月亮量到太陽）</td></tr>
+        <tr><th scope="row">精神點</th><td>上升點＋太陽−月亮<br>（從月亮量到太陽）</td><td>上升點＋月亮−太陽<br>（從太陽量到月亮）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="ar-body">
+    <h2 id="reversal"><span class="ar-sec">§02</span>夜盤為什麼反過來：出處說了什麼</h2>
+    <p>夜盤反轉是 Valens、Paulus 一系的做法，Paulus《導論》第 23 章，也就是談七個點的那一章，寫得最清楚：夜生盤把命運點與精神點的公式對調<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-3">[3]</a>。我讀的是 1586 年 Wittenberg 的希臘文、拉丁文對照初印本；Boer 1958 年的校勘本（學者比對多份古抄本後整理出的版本）與 Schmidt、Hand 1995 年的英譯都還沒有核<a class="ar-cite" href="#ref-3">[3]</a>。</p>
+    <p>Valens 另外說過一個條件：夜生盤如果月亮已經沒入地平，改用日盤公式。這一條出自《占星選集》III.11（Pingree 的編號；Kroll 與 Riley 編為 III.14），紀錄沒有寫明我讀的是希臘文、譯本還是二手報導，所以目前只標到出處<a class="ar-cite" href="#ref-5">[5]</a>；Greenbaum 指出，Valens 自己的例題並沒有照這一條做<a class="ar-cite" href="#ref-1">[1]</a>。本站沒有採用這個條件。</p>
+    <p>反轉一系為什麼這樣定？本站的方法頁與方法出處清單，只記下反轉這件事與它的出處，沒有記下古書替反轉給的理由，所以我不替古人補理由<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-2">[2]</a>。能說的只有公式本身的樣子：日盤的命運點從太陽量起，夜盤的命運點從月亮量起。</p>
+
+    <h2 id="ptolemy"><span class="ar-sec">§03</span>Ptolemy：命運點日夜不反轉</h2>
+    <p>Ptolemy 在《占星四書》III.10（Robbins 英譯的編號，pp.&nbsp;275–277；Hübner 校勘本為 III.11）主張，命運點不論日夜，都從太陽量到月亮<a class="ar-cite" href="#ref-4">[4]</a>。他的理由是幾何的：讓命運點與月亮的關係，等於上升點與太陽的關係，所以他把命運點稱為「月亮的上升點」<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-4">[4]</a>。</p>
+    <p>這樣一來，夜盤上 Ptolemy 的命運點，會落在反轉一系的精神點同一度。古代的 Rhetorius 輯本已經指出這一點；這一條我只讀到 Greenbaum 2007 年論文的轉引<a class="ar-cite" href="#ref-6">[6]</a>。Ptolemy 在這一章沒有給精神點的公式；有中世紀作者（研究稱 Ibn Ezra）另立日夜不反轉的精神點，出處還沒有核<a class="ar-cite" href="#ref-2">[2]</a>。</p>
+    <div class="ar-key">
+      <span class="ar-k">本站的做法</span>
+      <p><b>採用夜盤反轉，也不隱藏 Ptolemy 的不同意見。</b>每張盤的計算結果都帶著日盤與夜盤兩套公式的值，並標明主要值用哪一套；卷宗另把「命運點公式」列為古典文獻說法不一的地方<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-2">[2]</a>。</p>
+    </div>
+
+    <h2 id="two-points"><span class="ar-sec">§04</span>兩套公式，其實只有兩個點</h2>
+    <p>圖 1 是一張合成的夜盤：1990 年 5 月 15 日 22:30，臺北。上升點在摩羯 19°35′，太陽在金牛 24°30′，月亮在摩羯 28°27′，太陽在地平線下<a class="ar-cite" href="#ref-10">[10]</a>。</p>
+    <p>從月亮沿黃道順序量到太陽是 116°03′。從上升點順著黃道量這麼多，得到的點就是夜盤公式的命運點：命運點落在金牛 15°38′。逆著量同樣的弧，得到夜盤公式的精神點：精神點落在處女 23°32′<a class="ar-cite" href="#ref-10">[10]</a>。換成日盤公式，量的是從太陽到月亮的弧，兩個點的位置不變，只是名字對調。如果照 Ptolemy 日夜不反轉，Ptolemy 的命運點落在處女 23°32′，正是反轉一系的精神點。</p>
+    <p>所以兩個點永遠以上升點為中心左右對稱，兩套公式爭的不是位置，而是哪一個叫命運點。日盤時兩家一致：表 1 的日盤例的命運點在雙子 1°45′，Ptolemy 也是同一點<a class="ar-cite" href="#ref-10">[10]</a>。</p>
+  </div>
+
+  <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab1-cap">
+    <table class="ar-table">
+      <caption id="tab1-cap">表 1　兩張合成的盤：1990 年 5 月 15 日，臺北，回歸黃道、整宮制。「本站」兩欄是計算服務的主要值與落宮；最後一欄是日盤公式的命運點，也就是 Ptolemy 日夜都用的那一式。日盤例兩家一致；夜盤例 Ptolemy 的命運點與本站的精神點同一度<a class="ar-cite" href="#ref-10">[10]</a>。</caption>
+      <thead><tr><th scope="col">例子</th><th scope="col">日夜盤</th><th scope="col">上升點</th><th scope="col">太陽</th><th scope="col">月亮</th><th scope="col">命運點（本站）</th><th scope="col">精神點（本站）</th><th scope="col">Ptolemy 的命運點</th></tr></thead>
+      <tbody>
+        <!-- figure:charts -->
+          <tr><th scope="row">日盤例<br>14:30</th><td>日盤</td><td class="n">天秤 1°36′</td><td class="n">金牛 24°11′</td><td class="n">摩羯 24°20′</td><td class="n">雙子 1°45′<br>第 9 宮</td><td class="n">水瓶 1°26′<br>第 5 宮</td><td class="n">雙子 1°45′</td></tr>
+          <tr><th scope="row">夜盤例<br>22:30</th><td>夜盤</td><td class="n">摩羯 19°35′</td><td class="n">金牛 24°30′</td><td class="n">摩羯 28°27′</td><td class="n">金牛 15°38′<br>第 5 宮</td><td class="n">處女 23°32′<br>第 9 宮</td><td class="n">處女 23°32′</td></tr>
+        <!-- /figure:charts -->
+      </tbody>
+    </table>
+  </div>
+
+  <div class="ar-body">
+    <h2 id="horizon"><span class="ar-sec">§05</span>太陽靠近地平線時</h2>
+    <p>用哪一套公式，取決於日盤還是夜盤。本站看出生時太陽中心從地球中心看的真高度（不計大氣折射）：大於 0 度是日盤，恰好 0 度或更低是夜盤<a class="ar-cite" href="#ref-1">[1]</a>。這條邊界是本站的工程選擇；為什麼這樣畫、古書怎麼說，見〈<a href="/zh-TW/blog/day-or-night-chart">日盤還是夜盤怎麼判斷？</a>〉。</p>
+    <p>太陽靠近地平線時，換一種日出日落的定義，日夜盤就可能翻轉，命運點與精神點也跟著對調。所以太陽真高度在地平上下 50 角分以內時，結果把兩套公式的值並列：主要值仍依「真高度大於 0 度」決定，另一套是比較值，不隱藏；落宮與相位只用主要值<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-2">[2]</a>。我們核過的古典與中世紀作者，沒有「日夜盤不定就並列兩套」的程序；並列是現代處理不確定性的方式<a class="ar-cite" href="#ref-1">[1]</a>。</p>
+
+    <h2 id="houses"><span class="ar-sec">§06</span>落宮，以及什麼時候不算</h2>
+    <p>命運點與精神點也標出落在第幾宮，規則和行星落宮是同一條：宮頭算作下一宮的開始<a class="ar-cite" href="#ref-1">[1]</a>。</p>
+    <p>這兩個點是在當日的黃道與春分點上定義的。選 J2000 參考框架或「不含章動」時，本站把它們標為不適用並附原因代碼，不替你換算座標；從太陽或太陽系質心看的盤沒有上升點，也一樣不算。恆星黃道是例外：恆星黃經不隨章動開關改變，所以選恆星黃道時，就算關閉章動也照常計算<a class="ar-cite" href="#ref-1">[1]</a>。</p>
+
+    <h2 id="more-lots"><span class="ar-sec">§07</span>其他的點</h2>
+    <p>排盤只提供命運點與精神點。年度時間主星（time lords）的功能另列七個點的位置：Paulus 第 23 章的愛慾點（Lot of Eros）、必然點（Lot of Necessity）、勇氣點（Lot of Courage）、勝利點（Lot of Victory）與復仇點（Lot of Nemesis），以及 Valens《占星選集》IV.25 的愛點與必然點；同名的兩個必然點並列，不合併<a class="ar-cite" href="#ref-7">[7]</a>。這七個點的公式都用到命運點或精神點，例如復仇點的日盤公式是「上升點＋命運點−土星」，夜盤同樣兩端對調<a class="ar-cite" href="#ref-7">[7]</a>。</p>
+    <p>al-Bīrūnī《占星術入門》（Kitāb al-Tafhīm）§476 的行星點清單（他說依 Abū Maʿshar）寫出它們的含義：愛慾點是友誼與愛，必然點是絕望、貧困與詐欺，勇氣點是英勇與膽量，勝利點是勝利、凱旋與援助，復仇點是囚禁、牢獄與脫逃<a class="ar-cite" href="#ref-8">[8]</a>。這是古書的說法，照原文列出；本站的結果只出位置，不輸出這些含義。</p>
+    <p>Valens IV.25 的兩個點有一個特別之處：在同一個日夜判定下，它們都化簡成上升點加減兩倍的（太陽−月亮），所以日盤與夜盤的值相同<a class="ar-cite" href="#ref-7">[7]</a><a class="ar-cite" href="#ref-9">[9]</a>。命運點與精神點也是黃道釋放（zodiacal releasing）的起點，見〈<a href="/zh-TW/blog/time-lords-introduction">年度時間主星入門</a>〉。</p>
+
+    <aside class="ar-scope" aria-labelledby="scope-1">
+      <span class="ar-k" id="scope-1">本文的範圍</span>
+      <ul>
+        <li>本文只談命運點與精神點怎麼算、出自哪裡；不談它們在一張盤裡代表什麼，本站的結果也不輸出這些。</li>
+        <li>文中的盤都是合成時刻，不是任何人的出生資料。</li>
+      </ul>
+    </aside>
+  </div>
+
+  <section class="ar-refs" aria-labelledby="refs">
+    <h2 id="refs">出處</h2>
+    {{source_legend}}
+    <ol>
+      <li id="ref-1"><span>渾儀<a href="/zh-TW/methods#lots">方法頁</a> §06〈阿拉伯點：一個我們照實記錄的分歧〉、§05.3〈日夜盤的判定基準，是我們的工程選擇〉與 §07.9〈J2000 與不含章動〉：採用的公式、Ptolemy 的分歧與他的理由、Valens 的月亮條件與 Greenbaum 的說法、近地平時兩套並列、落宮規則與不適用的框架。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-2"><span>渾儀<a href="/zh-TW/method-sources.json">方法出處清單</a>，條目 <code>lots</code>、<code>lots/boundary_policy</code> 與 <code>contested/lot_formulas</code>：每條出處核到哪一層、近地平時主要值與比較值的規則，以及歸給 Ibn Ezra、尚未核對的日夜不反轉精神點。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-3"><span>Paulus Alexandrinus《導論》（Eisagōgika）第 23 章，1586 年 Wittenberg（Lehmann）的希臘文、拉丁文對照初印本：夜盤對調命運點與精神點的公式。紀錄沒有寫明讀的是希臘文還是拉丁譯文，所以只標譯本這一層；Boer 1958 年校勘本與 Schmidt、Hand 1995 年英譯未核。<span class="rs rs-checked">已讀譯本</span></span></li>
+      <li id="ref-4"><span>Ptolemy《占星四書》III.10，trans. F. E. Robbins (Loeb Classical Library, 1940)，pp.&nbsp;275–277（Hübner 校勘本 III.11）：命運點日夜都從太陽量到月亮。LacusCurtius 線上轉錄，希臘文未核。<span class="rs rs-checked">已讀譯本</span></span></li>
+      <li id="ref-5"><span>Vettius Valens《占星選集》III.11（Pingree 編號；Kroll 與 Riley 為 III.14）：夜生盤依月亮是否已沒入地平而換公式。紀錄沒有寫明讀的是希臘文、譯本還是二手報導，所以只標到出處。<span class="rs rs-relayed">只見書目</span></span></li>
+      <li id="ref-6"><span>Rhetorius 輯本，《希臘占星抄本目錄》（CCAG）第八卷第四冊 p.&nbsp;121：Ptolemy 的命運點在夜盤落在反轉一系精神點的度數。經 Dorian Gieseler Greenbaum, <i>Culture and Cosmos</i> 11 (2007) p.&nbsp;181 轉引。<span class="rs rs-relayed">轉引</span></span></li>
+      <li id="ref-7"><span>渾儀〈<a href="/zh-TW/methods/time-lords#extended-lots">年度時間主星的規則與出處</a>〉§05〈七個延伸的阿拉伯點〉：「＋A−B」的讀法、七個點的日夜公式、同名不合併、Valens 兩個點日夜相同，以及只輸出位置。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-8"><span>al-Bīrūnī, <i>The Book of Instruction in the Elements of the Art of Astrology</i>（Kitāb al-Tafhīm），trans. R. Ramsay Wright (London, 1934) §476：行星點的清單與各點的含義。<span class="rs rs-checked">已讀譯本</span></span></li>
+      <li id="ref-9"><span>Vettius Valens《占星選集》IV.25，Kroll 1908 年希臘文校勘本 p.&nbsp;202：愛點與必然點的公式，夜盤反過來。Pingree 的處理未核。<span class="rs rs-checked">已讀原文</span></span></li>
+      <li id="ref-10"><span>圖 1 與表 1：本站計算服務對兩個合成請求的回應，1990 年 5 月 15 日 14:30 與 22:30，臺北（北緯 25.05306°、東經 121.52639°、Asia/Taipei），回歸黃道、整宮制，勾選「阿拉伯點」，其餘用預設；讀日盤、夜盤兩套公式的值。2026 年 10 月以本機的同版服務自算。<span class="rs rs-computed">本站自算</span></span></li>
+    </ol>
+  </section>
+
+  <section class="ar-next" aria-labelledby="next-cta">
+    <div>
+      <h2 id="next-cta">在你的盤上，<br>看兩套公式並排。</h2>
+      <p>在計算頁的進階選項「點與軸」勾選「阿拉伯點」。結果會寫出這張盤用哪一套公式、命運點與精神點的位置與落宮；太陽靠近地平線時，兩套並列。</p>
+      <p><a class="btn-paper" href="/zh-TW/calculate">排一張盤 →</a></p>
+    </div>
+    <div>
+      <span class="ar-k">延伸閱讀</span>
+      <ul>
+        <li><a href="/zh-TW/blog/day-or-night-chart">日盤還是夜盤怎麼判斷？太陽剛好在地平線附近怎麼辦</a></li>
+        <li><a href="/zh-TW/methods/time-lords#extended-lots">年度時間主星的規則與出處：七個延伸的阿拉伯點</a></li>
+        <li><a href="/zh-TW/methods/glossary#lots">名詞解釋：命運點與精神點</a></li>
+        <li><a href="/zh-TW/methods#lots">方法頁：阿拉伯點的分歧</a></li>
+      </ul>
+    </div>
+  </section>
+
+</div>

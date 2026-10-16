@@ -8,10 +8,11 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 
-from ..config import PRODUCT_YEAR_RANGE
+from .invariants import InternalInvariantError
+from ..domain_catalog import PRODUCT_YEAR_RANGE
 from .formatting import dms_text
 from .method_status import METHOD_STATUS_PROVISIONAL
-from .module_state import EVENT_SEARCH_REASON_CODES, MODULE_STATUSES
+from .module_state import EVENT_SEARCH_REASON_CODES, MODULE_COMPUTED
 import datetime as dtmod
 from zoneinfo import ZoneInfo
 
@@ -458,7 +459,8 @@ def _ambiguous_time_params(request, time_conversion: dict) -> dict:
     )
     zone = ZoneInfo(timezone.iana_name)
     other = naive.replace(tzinfo=zone, fold=1 - timezone.fold).utcoffset()
-    assert other is not None
+    if other is None:
+        raise InternalInvariantError("other is not None")
     return {
         "timezone": timezone.iana_name,
         "fold": timezone.fold,
@@ -583,7 +585,8 @@ def prc_1988_dst_dispute_warnings(request) -> Iterator[dict]:
     start, end = PRC_1988_DISPUTED_LOCAL_INTERVAL
     used = (start + (end - start) / 2).replace(tzinfo=zone).utcoffset()
     summer = (end + dtmod.timedelta(hours=1)).replace(tzinfo=zone).utcoffset()
-    assert used is not None and summer is not None
+    if used is None or summer is None:
+        raise InternalInvariantError("used is not None and summer is not None")
     yield _warning(
         "prc_1988_dst_start_disputed",
         "warning",
@@ -838,7 +841,7 @@ def _module_state_warnings(
 
     for name, item in methodology["items"].items():
         if (
-            item["execution_status"] == MODULE_STATUSES[1]
+            item["execution_status"] == MODULE_COMPUTED
             and item["method_status"] == METHOD_STATUS_PROVISIONAL
         ):
             yield _warning(

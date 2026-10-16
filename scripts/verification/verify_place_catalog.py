@@ -34,14 +34,14 @@ APPLIED_CORRECTION_STATUSES = frozenset({"applied", "already_upstream"})
 
 
 def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
     with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+        return hashlib.file_digest(handle, "sha256").hexdigest()
 
 
 def _table_sha256(table: dict) -> str:
+    # Kept apart from the producer's identical function on purpose: the
+    # verifier recomputes the table digest itself rather than trust the code
+    # that wrote it, and the image carries this file without the producer.
     canonical = json.dumps(table, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 

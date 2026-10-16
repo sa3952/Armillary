@@ -29,8 +29,8 @@ from tests.backend import minimal_chart_payload
 from tests.backend import unused_local_port as _unused_local_port
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-BACKEND_ROOT = PROJECT_ROOT / "backend"
+ROOT = Path(__file__).resolve().parents[2]
+BACKEND_ROOT = ROOT / "backend"
 CANARY_TEXT = "PRIVACY_CANARY_DO_NOT_LOG_6C_734991"
 CANARY_LATITUDE = 23.456789
 CANARY_LONGITUDE = 123.456789
@@ -557,7 +557,7 @@ def test_public_cache_policy_separates_api_html_and_versioned_assets():
 
     # Independent oracle for the `?v=` token: SHA-256 prefix of the served bytes.
     page_css, tokens_css = (
-        hashlib.sha256((PROJECT_ROOT / "frontend/zh-TW" / name).read_bytes()).hexdigest()[:16]
+        hashlib.sha256((ROOT / "frontend/zh-TW" / name).read_bytes()).hexdigest()[:16]
         for name in ("style/home.css", "style/calculate.css")
     )
     immutable = "public, max-age=31536000, immutable"
@@ -723,7 +723,7 @@ def test_request_handling_does_not_use_python_file_write_apis(monkeypatch, case)
 def test_backend_has_no_third_party_telemetry_or_persistence_dependency():
     completed = subprocess.run(
         [sys.executable, "-m", "scripts.verification.verify_privacy_dependencies", "--check"],
-        cwd=PROJECT_ROOT, check=False, capture_output=True, text=True, timeout=20,
+        cwd=ROOT, check=False, capture_output=True, text=True, timeout=20,
     )
 
     assert completed.returncode == 0, completed.stdout + completed.stderr

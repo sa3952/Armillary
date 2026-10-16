@@ -19,10 +19,13 @@ import re
 import stat
 from typing import Any, Collection, Final, Mapping
 
+from .canonical_json import canonical_json_bytes
 from .frontend_assets import (
+    DEFAULT_LOCALE_ENTRYPOINT,
     MANIFEST_NAME,
     asset_parent_directories,
     validate_asset_name,
+    walk_regular_tree,
 )
 
 
@@ -54,35 +57,14 @@ def _load_object(path: Path) -> dict[str, Any]:
     return value
 
 
-#: The canonical form.  The trace receipt publishes these parameters as part of
-#: what it claims, so they are a stated fact, and the same three values were
-#: restated independently in every module that computed a digest.  One
-#: definition, read by all of them.
-CANONICAL_JSON_ENSURE_ASCII: Final = False
-CANONICAL_JSON_SORT_KEYS: Final = True
-CANONICAL_JSON_SEPARATORS: Final = (",", ":")
-
-
-def canonical_json_bytes(value: object) -> bytes:
-    return json.dumps(
-        value,
-        ensure_ascii=CANONICAL_JSON_ENSURE_ASCII,
-        sort_keys=CANONICAL_JSON_SORT_KEYS,
-        separators=CANONICAL_JSON_SEPARATORS,
-    ).encode("utf-8")
-
-
 def source_url_for(repository: str, revision: str) -> str:
     """The exact-revision tree URL of `revision` in `repository`."""
     return f"{repository}/tree/{revision}"
 
 
 def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
     with path.open("rb") as handle:
-        for block in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
+        return hashlib.file_digest(handle, "sha256").hexdigest()
 
 
 REQUIRED_CONTRACT_KEYS: Final = (
@@ -119,27 +101,14 @@ def artifact_digest(payload: dict[str, object]) -> str:
 
 
 def _release_tree(release: Path) -> tuple[set[str], set[str]]:
+    def refuse(relative: PurePosixPath, symlink: bool) -> ValueError:
+        kind = "symlink" if symlink else "non-file"
+        return ValueError(f"frontend release contains {kind}: {relative}")
+
     files: set[str] = set()
     directories: set[str] = set()
-
-    def collect(directory: Path, relative_parent: PurePosixPath | None = None) -> None:
-        for entry in directory.iterdir():
-            relative = (
-                PurePosixPath(entry.name)
-                if relative_parent is None
-                else relative_parent / entry.name
-            )
-            metadata = entry.lstat()
-            if entry.is_symlink():
-                raise ValueError(f"frontend release contains symlink: {relative}")
-            if stat.S_ISDIR(metadata.st_mode):
-                directories.add(relative.as_posix())
-                collect(entry, relative)
-            elif stat.S_ISREG(metadata.st_mode):
-                files.add(relative.as_posix())
-            else:
-                raise ValueError(f"frontend release contains non-file: {relative}")
-    collect(release)
+    for _entry, relative, is_directory in walk_regular_tree(release, refuse):
+        (directories if is_directory else files).add(relative.as_posix())
     return files, directories
 
 
@@ -164,13 +133,7 @@ def verify_release(
     only (absent while provisional, objects once published); their content is
     scripts/deployment/frontend_release.verify_published_release's.
     """
-    if authority_root is not None and required_contracts is None:
-        contract = exact_contract(authority_root)
-        expected_contracts = {key: str(contract[key]) for key in REQUIRED_CONTRACT_KEYS}
-    elif authority_root is None and required_contracts is not None:
-        expected_contracts = validated_required_contracts(required_contracts)
-    else:
-        raise ValueError("frontend release needs exactly one contract authority")
+    expected_contracts = _expected_contracts(authority_root, required_contracts)
     repositories = frozenset(
         (PUBLIC_REPOSITORY_URL,) if source_repositories is None else source_repositories
     )
@@ -178,9 +141,47 @@ def verify_release(
         raise ValueError("frontend release names an unrecorded public repository set")
     release = Path(os.path.abspath(release_directory))
     metadata = release.lstat()
-    if not stat.S_ISDIR(metadata.st_mode) or release.is_symlink():
+    if not stat.S_ISDIR(metadata.st_mode):
         raise ValueError("frontend release must be a non-symlink directory")
     manifest = _load_object(release / MANIFEST_NAME)
+    revision, digest = _verify_manifest(manifest, repositories, expected_contracts)
+    files = manifest["files"]
+    _verify_release_files(release, files)
+    payload = {key: value for key, value in manifest.items() if key != "artifact_digest"}
+    if artifact_digest(payload) != digest:
+        raise ValueError("frontend artifact digest mismatch")
+    if require_digest_directory_name and release.name != digest:
+        raise ValueError("frontend release directory identity mismatch")
+    return {
+        "artifact_digest": digest,
+        "frontend_public_source_revision": revision,
+        "source_url": manifest["source_url"],
+        "source_url_status": manifest["source_url_status"],
+        "source_publication": manifest["source_publication"],
+        "formal_legal_release_fields": manifest["formal_legal_release_fields"],
+        "required_contracts": manifest["required_contracts"],
+        "files": files,
+    }
+
+
+def _expected_contracts(
+    authority_root: Path | None, required_contracts: Mapping[str, object] | None,
+) -> dict[str, str]:
+    """The contract set the release must carry, from exactly one authority."""
+    if authority_root is not None and required_contracts is None:
+        contract = exact_contract(authority_root)
+        return {key: str(contract[key]) for key in REQUIRED_CONTRACT_KEYS}
+    if authority_root is None and required_contracts is not None:
+        return validated_required_contracts(required_contracts)
+    raise ValueError("frontend release needs exactly one contract authority")
+
+
+def _verify_manifest(
+    manifest: dict[str, Any],
+    repositories: frozenset[str],
+    expected_contracts: Mapping[str, str],
+) -> tuple[str, str]:
+    """The manifest's own fields; returns its source revision and artifact digest."""
     required_keys = {
         "schema_version",
         "artifact_type",
@@ -228,10 +229,15 @@ def verify_release(
     files = manifest.get("files")
     if not isinstance(files, dict) or not files:
         raise ValueError("frontend release file receipt is not exact-set")
+    return revision, digest
+
+
+def _verify_release_files(release: Path, files: dict[str, Any]) -> None:
+    """The release tree holds exactly the receipted files, each as receipted."""
     expected_assets = {validate_asset_name(name) for name in files}
     if (
         len(expected_assets) != len(files)
-        or "zh-TW/index.html" not in expected_assets
+        or DEFAULT_LOCALE_ENTRYPOINT not in expected_assets
     ):
         raise ValueError("frontend release file receipt is not exact-set")
     actual_files, actual_directories = _release_tree(release)
@@ -247,7 +253,7 @@ def verify_release(
     for name in sorted(expected_assets):
         path = release / name
         file_metadata = path.lstat()
-        if not stat.S_ISREG(file_metadata.st_mode) or path.is_symlink():
+        if not stat.S_ISREG(file_metadata.st_mode):
             raise ValueError(f"frontend release asset is a symlink or non-file: {name}")
         receipt = files.get(name)
         if not isinstance(receipt, dict) or set(receipt) != {"sha256", "size_bytes"}:
@@ -256,21 +262,6 @@ def verify_release(
             raise ValueError(f"frontend release size mismatch: {name}")
         if receipt.get("sha256") != _sha256(path):
             raise ValueError(f"frontend release SHA-256 mismatch: {name}")
-    payload = {key: value for key, value in manifest.items() if key != "artifact_digest"}
-    if artifact_digest(payload) != digest:
-        raise ValueError("frontend artifact digest mismatch")
-    if require_digest_directory_name and release.name != digest:
-        raise ValueError("frontend release directory identity mismatch")
-    return {
-        "artifact_digest": digest,
-        "frontend_public_source_revision": revision,
-        "source_url": manifest["source_url"],
-        "source_url_status": manifest["source_url_status"],
-        "source_publication": publication,
-        "formal_legal_release_fields": legal_fields,
-        "required_contracts": manifest["required_contracts"],
-        "files": files,
-    }
 
 
 def combined_release_id(

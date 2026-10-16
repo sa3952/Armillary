@@ -26,11 +26,11 @@ import subprocess
 from typing import Any, Iterator
 
 from . import _fx
-from ._common import ROOT, SIGNS, backend_on_path, calc_ut, swiss
+from ._common import ROOT, SIGNS, TAIPEI as PLACE, backend_on_path, calc_ut, swiss
 
 
 FRAGMENT = "blog-approximate-birth-hour"
-LAT, LON = 25.05306, 121.52639
+LAT, LON = PLACE
 TAIPEI = "Asia/Taipei"
 DAY = (2001, 6, 4)
 FEATURED = 15

@@ -1,40 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://projectarmillary.com/zh-TW/</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/calculate</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/features</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/methods</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/methods/birth-time-conversion</loc><lastmod>2026-10-11</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/methods/time-lords</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/methods/decennials</loc><lastmod>2026-10-13</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/methods/glossary</loc><lastmod>2026-10-13</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/validation</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/trust</loc><lastmod>2026-10-14</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/calculate</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/features</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/methods</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/methods/birth-time-conversion</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/methods/time-lords</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/methods/decennials</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/methods/glossary</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/validation</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/trust</loc><lastmod>2026-10-16</lastmod></url>
   <url><loc>https://projectarmillary.com/zh-TW/security</loc><lastmod>2026-10-14</lastmod></url>
   <url><loc>https://projectarmillary.com/zh-TW/security/verify</loc><lastmod>2026-10-13</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/about</loc><lastmod>2026-10-14</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/about</loc><lastmod>2026-10-16</lastmod></url>
   <url><loc>https://projectarmillary.com/zh-TW/contact</loc><lastmod>2026-10-10</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/roadmap</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/blog</loc><lastmod>2026-10-14</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/roadmap</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog</loc><lastmod>2026-10-16</lastmod></url>
   <url><loc>https://projectarmillary.com/zh-TW/legal/privacy</loc><lastmod>2026-10-14</lastmod></url>
   <url><loc>https://projectarmillary.com/zh-TW/legal/terms</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/legal/copyright</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/blog/birth-time-sensitivity</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/blog/taiwan-time-zone-history</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/blog/taiwan-era-years-birth-time</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/blog/whole-sign-vs-placidus</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/blog/four-bounds-tables</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/blog/unknown-birth-time</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/blog/approximate-birth-hour</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/blog/rising-sign-tables</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/blog/true-solar-time</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/blog/time-lords-introduction</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/blog/dodecatemoria</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/blog/combustion-under-beams-cazimi</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/blog/lunar-mansions</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/blog/prenatal-syzygy</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/blog/house-systems-explained</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/blog/verify-chart-calculation</loc><lastmod>2026-10-14</lastmod></url>
-  <url><loc>https://projectarmillary.com/zh-TW/blog/chart-calculation-accuracy</loc><lastmod>2026-10-14</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/legal/copyright</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/birth-time-sensitivity</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/taiwan-time-zone-history</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/taiwan-era-years-birth-time</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/whole-sign-vs-placidus</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/four-bounds-tables</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/unknown-birth-time</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/approximate-birth-hour</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/rising-sign-tables</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/true-solar-time</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/time-lords-introduction</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/dodecatemoria</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/combustion-under-beams-cazimi</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/lunar-mansions</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/prenatal-syzygy</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/house-systems-explained</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/verify-chart-calculation</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/chart-calculation-accuracy</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/choose-astrology-chart-calculator</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/lot-of-fortune-formula</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/day-or-night-chart</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://projectarmillary.com/zh-TW/blog/tropical-vs-sidereal-zodiac</loc><lastmod>2026-10-16</lastmod></url>
 </urlset>

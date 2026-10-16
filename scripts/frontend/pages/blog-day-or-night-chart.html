@@ -1,0 +1,150 @@
+<!-- 文章：日盤與夜盤怎麼判定，太陽靠近地平線時怎麼辦。表 2 與正文引用的數字由 scripts/frontend/figures/sect.py
+     以計算服務本身（行程內呼叫）對合成時刻（1990-05-15 臺北日出前後）逐分鐘產生；python -m scripts.frontend.figures --check 核對。
+     古書的說法與核到哪一層，一律照方法頁與方法出處清單。 -->
+<div class="wrap page-body article">
+
+  <div class="ar-head">
+    <p class="eyebrow"><a href="/zh-TW/blog">文章</a> · JOURNAL</p>
+    <h1>日盤還是夜盤怎麼判斷？<br>太陽剛好在地平線附近怎麼辦</h1>
+    <p class="ar-dek">日盤、夜盤看的是出生時太陽在地平線上還是下。聽起來簡單，到了日出日落那幾分鐘就不簡單：看太陽的中心還是上緣、算不算大氣折射，答案會不同，而古書沒有寫到這麼細。這篇說明古典技法拿日夜盤做什麼、本站怎麼畫這條線、為什麼，以及太陽靠近地平線時結果會怎樣。</p>
+    {{article_byline:講方法}}
+  </div>
+
+  <div class="ar-body">
+    <p class="ar-lead"><b>出生時太陽在地平線上方是日盤，在下方是夜盤。</b>本站的判準是：從地球中心看，太陽中心的真高度（不計大氣折射）大於 0 度是日盤，恰好 0 度或更低是夜盤<a class="ar-cite" href="#ref-1">[1]</a>。這條線畫在哪裡，是本站的工程選擇：本站整理過的古代到近代早期段落，都沒有明定要看太陽的中心還是上緣、算不算折射<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-2">[2]</a>。所以太陽在地平線上下 50 角分以內時，結果會提示，並把命運點（Lot of Fortune）與精神點（Lot of Spirit）的兩套公式並列。</p>
+
+    <section class="ar-points" aria-labelledby="points">
+      <h2 id="points">重點</h2>
+      <ul>
+        <li>古典技法常依日夜盤換規則：命運點的公式、三分性主星的次序、法達（firdaria）與十年期（decennials）從哪一顆起算、產前朔望（prenatal syzygy）取哪一次<a class="ar-cite" href="#ref-3">[3]</a><a class="ar-cite" href="#ref-4">[4]</a><a class="ar-cite" href="#ref-6">[6]</a><a class="ar-cite" href="#ref-7">[7]</a><a class="ar-cite" href="#ref-8">[8]</a>。</li>
+        <li>本站看地心、太陽中心、不計折射的真高度，大於 0 度為日盤；切換顯示中心或真／視位置，都不會改變日夜盤<a class="ar-cite" href="#ref-1">[1]</a>。</li>
+        <li>太陽真高度在上下 50 角分以內時，換一種日出定義就可能翻轉，所以阿拉伯點兩套並列，主要值照規則取一套<a class="ar-cite" href="#ref-1">[1]</a>。</li>
+        <li>以臺北一個合成的早晨為例，這條帶從 05:10 到 05:17 共 8 個整分鐘<a class="ar-cite" href="#ref-12">[12]</a>。</li>
+      </ul>
+    </section>
+
+    <h2 id="uses"><span class="ar-sec">§01</span>日夜盤會改變什麼</h2>
+    <p>日盤、夜盤本身不是一個結果，而是很多規則的開關。例如三分性：Dorotheus 替每個元素列出三位主星，日盤與夜盤的次序不同<a class="ar-cite" href="#ref-4">[4]</a>；命運點的公式在夜盤對調<a class="ar-cite" href="#ref-3">[3]</a>；法達與十年期，日盤從太陽起、夜盤從月亮起<a class="ar-cite" href="#ref-7">[7]</a><a class="ar-cite" href="#ref-8">[8]</a>；產前朔望的一種讀法，日盤取新月、夜盤取滿月<a class="ar-cite" href="#ref-5">[5]</a><a class="ar-cite" href="#ref-6">[6]</a>。下表列出本站有算、而且依日夜盤換規則的技法，每一列寫出它出自哪裡。</p>
+  </div>
+
+  <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab1-cap">
+    <table class="ar-table">
+      <caption id="tab1-cap">表 1　本站有算、依日夜盤換規則的技法。只列規則，不列它們的解讀。</caption>
+      <thead><tr><th scope="col">技法</th><th scope="col">日盤</th><th scope="col">夜盤</th><th scope="col">出處</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">命運點與精神點</th><td>命運點＝上升點＋月亮−太陽</td><td>兩式對調：命運點＝上升點＋太陽−月亮</td><td>Paulus《導論》第 23 章<a class="ar-cite" href="#ref-3">[3]</a></td></tr>
+        <tr><th scope="row">三分性主星（Dorotheus）</th><td colspan="2">三位主星的次序依日盤或夜盤而定</td><td>Dorotheus《占星詩》I.1<a class="ar-cite" href="#ref-4">[4]</a></td></tr>
+        <tr><th scope="row">產前朔望（具名讀法）</th><td>取出生前一次新月</td><td>取出生前一次滿月</td><td>Ptolemy《占星四書》III.10<a class="ar-cite" href="#ref-5">[5]</a>；Lilly 1647 pp.&nbsp;527–529<a class="ar-cite" href="#ref-6">[6]</a></td></tr>
+        <tr><th scope="row">法達（firdaria）</th><td>從太陽起</td><td>從月亮起</td><td>al-Bīrūnī《占星術入門》§438–439<a class="ar-cite" href="#ref-7">[7]</a></td></tr>
+        <tr><th scope="row">十年期（Firmicus 的起點）</th><td>從太陽起</td><td>從月亮起</td><td>Firmicus《Mathesis》II.26<a class="ar-cite" href="#ref-8">[8]</a></td></tr>
+        <tr><th scope="row">行星的日夜區分</th><td colspan="2">太陽、木星屬日，月亮、金星屬夜，土星歸日、火星歸夜；水星作晨星時屬日、作昏星時屬夜</td><td>Ptolemy《占星四書》I.7<a class="ar-cite" href="#ref-9">[9]</a></td></tr>
+        <tr><th scope="row">hayz</th><td colspan="2">陽性的日間行星在日盤、在地平線上、在陽性星座；陰性的夜間行星在夜盤、在地平線下、在陰性星座</td><td>Lilly 1647 p.&nbsp;113<a class="ar-cite" href="#ref-10">[10]</a>；al-Bīrūnī §496 的定義不同<a class="ar-cite" href="#ref-11">[11]</a></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="ar-body">
+    <p>命運點的公式為什麼夜盤對調、Ptolemy 為什麼不同意，見〈<a href="/zh-TW/blog/lot-of-fortune-formula">命運點怎麼算？</a>〉；法達與十年期，見〈<a href="/zh-TW/blog/time-lords-introduction">年度時間主星入門</a>〉；產前朔望，見〈<a href="/zh-TW/blog/prenatal-syzygy">產前朔望與產前日月食</a>〉。</p>
+
+    <h2 id="sources"><span class="ar-sec">§02</span>古書怎麼判定：大多當作已知</h2>
+    <p>本站內部的方法研究筆記整理了從 Dorotheus、Ptolemy《占星四書》I.7、Valens III.5、Paulus 第 6 章、Firmicus II.7、Rhetorius、Abū Maʿshar、al-Qabīṣī 到 Lilly p.&nbsp;113 的段落。這些段落多半把日生、夜生當作已知的分類，或以「在地上／地下」描述行星的條件，而不是教人怎麼判<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-2">[2]</a>。</p>
+    <p>最接近「用太陽判日夜」的有兩處：Valens III.11（Pingree 編號；Kroll 與 Riley 為 III.14）談月亮時，把「在地上」解為「直到它落下」；Lilly p.&nbsp;42 以太陽落在哪一宮，核對立盤的時段。研究另稱 Abū Maʿshar 把白晝定為日出到日落，這一條未查證<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-2">[2]</a>。<b>這些段落都沒有明定要看太陽的中心還是上緣、算不算大氣折射。</b>這份段落清單來自內部研究筆記，沒有經過第三方核對<a class="ar-cite" href="#ref-2">[2]</a>。</p>
+    <p>行星本身「在地上、在地下」也是同一個問題。本站判斷行星是否在地上，用的是同一條規則：行星中心的地心真高度大於 0 度；書上只說「在地上／地下」，沒有說看的是地平線還是宮位的分界<a class="ar-cite" href="#ref-2">[2]</a>。</p>
+
+    <h2 id="rule"><span class="ar-sec">§03</span>本站的規則，與它的理由</h2>
+    <p>本站採<b>地心</b>、太陽<b>中心</b>、<b>真</b>高度大於 0 度、<b>不計大氣折射</b>，恰好 0 度歸夜盤<a class="ar-cite" href="#ref-1">[1]</a>。理由是讓日夜盤不依賴出生當時通常查不到的氣壓、溫度與地形：同一份出生資料，任何人重算都得到同一個答案。恰好 0 度歸夜，是工程上的端點約定，不是古書的規定<a class="ar-cite" href="#ref-1">[1]</a>。</p>
+    <p>日夜盤固定看地心高度。你把顯示中心切到站心（從出生地看），或把位置切成真位置，日夜盤都不會跟著動<a class="ar-cite" href="#ref-1">[1]</a>。從太陽或太陽系質心看的盤沒有地平線，也就沒有日夜盤，結果標為不適用<a class="ar-cite" href="#ref-1">[1]</a>。</p>
+    <div class="ar-key">
+      <span class="ar-k">差多少</span>
+      <p>看太陽中心與看太陽上緣，差一個太陽半徑，約 16 角分；和天文年鑑的日出（太陽上緣初現，含平均大氣折射）相比，差約 50 角分。和民用晨昏相比差得更多：低緯約 25 分鐘，中緯約 40 到 55 分鐘，高緯可超過兩小時<a class="ar-cite" href="#ref-1">[1]</a>。</p>
+    </div>
+
+    <h2 id="band"><span class="ar-sec">§04</span>太陽在地平線附近：上下 50 角分</h2>
+    <p>天文年鑑的標準日出，指太陽上緣剛露出地平線的那一刻；這時太陽中心其實還在幾何地平線下約 50 角分：大氣折射約 34 角分，加上太陽半徑約 16 角分<a class="ar-cite" href="#ref-1">[1]</a>。所以太陽真高度介於 −50 角分與 0 度之間時，「看中心」與「看年鑑的日出」會給出不同的日夜盤。</p>
+    <p>本站把這個區間對稱擴成上下 50 角分，當作提示帶。理由是出生時刻的誤差，不是另有一條古典界線：地平線上方 0 到 50 角分之間，本站沒有找到任何具名的邊界<a class="ar-cite" href="#ref-1">[1]</a>。折射也不是定值，實測樣本從約 14 角分到 101 角分都有<a class="ar-cite" href="#ref-1">[1]</a>。</p>
+    <p>表 2 是臺北一個合成的早晨，逐分鐘問一次計算服務。太陽真高度每分鐘約升高 13 角分，所以這條帶從 05:10 到 05:17 共 8 個整分鐘；05:14 起判為日盤。其中 05:10 到 05:13 這 4 分鐘，本站判夜盤，但依年鑑的日出定義太陽已經算在地平線上，結果另外標明「兩種日出日落定義判法不同」<a class="ar-cite" href="#ref-12">[12]</a>。</p>
+  </div>
+
+  <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab2-cap">
+    <table class="ar-table">
+      <caption id="tab2-cap">表 2　合成時刻 1990 年 5 月 15 日，臺北，日出前後逐分鐘：計算服務回答的太陽真高度、日夜盤、兩種日出定義是否判法不同，以及命運點。帶內「比較值」是另一套公式的命運點；帶外不列。05:13 到 05:14 之間，主要值從夜盤公式換成日盤公式，命運點跳到另一個位置<a class="ar-cite" href="#ref-12">[12]</a>。</caption>
+      <thead><tr><th scope="col">出生時刻</th><th scope="col">太陽真高度</th><th scope="col">本站判定</th><th scope="col">兩種日出定義判法不同</th><th scope="col">命運點（主要值）</th><th scope="col">命運點（比較值）</th></tr></thead>
+      <tbody>
+        <!-- figure:morning -->
+          <tr><th scope="row">05:09</th><td class="n">−59.8′</td><td>夜盤</td><td>否</td><td class="n">處女 26°43′</td><td class="n">—</td></tr>
+          <tr><th scope="row">05:10</th><td class="n">−47.2′</td><td>夜盤（近地平，兩套並列）</td><td>是</td><td class="n">處女 26°59′</td><td class="n">摩羯 18°31′</td></tr>
+          <tr><th scope="row">05:11</th><td class="n">−34.5′</td><td>夜盤（近地平，兩套並列）</td><td>是</td><td class="n">處女 27°16′</td><td class="n">摩羯 18°49′</td></tr>
+          <tr><th scope="row">05:12</th><td class="n">−21.8′</td><td>夜盤（近地平，兩套並列）</td><td>是</td><td class="n">處女 27°32′</td><td class="n">摩羯 19°06′</td></tr>
+          <tr><th scope="row">05:13</th><td class="n">−9.1′</td><td>夜盤（近地平，兩套並列）</td><td>是</td><td class="n">處女 27°49′</td><td class="n">摩羯 19°24′</td></tr>
+          <tr><th scope="row">05:14</th><td class="n">+3.6′</td><td>日盤（近地平，兩套並列）</td><td>否</td><td class="n">摩羯 19°41′</td><td class="n">處女 28°05′</td></tr>
+          <tr><th scope="row">05:15</th><td class="n">+16.3′</td><td>日盤（近地平，兩套並列）</td><td>否</td><td class="n">摩羯 19°58′</td><td class="n">處女 28°21′</td></tr>
+          <tr><th scope="row">05:16</th><td class="n">+29.1′</td><td>日盤（近地平，兩套並列）</td><td>否</td><td class="n">摩羯 20°15′</td><td class="n">處女 28°38′</td></tr>
+          <tr><th scope="row">05:17</th><td class="n">+41.8′</td><td>日盤（近地平，兩套並列）</td><td>否</td><td class="n">摩羯 20°33′</td><td class="n">處女 28°54′</td></tr>
+          <tr><th scope="row">05:18</th><td class="n">+54.5′</td><td>日盤</td><td>否</td><td class="n">摩羯 20°50′</td><td class="n">—</td></tr>
+        <!-- /figure:morning -->
+      </tbody>
+    </table>
+  </div>
+
+  <div class="ar-body">
+    <p>換算成時間，這條帶有多寬依緯度與季節而異：低緯每次穿越約數分鐘，北緯 60 度的至點前後約 20 分鐘，更高緯可達數十分鐘；接近極圈時，太陽可能整夜停在帶內<a class="ar-cite" href="#ref-2">[2]</a>。所以本站不給固定的分鐘數，只看太陽的高度。</p>
+
+    <h2 id="inside"><span class="ar-sec">§05</span>在帶內，結果會怎樣</h2>
+    <p>判定本身仍是確定的：太陽真高度的正負是已知的，所以結果仍寫出日盤或夜盤。帶內多做的是下面幾件事<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-2">[2]</a>：</p>
+    <ul>
+      <li><b>阿拉伯點兩套並列。</b>主要值依「真高度大於 0 度」取一套，另一套是比較值，不隱藏；落宮與相位只用主要值。</li>
+      <li><b>本質尊貴沿用主要的日夜盤。</b>迦勒底界與三分性本來就同時附上日盤與夜盤兩組候選，可以自己對照；依日夜盤選主的尊貴技法，在帶內會就地加一句提示。</li>
+      <li><b>產前朔望的具名讀法不選。</b>日盤取新月、夜盤取滿月的那一種讀法，在帶內或沒有出生時刻時不替你挑，兩次都列出。</li>
+    </ul>
+    <p>我們核過的古典與中世紀作者，沒有「日夜盤不定就並列兩套」的程序；並列是現代處理不確定性的方式，不是古典規則<a class="ar-cite" href="#ref-1">[1]</a>。</p>
+
+    <h2 id="unknown-time"><span class="ar-sec">§06</span>出生時間不確定時</h2>
+    <p>表 2 也說明了另一件事：日出前後，出生時刻差一兩分鐘，日夜盤就可能不同。只知道日期時，本站不給日夜盤，因為沒有時刻，太陽高度就無從說起；只知道大約幾點時，本站在那一小時裡取五個時刻各算一次，有改變就把改變的時刻夾到 15 秒以內，日夜盤與近地平狀態都在其中<a class="ar-cite" href="#ref-13">[13]</a>。例子見〈<a href="/zh-TW/blog/unknown-birth-time">不知道出生時間，能排星盤嗎？</a>〉與〈<a href="/zh-TW/blog/approximate-birth-hour">只知道大概幾點出生，怎麼排盤？</a>〉。</p>
+
+    <aside class="ar-scope" aria-labelledby="scope-1">
+      <span class="ar-k" id="scope-1">本文的範圍</span>
+      <ul>
+        <li>本文只談日夜盤怎麼判、會改變哪些計算規則；不談日盤、夜盤在解盤上代表什麼，本站的結果也不輸出這些。</li>
+        <li>文中的時刻是合成的，不是任何人的出生資料。</li>
+      </ul>
+    </aside>
+  </div>
+
+  <section class="ar-refs" aria-labelledby="refs">
+    <h2 id="refs">出處</h2>
+    {{source_legend}}
+    <ol>
+      <li id="ref-1"><span>渾儀<a href="/zh-TW/methods#sect-boundary">方法頁</a> §05.3〈日夜盤的判定基準，是我們的工程選擇〉與 §06〈阿拉伯點〉：判準與理由、古書段落的整理、中心與上緣及民用晨昏的差距、50 角分的幾何理由與折射的實測範圍（方法頁依 USNO〈Rise, Set, and Twilight Definitions〉與 Schaefer &amp; Liller 1990）、帶內並列與尊貴的處理。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-2"><span>渾儀<a href="/zh-TW/method-sources.json">方法出處清單</a>，條目 <code>sect</code>（研究筆記所列段落，未經第三方核對）、<code>sect/near_horizon_band</code>（帶寬換算成時間）、<code>lots/boundary_policy</code>、<code>classical_classifications</code>（行星在地上的判準）與 <code>lunar_events/prenatal_syzygy_sect_profile</code>（帶內不選）。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-3"><span>Paulus Alexandrinus《導論》第 23 章，1586 年 Wittenberg 的希臘文、拉丁文對照初印本：夜盤對調命運點與精神點；紀錄沒有寫明讀的是希臘文還是拉丁譯文，只標譯本這一層。<span class="rs rs-checked">已讀譯本</span></span></li>
+      <li id="ref-4"><span>Dorotheus《占星詩》（Carmen Astrologicum）I.1，Pingree 1976 年英譯 pp.&nbsp;161–162：三分性主星與它們日盤、夜盤的次序。阿拉伯文未核。<span class="rs rs-checked">已讀譯本</span></span></li>
+      <li id="ref-5"><span>Ptolemy《占星四書》III.10，trans. F. E. Robbins (Loeb Classical Library, 1940)，相關段落 pp.&nbsp;277–279：日生盤的候選包含前一次新月，夜生盤包含前一次滿月；沒有說較近的另一種要不要越過。<span class="rs rs-checked">已讀譯本</span></span></li>
+      <li id="ref-6"><span>William Lilly, <i>Christian Astrology</i> (London, 1647) 卷三第 104 章，pp.&nbsp;527–529：日生盤取前一次新月、夜生盤取前一次滿月，較近的是另一種也要越過。<span class="rs rs-checked">已讀原文</span></span></li>
+      <li id="ref-7"><span>al-Bīrūnī《占星術入門》（Kitāb al-Tafhīm），R. Ramsay Wright 英譯（1934）§438–439：法達的年數與日盤、夜盤的次序表。<span class="rs rs-checked">已讀譯本</span></span></li>
+      <li id="ref-8"><span>Firmicus Maternus《Mathesis》II.26–27，Kroll 與 Skutsch 校勘的拉丁文本（LacusCurtius）：日盤從太陽、夜盤從月亮起，每顆行星 10 年 9 個月。<span class="rs rs-checked">已讀原文</span></span></li>
+      <li id="ref-9"><span>Ptolemy《占星四書》I.7〈日間與夜間的行星〉，trans. F. E. Robbins (Loeb Classical Library, 1940)，LacusCurtius 線上本。<span class="rs rs-checked">已讀譯本</span></span></li>
+      <li id="ref-10"><span>William Lilly, <i>Christian Astrology</i> (1647) p.&nbsp;113〈Hayz〉：讀的是 archive.org 上一部現代重排本的 OCR 文字。<span class="rs rs-checked">已讀原文</span></span></li>
+      <li id="ref-11"><span>al-Bīrūnī《占星術入門》，Wright 英譯（1934）§496：halb 與 hayyiz 的定義，與 Lilly 不同（例如夜間行星在夜盤要在地平線上）。<span class="rs rs-checked">已讀譯本</span></span></li>
+      <li id="ref-12"><span>表 2 與重點、§04 的數字：本站計算服務對合成請求的回應，1990 年 5 月 15 日 05:00 到 05:30 每個整分鐘，臺北（北緯 25.05306°、東經 121.52639°、Asia/Taipei），回歸黃道、整宮制，勾選「阿拉伯點」，其餘用預設。2026 年 10 月以本機的同版服務自算。<span class="rs rs-computed">本站自算</span></span></li>
+      <li id="ref-13"><span>渾儀〈<a href="/zh-TW/features">功能</a>〉頁與<a href="/zh-TW/method-sources.json">方法出處清單</a>條目 <code>birth_time_sensitivity/approximate_hour</code>：出生時刻的三種精度、只知道日期時不給日夜盤、只知道小時時的取樣與二分，以及日夜盤與近地平狀態在重算的分類之中。<span class="rs rs-register">本站出處清單</span></span></li>
+    </ol>
+  </section>
+
+  <section class="ar-next" aria-labelledby="next-cta">
+    <div>
+      <h2 id="next-cta">看你的盤，<br>太陽離地平線多遠。</h2>
+      <p>在計算頁的進階選項「點與軸」勾選「阿拉伯點」。結果的「日夜盤」一節寫出判定、所用的太陽高度，以及是否在近地平的提示帶內。</p>
+      <p><a class="btn-paper" href="/zh-TW/calculate">排一張盤 →</a></p>
+    </div>
+    <div>
+      <span class="ar-k">延伸閱讀</span>
+      <ul>
+        <li><a href="/zh-TW/blog/lot-of-fortune-formula">命運點（福點、幸運點）怎麼算？日盤與夜盤的公式為什麼相反</a></li>
+        <li><a href="/zh-TW/blog/approximate-birth-hour">只知道大概幾點出生，怎麼排盤？上升與宮位在那一小時的哪一刻會變</a></li>
+        <li><a href="/zh-TW/blog/unknown-birth-time">不知道出生時間，能排星盤嗎？只知道日期、不知道幾點時，哪些結果站得住</a></li>
+        <li><a href="/zh-TW/methods#sect-boundary">方法頁：日夜盤的判定基準</a></li>
+      </ul>
+    </div>
+  </section>
+
+</div>

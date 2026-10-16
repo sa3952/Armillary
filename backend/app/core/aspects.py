@@ -36,6 +36,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from .invariants import InternalInvariantError
 from ..ephemeris import FullEphemerisRequiredError
 from .bodies import DEFINITIONAL_EXCLUDED_PAIRS, memoized_longitudes
 from .module_state import (
@@ -46,6 +47,7 @@ from .module_state import (
     not_applicable_receipt,
 )
 from .method_status import method_receipt
+from .dignity_tables import SIGNS
 from .formatting import normalize_longitude, zodiac_sign_index
 from .root_finding import SOLVER_NAME, find_crossings_detailed, wrap_to_signed_180
 from .source_reading import SOURCE_READING_LEVELS
@@ -221,10 +223,6 @@ def _verification_status(record: dict, ref: str) -> dict:
 # 不可被描述成下列古籍替這些參與者提供了 orb。
 ORB_ELIGIBLE_CATEGORIES = frozenset({"classical_planet"})
 
-SIGN_KEYS = (
-    "aries", "taurus", "gemini", "cancer", "leo", "virgo",
-    "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces",
-)
 SIGN_ZH = (
     "牡羊", "金牛", "雙子", "巨蟹", "獅子", "處女",
     "天秤", "天蠍", "射手", "摩羯", "水瓶", "雙魚",
@@ -247,7 +245,7 @@ def _sign_record(longitude: float) -> dict:
     index = sign_index(longitude)
     return {
         "sign_index": index,
-        "sign_key": SIGN_KEYS[index],
+        "sign_key": SIGNS[index],
         "sign_zh": SIGN_ZH[index],
         "degree_in_sign": normalize_longitude(longitude) - index * 30.0,
     }
@@ -565,6 +563,180 @@ def aspects_not_applicable(state: dict, trace: Trace) -> dict:
     }
 
 
+def _degree_based_receipt(
+    usable: list[dict],
+    participants: list[dict],
+    *,
+    aspect_set_profile_key: str,
+    aspect_set_profile: dict,
+    degree_method_name: str,
+    partile_profile_key: str,
+    partile_profile: dict,
+    orb_profile_key: str | None,
+    profile: dict | None,
+    orb_scale_percent: float | None,
+    fixed_orb_degrees: float | None,
+    angle_orb_degrees: float | None,
+    orb_profile_selection_state: str | None,
+    angles_requested: bool,
+    angles_applicable: bool,
+    angles_used: bool,
+) -> dict:
+    """The degree-based layer's receipt: the set, partile, application and orb policies."""
+    return {
+        "method": degree_method_name,
+        **method_receipt("aspects"),
+        "aspect_set_profile": aspect_set_profile_key,
+        "aspect_set_profile_detail": dict(aspect_set_profile),
+        # 識別碼不動，只說明名稱各段指什麼。
+        "method_name_note": (
+            "ptolemaic_ = conjunction plus four traditional aspects (conventional "
+            "name); moiety from Lilly 1647 p.107 or product normalization; "
+            "Ptolemy I.24 gives neither degrees nor moieties"
+        ),
+        "aspect_set_profiles_available": sorted(ASPECT_SET_PROFILES),
+        "aspect_keys": list(aspect_set_profile["aspect_keys"]),
+        # 相位中文名的唯一產生器：涵蓋所選集合的每個相位；nearest_aspect 與
+        # aspect_targets 只帶 key，名稱一律從這裡取。
+        "aspect_names_zh": {
+            key: _ASPECT_BY_KEY[key]["zh"]
+            for key in aspect_set_profile["aspect_keys"]
+        },
+        # 精確角的唯一一份：各組 nearest_aspect 與 aspect_targets 只帶 key。
+        "aspect_angles_degrees": {
+            key: _ASPECT_BY_KEY[key]["angle"]
+            for key in aspect_set_profile["aspect_keys"]
+        },
+        # 常數契約文字只寫一次，不在 150 組相位裡各抄一份（回應大小，波 3）。
+        "nearest_aspect_semantics": "display_convenience_only_verdicts_live_in_aspect_targets",
+        "partile_profile": partile_profile_key,
+        "partile_profile_detail": {
+            key: value
+            for key, value in partile_profile.items()
+            if key != "sources"
+        }
+        | {"source_ref": f"aspects/partile/{partile_profile_key}"},
+        "partile_source_verification": _verification_status(
+            _PARTILE_SOURCE_VERIFICATION, "aspects/partile"
+        ),
+        "partile_profiles_available": sorted(PARTILE_PROFILES),
+        "partile_note": (
+            "三種慣例並存且會給出不同答案，其中兩種都載於 Lilly 名下的著作"
+            "（1647 同度、1677 三度以內）。預設採最通行的同度慣例，可經 "
+            "partile_profile 改選。"
+        ),
+        "application_method": APPLYING_METHOD_NAME,
+        "application_policy": {
+            "states": list(APPLYING_STATES),
+            "ownership": "pair_by_aspect_target",
+            "exact_residual_epsilon_degrees": EXACT_NOW_EPSILON_DEGREES,
+            "relative_speed_epsilon_deg_per_day": RELATIVE_SPEED_EPSILON_DEG_PER_DAY,
+            "solver_time_tolerance_days": PERFECTION_TOLERANCE_DAYS,
+            "policy_kind": "numerical_product_policy_not_classical_doctrine",
+            "source": (
+                "modern formalisation (sign of f·ḟ) of applying/separating as in "
+                "Lilly 1647 pp.107-110; his lighter-to-ponderous rule (p.108) not "
+                "modelled; exact_now and station states are product numerical policy"
+            ),
+        },
+        "minor_aspect_origin_note": MINOR_ASPECT_ORIGIN_NOTE,
+        "minor_aspect_source_ref": "aspects/minor_aspects",
+        "partile_valid_aspect_rule": PARTILE_VALID_ASPECT_RULE,
+        "partile_valid_aspect_basis": PARTILE_VALID_ASPECT_BASIS,
+        "aspect_target_listing": ASPECT_TARGET_LISTING,
+        "orb_profile": orb_profile_key,
+        "orb_profile_detail": (
+            {
+                key: value
+                for key, value in profile.items()
+                if key not in {"orbs_degrees", *_ORB_PROFILE_REGISTER_ONLY_KEYS}
+            }
+            | {
+                "orbs_degrees": dict(profile["orbs_degrees"]),
+                "source_verification": _verification_status(
+                    profile["source_verification"], f"aspects/orb/{orb_profile_key}"
+                ),
+            }
+            if profile
+            else None
+        ),
+        "orb_verdict_available": (
+            profile is not None
+            or fixed_orb_degrees is not None
+            or angle_orb_degrees is not None
+        ),
+        "orb_unavailable_reason_code": (
+            None
+            if profile is not None
+            or fixed_orb_degrees is not None
+            or angle_orb_degrees is not None
+            else "orb_profile_not_selected"
+        ),
+        "orb_receipt": _orb_receipt(
+            usable,
+            profile_key=orb_profile_key,
+            profile=profile,
+            orb_scale_percent=orb_scale_percent,
+            fixed_orb_degrees=fixed_orb_degrees,
+            angle_orb_degrees=angle_orb_degrees,
+            profile_selection=orb_profile_selection_state,
+        ),
+        "angle_participation": {
+            **module_state(
+                requested=angles_requested or any(
+                    item["category"] == "angle" for item in participants
+                ),
+                executed=angles_used,
+                applicable=angles_applicable,
+                available=angles_used,
+                source="astronomical_data.angles.asc_and_mc" if angles_used else None,
+                reason_code=(
+                    None if angles_applicable else "house_calculation_not_executed"
+                ),
+            ),
+            "participant_keys": [
+                item["key"] for item in usable if item["category"] == "angle"
+            ],
+            "angle_angle_pairs_included": False,
+            "applying_semantics": "not_applicable_angle_motion_not_modeled",
+            "angle_pair_orb_degrees": angle_orb_degrees,
+            "angle_pair_orb_source": (
+                "user_override" if angle_orb_degrees is not None else None
+            ),
+        },
+    }
+
+
+def _perfection_receipt(include_perfection: bool, perfection_window_days: float) -> dict:
+    """The perfection search's state before any pair is searched."""
+    return {
+        **module_state(
+            requested=include_perfection,
+            executed=include_perfection,
+            applicable=include_perfection,
+            available=include_perfection,
+            source=PRODUCT_FORMULA_SOURCE if include_perfection else None,
+            reason_code=None if include_perfection else "option_not_requested",
+        ),
+        "status": "computed" if include_perfection else "not_requested",
+        "solver": SOLVER_NAME if include_perfection else None,
+        "search_window_days": (
+            perfection_window_days if include_perfection else None
+        ),
+        # 只對此刻入相位的 target 往後搜尋；此刻精確、
+        # 出相位、相對站留不搜尋，各以 not_applying 標明（Lilly 1647 p.107 從入相位
+        # 定義成相）。
+        "semantics": (
+            "forward_search_from_chart_moment_bounded_by_search_window_"
+            "applying_targets_only"
+        ),
+        "searched_phases": ["applying"],
+        "statuses": list(PERFECTION_STATUSES),
+        "coverage": dict.fromkeys(PERFECTION_STATUSES, 0),
+        "partial": None,
+    }
+
+
 def compute_aspects(
     participants: list[dict],
     trace: Trace,
@@ -646,154 +818,25 @@ def compute_aspects(
             "requires_orb": False,
             "source_ref": "aspects/whole_sign",
         },
-        "degree_based": {
-            "method": degree_method_name,
-            **method_receipt("aspects"),
-            "aspect_set_profile": aspect_set_profile_key,
-            "aspect_set_profile_detail": dict(aspect_set_profile),
-            # 識別碼不動，只說明名稱各段指什麼。
-            "method_name_note": (
-                "ptolemaic_ = conjunction plus four traditional aspects (conventional "
-                "name); moiety from Lilly 1647 p.107 or product normalization; "
-                "Ptolemy I.24 gives neither degrees nor moieties"
-            ),
-            "aspect_set_profiles_available": sorted(ASPECT_SET_PROFILES),
-            "aspect_keys": list(aspect_set_profile["aspect_keys"]),
-            # 相位中文名的唯一產生器：涵蓋所選集合的每個相位；nearest_aspect 與
-            # aspect_targets 只帶 key，名稱一律從這裡取。
-            "aspect_names_zh": {
-                key: _ASPECT_BY_KEY[key]["zh"]
-                for key in aspect_set_profile["aspect_keys"]
-            },
-            # 精確角的唯一一份：各組 nearest_aspect 與 aspect_targets 只帶 key。
-            "aspect_angles_degrees": {
-                key: _ASPECT_BY_KEY[key]["angle"]
-                for key in aspect_set_profile["aspect_keys"]
-            },
-            # 常數契約文字只寫一次，不在 150 組相位裡各抄一份（回應大小，波 3）。
-            "nearest_aspect_semantics": "display_convenience_only_verdicts_live_in_aspect_targets",
-            "partile_profile": partile_profile_key,
-            "partile_profile_detail": {
-                key: value
-                for key, value in partile_profile.items()
-                if key != "sources"
-            }
-            | {"source_ref": f"aspects/partile/{partile_profile_key}"},
-            "partile_source_verification": _verification_status(
-                _PARTILE_SOURCE_VERIFICATION, "aspects/partile"
-            ),
-            "partile_profiles_available": sorted(PARTILE_PROFILES),
-            "partile_note": (
-                "三種慣例並存且會給出不同答案，其中兩種都載於 Lilly 名下的著作"
-                "（1647 同度、1677 三度以內）。預設採最通行的同度慣例，可經 "
-                "partile_profile 改選。"
-            ),
-            "application_method": APPLYING_METHOD_NAME,
-            "application_policy": {
-                "states": list(APPLYING_STATES),
-                "ownership": "pair_by_aspect_target",
-                "exact_residual_epsilon_degrees": EXACT_NOW_EPSILON_DEGREES,
-                "relative_speed_epsilon_deg_per_day": RELATIVE_SPEED_EPSILON_DEG_PER_DAY,
-                "solver_time_tolerance_days": PERFECTION_TOLERANCE_DAYS,
-                "policy_kind": "numerical_product_policy_not_classical_doctrine",
-                "source": (
-                    "modern formalisation (sign of f·ḟ) of applying/separating as in "
-                    "Lilly 1647 pp.107-110; his lighter-to-ponderous rule (p.108) not "
-                    "modelled; exact_now and station states are product numerical policy"
-                ),
-            },
-            "minor_aspect_origin_note": MINOR_ASPECT_ORIGIN_NOTE,
-            "minor_aspect_source_ref": "aspects/minor_aspects",
-            "partile_valid_aspect_rule": PARTILE_VALID_ASPECT_RULE,
-            "partile_valid_aspect_basis": PARTILE_VALID_ASPECT_BASIS,
-            "aspect_target_listing": ASPECT_TARGET_LISTING,
-            "orb_profile": orb_profile_key,
-            "orb_profile_detail": (
-                {
-                    key: value
-                    for key, value in profile.items()
-                    if key not in {"orbs_degrees", *_ORB_PROFILE_REGISTER_ONLY_KEYS}
-                }
-                | {
-                    "orbs_degrees": dict(profile["orbs_degrees"]),
-                    "source_verification": _verification_status(
-                        profile["source_verification"], f"aspects/orb/{orb_profile_key}"
-                    ),
-                }
-                if profile
-                else None
-            ),
-            "orb_verdict_available": (
-                profile is not None
-                or fixed_orb_degrees is not None
-                or angle_orb_degrees is not None
-            ),
-            "orb_unavailable_reason_code": (
-                None
-                if profile is not None
-                or fixed_orb_degrees is not None
-                or angle_orb_degrees is not None
-                else "orb_profile_not_selected"
-            ),
-            "orb_receipt": _orb_receipt(
-                usable,
-                profile_key=orb_profile_key,
-                profile=profile,
-                orb_scale_percent=orb_scale_percent,
-                fixed_orb_degrees=fixed_orb_degrees,
-                angle_orb_degrees=angle_orb_degrees,
-                profile_selection=orb_profile_selection_state,
-            ),
-            "angle_participation": {
-                **module_state(
-                    requested=angles_requested or any(
-                        item["category"] == "angle" for item in participants
-                    ),
-                    executed=angles_used,
-                    applicable=angles_applicable,
-                    available=angles_used,
-                    source="astronomical_data.angles.asc_and_mc" if angles_used else None,
-                    reason_code=(
-                        None if angles_applicable else "house_calculation_not_executed"
-                    ),
-                ),
-                "participant_keys": [
-                    item["key"] for item in usable if item["category"] == "angle"
-                ],
-                "angle_angle_pairs_included": False,
-                "applying_semantics": "not_applicable_angle_motion_not_modeled",
-                "angle_pair_orb_degrees": angle_orb_degrees,
-                "angle_pair_orb_source": (
-                    "user_override" if angle_orb_degrees is not None else None
-                ),
-            },
-        },
-        "perfection": {
-            **module_state(
-                requested=include_perfection,
-                executed=include_perfection,
-                applicable=include_perfection,
-                available=include_perfection,
-                source=PRODUCT_FORMULA_SOURCE if include_perfection else None,
-                reason_code=None if include_perfection else "option_not_requested",
-            ),
-            "status": "computed" if include_perfection else "not_requested",
-            "solver": SOLVER_NAME if include_perfection else None,
-            "search_window_days": (
-                perfection_window_days if include_perfection else None
-            ),
-            # 只對此刻入相位的 target 往後搜尋；此刻精確、
-            # 出相位、相對站留不搜尋，各以 not_applying 標明（Lilly 1647 p.107 從入相位
-            # 定義成相）。
-            "semantics": (
-                "forward_search_from_chart_moment_bounded_by_search_window_"
-                "applying_targets_only"
-            ),
-            "searched_phases": ["applying"],
-            "statuses": list(PERFECTION_STATUSES),
-            "coverage": dict.fromkeys(PERFECTION_STATUSES, 0),
-            "partial": None,
-        },
+        "degree_based": _degree_based_receipt(
+            usable,
+            participants,
+            aspect_set_profile_key=aspect_set_profile_key,
+            aspect_set_profile=aspect_set_profile,
+            degree_method_name=degree_method_name,
+            partile_profile_key=partile_profile_key,
+            partile_profile=partile_profile,
+            orb_profile_key=orb_profile_key,
+            profile=profile,
+            orb_scale_percent=orb_scale_percent,
+            fixed_orb_degrees=fixed_orb_degrees,
+            angle_orb_degrees=angle_orb_degrees,
+            orb_profile_selection_state=orb_profile_selection_state,
+            angles_requested=angles_requested,
+            angles_applicable=angles_applicable,
+            angles_used=angles_used,
+        ),
+        "perfection": _perfection_receipt(include_perfection, perfection_window_days),
         "participants": [
             {
                 "key": participant["key"],
@@ -1082,7 +1125,8 @@ def _pair_record(
             )
         else:
             # has_motion_model guarantees jd_ut and the sampler.
-            assert jd_ut is not None and longitude_at is not None
+            if jd_ut is None or longitude_at is None:
+                raise InternalInvariantError("jd_ut is not None and longitude_at is not None")
             perfection = _search_perfection(
                 participant_a=participant_a,
                 participant_b=participant_b,

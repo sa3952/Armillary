@@ -179,7 +179,7 @@ async def _handle_http_exception(request: Request, exc: Exception):
 
 
 def _declared_request_names(request: Request) -> frozenset[str]:
-    # The answering route's own names only (RT-SEC-03); a route that declared
+    # The answering route's own names only; a route that declared
     # nothing, or none at all, leaves every name masked.
     return getattr(request.scope.get("route"), "declared_request_names", frozenset())
 
@@ -273,26 +273,19 @@ class ComputeCapacityExhaustedError(Exception):
     code = "compute_capacity_exhausted"
 
 
-def _compute_chart_in_worker(req: ChartRequest):
+def _in_worker(work: Callable[[Any], Any], req: Any):
     try:
-        return _compute_chart_locked(req)
-    finally:
-        release_ephemeris_for_thread()
-
-
-def _compute_annual_in_worker(req: AnnualRequest):
-    try:
-        return _compute_annual_locked(req)
+        return work(req)
     finally:
         release_ephemeris_for_thread()
 
 
 async def compute_chart_for_request(req: ChartRequest, request: Request):
-    return await _compute_in_line(_compute_chart_in_worker, req, request)
+    return await _compute_in_line(_compute_chart_locked, req, request)
 
 
 async def compute_annual_for_request(req: AnnualRequest, request: Request):
-    return await _compute_in_line(_compute_annual_in_worker, req, request)
+    return await _compute_in_line(_compute_annual_locked, req, request)
 
 
 async def _compute_in_line(work: Callable[[Any], Any], req: Any, request: Request):
@@ -315,7 +308,7 @@ async def _compute_in_line(work: Callable[[Any], Any], req: Any, request: Reques
         if isinstance(scope, dict):
             mark_compute_entered(scope)
 
-        worker = asyncio.create_task(run_in_threadpool(work, req))
+        worker = asyncio.create_task(run_in_threadpool(_in_worker, work, req))
         # The place in line is released when the worker exits, not when this
         # request returns, so a cancelled request cannot let the next one in
         # while Swiss is still running.
@@ -333,26 +326,22 @@ async def _compute_in_line(work: Callable[[Any], Any], req: Any, request: Reques
         raise
 
 
+def _build_identity() -> dict:
+    return _BUILD_IDENTITY_CONTEXT.get() or {
+        "status": "unavailable",
+        "source_revision": None,
+        "revision_source": None,
+    }
+
+
+# The compute seams tests replace by name: _compute_in_line looks them up when
+# a request arrives, so a patched one is the one that runs.
 def _compute_chart_locked(req: ChartRequest):
-    return compute_chart_response(
-        req,
-        build_identity=_BUILD_IDENTITY_CONTEXT.get() or {
-            "status": "unavailable",
-            "source_revision": None,
-            "revision_source": None,
-        },
-    )
+    return compute_chart_response(req, build_identity=_build_identity())
 
 
 def _compute_annual_locked(req: AnnualRequest):
-    return compute_annual_response(
-        req,
-        build_identity=_BUILD_IDENTITY_CONTEXT.get() or {
-            "status": "unavailable",
-            "source_revision": None,
-            "revision_source": None,
-        },
-    )
+    return compute_annual_response(req, build_identity=_build_identity())
 
 
 def _declared_refusals(route: str) -> dict[int | str, dict[str, Any]]:

@@ -20,12 +20,12 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from . import _fx
-from ._common import SIGNS, swiss, zh
+from ._common import SIGNS, TAIPEI, swiss, zh
 
 
 FRAGMENT = "blog-taiwan-time-zone-history"
 PIN = Path(__file__).with_name("taiwan_tz_2026d.json")
-LAT, LON = 25.05306, 121.52639
+LAT, LON = TAIPEI
 EXAMPLE_LOCAL = datetime(1975, 7, 15, 15, 0)
 
 

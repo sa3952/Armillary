@@ -39,9 +39,9 @@
 
 **Cost, licence, language.** Free for now, with no signup. The source is under AGPL-3.0. The interface is Traditional Chinese only; an English version is planned.
 
-**界線。** 可計算 1900–2399 年。不做合盤、行運或太陽回歸盤；恆星黃道沒有 Lahiri。
+**界線。** 可計算 1900–2399 年。不做合盤、行運或推運；太陽回歸盤目前只在出生地起盤；恆星黃道沒有 Lahiri。
 
-**Limits.** Dates from 1900 to 2399. No synastry, transits or solar returns, and no Lahiri ayanamsa for the sidereal zodiac.
+**Limits.** Dates from 1900 to 2399. No synastry, transits or progressions; the solar return is cast for the birth place only; no Lahiri ayanamsa for the sidereal zodiac.
 
 **數字算錯了？** 依〈[聯絡](https://projectarmillary.com/zh-TW/contact)〉寫信，或開 GitHub issue：寫明哪一個數值、你看到什麼、預期什麼，以及你拿來對照的參考值（某本書的表、另一個軟體）。請用合成資料，不要貼真實生辰。漏洞請依 [SECURITY.md](SECURITY.md) 私下通報。
 
@@ -60,7 +60,8 @@
 | 它做的事 | 它不做的事 |
 |---|---|
 | 天體位置以黃道、赤道、地平三套座標並列 | 不解盤：不寫性格、運勢，也不把原典的分類綜合成對個人的判斷（原典說吉、凶，照原文附出處列出） |
-| 宮位、軸點、相位、本質尊貴、日夜盤、阿拉伯點等古典方法；規則具名，出處逐條列在〈方法〉頁 | 不預測：年度小限、法達、黃道釋放與十年期只列哪一段時間由哪顆行星或哪個星座輪值，不替你解盤；行運、推運、太陽回歸盤、合盤目前一項都沒有 |
+| 宮位、軸點、相位、本質尊貴、日夜盤、阿拉伯點等古典方法；規則具名，出處逐條列在〈方法〉頁 | 不預測：年度小限、法達、黃道釋放與十年期只列哪一段時間由哪顆行星或哪個星座輪值，不替你解盤；行運、推運、合盤目前一項都沒有 |
+| 選定一年，排出那一年的太陽回歸盤（太陽回到出生時黃經的那一刻，在出生地起盤，需要確切的出生時間），並列出回歸盤各星落在本命盤哪一宮 | 回歸盤只列位置與宮位，不解讀那一年；目前只在出生地起盤 |
 | 出生時刻不確定時對整個小時取樣，標出哪些判定在取樣之間翻面 | 不替你挑一張預設的界表，也不把不同類別的尊貴折成一個分數 |
 | 每次計算都能取得逐步計算軌跡、版本號與計算收據，可下載離線核對 | 不保管出生資料：沒有帳號，也沒有星盤歷史資料庫 |
 
@@ -133,6 +134,21 @@ python -m uvicorn app.main:create_app --factory --app-dir backend --host 127.0.0
 
 然後開 <http://127.0.0.1:8000/zh-TW/calculate>。
 
+**核對線上那一版。** 每一個正式上線的版本都有同名的 tag 與 [GitHub Release](https://github.com/sa3952/Armillary/releases)；
+展開結果頁的「計算收據」，可以看到網站正在執行的組合發布識別、後端 image、前端 artifact digest 與兩者的公開原始碼
+revision。前端 digest 只用公開材料就能重算：取出該版本的前端發布紀錄（`main` 上的
+`releases/<版本>/frontend-release.json`），checkout 該 tag，再執行
+
+```bash
+git show origin/main:releases/<版本>/frontend-release.json > /SAFE/OUTSIDE/frontend-release.json
+git checkout <版本>
+python -m scripts.deployment.frontend_release recompute --source-root . \
+  --release-record /SAFE/OUTSIDE/frontend-release.json
+```
+
+重建出的紀錄必須與公開的那份完全相同，印出的 `artifact_digest` 就是收據上的前端 artifact。API、Dossier 與 Export
+的契約版號在 [`deploy/frontend-contract.json`](deploy/frontend-contract.json)，每次計算回應也帶 `schema_version`。
+
 ## 專案狀態
 
 目前是公開測試（Public Alpha）：任何人都可以直接使用，不需邀請、帳號或 email，目前仍不收費；每一個 live 版本的原始碼都保持公開。現階段刻意只做幾件事：計算正確性與明確邊界、以架構落實隱私與資安、讓結果易懂但不刪掉可驗算依據、真正可用的複製與匯出流程；加入解盤、預測或大量方法之前，先取得真實回饋。
@@ -162,11 +178,12 @@ account: <https://projectarmillary.com/zh-TW/>. This repository is its Correspon
 
 **What it does.** Ecliptic, equatorial and horizontal coordinates side by side; houses and angles; aspects,
 essential dignities, sect and lots, each rule named and its sources listed on the methods page; birth-time sensitivity that samples a whole
-hour when the time is uncertain; a step-by-step calculation trace with the engine, ephemeris and time-zone
-database versions.
+hour when the time is uncertain; annual time lords (profections, firdaria, zodiacal releasing, decennials) and,
+for a chosen year, the solar-return chart cast for the birth place, with each return body's natal house; a
+step-by-step calculation trace with the engine, ephemeris and time-zone database versions.
 
-**What it does not do.** No interpretation and no prediction: there are no transits, progressions, solar returns
-or synastry. It does not pick a default bounds table for you, and it does not fold different dignities into one
+**What it does not do.** No interpretation and no prediction: there are no transits, progressions or synastry,
+and the solar return lists positions and houses without reading the year. It does not pick a default bounds table for you, and it does not fold different dignities into one
 score.
 
 **How it can be checked.** The main positions were compared hour by hour against a separate reference pipeline
@@ -197,6 +214,14 @@ format is generated from the same normalized result rather than reconstructed fr
 The commands are in the section [驗證這份原始碼](#驗證這份原始碼) above: create a virtual environment, install the
 pinned dependencies, run `python scripts/verify_delivery.py`, and start a local server with the `uvicorn` line
 shown there. Building the image is described in [docs/REPRODUCIBLE_BUILD.md](docs/REPRODUCIBLE_BUILD.md).
+
+Every release that went live has a tag and a [GitHub Release](https://github.com/sa3952/Armillary/releases) of the
+same name. The calculation receipt on the result page shows the combined release ID, the backend image, the
+frontend artifact digest and the public source revision of each. To recompute the frontend digest from public
+material only, check out the tag and run `scripts.deployment.frontend_release recompute` against the release's
+`releases/<version>/frontend-release.json` on `main`, as shown in
+[核對線上那一版](#驗證這份原始碼) above; the rebuilt record must equal the published one. The API, Dossier and
+Export contract versions are in [`deploy/frontend-contract.json`](deploy/frontend-contract.json).
 
 ### Status and contributing
 

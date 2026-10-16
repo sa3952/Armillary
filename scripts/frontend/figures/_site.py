@@ -28,7 +28,7 @@ def _choices(model, field: str) -> tuple[str, ...]:
 @functools.lru_cache(maxsize=1)
 def product() -> dict:
     with backend_on_path():
-        from app import config, request_limits, schemas
+        from app import domain_catalog, request_limits, schemas
         from app.core.birth_time_sensitivity import TRANSITION_RESOLUTION_SECONDS
         from app.core.lots import SECT_NEAR_CRITICAL_DEGREES
         from app.privacy_logging import _SECURITY_HEADERS
@@ -40,14 +40,14 @@ def product() -> dict:
             for field in ("house_system", "bounds_profile", "decan_profile", "triplicity_profile",
                           "aspect_set_profile", "aspect_orb_profile", "partile_profile")
         }
-        ayanamsas = tuple(choice for choice in _choices(mode, "ayanamsa") if choice in config.AYANAMSA_OPTIONS)
+        ayanamsas = tuple(choice for choice in _choices(mode, "ayanamsa") if choice in domain_catalog.AYANAMSA_OPTIONS)
         named["ayanamsa"] = (ayanamsas, mode_defaults.ayanamsa)
-        if set(ayanamsas) != set(config.AYANAMSA_OPTIONS):
+        if set(ayanamsas) != set(domain_catalog.AYANAMSA_OPTIONS):
             raise RuntimeError("the request schema and the ayanamsa table name different ayanamsas")
         return {
             "named": named,
             "precisions": _choices(schemas.ChartRequest, "birth_time_precision"),
-            "years": config.PRODUCT_YEAR_RANGE,
+            "years": domain_catalog.PRODUCT_YEAR_RANGE,
             "max_chart_bytes": request_limits.MAX_CHART_REQUEST_BYTES,
             "general_pool": request_limits.MAX_HOSTED_REQUESTS_PER_WORKER,
             "compute_pool": request_limits.MAX_HOSTED_COMPUTE_REQUESTS_PER_WORKER,

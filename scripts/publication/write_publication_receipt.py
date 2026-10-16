@@ -409,7 +409,10 @@ def verify_receipt(
 
 
 def compare_commit(*, candidate: Path, checkout: Path) -> str:
-    """Before any push: the commit at `checkout` HEAD holds exactly the candidate.
+    """Before any push: the commit at `checkout` HEAD holds exactly the candidate,
+    and every commit the push would add (reachable from HEAD, on no
+    remote-tracking branch) carries only its subject line: no body, so no
+    co-author, generator or other trailer reaches the public history.
 
     The commit is read through `git archive`, so a file the public `.gitignore`
     kept out of the commit is seen as missing; the operator's Git configuration
@@ -429,8 +432,18 @@ def compare_commit(*, candidate: Path, checkout: Path) -> str:
                 ["git", "archive", "--format=tar.gz", f"--prefix={name}-{revision}/", "HEAD"],
                 cwd=checkout, capture_output=True, check=True, env=environment,
             ).stdout
+            # NUL-separated: commit id, then its whole message.
+            added = subprocess.run(
+                ["git", "log", "--format=%H%x00%B%x00", "HEAD", "--not", "--remotes"],
+                cwd=checkout, capture_output=True, text=True, check=True, env=environment,
+            ).stdout.split("\0")
     except (OSError, subprocess.CalledProcessError) as error:
         raise ReceiptRefusal(f"cannot read the commit to be published: {error}") from None
+    for commit, message in zip(added[0::2], added[1::2]):
+        if "\n" in message.strip():
+            raise ReceiptRefusal(
+                f"commit to be published {commit.strip()} must carry only its subject line"
+            )
     compare_inventories(
         "commit to be published", expected,
         archive_inventory(archive, repository=accepted_repository(), revision=revision),

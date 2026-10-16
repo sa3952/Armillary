@@ -679,6 +679,21 @@ def _first_event_after(
 
 
 SUN_CROSSING_RESUME_DAYS: Final = 1.0 / 1440.0
+# An event walk finds at most a couple of events of one kind per day (a
+# grazing contact adds one more); four per day of the window, plus two for the
+# window's ends, is a bound no real sky reaches.
+WALK_EVENTS_PER_DAY_BOUND: Final = 4
+WALK_BOUND_EXCEEDED_MESSAGE: Final = "horizon event walk exceeded its event bound"
+
+
+def _walk_event_bound(window_days: float) -> int:
+    return WALK_EVENTS_PER_DAY_BOUND * math.ceil(max(window_days, 0.0)) + 2
+
+
+def _walk_bound_exceeded() -> swe.Error:
+    # Only a Swiss root that stops advancing can get here, so it leaves as the
+    # Swiss failure every caller already degrades to a closed module state.
+    return swe.Error(WALK_BOUND_EXCEEDED_MESSAGE)
 
 
 def sun_horizon_crossings(
@@ -696,7 +711,7 @@ def sun_horizon_crossings(
     crossings = []
     for name in HORIZON_CROSSINGS:
         cursor = start_jd_ut
-        while True:
+        for _ in range(_walk_event_bound(end_jd_ut - start_jd_ut)):
             found = _first_event_after(
                 cursor, end_jd_ut, swe.SUN, name, geopos, pressure_hpa,
                 atmosphere.temperature_c, None,
@@ -708,6 +723,8 @@ def sun_horizon_crossings(
             # ULPs, so the walk resumes a minute later; two sunrises a minute
             # apart do not exist outside a grazing contact.
             cursor = found + SUN_CROSSING_RESUME_DAYS
+        else:
+            raise _walk_bound_exceeded()
     return sorted(crossings)
 
 
@@ -793,7 +810,7 @@ def _search_previous(
         if anchor is None or anchor >= reference_jd_ut:
             return "no_event_within_search_interval", None
     previous = anchor
-    while True:
+    for _ in range(_walk_event_bound(reference_jd_ut - anchor)):
         following = _first_event_after(
             previous, reference_jd_ut,
             body_id, event_name, geopos, pressure_hpa, temperature_c, probe_cache,
@@ -802,6 +819,7 @@ def _search_previous(
         if following is None or following >= reference_jd_ut:
             return "event_found", previous
         previous = following
+    raise _walk_bound_exceeded()
 
 
 def _searched_pair(
