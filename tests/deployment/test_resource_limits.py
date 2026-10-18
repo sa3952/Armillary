@@ -287,8 +287,8 @@ def test_e014_pids_limit_covers_the_threads_and_the_declared_request_capacity():
     import anyio.to_thread
 
     from app.request_limits import (
-        MAX_HOSTED_COMPUTE_REQUESTS_PER_WORKER, MAX_HOSTED_REQUESTS_PER_WORKER,
-        MAX_HOSTED_SEARCH_REQUESTS_PER_WORKER,
+        MAX_HOSTED_ANNUAL_REQUESTS_PER_WORKER, MAX_HOSTED_COMPUTE_REQUESTS_PER_WORKER,
+        MAX_HOSTED_REQUESTS_PER_WORKER, MAX_HOSTED_SEARCH_REQUESTS_PER_WORKER,
     )
 
     # The limit as Docker Compose resolves the production files; the workers as
@@ -308,5 +308,5 @@ def test_e014_pids_limit_covers_the_threads_and_the_declared_request_capacity():
     overhead = workers + 4
     assert workers * anyio.run(pool_size) + overhead <= limit
     declared = (MAX_HOSTED_REQUESTS_PER_WORKER + MAX_HOSTED_COMPUTE_REQUESTS_PER_WORKER
-                + MAX_HOSTED_SEARCH_REQUESTS_PER_WORKER)
+                + MAX_HOSTED_ANNUAL_REQUESTS_PER_WORKER + MAX_HOSTED_SEARCH_REQUESTS_PER_WORKER)
     assert workers * (declared + 1) + overhead <= limit

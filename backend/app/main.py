@@ -55,7 +55,6 @@ from .core.time_utils import (
 from .core.civil_time_basis import (
     CivilTimeBasisNotApplicableError,
     CivilTimeBasisRequiredError,
-    check_civil_time_basis,
 )
 from .core.houses import HouseSystemUnavailableError
 from .core.time_conversion import (
@@ -70,9 +69,12 @@ from .response_projection import (
 )
 from .annual_projection import DEFAULT_ANNUAL_PROJECTION, project_annual_response
 from .core.place_catalog import (
+    CatalogLocationMismatchError,
+    CatalogRecordUnknownError,
     PlaceCatalog,
     PlaceCatalogUnavailableError,
     PlaceSearchBudgetExceededError,
+    check_request_places,
 )
 from .privacy_logging import (
     DOMAIN_ERROR_STATE_KEY,
@@ -375,7 +377,7 @@ def _add_api_routes(
         projection: ChartProjection = DEFAULT_CHART_PROJECTION,
     ):
         # Before the compute line: a refusal here costs no Swiss slot.
-        await run_in_threadpool(check_civil_time_basis, req, place_catalog.record_zone)
+        await run_in_threadpool(check_request_places, req, place_catalog.record)
         token = _BUILD_IDENTITY_CONTEXT.set(runtime_build_identity)
         try:
             # page is derived from this one detailed response.
@@ -458,7 +460,7 @@ def _add_api_routes(
             projection: ChartProjection = DEFAULT_ANNUAL_PROJECTION,
         ):
             # The same natal input as /api/chart, so the same question first.
-            await run_in_threadpool(check_civil_time_basis, req, place_catalog.record_zone)
+            await run_in_threadpool(check_request_places, req, place_catalog.record)
             token = _BUILD_IDENTITY_CONTEXT.set(runtime_build_identity)
             try:
                 # page is derived from this one detailed response.
@@ -493,6 +495,8 @@ def _add_refusal_handlers(application: FastAPI) -> None:
         (HouseSystemUnavailableError, _handle_domain_error),
         (CivilTimeBasisRequiredError, _handle_domain_error),
         (CivilTimeBasisNotApplicableError, _handle_domain_error),
+        (CatalogRecordUnknownError, _handle_domain_error),
+        (CatalogLocationMismatchError, _handle_domain_error),
         (TimeConversionZoneNotCoveredError, _handle_domain_error),
         (PlaceCatalogUnavailableError, _handle_domain_error),
         (PlaceSearchBudgetExceededError, _handle_domain_error),

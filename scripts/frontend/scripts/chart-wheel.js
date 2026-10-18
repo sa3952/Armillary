@@ -28,11 +28,15 @@
     bg: "#FFFFFF", band: "#F0EAD9", fg: "#1C1913", dim: "#574F41", hair: "#CFC5AE", accent: "#A03A22",
     aspect: "#A0632B",
   });
-  const FONT_TOKENS = Object.freeze({ sans: "sans", mono: "mono" });
+  const FONT_TOKENS = Object.freeze({ sans: "sans", mono: "mono", serif: "serif-num", book: "serif" });
   const FONTS = Object.freeze({
     sans: "\"PingFang TC\", \"Noto Sans TC\", \"Noto Sans CJK TC\", \"Microsoft JhengHei\", sans-serif",
     mono: "ui-monospace, \"SF Mono\", SFMono-Regular, Menlo, Consolas, \"DejaVu Sans Mono\", "
       + "\"Liberation Mono\", \"PingFang TC\", \"Noto Sans CJK TC\", \"Microsoft JhengHei\", monospace",
+    serif: "Palatino, \"Palatino Linotype\", \"Book Antiqua\", \"Times New Roman\", \"Liberation Serif\", "
+      + "\"DejaVu Serif\", serif",
+    book: "\"Songti TC\", \"Noto Serif TC\", \"Noto Serif CJK TC\", \"Source Han Serif TC\", \"PMingLiU\", \"MingLiU\", "
+      + "\"Times New Roman\", serif",
   });
   const PNG_SCALE = 2;
   const ANCHOR_TO_ALIGN = Object.freeze({ start: "left", middle: "center", end: "right" });
@@ -47,7 +51,9 @@
 
   /** 一個圖元的幾何屬性（兩種 SVG 相同）。 */
   function geometry(item) {
-    if (item.type === "circle") return { cx: item.cx, cy: item.cy, r: item.r, "stroke-width": item.width };
+    if (item.type === "circle") {
+      return { cx: item.cx, cy: item.cy, r: item.r, "stroke-width": item.width, "stroke-dasharray": item.dash || null };
+    }
     if (item.type === "line") {
       return { x1: item.x1, y1: item.y1, x2: item.x2, y2: item.y2, "stroke-width": item.width,
         "stroke-dasharray": item.dash || null };

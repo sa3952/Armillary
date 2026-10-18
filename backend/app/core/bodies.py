@@ -41,6 +41,7 @@ from .formatting import (
 )
 from .frame_compatibility import NON_EARTH_OBSERVER_CENTER, method_frame_state
 from .source_reading import SOURCE_READING_LEVELS
+from .time_utils import earth_rotation_jd_ut
 from .trace import Trace
 
 # `position_mode="true"` 時不輸出視高度。
@@ -83,7 +84,7 @@ def horizontal_position(jd_ut: float, ctx, atmosphere, ecl) -> tuple:
 
     pressure_hpa = atmosphere.pressure_hpa if atmosphere.pressure_hpa is not None else 0.0
     az_raw, true_alt, app_alt = swe.azalt(
-        jd_ut,
+        earth_rotation_jd_ut(jd_ut),
         swe.ECL2HOR,
         (ctx.location.longitude, ctx.location.latitude, ctx.location.altitude_m),
         pressure_hpa,

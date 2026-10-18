@@ -77,15 +77,17 @@ def check_civil_time_basis(
     request, catalogue_record: Callable[[str, str], dict | None]
 ) -> None:
     """Refuse a request whose place keeps two clocks but names neither, and an
-    answer where none applies.  Every chart route calls this one check.
+    answer where none applies.  Every chart route calls this one check, through
+    ``place_catalog.check_request_places``, which has already refused an id the
+    catalogue does not hold.
 
     A catalogue place is dual-time by its row.  Manual coordinates are by the
     picked zone: a Xinjiang-time zone requires the answer, and either answer's
     zone may carry it (the schema already ties each answer to its zone).
 
-    ``catalogue_record(source, source_record_id)`` returns the row's
-    ``country_code`` and ``timezone``, or None when the catalogue has no such
-    record (a client-asserted id is not otherwise verified).
+    ``catalogue_record(source, source_record_id)`` returns the row (at least
+    ``country_code`` and ``timezone``).  A missing row is an error here, not a
+    place that keeps one clock: deciding without the row would be a guess.
     """
 
     location = request.location
@@ -94,15 +96,15 @@ def check_civil_time_basis(
     if location.location_source == "manual":
         check_zone_civil_time_basis(zone, basis)
         return
-    required = False
-    if location.source_record_id:
-        record = catalogue_record(location.location_source, location.source_record_id)
-        required = record is not None and is_dual_civil_time_place(
-            source=location.location_source,
-            source_record_id=location.source_record_id,
-            country_code=record["country_code"],
-            timezone=record["timezone"],
-        )
+    record = catalogue_record(location.location_source, location.source_record_id)
+    if record is None:
+        raise LookupError("the catalogue holds no such record; refuse it before this check")
+    required = is_dual_civil_time_place(
+        source=location.location_source,
+        source_record_id=location.source_record_id,
+        country_code=record["country_code"],
+        timezone=record["timezone"],
+    )
     _refuse_unless_answered(required=required, applicable=required, basis=basis)
 
 

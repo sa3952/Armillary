@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import pytest
-from fastapi.testclient import TestClient
-
-from app.main import create_app
-from app.settings import AppSettings
 
 
 @pytest.fixture(scope="module")
 def on():
     """A client of an app with the flagged annual route switched on."""
+    # Imported here, not at collection: a product module that refuses to load
+    # then fails the tests that use it by name, not every backend file at once.
+    from fastapi.testclient import TestClient
+
+    from app.main import create_app
+    from app.settings import AppSettings
+
     with TestClient(create_app(AppSettings(enable_annual_route=True)),
                     raise_server_exceptions=False) as api:
         yield api

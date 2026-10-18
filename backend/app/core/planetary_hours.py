@@ -35,15 +35,26 @@ from ..domain_catalog import CLASSICAL_BODIES
 from .horizon_events import (
     DIURNAL_REGIME_MAX_DAYS,
     FRAME_DECLARATION,
+    RISE_TRANS_REPEATABILITY_DAYS,
     SEARCH_COVERAGE_MARGIN_DAYS,
     require_search_coverage,
     sun_horizon_crossings,
 )
 from .module_state import computed_receipt, module_state
 from .method_status import method_receipt
+from .source_reading import SOURCE_READING_LEVELS
 from .time_utils import civil_date as _local_date
-from .time_utils import civil_instant as _instant
+from .time_utils import civil_instant, solved_instant
 from .trace import Trace
+
+def _instant(jd_ut: float, tz_input) -> dict:
+    """A sunrise, a sunset or an hour boundary made from them, printed no finer
+    than the sunrise and sunset themselves are."""
+
+    return solved_instant(
+        jd_ut, RISE_TRANS_REPEATABILITY_DAYS, lambda jd: civil_instant(jd, tz_input)
+    )[1]
+
 
 METHOD: Final = "chaldean_unequal_hours_from_sunrise_v1"
 SOURCE: Final = "Swiss Ephemeris swe_rise_trans (Sun), product hour division"
@@ -105,6 +116,20 @@ METHOD_SOURCE_ENTRIES: Final = {
             "cited. No page numbers"
         ),
         "primary_text_checked": "dio_xxxvii_19_in_english_translation_only",
+        "sources": [
+            {
+                "citation": "Cassius Dio, Roman History XXXVII.19",
+                "says": (
+                    "the weekday names follow from giving the planets, from Saturn on, to "
+                    "the successive hours of day and night"
+                ),
+                "reading": SOURCE_READING_LEVELS[1],
+                "read_at": (
+                    "an English translation only; the record does not name which, and "
+                    "the Greek not checked"
+                ),
+            },
+        ],
         "sunrise_definition": (
             "the horizon module's event: refracted upper limb crossing the apparent "
             "horizon, topocentric, request atmosphere, no dip (USNO standard "

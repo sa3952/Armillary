@@ -1,0 +1,17 @@
+{
+ "schema_version": 1,
+ "files": {
+  "backend/ephe/seas_18.se1": "a2cd8fc33807c78ca9a700c91c2e042258b12fc4796519e00781440b5ad8b2e2",
+  "backend/ephe/semo_18.se1": "1ca07bd67c24374d77226180c20a4f9996cba013697894810518e7eb582ca4f7",
+  "backend/ephe/sepl_18.se1": "ca1393ceab3a44fbc895887cf789c68819ae6a1cbc9b22225872dbe4ccd99a66",
+  "backend/place_data/places.sqlite3": "a977c5774acb75d5f92ecc09db7bdd4241be3cd7c1af4c98cdc955b918da2f72",
+  "docs/readme/calculator.png": "6edf9653543a625c9dc74f92e305eb03d08cdf19c21c04a81bcc052352172381",
+  "docs/readme/card.png": "453adec8612272fb92d98a42a60cce1af3b16e808891d6dc43f4880c8c6301e4",
+  "docs/readme/positions.png": "6943f77047ce3469fcf8c0acc1830a939582962232f0bb14f6ab6ea9bdb018e5",
+  "docs/readme/trace.png": "9f72864e3aa0baa5d27c6a0ce622c599b1b1da8b9cf8cd2780323be37f0c858e",
+  "frontend/apple-touch-icon.png": "f8a5749f0e560cd938d541fe4afc3dd463b667e380fea4ad25cbaa5045767820",
+  "frontend/favicon.ico": "62e9be44d3225985d2197a357edc412fb36d0daaf3b567af01e3f5ac6860fbd3",
+  "frontend/zh-TW/og-card.png": "16c9900d06168aab4cc73415ebfb91dfcdbed7601d53ce12457b697c9594bf9d",
+  "third_party/pyswisseph/pyswisseph-2.10.3.2.tar.gz": "c54c305e83dbd5d2b71e58d8a69d8ee41de24c4d3328ce09e2af860a3537624d"
+ }
+}

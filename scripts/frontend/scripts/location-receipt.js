@@ -5,14 +5,15 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function buildLocationReceipt() {
   "use strict";
 
-  const COORDINATE_EQUALITY_TOLERANCE_DEGREES = 1e-9;
-
+  // 服務只在座標與目錄列的儲存值（IEEE-754 binary64）完全相同時接受目錄地點，
+  // 所以這裡也比數值本身：「22.9915000000」與 22.9915 相同，差一個可表示的倍精度數就不同，
+  // 改送手動座標，而不是帶著目錄記錄 id 送出另一組座標。
   function sameCoordinate(currentValue, selectedValue) {
     const current = Number(currentValue);
     const selected = Number(selectedValue);
     return Number.isFinite(current)
       && Number.isFinite(selected)
-      && Math.abs(current - selected) <= COORDINATE_EQUALITY_TOLERANCE_DEGREES;
+      && current === selected;
   }
 
   function manualLocation(latitude, longitude, altitudeM) {

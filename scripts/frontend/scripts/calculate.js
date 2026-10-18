@@ -11,12 +11,15 @@
   // 已記下的全域歷史，本頁收不回。唯一的例外是站內連結帶的模式（mode）：拿掉之前讀一次，
   // 只認三個固定值，其餘的鍵一概不讀。
   const linkedMode = window.ResultChapters ? window.ResultChapters.modeFromQuery(window.location.search) : null;
+  // 頁面開著時才貼上或改動的 #片段（同一份文件內的導覽，不重新載入，瀏覽器為它新增一筆紀錄）
+  // 也一樣清掉。
   function clearAddressInput() {
     if (window.location.search || window.location.hash) {
       window.history.replaceState(null, "", window.location.pathname);
     }
   }
   clearAddressInput();
+  window.addEventListener("hashchange", clearAddressInput);
 
   const Catalogue = window.OptionsCatalogue;
   const Labels = window.ArmillaryLabels;
@@ -356,6 +359,8 @@
 
       const row = control.closest(".option-row");
       if (row) row.classList.toggle("is-changed", Catalogue.isEnabled(option, value));
+      // 此刻沒有意義的一項（例如三分性已選「全部並列」時的「並列其餘三分性」）收起；它也不會送出。
+      if (row) row.hidden = Catalogue.isHidden(option, optionValues);
 
       // 互斥：停用並就地說明，不隱藏。隱藏會讓人以為選項不存在。
       const conflict = Catalogue.conflictFor(option, optionValues);
@@ -396,8 +401,8 @@
 
     // 標題說的是「進階選項」，只數進階群組。主表單的宮位選擇就在眼前；計進來會讓
     // 只選了「不計算宮位」的人讀到「已調整 1 項」，卻在進階選項裡找不到那一項。
-    // 「已調整」只數使用者自己改的：模式預先勾好的那幾項（例如古典完整的 4 項）不算，
-    // 改寫成「古典完整預設 4 項」，不用強調色。模式讀畫面上選中的那一顆（這個函式在
+    // 「已調整」只數使用者自己改的：模式預先勾好的那幾項（例如古典完整的 5 項）不算，
+    // 改寫成「古典完整預設 5 項」，不用強調色。模式讀畫面上選中的那一顆（這個函式在
     // currentModeId 宣告之前就會被呼叫）。
     const checkedMode = document.querySelector('input[name="calc-mode"]:checked');
     const mode = Chapters.mode(checkedMode ? checkedMode.value : "quick");
@@ -511,8 +516,9 @@
     if (!key) return;
     let value;
     if (control.type === "checkbox") {
+      // 沒寫 data-plan-off 的選單式選項，取消勾選就回到「不計算」（null）。
       value = control.dataset.planOn
-        ? (control.checked ? control.dataset.planOn : control.dataset.planOff)
+        ? (control.checked ? control.dataset.planOn : (control.dataset.planOff ?? null))
         : control.checked;
     } else {
       value = control.value === "\u0000null" ? null : control.value;
@@ -541,9 +547,12 @@
         && optionValues[option.key] === true)
       .map((option) => option.label_zh);
     if (extras.length) parts.push(`另加：${extras.join("、")}`);
-    PLAN_PROFILE_KEYS.forEach((key) => {
+    [...PLAN_PROFILE_KEYS, "peregrine_profile"].forEach((key) => {
       if (optionValues[key] !== null && optionValues[key] !== undefined) {
-        parts.push(`${Catalogue.BY_KEY[key].label_zh}：${label(key)}`);
+        // 「全部並列」說出是幾套（具名的那幾個值，不含「不計算」與「全部並列」本身）。
+        const named = Catalogue.BY_KEY[key].values.filter((value) => value.value !== null && value.value !== "all");
+        const count = optionValues[key] === "all" ? `（${named.length} 套）` : "";
+        parts.push(`${Catalogue.BY_KEY[key].label_zh}：${label(key)}${count}`);
       }
     });
     const line = `這次會算：${parts.join("；")}。`;
@@ -1161,8 +1170,9 @@
         options.appendChild(label);
         return;
       }
-      // 秒級的歷史偏移不印成長小數，一律 ±時:分:秒。
-      const sign = occurrence.offsetHours >= 0 ? "+" : "−";
+      // 秒級的歷史偏移不印成長小數，一律 ±時:分:秒。寫法與結果頁的「UTC 偏移」相同（view-model.js 的
+      // utcOffsetText；那支在送出後才載入，這裡用不到）：負號是 ASCII「-」。
+      const sign = occurrence.offsetHours >= 0 ? "+" : "-";
       const seconds = Math.round(Math.abs(occurrence.offsetHours) * 3600);
       const pad = (value) => String(value).padStart(2, "0");
       const magnitude = `${pad(Math.floor(seconds / 3600))}:${pad(Math.floor((seconds % 3600) / 60))}`
@@ -1170,7 +1180,10 @@
       const bold = document.createElement("b");
       bold.textContent = `${which}　UTC${sign}${magnitude}`;
       const detail = document.createElement("span");
-      detail.textContent = `對應世界時 ${occurrence.utcIso.replace(".000Z", "Z")}`;
+      // 寫成「世界時 日期 時:分」，不寫 ISO 的 Z：Z 是 UTC，而 1972 年前（與 Swiss 判定閏秒表過期之後）
+      // 結果頁標的是 UT1。「世界時」兩者都涵蓋，與結果頁不矛盾。
+      const instant = occurrence.utcIso.replace(/\.000Z$|Z$/, "").replace("T", " ").replace(/:00$/, "");
+      detail.textContent = `對應世界時 ${instant}`;
       caption.append(bold, detail);
       label.append(input, caption);
       options.appendChild(label);
@@ -1197,6 +1210,10 @@
     refreshTimezoneOffset();
     if (target && typeof target.hasAttribute === "function" && target.hasAttribute("aria-invalid")) {
       clearFieldInvalid(target);
+      if (formErrorShown && !form.querySelector("[aria-invalid]")) {
+        hideError();
+        setStatus("", "info");
+      }
     }
     refreshResultBinding();
     refreshTimeCheckBinding();
@@ -1720,7 +1737,12 @@
     href: "#civil-time-choice",
   });
 
+  // 錯誤面板是不是本頁自己擋下的表單錯誤（沒送出）：是的話，欄位都改好時面板自己收起，
+  // 不必等下一次送出；伺服器的錯誤說的是上一次送出，不在這裡收。
+  let formErrorShown = false;
+
   function showError(message, actions) {
+    formErrorShown = false;
     errorMessage.textContent = message;
     errorActions.replaceChildren();
     (actions || []).forEach((action) => {
@@ -1820,6 +1842,7 @@
   }
 
   function hideError() {
+    formErrorShown = false;
     errorPanel.hidden = true;
     errorMessage.textContent = "";
     errorActions.replaceChildren();
@@ -1879,6 +1902,7 @@
       // 先清再報，順序不可調換：dropResultsForNewAttempt() 會 hideError()。
       dropResultsForNewAttempt();
       showError(parts.join(" "), actions);
+      formErrorShown = true;
       markInvalidFields(built.fields, built.messages);
       setStatus("尚未送出。", "error");
       return;
@@ -2452,6 +2476,18 @@
   // （dropResultsForNewAttempt），放大的對話框也在區塊內。圖畫不出來時只留一句說明，表格照常。
   const WHEEL_FILES = Object.freeze({ svg: "classical-astrology-chart.svg", png: "classical-astrology-chart.png" });
 
+  // 圖例十來條，攤開時比首屏的答案還佔地方：收在一個預設收起的「圖例」裡。圖仍以同一個清單元素
+  // 重畫圖例（chart-wheel.js 握著它），這裡只把它移進摺疊；列印前的全部展開照樣印出來。
+  function foldChartLegend(section) {
+    const legend = section.querySelector(".chart-wheel-legend");
+    if (!legend) return;
+    const fold = make("details", "chart-wheel-legend-fold");
+    const summary = document.createElement("summary");
+    summary.textContent = "圖例：符號、線條與記號的意思";
+    legend.replaceWith(fold);
+    fold.append(summary, legend);
+  }
+
   function mountChartWheel(canonical) {
     let section;
     try {
@@ -2470,6 +2506,7 @@
     } catch (_error) {
       section = window.ChartWheel.createFailureSection(document);
     }
+    foldChartLegend(section);
     lifecycle.registerSectionNode(section);
     chartWheelHost.replaceChildren(section);
     // 圓盤或方盤：上一份結果選了方盤，這一份照樣先畫方盤（這一頁的變數，不寫儲存）。
@@ -3424,8 +3461,10 @@
     );
     // 列數門檻留著當保險：極端的「很多列但每列極短」不會被字數抓到。
     // 現有 fixture 都由字數先觸發，這一條沒有實際生效過。
-    const collapsible =
-      charCount > LONG_SECTION_CHARS || rowCount > LONG_SECTION_ROWS;
+    // 「全部並列」的區段不整區收起：上面有一覽，各套的完整表已各自收進摺疊（decorateClassicalSection）。
+    const comparing = tables.some((table) => String(table.title).startsWith("各家對照："));
+    const collapsible = !comparing
+      && (charCount > LONG_SECTION_CHARS || rowCount > LONG_SECTION_ROWS);
     let body = host;
     if (collapsible) {
       const details = make("details", "long-section");
@@ -3474,6 +3513,8 @@
         const bar = section.id === "bodies" ? decoratePositionTable(wrap, child) : null;
         if (bar) body.appendChild(bar);
         body.appendChild(wrap);
+        // 整欄相同而收起的欄：表下註緊接在表的下面（ChartViewModel.buildViewTree）。
+        (child.notes || []).forEach((text) => body.appendChild(figureText("p", "section-note table-note", text)));
       } else if (child.type === "source") {
         // 古書出處：同一區的出處收在一個「出處」摺疊裡，預設收起。
         if (!sources) {
@@ -3488,8 +3529,875 @@
         sources.appendChild(line);
       }
     });
+    decorateClassicalSection(host, section);
     linkGlossaryTerms(host, section.id);
     return host;
+  }
+
+  // ══ 古典判斷三區的一覽與標記：廟旺陷弱、外來、行速與停滯 ══════════════
+  //
+  // 只改畫面，不改字：一覽、標記與時間軸都讀這一區 canonical 表格裡的同一份字串（匯出、複製不經過這裡），
+  // 表格照舊留在下面，給精確值、匯出對照與報讀。讀不懂的格（字串對不上已知的寫法）就照原樣不加標記，不猜。
+  //
+  // 標記的框線照 Lilly《Christian Astrology》1647 p.115 那張表（Fortitudes and Debilities）分邊：
+  // 實線框＝他列在強的一邊，虛線框＝列在弱的一邊，淡底無框＝不在那張表上或這裡不分邊。
+  // 只分邊、不給分數，也不用紅綠分好壞；字本身就是答案，框線只是第二道提示（不靠顏色）。
+  const GLANCE_KEY_TEXT = "框線照 Lilly《Christian Astrology》1647 p.115 的表：實線框是他列在強（Fortitudes）的一邊，"
+    + "虛線框是列在弱（Debilities）的一邊；只照書分邊，不加分數。";
+  const DIGNITY_MARK_SIDE = Object.freeze({
+    入廟: "fortitude", 入旺: "fortitude", 在陷: "debility", 在弱: "debility",
+  });
+  const PEREGRINE_MARK_SIDE = Object.freeze({ 陷: "debility", 弱: "debility" });
+  const P115_SIDE = Object.freeze({ "Lilly 列為偶然強": "fortitude", "Lilly 列為偶然弱": "debility" });
+  /** p.115 表的一格（可能帶「（他寫的是「漸虧」）」這類補註）落在哪一邊；不在表上回 null。 */
+  const p115Side = (text) => {
+    const head = Object.keys(P115_SIDE).find((label) => String(text || "").startsWith(label));
+    return head ? P115_SIDE[head] : null;
+  };
+  const GLANCE_DASH = "—";
+
+  /** 一個標記：字照原樣，data-side 決定框線（fortitude 實線、debility 虛線、neutral 淡底、quiet 只是淡字）。 */
+  function stateMark(text, side) {
+    const mark = make("span", "state-mark");
+    mark.dataset.side = side;
+    mark.textContent = text;
+    return mark;
+  }
+
+  /**
+   * 把一格的字換成「標記＋原字」：parts 依序接起來必須等於這一格原本的字，否則不動（格內的字一個不改）。
+   * part 是 { text, side }（標記）或 { text }（原樣的字）；分隔用的「、」留在 DOM 裡、畫面上收起。
+   */
+  function markCell(cell, parts) {
+    if (!cell || parts.map((part) => part.text).join("") !== cell.textContent) return false;
+    cell.replaceChildren(...parts.map((part) => {
+      if (part.side) return stateMark(part.text, part.side);
+      if (part.separator) return figureText("span", "state-mark-sep", part.text);
+      return document.createTextNode(part.text);
+    }));
+    cell.classList.add("has-marks");
+    return true;
+  }
+
+  /** 「入廟、在弱」這種清單：每一項依 sides 標記，「、」留著當分隔；不在表上的項目不標。 */
+  function listParts(text, sides) {
+    const items = text.split("、");
+    if (!items.every((item) => sides[item])) return null;
+    return items.flatMap((item, index) => (index ? [{ text: "、", separator: true }] : [])
+      .concat([{ text: item, side: sides[item] }]));
+  }
+
+  /** 表頭為 name 的那一欄的格（不含表頭）；欄不存在時是空陣列。 */
+  function columnCells(table, name) {
+    const heads = [...table.tHead.rows[0].cells].map((cell) => cell.textContent);
+    const index = heads.indexOf(name);
+    return index < 0 ? [] : [...table.tBodies[0].rows].map((row) => row.cells[index]);
+  }
+
+  function tableModel(section, test) {
+    return section.children.find((child) => child.type === "table" && test(child)) || null;
+  }
+
+  /** 天體名稱前的符號（與表格同一套）；對照不到就只有字。 */
+  function bodyLabel(name) {
+    const node = make("span", "glance-body");
+    const glyph = TABLE_GLYPHS.bodies.get(name);
+    if (glyph) node.appendChild(tableGlyph(glyph));
+    node.append(name);
+    return node;
+  }
+
+  function signLabel(name) {
+    const node = make("span", "glance-sign");
+    if (TABLE_GLYPHS.signs.has(name)) node.appendChild(tableGlyph(TABLE_GLYPHS.signs.get(name)));
+    node.append(name);
+    return node;
+  }
+
+  // 一覽整塊是一張圖（role="img"），名稱是一句由同一份表格字串導出的摘要：報讀器聽到摘要，
+  // 逐格的精確值在下面的表。圖裡的字（標題、圖例、刻度）只描述這張圖，與摘要圖同一條契約，匯出不印。
+  function glanceShell(title) {
+    const host = make("div", "glance");
+    host.setAttribute("role", "img");
+    host.appendChild(figureText("p", "glance-title", title));
+    return host;
+  }
+  function nameGlance(host, title, lines) {
+    host.setAttribute("aria-label", `${title}：${lines.join("；")}。精確值見下方的表。`);
+  }
+
+  // ── 廟、旺、陷、弱（與外來）一覽 ──────────────────────────
+  // 每顆星一格：星、星座、判定的標記；選了外來時，同一格加上外來的判定（讀〈外來〉一區的表）。
+  function dignityGlance(section) {
+    const model = tableModel(section, (table) => table.columns.join("|")
+      === `天體|星座|${window.ChartViewModel.DEGREE_IN_SIGN_COLUMN}|廟|旺|陷|弱|判定`);
+    if (!model || !model.rows.length) return null;
+    const peregrineSection = currentViewTree
+      && currentViewTree.sections.find((item) => item.id === "dignity_peregrine" && item.status.state === "present");
+    const peregrineModel = peregrineSection
+      ? tableModel(peregrineSection, (table) => table.columns[0] === "天體" && table.columns[3] === "判定") : null;
+    const peregrineBy = new Map(peregrineModel ? peregrineModel.rows.map((row) => [row[0], row[3]]) : []);
+
+    const title = peregrineModel ? "七顆行星一覽：廟、旺、陷、弱與外來" : "七顆行星一覽：廟、旺、陷、弱";
+    const host = glanceShell(title);
+    const lines = [];
+    host.classList.add("glance-dignity");
+    const list = make("ul", "glance-planets");
+    model.rows.forEach((row) => {
+      const [name, sign, , , , , , judgment] = row.map((cell) => String(cell == null ? "" : cell));
+      const item = make("li", "glance-planet");
+      const marks = make("span", "glance-marks");
+      const parts = listParts(judgment, DIGNITY_MARK_SIDE);
+      if (parts) parts.filter((part) => part.side).forEach((part) => marks.appendChild(stateMark(part.text, part.side)));
+      else marks.appendChild(stateMark(judgment, "quiet"));
+      const peregrine = peregrineBy.get(name);
+      if (peregrine) {
+        const side = peregrine === "外來" ? "debility" : (peregrine.startsWith("無法判定") ? "neutral" : "quiet");
+        marks.appendChild(stateMark(peregrine, side));
+      }
+      item.append(bodyLabel(name), signLabel(sign), marks);
+      list.appendChild(item);
+      lines.push(`${name}在${sign}，${[judgment].concat(peregrine ? [peregrine] : []).join("，")}`);
+    });
+    host.appendChild(list);
+    host.appendChild(figureText("p", "glance-key", GLANCE_KEY_TEXT
+      + (peregrineModel ? "外來依 Lilly 1647 判，細節在〈外來〉一區。" : "")));
+    nameGlance(host, title, lines);
+    return host;
+  }
+
+  /** 廟旺陷弱表：判定欄加標記；判定是在陷／在弱…時，對應那一欄的星座標成「這一格就是它現在的星座」。 */
+  function decorateDignityTable(host) {
+    const table = host.querySelector('table[data-section="dignity_domicile_exaltation"]');
+    if (!table) return;
+    const judgments = columnCells(table, "判定");
+    const hit = { 入廟: "廟", 入旺: "旺", 在陷: "陷", 在弱: "弱" };
+    judgments.forEach((cell, rowIndex) => {
+      const text = cell.textContent;
+      const parts = listParts(text, DIGNITY_MARK_SIDE);
+      if (!parts) { cell.classList.add("is-quiet"); return; }
+      markCell(cell, parts);
+      // 「牡羊、天蠍」這種兩個星座的格，只標出它現在所在的那一個。
+      const sign = columnCells(table, "星座")[rowIndex];
+      parts.filter((part) => part.side).forEach((part) => {
+        const target = columnCells(table, hit[part.text])[rowIndex];
+        if (!target || !sign) return;
+        const items = target.textContent.split("、");
+        if (!items.includes(sign.textContent)) return;
+        target.replaceChildren(...items.flatMap((item, index) => (index ? ["、"] : [])
+          .concat([item === sign.textContent ? figureText("span", "sign-hit", item) : item])));
+      });
+    });
+  }
+
+  function decoratePeregrineTable(host) {
+    const table = host.querySelector('table[data-section="dignity_peregrine"]');
+    if (!table) return;
+    columnCells(table, "判定").forEach((cell) => {
+      const text = cell.textContent;
+      if (text === "外來") markCell(cell, [{ text, side: "debility" }]);
+      else if (text.startsWith("無法判定")) markCell(cell, [{ text, side: "neutral" }]);
+      else cell.classList.add("is-quiet");
+    });
+    // 有的尊貴照字（一格常有兩三項，全框起來太吵）；同時在的陷、弱加虛線框，與廟旺陷弱表一致。
+    ["同時在"].forEach((name) => columnCells(table, name).forEach((cell) => {
+      const parts = cell.textContent === GLANCE_DASH ? null : listParts(cell.textContent, PEREGRINE_MARK_SIDE);
+      if (parts) markCell(cell, parts);
+    }));
+  }
+
+  // ── 行速、停滯與東出西入 ────────────────────────────────
+  // 度分秒字串（「14°38′38.77″」「59′08″」「2′00″35‴」）換成度；讀不懂回 null（不畫橫條）。
+  function dmsDegrees(text) {
+    const match = /^(?:(\d+)°)?(?:(\d+)′)?(?:(\d+(?:\.\d+)?)″)?(?:(\d+)‴)?$/.exec(String(text || "").trim());
+    if (!match || !match.slice(1).some((part) => part !== undefined)) return null;
+    const [deg, min, sec, third] = match.slice(1).map((part) => (part === undefined ? 0 : Number(part)));
+    return deg + min / 60 + sec / 3600 + third / 216000;
+  }
+
+  /** 「出生前 14.8 天」「代表性時刻後 3.0 小時」換成日數（前為負）；讀不懂回 null。 */
+  function offsetDays(text) {
+    const match = /(前|後) (\d+(?:\.\d+)?) (天|小時)$/.exec(String(text || ""));
+    if (!match) return null;
+    const value = Number(match[2]) / (match[3] === "小時" ? 24 : 1);
+    return match[1] === "前" ? -value : value;
+  }
+
+  // 橫條：這一刻每天走的度數，刻度到平均的兩倍，平均是正中那條直線；超過兩倍的停在右端並畫一個缺口。
+  // 逆行畫空心（比的是每天退的度數，與表格同一句）。橫條只是圖，aria-hidden；數字在旁邊的字裡。
+  const SPEED_SCALE = 2;
+  function speedGauge(daily, mean, retrograde) {
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("class", "speed-gauge");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    const ratio = daily / mean / SPEED_SCALE;
+    const shape = (tag, attributes) => {
+      const node = document.createElementNS(SVG_NS, tag);
+      Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, String(value)));
+      svg.appendChild(node);
+      return node;
+    };
+    shape("rect", { class: "speed-track", x: "0", y: "3", width: "100%", height: "8" });
+    if (ratio > 0) {
+      shape("rect", {
+        class: retrograde ? "speed-bar is-retrograde" : "speed-bar",
+        x: "0.5", y: "3.5", width: `${(Math.min(ratio, 1) * 100).toFixed(2)}%`, height: "7",
+      });
+    }
+    if (ratio > 1) shape("line", { class: "speed-over", x1: "97%", x2: "97%", y1: "1", y2: "13" });
+    shape("line", { class: "speed-mean", x1: "50%", x2: "50%", y1: "0", y2: "14" });
+    return svg;
+  }
+
+  // 轉向時間軸：出生（或代表性時刻）在正中，左右各到搜尋的天數；每一次轉向一根標竿，標上星名與哪一次。
+  // 標籤太近時往上疊一層。位置用百分比，字級固定，窄螢幕不縮字。精確時刻在下面的表。
+  const TURN_LABEL_EM = 13;     // 標籤字級（px），與 calculate.css 的 .turn-label 一致
+  const TURN_ASSUMED_WIDTH = 330;  // 估算碰撞用的寬度：取手機可用寬度，桌機只會更鬆
+  function turnTimeline(model, windowDays, anchorLabel) {
+    const turns = model.rows.map((row) => ({
+      planet: String(row[0]), which: String(row[1]), days: offsetDays(row[2]),
+    })).filter((turn) => turn.days !== null && Math.abs(turn.days) <= windowDays);
+    if (!turns.length) return null;
+    const place = (days) => (days + windowDays) / (2 * windowDays);
+    // 依位置排，逐一放進第一個不重疊的層；寬度用字數估。
+    const lanes = [];
+    turns.sort((a, b) => a.days - b.days).forEach((turn) => {
+      const text = `${turn.planet}　${turn.which}`;
+      const width = text.length * TURN_LABEL_EM / TURN_ASSUMED_WIDTH;
+      const x = place(turn.days);
+      const anchor = x < 0.3 ? "start" : (x > 0.7 ? "end" : "middle");
+      const left = anchor === "start" ? x : (anchor === "end" ? x - width : x - width / 2);
+      let lane = lanes.findIndex((end) => left > end + 0.02);
+      if (lane < 0) { lanes.push(0); lane = lanes.length - 1; }
+      lanes[lane] = left + width;
+      Object.assign(turn, { text, x, anchor, lane });
+    });
+    const laneHeight = 20;
+    const axisY = 12 + lanes.length * laneHeight + 8;
+    const height = axisY + 24;
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("class", "turn-timeline");
+    svg.setAttribute("height", String(height));
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    const inner = document.createElementNS(SVG_NS, "svg");
+    // 左右各留 1.5%，最外側的字不貼邊。
+    inner.setAttribute("x", "1.5%");
+    inner.setAttribute("width", "97%");
+    inner.setAttribute("overflow", "visible");
+    svg.appendChild(inner);
+    const shape = (tag, attributes, text) => {
+      const node = document.createElementNS(SVG_NS, tag);
+      Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, String(value)));
+      if (text !== undefined) node.textContent = text;
+      inner.appendChild(node);
+      return node;
+    };
+    shape("line", { class: "turn-axis", x1: "0%", x2: "100%", y1: axisY, y2: axisY });
+    const step = windowDays % 5 === 0 ? 5 : windowDays;
+    for (let day = -windowDays; day <= windowDays; day += step) {
+      const x = `${(place(day) * 100).toFixed(2)}%`;
+      shape("line", { class: day === 0 ? "turn-tick is-anchor" : "turn-tick", x1: x, x2: x, y1: axisY - (day === 0 ? 8 : 4), y2: axisY + 4 });
+      const label = day === 0 ? anchorLabel
+        : `${day < 0 ? "−" : "+"}${Math.abs(day)}${Math.abs(day) === windowDays ? " 天" : ""}`;
+      const anchor = day === -windowDays ? "start" : (day === windowDays ? "end" : "middle");
+      shape("text", { class: day === 0 ? "turn-scale is-anchor" : "turn-scale", x, y: axisY + 19, "text-anchor": anchor }, label);
+    }
+    turns.forEach((turn) => {
+      const x = `${(turn.x * 100).toFixed(2)}%`;
+      const labelY = 12 + (lanes.length - 1 - turn.lane) * laneHeight + 4;
+      shape("line", { class: "turn-stem", x1: x, x2: x, y1: labelY + 5, y2: axisY });
+      shape("circle", { class: "turn-dot", cx: x, cy: axisY, r: 4 });
+      shape("text", { class: "turn-label", x, y: labelY, "text-anchor": turn.anchor }, turn.text);
+    });
+    return svg;
+  }
+
+  // 停滯那一格的開頭（「停滯（第一次：…）；…」只取分號前，與表格同一份字）。
+  const MOTION_COURSE_SHORT = Object.freeze({
+    "行速快（swift）": "行速快", "行速慢（slow）": "行速慢", "等於平均（到原典印出的那一位）": "等於平均",
+  });
+
+  function motionGlance(section) {
+    const main = tableModel(section, (table) => table.columns.join("|")
+      === "天體|這一刻每天走|順行或逆行|Lilly 的平均每日行度|行速|停滯|東出或西入");
+    if (!main || !main.rows.length) return null;
+    const p115 = tableModel(section, (table) => table.title.startsWith("Lilly 的強弱表"));
+    const p115By = new Map(p115 ? p115.rows.map((row) => [row[0], row]) : []);
+    const title = main.title.startsWith("代表性時刻") ? "七顆星在代表性時刻" : "七顆星這一刻";
+    const host = glanceShell(title);
+    const lines = [];
+    host.classList.add("glance-motion");
+    const list = make("ul", "glance-motion-rows");
+    main.rows.forEach((row) => {
+      const [name, daily, direction, mean, course, station, side] = row.map((cell) => String(cell == null ? "" : cell));
+      const listed = p115By.get(name) || [];
+      const item = make("li", "glance-motion-row");
+      const speed = make("span", "glance-speed");
+      const dailyDegrees = dmsDegrees(daily);
+      const meanDegrees = dmsDegrees(mean);
+      const retrograde = direction === "逆行";
+      if (dailyDegrees !== null && meanDegrees) speed.appendChild(speedGauge(dailyDegrees, meanDegrees, retrograde));
+      const numbers = make("span", "glance-speed-text");
+      numbers.append(figureText("span", "glance-speed-value", `每天 ${daily}`),
+        figureText("span", "glance-speed-value", `平均 ${mean}`));
+      speed.appendChild(numbers);
+      const marks = make("span", "glance-marks");
+      const courseHead = course.split("；")[0];
+      if (MOTION_COURSE_SHORT[courseHead]) {
+        marks.appendChild(stateMark(MOTION_COURSE_SHORT[courseHead], p115Side(listed[1]) || "neutral"));
+      }
+      if (retrograde) marks.appendChild(stateMark("逆行", "neutral"));
+      if (station.startsWith("停滯")) marks.appendChild(stateMark(station.split("；")[0], "neutral"));
+      if (side === "晨星（東出）" || side === "昏星（西入）") {
+        marks.appendChild(stateMark(side, p115Side(listed[2]) || "neutral"));
+      }
+      item.append(bodyLabel(name), speed, marks);
+      list.appendChild(item);
+      lines.push(`${name}每天 ${daily}，平均 ${mean}，${[...marks.childNodes].map((mark) => mark.textContent).join("、")}`);
+    });
+    host.appendChild(list);
+    host.appendChild(figureText("p", "glance-key",
+      "橫條是這一刻每天走的度數，中間的直線是 Lilly 的平均每日行度，到右端是平均的兩倍（超過兩倍停在右端）；"
+      + "空心的橫條是逆行，比的是每天退的度數。" + (p115 ? GLANCE_KEY_TEXT : "")));
+
+    const turns = tableModel(section, (table) => /前後 \d+ 天內的轉向時刻/.test(table.title));
+    if (turns) {
+      const windowDays = Number(/前後 (\d+) 天/.exec(turns.title)[1]);
+      const timeline = windowDays > 0
+        ? turnTimeline(turns, windowDays, turns.title.startsWith("代表性時刻") ? "代表性時刻" : "出生") : null;
+      if (timeline) {
+        const figure = make("div", "glance-turns");
+        figure.appendChild(figureText("p", "glance-subtitle", `前後 ${windowDays} 天內的轉向（精確時刻見下方的表）`));
+        figure.appendChild(timeline);
+        host.appendChild(figure);
+        lines.push(`前後 ${windowDays} 天內的轉向：`
+          + turns.rows.filter((row) => offsetDays(row[2]) !== null).map((row) => `${row[0]}${row[2]}${row[1]}`).join("，"));
+      }
+    }
+    nameGlance(host, title, lines);
+    return host;
+  }
+
+  /** 行速主表與 p.115 表：行速、東出西入、Lilly 的分邊加標記（框線取同一列在 p.115 表的那一格）。 */
+  function decorateMotionTables(host, section) {
+    const tables = [...host.querySelectorAll('table[data-section="motion_states"]')];
+    const p115Model = tableModel(section, (table) => table.title.startsWith("Lilly 的強弱表"));
+    const p115Rows = p115Model ? p115Model.rows : [];
+    tables.forEach((table) => {
+      const caption = table.caption ? table.caption.textContent : "";
+      if (caption.startsWith("Lilly 的強弱表")) {
+        ["行速", "東出或西入"].forEach((name) => columnCells(table, name).forEach((cell) => {
+          const text = cell.textContent;
+          const head = Object.keys(P115_SIDE).find((label) => text.startsWith(label));
+          if (head) markCell(cell, [{ text: head, side: P115_SIDE[head] }].concat(text.length > head.length ? [{ text: text.slice(head.length) }] : []));
+        }));
+        return;
+      }
+      const heads = [...table.tHead.rows[0].cells].map((cell) => cell.textContent);
+      if (!heads.includes("東出或西入") || !heads.includes("停滯")) return;
+      columnCells(table, "行速").forEach((cell, index) => {
+        const text = cell.textContent;
+        const head = text.split("；")[0];
+        const listed = p115Rows[index] || [];
+        if (!MOTION_COURSE_SHORT[head]) return;
+        markCell(cell, [{ text: head, side: p115Side(listed[1]) || "neutral" }]
+          .concat(text.length > head.length ? [{ text: text.slice(head.length) }] : []));
+      });
+      columnCells(table, "東出或西入").forEach((cell, index) => {
+        const text = cell.textContent;
+        const listed = p115Rows[index] || [];
+        if (text === "晨星（東出）" || text === "昏星（西入）") markCell(cell, [{ text, side: p115Side(listed[2]) || "neutral" }]);
+        else cell.classList.add("is-quiet");
+      });
+      columnCells(table, "停滯").forEach((cell) => {
+        const text = cell.textContent;
+        if (!text.startsWith("停滯")) { cell.classList.add("is-quiet"); return; }
+        const head = text.split("；")[0];
+        markCell(cell, [{ text: head, side: "neutral" }].concat(text.length > head.length ? [{ text: text.slice(head.length) }] : []));
+      });
+      columnCells(table, "順行或逆行").forEach((cell) => {
+        if (cell.textContent === "逆行") markCell(cell, [{ text: "逆行", side: "neutral" }]);
+      });
+    });
+  }
+
+  // 指向方法頁的一句（十二分部區的九分部）：畫面上做成連結與較輕的旁註；字一個不改。
+  const SECTION_XREFS = Object.freeze({
+    dodecatemoria: [["九分部（novenaria", "方法頁〈十二分部〉一節", "/zh-TW/methods#novenaria"]],
+  });
+  function linkCrossReferences(host, sectionId) {
+    (SECTION_XREFS[sectionId] || []).forEach(([prefix, phrase, href]) => {
+      const note = [...host.querySelectorAll("p.section-note")].find((node) => node.textContent.startsWith(prefix));
+      if (!note) return;
+      note.classList.add("section-xref");
+      const text = [...note.childNodes].find((node) => node.nodeType === 3 && node.data.includes(phrase));
+      if (!text) return;
+      const hit = text.splitText(text.data.indexOf(phrase));
+      hit.splitText(phrase.length);
+      const link = document.createElement("a");
+      link.href = href;
+      link.textContent = phrase;
+      hit.replaceWith(link);
+    });
+  }
+
+  /** 本質尊貴各區的英文來源行（「來源：…」）：畫面上排成較輕的引文，字不改。 */
+  function quietSourceNotes(host, sectionId) {
+    if (!sectionId.startsWith("dignity_")) return;
+    host.querySelectorAll("p.section-note").forEach((note) => {
+      if (note.textContent.startsWith("來源：")) note.classList.add("section-cite");
+    });
+  }
+
+  // ── 全部並列：各家對照一覽（界、三分性、面；十二分部）──────────────
+  // 讀這幾區 canonical 的「各家對照：…」表（view-model 的 comparisonTable），字一個不改：每顆星一張卡，
+  // 同一技法裡說同一個答案的表放在同一行（依答案分組，表名照目錄順序）；各家相同的星收成一行，
+  // 有不同的才展開。不印比數、不照幾家相同排序、不用顏色：「有不同」只是一個細實線框的字，
+  // 不表示哪一家對。面的兩套型別不同（行星與星座），只並排、不比。
+  const COMPARISON_PREFIX = "各家對照：";
+  const COMPARISON_DIGNITY_ORDER = Object.freeze(["dignity_bounds", "dignity_triplicity", "dignity_face_decan"]);
+  const COMPARISON_VERDICT = Object.freeze({
+    相同: "same", 有不同: "differ", "無法比：日夜盤未知": "unknown", "不比：一套是行星、一套是星座": "not_compared",
+  });
+  const COMPARISON_MARK = Object.freeze({
+    same: ["各家相同", "quiet"], differ: ["有不同", "differ"], unknown: ["無法比", "neutral"], not_compared: ["不比", "quiet"],
+  });
+
+  /** 一張「各家對照」表 → { label, rows:[{ name, where, answers:[{school, text}], verdict }] }；讀不懂回 null。 */
+  function comparisonModel(section) {
+    const table = tableModel(section, (item) => String(item.title).startsWith(COMPARISON_PREFIX));
+    if (!table || !table.rows.length) return null;
+    // 「各家」整欄相同時收成表下註（面／旬每一列都是「不比」）；那時這一欄不在表上。
+    const verdictColumn = table.columns[table.columns.length - 1] === "各家";
+    if (!verdictColumn && !(table.notes || []).some((note) => note.includes("「各家」一欄每一列都是「不比"))) return null;
+    const fixed = table.columns[0] === "點" ? 2 : 3;
+    const schools = table.columns.slice(fixed, verdictColumn ? -1 : undefined);
+    const rows = table.rows.map((row) => {
+      const cells = row.map((cell) => String(cell == null ? "" : cell));
+      return {
+        name: cells[0],
+        sign: fixed === 3 ? cells[1] : null,
+        where: fixed === 3 ? cells[2] : cells[1],
+        answers: schools.map((school, index) => ({ school, text: cells[fixed + index] })),
+        verdict: verdictColumn ? COMPARISON_VERDICT[cells[cells.length - 1]] || null : "not_compared",
+      };
+    });
+    if (rows.some((row) => !row.verdict)) return null;
+    return { label: String(table.title).slice(COMPARISON_PREFIX.length), rows };
+  }
+
+  /** 同一個答案的表收成一組；組的順序照第一個說它的表（也就是目錄順序）。 */
+  function answerGroups(answers) {
+    const groups = [];
+    answers.forEach(({ school, text }) => {
+      const group = groups.find((item) => item.text === text);
+      if (group) group.schools.push(school);
+      else groups.push({ text, schools: [school] });
+    });
+    return groups;
+  }
+
+  /** 答案前加符號：行星或星座（十二分部「金牛（金星）」取括號前的星座）；其他照原字。 */
+  function answerLabel(text) {
+    const node = make("span", "cmp-answer");
+    const match = /^(.+?)（(.+)）$/.exec(text);
+    const head = match ? match[1] : text;
+    const glyph = TABLE_GLYPHS.bodies.get(head) || TABLE_GLYPHS.signs.get(head);
+    if (glyph) node.appendChild(tableGlyph(glyph));
+    node.append(head);
+    if (match) node.appendChild(figureText("span", "cmp-answer-lord", `（${match[2]}）`));
+    return node;
+  }
+
+  /** 表名：研究用的表把「（研究用）」排成小標籤，字不改。 */
+  function schoolLabel(name) {
+    const node = make("span", "cmp-school");
+    const research = name.endsWith("（研究用）");
+    node.append(research ? name.slice(0, -"（研究用）".length) : name);
+    if (research) node.appendChild(figureText("span", "cmp-research", "（研究用）"));
+    return node;
+  }
+
+  /** 一顆星（或一個點）在全部技法下的判斷：任一技法有不同→有不同；否則有無法比→無法比；否則相同。 */
+  function subjectVerdict(lines) {
+    const compared = lines.filter((line) => line.verdict !== "not_compared");
+    if (!compared.length) return "not_compared";
+    if (compared.some((line) => line.verdict === "differ")) return "differ";
+    if (compared.some((line) => line.verdict === "unknown")) return "unknown";
+    return "same";
+  }
+
+  function comparisonCard(subject, lines) {
+    const verdict = subjectVerdict(lines);
+    const card = make("li", "cmp-card");
+    card.dataset.verdict = verdict;
+    const head = make("div", "cmp-head");
+    head.appendChild(bodyLabel(subject.name));
+    const where = make("span", "cmp-where");
+    if (subject.sign) where.appendChild(signLabel(subject.sign));
+    where.appendChild(figureText("span", "cmp-degree", subject.where));
+    head.appendChild(where);
+    const [markText, side] = COMPARISON_MARK[verdict];
+    head.appendChild(stateMark(markText, side));
+    card.appendChild(head);
+    const sentences = [];
+    if (verdict === "same" || verdict === "not_compared") {
+      // 收成一行：每個技法一個答案（面的兩套並排，用「／」隔開）。
+      const line = make("p", "cmp-line");
+      lines.forEach((item) => {
+        const part = make("span", "cmp-line-part");
+        if (item.label) part.appendChild(figureText("span", "cmp-tech", item.label));
+        answerGroups(item.answers).forEach((group, index) => {
+          if (index) part.appendChild(figureText("span", "cmp-slash", "／"));
+          part.appendChild(answerLabel(group.text));
+        });
+        line.appendChild(part);
+        sentences.push(`${item.label || ""}${answerGroups(item.answers).map((group) => group.text).join("／")}`);
+      });
+      card.appendChild(line);
+    } else {
+      const list = make("dl", lines.some((item) => item.label) ? "cmp-rows" : "cmp-rows no-tech");
+      lines.forEach((item) => {
+        const term = figureText("dt", "cmp-tech", item.label || "");
+        const detail = make("dd", "cmp-groups");
+        const groups = answerGroups(item.answers);
+        if (item.verdict === "same") {
+          const group = make("span", "cmp-group");
+          group.append(answerLabel(groups[0].text), figureText("span", "cmp-schools is-all", "各家相同"));
+          detail.appendChild(group);
+          sentences.push(`${item.label || ""}各家相同，${groups[0].text}`);
+        } else {
+          groups.forEach((entry) => {
+            const group = make("span", "cmp-group");
+            const schools = make("span", "cmp-schools");
+            entry.schools.forEach((school, index) => {
+              if (index) schools.appendChild(figureText("span", "cmp-sep", "、"));
+              schools.appendChild(schoolLabel(school));
+            });
+            group.append(answerLabel(entry.text), schools);
+            detail.appendChild(group);
+          });
+          sentences.push(`${item.label || ""}${groups.map((entry) => `${entry.schools.join("、")}說${entry.text}`).join("，")}`);
+        }
+        if (item.label) list.append(term, detail);
+        else list.append(detail);
+      });
+      card.appendChild(list);
+    }
+    return { card, verdict, sentence: `${subject.name}${subject.sign ? `在${subject.sign}` : ""}：${markText}；${sentences.join("；")}` };
+  }
+
+  /**
+   * 一覽：models 是 [{ label, rows }]（同一批星、同一順序），label 為 null 時卡片不寫技法名（十二分部）。
+   * 回傳一覽節點；讀不懂就回 null，表格照舊。
+   */
+  function comparisonGlance(title, models, unit) {
+    if (!models.length) return null;
+    const subjects = models[0].rows;
+    if (models.some((model) => model.rows.length !== subjects.length
+      || model.rows.some((row, index) => row.name !== subjects[index].name))) return null;
+    const host = glanceShell(title);
+    host.classList.add("glance-compare");
+    const list = make("ul", "cmp-cards");
+    const counts = { same: 0, differ: 0, unknown: 0 };
+    const sentences = [];
+    subjects.forEach((subject, index) => {
+      const lines = models.map((model) => ({
+        label: model.label, answers: model.rows[index].answers, verdict: model.rows[index].verdict,
+      }));
+      const { card, verdict, sentence } = comparisonCard(subject, lines);
+      if (verdict in counts) counts[verdict] += 1;
+      list.appendChild(card);
+      sentences.push(sentence);
+    });
+    const tally = [["各家相同", counts.same], ["有不同", counts.differ], ["無法比", counts.unknown]]
+      .filter(([, count]) => count).map(([name, count]) => `${name} ${count} ${unit}`).join(" · ");
+    if (tally) host.appendChild(figureText("p", "cmp-tally", tally));
+    host.appendChild(list);
+    host.appendChild(figureText("p", "glance-key",
+      "依答案分組：同一個答案的表寫在同一行，表名照目錄順序。各家相同的收成一行，有不同的才展開；"
+      + "「有不同」的框只是提示，不表示哪一家對，也不照幾家相同排序。"
+      + (models.some((model) => model.rows.some((row) => row.verdict === "not_compared"))
+        ? "面的兩套一套是行星、一套是星座，只並排，不比。" : "")
+      + "精確值與各套的完整表在下方。"));
+    nameGlance(host, title, (tally ? [tally] : []).concat(sentences));
+    return host;
+  }
+
+  // ── 界的對照圖版（全部並列）──────────────────────────────
+  // 讀這一區每一套的「完整界段」表（view tree，字與下方的表同一份），不另算：每顆星一列、每套表一欄，
+  // 一條 0–30° 的細框條；這顆星所在的那一段界畫斜線與兩條邊，圈裡是那一段的界主，紅色直線是這顆星
+  // 在星座內的度數。列首一條紅線＝各套的界主不一致（只標「有不同」，不表示哪一家對）。
+  // 寬版是一張矩陣；窄版每顆星一張小圖版、各套上下疊。整張圖是 role="img"，名稱是逐星逐套的一句話。
+  const BOUNDS_FULL_SUFFIX = "：完整界段";
+  const BOUNDS_RULER_SHORT = Object.freeze({ 土星: "土", 木星: "木", 火星: "火", 金星: "金", 水星: "水" });
+
+  /** 一套「完整界段」表 → { name, rows:[{ body, sign, degreeText, ruler, start, end, degree }] }；讀不懂回 null。 */
+  function boundsProfileModel(table) {
+    const column = (label) => table.columns.indexOf(label);
+    const at = { body: 0, sign: column("星座"), degree: column(window.ChartViewModel.DEGREE_IN_SIGN_COLUMN),
+      ruler: column("守護"), range: column("界段") };
+    if (at.sign < 0 || at.degree < 0 || at.ruler < 0 || at.range < 0) return null;
+    const rows = table.rows.map((row) => {
+      const cell = (index) => String(row[index] == null ? "" : row[index]).trim();
+      const range = /^(\d+)°–(\d+)°$/.exec(cell(at.range));
+      const degree = /^(\d+)°(\d+)′/.exec(cell(at.degree));
+      const start = range ? Number(range[1]) : null;
+      const end = range ? Number(range[2]) : null;
+      return {
+        body: cell(at.body), sign: cell(at.sign), degreeText: cell(at.degree), ruler: cell(at.ruler),
+        rangeText: cell(at.range),
+        start: range && start < end && end <= 30 ? start : null, end: range && start < end && end <= 30 ? end : null,
+        degree: degree ? Number(degree[1]) + Number(degree[2]) / 60 : null,
+      };
+    });
+    return { name: String(table.title).slice(0, -BOUNDS_FULL_SUFFIX.length), rows };
+  }
+
+  function boundsPlateModel(section) {
+    const profiles = section.children
+      .filter((child) => child.type === "table" && String(child.title).endsWith(BOUNDS_FULL_SUFFIX))
+      .map(boundsProfileModel);
+    if (profiles.length < 2 || profiles.some((profile) => !profile || !profile.rows.length)) return null;
+    const bodies = profiles[0].rows.map((row) => row.body);
+    if (profiles.some((profile) => profile.rows.length !== bodies.length
+      || profile.rows.some((row, index) => row.body !== bodies[index]))) return null;
+    return { profiles, bodies };
+  }
+
+  function plateNode(name, attributes = {}, parent = null) {
+    const node = document.createElementNS(SVG_NS, name);
+    Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, String(value)));
+    if (parent) parent.appendChild(node);
+    return node;
+  }
+  function plateText(parent, x, y, content, className, anchor = "start") {
+    const node = plateNode("text", { x, y, class: className, "text-anchor": anchor }, parent);
+    node.textContent = content;
+    return node;
+  }
+  function plateGlyph(parent, key, cx, cy, size, className) {
+    const glyph = key && TABLE_GLYPHS.glyphs[key];
+    if (!glyph) return;
+    const [x0, y0, x1, y1] = glyph.bbox;
+    const scale = size / Math.max(x1 - x0, y1 - y0);
+    plateNode("path", { d: glyph.d, class: className, transform: `matrix(${scale} 0 0 ${scale} `
+      + `${(cx - (scale * (x0 + x1)) / 2).toFixed(2)} ${(cy - (scale * (y0 + y1)) / 2).toFixed(2)})` }, parent);
+  }
+  function plateSvg(width, height, hatchId) {
+    const svg = plateNode("svg", { viewBox: `0 0 ${width} ${height}`, class: "bp-svg", "aria-hidden": "true", focusable: "false" });
+    const defs = plateNode("defs", {}, svg);
+    const pattern = plateNode("pattern", { id: hatchId, width: 5, height: 5, patternUnits: "userSpaceOnUse",
+      patternTransform: "rotate(45)" }, defs);
+    plateNode("line", { x1: 0, y1: 0, x2: 0, y2: 5, class: "bp-hatch-line" }, pattern);
+    plateNode("rect", { x: 0.5, y: 0.5, width: width - 1, height: height - 1, class: "bp-plate" }, svg);
+    plateNode("rect", { x: 4.5, y: 4.5, width: width - 9, height: height - 9, class: "bp-plate-in" }, svg);
+    return svg;
+  }
+  /** 一條 0–30° 的框條：x..x+w；所在界段斜線＋兩條邊、圈內界主、星的度數。 */
+  function plateStrip(parent, x, y, w, h, row, hatchId) {
+    const at = (degree) => x + (degree / 30) * w;
+    plateNode("rect", { x, y, width: w, height: h, class: "bp-frame" }, parent);
+    [10, 20].forEach((degree) => plateNode("line", { x1: at(degree), y1: y + h - 3, x2: at(degree), y2: y + h, class: "bp-tick" }, parent));
+    const ranged = row.start !== null;
+    if (ranged) {
+      plateNode("rect", { x: at(row.start), y, width: at(row.end) - at(row.start), height: h, class: "bp-bound",
+        fill: `url(#${hatchId})` }, parent);
+      [row.start, row.end].forEach((degree) => plateNode("line", { x1: at(degree), y1: y, x2: at(degree), y2: y + h, class: "bp-edge" }, parent));
+    }
+    if (row.degree !== null) plateNode("line", { x1: at(row.degree), y1: y - 4, x2: at(row.degree), y2: y + h + 4, class: "bp-body" }, parent);
+    const cx = ranged ? (at(row.start) + at(row.end)) / 2 : x + w / 2;
+    const key = TABLE_GLYPHS.bodies.get(row.ruler);
+    if (key && ranged) {
+      plateNode("circle", { cx, cy: y + h / 2, r: h / 2 - 1.5, class: "bp-ring" }, parent);
+      plateGlyph(parent, key, cx, y + h / 2, h * 0.52, "bp-gl");
+    }
+    // 框條下面一行小字：界主（一字）與界段；讀不懂的界段照原字寫出界主與界段，不畫斜線。
+    const label = ranged ? `${BOUNDS_RULER_SHORT[row.ruler] || row.ruler} ${row.start}°–${row.end}°`
+      : [row.ruler, row.rangeText].filter(Boolean).join(" ");
+    const anchor = cx - x < 24 ? "start" : x + w - cx < 24 ? "end" : "middle";
+    plateText(parent, anchor === "start" ? x : anchor === "end" ? x + w : cx, y + h + 14, label, "bp-t bp-small", anchor);
+  }
+  const plateDegree = (text) => text.replace(/\d+(?:\.\d+)?″$/, "");
+  const plateDiffers = (model, index) => new Set(model.profiles.map((profile) => profile.rows[index].ruler)).size > 1;
+
+  function boundsPlateMatrix(model) {
+    const nameW = 128;
+    const cellW = 200;
+    const gap = 18;
+    const rowH = 60;
+    const width = nameW + model.profiles.length * (cellW + gap);
+    const height = 46 + model.bodies.length * rowH + 22;
+    const hatchId = "bp-hatch-wide";
+    const svg = plateSvg(width, height, hatchId);
+    svg.classList.add("bp-wide");
+    model.profiles.forEach((profile, column) => plateText(svg, nameW + column * (cellW + gap), 32, profile.name, "bp-t bp-head"));
+    model.bodies.forEach((body, index) => {
+      const y = 46 + index * rowH;
+      const group = plateNode("g", {}, svg);
+      if (index) plateNode("line", { x1: 14, y1: y - 7, x2: width - 14, y2: y - 7, class: "bp-rule" }, group);
+      if (plateDiffers(model, index)) plateNode("line", { x1: 12, y1: y + 2, x2: 12, y2: y + 42, class: "bp-differ-bar" }, group);
+      plateGlyph(group, TABLE_GLYPHS.bodies.get(body), 28, y + 14, 15, "bp-gl");
+      plateText(group, 42, y + 19, body, "bp-t bp-name");
+      const first = model.profiles[0].rows[index];
+      plateText(group, 42, y + 37, `${first.sign} ${plateDegree(first.degreeText)}`, "bp-t bp-small bp-dim");
+      model.profiles.forEach((profile, column) => plateStrip(group, nameW + column * (cellW + gap), y + 4, cellW, 22,
+        profile.rows[index], hatchId));
+    });
+    model.profiles.forEach((_profile, column) => {
+      const x = nameW + column * (cellW + gap);
+      [0, 10, 20, 30].forEach((degree) => plateText(svg, x + (degree / 30) * cellW, height - 14, `${degree}°`,
+        "bp-t bp-small bp-num", degree === 0 ? "start" : degree === 30 ? "end" : "middle"));
+    });
+    return svg;
+  }
+
+  function boundsPlateStack(model) {
+    const list = make("div", "bp-stack");
+    const width = 340;
+    const rowH = 44;
+    model.bodies.forEach((body, index) => {
+      const height = 42 + model.profiles.length * rowH + 6;
+      const hatchId = `bp-hatch-${index}`;
+      const svg = plateSvg(width, height, hatchId);
+      const first = model.profiles[0].rows[index];
+      if (plateDiffers(model, index)) plateNode("line", { x1: 9, y1: 12, x2: 9, y2: 32, class: "bp-differ-bar" }, svg);
+      plateGlyph(svg, TABLE_GLYPHS.bodies.get(body), 23, 22, 14, "bp-gl");
+      plateText(svg, 37, 27, body, "bp-t bp-name");
+      plateText(svg, width - 14, 27, `${first.sign} ${plateDegree(first.degreeText)}`, "bp-t bp-small bp-dim", "end");
+      model.profiles.forEach((profile, row) => {
+        const y = 42 + row * rowH;
+        plateText(svg, 14, y + 16, profile.name.replace(/ 承襲界$/, ""), "bp-t bp-small");
+        plateStrip(svg, 116, y + 3, 208, 18, profile.rows[index], hatchId);
+      });
+      list.appendChild(svg);
+    });
+    return list;
+  }
+
+  /** 界一區畫得出圖版時，界的對照由圖版承擔，不再進共用一覽的卡片（三分性與面照舊是卡片）。 */
+  function platedBounds(section) {
+    return section.id === "dignity_bounds" && Boolean(boundsPlateModel(section));
+  }
+
+  /** 界一區（全部並列）的對照圖版；讀不懂就回 null，表格與一覽照舊。 */
+  function boundsPlate(section) {
+    const model = boundsPlateModel(section);
+    if (!model) return null;
+    const host = glanceShell(`界的對照圖：${model.profiles.map((profile) => profile.name).join("、")}`);
+    host.classList.add("bounds-plate");
+    host.appendChild(boundsPlateMatrix(model));
+    host.appendChild(boundsPlateStack(model));
+    host.appendChild(figureText("p", "glance-key",
+      "斜線是這顆星所在的那一段界，圈裡是那一段的界主；紅色直線是這顆星在星座內的度數；"
+      + "列首的紅線表示各套的界主不一致（不表示哪一家對）。數字取自下方各套的「完整界段」表。"));
+    const sentences = model.bodies.map((body, index) => {
+      const first = model.profiles[0].rows[index];
+      return `${body}在${first.sign} ${plateDegree(first.degreeText)}，`
+        + model.profiles.map((profile) => {
+          const row = profile.rows[index];
+          return `${profile.name}${[row.ruler, row.rangeText].filter(Boolean).join(" ")}`;
+        }).join("、")
+        + (plateDiffers(model, index) ? "（界主有不同）" : "");
+    });
+    nameGlance(host, host.querySelector(".glance-title").textContent, sentences);
+    return host;
+  }
+
+  /** 尊貴三區（選了全部並列的）共用一個一覽，放在第一個全部並列的區段；畫成圖版的界不在其中。 */
+  function dignityComparisonGlance() {
+    if (!currentViewTree) return null;
+    const models = COMPARISON_DIGNITY_ORDER.map((id) => {
+      const section = currentViewTree.sections.find((item) => item.id === id && item.status.state === "present");
+      return section && !platedBounds(section) ? comparisonModel(section) : null;
+    }).filter(Boolean);
+    if (!models.length) return null;
+    return comparisonGlance(`七顆行星各家對照：${models.map((model) => model.label).join("、")}`, models, "顆");
+  }
+
+  /** 第一個（依畫面順序）有「各家對照」表的尊貴區段。 */
+  function firstComparisonDignity() {
+    if (!currentViewTree) return null;
+    const found = currentViewTree.sections.find((item) => item.id.startsWith("dignity_")
+      && item.status.state === "present" && !platedBounds(item) && comparisonModel(item));
+    return found ? found.id : null;
+  }
+
+  // 全部並列一區的說明：第一段（算了哪幾套）與日夜盤的狀況留在外面，怎麼讀對照表與出處收進「說明與原典」。
+  const COMPARISON_EXPLAIN_PREFIXES = Object.freeze(["「各家」一欄", "三分性的對照只列", "面／旬的兩套守護者", "來源："]);
+  function foldComparisonNotes(host) {
+    const notes = [...host.querySelectorAll(":scope > p.section-note")].filter((note) => (
+      COMPARISON_EXPLAIN_PREFIXES.some((prefix) => note.textContent.startsWith(prefix))
+      || /列為研究用：/.test(note.textContent)));
+    if (!notes.length) return;
+    const explain = make("details", "section-explain");
+    const summary = document.createElement("summary");
+    summary.textContent = "說明與原典";
+    explain.appendChild(summary);
+    notes[0].before(explain);
+    notes.forEach((note) => explain.appendChild(note));
+  }
+
+  /** 各套的完整表：每一套收進自己的摺疊（標題就是表名），預設收起；對照表照舊攤開。字與表一個不改。 */
+  function foldProfileTables(host) {
+    [...host.querySelectorAll(".table-wrap")].forEach((wrap) => {
+      const caption = wrap.querySelector("caption");
+      const name = caption ? caption.textContent : "";
+      if (!name || name.startsWith(COMPARISON_PREFIX)) return;
+      const fold = make("details", "section-tables profile-table");
+      const summary = document.createElement("summary");
+      summary.textContent = name;
+      fold.appendChild(summary);
+      wrap.before(fold);
+      fold.appendChild(wrap);
+      fold.addEventListener("toggle", applyOverflowRegions);
+    });
+  }
+
+  /** 古典判斷三區的一覽與標記；其他區段不動。一覽放在標題列之後、任何摺疊之外。 */
+  function decorateClassicalSection(host, section) {
+    quietSourceNotes(host, section.id);
+    linkCrossReferences(host, section.id);
+    let glance = null;
+    if (section.id === "dignity_domicile_exaltation") {
+      glance = dignityGlance(section);
+      decorateDignityTable(host);
+    } else if (section.id === "dignity_peregrine") {
+      decoratePeregrineTable(host);
+    } else if (/^dignity_(bounds|face_decan|triplicity)$/.test(section.id) && comparisonModel(section)) {
+      // 全部並列：三區共用一個一覽，放在第一個全部並列的區段；每一區的各套完整表各自收起。
+      // 界畫得出圖版時，界一區放圖版，三分性與面的卡片放在下一個全部並列的區段。
+      glance = section.id === "dignity_bounds" ? boundsPlate(section) : null;
+      if (!glance && firstComparisonDignity() === section.id) glance = dignityComparisonGlance();
+      foldProfileTables(host);
+      foldComparisonNotes(host);
+    } else if (section.id === "dodecatemoria" && comparisonModel(section)) {
+      const model = comparisonModel(section);
+      glance = comparisonGlance("十二分部：兩種算法逐點對照", [{ ...model, label: null }], "個點");
+    } else if (section.id === "motion_states") {
+      glance = motionGlance(section);
+      decorateMotionTables(host, section);
+      // 一覽與時間軸已把每顆星的狀態攤在畫面上；四、五張逐格的表收進一個預設收起的「詳細數值」。
+      // 只在一覽畫得出來時收：畫不出來（讀不懂表）就照舊攤開，不讓答案藏在摺疊裡。
+      if (glance) foldTables(host, "詳細數值");
+    }
+    if (glance) host.querySelector(".head").after(glance);
+  }
+
+  /** 把這一區所有的表依序移進一個預設收起的摺疊，放在第一張表原來的位置；字與表一個不改。 */
+  function foldTables(host, label) {
+    const wraps = [...host.querySelectorAll(".table-wrap")];
+    if (!wraps.length) return;
+    const fold = make("details", "section-tables");
+    const summary = document.createElement("summary");
+    summary.textContent = `${label}（${wraps.length} 張表）`;
+    fold.appendChild(summary);
+    wraps[0].before(fold);
+    wraps.forEach((wrap) => fold.appendChild(wrap));
+    // 收起時表格不在版面上；展開後重量溢出，可橫捲的表才保有 region／tabindex／標籤。
+    fold.addEventListener("toggle", applyOverflowRegions);
   }
 
   // 區段說明裡第一次出現、名詞解釋有條目的詞，做成與章節導言同一種可點的詞（.term，點了打開名詞解釋
@@ -3499,11 +4407,13 @@
     fixed_stars: [["fixed_stars", "恆星"]],
     prenatal_points: [["prenatal_syzygy", "產前朔望"]],
     antiscia: [["antiscia", "反照點"]],
-    dodecatemoria: [["dodecatemoria", "十二分部"]],
+    dodecatemoria: [["dodecatemoria", "十二分部"], ["novenaria", "九分部"]],
     aspects: [["aversion", "不合意"]],
     lunar_mansions: [["lunar_mansions", "月宿"]],
     void_of_course: [["void_of_course", "月空亡"]],
     solar_phase: [["cazimi", "日輪內"], ["combust", "焦傷"], ["under_beams", "在光束下"]],
+    motion_states: [["swift_slow", "行速快慢"], ["stationary", "停滯"], ["oriental_occidental", "東出西入"]],
+    dignity_peregrine: [["peregrine", "外來"]],
     classical_classifications: [["benefic_malefic", "吉星"], ["joys", "喜樂"], ["hayz", "Hayz 與 halb"],
       ["house_triad", "始宮"]],
   });
@@ -3807,6 +4717,40 @@
     node.append(text);
   }
 
+  // 相位方格的格內記號：幾何線條畫的相位符號（☌ ☍ △ □ ⚹），不靠字型；其他相位只寫名稱。
+  // 文字照原字放在只給報讀器的 span 裡（複製、匯出與報讀讀到的仍是同一句），記號與容許度只是畫面。
+  const ASPECT_MARKS = Object.freeze({
+    conjunction: [["circle", { cx: 8, cy: 12, r: 4.6 }], ["line", { x1: 11.3, y1: 8.7, x2: 16.5, y2: 3.5 }]],
+    opposition: [["circle", { cx: 5.2, cy: 14.8, r: 3.2 }], ["circle", { cx: 14.8, cy: 5.2, r: 3.2 }],
+      ["line", { x1: 7.5, y1: 12.5, x2: 12.5, y2: 7.5 }]],
+    trine: [["path", { d: "M10 3 L17.5 16.5 L2.5 16.5 Z" }]],
+    square: [["path", { d: "M4 4 H16 V16 H4 Z" }]],
+    sextile: [["line", { x1: 10, y1: 2.5, x2: 10, y2: 17.5 }], ["line", { x1: 3.5, y1: 6.25, x2: 16.5, y2: 13.75 }],
+      ["line", { x1: 3.5, y1: 13.75, x2: 16.5, y2: 6.25 }]],
+  });
+  function aspectMark(mark) {
+    const holder = make("span", "asp-mark");
+    holder.setAttribute("aria-hidden", "true");
+    if (mark.orb) holder.dataset.orb = mark.orb;
+    const shape = ASPECT_MARKS[mark.aspect];
+    if (!shape) {
+      holder.classList.add("asp-mark-name");
+      holder.dataset.name = mark.name;
+      return holder;
+    }
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("viewBox", "0 0 20 20");
+    svg.setAttribute("class", `asp-glyph asp-${mark.aspect}`);
+    svg.setAttribute("focusable", "false");
+    for (const [name, attributes] of shape) {
+      const node = document.createElementNS(SVG_NS, name);
+      for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, String(value));
+      svg.appendChild(node);
+    }
+    holder.appendChild(svg);
+    return holder;
+  }
+
   function materializeTable(model, sectionId, sectionTitle) {
     const wrap = make("div", "table-wrap");
     // role／tabindex 由 applyOverflowRegions 依實際溢出決定，不在這裡寫死。
@@ -3860,7 +4804,16 @@
           host.href = href;
           node.appendChild(host);
         }
-        fillCell(host, String(cell == null ? "" : cell), index === 0, index === 0 && Array.isArray(rowKeys) ? rowKeys : null);
+        const marks = isGrid && index > 0 && Array.isArray(model.marks) && Array.isArray(model.marks[rowIndex])
+          ? model.marks[rowIndex][index - 1] : null;
+        if (Array.isArray(marks) && marks.length) {
+          const spoken = make("span", "visually-hidden");
+          spoken.textContent = String(cell);
+          host.append(spoken, ...marks.map(aspectMark));
+          node.classList.add("asp-cell");
+        } else {
+          fillCell(host, String(cell == null ? "" : cell), index === 0, index === 0 && Array.isArray(rowKeys) ? rowKeys : null);
+        }
         tr.appendChild(node);
       });
       tbody.appendChild(tr);

@@ -32,7 +32,10 @@ from ..ephemeris import (
     segments_read_by,
 )
 from .trace import Trace
-from .time_utils import jd_ut_to_iso_utc, time_scale_for_jd_ut
+from .time_utils import (
+    SECONDS_PER_DAY, earth_rotation_jd_ut, earth_rotation_shift_days, jd_ut_to_iso_utc,
+    solved_instant, time_scale_for_jd_ut,
+)
 
 
 EVENT_FLAGS = {
@@ -111,21 +114,28 @@ VISIBILITY_STATES: Final = (
 # margin, so a body that finds no crossing here is genuinely without one across
 # the whole season, not merely across a calendar day.
 SEARCH_HORIZON_DAYS: Final = {"rise": 200.0, "set": 200.0, "upper_transit": 3.0, "lower_transit": 3.0}
-# Day-skip pre-filter.  A probe day [t, t + 1] is skipped without asking Swiss
-# only when no rise or set of the body can fall inside it.  A rise or set is
-# the instant the refracted upper limb reaches the apparent horizon, that is,
-# the topocentric true upper limb stands at -R, R the refraction at the
-# apparent horizon.  Let h be the centre's altitude from the latitude phi and
-# the apparent declination delta, p the topocentric parallax (it only lowers
-# the centre) and s the semidiameter; the upper limb lies in [h - p + s, h + s].
+# Day-skip pre-filter.  A probe at t asks Swiss for the next event after t,
+# and Swiss looks past the day it stands for: the slow method tabulates to
+# t + 26 h, the fast one may look about 1.5 days ahead.  A probe day [t, t + 1]
+# is therefore skipped without asking Swiss only when no rise or set of the
+# body can fall inside [t, t + 2], that is, when the rule below holds for that
+# day and for the next one; the skipped probe would have answered "none" and
+# the walk moves on exactly as it would have after asking.
+#
+# A rise or set is the instant the refracted upper limb reaches the apparent
+# horizon, that is, the topocentric true upper limb stands at -R, R the
+# refraction Swiss applies at the apparent horizon under the request's
+# atmosphere.  Let h be the centre's altitude from the latitude phi and the
+# apparent declination delta, p the topocentric parallax (it only lowers the
+# centre) and s the semidiameter; the upper limb lies in [h - p + s, h + s].
 #
 # * delta on the observer's side (same sign as phi): h never drops below the
 #   lower culmination |phi| + |delta| - 90, so the limb stays above
-#   |phi| + |delta| - 90 - p.  No crossing when |delta| > 90 - |phi| + p,
-#   since -R <= 0.
+#   |phi| + |delta| - 90 - p + s_min.  No crossing when
+#   |delta| > 90 - |phi| + p - s_min - R.
 # * delta on the other side: h never exceeds the upper culmination
-#   90 - |phi| - |delta|, so the limb stays below 90 - |phi| - |delta| + s.
-#   No crossing when |delta| > 90 - |phi| + R + s.
+#   90 - |phi| - |delta|, so the limb stays below 90 - |phi| - |delta| + s_max.
+#   No crossing when |delta| > 90 - |phi| + R + s_max.
 #
 # The rule reads delta at the two ends of the day only.  With
 # |d2(delta)/dt2| <= K, delta lies within K/8 of the straight line between the
@@ -137,46 +147,103 @@ SEARCH_HORIZON_DAYS: Final = {"rise": 200.0, "set": 200.0, "upper_transit": 3.0,
 # Measured bounds (1800-2399, plain swe.calc_ut): the Moon's |d2(delta)/dt2|
 # reaches 2.22 deg/day^2 and its horizontal parallax 1.0255 deg (1.027 from
 # 10 km up); every other body stays under 0.10 deg/day^2 (Mercury) and 0.01 deg
-# of parallax (Venus at inferior conjunction).  R is at most 0.89 deg over the
-# accepted atmosphere (-40 C, 1100 hPa; the request schema refuses colder air,
-# where Swiss's refraction is no longer monotonic).  PRE_FILTER_SAFETY_DEGREES
-# absorbs the geodetic-versus-geocentric zenith (under 0.004 deg of parallax
-# direction) and rounding.
+# of parallax (Venus at inferior conjunction).  Semidiameters: the Moon 0.2448
+# (apogee) to 0.2793 deg, the Sun 0.2622 (aphelion) to 0.2717 deg, every other
+# body under 0.009 deg (Venus at inferior conjunction).  R is read from Swiss
+# for the request's atmosphere (``horizon_refraction_bracket``); it is at most
+# 0.89 deg over the accepted atmosphere (-40 C, 1100 hPa; the request schema
+# refuses colder air, where Swiss's refraction is no longer monotonic) and at
+# least -0.07 deg (1 hPa, 500 m below sea level, where Swiss's horizon dip
+# leaves a direction just above the true horizon unrefracted below the apparent
+# one).  PRE_FILTER_SAFETY_DEGREES absorbs the geodetic-versus-geocentric zenith
+# (under 0.004 deg of parallax direction) and rounding.
 REFRACTION_AT_HORIZON_MAX_DEGREES: Final = 0.90
+REFRACTION_AT_HORIZON_MIN_DEGREES: Final = -0.10
 PRE_FILTER_SAFETY_DEGREES: Final = 0.05
+# Bisection steps for R: the 1-degree range halved 30 times is under 1e-9
+# degrees, and each margin uses the end of the bracket that keeps it
+# conservative.
+REFRACTION_BISECTION_STEPS: Final = 30
+# Refraction depends only on the true altitude and the atmosphere; the instant
+# and the direction used to read it are arbitrary.
+_REFRACTION_READING_JD_UT: Final = 2451545.0
+
+
+def horizon_refraction_bracket(
+    altitude_m: float, pressure_hpa: float, temperature_c: float
+) -> tuple[float, float]:
+    """(lower, upper) bounds on R, the depth below the true horizon that Swiss
+    refracts onto the apparent horizon for this observer altitude and atmosphere.
+
+    Read through the same Swiss conversion the altitude evidence uses
+    (``_apparent_altitude``), by bisection on the true altitude.  When the
+    crossing is not inside the accepted range of R the reading is not trusted
+    and the widest bracket is returned, which makes the pre-filter skip fewer
+    days, never more.
+    """
+    geopos = (0.0, 0.0, altitude_m)
+
+    def lifted(true_altitude: float) -> bool:
+        return _apparent_altitude(
+            _REFRACTION_READING_JD_UT, 0.0, true_altitude, geopos, pressure_hpa, temperature_c
+        ) >= 0.0
+
+    below, above = -REFRACTION_AT_HORIZON_MAX_DEGREES, -REFRACTION_AT_HORIZON_MIN_DEGREES
+    if lifted(below) or not lifted(above):
+        return -90.0, 90.0
+    for _ in range(REFRACTION_BISECTION_STEPS):
+        middle = (below + above) / 2.0
+        if lifted(middle):
+            above = middle
+        else:
+            below = middle
+    return -above, -below
 
 
 class PreFilterBounds(NamedTuple):
     parallax_degrees: float
-    semidiameter_degrees: float
+    semidiameter_max_degrees: float
+    semidiameter_min_degrees: float
     curvature_allowance_degrees: float  # K / 8
 
-    def same_hemisphere_margin(self) -> float:
-        return self.parallax_degrees + self.curvature_allowance_degrees + PRE_FILTER_SAFETY_DEGREES
-
-    def opposite_hemisphere_margin(self) -> float:
+    def same_hemisphere_margin(self, refraction_lower: float) -> float:
         return (
-            REFRACTION_AT_HORIZON_MAX_DEGREES + self.semidiameter_degrees
+            self.parallax_degrees + self.curvature_allowance_degrees + PRE_FILTER_SAFETY_DEGREES
+            - self.semidiameter_min_degrees - refraction_lower
+        )
+
+    def opposite_hemisphere_margin(self, refraction_upper: float) -> float:
+        return (
+            refraction_upper + self.semidiameter_max_degrees
             + self.curvature_allowance_degrees + PRE_FILTER_SAFETY_DEGREES
         )
 
 
-_MOON_PRE_FILTER_BOUNDS: Final = PreFilterBounds(1.03, 0.29, 0.30)
-# The Sun's disc (0.272 at perihelion) is the largest of the other bodies.
-_OTHER_PRE_FILTER_BOUNDS: Final = PreFilterBounds(0.01, 0.28, 0.02)
+_MOON_PRE_FILTER_BOUNDS: Final = PreFilterBounds(1.03, 0.29, 0.24, 0.30)
+_SUN_PRE_FILTER_BOUNDS: Final = PreFilterBounds(0.01, 0.28, 0.26, 0.02)
+_OTHER_PRE_FILTER_BOUNDS: Final = PreFilterBounds(0.01, 0.01, 0.0, 0.02)
+_PRE_FILTER_GROUPS: Final = (
+    ("moon", _MOON_PRE_FILTER_BOUNDS),
+    ("sun", _SUN_PRE_FILTER_BOUNDS),
+    ("other_bodies", _OTHER_PRE_FILTER_BOUNDS),
+)
 
 
 def pre_filter_bounds(body_id: int) -> PreFilterBounds:
-    return _MOON_PRE_FILTER_BOUNDS if body_id == swe.MOON else _OTHER_PRE_FILTER_BOUNDS
+    if body_id == swe.MOON:
+        return _MOON_PRE_FILTER_BOUNDS
+    return _SUN_PRE_FILTER_BOUNDS if body_id == swe.SUN else _OTHER_PRE_FILTER_BOUNDS
 
 
-def pre_filter_margins_receipt() -> dict:
+def pre_filter_margins_receipt(refraction: tuple[float, float]) -> dict:
+    """The margins the pre-filter applied under this request's refraction bracket."""
+    lower, upper = refraction
     return {
         group: {
-            "same_hemisphere": round(bounds.same_hemisphere_margin(), 6),
-            "opposite_hemisphere": round(bounds.opposite_hemisphere_margin(), 6),
+            "same_hemisphere": round(bounds.same_hemisphere_margin(lower), 6),
+            "opposite_hemisphere": round(bounds.opposite_hemisphere_margin(upper), 6),
         }
-        for group, bounds in (("moon", _MOON_PRE_FILTER_BOUNDS), ("other_bodies", _OTHER_PRE_FILTER_BOUNDS))
+        for group, bounds in _PRE_FILTER_GROUPS
     }
 
 
@@ -242,9 +309,10 @@ PROVENANCE: Final = {
 # a probe (swecl.c 2.10.03): the slow method tabulates from start - 2 h to
 # start + 26 h and refines inside that; the fast method may restart half a day
 # later and then looks up to one more day (about 1.5 days); a meridian transit
-# looks up to about one day; the pre-filter reads a probe day's far end
-# (+1 day) and the altitude envelope spans -0.5 to +1.5 days.  Two days covers
-# all of them on both sides.
+# looks up to about one day; the pre-filter reads the declination up to two
+# days past a probe start (the probe day and the next), never past the far end
+# of the seasonal horizon plus two days, and the altitude envelope spans -0.5
+# to +1.5 days.  Two days covers all of them on both sides.
 SEARCH_COVERAGE_MARGIN_DAYS: Final = 2.0
 
 
@@ -291,13 +359,27 @@ METHOD_SOURCE_ENTRIES: Final = {
 }
 
 
-def _event_value(jd_ut: float) -> dict:
+# swe_rise_trans states no tolerance.  The same event solved from 48 starting
+# instants spread over the day before it (400 random dates 1900-2400 and places
+# within 70 degrees of the equator, each for the Sun, the Moon and the five
+# planets, 2026-10-18) came back up to 0.97 s apart for a lunar lower transit, 0.50 s for a moonset
+# and 0.19 s for a sunrise before the walks started from a fixed whole-day grid;
+# the spread is kept as the printed resolution so a Swiss change cannot leak
+# sub-second noise into labels.  An event is therefore printed to the whole second.
+RISE_TRANS_REPEATABILITY_DAYS: Final = 1.0 / SECONDS_PER_DAY
+
+
+def _raw_event_value(jd_ut: float) -> dict:
     return {
         "jd_ut": jd_ut,
         "utc_time": jd_ut_to_iso_utc(jd_ut),
         # Each timestamp names its own era; a pre-1972 event is UT1.
         "time_scale": time_scale_for_jd_ut(jd_ut),
     }
+
+
+def _event_value(jd_ut: float) -> dict:
+    return solved_instant(jd_ut, RISE_TRANS_REPEATABILITY_DAYS, _raw_event_value)[1]
 
 
 def _interval(start_jd_ut: float, end_jd_ut: float) -> dict:
@@ -356,7 +438,12 @@ def _swiss_rise_trans(
             temperature_c,
             EPHEMERIS_FLAGS,
         )
-    return result, times[0] if result == 0 else None
+    if result != 0:
+        return result, None
+    # Swiss solves the crossing with its own sidereal time; from 2050 on the
+    # product's sidereal time is the IERS 2010 one, which the Earth reaches
+    # earlier or later by the shift (under a second; the bodies do not move).
+    return result, times[0] - earth_rotation_shift_days(times[0])
 
 
 # --- Per-chart probe reuse (performance only; never changes a result) --------
@@ -454,6 +541,10 @@ class HorizonProbeCache:
         self._combined: dict[tuple, object] = {}
         self._declinations: dict[tuple[float, int], float] = {}
         self._envelopes: dict[tuple, dict] = {}
+        self._refraction: dict[tuple[float, float, float], tuple[float, float]] = {}
+        # A day is judged once per chart: as a probe day and as the day after
+        # the previous probe, by the rise walk and by the set walk.
+        self.day_verdicts: dict[tuple, bool] = {}
 
     def probe(
         self,
@@ -554,6 +645,16 @@ class HorizonProbeCache:
             self._envelopes[key] = envelope
         return dict(envelope)
 
+    def refraction(
+        self, altitude_m: float, pressure_hpa: float, temperature_c: float
+    ) -> tuple[float, float]:
+        key = (altitude_m, pressure_hpa, temperature_c)
+        bracket = self._refraction.get(key)
+        if bracket is None:
+            bracket = horizon_refraction_bracket(*key)
+            self._refraction[key] = bracket
+        return bracket
+
     def declination(self, instant: float, body_id: int) -> float:
         key = (instant, body_id)
         value = self._declinations.get(key)
@@ -563,42 +664,87 @@ class HorizonProbeCache:
         return value
 
 
-def _crossing_geometrically_possible(
+def _declination(instant: float, body_id: int, probe_cache: "HorizonProbeCache | None") -> float:
+    if probe_cache is not None:
+        return probe_cache.declination(instant, body_id)
+    return swe.calc_ut(instant, body_id, EPHEMERIS_FLAGS | swe.FLG_EQUATORIAL)[0][1]
+
+
+def _day_crossing_possible(
     jd_ut: float,
     body_id: int,
-    latitude: float,
-    probe_cache: HorizonProbeCache | None = None,
+    geopos: tuple[float, float, float],
+    pressure_hpa: float,
+    temperature_c: float,
+    probe_cache: "HorizonProbeCache | None",
 ) -> bool:
-    """Cheap pre-filter: False only if no rise or set can fall in [jd_ut, jd_ut + 1].
-
-    The probe at `jd_ut` asks Swiss for the next event after it, so the day it
-    stands for is [jd_ut, jd_ut + 1].  The derivation of the rule and of its
-    bounds is the comment above `REFRACTION_AT_HORIZON_MAX_DEGREES`: a day is
-    skipped only when the declination keeps one sign and stays beyond the
-    hemisphere's limit all day, judged from both ends plus the curvature
-    allowance.  The pre-filter only saves solver calls; it is never the final
-    verdict.
-    """
-    ends = [
-        (
-            probe_cache.declination(instant, body_id)
-            if probe_cache is not None
-            else swe.calc_ut(
-                instant, body_id, EPHEMERIS_FLAGS | swe.FLG_EQUATORIAL
-            )[0][1]
-        )
-        for instant in (jd_ut, jd_ut + 1.0)
-    ]
+    """False only if no rise or set can fall in [jd_ut, jd_ut + 1]."""
+    latitude = geopos[1]
+    ends = [_declination(instant, body_id, probe_cache) for instant in (jd_ut, jd_ut + 1.0)]
     if latitude == 0.0 or ends[0] * ends[1] <= 0.0:
         return True
     bounds = pre_filter_bounds(body_id)
     same_hemisphere = (ends[0] > 0.0) == (latitude > 0.0)
-    margin = (
-        bounds.same_hemisphere_margin()
-        if same_hemisphere
-        else bounds.opposite_hemisphere_margin()
+    beyond = min(abs(ends[0]), abs(ends[1])) - (90.0 - abs(latitude))
+    # Refraction moves the two margins in opposite directions.  The two ends of
+    # the accepted range of R decide most days; the request's own R is read
+    # only when the answer depends on it.
+    if same_hemisphere:
+        always_possible, never_possible = (
+            bounds.same_hemisphere_margin(REFRACTION_AT_HORIZON_MAX_DEGREES),
+            bounds.same_hemisphere_margin(REFRACTION_AT_HORIZON_MIN_DEGREES),
+        )
+    else:
+        always_possible, never_possible = (
+            bounds.opposite_hemisphere_margin(REFRACTION_AT_HORIZON_MIN_DEGREES),
+            bounds.opposite_hemisphere_margin(REFRACTION_AT_HORIZON_MAX_DEGREES),
+        )
+    if beyond <= always_possible:
+        return True
+    if beyond > never_possible:
+        return False
+    lower, upper = (
+        probe_cache.refraction(geopos[2], pressure_hpa, temperature_c)
+        if probe_cache is not None
+        else horizon_refraction_bracket(geopos[2], pressure_hpa, temperature_c)
     )
-    return min(abs(ends[0]), abs(ends[1])) <= 90.0 - abs(latitude) + margin
+    margin = (
+        bounds.same_hemisphere_margin(lower)
+        if same_hemisphere
+        else bounds.opposite_hemisphere_margin(upper)
+    )
+    return beyond <= margin
+
+
+def _crossing_geometrically_possible(
+    jd_ut: float,
+    body_id: int,
+    geopos: tuple[float, float, float],
+    pressure_hpa: float,
+    temperature_c: float,
+    probe_cache: "HorizonProbeCache | None" = None,
+) -> bool:
+    """Cheap pre-filter: False only if the probe at `jd_ut` would find nothing.
+
+    The probe at `jd_ut` asks Swiss for the next event after it and Swiss looks
+    up to about 1.5 days ahead, so the probe day is skipped only when neither
+    it nor the following day can hold a rise or set.  The derivation of the
+    rule and of its bounds is the comment above
+    `REFRACTION_AT_HORIZON_MAX_DEGREES`.  The pre-filter only saves solver
+    calls; it is never the final verdict.
+    """
+    for day in (jd_ut, jd_ut + 1.0):
+        key = (day, body_id, geopos, pressure_hpa, temperature_c)
+        remembered = probe_cache.day_verdicts.get(key) if probe_cache is not None else None
+        if remembered is None:
+            remembered = _day_crossing_possible(
+                day, body_id, geopos, pressure_hpa, temperature_c, probe_cache
+            )
+            if probe_cache is not None:
+                probe_cache.day_verdicts[key] = remembered
+        if remembered:
+            return True
+    return False
 
 
 def _walk_probe(
@@ -624,6 +770,79 @@ def _walk_probe(
     )
 
 
+# --- Search grid -------------------------------------------------------------
+#
+# Swiss states no tolerance for swe_rise_trans, and the same event solved from
+# different starting instants comes back up to about a second apart (a lunar
+# lower transit; method notes of 2026-10-18).  A walk that starts from the
+# request's own instant would therefore move an event's last digits with the
+# birth time, and two anchors of one chart (or two charts) could print the
+# same rise a second apart.  Every walk therefore starts from a fixed grid:
+# the events of the interval (g, g + 1], g a whole Julian day (12:00 UT), are
+# the chain Swiss gives from g itself, then from just past each event found,
+# until a probe leaves the interval.  An event's value depends only on the
+# interval it lies in, never on the instant searched from; a walk reads the
+# intervals it needs and keeps the events on its side of the reference.
+SEARCH_GRID_DAYS: Final = 1.0
+# Swiss re-solves a root from a start just past it to within a few ULPs, so a
+# chain resumes a minute after each event; two events of one kind a minute
+# apart do not exist outside a grazing contact.
+CHAIN_RESUME_DAYS: Final = 1.0 / 1440.0
+# A chain finds at most a couple of events of one kind per day (a grazing
+# contact adds one more); four is a bound no real sky reaches.
+WALK_EVENTS_PER_DAY_BOUND: Final = 4
+WALK_BOUND_EXCEEDED_MESSAGE: Final = "horizon event walk exceeded its event bound"
+
+
+def _walk_bound_exceeded() -> swe.Error:
+    # Only a Swiss root that stops advancing can get here, so it leaves as the
+    # Swiss failure every caller already degrades to a closed module state.
+    return swe.Error(WALK_BOUND_EXCEEDED_MESSAGE)
+
+
+def _grid_interval_events(
+    grid_start: float,
+    stop_after: float,
+    body_id: int,
+    event_name: str,
+    geopos: tuple[float, float, float],
+    pressure_hpa: float,
+    temperature_c: float,
+    probe_cache: HorizonProbeCache | None,
+    *,
+    within_empty_run: bool,
+) -> list[float]:
+    """The events of (grid_start, grid_start + 1], in time order.
+
+    The chain stops early once it has an event later than ``stop_after``; every
+    event it returns has the value any other walk reads for it.  A probe day
+    the pre-filter proves crossing-free has none, which is what its probe would
+    have answered.
+    """
+    if event_name in HORIZON_CROSSINGS and not _crossing_geometrically_possible(
+        grid_start, body_id, geopos, pressure_hpa, temperature_c, probe_cache
+    ):
+        return []
+    events: list[float] = []
+    start = grid_start
+    for _ in range(WALK_EVENTS_PER_DAY_BOUND + 1):
+        status, found = _walk_probe(
+            start, body_id, event_name, geopos, pressure_hpa, temperature_c,
+            probe_cache, within_empty_run=within_empty_run and not events,
+        )
+        # -2: nothing in Swiss's own one/two-day window from this start, which
+        # covers the rest of the interval.
+        if status != 0 or found is None or found > grid_start + SEARCH_GRID_DAYS:
+            return events
+        if found <= start:
+            raise _walk_bound_exceeded()
+        events.append(found)
+        if found > stop_after:
+            return events
+        start = found + CHAIN_RESUME_DAYS
+    raise _walk_bound_exceeded()
+
+
 def _first_event_after(
     after_jd_ut: float,
     end_jd_ut: float,
@@ -633,67 +852,21 @@ def _first_event_after(
     pressure_hpa: float,
     temperature_c: float,
     probe_cache: HorizonProbeCache | None,
-    *,
-    known_empty: tuple[float, float] | None = None,
 ) -> float | None:
-    """First event strictly after ``after_jd_ut`` and not later than ``end_jd_ut``.
-
-    A Swiss probe sees only its own window from the probe start (about 26 hours
-    for the slow method), and a -2 means "nothing in that window", not "nothing
-    until the end".  Consecutive moonrises or moonsets at high latitude can be
-    more than a window apart, so after a -2 the probe start moves one day on and
-    the walk continues; one day is shorter than every Swiss window, so the
-    windows overlap and no stretch before ``end_jd_ut`` is left unprobed.
-
-    ``known_empty = (low, high)`` says no event lies in (low, high], because
-    probes already made under the same one-day rule found none there; a step
-    that lands inside that stretch moves straight to ``high``, which probes the
-    same remaining time.
-    """
-    cursor = math.nextafter(after_jd_ut, math.inf)
-    crossing = event_name in HORIZON_CROSSINGS
+    """First grid event strictly after ``after_jd_ut`` and not later than ``end_jd_ut``."""
+    grid_start = float(math.floor(after_jd_ut))
     within_empty_run = False
-
-    def step(current: float) -> float:
-        following = current + 1.0
-        if known_empty is not None and known_empty[0] < following < known_empty[1]:
-            return known_empty[1]
-        return following
-
-    while cursor <= end_jd_ut:
-        if crossing and not _crossing_geometrically_possible(
-            cursor, body_id, geopos[1], probe_cache
-        ):
-            cursor = step(cursor)
-            continue
-        status, candidate = _walk_probe(
-            cursor, body_id, event_name, geopos, pressure_hpa, temperature_c,
-            probe_cache, within_empty_run=within_empty_run,
+    while grid_start < end_jd_ut:
+        events = _grid_interval_events(
+            grid_start, after_jd_ut, body_id, event_name, geopos, pressure_hpa,
+            temperature_c, probe_cache, within_empty_run=within_empty_run,
         )
-        within_empty_run = status != 0
-        if status == 0 and candidate is not None:
-            return candidate if candidate <= end_jd_ut else None
-        # -2: no event in Swiss's own one/two-day window from this cursor.
-        cursor = step(cursor)
+        within_empty_run = not events
+        for found in events:
+            if found > after_jd_ut:
+                return found if found <= end_jd_ut else None
+        grid_start += SEARCH_GRID_DAYS
     return None
-
-
-SUN_CROSSING_RESUME_DAYS: Final = 1.0 / 1440.0
-# An event walk finds at most a couple of events of one kind per day (a
-# grazing contact adds one more); four per day of the window, plus two for the
-# window's ends, is a bound no real sky reaches.
-WALK_EVENTS_PER_DAY_BOUND: Final = 4
-WALK_BOUND_EXCEEDED_MESSAGE: Final = "horizon event walk exceeded its event bound"
-
-
-def _walk_event_bound(window_days: float) -> int:
-    return WALK_EVENTS_PER_DAY_BOUND * math.ceil(max(window_days, 0.0)) + 2
-
-
-def _walk_bound_exceeded() -> swe.Error:
-    # Only a Swiss root that stops advancing can get here, so it leaves as the
-    # Swiss failure every caller already degrades to a closed module state.
-    return swe.Error(WALK_BOUND_EXCEEDED_MESSAGE)
 
 
 def sun_horizon_crossings(
@@ -701,30 +874,27 @@ def sun_horizon_crossings(
 ) -> list[tuple[float, str]]:
     """Every sunrise and sunset in (start, end], in time order, by this module's definition.
 
-    The same Swiss probe walk as the rise/set search (refracted upper limb,
-    apparent topocentric, the request's atmosphere), over a caller's window
-    instead of the seasonal horizon.  The caller checks coverage first
+    The same grid walk as the rise/set search (refracted upper limb, apparent
+    topocentric, the request's atmosphere), over a caller's window instead of
+    the seasonal horizon, so a sunrise here is the instant the rise/set search
+    reports for it.  The caller checks coverage first
     (``require_search_coverage`` with its own reach).
     """
     geopos = (location.longitude, location.latitude, location.altitude_m)
     pressure_hpa = atmosphere.pressure_hpa if atmosphere.pressure_hpa is not None else 0.0
-    crossings = []
+    crossings: list[tuple[float, str]] = []
     for name in HORIZON_CROSSINGS:
-        cursor = start_jd_ut
-        for _ in range(_walk_event_bound(end_jd_ut - start_jd_ut)):
-            found = _first_event_after(
-                cursor, end_jd_ut, swe.SUN, name, geopos, pressure_hpa,
-                atmosphere.temperature_c, None,
+        grid_start = float(math.floor(start_jd_ut))
+        while grid_start < end_jd_ut:
+            crossings.extend(
+                (found, name)
+                for found in _grid_interval_events(
+                    grid_start, math.inf, swe.SUN, name, geopos, pressure_hpa,
+                    atmosphere.temperature_c, None, within_empty_run=False,
+                )
+                if start_jd_ut < found <= end_jd_ut
             )
-            if found is None:
-                break
-            crossings.append((found, name))
-            # Swiss re-solves a root from a start just past it to within a few
-            # ULPs, so the walk resumes a minute later; two sunrises a minute
-            # apart do not exist outside a grazing contact.
-            cursor = found + SUN_CROSSING_RESUME_DAYS
-        else:
-            raise _walk_bound_exceeded()
+            grid_start += SEARCH_GRID_DAYS
     return sorted(crossings)
 
 
@@ -758,68 +928,26 @@ def _search_previous(
 ) -> tuple[str, float | None]:
     """Last event strictly before the reference within the seasonal horizon.
 
-    Walk backwards a day at a time until a probe yields an event before the
-    reference; then walk forwards from it, exactly as the next-event search
-    does (stepping a day past each empty Swiss window), until the reference, so
-    the last event below the reference is returned.  A Swiss -2 only means no
-    event in that probe's own window (stopping there would report a moonset at
-    68.6 N more than a day too early).
+    Grid intervals are read backwards from the one holding the reference; the
+    first that has an event before the reference holds the answer, its last
+    such event.  Within an interval the chain stops at the first event at or
+    after the reference.
     """
-    horizon = SEARCH_HORIZON_DAYS[event_name]
-    start = reference_jd_ut - horizon
-    crossing = event_name in HORIZON_CROSSINGS
-    cursor = reference_jd_ut - 2.0
+    start = reference_jd_ut - SEARCH_HORIZON_DAYS[event_name]
+    before_reference = math.nextafter(reference_jd_ut, -math.inf)
+    grid_start = float(math.ceil(reference_jd_ut)) - SEARCH_GRID_DAYS
     within_empty_run = False
-    anchor = None
-    while cursor >= start:
-        if crossing and not _crossing_geometrically_possible(
-            cursor, body_id, geopos[1], probe_cache
-        ):
-            cursor -= 1.0
-            continue
-        status, candidate = _walk_probe(
-            cursor, body_id, event_name, geopos, pressure_hpa, temperature_c,
-            probe_cache, within_empty_run=within_empty_run,
+    while grid_start + SEARCH_GRID_DAYS > start:
+        events = _grid_interval_events(
+            grid_start, before_reference, body_id, event_name, geopos, pressure_hpa,
+            temperature_c, probe_cache, within_empty_run=within_empty_run,
         )
-        within_empty_run = status != 0
-        if status == 0 and candidate is not None and candidate < reference_jd_ut:
-            anchor = candidate
-            break
-        cursor -= 1.0
-    # The seasonal horizon may end inside the last day probed above; one more
-    # probe at the horizon itself closes that gap.
-    if anchor is None and cursor < start and start < reference_jd_ut - 2.0:
-        status, candidate = _rise_trans_call(
-            start, body_id, EVENT_FLAGS[event_name], geopos, pressure_hpa, temperature_c,
-            probe_cache,
-        )
-        if status == 0 and candidate is not None and candidate < reference_jd_ut:
-            anchor = candidate
-    # Every backward probe start after the one that found the anchor (or every
-    # one, when none did) found nothing before the reference, and each covered
-    # at least the day after it: no event lies in (that start, reference - 1].
-    # The forward walk below need not probe that stretch again.  The first
-    # backward probe (reference - 2) sees only its own window, so the last day
-    # before the reference is always probed.
-    known_empty = (cursor + 1.0, reference_jd_ut - 1.0)
-    if anchor is None:
-        anchor = _first_event_after(
-            max(start, reference_jd_ut - 1.0), reference_jd_ut,
-            body_id, event_name, geopos, pressure_hpa, temperature_c, probe_cache,
-        )
-        if anchor is None or anchor >= reference_jd_ut:
-            return "no_event_within_search_interval", None
-    previous = anchor
-    for _ in range(_walk_event_bound(reference_jd_ut - anchor)):
-        following = _first_event_after(
-            previous, reference_jd_ut,
-            body_id, event_name, geopos, pressure_hpa, temperature_c, probe_cache,
-            known_empty=known_empty,
-        )
-        if following is None or following >= reference_jd_ut:
-            return "event_found", previous
-        previous = following
-    raise _walk_bound_exceeded()
+        within_empty_run = not events
+        earlier = [found for found in events if start < found < reference_jd_ut]
+        if earlier:
+            return "event_found", earlier[-1]
+        grid_start -= SEARCH_GRID_DAYS
+    return "no_event_within_search_interval", None
 
 
 def _searched_pair(
@@ -947,7 +1075,7 @@ def _sample_altitude_envelope(
     for jd_ut in _envelope_sample_instants(reference_jd_ut):
         ecliptic = swe.calc_ut(jd_ut, body_id, topocentric_flags)[0]
         azimuth, true_centre_altitude, _apparent_centre_altitude = swe.azalt(
-            jd_ut,
+            earth_rotation_jd_ut(jd_ut),
             swe.ECL2HOR,
             geopos,
             pressure_hpa,
@@ -1015,9 +1143,10 @@ def _apparent_altitude(
     temperature_c: float,
 ) -> float:
     """Swiss's refracted altitude of the direction at (azimuth, true altitude)."""
-    equatorial = swe.azalt_rev(jd_ut, swe.HOR2EQU, geopos, azimuth, true_altitude)
+    rotation_jd_ut = earth_rotation_jd_ut(jd_ut)
+    equatorial = swe.azalt_rev(rotation_jd_ut, swe.HOR2EQU, geopos, azimuth, true_altitude)
     return swe.azalt(
-        jd_ut,
+        rotation_jd_ut,
         swe.EQU2HOR,
         geopos,
         pressure_hpa,
@@ -1168,8 +1297,9 @@ def compute_horizon_events(
         "天體升降與上下中天",
         formula=(
             "swe.rise_trans；每側在有界季節區間內逐日搜尋（升降 ±200 日、中天 ±3 日），"
-            "探測日首尾兩端赤緯同號、且 |δ| 都超過 90°−|φ| 加該半球的餘裕（contract."
-            "crossing_prefilter_margins_degrees）才跳過，首尾異號的日子一律問 Swiss；"
+            "Swiss 一律從固定的整數儒略日格點（UT 12:00）起算，同一事件不隨參考時刻改變；"
+            "探測日與次日首尾兩端赤緯同號、且 |δ| 都超過 90°−|φ| 加該半球的餘裕（contract."
+            "crossing_prefilter_margins_degrees，含本次大氣下的折射）才跳過，首尾異號的日子一律問 Swiss；"
             "previous 取參考時刻前最後一次事件，next 取其後第一次；地理極點上下中天不適用"
         ),
         inputs={
@@ -1223,7 +1353,13 @@ def compute_horizon_events(
                 "is_search_interval": False,
                 "emitted_when": "bracketing crossings are not within one diurnal cycle",
             },
-            "crossing_prefilter_margins_degrees": pre_filter_margins_receipt(),
+            "crossing_prefilter_margins_degrees": pre_filter_margins_receipt(
+                probe_cache.refraction(location.altitude_m, pressure_hpa, atmosphere.temperature_c)
+                if probe_cache is not None
+                else horizon_refraction_bracket(
+                    location.altitude_m, pressure_hpa, atmosphere.temperature_c
+                )
+            ),
             "grazing_tolerance_degrees": GRAZING_TOLERANCE_DEGREES,
             "diurnal_regime_max_days": DIURNAL_REGIME_MAX_DAYS,
             # The three closed sets are constant: register entry horizon_events/statuses.

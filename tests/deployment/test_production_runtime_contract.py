@@ -564,8 +564,16 @@ _COMPOSE_INTERPOLATION = {
 }
 
 
+# The compose files the host's deploy and rollback start the service from, in
+# order (tests/deployment/test_staging_release.py binds this to the command
+# staging_release runs).
+PRODUCTION_COMPOSE_FILES = (
+    "deploy/compose.yaml", "deploy/staging/compose.staging.yaml", "deploy/compose.frontend-release.yaml",
+)
+
+
 def production_compose_service() -> dict:
-    """The production service as Docker Compose itself resolves the two files the
+    """The production service as Docker Compose itself resolves the files the
     host runs (`docker compose config`)."""
 
     docker = shutil.which("docker")
@@ -574,7 +582,7 @@ def production_compose_service() -> dict:
     import subprocess
 
     command = [docker, "compose"]
-    for name in ("deploy/compose.yaml", "deploy/compose.frontend-release.yaml"):
+    for name in PRODUCTION_COMPOSE_FILES:
         command += ["--file", str(ROOT / name)]
     environment = {key: value for key, value in os.environ.items()
                    if not key.startswith("COMPOSE_") and key not in _COMPOSE_INTERPOLATION}
@@ -606,8 +614,12 @@ def test_graceful_shutdown_lets_a_queued_chart_finish_before_the_container_is_ki
     # The wait budget is derived in request_limits, so read the value
     # the process runs with rather than a literal in the source.
     queue_wait = main._COMPUTE_LOCK_WAIT_TIMEOUT_SECONDS
-    stop_grace = duration_seconds(production_compose_service()["stop_grace_period"])
+    service = production_compose_service()
+    stop_grace = duration_seconds(service["stop_grace_period"])
     assert graceful is not None and queue_wait < graceful < stop_grace
+    # A crash, and the health probe's own SIGTERM to PID 1, bring the service
+    # back only through the restart policy of the files production runs.
+    assert service.get("restart") == "unless-stopped"
 
 
 def test_the_dockerfile_reader_follows_the_reference():

@@ -6,7 +6,6 @@ import gzip
 import hashlib
 import json
 from pathlib import Path
-import re
 
 from fastapi.testclient import TestClient
 import pytest
@@ -15,6 +14,7 @@ from app.main import create_app
 from app.runtime_static import RuntimeStaticFiles
 from app.settings import AppSettings, load_settings
 from tests.backend import synthetic_birth_payload as _payload
+from tests.backend.privacy_event_oracle import assert_events_hold_no
 
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2] / "backend"
@@ -211,16 +211,10 @@ def test_hosted_chart_emits_status_only_allowlisted_event():
     ]
     chart_event = events[0]
     assert (chart_event["status_code"], chart_event["outcome"]) == (200, "success")
-    # request_id is a random uuid4 hex that can contain "1997" by chance, so it
-    # is checked against its domain and every other field is scanned.
-    assert re.fullmatch(r"[0-9a-f]{32}", chart_event["request_id"])
-    encoded = json.dumps(
-        {name: value for name, value in chart_event.items() if name != "request_id"},
-        ensure_ascii=False,
-    )
+    # request_id is a random uuid4 hex that can contain "1997" by chance, so each
+    # field is checked against its own shape (tests/backend/privacy_event_oracle.py).
     location = _payload()["location"]
-    for value in (str(location["latitude"]), str(location["longitude"]), "1997"):
-        assert value not in encoded
+    assert_events_hold_no(events, [location["latitude"], location["longitude"], "1997"])
 
 
 @pytest.mark.parametrize(
@@ -291,7 +285,8 @@ def test_ephemeris_refusal_returns_only_the_closed_error_code(monkeypatch):
     }}
     assert "2597667" not in response.text
     assert "CANARY_OPERATION" not in response.text
-    assert events[-1]["error_code"] == "full_ephemeris_required"
+    # The user is told which refusal; the event keeps the category (PRIVACY_LOGGING_POLICY).
+    assert events[-1]["error_code"] == "domain_failed"
     assert events[-1]["outcome"] == "error"
 
 

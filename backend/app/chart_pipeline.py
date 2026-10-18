@@ -134,6 +134,7 @@ from .core.prenatal_points import (
     comparable_view as prenatal_comparable_view,
 )
 from .core.horizon_events import (
+    RISE_TRANS_REPEATABILITY_DAYS,
     HorizonProbeCache,
     compute_horizon_events,
     probe_cache_for_chart,
@@ -146,6 +147,12 @@ from .core.lunar_mansions import (
     compute_lunar_mansions,
     lunar_mansions_not_applicable,
     lunar_mansions_unavailable,
+)
+from .core.motion_states import (
+    compute_motion_states,
+    make_speed_sampler,
+    motion_states_not_applicable,
+    motion_states_unavailable,
 )
 from .core.solar_phase import (
     compute_solar_phase,
@@ -167,7 +174,7 @@ from .core.module_state import (
 from .core.method_status import method_receipt
 
 
-SCHEMA_VERSION = "0.18.0"
+SCHEMA_VERSION = "0.19.0"
 
 _CLASSICAL_KEYS = tuple(body["key"] for body in CLASSICAL_BODIES)
 
@@ -358,6 +365,7 @@ class DerivedChart:
     void_of_course: Any
     lunar_mansions: Any
     solar_phase: Any
+    motion_states: Any
     classical_classifications: Any
 
 
@@ -449,13 +457,16 @@ _LUNAR_SAMPLE_RESULT_KEYS = (
     "contract", "direction_policy", "primary_phases", "prenatal_syzygy", "eclipses",
 )
 _ANCHOR_SAMPLE_ROLE = REPRESENTATIVE_SAMPLE_ROLES[1]
-# Julian-day values (any key containing "jd_ut") agree within 1e-6 day (86 ms):
-# the observed re-solve jitter is at most ~1.4e-7 day and distinct events of one
-# kind are at least ~0.9 day apart.  Any other float (eclipse gamma and diameter
-# ratios, solver residuals and speeds) agrees within a relative 1e-9: rounding of
-# one quantity, never a different value.  `utc_time*` strings are derived from the
-# compared JD (millisecond-truncated, so one ULP can flip them) and not compared.
-_SAME_EVENT_JD_TOLERANCE_DAYS = 1e-6
+# Julian-day values (any key containing "jd_ut") agree within two seconds: a
+# horizon event re-solved from another anchor moves by up to about a second
+# (RISE_TRANS_REPEATABILITY_DAYS) and is printed as the whole second it lies in,
+# so two prints of one event are at most one second apart, while distinct events
+# of one kind are at least ~0.9 day apart.  Any other float (eclipse gamma and
+# diameter ratios, solver residuals and speeds) agrees within a relative 1e-9:
+# rounding of one quantity, never a different value.  `utc_time*` strings are
+# derived from the compared JD (truncated, so one ULP can flip them) and not
+# compared.
+_SAME_EVENT_JD_TOLERANCE_DAYS = 2 * RISE_TRANS_REPEATABILITY_DAYS
 _SAME_EVENT_FLOAT_REL_TOLERANCE = 1e-9
 
 
@@ -1475,11 +1486,17 @@ def _void_of_course(facts: AstronomicalFacts) -> JsonObject:
     if not req.options.include_void_of_course:
         return {}
     if not voc_frame["applicable"]:
-        return void_of_course_not_applicable(voc_frame, trace)
+        return {**void_of_course_not_applicable(voc_frame, trace), "time_basis": None}
     try:
-        return evaluate_void_of_course(
-            positions.bodies_all, trace, jd_ut=time.jd_ut, longitude_at=positions.longitude_at
-        )
+        # The verdict holds at one instant: the birth instant, or for an hour
+        # or a date the representative anchor, which time_basis names.
+        return {
+            **evaluate_void_of_course(
+                positions.bodies_all, trace, jd_ut=time.jd_ut,
+                longitude_at=positions.longitude_at,
+            ),
+            "time_basis": _event_time_basis(time),
+        }
     except (FullEphemerisRequiredError, swe.Error) as error:
         refusal = _event_search_refusal("月空亡(VOC)", error, trace)
         return {
@@ -1490,6 +1507,7 @@ def _void_of_course(facts: AstronomicalFacts) -> JsonObject:
             "is_void_of_course": None,
             "time_to_sign_exit_hours": None,
             "all_candidates": [],
+            "time_basis": None,
         }
 
 
@@ -1587,6 +1605,7 @@ def _essential_dignities(
         triplicity_profile=req.options.triplicity_profile,
         include_triplicity_comparison=req.options.triplicity_include_research_comparison,
         computation_mode=req.computation_mode,
+        peregrine_profile=req.options.peregrine_profile,
         sect_basis=dignity_sect_basis,
         trace=trace,
         sect_sun_altitude=sect_sun_altitude,
@@ -1661,7 +1680,7 @@ def _dodecatemoria(facts: AstronomicalFacts, lots: JsonObject) -> JsonObject:
         return {}
     frame = time.frame_states["dodecatemoria"]
     if not frame["applicable"]:
-        return dodecatemoria_not_applicable(frame, trace)
+        return dodecatemoria_not_applicable(frame, trace, req.options.dodecatemoria_profile)
     planets = effective_participants(
         facts.positions.bodies_all, include_nodes=False, include_outer_planets=False
     )
@@ -1768,6 +1787,15 @@ def _lunar_mansions(facts: AstronomicalFacts) -> JsonObject:
         return lunar_mansions_not_applicable(frame, trace)
     interval, spans = _birth_time_interval_spans(time)
     try:
+        # The core chart prints a Moshier Moon when its segment file is missing
+        # and says so (used_full_ephemeris); a mansion read off that Moon is
+        # refused as every module that samples the Moon itself refuses it.
+        moon = next(body for body in positions.bodies if body["key"] == "moon")
+        if moon.get("used_full_ephemeris") is not True:
+            raise FullEphemerisRequiredError(
+                operation="月宿（月亮位置）", jd_ut=time.jd_ut, retflag=0,
+                reason="segment_file_missing",
+            )
         moon_at_ends = (
             None
             if spans is None
@@ -1829,6 +1857,41 @@ def _solar_phase(facts: AstronomicalFacts) -> JsonObject:
         return solar_phase_unavailable(refusal)
 
 
+def _motion_states(facts: AstronomicalFacts) -> JsonObject:
+    """Swift or slow, stationary, and oriental or occidental of the Sun."""
+
+    time, positions = facts.time, facts.positions
+    if not time.input_request.options.include_motion_states:
+        return {}
+    frame = time.frame_states["motion_states"]
+    if not frame["applicable"]:
+        return motion_states_not_applicable(frame, time.trace)
+    flags = time.context.base_flags
+    # The side of the Sun reads the effective Moon, as solar_phase does.
+    moon_topocentric = (
+        time.request.options.moon_position_profile == "moon_only_topocentric_v1"
+        or time.request.computation_mode.center == "topocentric"
+    )
+    interval, spans = _birth_time_interval_spans(time)
+    try:
+        return compute_motion_states(
+            positions.bodies,
+            time.trace,
+            time_basis=_event_time_basis(time),
+            jd_ut=time.jd_ut,
+            instant_of=lambda jd: civil_instant(jd, time.input_request.timezone),
+            speed=make_speed_sampler(flags),
+            sample=make_ecliptic_sampler(
+                flags, flags | swe.FLG_TOPOCTR if moon_topocentric else flags
+            ),
+            interval=interval,
+            interval_spans=spans,
+        )
+    except (FullEphemerisRequiredError, swe.Error) as error:
+        refusal = _event_search_refusal("行速、停滯與東出西入", error, time.trace)
+        return motion_states_unavailable(refusal)
+
+
 def _derived_chart(facts: AstronomicalFacts) -> DerivedChart:
     time = facts.time
     req = time.request
@@ -1848,11 +1911,11 @@ def _derived_chart(facts: AstronomicalFacts) -> DerivedChart:
     dodecatemoria = _dodecatemoria(facts, lots)
     lunar_mansions = _lunar_mansions(facts)
     solar_phase = _solar_phase(facts)
+    motion_states = _motion_states(facts)
     classical_classifications = _classical_classifications(facts, sect_sun_altitude)
 
     if time.input_request.birth_time_precision == "date_only":
         for requested, result in (
-            (req.options.include_void_of_course, void_of_course),
             (req.options.include_aspects, aspects),
             (req.options.include_declination_aspects, declination_aspects),
             (essential_dignities is not None, essential_dignities),
@@ -1883,6 +1946,7 @@ def _derived_chart(facts: AstronomicalFacts) -> DerivedChart:
         void_of_course=void_of_course,
         lunar_mansions=lunar_mansions,
         solar_phase=solar_phase,
+        motion_states=motion_states,
         classical_classifications=classical_classifications,
     )
 
@@ -1970,6 +2034,7 @@ def _derived_methods(facts: AstronomicalFacts, methods: DerivedChart) -> JsonObj
             methods.lunar_mansions, options.include_lunar_mansions
         ),
         "solar_phase": _module_container(methods.solar_phase, options.include_solar_phase),
+        "motion_states": _module_container(methods.motion_states, options.include_motion_states),
         "classical_classifications": _module_container(
             methods.classical_classifications, options.include_classical_classifications
         ),
@@ -2002,6 +2067,7 @@ def _birth_time_sensitivity(
                 representative_offset_seconds=time.representative_offset_seconds,
                 representative_semantics=time.time_conversion["input_semantics"],
                 representative_dodecatemoria=methods.dodecatemoria,
+                representative_essential_dignities=methods.essential_dignities,
             )
         elif input_request.birth_time_precision == "date_only":
             if time.civil_day is None:  # resolved for every date_only chart

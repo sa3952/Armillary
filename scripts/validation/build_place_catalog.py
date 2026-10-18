@@ -791,7 +791,20 @@ def _schema(connection: sqlite3.Connection) -> None:
     )
 
 
+# Every field a person reads or a request echoes back.  Sources pad some of
+# them (MOI writes「謝屋 」and「 chi ronag`ay」), and a padded label then differs
+# from the one a client sends after trimming; each importer trims at read, and a
+# record that still carries surrounding whitespace is refused here.
+_LABEL_FIELDS = ("name", "display_name", "admin1_name", "admin2", "admin3", "name_zh")
+
+
 def _insert(connection: sqlite3.Connection, record: dict) -> bool:
+    for field in _LABEL_FIELDS:
+        value = record.get(field)
+        if isinstance(value, str) and value != value.strip():
+            raise ValueError(
+                f"{record['source_record_id']}: {field} has surrounding whitespace"
+            )
     cursor = connection.execute(
         """
         INSERT OR IGNORE INTO places (
@@ -1075,6 +1088,7 @@ def import_geonames(
             timezone,
             _modified,
         ) = fields[:19]
+        name = name.strip()
         rejection = _semantic_name_rejection(name)
         if rejection is not None:
             rejected[rejection] += 1
@@ -1294,7 +1308,9 @@ def import_taiwan(
             if _is_upstream_test_row(row):
                 rejected[REJECT_UPSTREAM_TEST_ROW] += 1
                 continue
-            name = str(row.get("PlaceName") or "")
+            # The record id hashes the row as published, so trimming the
+            # labels below leaves every existing id unchanged.
+            name = str(row.get("PlaceName") or "").strip()
             rejection = _semantic_name_rejection(name)
             if rejection is not None:
                 rejected[rejection] += 1
@@ -1302,8 +1318,10 @@ def import_taiwan(
             aliases = " ".join(
                 str(row.get(key) or "") for key in ("ChinesePhonetic", "CommonPhonetic", "AnotherName")
             )
+            county = str(row.get("County") or "").strip()
+            town = str(row.get("Town") or "").strip()
             label = f"{name}{MISSING_GLYPH_MARK}" if _missing_glyph(name) else name
-            display_parts = [label, row.get("Town") or "", row.get("County") or ""]
+            display_parts = [label, town, county]
             inserted = _insert(
                 connection,
                 {
@@ -1313,9 +1331,9 @@ def import_taiwan(
                     "display_name": ", ".join(item for item in display_parts if item),
                     "aliases": aliases,
                     "country_code": "TW",
-                    "admin1": row.get("County") or None,
-                    "admin1_name": row.get("County") or None,
-                    "admin2": row.get("Town") or None,
+                    "admin1": county or None,
+                    "admin1_name": county or None,
+                    "admin2": town or None,
                     "admin3": (row.get("Village") or "").strip() or None,
                     "latitude": float(row["Latitude"]),
                     "longitude": float(row["Longitude"]),

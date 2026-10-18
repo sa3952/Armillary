@@ -204,7 +204,7 @@ def _pipeline_table(e: dict, bound: _fx.Bound) -> str:
     body = "".join(f'<tr><th scope="row">{name}</th><td class="n">{bound.num(a)}</td><td class="n">{bound.num(b)}</td></tr>'
                    for name, a, b in rows)
     return ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">　</th><th scope="col">本站的做法</th>'
+            '<table class="ar-table fx-table"><thead><tr><th scope="col">項目</th><th scope="col">本站的做法</th>'
             f'<th scope="col">先換真太陽時</th></tr></thead><tbody>{body}</tbody></table></div></details>')
 
 

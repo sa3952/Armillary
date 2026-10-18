@@ -74,7 +74,8 @@ _DIGNITY_OBJECT = (
     "segment_start_degrees,segment_end_degrees,day_candidate,night_candidate,"
     "selected_rulers,element,day_rulers,night_rulers,"
     "assigned_rulers,principal_ruler,secondary_ruler,domicile_matched,"
-    "domicile_signs,exaltation_matched,exaltation_sign"
+    "domicile_signs,exaltation_matched,exaltation_sign,detriment_matched,"
+    "detriment_signs,fall_matched,fall_sign"
 )
 _SAMPLES = "representative_samples[]"
 _SYZYGY_POINT = (
@@ -107,6 +108,11 @@ PAGE_KEPT_UNREAD_PATHS: tuple[str, ...] = (
     # message, and a reader writing the sentence in another language from the
     # code reads params from the default response as well.
     "calculation_dossier.warnings[].params",
+    # The chart wheel (chart-wheel-model.js, not the view-model) draws the
+    # sampled range of an uncertain position: the Moon over the day (date
+    # only) and the Ascendant over the hour.
+    "birth_time_sensitivity.position_ranges[].sampled_longitude_envelope.{start_degrees,end_degrees}",
+    "birth_time_sensitivity.angles.asc.{start_degrees,end_degrees}",
 )
 
 PAGE_KEPT_PATHS: tuple[str, ...] = (
@@ -225,7 +231,7 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     "house_placement.{fortune,spirit},sect_applied,sect_named_boundary_disagreement}",
     "derived_methods.lots.by_sect.*.{fortune_house,spirit_house,sign_positions}",
     f"derived_methods.void_of_course.{{{_RECEIPT},is_void_of_course,verdict,"
-    "solver,time_to_sign_exit_hours}",
+    "solver,time_to_sign_exit_hours,time_basis}",
     "derived_methods.void_of_course.all_candidates[].{body,aspect_angle,time_days}",
     f"derived_methods.declination_aspects.{{{_RECEIPT},aspects,orb_receipt.effective_orb_degrees}}",
     f"derived_methods.aspects.{{{_RECEIPT},pair_listing.unlisted_pairs_without_aspect}}",
@@ -280,14 +286,29 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     "derived_methods.solar_phase.birth_time_interval.interval",
     "derived_methods.solar_phase.birth_time_interval.rows[].{key,name,stable,"
     "longitude_difference_min_degrees,longitude_difference_max_degrees}",
-    f"derived_methods.essential_dignities.{{{_RECEIPT},selected_profiles,"
-    "research_comparison_profiles,sect.{selected_ruler_available,sect_dependent_components,"
+    f"derived_methods.motion_states.{{{_RECEIPT},time_basis}}",
+    "derived_methods.motion_states.rows[].{key,name,daily_motion_text,direction,mean_motion_text,"
+    "course,relative_to_sun,lilly_p115}",
+    "derived_methods.motion_states.rows[].station.{state,lilly_days,turn.day_offset}",
+    "derived_methods.motion_states.profile_results.*.{means.*.text,courses}",
+    "derived_methods.motion_states.stations_within_window.*[].{kind,day_offset,"
+    "instant.{local_time,utc_offset}}",
+    "derived_methods.motion_states.station_search.window_days",
+    "derived_methods.motion_states.birth_time_interval.interval",
+    "derived_methods.motion_states.birth_time_interval.rows[].{name,courses_seen,"
+    "station_states_seen,relative_to_sun_seen,stable}",
+    f"derived_methods.essential_dignities.{{{_RECEIPT},selected_profiles,computed_profiles,"
+    "research_comparison_profiles,research_only_profiles,sect.{selected_ruler_available,sect_dependent_components,"
     "in_near_horizon_band,near_horizon_band_half_width_degrees,is_day}}",
     "derived_methods.essential_dignities.profile_results.*.{profile_id,technique,ruler_type,source}",
     f"derived_methods.essential_dignities.profile_results.*.objects[].{{{_DIGNITY_OBJECT}}}",
-    f"derived_methods.dodecatemoria.{{{_RECEIPT},profile,scope.not_listed}}",
+    "derived_methods.essential_dignities.peregrine.objects[].{name,sign,degree_in_sign_text,"
+    "status,dignities_held,debilities_also,by_sect}",
+    f"derived_methods.dodecatemoria.{{{_RECEIPT},profile,points_profile,computed_profiles,"
+    "scope.not_listed}",
     "derived_methods.dodecatemoria.points[].{key,name,category,point_sign_position,"
     "sign_position,domicile_lord,sign_differs_under_other_sect,comparison_sign}",
+    "derived_methods.dodecatemoria.profile_results.*.points[].{key,sign,domicile_lord}",
     f"derived_methods.classical_classifications.{{{_RECEIPT},not_evaluated,time_basis}}",
     "derived_methods.classical_classifications.chart_sect.{is_day,in_near_horizon_band}",
     "derived_methods.classical_classifications.planets[].{name,nature,gender,sect_membership,"

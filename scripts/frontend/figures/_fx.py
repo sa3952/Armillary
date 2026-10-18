@@ -274,10 +274,27 @@ def figure(
     # The caption closes the figure: HTML lets nothing follow a figcaption
     # that is not the figure's first child, so the table comes before it.
     if table:
-        out.append(table)
+        out.append(_data_table(fid, table))
     out.append(f'<figcaption id="{fid}-cap">{caption}</figcaption>')
     out.append("</figure>")
     return "\n".join(out)
+
+
+_EMPTY_HEADER = re.compile(r"<th\b[^>]*>\s*</th>")
+
+
+def _data_table(fid: str, table: str) -> str:
+    """The figure's numbers as a table, folded under a summary.  Its scroll frame is a named,
+    focusable region (named by the summary), so a keyboard can scroll a table wider than a
+    phone; a header cell is never empty (a screen reader would announce a blank heading)."""
+    if _EMPTY_HEADER.search(table):
+        raise ValueError(f"{fid}: a table header cell is empty")
+    if table.count('<details class="fx-data"><summary>') != 1 or table.count('<div class="ar-scroll">') != 1:
+        raise ValueError(f"{fid}: the figure's table is one fx-data fold with one ar-scroll frame")
+    return (table
+            .replace('<details class="fx-data"><summary>', f'<details class="fx-data"><summary id="{fid}-data">')
+            .replace('<div class="ar-scroll">',
+                     f'<div class="ar-scroll" tabindex="0" role="region" aria-labelledby="{fid}-data">'))
 
 
 _FOCUSABLE_MARK = re.compile(r'<g (?![^>]*\brole=)([^>]*\btabindex="0"[^>]*)>')

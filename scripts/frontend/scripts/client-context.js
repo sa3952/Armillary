@@ -70,6 +70,9 @@
     ),
     // 本頁只在目錄標示為新疆的地點送出這一項；走到這裡表示頁面版本與服務不一致。
     civil_time_basis_not_applicable: PAGE_SERVICE_MISMATCH,
+    // 本頁送出的目錄地點就是查詢結果那一列；對不上表示選定後被改過，或目錄已更新。
+    catalog_record_unknown: LOCATION_RECEIPT_MISMATCH,
+    catalog_location_mismatch: LOCATION_RECEIPT_MISMATCH,
     // 本頁的選項叫「整宮」，而一定走得通的出路是宮位制選單的「不計算宮位」。
     // 引號裡的名稱必須是頁面上真的存在的控制項（client-context.test.cjs 逐一對照頁面）。
     house_system_unavailable: (

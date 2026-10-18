@@ -22,6 +22,7 @@ from .module_state import (
     not_applicable_receipt,
 )
 from .method_status import method_receipt
+from .source_reading import reference_only
 from .trace import Trace
 
 DECLINATION_ASPECT_METHOD_NAME = "parallel_contra_parallel_fixed_orb_v1"
@@ -191,5 +192,21 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         "applies_to": "derived_methods.declination_aspects.method_provenance_attribution",
         "method_provenance": DECLINATION_ASPECT_PROVENANCE,
         "attribution": dict(DECLINATION_ASPECT_PROVENANCE_ATTRIBUTION),
+        "sources": [
+            reference_only(
+                "Placidus de Titis, Tabulae primi mobilis (Padua: Frambotti 1657), Theses "
+                "ex II. libro, no. 50, p.9",
+                "the so-called antiscia renamed 'Parallelos', equal distance from the "
+                "equator, and the contra-parallel",
+                "level pending: the record quotes the thesis but does not say which copy "
+                "was read; only the reference is claimed",
+            ),
+            reference_only(
+                "Ptolemy, Tetrabiblos I.14-I.15",
+                "signs of equal rising and the same parallel, as Placidus presents it",
+                "level pending: named through Placidus; the record does not say Ptolemy "
+                "was read for this entry",
+            ),
+        ],
     },
 }

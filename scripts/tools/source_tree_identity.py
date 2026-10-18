@@ -77,6 +77,24 @@ def maintained_source_paths(root: Path) -> tuple[str, ...]:
     return paths
 
 
+def _is_bytecode_cache(relative: Path, mode: int) -> bool:
+    """A `__pycache__` directory, or a compiled module directly inside one.
+
+    CPython writes these into the checkout a reader verifies (the documented
+    `python -m scripts.deployment.frontend_release recompute` imports its
+    modules from there); they are never published, so they are not part of the
+    published file set.  Anything else, a stray `.pyc` beside the sources or
+    another file inside `__pycache__` included, still is.
+    """
+    if relative.name == "__pycache__" and stat.S_ISDIR(mode):
+        return True
+    return (
+        stat.S_ISREG(mode)
+        and relative.parent.name == "__pycache__"
+        and relative.suffix == ".pyc"
+    )
+
+
 def observe_publication_tree(root: Path) -> SourceTreeIdentity:
     manifest_path = root / "PUBLICATION_FILES.json"
     try:
@@ -125,6 +143,8 @@ def observe_publication_tree(root: Path) -> SourceTreeIdentity:
             continue
         mode = path.lstat().st_mode
         rendered = relative.as_posix()
+        if _is_bytecode_cache(relative, mode):
+            continue
         if stat.S_ISDIR(mode):
             directories.add(rendered)
         elif stat.S_ISREG(mode):

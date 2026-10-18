@@ -10,16 +10,18 @@
 - 另一種：度數乘以 13，從星座起點往後數，也就是乘以 12 之後從該點自己的度數往後數
   （Paulus《導論》（Eisagōgika）ch.22 與 Olympiodorus 的例子）。
 
-兩者讀到哪一層、哪些點有見證，寫在 METHOD_SOURCE_ENTRIES；預設的選擇待追認。
+兩者讀到哪一層、哪些點有見證，寫在 METHOD_SOURCE_ENTRIES；預設算法已定（method_status 為 decided）。
 """
 
 from __future__ import annotations
 
+import copy
 import math
 from fractions import Fraction
-from typing import Literal
+from typing import Literal, get_args
 
 from .dignity_tables import DOMICILE_SIGNS, SIGNS
+from .essential_dignities import ALL_PROFILES
 from .formatting import normalize_longitude, zodiac_sign_index
 from .method_status import method_receipt
 from .module_state import PRODUCT_FORMULA_SOURCE, computed_receipt, not_applicable_receipt
@@ -31,6 +33,26 @@ DodecatemoriaProfile = Literal[
     "thirteenfold_from_sign_start_v1",
 ]
 DEFAULT_DODECATEMORIA_PROFILE: DodecatemoriaProfile = "twelvefold_from_sign_start_v1"
+# The request may also ask for every rule side by side ("all", the same value
+# as the dignity tables').  The listed points then stay the default rule's.
+DodecatemoriaProfileOption = Literal[
+    "twelvefold_from_sign_start_v1",
+    "thirteenfold_from_sign_start_v1",
+    "all",
+]
+PROFILE_IDS: tuple[DodecatemoriaProfile, ...] = get_args(DodecatemoriaProfile)
+
+
+def computed_profiles(requested: str) -> list[str]:
+    """The rules one requested value stands for, in catalogue order."""
+
+    return list(PROFILE_IDS) if requested == ALL_PROFILES else [requested]
+
+
+def points_profile(requested: str) -> str:
+    """The rule the top-level points (and the birth-time samples) use."""
+
+    return DEFAULT_DODECATEMORIA_PROFILE if requested == ALL_PROFILES else requested
 
 # How many degrees each degree inside the sign moves the result, counted from
 # the start of the same sign.  Thirteen times from the sign's start is twelve
@@ -137,20 +159,9 @@ def _other_sect_lots(lots: dict) -> dict | None:
     return other if isinstance(other, dict) else None
 
 
-def compute_dodecatemoria(
-    *,
-    planets: list[dict],
-    angles: dict | None,
-    lots: dict | None,
-    profile: str,
-    trace: Trace,
-) -> dict:
-    """Every listed point's twelfth-part under ``profile``.
-
-    ``angles`` and ``lots`` are the emitted containers when they hold usable
-    values, else None; a missing group is named in ``scope.not_listed``.
-    """
-
+def _points(
+    planets: list[dict], angles: dict | None, lots: dict | None, profile: str
+) -> tuple[list[dict], list[str]]:
     rows = [
         _row(body["key"], body["name"], "classical_planet", body["longitude"], profile)
         for body in planets
@@ -177,20 +188,51 @@ def compute_dodecatemoria(
         ]
     else:
         not_listed.append("lots_not_requested_or_not_computed")
+    return rows, not_listed
 
-    trace.add(
-        "十二分部",
-        formula=FORMULAS[profile],
-        inputs={"profile": profile},
-        result={row["key"]: row["longitude"] for row in rows},
-    )
+
+def compute_dodecatemoria(
+    *,
+    planets: list[dict],
+    angles: dict | None,
+    lots: dict | None,
+    profile: str,
+    trace: Trace,
+) -> dict:
+    """Every listed point's twelfth-part under ``profile`` (or under each rule).
+
+    ``angles`` and ``lots`` are the emitted containers when they hold usable
+    values, else None; a missing group is named in ``scope.not_listed``.
+    ``profile_results`` holds each computed rule's points, the same for a rule
+    whether it was requested alone or with ``"all"``; the top-level points are
+    the ``points_profile`` rule's.
+    """
+
+    profile_results = {}
+    not_listed: list[str] = []
+    for profile_id in computed_profiles(profile):
+        rows, not_listed = _points(planets, angles, lots, profile_id)
+        trace.add(
+            "十二分部",
+            formula=FORMULAS[profile_id],
+            inputs={"profile": profile_id},
+            result={row["key"]: row["longitude"] for row in rows},
+        )
+        profile_results[profile_id] = {
+            "profile": profile_id,
+            "formula": FORMULAS[profile_id],
+            "points": rows,
+        }
+    listed = profile_results[points_profile(profile)]
     return {
         "method": METHOD_NAME,
         **method_receipt("dodecatemoria"),
         **computed_receipt(PRODUCT_FORMULA_SOURCE),
         "source_ref": SOURCE_REF,
         "profile": profile,
-        "formula": FORMULAS[profile],
+        "points_profile": listed["profile"],
+        "computed_profiles": list(profile_results),
+        "formula": listed["formula"],
         "lord_rule": "domicile_lord_of_the_twelfth_part_sign_traditional_seven",
         "scope": {
             "categories": list(POINT_CATEGORIES),
@@ -199,11 +241,13 @@ def compute_dodecatemoria(
             "historical_method_status": dict(POINT_ATTESTATION),
         },
         "semantics": "positions_and_sign_lords_only_no_relationship_verdict",
-        "points": rows,
+        # A copy: the response's formatting pass writes into each list once.
+        "points": copy.deepcopy(listed["points"]),
+        "profile_results": profile_results,
     }
 
 
-def dodecatemoria_not_applicable(state: dict, trace: Trace) -> dict:
+def dodecatemoria_not_applicable(state: dict, trace: Trace, requested: str) -> dict:
     """Refuse instead of reading a degree inside a sign of another frame."""
 
     trace.add(
@@ -216,9 +260,16 @@ def dodecatemoria_not_applicable(state: dict, trace: Trace) -> dict:
         **method_receipt("dodecatemoria"),
         **not_applicable_receipt(state),
         "points": [],
+        "computed_profiles": computed_profiles(requested),
+        "profile_results": {},
     }
 
 
+
+_ROBBINS_I_22_PAGES = (
+    "the scanned 1964 reprint of Robbins (Loeb 1940), University of "
+    "Toronto copy, Internet Archive manethowithengli00maneuoft, pages n431-n432"
+)
 
 METHOD_SOURCE_ENTRIES: dict[str, dict] = {
     SOURCE_REF: {
@@ -234,7 +285,10 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "thirteenfold_from_sign_start_v1": (
                 "Multiply the degrees inside the sign by 13 and count on from the start "
                 "of the same sign; the same as multiplying by 12 and counting on from "
-                "the point's own degree."
+                "the point's own degree. The product multiplies the full position, "
+                "minutes included; the worked examples of Paulus and Olympiodorus use "
+                "whole degrees, and Greenbaum and Jones infer that P.Berl. 9825 "
+                "multiplied the whole degrees and disregarded the minutes."
             ),
         },
         "default_profile": DEFAULT_DODECATEMORIA_PROFILE,
@@ -264,7 +318,11 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
                 "example": "Sun Aries 5 deg 05 min: 60 + 1 = 61, the first degree of Gemini",
                 "profile": "twelvefold_from_sign_start_v1",
                 "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "Latin text, LacusCurtius (penelope.uchicago.edu)",
+                "read_at": (
+                    "Latin text, LacusCurtius (penelope.uchicago.edu); the rule and "
+                    "example re-read on p.56 of Kroll-Skutsch 1897 vol. I in the "
+                    "archive.org OCR text (matheseoslibrivi01firmuoft)"
+                ),
             },
             {
                 "citation": "Manilius, Astronomica II.693-748",
@@ -285,14 +343,35 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
                 ),
             },
             {
-                "citation": "Ptolemy, Tetrabiblos I.22 (Robbins, Loeb 1940)",
+                "citation": (
+                    "Ptolemy, Tetrabiblos I.22 (Robbins, Loeb 1940, Greek p.108, "
+                    "English p.109)"
+                ),
                 "rule": (
                     "describes the twelfth of a sign (2 1/2 degrees) assigned to the "
                     "signs in order, and rejects it as unfounded"
                 ),
                 "profile_agreement": "sign_level_only",
                 "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Robbins translation, LacusCurtius",
+                "read_at": _ROBBINS_I_22_PAGES,
+                "manuscript_variants": [
+                    {
+                        "citation": "Robbins 1940 p.108 n.3 (Greek apparatus) and p.109 n.2",
+                        "says": (
+                            "one manuscript (N) and Camerarius's printed editions add "
+                            "after 'to the signs in order' the words 'beginning from "
+                            "the twelfth-part in which the star is' (ἀρχόμενοι ἀπὸ τοῦ "
+                            "δωδεκατημορίου καθ᾽ ὅ ἐστιν ὁ ἀστήρ); the other "
+                            "manuscripts and Proclus omit them, and so does Robbins's "
+                            "text. The added words name where the count starts."
+                        ),
+                        "reading": SOURCE_READING_LEVELS[2],
+                        "read_at": (
+                            f"{_ROBBINS_I_22_PAGES}; manuscript N and Camerarius's "
+                            "printings were not read"
+                        ),
+                    }
+                ],
             },
             {
                 "citation": "Paulus Alexandrinus, Introduction ch.22",
@@ -323,8 +402,11 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
                 "citation": "Vettius Valens, Anthology I.4",
                 "rule": "the Sun's twelfth-part used to find the ascendant",
                 "example": "Sun Aquarius 22 deg, twelfth-part in Scorpio (fits the 13-fold rule only)",
-                "reading": SOURCE_READING_LEVELS[2],
-                "read_at": "reported by secondary summaries; Riley's translation not read",
+                "reading": SOURCE_READING_LEVELS[1],
+                "read_at": (
+                    "Riley's translation, the PDF of his preliminary edition "
+                    "(Vettius_Valens_Riley.pdf), p.8, between /19K/ and /20K/"
+                ),
             },
             {
                 "citation": "Porphyry, Introduction ch.39 (Holden 2009)",
@@ -335,9 +417,15 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             },
         ],
         "documentary_evidence": (
-            "P.Berl. 9825 (horoscope of 319 CE) gives the twelfth-part signs only; "
-            "Greenbaum and Jones 2017 para. 188 find five of its planets fit the 13-fold "
-            "rule and Mercury, the nodes and the prenatal full Moon fit the 12-fold rule."
+            "P.Berl. 9825 (horoscope of 319 CE) gives the twelfth-part signs only. "
+            "Greenbaum and Jones 2017 para. 188: the Moon, Saturn, Jupiter (at its "
+            "corrected position), Mars and Venus match the 13-fold formula; Mercury, "
+            "both nodes and the prenatal full Moon do not, and match the 12-fold "
+            "formula, which also fits Saturn, Jupiter and Mars. So only the Moon and "
+            "Venus favour the 13-fold rule against the 12-fold one, and three planets "
+            "fit both. They leave two explanations open: the 13-fold rule with the "
+            "minutes neglected, or the 12-fold rule miscalculated for the Moon and "
+            "Venus."
         ),
         "sect_band": (
             "When the Sun is in the near-horizon band and the Lots show both "

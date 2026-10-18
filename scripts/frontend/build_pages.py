@@ -263,7 +263,7 @@ TIME_LORD_TECHNIQUES: tuple[tuple[str, str, str], ...] = (
 NATAL_FEATURES: tuple[tuple[str, str, str], ...] = (
     ("include_houses", "行星位置、上升點、中天與行星落宮", "planet positions with the ascendant, midheaven and house placements"),
     ("include_aspects", "相位", "aspects"),
-    ("essential_dignities", "本質尊貴：廟、旺、界、面、三分性", "essential dignities"),
+    ("essential_dignities", "本質尊貴：廟、旺、陷、弱、界、面、三分性、外來", "essential dignities and debilities"),
     ("sect", "日盤夜盤", "sect"),
     ("include_lots", "命運點與精神點", "Lots of Fortune and Spirit"),
     ("include_fixed_stars", "恆星", "fixed stars"),
@@ -273,6 +273,7 @@ NATAL_FEATURES: tuple[tuple[str, str, str], ...] = (
     ("include_dodecatemoria", "十二分部", "dodecatemoria"),
     ("include_lunar_mansions", "月宿", "lunar mansions"),
     ("include_solar_phase", "焦傷、在光束下與日輪內", "solar phase: combustion, under the beams, cazimi"),
+    ("include_motion_states", "行速、停滯與東出西入", "swift or slow, stationary, oriental or occidental of the Sun"),
     ("include_lunar_phases", "月相與產前朔望", "lunar phases and the prenatal syzygy"),
     ("include_eclipses", "日月食", "eclipses"),
     ("planetary_hours", "行星時", "planetary hours"),

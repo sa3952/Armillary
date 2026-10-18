@@ -34,7 +34,7 @@ from .module_state import (
 )
 
 
-DOSSIER_VERSION = "0.10.0"
+DOSSIER_VERSION = "0.11.0"
 
 # The six-field vocabulary (MODULE_STATUSES, EVENT_SEARCH_REASON_CODES
 # and the builders) lives in module_state; the Dossier copies what each
@@ -159,6 +159,7 @@ _MODULE_ORDER = (
     "void_of_course", "declination_aspects", "lunar_phases", "eclipses",
     "rise_set_transits", "planetary_hours", "dodecatemoria", "lunar_mansions",
     "solar_phase",
+    "motion_states",
     "prenatal_syzygy",
     "classical_classifications",
 )
@@ -168,7 +169,7 @@ _DERIVED_METHOD_MODULES = (
     "house_division", "planet_in_house", "aspects", "sect", "lots",
     "void_of_course", "declination_aspects", "essential_dignities",
     "planetary_hours", "dodecatemoria", "lunar_mansions", "solar_phase",
-    "classical_classifications",
+    "motion_states", "classical_classifications",
 )
 # The classical bodies are always computed, or the request fails outright.
 _CORE_POSITIONS_STATE = module_state(
@@ -336,6 +337,7 @@ def _option_state_receipts(request, states: dict, response_parts: dict) -> dict:
         "include_dodecatemoria": ("dodecatemoria", "derived_methods.dodecatemoria"),
         "include_lunar_mansions": ("lunar_mansions", "derived_methods.lunar_mansions"),
         "include_solar_phase": ("solar_phase", "derived_methods.solar_phase"),
+        "include_motion_states": ("motion_states", "derived_methods.motion_states"),
         "include_classical_classifications": (
             "classical_classifications", "derived_methods.classical_classifications",
         ),
@@ -391,6 +393,7 @@ def _option_state_receipts(request, states: dict, response_parts: dict) -> dict:
         "bounds_profile": (options.bounds_profile is not None, "essential_dignities", profile_path),
         "decan_profile": (options.decan_profile is not None, "essential_dignities", profile_path),
         "triplicity_profile": (options.triplicity_profile is not None, "essential_dignities", profile_path),
+        "peregrine_profile": (options.peregrine_profile is not None, "essential_dignities", "derived_methods.essential_dignities.peregrine"),
         "dodecatemoria_profile": (options.include_dodecatemoria, "dodecatemoria", "derived_methods.dodecatemoria"),
         "solar_phase_profile": (options.include_solar_phase, "solar_phase", "derived_methods.solar_phase"),
     }
@@ -658,8 +661,10 @@ def _location_section(request) -> dict:
         "location_source": request.location.location_source,
         "source_record_id": request.location.source_record_id,
         "location_precision": request.location.location_precision,
+        # The chart routes compute a catalogue location only when it equals
+        # the catalogue's row (core.place_catalog.check_request_places).
         "verification_status": (
-            "client_asserted_not_server_verified"
+            "server_matched_catalog_record"
             if request.location.location_source != "manual"
             else "user_supplied"
         ),
@@ -751,6 +756,16 @@ def _essential_dignity_profiles(request) -> dict:
         "triplicity_research_comparison": (
             request.options.triplicity_include_research_comparison
         ),
+        "peregrine": request.options.peregrine_profile,
+        # "all" (side by side) expands to every named table in catalogue order.
+        "computed_profiles": {
+            technique: essential_dignities.expand_profiles(technique, requested)
+            for technique, requested in (
+                ("bounds", request.options.bounds_profile),
+                ("face_decan", request.options.decan_profile),
+                ("triplicity", request.options.triplicity_profile),
+            )
+        },
         "source": (
             "derived_methods.essential_dignities.profile_results"
         ),

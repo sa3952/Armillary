@@ -18,6 +18,8 @@ when the locks or third_party/ changed.
 from __future__ import annotations
 
 import argparse
+import codecs
+import hashlib
 import io
 import json
 import re
@@ -56,8 +58,31 @@ _CREDENTIAL_NAME = (
 )
 # At least six characters, one of them a letter, none a quote, space or template sigil.
 _CREDENTIAL_LITERAL = rb"(?=[^\s\"']*[A-Za-z])[^\s\"'$(){}\[\]<>,;]{6,}"
+# A password, token or key in a form a configuration file writes it.  A
+# template (`${NPM_TOKEN}`), a placeholder (`<token>`) or an expression in
+# backticks is not matched.
+_URL_PART = rb"[^\s/:@\"'<>`$(){}\[\]]"
 SECRET_PATTERNS = {
-    "private key": re.compile(rb"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
+    "private key": re.compile(rb"-----BEGIN [A-Z ]*PRIVATE KEY(?: BLOCK)?-----"),
+    # .npmrc: `//registry.example/:_authToken=...`, `_auth=...`, `_password=...`.
+    "npm auth": re.compile(
+        rb"(?im)^[ \t]*(?://[^\s=]*:)?_(?:auth|authToken|password)[ \t]*=[ \t]*(?!\$\{)[^\s]{6,}"
+    ),
+    "npm token": re.compile(rb"\bnpm_[A-Za-z0-9]{36}\b"),
+    "PyPI token": re.compile(rb"\bpypi-AgE[A-Za-z0-9_-]{16,}"),
+    # A URL that carries a user and a password before its host.
+    "password in a URL": re.compile(
+        rb"\b[A-Za-z][A-Za-z0-9+.-]*://" + _URL_PART + rb"+:" + _URL_PART + rb"+@[A-Za-z0-9.-]"
+    ),
+    # `Authorization: Bearer ...`, `proxy_set_header Authorization "Basic ..."`.
+    "authorization header": re.compile(
+        rb"(?i)\bauthorization\b[\"']?[ \t]*[:=,]?[ \t]*[\"']?[ \t]*(?:bearer|basic|token)[ \t]+"
+        rb"[A-Za-z0-9._~+/=-]{8,}"
+    ),
+    # An htpasswd line: user, then an apr1, bcrypt, SHA or crypt(3) hash.
+    "htpasswd hash": re.compile(
+        rb"(?m)^[^\s:#]+:(?:\$apr1\$|\$2[aby]\$[0-9]{2}\$|\{SHA\}|\$[156y]\$)[^\s:]{8,}"
+    ),
     "GitHub token": re.compile(rb"\bgh[opsu]_[A-Za-z0-9_]{20,}\b"),
     "GitHub fine-grained token": re.compile(rb"\bgithub_pat_[A-Za-z0-9_]{22,}\b"),
     "AWS access key": re.compile(rb"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b"),
@@ -103,6 +128,18 @@ class CandidateFailure(RuntimeError):
 
 
 BINARY_SNIFF_BYTES = 8192
+
+# Every binary the public tree carries (a NUL byte anywhere, or bytes that are
+# not UTF-8), each by its public path and SHA-256.  The content scan cannot
+# read a credential inside a binary, so a binary not named here, or named with
+# other bytes, is refused rather than skipped.  Updating the place catalog, an
+# ephemeris file or an image means approving its new digest here.
+BINARY_APPROVALS = "publication/public_binary_files.json"
+# What a public .npmrc may set: the registry, the engine check and the release
+# cool-down, nothing that authenticates.
+NPMRC_SETTING = re.compile(
+    rb"registry=https://registry\.npmjs\.org/|engine-strict=true|min-release-age=[0-9]{1,3}"
+)
 
 
 # A ticket or ruling id: an upper-case word of two or more letters, then any
@@ -303,10 +340,52 @@ UNPUBLISHED_REFERENCE_SITES = {
 }
 
 
-def _names_a_published_path(root: Path, reference: str) -> bool:
+# Markdown emphasis closing right after a path (two asterisks in bold): the
+# path regex admits `*` for patterns, so a trailing run of it after a name is
+# the markup, not part of the path.
+_EMPHASIS_CLOSE = re.compile(r"(?<=[^/*])\*+$")
+_BRACES = re.compile(r"(\{[^{}/]*\})")
+
+
+def _published_paths(root: Path) -> frozenset[str]:
+    """Every file and directory of the tree, each with a trailing `/`."""
+    return frozenset(
+        relative.as_posix() + "/" for path in root.rglob("*")
+        if (relative := path.relative_to(root)).parts[0] != ".git"
+    )
+
+
+def _component_regex(part: str) -> str:
+    def literal(text: str) -> str:
+        return "".join("[^/]*" if character == "*" else re.escape(character) for character in text)
+    # `{a,b}` is either; `{name}` (a placeholder, as an f-string writes it) is any name.
+    return "".join(
+        ("(?:" + "|".join(literal(option) for option in piece[1:-1].split(",")) + ")"
+         if "," in piece else "[^/]*")
+        if _BRACES.fullmatch(piece) else literal(piece)
+        for piece in _BRACES.split(part)
+    )
+
+
+def reference_pattern(reference: str) -> re.Pattern[str]:
+    """A named path pattern (`*`, `**`, `{a,b}`) as a regular expression over
+    _published_paths.  The text is a reader's prose, so it is translated here
+    rather than handed to pathlib's glob, whose rules differ between Python
+    versions; what is not a pattern is refused as such."""
+    pieces = []
+    for part in reference.split("/"):
+        if "**" in part and part != "**":
+            raise CandidateFailure(
+                f"cannot read {reference!r} as a path or a pattern: '**' is not a whole path component"
+            )
+        pieces.append("(?:[^/]+/)*" if part == "**" else _component_regex(part) + "/")
+    return re.compile("".join(pieces))
+
+
+def _names_a_published_path(root: Path, reference: str, published: Callable[[], frozenset[str]]) -> bool:
     if any(character in reference for character in "*{"):
-        pattern = re.sub(r"\{[^}]*\}", "*", reference)
-        return any(root.glob(pattern))
+        pattern = reference_pattern(reference)
+        return any(pattern.fullmatch(path) for path in published())
     if (root / reference).exists() or (root / f"{reference}.py").is_file():
         return True
     # `module.attribute`: the path of a module and a name inside it.
@@ -314,16 +393,11 @@ def _names_a_published_path(root: Path, reference: str) -> bool:
     return bool(module) and attribute.isidentifier() and (root / f"{module}.py").is_file()
 
 
-def path_references(root: Path, relative: str, data: bytes) -> list[str]:
-    """Repository paths one public file names that the tree does not carry."""
-    if b"\0" in data[:BINARY_SNIFF_BYTES]:
-        return []
-    try:
-        text = data.decode("utf-8")
-    except UnicodeDecodeError:
-        return []
+def named_paths(text: str) -> set[str]:
+    """The repository paths and modules a text names, without the Markdown
+    emphasis or the sentence punctuation around them."""
     named = {
-        match.group(1).rstrip("./") for match in _REPOSITORY_PATH.finditer(text)
+        _EMPHASIS_CLOSE.sub("", match.group(1)).rstrip("./") for match in _REPOSITORY_PATH.finditer(text)
         # After a lone `/` it is an absolute or URL path, not one of the tree;
         # after `../` it is relative to the tree.
         if text[max(0, match.start() - 1):match.start()] != "/"
@@ -331,24 +405,54 @@ def path_references(root: Path, relative: str, data: bytes) -> list[str]:
     }
     # A module the way `python -m` and imports name it (a module or a package).
     named |= {match.group(0).replace(".", "/") for match in _MODULE_PATH.finditer(text)}
+    return named
+
+
+def path_references(
+    root: Path, relative: str, data: bytes, published: Callable[[], frozenset[str]] | None = None,
+) -> list[str]:
+    """Repository paths one public file names that the tree does not carry.
+    `published` gives the tree's paths for a pattern (read once per scan)."""
+    if published is None:
+        cache: list[frozenset[str]] = []
+
+        def read_once() -> frozenset[str]:
+            if not cache:
+                cache.append(_published_paths(root))
+            return cache[0]
+        published = read_once
+    if b"\0" in data[:BINARY_SNIFF_BYTES]:
+        return []
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        return []
     site = UNPUBLISHED_REFERENCE_SITES.get(relative, ("", frozenset()))[1]
-    return sorted(
-        reference for reference in named
-        if reference not in site
-        and not reference.startswith(tuple(UNPUBLISHED_PATH_CLASSES))
-        and not _names_a_published_path(root, reference)
-    )
+    try:
+        return sorted(
+            reference for reference in named_paths(text)
+            if reference not in site
+            and not reference.startswith(tuple(UNPUBLISHED_PATH_CLASSES))
+            and not _names_a_published_path(root, reference, published)
+        )
+    except CandidateFailure as error:
+        raise CandidateFailure(f"{relative}: {error}") from None
 
 
 def scan_path_references(root: Path) -> None:
     """Fail on a public file outside third_party/ that names an unpublished path."""
+    paths = _published_paths(root)
+
+    def published() -> frozenset[str]:
+        return paths
+
     scanned = 0
     for path in sorted(root.rglob("*")):
         relative = path.relative_to(root)
         if not path.is_file() or relative.parts[0] in {".git", "third_party"}:
             continue
         scanned += 1
-        missing = path_references(root, relative.as_posix(), path.read_bytes())
+        missing = path_references(root, relative.as_posix(), path.read_bytes(), published)
         if missing:
             raise CandidateFailure(
                 f"{relative.as_posix()} names unpublished path(s): {', '.join(missing)}"
@@ -357,57 +461,117 @@ def scan_path_references(root: Path) -> None:
         raise CandidateFailure(f"no file to scan under {root}")
 
 
+def load_binary_approvals(root: Path) -> dict[str, str]:
+    """{public path: SHA-256} of the binaries `root` may carry; {} when it names none."""
+    path = root / BINARY_APPROVALS
+    if not path.exists():
+        return {}
+    document = _load_json(path)
+    files = document.get("files")
+    if document.get("schema_version") != 1 or not isinstance(files, dict) or not files or any(
+        not isinstance(name, str) or not isinstance(digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+        for name, digest in files.items()
+    ):
+        raise CandidateFailure(f"{BINARY_APPROVALS} is not a map of public paths to SHA-256 digests")
+    return dict(files)
+
+
+def _verify_npmrc(relative: str, data: bytes) -> None:
+    lines = [line.strip() for line in data.splitlines() if line.strip()]
+    unreviewed = [line for line in lines if NPMRC_SETTING.fullmatch(line) is None]
+    if unreviewed:
+        raise CandidateFailure(
+            f"{relative} sets more than the registry, engine-strict and min-release-age "
+            f"({len(unreviewed)} other line(s)); a public .npmrc carries no other setting"
+        )
+
+
 def scan_candidate_content(
     root: Path,
     *,
     forbidden_markers: set[str] = FORBIDDEN_TEXT,
     secret_patterns: dict[str, re.Pattern[bytes]] | None = None,
+    binary_files: dict[str, str] | None = None,
 ) -> None:
     """Scan every regular file's bytes outside `.git`, whatever its suffix.
 
     Every byte of every file is searched, case-insensitively, for the literal
-    markers.  The patterns are searched in text files only: a file with a NUL
-    byte in its first 8 KiB is binary (the 80 MB place catalog, ephemeris
-    files, archives, images).  Regular expressions over those bytes took about
-    25 s per export and cannot match what a person wrote; the literal markers
-    (paths, addresses, record names) still cover them.
+    markers.  Every byte of every file is searched for the patterns too, except
+    a binary approved by path and SHA-256 (BINARY_APPROVALS, or `binary_files`):
+    regular expressions over the 80 MB place catalog and the ephemeris files
+    took about 25 s per export and cannot match what a person wrote, so those
+    exact bytes are approved once instead.  Any other binary (a NUL byte
+    anywhere, or bytes that are not UTF-8) is refused: what the scan cannot
+    read as text it does not pass.
     """
 
     patterns = tuple((SECRET_PATTERNS if secret_patterns is None else secret_patterns).items())
+    approvals = load_binary_approvals(root) if binary_files is None else binary_files
     literals = tuple(
         (marker, marker.encode("utf-8").lower()) for marker in sorted(forbidden_markers)
     )
     overlap = max([512, *(len(value) for _, value in literals)])
     scanned = 0
+    approved_seen: set[str] = set()
     for path in sorted(root.rglob("*")):
         relative = path.relative_to(root)
         if not path.is_file() or ".git" in relative.parts:
             continue
         scanned += 1
-        tail, text = b"", None
+        rendered = relative.as_posix()
+        approved = approvals.get(rendered)
+        digest = hashlib.sha256()
+        decoder = codecs.getincrementaldecoder("utf-8")()
+        binary = False
+        tail = b""
         try:
             with path.open("rb") as handle:
                 for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-                    if text is None:
-                        text = b"\0" not in chunk[:BINARY_SNIFF_BYTES]
                     window = tail + chunk
                     lowered = window.lower()
                     for marker, encoded in literals:
                         if encoded in lowered:
-                            raise CandidateFailure(
-                                f"private marker {marker!r} in {relative.as_posix()}"
-                            )
-                    if text:
+                            raise CandidateFailure(f"private marker {marker!r} in {rendered}")
+                    if approved is not None:
+                        digest.update(chunk)
+                    else:
+                        if not binary:
+                            try:
+                                decoder.decode(chunk)
+                                binary = b"\0" in chunk
+                            except UnicodeDecodeError:
+                                binary = True
                         for label, pattern in patterns:
                             if pattern.search(window):
-                                raise CandidateFailure(
-                                    f"possible {label} in {relative.as_posix()}"
-                                )
+                                raise CandidateFailure(f"possible {label} in {rendered}")
                     tail = window[-overlap:]
+            if approved is None and not binary:
+                try:
+                    decoder.decode(b"", final=True)
+                except UnicodeDecodeError:
+                    binary = True
+            if path.name == ".npmrc":
+                _verify_npmrc(rendered, path.read_bytes())
         except OSError as error:
-            raise CandidateFailure(f"cannot scan {relative.as_posix()}: {error}") from None
+            raise CandidateFailure(f"cannot scan {rendered}: {error}") from None
+        if approved is not None:
+            approved_seen.add(rendered)
+            if digest.hexdigest() != approved:
+                raise CandidateFailure(
+                    f"approved binary changed: {rendered} (sha256 {digest.hexdigest()}; "
+                    f"{BINARY_APPROVALS} approves {approved})"
+                )
+        elif binary:
+            raise CandidateFailure(
+                f"binary file not approved for publication: {rendered} (the scan cannot read "
+                f"it as text; {BINARY_APPROVALS} names each published binary by its SHA-256)"
+            )
     if not scanned:
         raise CandidateFailure(f"no file to scan under {root}")
+    missing = sorted(set(approvals) - approved_seen)
+    if missing:
+        raise CandidateFailure(f"approved binary is missing: {', '.join(missing)}")
 
 
 def refused_public_path(rendered: str) -> str | None:

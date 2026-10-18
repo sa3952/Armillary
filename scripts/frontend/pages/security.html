@@ -1,7 +1,7 @@
 <div class="wrap page-body datasheet">
 
   <section class="ds-hero">
-    <p class="eyebrow">安全 · SECURITY</p>
+    <p class="eyebrow">安全</p>
     <h1>每一項保護，都附上查證的方法。</h1>
     <p class="lede">〈<a href="/zh-TW/trust">信任</a>〉回答「這些承諾由誰執行、你憑什麼相信」。<b>這一頁回答「它實際怎麼運作、擋住了什麼、壞掉的時候會怎樣」。</b>每一項都寫成三件事：本站怎麼做、它讓攻擊者或追蹤者做不到什麼、你怎麼自己查。數值全部照實列，包括我知道的弱點。</p>
     <p class="ds-note">沒有第三方安全認證，沒有專業滲透測試，沒有漏洞獎金計畫。<b>有的是可以逐行核對的設定、每次發布都在主機上重跑的驗收，以及一份誠實的攻擊面清單。</b></p>
@@ -17,7 +17,7 @@
       <li data-fact="logs"><b>伺服器不記你的 IP，也不記出生資料。</b>存取日誌關閉；事件日誌只有 11 個固定欄位，約一週後自動刪除。<span class="gives"><b>保護：</b>主機上沒有一份「誰在什麼時候查了什麼」的名單可以外洩、被要求交出，或被拿去分析。</span></li>
       <li data-fact="container"><b>計算程式關在沒有對外網路的容器裡。</b>唯讀檔案系統、非 root 使用者、Linux 特權全部移除。<span class="gives"><b>保護：</b>即使程式有漏洞被利用，它也沒有路把資料送出去，也改不了自己的程式檔。</span></li>
       <li data-fact="host"><b>主機只開必要的門。</b>防火牆預設拒絕連入；管理登入只收金鑰、只接受受限來源；作業系統安全更新每天自動安裝。<span class="gives"><b>保護：</b>網路上不停在猜密碼的程式，在這裡沒有密碼可猜；已公布修補的系統漏洞不必等人手動處理。</span></li>
-      <li data-fact="source"><b>線上版本對得回公開原始碼。</b>每張盤的計算收據印出這次用的程式版本；前端可以從公開原始碼重算出同一個雜湊。<span class="gives"><b>保護：</b>你不必只聽我說「線上跑的就是公開的那份」。</span></li>
+      <li data-fact="source"><b>線上版本對得回公開原始碼。</b>每張盤的計算收據印出這次用的程式版本。只有前端能用公開原始碼重算出同一個雜湊；後端的版本與映像識別碼是部署時宣告的，公開材料無法重算。<span class="gives"><b>保護：</b>前端這一半，你不必只聽我說「線上跑的就是公開的那份」。</span></li>
     </ol>
     <p class="limit">這七項是<b>降低風險</b>，不是保證沒有漏洞。每一項的界線寫在它自己的說明裡，整體的弱點在第 14 節。</p>
   </section>
@@ -42,7 +42,7 @@ curl -sv -o /dev/null https://projectarmillary.com/zh-TW/ 2&gt;&amp;1 | grep -iE
       </dl>
       <details class="proof">
         <summary>技術依據</summary>
-        <p>公開原始碼的 <span class="mono">deploy/staging/nginx-site.conf.template</span>：<span class="mono">ssl_protocols TLSv1.2 TLSv1.3</span>；<span class="mono">ssl_ciphers ECDHE+AESGCM:ECDHE+CHACHA20</span>（只有 ECDHE 金鑰交換與 AEAD 加密）；金鑰交換的簽章只接受 SHA-256 以上；TLS 工作階段票證（session ticket）關閉——票證金鑰一旦外洩，前向保密就打折。每次發布的主機驗收都確認 HSTS 存在，並確認 TLS 1.2 握手只用 SHA-256 以上的簽章。</p>
+        <p>公開原始碼的 <span class="mono">deploy/staging/nginx-site.conf.template</span>：<span class="mono">ssl_protocols TLSv1.2 TLSv1.3</span>；<span class="mono">ssl_ciphers ECDHE+AESGCM:ECDHE+CHACHA20</span>（只有 ECDHE 金鑰交換與 AEAD 加密）；金鑰交換的簽章只接受 SHA-256 以上。TLS 工作階段票證（session ticket）在 <span class="mono">deploy/staging/nginx.conf</span> 的 http 層關閉（<span class="mono">ssl_session_tickets off</span>），對每個站台都生效——票證金鑰一旦外洩，前向保密就打折。每次發布的主機驗收都確認 HSTS 存在，並確認 TLS 1.2 握手只用 SHA-256 以上的簽章。</p>
         <p><b>界線：</b>HSTS 目前沒有登記到瀏覽器內建的預載清單（preload）。從沒來過本站的瀏覽器，若手動輸入 <span class="mono">http://</span>，第一個請求在轉址前是明文——那個請求只有網址，<b>不含出生資料</b>；出生資料只會在加密連線上送出。</p>
       </details>
     </div>
@@ -112,6 +112,7 @@ curl -sv -o /dev/null https://projectarmillary.com/zh-TW/ 2&gt;&amp;1 | grep -iE
       <details class="proof">
         <summary>技術依據</summary>
         <p>容器網路標記 <span class="mono">internal: true</span>：Docker 不替它建立對外路由。後端也沒有對外的 HTTP 客戶端，相依守衛偵測到這類套件就失敗（第 05 節）。<b>真正擋住出口的是網路那一層，不是套件名單。</b></p>
+        <p><b>後端沒有自己的身分驗證，這是設計。</b>計算服務本身不檢查來者是誰——它沒有帳號、也沒有存任何資料要保護。能連到它的只有反向代理 NGINX：容器沒有對主機公開任何連接埠、只接在內部網路上，主機防火牆預設拒絕所有進站連線。後端會比對請求寫的主機名稱，那是用來抓出代理轉送設定錯誤的檢查，<b>不是身分驗證</b>。</p>
       </details>
     </div>
 
@@ -133,12 +134,12 @@ curl -sv -o /dev/null https://projectarmillary.com/zh-TW/ 2&gt;&amp;1 | grep -iE
         <dt>本站怎麼做</dt>
         <dd>原始碼公開在 <span class="mono">github.com/sa3952/Armillary</span>。每張盤的〈計算收據〉印出這次用的後端映像識別碼（image ID）、前端發佈雜湊（artifact digest），以及兩者對應的公開原始碼修訂與網址。</dd>
         <dt>擋住什麼</dt>
-        <dd>你不必只聽我說「線上跑的就是公開的那份」。<b>前端——也就是在你瀏覽器裡實際執行的程式——任何人都能從公開原始碼重算出同一個雜湊</b>，對照收據上的值。</dd>
+        <dd>你不必只聽我說「線上跑的就是公開的那份」。<b>前端——也就是在你瀏覽器裡實際執行的程式——任何人都能從公開原始碼重算出同一個雜湊</b>，對照收據上的值。<b>只有前端能這樣查。</b>收據上後端的公開原始碼修訂與映像識別碼是部署時宣告的：發布工具切換時核對過它們與映像標籤相同，但你手上的公開材料無法重算它們。</dd>
         <dt>你怎麼查</dt>
         <dd>先從計算收據抄下前端的公開原始碼修訂，再到公開原始碼的 <span class="mono">releases/&lt;版本&gt;/frontend-release.json</span> 取得那一版的發佈紀錄。在那個修訂的乾淨 checkout 裡執行（需要 Python 與公開原始碼的開發相依）：
-          <pre class="flow" tabindex="0" role="region" aria-label="重算前端雜湊的指令">python -m scripts.deployment.frontend_release recompute \
+          <pre class="flow" tabindex="0" role="region" aria-label="重算前端雜湊的指令">python -B -m scripts.deployment.frontend_release recompute \
   --source-root . --release-record &lt;下載的 frontend-release.json&gt;</pre>
-          重建出的紀錄必須與公開的那份完全相同，印出的 <span class="mono">artifact_digest</span> 應等於收據上的前端發佈雜湊。</dd>
+          <span class="mono">-B</span> 讓 Python 不在 checkout 裡寫入位元組碼快取；多出的檔案會讓公開檔案清單對不上。重建出的紀錄必須與公開的那份完全相同，印出的 <span class="mono">artifact_digest</span> 應等於收據上的前端發佈雜湊。</dd>
       </dl>
       <details class="proof">
         <summary>技術依據</summary>
@@ -242,9 +243,9 @@ curl -sv -o /dev/null https://projectarmillary.com/zh-TW/ 2&gt;&amp;1 | grep -iE
     <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="ds-07-title">
       <table class="spec">
         <tbody>
-          <tr><td>計算請求限流</td><td class="mono val">30 r/min／IP，burst 10，nodelay　→　429</td></tr>
-          <tr><td>地名查詢限流</td><td class="mono val">與計算請求共用同一個 30 r/min／IP 額度，burst 5　→　429</td></tr>
-          <tr><td>換算助手限流</td><td class="mono val">與計算請求共用同一個 30 r/min／IP 額度，burst 5　→　429</td></tr>
+          <tr><td>計算請求限流</td><td class="mono val">30 r/min／IP，burst 7，nodelay　→　429</td></tr>
+          <tr><td>地名查詢限流</td><td class="mono val">另有自己的額度：120 r/min／IP，burst 5　→　429</td></tr>
+          <tr><td>換算助手限流</td><td class="mono val">另有自己的額度：60 r/min／IP，burst 5　→　429</td></tr>
           <tr><td>靜態資源限流</td><td class="mono val">600 r/min／IP</td></tr>
           <tr><td>同時連線數</td><td class="mono val">另有 limit_conn 上限　→　503</td></tr>
           <tr><td>請求主體上限</td><td class="mono val">16 KB</td></tr>
@@ -255,7 +256,7 @@ curl -sv -o /dev/null https://projectarmillary.com/zh-TW/ 2&gt;&amp;1 | grep -iE
         </tbody>
       </table>
     </div>
-    <p>處理濫用期間，以上數值可能暫時調低（計算、地名查詢與換算助手 6 r/min、靜態資源 300 r/min、同時連線 16），濫用結束後恢復。</p>
+    <p>處理濫用期間，以上數值可能暫時調低（計算 6 r/min、地名查詢 24 r/min、換算助手 12 r/min、靜態資源 300 r/min、同時連線 16），濫用結束後恢復。</p>
     <p><b>限流用的是你的 IP，這件事值得說清楚。</b>反向代理必須看得到你的位址，否則封包送不回去。它拿那個位址做限流計數，<b>但不寫進日誌，也不轉送給應用程式</b>——應用程式從頭到尾沒有機會知道你的 IP。</p>
     <p>應用程式不會因<b>等待佇列預算到期</b>而主動取消已取得計算鎖、正在執行的同步星曆計算；worker、容器或主機故障仍可能中斷請求。</p>
   </section>

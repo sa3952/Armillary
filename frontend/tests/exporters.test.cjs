@@ -293,6 +293,11 @@ const SPREADSHEET_CASES = [
   ["＝1+1", true], ["＋1", true], ["－1", true], ["＠SUM(A1:A2)", true],
   ["​＝1+1", true], ["\u00a0＝1+1", true], ["　＋cmd|calc", true],
   ["－15°25′02.60″", true], ["太陽＝1", false], ["A－B", false],
+  // 小型符號（U+FE66、U+FE62、U+FE63、U+FE6B）與全形的｜；，以及顯示為空的填充字元開頭。
+  ["﹦HYPERLINK(1)", true], ["﹢1+1", true], ["﹣1+1", true], ["﹫SUM(1)", true],
+  ["｜calc", true], ["；=1+1", true],
+  ["\u3164=1+1", true], ["\u2800=1+1", true], ["\u115F\u1160=1", true], ["\uFFA0＋1", true],
+  ["太陽﹦1", false],
   // `|`（DDE 的 `|calc!A1`）與 `;`（`;=1+1`）在開頭同樣中和，前導空白、零寬與控制字元一樣略過。
   // 相鄰控制：不在開頭的 `|`、`;`、`=` 不加撇號；量測值豁免不變。
   ["|calc!A1", true], [";=1+1", true], [";", true], ["|", true],

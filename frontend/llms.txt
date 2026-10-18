@@ -9,13 +9,13 @@
 - 計算引擎：Swiss Ephemeris（pyswisseph 2.10.3.2）
 - 宮位制：Whole Sign、Equal、Porphyry、Alcabitius、Campanus、Regiomontanus、Placidus
 - 時間主星：年度小限（annual profections）、月小限（monthly profections）、法達（firdaria）、黃道釋放（zodiacal releasing）與十年期（decennials）；只列哪一段時間由哪顆行星或哪個星座輪值
-- 本命盤：行星位置、上升點、中天與行星落宮；相位；本質尊貴：廟、旺、界、面、三分性；日盤夜盤；命運點與精神點；恆星；反照點；赤緯平行與反平行；月空亡；十二分部；月宿；焦傷、在光束下與日輪內；月相與產前朔望；日月食；行星時
+- 本命盤：行星位置、上升點、中天與行星落宮；相位；本質尊貴：廟、旺、陷、弱、界、面、三分性、外來；日盤夜盤；命運點與精神點；恆星；反照點；赤緯平行與反平行；月空亡；十二分部；月宿；焦傷、在光束下與日輪內；行速、停滯與東出西入；月相與產前朔望；日月食；行星時
 - 狀態：公開測試（Public Alpha），自2026-10-10起
 - 已知限制（英文）：https://github.com/sa3952/Armillary/blob/main/docs/KNOWN_LIMITATIONS.md
 - 方法頁全文與文章重點（純文字）：https://projectarmillary.com/llms-full.txt
 - 親手驗證隱私：https://projectarmillary.com/zh-TW/security/verify
 
-Armillary (渾儀) is a classical Western astrology calculator with a Traditional Chinese interface: enter a birth date, time and place to get a natal chart, with the method source and a calculation receipt for every number. It also computes the annual time lords: annual profections, monthly profections, firdaria, zodiacal releasing and decennials, listing which planet or sign rules each period. The natal chart covers planet positions with the ascendant, midheaven and house placements, aspects, essential dignities, sect, Lots of Fortune and Spirit, fixed stars, antiscia, parallels and contra-parallels, void-of-course Moon, dodecatemoria, lunar mansions, solar phase: combustion, under the beams, cazimi, lunar phases and the prenatal syzygy, eclipses and planetary hours. It only calculates; it does not interpret charts or make predictions. The code is licensed AGPL-3.0-only, and the site has no accounts, no cookies and no third-party analytics or trackers.
+Armillary (渾儀) is a classical Western astrology calculator with a Traditional Chinese interface: enter a birth date, time and place to get a natal chart, with the method source and a calculation receipt for every number. It also computes the annual time lords: annual profections, monthly profections, firdaria, zodiacal releasing and decennials, listing which planet or sign rules each period. The natal chart covers planet positions with the ascendant, midheaven and house placements, aspects, essential dignities and debilities, sect, Lots of Fortune and Spirit, fixed stars, antiscia, parallels and contra-parallels, void-of-course Moon, dodecatemoria, lunar mansions, solar phase: combustion, under the beams, cazimi, swift or slow, stationary, oriental or occidental of the Sun, lunar phases and the prenatal syzygy, eclipses and planetary hours. It only calculates; it does not interpret charts or make predictions. The code is licensed AGPL-3.0-only, and the site has no accounts, no cookies and no third-party analytics or trackers.
 
 ## 產品
 

@@ -40,6 +40,11 @@
     { key: "classical", in_advanced: true, label_zh: "古典判斷",   label_en: "Classical doctrine" },
   ]);
 
+  // 界、面、三分性與十二分部的「全部並列」：同一份結果裡逐星對照各家，不必排好幾次盤。
+  const ALL_LABEL_ZH = "全部並列";
+  const ALL_HELP_ZH = "選「全部並列」就把每一套都算出來，在同一份結果裡逐星對照：各家說的相同就收成一行，不同才展開；"
+    + "不設主要那一套，也不照幾家相同排序。";
+
   /**
    * 每一欄的宣告。
    * type: boolean | choice | number
@@ -242,39 +247,54 @@
         { value: false, label_zh: "不計算", label_en: "Not calculated" },
         { value: true,  label_zh: "計算",   label_en: "Calculated" },
       ],
-      label_zh: "廟與旺", label_en: "Domicile and exaltation",
+      label_zh: "廟、旺、陷、弱", label_en: "Domicile, exaltation, detriment and fall",
       default: false,
-      help_zh: "只評估廟與旺；陷、弱、外來與接納（含互容）尚未評估，那是「未評估」，不是「沒有」。恆星黃道下產品會明確拒絕輸出並附原因代碼。" },
+      help_zh: "廟、旺與其對面的陷、弱，只判整個星座。外來另有一個選項。接納（含互容）尚未評估，那是「未評估」，不是「沒有」。恆星黃道下產品會明確拒絕輸出並附原因代碼。" },
     { key: "bounds_profile", group: "dignities", type: "choice",
       label_zh: "界", label_en: "Bounds", default: null,
       values: [
         { value: null, label_zh: "不計算", label_en: "Not calculated" },
-        { value: "egyptian_bounds_robbins_1940_v1", label_zh: "埃及界", label_en: "Egyptian" },
-        { value: "chaldaean_bounds_ptolemy_i_21_v1", label_zh: "迦勒底界", label_en: "Chaldaean" },
-        { value: "ptolemy_bounds_robbins_1940_v1", label_zh: "Ptolemy 界", label_en: "Ptolemy" },
-        { value: "lilly_received_bounds_1647_v1", label_zh: "Lilly 1647 承襲界", label_en: "Lilly 1647 received" },
+        { value: "egyptian_bounds_robbins_1940_v1", label_zh: Labels.VOCABULARIES.dignity_profile.egyptian_bounds_robbins_1940_v1, label_en: "Egyptian" },
+        { value: "chaldaean_bounds_ptolemy_i_21_v1", label_zh: Labels.VOCABULARIES.dignity_profile.chaldaean_bounds_ptolemy_i_21_v1, label_en: "Chaldaean" },
+        { value: "ptolemy_bounds_robbins_1940_v1", label_zh: Labels.VOCABULARIES.dignity_profile.ptolemy_bounds_robbins_1940_v1, label_en: "Ptolemy" },
+        { value: "lilly_received_bounds_1647_v1", label_zh: Labels.VOCABULARIES.dignity_profile.lilly_received_bounds_1647_v1, label_en: "Lilly 1647 received" },
+        { value: "all", label_zh: ALL_LABEL_ZH, label_en: "All, side by side" },
       ],
-      help_zh: "四套平等提供。迦勒底界在日夜盤未知時無法選定守護星，回應會同時給出日盤與夜盤候選，由你判讀，本產品不替你選一個。" },
+      help_zh: "四套平等提供。迦勒底界在日夜盤未知時無法選定守護星，回應會同時給出日盤與夜盤候選，由你判讀，本產品不替你選一個。"
+        + ALL_HELP_ZH },
     { key: "decan_profile", group: "dignities", type: "choice",
       label_zh: "面／旬", label_en: "Face / decan", default: null,
       values: [
         { value: null, label_zh: "不計算", label_en: "Not calculated" },
-        { value: "chaldean_planetary_faces_firmicus_ii_4_v1", label_zh: "Chaldean 行星面", label_en: "Chaldean planetary faces" },
-        { value: "manilius_sign_decans_astronomica_iv_v1", label_zh: "Manilius 星座旬", label_en: "Manilius sign decans" },
+        { value: "chaldean_planetary_faces_firmicus_ii_4_v1", label_zh: Labels.VOCABULARIES.dignity_profile.chaldean_planetary_faces_firmicus_ii_4_v1, label_en: "Chaldean planetary faces" },
+        { value: "manilius_sign_decans_astronomica_iv_v1", label_zh: Labels.VOCABULARIES.dignity_profile.manilius_sign_decans_astronomica_iv_v1, label_en: "Manilius sign decans" },
+        { value: "all", label_zh: ALL_LABEL_ZH, label_en: "All, side by side" },
       ],
-      help_zh: "兩套的守護者型別不同：一套的守護者是行星，另一套是星座。畫面會分開標示，不混用同一種標籤。" },
+      help_zh: "兩套的守護者型別不同：一套的守護者是行星，另一套是星座。畫面會分開標示，不混用同一種標籤；"
+        + "選「全部並列」時兩套並排列出，不比相同或不同。" + ALL_HELP_ZH },
     { key: "triplicity_profile", group: "dignities", type: "choice",
       label_zh: "三分性", label_en: "Triplicity", default: null,
       values: [
         { value: null, label_zh: "不計算", label_en: "Not calculated" },
-        { value: "dorothean_triplicity_three_rulers_v1", label_zh: "Dorotheus 三守護", label_en: "Dorothean three rulers" },
-        { value: "ptolemy_triplicity_textual_corulership_v1", label_zh: "Ptolemy 共治", label_en: "Ptolemy co-rulership" },
-        { value: "lilly_triplicity_compact_1647_v1", label_zh: "Lilly 1647 簡表", label_en: "Lilly 1647 compact" },
-      ] },
+        { value: "dorothean_triplicity_three_rulers_v1", label_zh: Labels.VOCABULARIES.dignity_profile.dorothean_triplicity_three_rulers_v1, label_en: "Dorothean three rulers" },
+        { value: "ptolemy_triplicity_textual_corulership_v1", label_zh: Labels.VOCABULARIES.dignity_profile.ptolemy_triplicity_textual_corulership_v1, label_en: "Ptolemy co-rulership" },
+        { value: "lilly_triplicity_compact_1647_v1", label_zh: Labels.VOCABULARIES.dignity_profile.lilly_triplicity_compact_1647_v1, label_en: "Lilly 1647 compact" },
+        { value: "all", label_zh: ALL_LABEL_ZH, label_en: "All, side by side" },
+      ],
+      help_zh: "三套平等提供；Lilly 1647 簡表列為研究用，選「全部並列」時也會列出，名稱後註明「研究用」。" + ALL_HELP_ZH },
     { key: "triplicity_include_research_comparison", group: "dignities", type: "boolean",
       label_zh: "並列其餘三分性 profile 供比較", label_en: "Triplicity research comparison",
       default: false, depends_on: "triplicity_profile",
+      // 三分性選「全部並列」時三套都已並列，這一項沒有東西可加，畫面上隱藏（calculate.js）；欄位照舊接受。
+      hidden_when: { triplicity_profile: "all" },
       help_zh: "並列比較不會改變你選定的那一套；回應中 selected_profiles 與 research_comparison_profiles 分開。" },
+    { key: "peregrine_profile", group: "dignities", type: "choice",
+      label_zh: "外來", label_en: "Peregrine", default: null,
+      values: [
+        { value: null, label_zh: "不計算", label_en: "Not calculated" },
+        { value: "lilly_1647_p112_v1", label_zh: "依 Lilly 1647 判", label_en: "By Lilly 1647" },
+      ],
+      help_zh: "外來（peregrine）：行星所在的度數，在它自己的廟、旺、三分性、界、面五項裡一項都沒有。依 Lilly《Christian Astrology》1647 p.112 的定義，固定用他自己 p.104 那一整張表判定，不跟上面選的界、面、三分性；三分性只算日夜盤當令的那一顆。日夜盤未知、或太陽貼近地平線而剛好取決於三分性時，寫「無法判定」。" },
 
     // ── 行星與宮的古典分類（本質尊貴一組）──────────────────
     { key: "include_classical_classifications", group: "classical", type: "boolean",
@@ -289,10 +309,12 @@
       label_zh: "十二分部的算法", label_en: "Twelfth-part rule", default: "twelvefold_from_sign_start_v1",
       depends_on: "include_dodecatemoria",
       values: [
-        { value: "twelvefold_from_sign_start_v1", label_zh: "乘以 12（Firmicus）", label_en: "Times 12 (Firmicus)" },
-        { value: "thirteenfold_from_sign_start_v1", label_zh: "乘以 13（Paulus）", label_en: "Times 13 (Paulus)" },
+        { value: "twelvefold_from_sign_start_v1", label_zh: Labels.VOCABULARIES.dodecatemoria_profile.twelvefold_from_sign_start_v1, label_en: "Times 12 (Firmicus)" },
+        { value: "thirteenfold_from_sign_start_v1", label_zh: Labels.VOCABULARIES.dodecatemoria_profile.thirteenfold_from_sign_start_v1, label_en: "Times 13 (Paulus)" },
+        { value: "all", label_zh: ALL_LABEL_ZH, label_en: "All, side by side" },
       ],
-      help_zh: "兩種都是把星座內的度數放大，再從同一星座的起點往後數；差在乘以 12 還是乘以 13。古書有這兩種算法，同一個點常落在不同星座。兩種平等提供，結果會寫明用的是哪一種。" },
+      help_zh: "兩種都是把星座內的度數放大，再從同一星座的起點往後數；差在乘以 12 還是乘以 13。古書有這兩種算法，同一個點常落在不同星座。兩種平等提供，結果會寫明用的是哪一種。"
+        + "選「全部並列」時兩種都算、逐點對照；主表與出生時間的取樣照舊用乘以 12 那一種，表上寫明。" },
 
     // ── 焦傷與光束下（行星離太陽多近）──────────────────────
     { key: "include_solar_phase", group: "classical", type: "boolean",
@@ -311,6 +333,11 @@
       label_zh: "日輪內改看太陽圓面", label_en: "Cazimi on the solar disc", default: false,
       depends_on: "include_solar_phase",
       help_zh: "改用「行星中心落在太陽圓面內」判定日輪內：看天空中的實際夾角，不看黃經差。古書多半只看黃經，這是另一種讀法，所以不預設；希臘化那一套沒有日輪內，選了也不套用。" },
+
+    // ── 行速、停滯與東出西入 ─────────────────────────────
+    { key: "include_motion_states", group: "classical", type: "boolean",
+      label_zh: "行速、停滯與東出西入", label_en: "Swift or slow, stationary, oriental or occidental", default: false,
+      help_zh: "古書看行星這一天走得比平均快還是慢、是不是快要停住轉向、比太陽早升起（晨星，東出）還是晚落下（昏星，西入）。勾選後列出太陽、月亮與五顆行星的這三件事，平均每日行度照 Lilly 1647，Bonatti 1550 並列；停滯照 Lilly 給的天數，另列前後 15 天內的轉向時刻。只照原典列出，不打分。" },
   ]);
 
   const BY_KEY = Object.freeze(OPTIONS.reduce((acc, option) => {
@@ -357,8 +384,15 @@
     return current === rule.value;
   }
 
+  /** 這一項此刻是否沒有意義而收起（hidden_when 的每一個鍵都等於宣告的值）：收起的不顯示，也不送出。 */
+  function isHidden(option, values) {
+    return Boolean(option.hidden_when)
+      && Object.entries(option.hidden_when).every(([key, value]) => values[key] === value);
+  }
+
   /** 相依鏈是否全部成立；任一祖先關閉即為 false。 */
   function isReachable(option, values) {
+    if (isHidden(option, values)) return false;
     let current = option;
     const seen = new Set();
     while (current && current.depends_on) {
@@ -439,7 +473,7 @@
 
   return Object.freeze({
     GROUPS, OPTIONS, BY_KEY,
-    isEnabled, isReachable, conflictFor, enabledCountByGroup, toRequestOptions,
+    isEnabled, isHidden, isReachable, conflictFor, enabledCountByGroup, toRequestOptions,
     defaults, helpText,
   });
 });

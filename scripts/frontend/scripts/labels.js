@@ -63,6 +63,25 @@
       japan_standard_time: "日本中央標準時",
       wartime_time: "戰時時間",
     }),
+    // OptionsInput 的 bounds_profile、decan_profile、triplicity_profile 的具名表（不含「all」）：
+    // 計算頁的選單與結果頁「全部並列」的對照欄都用這一組名稱。以人名命名的寫原文（Ptolemy、Lilly、
+    // Dorotheus、Manilius），以民族命名的寫中文（埃及、迦勒底），同一個詞不中英兩寫。
+    dignity_profile: Object.freeze({
+      egyptian_bounds_robbins_1940_v1: "埃及界",
+      chaldaean_bounds_ptolemy_i_21_v1: "迦勒底界",
+      ptolemy_bounds_robbins_1940_v1: "Ptolemy 界",
+      lilly_received_bounds_1647_v1: "Lilly 1647 承襲界",
+      chaldean_planetary_faces_firmicus_ii_4_v1: "迦勒底行星面",
+      manilius_sign_decans_astronomica_iv_v1: "Manilius 星座旬",
+      dorothean_triplicity_three_rulers_v1: "Dorotheus 三守護",
+      ptolemy_triplicity_textual_corulership_v1: "Ptolemy 共治",
+      lilly_triplicity_compact_1647_v1: "Lilly 1647 簡表",
+    }),
+    // OptionsInput.dodecatemoria_profile 的兩種算法（不含「all」）。
+    dodecatemoria_profile: Object.freeze({
+      twelvefold_from_sign_start_v1: "乘以 12（Firmicus）",
+      thirteenfold_from_sign_start_v1: "乘以 13（Paulus）",
+    }),
     // OptionsInput.house_system；表單選單與結果都取這一組。
     // 以人名命名的宮位制寫原文，不另取中文音譯；Equal 是方法名，譯成「等分宮」（不是「等分宮制」：
     // 計算口徑摘要會在中文名後接「制」）。
@@ -156,6 +175,8 @@
     civil_time_basis: "鐘點依據",
     civil_time_regime: "時制",
     house_system: "宮位制",
+    dignity_profile: "尊貴表",
+    dodecatemoria_profile: "十二分部算法",
     timezone_place: "時區",
     zodiac_sign: "星座",
     house_system_backend_name: "宮位制",

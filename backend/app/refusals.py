@@ -144,6 +144,20 @@ REFUSALS: Final[Mapping[str, Refusal]] = MappingProxyType({
         "timezone.civil_time_basis 只適用於目錄標示為同時使用北京時間與新疆時間的地點。",
         _CIVIL_TIME_ROUTES,
     ),
+    # A request that names a catalogue record is computed only as the
+    # catalogue's row (core.place_catalog.check_request_places); other
+    # coordinates or another zone are sent as manual coordinates.
+    "catalog_record_unknown": Refusal(
+        422,
+        "內建地名目錄裡沒有這個來源與記錄 id；請重新用地名查詢選定地點，或改用手動座標。",
+        _COMPUTE_ROUTES,
+    ),
+    "catalog_location_mismatch": Refusal(
+        422,
+        "地點的標籤、座標、位置精度或時區與內建地名目錄的這筆記錄不同；"
+        "reason_code 指出第一個不同的欄位。要用別的座標或時區，請改用手動座標。",
+        _COMPUTE_ROUTES,
+    ),
     # The helper answers only where its source table has rows
     # (core.civil_time_sources); elsewhere it would give an offset without a source.
     "time_conversion_zone_not_covered": Refusal(
@@ -168,8 +182,9 @@ REFUSALS: Final[Mapping[str, Refusal]] = MappingProxyType({
     "swiss_ephemeris_error": Refusal(
         500, "Swiss Ephemeris 無法完成這次計算；錯誤內容不對外輸出。", _COMPUTE_ROUTES,
     ),
-    # The chart route reads the catalogue to learn whether a catalogue place
-    # keeps two clocks; it refuses rather than guess when it cannot.
+    # The chart routes read the catalogue to bind a catalogue place to its row
+    # and to learn whether it keeps two clocks; they refuse rather than guess
+    # when they cannot.
     "place_catalog_unavailable": Refusal(
         503, "內建地名目錄無法讀取。", frozenset({PLACE_SEARCH_ROUTE, CHART_ROUTE, ANNUAL_ROUTE}),
     ),

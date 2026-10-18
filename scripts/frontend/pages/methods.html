@@ -2,7 +2,7 @@
 
   <section class="ap-hero">
     <div class="mb mb-plate">
-      <p class="eyebrow">方法 · METHODS</p>
+      <p class="eyebrow">方法</p>
       <h1>算一張星盤<br>要做幾十個選擇。</h1>
     </div>
     <div class="mb mb-accent">
@@ -25,7 +25,7 @@
     <div class="sl"><b>4</b><span>AYANAMSA</span><i>預設　Fagan–Bradley</i></div>
   </div>
 
-  <p class="ap-tally-note">黑的三格是<b>沒有預設值</b>的那三組：不選就不計算，而不是替你選一個。另外五格有預設，<b>預設值是什麼，每一次計算都印在卷宗裡</b>。每一欄的選項都各自具名，不是同一套規則的別名。</p>
+  <p class="ap-tally-note">黑的三格是自訂模式與 API <b>沒有預設值</b>的那三組：不選就不計算，而不是替你選一個；「古典完整」模式預選全部並列，各家一起列出。另外五格有預設，<b>預設值是什麼，每一次計算都印在卷宗裡</b>。每一欄的選項都各自具名，不是同一套規則的別名。</p>
 
   <p>計算頁與結果頁用到的詞（例如上升星座、整宮制、相位、廟與旺）各是什麼意思、原典怎麼說，見〈<a href="/zh-TW/methods/glossary">名詞解釋</a>〉。</p>
 
@@ -115,7 +115,7 @@
     <div class="readings">
       <div>
         <span class="rd-name">埃及界</span>
-        <span class="rd-src">Ptolemy 轉述的埃及界，《占星四書》（Tetrabiblos）I.20，這是 Robbins 的編號，Hübner 校勘本（學者比對多份古抄本後整理出的版本）為 I.21；Robbins, Loeb 1940 印本，全章 pp. 91–97，表在 p. 97。這是傳下來的表，不是某一份抄本本身；Firmicus II.6、Valens I.3 等後世見證有局部異文。「埃及」是 Ptolemy 轉述的名稱，巴比倫泥板有同類前身（Jones &amp; Steele 2011），但不指任何一張特定的表</span>
+        <span class="rd-src">Ptolemy 轉述的埃及界，《占星四書》（Tetrabiblos）I.20，這是 Robbins 的編號，Hübner 校勘本（學者比對多份古抄本後整理出的版本）為 I.21；Robbins, Loeb 1940 印本，全章 pp. 91–97，表在 p. 97。這是傳下來的表，不是某一份抄本本身；Firmicus II.6、Valens I.3 等後世見證有局部異文。「埃及」是 Ptolemy 轉述的名稱，巴比倫泥板有同類前身（Jones &amp; Steele 2011），但不指任何一張特定的表。Robbins 的校勘註（p. 97 註 2）記下 Camerarius 印本在摩羯有一處不同（金星 7、火星 5，本表為 8、4），本站照 Robbins 的表並在出處清單列出</span>
         <span class="rd-id">egyptian_bounds_robbins_1940_v1</span>
       </div>
       <div>
@@ -126,7 +126,7 @@
       </div>
       <div>
         <span class="rd-name">Ptolemy 界</span>
-        <span class="rd-src">Robbins, Loeb 1940 印本中 I.21 章末的完整界表（殘稿說明 pp. 103–105，表在 p. 107；Hübner 併入 I.21）。<b>傳本，作者歸屬有學界爭議</b>：我們不說這張表是 Ptolemy 親手寫的。Tolsa（Philologus 162, 2018）主張它是晚期古代對 Ptolemy 規則的系統化，我們只核到摘要</span>
+        <span class="rd-src">Robbins, Loeb 1940 印本中 I.21 章末的完整界表（殘稿說明 pp. 103–105，表在 p. 107；Hübner 併入 I.21）。<b>傳本，作者歸屬有學界爭議</b>：我們不說這張表是 Ptolemy 親手寫的。Tolsa（Philologus 162, 2018）主張它是晚期古代對 Ptolemy 規則的系統化，我們只核到摘要。Robbins 的表依 Vat. gr. 1453 抄本；他的校勘註（p. 106 註 1，續至 p. 107）記下 Proclus 在金牛、巨蟹、獅子、天秤、天蠍、摩羯、雙魚的另讀，以及 Camerarius 印本在摩羯的不同次序。本站照 Robbins 的表，另讀逐格列在出處清單；抄本與印本本身我們沒有讀。Lilly 1647 的界在天秤、天蠍、摩羯、雙魚四列正好是 Proclus 的另讀</span>
         <span class="rd-id">ptolemy_bounds_robbins_1940_v1</span>
       </div>
       <div>
@@ -136,7 +136,9 @@
       </div>
     </div>
 
-    <p class="nodef"><span class="nd-k">預設值</span><span><b>無。</b>下拉的第一個選項是「不計算」，四套平等並列在後。</span></p>
+    <p class="nodef"><span class="nd-k">預設值</span><span><b>依模式而定：「古典完整」模式預選全部並列；自訂模式與 API 無預設。</b>下拉的第一個選項是「不計算」，四套平等並列在後，最後一項是「全部並列」。</span></p>
+
+    <p><b>「全部並列」：四套一次算完，逐星對照。</b>不必排四次盤。結果頁先列一張對照表，每顆星一列、每套一欄，最後一欄「各家」只比較各套印出來的界主是否相同；每一套的完整界段收在下面，點開才看。各套照目錄順序排，不照幾家相同排，也不印「三比一」這種比數：相同的多不表示比較對。「古典完整」模式預先選它，因為本站不替你選一套；快速看盤與自訂不變。</p>
 
     <p>四套都是傳下來的印本表或文本規則，不是我們重建的。<b>每一格都由測試逐格釘住</b>，要改任何一格，必須在表和測試兩處同時改。還沒對原頁重核的列，回應裡逐列標在 row_verification。界段採半開區間：恰在分界度數屬下一段。古典以序數度書寫（第 1 至第 6 度），對應 [0°, 6°)。</p>
 
@@ -147,11 +149,11 @@
     </details>
   </section>
 
-  <!-- ═══ 03 面、三分性、廟旺 ═══ -->
+  <!-- ═══ 03 面、三分性、廟旺陷弱 ═══ -->
   <section class="ap-entry" aria-labelledby="dignities" data-fold-host>
     <p class="sig">03</p>
-    <h2 id="dignities">面、三分性、廟旺：<br>不同意的地方不壓平</h2>
-    <p class="fold-gist"><span class="fold-k">重點</span>面／旬兩套、三分性三套，一律無預設；Ptolemy 的三分性保留原文的共同主宰結構，不壓成單一主星。廟旺只看古典七政、只判整個星座；陷、弱尚未評估，也不給尊貴總分。</p>
+    <h2 id="dignities">面、三分性、廟旺陷弱與外來：<br>不同意的地方不壓平</h2>
+    <p class="fold-gist"><span class="fold-k">重點</span>面／旬兩套、三分性三套；「古典完整」模式預選全部並列，自訂模式與 API 無預設；Ptolemy 的三分性保留原文的共同主宰結構，不壓成單一主星。廟、旺、陷、弱只看古典七政、只判整個星座；陷的出處是 al-Bīrūnī 與 Lilly，Ptolemy 有弱、沒有陷。外來是五項尊貴一項都沒有，依 Lilly 1647 的定義與他自己那一套表判定。接納尚未評估，也不給尊貴總分。</p>
     <details class="sec-fold" data-fold>
       <summary aria-describedby="dignities"><span class="fold-closed">展開全文</span><span class="fold-opened">收合</span></summary>
       <div class="fold-body">
@@ -160,7 +162,7 @@
 
     <div class="readings">
       <div>
-        <span class="rd-name">Chaldean 行星面</span>
+        <span class="rd-name">迦勒底行星面</span>
         <span class="rd-src">守護者為行星。完整表依 Firmicus II.4.3（Kroll–Skutsch 1897, vol. I p. 45）；Paulus 第 4 章給出同一次序，他稱之為「七帶天球」（ἑπτάζωνος；依內部方法研究筆記轉引，未經核對）；傳統上最早歸屬於 Teucer（Hübner 2016）；Lilly 1647 p. 104 的面欄與此表相同。它不是《占星四書》I.23 所說的 proper face（Robbins pp. 111–113）；與 §02 的迦勒底界也只是同名：界用五星、長度 8／7／6／5／4，面用七政、等長 10°。「Chaldean」是慣用的現代名稱，不是說這個方法始於 Firmicus</span>
         <span class="rd-id">chaldean_planetary_faces_firmicus_ii_4_v1</span>
       </div>
@@ -171,7 +173,7 @@
       </div>
     </div>
 
-    <p><b>三分性有三套。</b>其中 Ptolemy 那套的原文是共同主宰結構，我們忠實保留，<b>不壓成單一主宰星</b>。另可並列其餘 profile 供比較，但比較不會改變你選定的那一套：回應中「你選的」與「並列比較的」是兩個分開的欄位。</p>
+    <p><b>三分性有三套。</b>其中 Ptolemy 那套的原文是共同主宰結構，我們忠實保留，<b>不壓成單一主宰星</b>。另可並列其餘 profile 供比較，但比較不會改變你選定的那一套：回應中「你選的」與「並列比較的」是兩個分開的欄位。選「全部並列」時三套本來就都在，這個並列開關就收起來。對照表裡的三分性只列日夜盤當令的那一顆；Lilly 1647 簡表列為研究用，並列時名稱後註明「研究用」。</p>
     <p>Ptolemy 那套依 Hübner 1998 的希臘文校勘本（該版 I.19，即 Robbins 英譯 I.18）：火、土、風三象各自<b>交給兩顆星</b>，由日夜盤決定誰居首，另一顆列在「次要共主」欄位；水象留給火星，日間金星、夜間月亮與之共主。我們先前每個日夜盤只列一顆，那是本產品整理時的簡化：Robbins 英譯（pp. 83–87）與 Hübner 校勘本都寫兩星指派。<b>次要共主不計分，也不改變任何既有結果。</b></p>
     <p class="cite">依 Robbins pp. 83–87 與 Hübner 校勘本 I.19（PAL 線上本）。章號對照：Robbins I.11–I.20 等於 Hübner I.12–I.21</p>
 
@@ -194,14 +196,85 @@
     </div>
 
     <p>三分性主星也被古人拿來分人生的前後段；行星的「小年」（古書給每顆行星的固定年數）則是十年期（decennials）與人生七齡的來源。這些時間上的用法，以及十年期的規則與逐格驗算，見〈<a href="/zh-TW/methods/decennials">十年期的規則、出處與驗算</a>〉。</p>
-    <p class="nodef"><span class="nd-k">預設值</span><span><b>界、面、三分性一律無預設。</b>不選就不計算。</span></p>
+    <p class="nodef"><span class="nd-k">預設值</span><span><b>界、面、三分性：「古典完整」模式預選全部並列；自訂模式與 API 無預設。</b>不選就不計算；選「全部並列」就每一套都算，逐星對照。面的兩套一套是行星、一套是星座，並列時只並排，不比相同或不同。外來不跟著並列，照舊依 Lilly 自己那一套表判。</span></p>
 
     <p><b>廟旺只處理古典七政。</b>廟採傳統七政的星座配置，<b>不加入三王星或任何現代主宰星</b>。旺只判定整個星座是否相符，<b>不選定精確的擢升度數</b>。那些度數雖有廣泛的古代見證，但存在傳本差異，也可能本來就服務於不同程序。</p>
     <p class="cite">廟旺依《占星四書》I.17、I.19（Robbins 編號；Hübner 校勘本為 I.18、I.20），並見於 Dorotheus I.1–2、Valens III.4、Firmicus II.2–3。這三處與 Ptolemy 是否互相獨立未評估。旺度數的傳本差異，逐稿本整理見 Ossendrijver (2025), Journal for the History of Astronomy 56.4: 396–411, 表 2（我們只核到書目）</p>
-    <p>輸出的是星座位置、廟的星座、旺的星座，以及相符與否。古書把在廟、在旺看作行星有力，在陷、在弱看作減損（Lilly《Christian Astrology》1647 p. 115 的表題就叫 Fortitudes and Debilities，「力量與減損」）；<b>本站目前只判定廟與旺，陷、弱尚未評估。</b></p>
-    <p class="cite">陷、弱、外來與接納（含互容）目前是「未評估」，不是「沒有」。恆星黃道下產品會明確拒絕輸出並附原因代碼，見 §07.2</p>
+    <p>輸出的是星座位置、廟的星座、旺的星座、陷的星座、弱的星座，以及各自相符與否。古書把在廟、在旺看作行星有力，在陷、在弱看作減損（Lilly《Christian Astrology》1647 p. 115 的表題就叫 Fortitudes and Debilities，「力量與減損」）。</p>
+    <p class="cite">接納（含互容）目前是「未評估」，不是「沒有」；外來見本節後段。恆星黃道下產品會明確拒絕輸出並附原因代碼，見 §07.2</p>
 
-    <p class="nodef"><span class="nd-k">為什麼不給總分</span><span>Lilly 在《Christian Astrology》1647 p. 115 替每一項尊貴與減損配了分數，加總比較（我們只讀到掃描辨識的文字，個別分數還沒有對照頁影像核對）。本站不採用：把廟、旺、三分性、界、面折成同一把尺上的分數，等於宣稱它們<b>可以通約</b>，我們不做這個宣稱。</span></p>
+    <p><b>陷與弱：照原書的分類列出。</b>陷（Detriment）是行星落在自己的廟正對面的星座；弱（Fall）是落在自己的旺正對面的星座。結果頁的判定欄寫「在陷」「在弱」。這是 Lilly《Christian Astrology》1647 p. 104 表上的分類：Detriment、Fall 兩欄，每個星座各列一顆行星；他在 p. 105 說土星在牡羊正對它的旺（天秤），「and so is Infortunate」（因而不吉）。al-Bīrūnī《占星術入門》§443 說行星在弱時受到拘束、處境變壞（依 Wright 英譯）。</p>
+    <p><b>Ptolemy 有弱，沒有陷。</b>《占星四書》I.17 只分配廟；I.19 講旺與旺的正對面（他稱 depression，降）。全書沒有「落在自己的廟的對面」這一項減損。陷作為一個有名字的減損，我們讀到的一手出處是 al-Bīrūnī《占星術入門》§442（阿拉伯文 wabāl）與 Lilly p. 104–105。我們讀到的希臘化文獻裡，「與自己的廟相對」只見於對沖相位的一種讀法（Valens II.41）；Rhetorius 用了有名字的 enantiōma，我們只讀到轉引。所以回應裡陷與弱的出處分開記，陷不掛在 Ptolemy 名下。</p>
+    <p><b>弱的星座各書一致，度數不判。</b>七政的弱，Ptolemy I.19、Dorotheus I.2、Valens III.4、Firmicus II.3.5、al-Bīrūnī §443 與 Lilly p. 104 給的是同一組星座：土星牡羊、木星摩羯、火星巨蟹、太陽天秤、金星處女、水星雙魚、月亮天蠍。Ptolemy 以外各家另給度數（旺的度數的正對面）。本站和旺一樣只判整個星座：Lilly p. 102 說旺「continues through the Signe」，p. 104 與 p. 115 的表也只按星座；al-Bīrūnī §443 自己記了三種意見，其中一種就是整個星座。水星在雙魚同時在陷、在弱，是七政裡唯一的雙重情形。</p>
+    <p>本站只判七顆古典行星。Lilly 的表另列月亮南交點在雙子為弱、北交點在射手為弱，al-Bīrūnī §443 也給交點旺的度數；這兩項不輸出。</p>
+    <div class="mansion-scroll" tabindex="0" role="region" aria-labelledby="dignity-signs-cap">
+      <table class="mansion-table dignity-signs">
+        <caption id="dignity-signs-cap">七政的廟、旺、陷、弱（只看整個星座；陷與弱各是廟與旺的正對面）</caption>
+        <thead><tr><th scope="col">行星</th><th scope="col">廟</th><th scope="col">旺</th><th scope="col">陷</th><th scope="col">弱</th></tr></thead>
+        <tbody>
+          <!-- figure:dignity-signs -->
+          <tr><th scope="row">太陽</th><td>獅子</td><td>牡羊</td><td>水瓶</td><td>天秤</td></tr>
+          <tr><th scope="row">月亮</th><td>巨蟹</td><td>金牛</td><td>摩羯</td><td>天蠍</td></tr>
+          <tr><th scope="row">水星</th><td>雙子、處女</td><td>處女</td><td>射手、雙魚</td><td>雙魚</td></tr>
+          <tr><th scope="row">金星</th><td>金牛、天秤</td><td>雙魚</td><td>牡羊、天蠍</td><td>處女</td></tr>
+          <tr><th scope="row">火星</th><td>牡羊、天蠍</td><td>摩羯</td><td>金牛、天秤</td><td>巨蟹</td></tr>
+          <tr><th scope="row">木星</th><td>射手、雙魚</td><td>巨蟹</td><td>雙子、處女</td><td>摩羯</td></tr>
+          <tr><th scope="row">土星</th><td>摩羯、水瓶</td><td>天秤</td><td>巨蟹、獅子</td><td>牡羊</td></tr>
+          <!-- /figure:dignity-signs -->
+        </tbody>
+      </table>
+    </div>
+
+    <p><b>別處怎麼譯。</b>同一個「陷」字，在不同的中文圈可能指 detriment，也可能指 fall：</p>
+    <div class="mansion-scroll" tabindex="0" role="region" aria-labelledby="debility-terms-cap">
+      <table class="mansion-table">
+        <caption id="debility-terms-cap">detriment 與 fall 的中文譯法</caption>
+        <thead><tr><th scope="col">英文（Lilly 的欄名）</th><th scope="col">本站</th><th scope="col">臺灣 NCGR 課程</th><th scope="col">中國常見譯法</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Detriment</th><td>陷</td><td>陷</td><td>失勢</td></tr>
+          <tr><th scope="row">Fall</th><td>弱</td><td>弱</td><td>落陷</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>也有中文排盤網站把 fall 標成「陷」。所以本站每個詞第一次出現時附英文，判定欄寫「在陷」「在弱」，不寫「落陷」：「落陷」在中國常見譯法裡指 fall，也是紫微斗數的用語。</p>
+
+    <details class="more" id="debility-sources">
+      <summary>出處：陷與弱</summary>
+      <ol>
+        <li><b>Ptolemy。</b>《占星四書》I.17（Robbins, Loeb 1940, pp. 79–83）只分配廟，沒有陷；I.19（pp. 89–91）每顆行星的 depression 是旺正對面的星座，只給星座、不給度數。核到：<span class="mono">已讀譯本</span>（Robbins 英譯）。</li>
+        <li><b>Dorotheus。</b>Carmen Astrologicum I.2（Pingree 1976 p. 162）：旺的度數，降（descent）在旺（ascent）的正對面。核到：<span class="mono">已讀譯本</span>（Pingree 英譯的掃描頁，左緣被裁切；被裁掉的那個字依 2024 年的 Pingree 改寫本補）。</li>
+        <li><b>Valens。</b>Anthologies III.4：每顆星的 depression 在旺的正對面那一點，附度數表；II.41：與自己的廟、三分、旺相對，是對沖相位的一種讀法。核到：<span class="mono">已讀譯本</span>（Riley 英譯的線上重排本）。</li>
+        <li><b>Firmicus。</b>Mathesis II.3.1、II.3.5（Kroll–Skutsch）：各星在旺的度數的正對面降落（deicitur）。核到：<span class="mono">已讀原文</span>（拉丁文）。</li>
+        <li><b>al-Bīrūnī。</b>《占星術入門》§442：廟的對面是陷（wabāl），逐星的附圖沒有讀到；§443：旺與弱（hubūṭ），並記旺的範圍有三種意見。核到：<span class="mono">已讀譯本</span>（Wright 1934 英譯的掃描辨識文字）。</li>
+        <li><b>Lilly。</b>《Christian Astrology》1647 p. 104 表的 Detriment、Fall 兩欄，p. 105 的說明，p. 102 論旺遍及整個星座。核到：<span class="mono">已讀原文</span>（1647 年第一版的頁影像）。</li>
+        <li><b>Rhetorius。</b>牡羊條的「the detriment (enantiōma) of Venus」（Holden 英譯）。核到：<span class="mono">轉引</span>（Brennan 與 László 2020 年的整理）。</li>
+      </ol>
+    </details>
+
+    <p id="peregrine"><b>外來（peregrine）：五項尊貴一項都沒有。</b>行星所在的度數，在它自己的廟、旺、三分性、界、面五項裡一項都沒有，就是外來。Lilly《Christian Astrology》1647 p. 112 這樣定義：土星在牡羊 10°，不在自己的廟、旺、三分性，也沒有界或面，是外來；在 27°、28° 就在自己的界，不算外來；太陽在巨蟹的任何度數都是外來。Bonatti《De astronomia》（1550 年 Basel 版）col. 165 把外來列為十種阻礙的第八種：「在沒有任何尊貴的位置」。Gadbury《The Doctrine of Nativities》（1658）p. 44 把五項逐一寫出：House, Exaltation, Triplicity, Term and Face。</p>
+    <p><b>面也算。</b>Lilly p. 103：行星在自己的面，「cannot then be called peregrine」（就不能叫外來）。Bonatti col. 178 也把面列為尊貴，只說面的力量不如其他幾項；Gadbury p. 44 與 al-Bīrūnī《占星術入門》§494 同樣把面算進去。</p>
+    <p><b>三分性只算日夜盤當令的那一顆：這一條只有 Lilly 明說。</b>Lilly p. 102：太陽在牡羊而夜生，有旺的尊貴，卻沒有三分性，因為夜間火象三分由木星主。Bonatti 與 Gadbury 在定義外來的地方，都沒有說三分性算哪一顆。本站照 Lilly。日夜盤未知（只知道出生日期），或太陽在近地平敏感帶內（見 §05.3）時，只差三分性一項就決定外來與否的行星寫「無法判定」，並列出日盤、夜盤各會怎麼判。</p>
+    <p><b>依 Lilly 判，固定用他自己那一套表。</b>界用 Lilly 1647 承襲界（p. 104），三分性用 Lilly 1647 簡表、只算當令的那一顆（這張簡表在上面並列三分性時標為研究用；這裡用它，只因為定義與表都出自 Lilly，不表示推薦它當三分性的表），面用 迦勒底行星面（Lilly p. 104 的面欄與此相同）。外來要五張表合起來才判得出來，所以<b>不跟你在上面選的界、面、三分性</b>：你選了埃及界，界的表可能寫某顆星在自己的界，外來一欄仍依 Lilly 的界判。這樣做，是因為 Lilly 是唯一把定義、三分性的算法與整張表一起寫出來的一手出處；把別家的表拼進他的定義，得到的是沒有任何作者用過的組合。<b>改用其他界或三分性，約 3%～21% 的位置判定會不同</b>：七顆行星在每一度、日盤夜盤各算一次，共 5,040 個位置；界改用 Ptolemy 界（Robbins 本）有 3.2% 判定不同，改用埃及界 9.2%；三分性改成 Dorotheus 的三位主星 14.8%；埃及界加三位主星 20.8%。依 Lilly 這一套，約一半（52.5%）的位置是外來。</p>
+    <p><b>外來可以和陷、弱同時成立。</b>al-Bīrūnī《占星術入門》§493：行星沒有尊貴叫外來（gharīb），若又在陷或弱，災厄再加上去（依 Wright 英譯）。例如土星在獅子 10° 在陷，也是外來。結果頁的外來表另有一欄「同時在」，列出陷或弱。</p>
+    <p><b>外來與接納是兩件事。</b>讀到的原典沒有一處說接納可以免去外來。Bonatti col. 165 把外來（第八種阻礙）和「不被接納」（第七、第十種）分開列；Māshāʾallāh 寫土星在獅子「peregrinus, non receptus」（外來、未被接納），兩者並列。本站沒有評估接納，接納也不改變外來的判定。</p>
+    <p><b>古書怎麼說外來的行星。</b>Lilly p. 115 的表把外來列在減損（Debilities）一邊。Bonatti col. 181 第五十五考量：徵象星外來時，它所代表的人「callidus, astutus, malitiosus」（狡猾、精明、存心不良），能行善也能作惡，但比較傾向惡；他說本命、問事與任何事情的開始都這樣看。照原文列出。</p>
+    <p><b>外來是阿拉伯—拉丁傳統的術語。</b>al-Bīrūnī 寫 gharīb，拉丁文作 peregrinus。我們讀到的希臘化文獻只有描述，例如 Valens《選集》II.22 說凶星「in alien signs and degrees」（在別人的星座與度數），沒有定義成一種狀態，也沒有列出條件。</p>
+    <p><b>譯名。</b>本站寫「外來（peregrine）」；也有人譯作「游離」或「浮游」。</p>
+
+    <details class="more" id="peregrine-sources">
+      <summary>出處：外來</summary>
+      <ol>
+        <li><b>Lilly。</b>《Christian Astrology》1647 p. 112 外來的定義與例子；p. 103 面；p. 102 三分性只算當令；p. 104 本站判定用的整張表；p. 115 的表把外來列在減損一邊（分數本站不用）。核到：<span class="mono">已讀原文</span>（1647 年第一版的頁影像）。</li>
+        <li><b>Bonatti。</b>《De astronomia》（1550 年 Basel 版）col. 165 第六考量的第八種阻礙；col. 178 第四十、第四十四考量（五項尊貴，面的力量最小）；col. 181 第五十五考量。核到：<span class="mono">已讀原文</span>（拉丁文，1550 年版的頁影像）。</li>
+        <li><b>Gadbury。</b>《The Doctrine of Nativities》（London 1658）p. 44。核到：<span class="mono">已讀原文</span>（1658 年版的頁影像）。</li>
+        <li><b>al-Bīrūnī。</b>《占星術入門》§493–494：沒有尊貴叫外來，又在陷或弱則再加災厄；五項尊貴。核到：<span class="mono">已讀譯本</span>（Wright 1934 英譯的掃描辨識文字）。</li>
+        <li><b>Māshāʾallāh。</b>《De cogitatione》：土星在獅子「peregrinus, non receptus」。核到：<span class="mono">轉引</span>（Houlding 2010 年的論文〈The Definition of Peregrine〉）。</li>
+        <li><b>Valens。</b>《選集》II.22（Kroll 版 p. 90）：「in alien signs and degrees」。核到：<span class="mono">已讀譯本</span>（Riley 英譯的線上重排本）。</li>
+        <li><b>換表的比例。</b>3.2%、9.2%、14.8%、20.8% 與 52.5% 是本站用站上的界表與三分性表逐一計算的結果，每一度取中點、日盤夜盤各算一次。</li>
+      </ol>
+    </details>
+
+    <p class="nodef"><span class="nd-k">為什麼不給總分</span><span>Lilly 在《Christian Astrology》1647 p. 115 替每一項尊貴與減損配了分數，加總比較（這張表已對照 1647 年第一版的頁影像核過）。本站不採用：把廟、旺、三分性、界、面、陷、弱、外來折成同一把尺上的分數，等於宣稱它們<b>可以通約</b>，我們不做這個宣稱。</span></p>
       </div>
     </details>
   </section>
@@ -538,8 +611,8 @@
     <p class="cite">新疆兩種時間與 1988 年起始日依 IANA tz 資料庫 asia 檔的 Asia/Urumqi 註解與 Rule PRC（2018f 版依 P Chan 引《人民日報》1988-04-12 更正）</p>
     <p><b>出生時間換算助手。</b>計算頁的換算助手接受民國年與明治、大正、昭和年號，並能在計算前由計算服務核對：這個鐘面時間在臺灣、香港、澳門或中國當時是 UTC 加幾小時、是否夏令時間或日本時間、是否不存在或出現兩次。四地逐段的規則、每條規則的出處與我們核到哪一層，見〈<a href="/zh-TW/methods/birth-time-conversion">出生時間換算的規則與出處</a>〉。</p>
     <p>ΔT（TT 與 UT1 之差）在 1955 年前取自 Swiss Ephemeris 預設的 Stephenson、Morrison 與 Hohenkerk（2016）模型，1955 年起取自內建表：實測值到 2023 年，2024–2028 年是表內預測，之後是外推。每張盤的收據標出落在哪一段與不確定度的量級：1900 年起約 0.1 秒（Stephenson &amp; Houlden 1986，經 NASA 轉載）。1962～2023 年的 ΔT 誤差約 0.03 秒：本站用逐年表格內插，抓不到地球自轉在一年之中的季節性快慢（量級依 IERS 公報的季節修正式，並已與 IERS 實測值核對）。1972 年起，這相當於上升點與宮頭約 0.5 角秒的不確定。2024–2028 年的表內預測約為秒級，2028 年之後依 Huber (2000) 外推式（2399 年約七分鐘，非權威信賴區間）。1972 年起到約 2033 年 9 月的輸入由 UTC 推得 UT1，<b>ΔT 的誤差移動的是恆星時、宮位與角點，不是天體位置</b>；1972 年前與約 2033 年 9 月以後，輸入直接當作 UT1，誤差移動的反而是天體位置（月亮每秒約半角秒的量級），不移動恆星時與宮位。</p>
-    <p>Swiss Ephemeris 的恆星時在 1850 年與 2050 年 1 月 1 日切換模型，兩段不連續；2050 年那次實測跳動約 0.13 秒，折合上升點所依的 ARMC 約 1.9 角秒。收據列出本次落在哪一段。</p>
-    <p class="cite">ΔT 與恆星時切換依 Swiss Ephemeris 2.10.03 原始碼（calc_deltat、swe_sidtime0）；不確定度依 F. Espenak〈Uncertainty in Delta T〉（NASA GSFC）、Huber (2000) 與 IERS Bulletin A 的 UT2−UT1 季節式，實測期以 IERS EOP 20 C04 核對；UTC 分界依 D. D. McCarthy, Coordinated Universal Time (BIPM CCTF/09-32, 2009) 與 IANA tz theory；約 2033 年的切換依 Swiss Ephemeris Programming Interface 的閏秒處理一節，切換日期由本產品以內建星曆實測；IANA 對 1970 年前資料的說明見 tz 文件〈Theory and pragmatics〉的 Scope 與 Accuracy 兩節</p>
+    <p>恆星時是上升點、天頂、宮位、日出日落與行星時的共同基礎。Swiss Ephemeris 只在 1850-01-01 到 2050-01-01 之間用 IERS 2010 公約的算法（以地球自轉角為基礎，美國海軍天文台與 JPL Horizons 用的也是這一套），之外改用另一套長期模型。兩套接不起來，而且 2050 年以後越差越遠：Swiss 的長期模型在 2050 年差 −0.13 秒，到 2399 年底差 到 2399 年底差 +0.58 秒（換成角度約 +8.6″）；在高緯度，上升點可差到數十角秒。<b>本站從 2050-01-01 起自己照同一套 IERS 2010 公式算恆星時</b>，宮位與四角、恆星時收據、日出日落、行星時與地平高度都改用它；2050 年以前直接用 Swiss 的值，1900–2049 年的結果一位不差。實測 1850-01-01 跳 −0.0065 秒（約 −0.1″，以臺北為例上升點多跳 −0.1″、天頂 −0.1″）；2050-01-01 跳 +0.0000 秒（Swiss 原本在這天跳 −0.1272 秒，約 −1.9″，以臺北為例上升點多跳 −2.1″、天頂 −1.9″）。1850 年在本站的年份範圍（1900–2399）之外。對照 JPL Horizons 2050–2399 年五個時刻的視恆星時（扣掉 Horizons 對未來固定的一個自轉差），本站最多差 0.04 秒，Swiss 的長期模型差到 0.45 秒；2050 年前後兩小時，本站和 Horizons 一樣沒有多跳。收據列出本次用的是哪一段，以及和 Swiss 原值差多少秒。</p>
+    <p class="cite">ΔT 與恆星時切換依 Swiss Ephemeris 2.10.03 原始碼（calc_deltat、swe_sidtime0）；2050 年起的恆星時依 IERS Conventions (2010)（IERS Technical Note 36）第 5 章式 5.32 與表 5.2e，對照值是 JPL Horizons 的視恆星時（2026-10-18 取得）；不確定度依 F. Espenak〈Uncertainty in Delta T〉（NASA GSFC）、Huber (2000) 與 IERS Bulletin A 的 UT2−UT1 季節式，實測期以 IERS EOP 20 C04 核對；UTC 分界依 D. D. McCarthy, Coordinated Universal Time (BIPM CCTF/09-32, 2009) 與 IANA tz theory；約 2033 年的切換依 Swiss Ephemeris Programming Interface 的閏秒處理一節，切換日期由本產品以內建星曆實測；IANA 對 1970 年前資料的說明見 tz 文件〈Theory and pragmatics〉的 Scope 與 Accuracy 兩節</p>
       </div>
     </details>
     </div>
@@ -642,14 +715,33 @@
 
     <div class="fold-sub" data-fold-host>
     <h3 id="dodecatemoria">07.14　十二分部：兩種算法，平等提供</h3>
-    <p class="fold-gist"><span class="fold-k">重點</span>十二分部有兩種算法：Firmicus 乘以 12（預設），Paulus 與 Olympiodorus 乘以 13，兩種常落在不同星座，計算頁都可選。只列位置與守護行星，不解盤；對出生時間非常敏感。</p>
+    <p class="fold-gist"><span class="fold-k">重點</span>十二分部有兩種算法：Firmicus 乘以 12（預設），Paulus 與 Olympiodorus 乘以 13，兩種常落在不同星座，計算頁都可選。只列位置與守護行星，不解盤；對出生時間非常敏感。另有一種把星座分成九份的九分部，本站只在這裡說明，不算。</p>
     <details class="sec-fold" data-fold>
       <summary aria-describedby="dodecatemoria"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
       <div class="fold-body">
     <p>十二分部（dodecatemoria）是古典占星的細部技法：一個點在星座裡走了幾度，把它放大，再從<b>同一個星座的起點</b>往後數，每 30° 換下一個星座，數到的位置就是這個點的十二分部；接著看那個星座由哪顆行星守護。例如太陽在牡羊 5°05′，乘以 12 得 61°，從牡羊起點數過牡羊、金牛各 30°，落在雙子第 1 度，雙子的守護行星是水星。</p>
-    <p>古書在「放大幾倍」上<b>說法不一，而且會改變結果</b>：Firmicus 乘以 12；Paulus 與註解他的 Olympiodorus 乘以 13，等於從這個點自己的位置再往後數 12 倍。兩種常落在不同星座。計算頁兩種都可選，預設是乘以 12：它是讀過原文、而且附例子的那一條，也和 Manilius 把每座分成十二段、每段 2°30′ 的分法在星座上一致。一張西元 319 年的紙草星盤裡，有幾顆行星合乎乘以 13、另幾顆合乎乘以 12；研究者認為可能是混用兩種，也可能是算錯。</p>
+    <p>古書在「放大幾倍」上<b>說法不一，而且會改變結果</b>：Firmicus 乘以 12；Paulus 與註解他的 Olympiodorus 乘以 13，等於從這個點自己的位置再往後數 12 倍。兩種常落在不同星座。計算頁兩種都可選，也可選「全部並列」逐點對照兩種（主表與出生時間的取樣仍用乘以 12），預設是乘以 12：它是讀過原文、而且附例子的那一條，也和 Manilius 把每座分成十二段、每段 2°30′ 的分法在星座上一致。一張西元 319 年的紙草星盤裡，有幾顆行星合乎乘以 13、另幾顆合乎乘以 12；研究者認為可能是混用兩種，也可能是算錯。</p>
     <p>列出的點：七顆行星；有算宮位時加上升點；勾了阿拉伯點時加命運點與精神點。<b>中天不列</b>：讀過的古書沒有算中天的十二分部。結果只列位置與守護行星，<b>不替你解盤，也不預測</b>。十二分部把度數放大十二倍以上，所以對出生時間非常敏感：時間差 4 分鐘，上升點的十二分部常常就差 10° 以上；只知約略時辰時，一小時裡任何一列都可能換星座，最容易換的是上升點、命運點與精神點，其次是月亮；只知日期時，一天裡每一列都可能換星座，月亮最快，太陽、水星、金星、火星也常常換。日心、質心、J2000 與（回歸黃道下）不含章動時，不適用並附原因。</p>
-    <p class="cite">Firmicus《Mathesis》II.13（Kroll–Skutsch 編號；Holden 英譯為 II.17），例為太陽牡羊 5°05′ 得雙子第 1 度，核到：已讀原文（拉丁文）；Manilius《Astronomica》II.693–748，核到：已讀原文（拉丁文）；Ptolemy《占星四書》I.22 描述每座十二段的分法並認為沒有根據，核到：已讀譯本（Robbins 英譯）；Paulus《導論》（Eisagōgika）ch. 22（牡羊 11° 得獅子 23°）與 Olympiodorus 註解 ch. 20（上升天蠍 20° 得巨蟹 20°），據 Greenbaum 與 Jones, ISAW Papers 12（2017）§185–188，核到：轉引（只讀到二手）；Olympiodorus 註解 ch. 21（阿拉伯點），核到：只見書目；Valens《占星選集》I.4 與 Porphyry《占星四書導論》ch. 39，核到：轉引（只讀到二手）</p>
+    <p class="cite">Firmicus《Mathesis》II.13（Kroll–Skutsch 編號；Holden 英譯為 II.17），例為太陽牡羊 5°05′ 得雙子第 1 度，核到：已讀原文（拉丁文）；Manilius《Astronomica》II.693–748，核到：已讀原文（拉丁文）；Ptolemy《占星四書》I.22（Robbins 希臘文 p. 108、英譯 p. 109）描述每座十二段的分法並認為沒有根據，核到：已讀譯本（Robbins 英譯）；Robbins 的校勘註（p. 108 註 3、p. 109 註 2）記有一份抄本與 Camerarius 印本多出「從星所在的那個十二分部起算」幾字，核到：轉引（只讀到 Robbins 的註）；Paulus《導論》（Eisagōgika）ch. 22（牡羊 11° 得獅子 23°）與 Olympiodorus 註解 ch. 20（上升天蠍 20° 得巨蟹 20°），據 Greenbaum 與 Jones, ISAW Papers 12（2017）§185–188，核到：轉引（只讀到二手）；Olympiodorus 註解 ch. 21（阿拉伯點），核到：只見書目；Valens《占星選集》I.4（Riley 英譯 PDF p. 8），核到：已讀譯本；Porphyry《占星四書導論》ch. 39，核到：轉引（只讀到二手）</p>
+    <p id="novenaria"><b>九分部（novenaria）：說明，不算。</b>九分部把每個星座分成九份，每份 3°20′。第一份給同一元素的啟動星座，再依黃道次序往下排：火象星座從牡羊起，土象從摩羯，風象從天秤，水象從巨蟹。例如金牛 21° 落在第七份，金牛是土象，從摩羯數到第七個是巨蟹，主星是月亮（Bonatti 的例子）；水瓶 18° 落在第六份，從天秤數到第六個是雙魚，主星是木星（al-Qabīṣī 的例子）。這條規則等於把整個黃經乘以 9 再看落在哪個星座。吠陀占星的 navamsa（D9）是同一條算式，但吠陀用恆星黃道，本站用回歸黃道，同一顆行星的兩個結果多半不同。</p>
+    <figure class="nv-figure" aria-labelledby="novenaria-cap">
+      <figcaption id="novenaria-cap">金牛的九份：每份 3°20′，第一份從同屬土象的啟動星座摩羯起，依黃道次序往下排；框出的是金牛 21°（Bonatti 的例子）。</figcaption>
+      <ol class="nv-strip">
+        <!-- figure:novenaria -->
+        <li><span class="nv-n">第 1 份</span><span class="nv-span"><span>0°</span><span>–3°20′</span></span><b class="nv-sign">摩羯</b><span class="nv-ruler">土星</span></li>
+        <li><span class="nv-n">第 2 份</span><span class="nv-span"><span>3°20′</span><span>–6°40′</span></span><b class="nv-sign">水瓶</b><span class="nv-ruler">土星</span></li>
+        <li><span class="nv-n">第 3 份</span><span class="nv-span"><span>6°40′</span><span>–10°</span></span><b class="nv-sign">雙魚</b><span class="nv-ruler">木星</span></li>
+        <li><span class="nv-n">第 4 份</span><span class="nv-span"><span>10°</span><span>–13°20′</span></span><b class="nv-sign">牡羊</b><span class="nv-ruler">火星</span></li>
+        <li><span class="nv-n">第 5 份</span><span class="nv-span"><span>13°20′</span><span>–16°40′</span></span><b class="nv-sign">金牛</b><span class="nv-ruler">金星</span></li>
+        <li><span class="nv-n">第 6 份</span><span class="nv-span"><span>16°40′</span><span>–20°</span></span><b class="nv-sign">雙子</b><span class="nv-ruler">水星</span></li>
+        <li class="is-example" aria-current="true"><span class="nv-n">第 7 份</span><span class="nv-span"><span>20°</span><span>–23°20′</span></span><b class="nv-sign">巨蟹</b><span class="nv-ruler">月亮</span></li>
+        <li><span class="nv-n">第 8 份</span><span class="nv-span"><span>23°20′</span><span>–26°40′</span></span><b class="nv-sign">獅子</b><span class="nv-ruler">太陽</span></li>
+        <li><span class="nv-n">第 9 份</span><span class="nv-span"><span>26°40′</span><span>–30°</span></span><b class="nv-sign">處女</b><span class="nv-ruler">水星</span></li>
+        <!-- /figure:novenaria -->
+      </ol>
+    </figure>
+    <p>寫這條規則的作者自己說它來自印度：al-Bīrūnī 說這是「全然印度的方法」，Abū Maʿshar 的拉丁文譯本章名就是「依印度人的九分」（de novenis signorum iuxta Indos），al-Qabīṣī 的拉丁文抄本旁注也寫「印度人這樣做」。我們讀過的希臘化文獻（Valens、Firmicus 卷二、Manilius）沒有九分部。另有一種依天球次序分配的做法，Abū Maʿshar 與 al-Bīrūnī 都說不用。九分部在這些書裡附在十二分部旁邊，用法很少：Ibn Ezra 說整個九分部帶有它所配星座與主星的性質；Bonatti 說要看月亮的九分部，並說九分部主星依它的狀態給上升或所問之宮助力。我們沒有找到更系統的判讀規則，所以<b>本站不計算九分部</b>，只在這裡寫明規則與出處。</p>
+    <p class="cite">al-Bīrūnī《占星術入門》§455（Wright 1934 英譯 pp. 59–60，附全表），核到：已讀譯本（英譯的頁影像）；Abū Maʿshar《導論》Hermann of Carinthia 拉丁文譯本（Augsburg 1489）〈de novenis signorum iuxta Indos〉，核到：已讀譯本（拉丁文譯本的頁影像）；al-Qabīṣī《導論》IV.16–17（Burnett、Yamamoto、Yano 2004 英譯與拉丁文校本），核到：已讀譯本（英譯與拉丁文校本的掃描辨識文字）；Ibn Ezra《智慧的開端》（Levy 與 Cantera 1939 英譯 p. 158 起），核到：已讀譯本（英譯的掃描辨識文字，未看頁影像）；Bonatti《De astronomia》（1550 年 Basel 版）cols. 813–814 與 col. 189 第八十七考量，核到：已讀原文（拉丁文，頁影像）</p>
       </div>
     </details>
     </div>
@@ -782,7 +874,7 @@
       <li>只知時辰或日期時，列出那段時間裡每一種分法出現過的每一個距離帶，以及黃經差的範圍。</li>
       <li>日心與質心、J2000 與（回歸黃道下）不含章動時不適用；恆星黃道下距離與距離帶都不變，只有「是否同星座」可能不同。</li>
     </ul>
-    <p class="cite">Lilly《Christian Astrology》1647 年版 pp.111、113–114 與格言第 26 條（依 1647 年版與 1659 年轉錄本的線上全文，頁影像未核；p.115 的強弱表只讀到 OCR，不引用）；al-Bīrūnī《占星術入門》Wright 1934 英譯 §481–486（線上打字稿全文；1934 年版頁碼未核）；Abū Maʿshar《大導論》VII.2，Hermann of Carinthia 拉丁譯本（線上全文；Dykes 英譯 p.418 只見轉引）；al-Qabīṣī《導論》第三章（John of Seville 拉丁譯本，線上全文）；Bonatti 經 Dykes 2007 p.211 轉引；Ptolemy《占星四書》III.10（Robbins 1940 英譯 p.285）；Porphyry《占星四書導論》第 2、30 章、Antiochus、Rhetorius 只見 Brennan 2017 與網頁轉引，原文未核</p>
+    <p class="cite">Lilly《Christian Astrology》1647 年版 pp.111、113–114 與格言第 26 條（依 1647 年版與 1659 年轉錄本的線上全文，頁影像未核；p.115 的強弱表已核頁影像，見 07.20）；al-Bīrūnī《占星術入門》Wright 1934 英譯 §481–486（線上打字稿全文；1934 年版頁碼未核）；Abū Maʿshar《大導論》VII.2，Hermann of Carinthia 拉丁譯本（線上全文；Dykes 英譯 p.418 只見轉引）；al-Qabīṣī《導論》第三章（John of Seville 拉丁譯本，線上全文）；Bonatti 經 Dykes 2007 p.211 轉引；Ptolemy《占星四書》III.10（Robbins 1940 英譯 p.285）；Porphyry《占星四書導論》第 2、30 章、Antiochus、Rhetorius 只見 Brennan 2017 與網頁轉引，原文未核</p>
       </div>
     </details>
     </div>
@@ -800,7 +892,7 @@
     <p><b>Hayz 與 halb。</b>中世紀阿拉伯語占星書的用詞，說一顆行星的所在合不合乎它屬白天或夜晚。al-Bīrūnī 第 496 節：白天一組的行星白天在地平上、夜裡在地平下，夜晚一組相反，叫 halb；再加上陽性行星在陽性星座、陰性行星在陰性星座，叫 hayyiz；火星是陽性但屬夜晚一組，要夜裡在地平上、在陽性星座。al-Qabīṣī 與 Bonatti 相同。Lilly《Christian Astrology》（1647）第 113 頁只有 hayz，而且說陰性的夜晚行星要<b>夜裡在地平下</b>，與 al-Bīrūnī 相反；火星與水星不在他的定義裡。兩種都列。古書只說「在地上」「在地下」，沒有說看地平線還是看宮位；我們看行星中心從地心算是否高於地平線，與判日夜盤的規則相同。</p>
     <p><b>十二宮的名稱與分類。</b>名稱沿用希臘化時期的叫法：第 1 宮 Hōroskopos（上升）、第 2 宮冥府之門、第 3 宮女神（Thea）、第 4 宮天底、第 5 宮好運（Agathē Tychē）、第 6 宮惡運（Kakē Tychē）、第 7 宮下降、第 8 宮死亡之始（Valens 稱為怠惰之處）、第 9 宮神（Theos）、第 10 宮中天、第 11 宮善靈（Agathos Daimōn）、第 12 宮惡靈（Kakos Daimōn）。這些中文是我們的譯名，結果裡並列希臘文、拉丁文與英文。第 1、4、7、10 宮是始宮，下一宮是續宮，再下一宮是果宮。好壞有兩種分法：Firmicus 卷二第 15–17 章說第 2、6、8、12 宮與上升沒有關聯，是遲滯、低落的位置；Dorotheus《Carmen Astrologicum》卷一第 5 章（只見轉引）把第 1、10、11、5、7、4、9 宮列為好，第 3、2、8 宮中等，第 6、12 宮壞。</p>
     <p><b>各宮的含義</b>（各宮主什麼事）不在這一節，見 07.19 的四本書對照。</p>
-    <p class="cite">Ptolemy《占星四書》I.5–I.7、I.12、III.3、III.10 與 Robbins 注 56（Robbins 英譯，Loeb 1940，LacusCurtius），已核英譯；Valens《占星選集》I.1、卷二、卷四〈十二宮的名稱〉（Riley 英譯的線上重排本），已核英譯；al-Bīrūnī《占星術入門》§382、§385、§386、§496（Wright 1934 英譯的掃描文字），已核英譯；al-Qabīṣī《導論》（al-Mudkhal）I.78（Burnett 等 2004）、Bonatti《天文學之書》（Decem tractatus astronomiae）III.8，已核英譯；Lilly, Christian Astrology 1647 p.113（現代重排本的掃描文字）；Firmicus《Mathesis》II.15–20（Kroll–Skutsch 編號），已核拉丁原文；Paulus《導論》ch.24、Olympiodorus ch.23、Rhetorius ch.54 只見 Brennan（ISAR Journal 2013）轉引；Dorotheus《Carmen Astrologicum》I.5 讀到 2024 年依 Pingree 英譯改寫的本子（轉引），Pingree 原文未核；Manilius《Astronomica》卷二的十二廟與卷三的 athla 已讀拉丁原文，哪一處對到第幾宮是我讀拉丁文所得，未對 Goold 英譯</p>
+    <p class="cite">Ptolemy《占星四書》I.5–I.7、I.12、III.3、III.10 與其譯注（Robbins 英譯，Loeb 1940；LacusCurtius 線上本註 56），已核英譯；Valens《占星選集》I.1、卷二、卷四〈十二宮的名稱〉（Riley 英譯的線上重排本），已核英譯；al-Bīrūnī《占星術入門》§382、§385、§386、§496（Wright 1934 英譯的掃描文字），已核英譯；al-Qabīṣī《導論》（al-Mudkhal）I.78（Burnett 等 2004）、Bonatti《天文學之書》（Decem tractatus astronomiae）III.8，已核英譯；Lilly, Christian Astrology 1647 p.113（現代重排本的掃描文字）；Firmicus《Mathesis》II.15–20（Kroll–Skutsch 編號），已核拉丁原文；Paulus《導論》ch.24、Olympiodorus ch.23、Rhetorius ch.54 只見 Brennan（ISAR Journal 2013）轉引；Dorotheus《Carmen Astrologicum》I.5 讀到 2024 年依 Pingree 英譯改寫的本子（轉引），Pingree 原文未核；Manilius《Astronomica》卷二的十二廟與卷三的 athla 已讀拉丁原文，哪一處對到第幾宮是我讀拉丁文所得，未對 Goold 英譯</p>
       </div>
     </details>
     </div>
@@ -867,6 +959,51 @@
       </div>
     </details>
     </div>
+    <div class="fold-sub" data-fold-host>
+    <h3 id="motion-states">07.20　行速、停滯與東出西入：比平均行度，停滯天數照 Lilly，東出西入只取相對太陽</h3>
+    <p class="fold-gist"><span class="fold-k">重點</span>行星這一天比平均每日行度快或慢（預設 Lilly 1647，Bonatti 1550 並列）、是否在 Lilly 寫的停滯天數內（轉向前；火星轉順後另加 1 天）、在太陽哪一側（晨星東出、昏星西入）。Lilly 把行速快、上行星東出列為偶然強，照原文列出；不打分，不替你解盤，也不預測。</p>
+    <details class="sec-fold" data-fold>
+      <summary aria-describedby="motion-states"><span class="fold-closed">展開</span><span class="fold-opened">收合</span></summary>
+      <div class="fold-body">
+    <p>勾選「行速、停滯與東出西入」時，結果列出太陽、月亮與五顆行星的三件事：這一天走得比平均快還是慢（行速，swift／slow in motion）、是不是快要停住轉向（停滯，stationary）、在太陽的哪一側（東出、西入，oriental／occidental）。天王星、海王星、冥王星不列，因為古書只談七政。</p>
+    <p class="nodef"><span class="nd-k">原典怎麼說</span><span>Lilly《Christian Astrology》1647 年版 p.115 的強弱表，把行速快、土星木星火星東出、金星水星西入、月亮漸盈或西入列為偶然強（accidental fortitude），行速慢、土星木星火星西入、金星水星東出、月亮漸虧列為偶然弱。p.80 說月亮行速慢時「等同逆行的行星」。Ptolemy《占星四書》I.24（Robbins 英譯 pp.115–117）：東出而且增於行時最有力，西入而且減速時較弱。al-Bīrūnī《占星術入門》§486：東出時作用最強，西入時弱；§498 說上行星喜東出、下行星喜西入。Valens《選集》IV.14：過了第一次停滯而逆行，使期待延遲；到第二次停滯，延遲取消；V.11 說升起與停滯的星有力，落下與逆行的星弱。<b>這些是各書的分類，照原文列出；我們不給分數、不加總，不替你解盤，也不預測。</b></span></p>
+    <p><b>行速：跟平均每日行度比。</b>Lilly p.168 說，一天走的多於該星的「平均行度」（meane or middle motion）就是行速快，並指回各行星章給的平均；p.178 照這個規則逐顆判了一張盤：土星一天 2′ 判慢（平均 2′01″），木星 13′、火星 35′ 判快，太陽 57′00″ 判慢，金星 1°13′「很快」，水星 1°44′「更快」，月亮 11°54′ 判慢。土星 2′ 對 2′01″ 就判慢，可見沒有容差帶，比到原典印出的那一位為止；本站也一樣：和平均相差不到最後一位的一半（Lilly 是半秒）才算「等於平均」，Bonatti 把這叫 aequalis。</p>
+    <div class="mansion-scroll" tabindex="0" role="region" aria-labelledby="motion-states-cap">
+      <table class="mansion-table">
+        <caption id="motion-states-cap">平均每日行度：兩本書的數字（都已核 1647／1550 年版頁影像）</caption>
+        <thead><tr><th scope="col">天體</th><th scope="col">Lilly 1647（預設）</th><th scope="col">Bonatti 1550</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">土星</th><td>2′01″（p.57）</td><td>2′00″35‴</td></tr>
+          <tr><th scope="row">木星</th><td>4′59″（p.61）</td><td>4′59″</td></tr>
+          <tr><th scope="row">火星</th><td>31′27″（p.178；p.65 印成「31 degr. 27 min.」）</td><td>31′26″</td></tr>
+          <tr><th scope="row">太陽</th><td>59′08″（p.69）</td><td>59′08″</td></tr>
+          <tr><th scope="row">金星、水星</th><td>59′08″，即太陽的（p.72、p.76）</td><td>59′08″</td></tr>
+          <tr><th scope="row">月亮</th><td>13°10′36″（p.80）</td><td>13°10′35″</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Bonatti 的數字見《De astronomia》（1550 年 Basel 版）第三論 cols.129–130；‴ 是一秒的 60 分之 1。兩套平均差到秒，1900–2100 年逐日比，只有土星 55 天、火星 15 天、月亮 7 天判法不同；兩套的結果都列出，預設用 Lilly。火星的平均 Lilly p.65 印成「31 度 27 分」，是印刷錯，他自己在 p.178 寫 31 分 27 秒，本站用後者。</p>
+    <p><b>逆行的行星比什麼。</b>Lilly p.178 那顆一天走 2′ 的土星正在逆行（同一頁另列「Retrograde」），他仍判它慢，所以比的是每天退的度數，本站照這樣比，結果頁在逆行的那一格加註「比的是每天退的度數」。照這樣比，逆行中的土星有約 71% 的日子比平均快，木星約 55%，水星約 18%（1900–2100 年逐日）；金星、火星逆行時從不超過平均。</p>
+    <p><b>月亮的門檻差 36″。</b>Lilly p.80 說月亮 24 小時內走不到 13°10′ 就算慢，「等同逆行的行星」；但他給的平均是 13°10′36″。本站照 p.168 的規則用平均 13°10′36″，所以月亮一天走 13°10′00″ 到 13°10′36″ 之間時，本站判慢，照 p.80 的字面則不算慢。這 36″ 的縫是原書就有的，我們照實寫出，不替他統一。</p>
+    <p><b>正午到正午，還是這一刻的速度。</b>古書的「一天走多少」是星曆上相鄰兩個正午的位置相減；本站用這一刻的速度（Swiss Ephemeris 直接給的瞬時值）。兩者只在接近平均時判得不同。1950–2050 年實測：以這一刻為中心、前後各 12 小時的位置相減，月亮約萬分之 2.5 的時刻判法和瞬時速度不同，水星約十萬分之 5；改用「之後 24 小時」相減，月亮約 3.6%、水星約 1.4%、土星約 0.5%、火星約 0.1%。</p>
+    <p><b>為什麼一律用地心速度。</b>從出生地看（站心）的月亮，速度一天內會擺動約 ±5.5°（臺北的緯度，30 天實測），這是觀測者隨地球自轉的效果，不是月亮走得快慢；古書的平均行度也是地心的。所以不論本次選哪個中心，行速都用地心速度判。恆星黃道、J2000 與不含章動時，速度會差一點歲差或章動的變化率，那不是古書比的當日回歸黃道速度，所以這一區不適用；日心、質心也不適用。</p>
+    <p><b>停滯：天數照 Lilly。</b>Ptolemy（I.8）、Valens、al-Bīrūnī、Bonatti 都只說「第一次停滯」（轉逆行之前）與「第二次停滯」（轉回順行之前）這兩個時點，沒有給門檻。Lilly 在各行星章寫了轉向前停幾天：土星轉逆前 5 天、轉順前 5 天（p.58）；木星 5 天與 4 天（p.62）；火星轉逆前「兩三天」、轉順前 2 天（p.65，本站取 3 天）；金星 2 天與 2 天（p.73）；水星「停一天」（p.76，本站取每次轉向前 1 天）。p.114 另說上行星在轉逆前 2、3 或 4 天不動。本站先用速度變號求出出生前後 15 天內每一次轉向的時刻（結果頁另列一表，只印到分鐘：用速度變號找的轉向，和直接看位置何時折返找的轉向，最多可差半分多鐘，印到秒等於假裝知道得更準），從這一刻到轉向的時間不超過 Lilly 的天數，就列為停滯。</p>
+    <p><b>轉向之後也算：本站的讀法。</b>各行星章裡，Lilly 只替火星寫了轉向之後的天數：p.65「stationary before direction two dayes; after, but one day」（轉順前停兩天，之後再一天）。所以火星轉回順行後 1 天內，本站也列為停滯（結果寫「停滯（第二次：剛轉回順行）」）；其他行星、其他轉向，Lilly 沒有寫轉向後的天數，本站轉向一過就不再列。<b>把轉向後的天數也算成停滯，是本站對 Lilly 各行星章（pp.58、62、65、73、76）的讀法，不是他明寫的一條總則。</b>水星的「停一天」（p.76）沒有說是轉向前還是轉向後，本站照舊取轉向前 1 天，所以水星一到轉向的那一分鐘就不再列為停滯。太陽與月亮不會停滯。</p>
+    <p><b>為什麼不用「速度低於平均幾成」。</b>我們實測過：照 Lilly 的天數，土星轉逆前 5 天時速度還有平均的 24%–28%，木星 18%–21%，金星 19%–21%，火星轉逆前 2–3 天時只剩 5%–9%（2000–2030 年所有停滯）。沒有一個百分比能同時重現 Lilly 給每顆行星的天數，用百分比就是本站自己的約定，不是 Lilly 的，所以不用。</p>
+    <p><b>東出西入至少有四種意思，本站只輸出第一種。</b></p>
+    <ul>
+      <li><b>相對太陽、分兩邊</b>（Lilly p.114；al-Bīrūnī §485；Ptolemy I.6）：土星、木星、火星從與太陽會合到對衝是東出，從對衝回到會合是西入；金星、水星在太陽所在星座較少的度數或前一個星座時東出；月亮從對衝（滿月）到會合（新月）東出。東出就是比太陽早升起、清晨在東方天空看得到的晨星——在黃道上它其實位於太陽的<b>西側</b>；西入是太陽下山後還留在西方天空的昏星，在黃道上位於太陽東側。本站用黃經差的正負號判，和〈焦傷與光束下〉一節的「西側（晨星）／東側（昏星）」是同一個計算。太陽本身沒有東出西入。</li>
+      <li><b>相對太陽、分好幾段</b>：al-Bīrūnī §481–482 說離開光束到距太陽 30° 才是東出，30° 到 90° 是弱東出，超過 90° 就不叫東出；Bonatti 第三論第二部第 5–6 章照 Alchabitius 分成七、八段。本站不輸出。</li>
+      <li><b>天空的四象限</b>：Ptolemy I.6、III.10 把上升到中天、下降到天底這兩段天空叫東方；al-Bīrūnī §486 說這也改變陰陽。這是看行星此刻在天空哪一區，和上面看行星與太陽的先後不是同一件事。本站不輸出。</li>
+      <li><b>陰陽</b>：Ptolemy I.6 說晨星與在東方象限的行星屬陽。本站不輸出。</li>
+    </ul>
+    <p>另外要小心反向的用法：Bonatti col.130 說，Ptolemy 在 almugea 一段裡講的「occidentalis a Sole」，是指行星在太陽西側、比太陽先落下——照 Lilly 的用詞這叫東出，正好相反。</p>
+    <p><b>「增於行／減於行」不輸出。</b>Ptolemy I.24 說「增於行」最有力，Robbins 注解成行星在本輪的外半圈。Bonatti cols.129–130 同時給了三種定義：（一）本輪引數在 0 到 6 宮為增、6 到 12 宮為減；（二）本輪均差加到平均行上為增、減掉為減；（三）一天走的與平均比，但上行星比平均快的反而叫「減於行」，和同段太陽、金星、水星、月亮的說法相反。al-Bīrūnī §512 把「順行、快、增」分成三件事，所以「增於行」不能直接當成「快」。三種定義互相衝突，本站不輸出。</p>
+    <p><b>Lilly 書上的最快日行與現在的星曆不合，照列。</b>Lilly 說月亮一天不超過 15°02′，實測最快約 15°24′；水星「1°40′，不會更多」，他自己 p.178 就寫了 1°44′，實測最快約 2°12′；土星「3′ 到 6′，很少更多」，實測最快約 8′；火星很少超過 44′，實測最快約 47′30″。這些數字本站不拿來判定。</p>
+    <p class="cite">Lilly《Christian Astrology》1647 年版 pp.57–58、61–62、65、69–70、72–73、76、80、114–115、168、178（Wellcome 圖書館藏本頁影像，逐頁核對），已讀原文；Bonatti《De astronomia》（1550 年 Basel 版）第三論 cols.129–130（頁影像），已讀原文；第 5–6 章 cols.133–134 已讀頁影像，col.135 只讀到掃描辨識的文字；Ptolemy《占星四書》I.6、I.8、I.24、III.10（Robbins 1940 英譯，LacusCurtius），已讀譯本；al-Bīrūnī《占星術入門》§481–486、§498、§512（Wright 1934 英譯的線上打字稿；1934 年版頁碼未核），已讀譯本；Valens《選集》IV.14、V.7、V.11（Riley 英譯），已讀譯本。實測數字用本站同一份 Swiss Ephemeris 星曆，地心、回歸黃道</p>
+      </div>
+    </details>
+    </div>
       </div>
     </details>
   </section>
@@ -909,13 +1046,13 @@
   <section class="ap-entry" aria-labelledby="not-computed" data-fold-host>
     <p class="sig">09</p>
     <h2 id="not-computed">目前不算的東西</h2>
-    <p class="fold-gist"><span class="fold-k">重點</span>陷、弱、外來、接納、尊貴總分、推運與行運、其餘阿拉伯點、禁止與傳光等目前不算；almuten 已研究，決定不做。也不解讀：進階判定與解盤要等驗證、考據確實後才開放。</p>
+    <p class="fold-gist"><span class="fold-k">重點</span>接納、尊貴總分、推運與行運、其餘阿拉伯點、禁止與傳光等目前不算；almuten 已研究，決定不做；九分部已研究，只寫說明。也不解讀：進階判定與解盤要等驗證、考據確實後才開放。</p>
     <details class="sec-fold" data-fold>
       <summary aria-describedby="not-computed"><span class="fold-closed">展開全文</span><span class="fold-opened">收合</span></summary>
       <div class="fold-body">
 
     <ul class="notdone">
-      <li><b>陷、弱、外來、接納（含互容）、偶然尊貴</b>：「未評估」，不是「沒有」。almuten 已研究過，見下。</li>
+      <li><b>接納（含互容）、偶然尊貴</b>：「未評估」，不是「沒有」。陷、弱與外來已列出，見 §03；almuten 已研究過，見下。</li>
       <li><b>任何形式的尊貴分數或總分</b>：見 §03 末。</li>
       <li><b>推運、行運</b>：已提供的時間主星技法與太陽回歸盤見 §08。</li>
       <li><b>命運點、精神點與年度功能的七個點以外的阿拉伯點</b></li>
@@ -924,17 +1061,19 @@
       <li><b>任何形式的解讀</b>：見下。</li>
     </ul>
 
-    <p class="nodef" id="almuten"><span class="nd-k">已研究，不做</span><span><b>Almuten（勝利星）與命主星（Lord of the Geniture）。</b>「整張盤最有力的那顆行星」這個概念是古典的，但各書看哪些點、怎麼比、給幾分都不同，沒有一套公認的算法：Ptolemy 只數支配關係的個數，取最多者，不加權；al-Bīrūnī 定義了勝利星，卻沒有給五個點的計分；Lilly 自己的「Almuten of the Figure」比的是行星本身的本質與偶然力量，不是幾個點上的尊貴加總；軟體常見、歸給 Ibn Ezra 的算法，我只讀到現代網站，沒有讀到他的原典。所有計分式的 almuten 都要把不同的尊貴折成同一把尺上的分數，與 §03 末「不給總分」的理由相衝突，所以本站不做，也不替任何一家開例外。唯一可能的後備是 Lilly 1647 的做法，要先用清楚的頁影像核對 p. 115 的表，並用 pp. 743–745 的例盤重算。</span></p>
+    <p class="nodef" id="almuten"><span class="nd-k">已研究，不做</span><span><b>Almuten（勝利星）與命主星（Lord of the Geniture）。</b>「整張盤最有力的那顆行星」這個概念是古典的，但各書看哪些點、怎麼比、給幾分都不同，沒有一套公認的算法：Ptolemy 只數支配關係的個數，取最多者，不加權；al-Bīrūnī 定義了勝利星，卻沒有給五個點的計分；Lilly 自己的「Almuten of the Figure」比的是行星本身的本質與偶然力量，不是幾個點上的尊貴加總；軟體常見、歸給 Ibn Ezra 的算法，我只讀到現代網站，沒有讀到他的原典。所有計分式的 almuten 都要把不同的尊貴折成同一把尺上的分數，與 §03 末「不給總分」的理由相衝突，所以本站不做，也不替任何一家開例外。唯一可能的後備是 Lilly 1647 的做法：p. 115 的表已對頁影像核過，還要用 pp. 743–745 的例盤重算。</span></p>
     <details class="more" id="almuten-sources">
       <summary>出處：almuten 與命主星</summary>
       <ol>
         <li><b>Ptolemy。</b>《占星四書》III.2（Robbins, Loeb 1940, pp. 229–235；五種支配方式一句在 p. 233）：五種支配方式（三分、宮、旺、界、相位或相）中具備全部或最多者為主，並列時取度數較近者，只數個數、不加權；III.10（p. 277）選壽命的主星，看與太陽、前一次朔望、上升有最多支配關係者。核到：<span class="mono">已讀譯本</span>（Robbins 英譯）。</li>
         <li><b>al-Bīrūnī。</b>《占星術入門》第 494 節（Wright 1934 p. 100）：尊貴依宮、旺、界、三分、面排序，有人給 5、4、[3]、2、1 分加總比較（界排在三分前，與 Lilly 相反；界的分數掃描文字讀作 5，依排序應為 3，未對印本）；同節另引一位不具名的權威，上升宮主 30、旺 20、面 10、界 5、三分 3½、時主 4½。第 495、523 節：命盤的勝利星（mubtazz）是出生時占優勢的行星，看上升或其主，或五個推出點，Wright 注說拉丁文的 almuten 即此；這兩節沒有給五個點的計分。核到：<span class="mono">已讀譯本</span>（Wright 英譯的掃描文字）。</li>
-        <li><b>Lilly。</b>《Christian Astrology》（1647）p. 49 的名詞解釋：Almuten of a Figure 是本質與偶然尊貴最有力的行星。第三卷第 105 章〈Of the Lord of the Geniture〉（pp. 531–532）列三種說法：Firmicus 依月亮的星座（Lilly 不取）；別人取在上升、天頂、太陽、月亮、命運點五處本質尊貴最多者（沒有給計分）；Lilly 自己取本質與偶然尊貴最多、位置最好、升得最高者，並說命主星主出生者的行事、體質、性情與習性。例盤 pp. 743–745 算出金星淨得 16 分，p. 749 稱金星為 Almuten of the Figure。p. 115 的力量與減損分數表只讀到掃描辨識的文字，部分數字讀不清。核到：<span class="mono">已讀原文</span>（線上的打字重排本，頁碼與 1647 年版一致）。</li>
+        <li><b>Lilly。</b>《Christian Astrology》（1647）p. 49 的名詞解釋：Almuten of a Figure 是本質與偶然尊貴最有力的行星。第三卷第 105 章〈Of the Lord of the Geniture〉（pp. 531–532）列三種說法：Firmicus 依月亮的星座（Lilly 不取）；別人取在上升、天頂、太陽、月亮、命運點五處本質尊貴最多者（沒有給計分）；Lilly 自己取本質與偶然尊貴最多、位置最好、升得最高者，並說命主星主出生者的行事、體質、性情與習性。例盤 pp. 743–745 算出金星淨得 16 分，p. 749 稱金星為 Almuten of the Figure。p. 115 的力量與減損分數表另對 1647 年第一版的頁影像核過。核到：<span class="mono">已讀原文</span>（線上的打字重排本，頁碼與 1647 年版一致）。</li>
         <li><b>Ibn Ezra。</b>現代網站與軟體常說「Ibn Ezra 法」：日、月、上升、命運點、產前朔望五點，各點依 5-4-3-2-1 給分，加日主 7 分、時主 6 分與宮位分；各網站的細節互相矛盾（第 8、9 宮的分數對調，三分性取一位或三位），能追到的傳承是 Robert Zoller 的教材。核到：<span class="mono">轉引</span>。Ibn Ezra 原典（Sela 的 Brill 2013、2019 年校勘譯本；1485 年威尼斯拉丁文印本）：<span class="mono">未讀</span>。</li>
         <li><b>其他。</b>al-Qabīṣī《導論》第四章、Abū Maʿshar、Bonatti 第九論、Schöner：<span class="mono">只見書目</span>。James Wilson《A Complete Dictionary of Astrology》（London 1819）p. 33 的定義同 Lilly，p. 355 質疑它的效力：<span class="mono">已讀原文</span>（片段）。</li>
       </ol>
     </details>
+
+    <p class="nodef" id="novenaria-not-computed"><span class="nd-k">已研究，只寫說明</span><span><b>九分部（novenaria）。</b>規則與出處都讀過，五位作者的規則一致；但讀到的判讀用法很少，又容易被當成恆星黃道的吠陀 navamsa，所以本站不計算，只寫說明，見 §07.14。</span></p>
 
     <p class="nodef"><span class="nd-k">為什麼不解讀</span><span>古書怎麼說，我們照原文列出、附出處；說吉就寫吉，說凶就寫凶。我們不把它綜合成對你這個人的解讀，也不預測。<b>不是因為解盤沒有價值，而是進階判定與解盤要等驗證、考據確實後才開放。</b>這一頁列出的未定歸屬與待考據項目，就是目前尚未跨過那個門檻的原因。</span></p>
 

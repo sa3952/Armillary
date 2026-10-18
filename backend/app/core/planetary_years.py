@@ -95,6 +95,12 @@ _SOURCES: dict[str, dict] = {
                 "reading": SOURCE_READING_LEVELS[1],
                 "read_at": "Riley's English translation via the re-typeset",
             },
+            {
+                "citation": "Valens, Anthologies III.10, the re-typeset's editor's note",
+                "says": "Venus's greater years are 'usually 82, not 84' (an editor's note, not Valens's text)",
+                "reading": SOURCE_READING_LEVELS[2],
+                "read_at": "the re-typeset of Riley's English translation",
+            },
         ],
         "note": (
             "Venus 82 as printed in IV.30; the re-typeset's note at III.10 says Venus's "

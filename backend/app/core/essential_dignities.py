@@ -18,12 +18,14 @@ import copy
 from collections.abc import Iterable
 from typing import Any
 
-from .formatting import degree_text, normalize_longitude, zodiac_sign_index
+from .formatting import dms_text, normalize_longitude, zodiac_sign_index
 from .frame_compatibility import method_frame_state
 from .module_state import computed_receipt, not_applicable_receipt
 from .method_status import method_receipt, research_only_profiles
+from .source_reading import SOURCE_READING_LEVELS, reference_only
 from .trace import Trace
 from .dignity_tables import (
+    ROBBINS_EGYPTIAN_TERMS_PAGES,
     BOUNDS_SOURCES,
     BOUNDS_SOURCE_DETAILS,
     BOUNDS_SOURCE_STATEMENTS,
@@ -31,17 +33,33 @@ from .dignity_tables import (
     CHALDAEAN_DAY_ORDER,
     CHALDAEAN_LENGTHS,
     CHALDEAN_FACES,
+    DEBILITY_COMPONENT_SOURCES,
+    DEBILITY_PARTICIPANT_NOTE,
     DECAN_SOURCES,
     DECAN_SOURCE_DETAILS,
     DOMICILE_EXALTATION_PROFILE_ID,
     DOMICILE_EXALTATION_SOURCES,
     DOMICILE_EXALTATION_SOURCE_SCOPE_NOTE,
+    DETRIMENT_SIGNS,
     DOMICILE_SIGNS,
     DOROTHEAN,
     ELEMENTS,
     EXALTATION_SIGNS,
+    FALL_SIGNS,
     LILLY_COMPACT,
+    LILLY_RECEIVED_BOUNDS,
     MANILIUS_SIGN_DECANS,
+    PEREGRINE_BASIS,
+    PEREGRINE_BASIS_NOTE,
+    PEREGRINE_DIGNITIES,
+    PEREGRINE_PROFILE_ID,
+    PEREGRINE_RULE,
+    PEREGRINE_SOURCE,
+    PEREGRINE_SOURCE_REF,
+    PEREGRINE_SOURCES,
+    PEREGRINE_STATUSES,
+    PEREGRINE_TABLE_DEPENDENCE,
+    PEREGRINE_TERM_NOTE,
     PTOLEMY_TEXTUAL,
     SIGNS,
     TRIPLICITY_IDS,
@@ -49,6 +67,26 @@ from .dignity_tables import (
     TRIPLICITY_SOURCE_DETAILS,
     TRIPLICITY_SOURCE_STATEMENTS,
 )
+
+
+# 「全部並列」：一個技法選這個值，就把本版的每一套具名表都算一次，依目錄順序（下面的
+# PROFILE_IDS，也是請求 schema 列出的順序）。每一套的結果與單獨選它時完全相同；不設主要那套。
+ALL_PROFILES = "all"
+PROFILE_IDS = {
+    "bounds": tuple(BOUNDS_SOURCES),
+    "face_decan": tuple(DECAN_SOURCES),
+    "triplicity": TRIPLICITY_IDS,
+}
+
+
+def expand_profiles(technique: str, requested: str | None) -> list[str]:
+    """The concrete profile ids one requested value stands for, in catalogue order."""
+
+    if requested is None:
+        return []
+    if requested == ALL_PROFILES:
+        return list(PROFILE_IDS[technique])
+    return [requested]
 
 
 class DignityParticipantScopeError(ValueError):
@@ -133,9 +171,10 @@ def _base_object(body: dict) -> dict:
         "sign_index": sign_index,
         "sign": sign,
         "degree_in_sign": degree,
-        # The table's text, rounded without reaching the next whole degree, so
-        # it never crosses a bound or decan end (all are whole degrees).
-        "degree_in_sign_text": degree_text(degree, 4),
+        # The table's text in degrees, minutes and seconds like every other
+        # section's sign position, rounded without reaching the next whole
+        # degree, so it never crosses a bound or decan end (all whole degrees).
+        "degree_in_sign_text": dms_text(degree),
     }
 
 
@@ -222,13 +261,17 @@ def _decan_profile(profile_id: str, bodies: list[dict]) -> dict:
 
 
 _DOMICILE_EXALTATION_SOURCE = (
-    "Ptolemy, Tetrabiblos I.17, I.19 (Robbins 1940; = Hübner I.18, I.20); "
-    "also attested in Dorotheus, Valens and Firmicus"
+    "Domicile and exaltation: Ptolemy, Tetrabiblos I.17, I.19 (Robbins 1940; = "
+    "Hübner I.18, I.20); also attested in Dorotheus, Valens and Firmicus. Fall: the "
+    "sign opposite the exaltation, Ptolemy I.19 'depression'. Detriment: the sign "
+    "opposite a domicile, al-Bīrūnī, Tafhīm §442 (Wright 1934) and Lilly, Christian "
+    "Astrology (1647) pp.104-105; Ptolemy names no detriment."
 )
 
 
 def _domicile_exaltation_profile(bodies: list[dict]) -> dict:
-    """Match the traditional seven against whole-sign houses/exaltations.
+    """Match the traditional seven against whole-sign houses/exaltations and
+    the signs opposite them (detriment, fall).
 
     This profile deliberately does not choose among transmitted exact exaltation
     degrees.  Ptolemy, Tetrabiblos I.17 and I.19 (Robbins; Hübner I.18 and I.20)
@@ -257,12 +300,18 @@ def _domicile_exaltation_profile(bodies: list[dict]) -> dict:
         key = item["key"]
         domicile_signs = DOMICILE_SIGNS[key]
         exaltation_sign = EXALTATION_SIGNS[key]
+        detriment_signs = DETRIMENT_SIGNS[key]
+        fall_sign = FALL_SIGNS[key]
         item.update(
             {
                 "domicile_signs": list(domicile_signs),
                 "exaltation_sign": exaltation_sign,
                 "domicile_matched": item["sign"] in domicile_signs,
                 "exaltation_matched": item["sign"] == exaltation_sign,
+                "detriment_signs": list(detriment_signs),
+                "detriment_matched": item["sign"] in detriment_signs,
+                "fall_sign": fall_sign,
+                "fall_matched": item["sign"] == fall_sign,
             }
         )
         objects.append(item)
@@ -275,7 +324,6 @@ def _domicile_exaltation_profile(bodies: list[dict]) -> dict:
         # The degree policy and the list of what is not evaluated are constant
         # text in the register entry source_ref names.
         "exact_exaltation_degrees_evaluated": False,
-        "debility_evaluated": False,
         "participant_scope": "classical_seven_planets_only",
         "objects": objects,
         "interpretation": None,
@@ -330,6 +378,92 @@ def _triplicity_profile(
     }
 
 
+def _peregrine_by_sect(item: dict) -> tuple[list[str], dict[str, bool]]:
+    """The dignities a planet holds whatever the sect, and the sect ruler's
+    triplicity by day and by night, all on Lilly's p.104 table."""
+
+    key, sign, sign_index = item["key"], item["sign"], item["sign_index"]
+    degree = item["degree_in_sign"]
+    held = []
+    if sign in DOMICILE_SIGNS[key]:
+        held.append("domicile")
+    if sign == EXALTATION_SIGNS[key]:
+        held.append("exaltation")
+    if _find_segment(LILLY_RECEIVED_BOUNDS[sign_index], degree)["ruler"] == key:
+        held.append("term")
+    if CHALDEAN_FACES[sign_index][min(int(degree // 10.0), 2)] == key:
+        held.append("face")
+    rule = LILLY_COMPACT[ELEMENTS[sign_index % 4]]
+    return held, {"day": key in rule["day"], "night": key in rule["night"]}
+
+
+def _peregrine_profile(bodies: list[dict], sect_classification: dict) -> dict:
+    """Lilly's peregrine (p.112) for the classical seven, on his own p.104 set.
+
+    The triplicity counts only for the sect ruler (p.102), so an unknown sect,
+    or a Sun inside the near-horizon band, leaves undetermined exactly the
+    planets the triplicity alone would decide.  No score.
+    """
+
+    unsupported = sorted(
+        {str(body.get("key", "<missing>")) for body in bodies if body.get("key") not in DOMICILE_SIGNS}
+    )
+    if unsupported:
+        raise DignityParticipantScopeError(
+            "unsupported peregrine participant: " + ", ".join(unsupported)
+        )
+    is_day = sect_classification["is_day"]
+    in_band = sect_classification["in_near_horizon_band"] is True
+    objects = []
+    for body in bodies:
+        item = _base_object(body)
+        held, triplicity = _peregrine_by_sect(item)
+        by_sect = {
+            sect: "not_peregrine" if held or triplicity[sect] else "peregrine"
+            for sect in ("day", "night")
+        }
+        if by_sect["day"] == by_sect["night"]:
+            status = by_sect["day"]
+        elif is_day is None:
+            status = "undetermined_sect_unknown"
+        elif in_band:
+            status = "undetermined_sect_near_horizon"
+        else:
+            status = by_sect["day" if is_day else "night"]
+        if is_day is not None and not status.startswith("undetermined") and (
+            triplicity["day" if is_day else "night"]
+        ):
+            held.append("triplicity")
+        item.update(
+            {
+                "status": status,
+                "dignities_held": [name for name in PEREGRINE_DIGNITIES if name in held],
+                "debilities_also": [
+                    name
+                    for name, signs in (
+                        ("detriment", DETRIMENT_SIGNS[item["key"]]),
+                        ("fall", (FALL_SIGNS[item["key"]],)),
+                    )
+                    if item["sign"] in signs
+                ],
+                "by_sect": by_sect,
+            }
+        )
+        objects.append(item)
+    return {
+        "profile_id": PEREGRINE_PROFILE_ID,
+        "technique": "peregrine",
+        "source": PEREGRINE_SOURCE,
+        "source_ref": PEREGRINE_SOURCE_REF,
+        "basis": dict(PEREGRINE_BASIS),
+        "statuses": list(PEREGRINE_STATUSES),
+        "participant_scope": "classical_seven_planets_only",
+        "objects": objects,
+        "interpretation": None,
+        "score": None,
+    }
+
+
 # The refusal decision and its code come from the central frame table; the
 # trace keeps the reason each code rests on.  A table code missing here is a
 # KeyError, so the two cannot drift apart silently.
@@ -366,6 +500,7 @@ def compute_essential_dignities(
     triplicity_profile: str | None,
     include_triplicity_comparison: bool,
     computation_mode,
+    peregrine_profile: str | None,
     sect_basis: str,
     trace: Trace,
     sect_sun_altitude: float | None,
@@ -379,6 +514,7 @@ def compute_essential_dignities(
         or decan_profile
         or triplicity_profile
         or include_triplicity_comparison
+        or peregrine_profile
     )
     if not requested:
         return None
@@ -391,6 +527,19 @@ def compute_essential_dignities(
         "bounds": bounds_profile,
         "face_decan": decan_profile,
         "triplicity": triplicity_profile,
+        "peregrine": peregrine_profile,
+    }
+    # What each technique's requested value expands to, in catalogue order: one
+    # id for a single choice, every table for "all" (which has no primary
+    # table).  The same whether or not the frame lets the module run, as the
+    # Dossier's calculation_policy states it; profile_results says what ran.
+    computed = {
+        technique: expand_profiles(technique, requested)
+        for technique, requested in (
+            ("bounds", bounds_profile),
+            ("face_decan", decan_profile),
+            ("triplicity", triplicity_profile),
+        )
     }
     center = computation_mode.center
     ecliptic_frame = computation_mode.ecliptic_frame
@@ -420,9 +569,11 @@ def compute_essential_dignities(
             "ecliptic_frame": ecliptic_frame,
             "nutation": nutation,
             "selected_profiles": selected,
+            "computed_profiles": computed,
             "research_comparison_profiles": [],
             "research_only_profiles": [],
             "profile_results": {},
+            "peregrine": None,
             "interpretation": None,
             "score": None,
         }
@@ -432,51 +583,71 @@ def compute_essential_dignities(
         results[DOMICILE_EXALTATION_PROFILE_ID] = (
             _domicile_exaltation_profile(usable_bodies)
         )
-    if bounds_profile:
-        results[bounds_profile] = _bounds_profile(
-            bounds_profile, usable_bodies, sect_is_day
-        )
-    if decan_profile:
-        results[decan_profile] = _decan_profile(decan_profile, usable_bodies)
-    triplicity_ids = []
-    if triplicity_profile:
-        triplicity_ids.append(triplicity_profile)
-    if include_triplicity_comparison:
+    for profile_id in computed["bounds"]:
+        results[profile_id] = _bounds_profile(profile_id, usable_bodies, sect_is_day)
+    for profile_id in computed["face_decan"]:
+        results[profile_id] = _decan_profile(profile_id, usable_bodies)
+    # The comparison toggle adds the other tables beside a single choice; with
+    # every table already side by side it adds nothing.
+    comparison = include_triplicity_comparison and triplicity_profile != ALL_PROFILES
+    triplicity_ids = list(computed["triplicity"])
+    if comparison:
         triplicity_ids.extend(TRIPLICITY_IDS)
     triplicity_ids = list(dict.fromkeys(triplicity_ids))
-    sect_dependent_components = (
-        [bounds_profile] if bounds_profile == "chaldaean_bounds_ptolemy_i_21_v1" else []
-    ) + triplicity_ids
+    sect_dependent_components = [
+        profile_id
+        for profile_id in computed["bounds"]
+        if profile_id == "chaldaean_bounds_ptolemy_i_21_v1"
+    ] + triplicity_ids
     for profile_id in triplicity_ids:
         results[profile_id] = _triplicity_profile(
             profile_id, usable_bodies, sect_is_day
         )
+    peregrine = None
+    if peregrine_profile:
+        peregrine = _peregrine_profile(usable_bodies, sect_classification)
+        sect_dependent_components.append(peregrine_profile)
 
     trace.add(
         "具名古典尊貴元件",
         formula=(
-            "tropical longitude -> whole-sign domicile/exaltation match and/or "
+            "tropical longitude -> whole-sign domicile/exaltation/detriment/fall "
+            "match and/or "
             "source-named half-open table; no scoring or interpretation"
         ),
         inputs={
             "selected_profiles": selected,
+            "computed_profiles": computed,
             "triplicity_research_comparison": include_triplicity_comparison,
             "sect_is_day": sect_is_day,
             "sect_basis": sect_basis,
         },
-        result={"profile_ids": list(results)},
+        result={
+            "profile_ids": list(results),
+            "peregrine": (
+                None
+                if peregrine is None
+                else {
+                    item["key"]: item["status"] for item in peregrine["objects"]
+                }
+            ),
+        },
         note=(
-            "Traditional-seven whole-sign domicile/exaltation is kept separate "
-            "from exact exaltation-degree traditions. Dorothean, Ptolemy textual, "
+            "Traditional-seven whole-sign domicile/exaltation and the detriment/fall "
+            "opposite them are kept separate from exact exaltation- and fall-degree "
+            "traditions. Dorothean, Ptolemy textual, "
             "Lilly compact, Egyptian, Chaldaean, Robbins and Lilly tables remain "
-            "separate profiles."
+            "separate profiles. Peregrine, when requested, is judged on Lilly's "
+            "p.104 set (sect ruler only for the triplicity), not on the selected "
+            "profiles."
         ),
     )
     return {
         "method": "named_essential_dignity_components_v1",
         **method_receipt("essential_dignities"),
         **computed_receipt(
-            "selected_named_primary_text_profiles", available=bool(results)
+            "selected_named_primary_text_profiles",
+            available=bool(results) or peregrine is not None,
         ),
         "zodiac_basis": DIGNITY_ZODIAC_BASIS,
         "coordinate_center": center,
@@ -494,12 +665,13 @@ def compute_essential_dignities(
             sect_dependent_components,
         ),
         "selected_profiles": selected,
-        "research_comparison_profiles": (
-            list(TRIPLICITY_IDS) if include_triplicity_comparison else []
-        ),
+        # Read this, not selected_profiles, for the ids (see above).
+        "computed_profiles": computed,
+        "research_comparison_profiles": list(TRIPLICITY_IDS) if comparison else [],
         # 列為 research-only 的 profile，被選為主要 profile 時也標出。
         "research_only_profiles": research_only_profiles(results),
         "profile_results": results,
+        "peregrine": peregrine,
         "interpretation": None,
         "score": None,
     }
@@ -528,6 +700,189 @@ def _sect_receipt(
     }
 
 
+_ORIGINAL, _TRANSLATION, _SECONDARY = SOURCE_READING_LEVELS[:3]
+_ROBBINS_1964_SCANS = (
+    "two scanned copies of the 1964 reprint of Robbins (Loeb 1940): Internet Archive "
+    "L350ManethoHistoryOfEgyptPtolemyTetrabiblos and University of Toronto copy "
+    "manethowithengli00maneuoft"
+)
+_LILLY_1647_P104_READ_AT = (
+    "the scanned first edition, Wellcome copy, archive.org/details/b30338724 "
+    "(leaves n137-n138), and the 1659 edition, p.104"
+)
+
+# The places each profile's statement and details name, as citation objects.  A
+# level comes from what the profile's own verification record says was read;
+# where it says nothing, only the reference is claimed.
+PROFILE_SOURCE_CITATIONS: dict[str, list[dict[str, Any]]] = {
+    "ptolemy_bounds_robbins_1940_v1": [
+        {
+            "citation": "Ptolemy, Tetrabiblos I.21, trans. Robbins (Loeb 1940) p.107, "
+                        "table 'Terms according to Ptolemy' (= Hübner 1998 I.21)",
+            "says": "the complete table the profile uses, every cell",
+            "reading": _TRANSLATION,
+            "read_at": f"{_ROBBINS_1964_SCANS}, p.107 (page n430)",
+        },
+        reference_only(
+            "Ptolemy, Tetrabiblos I.20-21, trans. Robbins (Loeb 1940) pp.103-107",
+            "Ptolemy's account of the terms (pp.103-105) and the table printed after it",
+            "the record names p.107 (the table) and pp.106-107 (the Greek table and its "
+            "apparatus) as read; for pp.103-105 only the reference is claimed",
+        ),
+    ],
+    "egyptian_bounds_robbins_1940_v1": [
+        {
+            "citation": "Ptolemy, Tetrabiblos I.20, trans. Robbins (Loeb 1940) pp.96-97, "
+                        "the Greek and English tables of the Egyptian terms (= Hübner 1998 I.21)",
+            "says": "the table the profile uses, every cell, and its totals (p.96 n.1)",
+            "reading": _TRANSLATION,
+            "read_at": f"{_ROBBINS_1964_SCANS}, pp.96-97 (pages n419-n420)",
+        },
+        reference_only(
+            f"Ptolemy, Tetrabiblos I.20, trans. Robbins (Loeb 1940) "
+            f"{ROBBINS_EGYPTIAN_TERMS_PAGES}",
+            "the chapter on the Egyptian terms",
+            "the record names pp.96-97 as read; for pp.91-95 only the reference is claimed",
+        ),
+        reference_only(
+            "Firmicus Maternus, Mathesis II.6.4-5, 10; Vettius Valens, Anthologies I.3",
+            "witnesses to the Egyptian terms",
+            "the witness list says these were checked but not in which text or edition; "
+            "only the reference is claimed",
+        ),
+    ],
+    "chaldaean_bounds_ptolemy_i_21_v1": [
+        reference_only(
+            "Ptolemy, Tetrabiblos I.21, trans. Robbins (Loeb 1940) pp.99-101 (= Hübner 1998 I.21)",
+            "the Chaldaean terms as a prose rule, no table",
+            "level pending: the record gives the chapter and Robbins's pages but does not "
+            "say what was read; only the reference is claimed",
+        ),
+    ],
+    "ptolemy_triplicity_textual_corulership_v1": [
+        reference_only(
+            "Ptolemy, Tetrabiblos I.18, trans. Robbins (Loeb 1940) pp.83-87 (= Hübner 1998 I.19)",
+            "two planets for each of fire, earth and air; Mars for water, with Venus by "
+            "day and the Moon by night",
+            "checked against an online transcription, not the printed page (PAL ed. 9 "
+            "text 1, 〈I.19〉); the record does not say whether the Greek or a translation "
+            "was read, so only the reference is claimed",
+        ),
+    ],
+    "lilly_received_bounds_1647_v1": [
+        {
+            "citation": "William Lilly, Christian Astrology (1647) p.104, Table of the "
+                        "Essential Dignities, Termes columns",
+            "says": "the table the profile uses",
+            "reading": _ORIGINAL,
+            "read_at": _LILLY_1647_P104_READ_AT,
+        },
+        {
+            "citation": "William Lilly, Christian Astrology (1647) planet chapters, "
+                        "pp.57, 62, 66, 73, 76-77",
+            "says": "the terms each planet's chapter lists, compared with the p.104 table",
+            "reading": _ORIGINAL,
+            "read_at": "as the Leo row's evidence records; the record does not say which "
+                       "copy of the 1647 text was read for these pages",
+        },
+        reference_only(
+            "Robbins 1940 p.108 n.1",
+            "the manuscripts' planet totals (Jupiter 79, Mars 66)",
+            "read for the Ptolemaic terms' Libra row (see that profile); here only the "
+            "reference is claimed",
+        ),
+    ],
+    "lilly_triplicity_compact_1647_v1": [
+        reference_only(
+            "William Lilly, Christian Astrology (1647) p.104, triplicity columns Di. and "
+            "Noc.; p.105",
+            "the day and night triplicity table; Mars rules water by day and night",
+            "cited from the methodology research report, not independently checked; the "
+            "record does not say which copy; only the reference is claimed",
+        ),
+    ],
+    "manilius_sign_decans_astronomica_iv_v1": [
+        {
+            "citation": "Manilius, Astronomica IV.310-362",
+            "says": "the decan assignments, Pisces decans 1-2 at IV.359-360",
+            "reading": _ORIGINAL,
+            "read_at": "Latin text, The Latin Library (manilius4.html), checked against "
+                       "the online transcription, not the printed page",
+        },
+        reference_only(
+            "Manilius, Astronomica IV.294-386",
+            "the decan passage",
+            "IV.310-362 was read (see the editorial correction); for the rest of the "
+            "passage only the reference is claimed",
+        ),
+    ],
+    "chaldean_planetary_faces_firmicus_ii_4_v1": [
+        {
+            "citation": "Firmicus Maternus, Mathesis II.4.3 (Kroll-Skutsch 1897 vol. I p.45)",
+            "says": "the complete 36-face table, every face",
+            "reading": _ORIGINAL,
+            "read_at": "the archive.org OCR text of matheseoslibrivi01firmuoft; checked "
+                       "against the online transcription, not the printed page",
+        },
+        reference_only(
+            "Firmicus Maternus, Mathesis II.4 (Kroll-Skutsch 1897 vol. I pp.44-46)",
+            "the chapter around the table",
+            "p.45 was read; for the rest of the chapter only the reference is claimed",
+        ),
+        {
+            "citation": "Paulus Alexandrinus, Introduction ch.4 (Boer 1958 numbering, main "
+                        "text; Schmidt/Hand 1995 pp.9-10)",
+            "says": "the 'seven-zoned sphere', a parallel witness",
+            "reading": _SECONDARY,
+            "read_at": "the order and the term as the method research report gives them; "
+                       "Boer 1958 and Schmidt/Hand 1995 not checked",
+        },
+        reference_only(
+            "William Lilly, Christian Astrology (1647) p.104, face columns",
+            "a later witness to the same order",
+            "level pending: the record does not say which copy, or that the face columns "
+            "were read; only the reference is claimed",
+        ),
+        reference_only(
+            "Ptolemy, Tetrabiblos I.23, trans. Robbins (Loeb 1940) pp.111-113",
+            "Ptolemy's 'proper face', a different doctrine that shares only the name",
+            "level pending: the record does not say what was read; only the reference "
+            "is claimed",
+        ),
+    ],
+    "dorothean_triplicity_three_rulers_v1": [
+        {
+            "citation": "Dorotheus, Carmen Astrologicum I.1 (Pingree 1976 pp.161-162)",
+            "says": "the triplicity rulers; in Virgo also a share for Mercury (p.162)",
+            "reading": _TRANSLATION,
+            "read_at": "Pingree's English translation (1976), checked against the cited "
+                       "pages; the Arabic not checked",
+        },
+        {
+            "citation": "Dorotheus, Carmen Astrologicum I.28 (Pingree 1976 p.196)",
+            "says": "the third ruler, 'the associate of these two'",
+            "reading": _TRANSLATION,
+            "read_at": "Pingree's English translation (1976), checked against the cited "
+                       "page; the Arabic not checked",
+        },
+        {
+            "citation": "Hephaestio, Apotelesmatica I.6",
+            "says": "the Greek verse with the same four triads",
+            "reading": _ORIGINAL,
+            "read_at": "an online transcription following CCAG/TLG; the Pingree 1973 "
+                       "edition not checked",
+        },
+        reference_only("Schmidt 1994 p.30", "Hephaestio's verse in translation", "not checked"),
+        reference_only("Dorotheus, Carmen Astrologicum I.4 (Pingree pp.163-164)",
+                       "the use of the rulers", "not checked"),
+        reference_only("Dorotheus, Carmen Astrologicum I.10 (Pingree)",
+                       "the word 'participant' for the third ruler",
+                       "level pending: the record does not say this page was read; only "
+                       "the reference is claimed"),
+    ],
+}
+
+
 def _register_entry(profile_id: str, statement: str, details: dict | None) -> dict:
     entry: dict[str, Any] = {
         "applies_to": f"derived_methods.essential_dignities.profile_results.{profile_id}",
@@ -535,6 +890,8 @@ def _register_entry(profile_id: str, statement: str, details: dict | None) -> di
     }
     if details is not None:
         entry["details"] = copy.deepcopy(details)
+    if profile_id in PROFILE_SOURCE_CITATIONS:
+        entry["sources"] = copy.deepcopy(PROFILE_SOURCE_CITATIONS[profile_id])
     return entry
 
 
@@ -552,9 +909,44 @@ METHOD_SOURCE_ENTRIES: dict[str, dict[str, Any]] = {
     },
     f"dignities/{DOMICILE_EXALTATION_PROFILE_ID}": {
         **_register_entry(DOMICILE_EXALTATION_PROFILE_ID, _DOMICILE_EXALTATION_SOURCE, None),
-        "sources": copy.deepcopy(DOMICILE_EXALTATION_SOURCES),
+        "sources": [
+            *copy.deepcopy(DOMICILE_EXALTATION_SOURCES),
+            {
+                **reference_only(
+                    "Vettius Valens, Anthologies III.4 (Riley, CSUS PDF (2010) p.61)",
+                    "the PDF page of the chapter as a locator",
+                    "the chapter was read in a reformatted online copy (github "
+                    "janegca/latex-valens), not in this PDF; only the page reference is "
+                    "claimed",
+                ),
+                "role": "page_locator_of_an_also_attested_source",
+            },
+            {
+                **reference_only(
+                    "Firmicus Maternus, Mathesis II.2 (Kroll-Skutsch-Ziegler)",
+                    "the domiciles",
+                    "level pending: the reading recorded is of II.3.1 and II.3.5; for II.2 "
+                    "only the reference is claimed",
+                ),
+                "role": "chapter_reference_of_an_also_attested_source",
+            },
+        ],
         "source_scope_note": DOMICILE_EXALTATION_SOURCE_SCOPE_NOTE,
-        "degree_policy": "specific_exaltation_degrees_not_selected_or_evaluated",
-        "not_evaluated": ["detriment", "fall", "peregrine", "reception"],
+        "component_sources": copy.deepcopy(DEBILITY_COMPONENT_SOURCES),
+        "participant_note": DEBILITY_PARTICIPANT_NOTE,
+        "degree_policy": "specific_exaltation_and_fall_degrees_not_selected_or_evaluated",
+        "not_evaluated": ["reception"],
+    },
+    PEREGRINE_SOURCE_REF: {
+        "applies_to": "derived_methods.essential_dignities.peregrine",
+        "statement": PEREGRINE_SOURCE,
+        "rule": PEREGRINE_RULE,
+        "basis": dict(PEREGRINE_BASIS),
+        "basis_note": PEREGRINE_BASIS_NOTE,
+        "statuses": list(PEREGRINE_STATUSES),
+        "table_dependence": PEREGRINE_TABLE_DEPENDENCE,
+        "term_note": PEREGRINE_TERM_NOTE,
+        "sources": copy.deepcopy(PEREGRINE_SOURCES),
+        "not_evaluated": ["reception"],
     },
 }

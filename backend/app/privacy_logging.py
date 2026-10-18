@@ -21,6 +21,7 @@ import time
 import uuid
 
 from collections.abc import Callable, Mapping
+from types import MappingProxyType
 from typing import Final
 
 from starlette.datastructures import MutableHeaders
@@ -71,13 +72,39 @@ _ALLOWED_METHODS: Final = frozenset({"GET", "POST", "HEAD", "OPTIONS"})
 _ALLOWED_ROUTES: Final = frozenset({
     ANNUAL_ROUTE, CHART_ROUTE, HEALTH_ROUTE, PLACE_SEARCH_ROUTE, TIME_CONVERT_ROUTE,
 })
-# Every code a refusal can carry is an event code too (the boundary reasons and
-# the domain errors are refusal codes); the refusal table in refusals.py is the
-# owner, so a new refusal cannot reach a response while telemetry reduces it to
-# `unclassified`.  The rest are telemetry's own words.
+# A refusal whose occurrence is decided by the birth date, time or place says
+# something about the birth record: a skipped or repeated local hour, a place
+# that keeps two clocks, a time zone outside the helper's sources, a latitude
+# where the house system fails, an instant outside the ephemeris.  The user is
+# still answered with the exact code; the event keeps only its category, so the
+# log holds no attribute of the birth data.
+TELEMETRY_CATEGORY: Final[Mapping[str, str]] = MappingProxyType({
+    "nonexistent_local_time": "domain_refused",
+    "ambiguous_local_time_choice_required": "domain_refused",
+    "civil_time_basis_required": "domain_refused",
+    "civil_time_basis_not_applicable": "domain_refused",
+    "time_conversion_zone_not_covered": "domain_refused",
+    "house_system_unavailable": "domain_refused",
+    "full_ephemeris_required": "domain_failed",
+    "swiss_ephemeris_error": "domain_failed",
+    "catalog_record_unknown": "domain_refused",
+    "catalog_location_mismatch": "domain_refused",
+})
+# Every other refusal code is an event code as it is (the boundary reasons and
+# the remaining domain errors are refusal codes); the refusal table in
+# refusals.py is the owner, so a new refusal cannot reach a response while
+# telemetry reduces it to `unclassified`.  The rest are telemetry's own words.
 _ALLOWED_ERROR_CODES: Final = frozenset(
     {"request_rejected", "server_error", "unclassified"}
-) | CLOSURE_REASON_CODES | frozenset(REFUSALS)
+) | CLOSURE_REASON_CODES | (frozenset(REFUSALS) - frozenset(TELEMETRY_CATEGORY)) | frozenset(
+    TELEMETRY_CATEGORY.values()
+)
+
+
+def telemetry_error_code(code: str) -> str:
+    """The event's word for a refusal code: the code itself, or its category."""
+
+    return TELEMETRY_CATEGORY.get(code, code)
 # Unexpected failures may expose only a closed exception-class vocabulary.
 # Anything else becomes `unclassified`; messages, tracebacks and request-derived
 # values never reach this field.
@@ -129,9 +156,8 @@ def failure_class(error: BaseException | None) -> str | None:
 
 
 _DOMAIN_FAILURE_CODES: Final = frozenset({
-    "full_ephemeris_required",
+    "domain_failed",
     "place_catalog_unavailable",
-    "swiss_ephemeris_error",
 })
 _ALLOWED_DURATION_BUCKETS: Final = frozenset(
     {
@@ -300,8 +326,8 @@ def _outcome(status_code: int, error_code: str | None) -> str:
 def _safe_error_code(value: object) -> str | None:
     if value is None:
         return None
-    if isinstance(value, str) and value in _ALLOWED_ERROR_CODES:
-        return value
+    if isinstance(value, str) and telemetry_error_code(value) in _ALLOWED_ERROR_CODES:
+        return telemetry_error_code(value)
     return "unclassified"
 
 
@@ -320,7 +346,10 @@ def _domain_error_reason(scope: Scope) -> str | None:
     if not isinstance(state, Mapping):
         return None
     value = state.get(DOMAIN_ERROR_STATE_KEY)
-    return value if isinstance(value, str) and value in _ALLOWED_ERROR_CODES else None
+    if not isinstance(value, str):
+        return None
+    reduced = telemetry_error_code(value)
+    return reduced if reduced in _ALLOWED_ERROR_CODES else None
 
 
 def _safe_request_id(value: object) -> str:

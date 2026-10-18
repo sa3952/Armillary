@@ -184,6 +184,18 @@ METHOD_FRAME_TABLE: dict[str, dict[str, Any]] = {
             (_NUTATION_ON_OR_SIDEREAL, "nutation_off_solar_phase_basis_not_authorized"),
         ),
     },
+    # Swift or slow compares a speed with mean motions the texts give in the
+    # tropical zodiac of date; a sidereal, J2000 or mean-equinox speed differs
+    # by the precession or nutation rate, so those frames are refused.  The side
+    # of the Sun is solar_phase's.
+    "motion_states": {
+        "requirements": (
+            (_EARTH_CENTRE, NON_EARTH_OBSERVER_CENTER),
+            (_TROPICAL, "sidereal_motion_states_basis_not_authorized"),
+            (_OF_DATE, "j2000_motion_states_basis_not_authorized"),
+            (_NUTATION_ON, "nutation_off_motion_states_basis_not_authorized"),
+        ),
+    },
 }
 
 FRAME_REASON_CODES = tuple(

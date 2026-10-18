@@ -82,6 +82,15 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
                 ),
             },
             {
+                "citation": "Vettius Valens, Anthologies IV.9 (Kroll 1908 p.169), Kroll's note on the 33rd year",
+                "says": "reads the 31st and 32nd years as complete and the 33rd as not yet complete",
+                "reading": SOURCE_READING_LEVELS[3],
+                "read_at": (
+                    "level pending: the counting note reports Kroll's note, but the record "
+                    "does not say p.169 was read; only the reference is claimed"
+                ),
+            },
+            {
                 "citation": "Firmicus Maternus, Mathesis II.27.3-4, II.28.3 (Kroll-Skutsch 1897 vol.1 pp.76-77)",
                 "says": "annual profection and lord of the year",
                 "reading": SOURCE_READING_LEVELS[2],

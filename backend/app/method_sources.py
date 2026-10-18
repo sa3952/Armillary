@@ -58,6 +58,7 @@ def _module_entries() -> dict[str, dict[str, Any]]:
         lunar_mansions,
         monthly_profections,
         moon,
+        motion_states,
         planetary_hours,
         planetary_years,
         prenatal_points,
@@ -90,6 +91,7 @@ def _module_entries() -> dict[str, dict[str, Any]]:
         dodecatemoria,
         lunar_mansions,
         solar_phase,
+        motion_states,
         prenatal_points,
         classical_classifications,
         # The annual route's techniques: its responses name this register too.

@@ -9,8 +9,15 @@ import sqlite3
 import threading
 import time
 import unicodedata
+from collections.abc import Callable
+from typing import Any
 
-from .civil_time_basis import civil_time_basis_choices, is_dual_civil_time_place
+from .civil_time_basis import (
+    CIVIL_TIME_BASIS_ZONES,
+    check_civil_time_basis,
+    civil_time_basis_choices,
+    is_dual_civil_time_place,
+)
 
 
 DEFAULT_CATALOG_PATH = (
@@ -386,6 +393,17 @@ _COUNTY_PREFIX_LOCK = threading.Lock()
 _COUNTY_PREFIX_CACHE: dict[tuple[str, int, int], tuple[str, ...]] = {}
 _ARTIFACT_DIGEST_LOCK = threading.Lock()
 _ARTIFACT_DIGEST_CACHE: dict[tuple[str, int, int], str] = {}
+_METADATA_LOCK = threading.Lock()
+_METADATA_CACHE: dict[tuple[str, int, int], dict[str, str]] = {}
+
+# The two per-row correction tables are about 100 KB of the catalogue metadata
+# and the same for every search, so a typed query carried six times the bytes
+# of its results.  The search receipt keeps each table's `*_table_sha256`; the
+# rows are in the published catalogue manifest, which the catalogue verifier
+# (scripts/verification/verify_place_catalog.py) requires to equal the
+# database's own copy.
+SEARCH_RECEIPT_OMITTED_METADATA = ("source_admin1_corrections", "source_corrections")
+SEARCH_RECEIPT_ROW_LISTS_SOURCE = "backend/place_data/catalog_manifest.json"
 
 
 def _artifact_digest(path: Path) -> dict:
@@ -618,18 +636,38 @@ class PlaceCatalog:
         return connection
 
     def metadata(self, connection: sqlite3.Connection) -> dict:
-        try:
-            rows = connection.execute(
-                "SELECT key, value_json FROM catalog_metadata"
-            ).fetchall()
-        except sqlite3.Error as exc:
-            raise PlaceCatalogUnavailableError(
-                "bundled place catalog metadata is unavailable"
-            ) from exc
         return {
-            row["key"]: json.loads(row["value_json"])
-            for row in rows
+            key: json.loads(value_json)
+            for key, value_json in self._metadata_json(connection).items()
         }
+
+    def _metadata_json(self, connection: sqlite3.Connection) -> dict[str, str]:
+        """The metadata rows as stored, read once per file identity.
+
+        The catalogue is opened immutable, so its metadata changes only with the
+        file.  The cache holds the catalogue's own text, never a request value,
+        and each caller decodes a fresh copy.
+        """
+
+        resolved = self.path.resolve()
+        status = resolved.stat()
+        key = (str(resolved), status.st_size, status.st_mtime_ns)
+        with _METADATA_LOCK:
+            cached = _METADATA_CACHE.get(key)
+        if cached is None:
+            try:
+                rows = connection.execute(
+                    "SELECT key, value_json FROM catalog_metadata"
+                ).fetchall()
+            except sqlite3.Error as exc:
+                raise PlaceCatalogUnavailableError(
+                    "bundled place catalog metadata is unavailable"
+                ) from exc
+            cached = {row["key"]: row["value_json"] for row in rows}
+            with _METADATA_LOCK:
+                _METADATA_CACHE.clear()
+                _METADATA_CACHE[key] = cached
+        return cached
 
     def _county_prefixes(self, connection: sqlite3.Connection) -> tuple[str, ...]:
         """County names of the catalogue's derived points, read once per file identity."""
@@ -654,11 +692,24 @@ class PlaceCatalog:
         return cached
 
     def _served_metadata(self, connection: sqlite3.Connection) -> dict:
-        metadata = self.metadata(connection)
+        """The metadata a search receipt carries, the per-row correction lists left out."""
+
+        stored = self._metadata_json(connection)
+        metadata = {
+            key: json.loads(value_json)
+            for key, value_json in stored.items()
+            if key not in SEARCH_RECEIPT_OMITTED_METADATA
+        }
         if metadata.get("schema_version") not in SUPPORTED_SCHEMA_VERSIONS:
             raise PlaceCatalogUnavailableError(
                 "bundled place catalog schema is unsupported"
             )
+        omitted = [key for key in SEARCH_RECEIPT_OMITTED_METADATA if key in stored]
+        metadata["omitted_row_lists"] = {
+            "keys": omitted,
+            "bound_by": [f"{key}_table_sha256" for key in omitted],
+            "rows_in": SEARCH_RECEIPT_ROW_LISTS_SOURCE,
+        }
         return metadata
 
     def _response(self, results: list[dict], metadata: dict, query_receipt: dict) -> dict:
@@ -676,15 +727,19 @@ class PlaceCatalog:
             "execution": dict(_EXECUTION_RECEIPT),
         }
 
-    def record_zone(self, source: str, source_record_id: str) -> dict | None:
-        """The catalogue's country and zone for one record, or None if it has none."""
+    def record(self, source: str, source_record_id: str) -> dict | None:
+        """One catalogue row by its identity, or None if the catalogue has none.
+
+        ``(source, source_record_id)`` is the table's UNIQUE key, so this is one
+        indexed lookup.
+        """
 
         connection = self._connect()
         try:
             self._served_metadata(connection)
             row = connection.execute(
-                "SELECT country_code, timezone FROM places "
-                "WHERE source = ? AND source_record_id = ?",
+                "SELECT display_name, latitude, longitude, timezone, location_precision, "
+                "country_code FROM places WHERE source = ? AND source_record_id = ?",
                 (source, source_record_id),
             ).fetchone()
         except sqlite3.Error as exc:
@@ -693,9 +748,7 @@ class PlaceCatalog:
             ) from exc
         finally:
             connection.close()
-        if row is None:
-            return None
-        return {"country_code": row["country_code"], "timezone": row["timezone"]}
+        return None if row is None else dict(row)
 
     def search(
         self,
@@ -834,3 +887,127 @@ class PlaceCatalog:
             for row in rows
         ]
         return self._response(results, metadata, query_receipt)
+
+
+# ── A catalogue location in a chart request is the catalogue's row ──────────
+#
+# A request that names a record (location_source other than "manual") is
+# computed only when every field the row holds arrives exactly as the row holds
+# it: the label is the row's display_name as stored text, less surrounding
+# whitespace as for every request string; latitude and
+# longitude are compared as IEEE-754 binary64, the type the catalogue stores
+# them in, so any JSON spelling of the stored number matches and the next
+# representable double does not; the precision is the row's; the zone is the
+# row's, or for a place that keeps two clocks the zone of the clock the request
+# names.  Anyone who wants other coordinates or another zone sends them as
+# manual coordinates.  The order of the checks is the order a refusal names the
+# first difference in.
+CATALOG_LOCATION_MISMATCH_REASONS = (
+    "place_label_differs",
+    "latitude_differs",
+    "longitude_differs",
+    "location_precision_differs",
+    "timezone_differs",
+)
+
+
+class CatalogRecordUnknownError(ValueError):
+    code = "catalog_record_unknown"
+
+
+class CatalogLocationMismatchError(ValueError):
+    code = "catalog_location_mismatch"
+
+    def __init__(self, reason_code: str):
+        if reason_code not in CATALOG_LOCATION_MISMATCH_REASONS:
+            raise RuntimeError(f"unregistered catalogue mismatch reason: {reason_code}")
+        super().__init__(reason_code)
+        self.detail_extra = {"reason_code": reason_code}
+
+
+def _is_location(value: Any) -> bool:
+    fields = getattr(type(value), "model_fields", None) or {}
+    return "location_source" in fields and "source_record_id" in fields
+
+
+def request_locations(request: Any) -> list[tuple[Any, Any]]:
+    """Every location a request carries, each with the zone it is bound to.
+
+    Found by walking the request model, not by a list of field names, so a
+    location field added to a request is checked without being registered.
+    Only the request's own ``location`` sits beside the request's ``timezone``;
+    a nested location (the relocated solar return) has no zone of its own.
+    """
+
+    found: list[tuple[Any, Any]] = []
+    stack = [(request, True)]
+    while stack:
+        model, top = stack.pop()
+        for name in type(model).model_fields:
+            value = getattr(model, name)
+            if _is_location(value):
+                zone = getattr(request, "timezone", None) if top and name == "location" else None
+                found.append((value, zone))
+            elif getattr(type(value), "model_fields", None):
+                stack.append((value, False))
+    return found
+
+
+def check_request_places(
+    request: Any, catalogue_record: Callable[[str, str], dict | None]
+) -> None:
+    """Refuse a request whose catalogue location is not the catalogue's row,
+    then ask the civil-time question of its place.  Every chart route calls
+    this one check before computing; each record is read once."""
+
+    rows: dict[tuple[str, str], dict | None] = {}
+
+    def row_of(source: str, source_record_id: str) -> dict | None:
+        key = (source, source_record_id)
+        if key not in rows:
+            rows[key] = catalogue_record(source, source_record_id)
+        return rows[key]
+
+    locations = [
+        (location, zone)
+        for location, zone in request_locations(request)
+        if location.location_source != "manual"
+    ]
+    for location, _zone in locations:
+        if row_of(location.location_source, location.source_record_id) is None:
+            raise CatalogRecordUnknownError(
+                "the catalogue holds no record with this source and id"
+            )
+    check_civil_time_basis(request, row_of)
+    for location, zone in locations:
+        row = row_of(location.location_source, location.source_record_id)
+        if row is None:  # read above; the loop before refused a missing row
+            raise CatalogRecordUnknownError("the catalogue holds no record with this source and id")
+        reason = _first_difference(location, zone, row)
+        if reason is not None:
+            raise CatalogLocationMismatchError(reason)
+
+
+def _first_difference(location: Any, zone: Any, row: dict) -> str | None:
+    # The request schema strips surrounding whitespace from every string, and
+    # one Taiwan row's stored label begins with a space; the row is read the
+    # same way, so the search result sent back verbatim still matches
+    # (tests/backend/test_catalogue_location_binding.py checks every row).
+    if location.place_label != row["display_name"].strip():
+        return "place_label_differs"
+    if location.latitude != row["latitude"]:
+        return "latitude_differs"
+    if location.longitude != row["longitude"]:
+        return "longitude_differs"
+    if location.location_precision != row["location_precision"]:
+        return "location_precision_differs"
+    if zone is None:
+        return None
+    expected = row["timezone"]
+    # The civil-time check has run: a basis here belongs to a two-clock place,
+    # and the schema has tied it to its zone.
+    if zone.civil_time_basis is not None:
+        expected = CIVIL_TIME_BASIS_ZONES[zone.civil_time_basis]
+    if zone.mode != "iana" or zone.iana_name != expected:
+        return "timezone_differs"
+    return None

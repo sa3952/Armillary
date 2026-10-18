@@ -12,9 +12,11 @@ body{
   background:var(--paper); color:var(--ink);
   font-family:var(--sans); font-size:var(--fs-body); line-height:var(--lh-body);
 }
-/* 比例寬度標點（palt）只用在標題：內文的全形逗號、句號在部分字型（Linux 的 Noto CJK）
-   會被壓成半形寬，句讀就擠在一起。 */
-h1,h2,h3,h4{font-feature-settings:"palt" 1}
+/* 標題不開比例寬度標點（palt）：在部分字型（Linux 的 Noto CJK）它把全形逗號、句號壓成半形寬，
+   大字級時句讀直接貼著下一個字。標點的空白交給 text-spacing-trim 的預設：只收相鄰標點之間
+   多出的那半格。標題與眉標的折行平衡各行長度，不留一個字在最後一行；中文標題的字距一律
+   0～.02em，不用負字距（方塊字本已滿格，壓縮後筆畫相黏）。這兩條由 e2e 的 cjkTypeFaults 逐頁讀回。 */
+h1,h2,h3,.eyebrow{text-wrap:balance}
 .skip-link{position:fixed;z-index:1000;top:var(--s2);left:var(--s2);padding:.55rem .75rem;background:var(--paper);color:var(--ink);border:2px solid var(--accent);border-radius:var(--radius);transform:translateY(-180%);text-decoration:none}
 .skip-link:focus{transform:translateY(0)}
 .wrap{max-width:var(--wrap); margin:0 auto; padding:0 var(--pad)}
@@ -41,10 +43,23 @@ a{
    按鈕因此一直是赭色。滑鼠與觸控板照舊。 */
 @media (hover:hover){a:hover{text-decoration-style:solid}}
 a:focus-visible,summary:focus-visible,button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+/* 按鈕的字不折行（放不下時由按鈕所在的列換行）。 */
+.btn{white-space:nowrap}
+
+/* ─── 展開記號：全站一種 ───
+   每一個 <details> 的摘要都是同一個 ▸／▾，淡墨，排在摘要字前。content 的「/ ""」是替代文字：
+   記號不被報讀器念出來（展開與否由 <details> 自己報）。日期說明的「?」不是展開記號，另外定義。 */
+details > summary{list-style:none}
+details > summary::-webkit-details-marker{display:none}
+details > summary::before{
+  content:"▸" / ""; display:inline-block; width:1.1em; flex:0 0 auto;
+  font-family:var(--sans); font-style:normal; font-weight:400; color:var(--disclosure-color);
+}
+details[open] > summary::before{content:"▾" / ""}
 
 /* ─── 銘牌 ─── */
 .eyebrow{
-  font-family:var(--mono); font-size:var(--fs-note); letter-spacing:.18em;
+  font-family:var(--mono); font-size:var(--fs-note); letter-spacing:0;
   text-transform:uppercase; color:var(--ink-faint);
 }
 /* .7rem（11.2px）在英文可讀，但「關於」「路線」這類漢字在該尺寸加上 .24em 字距
@@ -59,7 +74,7 @@ a:focus-visible,summary:focus-visible,button:focus-visible{outline:2px solid var
   font-family:var(--serif); font-size:var(--fs-subhead); line-height:1.6;
   color:var(--ink-dim); margin:0 0 var(--s3); max-width:var(--measure);
 }
-.h1-qual{font-size:.62em; color:var(--ink-dim); white-space:nowrap}
+.h1-qual{font-size:.62em; letter-spacing:.02em; color:var(--ink-dim); white-space:nowrap}
 
 /* ─── 頁首：黑底招牌段的一部分 ─── */
 header{background:var(--plate); color:var(--plate-fg); border-bottom:1px solid var(--plate-hair)}
@@ -169,17 +184,18 @@ p{max-width:var(--measure); color:var(--ink-dim)}
 /* 圖例與 SVG 同高、五列等分，因此每列中心恰為 10/30/50/70/90%，
    與 viewBox 內引線終點 y＝52/156/260/364/468 精確對齊。 */
 .legend{list-style:none; display:flex; flex-direction:column; height:100%}
+/* 五列要放進 SVG 的高度：說明用小一階的字、列上下留一點白，最長的一列（赤道環）不頂到列線。 */
 .legend li{
   flex:1; display:flex; flex-direction:column; justify-content:center;
-  border-bottom:1px solid var(--hair-soft); padding-left:var(--s3);
+  border-bottom:1px solid var(--hair-soft); padding:.35rem 0 .35rem var(--s3);
 }
 .legend li:first-child{border-top:1px solid var(--hair-soft)}
 .legend b{
-  font-family:var(--serif); font-weight:400; font-size:var(--fs-subhead);
+  font-family:var(--serif); font-weight:400; font-size:var(--fs-subhead); line-height:1.45;
   letter-spacing:.02em; display:block; margin-bottom:.1rem;
 }
 .legend b i{font-style:normal; font-family:var(--serif); color:var(--ink-faint); margin-left:.5rem; font-size:var(--fs-aside)}
-.legend span{font-size:var(--fs-note); color:var(--ink-dim); line-height:1.75}
+.legend span{font-size:var(--fs-small); color:var(--ink-dim); line-height:1.6}
 /* @pages home calculate */
 .caption{
   grid-column:1 / -1; font-family:var(--mono); font-size:var(--fs-note);
@@ -225,8 +241,7 @@ p{max-width:var(--measure); color:var(--ink-dim)}
 /* ─── 量測記錄：只有髮絲線，沒有反白列 ─── */
 .log{width:100%; border-collapse:collapse; margin-top:var(--s4); font-family:var(--mono); font-size:var(--fs-note); font-variant-numeric:tabular-nums}
 .log th{
-  text-align:left; font-weight:400; letter-spacing:.18em; font-size:var(--fs-small);
-  text-transform:uppercase; color:var(--ink-faint);
+  text-align:left; font-weight:400; letter-spacing:0; font-size:var(--fs-small); color:var(--ink-faint);
   border-bottom:1px solid var(--hair); padding:.6rem 1.1rem .6rem 0;
 }
 .log td{padding:.85rem 1.1rem .85rem 0; border-bottom:1px solid var(--hair-soft); color:var(--ink-dim)}
@@ -610,8 +625,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
 .sitemap{display:grid; grid-template-columns:repeat(auto-fit,minmax(12rem,1fr));
   gap:var(--s3); padding-top:var(--s4); padding-bottom:var(--s3)}
 .sitemap-col{display:flex; flex-direction:column; gap:.4rem}
-.sitemap-col h2{font-family:var(--mono); font-size:var(--fs-small); letter-spacing:.2em;
-  text-transform:uppercase; color:var(--ink-faint); margin:0 0 .3rem; font-weight:400}
+.sitemap-col h2{font-family:var(--mono); font-size:var(--fs-small); letter-spacing:0; color:var(--ink-faint); margin:0 0 .3rem; font-weight:400}
 .sitemap-col a{color:var(--ink-dim); text-decoration:none; font-size:var(--fs-note)}
 @media (hover:hover){.sitemap-col a:hover{color:var(--accent)}}
 @media (max-width:900px){
@@ -758,8 +772,8 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
 /* ─── 細節收合 ─── */
 .more{margin:var(--s3) 0; border-top:1px solid var(--hair); border-bottom:1px solid var(--hair)}
 .more summary{
-  cursor:pointer; padding:var(--s2) 0; font-family:var(--mono);
-  font-size:var(--fs-aside); letter-spacing:.06em; color:var(--ink-dim);
+  cursor:pointer; padding:var(--s2) 0; font-family:var(--sans);
+  font-size:var(--fs-aside); color:var(--ink-dim);
 }
 @media (hover:hover){.more summary:hover{color:var(--accent)}}
 .more[open] summary{border-bottom:1px solid var(--hair-soft); margin-bottom:var(--s2)}
@@ -1159,7 +1173,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
 .apparatus .mb-plate .eyebrow{color:var(--plate-dim); display:block; margin-bottom:var(--s3)}
 .apparatus .mb-plate h1{
   font-family:var(--sans); font-weight:700; color:var(--plate-fg);
-  font-size:clamp(2.05rem, 5.2vw, 3.9rem); line-height:1.08; letter-spacing:-.045em;
+  font-size:clamp(2.05rem, 5.2vw, 3.9rem); line-height:1.08; letter-spacing:0;
   margin:0; max-width:none;
 }
 .mb-accent{
@@ -1170,7 +1184,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
 .apparatus .mb-accent p{max-width:none; margin:0; color:var(--on-accent)}
 .apparatus .mb-lede{
   font-size:clamp(1.2rem, 2.2vw, 1.7rem); line-height:1.5; font-weight:700;
-  letter-spacing:-.01em;
+  letter-spacing:0;
 }
 .apparatus .mb-sub{margin-top:var(--s2); font-size:var(--fs-body); line-height:1.85}
 .mb-paper{grid-column:1 / -1; background:var(--paper-2); border-top:2px solid var(--ink)}
@@ -1190,7 +1204,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
 .sl.none{background:var(--plate); color:var(--plate-fg)}
 .apparatus .sl b{
   display:block; font-family:var(--sans); font-weight:700;
-  font-size:clamp(1.9rem, 4vw, 3.1rem); line-height:.94; letter-spacing:-.05em;
+  font-size:clamp(1.9rem, 4vw, 3.1rem); line-height:.94; letter-spacing:0;
 }
 .apparatus .sl span{
   display:block; margin-top:.5rem; font-size:var(--fs-aside); font-weight:700; letter-spacing:.04em;
@@ -1269,14 +1283,14 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
 /* @pages methods */
 .apparatus .ap-entry h2{
   margin:0 0 var(--s3); line-height:1.32; max-width:32rem;
-  font-family:var(--sans); font-weight:700; font-size:1.62rem; letter-spacing:-.02em;
+  font-family:var(--sans); font-weight:700; font-size:1.62rem; letter-spacing:0;
 }
 .apparatus .ap-entry p{max-width:42rem; line-height:1.95}
 /* 子條目（05.1、07.2 …）：比 h2 小一階，並在上方留出足夠的斷點，
    否則四個 07.x 讀起來會像同一段的續行。 */
 .apparatus .ap-entry h3{
   font-family:var(--sans); font-weight:700; font-size:var(--fs-subhead); line-height:1.5;
-  letter-spacing:-.01em; margin:var(--s4) 0 var(--s2); padding-top:var(--s2);
+  letter-spacing:0; margin:var(--s4) 0 var(--s2); padding-top:var(--s2);
   border-top:2px solid var(--ink); max-width:32rem;
 }
 /* 月宿表：紙面上的細線表，阿拉伯文欄由右至左。 */
@@ -1284,12 +1298,39 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
 .mansion-table{border-collapse:collapse; font-size:var(--fs-aside); line-height:1.7}
 .mansion-table caption{caption-side:top; text-align:left; font-size:var(--fs-note); color:var(--ink-dim); padding-bottom:.4rem}
 .mansion-table th{
-  text-align:left; font-family:var(--mono); font-weight:400; font-size:var(--fs-small); letter-spacing:.08em;
+  text-align:left; font-family:var(--mono); font-weight:400; font-size:var(--fs-small); letter-spacing:0;
   color:var(--ink-dim); border-bottom:2px solid var(--ink); padding:.35rem .8rem .35rem 0;
 }
 .mansion-table td{padding:.4rem .8rem .4rem 0; border-bottom:1px solid var(--hair-soft); vertical-align:top}
 .mansion-table td.mono{font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap}
 .mansion-table td[lang="ar"],.mansion-table td[lang="ar-Latn"]{white-space:nowrap}
+/* 七政的廟、旺、陷、弱：列標頭是行星；陷、弱兩欄與廟、旺之間一條較深的線，對面的兩欄成一組。 */
+.dignity-signs tbody th{
+  font-family:inherit; font-size:inherit; letter-spacing:0; color:var(--ink); white-space:nowrap;
+  border-bottom:1px solid var(--hair-soft); padding:.4rem 1.4rem .4rem 0;
+}
+.dignity-signs td{padding-right:1.4rem; white-space:nowrap}
+.dignity-signs th:nth-child(4),.dignity-signs td:nth-child(4){padding-left:1rem; border-left:1px solid var(--hair)}
+/* 九分部示意：一個星座的九份排成一條，每份寫份序、度數範圍、落到的星座與它的主星；
+   Bonatti 的例子那一份用墨框標出。窄螢幕排成三列三份。 */
+.nv-figure{margin:var(--s3) 0; max-width:46rem}
+.nv-figure figcaption{font-size:var(--fs-note); color:var(--ink-dim); line-height:var(--lh-note); margin-bottom:.6rem}
+.page-body .nv-strip,.nv-strip{list-style:none; margin:0; padding:0; max-width:none; display:grid; grid-template-columns:repeat(9, minmax(0, 1fr)); border-top:2px solid var(--ink); border-bottom:1px solid var(--hair)}
+.page-body .nv-strip li,.nv-strip li{margin:0; display:flex; flex-direction:column; gap:.1rem; padding:.5rem .35rem .55rem; border-left:1px solid var(--hair-soft); min-width:0}
+.nv-strip li:first-child{border-left:0}
+.nv-strip .nv-n{font-size:var(--fs-small); color:var(--ink-faint)}
+.nv-strip .nv-span{display:flex; flex-wrap:wrap; font-variant-numeric:tabular-nums; font-size:var(--fs-small); line-height:1.35; color:var(--ink-dim)}
+.nv-strip .nv-span span{white-space:nowrap}
+/* 寬螢幕九格並排時，度數範圍有的一行、有的兩行；留兩行高，星座名才在同一條線上。 */
+@media (min-width:901px){ .nv-strip .nv-span{min-height:2.7em} }
+.nv-strip .nv-sign{font-family:var(--serif); font-weight:400; font-size:var(--fs-lead); color:var(--ink)}
+.nv-strip .nv-ruler{font-size:var(--fs-small); color:var(--ink-dim)}
+.nv-strip li.is-example{outline:2px solid var(--ink); outline-offset:-2px; background:var(--paper-2)}
+@media (max-width:900px){
+  .page-body .nv-strip,.nv-strip{grid-template-columns:repeat(3, minmax(0, 1fr))}
+  .nv-strip li:nth-child(3n + 1){border-left:0}
+  .nv-strip li:nth-child(n + 4){border-top:1px solid var(--hair-soft)}
+}
 /* 宮義四欄對照：每格是一串事項，窄螢幕上整張橫捲，不把四欄擠成一字一行；列標頭是宮名，結果頁的宮名連到這一列。 */
 .house-meanings{min-width:52rem}
 .house-meanings tbody th{
@@ -1402,7 +1443,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
 }
 .apparatus .ap-close h2{
   margin-bottom:var(--s1); line-height:1.35; color:var(--plate-fg);
-  font-family:var(--sans); font-weight:700; font-size:1.62rem; letter-spacing:-.02em;
+  font-family:var(--sans); font-weight:700; font-size:1.62rem; letter-spacing:0;
 }
 .apparatus .ap-close p{color:var(--plate-dim); margin:0; max-width:36rem}
 .apparatus .ap-close .btn{background:var(--accent-rev); color:var(--plate)}
@@ -1448,16 +1489,8 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
 .sec-fold > summary{
   list-style:none; cursor:pointer; display:inline-flex; align-items:center; gap:.55rem;
   min-height:2.75rem; padding:.35rem .9rem; border:1px solid var(--ink);
-  font-family:var(--mono); font-size:var(--fs-note); letter-spacing:.08em; color:var(--ink);
+  font-family:var(--sans); font-size:var(--fs-note); color:var(--ink);
 }
-.sec-fold > summary::-webkit-details-marker{display:none}
-/* 方向記號用框線畫：content 裡的字元會被報讀器念出來。 */
-.sec-fold > summary::before{
-  content:""; width:.45rem; height:.45rem; flex:0 0 auto;
-  border-right:2px solid currentColor; border-bottom:2px solid currentColor;
-  transform:translateY(-.15rem) rotate(45deg);
-}
-.sec-fold[open] > summary::before{transform:translateY(.12rem) rotate(-135deg)}
 @media (hover:hover){.sec-fold > summary:hover{background:var(--paper-2)}}
 .fold-opened{display:none}
 .sec-fold[open] > summary .fold-closed{display:none}
@@ -1696,7 +1729,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
 .facts > div + div{border-left:1px solid var(--hair-soft); padding-left:var(--s2)}
 .strata .facts b{
   display:block; font-family:var(--sans); font-weight:700;
-  font-size:clamp(2rem, 4.2vw, 3rem); line-height:.95; letter-spacing:-.05em;
+  font-size:clamp(2rem, 4.2vw, 3rem); line-height:.95; letter-spacing:0;
 }
 .strata .facts span{
   display:block; margin-top:.35rem; font-size:var(--fs-body); font-weight:700; color:var(--ink);
@@ -1760,7 +1793,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
   font-family:var(--mono); font-size:var(--fs-small); letter-spacing:.14em;
   background:var(--ink); color:var(--paper); padding:.25rem .5rem;
 }
-.strata .mo-h b{font-size:var(--fs-subhead); font-weight:700; line-height:1.5; letter-spacing:-.01em}
+.strata .mo-h b{font-size:var(--fs-subhead); font-weight:700; line-height:1.5; letter-spacing:0}
 .strata .moat p{max-width:44rem; font-size:var(--fs-body); line-height:1.9; margin-bottom:var(--s2)}
 .strata .moat p:last-child{margin-bottom:0}
 .mo-src{
@@ -1808,7 +1841,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
 .datasheet .ds-hero .eyebrow{color:var(--plate-dim)}
 .datasheet .ds-hero h1{
   color:var(--plate-fg); margin:var(--s2) 0 var(--s3); line-height:1.2;
-  font-family:var(--sans); font-weight:700; letter-spacing:-.03em;
+  font-family:var(--sans); font-weight:700; letter-spacing:0;
   font-size:clamp(2rem, 4.6vw, 3.2rem); max-width:none;
 }
 .datasheet .lede{color:var(--paper-2); max-width:46rem; font-size:var(--fs-lead)}
@@ -1830,7 +1863,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
   display:flex; align-items:baseline; gap:var(--s2);
   margin:0 0 var(--s2); padding-bottom:.6rem; max-width:46rem;
   border-bottom:1px solid var(--stratum-3);
-  font-family:var(--sans); font-weight:700; font-size:1.3rem; letter-spacing:-.01em;
+  font-family:var(--sans); font-weight:700; font-size:1.3rem; letter-spacing:0;
   line-height:1.9; color:var(--paper-2);
 }
 .hdr span{
@@ -1866,7 +1899,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
 .datasheet .spec-scroll{margin:var(--s3) 0}
 .spec{width:100%; border-collapse:collapse; font-size:var(--fs-aside); line-height:1.75}
 .spec th{
-  text-align:left; font-family:var(--mono); font-size:var(--fs-small); letter-spacing:.12em;
+  text-align:left; font-family:var(--mono); font-size:var(--fs-small); letter-spacing:0;
   color:var(--plate); background:var(--accent-rev); padding:.4rem .7rem; font-weight:400;
 }
 .spec td{
@@ -1959,7 +1992,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
 }
 .datasheet .ds-close h2{
   color:var(--plate-fg); margin-bottom:var(--s1); line-height:1.35;
-  font-family:var(--sans); font-weight:700; font-size:1.5rem; letter-spacing:-.02em;
+  font-family:var(--sans); font-weight:700; font-size:1.5rem; letter-spacing:0;
 }
 .datasheet .ds-close p{color:var(--plate-dim); margin:0}
 .datasheet .ds-close .btn{background:var(--accent-rev); color:var(--plate)}
@@ -2075,7 +2108,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
   color:var(--ink); padding:0 0 .6rem;
 }
 .ct-sheet .spec th{
-  text-align:left; font-family:var(--sans); font-size:var(--fs-note); letter-spacing:.04em; font-weight:700;
+  text-align:left; font-family:var(--sans); font-size:var(--fs-note); letter-spacing:0; font-weight:700;
   color:var(--on-accent); background:var(--accent); padding:.45rem .7rem;
 }
 .ct-sheet .spec td,.ct-sheet .spec td + td{
@@ -2290,7 +2323,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
 /* ─── 法規對照表：這一頁唯一「大聲」的地方 ─── */
 .conform{width:100%; border-collapse:collapse; font-size:var(--fs-aside); line-height:1.8}
 .conform th{
-  text-align:left; font-family:var(--mono); font-size:var(--fs-small); letter-spacing:.12em;
+  text-align:left; font-family:var(--mono); font-size:var(--fs-small); letter-spacing:0;
   background:var(--ink); color:var(--paper); padding:.5rem .7rem; font-weight:400;
 }
 .conform td{
@@ -2622,7 +2655,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
 /* ─── 物料清單：全頁唯一填色處 ─── */
 .bom{width:100%; border-collapse:collapse; font-size:var(--fs-aside); line-height:1.8; margin:var(--s2) 0}
 .bom th{
-  text-align:left; font-family:var(--mono); font-size:var(--fs-small); letter-spacing:.12em;
+  text-align:left; font-family:var(--mono); font-size:var(--fs-small); letter-spacing:0;
   background:var(--ink); color:var(--paper); padding:.5rem .7rem; font-weight:400;
 }
 .bom td{
@@ -2998,7 +3031,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
 .validation-table{border-collapse:collapse; width:100%; min-width:56rem; font-size:var(--fs-note); line-height:1.7}
 .validation-table caption{caption-side:bottom; text-align:left; padding-top:var(--s1); color:var(--ink-faint); font-size:var(--fs-small)}
 .validation-table th,.validation-table td{padding:.6rem .8rem .6rem 0; border-bottom:1px solid var(--hair-soft); text-align:left; vertical-align:top; color:var(--ink-dim)}
-.validation-table thead th{font-family:var(--mono); font-weight:400; font-size:var(--fs-small); letter-spacing:.08em; color:var(--ink-faint)}
+.validation-table thead th{font-family:var(--mono); font-weight:400; font-size:var(--fs-small); letter-spacing:0; color:var(--ink-faint)}
 .validation-table tbody th{color:var(--ink); font-weight:400; min-width:8rem}
 .validation-table .num{font-variant-numeric:tabular-nums; min-width:6rem}
 .validation-steps{max-width:var(--measure-cjk); color:var(--ink-dim); padding-left:1.3rem}
@@ -3068,8 +3101,8 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
 .datasheet .pv pre.flow{margin:var(--s2) 0}
 .proof{margin-top:var(--s2); border-top:1px solid var(--stratum-2)}
 .proof summary{
-  cursor:pointer; padding:.7rem 0 .2rem; font-family:var(--mono); font-size:var(--fs-note);
-  letter-spacing:.06em; color:var(--plate-dim);
+  cursor:pointer; padding:.7rem 0 .2rem; font-size:var(--fs-note);
+   color:var(--plate-dim);
 }
 @media (hover:hover){.proof summary:hover{color:var(--accent-rev)}}
 .datasheet .proof p{font-size:var(--fs-note); margin:var(--s2) 0 0}
@@ -3078,3 +3111,192 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
   .pv{grid-template-columns:minmax(0,1fr); gap:.2rem}
   .datasheet .pv dd{margin-bottom:var(--s2)}
 }
+
+/* @pages all */
+/* ═══════════════════════════════════════════════════════════════
+   頁面系統・書頁（2026-10-18 定案）
+   ───────────────────────────────────────────────────────────────
+   三種頁型共用一套骨架：首頁（黑底招牌＋一塊圖版）、論述頁（方法、信任、安全、關於、
+   驗證、路線、功能）、文件頁（法律、聯絡、文章）。
+   · 一條內容左緣：每頁本體都是 .wrap 寬，不再各自縮窄置中；文字欄寬由區塊自己限制。
+   · 一種 h1 聲音：襯線 400，兩級字級（首頁大、其他頁小）。
+   · 一種眉標：黑體小字，不加字距、不大寫。
+   · 一種數字列（.stat-strip 的語彙）：拉丁襯線數字＋小號黑體標籤，上墨線下細線，格間髮線。
+   · 一種事實框：上下兩條墨線，不加框。
+   這一段寫在全檔最後、規則帶 !important，因為它取代的是前面十幾套頁面範圍的舊規則
+   （特異性各不相同）；之後若把舊規則刪除合併，這裡的 !important 就可以一起拿掉。
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  --h1-home: clamp(2.3rem, 4.4vw, 3.5rem);
+  --h1-page: clamp(1.95rem, 3.2vw, 2.65rem);
+  --text-measure: 40rem;
+}
+
+/* 一條內容左緣。 */
+.wrap.page-body{max-width:var(--wrap) !important; margin-left:auto; margin-right:auto; padding-top:var(--s4) !important}
+
+/* 一種 h1 聲音。 */
+main h1{
+  font-family:var(--serif) !important; font-weight:400 !important;
+  font-size:var(--h1-page) !important; line-height:1.3 !important;
+  letter-spacing:.02em !important; max-width:24em !important;
+  margin:var(--s2) 0 var(--s3) !important; color:inherit;
+}
+
+/* 一種眉標。 */
+main .eyebrow{
+  font-family:var(--sans) !important; text-transform:none !important; letter-spacing:0 !important;
+  font-size:var(--fs-note) !important; color:var(--ink-faint);
+}
+
+/* @pages home */
+.hero h1{font-size:var(--h1-home) !important; max-width:22em !important}
+.hero .eyebrow{color:var(--plate-dim)}
+
+/* @pages about methods methods-birth-time-conversion methods-decennials methods-glossary methods-time-lords security security-verify trust validation */
+/* 論述頁的首屏節奏：上無框、下一條細線。 */
+.ap-hero,.ds-hero,.tr-hero,.ab-hero,.validation-hero{
+  padding:0 0 var(--s4) !important; margin:0 !important;
+  border:0 !important; border-bottom:1px solid var(--hair) !important;
+}
+.ds-hero .lede,.ds-hero .kicker,.ds-hero .ds-note,.ds-hero .tr-sub,.ds-hero p,.tr-hero .lede,.tr-hero .kicker,.tr-hero .ds-note,.tr-hero .tr-sub,.tr-hero p,.ab-hero .lede,.ab-hero .kicker,.ab-hero .ds-note,.ab-hero .tr-sub,.ab-hero p,.validation-hero .lede,.validation-hero .kicker,.validation-hero .ds-note,.validation-hero .tr-sub,.validation-hero p{
+  max-width:var(--text-measure) !important;
+}
+
+/* @pages security security-verify */
+/* 安全頁回到紙面：不加新色，把深底的 token 對回紙面的同義 token。
+   「看到黑就是在講機制」的分工因此取消，全站只剩首頁招牌是黑底。 */
+.datasheet{
+  --plate: var(--paper); --plate-fg: var(--ink); --plate-dim: var(--ink-dim);
+  --paper-2: var(--ink-dim); --stratum-2: var(--hair-soft); --stratum-3: var(--ink-faint);
+  --stratum-4: var(--ink-faint); --accent-rev: var(--accent);
+  background:transparent !important; color:var(--ink);
+}
+.datasheet > *{max-width:none; margin-left:0; margin-right:0}
+/* 段首編號：一個重點色數字，不是實心小方塊。 */
+.datasheet .hdr span{background:transparent !important; color:var(--accent) !important; padding:0 !important; font-family:var(--serif-num) !important; font-size:var(--fs-lead) !important; letter-spacing:0 !important}
+.datasheet .hdr{font-family:var(--serif) !important; font-weight:400 !important; color:var(--ink) !important; font-size:1.5rem !important}
+
+/* @pages methods */
+/* 方法頁：三塊實心色塊收成一個首屏；「無預設」的論點改由數字列裡的磚紅小字承擔。 */
+.ap-hero{display:block !important}
+/* 首屏下緣不畫線：緊接著的數字列自己有一條墨線收住。 */
+.apparatus .ap-hero{border-bottom:0 !important; padding-bottom:var(--s2) !important}
+.ap-hero .mb{padding:0 !important; background:transparent !important; color:var(--ink) !important; border:0 !important}
+.apparatus .mb-plate .eyebrow{color:var(--ink-faint) !important; margin:0 !important}
+.apparatus .mb-plate h1{color:var(--ink) !important}
+.apparatus .mb-accent p{color:var(--ink-dim) !important}
+.apparatus .mb-lede{font-family:var(--serif); font-weight:400 !important; font-size:var(--fs-subhead) !important; color:var(--ink-dim) !important; line-height:1.6 !important}
+.apparatus .mb-sub{font-size:var(--fs-lead) !important}
+.apparatus .mb-paper{margin-top:var(--s2)}
+.apparatus .mb-paper p{font-size:var(--fs-body) !important; color:var(--ink-dim)}
+.rail{background:transparent !important; color:var(--ink-faint) !important; border:0 !important; border-top:1px solid var(--hair) !important; border-bottom:1px solid var(--hair) !important}
+.apparatus .rail b{color:var(--ink) !important}
+.apparatus .rail-row{padding:var(--s2) 0 !important}
+
+/* @pages blog */
+.desk .dk-head{padding:0 0 var(--s4) !important; margin:0 !important; border:0 !important; border-bottom:1px solid var(--hair) !important}
+.desk .dk-head h1{max-width:24em !important}
+
+/* @pages home methods trust blog validation */
+/* ─── 數字列：首頁憑證、方法頁選擇數、信任頁事實、文章數、驗證指標，同一個元件 ─── */
+.hero .creds,.slabs,.strata .facts,.dk-count,.validation-metrics{
+  display:grid !important; grid-template-columns:repeat(auto-fit, minmax(10.5rem, 1fr)) !important;
+  gap:0 !important; list-style:none; padding:0 !important; background:transparent !important;
+  margin:var(--s3) 0 var(--s3) !important;
+  border:0 !important; border-top:1px solid currentColor !important; border-bottom:1px solid var(--hair) !important;
+}
+.hero .creds > *,.slabs > *,.strata .facts > *,.dk-count > *,.validation-metrics > *{
+  padding:var(--s2) var(--s2) var(--s2) 0 !important; margin:0 !important;
+  border:0 !important; background:transparent !important; color:inherit !important; min-width:0;
+}
+.hero .creds > * + *,.slabs > * + *,.strata .facts > * + *,.dk-count > * + *,.validation-metrics > * + *{
+  border-left:1px solid var(--hair-soft) !important; padding-left:var(--s2) !important;
+}
+.hero .creds b,.slabs b,.strata .facts b,.dk-count b,.validation-metrics b{
+  display:block !important; font-family:var(--serif-num) !important; font-weight:400 !important;
+  font-size:2.1rem !important; line-height:1.1 !important; letter-spacing:0 !important;
+  color:inherit !important; font-variant-numeric:lining-nums tabular-nums;
+}
+.hero .creds span,.hero .creds small,.slabs span,.slabs small,.strata .facts span,.strata .facts small,.dk-count span,.dk-count small,.validation-metrics span,.validation-metrics small{
+  display:block !important; margin-top:.35rem !important; font-family:var(--sans) !important;
+  font-size:var(--fs-note) !important; font-weight:400 !important; letter-spacing:0 !important;
+  line-height:1.6 !important; color:var(--ink-dim) !important; text-transform:none !important; max-width:none !important;
+}
+.slabs i,.strata .facts i{
+  display:block !important; margin-top:.25rem !important; font-style:normal !important;
+  font-family:var(--sans) !important; font-size:var(--fs-small) !important; letter-spacing:0 !important;
+  line-height:1.6 !important; color:var(--ink-faint) !important;
+}
+.slabs .sl.none i{color:var(--accent) !important}
+.slabs > .sl:nth-child(4n+1){border-left:0 !important; padding-left:0 !important}
+.slabs > .sl:nth-child(n+5){border-top:1px solid var(--hair-soft) !important}
+.dk-count > div:first-child b,.validation-metrics b{color:inherit !important}
+@media (max-width:640px){
+  .slabs > .sl:nth-child(4n+1){border-left:1px solid var(--hair-soft) !important; padding-left:var(--s2) !important}
+  .slabs > .sl:nth-child(odd){border-left:0 !important; padding-left:0 !important}
+  .slabs > .sl:nth-child(n+3){border-top:1px solid var(--hair-soft) !important}
+  .hero .creds > * + *,.strata .facts > * + *,.dk-count > * + *,.validation-metrics > * + *{border-left:0 !important; padding-left:0 !important; border-top:1px solid var(--hair-soft) !important}
+}
+
+/* @pages methods */
+.apparatus .slabs{grid-template-columns:repeat(4, minmax(0,1fr)) !important}
+@media (max-width:640px){
+  .apparatus .slabs{grid-template-columns:repeat(2, minmax(0,1fr)) !important}
+}
+
+/* @pages home */
+/* 首頁招牌在黑底上：數字列的線與標籤改用深底的同義色。 */
+.hero .creds{border-bottom-color:var(--plate-hair) !important; margin-top:var(--s4) !important}
+.hero .creds > * + *{border-left-color:var(--plate-hair) !important}
+.hero .creds span{color:var(--plate-dim) !important}
+.hero .creds b{font-size:1.5rem !important}
+@media (max-width:640px){
+  .hero .creds > * + *{border-top-color:var(--plate-hair) !important}
+}
+
+/* ─── 首頁唯一的圖版：〈三個環〉──────────────────────────────
+   全站收成書頁以後，方法頁的黑／紅色塊不再出現；那份「這裡沒有替你預設」的份量
+   改由首頁這一塊承擔，用文章圖版的語言：雙墨線起首、排線帶收尾，結語用襯線大字。
+   只此一處；別的頁面不要沿用，重複出現就成了裝飾。 */
+#moduli .moduli{
+  position:relative; margin-top:var(--s4);
+  border:1px solid var(--ink); border-top:2px solid var(--ink);
+  box-shadow:inset 0 3px 0 var(--paper), inset 0 4px 0 var(--ink);
+  padding:calc(var(--s2) + 4px) var(--s3) 0;
+}
+#moduli .moduli .ring{padding-bottom:var(--s3)}
+#moduli .ring-head b{font-family:var(--serif-num); font-size:var(--fs-lead); letter-spacing:.12em; color:var(--ink)}
+/* 結語是這塊圖版的落款：排線帶接在框底，句子用襯線大字，「不是預設值」用重點色。 */
+#moduli > .after{
+  position:relative; margin:0; padding:calc(var(--s3) + 12px) var(--s3) var(--s3);
+  border:1px solid var(--ink); border-top:0;
+  font-family:var(--serif); font-size:var(--fs-subhead); line-height:1.6;
+  letter-spacing:.02em; color:var(--ink);
+}
+#moduli > .after::before{
+  content:""; position:absolute; left:0; right:0; top:0; height:10px;
+  border-bottom:1px solid var(--ink);
+  background:repeating-linear-gradient(135deg, transparent 0 5px, var(--ink-faint) 5px 6px);
+}
+#moduli > .after em{font-style:normal; color:var(--accent)}
+@media (max-width:900px){
+  #moduli .moduli{padding:var(--s2) var(--s2) 0}
+  #moduli > .after{padding:calc(var(--s2) + 12px) var(--s2) var(--s2)}
+}
+
+/* @pages legal-copyright legal-privacy legal-terms */
+/* ─── 事實框：上下兩條墨線，不加框 ─── */
+.stamp,.cv-meta{
+  border:0 !important; border-top:1px solid var(--ink) !important; border-bottom:1px solid var(--ink) !important;
+}
+.stamp > div,.cv-meta > div{border-right:1px solid var(--hair-soft) !important; padding:var(--s2) var(--s2) var(--s2) 0 !important}
+.stamp > div + div,.cv-meta > div + div{padding-left:var(--s2) !important}
+.stamp > div:last-child,.cv-meta > div:last-child{border-right:0 !important}
+.stamp span,.cv-meta span{font-family:var(--sans) !important; letter-spacing:0 !important; font-size:var(--fs-small) !important}
+.stamp-note,.draft-flag,.cv-headnote{border-left:1px solid var(--hair) !important}
+.st-head,.cv-head{
+  padding:0 0 var(--s4) !important; margin:0 !important;
+  border:0 !important; border-bottom:1px solid var(--hair) !important;
+}
+.st-head .lede,.st-head .stamp-note,.st-head .draft-flag,.st-head p{max-width:var(--text-measure) !important}

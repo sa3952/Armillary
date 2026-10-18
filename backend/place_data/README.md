@@ -81,7 +81,10 @@ producer's `SOURCE_TIMEZONE_CORRECTIONS` and recorded under `source_corrections`
 rows on real or disputed boundaries are left as the source has them and listed
 as reviewed cases in `tests/backend/test_place_catalog.py`;
 when `timezonefinder` is installed every GeoNames timezone is checked against
-its coordinate and a mismatch fails the build (`timezone_coordinate_check`);
+its coordinate and a mismatch fails the build; without it the check does not run
+and the manifest says so (`timezone_coordinate_check.status` `not_run`,
+`timezonefinder_not_installed`), which is how the bundled catalogue was built:
+its timezones were not checked against their coordinates this way;
 each input is hashed through the descriptor it was read from. The runtime
 refuses any schema it does not serve and reports the SHA-256 of the file it opened in every
 search receipt (`catalog.artifact`). GeoNames `admin3` is a bare code with no

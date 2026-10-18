@@ -21,11 +21,11 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="渾儀 Armillary：可驗證的古典西洋占星計算器">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/validation#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/validation#breadcrumb"},"dateModified":"2026-10-16","description":"星盤準不準？渾儀把天體位置與 JPL DE442、JPL Horizons 比對，日食、恆星時、宮位、回歸時刻與時區換算另以 NASA、USNO 與獨立算法核對；本頁列出每組的範圍、樣本、最大差與重現方法，也寫明證明不了什麼。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"星盤準不準：古典占星天文計算的驗證方法｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/validation"},{"@id":"https://projectarmillary.com/zh-TW/validation#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/validation","name":"驗證","position":2}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/validation#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/validation#breadcrumb"},"dateModified":"2026-10-18","description":"星盤準不準？渾儀把天體位置與 JPL DE442、JPL Horizons 比對，日食、恆星時、宮位、回歸時刻與時區換算另以 NASA、USNO 與獨立算法核對；本頁列出每組的範圍、樣本、最大差與重現方法，也寫明證明不了什麼。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"星盤準不準：古典占星天文計算的驗證方法｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/validation"},{"@id":"https://projectarmillary.com/zh-TW/validation#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/validation","name":"驗證","position":2}]}]}</script>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" href="/zh-TW/favicon.svg?v=c95686a2f029d369" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="/zh-TW/style/validation.css?v=8217e228a73d7b6f">
+<link rel="stylesheet" href="/zh-TW/style/validation.css?v=2b4f63b01bf89de5">
 </head>
 <body>
 
@@ -123,6 +123,7 @@
             <tr><th scope="row">日食的時刻與種類</th><td>NASA 五千年日食典</td><td>1900 到 2399 年</td><td class="num">1181 次</td><td>食甚時刻容許 30 秒，實測最大 12.1 秒（中位數 1.3 秒）；種類或是否中心食有 7 次與日食典不同，都在分類邊界附近</td><td>全面比對做過一次（2026-10-04）；常設測試保留那 7 次與邊界附近的案例</td></tr>
             <tr><th scope="row">上升點、中天與十二宮頭</th><td>測試裡另外寫的球面三角公式（Placidus 用逐宮半弧迭代，不用 Swiss 的解法）</td><td>1900 到 2150 年，南北半球、赤道與北緯 64 度</td><td class="num">7 種宮位制 × 10 個地點與年代</td><td>差小於 0.01 角秒</td><td>站內自動測試</td></tr>
             <tr><th scope="row">恆星時、日出日落與一張盤的宮頭</th><td>美國海軍天文臺（USNO）</td><td>2000 年元旦中午，臺北</td><td class="num">1 個時刻</td><td>恆星時容許 0.01 秒；宮頭容許 0.5 角秒；日出、中天、日落容許 2 分鐘（USNO 只列到分鐘）</td><td>站內自動測試；USNO 的數值可以自己查</td></tr>
+            <tr><th scope="row">2050 年以後的恆星時</th><td>JPL Horizons 的視恆星時（JPL 自己的地球自轉計算）</td><td>2050 到 2399 年，以及 2050 年元旦前後兩小時</td><td class="num">5 個時刻</td><td>扣掉 Horizons 對未來固定的一個自轉差後容許 0.05 秒，實測最大 0.04 秒（Swiss 原本的長期模型差到 0.45 秒）；跨 2050 年元旦的跳動對 Horizons 容許 0.002 秒</td><td>站內自動測試；你也可以在 JPL Horizons 查經度 0 度的地方視恆星時</td></tr>
             <tr><th scope="row">太陽回歸的時刻</th><td>測試裡另外寫的求根程式（不經產品的搜尋程式）</td><td>出生 1900 到 2399 年，0 到 100 歲</td><td class="num">333 筆出生、584 個回歸時刻</td><td>容許 0.01 秒；實測最大 40 微秒，中位數 0</td><td>站內自動測試</td></tr>
             <tr><th scope="row">回歸時刻的太陽方向</th><td>JPL Horizons（DE441）的向量</td><td>1900、2000、2380 年的出生</td><td class="num">3 對出生與回歸</td><td>方向差容許 0.002 角秒</td><td>站內自動測試</td></tr>
             <tr><th scope="row">回歸盤的上升點與中天</th><td>同一套球面三角公式，並對 Swiss 的宮位函式</td><td>從極圈內到赤道</td><td class="num">8 個地點</td><td>差小於 0.01 角秒</td><td>站內自動測試</td></tr>
@@ -247,7 +248,7 @@
   <div class="wrap">
     <span>渾儀 ARMILLARY</span>
     <span>只計算，不解盤，不預測</span>
-    <span>最後更新：<time datetime="2026-10-16">2026-10-16</time></span>
+    <span>最後更新：<time datetime="2026-10-18">2026-10-18</time></span>
   </div>
 </footer>
 

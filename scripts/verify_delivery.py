@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import os
 import json
 import subprocess
 import sys
@@ -18,6 +17,7 @@ if __name__ == "__main__":
     sys.dont_write_bytecode = True
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from scripts.tools.child_environment import tool_control_names, without_tool_control
 from scripts.tools.source_tree_identity import observe_source_tree
 
 
@@ -242,10 +242,17 @@ def main() -> int:
     if not args.frontend_only:
         _compile_universe()
     with TemporaryDirectory(prefix="public-source-pycache-") as pycache:
-        child_environment = os.environ.copy()
-        child_environment["PYTHONPYCACHEPREFIX"] = pycache
-        child_environment["PYTHONDONTWRITEBYTECODE"] = "1"
-        child_environment["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"
+        # Variables that change what a child selects or loads without appearing
+        # on its command line (PYTEST_ADDOPTS='-k nothing' empties the suite and
+        # it still passes): no child inherits them, and the gate says so.
+        dropped = tool_control_names()
+        if dropped:
+            print("[environment] not inherited by any check: " + ", ".join(dropped))
+        child_environment = without_tool_control(
+            PYTHONPYCACHEPREFIX=pycache,
+            PYTHONDONTWRITEBYTECODE="1",
+            PYTEST_DISABLE_PLUGIN_AUTOLOAD="1",
+        )
         commands = FRONTEND_COMMANDS if args.frontend_only else FULL_COMMANDS
         for command in commands:
             if command[:2] == ["node", "--test"]:

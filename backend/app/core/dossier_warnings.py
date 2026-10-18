@@ -53,6 +53,7 @@ MODULE_NAMES_ZH = {
     "dodecatemoria": "十二分部",
     "lunar_mansions": "月宿",
     "solar_phase": "焦傷與光束下",
+    "motion_states": "行速、停滯與東出西入",
     "classical_classifications": "行星與宮的古典分類",
     "extra_angles": "額外角點",
     "birth_time_sensitivity": "出生時刻敏感度",
@@ -381,14 +382,21 @@ def _sect_near_critical_warnings(
     sect: dict | None,
     essential_dignities: dict | None,
 ) -> Iterator[dict]:
-    # 近地平的日夜盤不只影響阿拉伯點；本質尊貴的迦勒底界與三分性也依它選主，所以沒有
-    # 請求阿拉伯點時也要發這個警告。受影響路徑依本次實際用到的地方列出。
+    # 近地平的日夜盤不只影響阿拉伯點；本質尊貴的迦勒底界與三分性也依它選主，外來也看
+    # 三分性，所以沒有請求阿拉伯點時也要發這個警告。受影響路徑依本次實際用到的地方列出。
     lots_near = bool(sect and sect.get("in_near_horizon_band"))
     dignity_sect = (essential_dignities or {}).get("sect") or {}
-    dignities_near = bool(
+    dependent = dignity_sect.get("sect_dependent_components") or []
+    peregrine = (essential_dignities or {}).get("peregrine") or {}
+    peregrine_near = bool(
         dignity_sect.get("in_near_horizon_band")
-        and dignity_sect.get("sect_dependent_components")
+        and peregrine.get("profile_id") in dependent
     )
+    rulers_near = bool(
+        dignity_sect.get("in_near_horizon_band")
+        and [item for item in dependent if item != peregrine.get("profile_id")]
+    )
+    dignities_near = rulers_near or peregrine_near
     if lots_near or dignities_near:
         tolerance = (sect or {}).get("near_horizon_band_half_width_degrees")
         if tolerance is None:
@@ -402,11 +410,15 @@ def _sect_near_critical_warnings(
             consequences.append("阿拉伯點因此並列日盤與夜盤兩套公式")
             consequence_codes.append("lots_list_both_sect_formulas")
             affected.append("derived_methods.lots")
-        if dignities_near:
+        if rulers_near:
             consequences.append(
                 "本質尊貴的迦勒底界主與三分性主星依這個日夜盤選定，換一種邊界可能改變"
             )
             consequence_codes.append("dignity_rulers_follow_this_sect")
+        if peregrine_near:
+            consequences.append("只差三分性一項就決定外來與否的行星，列為無法判定")
+            consequence_codes.append("peregrine_undetermined_where_the_sect_decides")
+        if dignities_near:
             affected.append("derived_methods.essential_dignities")
         yield _warning(
             "sect_near_horizon_critical",

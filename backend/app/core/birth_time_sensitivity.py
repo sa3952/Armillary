@@ -33,7 +33,7 @@ from .houses import (
     printed_angles,
     printed_house_division,
 )
-from .lots import compute_lots, determine_sect
+from .lots import classify_sect, compute_lots, determine_sect
 from .moon import evaluate_void_of_course as void_of_course_verdict
 from .time_utils import (
     AmbiguousLocalTimeChoiceRequiredError,
@@ -599,6 +599,16 @@ def _extract_probe(
             "placements": [],
         }
 
+    # Day or night by the chart's one sect rule, at every probe: the sect-dependent
+    # dignities are printed for the representative instant only, and the reader
+    # is told when the hour holds the other sect too (_sect_dependent_dignity_limit).
+    sect_is_day = (
+        classify_sect(
+            geocentric_sun_true_altitude(jd_ut, context, probe_request.atmosphere)
+        )["is_day"]
+        if context.horizon_meaningful
+        else None
+    )
     sect = lots = voc = None
     if probe_request.options.include_lots and houses is not None:
         body_map = {item["key"]: item for item in bodies}
@@ -645,6 +655,7 @@ def _extract_probe(
         "houses": houses,
         "placements": placements,
         "sect": sect,
+        "sect_is_day": sect_is_day,
         "lots": lots,
         "dodecatemoria": dodecatemoria,
         "void_of_course": voc,
@@ -671,6 +682,8 @@ def _sample_dodecatemoria(
         ),
         angles=angles,
         lots=lots if _usable(lots) else None,
+        # The chart's own request ("all" too), so a sample prints the same
+        # objects as the chart and every rule's signs are compared.
         profile=request.options.dodecatemoria_profile,
         trace=trace,
     )
@@ -949,6 +962,14 @@ def _coverage_status(coverage: dict[str, dict]) -> str:
 # Ascendant is then only partly evaluated, whatever the samples showed; what
 # differed is still listed.
 POLAR_ASCENDANT_LIMIT = "polar_ascendant_can_reverse_between_samples"
+# A little inside the circle the Ascendant never turns back, but near the
+# moment the ecliptic lies along the horizon it can run through several signs
+# within seconds (2065-12-12, 66.56°S: 126° to 248° in 20 s), faster than the
+# 15-second bisection.  Everything read off it then moves the same way, one
+# sign or house after the next, so two neighbouring evaluated instants whose
+# sign or house is two or more apart skipped what lay between: those paths
+# are only partly evaluated.
+SKIPPED_ASCENDANT_CLASSES_LIMIT = "ascendant_moved_past_whole_signs_or_houses_between_samples"
 ASCENDANT_DEPENDENT_PATHS = (
     "astronomical_data.angles",
     "derived_methods.house_division",
@@ -957,18 +978,80 @@ ASCENDANT_DEPENDENT_PATHS = (
 )
 
 
-def _evaluation_limits(representative_houses: dict | None) -> list[dict]:
-    if (
-        representative_houses is None
-        or representative_houses["latitude_regime"]["band"] != "beyond_polar_circle"
-    ):
+def _twelve_step_class(leaf: str, value: Any) -> bool:
+    """A sign index or a house number read off the Ascendant: one of twelve
+    classes in a cycle (``placements[sun].house``, ``fortune_house``,
+    ``house_placement.fortune``, ``cusp_sign_positions[0]``, ...)."""
+
+    if not isinstance(value, int) or isinstance(value, bool):
+        return False
+    module = next((path for path in ASCENDANT_DEPENDENT_PATHS if leaf.startswith(path + ".")), None)
+    if module is None:
+        return False
+    within = leaf[len(module) + 1:]
+    return "house" in within or any(key in within for key in SIGN_POSITION_KEYS)
+
+
+def _ascendant_classes_skipped(evaluated: list[tuple[int, int, dict[str, Any]]]) -> bool:
+    """Whether two neighbouring evaluated instants of one UTC stretch put a
+    sign or a house read off the Ascendant two or more steps apart.
+
+    ``evaluated`` holds (offset seconds, UTC stretch, classification state)
+    for every probe and bisection midpoint.
+    """
+
+    ordered = sorted(evaluated, key=lambda item: item[0])
+    for (_, left_stretch, left), (_, right_stretch, right) in zip(ordered, ordered[1:]):
+        if left_stretch != right_stretch:
+            continue
+        for leaf, value in left.items():
+            other = right.get(leaf)
+            if _twelve_step_class(leaf, value) and _twelve_step_class(leaf, other):
+                step = (other - value) % 12
+                if min(step, 12 - step) >= 2:
+                    return True
+    return False
+
+
+def _evaluation_limits(representative_houses: dict | None, *, skipped: bool) -> list[dict]:
+    if representative_houses is None:
+        return []
+    if representative_houses["latitude_regime"]["band"] == "beyond_polar_circle":
+        reason = POLAR_ASCENDANT_LIMIT
+    elif skipped:
+        reason = SKIPPED_ASCENDANT_CLASSES_LIMIT
+    else:
         return []
     return [
         {
-            "reason_code": POLAR_ASCENDANT_LIMIT,
+            "reason_code": reason,
             "affected_paths": list(ASCENDANT_DEPENDENT_PATHS),
         }
     ]
+
+
+# The essential dignities are not resampled: every table is read at the
+# representative instant, and the triplicity ruler, the Chaldaean bounds and
+# peregrine take that instant's day or night.  When the probes of the hour fall
+# on both sides of sunrise or sunset, those tables would read the other sect for
+# part of the hour; the limit says so beside the dignities' not_evaluated.
+SECT_DEPENDENT_DIGNITIES_LIMIT = "sect_differs_between_samples_dignities_read_at_representative_only"
+ESSENTIAL_DIGNITIES_PATH = "derived_methods.essential_dignities"
+
+
+def _sect_dependent_dignity_limit(
+    representative_dignities: dict | None, evaluated: list[dict]
+) -> list[dict]:
+    if not isinstance(representative_dignities, dict) or not representative_dignities.get("available"):
+        return []
+    if not representative_dignities["sect"]["sect_dependent_components"]:
+        return []
+    if len({probe["sect_is_day"] for probe in evaluated}) < 2:
+        return []
+    return [{
+        "reason_code": SECT_DEPENDENT_DIGNITIES_LIMIT,
+        "affected_paths": [ESSENTIAL_DIGNITIES_PATH],
+    }]
 
 
 def _apply_evaluation_limits(coverage: dict[str, dict], limits: list[dict]) -> None:
@@ -1235,6 +1318,7 @@ def build_approximate_hour_sensitivity(
     representative_offset_seconds: int,
     representative_semantics: str,
     representative_dodecatemoria: dict | None = None,
+    representative_essential_dignities: dict | None = None,
 ) -> dict:
     """Build governed probes and reuse the selected real representative chart."""
 
@@ -1251,6 +1335,12 @@ def build_approximate_hour_sensitivity(
         "houses": representative_houses,
         "placements": representative_placements,
         "sect": representative_sect,
+        "sect_is_day": (
+            representative_essential_dignities["sect"]["is_day"]
+            if isinstance(representative_essential_dignities, dict)
+            and representative_essential_dignities.get("available")
+            else None
+        ),
         "lots": representative_lots,
         "dodecatemoria": representative_dodecatemoria,
         "void_of_course": representative_void_of_course,
@@ -1345,13 +1435,25 @@ def build_approximate_hour_sensitivity(
         universe[VOID_OF_COURSE_PATH] = printed_classifications(
             representative_void_of_course, VOID_OF_COURSE_PATH
         )
+    sampled_states = [_classification_state(probe, request) for probe in probes]
+    refinement_states = [_classification_state(probe, request) for probe in refinement_probes]
     classification_coverage = _classification_coverage(
-        printed,
-        universe,
-        [_classification_state(probe, request) for probe in probes],
-        [_classification_state(probe, request) for probe in refinement_probes],
+        printed, universe, sampled_states, refinement_states,
     )
-    evaluation_limits = _evaluation_limits(representative_houses)
+    evaluation_limits = _evaluation_limits(
+        representative_houses,
+        skipped=_ascendant_classes_skipped(
+            [
+                (offset, _stretch_index(spans, _probe_utc(request, offset)), state)
+                for offset, state in zip(
+                    usable_offsets + refinement_offsets, sampled_states + refinement_states
+                )
+            ]
+        ),
+    )
+    evaluation_limits += _sect_dependent_dignity_limit(
+        representative_essential_dignities, probes + refinement_probes
+    )
     _apply_evaluation_limits(classification_coverage, evaluation_limits)
 
     body_signs = []

@@ -70,6 +70,8 @@
     ["derived_methods.lots.by_sect.*.sign_positions", "阿拉伯點"],
     ["derived_methods.dodecatemoria.points[].sign_position", "十二分部"],
     ["derived_methods.dodecatemoria.points[].point_sign_position", "十二分部"],
+    ["derived_methods.dodecatemoria.profile_results.*.points[].sign_position", "十二分部"],
+    ["derived_methods.dodecatemoria.profile_results.*.points[].point_sign_position", "十二分部"],
     // 出生時刻敏感度的代表值，是圖上同一批點在代表時刻的位置。
     ["birth_time_sensitivity.**", null],
     // 產前朔望與日月食的度數是出生前（或出生時正在進行的日月食）另一個時刻的位置，不是這張盤的點。
@@ -115,8 +117,11 @@
   // 標籤由外往內的徑向堆疊：符號（℞ 右上、交點與 Lilith 的下標右下）→ 度 → 星座 → 分。
   // 文字永遠直立；元素在 θ 方向上的徑向長度＝|w·cosθ|＋|h·sinθ|，切向寬度＝|w·sinθ|＋|h·cosθ|。
   const PARTS = Object.freeze(["glyph", "deg", "sign", "min"]);
+  // folio：符號一層、度星座分合成一行（line）一層。
+  const FOLIO_PARTS = Object.freeze(["glyph", "line"]);
   const SIZE = Object.freeze({
     glyph: 24, deg: 16, sign: 14, min: 14, angle: 13, mark: 13, suffix: 11,
+    folioGlyph: 26, folioAngle: 14, line: 14.6, lineSign: 14.6,
     ringGlyph: 15, ringName: 12, house: 14, footer: 12, footerLine: 17,
   });
   const PART_GAP = 1.5;          // 堆疊元素之間的徑向留白
@@ -130,6 +135,47 @@
   const SHIFT_STEP = 0.25;
 
   const DMS = /^(\d{1,2}°)(\d{2}′)\d{2}(?:\.\d+)?″$/;
+
+  // ── 標籤樣式
+  //   classic：徑向四段堆疊（符號→度→星座→分）、等寬數字、符號依 em 等比；方盤（chart-square.js）沿用。
+  //   folio（圓盤）：符號在外、一行「9°♋29′」在內（全圖兩種字級）、符號依墨框做光學正規化、數字用
+  //          拉丁襯線、宮位環外擴讓相位圈變大、中心留空圓；不確定的位置畫成範圍（只知日期的月亮、
+  //          約略小時的上升）。
+  const FOLIO_PRESETS = Object.freeze({
+    compact: Object.freeze({ text: 1.2, rHouseOut: 104, rHouseIn: 86 }),
+    standard: Object.freeze({ text: 1, rHouseOut: 126, rHouseIn: 104 }),
+    wide: Object.freeze({ text: 0.86, rHouseOut: 136, rHouseIn: 114 }),
+  });
+  const LABEL_STYLES = Object.freeze({
+    classic: Object.freeze({ optical: false, numFont: "mono", layout: "radial", disc: false, uncertainty: null, presets: null }),
+    folio: Object.freeze({ optical: true, numFont: "serif", layout: "folio", disc: true, uncertainty: "hatch", presets: FOLIO_PRESETS }),
+  });
+  let S = LABEL_STYLES.classic;   // 方盤讀 shared 時一律是 classic；圓盤 build 期間才換成 folio。
+
+  // 光學正規化：同一個字級下，每個符號墨框的長邊一樣長（em 等比時 ♂ 只有 ☉ 的七成高）。
+  // 圓形的 ☉ 看起來比同高的折線符號大，再收一點。
+  const OPTICAL_EXTENT = 0.74;
+  const OPTICAL_TRIM = Object.freeze({ sun: 0.9, north_node: 0.94, south_node: 0.94, aquarius: 1.06 });
+  function glyphScale(key, size) {
+    const [x0, y0, x1, y1] = Glyphs.GLYPHS[key].bbox;
+    if (!S.optical) return size / Glyphs.UNITS_PER_EM;
+    return (size * OPTICAL_EXTENT * (OPTICAL_TRIM[key] || 1)) / Math.max(x1 - x0, y1 - y0);
+  }
+
+  // 星盤數字（--serif-num）的字寬與字框高（em），取堆疊裡最大的：Palatino 數字 .5、° .4、′ .22、
+  // 行框 1.10；Times New Roman 與同字寬的 Liberation Serif 數字 .5、行框約 1.11–1.15；只有退到 DejaVu Serif 時數字約 .64。
+  // 字框高是瀏覽器 getBoundingClientRect 量到的行框，不是墨高：相鄰標籤的字框不相交，真實版面才不相撞。
+  const SERIF_ADVANCE = Object.freeze({ digit: 0.58, "°": 0.42, "′": 0.3, upper: 0.72, other: 0.6 });
+  const SERIF_HEIGHT = 1.15;
+  function serifBox(text, size) {
+    let w = 0;
+    for (const char of text) {
+      w += /\d/.test(char) ? SERIF_ADVANCE.digit : char === "°" || char === "′" ? SERIF_ADVANCE[char]
+        : /[A-Z]/.test(char) ? SERIF_ADVANCE.upper : SERIF_ADVANCE.other;
+    }
+    return { w: w * size, h: size * SERIF_HEIGHT };
+  }
+  const numBox = (text, size) => (S.numFont === "serif" ? serifBox(text, size) : monoBox(text, size));
 
   // 座標捨入與角度正規化與相位線圖層同一份：兩層的座標必須一致。
   const { round3, mod360, isRecord } = Aspects;
@@ -161,12 +207,13 @@
   /** 符號 path 以框中心放在 (x, y)、高為 size 的 em：回傳 [s, 0, 0, s, e, f]。 */
   function glyphMatrix(key, x, y, size) {
     const [x0, y0, x1, y1] = Glyphs.GLYPHS[key].bbox;
-    const s = size / Glyphs.UNITS_PER_EM;
+    const s = glyphScale(key, size);
     return [round3(s), 0, 0, round3(s), round3(x - (s * (x0 + x1)) / 2), round3(y - (s * (y0 + y1)) / 2)];
   }
   function glyphBox(key, size) {
     const [x0, y0, x1, y1] = Glyphs.GLYPHS[key].bbox;
-    return { w: ((x1 - x0) * size) / Glyphs.UNITS_PER_EM, h: ((y1 - y0) * size) / Glyphs.UNITS_PER_EM };
+    const s = glyphScale(key, size);
+    return { w: (x1 - x0) * s, h: (y1 - y0) * s };
   }
   const monoBox = (text, size) => ({ w: text.length * size * MONO_ADVANCE, h: size * TEXT_HEIGHT });
 
@@ -201,36 +248,59 @@
   //
   // 一個「標籤單位」是一個點，或角距不到 1° 的兩個相鄰天體共用的一條標籤（兩點由外往內接著排，
   // 各自一條引線連回自己的刻線）。標籤擠在一起時，同一星座只在第一個標籤印星座符號。
-  function partSize(item, part, fs) {
-    if (part === "glyph") return (item.kind === "angle" ? SIZE.angle : SIZE.glyph) * fs;
+  function partSize(item, part, fs, radial = false) {
+    const folio = S.layout === "folio" && !radial;
+    if (part === "glyph") {
+      return (item.kind === "angle" ? (folio ? SIZE.folioAngle : SIZE.angle) : (folio ? SIZE.folioGlyph : SIZE.glyph)) * fs;
+    }
+    // folio 的徑向退路（攤不開的群）與一行字同一個字級：全圖仍只有兩種字級。
+    if (S.layout === "folio" && (part === "deg" || part === "min")) return SIZE.line * fs;
     return SIZE[part] * fs;
   }
-  function partBox(item, part, fs) {
-    const size = partSize(item, part, fs);
+  /** folio 的一行：度、（星座）、分，各自的寬與在行內的中心（相對行中心）。 */
+  function lineLayout(item, fs) {
+    const size = SIZE.line * fs;
+    const gap = 0.7 * fs;
+    const deg = numBox(item.deg, size);
+    const min = numBox(item.min, size);
+    const sign = item.omitSign ? null : glyphBox(SIGN_KEYS[item.sign], SIZE.lineSign * fs);
+    const w = deg.w + min.w + (sign ? sign.w + 2 * gap : gap);
+    const h = Math.max(deg.h, sign ? sign.h : 0);
+    const degX = -w / 2 + deg.w / 2;
+    const signX = sign ? -w / 2 + deg.w + gap + sign.w / 2 : null;
+    const minX = w / 2 - min.w / 2;
+    return { w, h, size, degX, signX, minX };
+  }
+  function partBox(item, part, fs, radial = false) {
+    const size = partSize(item, part, fs, radial);
+    if (part === "line") {
+      const line = lineLayout(item, fs);
+      return { w: line.w, h: line.h, line };
+    }
     if (part === "glyph") {
-      if (item.kind === "angle") return monoBox(item.label, size);
+      if (item.kind === "angle") return numBox(item.label, size);
       const glyph = glyphBox(item.glyph, size);
       const mark = item.retro ? glyphBox("retrograde", SIZE.mark * fs).w
         : item.suffix ? textWidth(item.suffix, SIZE.suffix * fs) : 0;
       return { w: glyph.w + (mark ? 1.5 * fs + mark : 0), h: glyph.h, glyph, mark };
     }
     if (part === "sign") return glyphBox(SIGN_KEYS[item.sign], size);
-    return monoBox(part === "deg" ? item.deg : item.min, size);
+    return numBox(part === "deg" ? item.deg : item.min, size);
   }
   /** 單位在圖面角 a 上的徑向堆疊：每個元素的中心半徑與切向寬度；inner 是堆疊內緣的半徑。 */
   function unitStack(unit, a, fs) {
     const t = ((180 + a) * Math.PI) / 180;
     const c = Math.abs(Math.cos(t));
     const s = Math.abs(Math.sin(t));
-    let r = G.rLabelTop;
+    let r = unit.top || G.rLabelTop;
     const parts = [];
     unit.members.forEach((item, row) => {
-      for (const part of PARTS) {
+      for (const part of S.layout === "folio" && !unit.radial ? FOLIO_PARTS : PARTS) {
         if (part === "sign" && item.omitSign) continue;
-        const box = partBox(item, part, fs);
+        const box = partBox(item, part, fs, unit.radial);
         const radial = box.w * c + box.h * s;
         if (parts.length) r -= (row && part === "glyph" ? ROW_GAP : PART_GAP) * fs;
-        parts.push({ item, part, size: partSize(item, part, fs), box, r: r - radial / 2,
+        parts.push({ item, part, size: partSize(item, part, fs, unit.radial), box, r: r - radial / 2,
           tangential: box.w * s + box.h * c });
         r -= radial;
       }
@@ -394,42 +464,83 @@
   }
 
   /** 一輪排版：共用標籤、切向打包、星座省略、留在星座內。回傳單位、位置與每個點的框。 */
-  function arrange(items, fs, padFactor, floor) {
+  // folio 的扇形展開：一群標籤裡相鄰的兩個交錯放在內外兩層（各自一條引線），切向只需要約一半的寬度，
+  // 群聚因此不必縮字。只在兩層都放得下（標籤的徑向深度小，也就是一行字橫躺的上下兩側）時交錯。
+  const TIER_SHARE = 0.55;
+  const TIER_GAP = 7;   // 內外兩層之間的徑向留白：內層的引線終點不會比外層的字框更靠近別人
+  function stackDepth(unit, a, fs) {
+    const top = unit.top;
+    unit.top = undefined;
+    const depth = G.rLabelTop - unitStack(unit, a, fs).inner;
+    unit.top = top;
+    return depth;
+  }
+  function tierable(unit, a, fs, floor) {
+    return S.layout === "folio" && !unit.radial && unit.members.length === 1
+      && G.rLabelTop - 2 * stackDepth(unit, a, fs) - TIER_GAP * fs >= floor;
+  }
+  const tierFactor = (unit, a, fs, floor) => (tierable(unit, a, fs, floor) ? TIER_SHARE : 1);
+  /** 每一群裡連續可交錯的標籤，依圓周順序一外一內；內層的外緣在這一段外層最深處再往內 TIER_GAP。 */
+  function assignTiers(units, groups, placed, fs, floor) {
+    for (const unit of units) unit.top = undefined;
+    for (const group of groups) {
+      let run = [];
+      const flush = () => {
+        if (run.length > 1) {
+          const depth = Math.max(...run.map((index) => stackDepth(units[index], placed[index], fs)));
+          run.forEach((index, k) => { if (k % 2) units[index].top = G.rLabelTop - depth - TIER_GAP * fs; });
+        }
+        run = [];
+      };
+      for (const index of group) {
+        if (tierable(units[index], placed[index], fs, floor)) run.push(index);
+        else flush();
+      }
+      flush();
+    }
+  }
+
+  function arrange(items, fs, padFactor, floor, radial = new Set()) {
     for (const item of items) item.omitSign = false;
     const order = items.map((item, index) => ({ index, a: item.a })).sort((p, q) => p.a - q.a || p.index - q.index)
       .map((entry) => entry.index);
     // 共用標籤只在放得下（堆疊不壓到宮位環）時成立；共用標籤裡同星座的第二點不印星座。
-    let units = shareUnits(items, order).flatMap((unit) => {
+    let units = shareUnits(items, order).map((unit) => ({ ...unit, radial: unit.members.some((item) => radial.has(item)) }))
+      .flatMap((unit) => {
       if (unit.members.length === 1) return [unit];
       unit.members[1].omitSign = unit.members[1].sign === unit.members[0].sign;
       if (fits(unit, unit.a, fs, floor)) return [unit];
       unit.members[1].omitSign = false;
-      return unit.members.map((item) => ({ members: [item], a: item.a }));
+      return unit.members.map((item) => ({ members: [item], a: item.a, radial: unit.radial }));
     });
     let hw;
     let layout;
     // 每拆開一條放不下的共用標籤就重排一次；共用標籤只會越來越少，所以一定會停。
     for (;;) {
-      hw = units.map((unit) => halfWidth(unit, unit.a, fs) * padFactor);
+      hw = units.map((unit) => halfWidth(unit, unit.a, fs) * padFactor * tierFactor(unit, unit.a, fs, floor));
       layout = layoutLabels(units.map((unit) => unit.a), hw);
       // 切向寬度依位置而變：在排好的位置上重量一次，取較大者再排一次。
-      hw = units.map((unit, index) => Math.max(hw[index], halfWidth(unit, layout.placed[index], fs) * padFactor));
+      hw = units.map((unit, index) => Math.max(hw[index], halfWidth(unit, layout.placed[index], fs) * padFactor
+        * tierFactor(unit, layout.placed[index], fs, floor)));
       layout = layoutLabels(units.map((unit) => unit.a), hw);
       const split = units.findIndex((unit, index) => unit.members.length > 1 && !fits(unit, layout.placed[index], fs, floor));
       if (split < 0) break;
       units[split].members[1].omitSign = false;
-      units = [...units.slice(0, split), ...units[split].members.map((item) => ({ members: [item], a: item.a })),
+      units = [...units.slice(0, split), ...units[split].members.map((item) => ({ members: [item], a: item.a,
+        radial: units[split].radial })),
         ...units.slice(split + 1)];
     }
     // 擠在一起（同一群裡相鄰）的天體標籤，與前一個標籤同星座就不再印星座；四軸照印、也打斷連續。
     const sameSignAsPrevious = (previous, unit) => previous.members[0].kind === "body" && unit.members[0].kind === "body"
       && previous.members[previous.members.length - 1].sign === unit.members[0].sign;
-    for (const group of layout.groups) {
+    // folio 的一行標籤一律印星座：省掉會在「24° 10′」中間留一個洞，讀起來像缺字。
+    for (const group of S.layout === "folio" ? [] : layout.groups) {
       for (let k = 1; k < group.length; k += 1) {
         if (sameSignAsPrevious(units[group[k - 1]], units[group[k]])) units[group[k]].members[0].omitSign = true;
       }
     }
-    hw = units.map((unit, index) => halfWidth(unit, layout.placed[index], fs) * padFactor);
+    hw = units.map((unit, index) => halfWidth(unit, layout.placed[index], fs) * padFactor
+      * tierFactor(unit, layout.placed[index], fs, floor));
     layout = layoutLabels(units.map((unit) => unit.a), hw);
     // 重排後若某個省略星座的標籤不再緊接著同星座的前一個標籤，就把星座印回來。
     const groupOf = new Map();
@@ -440,8 +551,10 @@
       const [g, k] = groupOf.get(index);
       if (!k || !sameSignAsPrevious(units[layout.groups[g][k - 1]], unit)) head.omitSign = false;
     });
-    hw = units.map((unit, index) => Math.max(hw[index], halfWidth(unit, layout.placed[index], fs) * padFactor));
+    hw = units.map((unit, index) => Math.max(hw[index], halfWidth(unit, layout.placed[index], fs) * padFactor
+      * tierFactor(unit, layout.placed[index], fs, floor)));
     const placed = keepInSigns(units, layout, hw);
+    if (S.layout === "folio") assignTiers(units, layout.groups, placed, fs, floor);
     const boxes = new Map();
     let fitsAll = true;
     units.forEach((unit, index) => {
@@ -454,8 +567,28 @@
           x1: p.x + part.box.w / 2, y1: p.y + part.box.h / 2 });
       }
     });
-    return { units, placed, fs, boxes: items.map((item) => boxes.get(item)), fitsAll,
+    return { units, placed, fs, groups: layout.groups, boxes: items.map((item) => boxes.get(item)), fitsAll,
       omitted: { signs: items.some((item) => item.omitSign), shared: units.some((unit) => unit.members.length > 1) } };
+  }
+
+  // folio 的一行字比徑向堆疊寬；一群標籤要攤開超過 FAN_LIMIT 度才放得下時，那一群改用徑向堆疊
+  // （窄、深），引線不必拉得那麼長。其餘的群維持 folio。
+  const FAN_LIMIT = 20;
+  function arrangeFolio(items, fs, padFactor, floor) {
+    let radial = new Set();
+    let result = arrange(items, fs, padFactor, floor, radial);
+    if (S.layout !== "folio") return result;
+    for (;;) {
+      const next = new Set(radial);
+      for (const group of result.groups) {
+        const far = group.some((index) => Math.abs(signedGap(result.units[index].a, result.placed[index])) > FAN_LIMIT);
+        if (far) for (const index of group) for (const item of result.units[index].members) next.add(item);
+      }
+      if (next.size === radial.size) return result;
+      // 徑向堆疊較深；放不下（壓到宮位環）時由 packLabels 換小一號——只有攤不開的群才走到這一步。
+      radial = next;
+      result = arrange(items, fs, padFactor, floor, radial);
+    }
   }
 
   const overlap = (a, b) => a.x0 < b.x1 + 1 && b.x0 < a.x1 + 1 && a.y0 < b.y1 + 1 && b.y0 < a.y1 + 1;
@@ -472,16 +605,23 @@
    * 排版；框仍相撞就加大留白重排，整圈放不下（或堆疊壓到宮位環）時整組標籤等比縮小——
    * 不退到第二圈半徑。全部決定性：同一份回應永遠同一張圖。
    */
-  function packLabels(items, text, floor) {
+  // folio：攤開（含徑向退路）之後，標籤離刻線仍超過這個角度才縮字——縮字是最後一步。
+  const FAN_CAP = Object.freeze({ compact: 40, standard: 28, wide: 21 });
+  const maxAway = (result) => Math.max(0, ...result.units.map((unit, index) => Math.abs(signedGap(unit.a, result.placed[index]))));
+  function packLabels(items, text, floor, presetName) {
     let fallback = null;
+    const cap = S.layout === "folio" ? FAN_CAP[presetName] : Infinity;
     for (const scale of LABEL_SCALES) {
       let padFactor = 1;
       for (let attempt = 0; attempt < 6; attempt += 1) {
-        const result = arrange(items, text * scale, padFactor, floor);
+        const result = arrangeFolio(items, text * scale, padFactor, floor);
         fallback = result;
         // 堆疊壓到宮位環是字太大，加大留白沒有用：直接換小一號。
         if (!result.fitsAll) break;
-        if (!anyOverlap(result.boxes)) return result;
+        if (!anyOverlap(result.boxes)) {
+          if (maxAway(result) <= cap || scale === LABEL_SCALES[LABEL_SCALES.length - 1]) return result;
+          break;
+        }
         padFactor *= 1.15;
       }
     }
@@ -676,7 +816,7 @@
       // 宮號放在兩個宮頭之間的中點（圖面位置，不是方法計算）。
       const next = cusps[(index + 1) % 12];
       const p = at(lon + mod360(next - lon) / 2, rText);
-      items.push(textPrim("house-number", p.x, p.y, String(index + 1), SIZE.house * preset.text, "mono", "dim"));
+      items.push(textPrim("house-number", p.x, p.y, String(index + 1), SIZE.house * preset.text, S.numFont, "dim"));
     });
     return items;
   }
@@ -716,36 +856,46 @@
       const colour = item.kind === "angle" ? "accent" : "fg";
       const p = polar(angle, part.r);
       if (part.part === "glyph" && item.kind === "angle") {
-        items.push(textPrim("angle-label", p.x, p.y, item.label, part.size, "mono", colour, { halo }));
+        items.push(textPrim("angle-label", p.x, p.y, item.label, part.size, S.numFont, colour, { halo }));
       } else if (part.part === "glyph") {
         const { glyph: box, mark } = part.box;
         const gx = p.x - part.box.w / 2 + box.w / 2;
-        items.push(glyphPrim("label-glyph", item.glyph, gx, p.y, part.size, colour, { halo: halo / (part.size / 1000) }));
+        items.push(glyphPrim("label-glyph", item.glyph, gx, p.y, part.size, colour, { halo: halo / glyphScale(item.glyph, part.size) }));
         const mx = p.x + part.box.w / 2 - mark / 2;
         if (item.retro) {
           const size = SIZE.mark * fs;
           const markBox = glyphBox("retrograde", size);
           items.push(glyphPrim("label-mark", "retrograde", mx, p.y - box.h / 2 + markBox.h / 2, size, colour,
-            { halo: halo / (size / 1000) }));
+            { halo: halo / glyphScale("retrograde", size) }));
         } else if (item.suffix) {
           const size = SIZE.suffix * fs;
           items.push(textPrim("label-suffix", mx, p.y + box.h / 2 - size / 2, item.suffix, size, "sans", "dim", { halo }));
         }
       } else if (part.part === "sign") {
         items.push(glyphPrim("label-sign", SIGN_KEYS[item.sign], p.x, p.y, part.size,
-          item.kind === "angle" ? colour : "dim", { halo: halo / (part.size / 1000) }));
+          item.kind === "angle" ? colour : "dim", { halo: halo / glyphScale(SIGN_KEYS[item.sign], part.size) }));
+      } else if (part.part === "line") {
+        // 一行「度 星座 分」：數字與星座同一條中線；星座用淡墨，四軸整行用重點色。
+        const { line } = part.box;
+        items.push(textPrim("label-text", p.x + line.degX, p.y, item.deg, line.size, S.numFont, colour, { halo }));
+        if (line.signX !== null) {
+          const size = SIZE.lineSign * fs;
+          items.push(glyphPrim("label-sign", SIGN_KEYS[item.sign], p.x + line.signX, p.y, size,
+            item.kind === "angle" ? colour : "dim", { halo: halo / glyphScale(SIGN_KEYS[item.sign], size) }));
+        }
+        items.push(textPrim("label-text", p.x + line.minX, p.y, item.min, line.size, S.numFont, colour, { halo }));
       } else {
-        items.push(textPrim("label-text", p.x, p.y, part.part === "deg" ? item.deg : item.min, part.size, "mono", colour, { halo }));
+        items.push(textPrim("label-text", p.x, p.y, part.part === "deg" ? item.deg : item.min, part.size, S.numFont, colour, { halo }));
       }
     }
     return byItem;
   }
 
   /** 引線：由刻線內端先沿刻線方向走一小段，再斜向標籤外緣；標籤幾乎沒移動時是一條直線。 */
-  function leaderPrim(item, angle) {
+  function leaderPrim(item, angle, top) {
     const stroke = item.kind === "angle" ? "accent" : "dim";
     const from = polar(item.a, G.rTickIn);
-    const to = polar(angle, G.rLabelTop);
+    const to = polar(angle, top || G.rLabelTop);
     const path = Math.abs(signedGap(item.a, angle)) < 0.5 ? [from, to] : [from, polar(item.a, G.rElbow), to];
     return { ...polylinePrim("leader", path, stroke, 0.8), linked: [item.key] };
   }
@@ -799,6 +949,9 @@
         ...(hasHouses ? [] : [{ type: "circle", part: "aspect-ring", cx: G.c, cy: G.c, r: geometry.r,
           fill: null, stroke: "hair", width: 0.8 }]),
         ...result.group.items,
+        // 中心留一個空圓：對沖線經過圓心時不在中央打結。
+        ...(S.disc ? [{ type: "circle", part: "aspect-clear", cx: G.c, cy: G.c, r: round3(geometry.r * 0.2),
+          fill: "bg", stroke: "hair", width: 0.8 }] : []),
       ] }
       : null;
     const names = isRecord(aspects) && isRecord(aspects.degree_based) ? aspects.degree_based.aspect_names_zh : null;
@@ -809,15 +962,121 @@
     };
   }
 
+  // ── 不確定的位置畫成範圍（folio）：只讀回應的出生時刻敏感度，不另算。
+  //   只知日期：月亮在當天取樣到的黃經範圍（position_ranges[moon].sampled_longitude_envelope）；
+  //   約略小時：上升在這一小時取樣到的範圍（angles.asc）。範圍是取樣點的包絡，不是連續解。
+  const RANGE_TEXT = Object.freeze({
+    moon: "斜線弧：月亮當天取樣到的位置範圍", asc: "斜線扇形：上升在這一小時內取樣到的範圍",
+  });
+  const CENTRE_NOTE = Object.freeze(["只知日期", "沒有宮位"]);
+  // 回應少了這些端點時，與表格一樣以 response_incomplete 拒絕（不畫成一個確定的點、也不默默略過範圍）。
+  function incomplete(detail) {
+    const error = new Error(`回應結構不完整：缺少 ${detail}，星盤圖不能畫出不確定的範圍。`);
+    error.code = "response_incomplete";
+    return error;
+  }
+  function readEnvelope(envelope, path) {
+    if (!isRecord(envelope)) throw incomplete(path);
+    const { start_degrees: start, end_degrees: end } = envelope;
+    for (const [key, value] of [["start_degrees", start], ["end_degrees", end]]) {
+      if (typeof value !== "number" || !Number.isFinite(value)) throw incomplete(`${path}.${key}`);
+    }
+    const span = mod360(end - start);
+    // 範圍跨過半圈就不是「一段弧」，不畫（不猜方向）；取樣全落在同一點也不畫。
+    return span > 0 && span < 180 ? { start, span } : null;
+  }
+  function readRanges(response) {
+    const sensitivity = isRecord(response.birth_time_sensitivity) ? response.birth_time_sensitivity : null;
+    if (!sensitivity || sensitivity.status !== "computed") return {};
+    const base = "birth_time_sensitivity";
+    const out = {};
+    if (sensitivity.precision === "date_only") {
+      if (!Array.isArray(sensitivity.position_ranges)) throw incomplete(`${base}.position_ranges`);
+      const moon = sensitivity.position_ranges.find((entry) => isRecord(entry) && entry.key === "moon");
+      if (!moon) throw incomplete(`${base}.position_ranges[moon]`);
+      const range = readEnvelope(moon.sampled_longitude_envelope, `${base}.position_ranges[moon].sampled_longitude_envelope`);
+      if (range) out.moon = range;
+    }
+    // 上升的範圍只在有宮位（angles 是包絡而不是未請求的收據）時存在。
+    if (sensitivity.precision === "approximate_hour" && isRecord(sensitivity.angles)
+      && Object.hasOwn(sensitivity.angles, "asc")) {
+      const range = readEnvelope(sensitivity.angles.asc, `${base}.angles.asc`);
+      if (range) out.asc = range;
+    }
+    return out;
+  }
+  function arcPath(from, span, r) {
+    const p = polar(from, r);
+    const q = polar(from + span, r);
+    return `M ${round3(p.x)} ${round3(p.y)} A ${r} ${r} 0 ${span > 180 ? 1 : 0} 0 ${round3(q.x)} ${round3(q.y)}`;
+  }
+  /** 一段弧帶：外框（兩條弧、兩條徑向邊）加斜線排線，排線只留在帶內。 */
+  function hatchedBand(part, from, span, rIn, rOut, linked) {
+    const items = [];
+    const step = 1.4;
+    for (let t = 0; t + 1 <= span + 1e-9; t += step) {
+      items.push(linePrim(`${part}-hatch`, polar(from + t, rIn), polar(from + Math.min(span, t + 1), rOut), "dim", 0.6, { linked }));
+    }
+    const a = polar(from, rIn);
+    const b = polar(from + span, rIn);
+    items.push({ type: "path", part: `${part}-edge`, stroke: "fg", width: 0.9, linked,
+      d: `${arcPath(from, span, rOut)} L ${round3(b.x)} ${round3(b.y)} `
+        + `A ${rIn} ${rIn} 0 ${span > 180 ? 1 : 0} 1 ${round3(a.x)} ${round3(a.y)} Z` });
+    return items;
+  }
+  function rangeLayer(ranges, reference, preset, hasHouses) {
+    const items = [];
+    const notes = [];
+    for (const key of ["moon", "asc"]) {
+      const range = ranges[key];
+      if (!range) continue;
+      const from = range.start - reference;
+      items.push(...hatchedBand(`range-${key}`, from, range.span, G.rTickIn, G.rSignIn, [key]));
+      if (key === "asc") {
+        // 扇形的兩條邊：由宮位環外緣到星座環內緣的虛細線。
+        for (const angle of [from, from + range.span]) {
+          items.push(linePrim("range-asc-side", polar(angle, preset.rHouseOut), polar(angle, G.rTickIn), "dim", 0.7,
+            { dash: "1.5 2", linked: ["asc"] }));
+        }
+      }
+      notes.push(RANGE_TEXT[key]);
+    }
+    if (ranges.moon && !hasHouses) {
+      // 沒有宮位：淡化的宮位環＋中心一句小字，而不是空著的中心。
+      for (const r of [preset.rHouseOut, preset.rHouseIn]) {
+        items.push({ type: "circle", part: "house-ghost", cx: G.c, cy: G.c, r, fill: null, stroke: "hair", width: 0.8, dash: "2 3" });
+      }
+    }
+    return { items, notes };
+  }
+  function centreNote(preset) {
+    const size = SIZE.house * preset.text * 0.92;
+    const r = Math.max(preset.rHouseIn * 0.34, size * 2.6);
+    return [
+      { type: "circle", part: "centre-note-disc", cx: G.c, cy: G.c, r: round3(r), fill: "bg", stroke: "hair", width: 0.8 },
+      ...CENTRE_NOTE.map((line, index) => textPrim("centre-note", G.c, G.c + (index - 0.5) * size * 1.35, line, size, "book", "dim")),
+    ];
+  }
+
   /**
    * 回應 → 星盤圖模型。options.inputSummary：使用者勾選「加印輸入摘要」時的文字行（預設沒有）；
    * options.preset：字級（compact／standard／wide，預設 standard）；options.aspects：false 時不畫相位線
    * （預設畫）。
    */
   function build(response, options = {}) {
+    const previous = S;
+    S = LABEL_STYLES.folio;
+    try {
+      return buildWith(response, options);
+    } finally {
+      S = previous;
+    }
+  }
+
+  function buildWith(response, options) {
     if (!isRecord(response)) throw new Error("星盤圖需要一份回應。");
     const presetName = Object.hasOwn(PRESETS, options.preset) ? options.preset : "standard";
-    const preset = PRESETS[presetName];
+    const preset = (S.presets || PRESETS)[presetName];
     const { points, omitted, dateOnly } = readPoints(response);
     const houses = readHouses(response);
     const angles = readAngles(response);
@@ -827,23 +1086,28 @@
     const positions = readPositionSources(response, hasAngles, Boolean(cusps));
     const notDrawn = [...omitted, ...positions.omitted.filter((name) => !omitted.includes(name))];
 
+    const ranges = S.uncertainty ? readRanges(response) : {};
+    const range = S.uncertainty ? rangeLayer(ranges, reference, preset, Boolean(cusps)) : { items: [], notes: [] };
     const notes = [
       cusps ? `宮位制：${cusps.text}` : TEXT.noHouses,
       ...(hasAngles ? [TEXT.accent] : [TEXT.noAngles]),
       ...(points.some((point) => point.anchorOnly) ? [TEXT.dateOnly] : []),
+      ...range.notes,
       ...(notDrawn.length ? [`圖上未畫：${notDrawn.join("、")}（見表格）`] : []),
     ];
     const foot = footerLayout([...notes, ...summaryLines(options)], preset.text);
 
     const items = [...points, ...angles].map((item) => ({ ...item, a: mod360(item.lon - reference) }));
-    const packed = items.length ? packLabels(items, preset.text, preset.rHouseOut + 3)
+    const packed = items.length ? packLabels(items, preset.text, preset.rHouseOut + 3, presetName)
       : { units: [], placed: [], boxes: [], fs: preset.text, omitted: { signs: false, shared: false } };
     const anchorOf = new Map();
     packed.units.forEach((unit, index) => unit.members.forEach((item) => anchorOf.set(item, packed.placed[index])));
+    const topOf = new Map();
+    packed.units.forEach((unit) => unit.members.forEach((item) => topOf.set(item, unit.top)));
 
     const ticks = points.map((point) => linePrim("body-tick", polar(point.lon - reference, G.rSignIn),
       polar(point.lon - reference, G.rTickIn), "fg", 1.8, { ...(point.anchorOnly ? { dash: "2 1.6" } : {}), linked: [point.key] }));
-    const leaders = items.map((item) => leaderPrim(item, anchorOf.get(item)));
+    const leaders = items.map((item) => leaderPrim(item, anchorOf.get(item), topOf.get(item)));
     const sceneOf = new Map();
     packed.units.forEach((unit, index) => {
       for (const [item, prims] of unitScene(unit, packed.placed[index], packed.fs)) sceneOf.set(item, prims);
@@ -865,6 +1129,8 @@
       // 相位線在宮位之上、四軸之下：紅色四軸壓在線上。
       ...(showAspects ? [aspects.group] : []),
       ...(hasAngles ? [{ group: "angles", items: angleAxes(angles, reference, preset) }] : []),
+      ...(range.items.length ? [{ group: "ranges", items: range.items }] : []),
+      ...(ranges.moon && !cusps ? [{ group: "centre", items: centreNote(preset) }] : []),
       { group: "markers", items: [...ticks, ...leaders] },
       // 共用一條標籤的兩點各自一組（順序與 labels 相同），都加 shared 標記；頁面版以 class
       // cw-label-shared 標出，另一點的索引在 labels[].sharedWith。

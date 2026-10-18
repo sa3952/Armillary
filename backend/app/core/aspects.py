@@ -50,7 +50,7 @@ from .method_status import method_receipt
 from .dignity_tables import SIGNS
 from .formatting import normalize_longitude, zodiac_sign_index
 from .root_finding import SOLVER_NAME, find_crossings_detailed, wrap_to_signed_180
-from .source_reading import SOURCE_READING_LEVELS
+from .source_reading import SOURCE_READING_LEVELS, reference_only
 from .trace import Trace
 from .aspect_profiles import (
     ASPECT_SET_PROFILES,
@@ -1337,6 +1337,18 @@ WHOLE_SIGN_SOURCES = (
     "V.4 pp.185-228, chapter not checked). Counts signs between; Firmicus "
     "II.22 counts inclusively (trine = fifth sign)"
 )
+# The loci WHOLE_SIGN_SOURCES names; the record does not say what was read.
+WHOLE_SIGN_SOURCE_CITATIONS = [
+    reference_only(
+        "Ptolemy, Tetrabiblos I.13 (Robbins pp.73-75 = Hübner I.14), I.16 (pp.77-79 = Hübner I.17)",
+        "aspects counted by the signs between",
+    ),
+    reference_only(
+        "Ps.-Porphyry, 'On bearing testimony' (Antiochus; CCAG V.4 pp.185-228)",
+        "aspects by sign; chapter not checked",
+    ),
+    reference_only("Firmicus Maternus, Mathesis II.22", "counts inclusively (trine = fifth sign)"),
+]
 # The Harmonices mundi locators carry the 1619 printing's page numbers, but the
 # record does not say whether the Latin was read; only the reference is claimed
 # until that is confirmed.
@@ -1389,7 +1401,8 @@ KEPLER_MINOR_ASPECT_SOURCES = [
 METHOD_SOURCE_ENTRIES: dict[str, dict] = {
     "aspects/whole_sign": {
         "applies_to": "derived_methods.aspects.whole_sign",
-        "sources": WHOLE_SIGN_SOURCES,
+        "sources": WHOLE_SIGN_SOURCE_CITATIONS,
+        "source_summary": WHOLE_SIGN_SOURCES,
     },
     "aspects/minor_aspects": {
         "applies_to": "derived_methods.aspects.degree_based (modern minor aspects)",

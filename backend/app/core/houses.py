@@ -30,6 +30,7 @@ from ..domain_catalog import HOUSE_SYSTEMS, PRODUCT_YEAR_RANGE
 from .method_status import method_receipt
 from .module_state import computed_receipt
 from .source_reading import SOURCE_READING_LEVELS
+from .time_utils import earth_rotation_jd_ut, earth_rotation_shift_days
 from .trace import Trace
 
 
@@ -267,7 +268,7 @@ def compute_houses(house_system_code: str, jd_ut: float, location, ctx, trace: T
         )
     try:
         cusps, ascmc = swe.houses_ex(
-            jd_ut,
+            earth_rotation_jd_ut(jd_ut),
             location.latitude,
             location.longitude,
             code.encode(),
@@ -340,6 +341,11 @@ def compute_houses(house_system_code: str, jd_ut: float, location, ctx, trace: T
         formula=(
             "swe.houses_ex(JD_UT, 地理緯度, 地理經度, 宮位制代碼"
             + (", FLG_SIDEREAL)" if sidereal else ")")
+            + (
+                "；2050-01-01 起 JD_UT 先移到 Swiss 恆星時等於 IERS 2010 恆星時的時刻（相差不到一秒）"
+                if earth_rotation_shift_days(jd_ut) != 0.0
+                else ""
+            )
         ),
         inputs={"JD(UT)": jd_ut, "緯度": location.latitude, "經度": location.longitude,
                 "houses_ex_flags": houses_flags},
@@ -491,6 +497,9 @@ def house_availability(regime: dict) -> dict:
 
 
 HOUSE_SYSTEM_SOURCE_REF = "houses/systems"
+# Each history citation says where it was read; these were read when the entry
+# was written and no reading notes survive, which the read_at says.
+_NO_READING_NOTES = "no reading notes were kept"
 _ORIGINAL, _TRANSLATION, _SECONDARY, _BIBLIOGRAPHIC = SOURCE_READING_LEVELS
 # One row per code in domain_catalog.HOUSE_SYSTEMS.  `definition` is the geometry the
 # product computes (through swe.houses_ex); `history` says where the name and the
@@ -509,6 +518,10 @@ HOUSE_SYSTEM_SOURCES: dict[str, dict] = {
                     "not re-read for this entry"
                 ),
                 "reading": _BIBLIOGRAPHIC,
+                "read_at": (
+                    "the reference only, as the methods page gives it; the Anthology chapter was not "
+                    "opened for this entry"
+                ),
             },
         ],
     },
@@ -519,6 +532,10 @@ HOUSE_SYSTEM_SOURCES: dict[str, dict] = {
             {
                 "citation": "Named after Placidus de Titis (1590-1668) (Swiss Ephemeris §6.2.1)",
                 "reading": _SECONDARY,
+                "read_at": (
+                    "Swiss Ephemeris General Documentation §6.2.1, when this entry was written "
+                    f"(2026-10-12; {_NO_READING_NOTES}); Placidus's own work not read"
+                ),
             },
         ],
     },
@@ -533,6 +550,10 @@ HOUSE_SYSTEM_SOURCES: dict[str, dict] = {
                     "(Swiss Ephemeris §6.2.3)"
                 ),
                 "reading": _SECONDARY,
+                "read_at": (
+                    "Swiss Ephemeris General Documentation §6.2.3, when this entry was written "
+                    f"(2026-10-12; {_NO_READING_NOTES}); Regiomontanus's own work not read"
+                ),
             },
         ],
     },
@@ -544,6 +565,10 @@ HOUSE_SYSTEM_SOURCES: dict[str, dict] = {
             {
                 "citation": "Named after al-Qabīṣī (Alcabitius, d. 967) (Astrodienst FAQ on house systems)",
                 "reading": _SECONDARY,
+                "read_at": (
+                    "Astrodienst's house-system FAQ, when this entry was written "
+                    f"(2026-10-12; {_NO_READING_NOTES}); al-Qabīṣī's Introduction not read"
+                ),
             },
         ],
     },
@@ -559,6 +584,11 @@ HOUSE_SYSTEM_SOURCES: dict[str, dict] = {
                     "a division into topics)"
                 ),
                 "reading": _SECONDARY,
+                "read_at": (
+                    "the secondary accounts this sentence summarises, including R. Schmidt's reading, "
+                    f"when this entry was written (2026-10-12; {_NO_READING_NOTES}, and they are not named "
+                    "individually); the Valens chapter not read"
+                ),
             },
             {
                 "citation": (
@@ -566,6 +596,10 @@ HOUSE_SYSTEM_SOURCES: dict[str, dict] = {
                     "(CCAG V.4; trans. Holden 2009); the chapter number was not verified"
                 ),
                 "reading": _BIBLIOGRAPHIC,
+                "read_at": (
+                    "the bibliographic reference only (edition and translation); neither the Greek nor "
+                    "Holden's English was opened"
+                ),
             },
         ],
     },
@@ -581,6 +615,11 @@ HOUSE_SYSTEM_SOURCES: dict[str, dict] = {
                     "ascendant's degree"
                 ),
                 "reading": _TRANSLATION,
+                "read_at": (
+                    "Ashmand's 1822 English translation, III.12, when this entry was written "
+                    f"(2026-10-12; {_NO_READING_NOTES}); the Robbins chapter number is a concordance, not a "
+                    "second reading"
+                ),
             },
             {
                 "citation": (
@@ -588,6 +627,10 @@ HOUSE_SYSTEM_SOURCES: dict[str, dict] = {
                     "without a named source"
                 ),
                 "reading": _SECONDARY,
+                "read_at": (
+                    "Astrodienst's house-system FAQ, when this entry was written "
+                    f"(2026-10-12; {_NO_READING_NOTES})"
+                ),
             },
         ],
     },
@@ -599,6 +642,10 @@ HOUSE_SYSTEM_SOURCES: dict[str, dict] = {
             {
                 "citation": "Named after Campanus of Novara (13th century) (Swiss Ephemeris §6.2.4)",
                 "reading": _SECONDARY,
+                "read_at": (
+                    "Swiss Ephemeris General Documentation §6.2.4, when this entry was written "
+                    f"(2026-10-12; {_NO_READING_NOTES}); Campanus's own work not read"
+                ),
             },
             {
                 "citation": (
@@ -608,6 +655,11 @@ HOUSE_SYSTEM_SOURCES: dict[str, dict] = {
                     "sources, not read"
                 ),
                 "reading": _SECONDARY,
+                "read_at": (
+                    "the secondary report of Casulleras's and North's findings, when this entry was "
+                    f"written (2026-10-12; {_NO_READING_NOTES}); North 1986 pp. 175-176 itself, Ibn Muʿādh and "
+                    "al-Bīrūnī not read"
+                ),
             },
         ],
     },

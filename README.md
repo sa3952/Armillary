@@ -27,9 +27,9 @@
 
 **Armillary** is a verifiable calculator for classical Western astrology with a Traditional Chinese interface, live at <https://projectarmillary.com/zh-TW/>. It is computed with the Swiss Ephemeris and does calculation only: no interpretation, no prediction.
 
-**有什麼不同。** 每個數字附方法來源與計算收據。界表提供四套具名表並列（埃及、迦勒底、Ptolemy、Lilly），不替你挑預設。只知道約略小時或只知道日期時，在那一小時或那一天裡取樣，標出哪些判定會改變。歷史時區以 IANA 時區資料庫換算，臺灣、香港、澳門與中國的時區規則逐條列出處（〈[出生時間換算](https://projectarmillary.com/zh-TW/methods/birth-time-conversion)〉）。
+**有什麼不同。** 方法判定（界、三分性、相位容許度等）附出處代碼，對到每次發布一起公開的方法出處表；每次計算附逐步計算軌跡與一組只涵蓋這段軌跡的 SHA-256 計算收據。界表提供四套具名表並列（埃及、迦勒底、Ptolemy、Lilly），不替你挑預設。只知道約略小時或只知道日期時，在那一小時或那一天裡取樣，標出哪些判定會改變。歷史時區以 IANA 時區資料庫換算，臺灣、香港、澳門與中國的時區規則逐條列出處（〈[出生時間換算](https://projectarmillary.com/zh-TW/methods/birth-time-conversion)〉）。
 
-**What is different.** Every number comes with its method source and a calculation receipt. Four named bounds tables (Egyptian, Chaldean, Ptolemy, Lilly) are shown side by side, with no default chosen for you. If you know only the hour or only the date, the calculator samples that hour or day and marks which judgements change within it. Historical time zones come from the IANA tz database, with a source for each rule used in Taiwan, Hong Kong, Macau and mainland China.
+**What is different.** Method results (bounds, triplicities, aspect orbs and the like) carry a source code that resolves against the method-source register published with each release; every calculation carries a step-by-step trace and a SHA-256 calculation receipt over that trace only. Four named bounds tables (Egyptian, Chaldean, Ptolemy, Lilly) are shown side by side, with no default chosen for you. If you know only the hour or only the date, the calculator samples that hour or day and marks which judgements change within it. Historical time zones come from the IANA tz database, with a source for each rule used in Taiwan, Hong Kong, Macau and mainland China.
 
 **隱私是架構，不是設定。** 沒有帳號、沒有星盤資料庫；計算頁沒有任何第三方請求，不用 cookie，也不在你的瀏覽器裡存資料。〈[自己檢查](https://projectarmillary.com/zh-TW/security/verify)〉一頁教你用瀏覽器的開發者工具親手驗證。
 
@@ -91,6 +91,7 @@
   [`method-sources.json`](frontend/zh-TW/method-sources.json)。產品能計算某項結果，不代表所有歷史占星方法都已定論或被正式採用；方法的狀態保留在完整的machine-readable result（`projection=detailed`，即驗算匯出）中。
 - **對過外部基準，也寫出沒對過的地方。** 主要位置結果曾與另一條以 JPL DE442、Astropy 與 ERFA 組成的參考管線逐小時比較；月相事件與臺北的日月升降另與 USNO 資料交叉核對。比較範圍、門檻與沒有涵蓋的地方在〈[驗證](https://projectarmillary.com/zh-TW/validation)〉。這是具名範圍的驗證，不是全系統認證。
 - **版本寫在結果裡。** 每次計算回報引擎、星曆與時區資料庫的版本；你這一次用的公開原始碼版本，寫在計算收據上。
+  後端的公開原始碼版本與映像識別碼是部署時宣告的，公開材料無法重算；只有前端的 artifact digest 能只用公開材料重算（見下方「核對線上那一版」）。
 - **收據的界線。** 計算收據是逐步軌跡的 SHA-256：只能偵測意外損壞，不證明來源，也不證明沒被刻意修改。
 
 ## 隱私：出生資料只是計算的輸入
@@ -106,8 +107,10 @@
 
 ## 匯出與複製
 
-你可以把單一區段複製成以tab分隔的文字，或下載JSON、CSV、Markdown與純文字；平常只帶星盤資料，需要驗算時再加入
-receipts與trace。每一種格式都來自同一份normalized result，不從畫面上的DOM反向拼湊。
+計算頁的結果可以把單一區段複製成以tab分隔的文字，或把整份結果下載成JSON、CSV、Markdown或純文字；平常只帶星盤資料，
+需要驗算時再加入receipts與trace。星盤圖可存成SVG或PNG，結果頁另有列印版面。時間主星區可以把選定的一年存成行事曆檔
+（.ics），或把畫面已取得的期間存成時間主星表（Markdown、CSV或JSON）。下載檔都由瀏覽器收到的回應資料產生，不從畫面上的
+DOM反向拼湊；列印印的是畫面本身。
 
 ## 驗證這份原始碼
 
@@ -126,6 +129,12 @@ python scripts/verify_delivery.py
 tests、frontend tests 與 source postflight。Image、host、TLS 與 live browser 需要自己的 exact artifact，不從
 source test 推定。建置映像與 release 結構見 [docs/REPRODUCIBLE_BUILD.md](docs/REPRODUCIBLE_BUILD.md)。
 
+地名目錄 `backend/place_data/places.sqlite3` 隨原始碼公開，產生它的程式 `scripts/validation/build_place_catalog.py`
+也公開，但你無法用公開材料逐位元重建這份目錄：GeoNames 每天以同一個檔名換掉下載檔，`catalog_manifest.json` 記下的
+輸入 SHA-256 對不到之後下載到的檔，而產生這份目錄的那批輸入檔沒有公開。用新下載的檔跑產生程式，得到的是另一份目錄。
+能核對的是目錄本身：`python -m scripts.verification.verify_place_catalog --check` 比對 manifest 記下的 identity、
+完整性與列數（說明在 [backend/place_data/README.md](backend/place_data/README.md)）。
+
 在本機啟動（只綁 127.0.0.1；`--no-access-log` 不可省，uvicorn 預設會把每個請求的路徑與 query 寫進 access log）：
 
 ```bash
@@ -136,13 +145,15 @@ python -m uvicorn app.main:create_app --factory --app-dir backend --host 127.0.0
 
 **核對線上那一版。** 每一個正式上線的版本都有同名的 tag 與 [GitHub Release](https://github.com/sa3952/Armillary/releases)；
 展開結果頁的「計算收據」，可以看到網站正在執行的組合發布識別、後端 image、前端 artifact digest 與兩者的公開原始碼
-revision。前端 digest 只用公開材料就能重算：取出該版本的前端發布紀錄（`main` 上的
-`releases/<版本>/frontend-release.json`），checkout 該 tag，再執行
+revision。後端 image 與後端 revision 是部署時宣告的（發布工具切換時核對過它們與映像標籤相同），公開材料無法重算；
+只有前端 digest 能只用公開材料重算：取出該版本的前端發布紀錄（`main` 上的
+`releases/<版本>/frontend-release.json`），checkout 該 tag，再執行（`-B` 讓 Python 不在 checkout 裡寫入位元組碼快取；
+多出的檔案會讓公開檔案清單對不上）
 
 ```bash
 git show origin/main:releases/<版本>/frontend-release.json > /SAFE/OUTSIDE/frontend-release.json
 git checkout <版本>
-python -m scripts.deployment.frontend_release recompute --source-root . \
+python -B -m scripts.deployment.frontend_release recompute --source-root . \
   --release-record /SAFE/OUTSIDE/frontend-release.json
 ```
 
@@ -172,8 +183,8 @@ notice，詳見 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 ## English
 
 **Armillary (渾儀)** is an open-source, Traditional-Chinese-first calculator for classical Western astrology. It
-computes a chart with Swiss Ephemeris and hands you, alongside every number, the coordinate frame, the time
-conversion, and the named method and source that produced it. The hosted service is free for now and needs no
+computes a chart with Swiss Ephemeris and hands you, alongside the chart, the coordinate frame, the time
+conversion, and the named method and source behind each method result. The hosted service is free for now and needs no
 account: <https://projectarmillary.com/zh-TW/>. This repository is its Corresponding Source under AGPL-3.0.
 
 **What it does.** Ecliptic, equatorial and horizontal coordinates side by side; houses and angles; aspects,
@@ -206,14 +217,21 @@ See the [privacy architecture](docs/PRIVACY_ARCHITECTURE.md), [threat model](doc
 
 ### Take the result with you
 
-Copy a focused section as tab-separated text, or download the chart as JSON, CSV, Markdown, or plain text. Every
-format is generated from the same normalized result rather than reconstructed from the rendered page.
+Copy a focused section as tab-separated text, or download the chart as JSON, CSV, Markdown, or plain text; save
+the chart drawing as SVG or PNG, or print the result page. The time-lord section saves a chosen year as a calendar
+file (.ics) and the periods already loaded as a time-lord table (Markdown, CSV or JSON). Every download is generated
+from the response data the browser received rather than reconstructed from the rendered page; printing prints the
+page itself.
 
 ### Run and verify
 
 The commands are in the section [驗證這份原始碼](#驗證這份原始碼) above: create a virtual environment, install the
 pinned dependencies, run `python scripts/verify_delivery.py`, and start a local server with the `uvicorn` line
 shown there. Building the image is described in [docs/REPRODUCIBLE_BUILD.md](docs/REPRODUCIBLE_BUILD.md).
+The place catalogue (`backend/place_data/places.sqlite3`) and its producer are public, but the catalogue cannot be
+rebuilt byte for byte from public material: GeoNames replaces its dump files under the same names daily, and the
+input files behind the shipped catalogue are not published, so a fresh download produces a different catalogue.
+`verify_place_catalog --check` checks the shipped catalogue against its manifest instead.
 
 Every release that went live has a tag and a [GitHub Release](https://github.com/sa3952/Armillary/releases) of the
 same name. The calculation receipt on the result page shows the combined release ID, the backend image, the

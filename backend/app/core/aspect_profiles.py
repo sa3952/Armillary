@@ -341,6 +341,15 @@ ORB_PROFILES: dict[str, dict] = {
                 "reading": SOURCE_READING_LEVELS[0],
                 "read_at": "the first edition (archive.org/details/b30338724)",
             },
+            {
+                "citation": "William Lilly, Christian Astrology (1647) Book I p.110",
+                "says": "a separation example that uses the second set of orbs",
+                "reading": SOURCE_READING_LEVELS[3],
+                "read_at": (
+                    "level pending: the record describes the example but does not say "
+                    "which copy was read; only the reference is claimed"
+                ),
+            },
         ],
         "second_set_not_used": (
             "p.107 prints a second set beside the first (Saturn 9, Jupiter 9, Mars 7, "

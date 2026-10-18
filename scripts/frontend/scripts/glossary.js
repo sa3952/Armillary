@@ -30,7 +30,13 @@
     { key: "sect", term: "日盤／夜盤", chapter: "古典判斷",
       text: "出生時太陽在地平線上方是日盤，在下方是夜盤。古典技法常依此換用不同的規則，例如命運點的公式、法達的起點。" },
     { key: "domicile_exaltation", term: "廟與旺", en: "Domicile / Exaltation", chapter: "古典判斷",
-      text: "古書替每顆行星指定它自己的星座（廟）和它受尊崇的星座（旺）。古書把行星在廟、在旺看作有力，在陷（廟對面的星座）、在弱（旺對面的星座）看作減損；Lilly《Christian Astrology》1647 年版 p.115 的表題就叫 Fortitudes and Debilities（力量與減損）。本站目前只判定廟與旺。" },
+      text: "古書替每顆行星指定它自己的星座（廟）和它受尊崇的星座（旺）。古書把行星在廟、在旺看作有力，在陷（廟對面的星座）、在弱（旺對面的星座）看作減損；Lilly《Christian Astrology》1647 年版 p.115 的表題就叫 Fortitudes and Debilities（力量與減損）。本站判定廟、旺、陷、弱，都只看整個星座。" },
+    { key: "detriment", term: "陷", en: "Detriment", chapter: "古典判斷",
+      text: "行星落在自己的廟正對面的星座，例如金星在牡羊（金星的廟是金牛與天秤，天秤的正對面是牡羊）。Lilly《Christian Astrology》1647 年版 p.104 的表有一欄 Detriment，p.105 說金星在牡羊「is said to be in her Detriment」；al-Bīrūnī《占星術入門》§442 稱為 wabāl。Ptolemy《占星四書》沒有陷這一項。本站照原書的分類列出。" },
+    { key: "fall", term: "弱", en: "Fall", chapter: "古典判斷",
+      text: "行星落在自己的旺正對面的星座，例如土星在牡羊（土星的旺是天秤）。Ptolemy《占星四書》I.19 已有這一項，他稱 depression（降）；Lilly《Christian Astrology》1647 年版 p.104 的表有一欄 Fall，p.105 說土星在牡羊「so is Infortunate」（因而不吉）；al-Bīrūnī《占星術入門》§443 說行星在弱時受到拘束、處境變壞。古書多半另給弱的度數，本站和旺一樣只判整個星座。" },
+    { key: "peregrine", term: "外來", en: "Peregrine", chapter: "古典判斷",
+      text: "行星所在的度數，在它自己的廟、旺、三分性、界、面五項裡一項都沒有，例如太陽在巨蟹的任何度數。這是 Lilly《Christian Astrology》1647 年版 p.112 的定義，他在 p.115 的表把外來列在減損一邊；al-Bīrūnī《占星術入門》§493 稱為 gharīb，說行星若又在陷或弱，災厄再加上去。外來與接納是兩件事。本站依 Lilly 自己 p.104 那一整張表判定；也有人把 peregrine 譯作游離或浮游。" },
     { key: "bounds_dignity", term: "界", en: "Bounds", chapter: "古典判斷",
       text: "把每個星座切成五段，每段由一顆行星管。古書有好幾套切法，本站平等提供，不替你選。" },
     { key: "face", term: "面／旬", en: "Face / Decan", chapter: "古典判斷",
@@ -41,6 +47,8 @@
       text: "用太陽、月亮與上升點的位置算出來的點，不是天體。日盤與夜盤的公式不同。命運點也叫福點、幸運點。" },
     { key: "dodecatemoria", term: "十二分部", en: "Dodecatemoria", chapter: "位置",
       text: "把一個點在星座裡走了幾度乘以 12，從同一個星座的起點往後數，數到的位置。Firmicus《Mathesis》II.13 用乘以 12，Manilius《Astronomica》II.693–748 把每個星座分成十二段，落到的星座相同；Paulus《導論》第 22 章另用乘以 13（Paulus 這一條只讀到二手轉述）。" },
+    { key: "novenaria", term: "九分部", en: "Novenaria", chapter: "位置（十二分部一區的說明）",
+      text: "把每個星座分成九份、每份 3°20′，第一份給同一元素的啟動星座（火象從牡羊、土象從摩羯、風象從天秤、水象從巨蟹起），再依黃道次序往下排，等於把黃經乘以 9。拉丁文稱 novenaria；吠陀占星的 navamsa（D9）是同一條算式，但吠陀用恆星黃道。al-Bīrūnī 與 Abū Maʿshar 都說這是印度的方法。本站不算，只在方法頁說明。" },
     { key: "lunar_mansions", term: "月宿", en: "Lunar mansions", chapter: "古典判斷",
       text: "把月亮繞黃道一圈的路分成 28 段，看月亮落在哪一段。阿拉伯與中世紀歐洲的文獻常用；分法有好幾種。" },
     { key: "planetary_hours", term: "行星時", en: "Planetary hours", chapter: "古典判斷",
@@ -68,6 +76,18 @@
     { key: "under_beams", term: "在光束下", en: "Under the beams", chapter: "古典判斷",
       text: "比焦傷再遠一點，行星仍被太陽的光芒蓋住，肉眼看不到。Lilly《Christian Astrology》1647 年版 p.113 到 17° 為止；"
         + "希臘化時期的作者只用一條 15° 的線。al-Bīrūnī《占星術入門》§481 說行星在光束下「像被關住的囚犯」。" },
+    { key: "swift_slow", term: "行速快慢", en: "Swift or slow in motion", chapter: "古典判斷",
+      text: "行星這一天在黃道上走的度數，比它的「平均每日行度」（mean motion）多是行速快，少是行速慢。"
+        + "Lilly《Christian Astrology》1647 年版 p.168 這樣定義，各行星章給了平均，例如土星每天 2′01″、月亮 13°10′36″；"
+        + "逆行的行星比的是每天退的度數（p.178 的例子）。p.115 把行速快列為偶然強，行速慢列為偶然弱。" },
+    { key: "stationary", term: "停滯", en: "Stationary", chapter: "古典判斷",
+      text: "行星看起來幾乎停住不動：快要由順行轉成逆行是第一次停滯，由逆行轉回順行是第二次停滯。"
+        + "Lilly《Christian Astrology》1647 年版寫各行星在轉向前停幾天：土星 5 天、木星 5 天與 4 天、火星兩三天與 2 天、"
+        + "金星 2 天、水星 1 天；轉向之後只替火星另寫了一天（轉回順行之後）。太陽與月亮不會停滯。" },
+    { key: "oriental_occidental", term: "東出西入", en: "Oriental and occidental", chapter: "古典判斷",
+      text: "相對太陽的位置。東出（oriental）的行星比太陽早升起，清晨在東方天空看得到，所以又叫晨星；"
+        + "在黃道上它其實位於太陽的西側。西入（occidental）的行星在太陽下山後還留在西方天空，叫昏星，在黃道上位於太陽東側。"
+        + "Lilly《Christian Astrology》1647 年版 p.114 這樣定義；月亮從滿月到新月是東出。古書另有以天空四象限分東西的用法，本站不輸出。" },
     { key: "void_of_course", term: "月空亡", en: "Void of course", chapter: "古典判斷",
       text: "月亮離開它所在的星座之前，不再與任何行星完成相位。Lilly《Christian Astrology》1647 年版 p.112 有這一條，"
         + "並說在卜卦（就一個問題起盤）裡，月亮空亡時事情很少順利進展。本站另要求相位在換星座前精確完成；"

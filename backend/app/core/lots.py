@@ -37,6 +37,7 @@ Spirit，都是具名分歧，本模組照實記錄而不採用。
 from .formatting import normalize_longitude
 from .frame_compatibility import NON_EARTH_OBSERVER_CENTER
 from .module_state import computed_receipt, not_applicable_receipt
+from .source_reading import SOURCE_READING_LEVELS, reference_only
 from .house_placements import (
     HOUSE_INTERVAL_SEMANTICS,
     METHOD_NAME as HOUSE_PLACEMENT_METHOD_NAME,
@@ -64,6 +65,54 @@ SECT_SOURCE = (
     "it sets) and Lilly 1647 p.42 (checking the chart time by the Sun's house). None "
     "specifies sun-centre, upper limb or refraction; the >0° rule is a product convention."
 )
+# The loci SECT_SOURCE names, one citation object each.  Where another register
+# entry records how far the same place was read, that record is used; the rest
+# claim the reference only.
+SECT_SOURCE_CITATIONS = [
+    {
+        "citation": "Dorotheus, Carmen Astrologicum I.1 (Pingree 1976 pp.161-162)",
+        "says": "day and night births as given categories (the triplicity lords by sect)",
+        "reading": SOURCE_READING_LEVELS[1],
+        "read_at": "Pingree's English translation (1976); the Arabic not checked",
+    },
+    {
+        "citation": "Dorotheus, Carmen Astrologicum I.22 (Pingree 1976 p.183)",
+        "says": "the sect light's triplicity lords",
+        "reading": SOURCE_READING_LEVELS[1],
+        "read_at": "Pingree's English translation (1976); the Arabic not checked",
+    },
+    reference_only("Ptolemy, Tetrabiblos I.7 (Robbins p.43)", "diurnal and nocturnal planets"),
+    reference_only("Vettius Valens, Anthologies III.5 (Pingree pp.133-134)",
+                   "day and night births as given categories"),
+    reference_only(
+        "Paulus Alexandrinus, Introduction ch.6, ch.23 (Boer 1958, main text; Schmidt 1995 pp.13, 43)",
+        "sect as a given category; Boer 1958 and Schmidt 1995 not checked",
+    ),
+    reference_only("Firmicus Maternus, Mathesis II.7.1-4", "planets above or below the earth by day and night"),
+    reference_only(
+        "Rhetorius ch.2, ch.44 (Holden 2009 numbering, a compilation of epitomes)",
+        "sect as a given category; not verified",
+    ),
+    reference_only("Abū Maʿshar, Great Introduction II.9.1", "sect; the locator not verified"),
+    reference_only("Abū Maʿshar, Abbreviation III.3 (Dykes ITA §III.2)", "sect as a given category"),
+    reference_only("al-Qabīṣī, Introduction I (Latin 1512)", "sect as a given category"),
+    {
+        "citation": "William Lilly, Christian Astrology (1647) p.113, 'Hayz'",
+        "says": "a diurnal planet by day above the earth, a nocturnal planet by night under the earth",
+        "reading": SOURCE_READING_LEVELS[0],
+        "read_at": "archive.org OCR text of a modern reset edition",
+    },
+    reference_only(
+        "William Lilly, Christian Astrology (1647) p.42",
+        "checking the chart time by the Sun's house",
+        "level pending: a passage named by the method research notes; the record does "
+        "not say which copy was read, or that it was read, so only the reference is claimed",
+    ),
+    reference_only(
+        "Vettius Valens, Anthologies III.11 (Pingree; = III.14 Kroll/Riley, '14K;11P')",
+        "the Moon 'above the earth' read as until it sets",
+    ),
+]
 # 近地平敏感提示帶：±50 角分（理由見 module docstring）。
 SECT_NEAR_CRITICAL_DEGREES = 50.0 / 60.0
 SECT_STATUSES = ("day", "night", "boundary_both_shown")
@@ -94,6 +143,55 @@ LOTS_SOURCE = (
     "Ptolemy gives no Spirit formula there; a non-reversing Spirit attributed to "
     "Ibn Ezra is not checked."
 )
+# The loci LOTS_SOURCE names, one citation object each, as for SECT_SOURCE.
+LOTS_SOURCE_CITATIONS = [
+    {
+        "citation": "Paulus Alexandrinus, Introduction ch.23",
+        "says": "reverses Fortune and Spirit at night (the product's formula)",
+        "reading": SOURCE_READING_LEVELS[1],
+        "read_at": (
+            "the Greek-Latin first printing (Wittenberg 1586); Boer 1958 not "
+            "checked; level pending: the record does not say whether the Greek or "
+            "the Latin translation of that printing was read, so only the "
+            "translation level is claimed"
+        ),
+    },
+    reference_only(
+        "Paulus Alexandrinus, Eisagōgika ch.23 (Boer 1958; Schmidt/Hand 1995 pp.43-45)",
+        "the same chapter in the modern editions, neither edition checked",
+        "neither edition checked; only the reference is claimed",
+    ),
+    reference_only(
+        "Vettius Valens, Anthologies III.11 (Pingree p.147; = III.14 Kroll/Riley, '14K;11P')",
+        "the day formula at night once the Moon has set; not adopted",
+    ),
+    reference_only(
+        "Greenbaum, Culture and Cosmos 11, 2007, p.183",
+        "the after-moonset rule (Valens III.11 Pingree = III.14 Kroll/Riley)",
+    ),
+    {
+        "citation": "al-Bīrūnī, Kitāb al-Tafhīm §476 (Wright 1934; he says after Abū Maʿshar)",
+        "says": "Abū Maʿshar's line of the lots",
+        "reading": SOURCE_READING_LEVELS[1],
+        "read_at": "Wright's English translation (1934)",
+    },
+    reference_only("Abū Maʿshar, Abbreviation VI.3-4", "the lots; not checked",
+                   "not consulted"),
+    {
+        "citation": "Ptolemy, Tetrabiblos III.10 (Robbins pp.275-277; = Hübner III.11)",
+        "says": "the Lot of Fortune from Sun to Moon by day and by night; not adopted",
+        "reading": SOURCE_READING_LEVELS[1],
+        "read_at": (
+            "Robbins's English (Loeb 1940): the whole of III.10 read in the "
+            "LacusCurtius transcription, the Lot of Fortune at pp.275-277; the Greek "
+            "not checked"
+        ),
+    },
+    reference_only(
+        "Rhetorius, CCAG VIII/4 p.121, via Greenbaum 2007 p.181",
+        "at night Ptolemy's Fortune falls on the reversing Spirit's degree",
+    ),
+]
 # Per the method research notes.
 LOTS_SOURCE_LABEL = (
     "Paulus, Eisagōgika ch.23 (read in the Wittenberg 1586 printing; Boer 1958 and "
@@ -406,7 +504,8 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
     "sect": {
         "applies_to": "derived_methods.sect",
         "method_provenance": SECT_METHOD_PROVENANCE,
-        "sources": SECT_SOURCE,
+        "sources": SECT_SOURCE_CITATIONS,
+        "source_summary": SECT_SOURCE,
     },
     "sect/near_horizon_band": {
         "applies_to": "derived_methods.sect.near_horizon_band",
@@ -423,7 +522,8 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
     "lots": {
         "applies_to": "derived_methods.lots",
         "method_provenance": LOTS_METHOD_PROVENANCE,
-        "sources": LOTS_SOURCE,
+        "sources": LOTS_SOURCE_CITATIONS,
+        "source_summary": LOTS_SOURCE,
     },
     "lots/boundary_policy": {
         "applies_to": "derived_methods.lots.boundary_policy",

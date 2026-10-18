@@ -131,7 +131,10 @@ def _group_rows(key: str, d: dict, bound: _fx.Bound) -> list[tuple[str, str]]:
         return [(bound.num(name), bound.num(sha[:16]) + "…　" + "符合釘選值") for name, sha in d["files"]]
     if key == "trace":
         digest = bound.num(d["digest"])
-        return [("逐步軌跡步數", bound.num(d["steps"])), (bound.label("SHA-256"), digest[:32]), ("", digest[32:]),
+        # Each printed half is its own number: a run of digits the split cuts in two
+        # is two numbers on the page, neither of them the run the full digest holds.
+        return [("逐步軌跡步數", bound.num(d["steps"])), (bound.label("SHA-256"), bound.num(digest[:32])),
+                ("", bound.num(digest[32:])),
                 ("跨語言可攜", d["portable"])]
     return [(label, bound.num(value)) for label, value in d[key]]
 

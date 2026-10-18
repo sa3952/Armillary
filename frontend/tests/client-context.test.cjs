@@ -92,6 +92,7 @@ test("每個閉集代碼都有專屬文案", () => {
     "request_body_read_timeout", "request_headers_too_large", "conflicting_request_framing",
     "empty_request_body", "bad_request", "unauthorized", "undeclared_host", "request_validation_failed",
     "civil_time_basis_required", "civil_time_basis_not_applicable",
+    "catalog_record_unknown", "catalog_location_mismatch",
   ];
   const rules = [
     "calendar_date_invalid", "second_finer_than_microsecond", "iana_name_required", "iana_timezone_unknown",

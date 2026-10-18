@@ -35,7 +35,7 @@ from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import PydanticCustomError, core_schema
 
 from .core.civil_time_basis import CIVIL_TIME_BASIS_ZONES, CivilTimeBasis
-from .core.dodecatemoria import DEFAULT_DODECATEMORIA_PROFILE, DodecatemoriaProfile
+from .core.dodecatemoria import DEFAULT_DODECATEMORIA_PROFILE, DodecatemoriaProfileOption
 from .core.solar_phase import DEFAULT_SOLAR_PHASE_PROFILE, SolarPhaseProfile
 from .core.time_utils import exact_second_microseconds
 from .core.frame_compatibility import (
@@ -213,6 +213,10 @@ def _leap_second_label_in_utc(datetime_value, timezone_value) -> _dt.datetime | 
 #   Zl  U+2028 line separator
 #   Zp  U+2029 paragraph separator
 _FORBIDDEN_LABEL_CATEGORIES = frozenset({"Cc", "Cf", "Zl", "Zp"})
+# Blank fillers that Unicode files under letters or symbols, so the categories
+# above do not reach them, yet render as nothing: the Hangul fillers (all
+# Default_Ignorable_Code_Point) and the blank braille pattern.
+_INVISIBLE_FILLER_CODEPOINTS = frozenset({"\u115f", "\u1160", "\u3164", "\uffa0", "\u2800"})
 
 # ZWNJ (U+200C) and ZWJ (U+200D) are category Cf but are deliberately exempt.
 # They are orthographically required in Persian, Arabic and Indic scripts,
@@ -229,7 +233,8 @@ def _first_forbidden_label_codepoint(label: str) -> str | None:
     for character in label:
         if character in _ALLOWED_FORMAT_CODEPOINTS:
             continue
-        if unicodedata.category(character) in _FORBIDDEN_LABEL_CATEGORIES:
+        if (unicodedata.category(character) in _FORBIDDEN_LABEL_CATEGORIES
+                or character in _INVISIBLE_FILLER_CODEPOINTS):
             return character
     return None
 
@@ -691,8 +696,10 @@ class OptionsInput(StrictInputModel):
     body_selection_preset: Literal["custom", "classical_seven_v1"] = "custom"
 
     # --- 具名古典尊貴元件；只回傳規則／表格結果，不打分、不解讀 ---
-    # 傳統七政的 domicile/exaltation 星座層級是基礎 profile，預設計算但可明示
-    # 關閉。精確擢升度數、陷、弱、互容與總分均不在此開關範圍。
+    # 界、面、三分性另可選「all」（全部並列）：本版每一套具名表都算，依下面列出的順序，
+    # 回應的 computed_profiles 寫出展開後的 id（core/essential_dignities.py PROFILE_IDS）。
+    # 傳統七政的廟、旺與其對面的陷、弱，只判整個星座。精確擢升度數、互容與總分
+    # 均不在此開關範圍。
     include_domicile_exaltation: bool = False
     bounds_profile: Optional[
         Literal[
@@ -700,12 +707,14 @@ class OptionsInput(StrictInputModel):
             "chaldaean_bounds_ptolemy_i_21_v1",
             "ptolemy_bounds_robbins_1940_v1",
             "lilly_received_bounds_1647_v1",
+            "all",
         ]
     ] = None
     decan_profile: Optional[
         Literal[
             "chaldean_planetary_faces_firmicus_ii_4_v1",
             "manilius_sign_decans_astronomica_iv_v1",
+            "all",
         ]
     ] = None
     triplicity_profile: Optional[
@@ -713,15 +722,22 @@ class OptionsInput(StrictInputModel):
             "dorothean_triplicity_three_rulers_v1",
             "ptolemy_triplicity_textual_corulership_v1",
             "lilly_triplicity_compact_1647_v1",
+            "all",
         ]
     ] = None
+    # 選了「all」（全部並列）時三套都已並列，這個開關不再多加什麼；舊請求照樣接受。
     triplicity_include_research_comparison: bool = False
+    # 外來：五項本質尊貴一項都沒有。只有一套定義（Lilly 1647 p.112），固定用他自己
+    # p.104 的表判定，不跟上面選的界、面、三分性。
+    peregrine_profile: Optional[Literal["lilly_1647_p112_v1"]] = None
 
     # --- 十二分部（dodecatemoria）---
     # 本命盤的選用技法：每個點在星座內的度數放大後對應到另一個星座。名單與規則在
     # core/dodecatemoria.py；文獻有兩種算法並存，具名 profile 平等提供。
     include_dodecatemoria: bool = False
-    dodecatemoria_profile: DodecatemoriaProfile = DEFAULT_DODECATEMORIA_PROFILE
+    # 「all」：兩種都算；頂層的 points 仍是預設那一種（出生時刻敏感度也讀它），
+    # 每一種的結果在 profile_results。
+    dodecatemoria_profile: DodecatemoriaProfileOption = DEFAULT_DODECATEMORIA_PROFILE
     # 月宿：月亮落在黃道二十八等分的哪一宿。只計算位置，不解讀。
     include_lunar_mansions: bool = False
     # 各行星離太陽多遠：日輪內、焦傷、在光束下。門檻與分法在 core/solar_phase.py；
@@ -731,6 +747,8 @@ class OptionsInput(StrictInputModel):
     solar_phase_disc_cazimi: bool = False
     # 行星與宮的古典分類：吉凶、日夜區、喜樂宮、hayz／halb、十二宮的名稱與分類，各標出處。
     include_classical_classifications: bool = False
+    # 行速快慢、停滯、東出西入（相對太陽）。平均行度與停滯天數在 core/motion_states.py。
+    include_motion_states: bool = False
 
     @model_validator(mode="after")
     def check_body_selection_preset(self):

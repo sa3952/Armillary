@@ -11,7 +11,18 @@
 # A zone key cannot be changed by reload; applying a change to one requires a
 # full restart, and the operator procedure owns verifying that the restart took
 # effect.
+# Chart computation (the chart and, where enabled, the annual route).  The
+# slowest chart of the 2026-10-18 polar grid asks Swiss for 327 rise/set
+# probes, about a quarter of a CPU-second measured, so the sustained rate keeps
+# one client near an eighth of a CPU; the burst (7 beyond the first) fits the
+# two workers' eight chart slots.
 limit_req_zone $binary_remote_addr zone=armillary_chart_client:10m rate=30r/m;
+# Place lookup and time conversion each have their own bucket: typing a few
+# place names or checking a time no longer spends the chart's budget, and
+# neither can raise what a client may spend on charts.  A lookup is one
+# catalogue query and a conversion is zone arithmetic, so both refill faster.
+limit_req_zone $binary_remote_addr zone=armillary_place_client:10m rate=120r/m;
+limit_req_zone $binary_remote_addr zone=armillary_convert_client:10m rate=60r/m;
 # Static asset budget is sized for ordinary browsing rather than for a single
 # request: one page bootstrap issues about a dozen asset GETs, and the burst
 # below absorbs several concurrent bootstraps. Requests in progress are bounded
@@ -317,7 +328,7 @@ server {
         error_page 429 /_error/429.json;
         error_page 502 /_error/502.json;
         error_page 503 /_error/503.json;
-        limit_req zone=armillary_chart_client burst=10 nodelay;
+        limit_req zone=armillary_chart_client burst=7 nodelay;
         # NGINX counts each concurrent HTTP/2 request here, and one cold page
         # load fans out to about a dozen assets over a single TLS connection.
         # This budget admits two complete page fanouts with headroom while the
@@ -354,7 +365,7 @@ server {
     # varies with the submitted terms.  Without its own location it fell through
     # to `location /` and inherited the static zone's 600 r/m, the loosest limit
     # in this file, although each request costs a catalogue query.  It is
-    # bounded here at the chart rate and given a shorter read timeout, because
+    # bounded here by its own zone and given a shorter read timeout, because
     # the application now caps its own statement budget below that.
     location ~ ^/api/places/search(?:/|$) {
         # An error_page here replaces every inherited one, so all four are named.
@@ -362,7 +373,7 @@ server {
         error_page 429 /_error/429.json;
         error_page 502 /_error/502.json;
         error_page 503 /_error/503.json;
-        limit_req zone=armillary_chart_client burst=5 nodelay;
+        limit_req zone=armillary_place_client burst=5 nodelay;
         limit_conn armillary_connections 32;
 
         proxy_request_buffering on;
@@ -394,7 +405,7 @@ server {
         error_page 429 /_error/429.json;
         error_page 502 /_error/502.json;
         error_page 503 /_error/503.json;
-        limit_req zone=armillary_chart_client burst=5 nodelay;
+        limit_req zone=armillary_convert_client burst=5 nodelay;
         limit_conn armillary_connections 32;
 
         proxy_request_buffering on;

@@ -28,6 +28,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import math
 
 
 # 二分法迭代上限。每次迭代把區間對半，故 60 次可把 0.25 日的初始區間收斂到
@@ -224,6 +225,43 @@ def find_crossings_detailed(
         if not deduped or record["t"] - deduped[-1]["t"] > tolerance_days:
             deduped.append(record)
     return deduped[:max_roots]
+
+
+def find_crossings_around(
+    value_at_jd: Callable[[float], float],
+    *,
+    center_jd: float,
+    half_window_days: float,
+    coarse_step_days: float,
+    tolerance_days: float,
+) -> list[dict]:
+    """The roots within ``half_window_days`` of ``center_jd``, scanned on a grid
+    fixed in absolute time.
+
+    A grid laid from the center would bisect one event through different Julian
+    days for every center (a birth instant, an hour's representative, a day's
+    noon), and its undetermined last places would move with the request.  Here
+    the grid starts at a whole multiple of the step, so every center reads the
+    same Julian days around one event and finds the same root.  Each record is
+    a ``find_crossings_detailed`` record with ``jd`` added (its ``t`` and
+    bracket count from the grid base, not from the center).
+    """
+
+    # With a step that is an exact binary fraction every grid point and
+    # bisection midpoint is an exact sum, so the Julian days read are identical.
+    base = math.floor(center_jd / coarse_step_days) * coarse_step_days
+    roots = find_crossings_detailed(
+        lambda t: value_at_jd(base + t),
+        window_days=2 * half_window_days + coarse_step_days,
+        coarse_step_days=coarse_step_days,
+        tolerance_days=tolerance_days,
+        start_days=-half_window_days,
+    )
+    return [
+        {**root, "jd": base + root["t"]}
+        for root in roots
+        if abs(base + root["t"] - center_jd) <= half_window_days
+    ]
 
 
 def _sample(

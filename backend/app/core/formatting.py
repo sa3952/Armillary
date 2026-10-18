@@ -237,9 +237,15 @@ def attach_sign_positions(
             if isinstance(entry, dict):
                 entry["sign_positions"] = _sign_positions(entry, LOT_KEYS)
 
-    # A twelfth-part row prints the point it was taken from beside the result.
+    # A twelfth-part row prints the point it was taken from beside the result;
+    # each rule's own rows (profile_results) print the same two positions.
     for record in _records(_walk(derived_methods, "dodecatemoria.points")):
         record["point_sign_position"] = sign_position(_number(record.get("point_longitude")))
+    rules = _walk(derived_methods, "dodecatemoria.profile_results")
+    for rule in rules.values() if isinstance(rules, dict) else ():
+        for record in _records(_walk(rule, "points")):
+            record["sign_position"] = sign_position(_number(record.get("longitude")))
+            record["point_sign_position"] = sign_position(_number(record.get("point_longitude")))
 
     for item in (birth_time_sensitivity or {}).get("position_ranges") or []:
         if isinstance(item, dict) and "representative_longitude" in item:

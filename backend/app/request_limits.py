@@ -11,6 +11,7 @@ from typing import Final, Mapping
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from .refusals import (
+    ANNUAL_ROUTE,
     CHART_ROUTE,
     HEALTH_ROUTE,
     PLACE_SEARCH_ROUTE,
@@ -30,6 +31,13 @@ MAX_HOSTED_REQUESTS_PER_WORKER: Final = 32
 # accept connections independently, so simultaneous charts are not spread
 # evenly and only one worker's pool is guaranteed (measured on 2026-10-04).
 MAX_HOSTED_COMPUTE_REQUESTS_PER_WORKER: Final = 4
+# The annual route's own calculation pool.  An annual projection costs a small
+# part of a polar chart (at most about 0.4 CPU-s measured on 2026-10-18) but it
+# held a chart slot while waiting for Swiss, so a burst of annual requests left
+# no chart admitted.  Both routes still wait in the one Swiss line, where an
+# admitted annual request delays a chart by its own compute time only, and a
+# full chart pool does not refuse an annual request.
+MAX_HOSTED_ANNUAL_REQUESTS_PER_WORKER: Final = 2
 # Place lookup and time conversion.  They are neither page traffic nor chart
 # computation: an admitted place lookup holds a worker thread for up to the
 # catalogue statement budget, and in the general pool a burst of lookups refused
@@ -69,8 +77,12 @@ EDGE_CHART_READ_TIMEOUT_SECONDS: Final = 30.0
 # itself is computed, and only the search modules, whose windows run past the
 # bundled segments, are refused out-of-coverage before any Swiss call), and
 # ~2.9 s for the worst-options chart under amd64 emulation on 2026-10-04,
-# doubled when the two workers share one CPU.  Revisit with a measurement on
-# the production host.
+# doubled when the two workers share one CPU.  On 2026-10-18 the rise/set
+# pre-filter began reading the request's own refraction and each body's own
+# disc, and the walks moved to a fixed day grid shared by every representative
+# sample: the slowest polar chart of that day's grid fell from 2,505 to 327
+# Swiss probes (median CPU on one machine 1.27 -> 0.19 s for 68.5 N,
+# 2150-03-21, date only).  Revisit with a measurement on the production host.
 COMPUTE_P99_ESTIMATE_SECONDS: Final = 8.0
 # Serialization, compression and the edge hop after the calculation returns
 # (tens of milliseconds measured), plus the page's own request set-up inside
@@ -316,6 +328,7 @@ class RequestCapacityBoundary:
         max_concurrent: int = MAX_HOSTED_REQUESTS_PER_WORKER,
         max_compute_concurrent: int = MAX_HOSTED_COMPUTE_REQUESTS_PER_WORKER,
         max_search_concurrent: int = MAX_HOSTED_SEARCH_REQUESTS_PER_WORKER,
+        max_annual_concurrent: int = MAX_HOSTED_ANNUAL_REQUESTS_PER_WORKER,
         compute_paths: frozenset[str] = _COMPUTE_PATHS,
     ) -> None:
         if max_concurrent <= 0:
@@ -324,13 +337,17 @@ class RequestCapacityBoundary:
             raise ValueError("max_compute_concurrent must be positive")
         if max_search_concurrent <= 0:
             raise ValueError("max_search_concurrent must be positive")
+        if max_annual_concurrent <= 0:
+            raise ValueError("max_annual_concurrent must be positive")
         self.app = app
         self.max_concurrent = max_concurrent
         self.max_compute_concurrent = max_compute_concurrent
         self.max_search_concurrent = max_search_concurrent
+        self.max_annual_concurrent = max_annual_concurrent
         self.compute_paths = frozenset(compute_paths)
         self._active = 0
         self._active_compute = 0
+        self._active_annual = 0
         self._active_search = 0
         self._lock = threading.Lock()
 
@@ -346,9 +363,16 @@ class RequestCapacityBoundary:
             return
 
         compute = path in self.compute_paths
+        # The annual calculation has its own pool; every other calculation
+        # path counts against the chart's.
+        annual = compute and path == ANNUAL_ROUTE
         search = path in _LOOKUP_PATHS
         with self._lock:
-            if compute:
+            if annual:
+                accepted = self._active_annual < self.max_annual_concurrent
+                if accepted:
+                    self._active_annual += 1
+            elif compute:
                 accepted = self._active_compute < self.max_compute_concurrent
                 if accepted:
                     self._active_compute += 1
@@ -376,7 +400,9 @@ class RequestCapacityBoundary:
                 await self.app(scope, receive, send)
         finally:
             with self._lock:
-                if compute:
+                if annual:
+                    self._active_annual -= 1
+                elif compute:
                     self._active_compute -= 1
                 elif search:
                     self._active_search -= 1

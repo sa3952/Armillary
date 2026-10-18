@@ -98,7 +98,7 @@
       openYears: new Map(),
       solar: freshSolar(),
     };
-    const solarReturn = createSolarReturn({ doc, win, state, el, node, titledSection, post, failureMessage });
+    const solarReturn = createSolarReturn({ doc, win, state, el, node, titledSection, post, failureMessage, codeNote });
     // 伺服器沒有開年度路由（回 404／405）：這是部署狀態，不是這次輸入的問題。記住它，之後同一頁
     // 的每一張盤都直接顯示「尚未開放」，不再送出。
     let routeUnavailable = false;
@@ -113,6 +113,15 @@
       if (className) element.className = className;
       if (text !== undefined && text !== null) element.textContent = text;
       return element;
+    }
+
+    /** 回應原值的代碼：標明是代碼、標英文，報讀器不把它當中文念；畫面上照字可查。 */
+    function codeNote(code) {
+      const wrap = node("span", "tl-code", "代碼 ");
+      const value = node("code", null, code);
+      value.lang = "en";
+      wrap.appendChild(value);
+      return wrap;
     }
 
     function glyph(key) {
@@ -572,7 +581,7 @@
       Model.unavailableTechniques(state.model).forEach((entry) => {
         const item = node("p", "tl-na");
         item.append(node("strong", null, `${entry.title}：沒有算。`), doc.createTextNode(entry.text));
-        item.appendChild(node("span", "tl-code mono", entry.code));
+        item.appendChild(codeNote(entry.code));
         box.appendChild(item);
       });
       body.append(box, conventionsBox());
@@ -672,12 +681,19 @@
           card.setAttribute("aria-controls", "annual-detail");
           card.addEventListener("click", () => select(tile.select, card));
         }
-        card.append(
+        const parts = [
           node("span", "tl-tile-key", tile.title),
           runs(node("span", "tl-tile-value"), tile.value),
           runs(node("span", "tl-tile-sub"), tile.sub),
-        );
-        if (tile.gloss) card.appendChild(node("span", "tl-tile-gloss", tile.gloss));
+        ];
+        if (tile.gloss) parts.push(node("span", "tl-tile-gloss", tile.gloss));
+        card.append(...parts);
+        if (tile.select) {
+          // 按鈕的名稱只是「技法：主星」；其下的期間與名詞解釋是描述，不併進名稱（否則一顆按鈕念兩百字）。
+          parts.forEach((part, index) => { part.id = `annual-tile-${tile.key}-${index}`; });
+          card.setAttribute("aria-labelledby", parts.slice(0, 2).map((part) => part.id).join(" "));
+          if (parts.length > 2) card.setAttribute("aria-describedby", parts.slice(2).map((part) => part.id).join(" "));
+        }
         grid.appendChild(card);
       });
       return grid;
@@ -687,7 +703,7 @@
       return Model.warningNotices(state.model).map((warning) => {
         const notice = node("p", "tl-notice");
         notice.append(node("strong", null, "注意："), doc.createTextNode(warning.text));
-        notice.appendChild(node("span", "tl-code mono", warning.code));
+        notice.appendChild(codeNote(warning.code));
         return notice;
       });
     }
@@ -735,7 +751,10 @@
       labels.appendChild(axisLabel);
       const scroll = node("div", "tl-scroll");
       const canvas = node("div", "tl-canvas");
-      canvas.appendChild(node("div", "tl-axis"));
+      // 刻度只是畫面上的尺：每一段的名稱已寫明起訖日期，報讀器不必再念一串「0 1990 1 1991」。
+      const axisRow = node("div", "tl-axis");
+      axisRow.setAttribute("aria-hidden", "true");
+      canvas.appendChild(axisRow);
       let previousGroup = null;
       model.lanes.forEach((lane) => {
         const first = lane.group !== previousGroup;
@@ -821,12 +840,11 @@
       const x = (day) => (Math.min(Math.max(day, domain.startDay), domain.endDay) - domain.startDay) * ppd;
       const total = Math.ceil((domain.endDay - domain.startDay) * ppd);
       canvas.style.width = `${total}px`;
-      const narrow = matches(MOBILE_QUERY);
-      const step = state.zoom === "life" ? (narrow ? 20 : 10) : state.zoom === "decade" ? (narrow ? 2 : 1) : 1;
       const axis = canvas.querySelector(".tl-axis");
+      // 刻度先每年畫一個，量出最寬的標籤（字型由瀏覽器決定，Linux 的 Noto 比 macOS 寬），再只留每 step 年一個：
+      // 相鄰兩個標籤之間至少放得下一個標籤。固定的「每 10 年一格」在窄的主欄或寬的字型下會讓年份疊成「1981988199…」。
       axis.replaceChildren();
-      model.years.forEach((year) => {
-        if (year.n % step) return;
+      const ticks = model.years.map((year) => {
         const tick = node("div", "tl-tick");
         tick.style.left = `${x(year.startDay)}px`;
         tick.appendChild(node("b", null, `${year.n}`));
@@ -834,7 +852,14 @@
         tick.appendChild(doc.createTextNode(state.zoom === "year"
           ? `${year.start.localDate} ${year.start.localTime || ""}`.trim() : year.start.localDate.slice(0, 4)));
         axis.appendChild(tick);
+        return [year, tick];
       });
+      const widest = Math.max(0, ...ticks.map(([, tick]) => tick.scrollWidth || 0));
+      // 量不到寬度（尚未排版）時以字數估：數字約 0.6em。
+      const labelPx = widest > 0 ? widest + 6 : (state.zoom === "year" ? 17 : 5) * 14 * 0.6 + 6;
+      const yearPx = 365.25 * ppd;
+      const step = [1, 2, 5, 10, 20, 25, 50].find((every) => every * yearPx >= labelPx) || 50;
+      ticks.forEach(([year, tick]) => { if (year.n % step) tick.remove(); });
       canvas.querySelectorAll(".tl-seg-item").forEach((button) => {
         const start = Number(button.dataset.start);
         const end = Number(button.dataset.end);
@@ -966,6 +991,7 @@
           if (details.open) queueLevel2(first.startDay, last.endDay);
         });
         const table = node("table", "tl-book-table");
+        table.appendChild(node("caption", "visually-hidden", `年表：${first.n}–${last.n} 足歲`));
         const thead = node("thead");
         const headRow = node("tr");
         const corner = node("th", null, "年度");
@@ -1258,6 +1284,7 @@
       box.appendChild(node("summary", null, "七個延伸的阿拉伯點（本命，整宮）"));
       box.appendChild(node("p", "note", "Paulus 的五個點與 Valens 的兩個點；Valens 的兩點加注（Valens），與 Paulus 同名的點分開。只列星座與宮位，不解讀。宮位用整宮：一個星座算一宮。"));
       const table = node("table", "tl-lots-table");
+      table.appendChild(node("caption", "visually-hidden", "七個延伸的阿拉伯點"));
       const head = node("tr");
       ["點", "星座", "宮位"].forEach((text) => { const th = node("th", null, text); th.scope = "col"; head.appendChild(th); });
       const thead = node("thead");
@@ -1412,7 +1439,7 @@
    * 面板的狀態）、stop()（表單改動時停下進行中的請求）與 clear()（丟棄）。
    */
   function createSolarReturn(context) {
-    const { doc, win, state, el, node, titledSection, post, failureMessage } = context;
+    const { doc, win, state, el, node, titledSection, post, failureMessage, codeNote } = context;
     const solarLifecycle = Lifecycle.createSensitiveDataLifecycle({
       revokeObjectUrl: (url) => win.URL.revokeObjectURL(url),
     });
@@ -1618,7 +1645,7 @@
       if (panel.state !== "computed") {
         const refusal = node("p", "tl-na");
         refusal.append(node("strong", null, "沒有算。"), doc.createTextNode(panel.text));
-        refusal.appendChild(node("span", "tl-code mono", panel.code));
+        refusal.appendChild(codeNote(panel.code));
         wrap.appendChild(refusal);
         return wrap;
       }

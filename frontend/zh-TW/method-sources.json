@@ -20,6 +20,12 @@
      "says": "in Riley's English: 'We are investigating the 35th year. I divide <35> by 12 ... remainder 11 ... 11 signs from the Ascendant and Mars <in Virgo> to Saturn in Cancer'"
     },
     {
+     "citation": "Vettius Valens, Anthologies IV.9 (Kroll 1908 p.169), Kroll's note on the 33rd year",
+     "read_at": "level pending: the counting note reports Kroll's note, but the record does not say p.169 was read; only the reference is claimed",
+     "reading": "bibliographic_only",
+     "says": "reads the 31st and 32nd years as complete and the 33rd as not yet complete"
+    },
+    {
      "citation": "Firmicus Maternus, Mathesis II.27.3-4, II.28.3 (Kroll-Skutsch 1897 vol.1 pp.76-77)",
      "read_at": "as checked by the project's research notes, not re-read for this entry",
      "reading": "secondary_only",
@@ -137,6 +143,12 @@
      "read_at": "the first edition (archive.org/details/b30338724)",
      "reading": "original_language_read",
      "says": "the planets' orbs, the first column given as those of 'the best Authors and my owne Experience'"
+    },
+    {
+     "citation": "William Lilly, Christian Astrology (1647) Book I p.110",
+     "read_at": "level pending: the record describes the example but does not say which copy was read; only the reference is claimed",
+     "reading": "bibliographic_only",
+     "says": "a separation example that uses the second set of orbs"
     }
    ],
    "tabulated_from": [
@@ -258,7 +270,27 @@
   },
   "aspects/whole_sign": {
    "applies_to": "derived_methods.aspects.whole_sign",
-   "sources": "Ptolemy I.13 (Robbins pp.73-75 = Hübner I.14), I.16 (pp.77-79 = Hübner I.17); Ps.-Porphyry 'On bearing testimony' (Antiochus; CCAG V.4 pp.185-228, chapter not checked). Counts signs between; Firmicus II.22 counts inclusively (trine = fifth sign)"
+   "source_summary": "Ptolemy I.13 (Robbins pp.73-75 = Hübner I.14), I.16 (pp.77-79 = Hübner I.17); Ps.-Porphyry 'On bearing testimony' (Antiochus; CCAG V.4 pp.185-228, chapter not checked). Counts signs between; Firmicus II.22 counts inclusively (trine = fifth sign)",
+   "sources": [
+    {
+     "citation": "Ptolemy, Tetrabiblos I.13 (Robbins pp.73-75 = Hübner I.14), I.16 (pp.77-79 = Hübner I.17)",
+     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "aspects counted by the signs between"
+    },
+    {
+     "citation": "Ps.-Porphyry, 'On bearing testimony' (Antiochus; CCAG V.4 pp.185-228)",
+     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "aspects by sign; chapter not checked"
+    },
+    {
+     "citation": "Firmicus Maternus, Mathesis II.22",
+     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "counts inclusively (trine = fifth sign)"
+    }
+   ]
   },
   "birth_time_sensitivity/approximate_hour": {
    "applies_to": "birth_time_sensitivity (precision approximate_hour)",
@@ -372,7 +404,7 @@
      "says": "Moon and Venus feminine, Mercury common; Sun and Jupiter diurnal, Moon and Venus nocturnal, Saturn given to the day and Mars to the night; Mercury diurnal as a morning star and nocturnal as an evening star; the signs alternate masculine and feminine from Aries"
     },
     "ptolemy_tetrabiblos_iii_3_10": {
-     "citation": "Ptolemy, Tetrabiblos III.3 and III.10 with Robbins's notes 56-57",
+     "citation": "Ptolemy, Tetrabiblos III.3 and III.10 with Robbins's translator's notes (LacusCurtius online numbering, notes 56-57)",
      "read_at": "Robbins translation (Loeb 1940), LacusCurtius",
      "reading": "translation_read",
      "says": "angles, succedent places and places declining from the angles; the names of the twelve places (Horoscope, Gate of Hades, Goddess, Lower Midheaven, Good Fortune, Bad Fortune, Occident, Beginning of Death, God, Midheaven, Good Daemon, Bad Daemon)"
@@ -505,6 +537,24 @@
    ],
    "technique_family": "lots"
   },
+  "contested/mean_motion_values": {
+   "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=mean_motion_values; marks derived_methods.motion_states)",
+   "sources": [
+    {
+     "citation": "William Lilly, Christian Astrology (1647) pp.57, 61, 65, 69, 80, 168, 178",
+     "read_at": "Wellcome Library copy, archive.org b30338724, scanned pages",
+     "reading": "original_language_read",
+     "says": "means Saturn 2'01\", Jupiter 4'59\", Mars 31'27\" (p.178), Sun 59'08\", Moon 13 deg 10'36\"; the Moon slow under 13 deg 10' (p.80)"
+    },
+    {
+     "citation": "Guido Bonatti, De astronomia (Basel 1550) cols.129-130",
+     "read_at": "archive.org bub_gb_BgWuc5O-JzIC, scan n82",
+     "reading": "original_language_read",
+     "says": "means Saturn 2'00\"35''', Jupiter 4'59\", Mars 31'26\", Sun 59'08\", Moon 13 deg 10'35\"; equal to the mean is aequalis"
+    }
+   ],
+   "technique_family": "motion_states"
+  },
   "contested/partile_definition": {
    "applies_to": "calculation_dossier.methodology.classical_source_disagreements (key=partile_definition; marks derived_methods.aspects)",
    "sources": [
@@ -591,6 +641,7 @@
     "dodecatemoria_formula",
     "hayz_definition",
     "lot_formulas",
+    "mean_motion_values",
     "partile_definition",
     "solar_phase_limits",
     "void_of_course_definition"
@@ -735,7 +786,21 @@
     "note": "The date is that of the cited printed definition, not a claim of earliest use; earlier uses are not checked. Whether the declinations include planetary latitude is not asserted. The technique is not presented as Hellenistic or medieval.",
     "status": "attested_placidus_1657"
    },
-   "method_provenance": "not_classical_earliest_use_attribution_unverified"
+   "method_provenance": "not_classical_earliest_use_attribution_unverified",
+   "sources": [
+    {
+     "citation": "Placidus de Titis, Tabulae primi mobilis (Padua: Frambotti 1657), Theses ex II. libro, no. 50, p.9",
+     "read_at": "level pending: the record quotes the thesis but does not say which copy was read; only the reference is claimed",
+     "reading": "bibliographic_only",
+     "says": "the so-called antiscia renamed 'Parallelos', equal distance from the equator, and the contra-parallel"
+    },
+    {
+     "citation": "Ptolemy, Tetrabiblos I.14-I.15",
+     "read_at": "level pending: named through Placidus; the record does not say Ptolemy was read for this entry",
+     "reading": "bibliographic_only",
+     "says": "signs of equal rising and the same parallel, as Placidus presents it"
+    }
+   ]
   },
   "dignities/chaldaean_bounds_ptolemy_i_21_v1": {
    "applies_to": "derived_methods.essential_dignities.profile_results.chaldaean_bounds_ptolemy_i_21_v1",
@@ -750,12 +815,21 @@
     "note": "Generated from the rule Ptolemy reports: the triplicity ruler sequence with Saturn and Mercury exchanging position, and so length, by sect. I.21 is the only known classical witness (Jones & Steele 2011 §1: 'attested in no other source').",
     "row_exceptions": []
    },
+   "sources": [
+    {
+     "citation": "Ptolemy, Tetrabiblos I.21, trans. Robbins (Loeb 1940) pp.99-101 (= Hübner 1998 I.21)",
+     "read_at": "level pending: the record gives the chapter and Robbins's pages but does not say what was read; only the reference is claimed",
+     "reading": "bibliographic_only",
+     "says": "the Chaldaean terms as a prose rule, no table"
+    }
+   ],
    "statement": "Chaldaean terms as reported by Ptolemy, Tetrabiblos I.21: triplicity sequence, sect-dependent Saturn/Mercury order, lengths 8/7/6/5/4"
   },
   "dignities/chaldean_planetary_faces_firmicus_ii_4_v1": {
    "applies_to": "derived_methods.essential_dignities.profile_results.chaldean_planetary_faces_firmicus_ii_4_v1",
    "details": {
-    "citation_verification": "cited_from_methodology_research_report_not_independently_checked",
+    "citation_verification": "checked_against_online_transcription_not_printed_page",
+    "citation_verification_evidence": "Kroll-Skutsch 1897 vol. I p.45, II.4.3, every face, read in the archive.org OCR text of matheseoslibrivi01firmuoft",
     "complete_table_anchor": "Firmicus Maternus, Mathesis II.4.3 (complete 36-face table; Kroll-Skutsch ed. 1897, vol. I p.45; chapter II.4 pp.44-46)",
     "conventional_name_note": "'Chaldean order' is the conventional modern name for this sequence; the profile does not claim the method begins with Firmicus",
     "earliest_attributed_tradition": "Teucer of Babylon, transmitted through later compilations, not a surviving table (Hübner, Berichte zur Wissenschaftsgeschichte 39.1, 2016, 36-51: 'first witness, if not the inventor'; abstract only)",
@@ -764,6 +838,38 @@
     "not_to_be_confused_with": "Ptolemy's 'proper face', Tetrabiblos I.23 (Robbins pp.111-113); shares only the name 'Chaldaean' with the terms",
     "parallel_witness": "Paulus Alexandrinus, Introduction ch.4 (Boer 1958 numbering, main text; Schmidt/Hand 1995 pp.9-10), 'seven-zoned sphere' (order and term per research report, not checked)"
    },
+   "sources": [
+    {
+     "citation": "Firmicus Maternus, Mathesis II.4.3 (Kroll-Skutsch 1897 vol. I p.45)",
+     "read_at": "the archive.org OCR text of matheseoslibrivi01firmuoft; checked against the online transcription, not the printed page",
+     "reading": "original_language_read",
+     "says": "the complete 36-face table, every face"
+    },
+    {
+     "citation": "Firmicus Maternus, Mathesis II.4 (Kroll-Skutsch 1897 vol. I pp.44-46)",
+     "read_at": "p.45 was read; for the rest of the chapter only the reference is claimed",
+     "reading": "bibliographic_only",
+     "says": "the chapter around the table"
+    },
+    {
+     "citation": "Paulus Alexandrinus, Introduction ch.4 (Boer 1958 numbering, main text; Schmidt/Hand 1995 pp.9-10)",
+     "read_at": "the order and the term as the method research report gives them; Boer 1958 and Schmidt/Hand 1995 not checked",
+     "reading": "secondary_only",
+     "says": "the 'seven-zoned sphere', a parallel witness"
+    },
+    {
+     "citation": "William Lilly, Christian Astrology (1647) p.104, face columns",
+     "read_at": "level pending: the record does not say which copy, or that the face columns were read; only the reference is claimed",
+     "reading": "bibliographic_only",
+     "says": "a later witness to the same order"
+    },
+    {
+     "citation": "Ptolemy, Tetrabiblos I.23, trans. Robbins (Loeb 1940) pp.111-113",
+     "read_at": "level pending: the record does not say what was read; only the reference is claimed",
+     "reading": "bibliographic_only",
+     "says": "Ptolemy's 'proper face', a different doctrine that shares only the name"
+    }
+   ],
    "statement": "Firmicus Maternus, Mathesis II.4, planetary decans/faces in the order conventionally called Chaldean"
   },
   "dignities/dorothean_triplicity_three_rulers_v1": {
@@ -771,7 +877,12 @@
    "details": {
     "chapter": "Carmen Astrologicum I.1 (Pingree pp.161-162); use of the rulers I.4 (pp.163-164, not checked)",
     "citation_verification": "checked_against_cited_edition_pages",
-    "corroboration": "Valens II.1-2 (Pingree pp.54-56; Riley/Griscti pp.89-92; not checked)",
+    "corroboration": {
+     "citation": "Vettius Valens, Anthologies II.1 (Kroll and Pingree II.1; Pingree pp.54-55 by Riley's /P/ markers)",
+     "read_at": "Riley's translation, the PDF of his preliminary edition (Vettius_Valens_Riley.pdf), p.25",
+     "reading": "translation_read",
+     "says": "the same four triads by day and by night as Dorotheus, the third planet working with both sects"
+    },
     "cross_check_pending": "Dykes, Dorotheus's Carmen Astrologicum, 2nd ed. (not compared)",
     "sign_specific_additional_shares": [
      {
@@ -784,6 +895,44 @@
     "third_ruler_term": "third_and_common_ruler",
     "third_ruler_term_source": "Holden's Rhetorius per research report, not checked; Pingree has 'then' (I.1), 'associate' (I.28), 'participant' (I.10)"
    },
+   "sources": [
+    {
+     "citation": "Dorotheus, Carmen Astrologicum I.1 (Pingree 1976 pp.161-162)",
+     "read_at": "Pingree's English translation (1976), checked against the cited pages; the Arabic not checked",
+     "reading": "translation_read",
+     "says": "the triplicity rulers; in Virgo also a share for Mercury (p.162)"
+    },
+    {
+     "citation": "Dorotheus, Carmen Astrologicum I.28 (Pingree 1976 p.196)",
+     "read_at": "Pingree's English translation (1976), checked against the cited page; the Arabic not checked",
+     "reading": "translation_read",
+     "says": "the third ruler, 'the associate of these two'"
+    },
+    {
+     "citation": "Hephaestio, Apotelesmatica I.6",
+     "read_at": "an online transcription following CCAG/TLG; the Pingree 1973 edition not checked",
+     "reading": "original_language_read",
+     "says": "the Greek verse with the same four triads"
+    },
+    {
+     "citation": "Schmidt 1994 p.30",
+     "read_at": "not checked",
+     "reading": "bibliographic_only",
+     "says": "Hephaestio's verse in translation"
+    },
+    {
+     "citation": "Dorotheus, Carmen Astrologicum I.4 (Pingree pp.163-164)",
+     "read_at": "not checked",
+     "reading": "bibliographic_only",
+     "says": "the use of the rulers"
+    },
+    {
+     "citation": "Dorotheus, Carmen Astrologicum I.10 (Pingree)",
+     "read_at": "level pending: the record does not say this page was read; only the reference is claimed",
+     "reading": "bibliographic_only",
+     "says": "the word 'participant' for the third ruler"
+    }
+   ],
    "statement": "Dorotheus, Carmen Astrologicum I.1 (Arabic recension; Pingree 1976 pp.161-162): the first two rulers exchange by sect and the third ('the associate of these two', I.28 p.196) participates by day and by night; the Greek verse in Hephaestio I.6 gives the same four triads (read in an online transcription following CCAG/TLG; the Pingree 1973 edition and Schmidt 1994 p.30 not checked)"
   },
   "dignities/egyptian_bounds_robbins_1940_v1": {
@@ -802,6 +951,43 @@
      "p.96, Greek table of the Egyptian terms with cumulative endpoints to 30 in every sign (both copies, Internet Archive page n419)",
      "p.96 n.1: the totals some manuscripts add (Saturn 57°, Jupiter 79°, Mars 66°, Venus 82°, Mercury 76°) equal this table's totals"
     ],
+    "manuscript_variants": [
+     {
+      "citation": "Robbins 1940 p.97 n.2 (Latin apparatus to the Greek table on p.96)",
+      "line_note": "Robbins names page lines 26 and 28; Venus and Mars occur in Capricorn only at lines 3 and 5, which is where they are recorded here",
+      "read_at": "the scanned 1964 reprint of Robbins (Loeb 1940), University of Toronto copy, Internet Archive manethowithengli00maneuoft, pages n420; Vat. gr. 1453 and Camerarius's printings were not read",
+      "reading": "secondary_only",
+      "readings": [
+       {
+        "line": 3,
+        "other": [
+         "venus",
+         7
+        ],
+        "sign": "capricorn",
+        "table": [
+         "venus",
+         8
+        ],
+        "witness": "camerarius_printing"
+       },
+       {
+        "line": 5,
+        "other": [
+         "mars",
+         5
+        ],
+        "sign": "capricorn",
+        "table": [
+         "mars",
+         4
+        ],
+        "witness": "camerarius_printing"
+       }
+      ],
+      "says": "Robbins follows the tables of Vat. gr. 1453 (which contains Proclus's Paraphrase); Camerarius's printing agrees except at lines 26 and 28 of the Greek page, under Capricorn, where it offers Venus 7 and Mars 5; the tables are in manuscripts PLMNAD and omitted in VE"
+     }
+    ],
     "note": "Ptolemy reports these as the Egyptian terms. The Robbins printing is one realization of a table that later witnesses transmit with local variants. 'Egyptian' is the name Ptolemy reports; Babylonian tablets preserve forerunners (Jones & Steele, ISAW Papers 1, 2011; Steele, JCS 67, 2015); no table is claimed for the tablets.",
     "row_exceptions": [],
     "witnesses": [
@@ -809,6 +995,26 @@
      "not checked: Dorotheus via Hephaistio; Paulus ch.3; Abū Maʿshar, Abbr. 7.10"
     ]
    },
+   "sources": [
+    {
+     "citation": "Ptolemy, Tetrabiblos I.20, trans. Robbins (Loeb 1940) pp.96-97, the Greek and English tables of the Egyptian terms (= Hübner 1998 I.21)",
+     "read_at": "two scanned copies of the 1964 reprint of Robbins (Loeb 1940): Internet Archive L350ManethoHistoryOfEgyptPtolemyTetrabiblos and University of Toronto copy manethowithengli00maneuoft, pp.96-97 (pages n419-n420)",
+     "reading": "translation_read",
+     "says": "the table the profile uses, every cell, and its totals (p.96 n.1)"
+    },
+    {
+     "citation": "Ptolemy, Tetrabiblos I.20, trans. Robbins (Loeb 1940) pp.91-97, table p.97",
+     "read_at": "the record names pp.96-97 as read; for pp.91-95 only the reference is claimed",
+     "reading": "bibliographic_only",
+     "says": "the chapter on the Egyptian terms"
+    },
+    {
+     "citation": "Firmicus Maternus, Mathesis II.6.4-5, 10; Vettius Valens, Anthologies I.3",
+     "read_at": "the witness list says these were checked but not in which text or edition; only the reference is claimed",
+     "reading": "bibliographic_only",
+     "says": "witnesses to the Egyptian terms"
+    }
+   ],
    "statement": "Egyptian terms as reported by Ptolemy, Tetrabiblos I.20; Frank E. Robbins trans., Loeb 1940, pp.91-97, table p.97; a transmitted table (Robbins's printed recension), not a single manuscript witness"
   },
   "dignities/lilly_received_bounds_1647_v1": {
@@ -847,6 +1053,8 @@
         5
        ]
       ],
+      "read_at": "the scanned first edition, Wellcome copy, archive.org/details/b30338724 (leaves n137-n138) and the 1659 edition, p.104",
+      "reading": "original_language_read",
       "row_changed": true,
       "row_verification": "corrected_against_first_edition_page_images",
       "sign": "leo"
@@ -855,6 +1063,26 @@
     "source_priority": "Christian Astrology 1647 p.104 consolidated table",
     "table_heading": "'...Dignities of the Planets according to Ptolomy' (Lilly's heading)"
    },
+   "sources": [
+    {
+     "citation": "William Lilly, Christian Astrology (1647) p.104, Table of the Essential Dignities, Termes columns",
+     "read_at": "the scanned first edition, Wellcome copy, archive.org/details/b30338724 (leaves n137-n138), and the 1659 edition, p.104",
+     "reading": "original_language_read",
+     "says": "the table the profile uses"
+    },
+    {
+     "citation": "William Lilly, Christian Astrology (1647) planet chapters, pp.57, 62, 66, 73, 76-77",
+     "read_at": "as the Leo row's evidence records; the record does not say which copy of the 1647 text was read for these pages",
+     "reading": "original_language_read",
+     "says": "the terms each planet's chapter lists, compared with the p.104 table"
+    },
+    {
+     "citation": "Robbins 1940 p.108 n.1",
+     "read_at": "read for the Ptolemaic terms' Libra row (see that profile); here only the reference is claimed",
+     "reading": "bibliographic_only",
+     "says": "the manuscripts' planet totals (Jupiter 79, Mars 66)"
+    }
+   ],
    "statement": "William Lilly, Christian Astrology (1647), p.104, Table of the Essential Dignities, Termes columns; Leo reads Saturn 6, Mercury 7, Venus 6, Jupiter 6, Mars 5"
   },
   "dignities/lilly_triplicity_compact_1647_v1": {
@@ -868,12 +1096,20 @@
     "note": "Fire, earth and air coincide with the first two Dorothean rulers, but water does not: by day Dorotheus gives Venus and Lilly gives Mars. Lilly keeps Mars for water by day and night without Ptolemy's Venus/Moon co-rulers.",
     "water_rule": "mars_alone_by_day_and_night"
    },
+   "sources": [
+    {
+     "citation": "William Lilly, Christian Astrology (1647) p.104, triplicity columns Di. and Noc.; p.105",
+     "read_at": "cited from the methodology research report, not independently checked; the record does not say which copy; only the reference is claimed",
+     "reading": "bibliographic_only",
+     "says": "the day and night triplicity table; Mars rules water by day and night"
+    }
+   ],
    "statement": "William Lilly, Christian Astrology (1647), p.104, day/night triplicity table, headed 'according to Ptolomy', columns Di. and Noc. only; p.105: Mars 'ruleth onely that Triplicity both day and night', which Lilly attributes to Ptolomy and Naibod (Naibod 1560 not checked). This is Lilly's printed table, not the Dorothean table without its third ruler and not Ptolemy's co-rulership text"
   },
   "dignities/manilius_sign_decans_astronomica_iv_v1": {
    "applies_to": "derived_methods.essential_dignities.profile_results.manilius_sign_decans_astronomica_iv_v1",
    "details": {
-    "citation_verification": "cited_from_methodology_research_report_not_independently_checked",
+    "citation_verification": "checked_against_online_transcription_not_printed_page",
     "editorial_corrections": [
      {
       "adopted_reading": [
@@ -887,6 +1123,8 @@
        2
       ],
       "passage": "IV.358-362",
+      "read_at": "Latin text, The Latin Library (manilius4.html), IV.310-362; Housman 1920 p.43 and p.vi in the archive.org OCR text of astronomiconrece04maniuoft; the scanned pages were not viewed",
+      "reading": "original_language_read",
       "sign": "pisces",
       "transmitted_reading": [
        "aries",
@@ -895,7 +1133,120 @@
      }
     ]
    },
+   "sources": [
+    {
+     "citation": "Manilius, Astronomica IV.310-362",
+     "read_at": "Latin text, The Latin Library (manilius4.html), checked against the online transcription, not the printed page",
+     "reading": "original_language_read",
+     "says": "the decan assignments, Pisces decans 1-2 at IV.359-360"
+    },
+    {
+     "citation": "Manilius, Astronomica IV.294-386",
+     "read_at": "IV.310-362 was read (see the editorial correction); for the rest of the passage only the reference is claimed",
+     "reading": "bibliographic_only",
+     "says": "the decan passage"
+    }
+   ],
    "statement": "Manilius, Astronomica IV.294-386 (decan assignments from IV.312ff.); Pisces decans 1-2 follow the editorial correction of IV.359-360 (transmitted text: Aries, Taurus)"
+  },
+  "dignities/peregrine_lilly_1647_p112_v1": {
+   "applies_to": "derived_methods.essential_dignities.peregrine",
+   "basis": {
+    "bounds": "lilly_received_bounds_1647_v1",
+    "domicile_exaltation": "traditional_seven_domicile_exaltation_signs_v1",
+    "face_decan": "chaldean_planetary_faces_firmicus_ii_4_v1",
+    "scope": "fixed_lilly_1647_set_not_the_selected_profiles",
+    "triplicity": "lilly_triplicity_compact_1647_v1",
+    "triplicity_rule": "sect_ruler_only"
+   },
+   "basis_note": "The triplicity table used, lilly_triplicity_compact_1647_v1, is labelled research-only when it is chosen as a table to show beside the others; here it is used only because the definition is Lilly's and so is the table, and the judgment does not make that table a recommended triplicity scheme.",
+   "not_evaluated": [
+    "reception"
+   ],
+   "rule": "A planet is peregrine when, at its degree, it holds none of the five essential dignities: whole-sign domicile or exaltation, the triplicity of the chart's sect ruler only (Lilly p.102), a term in Lilly's p.104 table, or a face (the Chaldean order, which Lilly's p.104 face column prints). Peregrine and detriment or fall can hold together. Reception does not remove peregrination: Bonatti lists the two as separate impediments, and Māshāʾallāh writes 'peregrinus, non receptus'. Only Lilly states that the sect ruler alone counts; Bonatti and Gadbury do not say.",
+   "sources": [
+    {
+     "citation": "William Lilly, Christian Astrology (1647) p.112 'Peregrine'",
+     "read_at": "the scanned first edition, archive.org/details/b30338724 (leaf n145)",
+     "reading": "original_language_read",
+     "says": "a planet is peregrine 'in the degrees of any Signe wherein he hath no essentiall dignity'; Saturn in Aries 10° is peregrine, in 27° or 28° he is in his own term; the Sun in any part of Cancer is peregrine"
+    },
+    {
+     "citation": "William Lilly, Christian Astrology (1647) p.103",
+     "read_at": "the scanned first edition, archive.org/details/b30338724 (leaf n136)",
+     "reading": "original_language_read",
+     "says": "a planet in its own face 'cannot then be called peregrine'"
+    },
+    {
+     "citation": "William Lilly, Christian Astrology (1647) p.102",
+     "read_at": "the scanned first edition, archive.org/details/b30338724 (leaf n135)",
+     "reading": "original_language_read",
+     "says": "the Sun in Aries by night has his exaltation but no triplicity, which by night is Jupiter's; 'this doe generally in all the Planets, Mars excepted'"
+    },
+    {
+     "citation": "William Lilly, Christian Astrology (1647) p.104 table",
+     "read_at": "the scanned first edition, archive.org/details/b30338724 (leaf n137)",
+     "reading": "original_language_read",
+     "says": "the houses, exaltations, triplicities by day and night, terms and faces this judgment uses"
+    },
+    {
+     "citation": "William Lilly, Christian Astrology (1647) p.115 table",
+     "read_at": "the scanned first edition, archive.org/details/b30338724 (leaf n148)",
+     "reading": "original_language_read",
+     "says": "Peregrine listed among the Debilities; its score is not used"
+    },
+    {
+     "citation": "Guido Bonatti, De astronomia (Basel 1550) col.165",
+     "read_at": "the scanned Basel 1550 printing, archive.org/details/bub_gb_BgWuc5O-JzIC (leaf n100)",
+     "reading": "original_language_read",
+     "says": "the eighth of ten impediments: 'ut sit peregrinus, hoc est, ut sit in loco in quo non habeat aliquam dignitatem'; not being received is listed as other impediments (the seventh and tenth)"
+    },
+    {
+     "citation": "Guido Bonatti, De astronomia (Basel 1550) col.178",
+     "read_at": "the scanned Basel 1550 printing, archive.org/details/bub_gb_BgWuc5O-JzIC (leaf n105)",
+     "reading": "original_language_read",
+     "says": "the 40th and 44th considerations: domicile, exaltation, triplicity, term and face are the dignities; 'facies non est tantae uirtutis'; a malefic in triplicity or face restrains its malice less"
+    },
+    {
+     "citation": "Guido Bonatti, De astronomia (Basel 1550) col.181",
+     "read_at": "the scanned Basel 1550 printing, archive.org/details/bub_gb_BgWuc5O-JzIC (leaf n106)",
+     "reading": "original_language_read",
+     "says": "the 55th consideration: one whose significator is peregrine will be 'callidus, astutus, malitiosus', more inclined to evil than to good"
+    },
+    {
+     "citation": "John Gadbury, The Doctrine of Nativities (London 1658) p.44",
+     "read_at": "the scanned 1658 edition, archive.org/details/the-doctrine-of-nativities-and-horary-questions-by-john-gadbury (leaf n32)",
+     "reading": "original_language_read",
+     "says": "'Pergerine, or a Stranger, when he is out of all his essential Dignities, viz. his House, Exaltation, Triplicity, Term and Face'"
+    },
+    {
+     "citation": "al-Bīrūnī, Kitāb al-tafhīm §493-494",
+     "read_at": "R. Ramsay Wright's translation (1934), archive.org OCR text",
+     "reading": "translation_read",
+     "says": "a planet without dignity is a stranger (gharīb); in detriment or fall calamity is added; §494 ranks domicile, exaltation, term, triplicity and face"
+    },
+    {
+     "citation": "Māshāʾallāh, De cogitatione",
+     "read_at": "Houlding, 'The Definition of Peregrine' (STA 2010)",
+     "reading": "secondary_only",
+     "says": "Saturn in Leo 'peregrinus, non receptus'"
+    },
+    {
+     "citation": "Vettius Valens, Anthologies II.22 (Kroll p.90)",
+     "read_at": "Riley's translation in a reformatted online copy (github janegca/latex-valens)",
+     "reading": "translation_read",
+     "says": "malefics 'in alien signs and degrees' ruin livelihood; a description, not a defined state"
+    }
+   ],
+   "statement": "William Lilly, Christian Astrology (1647) p.112, with pp.102-104",
+   "statuses": [
+    "peregrine",
+    "not_peregrine",
+    "undetermined_sect_unknown",
+    "undetermined_sect_near_horizon"
+   ],
+   "table_dependence": "Of 5,040 positions (7 planets x 360 whole-degree midpoints x day and night), Robbins's Ptolemaic bounds in place of Lilly's change the judgment at 161 (3.2%), the Egyptian bounds at 463 (9.2%); the three Dorothean triplicity rulers in place of the sect ruler at 747 (14.8%); Egyptian bounds with the three rulers at 1,049 (20.8%).",
+   "term_note": "The term is Arabic-Latin (al-Bīrūnī's gharīb, Latin peregrinus). The Hellenistic texts read describe a planet 'in alien signs and degrees' (Valens II.22) without defining it as a state."
   },
   "dignities/ptolemy_bounds_robbins_1940_v1": {
    "applies_to": "derived_methods.essential_dignities.profile_results.ptolemy_bounds_robbins_1940_v1",
@@ -918,6 +1269,199 @@
      "p.107, English table 'Terms according to Ptolemy', every cell (both copies, Internet Archive page n430)",
      "p.106, Greek table with cumulative endpoints to 30 in every sign (both copies, Internet Archive page n429)"
     ],
+    "manuscript_variants": [
+     {
+      "citation": "Robbins 1940 p.106 n.1, continued on p.107 (Latin apparatus to the Greek table on p.106)",
+      "read_at": "the scanned 1964 reprint of Robbins (Loeb 1940), University of Toronto copy, Internet Archive manethowithengli00maneuoft, pages n429-n430; Vat. gr. 1453 and Camerarius's printings were not read",
+      "reading": "secondary_only",
+      "readings": [
+       {
+        "line": 4,
+        "other": [
+         "mars",
+         5
+        ],
+        "sign": "capricorn",
+        "table": [
+         "saturn",
+         6
+        ],
+        "witness": "camerarius_printing"
+       },
+       {
+        "line": 5,
+        "other": [
+         "saturn",
+         6
+        ],
+        "sign": "capricorn",
+        "table": [
+         "mars",
+         5
+        ],
+        "witness": "camerarius_printing"
+       },
+       {
+        "line": 4,
+        "other": [
+         "saturn",
+         4
+        ],
+        "sign": "taurus",
+        "table": [
+         "saturn",
+         2
+        ],
+        "witness": "proclus_paraphrase_double_reading"
+       },
+       {
+        "line": 2,
+        "other": [
+         "mercury",
+         null
+        ],
+        "sign": "cancer",
+        "table": [
+         "jupiter",
+         7
+        ],
+        "witness": "proclus_paraphrase_double_reading"
+       },
+       {
+        "line": 3,
+        "other": [
+         "jupiter",
+         null
+        ],
+        "sign": "cancer",
+        "table": [
+         "mercury",
+         7
+        ],
+        "witness": "proclus_paraphrase_double_reading"
+       },
+       {
+        "line": 3,
+        "other": [
+         "venus",
+         null
+        ],
+        "sign": "leo",
+        "table": [
+         "saturn",
+         6
+        ],
+        "witness": "proclus_paraphrase_double_reading"
+       },
+       {
+        "line": 3,
+        "other": [
+         "jupiter",
+         8
+        ],
+        "sign": "libra",
+        "table": [
+         "mercury",
+         5
+        ],
+        "witness": "proclus_paraphrase_double_reading"
+       },
+       {
+        "line": 4,
+        "other": [
+         "mercury",
+         5
+        ],
+        "sign": "libra",
+        "table": [
+         "jupiter",
+         8
+        ],
+        "witness": "proclus_paraphrase_double_reading"
+       },
+       {
+        "line": 2,
+        "other": [
+         "jupiter",
+         8
+        ],
+        "sign": "scorpio",
+        "table": [
+         "venus",
+         7
+        ],
+        "witness": "proclus_paraphrase_double_reading"
+       },
+       {
+        "line": 3,
+        "other": [
+         "venus",
+         7
+        ],
+        "sign": "scorpio",
+        "table": [
+         "jupiter",
+         8
+        ],
+        "witness": "proclus_paraphrase_double_reading"
+       },
+       {
+        "line": 4,
+        "other": [
+         "mars",
+         null
+        ],
+        "sign": "capricorn",
+        "table": [
+         "saturn",
+         6
+        ],
+        "witness": "proclus_paraphrase_double_reading"
+       },
+       {
+        "line": 5,
+        "other": [
+         "saturn",
+         null
+        ],
+        "sign": "capricorn",
+        "table": [
+         "mars",
+         5
+        ],
+        "witness": "proclus_paraphrase_double_reading"
+       },
+       {
+        "line": 4,
+        "other": [
+         "mars",
+         6
+        ],
+        "sign": "pisces",
+        "table": [
+         "mars",
+         5
+        ],
+        "witness": "proclus_paraphrase_double_reading"
+       },
+       {
+        "line": 5,
+        "other": [
+         "saturn",
+         4
+        ],
+        "sign": "pisces",
+        "table": [
+         "saturn",
+         5
+        ],
+        "witness": "proclus_paraphrase_double_reading"
+       }
+      ],
+      "relation_to_lilly_1647": "Lilly's p.104 Termes rows are this table with Proclus's other readings in Libra, Scorpio, Capricorn and Pisces; in Taurus Lilly has Saturn 4 (Proclus's other reading) and Mars 4, and in Leo Venus at line 3 (Proclus's other reading) in an otherwise different order; Cancer follows this table; Gemini differs where the apparatus records no variant",
+      "says": "Robbins follows the tables found in Vat. gr. 1453, which contains Proclus's Paraphrase; Camerarius's printing agrees except at lines 4-5 under Capricorn, where its order is Mars 5, Saturn 6; Proclus has some double readings, in Taurus, Cancer, Leo, Libra, Scorpio, Capricorn and Pisces"
+     }
+    ],
     "note": "Tolsa, 'The Table of Ptolemy's Terms (Tetr. 1.21)', Philologus 162.2 (2018) 247-264, DOI 10.1515/phil-2017-0023, argues the complete table is a late-antique systematization that entered the text c. 11th century (his argument, not consensus). The profile id names the printed table, not Ptolemy's authorship.",
     "row_exceptions": [
      {
@@ -933,6 +1477,8 @@
        "p.108 n.1: the totals some manuscripts add after the tables (Saturn 57°, Jupiter 79°, Mars 66°, Venus 82°, Mercury 76°) hold only with Mars in Libra line 5"
       ],
       "product_reading": "mars",
+      "read_at": "the scanned 1964 reprint of Robbins, both copies named in the evidence, pages n429-n430",
+      "reading": "original_language_read",
       "row_changed": false,
       "row_verification": "reading_differs_from_cited_transcription",
       "segment_number": 5,
@@ -940,6 +1486,20 @@
      }
     ]
    },
+   "sources": [
+    {
+     "citation": "Ptolemy, Tetrabiblos I.21, trans. Robbins (Loeb 1940) p.107, table 'Terms according to Ptolemy' (= Hübner 1998 I.21)",
+     "read_at": "two scanned copies of the 1964 reprint of Robbins (Loeb 1940): Internet Archive L350ManethoHistoryOfEgyptPtolemyTetrabiblos and University of Toronto copy manethowithengli00maneuoft, p.107 (page n430)",
+     "reading": "translation_read",
+     "says": "the complete table the profile uses, every cell"
+    },
+    {
+     "citation": "Ptolemy, Tetrabiblos I.20-21, trans. Robbins (Loeb 1940) pp.103-107",
+     "read_at": "the record names p.107 (the table) and pp.106-107 (the Greek table and its apparatus) as read; for pp.103-105 only the reference is claimed",
+     "reading": "bibliographic_only",
+     "says": "Ptolemy's account of the terms (pp.103-105) and the table printed after it"
+    }
+   ],
    "statement": "Ptolemaic terms, Robbins 1940 transmitted table: the complete table printed after Ptolemy's discussion in Tetrabiblos I.20-21, Frank E. Robbins trans., Loeb 1940, pp.103-107; authorship of the complete table is disputed in scholarship"
   },
   "dignities/ptolemy_triplicity_textual_corulership_v1": {
@@ -954,17 +1514,83 @@
     },
     "citation_verification": "checked_against_online_transcription_not_printed_page"
    },
+   "sources": [
+    {
+     "citation": "Ptolemy, Tetrabiblos I.18, trans. Robbins (Loeb 1940) pp.83-87 (= Hübner 1998 I.19)",
+     "read_at": "checked against an online transcription, not the printed page (PAL ed. 9 text 1, 〈I.19〉); the record does not say whether the Greek or a translation was read, so only the reference is claimed",
+     "reading": "bibliographic_only",
+     "says": "two planets for each of fire, earth and air; Mars for water, with Venus by day and the Moon by night"
+    }
+   ],
    "statement": "Ptolemy, Tetrabiblos I.18 in Frank E. Robbins trans. (1940) = I.19 in W. Hübner ed. (1998). Following Hübner, fire, earth and air are each assigned to two planets (Sun+Jupiter, Venus+Moon, Saturn+Mercury), sect giving first governance and the other planet keeping a share (secondary_ruler); water is left to Mars, with Venus by day and Moon by night as co-rulers. This product's earlier one-ruler-per-sect table was its own simplification: Robbins (pp.83-87) and Hübner both assign two planets. secondary_ruler adds no score."
   },
   "dignities/traditional_seven_domicile_exaltation_signs_v1": {
    "applies_to": "derived_methods.essential_dignities.profile_results.traditional_seven_domicile_exaltation_signs_v1",
-   "degree_policy": "specific_exaltation_degrees_not_selected_or_evaluated",
+   "component_sources": {
+    "detriment": [
+     {
+      "citation": "al-Bīrūnī, Kitāb al-tafhīm §442",
+      "read_at": "R. Ramsay Wright's translation (1934), archive.org OCR text",
+      "reading": "translation_read",
+      "says": "wabāl: the signs opposite the domiciles of the planets are their detriments or debilities; the per-planet figure was not read"
+     },
+     {
+      "citation": "William Lilly, Christian Astrology (1647) p.104 table, Detriment column; p.105",
+      "read_at": "the scanned first edition, archive.org/details/b30338724 (leaves n137-n138)",
+      "reading": "original_language_read",
+      "says": "one planet per sign; Venus in Aries 'is in a Signe opposite to one of her owne Houses, and so is said to be in her Detriment'"
+     },
+     {
+      "citation": "Ptolemy, Tetrabiblos I.17 'Of the Houses' (Robbins pp.79-83; = Hübner 1998 I.18)",
+      "read_at": "Robbins translation (Loeb 1940), LacusCurtius",
+      "reading": "translation_read",
+      "says": "assigns the domiciles; names no detriment, nor does I.19, which gives exaltations and depressions"
+     }
+    ],
+    "fall": [
+     {
+      "citation": "Ptolemy, Tetrabiblos I.19 'Of Exaltations' (Robbins pp.89-91; = Hübner 1998 I.20)",
+      "read_at": "Robbins translation (Loeb 1940), LacusCurtius",
+      "reading": "translation_read",
+      "says": "each planet's depression is the sign diametrically opposite its exaltation; signs only, no degrees"
+     },
+     {
+      "citation": "Dorotheus of Sidon, Carmen Astrologicum I.2 (Pingree 1976 p.162)",
+      "read_at": "the scan of Pingree's translation, archive.org PingreeDS1976, left margin cut off; the clipped word read from a 2024 rework of Pingree",
+      "reading": "translation_read",
+      "says": "exaltation degrees; the descent is opposite the ascent"
+     },
+     {
+      "citation": "Vettius Valens, Anthologies III.4",
+      "read_at": "Riley's translation in a reformatted online copy (github janegca/latex-valens)",
+      "reading": "translation_read",
+      "says": "each star has its depression at the point in opposition to its exaltation, with a table of degrees"
+     },
+     {
+      "citation": "Firmicus Maternus, Mathesis II.3.1, II.3.5 (Kroll-Skutsch)",
+      "read_at": "Latin text, LacusCurtius",
+      "reading": "original_language_read",
+      "says": "altitudines et deiectiones: each planet 'deicitur' in the degree opposite its exaltation"
+     },
+     {
+      "citation": "al-Bīrūnī, Kitāb al-tafhīm §443",
+      "read_at": "R. Ramsay Wright's translation (1934), archive.org OCR text",
+      "reading": "translation_read",
+      "says": "hubūṭ: the signs and degrees opposite the exaltations are places of fall; three opinions on an exaltation's extent, one of them the whole sign"
+     },
+     {
+      "citation": "William Lilly, Christian Astrology (1647) p.104 table, Fall column; p.105",
+      "read_at": "the scanned first edition, archive.org/details/b30338724 (leaves n137-n138)",
+      "reading": "original_language_read",
+      "says": "one planet per sign, by sign only; Saturn in Aries 'is opposite to Libra his Exaltation, and so is Infortunate'"
+     }
+    ]
+   },
+   "degree_policy": "specific_exaltation_and_fall_degrees_not_selected_or_evaluated",
    "not_evaluated": [
-    "detriment",
-    "fall",
-    "peregrine",
     "reception"
    ],
+   "participant_note": "Lilly's p.104 table also gives a fall to the Dragon's Head (Sagittarius) and Tail (Gemini), and al-Bīrūnī §443 exaltations for them; this profile covers the seven planets only.",
    "source_scope_note": "Ptolemy I.17 and I.19 support the sign-level output used here. The Dorotheus, Valens, and Firmicus passages, which also attest these assignments, transmit exact-degree traditions that this profile deliberately does not evaluate; their inclusion does not imply that ancient traditions were sign-only. Whether these witnesses are independent of Ptolemy has not been evaluated. For manuscript variation in the exaltation degrees see Ossendrijver (2025), Journal for the History of Astronomy 56.4: 396-411, table 2, DOI 10.1177/00218286251353245 (table 2 not consulted; checked at the bibliography level only).",
    "sources": [
     {
@@ -986,19 +1612,33 @@
      "location": "II.2 and II.3.5-6 (Kroll-Skutsch-Ziegler)",
      "role": "also_attested_domiciles_and_exaltation_signs_source_also_supplies_exact_degrees_not_evaluated_by_this_profile",
      "work": "Firmicus Maternus, Mathesis"
+    },
+    {
+     "citation": "Vettius Valens, Anthologies III.4 (Riley, CSUS PDF (2010) p.61)",
+     "read_at": "the chapter was read in a reformatted online copy (github janegca/latex-valens), not in this PDF; only the page reference is claimed",
+     "reading": "bibliographic_only",
+     "role": "page_locator_of_an_also_attested_source",
+     "says": "the PDF page of the chapter as a locator"
+    },
+    {
+     "citation": "Firmicus Maternus, Mathesis II.2 (Kroll-Skutsch-Ziegler)",
+     "read_at": "level pending: the reading recorded is of II.3.1 and II.3.5; for II.2 only the reference is claimed",
+     "reading": "bibliographic_only",
+     "role": "chapter_reference_of_an_also_attested_source",
+     "says": "the domiciles"
     }
    ],
-   "statement": "Ptolemy, Tetrabiblos I.17, I.19 (Robbins 1940; = Hübner I.18, I.20); also attested in Dorotheus, Valens and Firmicus"
+   "statement": "Domicile and exaltation: Ptolemy, Tetrabiblos I.17, I.19 (Robbins 1940; = Hübner I.18, I.20); also attested in Dorotheus, Valens and Firmicus. Fall: the sign opposite the exaltation, Ptolemy I.19 'depression'. Detriment: the sign opposite a domicile, al-Bīrūnī, Tafhīm §442 (Wright 1934) and Lilly, Christian Astrology (1647) pp.104-105; Ptolemy names no detriment."
   },
   "dodecatemoria": {
    "applies_to": "derived_methods.dodecatemoria",
    "default_basis": "The only text read in its own words that states the rule and works an example is Firmicus II.13, and it multiplies by 12 from the start of the sign; the 2 deg 30 min division of Manilius and Ptolemy gives the same sign. The 13-fold rule is attested by the examples of Paulus and Olympiodorus as reported by Greenbaum and Jones; both are offered.",
    "default_profile": "twelvefold_from_sign_start_v1",
-   "documentary_evidence": "P.Berl. 9825 (horoscope of 319 CE) gives the twelfth-part signs only; Greenbaum and Jones 2017 para. 188 find five of its planets fit the 13-fold rule and Mercury, the nodes and the prenatal full Moon fit the 12-fold rule.",
+   "documentary_evidence": "P.Berl. 9825 (horoscope of 319 CE) gives the twelfth-part signs only. Greenbaum and Jones 2017 para. 188: the Moon, Saturn, Jupiter (at its corrected position), Mars and Venus match the 13-fold formula; Mercury, both nodes and the prenatal full Moon do not, and match the 12-fold formula, which also fits Saturn, Jupiter and Mars. So only the Moon and Venus favour the 13-fold rule against the 12-fold one, and three planets fit both. They leave two explanations open: the 13-fold rule with the minutes neglected, or the 12-fold rule miscalculated for the Moon and Venus.",
    "lord_rule": "The lord listed is the domicile lord of the twelfth-part's sign in the traditional seven-planet scheme (the product's domicile table). Later steps that look at which planets occupy or aspect that sign are not computed; this product lists positions and lords only.",
    "not_computed": "Manilius's further division of each part among the five planets; the midheaven (no witness read); judgements of which planets occupy or aspect the twelfth-part.",
    "profiles": {
-    "thirteenfold_from_sign_start_v1": "Multiply the degrees inside the sign by 13 and count on from the start of the same sign; the same as multiplying by 12 and counting on from the point's own degree.",
+    "thirteenfold_from_sign_start_v1": "Multiply the degrees inside the sign by 13 and count on from the start of the same sign; the same as multiplying by 12 and counting on from the point's own degree. The product multiplies the full position, minutes included; the worked examples of Paulus and Olympiodorus use whole degrees, and Greenbaum and Jones infer that P.Berl. 9825 multiplied the whole degrees and disregarded the minutes.",
     "twelvefold_from_sign_start_v1": "Multiply the degrees and minutes inside the sign by 12 and count the product on from the start of the same sign, 30 to each sign. The product's default. At sign level this equals the division of each sign into twelve parts of 2 deg 30 min given to the sign itself and the following signs in order."
    },
    "sect_band": "When the Sun is in the near-horizon band and the Lots show both formulas, each Lot row says whether the other sect's formula gives another twelfth-part sign (sign_differs_under_other_sect, comparison_sign), as the zodiacal-releasing rows do; the listed value follows the product's sect rule.",
@@ -1007,7 +1647,7 @@
      "citation": "Firmicus Maternus, Mathesis II.13 (Kroll-Skutsch numbering; Holden's translation numbers it II.17)",
      "example": "Sun Aries 5 deg 05 min: 60 + 1 = 61, the first degree of Gemini",
      "profile": "twelvefold_from_sign_start_v1",
-     "read_at": "Latin text, LacusCurtius (penelope.uchicago.edu)",
+     "read_at": "Latin text, LacusCurtius (penelope.uchicago.edu); the rule and example re-read on p.56 of Kroll-Skutsch 1897 vol. I in the archive.org OCR text (matheseoslibrivi01firmuoft)",
      "reading": "original_language_read",
      "rule": "degrees and minutes of the star times 12, given 30 to each sign starting with the sign the star is in"
     },
@@ -1021,9 +1661,17 @@
      "rule": "each sign in twelve parts of 2 1/2 degrees, the first to the sign itself and the rest to the following signs; for the Moon its degrees times 12, 30 to each sign from the Moon's sign; each part halved again among the five planets (not computed)"
     },
     {
-     "citation": "Ptolemy, Tetrabiblos I.22 (Robbins, Loeb 1940)",
+     "citation": "Ptolemy, Tetrabiblos I.22 (Robbins, Loeb 1940, Greek p.108, English p.109)",
+     "manuscript_variants": [
+      {
+       "citation": "Robbins 1940 p.108 n.3 (Greek apparatus) and p.109 n.2",
+       "read_at": "the scanned 1964 reprint of Robbins (Loeb 1940), University of Toronto copy, Internet Archive manethowithengli00maneuoft, pages n431-n432; manuscript N and Camerarius's printings were not read",
+       "reading": "secondary_only",
+       "says": "one manuscript (N) and Camerarius's printed editions add after 'to the signs in order' the words 'beginning from the twelfth-part in which the star is' (ἀρχόμενοι ἀπὸ τοῦ δωδεκατημορίου καθ᾽ ὅ ἐστιν ὁ ἀστήρ); the other manuscripts and Proclus omit them, and so does Robbins's text. The added words name where the count starts."
+      }
+     ],
      "profile_agreement": "sign_level_only",
-     "read_at": "Robbins translation, LacusCurtius",
+     "read_at": "the scanned 1964 reprint of Robbins (Loeb 1940), University of Toronto copy, Internet Archive manethowithengli00maneuoft, pages n431-n432",
      "reading": "translation_read",
      "rule": "describes the twelfth of a sign (2 1/2 degrees) assigned to the signs in order, and rejects it as unfounded"
     },
@@ -1052,8 +1700,8 @@
     {
      "citation": "Vettius Valens, Anthology I.4",
      "example": "Sun Aquarius 22 deg, twelfth-part in Scorpio (fits the 13-fold rule only)",
-     "read_at": "reported by secondary summaries; Riley's translation not read",
-     "reading": "secondary_only",
+     "read_at": "Riley's translation, the PDF of his preliminary edition (Vettius_Valens_Riley.pdf), p.8, between /19K/ and /20K/",
+     "reading": "translation_read",
      "rule": "the Sun's twelfth-part used to find the ascendant"
     },
     {
@@ -1940,6 +2588,7 @@
      "history": [
       {
        "citation": "Named after al-Qabīṣī (Alcabitius, d. 967) (Astrodienst FAQ on house systems)",
+       "read_at": "Astrodienst's house-system FAQ, when this entry was written (2026-10-12; no reading notes were kept); al-Qabīṣī's Introduction not read",
        "reading": "secondary_only"
       }
      ]
@@ -1950,10 +2599,12 @@
      "history": [
       {
        "citation": "Named after Campanus of Novara (13th century) (Swiss Ephemeris §6.2.4)",
+       "read_at": "Swiss Ephemeris General Documentation §6.2.4, when this entry was written (2026-10-12; no reading notes were kept); Campanus's own work not read",
        "reading": "secondary_only"
       },
       {
        "citation": "The prime-vertical method was described earlier in Arabic sources: a treatise by Ibn Muʿādh al-Jayyānī (11th century; studied by J. Casulleras) and, per J. D. North, Horoscopes and History (1986) pp. 175-176, al-Bīrūnī; both cited via secondary sources, not read",
+       "read_at": "the secondary report of Casulleras's and North's findings, when this entry was written (2026-10-12; no reading notes were kept); North 1986 pp. 175-176 itself, Ibn Muʿādh and al-Bīrūnī not read",
        "reading": "secondary_only"
       }
      ]
@@ -1964,10 +2615,12 @@
      "history": [
       {
        "citation": "Ptolemy, Tetrabiblos III.12 in Ashmand's translation (III.10 in Robbins): the places used for the length of life are 30° each, the first from 5° above the horizon to 25° below it. That rule starts 5° earlier than this construction, which starts at the ascendant's degree",
+       "read_at": "Ashmand's 1822 English translation, III.12, when this entry was written (2026-10-12; no reading notes were kept); the Robbins chapter number is a concordance, not a second reading",
        "reading": "translation_read"
       },
       {
        "citation": "Astrodienst's house-system FAQ says equal houses have been used since antiquity, without a named source",
+       "read_at": "Astrodienst's house-system FAQ, when this entry was written (2026-10-12; no reading notes were kept)",
        "reading": "secondary_only"
       }
      ]
@@ -1978,10 +2631,12 @@
      "history": [
       {
        "citation": "The trisection of the quadrants appears in Vettius Valens, Anthology book III, in a chapter on the active and inactive places (cited via secondary sources; the chapter was not read, and R. Schmidt reads it as a measure of planetary activity rather than a division into topics)",
+       "read_at": "the secondary accounts this sentence summarises, including R. Schmidt's reading, when this entry was written (2026-10-12; no reading notes were kept, and they are not named individually); the Valens chapter not read",
        "reading": "secondary_only"
       },
       {
        "citation": "Named after Porphyry of Tyre (3rd century), Introduction to the Tetrabiblos (CCAG V.4; trans. Holden 2009); the chapter number was not verified",
+       "read_at": "the bibliographic reference only (edition and translation); neither the Greek nor Holden's English was opened",
        "reading": "bibliographic_only"
       }
      ]
@@ -1992,6 +2647,7 @@
      "history": [
       {
        "citation": "Named after Placidus de Titis (1590-1668) (Swiss Ephemeris §6.2.1)",
+       "read_at": "Swiss Ephemeris General Documentation §6.2.1, when this entry was written (2026-10-12; no reading notes were kept); Placidus's own work not read",
        "reading": "secondary_only"
       }
      ]
@@ -2002,6 +2658,7 @@
      "history": [
       {
        "citation": "Named after Johannes Müller of Königsberg, called Regiomontanus (1436-1476) (Swiss Ephemeris §6.2.3)",
+       "read_at": "Swiss Ephemeris General Documentation §6.2.3, when this entry was written (2026-10-12; no reading notes were kept); Regiomontanus's own work not read",
        "reading": "secondary_only"
       }
      ]
@@ -2012,6 +2669,7 @@
      "history": [
       {
        "citation": "Vettius Valens, Anthology V.6 (Pingree 1986 numbering and pages, pp. 215-216; Kroll V.9, p.227): a chart whose degree-based MC falls in the ninth sign, cited on the methods page and not re-read for this entry",
+       "read_at": "the reference only, as the methods page gives it; the Anthology chapter was not opened for this entry",
        "reading": "bibliographic_only"
       }
      ]
@@ -2025,7 +2683,57 @@
   "lots": {
    "applies_to": "derived_methods.lots",
    "method_provenance": "valens_paulus_sect_reversing_lineage",
-   "sources": "Paulus, Eisagōgika ch.23 (Boer 1958, main text; Schmidt/Hand 1995 pp.43–45; neither edition checked), the cleanest witness: the Greek-Latin first printing (Wittenberg: Lehmann, 1586), chapter on the seven lots of Panaretus, reverses Fortune and Spirit at night. Valens III.11 (Pingree p.147; = III.14 Kroll/Riley, '14K;11P') also uses the day formula at night once the Moon has set: not adopted (Greenbaum, Culture and Cosmos 11, 2007, p.183). Abū Maʿshar's line via al-Bīrūnī, Tafhīm §476 (Wright 1934); Abbr. VI.3–4 and Bonatti not checked. Named disagreement not adopted: Ptolemy III.10 (Robbins pp.275–277) = III.11 (Hübner), Fortune Sun to Moon by day and night (Sun:ASC = Moon:Fortune); at night it falls on the reversing Spirit's degree (Rhetorius, CCAG VIII/4 p.121, via Greenbaum 2007 p.181). Ptolemy gives no Spirit formula there; a non-reversing Spirit attributed to Ibn Ezra is not checked."
+   "source_summary": "Paulus, Eisagōgika ch.23 (Boer 1958, main text; Schmidt/Hand 1995 pp.43–45; neither edition checked), the cleanest witness: the Greek-Latin first printing (Wittenberg: Lehmann, 1586), chapter on the seven lots of Panaretus, reverses Fortune and Spirit at night. Valens III.11 (Pingree p.147; = III.14 Kroll/Riley, '14K;11P') also uses the day formula at night once the Moon has set: not adopted (Greenbaum, Culture and Cosmos 11, 2007, p.183). Abū Maʿshar's line via al-Bīrūnī, Tafhīm §476 (Wright 1934); Abbr. VI.3–4 and Bonatti not checked. Named disagreement not adopted: Ptolemy III.10 (Robbins pp.275–277) = III.11 (Hübner), Fortune Sun to Moon by day and night (Sun:ASC = Moon:Fortune); at night it falls on the reversing Spirit's degree (Rhetorius, CCAG VIII/4 p.121, via Greenbaum 2007 p.181). Ptolemy gives no Spirit formula there; a non-reversing Spirit attributed to Ibn Ezra is not checked.",
+   "sources": [
+    {
+     "citation": "Paulus Alexandrinus, Introduction ch.23",
+     "read_at": "the Greek-Latin first printing (Wittenberg 1586); Boer 1958 not checked; level pending: the record does not say whether the Greek or the Latin translation of that printing was read, so only the translation level is claimed",
+     "reading": "translation_read",
+     "says": "reverses Fortune and Spirit at night (the product's formula)"
+    },
+    {
+     "citation": "Paulus Alexandrinus, Eisagōgika ch.23 (Boer 1958; Schmidt/Hand 1995 pp.43-45)",
+     "read_at": "neither edition checked; only the reference is claimed",
+     "reading": "bibliographic_only",
+     "says": "the same chapter in the modern editions, neither edition checked"
+    },
+    {
+     "citation": "Vettius Valens, Anthologies III.11 (Pingree p.147; = III.14 Kroll/Riley, '14K;11P')",
+     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "the day formula at night once the Moon has set; not adopted"
+    },
+    {
+     "citation": "Greenbaum, Culture and Cosmos 11, 2007, p.183",
+     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "the after-moonset rule (Valens III.11 Pingree = III.14 Kroll/Riley)"
+    },
+    {
+     "citation": "al-Bīrūnī, Kitāb al-Tafhīm §476 (Wright 1934; he says after Abū Maʿshar)",
+     "read_at": "Wright's English translation (1934)",
+     "reading": "translation_read",
+     "says": "Abū Maʿshar's line of the lots"
+    },
+    {
+     "citation": "Abū Maʿshar, Abbreviation VI.3-4",
+     "read_at": "not consulted",
+     "reading": "bibliographic_only",
+     "says": "the lots; not checked"
+    },
+    {
+     "citation": "Ptolemy, Tetrabiblos III.10 (Robbins pp.275-277; = Hübner III.11)",
+     "read_at": "Robbins's English (Loeb 1940): the whole of III.10 read in the LacusCurtius transcription, the Lot of Fortune at pp.275-277; the Greek not checked",
+     "reading": "translation_read",
+     "says": "the Lot of Fortune from Sun to Moon by day and by night; not adopted"
+    },
+    {
+     "citation": "Rhetorius, CCAG VIII/4 p.121, via Greenbaum 2007 p.181",
+     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "at night Ptolemy's Fortune falls on the reversing Spirit's degree"
+    }
+   ]
   },
   "lots/boundary_policy": {
    "applies_to": "derived_methods.lots.boundary_policy",
@@ -2146,6 +2854,65 @@
    "statement": "Month k (k = 1-12) of year of life N+1 is the annual profection sign moved k-1 signs on in zodiacal order, so the first month is the year's own sign and the count starts again at every solar return; the lord of the month is that sign's seven-planet domicile lord. By default month k begins when the Sun has moved 30(k-1) degrees past its natal longitude, so the first month begins at the return and the twelfth ends at the next one; the named alternative cuts the return year into twelve equal parts. Whole signs only; the sect is not read. No degree, no topic of the place and no verdict is emitted.",
    "worked_example": "none: no source read gives a monthly profection with numbers; the tests check the rule against Swiss Ephemeris's own solar crossing and hand-typed sign tables"
   },
+  "motion_states": {
+   "applies_to": "derived_methods.motion_states",
+   "boundary_rule": "exact rational comparison of |speed| in arcseconds a day with the printed mean; equal when the difference is less than half the last printed unit; a turn exactly Lilly's days ahead, or at the instant itself, counts as stationary; after a turn, an instant exactly Lilly's days after it still counts",
+   "daily_motion_basis": "The texts' daily motion is the difference of two noon positions; the product uses the instantaneous speed. Measured 1950-2050 (Swiss Ephemeris, geocentric): against the next 24 hours the Moon's swift/slow differs on 3.6% of instants (Mercury 1.4%, Saturn 0.5%, Mars 0.1%); against the 24 hours centred on the instant, 0.025% (Mercury 0.005%).",
+   "default_mean_motion_profile": "lilly_1647_v1",
+   "definition": "Course: the absolute geocentric longitude speed (Swiss Ephemeris analytic speed at the instant) against the mean daily motion; more is swift, less is slow (Lilly p.168), equal only within half the last place the source printed. A retrograde planet is compared by the degrees it goes back a day (Lilly p.178 calls a retrograde Saturn of 2 minutes a day slow). Stations: every sign change of the geocentric speed within 15 days before or after the chart instant, by root-finding; a planet is stationary when a turn falls within Lilly's days after the instant, or the instant within Lilly's days after a turn. Oriental or occidental of the Sun: the side of the Sun from solar_phase, west of the Sun (rising before it) oriental (Lilly p.114); the Moon oriental from opposition to conjunction; the Sun has none. Listed: the Sun, the Moon and the five planets.",
+   "doctrine": [
+    "Lilly 1647 p.115: swift in motion, Saturn, Jupiter and Mars oriental, Venus and Mercury occidental, the Moon increasing or occidental are accidental fortitudes; slow in motion, Saturn, Jupiter and Mars occidental, Venus and Mercury oriental, the Moon decreasing in light are debilities",
+    "Lilly 1647 p.80: the Moon slow is 'equivalent to a Retrograde Planet'",
+    "Ptolemy, Tetrabiblos I.24 (Robbins pp.115-117): planets oriental and adding to their motion are most powerful; occidental and diminishing in speed, weaker",
+    "al-Biruni, Book of Instruction §486: the influence is greatest when oriental and weak when occidental",
+    "Vettius Valens, Anthologies IV.14: passing the first station into retrograde delays what is expected; the second station removes the delay"
+   ],
+   "interval_rule": "for a non-exact birth time, every course, station state and side of the Sun each body is in over the stated hour or civil day, from the roots of every edge over it",
+   "interval_vocabulary": [
+    "stated_civil_hour",
+    "civil_day"
+   ],
+   "mean_motion_profiles": {
+    "bonatti_1550_v1": "Bonatti 1550 tractatus III cols.129-130: Saturn 2'00\"35''', Jupiter 4'59\", Mars 31'26\", Sun, Venus and Mercury 59'08\", Moon 13 deg 10'35\"; equal to the mean is 'aequalis'. Listed beside the default.",
+    "lilly_1647_v1": "Lilly 1647: Saturn 2'01\" (p.57), Jupiter 4'59\" (p.61), Mars 31'27\" (p.178; p.65 prints '31 degr. 27 min.'), Sun 59'08\" (p.69), Venus and Mercury the Sun's 59'08\" (p.72, p.76), Moon 13 deg 10'36\" (p.80). The default; it fills rows[]."
+   },
+   "moon_slow_limit": "The Moon is slow below her mean 13 deg 10'36\", Lilly's p.168 rule; p.80 says less than 13 deg 10' in 24 hours is slow, 'equivalent to a Retrograde Planet'. The 36\" between the two is disclosed, not applied.",
+   "not_applied": "Increasing or decreasing in course (Bonatti's three definitions disagree for the superior planets, cols.129-130; Ptolemy I.24 and al-Biruni §512 keep rapid and increasing apart); al-Biruni's phased orientality (§481-482) and Bonatti's graded phases (tractatus III part 2 ch.5-6); the eastern and western quadrants of the horizon (Ptolemy I.6, III.10; al-Biruni §486); masculine and feminine by orientality (Ptolemy I.6); any speed-percentage station threshold; Lilly's p.115 points.",
+   "sources": [
+    {
+     "citation": "William Lilly, Christian Astrology (London 1647) pp.57-58, 61-62, 65, 69-70, 72-73, 76, 80, 114-115, 168, 178",
+     "read_at": "Wellcome Library copy, archive.org b30338724, scans n90-n211; each listed page checked on the scan",
+     "reading": "original_language_read"
+    },
+    {
+     "citation": "Guido Bonatti, De astronomia tractatus X (Basel 1550) tractatus III part 2 ch.1 and 3, cols.129-130",
+     "read_at": "archive.org bub_gb_BgWuc5O-JzIC, scan n82",
+     "reading": "original_language_read"
+    },
+    {
+     "citation": "Ptolemy, Tetrabiblos I.6, I.8, I.24, trans. Robbins (Loeb 1940) pp.41, 45, 115-117",
+     "read_at": "LacusCurtius transcription",
+     "reading": "translation_read"
+    },
+    {
+     "citation": "al-Biruni, Book of Instruction, trans. R. Ramsay Wright (1934) §481-486, §498, §512",
+     "read_at": "archive.org typescript OCR; the 1934 page numbers not checked",
+     "reading": "translation_read"
+    },
+    {
+     "citation": "Vettius Valens, Anthologies IV.14, V.7, V.11 (Kroll), trans. Riley",
+     "read_at": "Riley's PDF pp.84, 100, 110",
+     "reading": "translation_read"
+    },
+    {
+     "citation": "Ptolemy, Tetrabiblos III.10",
+     "read_at": "level pending: the record names the chapter but does not say what was read; only the reference is claimed",
+     "reading": "bibliographic_only",
+     "says": "the eastern and western quadrants of the horizon; not applied"
+    }
+   ],
+   "station_days": "Lilly's days before each turn: Saturn 5 and 5 (p.58), Jupiter 5 and 4 (p.62), Mars 'two or three' taken as 3 and 2 (p.65), Venus 2 and 2 (p.73), Mercury 'Stationary one day' taken as 1 before each turn (p.76); p.114: the superiors move not 2, 3 or 4 days before retrogradation. After a turn: Mars 1 day after direction, 'after, but one day' (p.65); no other planet chapter gives days after a turn, so none. Counting the days after a turn is this site's reading of the planet chapters, not a rule Lilly states. The exact turns within the window are listed."
+  },
   "planetary_hours": {
    "applies_to": "derived_methods.planetary_hours",
    "day_ruler_rule_boundary": "the weekday is read from the sunrise's civil date; where two consecutive sunrises fall on one civil date or skip one (near polar transitions) the Chaldean sequence across the two days does not continue, and the product does not adjust it",
@@ -2161,6 +2928,14 @@
    ],
    "source_note": "Cassius Dio, Roman History XXXVII.19: the weekday names follow from giving the planets, from Saturn on, to the successive hours of day and night. Dio defines neither unequal hours nor a day starting at sunrise; those are the standard later tradition, for which no primary text is cited. No page numbers",
    "source_status": "standard_tradition",
+   "sources": [
+    {
+     "citation": "Cassius Dio, Roman History XXXVII.19",
+     "read_at": "an English translation only; the record does not name which, and the Greek not checked",
+     "reading": "translation_read",
+     "says": "the weekday names follow from giving the planets, from Saturn on, to the successive hours of day and night"
+    }
+   ],
    "sunrise_definition": "the horizon module's event: refracted upper limb crossing the apparent horizon, topocentric, request atmosphere, no dip (USNO standard definition; Swiss swe_rise_trans default)"
   },
   "planetary_years": {
@@ -2174,6 +2949,12 @@
        "read_at": "Riley's English translation via the re-typeset",
        "reading": "translation_read",
        "says": "the row he calls 'maximum', i.e. the periods usually called the greater years; III.10 mentions giving the greatest, the mean or the least years as the case requires"
+      },
+      {
+       "citation": "Valens, Anthologies III.10, the re-typeset's editor's note",
+       "read_at": "the re-typeset of Riley's English translation",
+       "reading": "secondary_only",
+       "says": "Venus's greater years are 'usually 82, not 84' (an editor's note, not Valens's text)"
       }
      ],
      "verification": "attested_hellenistic_text_read"
@@ -2350,7 +3131,87 @@
   "sect": {
    "applies_to": "derived_methods.sect",
    "method_provenance": "product_convention_sources_checked_do_not_specify_boundary",
-   "sources": "Passages (not independently verified): Dorotheus I.1 (Pingree pp.161–162), I.22 (p.183); Ptolemy I.7 (Robbins p.43); Valens III.5 (Pingree pp.133–134); Paulus ch.6, ch.23 (Boer 1958, main text; Schmidt 1995 pp.13, 43); Firmicus II.7.1–4; Rhetorius ch.2, ch.44 (Holden 2009 numbering, a compilation of epitomes; not verified); Abū Maʿshar, Great Introduction II.9.1 (locator not verified), Abbreviation III.3 (Dykes ITA §III.2); al-Qabīṣī I (Latin 1512); Lilly 1647 p.113 (Hayz), p.42. Most treat a diurnal or nocturnal birth as a given category, or describe planetary conditions as above or below the earth; the closest to a solar day/night criterion are Valens III.11 (Pingree; = III.14 Kroll/Riley, '14K;11P'; the Moon 'above the earth' read as until it sets) and Lilly 1647 p.42 (checking the chart time by the Sun's house). None specifies sun-centre, upper limb or refraction; the >0° rule is a product convention."
+   "source_summary": "Passages (not independently verified): Dorotheus I.1 (Pingree pp.161–162), I.22 (p.183); Ptolemy I.7 (Robbins p.43); Valens III.5 (Pingree pp.133–134); Paulus ch.6, ch.23 (Boer 1958, main text; Schmidt 1995 pp.13, 43); Firmicus II.7.1–4; Rhetorius ch.2, ch.44 (Holden 2009 numbering, a compilation of epitomes; not verified); Abū Maʿshar, Great Introduction II.9.1 (locator not verified), Abbreviation III.3 (Dykes ITA §III.2); al-Qabīṣī I (Latin 1512); Lilly 1647 p.113 (Hayz), p.42. Most treat a diurnal or nocturnal birth as a given category, or describe planetary conditions as above or below the earth; the closest to a solar day/night criterion are Valens III.11 (Pingree; = III.14 Kroll/Riley, '14K;11P'; the Moon 'above the earth' read as until it sets) and Lilly 1647 p.42 (checking the chart time by the Sun's house). None specifies sun-centre, upper limb or refraction; the >0° rule is a product convention.",
+   "sources": [
+    {
+     "citation": "Dorotheus, Carmen Astrologicum I.1 (Pingree 1976 pp.161-162)",
+     "read_at": "Pingree's English translation (1976); the Arabic not checked",
+     "reading": "translation_read",
+     "says": "day and night births as given categories (the triplicity lords by sect)"
+    },
+    {
+     "citation": "Dorotheus, Carmen Astrologicum I.22 (Pingree 1976 p.183)",
+     "read_at": "Pingree's English translation (1976); the Arabic not checked",
+     "reading": "translation_read",
+     "says": "the sect light's triplicity lords"
+    },
+    {
+     "citation": "Ptolemy, Tetrabiblos I.7 (Robbins p.43)",
+     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "diurnal and nocturnal planets"
+    },
+    {
+     "citation": "Vettius Valens, Anthologies III.5 (Pingree pp.133-134)",
+     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "day and night births as given categories"
+    },
+    {
+     "citation": "Paulus Alexandrinus, Introduction ch.6, ch.23 (Boer 1958, main text; Schmidt 1995 pp.13, 43)",
+     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "sect as a given category; Boer 1958 and Schmidt 1995 not checked"
+    },
+    {
+     "citation": "Firmicus Maternus, Mathesis II.7.1-4",
+     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "planets above or below the earth by day and night"
+    },
+    {
+     "citation": "Rhetorius ch.2, ch.44 (Holden 2009 numbering, a compilation of epitomes)",
+     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "sect as a given category; not verified"
+    },
+    {
+     "citation": "Abū Maʿshar, Great Introduction II.9.1",
+     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "sect; the locator not verified"
+    },
+    {
+     "citation": "Abū Maʿshar, Abbreviation III.3 (Dykes ITA §III.2)",
+     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "sect as a given category"
+    },
+    {
+     "citation": "al-Qabīṣī, Introduction I (Latin 1512)",
+     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "sect as a given category"
+    },
+    {
+     "citation": "William Lilly, Christian Astrology (1647) p.113, 'Hayz'",
+     "read_at": "archive.org OCR text of a modern reset edition",
+     "reading": "original_language_read",
+     "says": "a diurnal planet by day above the earth, a nocturnal planet by night under the earth"
+    },
+    {
+     "citation": "William Lilly, Christian Astrology (1647) p.42",
+     "read_at": "level pending: a passage named by the method research notes; the record does not say which copy was read, or that it was read, so only the reference is claimed",
+     "reading": "bibliographic_only",
+     "says": "checking the chart time by the Sun's house"
+    },
+    {
+     "citation": "Vettius Valens, Anthologies III.11 (Pingree; = III.14 Kroll/Riley, '14K;11P')",
+     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
+     "reading": "bibliographic_only",
+     "says": "the Moon 'above the earth' read as until it sets"
+    }
+   ]
   },
   "sect/near_horizon_band": {
    "applies_to": "derived_methods.sect.near_horizon_band",
@@ -2409,7 +3270,7 @@
    "sources": [
     {
      "citation": "William Lilly, Christian Astrology (London 1647) Book I, pp.111, 113-114",
-     "read_at": "archive.org full text of the 1647 printing and of a 1659 transcription; scans not checked. The p.115 table of fortitudes and debilities was read only as OCR and is not cited",
+     "read_at": "archive.org full text of the 1647 printing and of a 1659 transcription; pp.111 and 113 not checked on the scan. The p.115 table of fortitudes and debilities was read on the scan (Wellcome Library copy, archive.org b30338724 n148); it is cited under motion_states",
      "reading": "original_language_read"
     },
     {
@@ -2436,6 +3297,18 @@
      "citation": "Porphyry, Introduction ch.2 and ch.30; Antiochus; Rhetorius (Holden 2009 pp.24, 134); Brennan, Hellenistic Astrology (2017)",
      "read_at": "secondary pages and search excerpts only",
      "reading": "secondary_only"
+    },
+    {
+     "citation": "William Lilly, Christian Astrology (1647) Book I ch. XIX p.107, first column",
+     "read_at": "the first edition (archive.org/details/b30338724)",
+     "reading": "original_language_read",
+     "says": "the Sun's orb of 17 degrees, which the default limits halve"
+    },
+    {
+     "citation": "Bonatti, as given in Dykes 2007 p.211",
+     "read_at": "Dykes 2007, a secondary report; Bonatti's Latin not read",
+     "reading": "secondary_only",
+     "says": "cazimi requires the latitude as well as the longitude within 16 minutes"
     }
    ]
   },
@@ -2547,10 +3420,11 @@
   "time/sidereal_time_model": {
    "applies_to": "astronomical_data.time.sidereal_time_model and calculation_dossier.time_conversion.sidereal_time_model",
    "segment_vocabulary": [
-    "iau_2006_short_term",
+    "iers_2010_era_based",
+    "iers_2010_era_based_product_continuation",
     "swiss_long_term"
    ],
-   "source": "Swiss Ephemeris 2.10.03 swe_sidtime / swe_sidtime0 (swephlib.c SIDT_LTERM_T0, SIDT_LTERM_T1)"
+   "source": "Before 2050-01-01: Swiss Ephemeris 2.10.03 swe_sidtime / swe_sidtime0, whose IERS Conventions 2010 branch (Earth rotation angle, IAU 2006 GMST polynomial, equation of the equinoxes with complementary terms; swephlib.c SIDT_LTERM_T0, SIDT_LTERM_T1) covers the whole product range up to then. From 2050-01-01: the same IERS Conventions 2010 eq. 5.32 expression computed by the product (IERS Technical Note 36, ch. 5; complementary terms Table 5.2e), with Swiss's IAU 2000B nutation; checked against JPL Horizons apparent sidereal time 2050-2399"
   },
   "time/xinjiang_civil_time_basis": {
    "applies_to": "input_receipt.timezone.civil_time_basis",

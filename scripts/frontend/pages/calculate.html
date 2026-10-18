@@ -1,7 +1,7 @@
 <div class="wrap calc-body">
 
     <section class="compose" aria-labelledby="compose-heading">
-      <div class="eyebrow">計算 · COMPOSE</div>
+      <div class="eyebrow">計算</div>
       <h1 id="compose-heading">線上排古典西洋占星本命盤<span class="h1-qual">（整宮制等七種宮位制）</span></h1>
       <p class="kicker">排一張本命盤，每一步都能檢查。</p>
       <!-- 引言：第一句與最後一句（伺服器不留副本）常駐；中間那一句在 <details> 裡（預設收起，不靠 JavaScript
@@ -31,11 +31,11 @@
           </label>
           <label>
             <input type="radio" name="calc-mode" value="classical" autocomplete="off">
-            <span><b>古典完整</b><span>我照古典占星的作法讀盤：古典七顆行星、日盤夜盤、廟與旺、命運點與精神點、十二分部，算完接著排時間主星。界、面、三分性由你選一套。結果分六章。</span></span>
+            <span><b>古典完整</b><span>我照古典占星的作法讀盤：古典七顆行星、日盤夜盤、廟旺與陷弱、外來、命運點與精神點、十二分部，算完接著排時間主星。界、面、三分性各家並列。結果分六章。</span></span>
           </label>
           <label>
             <input type="radio" name="calc-mode" value="custom" autocomplete="off">
-            <span><b>自訂</b><span>我要自己挑每個選項：從快速看盤的設定開始，全部選項攤開；匯出預設帶驗算資料。結果分六章。</span></span>
+            <span><b>自訂</b><span>我要自己挑每個選項：從快速看盤的設定開始，全部選項攤開；匯出預設帶驗算資料，含出生地的精確經緯度與海拔。結果分六章。</span></span>
           </label>
         </div>
         <p class="note mode-choice-timelords" id="mode-choice-timelords">古典完整會在星盤算完後接著排出年度時間主星：{{time_lord_techniques}}。規則與出處見〈<a href="/zh-TW/methods/time-lords">年度時間主星的規則與出處</a>〉。</p>
@@ -220,12 +220,13 @@
             <div class="plan-checks">
               <label><input type="checkbox" class="option-control" id="plan-body_selection_preset" data-plan-key="body_selection_preset" data-plan-on="classical_seven_v1" data-plan-off="custom" autocomplete="off">只算古典七顆行星（太陽、月亮、水星、金星、火星、木星、土星）</label>
               <label><input type="checkbox" class="option-control" id="plan-include_lots" data-plan-key="include_lots" autocomplete="off">日盤／夜盤，以及命運點與精神點</label>
-              <label><input type="checkbox" class="option-control" id="plan-include_domicile_exaltation" data-plan-key="include_domicile_exaltation" autocomplete="off">廟與旺</label>
+              <label><input type="checkbox" class="option-control" id="plan-include_domicile_exaltation" data-plan-key="include_domicile_exaltation" autocomplete="off">廟、旺、陷、弱</label>
+              <label><input type="checkbox" class="option-control" id="plan-peregrine_profile" data-plan-key="peregrine_profile" data-plan-on="lilly_1647_p112_v1" autocomplete="off"><span>外來 <span class="en" lang="en">Peregrine</span>（依 Lilly 1647 判）</span></label>
               <label><input type="checkbox" class="option-control" id="plan-include_dodecatemoria" data-plan-key="include_dodecatemoria" autocomplete="off"><span>十二分部 <span class="en" lang="en">Dodecatemoria</span></span></label>
             </div>
             <fieldset class="plan-profiles" id="plan-profiles" aria-describedby="plan-profiles-note">
-              <legend>界、面、三分性：選你用的那一套</legend>
-              <p class="note" id="plan-profiles-note">古書有好幾套，本站不替你選。選了才會算；先不選也可以，結果頁會留一行讓你之後再選。</p>
+              <legend>界、面、三分性：選一套，或全部並列</legend>
+              <p class="note" id="plan-profiles-note">古書有好幾套，本站不替你選。「古典完整」模式預選全部並列；自訂模式與 API 無預設。全部並列是在同一份結果裡逐星對照各家，相同的收成一行，不同的才展開。也可以只選一套，或選「不計算」。</p>
               <div class="grid three" id="plan-profile-slots"></div>
             </fieldset>
             <label class="plan-timelords"><input type="checkbox" class="option-control" id="plan-timelords" checked autocomplete="off" aria-describedby="plan-timelords-note">算完星盤後，接著排出時間主星</label>
@@ -388,7 +389,7 @@
             <button type="button" class="ghost small" id="quick-print-button" data-print-mode="full" aria-label="列印完整結果（常用匯出）">列印完整結果</button>
           </div>
           <label class="print-brief-input"><input type="checkbox" class="option-control" id="print-brief-input">摘要加印出生日期、時間與地點</label>
-          <p class="note" id="quick-export-data-note">匯出檔含出生時刻與計算結果；即使不列座標，星盤數值本身也能推回出生時間與地點，刪掉日期欄位也無法匿名。</p>
+          <p class="note" id="quick-export-data-note">匯出檔含出生時刻與計算結果。「運算結果」不列出生地座標，「運算結果＋驗算資料」則含出生地的精確經緯度與海拔；不論哪一種，星盤數值本身都能推回出生時間與地點，刪掉日期欄位也無法匿名。</p>
           <p class="note"><a href="#export-toolbar">純文字、JSON、CSV 與『運算結果＋驗算資料』在「收據與匯出」一章的匯出工具列。</a></p>
         </div>
         <!-- 一頁摘要的位置表：畫面上不顯示；紙上排在圖的右邊、速覽之下。calculate.js 算完時依畫面上的表格原字填入。 -->
@@ -428,7 +429,7 @@
       <section class="chapter" id="chapter-classical" data-chapter="classical" aria-labelledby="chapter-classical-title" hidden>
         <div class="chapter-head">
           <h2 id="chapter-classical-title" tabindex="-1">古典判斷</h2>
-          <p class="chapter-lead">古典占星讀盤前先要確認的幾件事：<button type="button" class="term" data-term="sect">日盤還是夜盤</button>、行星的<button type="button" class="term" data-term="domicile_exaltation">廟與旺</button>、<button type="button" class="term" data-term="lots">命運點與精神點</button>、<button type="button" class="term" data-term="planetary_hours">行星時</button>。選了對應的選項時，這一章另列<button type="button" class="term" data-term="bounds_dignity">界</button>、<button type="button" class="term" data-term="face">面／旬</button>與<button type="button" class="term" data-term="triplicity">三分性</button>，<button type="button" class="term" data-term="lunar_mansions">月宿</button>，<button type="button" class="term" data-term="void_of_course">月空亡</button>，<button type="button" class="term" data-term="combust">焦傷</button>與<button type="button" class="term" data-term="under_beams">在光束下</button>（行星離太陽多近），以及行星與宮的古典分類（<button type="button" class="term" data-term="benefic_malefic">吉星與凶星</button>、<button type="button" class="term" data-term="joys">喜樂宮</button>、<button type="button" class="term" data-term="hayz">hayz 與 halb</button>、<button type="button" class="term" data-term="house_triad">始宮／續宮／果宮</button>）。照原典列出。不替你解盤，也不預測。</p>
+          <p class="chapter-lead">古典占星讀盤前先要確認的幾件事：<button type="button" class="term" data-term="sect">日盤還是夜盤</button>、行星的<button type="button" class="term" data-term="domicile_exaltation">廟與旺</button>和<button type="button" class="term" data-term="detriment">陷</button>、<button type="button" class="term" data-term="fall">弱</button>、<button type="button" class="term" data-term="peregrine">外來</button>、<button type="button" class="term" data-term="lots">命運點與精神點</button>、<button type="button" class="term" data-term="planetary_hours">行星時</button>。選了對應的選項時，這一章另列<button type="button" class="term" data-term="bounds_dignity">界</button>、<button type="button" class="term" data-term="face">面／旬</button>與<button type="button" class="term" data-term="triplicity">三分性</button>，<button type="button" class="term" data-term="lunar_mansions">月宿</button>，<button type="button" class="term" data-term="void_of_course">月空亡</button>，<button type="button" class="term" data-term="combust">焦傷</button>與<button type="button" class="term" data-term="under_beams">在光束下</button>（行星離太陽多近），以及行星與宮的古典分類（<button type="button" class="term" data-term="benefic_malefic">吉星與凶星</button>、<button type="button" class="term" data-term="joys">喜樂宮</button>、<button type="button" class="term" data-term="hayz">hayz 與 halb</button>、<button type="button" class="term" data-term="house_triad">始宮／續宮／果宮</button>）。照原典列出。不替你解盤，也不預測。</p>
         </div>
         <div class="chapter-sections" data-chapter-host="classical"></div>
       </section>
@@ -484,7 +485,7 @@
           <legend class="export-mode-title" id="export-mode-title">複製與下載內容</legend>
           <div class="export-mode-options">
             <label><input type="radio" name="export-detail-mode" value="chart_data_only" checked><span><b>運算結果</b><small>天體、座標、宮位、相位與所選計算</small></span></label>
-            <label><input type="radio" name="export-detail-mode" value="reproducibility_detail"><span><b>運算結果＋驗算資料</b><small>再加入版本、來源、計算軌跡與完整收據</small></span></label>
+            <label><input type="radio" name="export-detail-mode" value="reproducibility_detail"><span><b>運算結果＋驗算資料</b><small>再加入版本、來源、計算軌跡、完整收據，以及出生地的精確經緯度與海拔</small></span></label>
           </div>
         </fieldset>
         <p class="note" id="export-mode-help">一般閱讀建議使用PDF、Markdown或純文字；JSON供程式處理，完整精度在『運算結果＋驗算資料』的 JSON 匯出中；CSV供試算表使用。</p>
@@ -496,7 +497,7 @@
           <button type="button" class="ghost small" data-download="csv" aria-describedby="export-data-note">CSV</button>
           <button type="button" class="ghost small" id="print-button" data-print-mode="full">列印完整結果</button>
         </div>
-        <p class="note" id="export-data-note">匯出檔含出生時刻與計算結果；即使不列座標，星盤數值本身也能推回出生時間與地點，刪掉日期欄位也無法匿名。</p>
+        <p class="note" id="export-data-note">匯出檔含出生時刻與計算結果。「運算結果」不列出生地座標，「運算結果＋驗算資料」則含出生地的精確經緯度與海拔；不論哪一種，星盤數值本身都能推回出生時間與地點，刪掉日期欄位也無法匿名。</p>
         <p class="note">檔名不含這些資料，但內容含有；請自行決定存放位置。</p>
       </div>
       <!-- 快速看盤沒有「時間主星」一章：結果最後一行指給你看；按了只換模式（自訂只移焦點），不另外送請求。 -->
@@ -505,7 +506,7 @@
 
 
       <div class="clear-zone">
-        <div class="eyebrow">清除 · CLEAR</div>
+        <div class="eyebrow">清除</div>
         <div class="row wrap-row">
           <button type="button" class="ghost small" id="clear-results">清除計算結果（保留表單）</button>
           <button type="button" class="small danger" id="clear-sensitive">清除本頁敏感資料（連表單一起）</button>
@@ -567,7 +568,7 @@
       </details>
       <details>
         <summary>怎麼自己驗算排出來的星盤？</summary>
-        <p>每張盤都附計算收據，在結果最下方的「技術細節與驗算資料」：寫出時間怎麼換算、用了哪一版程式與哪些星曆檔，以及整串計算步驟的雜湊；用同一份輸入再算一次、比對雜湊即可。見〈<a href="/zh-TW/blog/verify-chart-calculation">星盤怎麼驗算？</a>〉。</p>
+        <p>每張盤都附計算收據，在結果最下方的「技術細節與驗算資料」：寫出時間怎麼換算、用了哪一版程式與哪些星曆檔，以及整串計算步驟的雜湊；在同一個網站上用同一份輸入再算一次、比對雜湊即可。自己架設的一份拿來比，雜湊可能因電腦不同而不同，要比數值。見〈<a href="/zh-TW/blog/verify-chart-calculation">星盤怎麼驗算？</a>〉。</p>
       </details>
       <details>
         <summary>線上排盤要錢嗎？要註冊嗎？</summary>

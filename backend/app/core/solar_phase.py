@@ -59,8 +59,11 @@ from .module_state import (
     module_state,
     not_applicable_receipt,
 )
-from .root_finding import SOLVER_NAME, find_crossings_detailed, wrap_to_signed_180
+from .root_finding import (
+    SOLVER_NAME, find_crossings_around, find_crossings_detailed, wrap_to_signed_180,
+)
 from .source_reading import SOURCE_READING_LEVELS
+from .time_utils import solved_instant
 from .trace import Trace
 
 
@@ -238,6 +241,12 @@ def _side(longitude_difference: float) -> str:
     return SIDES[2]
 
 
+def side_of_sun(longitude: float, sun_longitude: float) -> str:
+    """The side of the Sun a body stands on, by its longitude difference."""
+
+    return _side(wrap_to_signed_180(longitude - sun_longitude))
+
+
 def classify(
     profile: str,
     key: str,
@@ -369,7 +378,11 @@ def _beam_crossings(
     instant_of: Callable[[float], dict],
 ) -> list[dict]:
     """Crossings of the profile's under-the-beams limit (on the side the body
-    is on at that moment) within 7 days of the chart instant."""
+    is on at that moment) within 7 days of the chart instant.
+
+    The search grid is fixed in absolute time and each crossing is printed no
+    finer than the bisection determines it (``solved_instant``), so the same
+    crossing reads the same whichever instant anchors the search."""
 
     def threshold(dl: float) -> float:
         value = _limit_degrees(profile, "under_beams", key, _side(dl))
@@ -377,16 +390,16 @@ def _beam_crossings(
             raise InternalInvariantError("value is not None")
         return value
 
-    def outside_by(t: float) -> float:
-        dl = _state_at(sample, body, jd_ut + t)[0]
+    def outside_by(jd: float) -> float:
+        dl = _state_at(sample, body, jd)[0]
         return abs(dl) - threshold(dl)
 
-    roots = find_crossings_detailed(
+    roots = find_crossings_around(
         outside_by,
-        window_days=2 * SEARCH_WINDOW_DAYS,
+        center_jd=jd_ut,
+        half_window_days=SEARCH_WINDOW_DAYS,
         coarse_step_days=PLANET_STEP_DAYS,
         tolerance_days=TOLERANCE_DAYS,
-        start_days=-SEARCH_WINDOW_DAYS,
     )
     crossings = []
     for root in roots:
@@ -394,15 +407,16 @@ def _beam_crossings(
         low, high = bracket["low_offset_degrees"], bracket["high_offset_degrees"]
         if low == high:
             # A sample landed on the root: read the direction off its neighbours.
-            low = outside_by(root["t"] - 1e-4)
-            high = outside_by(root["t"] + 1e-4)
+            low = outside_by(root["jd"] - 1e-4)
+            high = outside_by(root["jd"] + 1e-4)
         if low == high or (low > 0) == (high > 0):
             continue  # a touch, not a crossing
+        second, instant = solved_instant(root["jd"], TOLERANCE_DAYS, instant_of)
         crossings.append({
             "direction": CROSSING_DIRECTIONS[0] if high > low else CROSSING_DIRECTIONS[1],
-            "threshold_degrees": threshold(_state_at(sample, body, jd_ut + root["t"])[0]),
-            "day_offset": root["t"],
-            "instant": instant_of(jd_ut + root["t"]),
+            "threshold_degrees": threshold(_state_at(sample, body, root["jd"])[0]),
+            "day_offset": second - jd_ut,
+            "instant": instant,
         })
     return crossings
 
@@ -610,7 +624,7 @@ def compute_solar_phase(
         separation = angular_separation_degrees(
             body["longitude"], body["latitude"], sun["longitude"], sun["latitude"]
         )
-        side = _side(dl)
+        side = side_of_sun(body["longitude"], sun["longitude"])
         for pid in PROFILE_IDS:
             result = profile_results[pid]
             result["bands"][key] = _band(pid, body, dl, separation, sun_semidiameter, disc_cazimi)
@@ -845,8 +859,9 @@ METHOD_SOURCE_ENTRIES: Final = {
                 "reading": SOURCE_READING_LEVELS[0],
                 "read_at": (
                     "archive.org full text of the 1647 printing and of a 1659 transcription; "
-                    "scans not checked. The p.115 table of fortitudes and debilities "
-                    "was read only as OCR and is not cited"
+                    "pp.111 and 113 not checked on the scan. The p.115 table of fortitudes "
+                    "and debilities was read on the scan (Wellcome Library copy, "
+                    "archive.org b30338724 n148); it is cited under motion_states"
                 ),
             },
             {
@@ -889,6 +904,21 @@ METHOD_SOURCE_ENTRIES: Final = {
                 ),
                 "reading": SOURCE_READING_LEVELS[2],
                 "read_at": "secondary pages and search excerpts only",
+            },
+            {
+                "citation": (
+                    "William Lilly, Christian Astrology (1647) Book I ch. XIX p.107, "
+                    "first column"
+                ),
+                "says": "the Sun's orb of 17 degrees, which the default limits halve",
+                "reading": SOURCE_READING_LEVELS[0],
+                "read_at": "the first edition (archive.org/details/b30338724)",
+            },
+            {
+                "citation": "Bonatti, as given in Dykes 2007 p.211",
+                "says": "cazimi requires the latitude as well as the longitude within 16 minutes",
+                "reading": SOURCE_READING_LEVELS[2],
+                "read_at": "Dykes 2007, a secondary report; Bonatti's Latin not read",
             },
         ],
         "not_applied": (

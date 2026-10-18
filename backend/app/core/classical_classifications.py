@@ -173,7 +173,7 @@ def _joys(key: str, house: int | None, is_day: bool | None) -> list[dict]:
 TRIAD_VALUES = ("angular", "succedent", "cadent")
 FIRMICUS_GROUP_VALUES = ("joined_to_the_ascendant", "sluggish_and_cast_down")
 DOROTHEUS_RANK_VALUES = ("good", "middling", "bad")
-# 名稱：希臘文轉寫與英文依 Robbins 譯 Ptolemy III.10 注 56、Valens 卷二與卷四；拉丁文依
+# 名稱：希臘文轉寫與英文依 Robbins 英譯 Ptolemy III.10 的譯注（LacusCurtius 線上本註 56）、Valens 卷二與卷四；拉丁文依
 # Firmicus II.19–20。中文是本產品的譯名（沒有通行的中文名），對外第一次出現時並列原文。
 PLACES = (
     (1, "上升", "Hōroskopos", "Horoscope", "horoscopus"),
@@ -433,7 +433,7 @@ SOURCES = {
         "read_at": "archive.org OCR text of a modern reset edition",
     },
     "ptolemy_tetrabiblos_iii_3_10": {
-        "citation": "Ptolemy, Tetrabiblos III.3 and III.10 with Robbins's notes 56-57",
+        "citation": "Ptolemy, Tetrabiblos III.3 and III.10 with Robbins's translator's notes (LacusCurtius online numbering, notes 56-57)",
         "says": (
             "angles, succedent places and places declining from the angles; the names of the twelve "
             "places (Horoscope, Gate of Hades, Goddess, Lower Midheaven, Good Fortune, Bad Fortune, "

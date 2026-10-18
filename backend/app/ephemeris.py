@@ -14,6 +14,7 @@
 import hashlib
 import os
 import threading
+import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Final
@@ -299,7 +300,15 @@ def _build_manifest() -> dict[str, dict]:
 # removed, replaced or re-pointed file changes the inode; a rewrite in place
 # changes the ctime even when its size and mtime are put back (the ctime cannot
 # be set from user space).  A key that changes while the files are being
-# hashed is not cached, so the next refresh hashes again.
+# hashed is not cached, so the next refresh hashes again.  Nor is a key whose
+# file was written within one filesystem timestamp tick of the moment hashing
+# began ("racily clean", as git treats its index): a second write inside that
+# tick can leave size, mtime and ctime as they were, and the cache would then
+# describe bytes that are no longer there.  Such a manifest serves the chart
+# that built it but is rebuilt at the next refresh, until the files are older
+# than the tick.
+_TIMESTAMP_TICK_NS: Final = 2_000_000_000  # the coarsest common tick (FAT's 2 s)
+_MANIFEST_RACY = False
 #
 # The re-stat happens at a boundary, not on the hot path.  `require_full_ephemeris`
 # runs after every Swiss call a search makes — several thousand per chart — and
@@ -338,13 +347,29 @@ def input_files_signature() -> tuple:
 def refresh_ephemeris_file_manifest() -> dict[str, dict]:
     """Re-stat the input files and rebuild the manifest when any of them changed."""
 
-    global _MANIFEST_CACHE
+    global _MANIFEST_CACHE, _MANIFEST_RACY
     signature = input_files_signature()
-    if _MANIFEST_CACHE is None or _MANIFEST_CACHE[0] != signature:
+    if _MANIFEST_CACHE is None or _MANIFEST_CACHE[0] != signature or _MANIFEST_RACY:
+        hashing_began_ns = time.time_ns()
         manifest = _build_manifest()
         stable = input_files_signature() == signature
+        _MANIFEST_RACY = _written_within_a_tick_of(signature, hashing_began_ns)
         _MANIFEST_CACHE = (signature if stable else None, manifest)
     return _MANIFEST_CACHE[1]
+
+
+def _written_within_a_tick_of(signature: tuple, moment_ns: int) -> bool:
+    """Whether any file's mtime or ctime is less than one tick before ``moment_ns``
+    (or after it)."""
+
+    for entry in signature[1:]:
+        for identity in entry[1:]:
+            if identity is None:
+                continue
+            mtime_ns, ctime_ns = identity[3], identity[4]
+            if max(mtime_ns, ctime_ns) > moment_ns - _TIMESTAMP_TICK_NS:
+                return True
+    return False
 
 
 def watch_chart_input_files() -> tuple | None:

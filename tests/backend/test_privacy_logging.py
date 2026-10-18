@@ -27,6 +27,7 @@ import swisseph as swe
 from tests.backend import http_request as _request
 from tests.backend import minimal_chart_payload
 from tests.backend import unused_local_port as _unused_local_port
+from tests.backend.privacy_event_oracle import assert_events_hold_no
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -145,6 +146,13 @@ def test_structured_event_schema_is_closed_and_discards_attacker_controlled_text
         "headers", "exception", "latitude", "longitude", "datetime",
     ):
         assert forbidden_field not in event
+    # An error code outside the closed vocabulary is reduced, never echoed.
+    unfamiliar = build_request_event(
+        request_id="r", method="POST", path="/api/chart", status_code=422, duration_ms=1.0,
+        content_length="10", error_code=f"attacker-{CANARY_TEXT}",
+    )
+    assert unfamiliar["error_code"] == "unclassified"
+    assert CANARY_TEXT not in json.dumps(unfamiliar, ensure_ascii=False)
 
     # Place search is logged under its fixed route label, never with the query.
     place = _event(path="/api/places/search", content_length="72")
@@ -191,9 +199,8 @@ def test_the_annual_route_is_logged_under_its_own_label_with_or_without_its_flag
     assert annual["status_code"] == answered.status_code
     assert annual["error_code"] == (None if enabled else "unknown_api_path")
     assert other["route"] == "frontend_or_unmatched"
-    encoded = json.dumps(events)
-    assert "1987" not in encoded and "121.56" not in encoded
-    assert "47.37" not in encoded and "8.54" not in encoded and "canary" not in encoded
+    # Field by field: the random request ID may hold "1987" by chance.
+    assert_events_hold_no(events, ["1987", "121.56", "47.37", "8.54", "canary"])
 
 
 def test_duration_bucket_rejects_non_finite_values():
@@ -299,7 +306,8 @@ def test_boundary_reason_producer_and_privacy_consumer_are_closed():
         "type": "http",
         "state": {privacy_logging.DOMAIN_ERROR_STATE_KEY: "full_ephemeris_required"},
     }
-    assert privacy_logging._domain_error_reason(domain_scope) == "full_ephemeris_required"
+    # The event keeps the category, not the code that says the instant is outside the ephemeris.
+    assert privacy_logging._domain_error_reason(domain_scope) == "domain_failed"
     domain_event = _event(
         request_id="b" * 32, status_code=503, duration_ms=1, content_length="1",
         error_code=privacy_logging._domain_error_reason(domain_scope),
@@ -544,7 +552,7 @@ def test_caller_supplied_request_id_is_ignored(monkeypatch):
     }.items():
         assert response.headers[name] == value, name
     assert captured_events[-1]["request_id"] == response.headers["X-Request-ID"]
-    assert CANARY_TEXT not in json.dumps(captured_events, ensure_ascii=False)
+    assert_events_hold_no(captured_events, [CANARY_TEXT, CANARY_LATITUDE, CANARY_LONGITUDE])
 
 
 def test_public_cache_policy_separates_api_html_and_versioned_assets():
@@ -738,7 +746,7 @@ def test_backend_has_no_third_party_telemetry_or_persistence_dependency():
 def test_chart_failure_returns_closed_refusal_and_logs_no_exception_text(
     monkeypatch, error_type, code,
 ):
-    from app import main as app_main
+    from app import main as app_main, privacy_logging
     from app.refusals import REFUSALS
 
     captured_events: list[dict] = []
@@ -762,8 +770,9 @@ def test_chart_failure_returns_closed_refusal_and_logs_no_exception_text(
         )
     for canary in (CANARY_TEXT, str(CANARY_LATITUDE), str(CANARY_LONGITUDE)):
         assert canary not in response.text
-    assert captured_events[-1]["error_code"] == code
-    assert CANARY_TEXT not in json.dumps(captured_events, ensure_ascii=False)
+    # The user is told which failure it was; the event keeps its category.
+    assert captured_events[-1]["error_code"] == privacy_logging.telemetry_error_code(code)
+    assert_events_hold_no(captured_events, [CANARY_TEXT, CANARY_LATITUDE, CANARY_LONGITUDE])
 
 
 def test_real_uvicorn_unexpected_errors_emit_no_traceback_or_canary():

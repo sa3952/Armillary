@@ -138,7 +138,7 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
         "note_zh": (
             "界有多套表並存，同一度數可能歸給不同行星：Ptolemy《占星四書》（Tetrabiblos）I.20–21 並列"
             "埃及界與迦勒底界並加以評比，書中所附的完整界表是否出自 Ptolemy，學界也有爭議。"
-            "所以本產品不預設任何一套，由你選表。"
+            "所以本產品不預設任何一套，由你選表，或選「全部並列」逐星對照各家。"
         ),
         "sources": [
             {
@@ -310,6 +310,36 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
                 "says": "one band of 15 degrees",
                 "reading": _SECONDARY,
                 "read_at": "via Brennan 2017, a secondary work",
+            },
+        ],
+    },
+    "mean_motion_values": {
+        "technique_family": "motion_states",
+        "response_path": "derived_methods.motion_states",
+        "note_zh": (
+            "行速快慢比的「平均每日行度」各書數字不同：Lilly《Christian Astrology》（1647）"
+            "寫土星 2′01″、火星 31′27″（p.178；p.65 印成 31 度 27 分）、月亮 13°10′36″；"
+            "Bonatti《De astronomia》（1550）寫土星 2′00″35‴、火星 31′26″、月亮 13°10′35″。"
+            "Lilly p.80 又說月亮一天少於 13°10′ 才算慢。本站照 Lilly 的平均判定，Bonatti 的結果並列。"
+        ),
+        "sources": [
+            {
+                "citation": "William Lilly, Christian Astrology (1647) pp.57, 61, 65, 69, 80, 168, 178",
+                "says": (
+                    "means Saturn 2'01\", Jupiter 4'59\", Mars 31'27\" (p.178), Sun 59'08\", "
+                    "Moon 13 deg 10'36\"; the Moon slow under 13 deg 10' (p.80)"
+                ),
+                "reading": _ORIGINAL,
+                "read_at": "Wellcome Library copy, archive.org b30338724, scanned pages",
+            },
+            {
+                "citation": "Guido Bonatti, De astronomia (Basel 1550) cols.129-130",
+                "says": (
+                    "means Saturn 2'00\"35''', Jupiter 4'59\", Mars 31'26\", Sun 59'08\", "
+                    "Moon 13 deg 10'35\"; equal to the mean is aequalis"
+                ),
+                "reading": _ORIGINAL,
+                "read_at": "archive.org bub_gb_BgWuc5O-JzIC, scan n82",
             },
         ],
     },

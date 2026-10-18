@@ -367,10 +367,11 @@ def _latitude_figure(d: dict) -> str:
         if name is None and lat not in range(-40, 61, 5):
             continue
         key = f' data-fx-key="{CITY_KEYS[name]}"' if name else ""
-        rows.append(f'<tr{key}><th scope="row">{name or ""}</th><td class="n">{bound.num(_lat_text(lat))}</td>'
+        # 每一列都有緯度、不一定有城市：緯度是列標頭，城市是一般的格（沒有城市的列，列標頭不會是空的）。
+        rows.append(f'<tr{key}><th scope="row" class="n">{bound.num(_lat_text(lat))}</th><td>{name or ""}</td>'
                     f'<td class="n">{bound.num(_pct(d["latitude"][lat]))}</td></tr>')
     table = ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-             '<table class="ar-table fx-table"><thead><tr><th scope="col">城市</th><th scope="col" class="n">緯度</th>'
+             '<table class="ar-table fx-table"><thead><tr><th scope="col" class="n">緯度</th><th scope="col">城市</th>'
              f'<th scope="col" class="n">查錯的時刻佔比</th></tr></thead><tbody>{"".join(rows)}</tbody></table></div></details>')
     notes = []
     for name in FIG2_MARKS:

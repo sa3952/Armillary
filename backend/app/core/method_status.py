@@ -36,6 +36,8 @@ DECIDED_METHODS: frozenset[str] = frozenset({
     "solar_phase",
     # 行星與宮的古典分類：地平上下的判準、預設的出處組合與各欄寫法都已裁定。
     "classical_classifications",
+    # 行速、停滯與東出西入：平均行度、逆行比法、月亮門檻、停滯天數與東出西入的意思都已裁定。
+    "motion_states",
 })
 
 # 維持 provisional 的方法：Lots 隨可用的上升點保留 provisional；月空亡的定義仍未定，

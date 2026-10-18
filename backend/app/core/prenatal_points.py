@@ -53,7 +53,7 @@ from .lunar_events import (
     _phase_state,
     previous_phase_strictly_before,
 )
-from .time_utils import civil_instant
+from .time_utils import civil_instant, earth_rotation_jd_ut
 from .source_reading import SOURCE_READING_LEVELS
 from .trace import Trace
 
@@ -168,7 +168,7 @@ def _horizon_reading(altitudes: dict) -> dict:
 def _ascendant(jd_ut: float, place: PrenatalPlace) -> float:
     location = place.context.location
     # The ascendant does not depend on the house system; equal houses never fail.
-    _cusps, ascmc = swe.houses_ex(jd_ut, location.latitude, location.longitude, b"E")
+    _cusps, ascmc = swe.houses_ex(earth_rotation_jd_ut(jd_ut), location.latitude, location.longitude, b"E")
     return ascmc[0]
 
 

@@ -7,7 +7,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function buildExportPipeline(Labels) {
   "use strict";
 
-  const EXPORT_CONTRACT_VERSION = "0.2.0";
+  const EXPORT_CONTRACT_VERSION = "0.3.0";
   // 畫面（view-model.js）與匯出共用這一份；與後端 time_utils.py 同字由
   // tests/integration/test_frontend_contract.py 對照。1972 年前與約 2033-09 以後的盤
   // 是 UT1 而不是 UTC；這時欄位值結尾的 Z 只是沿用欄位格式，所以一併去掉。
@@ -114,7 +114,7 @@
     "trace", "requested_options", "contract", "receipt",
   ]);
   const SUPPORTED_RESPONSE_CONTRACTS = Object.freeze({
-    "0.18.0": Object.freeze(["0.10.0"]),
+    "0.19.0": Object.freeze(["0.11.0"]),
   });
 
   function assertCompatibleSourceResponse(sourceResponse) {
@@ -578,17 +578,19 @@
   // U+200D、U+2060）不歸在空白。
   // C0／C1 控制字元（\p{Cc}）同樣會被試算表略過再讀到公式前導，
   // 而 \s 只涵蓋其中的 tab／CR／LF／VT／FF。
-  // 全形的 ＝＋－＠（U+FF1D、U+FF0B、U+FF0D、U+FF20）也中和：東亞語系的試算表或輸入法
-  // 可能把它們轉成半形，是否真的會被讀成公式沒有在各家試算表驗過，寧可多一個撇號。
+  // 看的是 NFKC 正規化後的開頭：全形（＝＋－＠｜；）與小型（﹦﹢﹣﹫）的符號，東亞語系的試算表或
+  // 輸入法可能把它們轉成半形，正規化後就是 =+-@|;，不必逐一列舉。是否真的會被讀成公式沒有在各家
+  // 試算表驗過，寧可多一個撇號。前導的「看不見」也包括 Unicode 定為可忽略的字元（韓文填充字
+  // U+115F、U+1160、U+3164、U+FFA0 等）與點字空格 U+2800：它們不是空白類別，卻一樣顯示為空。
   // `|` 開頭可被讀成 DDE 呼叫（`|calc!A1`）；以分號為欄界讀入時（部分語系的預設），
   // `;=1+1` 會切出一格 `=1+1`。只看開頭：儲存格中間的 `|`、`;` 不加撇號。
-  const CSV_FORMULA_LEAD = /^[\s\p{Cf}\p{Cc}]*[=+\-@|;＝＋－＠]/u;
+  const CSV_FORMULA_LEAD = /^[\s\p{Cf}\p{Cc}\p{Default_Ignorable_Code_Point}\u2800]*[=+\-@|;]/u;
   // 完整量測值不是公式。只接受目前serializer實際產生的封閉形狀；
   // 時間冒號、運算子或尾隨文字都不在豁免內。
   const CSV_MEASURED_LITERAL = /^[\t\r\n ]*[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:%|\s*(?:℃|°C|h)|°(?:\d{1,2}′(?:\d{1,2}(?:\.\d+)?″)?)?)[\t\r\n ]*$/u;
   function spreadsheetScalar(value) {
     let raw = text(value);
-    const formulaLike = CSV_FORMULA_LEAD.test(raw);
+    const formulaLike = CSV_FORMULA_LEAD.test(raw.normalize("NFKC"));
     const numericLiteral = /^[\t\r\n ]*[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?[\t\r\n ]*$/.test(raw);
     if (formulaLike && !numericLiteral && !CSV_MEASURED_LITERAL.test(raw)) raw = "'" + raw;
     return raw;

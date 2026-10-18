@@ -19,7 +19,8 @@ def _choices(model, field: str) -> tuple[str, ...]:
     annotation = get_type_hints(model)[field]
     while get_origin(annotation) is Union:  # Optional[Literal[...]]
         (annotation,) = [arg for arg in get_args(annotation) if arg is not type(None)]
-    choices = get_args(annotation)
+    # "all" (全部並列) asks for every named choice; it is not one of them.
+    choices = tuple(choice for choice in get_args(annotation) if choice != "all")
     if not choices or not all(isinstance(choice, str) for choice in choices):
         raise RuntimeError(f"{model.__name__}.{field} is not a closed set of names")
     return choices

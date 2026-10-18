@@ -175,6 +175,15 @@ def _solar_return() -> list[str]:
     ]
 
 
+def _sidereal_time() -> list[str]:
+    fixture = json.loads((FIXTURES / "jpl_horizons_sidereal_time_2050_2399.json").read_text(encoding="utf-8"))
+    years = [int(row["label"][:4]) for row in fixture["tt_rows"]]
+    return [
+        f"<td>{min(years)} 到 {max(years)} 年，以及 2050 年元旦前後兩小時</td>"
+        f'<td class="num">{len(years)} 個時刻</td>',
+    ]
+
+
 def _civil_time() -> list[str]:
     source = (TESTS / "test_civil_time_exhaustive.py").read_text(encoding="utf-8")
     start = int(_search(r"SWEEP_START = dtmod\.datetime\((\d{4}), 1, 1", source, "the civil-time sweep")[1])
@@ -221,6 +230,6 @@ def build() -> tuple[dict[str, str], list[str]]:
         f"{START:%Y-%m-%d}至{END:%Y-%m-%d}，逐小時，共{points:,}個時點",
         f'<td class="num">{rows:,} 列</td>',
         f"<td>{START.year} 到 {END.year} 年，逐小時</td>",
-        *_horizons(), *_eclipses(), *_houses(), *_solar_return(), *_civil_time(), *_fixed_stars(), *_engine(),
+        *_horizons(), *_eclipses(), *_houses(), *_solar_return(), *_sidereal_time(), *_civil_time(), *_fixed_stars(), *_engine(),
     ]
     return {}, quoted

@@ -1,7 +1,7 @@
 <div class="wrap page-body ladder">
 
   <section class="rm-hero">
-    <p class="eyebrow">路線 · ROADMAP</p>
+    <p class="eyebrow">路線</p>
     <h1>這不是功能清單，<br>是一道階梯。</h1>
     <p class="lede">功能清單會誘使你問「什麼時候會有 X」。階梯讓你問一個更有用的問題：<b>「他們現在站在哪一階，憑什麼上下一階？」</b></p>
     <p class="rm-promise">下面每一列都附<b>「這個狀態是怎麼知道的」</b>——文件名、測試名，或一句可以自己重跑的話。<br>沒有依據的狀態，就是還沒查證的狀態。</p>
@@ -73,10 +73,16 @@
           <tr><td>黃道相位：整宮配置層 ＋ 逐度層，另附相位方格</td><td class="st ok">已完成</td><td>計算頁相位組十項控制；方格把逐度層的同一份兩兩組合排成三角形，不另計算</td></tr>
           <tr><td>四套相位集合、兩套具名容許度表、三種同度判準</td><td class="st ok">已完成</td><td>同上；容許度表逐條列出書目</td></tr>
           <tr><td>界四套、面／旬兩套、三分性三套，皆具名到來源</td><td class="st ok">已完成</td><td>回應中每套帶作品與章節、行號或頁碼</td></tr>
+          <tr><td>界、面、三分性與十二分部「全部並列」：一次算出各家，逐星對照</td><td class="st ok">已完成</td><td>選項值 <span class="mono">all</span>；回應的 <span class="mono">computed_profiles</span> 寫出展開後的各套，每套結果與單選時相同；「各家相同／有不同」由結果頁比對印出的守護者，不進回應</td></tr>
           <tr><td>廟旺判定</td><td class="st ok">已完成</td><td>來源：Ptolemy《占星四書》（Tetrabiblos）I.17／I.19（Robbins 編號；Hübner 為 I.18／I.20），並見於 Dorotheus、Valens、Firmicus</td></tr>
+          <tr><td>陷、弱（整星座，古典七政）</td><td class="st ok">已完成</td><td>陷：al-Bīrūnī《占星術入門》§442、Lilly 1647 p.104；Ptolemy 沒有陷。弱：Ptolemy I.19 等六家的星座一致；度數不判</td></tr>
+          <tr><td>外來（peregrine）</td><td class="st ok">已完成</td><td>依 Lilly 1647 p.112 的定義與他自己 p.104 的整套表判定，三分性只算當令（p.102）；換用其他界或三分性約 3%～21% 的位置判定不同，方法頁寫明。古典完整預設開啟</td></tr>
+          <tr><td>接納（含互容）、almuten</td><td class="st ok">已研究，不做</td><td>almuten 的理由見方法頁〈<a href="/zh-TW/methods#almuten">目前不算的東西</a>〉；回應的未評估清單仍列出接納</td></tr>
+          <tr><td>九分部（novenaria）</td><td class="st ok">已研究，只寫說明</td><td>規則各書一致，等於黃經乘以 9；出處與不計算的理由見方法頁〈<a href="/zh-TW/methods#novenaria">十二分部</a>〉一節</td></tr>
           <tr><td>月空亡（含兩段式求根）</td><td class="st ok">已完成</td><td>求根器回傳括號端點與二分迭代次數</td></tr>
           <tr><td>日夜盤（含近地平提示與並列輸出）</td><td class="st ok">已完成</td><td>太陽中心真高度 ±50 角分標記 <span class="mono">in_near_horizon_band</span></td></tr>
           <tr><td>行星日與行星時（從日出起算、晝夜各十二等分、迦勒底序）</td><td class="st ok">已完成</td><td>每張盤的 <span class="mono">derived_methods.planetary_hours</span>；極區沒有日出日落循環時標為不適用</td></tr>
+          <tr><td>行速、停滯與東出西入（古典判斷，選用）</td><td class="st ok">已完成</td><td>平均每日行度照 Lilly 1647（Bonatti 1550 並列），停滯照 Lilly 的天數並列出前後 15 天的轉向時刻，東出西入只取相對太陽一種；平均行度、停滯天數與 p.115 強弱表已核 1647 年版頁影像</td></tr>
           <tr><td>命運點（Lot of Fortune，也譯福點、幸運點）與精神點（Lot of Spirit）、行星落宮、反照點（antiscia）</td><td class="st ok">已完成</td><td>計算頁的點與幾何選項組</td></tr>
           <tr><td>年度時間主星（time lords）：年度小限、法達（firdaria）、黃道釋放（zodiacal releasing，兩層）、十年期（decennials，兩層）與七個延伸的阿拉伯點</td><td class="st ok">已完成</td><td>年度結果附內嵌的方法出處清單；規則、文獻分歧與我們採用的做法見〈<a href="/zh-TW/methods/time-lords">年度時間主星的規則與出處</a>〉。只列哪一段時間由誰輪值，不解讀</td></tr>
           <tr><td>不計算宮位的模式、只知道日期的模式</td><td class="st ok">已完成</td><td>計算頁的出生時刻精度三選一</td></tr>
@@ -84,11 +90,12 @@
           <tr><td>日夜盤判定基準的文獻考據</td><td class="st wip">進行中</td><td><b>研究筆記所列的古典段落沒有明定太陽中心、上緣或折射的邊界</b>；現行規則標為產品慣例，非古典來源</td></tr>
           <tr><td>時間主星的一手出處</td><td class="st wip">進行中</td><td>Valens 的關鍵句已對 Kroll 1908 希臘文，法達已讀 al-Bīrūnī 與 Bonatti 的英譯；Abū Maʿshar 原書、Paulus 希臘文與 Pingree 校勘本（學者比對多份古抄本後整理出的版本）尚未讀到，這幾條在出處清單照實標為轉引</td></tr>
           <tr><td>月空亡星座界線規則的歷史歸屬</td><td class="st open">未解</td><td>星座條件最晚見於 Lilly 1647 p.112；「離座前精確完成」後人文獻歸於 Al H. Morrison（AFA Bulletin 第 28 卷第 10 期，1966 年 10 月；原是當年 AFA 大會的演講，後來印成 AFA 小冊《The Void of Course Moon》；原文未讀），更早的起源尚未查證；兩者合起來的歸屬仍未定。已寫入回應的 <span class="mono">source_verification</span></td></tr>
-          <tr><td>精確擢升度數、陷、弱、外來、接納（含互容）、almuten</td><td class="st pend">尚未裁決</td><td>每次輸出明示 <span class="mono">debility_evaluated=false</span> 與未評估項目</td></tr>
+          <tr><td>精確擢升與弱的度數</td><td class="st pend">尚未裁決</td><td>目前只判整個星座；回應的方法出處條目寫明度數不判</td></tr>
+          <tr><td>相位容許度表與同度判準的各家對照欄</td><td class="st no">未開始</td><td>做法是每一對相位加一欄「依各表是否在容許度內」，星盤上的相位線照舊依你選的那一套；黃道釋放（zodiacal releasing）的年長度（360 日或 365.25 日）依已有裁決不並列</td></tr>
         </tbody>
       </table>
     </div>
-    <p class="limit"><b>這張表最值得看的是下面四列，不是上面十一列。</b>「已完成」只表示算得出來；「尚未裁決」表示我們知道有這個東西、也知道自己還沒有決定用誰的版本——<b>而在決定之前不會偷偷選一個給你。</b></p>
+    <p class="limit"><b>這張表最值得看的是下面五列，不是上面十七列。</b>「已完成」只表示算得出來；「尚未裁決」表示我們知道有這個東西、也知道自己還沒有決定用誰的版本——<b>而在決定之前不會偷偷選一個給你。</b></p>
   </section>
 
   <!-- ═══ 現況：產品與營運 ═══ -->
@@ -120,7 +127,6 @@
       <li><b>月空亡星座界線規則的歷史歸屬</b><span>星座條件已見於 Lilly 1647；「離座前精確完成」的來歷，以及兩者合起來的歸屬仍未定。已經寫進回應裡，不等考據完成才承認。</span></li>
       <li><b>日夜盤判定基準的文獻來源</b><span>研究筆記所列的古典段落沒有明定邊界判準；現行規則是產品慣例。</span></li>
       <li><b>時間主星還沒讀到的原典</b><span>Abū Maʿshar 論法達的原書、Paulus 論七個阿拉伯點的希臘文、Valens 的 Pingree 校勘本。讀到之前，出處清單維持「轉引」，不因功能穩定就升格。</span></li>
-      <li><b>陷、弱、接納（含互容）與 almuten</b><span>守護星前提已定為七政主宰，尚待各自的方法考據。</span></li>
       <li><b>瑞士／臺灣以外的下一個市場與法域</b><span>尚未確定。</span></li>
       <li><b>未來是否提供付費項目，以及如何定價</b><span>目前全部免費。有付費項目的話會事先公告。</span></li>
     </ul>

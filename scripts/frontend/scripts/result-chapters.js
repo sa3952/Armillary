@@ -47,7 +47,13 @@
         // 日夜盤與命運點、精神點由同一個選項開啟（後端在算阿拉伯點時判定日夜盤）。
         include_lots: true,
         include_domicile_exaltation: true,
+        // 外來依 Lilly 1647 判；後端預設不算，只有這個模式預先選上。
+        peregrine_profile: "lilly_1647_p112_v1",
         include_dodecatemoria: true,
+        // 界、面、三分性古書各有好幾套，本站不替你選：預設全部並列，第一次算就看得到各家哪裡不同。
+        bounds_profile: "all",
+        decan_profile: "all",
+        triplicity_profile: "all",
       }),
       chapters: CHAPTER_IDS,
       compactPositions: false,
@@ -106,7 +112,9 @@
     { section: "dignity_bounds", chapter: "classical" },
     { section: "dignity_face_decan", chapter: "classical" },
     { section: "dignity_triplicity", chapter: "classical" },
+    { section: "dignity_peregrine", chapter: "classical" },
     { section: "solar_phase", chapter: "classical", enable: ["include_solar_phase"] },
+    { section: "motion_states", chapter: "classical", enable: ["include_motion_states"] },
     { section: "classical_classifications", chapter: "classical", enable: ["include_classical_classifications"] },
 
     { section: "time", chapter: "receipt" },

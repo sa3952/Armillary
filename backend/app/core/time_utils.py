@@ -199,50 +199,161 @@ def _measured_era_delta_t_note(delta_t_model: dict) -> str:
 
 # --- Sidereal time model --------------------------------------------
 #
-# swe_sidtime0 (swephlib.c) uses the IAU 2006 short-term expression only strictly
-# between SIDT_LTERM_T0 = JD 2396758.5 (1850-01-01) and SIDT_LTERM_T1 = JD
-# 2469807.5 (2050-01-01), and a long-term model with a constant offset outside.
-# The two do not join: sidereal time, and with it the ARMC every house system
-# and angle is built from, steps at both dates.  The step is measured from Swiss
-# itself at import so the receipt cannot disagree with the library it describes.
-SIDEREAL_TIME_SEGMENTS = ("iau_2006_short_term", "swiss_long_term")
+# swe_sidtime0 (swephlib.c) computes the IERS Conventions 2010 sidereal time
+# (Earth rotation angle + IAU 2006 GMST polynomial + equation of the equinoxes
+# with its complementary terms) only strictly between SIDT_LTERM_T0 = JD
+# 2396758.5 (1850-01-01) and SIDT_LTERM_T1 = JD 2469807.5 (2050-01-01), and a
+# long-term model with a constant offset outside.  The long-term model does not
+# join the IERS one and drifts away from it after 2050 (-0.13 s at 2050,
+# +0.58 s by 2399).  From 2050-01-01 on the product computes the same IERS 2010
+# expression itself, so sidereal time stays on one formulation across the whole
+# product range; before 2050 Swiss's own value is used unchanged.  Everything
+# Swiss derives from its sidereal time (houses, horizon coordinates, rise and
+# set) is called at the instant whose Swiss sidereal time equals the IERS one
+# (earth_rotation_jd_ut); the shift is under one second, so nutation,
+# obliquity and the bodies do not move measurably.
+SIDEREAL_TIME_SEGMENTS = (
+    "iers_2010_era_based",
+    "iers_2010_era_based_product_continuation",
+    "swiss_long_term",
+)
 _SIDEREAL_SWITCHES = (("1850-01-01", 2396758.5), ("2050-01-01", 2469807.5))
+SIDEREAL_PRODUCT_CONTINUATION_FROM_JD_UT = _SIDEREAL_SWITCHES[1][1]
 _SIDEREAL_RATE = 1.00273790935
 _SIDEREAL_SWITCH_PROBE_DAYS = 1e-7
+_ARCSEC = 3600.0
 
 
-def _measured_sidereal_step_seconds(jd_ut: float) -> float:
+def _iers_2010_mean_sidereal_degrees(jd_ut: float) -> float:
+    """GMST (IERS Conventions 2010 eq. 5.32 without the equation of the
+    equinoxes): Earth rotation angle plus the IAU 2006 polynomial in TT."""
+    tu = jd_ut - 2451545.0
+    era = 360.0 * ((0.7790572732640 + 0.00273781191135448 * tu + tu) % 1.0)
+    t = (jd_ut + swe.deltat(jd_ut) - 2451545.0) / 36525.0
+    poly = (
+        0.014506
+        + t * (4612.156534 + t * (1.3915817 + t * (-0.00000044 + t * (-0.000029956 + t * -0.0000000368))))
+    ) / _ARCSEC
+    return (era + poly) % 360.0
+
+
+def _iers_2010_complementary_terms_arcsec(t: float) -> float:
+    """The largest complementary terms of the equation of the equinoxes
+    (IERS Conventions 2010 Table 5.2e, microarcseconds), as Swiss uses them."""
+    om = math.radians(125.04455501 - 6962890.5431 * t / _ARCSEC)
+    f = math.radians(93.27209062 + 1739527262.8478 * t / _ARCSEC)
+    d = math.radians(297.85019547 + 1602961601.2090 * t / _ARCSEC)
+    micro = (
+        2640.96 * math.sin(om) - 0.39 * math.cos(om)
+        + 63.52 * math.sin(2 * om) - 0.02 * math.cos(2 * om)
+        + 11.75 * math.sin(2 * f - 2 * d + 3 * om) + 11.21 * math.sin(2 * f - 2 * d + om)
+        - 4.55 * math.sin(2 * f - 2 * d + 2 * om) + 2.02 * math.sin(2 * f + 3 * om)
+        + 1.98 * math.sin(2 * f + om) - 1.72 * math.sin(3 * om) - 0.87 * t * math.sin(om)
+    )
+    return micro * 1e-6
+
+
+def iers_2010_sidereal_hours(jd_ut: float) -> tuple[float, float]:
+    """(GAST, GMST) in hours from the IERS Conventions 2010 expression, with
+    Swiss's nutation and obliquity (IAU 2000B) for the equation of the equinoxes."""
+    true_obliquity, _mean, nut_lon = swe.calc_ut(jd_ut, swe.ECL_NUT, 0)[0][:3]
+    t = (jd_ut + swe.deltat(jd_ut) - 2451545.0) / 36525.0
+    gmst = _iers_2010_mean_sidereal_degrees(jd_ut)
+    equinoxes = nut_lon * math.cos(math.radians(true_obliquity)) + (
+        _iers_2010_complementary_terms_arcsec(t) / _ARCSEC
+    )
+    return ((gmst + equinoxes) % 360.0) / 15.0, gmst / 15.0
+
+
+def _wrap_hours(hours: float) -> float:
+    return (hours + 12.0) % 24.0 - 12.0
+
+
+def earth_rotation_shift_days(jd_ut: float) -> float:
+    """Days to add to jd_ut so that Swiss's apparent sidereal time equals the
+    product's (IERS 2010) one.  Exactly 0.0 before 2050-01-01."""
+    if jd_ut < SIDEREAL_PRODUCT_CONTINUATION_FROM_JD_UT:
+        return 0.0
+    target = iers_2010_sidereal_hours(jd_ut)[0]
+    shifted = jd_ut
+    for _ in range(4):
+        miss = _wrap_hours(target - swe.sidtime(shifted))
+        if abs(miss) * 3600.0 < 1e-7:
+            break
+        shifted += miss / 24.0 / _SIDEREAL_RATE
+    return shifted - jd_ut
+
+
+def earth_rotation_jd_ut(jd_ut: float) -> float:
+    """The instant to hand to a Swiss function that turns the Earth by its own
+    sidereal time (houses_ex, azalt, azalt_rev): jd_ut itself before 2050."""
+    return jd_ut + earth_rotation_shift_days(jd_ut)
+
+
+def sidereal_time_hours(jd_ut: float, mean_obliquity: float) -> tuple[float, float]:
+    """(GAST, GMST) in hours: Swiss before 2050-01-01, IERS 2010 from then on."""
+    if jd_ut < SIDEREAL_PRODUCT_CONTINUATION_FROM_JD_UT:
+        return swe.sidtime(jd_ut), swe.sidtime0(jd_ut, mean_obliquity, 0.0)
+    return iers_2010_sidereal_hours(jd_ut)
+
+
+def _product_sidereal_step_seconds(jd_ut: float) -> float:
+    probe = _SIDEREAL_SWITCH_PROBE_DAYS
+    after = sidereal_time_hours(jd_ut + probe, 0.0)[0]
+    before = sidereal_time_hours(jd_ut - probe, 0.0)[0]
+    return _wrap_hours(after - before) * 3600.0 - 2.0 * probe * 86400.0 * _SIDEREAL_RATE
+
+
+def _swiss_sidereal_step_seconds(jd_ut: float) -> float:
     probe = _SIDEREAL_SWITCH_PROBE_DAYS
     return (swe.sidtime(jd_ut + probe) - swe.sidtime(jd_ut - probe)) * 3600.0 - (
         2.0 * probe * 86400.0 * _SIDEREAL_RATE
     )
 
 
+def _rounded_step(seconds: float) -> float:
+    rounded = round(seconds, 4)
+    return 0.0 if rounded == 0.0 else rounded
+
+
 SIDEREAL_SWITCH_POINTS = tuple(
     {
         "date": date_label,
         "jd_ut": switch_jd_ut,
-        "measured_step_seconds": round(_measured_sidereal_step_seconds(switch_jd_ut), 4),
+        # The step the receipted sidereal time takes at this date.
+        "measured_step_seconds": _rounded_step(_product_sidereal_step_seconds(switch_jd_ut)),
+        # The step Swiss's own sidereal time takes there.
+        "swiss_step_seconds": _rounded_step(_swiss_sidereal_step_seconds(switch_jd_ut)),
     }
     for date_label, switch_jd_ut in _SIDEREAL_SWITCHES
 )
 
 
 def sidereal_time_model_receipt(jd_ut: float) -> dict:
-    short_term = _SIDEREAL_SWITCHES[0][1] < jd_ut < _SIDEREAL_SWITCHES[1][1]
+    if jd_ut >= SIDEREAL_PRODUCT_CONTINUATION_FROM_JD_UT:
+        segment = SIDEREAL_TIME_SEGMENTS[1]
+    elif jd_ut > _SIDEREAL_SWITCHES[0][1]:
+        segment = SIDEREAL_TIME_SEGMENTS[0]
+    else:
+        segment = SIDEREAL_TIME_SEGMENTS[2]
     return {
-        "segment": SIDEREAL_TIME_SEGMENTS[0 if short_term else 1],
+        "segment": segment,
         # The closed segment set and the source are constant: register entry
         # time/sidereal_time_model.
         "source_ref": "time/sidereal_time_model",
         "switch_points": [dict(point) for point in SIDEREAL_SWITCH_POINTS],
-        "continuity": "discontinuous_at_switch_points",
+        # 1850-01-01 lies outside the product range; 2050-01-01 is joined.
+        "continuity": "continuous_within_product_range",
+        # Seconds the product's GAST differs from Swiss's swe.sidtime here.
+        "swiss_correction_seconds": round(earth_rotation_shift_days(jd_ut) * 86400.0 * _SIDEREAL_RATE, 4) or 0.0,
         "consumers": [
             "gast_hours",
             "gmst_hours",
             "last_hours",
             "lmst_hours",
             "houses_and_angles_armc",
+            "horizon_coordinates",
+            "rise_set_and_planetary_hours",
         ],
     }
 
@@ -370,19 +481,26 @@ def civil_time_label(
     )
 
 
-# A Julian day near 2.45e6 resolves about 40 µs, so Swiss can split an instant
-# made from a whole second as 59.99998659 s.  The instant is rounded to the
-# nearest millisecond by moving it half a millisecond before Swiss splits it:
-# Swiss then carries minutes, days and leap seconds itself (an instant inside
-# a leap second comes back as second 60.x), and the label only truncates.
-_HALF_MILLISECOND_DAYS = 0.0005 / 86400.0
+# A Julian day near 2.45e6 resolves 2^-31 day (about 40 µs), and Swiss's own
+# UTC round trip is off by at most half of that, so an instant made from a
+# whole millisecond can come back as 59.99998659 s.  The instant is moved
+# forward by one unit in the last place of its Julian day before Swiss splits
+# it: that covers the round trip and nothing more, so the label then truncates
+# like civil_time_label and never names a later millisecond, minute, day or
+# leap second than an instant at least one such unit short of it.  Swiss
+# carries minutes, days and leap seconds itself (an instant inside a leap
+# second comes back as second 60.x).
+def _utc_fields_of_jd(jd_ut: float) -> tuple[int, int, int, int, int, int]:
+    """(year, month, day, hour, minute, millisecond of the minute), truncated."""
+
+    year, month, day, hour, minute, second = swe.jdut1_to_utc(
+        jd_ut + math.ulp(jd_ut), swe.GREG_CAL
+    )
+    return year, month, day, hour, minute, math.floor(second * 1000.0)
 
 
 def jd_ut_to_iso_utc(jd_ut: float) -> str:
-    year, month, day, hour, minute, second = swe.jdut1_to_utc(
-        jd_ut + _HALF_MILLISECOND_DAYS, swe.GREG_CAL
-    )
-    millis = math.floor(second * 1000.0)
+    year, month, day, hour, minute, millis = _utc_fields_of_jd(jd_ut)
     return civil_time_label(
         year, month, day, hour, minute, millis * _LABEL_MICROSECONDS, separator="T"
     ) + "Z"
@@ -391,20 +509,115 @@ def jd_ut_to_iso_utc(jd_ut: float) -> str:
 def utc_parts_of_jd(jd_ut: float) -> tuple[dtmod.datetime, int]:
     """The instant as an aware UTC datetime and its millisecond-of-minute count.
 
-    Rounded to the millisecond as ``jd_ut_to_iso_utc`` is; inside a leap second
-    the datetime stops at :59.999 and the count keeps the 60.
+    Truncated to the millisecond as ``jd_ut_to_iso_utc`` is; inside a leap
+    second the datetime stops at :59.999 and the count keeps the 60.
     """
 
-    year, month, day, hour, minute, second = swe.jdut1_to_utc(
-        jd_ut + _HALF_MILLISECOND_DAYS, swe.GREG_CAL
-    )
-    millis = math.floor(second * 1000.0)
+    year, month, day, hour, minute, millis = _utc_fields_of_jd(jd_ut)
     held = min(millis, 59_999)
     value = dtmod.datetime(
         year, month, day, hour, minute, held // 1000, (held % 1000) * 1000,
         tzinfo=dtmod.timezone.utc,
     )
     return value, millis
+
+
+def _without_fraction(label: str) -> str:
+    """A civil label cut to its whole second (truncated, as every label is)."""
+
+    head, dot, tail = label.partition(".")
+    if dot != "." or not tail.rstrip("Z").isdigit():
+        raise InternalInvariantError(f"{label!r} carries no fraction of a second")
+    return head + ("Z" if tail.endswith("Z") else "")
+
+
+def _without_seconds(label: str) -> str:
+    """A civil label cut to its whole minute (truncated, as every label is)."""
+
+    head = _without_fraction(label)
+    zulu = head.endswith("Z")
+    bare = head.removesuffix("Z")
+    minute, colon, second = bare.rpartition(":")
+    if colon != ":" or len(second) != 2 or not second.isdigit() or minute.count(":") != 1:
+        raise InternalInvariantError(f"{label!r} carries no seconds")
+    return minute + ("Z" if zulu else "")
+
+
+SECONDS_PER_DAY = 86400.0
+# The units a solved instant can be printed to: the millisecond every civil
+# label carries, the whole second and the whole minute.
+MILLISECOND_UNIT_SECONDS = 1e-3
+WHOLE_SECOND_UNIT_SECONDS = 1.0
+WHOLE_MINUTE_UNIT_SECONDS = 60.0
+# The civil labels an instant record may carry (civil_instant and the event
+# records that print only UTC).
+INSTANT_LABEL_FIELDS = ("utc_time", "local_time")
+
+
+def printed_unit_seconds(uncertainty_days: float) -> float:
+    """The unit an instant is printed to, given how far its solver leaves it open.
+
+    The uncertainty is what the solver's caller declares: the bisection
+    tolerance, the spread measured when a Swiss solver that states none
+    (rise_trans) is started from different instants, or, where the quantity
+    solved for is itself defined only that far (a planet's station), the spread
+    between its definitions.  The printed unit is never finer than that: the
+    millisecond when the uncertainty is below it, else the whole second when it
+    is at most a second, else the whole minute when it is at most a minute.  No
+    solver here leaves more than a minute open; one that did would need a
+    coarser label first.
+    """
+
+    seconds = uncertainty_days * SECONDS_PER_DAY
+    if seconds < MILLISECOND_UNIT_SECONDS:
+        return MILLISECOND_UNIT_SECONDS
+    if seconds <= WHOLE_SECOND_UNIT_SECONDS:
+        return WHOLE_SECOND_UNIT_SECONDS
+    if seconds <= WHOLE_MINUTE_UNIT_SECONDS:
+        return WHOLE_MINUTE_UNIT_SECONDS
+    raise InternalInvariantError(f"no printed unit covers {seconds} s of uncertainty")
+
+
+def solved_instant(
+    jd_ut: float, uncertainty_days: float, instant_of: Callable[[float], dict]
+) -> tuple[float, dict]:
+    """A found instant printed no finer than its solver determines it.
+
+    Returns the Julian day that stands for the instant and its record from
+    ``instant_of``.  At the millisecond both are the instant itself.  At the
+    whole second (or minute) the labels are the instant's own labels cut to the
+    second (or minute; truncated, so never a later second, minute or day), and
+    the Julian day is moved back by the printed fraction to the start of that
+    UTC second (or minute, a leap second included): any offset a caller derives
+    from it names the same unit, and nothing finer.  Each label names the unit
+    its own clock puts the instant in; under an offset with a seconds part the
+    local minute is cut from the instant, not from the start of the UTC minute.
+    The day is not made by turning the label back through Swiss's UTC input,
+    because Swiss's output and input switch to UT1 on different days in 2033
+    and between them that round trip lands in another second.
+    """
+
+    record = instant_of(jd_ut)
+    unit = printed_unit_seconds(uncertainty_days)
+    if unit == MILLISECOND_UNIT_SECONDS:
+        return jd_ut, record
+    utc_seconds = swe.jdut1_to_utc(jd_ut + math.ulp(jd_ut), swe.GREG_CAL)[5]
+    into_unit = utc_seconds if unit == WHOLE_MINUTE_UNIT_SECONDS else (
+        utc_seconds - math.floor(utc_seconds)
+    )
+    start = jd_ut - into_unit / SECONDS_PER_DAY
+    cut = _without_seconds if unit == WHOLE_MINUTE_UNIT_SECONDS else _without_fraction
+    printed = {
+        **record,
+        **{
+            field: cut(record[field])
+            for field in INSTANT_LABEL_FIELDS
+            if record.get(field) is not None
+        },
+    }
+    if "jd_ut" in printed:
+        printed["jd_ut"] = start
+    return start, printed
 
 
 def local_wall_time(utc_value: dtmod.datetime, tz_input) -> tuple[dtmod.datetime, float]:
@@ -607,6 +820,10 @@ def exact_second_microseconds_or_raise(second: float) -> int:
     return microseconds
 
 
+# PEP 495: fold 0 is the earlier of the two readings of a repeated wall-clock time.
+_OCCURRENCE_ZH = ("第一次（較早）", "第二次（較晚）")
+
+
 def _to_utc_datetime(
     dt_input: "DateTimeInput",
     tz_input: "TimezoneInput",
@@ -670,12 +887,14 @@ def _to_utc_datetime(
                 # 重複多久、為什麼重複都由兩個偏移導出，不寫死「日光節約」「一小時」「秋季」：
                 # Lord Howe 2024-04-07 只重複 30 分鐘，臺北 1945-09-21 是標準時變更，
                 # Kwajalein 1969-09-30 重複約 23 小時。
+                # Shown on the result page: the occurrence in words, as the
+                # calculate page's choice names it, not the request field.
                 dst_warning = (
-                    f"此本地時間在 {tz_label} 為時區偏移改變造成的模糊時刻（例如日光節約時間結束或標準時變更；"
-                    f"同一本地時間對應兩個 UTC 時刻，兩次相差 {_offset_span_label(offset_hours, alt_offset_hours)}）。"
-                    f"已採用 fold={fold}，對應 {utc_offset_text(offset_hours)}；"
-                    f"另一種解讀為 {utc_offset_text(alt_offset_hours)}。如果您知道確切是哪一次，"
-                    f"請在請求中指定 timezone.fold={1 - fold} 以取得另一種結果。"
+                    f"這個當地時間在 {tz_label} 出現兩次：時區在這裡改變了 UTC 偏移（例如日光節約時間結束"
+                    f"或標準時變更），時鐘往回撥，兩次相差 {_offset_span_label(offset_hours, alt_offset_hours)}。"
+                    f"這次採用{_OCCURRENCE_ZH[fold]}，{utc_offset_text(offset_hours)}；"
+                    f"另一次是{_OCCURRENCE_ZH[1 - fold]}，{utc_offset_text(alt_offset_hours)}。"
+                    "如果知道是另一次，請改選那一次重新計算。"
                 )
     else:
         fixed_offset_hours = tz_input.utc_offset_hours
@@ -964,15 +1183,15 @@ def _time_conversion_from_jd_ut(
     # 不是名稱含混的「GST」。平均恆星時則以 sidtime0(..., mean_obliquity, 0)
     # 明確移除章動。
     sidereal_model = sidereal_time_model_receipt(jd_ut)
-    gast_hours = swe.sidtime(jd_ut)
-    gmst_hours = swe.sidtime0(jd_ut, mean_obliquity, 0.0)
+    gast_hours, gmst_hours = sidereal_time_hours(jd_ut, mean_obliquity)
     last_hours = (gast_hours + location.longitude / 15.0) % 24.0
     lmst_hours = (gmst_hours + location.longitude / 15.0) % 24.0
     trace.add(
         "平均／視恆星時 (Sidereal Time)",
         formula=(
-            "GAST = swe.sidtime(JD_UT)；GMST = swe.sidtime0(JD_UT, 平黃赤交角, 0)；"
-            "LAST/LMST = GAST/GMST + 東經/15"
+            "2050-01-01 以前：GAST = swe.sidtime(JD_UT)，GMST = swe.sidtime0(JD_UT, 平黃赤交角, 0)；"
+            "2050-01-01 起：GMST = 地球自轉角 ＋ IAU 2006 多項式，GAST = GMST ＋ 黃經章動 × cos 真黃赤交角 ＋ 補充項"
+            "（IERS 2010 公約）；LAST/LMST = GAST/GMST + 東經/15"
         ),
         inputs={
             "JD(UT)": jd_ut,
@@ -986,10 +1205,11 @@ def _time_conversion_from_jd_ut(
             "LMST(小時)": lmst_hours,
         },
         note=(
-            "Swiss 在 1850-01-01 與 2050-01-01 之間用 IAU 2006 短期式，之外改用長期"
-            "模型（本次："
-            f"{sidereal_model['segment']}）；兩者在切換日不連續，實測跳動見 "
-            "time.sidereal_time_model.switch_points，宮位與角點的 ARMC 同受影響。"
+            "Swiss 只在 1850-01-01 與 2050-01-01 之間用 IERS 2010 公約的恆星時，2050 年以後改用的長期模型"
+            "會越差越遠（2399 年約差 0.58 秒）。本站 2050-01-01 起自己照同一套 IERS 2010 公式計算，"
+            "2050 年前直接用 Swiss 的值。本次："
+            f"{sidereal_model['segment']}，與 Swiss 原值相差 {sidereal_model['swiss_correction_seconds']:.4f} 秒；"
+            "宮位、上升點與天頂、日出日落、行星時與地平高度都用同一個恆星時。"
         ),
     )
 
@@ -1516,8 +1736,13 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         "applies_to": _TIME_RECEIPT_PATHS.format("sidereal_time_model"),
         "segment_vocabulary": list(SIDEREAL_TIME_SEGMENTS),
         "source": (
-            "Swiss Ephemeris 2.10.03 swe_sidtime / swe_sidtime0 "
-            "(swephlib.c SIDT_LTERM_T0, SIDT_LTERM_T1)"
+            "Before 2050-01-01: Swiss Ephemeris 2.10.03 swe_sidtime / swe_sidtime0, whose "
+            "IERS Conventions 2010 branch (Earth rotation angle, IAU 2006 GMST polynomial, "
+            "equation of the equinoxes with complementary terms; swephlib.c SIDT_LTERM_T0, "
+            "SIDT_LTERM_T1) covers the whole product range up to then. From 2050-01-01: the "
+            "same IERS Conventions 2010 eq. 5.32 expression computed by the product (IERS "
+            "Technical Note 36, ch. 5; complementary terms Table 5.2e), with Swiss's IAU 2000B "
+            "nutation; checked against JPL Horizons apparent sidereal time 2050-2399"
         ),
     },
 }

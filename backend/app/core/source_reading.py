@@ -32,3 +32,21 @@ SOURCE_READING_LEVELS: Final = (
     "secondary_only",
     "bibliographic_only",
 )
+
+# A locus the method research notes name, carried as a citation object while
+# the record does not say what was read: only the reference is claimed.
+LEVEL_PENDING_RESEARCH_NOTES: Final = (
+    "level pending: a passage named by the method research notes and not "
+    "independently verified; the record does not say what was read, so only the "
+    "reference is claimed until that is confirmed"
+)
+
+
+def reference_only(citation: str, says: str, read_at: str = LEVEL_PENDING_RESEARCH_NOTES) -> dict:
+    """A citation object claiming the reference alone (`bibliographic_only`)."""
+    return {
+        "citation": citation,
+        "says": says,
+        "reading": SOURCE_READING_LEVELS[3],
+        "read_at": read_at,
+    }

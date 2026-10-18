@@ -9,6 +9,12 @@ binds the artifact to the producer that should have built it: a correction or
 generator version changed in ``scripts/validation/build_place_catalog.py``
 without a rebuild fails here.
 
+The build's timezone/coordinate cross-check outcome is bound too: the
+manifest and the catalogue must record the same closed-set outcome, a pass
+must name its engine and cover every GeoNames row, and an outcome of
+``not_run`` is printed on every run so that "VERIFIED" never reads as a
+checked zone.
+
 The container image ships this verifier and the catalogue but not the
 producer, so the entrypoint passes ``--installed-image``: the freshness binding
 was enforced in the repository, and the image still checks every recorded
@@ -252,6 +258,31 @@ def _check_missing_glyph_marks(connection: sqlite3.Connection, manifest: dict) -
         )
 
 
+TIMEZONE_CHECK_NOT_RUN_REASONS = frozenset({"timezonefinder_not_installed"})
+
+
+def _check_timezone_check(metadata: dict, manifest: dict) -> str:
+    """The recorded timezone/coordinate cross-check outcome, refused unless it is one the producer writes."""
+
+    outcome = manifest.get("timezone_coordinate_check")
+    if metadata.get("timezone_coordinate_check") != outcome:
+        raise SystemExit("catalogue and manifest disagree on timezone_coordinate_check")
+    if not isinstance(outcome, dict):
+        raise SystemExit(f"unknown timezone/coordinate check outcome: {outcome!r}")
+    status = outcome.get("status")
+    if status == "passed":
+        engine, rows = outcome.get("engine"), outcome.get("rows_checked")
+        if (not isinstance(engine, str) or not engine.strip()
+                or rows != manifest.get("row_counts", {}).get("geonames_cities500")):
+            raise SystemExit(f"timezone/coordinate check outcome is not a pass over every GeoNames row: {outcome!r}")
+        return f"timezone/coordinate cross-check passed ({rows} rows, {engine})"
+    if (status == "not_run" and outcome.get("engine") is None
+            and outcome.get("reason") in TIMEZONE_CHECK_NOT_RUN_REASONS):
+        return (f"timezone/coordinate cross-check NOT RUN ({outcome['reason']}): no GeoNames zone was "
+                "compared with its coordinate when this catalogue was built")
+    raise SystemExit(f"unknown timezone/coordinate check outcome: {outcome!r}")
+
+
 def verify(*, installed_image: bool = False) -> None:
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
     catalog = manifest.get("catalog")
@@ -318,6 +349,7 @@ def verify(*, installed_image: bool = False) -> None:
             )
         if metadata.get("runtime_outbound") is not False:
             raise SystemExit("place catalog claims runtime outbound")
+        timezone_check = _check_timezone_check(metadata, manifest)
         corrected_rows = _check_corrections(connection, manifest)
         admin1_rows = _check_admin1_corrections(connection, manifest)
         _check_exclusions(connection, manifest)
@@ -345,7 +377,7 @@ def verify(*, installed_image: bool = False) -> None:
 
     print(
         f"PLACE CATALOG VERIFIED ({corrected_rows} corrected rows and "
-        f"{admin1_rows} admin1-corrected rows read back)"
+        f"{admin1_rows} admin1-corrected rows read back; {timezone_check})"
     )
 
 
