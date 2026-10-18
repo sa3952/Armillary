@@ -27,7 +27,7 @@
     {
       "executable": false,
       "path": ".well-known/security.txt",
-      "sha256": "f724516edeaf362f75b2053dafa7bfd8f379e5eca59819d58ff69cb5c3ddb4de",
+      "sha256": "23e7666a8f5f454b7baedb46076616f3f49ac7b773b29e6a46c31f81c8cc8c79",
       "size_bytes": 306
     },
     {
@@ -63,7 +63,7 @@
     {
       "executable": false,
       "path": "SOURCE_EXPORT.json",
-      "sha256": "42aeeccd8985c344a7221606b8f7a7ea3b01ed657423ef7b8ccfd1a49f90d59d",
+      "sha256": "f3ceaa3a153676d308df67a82258279bc880ee45b15d3e13b47db82dba32673c",
       "size_bytes": 136
     },
     {
@@ -789,7 +789,7 @@
     {
       "executable": false,
       "path": "frontend/security.txt",
-      "sha256": "f724516edeaf362f75b2053dafa7bfd8f379e5eca59819d58ff69cb5c3ddb4de",
+      "sha256": "23e7666a8f5f454b7baedb46076616f3f49ac7b773b29e6a46c31f81c8cc8c79",
       "size_bytes": 306
     },
     {
@@ -2342,6 +2342,12 @@
     },
     {
       "executable": false,
+      "path": "tests/backend/privacy_event_oracle.py",
+      "sha256": "90e51d7c06130ebf66ffc93064e97ea2830acbcae27fea8292bd33e97b12a5c3",
+      "size_bytes": 4797
+    },
+    {
+      "executable": false,
       "path": "tests/backend/test_privacy_logging.py",
       "sha256": "0f051b37d888ed4f34187912b2cc6f5e5516374cfa88b8273827bc1fe1e7ae84",
       "size_bytes": 39327
@@ -2385,7 +2391,7 @@
     {
       "executable": false,
       "path": "third_party/SOURCE_MANIFEST.json",
-      "sha256": "dcbe96d9e652d37ec4dc496cd5ec3211145cdfa6b1ed0defeb09f38386c71513",
+      "sha256": "b0489405917b317bb969146a856d2129097c06f4ad5b579e497af8125e298b5f",
       "size_bytes": 524
     },
     {
