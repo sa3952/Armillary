@@ -27,7 +27,7 @@
     {
       "executable": false,
       "path": ".well-known/security.txt",
-      "sha256": "8a73df493684c58f8edad4aea763897293fbcae17ad69d2457eef61486101e1b",
+      "sha256": "f724516edeaf362f75b2053dafa7bfd8f379e5eca59819d58ff69cb5c3ddb4de",
       "size_bytes": 306
     },
     {
@@ -63,7 +63,7 @@
     {
       "executable": false,
       "path": "SOURCE_EXPORT.json",
-      "sha256": "d8a7e54772272f85d27f99abcb2ec40bf9f91097a7a588051878d3ccd692b2c4",
+      "sha256": "42aeeccd8985c344a7221606b8f7a7ea3b01ed657423ef7b8ccfd1a49f90d59d",
       "size_bytes": 136
     },
     {
@@ -789,7 +789,7 @@
     {
       "executable": false,
       "path": "frontend/security.txt",
-      "sha256": "8a73df493684c58f8edad4aea763897293fbcae17ad69d2457eef61486101e1b",
+      "sha256": "f724516edeaf362f75b2053dafa7bfd8f379e5eca59819d58ff69cb5c3ddb4de",
       "size_bytes": 306
     },
     {
@@ -2385,7 +2385,7 @@
     {
       "executable": false,
       "path": "third_party/SOURCE_MANIFEST.json",
-      "sha256": "1f616c773d894592539194c12dfc7b0ff69b6d9f08d642c73fd10ac61a7984a9",
+      "sha256": "dcbe96d9e652d37ec4dc496cd5ec3211145cdfa6b1ed0defeb09f38386c71513",
       "size_bytes": 524
     },
     {
