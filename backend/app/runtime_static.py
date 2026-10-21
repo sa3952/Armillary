@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import gzip
+import hashlib
 import os
 import re
 import stat
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 
 from fastapi.staticfiles import StaticFiles
 from starlette.datastructures import Headers, MutableHeaders
@@ -27,6 +28,7 @@ from .frontend_assets import (
     DEFAULT_LOCALE_ENTRYPOINT,
     NOT_FOUND_PAGE,
     RUNTIME_MEDIA_TYPES,
+    RUNTIME_NAME_MEDIA_TYPES,
     asset_content_version,
     asset_parent_directories,
     validate_asset_name,
@@ -49,6 +51,9 @@ _ENTRY_SPELLINGS = frozenset({
 def _media_type(path: str | os.PathLike[str]) -> str | None:
     """The declared type of a runtime asset; None only for an undeclared
     suffix, which the allowlist never admits."""
+    named = RUNTIME_NAME_MEDIA_TYPES.get(os.path.basename(os.fspath(path)))
+    if named is not None:
+        return named
     return RUNTIME_MEDIA_TYPES.get(os.path.splitext(os.fspath(path))[1].casefold())
 
 
@@ -75,10 +80,18 @@ def page_link_header(assets: frozenset[str]) -> str | None:
 GZIP_LEVEL = 6
 
 
+def _file_identity(stat_result: os.stat_result) -> tuple[int, ...]:
+    return (
+        stat_result.st_dev, stat_result.st_ino, stat_result.st_size,
+        stat_result.st_mtime_ns, stat_result.st_ctime_ns,
+    )
+
+
 @dataclass(frozen=True)
 class _AssetSnapshot:
-    identity: tuple[int, int, int]
+    identity: tuple[int, ...]
     version: str
+    sha256: str
     gzip_body: bytes | None
 
 
@@ -114,10 +127,9 @@ class _RangeLenientFileResponse(FileResponse):
     """A file answer that ignores a Range it cannot serve.
 
     Starlette answers a malformed Range with a bare `400 text/plain` and an
-    unsatisfiable one with an empty `416`, both outside the one refusal shape
-    this service writes (refusals.py).  RFC 9110 §14.2 lets a server ignore a
-    Range header, so such a request gets the whole file with 200, as if it had
-    sent none; a Range that can be served still gets its 206.
+    unsatisfiable one with an empty `416`, outside the one refusal shape
+    (refusals.py).  RFC 9110 §14.2 lets a server ignore Range, so such a request
+    gets the whole file with 200; a servable Range still gets its 206.
     """
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -139,40 +151,45 @@ class _RangeLenientFileResponse(FileResponse):
 class RuntimeStaticFiles(StaticFiles):
     """Reject files that are not declared browser runtime assets.
 
-    The policy remains effective for local source checkouts and for hosted
-    immutable frontend releases mounted read-only into the application.
+    Applies to source checkouts and to read-only hosted releases alike.
 
-    Static text assets are gzip-encoded here for clients that accept it, and
-    this class is the one source of each asset's content version for the
-    public cache policy.  API responses never pass
-    through it; the chart result has its own encoder (ChartResultCompression
-    below), and no other API body is compressed.
-    The staging NGINX template enables no gzip; NGINX's gzip filter also skips
-    a response that already has Content-Encoding, so enabling it at the edge
-    later would not compress these twice.
+    Static text assets are gzip-encoded here, and this class is the one source
+    of each asset's content version for the public cache policy.  API responses
+    never pass through it.  The staging NGINX enables no gzip, and its gzip
+    filter skips a response that already has Content-Encoding, so enabling it
+    later would not compress twice.
     """
 
     def __init__(
         self,
         *,
         allowed_assets: Iterable[str],
+        asset_digests: Mapping[str, str] | None = None,
         **kwargs: Any,
     ) -> None:
         declared = frozenset(validate_asset_name(name) for name in allowed_assets)
+        # A mounted release's receipted SHA-256 per file.  The
+        # release is verified at start; with digests, every file is also held
+        # to its receipt whenever it is (re)read, at the exact path that was
+        # asked for, so a file changed or swapped for a symlink under the
+        # running process is refused (404) instead of served.
+        if asset_digests is not None and set(asset_digests) != declared:
+            raise ValueError("release digests must name exactly the declared assets")
+        self._asset_digests = dict(asset_digests) if asset_digests is not None else None
         if not declared:
             raise ValueError("runtime frontend allowlist must not be empty")
-        # The branded 404 page is declared (it travels in the hashed release)
-        # but is not addressable: no request path reaches it, so it can never
-        # answer 200 at a URL of its own.
+        # The branded 404 page travels in the hashed release but is not
+        # addressable, so it can never answer 200 at a URL of its own.
         self._not_found_page = NOT_FOUND_PAGE if NOT_FOUND_PAGE in declared else None
         assets = declared - {NOT_FOUND_PAGE}
         self._assets = assets
         self._page_links = page_link_header(assets)
         self._allowed_paths = assets | asset_parent_directories(assets)
         # Keyed by resolved path of a declared asset, so bounded by the
-        # allowlist.  An entry is reused only while the file's inode, size
-        # and mtime are unchanged: a hosted release is read-only, and a source
-        # checkout that changes under a running process is re-read.
+        # allowlist.  An entry is reused only while the file's device, inode,
+        # size, mtime and ctime are unchanged: a hosted release is read-only,
+        # and a file that changes under a running process is re-read (ctime
+        # moves on any write, even one that restores the mtime).
         self._snapshots: dict[str, _AssetSnapshot] = {}
         super().__init__(**kwargs)
 
@@ -204,13 +221,11 @@ class RuntimeStaticFiles(StaticFiles):
             target = None
         if target is None or target == original:
             return None
-        # The query string is dropped.  No page reads one: the calculation
-        # page replaces its own address without query or fragment as the first
-        # thing it does on load (clearAddressInput), and every input travels
-        # in a POST body.  A query on a page address is therefore something a
-        # visitor or a link put there, possibly birth data, and a 308 is
-        # cacheable by default: echoing it into Location would store it in the
-        # browser's redirect cache and history under the canonical address.
+        # The query string is dropped.  No page reads one (the calculation page
+        # clears its own on load, clearAddressInput; inputs travel in POST
+        # bodies), so a query is something a visitor or link put there,
+        # possibly birth data; a 308 is cacheable, and echoing it into Location
+        # would store it in the redirect cache and history.
         return target
 
     def not_found_response(self, scope: Scope) -> Response | None:
@@ -222,15 +237,15 @@ class RuntimeStaticFiles(StaticFiles):
         is the one the JSON refusal records.
         """
 
-        # A miss under the API prefix keeps the API's JSON refusal; the HTML
-        # page is for page addresses only.
         if (
             self._not_found_page is None
             or scope.get("method") not in {"GET", "HEAD"}
             or is_api_path(scope["path"])
         ):
             return None
-        full_path, stat_result = super().lookup_path(self._not_found_page)
+        full_path, stat_result = self._verified(
+            self._not_found_page, *super().lookup_path(self._not_found_page)
+        )
         if stat_result is None or not stat.S_ISREG(stat_result.st_mode):
             return None
         scope.setdefault("state", {})[DOMAIN_ERROR_STATE_KEY] = "not_found"
@@ -270,14 +285,34 @@ class RuntimeStaticFiles(StaticFiles):
             and normalized not in self._allowed_paths
         ):
             return "", None
-        return super().lookup_path(path)
+        return self._verified(normalized, *super().lookup_path(path))
+
+    def _verified(
+        self, name: str, full_path: str, stat_result: os.stat_result | None
+    ) -> tuple[str, os.stat_result | None]:
+        """The looked-up file, or nothing if it is not its receipted bytes."""
+        if self._asset_digests is None or stat_result is None:
+            return full_path, stat_result
+        expected = self._asset_digests.get(name)
+        if expected is None:  # a directory of the release
+            return full_path, stat_result
+        exact = os.path.join(os.path.realpath(self.directory or "."), *name.split("/"))
+        # The lookup resolves symlinks; the file served must be the very
+        # path asked for, a regular file holding its receipted bytes.
+        if full_path != exact or not stat.S_ISREG(stat_result.st_mode):
+            return "", None
+        try:
+            snapshot = self._snapshot(full_path, stat_result)
+        except OSError:
+            return "", None
+        if snapshot.sha256 != expected:
+            return "", None
+        return full_path, stat_result
 
     def _snapshot(
         self, full_path: str, stat_result: os.stat_result
     ) -> _AssetSnapshot:
-        identity = (
-            stat_result.st_ino, stat_result.st_size, stat_result.st_mtime_ns
-        )
+        identity = _file_identity(stat_result)
         cached = self._snapshots.get(full_path)
         if cached is not None and cached.identity == identity:
             return cached
@@ -290,8 +325,9 @@ class RuntimeStaticFiles(StaticFiles):
             if len(encoded) >= len(data):
                 encoded = None
         snapshot = _AssetSnapshot(
-            identity=(opened.st_ino, opened.st_size, opened.st_mtime_ns),
+            identity=_file_identity(opened),
             version=asset_content_version(data),
+            sha256=hashlib.sha256(data).hexdigest(),
             gzip_body=encoded,
         )
         self._snapshots[full_path] = snapshot
@@ -300,10 +336,9 @@ class RuntimeStaticFiles(StaticFiles):
     def content_version(self, path: object) -> str | None:
         """Content version of the declared asset at an exact request path.
 
-        The public cache policy grants the immutable lifetime only when a
-        request's `?v=` equals this value.  Anything that is not
-        exactly one declared file (an extensionless page alias, a redirect
-        spelling, a missing file) has no version.
+        The cache policy grants immutable only when `?v=` equals this value.
+        Anything not exactly one declared file (page alias, redirect spelling,
+        missing file) has no version.
         """
 
         if not isinstance(path, str) or not path.startswith("/"):
@@ -373,35 +408,24 @@ class RuntimeStaticFiles(StaticFiles):
         return Response(snapshot.gzip_body, headers=dict(encoded_headers))
 
 
-# gzip for the chart result.
+# gzip for the chart result: 100-600 KB of JSON that compresses to about a
+# seventh.  Only the successful `POST /api/chart` (and flagged annual) result,
+# only for a client naming gzip (accepts_gzip), with the deterministic encoder
+# (GZIP_LEVEL, mtime 0): one body, one byte sequence on every worker.  Refusals
+# and other API bodies stay identity; they are small and some echo submitted
+# terms (place search).  Cache-Control and security headers are added outside,
+# so both representations match.  The edge passes the body through unchanged
+# (no gzip in the NGINX template; tests/deployment/test_staging_nginx_runtime.py).
 #
-# A chart result is 100-600 KB of JSON that compresses to about a seventh.  Only
-# the successful `POST /api/chart` result (and the flagged `POST
-# /api/chart/annual` result, the same kind of body) is encoded, only for a client that
-# names gzip in Accept-Encoding (the same reading as the static assets,
-# accepts_gzip above), with the same deterministic encoder (level
-# GZIP_LEVEL, mtime 0): one request body gives one byte sequence on every worker
-# of one image.  Refusals and every other API body stay identity; they are small
-# and some echo submitted terms (place search).  Both representations of a
-# result carry `Vary: Accept-Encoding`.  Cache-Control (no-store) and the
-# security headers are added outside this middleware, so they are the same for
-# both.  The edge passes the encoded body through unchanged (no gzip or gunzip
-# in the NGINX template; observed in tests/deployment/test_staging_nginx_runtime.py).
-#
-# Why compressing this body does not open a BREACH/CRIME-class leak: such an
-# attack needs a secret and attacker-chosen input in the same compressed body,
-# and many requests the attacker can cause the victim's browser to send.  A chart
-# result holds no secret of that kind: no session, cookie, CSRF or other token,
-# no credential, no server-side state.  The result is a function of the request
-# body alone, so the only private data in it is the birth data the same request
-# carried.  A request the attacker can cause cannot carry the victim's birth data
-# (it exists only in the victim's own submission, and the route accepts only
-# `application/json`, which a cross-site page cannot send without a CORS
-# preflight this application never grants), so no response ever mixes a guess
-# with that data.  What an on-path observer still sees is the length of the victim's own response, which
-# the identity encoding reveals as well.  The annual result is the same: a
-# function of its own request body, holding no secret but the birth data that
-# body carried.
+# No BREACH/CRIME-class leak: that needs a secret and attacker-chosen input in
+# one compressed body, over many requests the attacker can make the victim's
+# browser send.  A result holds no session, cookie, token, credential or server
+# state; it is a function of its own request body, so its only private data is
+# the birth data that request carried.  An attacker-caused request cannot carry
+# the victim's birth data (the route accepts only `application/json`, which a
+# cross-site page cannot send without a CORS preflight never granted), so no
+# response mixes a guess with it.  An on-path observer sees only the length of
+# the victim's own response, which identity encoding reveals as well.
 _COMPRESSED_RESULT_ROUTES = frozenset({CHART_ROUTE, ANNUAL_ROUTE})
 
 

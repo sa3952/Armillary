@@ -5,11 +5,8 @@ prose quotes."""
 from __future__ import annotations
 
 import html
-import json
-import shutil
-import subprocess
 
-from ._common import ROOT, zh
+from ._common import ROOT, node_json, zh
 
 
 FRAGMENT = "methods-glossary"
@@ -17,15 +14,8 @@ GLOSSARY_SCRIPT = ROOT / "scripts/frontend/scripts/glossary.js"
 
 
 def entries() -> list[dict]:
-    node = shutil.which("node")
-    if node is None:
-        raise RuntimeError("node is required to read the glossary entries")
-    script = "const G=require(process.argv[1]);process.stdout.write(JSON.stringify({e:G.ENTRIES,t:G.TEXT}));"
-    completed = subprocess.run([node, "-e", script, str(GLOSSARY_SCRIPT)],
-                               cwd=ROOT, capture_output=True, text=True, check=False, timeout=30)
-    if completed.returncode != 0:
-        raise RuntimeError("the glossary entries could not be read: " + completed.stderr.strip())
-    found = json.loads(completed.stdout)["e"]
+    found = node_json("const G=require(process.argv[1]);process.stdout.write(JSON.stringify(G.ENTRIES));",
+                      GLOSSARY_SCRIPT, what="read the glossary entries")
     if not found or len({entry["key"] for entry in found}) != len(found):
         raise RuntimeError("the glossary has no entries or repeats a key")
     return found

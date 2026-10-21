@@ -4,11 +4,17 @@ from __future__ import annotations
 
 import copy
 import json
+import math
 import socket
+import subprocess
+import sys
+import time
 from contextlib import contextmanager
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterator
-from urllib.error import HTTPError
+from types import SimpleNamespace
+from typing import Any, Iterable, Iterator, cast
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 
@@ -89,9 +95,57 @@ def chart_payload(
     return payload
 
 
-CHART_REQUESTS_PATH = (
-    Path(__file__).resolve().parents[2] / "frontend/tests/fixtures/chart-requests.json"
-)
+def neutral_chart_payload(*, timezone: dict | None = None) -> dict:
+    """`chart_payload` with every computation-mode field and the atmosphere
+    stated, and the optional modules named off.  The Falses are sent, not left
+    to the defaults: each one makes its option state's `input_presence`
+    "explicit" instead of "defaulted"."""
+
+    return chart_payload(
+        timezone=timezone,
+        atmosphere={"pressure_hpa": None, "temperature_c": 0.0},
+        mode={
+            "center": "geocentric", "zodiac": "tropical", "ayanamsa": "fagan_bradley",
+            "position_mode": "apparent", "ecliptic_frame": "of_date", "nutation": True,
+        },
+        options={name: False for name in (
+            "include_fixed_stars", "include_lots", "include_antiscia",
+            "include_void_of_course", "include_declination_aspects",
+            "include_outer_planets", "include_lunar_phases", "include_eclipses",
+            "include_rise_set_transits",
+        )},
+    )
+
+
+# A request's clock read as UTC.  Each use gets its own dict: a test may edit
+# the payload it is part of.
+def fixed_utc() -> dict:
+    return {"mode": "fixed_offset", "utc_offset_hours": 0.0}
+
+
+def utc_instant(label: str) -> datetime:
+    """A response's `...Z` time as an aware datetime."""
+
+    return datetime.fromisoformat(label.replace("Z", "+00:00"))
+
+
+def sign_index(longitude: float) -> int:
+    """0 for Aries through 11 for Pisces."""
+
+    return math.floor(longitude % 360 / 30)
+
+
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
+
+
+def load_fixture(name: str) -> Any:
+    """A JSON file of tests/backend/fixtures, parsed."""
+
+    return json.loads((FIXTURES / name).read_text(encoding="utf-8"))
+
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+CHART_REQUESTS_PATH = REPOSITORY_ROOT / "frontend/tests/fixtures/chart-requests.json"
 
 
 def chart_requests() -> dict[str, dict]:
@@ -117,6 +171,65 @@ def chart_requests() -> dict[str, dict]:
     return copy.deepcopy(requests)
 
 
+def require_frontend_packages(*names: str) -> None:
+    """Skip, with the reason, when the frontend package directory lacks a package a test
+    runs under node; where every layer must run that skip is a failure."""
+    import pytest
+
+    missing = [name for name in names
+               if not (REPOSITORY_ROOT / "frontend" / ("node" + "_modules") / name / "package.json").is_file()]
+    if missing:
+        pytest.skip(f"the frontend package directory has no {', '.join(missing)} (run npm ci --ignore-scripts in frontend/)")
+
+
+def node_json(script: str, payload: Any = None, *, cwd: Path = REPOSITORY_ROOT) -> Any:
+    """Run `node -e script` with `payload` as JSON on stdin; parse what it writes."""
+
+    completed = subprocess.run(
+        ["node", "-e", script], cwd=cwd, check=True, capture_output=True, text=True,
+        input=None if payload is None else json.dumps(payload, ensure_ascii=False),
+    )
+    return json.loads(completed.stdout)
+
+
+JsonPath = tuple[str | int, ...]
+
+
+def expect_fields(mapping: dict, **expected: Any) -> None:
+    """Assert several fields of one record at once (the others are not compared)."""
+
+    assert {key: mapping[key] for key in expected} == expected
+
+
+def walk_json(node: Any, sequences: tuple[type, ...] = (list,), _path: JsonPath = ()) -> Iterator[tuple[JsonPath, Any, Any]]:
+    """(path, key, value) for `node` itself and every value under it, parents
+    before children: `path` is the dict keys and sequence indexes from `node`
+    to the value, `key` its last step (None for `node` itself).  Dicts and
+    `sequences` are descended; everything else is a leaf."""
+
+    yield _path, (_path[-1] if _path else None), node
+    if isinstance(node, dict):
+        items: Iterable[tuple[Any, Any]] = node.items()
+    elif isinstance(node, sequences):
+        items = enumerate(cast(Iterable[Any], node))
+    else:
+        return
+    for key, value in items:
+        yield from walk_json(value, sequences, (*_path, key))
+
+
+def json_path(path: JsonPath, root: str = "$") -> str:
+    """`root.key[0].key` for a `walk_json` path."""
+
+    return root + "".join(f"[{step}]" if isinstance(step, int) else f".{step}" for step in path)
+
+
+def response_keys(node: Any) -> Iterator[str]:
+    """Every dictionary key anywhere in a decoded JSON value."""
+
+    return (key for _path, key, _value in walk_json(node) if isinstance(key, str))
+
+
 def unused_local_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(("127.0.0.1", 0))
@@ -139,22 +252,30 @@ def http_request(
         return error.code, error.read()
 
 
-def list_every_pair(pair: dict) -> bool:
-    """An aspect listing rule that lists every evaluated pair.
-
-    The product lists by `pair_is_listed`; tests pass this as `pair_filter` to
-    see the pairs that rule leaves out.
-    """
-
+def list_every_pair(_pair: dict) -> bool:
+    """A `pair_filter` that lists every pair `pair_is_listed` would leave out too."""
     return True
 
 
-def find_crossings(separation_at, **kwargs) -> list[float]:
-    """Root times only, from `find_crossings_detailed`."""
+def aspect_participant(key, longitude, *, speed=1.0, category="classical_planet", body_id=None) -> dict:
+    """One participant as the aspect module receives it."""
 
-    from app.core.root_finding import find_crossings_detailed
+    return {"key": key, "name": key, "longitude": longitude,
+            "speed_longitude": speed, "body_id": body_id, "category": category}
 
-    return [record["t"] for record in find_crossings_detailed(separation_at, **kwargs)]
+
+def aspect_pair(receipt: dict, key_a: str, key_b: str) -> dict:
+    for record in receipt["pairs"]:
+        if {record["body_a"], record["body_b"]} == {key_a, key_b}:
+            return record
+    raise AssertionError(f"pair {key_a}/{key_b} not found")
+
+
+def aspect_target(record: dict, key: str) -> dict:
+    for target in record["aspect_targets"]:
+        if target["key"] == key:
+            return target
+    raise AssertionError(f"target {key} not found")
 
 
 @contextmanager
@@ -170,3 +291,47 @@ def compute_queue_held() -> Iterator[None]:
         yield
     finally:
         main._COMPUTE_QUEUE.release()
+
+
+@contextmanager
+def real_uvicorn_probe(label: str, *setup: str, command: list[str] | None = None):
+    """A real uvicorn server on a free port; `probe.output` holds its log after exit."""
+
+    port = unused_local_port()
+    if command is None:
+        script = "\n".join((
+            "import uvicorn",
+            *setup,
+            f"uvicorn.run(main.app, host='127.0.0.1', port={port}, access_log=False, http='h11')",
+        ))
+        command = [sys.executable, "-c", script]
+    else:
+        command = [*command, "--port", str(port)]
+    process = subprocess.Popen(
+        command, cwd=REPOSITORY_ROOT / "backend",
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+    )
+    probe = SimpleNamespace(base_url=f"http://127.0.0.1:{port}", output="")
+    try:
+        deadline = time.monotonic() + 20
+        while time.monotonic() < deadline:
+            if process.poll() is not None:
+                raise AssertionError(f"{label} server stopped early:\n" + (process.stdout.read() if process.stdout else ""))
+            try:
+                if http_request(probe.base_url + "/api/health")[0] == 200:
+                    break
+            except URLError:
+                pass
+            time.sleep(0.05)
+        else:
+            raise AssertionError(f"{label} server startup timed out")
+        yield probe
+    finally:
+        if process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=8)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=5)
+        probe.output = process.stdout.read() if process.stdout else ""

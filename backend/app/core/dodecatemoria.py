@@ -23,9 +23,9 @@ from typing import Literal, get_args
 from .dignity_tables import DOMICILE_SIGNS, SIGNS
 from .essential_dignities import ALL_PROFILES
 from .formatting import normalize_longitude, zodiac_sign_index
-from .method_status import method_receipt
-from .module_state import PRODUCT_FORMULA_SOURCE, computed_receipt, not_applicable_receipt
-from .source_reading import SOURCE_READING_LEVELS
+from .method_status import method_head
+from .module_state import PRODUCT_FORMULA_SOURCE, computed_receipt, frame_table_refusal
+from .source_reading import BIBLIOGRAPHIC_ONLY, ORIGINAL_LANGUAGE_READ, SECONDARY_ONLY, TRANSLATION_READ, cited
 from .trace import Trace
 
 DodecatemoriaProfile = Literal[
@@ -75,11 +75,9 @@ DOMICILE_LORD_BY_SIGN = {
     sign: planet for planet, signs in DOMICILE_SIGNS.items() for sign in signs
 }
 
-# Which points the module lists, in this order.  The seven planets always;
-# the ascendant when the chart has angles; the Lots of Fortune and Spirit when
-# they were requested and computed.  The midheaven is left out: no text read
-# computes its twelfth-part (Paulus names the angles only as the signs a
-# twelfth-part may fall in).
+# Listed points, in order: the seven planets; the ascendant when the chart has
+# angles; Fortune and Spirit when computed.  No text read computes the
+# midheaven's twelfth-part (Paulus names angles only as signs one may fall in).
 POINT_CATEGORIES = ("classical_planet", "angle", "lot")
 _ANGLE_POINTS = (("asc", "上升"),)
 _LOT_POINTS = (("fortune", "命運點"), ("spirit", "精神點"))
@@ -201,11 +199,9 @@ def compute_dodecatemoria(
 ) -> dict:
     """Every listed point's twelfth-part under ``profile`` (or under each rule).
 
-    ``angles`` and ``lots`` are the emitted containers when they hold usable
-    values, else None; a missing group is named in ``scope.not_listed``.
-    ``profile_results`` holds each computed rule's points, the same for a rule
-    whether it was requested alone or with ``"all"``; the top-level points are
-    the ``points_profile`` rule's.
+    ``angles``/``lots`` are None when unusable; a missing group is named in
+    ``scope.not_listed``.  A rule's ``profile_results`` entry is the same alone
+    or under ``"all"``; the top-level points are the ``points_profile`` rule's.
     """
 
     profile_results = {}
@@ -225,8 +221,7 @@ def compute_dodecatemoria(
         }
     listed = profile_results[points_profile(profile)]
     return {
-        "method": METHOD_NAME,
-        **method_receipt("dodecatemoria"),
+        **method_head(METHOD_NAME, "dodecatemoria"),
         **computed_receipt(PRODUCT_FORMULA_SOURCE),
         "source_ref": SOURCE_REF,
         "profile": profile,
@@ -248,17 +243,16 @@ def compute_dodecatemoria(
 
 
 def dodecatemoria_not_applicable(state: dict, trace: Trace, requested: str) -> dict:
-    """Refuse instead of reading a degree inside a sign of another frame."""
-
-    trace.add(
-        "十二分部",
-        result={"execution_status": "not_applicable", "reason_code": state["reason_code"]},
+    refusal = frame_table_refusal(
+        state, trace, "十二分部",
         note="參考框架相容表判定不適用：不換框架重算。",
     )
     return {
-        "method": METHOD_NAME,
-        **method_receipt("dodecatemoria"),
-        **not_applicable_receipt(state),
+        **method_head(METHOD_NAME, "dodecatemoria"),
+        **refusal,
+        "profile": requested,
+        # No points are listed, so no rule's points are the top-level ones.
+        "points_profile": None,
         "points": [],
         "computed_profiles": computed_profiles(requested),
         "profile_results": {},
@@ -317,7 +311,7 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
                 ),
                 "example": "Sun Aries 5 deg 05 min: 60 + 1 = 61, the first degree of Gemini",
                 "profile": "twelvefold_from_sign_start_v1",
-                "reading": SOURCE_READING_LEVELS[0],
+                "reading": ORIGINAL_LANGUAGE_READ,
                 "read_at": (
                     "Latin text, LacusCurtius (penelope.uchicago.edu); the rule and "
                     "example re-read on p.56 of Kroll-Skutsch 1897 vol. I in the "
@@ -334,7 +328,7 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
                 ),
                 "profile": "twelvefold_from_sign_start_v1",
                 "profile_agreement": "sign_level_only",
-                "reading": SOURCE_READING_LEVELS[0],
+                "reading": ORIGINAL_LANGUAGE_READ,
                 "read_at": "Latin text, The Latin Library; lines 732-734 bracketed as suspect",
                 "note": (
                     "Whether the Moon rule counts from the sign's start or the Moon's "
@@ -352,25 +346,19 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
                     "signs in order, and rejects it as unfounded"
                 ),
                 "profile_agreement": "sign_level_only",
-                "reading": SOURCE_READING_LEVELS[1],
+                "reading": TRANSLATION_READ,
                 "read_at": _ROBBINS_I_22_PAGES,
                 "manuscript_variants": [
-                    {
-                        "citation": "Robbins 1940 p.108 n.3 (Greek apparatus) and p.109 n.2",
-                        "says": (
-                            "one manuscript (N) and Camerarius's printed editions add "
-                            "after 'to the signs in order' the words 'beginning from "
-                            "the twelfth-part in which the star is' (ἀρχόμενοι ἀπὸ τοῦ "
-                            "δωδεκατημορίου καθ᾽ ὅ ἐστιν ὁ ἀστήρ); the other "
-                            "manuscripts and Proclus omit them, and so does Robbins's "
-                            "text. The added words name where the count starts."
-                        ),
-                        "reading": SOURCE_READING_LEVELS[2],
-                        "read_at": (
-                            f"{_ROBBINS_I_22_PAGES}; manuscript N and Camerarius's "
-                            "printings were not read"
-                        ),
-                    }
+                    cited("Robbins 1940 p.108 n.3 (Greek apparatus) and p.109 n.2",
+                          ("one manuscript (N) and Camerarius's printed editions add "
+                           "after 'to the signs in order' the words 'beginning from "
+                           "the twelfth-part in which the star is' (ἀρχόμενοι ἀπὸ τοῦ "
+                           "δωδεκατημορίου καθ᾽ ὅ ἐστιν ὁ ἀστήρ); the other "
+                           "manuscripts and Proclus omit them, and so does Robbins's "
+                           "text. The added words name where the count starts."),
+                          SECONDARY_ONLY,
+                          (f"{_ROBBINS_I_22_PAGES}; manuscript N and Camerarius's "
+                           "printings were not read"))
                 ],
             },
             {
@@ -378,7 +366,7 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
                 "rule": "degrees times 13, added to the start of the sign",
                 "example": "Aries 11 deg: 143 deg, Leo 23 deg",
                 "profile": "thirteenfold_from_sign_start_v1",
-                "reading": SOURCE_READING_LEVELS[2],
+                "reading": SECONDARY_ONLY,
                 "read_at": (
                     "Greenbaum and Jones, P.Berl. 9825, ISAW Papers 12 (2017) para. 185; "
                     "the Greek text and Greenbaum's translation not checked"
@@ -389,30 +377,30 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
                 "rule": "the same as Paulus, worked for the ascendant",
                 "example": "Ascendant Scorpio 20 deg: 20 x 13 = 260, + 210 = 470, - 360 = 110, Cancer 20 deg",
                 "profile": "thirteenfold_from_sign_start_v1",
-                "reading": SOURCE_READING_LEVELS[2],
+                "reading": SECONDARY_ONLY,
                 "read_at": "Greenbaum and Jones 2017 para. 186; the Greek text not checked",
             },
             {
                 "citation": "Olympiodorus, Commentary on Paulus ch.21",
                 "rule": "chapter on the Lots and their twelfth-parts",
-                "reading": SOURCE_READING_LEVELS[3],
+                "reading": BIBLIOGRAPHIC_ONLY,
                 "read_at": "chapter title in a published table of contents only",
             },
             {
                 "citation": "Vettius Valens, Anthology I.4",
                 "rule": "the Sun's twelfth-part used to find the ascendant",
                 "example": "Sun Aquarius 22 deg, twelfth-part in Scorpio (fits the 13-fold rule only)",
-                "reading": SOURCE_READING_LEVELS[1],
+                "reading": TRANSLATION_READ,
                 "read_at": (
                     "Riley's translation, the PDF of his preliminary edition "
-                    "(Vettius_Valens_Riley.pdf), p.8, between /19K/ and /20K/"
+                    "(Vettius_Valens_Riley.pdf), printed p.8 (PDF page 10), between /19K/ and /20K/"
                 ),
             },
             {
                 "citation": "Porphyry, Introduction ch.39 (Holden 2009)",
                 "rule": "the Moon's degrees measured off by 2 1/2 degrees through the following signs",
                 "example": "Moon Aries 13 deg, Virgo (both rules agree)",
-                "reading": SOURCE_READING_LEVELS[2],
+                "reading": SECONDARY_ONLY,
                 "read_at": "reported by secondary summaries; Holden's translation not read",
             },
         ],

@@ -14,6 +14,16 @@
   // exporters、calculate、client-context 與 timelords-model 各自還有自己代碼的中文表。
   // 這裡每一組的鍵集合由整合測試對照後端的閉集（schemas.py 的 Literal、出貨目錄的實際值、
   // 真實目錄查詢回的值），後端多了代碼而這裡沒有，測試就紅。
+  // 後端 core/extended_lots.py LOT_METHODS 的 lot_method_id；方法頁的表也讀這一份。
+  const EXTENDED_LOT_NAMES = Object.freeze({
+    eros_paulus_hermetic_ch23_v1: "愛慾點",
+    necessity_paulus_hermetic_ch23_v1: "必然點",
+    courage_paulus_hermetic_ch23_v1: "勇氣點",
+    victory_paulus_hermetic_ch23_v1: "勝利點",
+    nemesis_paulus_hermetic_ch23_v1: "復仇點",
+    love_valens_iv25_v1: "愛點（Valens）",
+    necessity_valens_iv25_v1: "必然點（Valens）",
+  });
   const VOCABULARIES = Object.freeze({
     // 後端 schemas.py 的 birth_time_precision；標籤與 calculate.html 三個選項的粗體字同字。
     birth_time_precision: Object.freeze({
@@ -49,6 +59,7 @@
       name_prefix: "地名開頭相符",
       other_field: "別名或行政區欄位相符",
       spelling_fallback: "原字查無結果，拼法相近（最多差兩個字母）",
+      curated_alias: "香港地名中文別名表（區名或目錄沒有的地名，取區內或最近的代表地點）",
     }),
     // TimezoneInput.civil_time_basis：出生紀錄用的是哪一種鐘點（新疆的地點）。
     civil_time_basis: Object.freeze({
@@ -76,6 +87,12 @@
       dorothean_triplicity_three_rulers_v1: "Dorotheus 三守護",
       ptolemy_triplicity_textual_corulership_v1: "Ptolemy 共治",
       lilly_triplicity_compact_1647_v1: "Lilly 1647 簡表",
+    }),
+    // OptionsInput.void_of_course_method 的三種定義。
+    void_of_course_method: Object.freeze({
+      modern_sign_bounded_exact_perfection_v1: "換座前精確完成（產品預設）",
+      hellenistic_30_degree_v1: "未來 30° 內（Porphyry 名下）",
+      lilly_moiety_before_sign_exit_v1: "換座前入容許度（Lilly 1647）",
     }),
     // OptionsInput.dodecatemoria_profile 的兩種算法（不含「all」）。
     dodecatemoria_profile: Object.freeze({
@@ -108,6 +125,7 @@
     }),
     // 黃道十二星座，依黃經序（0＝牡羊）。後端在尊貴模組回英文星座鍵、在其餘模組回
     // sign_position 的星座索引；結果表格與星盤圖都取這一組（全站寫「水瓶」）。
+    extended_lot: EXTENDED_LOT_NAMES,
     zodiac_sign: Object.freeze({
       aries: "牡羊", taurus: "金牛", gemini: "雙子", cancer: "巨蟹",
       leo: "獅子", virgo: "處女", libra: "天秤", scorpio: "天蠍",
@@ -134,10 +152,10 @@
     // 後端月交點的名稱（app.domain_catalog.NODE_BODIES 與 core/bodies.py 的南交點，一對一）。認點一律讀回應
     // 的 key；這一組只給表格的名稱格補符號（calculate.js）。兩邊一致由整合測試對照。
     node_backend_name: Object.freeze({
-      true_node: "北交點(密切)",
-      mean_node: "北交點(平均)",
-      true_south_node: "南交點(密切)",
-      mean_south_node: "南交點(平均)",
+      true_node: "北交點（密切）",
+      mean_node: "北交點（平均）",
+      true_south_node: "南交點（密切）",
+      mean_south_node: "南交點（平均）",
     }),
     // 後端月球拱點的名稱（app.domain_catalog.LUNAR_APSIDES，一對一）。同上，只給表格的名稱格補符號。
     // 兩邊一致由整合測試對照。
@@ -162,6 +180,8 @@
       desc: "下降 DSC",
       ic: "天底 IC",
     }),
+    // 阿拉伯點（後端 lots 的鍵）：時間主星與出生時刻敏感度共用。
+    lot: Object.freeze({ fortune: "命運點", spirit: "精神點" }),
   });
 
   // 每一組詞彙表在「未識別的<角色>（代碼）」裡的角色名。
@@ -177,6 +197,8 @@
     house_system: "宮位制",
     dignity_profile: "尊貴表",
     dodecatemoria_profile: "十二分部算法",
+    extended_lot: "阿拉伯點",
+    void_of_course_method: "月空亡定義",
     timezone_place: "時區",
     zodiac_sign: "星座",
     house_system_backend_name: "宮位制",
@@ -185,6 +207,7 @@
     lunar_apsis_backend_name: "月球拱點",
     source_reading: "核對層級",
     angle_label: "軸點",
+    lot: "阿拉伯點",
   });
 
   /** 表裡自身屬性的值；原型鏈上的名字不是閉集成員。不在表裡回 null。 */
@@ -260,8 +283,18 @@
     }
   }
 
+  /**
+   * 畫面上的負號：整格是帶負號的十進位數或度分秒時，ASCII 連字號換成 U+2212「−」。連字號比數字的
+   * 橫畫短而細，排在襯線數字旁像破折號的一截；U+2212 與加號同寬，正負值上下對齊。只給畫面用：
+   * 匯出檔與「複製」按鈕的文字照 view-model 原字，仍是連字號，給試算表與程式讀。不是整格數值的文字不改。
+   */
+  const SIGNED_NUMBER = /^-(?=\d+(?:\.\d+)?(?:°\d+′\d+(?:\.\d+)?″)?$)/;
+  function displayNumber(text) {
+    return typeof text === "string" ? text.replace(SIGNED_NUMBER, "\u2212") : text;
+  }
+
   return Object.freeze({
     VOCABULARIES, ROLES, label, ownLabel, closedLabel, sourceLine, houseSystemCodeForName, houseSystemText,
-    timezoneText, regionName,
+    timezoneText, regionName, displayNumber,
   });
 });

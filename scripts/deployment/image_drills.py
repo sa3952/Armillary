@@ -6,9 +6,8 @@ the run settings of ``deploy/compose.yaml`` (read-only root, tmpfs, no
 capabilities or privilege escalation, resource limits, init), read through
 ``docker compose config`` and translated by Gate D's own compose translator;
 no container is published and none is the live one.  Production hosts run no
-drill.  The two edge cases the host gate used to drill live (``slow_body``,
-``503``) are held by the real-NGINX tests and the byte-identical host config
-readback instead.
+drill.  The ``slow_body`` and ``503`` edge cases are held by the real-NGINX
+tests and the byte-identical host config readback.
 
 ``worker_restart`` (disposable twin)
     The image's own entrypoint and command (two workers).  One worker is killed
@@ -125,10 +124,6 @@ def drill_payloads(canary: Canary) -> dict[str, dict[str, Any]]:
 def scan_canary(canary: Canary) -> Canary:
     """One canary whose fragments cover every drill payload."""
     return reduce(derive_canary, drill_payloads(canary).values(), canary)
-
-
-def _encoded(payload: dict[str, Any]) -> bytes:
-    return json.dumps(payload, separators=(",", ":")).encode("utf-8")
 
 
 # Every program below runs with the image's Python (or, in tests, the local
@@ -303,7 +298,7 @@ def _probe_input(canary: Canary, *, host: str, port: int, **extra: Any) -> dict[
     payloads = drill_payloads(canary)
     return {"host": host, "port": port, "marker": canary.marker,
             "fragments": list(canary.sensitive_fragments),
-            **{name: _encoded(payload).decode("utf-8") for name, payload in payloads.items()},
+            **{name: json.dumps(payload, separators=(",", ":")) for name, payload in payloads.items()},
             "hold_seconds": HOLD_SECONDS, "replacement_wait_seconds": WORKER_REPLACEMENT_WAIT_SECONDS,
             **extra}
 

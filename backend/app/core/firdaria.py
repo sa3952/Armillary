@@ -1,16 +1,10 @@
 """法達（firdaria）：日夜盤決定的九段主星序列，與行星期的七等分夥伴。
 
-期間（年）：太陽 10、金星 8、水星 13、月亮 9、土星 11、木星 12、火星 7、北交 3、南交 2，
-合計 75 年後以同一序列重新開始（Bonatti Tr.9 Ch.3 對日盤明寫；夜盤「一切照日盤」）。
+期間年數、日盤序、兩個夜盤 profile、第二層的分法與 75 年循環只寫在下面的
+``METHOD_SOURCE_ENTRIES``。
 
-- 日盤序：日 金 水 月 土 木 火 北交 南交。
-- 夜盤兩個具名 profile，請求選擇、收據照印：
-  `abu_mashar_nodes_after_mercury_v1` 月 土 木 火 日 金 水 北交 南交；
-  `bonatti_reading_nodes_after_mars_v1` 月 土 木 火 北交 南交 日 金 水。
-  日盤的最後一顆行星本來就是火星，所以兩個 profile 在日盤完全相同（profile 照印，
-  `nocturnal_node_profile_applies=false`）。「交點在土星後」不是任何具名版本，不做。
-- 第二層：行星期七等分，第一個夥伴是本主，其餘依迦勒底序（土 木 火 日 金 水 月）往下；
-  交點期不分（`node_period_not_subdivided`）。
+- 兩個夜盤 profile 在日盤相同（`nocturnal_node_profile_applies=false`）；「交點在土星後」
+  不是任何具名版本，不做。
 - 年數以 `Fraction` 累加，邊界年數是精確有理數；換成瞬間由注入的 `instant_at_year`
   （年界產生器的 `SolarReturnClock.instant_at_year`）負責，這裡不做任何日期算術。
   所以第 7 個夥伴的終點與 L1 終點是同一個年數、同一個瞬間。
@@ -24,7 +18,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from fractions import Fraction
 
-from .source_reading import SOURCE_READING_LEVELS
+from .dignity_tables import CHALDEAN_ORDER
+from .source_reading import ORIGINAL_LANGUAGE_READ, SECONDARY_ONLY, TRANSLATION_READ, cited
 from .time_utils import jd_ut_to_iso_utc
 from .year_boundary import lifetime_window
 
@@ -61,7 +56,6 @@ NOCTURNAL_SEQUENCES = {
         "sun", "venus", "mercury",
     ),
 }
-CHALDEAN_ORDER = ("saturn", "jupiter", "mars", "sun", "venus", "mercury", "moon")
 NODES = frozenset({"north_node", "south_node"})
 if CYCLE_YEARS != 75:
     raise RuntimeError("the firdaria periods total 75 years")
@@ -194,64 +188,46 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "Mars, Sun, Venus, Mercury, Moon); node periods are not subdivided"
         ),
         "cycle_rule": (
-            "after 75 years the same sequence starts again: explicit in Bonatti Tr.9 "
-            "Ch.3 for the diurnal sequence (after the South Node it returns to the Sun "
-            "and runs on in order); the nocturnal sequence follows the diurnal one, "
-            "since Bonatti says 'all as for the day'"
+            "after 75 years the same sequence starts again: explicit in Bonatti "
+            "(Basel 1550 col.814) for the diurnal sequence ('post hoc revertitur "
+            "dispositio ad Solem', after the South Node); the nocturnal sequence follows "
+            "the diurnal one, since Bonatti says it goes 'in omnibus et per omnia, ut "
+            "dictum est' as when it starts from the Sun"
         ),
         "method_provenance": dict(_METHOD_PROVENANCE),
         "sources": [
-            {
-                "citation": (
-                    "Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, "
-                    "Persian Nativities IV (2019); Latin abridgement in Persian Nativities III (2010)"
-                ),
-                "says": (
-                    "the fullest surviving operational account per the research notes, "
-                    "nocturnal nodes after Mercury; chapter located as PN IV IV.8 via secondary "
-                    "sources"
-                ),
-                "reading": SOURCE_READING_LEVELS[2],
-                "read_at": "secondary sources and the research notes; the book not consulted",
-            },
-            {
-                "citation": (
-                    "al-Biruni, Book of Instruction in the Elements of the Art of Astrology "
-                    "§438-439 (tr. R. R. Wright, 1934, p.48)"
-                ),
-                "says": (
-                    "the table of periods and sequences; the nodes, 3 and 2 years for day and "
-                    "night alike, follow the seven planets, so by night they come after "
-                    "Mercury; the nodes have no sub-periods"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Wright's English translation, the scanned 1934 printing",
-            },
-            {
-                "citation": "al-Qabisi, Introduction",
-                "says": (
-                    "an abridged nocturnal sequence, named by the research notes as the source "
-                    "of the Latin divergence"
-                ),
-                "reading": SOURCE_READING_LEVELS[2],
-                "read_at": "the research notes only; not verified",
-            },
-            {
-                "citation": "Bonatti, Liber astronomiae Tr.9 Ch.3 (tr. B. Dykes, 2007)",
-                "says": (
-                    "the periods, the diurnal sequence and the return after 75 years; for the "
-                    "night the text starts from the Moon and says 'all as for the day'; "
-                    "nocturnal nodes after Mars is Zoller's reading, not Bonatti's words"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Dykes's English translation",
-            },
-            {
-                "citation": "Schoener (Renaissance)",
-                "says": "keeps the nodes-last order",
-                "reading": SOURCE_READING_LEVELS[2],
-                "read_at": "the research notes only; not verified",
-            },
+            cited(("Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, "
+                   "Persian Nativities IV (2019); Latin abridgement in Persian Nativities III (2010)"),
+                  ("the fullest surviving operational account per the research notes, "
+                   "nocturnal nodes after Mercury; chapter located as PN IV IV.8 via secondary "
+                   "sources"),
+                  SECONDARY_ONLY,
+                  "secondary sources and the research notes; the book not consulted"),
+            cited(("al-Biruni, Book of Instruction in the Elements of the Art of Astrology "
+                   "§438-439 (tr. R. R. Wright, 1934, p.48)"),
+                  ("the table of periods and sequences; the nodes, 3 and 2 years for day and "
+                   "night alike, follow the seven planets, so by night they come after "
+                   "Mercury; the nodes have no sub-periods"),
+                  TRANSLATION_READ,
+                  "Wright's English translation, the scanned 1934 printing"),
+            cited("al-Qabisi, Introduction",
+                  ("an abridged nocturnal sequence, named by the research notes as the source "
+                   "of the Latin divergence"),
+                  SECONDARY_ONLY, "the research notes only; not verified"),
+            cited(("Guido Bonatti, De astronomia (Basel 1550), the nativities treatise, "
+                   "ch.3 'De annis Firdariae et ipsorum dispositoribus', cols.813-814 "
+                   "(Treatise 9 ch.3 in Dykes's numbering)"),
+                  ("the periods (Sun 10, Venus 8, Mercury 13, Moon 9, Saturn 11, Jupiter 12, "
+                   "Mars 7, Head 3, Tail 2; 75 in all), the diurnal sequence with each planet's "
+                   "period in sevenths shared with the planets following in order, the nodes "
+                   "named without sharing, and the return to the Sun; for the night the order starts "
+                   "from the Moon and runs 'in omnibus et per omnia, ut dictum est'; nocturnal "
+                   "nodes after Mars is Zoller's reading, not Bonatti's words"),
+                  ORIGINAL_LANGUAGE_READ,
+                  ("the Latin in the archive.org scan of the Basel 1550 printing "
+                   "(bub_gb_BgWuc5O-JzIC, leaf n415, running head 'Pars V'), read at the cited columns")),
+            cited("Schoener (Renaissance)", "keeps the nodes-last order", SECONDARY_ONLY,
+                  "the research notes only; not verified"),
         ],
         "naming_note": (
             "Neither nocturnal profile is marked the only correct one; the "

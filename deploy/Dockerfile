@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 
-FROM python:3.14.8-slim-trixie@sha256:c3e521df8b2b498a7a682e7e18676771cb80c6b75b8699af886b2d554ce40151 AS builder
+FROM python:3.14.8-slim-trixie@sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170 AS builder
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Keep compiler-produced archives independent of wall-clock time.
 ENV SOURCE_DATE_EPOCH="0" \
@@ -17,17 +19,21 @@ ENV CXX="g++" \
 WORKDIR /build
 
 # Install the toolchain from the same Debian snapshot the pinned base
-# image records in its sources (20260918T000000Z), not from whatever the mirror
-# serves on build day.  pkg-config and libsqlite3-dev make pyswisseph's
-# setup.py link Debian's libsqlite3 (security-maintained, the runtime base
+# image records in its sources (20261005T000000Z, the commented snapshot URIs
+# of its /etc/apt/sources.list.d/debian.sources), not from whatever the mirror
+# serves on build day.  The snapshot's Release files are past their
+# Valid-Until, so that check is off; they are fetched over HTTPS so a party on
+# the path cannot replay an older, still validly signed Release.  pkg-config
+# and libsqlite3-dev make pyswisseph's setup.py link Debian's libsqlite3 (security-maintained, the runtime base
 # already carries libsqlite3-0) instead of compiling Swephelp's bundled SQLite.
-ARG DEBIAN_SNAPSHOT=20260918T000000Z
+ARG DEBIAN_SNAPSHOT=20261005T000000Z
 RUN sed -i \
-        -e "s|http://deb.debian.org/debian-security|http://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT}|" \
-        -e "s|http://deb.debian.org/debian|http://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}|" \
+        -e "s|http://deb.debian.org/debian-security|https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT}|" \
+        -e "s|http://deb.debian.org/debian|https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}|" \
         /etc/apt/sources.list.d/debian.sources \
-    && grep -q "snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}" /etc/apt/sources.list.d/debian.sources \
+    && grep -q "https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}" /etc/apt/sources.list.d/debian.sources \
     && ! grep -q 'deb.debian.org' /etc/apt/sources.list.d/debian.sources \
+    && ! grep -q '^URIs: http:' /etc/apt/sources.list.d/debian.sources \
     && apt-get -o Acquire::Check-Valid-Until=false update \
     && apt-get install --yes --no-install-recommends build-essential pkg-config libsqlite3-dev \
     && rm -rf /var/lib/apt/lists/*
@@ -72,9 +78,12 @@ RUN --network=none python -c 'import re,sys; from pathlib import Path; blocks=re
     && /opt/venv/bin/python -c \
         'import platform,sys,swisseph; ok=platform.python_version()=="3.14.8" and swisseph.version=="2.10.03"; sys.exit(0 if ok else "Python or Swiss Ephemeris version mismatch")' \
     && ldd /opt/venv/lib/python3.14/site-packages/swisseph.*.so | grep -q 'libsqlite3\.so\.0 => /' \
-    && /opt/venv/bin/python -m pip uninstall --yes pip
+    && /opt/venv/bin/python -m pip uninstall --yes pip \
+    && find /opt/venv -depth -type d -name __pycache__ -exec rm --recursive {} +
 
-FROM python:3.14.8-slim-trixie@sha256:c3e521df8b2b498a7a682e7e18676771cb80c6b75b8699af886b2d554ce40151
+FROM python:3.14.8-slim-trixie@sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ARG VCS_REF
 ARG PUBLICATION_STATUS
@@ -99,13 +108,14 @@ ENV CLASSICAL_ASTROLOGY_REQUIRE_FRONTEND_RELEASE="1" \
     PATH="/opt/venv/bin:${PATH}" \
     PYTHONFAULTHANDLER="1" \
     PYTHONUNBUFFERED="1" \
-    PYTHONDONTWRITEBYTECODE="1"
+    PYTHONDONTWRITEBYTECODE="1" \
+    PYTHONPYCACHEPREFIX="/opt/pycache"
 
 WORKDIR /app
 
-# /bin/sh has no pipefail: each dpkg-query result is captured on its own, so
-# that `set -e` stops the build when the package database cannot be read
-# instead of an empty list meaning "nothing to purge, nothing survived".
+# Each dpkg-query result is captured on its own, so that `set -e` stops the
+# build when the package database cannot be read instead of an empty list
+# meaning "nothing to purge, nothing survived".
 RUN set -eux; \
     packages="$(dpkg-query -W -f='${binary:Package}\t${Essential}\n')"; \
     removable="$(printf '%s\n' "$packages" \
@@ -143,9 +153,11 @@ RUN dpkg-query -W -f='${db:Status-Abbrev}\n' libstdc++6 | grep -q '^ii ' \
     && dpkg-query -W -f='${db:Status-Abbrev}\n' libsqlite3-0 | grep -q '^ii ' \
     && /opt/venv/bin/python -c 'import swisseph; print(swisseph.version)'
 
-COPY backend/app /app/backend/app
-COPY backend/ephe /app/backend/ephe
+# Largest and least often changed first, so a code change rebuilds only the
+# small layers after it.
 COPY backend/place_data /app/backend/place_data
+COPY backend/ephe /app/backend/ephe
+COPY backend/app /app/backend/app
 COPY deploy/ephemeris.sha256 /app/deploy/ephemeris.sha256
 COPY deploy/frontend-contract.json /app/deploy/frontend-contract.json
 COPY deploy/entrypoint.sh /app/deploy/entrypoint.sh
@@ -167,12 +179,26 @@ RUN --mount=type=bind,target=/build-context,readonly \
         exit 1; \
     fi
 
+# Bytecode, compiled once here: the root filesystem is read-only at run time,
+# so without it every worker of every start (and every health probe) compiles
+# each module it imports again.  The venv and the application are compiled
+# whole; of the standard library only the modules a started worker, the
+# entrypoint checks and the health probe import (the rest would add ~11 MB for
+# modules that are never loaded).  The cache sits under PYTHONPYCACHEPREFIX,
+# outside /app, so the /app tree stays exactly the copied sources.
+# unchecked-hash .pyc files carry no timestamps (reproducible) and are never
+# revalidated, which is right for files that cannot change.
+RUN python -c 'import py_compile, sys; sys.path.insert(0, "/app/backend"); import app.main, uvicorn.main, uvicorn.server, uvicorn.config, uvicorn.supervisors.multiprocess, uvicorn.protocols.http.h11_impl, uvicorn.lifespan.on, uvicorn.loops.asyncio, uvicorn.middleware.proxy_headers, argparse, hashlib, sqlite3, urllib.request, urllib.error; files = sorted({m.__file__ for m in list(sys.modules.values()) if (getattr(m, "__file__", None) or "").startswith("/usr/local/lib/python3.14/") and m.__file__.endswith(".py")}); len(files) > 100 or sys.exit("too few standard-library modules found to precompile"); [py_compile.compile(f, doraise=True, invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH) for f in files]' \
+    && python -m compileall -q -j 0 --invalidation-mode unchecked-hash \
+        /opt/venv/lib/python3.14/site-packages \
+        /app/backend/app /app/scripts/verification /app/deploy/container_healthcheck.py
+
 RUN chmod 0555 /app/deploy/entrypoint.sh \
     /app/deploy/container_healthcheck.py \
     /app/scripts/verification/verify_ephemeris_integrity.py \
     /app/scripts/verification/verify_place_catalog.py \
-    && find /app /opt/venv -type d -exec chmod 0555 {} + \
-    && find /app /opt/venv -type f -exec chmod go-w {} +
+    && find /app /opt/venv /opt/pycache -type d -exec chmod 0555 {} + \
+    && find /app /opt/venv /opt/pycache -type f -exec chmod go-w {} +
 
 USER 10001:10001
 EXPOSE 8000

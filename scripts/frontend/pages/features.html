@@ -10,7 +10,7 @@
 
   <!-- ═══ 01 界 ═══ -->
   <section class="feat">
-    <p class="feat-num"><span class="dnum">01</span> 古典方法</p>
+    <p class="sig">01<span class="sig-k">古典方法</span></p>
     <h2>「界」不只有一張表。<br>我們四張都給，一張都不預設。</h2>
 
     <p class="verdict">這張盤的月亮在摩羯 24°20′。<br><b>它的界主是誰，取決於你用誰的表。</b></p>
@@ -52,7 +52,7 @@
 
   <!-- ═══ 02 精準度 ═══ -->
   <section class="feat">
-    <p class="feat-num"><span class="dnum">02</span> 精準度</p>
+    <p class="sig">02<span class="sig-k">精準度</span></p>
     <h2>精準不是形容詞。<br>是一組可以查的版本號。</h2>
 
     <p class="verdict">每一次計算都回報<b>三個獨立的版本號</b>——而且主動告訴你其中一個不歸我們管。</p>
@@ -63,7 +63,7 @@
       <div><span class="vs-label">IANA 時區資料庫</span><b class="vs-answer sm alt">2026c</b><span class="vs-src">由作業系統或 image 提供<br><b>不由本產品固定</b></span></div>
     </div>
 
-    <p>前兩個數字格式相近，<b>但不是同一個值</b>——我們把這句話寫進每一份卷宗，因為搞混了會誤導。第三個更重要：時區資料庫更新後，同一組輸入可能換算出不同的 UTC。<b>所以它的版本也印在你的卷宗裡。</b>1970 年前、特別是標為地方平時（LMT）的時段，資料庫自承多為推定，我們不把它當成已驗證的歷史鐘面。</p>
+    <p>前兩個數字格式相近，<b>但不是同一個值</b>——我們把這句話寫進每一份卷宗，因為搞混了會誤導。第三個更重要：時區資料庫更新後，同一組輸入可能換算出不同的 UTC。所以它的版本也印在你的卷宗裡。1970 年前、特別是標為地方平時（LMT）的時段，資料庫自承多為推定，我們不把它當成已驗證的歷史鐘面。</p>
 
     <h3>已經對過外部基準的部分</h3>
     <ul class="ticks">
@@ -78,7 +78,7 @@
 
   <!-- ═══ 03 出生時刻 ═══ -->
   <section class="feat">
-    <p class="feat-num"><span class="dnum">03</span> 出生時刻</p>
+    <p class="sig">03<span class="sig-k">出生時刻</span></p>
     <h2>不知道確切出生時間？<br>只記得大約幾點，就別假裝知道。</h2>
 
     <p class="verdict">這張盤如果只知道「下午兩點多」——<br><b>七顆星的落宮會在同一個時刻附近一起換宮。我們把那個時刻夾在 15 秒以內的區間裡。</b></p>
@@ -107,8 +107,10 @@
 
   <!-- ═══ 04 口徑 ═══ -->
   <section class="feat">
-    <p class="feat-num"><span class="dnum">04</span> 口徑</p>
-    <h2>兩個網站算出不同的上升星座。<br>通常兩邊都沒錯。</h2>
+    <p class="sig">04<span class="sig-k">口徑</span></p>
+    <h2>兩個網站算出<wbr>不同的上升星座。<br>多半是輸入不同，不是誰算錯。</h2>
+
+    <p>先對照兩邊的時區、夏令時間、出生地座標與出生時間；這四樣都一樣還是不同，再看黃道的起算點。宮位制只決定宮頭，不改上升點。</p>
 
     <p class="verdict">同一個時間、同一個地點。<b>換一把尺，上升星座整個退一格。</b></p>
 
@@ -125,7 +127,7 @@
 
   <!-- ═══ 05 座標 ═══ -->
   <section class="feat">
-    <p class="feat-num"><span class="dnum">05</span> 座標</p>
+    <p class="sig">05<span class="sig-k">座標</span></p>
     <h2>一次計算，<br>三套座標一起輸出。</h2>
 
     <p class="verdict">多數占星軟體只給黃經。<b>赤道與地平座標可以直接拿去對天文軟體。</b></p>
@@ -139,12 +141,12 @@
 
     <p>涵蓋七政、三王星、凱龍星、平均與密切交點（密切交點即 osculating node，常被稱為真交點；兩者都含南交點）、Lilith 與 Priapus，以及 <b>{{fixed_star_count}} 顆</b>恆星與 <b>{{fixed_star_cluster_count}} 個</b>星團。相位分兩層輸出：整宮配置層（純算術）與逐度層（角距離、距精確相位差、入相位方向）；逐度層另排成一張相位方格，每格列出容許度內的相位、距精確的度數與入相位或出相位，不另計算。四套相位集合（預設合相＋四種傳統相位）、兩套具名容許度表（預設 Lilly 1647），都可切換，<b>每一次的預設值都印在卷宗裡</b>。</p>
 
-    <p class="limit"><b>邊界：</b>恆星只輸出座標與星等，不判定合相——那要先選定幾何（黃道合相、與角點同升或中天、地平事件），再定容許度與歲差政策，這些都還沒裁決。行運、推運與合盤目前一項都沒有；太陽回歸盤（solar return）可以在計算頁另外排（見下方第 06 節），在出生地起盤。</p>
+    <p class="limit"><b>邊界：</b>恆星只輸出座標與星等，不判定合相——那要先選定幾何（黃道合相、與角點同升或中天、地平事件），再定容許度與歲差政策，這些都還沒裁決。行運、推運與合盤目前一項都沒有；太陽回歸盤（solar return）可以在計算頁另外排（見下方第 06 節），預設在出生地起盤，也可以改用另一個地點。</p>
   </section>
 
   <!-- ═══ 06 時間主星 ═══ -->
   <section class="feat">
-    <p class="feat-num"><span class="dnum">06</span> 時間主星</p>
+    <p class="sig">06<span class="sig-k">時間主星</span></p>
     <h2>時間主星：哪一段時間由誰輪值。<br>只列輪值表，不替你解盤。</h2>
 
     <p class="verdict">本站排出的年度時間主星（time lords）有年度小限（annual profection）、月小限（monthly profection）、法達（firdaria）、黃道釋放（zodiacal releasing）與十年期（decennials），都是把人生分成一段一段、每段交給一顆行星或一個星座的古典做法。其中年度小限、黃道釋放與十年期是希臘化（Hellenistic）時期的技法，規則出自 Valens 與 Ptolemy；法達依據中世紀 Abū Maʿshar 的阿拉伯文著作，不是希臘化技法。<br><b>只列計算結果：哪一段時間由哪顆行星或哪個星座輪值。不替你解盤，也不預測。</b></p>
@@ -160,18 +162,18 @@
 
     <p>一年從太陽回歸的那一刻算起；期間的日期是<b>出生地的日期，只到日</b>。每一條規則用了哪一份文獻、我們核到哪一層、文獻說法不同時用哪一種，見〈<a href="/zh-TW/methods/time-lords">年度時間主星的規則與出處</a>〉。</p>
 
-    <p class="limit"><b>邊界：</b>選定某一年後，可以另外排那一年的太陽回歸盤（在出生地起盤，需要確切的出生時間）。只知道出生日期時，這幾種都不產生；黃道釋放與十年期都只算兩層。</p>
+    <p class="limit"><b>邊界：</b>選定某一年後，可以另外排那一年的太陽回歸盤（預設在出生地起盤，也可以改用另一個地點；需要確切的出生時間）。只知道出生日期時，這幾種都不產生；黃道釋放與十年期都只算兩層。</p>
   </section>
 
   <!-- ═══ 07 收據 ═══ -->
   <section class="feat">
-    <p class="feat-num"><span class="dnum">07</span> 出處</p>
+    <p class="sig">07<span class="sig-k">出處</span></p>
     <h2 id="dossier-title">算完之後，<br>這份結果還要能被查。</h2>
 
     <p class="verdict">每次計算都能取得一份卷宗：<b>逐步軌跡、完整口徑、所有版本號，以及一組 SHA-256 收據。</b>完整卷宗在「技術細節與驗算資料」與「運算結果＋驗算資料」匯出裡；預設的結果頁只取它需要的部分。</p>
 
     <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="dossier-title">
-      <table class="log spec-table">
+      <table class="log spec-table stack-narrow">
         <thead><tr><th>步</th><th>算什麼</th><th>得到</th><th>怎麼來的</th></tr></thead>
         <tbody>
           <!-- figure:dossier-steps -->
@@ -192,7 +194,7 @@
 
   <!-- ═══ 07 隱私 ═══ -->
   <section class="feat">
-    <p class="feat-num"><span class="dnum">08</span> 隱私</p>
+    <p class="sig">08<span class="sig-k">隱私</span></p>
     <h2>不留你的資料。<br>因為沒有地方可以留。</h2>
 
     <p class="verdict">這不是一個可以關掉的設定，是應用程式的形狀。<br><b>下面每一個 0，你打開瀏覽器的開發者工具就能自己數。</b></p>
@@ -211,7 +213,7 @@
     <ul class="ticks">
       <li>預設計算請求期間，若有 Python 程式碼以寫入模式開檔，<b>測試會直接失敗</b>——這是機制，不是承諾；原生函式庫不在涵蓋範圍內。</li>
       <li>地名搜尋讀<b>內建的離線資料庫</b>，不呼叫第三方地理服務、不使用瀏覽器定位、不看你的 IP。</li>
-      <li>匯出檔名固定為 <span class="mono">classical-astrology-export.{json,md,csv,txt}</span>，<b>不嵌入出生日期、時間、姓名或座標</b>。</li>
+      <li>每一種下載的檔名都是固定的：結果匯出為 <span class="mono">classical-astrology-export.{json,md,csv,txt}</span>，星盤圖為 <span class="mono">classical-astrology-chart.{svg,png}</span>（方盤 <span class="mono">classical-astrology-square-chart.{svg,png}</span>、太陽回歸盤 <span class="mono">classical-astrology-solar-return-chart.{svg,png}</span>），時間主星為 <span class="mono">armillary-time-lords.ics</span> 與 <span class="mono">armillary-time-lords.{md,csv,json}</span>；<b>都不嵌入出生日期、時間、姓名或座標</b>。</li>
       <li>「清除本頁敏感資料」會清空表單、結果、錯誤與網址列的 query 與 fragment，並使已發出的複製／下載 handler 立即失效。</li>
     </ul>
 
@@ -220,13 +222,13 @@
 
   <!-- ═══ 08 資安 ═══ -->
   <section class="feat">
-    <p class="feat-num"><span class="dnum">09</span> 資安</p>
+    <p class="sig">09<span class="sig-k">資安</span></p>
     <h2 id="security-headers-title">資安跟隱私是兩件事。<br>隱私是我們不拿；資安是別人也拿不到。</h2>
 
     <p class="verdict">瀏覽器收到的每一個安全標頭都是可以當場查的。<br><b>把開發者工具切到 Network，點任一個回應，就在 Headers 裡。</b></p>
 
     <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="security-headers-title">
-      <table class="log spec-table">
+      <table class="log spec-table stack-narrow">
         <thead><tr><th>標頭</th><th>設定值</th><th>擋掉什麼</th></tr></thead>
         <tbody>
           <tr><td>Content-Security-Policy</td><td class="num">script-src 'self'</td><td>腳本只能由本站載入，並拒絕 inline 與 eval 型執行，<b>降低常見注入的可利用面</b>——這不是「不存在 XSS」的證明</td></tr>
@@ -252,12 +254,12 @@
       <li><b>供應鏈：</b>沒有 npm 執行期相依、沒有外部字型。出貨的樣式與程式是由公開原始碼自動壓縮產生的，產生器也在公開原始碼裡；你可以自己重新產生，逐位元比對。</li>
     </ul>
 
-    <p class="limit"><b>邊界（這一段很重要）：</b>我們<b>沒有第三方安全認證，沒有專業滲透測試，也沒有漏洞獎金計畫</b>。有的是寫進程式並由失敗優先測試守著的限制、多輪具名外部技術審查與多工具對抗測試，以及一份誠實的「我們控制不了什麼」清單。<b>這些都不等於專業滲透測試。</b>完整的邊界、資料流與已知限制列在〈<a href="/zh-TW/security">安全</a>〉，那一頁是專門寫這件事的。</p>
+    <p class="limit"><b>邊界（這一段很重要）：</b>我們<b>沒有第三方安全認證，沒有專業滲透測試，也沒有漏洞獎金計畫</b>。有的是寫進程式並由失敗優先測試守著的限制、多輪具名外部技術審查與多工具對抗測試，以及一份誠實的「我們控制不了什麼」清單。這些都不等於專業滲透測試。完整的邊界、資料流與已知限制列在〈<a href="/zh-TW/security">安全</a>〉，那一頁是專門寫這件事的。</p>
   </section>
 
   <!-- ═══ 08 讀者 ═══ -->
   <section class="feat who-sec">
-    <p class="feat-num"><span class="dnum">10</span> 讀者</p>
+    <p class="sig">10<span class="sig-k">讀者</span></p>
     <h2>這個工具給誰用。</h2>
     <div class="who">
       <div>
@@ -281,10 +283,10 @@
 
   <!-- ═══ 09 規格 ═══ -->
   <section class="feat">
-    <p class="feat-num"><span class="dnum">11</span> 規格</p>
+    <p class="sig">11<span class="sig-k">規格</span></p>
     <h2 id="numbers-title">可查證的數字。</h2>
     <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="numbers-title">
-      <table class="log spec-table">
+      <table class="log spec-table stack-narrow">
         <tbody>
           <tr><td>計算引擎</td><td>Swiss Ephemeris 2.10.03（套件與 C 函式庫版本分開輸出）</td></tr>
           <tr><td>內建星曆</td><td>基於 JPL DE441</td></tr>

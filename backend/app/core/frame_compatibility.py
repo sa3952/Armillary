@@ -18,9 +18,8 @@ recomputed in a converted frame.
 
 Sidereal of date stays applicable except for the tropical classical tables:
 the method research notes find the antiscia ``2 x ayanamsa`` handling correct and
-the sidereal dignity refusal right.  With nutation off, sidereal longitudes and
-cusps are the nutation-on numbers, so only antiscia and declination parallels,
-which still read an equinox or equator the flag selects, are refused.  Sidereal combined with J2000 is refused at
+the sidereal dignity refusal right.  Nutation off with sidereal: see
+``_NUTATION_ON_OR_SIDEREAL``.  Sidereal combined with J2000 is refused at
 the request boundary (``request_frame_refusal``): in that cell the ayanamsa
 receipt differed from the offset actually subtracted (3.25e-3 deg for bodies,
 0.13 deg for the true node, measured).
@@ -46,13 +45,12 @@ _EARTH_CENTRE = ("center", EARTH_OBSERVER_CENTERS)
 _TROPICAL = ("zodiac", frozenset({"tropical"}))
 _OF_DATE = ("ecliptic_frame", frozenset({"of_date"}))
 _NUTATION_ON = ("nutation", frozenset({True}))
-# A sidereal longitude does not depend on the nutation flag.  Swiss
-# subtracts the ayanamsa of the same equinox it measured from (true with
-# nutation, mean without), so the nutation cancels; the cusps are Swiss's
-# native sidereal division, which ignores FLG_NONUT too.
-# Measured: body longitudes, cusps, ASC and MC bit-identical with
-# nutation on and off (4 ayanamsas x 4 epochs, 1900-2399).  A method that reads
-# only those numbers therefore runs in the authorized frame either way.
+# A sidereal longitude does not depend on the nutation flag.  Swiss subtracts
+# the ayanamsa of the same equinox it measured from (true with nutation, mean
+# without), so the nutation cancels; the cusps are Swiss's native sidereal
+# division, which ignores FLG_NONUT too.  Measured: body longitudes, cusps, ASC
+# and MC bit-identical with nutation on and off (4 ayanamsas x 4 epochs,
+# 1900-2399), so a method reading only those runs in the authorized frame.
 # Antiscia (mirror axis = the solstitial axis the nutation flag selects) and
 # declination parallels (equator of date) still change with the flag and keep
 # ``_NUTATION_ON``.
@@ -71,18 +69,39 @@ REPORT_ALL = "every_failing_requirement"
 # Each row: ordered (requirement, reason_code) pairs.  A requirement is
 # (request axis, accepted values), or a tuple of such pairs of which any one
 # suffices.
+
+
+def _of_date_row(
+    basis: str,
+    nutation: tuple = _NUTATION_ON_OR_SIDEREAL,
+    *,
+    tropical: bool = False,
+    centre_code: str = NON_EARTH_OBSERVER_CENTER,
+) -> dict[str, Any]:
+    """An Earth-observer method of date: its codes are
+    ``sidereal_<basis>_basis_not_authorized`` (tropical tables only),
+    ``j2000_<basis>_...`` and ``nutation_off_<basis>_...``."""
+    zodiac = ((_TROPICAL, f"sidereal_{basis}_basis_not_authorized"),) if tropical else ()
+    return {
+        "requirements": (
+            (_EARTH_CENTRE, centre_code),
+            *zodiac,
+            (_OF_DATE, f"j2000_{basis}_basis_not_authorized"),
+            (nutation, f"nutation_off_{basis}_basis_not_authorized"),
+        ),
+    }
+
+
+_EARTH_CENTRE_ONLY: dict[str, Any] = {"requirements": ((_EARTH_CENTRE, NON_EARTH_OBSERVER_CENTER),)}
+
 METHOD_FRAME_TABLE: dict[str, dict[str, Any]] = {
     # Phase angle, illuminated fraction, elongation, apparent diameter and
     # magnitude are Earth-observer quantities; Swiss pheno_ut ignores the
     # heliocentric/barycentric flags and returns the geocentric values.
     "earth_observer_phenomena": {
-        "requirements": (
-            (_EARTH_CENTRE, EARTH_OBSERVER_PHENOMENA_NOT_APPLICABLE),
-        ),
+        "requirements": ((_EARTH_CENTRE, EARTH_OBSERVER_PHENOMENA_NOT_APPLICABLE),),
     },
-    "house_division": {
-        "requirements": ((_EARTH_CENTRE, NON_EARTH_OBSERVER_CENTER),),
-    },
+    "house_division": _EARTH_CENTRE_ONLY,
     "planet_in_house": {
         "report": REPORT_ALL,
         "requirements": (
@@ -94,108 +113,37 @@ METHOD_FRAME_TABLE: dict[str, dict[str, Any]] = {
     # Aspects, declination parallels and antiscia are relations in the Earth
     # observer's sky (whole-sign configuration, equator, solstitial axis); seen
     # from the Sun or the barycentre the numbers compute but name no method.
-    "antiscia": {
-        "requirements": (
-            (_EARTH_CENTRE, NON_EARTH_OBSERVER_CENTER),
-            (_OF_DATE, "j2000_antiscia_basis_not_authorized"),
-            (_NUTATION_ON, "nutation_off_antiscia_basis_not_authorized"),
-        ),
-    },
-    "aspects": {
-        "requirements": (
-            (_EARTH_CENTRE, NON_EARTH_OBSERVER_CENTER),
-            (_OF_DATE, "j2000_aspects_basis_not_authorized"),
-            (_NUTATION_ON_OR_SIDEREAL, "nutation_off_aspects_basis_not_authorized"),
-        ),
-    },
-    "lots": {
-        "requirements": (
-            (_EARTH_CENTRE, NON_EARTH_OBSERVER_CENTER),
-            (_OF_DATE, "j2000_lots_basis_not_authorized"),
-            (_NUTATION_ON_OR_SIDEREAL, "nutation_off_lots_basis_not_authorized"),
-        ),
-    },
-    "void_of_course": {
-        "requirements": (
-            (_EARTH_CENTRE, NON_EARTH_OBSERVER_CENTER),
-            (_OF_DATE, "j2000_void_of_course_basis_not_authorized"),
-            (_NUTATION_ON_OR_SIDEREAL, "nutation_off_void_of_course_basis_not_authorized"),
-        ),
-    },
-    "declination_aspects": {
-        "requirements": (
-            (_EARTH_CENTRE, NON_EARTH_OBSERVER_CENTER),
-            (_OF_DATE, "j2000_declination_aspects_basis_not_authorized"),
-            (
-                _NUTATION_ON,
-                "nutation_off_declination_aspects_basis_not_authorized",
-            ),
-        ),
-    },
+    "antiscia": _of_date_row("antiscia", _NUTATION_ON),
+    "aspects": _of_date_row("aspects"),
+    "lots": _of_date_row("lots"),
+    "void_of_course": _of_date_row("void_of_course"),
+    "declination_aspects": _of_date_row("declination_aspects", _NUTATION_ON),
     # Sunrise and sunset belong to an observer on the Earth's surface; a chart
     # seen from the Sun or the barycentre has no day or night to divide.
-    "planetary_hours": {
-        "requirements": ((_EARTH_CENTRE, NON_EARTH_OBSERVER_CENTER),),
-    },
-    "essential_dignities": {
-        "requirements": (
-            (_EARTH_CENTRE, "non_earth_center_dignity_basis_not_authorized"),
-            (_TROPICAL, "sidereal_dignity_basis_not_authorized"),
-            (_OF_DATE, "j2000_dignity_basis_not_authorized"),
-            (_NUTATION_ON, "nutation_off_dignity_basis_not_authorized"),
-        ),
-    },
+    "planetary_hours": _EARTH_CENTRE_ONLY,
+    "essential_dignities": _of_date_row(
+        "dignity", _NUTATION_ON, tropical=True,
+        centre_code="non_earth_center_dignity_basis_not_authorized",
+    ),
     # Twelfth-parts read the degree inside the sign of date, as the Lots do; a
     # sidereal longitude is unchanged by the nutation flag, so it stays allowed.
-    "dodecatemoria": {
-        "requirements": (
-            (_EARTH_CENTRE, NON_EARTH_OBSERVER_CENTER),
-            (_OF_DATE, "j2000_dodecatemoria_basis_not_authorized"),
-            (_NUTATION_ON_OR_SIDEREAL, "nutation_off_dodecatemoria_basis_not_authorized"),
-        ),
-    },
+    "dodecatemoria": _of_date_row("dodecatemoria"),
     # Planet and place classifications read the horizon (sect, above or under
     # the earth) and the sign of date, as the Lots do.
-    "classical_classifications": {
-        "requirements": (
-            (_EARTH_CENTRE, NON_EARTH_OBSERVER_CENTER),
-            (_OF_DATE, "j2000_classical_classification_basis_not_authorized"),
-            (_NUTATION_ON_OR_SIDEREAL, "nutation_off_classical_classification_basis_not_authorized"),
-        ),
-    },
+    "classical_classifications": _of_date_row("classical_classification"),
     # The mansions start at the vernal point of date: a sidereal zodiac, the
     # J2000 ecliptic or a mean equinox moves the zero point, and a chart seen
     # from the Sun or the barycentre has no Moon's station to name.
-    "lunar_mansions": {
-        "requirements": (
-            (_EARTH_CENTRE, NON_EARTH_OBSERVER_CENTER),
-            (_TROPICAL, "sidereal_lunar_mansion_basis_not_authorized"),
-            (_OF_DATE, "j2000_lunar_mansion_basis_not_authorized"),
-            (_NUTATION_ON, "nutation_off_lunar_mansion_basis_not_authorized"),
-        ),
-    },
+    "lunar_mansions": _of_date_row("lunar_mansion", _NUTATION_ON, tropical=True),
     # The distance from the Sun is a difference of two longitudes of date as
     # seen from the Earth; a sidereal zodiac subtracts the same ayanamsa from
     # both, so only the frame and the centre are restricted.
-    "solar_phase": {
-        "requirements": (
-            (_EARTH_CENTRE, NON_EARTH_OBSERVER_CENTER),
-            (_OF_DATE, "j2000_solar_phase_basis_not_authorized"),
-            (_NUTATION_ON_OR_SIDEREAL, "nutation_off_solar_phase_basis_not_authorized"),
-        ),
-    },
+    "solar_phase": _of_date_row("solar_phase"),
     # Swift or slow compares a speed with mean motions the texts give in the
     # tropical zodiac of date; a sidereal, J2000 or mean-equinox speed differs
     # by the precession or nutation rate, so those frames are refused.  The side
     # of the Sun is solar_phase's.
-    "motion_states": {
-        "requirements": (
-            (_EARTH_CENTRE, NON_EARTH_OBSERVER_CENTER),
-            (_TROPICAL, "sidereal_motion_states_basis_not_authorized"),
-            (_OF_DATE, "j2000_motion_states_basis_not_authorized"),
-            (_NUTATION_ON, "nutation_off_motion_states_basis_not_authorized"),
-        ),
-    },
+    "motion_states": _of_date_row("motion_states", _NUTATION_ON, tropical=True),
 }
 
 FRAME_REASON_CODES = tuple(

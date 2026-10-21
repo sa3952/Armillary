@@ -29,7 +29,7 @@ test("拒絕文案逐字對照", () => {
     [{ code: "house_system_unavailable", message: "Placidus 在緯度 89.123456° 無法計算", latitude: 89.123456 }, 422,
       "所選宮位制無法在這個緯度計算；請在「宮位制」選單改選「整宮」，或選「不計算宮位」。"],
     [{ code: "internal_server_error", message: "raw traceback detail" }, 500,
-      "服務暫時無法完成計算。請稍後重試；若持續發生，請聯絡服務管理者。"],
+      "網站暫時無法完成計算。請稍後再試一次；若持續發生，請透過聯絡頁回報。"],
     // 舊的裸陣列不再當成欄位發現。
     [[{ type: "calendar_date_invalid", loc: ["body", "datetime", "day"] }], 422, GENERIC_INVALID],
   ]) {
@@ -40,9 +40,9 @@ test("拒絕文案逐字對照", () => {
 test("拒絕文案必須說出的與不得說出的", () => {
   for (const [detail, status, includes, excludes] of [
     [{ code: "request_capacity_exhausted" }, 503, [/不是.*輸入|忙碌/], []],
-    [{ code: "compute_capacity_exhausted" }, 503, [/稍後|重試/], []],
+    [{ code: "compute_capacity_exhausted" }, 503, [/稍後|再試一次/], []],
     ["caller supplied secret", 400, [], ["secret"]],
-    [null, 500, [/服務暫時無法完成計算/], []],
+    [null, 500, [/網站暫時無法完成計算/], []],
     // 訊息只描述情況：出路由 calculate.js 依選擇區是否真的出現導出，訊息不得自行宣稱頁面能或不能
     // 做什麼，也不得指向本頁不存在的固定偏移輸入，或回顯後端原文。
     [{
@@ -72,8 +72,8 @@ test("拒絕文案必須說出的與不得說出的", () => {
     [issue("sidereal_with_j2000_frame_not_supported", "computation_mode"), 422, ["J2000"], [/「[^」]+」/]],
     [{ code: "place_search_timeout" }, 503, ["「改為手動輸入座標與時區」"], ["目錄暫時無法讀取"]],
     // 星曆拒絕重送不會改變結果。
-    [{ code: "swiss_ephemeris_error", message: "server text" }, 500, [], ["重試"]],
-    [{ code: "full_ephemeris_required", message: "server text" }, 422, [], ["重試"]],
+    [{ code: "swiss_ephemeris_error", message: "server text" }, 500, [], ["重試", "再試"]],
+    [{ code: "full_ephemeris_required", message: "server text" }, 422, [], ["重試", "再試"]],
     // 時間主星區塊會送年度請求：出生在可計算範圍尾端時，要算的那一年可能在 2399 年之後。
     // 輸入沒有錯，頁面也沒有過期，不得叫人重新載入。
     [issue("solar_return_outside_supported_year_range", "annual", "target_value"), 422,
@@ -98,7 +98,8 @@ test("每個閉集代碼都有專屬文案", () => {
     "calendar_date_invalid", "second_finer_than_microsecond", "iana_name_required", "iana_timezone_unknown",
     "utc_offset_hours_required", "timezone_field_not_applicable_to_mode", "fold_requires_iana_mode",
     "civil_time_basis_zone_mismatch",
-    "place_label_forbidden_codepoint", "location_precision_not_accepted_for_source",
+    "place_label_forbidden_codepoint", "place_label_has_no_base_character",
+    "location_precision_not_accepted_for_source",
     "source_record_id_not_allowed_for_manual", "catalog_location_requires_label_and_record_id",
     "ayanamsa_unsupported", "sidereal_with_j2000_frame_not_supported",
     "leap_second_not_applicable_to_pre_1972_scale", "leap_second_requires_exact_utc_2359",
@@ -106,18 +107,18 @@ test("每個閉集代碼都有專屬文案", () => {
   ];
   for (const detail of [...codes.map((code) => ({ code })), ...rules.map((type) => issue(type))]) {
     const message = formatApiError(detail, 400);
-    assert.notEqual(message, "服務拒絕本次請求（HTTP 400）。請檢查輸入後再試。", JSON.stringify(detail));
-    assert.notEqual(message, "輸入資料格式無效；請檢查後再試。", JSON.stringify(detail));
+    assert.notEqual(message, "網站沒有接受這次請求。請檢查輸入後再試一次。", JSON.stringify(detail));
+    assert.notEqual(message, "輸入資料格式無效；請檢查後再試一次。", JSON.stringify(detail));
   }
 });
 
 test("錯誤動作：可重試的 503 依 Retry-After 建議重試；星曆拒絕不建議重試；不叫人修正輸入", () => {
-  assert.deepStrictEqual(apiErrorActions(503, "5", null), ["約 5 秒後重試。", "若持續發生，請透過聯絡頁回報。"]);
-  assert.equal(apiErrorActions(503, "5", "place_search_timeout")[0], "約 5 秒後重試。");
+  assert.deepStrictEqual(apiErrorActions(503, "5", null), ["約 5 秒後再試一次。", "若持續發生，請透過聯絡頁回報。"]);
+  assert.equal(apiErrorActions(503, "5", "place_search_timeout")[0], "約 5 秒後再試一次。");
   assert.ok(!apiErrorActions(503, null, null).some((value) => value.includes("修正輸入")));
   for (const [code, status] of [["swiss_ephemeris_error", 500], ["full_ephemeris_required", 422]]) {
     const actions = apiErrorActions(status, null, code);
-    assert.ok(!actions.some((action) => action.includes("重試")), actions.join(" / "));
+    assert.ok(!actions.some((action) => action.includes("重試") || action.includes("再試")), actions.join(" / "));
   }
 });
 
@@ -132,7 +133,7 @@ test("必然的方法拒收（422 宮位制不可用）不叫人透過聯絡頁�
 });
 
 test("網路錯誤只有一種措辭，沒有私測 profile 或邀請者", () => {
-  assert.equal(networkErrorMessage(), "無法連線到命盤計算服務。請確認網路連線後再試；若持續發生，請透過聯絡頁回報。");
+  assert.equal(networkErrorMessage(), "連不上本站的計算功能。請確認網路連線後再試一次；若持續發生，請透過聯絡頁回報。");
   for (const retired of ["PROFILES", "validateClientConfiguration", "resolveProfileBounded"]) {
     assert.equal(ClientContext[retired], undefined, retired);
   }
@@ -161,8 +162,8 @@ test("422 欄位錯誤對應到控制項 id", () => {
   for (const [detail, expected] of [
     [issue("value_error", "timezone"), ["timezone"]],
     [issue("missing", "timezone", "iana_name"), ["timezone"]],
-    [issue("greater_than_equal", "datetime", "year"), ["date"]],
-    [issue("calendar_date_invalid", "datetime", "day"), ["date"]],
+    [issue("greater_than_equal", "datetime", "year"), ["date-year"]],
+    [issue("calendar_date_invalid", "datetime", "day"), ["date-day"]],
     [issue("less_than_equal", "datetime", "hour"), ["hour"]],
     [issue("less_than_equal", "location", "latitude"), ["latitude"]],
     [issue("finite_number", "location", "altitude_m"), ["altitude"]],

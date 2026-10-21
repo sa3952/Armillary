@@ -25,7 +25,7 @@
     bg: "print-bg", band: "paper", fg: "ink", dim: "ink-dim", hair: "hair", accent: "accent", aspect: "ring-3",
   });
   const DOWNLOAD_PALETTE = Object.freeze({
-    bg: "#FFFFFF", band: "#F0EAD9", fg: "#1C1913", dim: "#574F41", hair: "#CFC5AE", accent: "#A03A22",
+    bg: "#FFFFFF", band: "#F0EAD9", fg: "#1C1913", dim: "#4F483B", hair: "#CFC5AE", accent: "#A03A22",
     aspect: "#A0632B",
   });
   const FONT_TOKENS = Object.freeze({ sans: "sans", mono: "mono", serif: "serif-num", book: "serif" });
@@ -238,7 +238,7 @@
     return WheelModel.shared.withPresets(WheelModel.build, response, options);
   }
 
-  // ── 結果頁上的「星盤圖」區塊
+  // 結果頁上的「星盤圖」區塊
   const SECTION_TEXT = Object.freeze({
     title: "星盤圖",
     lead: "刻線畫在真實黃經；符號與度數太擠時會移開，以細線連回刻線，前後順序不變。只畫本次所選的宮位制。",
@@ -246,7 +246,6 @@
       + "中央的線是容許度內的逐度相位，與相位方格同源，可以關閉。只畫本次所選的宮位制。",
     caption: "數值與表格同源；表格是完整版。",
     // 方盤的格子在窄螢幕上很擠，字可能小到認不出來。
-    squareZoomHint: "方盤的字太小時，按「放大檢視」或點圖看大圖。",
     legend: Object.freeze({
       tick: "星座環內緣的短刻線是天體的真實黃經，不會移動。",
       label: "標籤由外往內是符號、度、星座、分；度與分直接取自回應，與表格「星座度數」欄相同（圖只到分）。",
@@ -273,6 +272,8 @@
     enlarge: "放大檢視",
     close: "關閉",
     dialogTitle: "星盤圖（放大）",
+    panHint: "圖比螢幕大：用一指拖曳看四周，兩指可再放大。",
+    fitWhole: "看整張",
     includeInput: "在圖內加印輸入摘要（出生日期、時間與地點）",
     downloadSvg: "下載 SVG",
     downloadPng: "下載 PNG",
@@ -342,8 +343,7 @@
     return svg;
   }
 
-  // ── 圖表連動（只在結果頁上的圖；下載的 SVG／PNG 不經過這裡）
-  //
+  // 圖表連動（只在結果頁上的圖；下載的 SVG／PNG 不經過這裡）
   // 每個點的刻線、引線、四軸線與標籤群組帶 data-points（後端的點鍵），標籤上另疊一個透明的
   // 感應框（cw-hit）。鍵讀模型圖元的 linked（本檔的點）或 points（相位線的兩端），先過格式檢查。
   // 標示本身（哪些元素加 class）由呼叫端做，它同時管表格那一側。
@@ -432,7 +432,7 @@
   function symbolGlyph(doc, key) {
     const glyph = Glyphs.GLYPHS[key];
     const svg = svgElement(doc, "svg", {
-      class: "chart-wheel-symbol-glyph", viewBox: `${Math.round((glyph.bbox[0] + glyph.bbox[2]) / 2) - 525} -810 1050 1050`,
+      class: "chart-wheel-symbol-glyph", viewBox: WheelModel.glyphViewBox(key),
       "aria-hidden": "true", focusable: "false",
     });
     svg.appendChild(svgElement(doc, "path", { d: glyph.d }));
@@ -593,12 +593,21 @@
     show(model);
     const View = doc.defaultView;
     if (View && typeof View.ResizeObserver === "function") {
+      // 重畫放到下一個畫格：在回呼裡直接換掉被觀察的內容，Safari 會報「ResizeObserver loop」錯誤。
+      const frame = typeof View.requestAnimationFrame === "function"
+        ? (callback) => View.requestAnimationFrame(callback) : (callback) => callback();
+      let pending = false;
       const observer = new View.ResizeObserver(() => {
-        if (!section.isConnected) {
-          observer.disconnect();
-          return;
-        }
-        if (figure.clientWidth > 0) show(modelFor(WheelModel.presetForWidth(figure.clientWidth)));
+        if (pending) return;
+        pending = true;
+        frame(() => {
+          pending = false;
+          if (!section.isConnected) {
+            observer.disconnect();
+            return;
+          }
+          if (figure.clientWidth > 0) show(modelFor(WheelModel.presetForWidth(figure.clientWidth)));
+        });
       });
       observer.observe(figure);
     }
@@ -624,8 +633,6 @@
       });
       return button;
     });
-    const zoomHint = htmlElement(doc, "p", "note chart-wheel-zoom-hint", SECTION_TEXT.squareZoomHint);
-    zoomHint.hidden = true;
     // 圓盤／方盤：切換只換圖、引言與讀圖說明（區塊加 cw-style-square，calculate.css 依此藏起相位線的勾選框）。
     const styleControl = alternate ? alternate.control(doc, (next) => {
       style = next === "square" ? "square" : "wheel";
@@ -643,7 +650,6 @@
         else symbols.remove();
         symbols = rebuilt;
       }
-      zoomHint.hidden = style !== "square";
       section.querySelector(".section-note").textContent = style === "square" ? alternate.lead
         : drawsAspects ? SECTION_TEXT.leadWithAspects : SECTION_TEXT.lead;
       show(modelFor(WheelModel.presetForWidth(figure.clientWidth)));
@@ -658,28 +664,63 @@
     dialogTitle.id = `${idPrefix}-dialog-title`;
     const close = htmlElement(doc, "button", "ghost small", SECTION_TEXT.close);
     close.type = "button";
-    dialogHead.append(dialogTitle, close);
+    // 「看整張」：放大的圖比螢幕大時（手機），一鍵縮回螢幕寬看全圖，再按一次回到放大；aria-pressed 標狀態。
+    const fit = htmlElement(doc, "button", "ghost small chart-wheel-fit", SECTION_TEXT.fitWhole);
+    fit.type = "button";
+    fit.setAttribute("aria-pressed", "false");
+    const dialogTools = htmlElement(doc, "div", "chart-wheel-dialog-tools");
+    dialogTools.append(fit, close);
+    dialogHead.append(dialogTitle, dialogTools);
     // 內容包在一層裡：對話框本身沒有留白，點到 dialog 本身就是點在背景上。
     const dialogBody = htmlElement(doc, "div", "chart-wheel-dialog-body");
+    // 放大的圖比螢幕大時，標題下一行說怎麼看（打開時從圖的正中央看起，四周的標籤在畫面外）。
+    const panHint = htmlElement(doc, "p", "note chart-wheel-pan-hint", SECTION_TEXT.panHint);
+    panHint.id = `${idPrefix}-dialog-hint`;
     // 手機上放大後的圖比螢幕寬，在這一層裡捲動；頁面本身不會橫向溢出。
     const dialogView = htmlElement(doc, "div", "chart-wheel-dialog-view");
-    dialogBody.append(dialogHead, dialogView);
+    dialogBody.append(dialogHead, panHint, dialogView);
     dialog.appendChild(dialogBody);
+    dialog.setAttribute("aria-describedby", panHint.id);
+    const overflowing = () => dialogView.scrollWidth > dialogView.clientWidth + 1
+      || dialogView.scrollHeight > dialogView.clientHeight + 1;
+    // 放大的圖放得進對話框時（桌機），提示與「看整張」都不需要。
+    const paintTools = () => {
+      const zoomable = dialog.classList.contains("is-fit") || overflowing();
+      fit.hidden = !zoomable;
+      panHint.hidden = !zoomable || dialog.classList.contains("is-fit");
+    };
+    const centre = () => {
+      dialogView.scrollLeft = (dialogView.scrollWidth - dialogView.clientWidth) / 2;
+      dialogView.scrollTop = (dialogView.scrollHeight - dialogView.clientHeight) / 2;
+    };
+    fit.addEventListener("click", () => {
+      const whole = !dialog.classList.contains("is-fit");
+      dialog.classList.toggle("is-fit", whole);
+      fit.setAttribute("aria-pressed", String(whole));
+      paintTools();
+      centre();
+    });
     let opener = enlarge;
+    // 打開前頁面捲到哪裡：關閉後焦點回到「放大檢視」鈕，但不為它捲動頁面（點圖打開時，那顆鈕在圖的下方，
+    // 瀏覽器會把頁面往下捲到它，使用者回來時已不在剛才看的圖上）。
+    let pageScroll = null;
     const open = (from) => {
       // 放大鈕停用（畫面上已沒有結果）或區塊已移出頁面時不開：點圖本身也走這裡。
       if (dialog.open || enlarge.disabled || !section.isConnected) return;
       opener = from;
+      pageScroll = View ? { x: View.scrollX || 0, y: View.scrollY || 0 } : null;
       // 放大的圖在畫面上大於 680px，用相對較小的字級：同一群標籤攤得較窄。
       const zoomed = modelFor("wide");
       const svg = pageSvg(doc, zoomed, description, ariaLabel);
       dialogView.replaceChildren(svg);
+      dialog.classList.remove("is-fit");
+      fit.setAttribute("aria-pressed", "false");
       if (typeof dialog.showModal === "function") dialog.showModal();
       else dialog.setAttribute("open", "");
       // 放大後比視窗大時從正中央看起：四周哪一邊都只差半個視窗，往哪個方向捲都一樣近。
-      dialogView.scrollLeft = (dialogView.scrollWidth - dialogView.clientWidth) / 2;
-      dialogView.scrollTop = (dialogView.scrollHeight - dialogView.clientHeight) / 2;
-      close.focus();
+      centre();
+      paintTools();
+      close.focus({ preventScroll: true });
     };
     const shut = () => {
       if (typeof dialog.close === "function") dialog.close();
@@ -695,12 +736,20 @@
     dialog.addEventListener("click", (event) => { if (event.target === dialog) shut(); });
     dialog.addEventListener("close", () => {
       dialogView.replaceChildren();
-      if (opener && opener.isConnected) opener.focus();
+      dialog.classList.remove("is-fit");
+      if (opener && opener.isConnected) opener.focus({ preventScroll: true });
+      if (pageScroll && View && typeof View.scrollTo === "function"
+        && (View.scrollX !== pageScroll.x || View.scrollY !== pageScroll.y)) {
+        View.scrollTo(pageScroll.x, pageScroll.y);
+      }
+      pageScroll = null;
     });
 
     symbols = link && model.labels.length ? symbolBar(doc, model, link) : null;
-    // 「圓盤／方盤」緊接在圖的正下方：換了畫法不必往上捲就看得到圖。
-    section.append(figure, ...(styleControl ? [zoomHint, styleControl] : []), caption,
+    // 「圓盤／方盤」緊接在圖的正下方：換了畫法不必往上捲就看得到圖。讀圖的那一句說明移到圖與切換之後：
+    // 結果首屏先看到圖。
+    const lead = section.querySelector(":scope > .section-note");
+    section.append(figure, ...(styleControl ? [styleControl] : []), ...(lead ? [lead] : []), caption,
       ...(symbols ? [symbols] : []), legend, actions, privacy, dialog);
     return section;
   }
@@ -710,8 +759,67 @@
     return sectionShell(doc, SECTION_TEXT.failed);
   }
 
+  /**
+   * 下載一張圖（本命盤、方盤、回歸盤共用）：SVG 直接序列化；PNG 以 Canvas 2D 畫同一份場景。
+   * 交給 lifecycle.deliverDownload，結果以 report(訊息, 語氣) 回報。toBlob 是非同步的：交出 PNG
+   * 前再問一次 isCurrent()，期間結果已清除或換掉就不交出。
+   */
+  function downloadImage(doc, lifecycle, model, format, files, isCurrent, report) {
+    if (format === "svg") {
+      const svg = renderSvg(doc, model, { variant: "download" });
+      lifecycle.deliverDownload(doc, new doc.defaultView.Blob([serializeSvg(svg)], { type: "image/svg+xml" }), files.svg);
+      report("已產生 SVG 檔案。", "info");
+      return;
+    }
+    const canvas = doc.createElement("canvas");
+    canvas.width = model.width * PNG_SCALE;
+    canvas.height = model.height * PNG_SCALE;
+    const context = typeof canvas.getContext === "function" ? canvas.getContext("2d") : null;
+    if (!context || typeof canvas.toBlob !== "function") {
+      report("下載失敗：這個瀏覽器無法產生 PNG。", "error");
+      return;
+    }
+    drawCanvas(context, model);
+    canvas.toBlob((blob) => {
+      if (!isCurrent()) return;
+      if (!blob) {
+        report("下載失敗：無法產生 PNG。", "error");
+        return;
+      }
+      pngImageOnly(doc, blob).then((image) => {
+        if (!isCurrent()) return;
+        lifecycle.deliverDownload(doc, image, files.png);
+        report("已產生 PNG 檔案。", "info");
+      });
+    }, "image/png");
+  }
+
+  /**
+   * 只留 PNG 的必要區塊（型別首字母大寫：IHDR、PLTE、IDAT、IEND）。各瀏覽器的編碼器會自己加附屬
+   * 區塊：Firefox 加一段帶識別碼的 deBG，Safari 加 sRGB 與 eXIf；下載的圖只該有圖本身。
+   * 讀不了位元組（沒有 arrayBuffer）或格式不對時原樣交出。
+   */
+  function pngImageOnly(doc, blob) {
+    if (typeof blob.arrayBuffer !== "function") return Promise.resolve(blob);
+    return blob.arrayBuffer().then((buffer) => {
+      const bytes = new Uint8Array(buffer);
+      const view = new DataView(buffer);
+      const kept = [bytes.subarray(0, 8)];
+      let offset = 8;
+      while (offset + 12 <= bytes.length) {
+        const length = view.getUint32(offset);
+        const end = offset + 12 + length;
+        if (end > bytes.length) return blob;
+        const first = bytes[offset + 4];
+        if (first >= 0x41 && first <= 0x5A) kept.push(bytes.subarray(offset, end));
+        offset = end;
+      }
+      return new doc.defaultView.Blob(kept, { type: "image/png" });
+    }, () => blob);
+  }
+
   return Object.freeze({
-    renderSvg, serializeSvg, drawCanvas, createSection, createFailureSection,
+    renderSvg, serializeSvg, drawCanvas, downloadImage, createSection, createFailureSection,
     DOWNLOAD_PALETTE, DOWNLOAD_PALETTE_TOKENS, FONTS, FONT_TOKENS, PNG_SCALE,
     buildModel,
   });

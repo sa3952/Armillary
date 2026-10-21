@@ -23,24 +23,26 @@ from typing import Final
 import swisseph as swe
 
 from ..domain_catalog import (
+    BODY_ID_BY_KEY,
     CHIRON_JPL_SBDB_REFERENCE,
     CHIRON_PHYSICAL_PARAMETERS_SOURCE_REF,
+    NODE_BODIES,
 )
 from ..ephemeris import (
     COVERAGE_STATES,
     FullEphemerisRequiredError,
     coverage_state,
+    guarded_calc,
     object_used_full_ephemeris,
-    require_full_ephemeris,
-    require_object_coverage,
     segments_read_by,
 )
 from .formatting import (
     negate_without_negative_zero,
     swiss_azimuth_to_standard,
 )
+from .computation_mode import heliocentric_apparent_calc_ut, uses_sun_centre_light_time
 from .frame_compatibility import NON_EARTH_OBSERVER_CENTER, method_frame_state
-from .source_reading import SOURCE_READING_LEVELS
+from .source_reading import ORIGINAL_LANGUAGE_READ, cited
 from .time_utils import earth_rotation_jd_ut
 from .trace import Trace
 
@@ -68,8 +70,6 @@ AZIMUTH_UNDEFINED_AT_POLE_REASON = "azimuth_undefined_at_geographic_pole"
 
 
 def azimuth_policy(location) -> str | None:
-    """Reason code when azimuth is undefined at this location, else None."""
-
     if abs(location.latitude) >= 90.0:
         return AZIMUTH_UNDEFINED_AT_POLE_REASON
     return None
@@ -149,8 +149,8 @@ def withhold_horizontal_coordinates(record: dict, reason_code: str) -> dict:
 # The descending nodes the chart derives on request, with their names: the
 # chart and every date_only sample derive them from this one table.
 SOUTH_NODE_DERIVATIONS = (
-    ("true_node", "true_south_node", "南交點(密切)"),
-    ("mean_node", "mean_south_node", "南交點(平均)"),
+    ("true_node", "true_south_node", "南交點（密切）"),
+    ("mean_node", "mean_south_node", "南交點（平均）"),
 )
 
 
@@ -248,12 +248,93 @@ def _motion_sign(speed: float) -> str:
     return "zero"
 
 
-def compute_body(body_id: int, key: str, zh_name: str, jd_ut: float, ctx, atmosphere,
-                  trace: Trace, physical: bool = True, moon_relative: bool = False) -> dict:
+def _horizontal(
+    jd_ut: float, body_id: int, ctx, atmosphere, ecliptic: tuple, used_full_ephemeris: bool
+) -> tuple[tuple, int, bool]:
+    """The horizontal position, its source retflag, and the updated full-ephemeris flag."""
+
+    ecl, retflag_ecl = ecliptic
     flags = ctx.base_flags
-    ecl, retflag_ecl = swe.calc_ut(jd_ut, body_id, flags)
+    horizontal_flags = ctx.horizontal_source_flags
+    horizontal_ecl, horizontal_retflag = (
+        (ecl, retflag_ecl)
+        if horizontal_flags == flags
+        else swe.calc_ut(jd_ut, body_id, horizontal_flags)
+    )
+    used_full_ephemeris = used_full_ephemeris and object_used_full_ephemeris(
+        horizontal_retflag, body=body_id, flags=horizontal_flags, jd_ut=jd_ut,
+    )
+    position = horizontal_position(jd_ut, ctx, atmosphere, horizontal_ecl)
+    return position, horizontal_retflag, used_full_ephemeris
+
+
+def _speed_semantics(ctx, key: str, physical: bool) -> tuple[str, str]:
+    """What the speed fields claim: derivative agreement, and the distance speed's meaning."""
+
+    speed_position_derivative_status = (
+        "known_internal_disagreement_for_sun_moon"
+        if ctx.mode.center == "topocentric" and key in {"sun", "moon"}
+        else "not_independently_established"
+        if ctx.mode.center == "topocentric"
+        # A specific statement, not "not_evaluated".  The Swiss analytic
+        # speed is not claimed to equal the derivative of the emitted position;
+        # locally the geocentric Moon differs by about 0.2 arcsec/day.
+        else "analytic_swiss_value_agreement_not_claimed"
+    )
+    speed_distance_semantics = SPEED_DISTANCE_SEMANTICS[
+        1
+        if ctx.mode.center == "geocentric"
+        and ctx.mode.position_mode == "apparent"
+        and physical
+        and key not in {"sun", "moon"}
+        else 0
+    ]
+    return speed_position_derivative_status, speed_distance_semantics
+
+
+def _phenomena(jd_ut: float, body_id: int, key: str, flags: int, physical: bool, phenomena_state: dict) -> tuple:
+    """Swiss pheno_ut's Earth-observer quantities, or null with the reason."""
+
+    phase_angle = illum_fraction = elongation = app_diameter = app_mag = None
+    app_mag_reason = None if physical else "not_applicable_non_physical_point"
+    phenomena_reason = None if physical else "not_applicable_non_physical_point"
+    if physical and not phenomena_state["applicable"]:
+        app_mag_reason = phenomena_reason = phenomena_state["reason_code"]
+    elif physical:
+        try:
+            attr = swe.pheno_ut(jd_ut, body_id, flags)
+            phase_angle, illum_fraction, elongation, app_diameter, app_mag = attr[0], attr[1], attr[2], attr[3], attr[4]
+            # 太陽對自己求「相位角/照明比例/距角」在幾何上是退化的(Sun-Body-Earth三角形兩頂點重合)，
+            # 無論計算中心為何都沒有意義，故一律轉為 null；但視直徑與視星等是獨立公式，太陽本身仍是有效值，保留。
+            if key == "sun":
+                phase_angle = illum_fraction = elongation = None
+            if (
+                key == "moon"
+                and phase_angle is not None
+                and phase_angle > MOON_MAGNITUDE_MODEL_MAX_PHASE_ANGLE_DEGREES
+            ):
+                app_mag = None
+                app_mag_reason = MOON_MAGNITUDE_BEYOND_MODEL_REASON
+        except swe.Error:
+            app_mag_reason = phenomena_reason = "swiss_phenomena_unavailable"
+    return (
+        phase_angle, illum_fraction, elongation, app_diameter, app_mag,
+        app_mag_reason, phenomena_reason,
+    )
+
+
+def compute_body(definition: dict, jd_ut: float, ctx, atmosphere,
+                  trace: Trace, physical: bool = True, moon_relative: bool = False) -> dict:
+    body_id, key, zh_name = definition["id"], definition["key"], definition["zh"]
+    flags = ctx.base_flags
+    position_calc = (
+        heliocentric_apparent_calc_ut
+        if physical and key != "sun" and uses_sun_centre_light_time(ctx)
+        else swe.calc_ut
+    )
+    ecl, retflag_ecl = position_calc(jd_ut, body_id, flags)
     equatorial_flags = ctx.equatorial_source_flags | swe.FLG_EQUATORIAL
-    equ, retflag_eq = swe.calc_ut(jd_ut, body_id, equatorial_flags)
+    equ, retflag_eq = position_calc(jd_ut, body_id, equatorial_flags)
 
     ecl_lon, ecl_lat, dist_au, speed_lon, speed_lat, speed_dist = ecl
     ra, dec, _dist2, speed_ra, speed_dec, _speed_dist2 = equ
@@ -310,63 +391,21 @@ def compute_body(body_id: int, key: str, zh_name: str, jd_ut: float, ctx, atmosp
         return result
 
     motion_sign = _motion_sign(speed_lon)
-    speed_position_derivative_status = (
-        "known_internal_disagreement_for_sun_moon"
-        if ctx.mode.center == "topocentric" and key in {"sun", "moon"}
-        else "not_independently_established"
-        if ctx.mode.center == "topocentric"
-        # A specific statement, not "not_evaluated".  The Swiss analytic
-        # speed is not claimed to equal the derivative of the emitted position;
-        # locally the geocentric Moon differs by about 0.2 arcsec/day.
-        else "analytic_swiss_value_agreement_not_claimed"
+    speed_position_derivative_status, speed_distance_semantics = _speed_semantics(
+        ctx, key, physical
     )
-    speed_distance_semantics = SPEED_DISTANCE_SEMANTICS[
-        1
-        if ctx.mode.center == "geocentric"
-        and ctx.mode.position_mode == "apparent"
-        and physical
-        and key not in {"sun", "moon"}
-        else 0
-    ]
 
     az = az_raw = true_alt = app_alt = None
     horizontal_retflag = None
     if ctx.horizon_meaningful:
-        horizontal_flags = ctx.horizontal_source_flags
-        horizontal_ecl, horizontal_retflag = (
-            (ecl, retflag_ecl)
-            if horizontal_flags == flags
-            else swe.calc_ut(jd_ut, body_id, horizontal_flags)
-        )
-        used_full_ephemeris = used_full_ephemeris and object_used_full_ephemeris(
-            horizontal_retflag, body=body_id, flags=horizontal_flags, jd_ut=jd_ut,
-        )
-        az, az_raw, true_alt, app_alt = horizontal_position(
-            jd_ut, ctx, atmosphere, horizontal_ecl
+        (az, az_raw, true_alt, app_alt), horizontal_retflag, used_full_ephemeris = (
+            _horizontal(jd_ut, body_id, ctx, atmosphere, (ecl, retflag_ecl), used_full_ephemeris)
         )
 
-    phase_angle = illum_fraction = elongation = app_diameter = app_mag = None
-    app_mag_reason = None if physical else "not_applicable_non_physical_point"
-    phenomena_reason = None if physical else "not_applicable_non_physical_point"
-    if physical and not phenomena_state["applicable"]:
-        app_mag_reason = phenomena_reason = phenomena_state["reason_code"]
-    elif physical:
-        try:
-            attr = swe.pheno_ut(jd_ut, body_id, flags)
-            phase_angle, illum_fraction, elongation, app_diameter, app_mag = attr[0], attr[1], attr[2], attr[3], attr[4]
-            # 太陽對自己求「相位角/照明比例/距角」在幾何上是退化的(Sun-Body-Earth三角形兩頂點重合)，
-            # 無論計算中心為何都沒有意義，故一律轉為 null；但視直徑與視星等是獨立公式，太陽本身仍是有效值，保留。
-            if key == "sun":
-                phase_angle = illum_fraction = elongation = None
-            if (
-                key == "moon"
-                and phase_angle is not None
-                and phase_angle > MOON_MAGNITUDE_MODEL_MAX_PHASE_ANGLE_DEGREES
-            ):
-                app_mag = None
-                app_mag_reason = MOON_MAGNITUDE_BEYOND_MODEL_REASON
-        except swe.Error:
-            app_mag_reason = phenomena_reason = "swiss_phenomena_unavailable"
+    (
+        phase_angle, illum_fraction, elongation, app_diameter, app_mag,
+        app_mag_reason, phenomena_reason,
+    ) = _phenomena(jd_ut, body_id, key, flags, physical, phenomena_state)
 
     trace.add(
         f"{zh_name} 位置計算",
@@ -458,13 +497,7 @@ def make_longitude_sampler(ctx, *, moon_ctx=None, moon_id: int = swe.MOON):
             if moon_flags is not None and body_id == moon_id
             else flags
         )
-        operation = f"未來事件搜尋（Swiss body {body_id} 黃經）"
-        require_object_coverage(
-            body=body_id, flags=effective_flags, jd_ut=jd_ut, operation=operation,
-        )
-        values, retflag = swe.calc_ut(jd_ut, body_id, effective_flags)
-        require_full_ephemeris(retflag, operation=operation, jd_ut=jd_ut)
-        return values[0]
+        return guarded_calc(jd_ut, body_id, effective_flags, f"未來事件搜尋（Swiss body {body_id} 黃經）")[0][0]
 
     return longitude_at
 
@@ -541,8 +574,8 @@ def compute_bodies(body_defs: list, jd_ut: float, ctx, atmosphere, trace: Trace,
     results = []
     for definition in body_defs:
         result = compute_body(
-            definition["id"], definition["key"], definition["zh"], jd_ut, ctx,
-            atmosphere, trace, physical=physical, moon_relative=moon_relative,
+            definition, jd_ut, ctx, atmosphere, trace,
+            physical=physical, moon_relative=moon_relative,
         )
         for metadata_key in _DEFINITION_METADATA_KEYS:
             if metadata_key in definition:
@@ -554,6 +587,23 @@ def compute_bodies(body_defs: list, jd_ut: float, ctx, atmosphere, trace: Trace,
             result["swiss_body_id"] = definition["id"]
         results.append(result)
     return results
+
+
+def node_definitions() -> list[dict]:
+    return [{"id": b["id"], "key": b["key"], "zh": b["zh"]} for b in NODE_BODIES]
+
+
+def append_south_nodes(points: list[dict], jd_ut: float, ctx, atmosphere, trace: Trace) -> None:
+    """Derive every SOUTH_NODE_DERIVATIONS node from its north node in `points`."""
+    by_key = {item["key"]: item for item in points}
+    points.extend(
+        derive_node_antipode(
+            by_key[north_key], key=south_key, name=south_name,
+            body_id=BODY_ID_BY_KEY[north_key], jd_ut=jd_ut, ctx=ctx,
+            atmosphere=atmosphere, trace=trace,
+        )
+        for north_key, south_key, south_name in SOUTH_NODE_DERIVATIONS
+    )
 
 
 def derive_node_antipode(
@@ -665,9 +715,7 @@ def derive_node_antipode(
     }
 
 
-# ---------------------------------------------------------------------------
 # 參與者集合
-#
 # 黃道相位、反照點與赤緯相位共用**同一個**參與者選擇器，三個消費者對「哪些星體
 # 可以參與」給出同一個答案，收據才能如實描述每個選項是否真的生效：
 #   classical_planet：七政，永遠參與。
@@ -677,13 +725,11 @@ def derive_node_antipode(
 #   outer_planet：三王星，只在 include_outer_planets 為真時參與。
 #   其餘（凱龍、Lilith／Priapus 等現代附加點）**永遠不自動加入**：現代點不因開啟而
 #   自動參與相位或古典方法（赤緯相位也不例外）。
-# ---------------------------------------------------------------------------
 
 LUNAR_NODE_KEYS = frozenset({
     "true_node", "mean_node", "true_south_node", "mean_south_node",
 })
 # 關係判定（黃道相位、赤緯平行）排除的「定義性」交點對，每對帶一個閉集理由碼：
-#
 # - nodal_axis_antipodal_by_definition：南交點是所選北交點的定義性對蹠點
 #   （λ_S = λ_N + 180°），兩者的「對沖」與赤緯「反平行」是定義而非發現（方法研究筆記）。
 # - node_models_of_same_nodal_axis：密切交點與平均交點是同一條交點軸的兩種算法，不是
@@ -775,17 +821,16 @@ def participant_policy_receipt(
 
 
 # The one definition of the Sun position the sect altitude reads.  Geocentric,
-# tropical of date with
-# nutation (what ECL2HOR expects), and the *apparent* place: light-time and
-# aberration applied, as the request's default position_mode.  "真高度"／"true
-# altitude" in the sect method and the methods page means the altitude without
-# atmospheric refraction (Swiss azalt's true vs apparent altitude), not
-# FLG_TRUEPOS: the named comparison boundary, the USNO sunrise definition
-# (geometric zenith distance 90°50′), is stated for the Sun's apparent place.
-# Not read from the request's position_mode, or sect would move with a display
-# switch: about 20″ of aberration flips day/night for about a second each
-# sunrise and sunset (2000-03-20 10:01:29 UTC at 25°N: apparent −4.9″, true
-# +15.7″).
+# tropical of date with nutation (what ECL2HOR expects), and the *apparent*
+# place: light-time and aberration applied, as the request's default
+# position_mode.  "真高度"／"true altitude" in the sect method and the methods
+# page means the altitude without atmospheric refraction (Swiss azalt's true vs
+# apparent altitude), not FLG_TRUEPOS: the named comparison boundary, the USNO
+# sunrise definition (geometric zenith distance 90°50′), is stated for the Sun's
+# apparent place.  Not read from the request's position_mode, or sect would move
+# with a display switch: about 20″ of aberration flips day/night for about a
+# second each sunrise and sunset (2000-03-20 10:01:29 UTC at 25°N: apparent
+# −4.9″, true +15.7″).
 SECT_SUN_FLAGS: Final = swe.FLG_SWIEPH | swe.FLG_SPEED
 # lots.SECT_SUN_POSITION names these flags in the sect receipt.
 
@@ -832,37 +877,19 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "apparent_magnitude and physical_parameters"
         ),
         "sources": [
-            {
-                "citation": (
-                    "Swiss Ephemeris 2.10.03 sweph.h pla_diam[] and swecl.c mag_elem[], "
-                    "used by swe_pheno"
-                ),
-                "says": (
-                    "pla_diam[]: Chiron 271370 m; mag_elem[]: Chiron H 6.5, G 0.15, "
-                    "\"from Bowell data base\""
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "the Swiss Ephemeris 2.10.03 source files",
-            },
-            {
-                "citation": (
-                    "JPL Small-Body Database, 2060 Chiron, physical parameters"
-                ),
-                "says": (
-                    f"diameter {CHIRON_JPL_SBDB_REFERENCE['diameter_km']:g} km "
-                    f"(Dunham 1998), H {CHIRON_JPL_SBDB_REFERENCE['absolute_magnitude_h']:g}"
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": (
-                    f"the database record, retrieved {CHIRON_JPL_SBDB_REFERENCE['retrieved']}"
-                ),
-            },
-            {
-                "citation": "JPL Horizons, 2060 Chiron orbit solution JPL#171",
-                "says": "the orbit solution the Swiss position is measured against",
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "the Horizons service, solution JPL#171",
-            },
+            cited(("Swiss Ephemeris 2.10.03 sweph.h pla_diam[] and swecl.c mag_elem[], "
+                   "used by swe_pheno"),
+                  ("pla_diam[]: Chiron 271370 m; mag_elem[]: Chiron H 6.5, G 0.15, "
+                   "\"from Bowell data base\""),
+                  ORIGINAL_LANGUAGE_READ, "the Swiss Ephemeris 2.10.03 source files"),
+            cited("JPL Small-Body Database, 2060 Chiron, physical parameters",
+                  (f"diameter {CHIRON_JPL_SBDB_REFERENCE['diameter_km']:g} km "
+                   f"(Dunham 1998), H {CHIRON_JPL_SBDB_REFERENCE['absolute_magnitude_h']:g}"),
+                  ORIGINAL_LANGUAGE_READ,
+                  f"the database record, retrieved {CHIRON_JPL_SBDB_REFERENCE['retrieved']}"),
+            cited("JPL Horizons, 2060 Chiron orbit solution JPL#171",
+                  "the orbit solution the Swiss position is measured against",
+                  ORIGINAL_LANGUAGE_READ, "the Horizons service, solution JPL#171"),
         ],
         "note": (
             "Apparent diameter and magnitude use the parameters built into Swiss "

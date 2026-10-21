@@ -39,7 +39,6 @@ import subprocess
 import sys
 import tarfile
 import tempfile
-from typing import Callable
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 
@@ -66,7 +65,6 @@ _scrubbed_git_environment = consumer.anonymous_git_environment
 
 # path -> (size, sha256, Git executable bit)
 Inventory = dict[str, tuple[int, str, bool]]
-Fetch = Callable[[str], bytes]
 
 
 class ReceiptRefusal(RuntimeError):
@@ -241,12 +239,10 @@ def produce_receipt(
     output_dir: Path,
     checkout_dir: Path | None = None,
     origin: str = PUBLIC_ORIGIN,
-    fetch: Fetch | None = None,
-    today: datetime | None = None,
 ) -> dict[str, str]:
-    """`origin` and `fetch` replace the transport only; recorded URLs stay canonical."""
+    """`origin` replaces the transport only; recorded URLs stay canonical."""
 
-    fetch = fetch or consumer._anonymous_fetch
+    fetch = consumer._anonymous_fetch
     if not REVISION_RE.fullmatch(revision):
         raise ReceiptRefusal("revision must be a full lowercase 40-hex commit")
     if not re.fullmatch(r"[0-9a-f]{64}", verified_tree_sha256):
@@ -292,7 +288,7 @@ def produce_receipt(
             checkout_dir.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(str(clone), str(checkout_dir))
 
-    observed_at = (today or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    observed_at = datetime.now(timezone.utc).astimezone(timezone.utc)
     evidence = {
         "schema_version": EVIDENCE_SCHEMA,
         "observed_at_utc": observed_at.isoformat(timespec="seconds"),

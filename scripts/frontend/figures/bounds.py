@@ -112,26 +112,26 @@ def _bands_table(rows: list[dict], bound: _fx.Bound) -> str:
                         for r, a, b in _ranges(row["segments"]))
         body.append(f'<tr data-fx-key="{row["key"]}"><th scope="row">{escape(row["name"])}<br>'
                     f'<small>{escape(row["source"])}</small></th>{cells}</tr>')
-    head = "".join(f'<th scope="col">第 {bound.scale(str(i))} 段</th>' for i in range(1, 6))
-    return ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-            f'<table class="ar-table fx-table"><thead><tr><th scope="col">界表</th>{head}</tr></thead>'
-            f'<tbody>{"".join(body)}</tbody></table></div></details>')
+    return _fx.data_table(("界表", *(f"第 {bound.scale(str(i))} 段" for i in range(1, 6))), body)
 
 
 def _bands_figure(fid: str, title: str, caption: str, rows: list[dict], bound: _fx.Bound, hero: bool = False) -> str:
     for row in rows:
         bound.label(row["name"])
         bound.label(row["source"])
-    markup = _fx.figure(
-        fid=fid, hero=hero, title=title, caption=caption,
-        wide=_bands("fx-wide", fid, rows, bound), narrow=_bands("fx-narrow", fid, rows, bound),
-        notes=[_fx.Note(row["key"], None, _sentence(row, bound)) for row in rows],
-        idle=IDLE, table=_bands_table(rows, bound),
+    return _fx.figure(
+        fid=fid,
+        hero=hero,
+        title=title,
+        caption=caption,
+        art=_fx.FigureArt.drawn(
+            _bands, fid, rows, bound,
+            notes=[_fx.Note(row["key"], None, _sentence(row, bound)) for row in rows],
+            idle=IDLE,
+        ),
+        table=_bands_table(rows, bound),
+        bound=bound,
     )
-    found = _fx.problems(markup, bound)
-    if found:
-        raise RuntimeError("figure check: " + "; ".join(found))
-    return markup
 
 
 _ROW = re.compile(r'<g class="fx-row" data-fx-key="(?P<key>[a-z-]+)"(?P<body>.*?)</g>', re.S)
@@ -262,23 +262,18 @@ def _agreement_figure(agree: dict[str, list[bool]], counts: dict[str, int]) -> s
         body.append(f'<tr><th scope="row">{SIGNS[s]}</th>{cells}</tr>')
     totals = "".join(f'<td class="n">{bound.num(str(counts[key]))}</td>' for key, _ in COMPARISONS)
     body.append(f'<tr><th scope="row">合計</th>{totals}</tr>')
-    table = ('<details class="fx-data"><summary>圖中的數字（表格）：每個星座裡一致的度數</summary><div class="ar-scroll">'
-             f'<table class="ar-table fx-table"><thead><tr><th scope="col">星座</th>{head}</tr></thead>'
-             f'<tbody>{"".join(body)}</tbody></table></div></details>')
+    table = _fx.data_table(f'<th scope="col">星座</th>{head}', body, summary="圖中的數字（表格）：每個星座裡一致的度數")
     caption = (f"<b>{bound.label('圖 2')}</b>黃道上 {bound.num('360')} 個一度區間，從牡羊座 {bound.scale('0°')} 排到雙魚座 "
                f"{bound.scale('30°')}，每一格是一個星座。塗黑的度數，表示那一列比較的幾套表在這一度給同一個界主；"
                "留白的度數，就是換一套表、界主跟著換的地方。")
-    markup = _fx.figure(
-        fid="fig-agree", title="四套界表在黃道上哪些度數給同一個界主",
+    return _fx.figure(
+        fid="fig-agree",
+        title="四套界表在黃道上哪些度數給同一個界主",
         caption=caption,
-        wide=_agreement("fx-wide", "fig-agree", agree, counts, SIGNS, bound),
-        narrow=_agreement("fx-narrow", "fig-agree", agree, counts, SIGNS, bound),
-        notes=[], idle="", table=table,
+        art=_fx.FigureArt.drawn(_agreement, "fig-agree", agree, counts, SIGNS, bound),
+        table=table,
+        bound=bound,
     )
-    found = _fx.problems(markup, bound)
-    if found:
-        raise RuntimeError("figure check: " + "; ".join(found))
-    return markup
 
 
 def build() -> tuple[dict[str, str], list[str]]:

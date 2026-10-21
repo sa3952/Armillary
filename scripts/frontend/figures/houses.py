@@ -14,21 +14,16 @@ Swiss Ephemeris here.
 """
 from __future__ import annotations
 
-import json
 import math
 import re
-import shutil
-import subprocess
 
 from . import _fx, house_sphere
-from ._common import ROOT, SIGNS, TAIPEI, backend_on_path, spoken_longitude as _spoken, swiss
+from ._common import PLANETS, SIGNS, TAIPEI, product_client, spoken_longitude as _spoken, swiss
 
 
 FRAGMENT = "blog-whole-sign-vs-placidus"
 SYSTEMS = "WPRB"
 ORDER = ("sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn")
-NAMES = {"sun": "太陽", "moon": "月亮", "mercury": "水星", "venus": "金星", "mars": "火星", "jupiter": "木星",
-         "saturn": "土星"}
 COUNT = "零一二三四五六七"
 # The polar status table (表 4) as the article states it.
 POLAR_STATES = {"W": "available_polar_geometry", "P": "placidus_no_semiarc", "R": "unstable", "B": "unstable"}
@@ -56,38 +51,27 @@ def _request(system: str, *, polar: bool = False, houses: bool = True) -> dict:
 
 
 def _data() -> dict:
-    with backend_on_path():
-        from fastapi.testclient import TestClient
-        from app.main import app
-
-        client = TestClient(app)
-
-        def post(payload: dict, expected: int = 200) -> dict:
-            response = client.post("/api/chart", json=payload)
-            if response.status_code != expected:
-                raise RuntimeError(f"chart request answered {response.status_code}: {response.text[:300]}")
-            return response.json()
-
+    with product_client() as post:
         d: dict = {}
         for system in SYSTEMS:
-            body = post(_request(system))
+            body = post("/api/chart", _request(system))
             division = body["derived_methods"]["house_division"]
             d[system] = {
                 "cusps": division["cusps"],
                 "placements": [(p["key"], p["house"]) for p in body["derived_methods"]["planet_in_house"]["placements"]],
                 "angles": body["astronomical_data"]["angles"]["sign_positions"],
             }
-        body = post(_request("P", houses=False))
+        body = post("/api/chart", _request("P", houses=False))
         d["bodies"] = {b["key"]: [b["sign_position"][0], b["sign_position"][1], float(b["sign_position"][2])]
                        for b in body["astronomical_data"]["bodies"]}
         polar = {}
         for system in SYSTEMS:
             if system == "P":
-                refusal = post(_request(system, polar=True), expected=422)["detail"]
+                refusal = post("/api/chart", _request(system, polar=True), expected=422)["detail"]
                 polar[system] = refusal["reason_code"]
                 d["polar_reason"] = refusal["geometric_reason"]
             else:
-                answer = post(_request(system, polar=True))
+                answer = post("/api/chart", _request(system, polar=True))
                 polar[system] = answer["derived_methods"]["house_division"]["availability"]["state"]
                 d["polar_obliquity"] = answer["astronomical_data"]["time"]["true_obliquity"]
         if polar != POLAR_STATES:
@@ -149,7 +133,7 @@ _TEXT = re.compile(r'<text x="([-0-9.]+)" y="([-0-9.]+)" class="([^"]+)"(?: text
 
 
 def _inside_plate(markup: str, layout: str, width: float, height: float) -> None:
-    """Every label of a drawing lies inside its plate (the old wheel cut 「上升」 off at 375 px)."""
+    """Every label of a drawing lies inside its plate (a label past the edge is cut off at 375 px)."""
     sizes = _fx.text_sizes()
     for x, y, cls, anchor, value in _TEXT.findall(markup):
         size = sizes[(layout, "fx-small" if "fx-small" in cls.split() else "fx-t")]
@@ -283,7 +267,7 @@ def _wheel(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
         w = houses["W"][key]
         position = bound.num(_position(d, key))
         top = ly + i * row
-        out.append(f'<g class="fx-row" data-fx-key="{key}" tabindex="0" aria-label="{NAMES[key]}，{position}">')
+        out.append(f'<g class="fx-row" data-fx-key="{key}" tabindex="0" aria-label="{PLANETS[key]}，{position}">')
         out.append(_fx.rect(lx - 6, top - 2, W - lx - 8, row - 4, "fx-hit"))
         mx, my = marks[key]
         out.append(_fx.circle(mx, my, g["mark"] + 6, "fx-hit"))
@@ -306,7 +290,7 @@ def _wheel(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
             body.append(_fx.variant_group(variant, VARIANTS[0][0], drawn))
         out += body
         name_x = lx + 2 * g["mark"] + (14 if wide else 8)
-        out.append(_fx.text(name_x, ry + (6 if wide else 5), NAMES[key], "fx-t fx-name"))
+        out.append(_fx.text(name_x, ry + (6 if wide else 5), PLANETS[key], "fx-t fx-name"))
         out.append(_fx.text(name_x + (44 if wide else 32), ry + (6 if wide else 5), position, small + " fx-num"))
         out.append("</g>")
     # how to read the lines, next to the list
@@ -332,7 +316,7 @@ def _wheel(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
 
 
 def _wheel_sentence(d: dict, variant: str, key: str, bound: _fx.Bound) -> str:
-    name = NAMES[key]
+    name = PLANETS[key]
     lon = d["bodies"][key][2]
     w = dict(d["W"]["placements"])[key]
     text = f"{name}：{bound.num(_position(d, key))}。整宮制：{SIGNS[int(lon // 30)]}座整座是第 {bound.num(str(w))} 宮。"
@@ -349,32 +333,35 @@ def _wheel_sentence(d: dict, variant: str, key: str, bound: _fx.Bound) -> str:
     return text
 
 
-def _wheel_figure(d: dict) -> tuple[str, _fx.Bound]:
+def _wheel_figure(d: dict) -> str:
     bound = _fx.Bound()
     asc = float(d["W"]["angles"]["asc"][2])
     mc = float(d["W"]["angles"]["mc"][2])
     whole, placidus = dict(d["W"]["placements"]), dict(d["P"]["placements"])
     moved = [key for key in ORDER if whole[key] != placidus[key]]
-    differences = "；".join(f"{NAMES[key]}在整宮制落第 {whole[key]} 宮、在 Placidus 落第 {placidus[key]} 宮"
+    differences = "；".join(f"{PLANETS[key]}在整宮制落第 {whole[key]} 宮、在 Placidus 落第 {placidus[key]} 宮"
                            for key in moved)
     moment = _request("W")["datetime"]
     when = bound.num(f"{moment['year']} 年 {moment['month']} 月 {moment['day']} 日上午 {moment['hour']} 點")
     notes = [_fx.Note(key, variant, _wheel_sentence(d, variant, key, bound)) for variant, _ in VARIANTS for key in ORDER]
-    html = _fx.figure(
-        fid="fig-wheel", hero=True,
+    return _fx.figure(
+        fid="fig-wheel",
+        hero=True,
         title=(f"同一張合成星盤的分宮：外圈是十二星座，也就是整宮制的十二宮；虛線是 Placidus 的宮頭。"
                f"上升點在{_spoken(asc)}，中天在{_spoken(mc)}。{differences}；"
                f"其餘{COUNT[len(ORDER) - len(moved)]}顆兩制相同。按鈕可以換成只看一種宮位制。"),
         caption=(f"<b>{bound.label('圖 1')}</b>同一張合成星盤（{when}，臺北），兩種分宮疊在一起。外圈是十二星座；"
                  f"實線是整宮制的宮界，也就是星座交界，緊貼在內的數字是整宮制的宮號；虛線是 Placidus 的宮頭，"
-                 f"中間一圈數字是 Placidus 的宮號。實心的{'、'.join(NAMES[key] for key in moved)}在兩種宮位制裡"
+                 f"中間一圈數字是 Placidus 的宮號。實心的{'、'.join(PLANETS[key] for key in moved)}在兩種宮位制裡"
                  f"落在不同的宮。按鈕可以只看整宮制，或換成 Placidus、Regiomontanus、Alcabitius；"
                  f"各宮頭的度數見{bound.label('表 3')}。"),
-        wide=_wheel("fx-wide", "fig-wheel", d, bound),
-        narrow=_wheel("fx-narrow", "fig-wheel", d, bound),
-        notes=notes, idle=IDLE, variants=VARIANTS, switch_label=SWITCH_LABEL,
+        art=_fx.FigureArt.drawn(_wheel, "fig-wheel", d, bound, notes=notes, idle=IDLE),
+        controls=_fx.FigureControls(
+            variants=VARIANTS,
+            switch_label=SWITCH_LABEL,
+        ),
+        bound=bound,
     )
-    return html, bound
 
 
 # --- figure 2: the sphere -----------------------------------------------------
@@ -400,20 +387,6 @@ SPHERE_ROLES = (
     ("hs-tick", "fx-axis"), ("hs-pt-hor", "fx-sph-pt-open"), ("hs-pt-equ", "fx-sph-pt-open"),
     ("hs-pt-pv", "fx-sph-pt-open"), ("hs-pt-dim", "fx-sph-pt-dim"), ("hs-pt", "fx-sph-pt"),
 )
-
-
-def _sphere_script() -> dict:
-    node = shutil.which("node")
-    if node is None:
-        raise RuntimeError("node is required to draw the house-system sphere")
-    scripts = ROOT / "scripts" / "frontend" / "scripts"
-    completed = subprocess.run(
-        [node, "-e", _SPHERE_SCRIPT, str(scripts / "house-sphere-core.js"), str(scripts / "house-sphere.js")],
-        cwd=ROOT, capture_output=True, text=True, check=False, timeout=120,
-    )
-    if completed.returncode != 0:
-        raise RuntimeError("the house-sphere script failed: " + completed.stderr.strip())
-    return json.loads(completed.stdout)
 
 
 def _role(classes: str) -> str:
@@ -551,8 +524,8 @@ def _sphere(layout: str, fid: str, script: dict, bound: _fx.Bound) -> str:
     return markup
 
 
-def _sphere_figure() -> tuple[str, _fx.Bound]:
-    script = _sphere_script()
+def _sphere_figure() -> str:
+    script = house_sphere.sphere_node(_SPHERE_SCRIPT)
     start = script["start"]
     with swiss() as swe:
         for item in script["panels"]:
@@ -566,7 +539,7 @@ def _sphere_figure() -> tuple[str, _fx.Bound]:
     minutes = round(start["armc"] * 4) % 1440
     sky = bound.num(f"緯度 {start['lat']}°、地方恆星時 {minutes // 60} 時 {minutes % 60:02d} 分")
     asc, mc = (bound.num(_written(lon)) for lon in angles)
-    html = _fx.figure(
+    return _fx.figure(
         fid="fig-sphere",
         title="同一片天空在天球上的兩種分宮：一顆畫整宮制，一顆畫 Placidus。教學示意，不是任何人的命盤。",
         caption=(f"<b>{bound.label('圖 2')}</b>同一片天空在天球上的兩種分宮（教學示意：{sky}，"
@@ -575,11 +548,9 @@ def _sphere_figure() -> tuple[str, _fx.Bound]:
                  "整宮制不切天空，只數星座，所以宮界就是星座交界；Placidus 讓每個宮頭各量自己的半日弧，"
                  "所以宮界在球上是彎的。可以轉動、換緯度、換七種宮位制的天球，在"
                  '〈<a href="/zh-TW/blog/house-systems-explained">宮位制有哪些</a>〉。'),
-        wide=_sphere("fx-wide", "fig-sphere", script, bound),
-        narrow=_sphere("fx-narrow", "fig-sphere", script, bound),
-        notes=[], idle="",
+        art=_fx.FigureArt.drawn(_sphere, "fig-sphere", script, bound),
+        bound=bound,
     )
-    return html, bound
 
 
 # --- figure 3: the polar band -------------------------------------------------
@@ -638,22 +609,20 @@ def _polar(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
     return markup
 
 
-def _polar_figure(d: dict) -> tuple[str, _fx.Bound]:
+def _polar_figure(d: dict) -> str:
     bound = _fx.Bound()
     limit = bound.num(f"{90.0 - d['polar_obliquity']:.2f}")
     tromso = bound.num(f"{_request('W', polar=True)['location']['latitude']:.2f}")
-    html = _fx.figure(
+    return _fx.figure(
         fid="fig-polar",
         title=(f"地球的緯度示意。北緯與南緯 {limit} 度以上的極區帶畫成斜線，本站在帶內整帶拒絕 Placidus；"
                f"臺北遠在帶外，四種宮位制都可以算；挪威特羅姆瑟在北緯 {tromso} 度，位於極區帶內。"),
         caption=(f"<b>{bound.label('圖 3')}</b>極區帶的邊界是 {bound.scale('90')} 度減去命盤時刻的真黃赤交角，目前約 {limit} 度，"
                  f'隨年代緩慢變動<a class="ar-cite" href="#ref-1">[{bound.label("1")}]</a>。臺北遠在帶外；'
                  f"挪威的特羅姆瑟（北緯 {tromso} 度）在帶內。"),
-        wide=_polar("fx-wide", "fig-polar", d, bound),
-        narrow=_polar("fx-narrow", "fig-polar", d, bound),
-        notes=[], idle="",
+        art=_fx.FigureArt.drawn(_polar, "fig-polar", d, bound),
+        bound=bound,
     )
-    return html, bound
 
 
 # --- tables -------------------------------------------------------------------
@@ -674,7 +643,7 @@ def _places(d: dict) -> str:
         values = [placements[hs][key] for hs in SYSTEMS]
         highlight = ' class="hl"' if len(set(values)) > 1 else ""
         cells = "".join(f'<td class="n{" diff" if v != values[0] else ""}">{v}</td>' for v in values)
-        rows.append(f'          <tr{highlight}><td>{NAMES[key]}</td><td class="n">{SIGNS[sign]} '
+        rows.append(f'          <tr{highlight}><td>{PLANETS[key]}</td><td class="n">{SIGNS[sign]} '
                     f'{dms[:dms.index("′")+1]}</td>{cells}</tr>')
     return "\n".join(rows)
 
@@ -682,15 +651,8 @@ def _places(d: dict) -> str:
 def _figures(d: dict) -> dict[str, str]:
     """The page's sprite and its three figures, each checked by `_fx.problems`."""
     _check_drawn_houses(d)
-    blocks = {}
-    for name, (markup, bound) in (("wheel", _wheel_figure(d)), ("sphere", _sphere_figure()),
-                                  ("polar-band", _polar_figure(d))):
-        found = _fx.problems(markup, bound)
-        if found:
-            raise RuntimeError("figure check: " + "; ".join(found))
-        blocks[name] = markup
-    blocks["fx-defs"] = _fx.defs(ORDER)
-    return blocks
+    return {"wheel": _wheel_figure(d), "sphere": _sphere_figure(), "polar-band": _polar_figure(d),
+            "fx-defs": _fx.defs(ORDER)}
 
 
 def build() -> tuple[dict[str, str], list[str]]:

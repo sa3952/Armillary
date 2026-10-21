@@ -1,17 +1,13 @@
 """Identify the IANA time zone database the running process is using.
 
-Every chart converts a local birth time to UTC through an IANA zone, so the tz
-database is an *input* to the calculation in exactly the way the ephemeris files
-are, and the Calculation Dossier records it beside the Swiss versions.  IANA
-releases often *correct historical offsets*, so the same request on the same
-code can convert to a different UTC, and so a different chart.  The version is
-not pinned here (macOS supplies it from the operating system, the container
-from the image's tzdata); recording it makes a change visible when someone asks
-why a chart moved.
+The tz database is a calculation *input* like the ephemeris files, so the
+Dossier records it beside the Swiss versions: IANA releases often *correct
+historical offsets*, so the same request can convert to a different UTC.  The
+version is not pinned (macOS supplies it, the container its image's tzdata);
+recording it explains why a chart moved.
 
-Resolution follows zoneinfo's own lookup order, because the
-receipt must name the database that actually converted the time, not whichever
-one happens to be installed:
+Resolution follows zoneinfo's own lookup order, so the receipt names the
+database that actually converted the time, not whichever one is installed:
 
 1. the first ``zoneinfo.TZPATH`` directory that holds the probe zone file —
    zoneinfo reads that directory before it ever consults the tzdata package; the
@@ -43,7 +39,6 @@ _IANA_RELEASE: Final = re.compile(r"^\d{4}[a-z]$")
 # tzdata.zi opens with "# version 2026c", optionally with a build variant suffix
 # ("-rearguard" is what macOS ships).
 _TZDATA_ZI_VERSION_LINE: Final = re.compile(r"^# version (\d{4}[a-z])(?:-([a-z]+))?$")
-# zoneinfo resolves a key through TZPATH first and the tzdata package second.
 # This key decides which TZPATH directory zoneinfo would actually read.
 _PROBE_KEY: Final = "UTC"
 RESOLUTION_ORDER: Final = ("zoneinfo.TZPATH", "tzdata_package")
@@ -154,17 +149,15 @@ def resolve_tz_database_version() -> dict:
         else:
             receipt["reason_code"] = REASON_CODES[1]
         return receipt
-    # The chart is still computed — the conversion happened, we just cannot name
-    # which database performed it.  That is a weaker receipt, not a failed
-    # calculation, so it is reported rather than raised.
+    # The conversion happened; we just cannot name the database.  A weaker
+    # receipt, not a failed calculation, so reported rather than raised.
     receipt["reason_code"] = REASON_CODES[0]
     return receipt
 
 
-# Resolved once at import: the database does not change inside a process, and a
-# per-request stat of four directories would buy nothing.  A system update that
-# replaces it takes effect on the next restart, which is also when the recorded
-# version changes — the two stay consistent with each other.
+# Resolved once at import: the database does not change inside a process.  A
+# system update takes effect on the next restart, which is also when the
+# recorded version changes, so the two stay consistent.
 TZ_DATABASE: Final = resolve_tz_database_version()
 
 

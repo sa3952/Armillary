@@ -230,5 +230,5 @@
     return out;
   }
 
-  return Object.freeze({ build, legendLines, STATUS, OMIT_REASON, STYLES, DEFAULT_GEOMETRY, round3, mod360, isRecord });
+  return Object.freeze({ build, legendLines, STATUS, OMIT_REASON, STYLES, DEFAULT_GEOMETRY, round3, mod360, isRecord, polar });
 });

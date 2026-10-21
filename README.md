@@ -20,6 +20,7 @@
 </p>
 
 <p align="center"><sub>AGPL-3.0 · 繁體中文 · Swiss Ephemeris · 免註冊 · 沒有帳號與星盤資料庫 · Public Alpha</sub></p>
+<p align="center"><sub>訂閱文章更新 · Article feed：<a href="https://projectarmillary.com/feed.xml">feed.xml（Atom）</a></sub></p>
 
 ## 簡介 · Introduction
 
@@ -39,7 +40,7 @@
 
 **Cost, licence, language.** Free for now, with no signup. The source is under AGPL-3.0. The interface is Traditional Chinese only; an English version is planned.
 
-**界線。** 可計算 1900–2399 年。不做合盤、行運或推運；太陽回歸盤目前只在出生地起盤；恆星黃道沒有 Lahiri。
+**界線。** 可計算 1900–2399 年。不做合盤、行運或推運；太陽回歸盤預設在出生地起盤，也可以改用另一個地點；恆星黃道沒有 Lahiri。
 
 **Limits.** Dates from 1900 to 2399. No synastry, transits or progressions; the solar return is cast for the birth place only; no Lahiri ayanamsa for the sidereal zodiac.
 
@@ -61,7 +62,7 @@
 |---|---|
 | 天體位置以黃道、赤道、地平三套座標並列 | 不解盤：不寫性格、運勢，也不把原典的分類綜合成對個人的判斷（原典說吉、凶，照原文附出處列出） |
 | 宮位、軸點、相位、本質尊貴、日夜盤、阿拉伯點等古典方法；規則具名，出處逐條列在〈方法〉頁 | 不預測：年度小限、法達、黃道釋放與十年期只列哪一段時間由哪顆行星或哪個星座輪值，不替你解盤；行運、推運、合盤目前一項都沒有 |
-| 選定一年，排出那一年的太陽回歸盤（太陽回到出生時黃經的那一刻，在出生地起盤，需要確切的出生時間），並列出回歸盤各星落在本命盤哪一宮 | 回歸盤只列位置與宮位，不解讀那一年；目前只在出生地起盤 |
+| 選定一年，排出那一年的太陽回歸盤（太陽回到出生時黃經的那一刻，預設在出生地起盤，也可以改用另一個地點，需要確切的出生時間），並列出回歸盤各星落在本命盤哪一宮 | 回歸盤只列位置與宮位，不解讀那一年 |
 | 出生時刻不確定時對整個小時取樣，標出哪些判定在取樣之間翻面 | 不替你挑一張預設的界表，也不把不同類別的尊貴折成一個分數 |
 | 每次計算都能取得逐步計算軌跡、版本號與計算收據，可下載離線核對 | 不保管出生資料：沒有帳號，也沒有星盤歷史資料庫 |
 

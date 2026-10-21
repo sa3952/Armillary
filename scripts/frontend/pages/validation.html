@@ -1,7 +1,7 @@
 <div class="wrap page-body validation-page">
   <section class="validation-hero">
-    <h1>渾儀怎麼驗證星盤計算：與 JPL 星曆比對的範圍與誤差</h1>
-    <p class="kicker">驗證不是口號。<br>範圍才是答案。</p>
+    <p class="eyebrow">驗證</p>
+    <h1>渾儀怎麼驗證<wbr>星盤計算：<wbr>與 JPL 星曆比對的<wbr>範圍與誤差<span class="h1-sub"><span class="keep">驗證不是口號。</span><span class="keep">範圍才是答案。</span></span></h1>
     <p class="lede">渾儀的主要位置結果曾與另一條以JPL DE442、Astropy與ERFA組成的管線逐小時比較，另有一組常設測試拿 JPL Horizons、NASA 日食典與美國海軍天文臺的數值核對。底下直接列結論、方法、每一組比對的範圍與差距，以及沒有涵蓋的地方。</p>
     <div class="validation-metrics" role="group" aria-label="歷史驗證批次摘要">
       <div><b>2,244,088</b><span>天體—小時比對列</span><small>1990–2026，七個天體，每列含多個欄位</small></div>
@@ -148,7 +148,7 @@
     <div>
       <h2>你可以怎麼自己核對</h2>
       <p>不必相信這一頁的數字。每一張盤的結果頁最下方都有「技術細節與驗算資料」，寫著這次計算用的世界時、儒略日、ΔT、時區資料庫版本、Swiss Ephemeris 版本與計算政策。拿這些數值，你可以做三件事：</p>
-      <ol class="validation-steps">
+      <ol class="validation-steps howto">
         <li><b>對 JPL Horizons 查行星位置。</b>用收據上的世界時，在 Horizons 查同一時刻的地心視黃經，和結果頁的位置相減。差多少，可以對照上面的表 1：在 2000 年附近，應該只差零點幾角秒。</li>
         <li><b>請別人用同一份卷宗重算。</b>匯出時選「運算結果＋驗算資料」，把卷宗交給另一個人，用同一版 Swiss Ephemeris 與收據上的旗標重算行星與宮位。步驟寫在〈<a href="/zh-TW/blog/verify-chart-calculation">星盤怎麼驗算？</a>〉。卷宗含有你的出生資料，交出去之前請先想清楚。</li>
         <li><b>看瀏覽器送出了什麼。</b>計算在本站的伺服器上進行；瀏覽器送出什麼、送到哪裡，可以照〈<a href="/zh-TW/security/verify">自己檢查瀏覽器送出什麼</a>〉用開發者工具親手看。</li>

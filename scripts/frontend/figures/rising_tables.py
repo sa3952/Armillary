@@ -30,7 +30,7 @@ from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from . import _fx, _noaa
-from ._common import SIGNS, TAIPEI, backend_on_path, calc_ut, product_charts, swiss
+from ._common import SIGNS, TAIPEI, calc_ut, product_charts, product_client, swiss
 
 
 FRAGMENT = "blog-rising-sign-tables"
@@ -72,14 +72,10 @@ SUNRISE_DAY = date(YEAR, 3, 21)
 
 
 def _check_catalogue() -> None:
-    with backend_on_path():
-        from fastapi.testclient import TestClient
-        from app.main import app
-
-        client = TestClient(app)
+    with product_client() as post:
         for name, (record, lat, lon, zone) in PLACES.items():
-            response = client.post("/api/places/search", json={"query": SEARCH[name], "limit": 10})
-            rows = [row for row in response.json()["results"] if row.get("source_record_id") == record]
+            found = post("/api/places/search", {"query": SEARCH[name], "limit": 10})
+            rows = [row for row in found["results"] if row.get("source_record_id") == record]
             if not rows or (rows[0]["latitude"], rows[0]["longitude"], rows[0]["timezone"]) != (lat, lon, zone):
                 raise RuntimeError(f"the catalogue no longer has {name} as {record} {lat} {lon} {zone}")
 
@@ -284,20 +280,19 @@ def _share_figure(d: dict) -> str:
     bars = _bars(d)
     rows = "".join(f'<tr><th scope="row">{table}，{where}</th><td class="n">{bound.num(_pct(share))}</td></tr>'
                    for table, where, _, share in bars)
-    table = ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-             '<table class="ar-table fx-table"><thead><tr><th scope="col">查詢表與用在哪裡</th>'
-             f'<th scope="col" class="n">查錯的時刻佔比</th></tr></thead><tbody>{rows}</tbody></table></div></details>')
+    table = _fx.data_table('<th scope="col">查詢表與用在哪裡</th><th scope="col" class="n">查錯的時刻佔比</th>', rows)
     markup = _fx.figure(
-        fid="fig-share", hero=True,
+        fid="fig-share",
+        hero=True,
         title="兩種模型查詢表與精算給出不同上升星座的時刻佔比",
         caption=(f"<b>{bound.label('圖 1')}</b>兩種模型查詢表與精算給出不同上升星座的時刻佔比。第一列是只看太陽星座與出生時段的表，"
                  "已經把時段的切點挑到對臺北最有利、並給它太陽的精確星座；其餘四列是一張照臺北精確算出的表，"
                  "拿到別的地方或夏令時間的年份去用。兩種表都是本文自己定義的模型，不是任何特定網站或書上的表。"),
-        wide=_share_drawing("fx-wide", "fig-share", bars, bound),
-        narrow=_share_drawing("fx-narrow", "fig-share", bars, bound),
-        notes=[], idle="", table=table,
+        art=_fx.FigureArt.drawn(_share_drawing, "fig-share", bars, bound),
+        table=table,
+        bound=bound,
     )
-    return _checked(markup, bound)
+    return markup
 
 
 def _lat_text(lat: float) -> str:
@@ -370,9 +365,8 @@ def _latitude_figure(d: dict) -> str:
         # 每一列都有緯度、不一定有城市：緯度是列標頭，城市是一般的格（沒有城市的列，列標頭不會是空的）。
         rows.append(f'<tr{key}><th scope="row" class="n">{bound.num(_lat_text(lat))}</th><td>{name or ""}</td>'
                     f'<td class="n">{bound.num(_pct(d["latitude"][lat]))}</td></tr>')
-    table = ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-             '<table class="ar-table fx-table"><thead><tr><th scope="col" class="n">緯度</th><th scope="col">城市</th>'
-             f'<th scope="col" class="n">查錯的時刻佔比</th></tr></thead><tbody>{"".join(rows)}</tbody></table></div></details>')
+    table = _fx.data_table('<th scope="col" class="n">緯度</th><th scope="col">城市</th>'
+                           '<th scope="col" class="n">查錯的時刻佔比</th>', rows)
     notes = []
     for name in FIG2_MARKS:
         lat = PLACES[name][1]
@@ -386,12 +380,15 @@ def _latitude_figure(d: dict) -> str:
                  "用在其他緯度時，一個恆星日裡查錯的時刻佔比"
                  f"（恆星時每 {bound.num(f'{ARMC_STEP:g}')} 度取樣一次，黃赤交角取 {bound.num(str(YEAR))} 年的平均）。"
                  f"只有緯度不同；經度與時鐘的差別另見{bound.label('表 1')}。"),
-        wide=_latitude_drawing("fx-wide", "fig-latitude", d, bound),
-        narrow=_latitude_drawing("fx-narrow", "fig-latitude", d, bound),
-        notes=notes, idle="用 Tab 鍵移到一個城市上，或用滑鼠指著它，這裡會寫出它的緯度與查錯的時刻佔比。",
+        art=_fx.FigureArt.drawn(
+            _latitude_drawing, "fig-latitude", d, bound,
+            notes=notes,
+            idle="用 Tab 鍵移到一個城市上，或用滑鼠指著它，這裡會寫出它的緯度與查錯的時刻佔比。",
+        ),
         table=table,
+        bound=bound,
     )
-    return _checked(markup, bound)
+    return markup
 
 
 RISING_VARIANTS = (("actual", f"實際：{YEAR} 年臺北"), ("model", "模型：每個星座兩小時"))
@@ -468,10 +465,8 @@ def _rising_figure(d: dict) -> str:
         bound.label(label)
     rows = "".join(f'<tr><th scope="row">{SIGNS[s]}</th><td class="n">{bound.num(str(BLOCK_MINUTES))}</td>'
                    f'<td class="n">{bound.num(f"{m:.0f}")}</td></tr>' for s, m in enumerate(d["rising"]))
-    table = ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-             '<table class="ar-table fx-table"><thead><tr><th scope="col">星座</th>'
-             f'<th scope="col" class="n">模型（分鐘）</th><th scope="col" class="n">{bound.num(str(YEAR))} 年臺北（分鐘）</th>'
-             f'</tr></thead><tbody>{rows}</tbody></table></div></details>')
+    table = _fx.data_table('<th scope="col">星座</th><th scope="col" class="n">模型（分鐘）</th>'
+                           f'<th scope="col" class="n">{bound.num(str(YEAR))} 年臺北（分鐘）</th>', rows)
     markup = _fx.figure(
         fid="fig-rising",
         title="每個星座升起要多少分鐘：每兩小時一個星座的模型，與臺北的實際",
@@ -480,18 +475,14 @@ def _rising_figure(d: dict) -> str:
                  f"{bound.num(str(YEAR))} 年臺北的緯度，有的星座約一個半小時就升完，有的要兩個多小時"
                  f"（恆星時每 {bound.num(f'{ARMC_STEP:g}')} 度取樣，黃赤交角取 {bound.num(str(YEAR))} 年的平均）。"
                  "虛線是兩小時。"),
-        wide=_rising_drawing("fx-wide", "fig-rising", d, bound),
-        narrow=_rising_drawing("fx-narrow", "fig-rising", d, bound),
-        notes=[], idle="", variants=RISING_VARIANTS, switch_label="切換模型與實際",
+        art=_fx.FigureArt.drawn(_rising_drawing, "fig-rising", d, bound),
+        controls=_fx.FigureControls(
+            variants=RISING_VARIANTS,
+            switch_label="切換模型與實際",
+        ),
         table=table,
+        bound=bound,
     )
-    return _checked(markup, bound)
-
-
-def _checked(markup: str, bound: _fx.Bound) -> str:
-    found = _fx.problems(markup, bound)
-    if found:
-        raise RuntimeError("figure check: " + "; ".join(found))
     return markup
 
 

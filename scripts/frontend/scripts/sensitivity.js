@@ -21,14 +21,53 @@
  * 所有數值取自一次實際計算：1990-05-15 14:00–15:00 臺北
  * （25.053060°N 121.526390°E），整宮制、回歸黃道、視位置、地心。
  */
-(function () {
+(function attachSensitivity(root, timeFactory, demo) {
+  // 時間軸的半開區間（timeFactory）是純函式，Node 測試直接 require 本檔取得；示範只在頁面上跑。
+  const Time = timeFactory();
+  if (typeof module === "object" && module.exports) module.exports = Time;
+  if (root && root.document) demo(root.document, Time);
+})(typeof globalThis !== "undefined" ? globalThis : this, function sensitivityTime() {
+  "use strict";
+
+  const HOUR_SECONDS = 3600;
+  const LAST_SECOND = HOUR_SECONDS - 1;
+
+  function clampSecond(value) {
+    return Math.max(0, Math.min(LAST_SECOND, Math.round(value)));
+  }
+
+  function secondFromRatio(value) {
+    const ratio = Math.max(0, Math.min(1, Number(value)));
+    return clampSecond(ratio * LAST_SECOND);
+  }
+
+  function clockOf(value) {
+    const second = clampSecond(value);
+    const minute = Math.floor(second / 60);
+    const remainder = second % 60;
+    const pad = (number) => (number < 10 ? `0${number}` : String(number));
+    return `14:${pad(minute)}:${pad(remainder)}`;
+  }
+
+  function isExactSample(value, sampleSeconds) {
+    const second = clampSecond(value);
+    return sampleSeconds.some((sample) => second === sample);
+  }
+
+  return Object.freeze({
+    HOUR_SECONDS,
+    LAST_SECOND,
+    clampSecond,
+    secondFromRatio,
+    clockOf,
+    isExactSample,
+  });
+}, function sensitivityDemo(document, Time) {
   "use strict";
 
   var root = document.getElementById("sens-demo");
   if (!root) return;
 
-  var Time = window.SensitivityTime;
-  if (!Time) throw new Error("SensitivityTime is required");
   var LAST_SECOND = Time.LAST_SECOND;
 
   // 後端回傳的五個取樣點（birth_time_sensitivity.angles.asc.sampled_values）
@@ -213,4 +252,4 @@
   // 只念時間（WCAG 4.1.3）。
   stateEl.setAttribute("aria-live", "polite");
   render(0);
-})();
+});

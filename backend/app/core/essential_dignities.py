@@ -4,15 +4,14 @@ This module deliberately stops before interpretation or scoring.  It reports whi
 closed historical rule table applies to a tropical longitude.  Profiles are not
 silently treated as interchangeable and no profile is a universal default.
 
-Boundary convention
--------------------
-All degree intervals are zero-based and half-open.  A source's cumulative ``6``
-therefore means ``[0, 6)``; exactly 6 degrees belongs to the next segment.  A
-normalized longitude is always in ``[0, 360)``, so 30 degrees within a sign cannot
-occur.
+Boundary convention: degree intervals are zero-based and half-open.  A source's
+cumulative ``6`` means ``[0, 6)``; exactly 6 degrees belongs to the next segment.
+A normalized longitude is in ``[0, 360)``, so 30 degrees within a sign cannot occur.
 """
 
 from __future__ import annotations
+
+from dataclasses import dataclass
 
 import copy
 from collections.abc import Iterable
@@ -20,9 +19,11 @@ from typing import Any
 
 from .formatting import dms_text, normalize_longitude, zodiac_sign_index
 from .frame_compatibility import method_frame_state
-from .module_state import computed_receipt, not_applicable_receipt
-from .method_status import method_receipt, research_only_profiles
-from .source_reading import SOURCE_READING_LEVELS, reference_only
+from .module_state import computed_receipt, frame_table_refusal
+from .method_status import method_head, research_only_profiles
+from .source_reading import (
+    DOROTHEUS_BOOK_I_ONLINE, ORIGINAL_LANGUAGE_READ, SOURCE_READING_LEVELS, cited, reference_only,
+)
 from .trace import Trace
 from .dignity_tables import (
     ROBBINS_EGYPTIAN_TERMS_PAGES,
@@ -171,9 +172,8 @@ def _base_object(body: dict) -> dict:
         "sign_index": sign_index,
         "sign": sign,
         "degree_in_sign": degree,
-        # The table's text in degrees, minutes and seconds like every other
-        # section's sign position, rounded without reaching the next whole
-        # degree, so it never crosses a bound or decan end (all whole degrees).
+        # Rounded without reaching the next whole degree, so the text never
+        # crosses a bound or decan end (all whole degrees).
         "degree_in_sign_text": dms_text(degree),
     }
 
@@ -273,12 +273,8 @@ def _domicile_exaltation_profile(bodies: list[dict]) -> dict:
     """Match the traditional seven against whole-sign houses/exaltations and
     the signs opposite them (detriment, fall).
 
-    This profile deliberately does not choose among transmitted exact exaltation
-    degrees.  Ptolemy, Tetrabiblos I.17 and I.19 (Robbins; Hübner I.18 and I.20)
-    supplies a whole-sign scheme;
-    Dorotheus I.1-2, Valens III.4, and Firmicus Mathesis II.2-3 also preserve
-    the familiar sign assignments while supplying degree traditions whose
-    variants require a separate method decision.
+    Deliberately chooses no transmitted exact exaltation degree: the degree
+    variants in Dorotheus, Valens and Firmicus need a separate method decision.
     """
 
     unsupported = sorted(
@@ -485,129 +481,48 @@ _DIGNITY_FRAME_REFUSAL_NOTES = {
 }
 
 
-# The basis every dignity table is defined in; a chart in any other frame is
-# refused (the central frame table), so the computed and the refused receipt
-# state the same basis.
+# Every dignity table's basis; any other frame is refused (central frame table),
+# so computed and refused receipts state the same basis.
 DIGNITY_ZODIAC_BASIS = "tropical_ecliptic_of_date_nutation_on_earth_center"
 
 
-def compute_essential_dignities(
-    *,
-    bodies: list[dict],
-    include_domicile_exaltation: bool,
-    bounds_profile: str | None,
-    decan_profile: str | None,
-    triplicity_profile: str | None,
-    include_triplicity_comparison: bool,
-    computation_mode,
-    peregrine_profile: str | None,
-    sect_basis: str,
-    trace: Trace,
-    sect_sun_altitude: float | None,
-    sect_classification: dict,
-) -> dict | None:
-    """Compute selected source-named components for the classical seven only."""
 
-    requested = bool(
-        include_domicile_exaltation
-        or bounds_profile
-        or decan_profile
-        or triplicity_profile
-        or include_triplicity_comparison
-        or peregrine_profile
-    )
-    if not requested:
-        return None
-    selected = {
-        "domicile_exaltation": (
-            DOMICILE_EXALTATION_PROFILE_ID
-            if include_domicile_exaltation
-            else None
-        ),
-        "bounds": bounds_profile,
-        "face_decan": decan_profile,
-        "triplicity": triplicity_profile,
-        "peregrine": peregrine_profile,
-    }
-    # What each technique's requested value expands to, in catalogue order: one
-    # id for a single choice, every table for "all" (which has no primary
-    # table).  The same whether or not the frame lets the module run, as the
-    # Dossier's calculation_policy states it; profile_results says what ran.
-    computed = {
-        technique: expand_profiles(technique, requested)
-        for technique, requested in (
-            ("bounds", bounds_profile),
-            ("face_decan", decan_profile),
-            ("triplicity", triplicity_profile),
-        )
-    }
+def _frame_refused(frame_state, computation_mode, selected, computed, trace: Trace) -> dict:
+    """The module refused by the central frame table; nothing is converted."""
+
     center = computation_mode.center
-    ecliptic_frame = computation_mode.ecliptic_frame
-    nutation = computation_mode.nutation
-    sect_is_day = sect_classification["is_day"]
-    frame_state = method_frame_state("essential_dignities", computation_mode)
-    if not frame_state["applicable"]:
-        reason_code = frame_state["reason_code"]
-        trace.add(
-            "具名古典尊貴元件",
-            inputs={
-                "center": center,
-                "zodiac": computation_mode.zodiac,
-                "ecliptic_frame": ecliptic_frame,
-                "nutation": nutation,
-                "selected_profiles": selected,
-            },
-            result={"execution_status": "not_applicable", "reason_code": reason_code},
-            note=_DIGNITY_FRAME_REFUSAL_NOTES[reason_code],
-        )
-        return {
-            "method": "named_essential_dignity_components_v1",
-            **method_receipt("essential_dignities"),
-            **not_applicable_receipt(frame_state),
-            "zodiac_basis": DIGNITY_ZODIAC_BASIS,
-            "coordinate_center": center,
-            "ecliptic_frame": ecliptic_frame,
-            "nutation": nutation,
+    refusal = frame_table_refusal(
+        frame_state, trace, "具名古典尊貴元件",
+        note=_DIGNITY_FRAME_REFUSAL_NOTES[frame_state["reason_code"]],
+        inputs={
+            "center": center,
+            "zodiac": computation_mode.zodiac,
+            "ecliptic_frame": computation_mode.ecliptic_frame,
+            "nutation": computation_mode.nutation,
             "selected_profiles": selected,
-            "computed_profiles": computed,
-            "research_comparison_profiles": [],
-            "research_only_profiles": [],
-            "profile_results": {},
-            "peregrine": None,
-            "interpretation": None,
-            "score": None,
-        }
-    usable_bodies = [body for body in bodies if body.get("longitude") is not None]
-    results = {}
-    if include_domicile_exaltation:
-        results[DOMICILE_EXALTATION_PROFILE_ID] = (
-            _domicile_exaltation_profile(usable_bodies)
-        )
-    for profile_id in computed["bounds"]:
-        results[profile_id] = _bounds_profile(profile_id, usable_bodies, sect_is_day)
-    for profile_id in computed["face_decan"]:
-        results[profile_id] = _decan_profile(profile_id, usable_bodies)
-    # The comparison toggle adds the other tables beside a single choice; with
-    # every table already side by side it adds nothing.
-    comparison = include_triplicity_comparison and triplicity_profile != ALL_PROFILES
-    triplicity_ids = list(computed["triplicity"])
-    if comparison:
-        triplicity_ids.extend(TRIPLICITY_IDS)
-    triplicity_ids = list(dict.fromkeys(triplicity_ids))
-    sect_dependent_components = [
-        profile_id
-        for profile_id in computed["bounds"]
-        if profile_id == "chaldaean_bounds_ptolemy_i_21_v1"
-    ] + triplicity_ids
-    for profile_id in triplicity_ids:
-        results[profile_id] = _triplicity_profile(
-            profile_id, usable_bodies, sect_is_day
-        )
-    peregrine = None
-    if peregrine_profile:
-        peregrine = _peregrine_profile(usable_bodies, sect_classification)
-        sect_dependent_components.append(peregrine_profile)
+        },
+    )
+    return {
+        **method_head("named_essential_dignity_components_v1", "essential_dignities"),
+        **refusal,
+        "zodiac_basis": DIGNITY_ZODIAC_BASIS,
+        "coordinate_center": center,
+        "ecliptic_frame": computation_mode.ecliptic_frame,
+        "nutation": computation_mode.nutation,
+        "selected_profiles": selected,
+        "computed_profiles": computed,
+        "research_comparison_profiles": [],
+        "research_only_profiles": [],
+        "profile_results": {},
+        "peregrine": None,
+        "interpretation": None,
+        "score": None,
+    }
 
+def _trace_computed(
+    trace: Trace, selected: dict, computed: dict, include_triplicity_comparison: bool,
+    sect_is_day, sect_basis: str, results: dict, peregrine: dict | None,
+) -> None:
     trace.add(
         "具名古典尊貴元件",
         formula=(
@@ -642,9 +557,118 @@ def compute_essential_dignities(
             "profiles."
         ),
     )
+
+
+@dataclass(frozen=True)
+class DignitySelection:
+    """The dignity techniques and tables the request names."""
+
+    include_domicile_exaltation: bool
+    bounds_profile: str | None
+    decan_profile: str | None
+    triplicity_profile: str | None
+    include_triplicity_comparison: bool
+    peregrine_profile: str | None
+
+
+@dataclass(frozen=True)
+class DignitySect:
+    """The chart's sect as the dignities read it, and on what basis."""
+
+    basis: str
+    sun_altitude: float | None
+    classification: dict
+
+
+def compute_essential_dignities(
+    *,
+    bodies: list[dict],
+    selection: DignitySelection,
+    computation_mode,
+    sect: DignitySect,
+    trace: Trace,
+) -> dict | None:
+    """Compute selected source-named components for the classical seven only."""
+
+    requested = bool(
+        selection.include_domicile_exaltation
+        or selection.bounds_profile
+        or selection.decan_profile
+        or selection.triplicity_profile
+        or selection.include_triplicity_comparison
+        or selection.peregrine_profile
+    )
+    if not requested:
+        return None
+    selected = {
+        "domicile_exaltation": (
+            DOMICILE_EXALTATION_PROFILE_ID
+            if selection.include_domicile_exaltation
+            else None
+        ),
+        "bounds": selection.bounds_profile,
+        "face_decan": selection.decan_profile,
+        "triplicity": selection.triplicity_profile,
+        "peregrine": selection.peregrine_profile,
+    }
+    # What each technique's requested value expands to, in catalogue order: one
+    # id for a single choice, every table for "all" (which has no primary
+    # table).  The same whether or not the frame lets the module run, as the
+    # Dossier's calculation_policy states it; profile_results says what ran.
+    computed = {
+        technique: expand_profiles(technique, requested)
+        for technique, requested in (
+            ("bounds", selection.bounds_profile),
+            ("face_decan", selection.decan_profile),
+            ("triplicity", selection.triplicity_profile),
+        )
+    }
+    center = computation_mode.center
+    ecliptic_frame = computation_mode.ecliptic_frame
+    nutation = computation_mode.nutation
+    sect_is_day = sect.classification["is_day"]
+    frame_state = method_frame_state("essential_dignities", computation_mode)
+    if not frame_state["applicable"]:
+        return _frame_refused(frame_state, computation_mode, selected, computed, trace)
+    usable_bodies = [body for body in bodies if body.get("longitude") is not None]
+    results = {}
+    if selection.include_domicile_exaltation:
+        results[DOMICILE_EXALTATION_PROFILE_ID] = (
+            _domicile_exaltation_profile(usable_bodies)
+        )
+    for profile_id in computed["bounds"]:
+        results[profile_id] = _bounds_profile(profile_id, usable_bodies, sect_is_day)
+    for profile_id in computed["face_decan"]:
+        results[profile_id] = _decan_profile(profile_id, usable_bodies)
+    # The comparison toggle adds the other tables beside a single choice; with
+    # every table already side by side it adds nothing.
+    comparison = (
+        selection.include_triplicity_comparison and selection.triplicity_profile != ALL_PROFILES
+    )
+    triplicity_ids = list(computed["triplicity"])
+    if comparison:
+        triplicity_ids.extend(TRIPLICITY_IDS)
+    triplicity_ids = list(dict.fromkeys(triplicity_ids))
+    sect_dependent_components = [
+        profile_id
+        for profile_id in computed["bounds"]
+        if profile_id == "chaldaean_bounds_ptolemy_i_21_v1"
+    ] + triplicity_ids
+    for profile_id in triplicity_ids:
+        results[profile_id] = _triplicity_profile(
+            profile_id, usable_bodies, sect_is_day
+        )
+    peregrine = None
+    if selection.peregrine_profile:
+        peregrine = _peregrine_profile(usable_bodies, sect.classification)
+        sect_dependent_components.append(selection.peregrine_profile)
+
+    _trace_computed(
+        trace, selected, computed, selection.include_triplicity_comparison,
+        sect_is_day, sect.basis, results, peregrine,
+    )
     return {
-        "method": "named_essential_dignity_components_v1",
-        **method_receipt("essential_dignities"),
+        **method_head("named_essential_dignity_components_v1", "essential_dignities"),
         **computed_receipt(
             "selected_named_primary_text_profiles",
             available=bool(results) or peregrine is not None,
@@ -654,14 +678,13 @@ def compute_essential_dignities(
         "ecliptic_frame": ecliptic_frame,
         "nutation": nutation,
         "participant_scope": "classical_seven_planets_only",
-        # 二元日夜盤結果旁必須附上近地平提示。日夜盤、
-        # 提示帶與具名邊界分歧都來自 lots.classify_sect（單一產生器），這裡不另算；
-        # sect_dependent_components 列出本次真正依日夜盤選主的元件。
+        # 二元日夜盤結果旁必須附近地平提示；全部來自 lots.classify_sect（單一產生器），
+        # 這裡不另算。sect_dependent_components 列出本次真正依日夜盤選主的元件。
         "sect": _sect_receipt(
             sect_is_day,
-            sect_basis,
-            sect_sun_altitude,
-            sect_classification,
+            sect.basis,
+            sect.sun_altitude,
+            sect.classification,
             sect_dependent_components,
         ),
         "selected_profiles": selected,
@@ -716,13 +739,10 @@ _LILLY_1647_P104_READ_AT = (
 # where it says nothing, only the reference is claimed.
 PROFILE_SOURCE_CITATIONS: dict[str, list[dict[str, Any]]] = {
     "ptolemy_bounds_robbins_1940_v1": [
-        {
-            "citation": "Ptolemy, Tetrabiblos I.21, trans. Robbins (Loeb 1940) p.107, "
-                        "table 'Terms according to Ptolemy' (= Hübner 1998 I.21)",
-            "says": "the complete table the profile uses, every cell",
-            "reading": _TRANSLATION,
-            "read_at": f"{_ROBBINS_1964_SCANS}, p.107 (page n430)",
-        },
+        cited(("Ptolemy, Tetrabiblos I.21, trans. Robbins (Loeb 1940) p.107, "
+               "table 'Terms according to Ptolemy' (= Hübner 1998 I.21)"),
+              "the complete table the profile uses, every cell", _TRANSLATION,
+              f"{_ROBBINS_1964_SCANS}, p.107 (page n430)"),
         reference_only(
             "Ptolemy, Tetrabiblos I.20-21, trans. Robbins (Loeb 1940) pp.103-107",
             "Ptolemy's account of the terms (pp.103-105) and the table printed after it",
@@ -731,23 +751,28 @@ PROFILE_SOURCE_CITATIONS: dict[str, list[dict[str, Any]]] = {
         ),
     ],
     "egyptian_bounds_robbins_1940_v1": [
-        {
-            "citation": "Ptolemy, Tetrabiblos I.20, trans. Robbins (Loeb 1940) pp.96-97, "
-                        "the Greek and English tables of the Egyptian terms (= Hübner 1998 I.21)",
-            "says": "the table the profile uses, every cell, and its totals (p.96 n.1)",
-            "reading": _TRANSLATION,
-            "read_at": f"{_ROBBINS_1964_SCANS}, pp.96-97 (pages n419-n420)",
-        },
+        cited(("Ptolemy, Tetrabiblos I.20, trans. Robbins (Loeb 1940) pp.96-97, "
+               "the Greek and English tables of the Egyptian terms (= Hübner 1998 I.21)"),
+              "the table the profile uses, every cell, and its totals (p.96 n.1)", _TRANSLATION,
+              f"{_ROBBINS_1964_SCANS}, pp.96-97 (pages n419-n420)"),
         reference_only(
             f"Ptolemy, Tetrabiblos I.20, trans. Robbins (Loeb 1940) "
             f"{ROBBINS_EGYPTIAN_TERMS_PAGES}",
             "the chapter on the Egyptian terms",
             "the record names pp.96-97 as read; for pp.91-95 only the reference is claimed",
         ),
+        cited("Firmicus Maternus, Mathesis II.6.2-13 (Kroll-Skutsch 1897 vol. I pp.47-49)",
+              ("a variant witness, not support: nine signs agree with the table cell for "
+               "cell; Gemini (II.6.4: Mercury, Jupiter, Venus, Mars, Saturn 6 each, against "
+               "Venus 5, Mars 7), Cancer (II.6.5: Mercury 7, Saturn 3, against 6 and 4) and "
+               "Sagittarius (II.6.10: Mercury 6, Saturn 4, Mars 3, against 4, 5, 4) differ"),
+              ORIGINAL_LANGUAGE_READ,
+              ("the Kroll-Skutsch Latin in the LacusCurtius transcription (Mathesis "
+               "book II), compared sign by sign with the table's bounds")),
         reference_only(
-            "Firmicus Maternus, Mathesis II.6.4-5, 10; Vettius Valens, Anthologies I.3",
-            "witnesses to the Egyptian terms",
-            "the witness list says these were checked but not in which text or edition; "
+            "Vettius Valens, Anthologies I.3",
+            "a witness to the Egyptian terms",
+            "the witness list says this was checked but not in which text or edition; "
             "only the reference is claimed",
         ),
     ],
@@ -770,21 +795,14 @@ PROFILE_SOURCE_CITATIONS: dict[str, list[dict[str, Any]]] = {
         ),
     ],
     "lilly_received_bounds_1647_v1": [
-        {
-            "citation": "William Lilly, Christian Astrology (1647) p.104, Table of the "
-                        "Essential Dignities, Termes columns",
-            "says": "the table the profile uses",
-            "reading": _ORIGINAL,
-            "read_at": _LILLY_1647_P104_READ_AT,
-        },
-        {
-            "citation": "William Lilly, Christian Astrology (1647) planet chapters, "
-                        "pp.57, 62, 66, 73, 76-77",
-            "says": "the terms each planet's chapter lists, compared with the p.104 table",
-            "reading": _ORIGINAL,
-            "read_at": "as the Leo row's evidence records; the record does not say which "
-                       "copy of the 1647 text was read for these pages",
-        },
+        cited(("William Lilly, Christian Astrology (1647) p.104, Table of the "
+               "Essential Dignities, Termes columns"),
+              "the table the profile uses", _ORIGINAL, _LILLY_1647_P104_READ_AT),
+        cited(("William Lilly, Christian Astrology (1647) planet chapters, "
+               "pp.57, 62, 66, 73, 76-77"),
+              "the terms each planet's chapter lists, compared with the p.104 table", _ORIGINAL,
+              ("as the Leo row's evidence records; the record does not say which "
+               "copy of the 1647 text was read for these pages")),
         reference_only(
             "Robbins 1940 p.108 n.1",
             "the manuscripts' planet totals (Jupiter 79, Mars 66)",
@@ -793,50 +811,39 @@ PROFILE_SOURCE_CITATIONS: dict[str, list[dict[str, Any]]] = {
         ),
     ],
     "lilly_triplicity_compact_1647_v1": [
-        reference_only(
-            "William Lilly, Christian Astrology (1647) p.104, triplicity columns Di. and "
-            "Noc.; p.105",
-            "the day and night triplicity table; Mars rules water by day and night",
-            "cited from the methodology research report, not independently checked; the "
-            "record does not say which copy; only the reference is claimed",
-        ),
+        cited(("William Lilly, Christian Astrology (1647) p.104, triplicity columns Di. "
+               "and Noc.; p.105"),
+              "the day and night triplicity table; Mars rules water by day and night",
+              "original_language_read",
+              ("the 1647 printing as scanned at archive.org (b30338724, n137-n138) "
+               "(= pp.104-105): the water row reads Mars in both columns, and p.105 "
+               "'ruleth onely that Triplicity both day and night'")),
     ],
     "manilius_sign_decans_astronomica_iv_v1": [
-        {
-            "citation": "Manilius, Astronomica IV.310-362",
-            "says": "the decan assignments, Pisces decans 1-2 at IV.359-360",
-            "reading": _ORIGINAL,
-            "read_at": "Latin text, The Latin Library (manilius4.html), checked against "
-                       "the online transcription, not the printed page",
-        },
-        reference_only(
-            "Manilius, Astronomica IV.294-386",
-            "the decan passage",
-            "IV.310-362 was read (see the editorial correction); for the rest of the "
-            "passage only the reference is claimed",
-        ),
+        cited("Manilius, Astronomica IV.310-362",
+              "the decan assignments, Pisces decans 1-2 at IV.359-360", _ORIGINAL,
+              ("Latin text, The Latin Library (manilius4.html), checked against "
+               "the online transcription, not the printed page")),
+        cited("Manilius, Astronomica IV.294-386", "the decan passage", "original_language_read",
+              ("Latin text, The Latin Library (manilius4.html), the whole passage from "
+               "'Sed nihil in semet totum valet' (294) to 'mixta sed in pluris sociantur "
+               "sidera vires' (386), the online transcription, not the printed page")),
     ],
     "chaldean_planetary_faces_firmicus_ii_4_v1": [
-        {
-            "citation": "Firmicus Maternus, Mathesis II.4.3 (Kroll-Skutsch 1897 vol. I p.45)",
-            "says": "the complete 36-face table, every face",
-            "reading": _ORIGINAL,
-            "read_at": "the archive.org OCR text of matheseoslibrivi01firmuoft; checked "
-                       "against the online transcription, not the printed page",
-        },
+        cited("Firmicus Maternus, Mathesis II.4.3 (Kroll-Skutsch 1897 vol. I p.45)",
+              "the complete 36-face table, every face", _ORIGINAL,
+              ("the archive.org OCR text of matheseoslibrivi01firmuoft; checked "
+               "against the online transcription, not the printed page")),
         reference_only(
             "Firmicus Maternus, Mathesis II.4 (Kroll-Skutsch 1897 vol. I pp.44-46)",
             "the chapter around the table",
             "p.45 was read; for the rest of the chapter only the reference is claimed",
         ),
-        {
-            "citation": "Paulus Alexandrinus, Introduction ch.4 (Boer 1958 numbering, main "
-                        "text; Schmidt/Hand 1995 pp.9-10)",
-            "says": "the 'seven-zoned sphere', a parallel witness",
-            "reading": _SECONDARY,
-            "read_at": "the order and the term as the method research report gives them; "
-                       "Boer 1958 and Schmidt/Hand 1995 not checked",
-        },
+        cited(("Paulus Alexandrinus, Introduction ch.4 (Boer 1958 numbering, main "
+               "text; Schmidt/Hand 1995 pp.9-10)"),
+              "the 'seven-zoned sphere', a parallel witness", _SECONDARY,
+              ("the order and the term as the method research report gives them; "
+               "Boer 1958 and Schmidt/Hand 1995 not checked")),
         reference_only(
             "William Lilly, Christian Astrology (1647) p.104, face columns",
             "a later witness to the same order",
@@ -851,34 +858,33 @@ PROFILE_SOURCE_CITATIONS: dict[str, list[dict[str, Any]]] = {
         ),
     ],
     "dorothean_triplicity_three_rulers_v1": [
-        {
-            "citation": "Dorotheus, Carmen Astrologicum I.1 (Pingree 1976 pp.161-162)",
-            "says": "the triplicity rulers; in Virgo also a share for Mercury (p.162)",
-            "reading": _TRANSLATION,
-            "read_at": "Pingree's English translation (1976), checked against the cited "
-                       "pages; the Arabic not checked",
-        },
-        {
-            "citation": "Dorotheus, Carmen Astrologicum I.28 (Pingree 1976 p.196)",
-            "says": "the third ruler, 'the associate of these two'",
-            "reading": _TRANSLATION,
-            "read_at": "Pingree's English translation (1976), checked against the cited "
-                       "page; the Arabic not checked",
-        },
-        {
-            "citation": "Hephaestio, Apotelesmatica I.6",
-            "says": "the Greek verse with the same four triads",
-            "reading": _ORIGINAL,
-            "read_at": "an online transcription following CCAG/TLG; the Pingree 1973 "
-                       "edition not checked",
-        },
-        reference_only("Schmidt 1994 p.30", "Hephaestio's verse in translation", "not checked"),
-        reference_only("Dorotheus, Carmen Astrologicum I.4 (Pingree pp.163-164)",
-                       "the use of the rulers", "not checked"),
-        reference_only("Dorotheus, Carmen Astrologicum I.10 (Pingree)",
-                       "the word 'participant' for the third ruler",
-                       "level pending: the record does not say this page was read; only "
-                       "the reference is claimed"),
+        cited("Dorotheus, Carmen Astrologicum I.1 (Pingree 1976 pp.161-162)",
+              "the triplicity rulers; in Virgo also a share for Mercury (p.162)", _TRANSLATION,
+              (f"{DOROTHEUS_BOOK_I_ONLINE}: I.1 on pp.161-162, 'and in Virgo is also a "
+               "share for Mercury' at the head of p.162; the Arabic not checked")),
+        cited("Dorotheus, Carmen Astrologicum I.28 (Pingree 1976 p.196)",
+              "the third ruler, 'the associate of these two'", _TRANSLATION,
+              (f"{DOROTHEUS_BOOK_I_ONLINE}: I.28 on p.196, 'the associate of these "
+               "two'; the Arabic not checked")),
+        cited("Hephaestio, Apotelesmatica I.6", "the Greek verse with the same four triads",
+              _ORIGINAL,
+              ("an online transcription following CCAG/TLG (astrologicon.org, "
+               "Apotelesmatika book 1, ch. 6 'Peri ton trigonon hos Dorotheos'), "
+               "re-read at that chapter on 2026-10-19: the four triads and Mercury's "
+               "share in Virgo; the Pingree 1973 edition not checked")),
+        reference_only(("Hephaestio of Thebes, Apotelesmatics Book I, trans. R. Schmidt "
+                        "(Project Hindsight, 1994) p.30"),
+                       "Hephaestio's verse in translation", "not checked"),
+        cited("Dorotheus, Carmen Astrologicum I.4 (Pingree 1976 pp.163-164)", "the use of the rulers",
+              "translation_read",
+              (f"{DOROTHEUS_BOOK_I_ONLINE}: I.4 begins on p.163 with 'the first, "
+               "second, and third lords of the triplicity' and runs on to p.164, where "
+               "I.5 begins; the Arabic not checked")),
+        cited("Dorotheus, Carmen Astrologicum I.10 (Pingree 1976 p.167)",
+              "the word 'participant' for the third ruler", "translation_read",
+              (f"{DOROTHEUS_BOOK_I_ONLINE}: I.10 at the foot of p.167, 'the first lord "
+               "of the triplicity of the Moon or its participant by night'; the Arabic "
+               "not checked")),
     ],
 }
 
@@ -913,23 +919,20 @@ METHOD_SOURCE_ENTRIES: dict[str, dict[str, Any]] = {
             *copy.deepcopy(DOMICILE_EXALTATION_SOURCES),
             {
                 **reference_only(
-                    "Vettius Valens, Anthologies III.4 (Riley, CSUS PDF (2010) p.61)",
-                    "the PDF page of the chapter as a locator",
+                    "Vettius Valens, Anthologies III.4 (Riley, CSUS PDF (2010) printed p.61)",
+                    "the printed page of the chapter in the PDF (PDF page 63) as a locator",
                     "the chapter was read in a reformatted online copy (github "
                     "janegca/latex-valens), not in this PDF; only the page reference is "
                     "claimed",
                 ),
                 "role": "page_locator_of_an_also_attested_source",
             },
-            {
-                **reference_only(
-                    "Firmicus Maternus, Mathesis II.2 (Kroll-Skutsch-Ziegler)",
-                    "the domiciles",
-                    "level pending: the reading recorded is of II.3.1 and II.3.5; for II.2 "
-                    "only the reference is claimed",
-                ),
-                "role": "chapter_reference_of_an_also_attested_source",
-            },
+            cited("Firmicus Maternus, Mathesis II.2 (Kroll–Skutsch 1897, vol. I)", "the domiciles",
+                  "original_language_read",
+                  ("the Latin of Kroll-Skutsch as transcribed on LacusCurtius "
+                   "(Firmicus_Maternus/Mathesis/2*.html), II.2 'De Domibus Stellarum', "
+                   "II.2.5 'Saturnus habet domicilium in Aquario et Capricorno'"),
+                  role="chapter_reference_of_an_also_attested_source"),
         ],
         "source_scope_note": DOMICILE_EXALTATION_SOURCE_SCOPE_NOTE,
         "component_sources": copy.deepcopy(DEBILITY_COMPONENT_SOURCES),

@@ -4,7 +4,7 @@ pytest==9.1.1
 # The ordinary check runs the suite once across processes (`pytest -n auto`).
 pytest-xdist==3.8.0
 httpx2==2.13.1
-hypothesis==6.168.3
+hypothesis==6.169.0
 # 型別檢查以基線模式執行（設定在 mypy.ini，由私有的型別檢查工具執行）。
 # mypy.ini 自 2026-07-27 就存在，但 mypy 從未被安裝或執行過。
 mypy==2.4.0

@@ -1,7 +1,6 @@
 {
-  "exported_from_private_revision": "7aaf5f278a6bacb8f2e403701def3d7ecbe65dce",
   "license_expression": "AGPL-3.0-only",
-  "schema_version": 1,
+  "schema_version": 2,
   "sources": [
     {
       "contains": "Python binding and Swiss Ephemeris C source",

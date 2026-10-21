@@ -24,7 +24,7 @@ import re
 from typing import Any
 
 from . import _fx, page_validation
-from ._common import ROOT, SIGNS, TAIPEI, backend_on_path, product_charts, swiss
+from ._common import ROOT, SIGNS, TAIPEI, backend_on_path, product_charts, sign_degree_minute, swiss
 from . import _site
 
 
@@ -195,9 +195,8 @@ def _dms(arcsec: float) -> str:
 
 
 def _place(longitude: float) -> tuple[str, str]:
-    total = round(longitude * 60)
-    sign, rest = divmod(total, 30 * 60)
-    return SIGNS[sign % 12] + "座", f"{rest // 60}°{rest % 60:02d}′"
+    sign, degree, minute = sign_degree_minute(longitude)
+    return sign + "座", f"{degree}°{minute:02d}′"
 
 
 def _late_label(seconds: int) -> str:
@@ -318,10 +317,7 @@ def _budget_table(rows: list[dict], bound: _fx.Bound) -> str:
     for row in rows:
         body.append(f'<tr data-fx-key="{row["key"]}"><th scope="row">{row["label"]}</th><td>{row["moves"]}</td>'
                     f'<td class="n">{bound.num(_arc(row["value"]))}</td><td>{_bind_how(row, bound)}</td></tr>')
-    return ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">誤差來源</th><th scope="col">移動的是</th>'
-            '<th scope="col">移動多少</th><th scope="col">怎麼算的</th></tr></thead>'
-            f'<tbody>{"".join(body)}</tbody></table></div></details>')
+    return _fx.data_table(("誤差來源", "移動的是", "移動多少", "怎麼算的"), body)
 
 
 def _budget_figure(p: dict, rows: list[dict]) -> str:
@@ -337,19 +333,19 @@ def _budget_figure(p: dict, rows: list[dict]) -> str:
         "實心是上升點的移動，排線是天體位置的移動。虛線是只顯示到角分時的捨入：落在虛線左邊的誤差，"
         "在一般顯示到角分的星盤上看不出來。上升點與中天是本站計算服務的實際回應，月亮的兩列以 Swiss Ephemeris 自算。"
     )
-    markup = _fx.figure(
-        fid="fig-error-budget", hero=True,
+    return _fx.figure(
+        fid="fig-error-budget",
+        hero=True,
         title="誤差預算：每一種誤差讓星盤上的位置移動多少",
         caption=caption,
-        wide=_budget("fx-wide", "fig-error-budget", rows, bound),
-        narrow=_budget("fx-narrow", "fig-error-budget", rows, bound),
-        notes=notes, idle="用 Tab 鍵移到一列上，或用滑鼠指著它，這裡會寫出它怎麼算的。",
+        art=_fx.FigureArt.drawn(
+            _budget, "fig-error-budget", rows, bound,
+            notes=notes,
+            idle="用 Tab 鍵移到一列上，或用滑鼠指著它，這裡會寫出它怎麼算的。",
+        ),
         table=_budget_table(rows, bound),
+        bound=bound,
     )
-    found = _fx.problems(markup, bound)
-    if found:
-        raise RuntimeError("figure check: " + "; ".join(found))
-    return markup
 
 
 # --- figure 2: a late birth time, with a slider ---------------------------------------
@@ -438,10 +434,7 @@ def _strip_table(p: dict, bound: _fx.Bound) -> str:
             cells.append(f"<td>{sign} {bound.num(deg)}</td>"
                          f'<td class="n">{bound.num(_dms(abs(_wrap(angles[key] - base[key])) * 3600))}</td>')
         rows.append(f'<tr><th scope="row">{bound.num(_late_label(seconds))}</th>{"".join(cells)}</tr>')
-    return ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">晚了</th><th scope="col">上升點</th>'
-            '<th scope="col">移動</th><th scope="col">中天</th><th scope="col">移動</th></tr></thead>'
-            f'<tbody>{"".join(rows)}</tbody></table></div></details>')
+    return _fx.data_table(("晚了", "上升點", "移動", "中天", "移動"), rows)
 
 
 def _strip_figure(p: dict) -> str:
@@ -457,27 +450,26 @@ def _strip_figure(p: dict) -> str:
         f"{bound.num(_late_label(LATE[-1]))}；紅線是挪後的位置，每一步都是本站計算服務對那個時刻的實際回應。"
         "兩條尺都只畫出原本位置前後的一段黃道，點狀底是下一個星座。"
     )
-    markup = _fx.figure(
+    return _fx.figure(
         fid="fig-time-error",
         title="出生時間晚了幾秒到一小時，上升點與中天移動多少",
         caption=caption,
-        wide=_strip("fx-wide", "fig-time-error", p, bound),
-        narrow=_strip("fx-narrow", "fig-time-error", p, bound),
-        notes=notes, idle="拖拉選一個時間誤差，這裡會寫出上升點與中天移動多少、到了哪裡。",
-        steps=len(LATE), default_step=DEFAULT_STEP, scrub_label="出生時間晚了",
+        art=_fx.FigureArt.drawn(
+            _strip, "fig-time-error", p, bound,
+            notes=notes,
+            idle="拖拉選一個時間誤差，這裡會寫出上升點與中天移動多少、到了哪裡。",
+        ),
+        controls=_fx.FigureControls(
+            steps=len(LATE),
+            default_step=DEFAULT_STEP,
+            scrub_label="出生時間晚了",
+        ),
         table=_strip_table(p, bound),
+        bound=bound,
     )
-    found = _fx.problems(markup, bound)
-    if found:
-        raise RuntimeError("figure check: " + "; ".join(found))
-    return markup
 
 
 # --- the article ----------------------------------------------------------------------
-
-def _jd_year(swe, jd: float) -> int:
-    return swe.revjul(jd)[0]
-
 
 def build() -> tuple[dict[str, str], list[str]]:
     p = _product()
@@ -486,7 +478,7 @@ def build() -> tuple[dict[str, str], list[str]]:
         with backend_on_path():
             from app import domain_catalog, ephemeris
 
-            coverage = {name: tuple(_jd_year(swe, jd) for jd in ephemeris.SEGMENT_MANIFEST[name]["jd_ut_coverage"])
+            coverage = {name: tuple(swe.revjul(jd)[0] for jd in ephemeris.SEGMENT_MANIFEST[name]["jd_ut_coverage"])
                         for name in ephemeris.CORE_SEGMENTS}
             years = domain_catalog.PRODUCT_YEAR_RANGE
     rows = _rows(p, moon)

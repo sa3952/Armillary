@@ -13,11 +13,11 @@ import swisseph as swe
 
 from ..ephemeris import (
     chart_observer_restored,
+    guarded_calc,
     require_full_ephemeris,
-    require_object_coverage,
 )
 from .root_finding import find_crossings_detailed, wrap_to_signed_180
-from .source_reading import SOURCE_READING_LEVELS
+from .source_reading import ORIGINAL_LANGUAGE_READ, cited
 from .trace import Trace
 from .time_utils import jd_ut_to_iso_utc, time_scale_for_jd_ut
 
@@ -35,13 +35,8 @@ def _phase_state(jd_ut: float) -> tuple[float, float, int, int]:
     # Coverage is decided by manifest before Swiss is asked (ephemeris module
     # contract): a Moshier retflag afterwards would come too late, and a warm
     # worker may extrapolate under SWIEPH instead.
-    moon_operation, sun_operation = "月相搜尋（月球位置）", "月相搜尋（太陽位置）"
-    require_object_coverage(body=swe.MOON, flags=PHASE_FLAGS, jd_ut=jd_ut, operation=moon_operation)
-    require_object_coverage(body=swe.SUN, flags=PHASE_FLAGS, jd_ut=jd_ut, operation=sun_operation)
-    moon, moon_retflag = swe.calc_ut(jd_ut, swe.MOON, PHASE_FLAGS)
-    sun, sun_retflag = swe.calc_ut(jd_ut, swe.SUN, PHASE_FLAGS)
-    require_full_ephemeris(moon_retflag, operation=moon_operation, jd_ut=jd_ut)
-    require_full_ephemeris(sun_retflag, operation=sun_operation, jd_ut=jd_ut)
+    moon, moon_retflag = guarded_calc(jd_ut, swe.MOON, PHASE_FLAGS, "月相搜尋（月球位置）")
+    sun, sun_retflag = guarded_calc(jd_ut, swe.SUN, PHASE_FLAGS, "月相搜尋（太陽位置）")
     elongation = (moon[0] - sun[0]) % 360.0
     relative_speed = moon[3] - sun[3]
     return elongation, relative_speed, moon_retflag, sun_retflag
@@ -54,13 +49,12 @@ _PHASE_COARSE_STEP_DAYS = 0.05
 # 1e-9 days is under a millisecond; the caller independently checks the angular
 # residual after refinement.
 _PHASE_TOLERANCE_DAYS = 1e-9
-# A phase this close to the reference in elongation (about 0.7 ms at
-# the mean relative speed) cannot be placed before or after the reference from
-# the elongation alone (doing so pushes it a whole synodic cycle away in *both*
-# directions).  It is refined as a root and placed by time: an event
-# at the reference instant, within the solver tolerance, is the previous event;
-# the next event is strictly later.  The prenatal syzygy is stricter still: it
-# lies strictly before birth (previous_phase_strictly_before).
+# A phase this close to the reference in elongation (about 0.7 ms at the mean
+# relative speed) cannot be placed before or after it from the elongation alone
+# (that pushes it a whole synodic cycle away in *both* directions).  It is
+# refined as a root and placed by time: an event at the reference, within the
+# solver tolerance, is the previous event; the next is strictly later.  The
+# prenatal syzygy lies strictly before birth (previous_phase_strictly_before).
 _PHASE_NEAR_REFERENCE_DEGREES = 1e-7
 PHASE_DIRECTION_POLICY = {
     "previous": "last_event_at_or_before_reference_within_solver_tolerance",
@@ -250,11 +244,9 @@ def _eclipse_type(retflag: int, lunar: bool) -> str:
     return "unknown"
 
 
-# Contact labels come from one table chosen by kind and type, not one table
-# shared by solar and lunar results and by every solar type (an annular eclipse
-# has no `totality_begin`, and a solar center-line contact is not
-# "penumbral_or_centerline").  Swiss tret indices
-# (swecl.c, 2.10.03): solar sol_eclipse_when_glob — 2/3 eclipse begin/end, 4/5
+# Contact labels are chosen by kind and type, not shared (an annular eclipse has
+# no `totality_begin`; a solar center-line contact is not "penumbral_or_centerline").
+# Swiss tret indices (swecl.c, 2.10.03): solar sol_eclipse_when_glob — 2/3 eclipse begin/end, 4/5
 # the central phase ("totality" in the Swiss comment whatever the type), 6/7
 # center line begin/end; lunar lun_eclipse_when — 2/3 partial (umbral)
 # begin/end, 4/5 totality begin/end, 6/7 penumbral begin/end.
@@ -344,9 +336,8 @@ def _contacts(tret: tuple[float, ...], kind: str, eclipse_type: str) -> dict:
     return contacts
 
 
-# Which instant "maximum" names.
-# Swiss's time of maximum differs from NASA's greatest eclipse (shadow axis
-# closest to Earth's centre, in TD) and IMCCE's (largest magnitude).  Closed set.
+# Which instant "maximum" names (closed set): Swiss's differs from NASA's greatest
+# eclipse (shadow axis closest to Earth's centre, in TD) and IMCCE's (largest magnitude).
 ECLIPSE_INSTANT_DEFINITIONS = {
     "solar": "swiss_geocentric_minimum_limb_separation_of_sun_and_moon",
     "lunar": "swiss_minimum_limb_separation_of_sun_and_earth_seen_from_moon_centre",
@@ -377,11 +368,9 @@ CLASSIFICATION_BORDERLINE_REASONS = (
 CLASSIFICATION_DIAMETER_RATIO_MARGIN = 0.001
 CLASSIFICATION_GAMMA_BAND = (0.99, 1.005)
 CLASSIFICATION_BORDERLINE_SOURCE_REF = "eclipses/classification_borderline"
-# The state must be readable by a person, not only by
-# a program.  One plain zh-TW explanation per state, and for the borderline
-# state one clause per reason, travel with every eclipse as explanation_zh; the
-# result page shows that string as it is (frontend/zh-TW/view-model.js), so the
-# wording has this one producer.
+# One plain zh-TW explanation per state (one clause per borderline reason)
+# travels with every eclipse as explanation_zh; the result page shows it as is
+# (frontend/zh-TW/view-model.js), so the wording has this one producer.
 CLASSIFICATION_BORDERLINE_REASON_CLAUSES_ZH = {
     "diameter_ratio_near_one": (
         "從地面看，月亮和太陽幾乎一樣大（兩者大小的比例與 1 相差在 "
@@ -615,24 +604,14 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             ),
         },
         "sources": [
-            {
-                "citation": (
-                    "Swiss Ephemeris 2.10.03 swecl.c: eclipse_where, "
-                    "sol_eclipse_when_glob, swe_sol_eclipse_where"
-                ),
-                "says": "the functions that find the eclipse type and its maximum",
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "the Swiss Ephemeris 2.10.03 source file swecl.c",
-            },
-            {
-                "citation": (
-                    "NASA GSFC Five Millennium Canon of Solar Eclipses (Espenak & Meeus, "
-                    "NASA/TP-2006-214141)"
-                ),
-                "says": "type, gamma and magnitude columns",
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "the canon's type, gamma and magnitude columns",
-            },
+            cited(("Swiss Ephemeris 2.10.03 swecl.c: eclipse_where, "
+                   "sol_eclipse_when_glob, swe_sol_eclipse_where"),
+                  "the functions that find the eclipse type and its maximum",
+                  ORIGINAL_LANGUAGE_READ, "the Swiss Ephemeris 2.10.03 source file swecl.c"),
+            cited(("NASA GSFC Five Millennium Canon of Solar Eclipses (Espenak & Meeus, "
+                   "NASA/TP-2006-214141)"),
+                  "type, gamma and magnitude columns", ORIGINAL_LANGUAGE_READ,
+                  "the canon's type, gamma and magnitude columns"),
         ],
         "note": (
             "Over 1181 solar eclipses 1900-2399 the Swiss type or centrality "
@@ -646,30 +625,16 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         "applies_to": "astronomical_data.lunar_events.eclipses.previous_*.instant_definition",
         "instant_definitions": dict(ECLIPSE_INSTANT_DEFINITIONS),
         "sources": [
-            {
-                "citation": (
-                    "Swiss Ephemeris Programming Interface (2.10.03) §8.3, §8.10, and "
-                    "swecl.c"
-                ),
-                "says": "time of maximum eclipse",
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "the Swiss Ephemeris 2.10.03 documentation and source file swecl.c",
-            },
-            {
-                "citation": "NASA GSFC, Key to Solar Eclipse Maps and Glossary",
-                "says": (
-                    "greatest eclipse is the instant the shadow axis passes closest to "
-                    "Earth's centre, in dynamical time"
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "NASA GSFC's own text",
-            },
-            {
-                "citation": "IMCCE, Éclipses de Soleil",
-                "says": "maximum is the instant of largest magnitude",
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "IMCCE's own French text",
-            },
+            cited(("Swiss Ephemeris Programming Interface (2.10.03) §8.3, §8.10, and "
+                   "swecl.c"),
+                  "time of maximum eclipse", ORIGINAL_LANGUAGE_READ,
+                  "the Swiss Ephemeris 2.10.03 documentation and source file swecl.c"),
+            cited("NASA GSFC, Key to Solar Eclipse Maps and Glossary",
+                  ("greatest eclipse is the instant the shadow axis passes closest to "
+                   "Earth's centre, in dynamical time"),
+                  ORIGINAL_LANGUAGE_READ, "NASA GSFC's own text"),
+            cited("IMCCE, Éclipses de Soleil", "maximum is the instant of largest magnitude",
+                  ORIGINAL_LANGUAGE_READ, "IMCCE's own French text"),
         ],
         "note": (
             "The three definitions name different instants; external comparison "

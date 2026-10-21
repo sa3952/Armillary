@@ -58,6 +58,9 @@
     const now = options.now;
     const token = options.token;
     const describeError = options.describeError || (() => "年度時間主星沒有算出來。");
+    // 站內連結指定的技法（計算頁從網址讀一次，見 result-chapters.js 的 techniqueFromQuery）：只決定
+    // 先選哪一段，不改請求，也不記住到下次載入。
+    let preferredTechnique = null;
     const lifecycle = Lifecycle.createSensitiveDataLifecycle({
       revokeObjectUrl: (url) => win.URL.revokeObjectURL(url),
     });
@@ -72,6 +75,9 @@
     // 十年期的起點：排出之前選；排出之後改了，「排出時間主星」再出現，按下才重新請求。
     const decennialsProfile = el("annual-dec-profile");
     const decennialsPlanet = el("annual-dec-planet");
+    // 法達夜盤交點的排法與黃道釋放的一年：與十年期的起點同一種流程。
+    const firdariaNode = el("annual-fir-node");
+    const zrYear = el("annual-zr-year");
     const statusLine = el("annual-status");
     const body = el("annual-body");
 
@@ -92,6 +98,8 @@
       ...freshLevel2(),
       returnFocus: null,
       decennials: null,
+      firdariaNode: null,
+      zrYear: null,
       // 年表各段十年使用者自己打開或收起的狀態（以該段第一個年度的索引為鍵）；重畫時照舊。
       openDecades: new Map(),
       // 手機年表裡使用者自己展開或收起的年度（以年度索引為鍵）；預設只展開選定的那一年。
@@ -99,6 +107,7 @@
       solar: freshSolar(),
     };
     const solarReturn = createSolarReturn({ doc, win, state, el, node, titledSection, post, failureMessage, codeNote });
+    const life = createLifeOverview({ doc, win, state, node, titledSection, onOpen: (id, trigger) => select(id, trigger) });
     // 伺服器沒有開年度路由（回 404／405）：這是部署狀態，不是這次輸入的問題。記住它，之後同一頁
     // 的每一張盤都直接顯示「尚未開放」，不再送出。
     let routeUnavailable = false;
@@ -107,7 +116,7 @@
     let yearTimer = null;
     const retryTimers = new Map();
 
-    // ── 小工具 ─────────────────────────────────────────
+    // 小工具
     function node(tag, className, text) {
       const element = doc.createElement(tag);
       if (className) element.className = className;
@@ -155,7 +164,7 @@
         if (typeof run === "string") { parent.appendChild(doc.createTextNode(run)); return; }
         if (run.glyph) { const svg = glyph(run.glyph); if (svg) parent.appendChild(svg); return; }
         if (run.strong) { parent.appendChild(node("strong", null, run.strong)); return; }
-        if (run.mono) { parent.appendChild(node("span", "mono", run.mono)); return; }
+        if (run.mono) { parent.appendChild(node("span", "tl-num", run.mono)); return; }
         if (run.small) { parent.appendChild(node("span", "tl-small", run.small)); }
       });
       return parent;
@@ -174,7 +183,7 @@
       statusLine.dataset.tone = tone || "info";
     }
 
-    // ── 請求 ───────────────────────────────────────────
+    // 請求
     // 每個槽一次只有一個請求（重排在 state.loading 時不再送，第二層一次一個），所以槽裡的請求只會被
     // drop()、setStale() 或重排開始時中止；那三處都會遞增對應的 generation，回呼只看 generation。
     function post(channel, requestBody) {
@@ -216,7 +225,7 @@
       if (result.error) {
         return result.timedOut
           ? `等待超過 ${REQUEST_TIMEOUT_MS / 1000} 秒，已停止等待。`
-          : "沒有送達計算服務。請確認連線後再試一次。";
+          : "沒有送達本站的計算功能。請確認網路連線後再試一次。";
       }
       const status = result.response ? result.response.status : 0;
       return describeError(result.body, status);
@@ -236,36 +245,56 @@
       if (wrap) wrap.hidden = !wanted;
     }
 
+    // 法達夜盤交點的排法與黃道釋放的一年：選單上的值（預設是閉集的第一個）。
+    function methodChoices() {
+      return {
+        firdariaNode: firdariaNode ? firdariaNode.value : Model.FIRDARIA_NODE_PROFILES[0],
+        zrYear: zrYear ? zrYear.value : Model.ZR_YEAR_MODELS[0],
+      };
+    }
+
     // 手機上選單只有約 300 px 寬，長的選項字被截掉：窄螢幕改用短字（option 的 label），完整的字
     // 照舊在 option 裡，選定那一項的完整字另由 aria-describedby 交給輔助科技。寬螢幕時拿掉短字。
-    const fullChoice = decennialsProfile ? node("span", "visually-hidden") : null;
-    if (fullChoice) {
-      fullChoice.id = "annual-dec-profile-full";
-      decennialsProfile.insertAdjacentElement("afterend", fullChoice);
-    }
+    const shortLabelled = [
+      [decennialsProfile, Model.DECENNIALS_START_SHORT],
+      [firdariaNode, Model.METHOD_CHOICE_SHORT],
+      [zrYear, Model.METHOD_CHOICE_SHORT],
+    ].filter(([control]) => control).map(([control, shorts]) => {
+      const full = node("span", "visually-hidden");
+      full.id = `${control.id}-full`;
+      control.insertAdjacentElement("afterend", full);
+      return { control, shorts, full };
+    });
 
     function syncOptionLabels() {
-      if (!decennialsProfile) return;
       const narrow = matches(MOBILE_QUERY);
-      [...decennialsProfile.options].forEach((option) => {
-        const short = Model.DECENNIALS_START_SHORT[option.value];
-        if (narrow && short) option.label = short;
-        else option.removeAttribute("label");
+      shortLabelled.forEach(({ control, shorts, full }) => {
+        [...control.options].forEach((option) => {
+          const short = shorts[option.value];
+          if (narrow && short) option.label = short;
+          else option.removeAttribute("label");
+        });
+        const chosen = control.selectedOptions[0];
+        full.textContent = narrow && chosen ? chosen.textContent : "";
+        if (narrow) control.setAttribute("aria-describedby", full.id);
+        else control.removeAttribute("aria-describedby");
       });
-      const chosen = decennialsProfile.selectedOptions[0];
-      fullChoice.textContent = narrow && chosen ? chosen.textContent : "";
-      if (narrow) decennialsProfile.setAttribute("aria-describedby", fullChoice.id);
-      else decennialsProfile.removeAttribute("aria-describedby");
     }
 
-    function onDecennialsChange() {
+    function onChoiceChange() {
       syncOptionLabels();
       refreshDecennialsControls();
       if (!state.model || state.loading) return;
       const choice = decennialsChoice();
-      const same = state.decennials && choice.profile === state.decennials.profile && choice.planet === state.decennials.planet;
-      startNote.hidden = same;
-      setStatus(same ? "" : "十年期的起點改了；按「排出時間主星」重新排出。", "info");
+      const methods = methodChoices();
+      const changed = [];
+      if (!(state.decennials && choice.profile === state.decennials.profile && choice.planet === state.decennials.planet)) {
+        changed.push("十年期的起點");
+      }
+      if (methods.firdariaNode !== state.firdariaNode) changed.push("法達夜盤交點的排法");
+      if (methods.zrYear !== state.zrYear) changed.push("黃道釋放的一年");
+      startNote.hidden = !changed.length;
+      setStatus(changed.length ? `${changed.join("、")}改了；按「排出時間主星」重新排出。` : "", "info");
     }
 
     function load() {
@@ -274,13 +303,16 @@
       stopLevel2();
       const generation = state.generation;
       const decennials = decennialsChoice();
+      const methods = methodChoices();
       const todayDate = today();
       const birth = state.payload.datetime;
       const estimate = Model.estimateCompletedYears(birth, todayDate);
       state.loading = true;
+      // 停用中的按鈕會丟掉鍵盤焦點（焦點掉回頁首）；算完後把焦點還給按鈕，或交給這一章的標題。
+      const keyboardWasHere = document.activeElement === startButton;
       startButton.disabled = true;
       setStatus("計算中…", "info");
-      const request = (years) => post(lifecycle, Model.annualRequestBody(state.payload, years, { decennials }));
+      const request = (years) => post(lifecycle, Model.annualRequestBody(state.payload, years, { decennials, ...methods }));
       async function fetchYear() {
         let years = estimate;
         for (let attempt = 0; ; attempt += 1) {
@@ -307,7 +339,7 @@
             showUnavailable();
             return;
           }
-          showLoaded(outcome.data, decennials, todayDate, outcome.body);
+          showLoaded(outcome.data, decennials, methods, todayDate, outcome.body);
         } catch (error) {
           // 畫到一半失敗的區塊不留在畫面上；程式例外的原文不上畫面。
           Object.assign(state, { data: null, model: null, sources: [], selected: null, yearIndex: -1 });
@@ -321,17 +353,30 @@
           setStatus(message, "error");
         } finally {
           refreshControls();
+          if (keyboardWasHere && (!document.activeElement || document.activeElement === document.body)) {
+            if (!startButton.disabled) startButton.focus();
+            // 按鈕在結果出來後收起（隱藏）時 focus() 不生效，改交給這一章的標題。
+            if (document.activeElement !== startButton) {
+              const heading = el("annual-heading");
+              if (heading) {
+                heading.tabIndex = -1;
+                heading.focus();
+              }
+            }
+          }
         }
       });
     }
 
-    function showLoaded(data, decennials, todayDate, sourceBody) {
+    function showLoaded(data, decennials, methods, todayDate, sourceBody) {
       const model = Model.buildModel(data, todayDate);
       // 一生視窗裡沒有任何算得出的年界（例如出生在可計算範圍的最後一年）：沒有年度可以畫。
       if (!model.years.length) {
         throw plainFailure("這張盤的年界超出本站可以計算的範圍（到西元 2399 年），排不出年度時間主星；本命盤的結果不受影響。");
       }
       state.decennials = decennials;
+      state.firdariaNode = methods.firdariaNode;
+      state.zrYear = methods.zrYear;
       // 排在舊結果上的按需請求（例如重排進行中換了年度）屬於舊的那一份，不帶到新結果；
       // 選過的年度（只有這幾年的月小限會從按需回應收下）也從頭記。
       Object.assign(state, freshLevel2());
@@ -424,7 +469,7 @@
       const months = isMonths(next.id);
       state.level2Busy = true;
       setStatus(months ? "正在取這一年的月小限…" : "正在取這一段的第二層…", "info");
-      post(level2Lifecycle, Model.annualRequestBody(state.payload, next.n, { level2Only: true, decennials: state.decennials })).then((result) => {
+      post(level2Lifecycle, Model.annualRequestBody(state.payload, next.n, { level2Only: true, decennials: state.decennials, zrYear: state.zrYear })).then((result) => {
         // 唯一的守衛：清除、表單過期或重排開始時 stopLevel2() 遞增 level2Generation。
         if (generation !== state.level2Generation) return;
         state.level2Busy = false;
@@ -461,12 +506,9 @@
       });
     }
 
-    // ── 選取 ──────────────────────────────────────────
+    // 選取
     function defaultSelection() {
-      const tiles = Model.summaryTiles(state.model, state.yearIndex);
-      const firdaria = tiles.find((tile) => tile.key === "firdaria" && tile.select);
-      const first = tiles.find((tile) => tile.select);
-      return (firdaria || first || {}).select || null;
+      return Model.preferredSelection(state.model, state.yearIndex, preferredTechnique);
     }
 
     function select(id, trigger) {
@@ -486,7 +528,7 @@
       });
     }
 
-    // ── 畫面 ──────────────────────────────────────────
+    // 畫面
     /** 焦點元素的身分：同一段期間（data-item 加類別）或同一個具名控制項，重畫後用它找回。 */
     function focusIdentity(element) {
       if (!element || !body.contains(element)) return null;
@@ -548,9 +590,12 @@
       body.hidden = false;
       const model = state.model;
       if (!model.lanes.length) {
+        life.stop();
         renderUnavailableOnly();
         return;
       }
+      const lifeBox = life.section();
+      if (lifeBox) body.appendChild(lifeBox);
       body.append(
         viewSwitch(),
         yearNav(),
@@ -568,7 +613,36 @@
       detail.setAttribute("aria-labelledby", "annual-detail-title");
       layout.append(main, detail);
       body.append(layout, ...(Model.supportsSolarReturn(state.sources[0]) ? [solarReturn.box()] : []),
-        exportBox(), tableExportBox(), conventionsBox(), lotsBox());
+        exportBox(), tableExportBox(), conventionsBox());
+      renderDetail();
+      refreshControls();
+      if (lifeBox) life.draw();
+      if (state.view === "timeline") positionTimeline(keepLeft);
+    }
+
+    // 換年：只換掉跟著年度變的部分（年度列、摘要卡、參考說明、主欄、細節欄、行事曆檔與回歸盤兩格），
+    // 呈現方式、注意事項、取樣說明、時間主星表、慣例與延伸點不動。
+    function refreshForYear(opts) {
+      const parts = [".tl-year-nav", ".tl-summary", ".tl-reference", ".tl-main", "#annual-detail", ".tl-export:not(.tl-table-export)"]
+        .map((selector) => body.querySelector(selector));
+      const solar = body.querySelector(".tl-box.tl-sr");
+      if (parts.some((part) => !part) || (!solar && Model.supportsSolarReturn(state.sources[0]))) {
+        renderAll(opts);
+        return;
+      }
+      const [nav, oldSummary, reference, main, oldDetail, ics] = parts;
+      const scroller = body.querySelector(".tl-scroll");
+      const keepLeft = opts.keepScroll && scroller ? scroller.scrollLeft : null;
+      nav.replaceWith(yearNav());
+      oldSummary.replaceWith(summary());
+      reference.replaceWith(node("p", "tl-reference note", Model.referenceNote(state.model, state.yearIndex)));
+      main.replaceChildren(state.view === "timeline" ? timeline() : yearbook());
+      const detail = node("aside", "tl-detail");
+      detail.id = "annual-detail";
+      detail.setAttribute("aria-labelledby", "annual-detail-title");
+      oldDetail.replaceWith(detail);
+      if (solar) solar.replaceWith(solarReturn.box());
+      ics.replaceWith(exportBox());
       renderDetail();
       refreshControls();
       if (state.view === "timeline") positionTimeline(keepLeft);
@@ -659,10 +733,9 @@
       state.yearIndex = target;
       state.openDecades.delete(target - (target % 10));
       state.openYears.delete(target);
-      const tiles = Model.summaryTiles(state.model, target);
-      const pick = tiles.find((tile) => tile.key === "firdaria" && tile.select) || tiles.find((tile) => tile.select);
-      if (pick) state.selected = pick.select;
-      renderAll({ keepScroll: state.zoom === "life" });
+      const pick = Model.preferredSelection(state.model, target, preferredTechnique);
+      if (pick) state.selected = pick;
+      refreshForYear({ keepScroll: state.zoom === "life" });
       const again = el(focusId);
       if (again && !again.disabled) again.focus();
       else { const title = el("annual-year-title"); if (title) { title.tabIndex = -1; title.focus(); } }
@@ -726,7 +799,7 @@
       return box;
     }
 
-    // ── 方案 A：橫向時間軸 ─────────────────────────────
+    // 方案 A：橫向時間軸
     function timeline() {
       const model = state.model;
       const [section, heading] = titledSection("tl-timeline", "annual-timeline-title", "一生的時間軸");
@@ -960,7 +1033,7 @@
       }, SCROLL_SETTLE_MS);
     }
 
-    // ── 方案 B：直向年表 ───────────────────────────────
+    // 方案 B：直向年表
     function yearbook() {
       const model = state.model;
       const [section, heading] = titledSection("tl-yearbook", "annual-yearbook-title", "逐年年表");
@@ -1022,6 +1095,10 @@
         });
         table.append(thead, tbody);
         const wrap = node("div", "tl-book-wrap");
+        // 窄螢幕上年表在自己的框裡橫捲；框是有名字的區域，可以用鍵盤捲動。
+        wrap.setAttribute("role", "region");
+        wrap.setAttribute("aria-label", `年表：${first.n}–${last.n} 足歲`);
+        wrap.tabIndex = 0;
         wrap.appendChild(table);
         details.appendChild(wrap);
         section.appendChild(details);
@@ -1077,7 +1154,7 @@
         const holder = position === 0 ? line : node("span", "tl-book-change");
         if (position === 0 && lane.prefix) holder.appendChild(node("span", "tl-prefix", lane.prefix));
         if (position > 0) {
-          holder.append(doc.createTextNode("↳ "), node("span", "mono", item.start.localDate.slice(5)), doc.createTextNode(" 起 "));
+          holder.append(doc.createTextNode("↳ "), node("span", "tl-num", item.start.localDate.slice(5)), doc.createTextNode(" 起 "));
         }
         const chip = node("button", `tl-chip${item.kind === "node" ? " node" : ""}`);
         chip.type = "button";
@@ -1103,7 +1180,7 @@
       return line;
     }
 
-    // ── 細節 ──────────────────────────────────────────
+    // 細節
     function renderDetail() {
       const panel = el("annual-detail");
       if (!panel) return;
@@ -1152,7 +1229,6 @@
       receipt.appendChild(node("summary", null, "收據（回應原值）"));
       receipt.appendChild(node("pre", "mono", JSON.stringify(detail.receipt, null, 1)));
       content.appendChild(receipt);
-      content.appendChild(node("p", "tl-detail-foot", Model.FIXED_SENTENCE));
       panel.append(head, content);
     }
 
@@ -1175,7 +1251,7 @@
       if (back && back.isConnected) back.focus({ preventScroll: true });
     }
 
-    // ── 匯出 .ics ──────────────────────────────────────
+    // 匯出 .ics
     function exportBox() {
       const [box, heading] = titledSection("tl-box tl-export", "annual-export-title", "存成行事曆檔");
       const year = state.model.years[state.yearIndex];
@@ -1220,7 +1296,7 @@
       lifecycle.deliverDownload(doc, new win.Blob([artifact.content], { type: artifact.mime_type }), artifact.filename);
     }
 
-    // ── 匯出時間主星表 ───────────────────────────────────
+    // 匯出時間主星表
     function tableExportBox() {
       const [box, heading] = titledSection("tl-box tl-export tl-table-export", "annual-table-title", "存成時間主星表");
       const use = node("p", "note", "時間主星表把這一區的期間整理成一份資料檔：每一段的技法、層級、起訖日期、輪值的星座或行星與守護行星，加上算法代碼、注意事項與本工具採用的約定，可以留存、核對，或拿去自己整理。行事曆檔只放選定的這一年，給行事曆用；這份表放畫面目前取到的每一段。");
@@ -1262,7 +1338,7 @@
       setStatus(`已產生時間主星表（${artifact.format_name}，${artifact.count} 段期間，${Model.ICS_LABEL}）。`, "info");
     }
 
-    // ── 約定、擴充點 ───────────────────────────────────
+    // 約定、擴充點
     function conventionsBox() {
       const [box, heading] = titledSection("tl-box tl-conventions", "annual-conventions-title", "本工具採用的約定");
       box.append(heading, node("p", "note", "同一套技法，各家軟體的預設不同。這裡列出本頁用了哪一種。"));
@@ -1276,37 +1352,7 @@
       return box;
     }
 
-    function lotsBox() {
-      const lots = Model.extendedLots(state.model);
-      const fragment = doc.createDocumentFragment();
-      if (!lots.length) return fragment;
-      const box = node("details", "tl-box tl-lots");
-      box.appendChild(node("summary", null, "七個延伸的阿拉伯點（本命，整宮）"));
-      box.appendChild(node("p", "note", "Paulus 的五個點與 Valens 的兩個點；Valens 的兩點加注（Valens），與 Paulus 同名的點分開。只列星座與宮位，不解讀。宮位用整宮：一個星座算一宮。"));
-      const table = node("table", "tl-lots-table");
-      table.appendChild(node("caption", "visually-hidden", "七個延伸的阿拉伯點"));
-      const head = node("tr");
-      ["點", "星座", "宮位"].forEach((text) => { const th = node("th", null, text); th.scope = "col"; head.appendChild(th); });
-      const thead = node("thead");
-      thead.appendChild(head);
-      const tbody = node("tbody");
-      lots.forEach((lot) => {
-        const row = node("tr");
-        const name = node("th", null, lot.name);
-        name.scope = "row";
-        const sign = node("td");
-        const svg = glyph(lot.sign);
-        if (svg) sign.appendChild(svg);
-        sign.appendChild(doc.createTextNode(Model.signName(lot.sign)));
-        row.append(name, sign, node("td", null, `第 ${lot.house} 宮`));
-        tbody.appendChild(row);
-      });
-      table.append(thead, tbody);
-      box.appendChild(table);
-      return box;
-    }
-
-    // ── 狀態與控制項 ───────────────────────────────────
+    // 狀態與控制項
     const START_LABEL = startButton.textContent;
     function showUnavailable() {
       startButton.textContent = "年度時間主星尚未開放";
@@ -1346,12 +1392,13 @@
       lifecycle.clear();
       level2Lifecycle.clear();
       solarReturn.clear();
+      life.clear();
       if (scrollTimer !== null) { win.clearTimeout(scrollTimer); scrollTimer = null; }
       clearLevel2Timers();
       Object.assign(state, {
         payload: null, stale: false, loading: false, data: null, model: null, sources: [], view: null,
         zoom: "decade", yearIndex: -1, selected: null, level2Busy: false, ...freshLevel2(),
-        returnFocus: null, decennials: null, openDecades: new Map(), openYears: new Map(),
+        returnFocus: null, decennials: null, firdariaNode: null, zrYear: null, openDecades: new Map(), openYears: new Map(),
         solar: { ...freshSolar(), generation: state.solar.generation + 1 },
       });
       body.replaceChildren();
@@ -1381,8 +1428,9 @@
     }
 
     startButton.addEventListener("click", load);
-    if (decennialsProfile) decennialsProfile.addEventListener("change", onDecennialsChange);
-    if (decennialsPlanet) decennialsPlanet.addEventListener("change", onDecennialsChange);
+    [decennialsProfile, decennialsPlanet, firdariaNode, zrYear].forEach((control) => {
+      if (control) control.addEventListener("change", onChoiceChange);
+    });
     refreshDecennialsControls();
     syncOptionLabels();
     // 跨過手機斷點（轉向、縮放視窗）時：選單換短字或長字，年表換成有沒有收起年度的那一種。
@@ -1409,6 +1457,7 @@
       setStale,
       // 與按「排出時間主星」同一個動作（計算頁在古典完整算完星盤後呼叫）。
       load,
+      prefer: (technique) => { preferredTechnique = technique || null; },
       // 一頁摘要的一行（選定的那一年由誰輪值）；還沒排出或表單已改動時是 null。
       briefLine: () => (state.model && !state.stale ? Model.briefLine(state.model, state.yearIndex) : null),
       // 測試用：目前狀態的唯讀快照。
@@ -1419,9 +1468,484 @@
     });
   }
 
-  // ── 太陽回歸盤 ─────────────────────────────────────
+  // 太陽回歸盤
   // 選定年度的年界那一刻起的星盤：按了才請求（同一條年度路由，只要這一張盤），預設在出生地。
   // 結果只對那一年；換到別的年度時這一格回到按鈕。清除、過期或離開頁面時跟著丟棄。
+  // 人生時間軸：寬的畫成橫向（時間往右），窄於這個寬度（px）時改畫直向（時間往下、每種技法一欄）。
+  const LIFE_VERTICAL_BELOW = 560;
+  const LIFE_FALLBACK_WIDTH = 960;
+  const LIFE_PROMPT = "點任一段（或按 Tab 再用方向鍵）看它的起訖日期與主星。";
+
+  /**
+   * 人生時間軸一格：每種技法的第一層各一條，排在同一條足歲軸上並列（資料見 Model.lifeOverview）。
+   * 圖是 SVG，位置全寫在屬性上，不用 style；量出容器寬度後才畫，寬度改變時重畫。每一段是一個可聚焦的
+   * 按鈕（每條一個 Tab 停點，方向鍵移動），聚焦、滑過或點按都在圖下的讀出列寫出起訖與主星；同一份資料
+   * 另列成表格給報讀器與列印。回傳 section()（建出這一格）、draw()（量寬後畫圖）與 stop()（停止量寬）。
+   */
+  function createLifeOverview(context) {
+    const { doc, win, state, node, titledSection, onOpen } = context;
+    let observer = null;
+    let figure = null;
+    let readout = null;
+    let overview = null;
+    let drawnWidth = 0;
+    let picked = null;
+
+    function svg(tag, attributes, className) {
+      const element = doc.createElementNS(SVG_NS, tag);
+      if (className) element.setAttribute("class", className);
+      Object.entries(attributes || {}).forEach(([key, value]) => element.setAttribute(key, String(value)));
+      return element;
+    }
+
+    function text(x, y, content, className, anchor) {
+      const element = svg("text", { x: round(x), y: round(y), "text-anchor": anchor || "start" }, className);
+      element.textContent = content;
+      return element;
+    }
+
+    const round = (value) => Math.round(value * 10) / 10;
+
+    function glyphAt(key, x, y, size) {
+      const entry = key && Glyphs.GLYPHS[key];
+      if (!entry) return null;
+      const [x0, , x1] = entry.bbox;
+      const box = svg("svg", {
+        x: round(x), y: round(y), width: size, height: size,
+        viewBox: `${Math.round((x0 + x1) / 2) - 525} -810 1050 1050`, "aria-hidden": "true", focusable: "false",
+      }, "tl-life-glyph");
+      box.appendChild(svg("path", { d: entry.d }));
+      return box;
+    }
+
+    function findItem(id) {
+      if (!overview) return null;
+      for (const lane of overview.lanes) {
+        const item = lane.items.find((candidate) => candidate.id === id);
+        if (item) return { lane, item };
+      }
+      return null;
+    }
+
+    function showReadout(id) {
+      if (!readout) return;
+      const found = id ? findItem(id) : null;
+      readout.replaceChildren();
+      if (!found) {
+        readout.appendChild(node("span", "tl-life-prompt", LIFE_PROMPT));
+        return;
+      }
+      const { lane, item } = found;
+      const head = node("span", "tl-life-read-lane", lane.title);
+      const ruler = node("span", "tl-life-read-ruler");
+      const svgGlyph = glyphFor(item.glyph);
+      if (svgGlyph) ruler.appendChild(svgGlyph);
+      ruler.appendChild(doc.createTextNode(item.label));
+      if (item.lord) {
+        ruler.appendChild(doc.createTextNode("・年主星 "));
+        const lordGlyph = glyphFor(item.lordGlyph);
+        if (lordGlyph) ruler.appendChild(lordGlyph);
+        ruler.appendChild(doc.createTextNode(item.lord));
+      }
+      const dates = node("span", "tl-life-read-dates tl-num", `${item.start} → ${item.end}`);
+      const ages = node("span", "tl-life-read-ages", lane.technique === "annual_profection"
+        ? `${item.startAge} 足歲這一年` : `${item.startAge} 至 ${item.endAge} 足歲`);
+      readout.append(head, ruler, dates, ages);
+      if (item.loosing) readout.appendChild(node("span", "tl-life-read-mark", "解鎖"));
+      if (item.continuesAfter) readout.appendChild(node("span", "tl-life-read-mark", "延續到圖的範圍之後"));
+      if (onOpen && state.model && state.model.byId.has(item.id)) {
+        const open = node("button", "tl-life-open", "在下方看這一段的細節");
+        open.type = "button";
+        open.addEventListener("click", () => onOpen(item.id, open));
+        readout.appendChild(open);
+      }
+    }
+
+    function glyphFor(key) {
+      const entry = key && Glyphs.GLYPHS[key];
+      if (!entry) return null;
+      const [x0, , x1] = entry.bbox;
+      const box = svg("svg", { viewBox: `${Math.round((x0 + x1) / 2) - 525} -810 1050 1050`, "aria-hidden": "true", focusable: "false" }, "tl-glyph");
+      box.appendChild(svg("path", { d: entry.d }));
+      return box;
+    }
+
+    function markPicked() {
+      if (!figure) return;
+      figure.querySelectorAll(".tl-life-band").forEach((band) => {
+        const on = band.dataset.lifeItem === picked;
+        band.classList.toggle("is-picked", on);
+        band.setAttribute("aria-pressed", String(on));
+      });
+    }
+
+    function pick(id) {
+      picked = id;
+      markPicked();
+      showReadout(id);
+    }
+
+    function table() {
+      const wrap = node("details", "tl-life-table");
+      wrap.appendChild(node("summary", null, "以表格列出全部期間"));
+      const scroller = node("div", "tl-life-table-wrap");
+      const grid = node("table");
+      grid.appendChild(node("caption", null, `人生時間軸的期間（${overview.startAge} 至 ${overview.endAge} 足歲；日期是${Model.DATE_NOTE}）`));
+      const head = node("thead");
+      const headRow = node("tr");
+      ["技法", "主星或星座", "起", "迄", "足歲"].forEach((label) => {
+        const cell = node("th", null, label);
+        cell.scope = "col";
+        headRow.appendChild(cell);
+      });
+      head.appendChild(headRow);
+      grid.appendChild(head);
+      overview.lanes.forEach((lane) => {
+        const group = node("tbody");
+        lane.items.forEach((item, index) => {
+          const row = node("tr");
+          const name = node(index ? "td" : "th", null, index ? "" : lane.title);
+          if (!index) { name.scope = "rowgroup"; name.rowSpan = lane.items.length; row.appendChild(name); }
+          row.append(
+            node("td", null, item.lord ? `${item.label}（年主星 ${item.lord}）` : item.label),
+            node("td", "tl-num", item.start),
+            node("td", "tl-num", item.end),
+            node("td", "tl-num", lane.technique === "annual_profection" ? `${item.startAge}` : `${item.startAge}–${item.endAge}`),
+          );
+          group.appendChild(row);
+        });
+        grid.appendChild(group);
+      });
+      scroller.appendChild(grid);
+      wrap.appendChild(scroller);
+      return wrap;
+    }
+
+    function section() {
+      stop();
+      overview = Model.lifeOverview(state.model);
+      if (!overview || !overview.lanes.length) return null;
+      if (picked && !findItem(picked)) picked = null;
+      const [box, heading] = titledSection("tl-life", "annual-life-title", "人生時間軸");
+      const head = node("div", "tl-life-head");
+      head.append(heading, node("p", "tl-life-lead", Model.LIFE_LEAD));
+      box.appendChild(head);
+      figure = node("div", "tl-life-figure");
+      box.appendChild(figure);
+      readout = node("p", "tl-life-readout");
+      readout.id = "annual-life-readout";
+      readout.setAttribute("aria-live", "polite");
+      box.appendChild(readout);
+      showReadout(picked);
+      const legend = node("div", "tl-life-legend");
+      legend.setAttribute("aria-hidden", "true");
+      [["tl-life-lg-today", "今天"], ["tl-life-lg-now", "今天所在的那一段"], ["tl-life-lg-restart", "小限回到上升星座"], ["tl-life-lg-loose", "解鎖（黃道釋放跳到對宮）"]]
+        .forEach(([className, label]) => {
+          const entry = node("span");
+          entry.append(node("i", className), doc.createTextNode(label));
+          legend.appendChild(entry);
+        });
+      box.appendChild(legend);
+      box.appendChild(node("p", "note tl-life-note", `底色兩種紙色交替只為分辨相鄰兩段，不代表好壞。各技法的年長不同（法達與小限以太陽回歸為年界，黃道釋放與十年期一年 360 日），所以同一個年數的分界不一定對齊。日期是${Model.DATE_NOTE}。`));
+      box.appendChild(table());
+      if (typeof win.ResizeObserver === "function") {
+        // 重畫放到下一個畫格：在回呼裡直接換掉被觀察的內容，Safari 會報「ResizeObserver loop」錯誤。
+        let pending = false;
+        observer = new win.ResizeObserver(() => {
+          if (pending) return;
+          pending = true;
+          const redraw = () => {
+            pending = false;
+            const width = measure();
+            if (Math.abs(width - drawnWidth) >= 1) draw();
+          };
+          if (typeof win.requestAnimationFrame === "function") win.requestAnimationFrame(redraw);
+          else redraw();
+        });
+        observer.observe(figure);
+      }
+      return box;
+    }
+
+    function measure() {
+      return figure && figure.clientWidth > 0 ? figure.clientWidth : LIFE_FALLBACK_WIDTH;
+    }
+
+    function draw() {
+      if (!figure || !overview) return;
+      const width = measure();
+      drawnWidth = width;
+      const vertical = width < LIFE_VERTICAL_BELOW;
+      const focused = doc.activeElement && figure.contains(doc.activeElement) ? doc.activeElement.dataset.lifeItem : null;
+      const drawing = vertical ? drawVertical(width) : drawHorizontal(width);
+      figure.dataset.orientation = vertical ? "vertical" : "horizontal";
+      figure.replaceChildren(drawing);
+      setStops(focused);
+      markPicked();
+      if (focused) {
+        const again = figure.querySelector(`[data-life-item="${CSS_ESCAPE(focused)}"]`);
+        if (again) again.focus({ preventScroll: true });
+      }
+    }
+
+    // 期間 id 只含英數、斜線、點、連字號與 @（回應的閉集）；選擇器裡照樣跳脫引號以外的字元不必要。
+    const CSS_ESCAPE = (value) => String(value).replace(/["\\]/g, "\\$&");
+
+    function frame(width, height, vertical) {
+      const root = svg("svg", { viewBox: `0 0 ${Math.round(width)} ${Math.round(height)}`, role: "group",
+        "aria-label": `人生時間軸，${overview.startAge} 至 ${overview.endAge} 足歲，${overview.lanes.length} 條並列`,
+        "aria-describedby": "annual-life-readout" }, `tl-life-svg${vertical ? " is-vertical" : ""}`);
+      root.addEventListener("click", onBandEvent);
+      root.addEventListener("keydown", onKey);
+      root.addEventListener("focusin", (event) => { const band = bandOf(event.target); if (band) showReadout(band.dataset.lifeItem); });
+      root.addEventListener("focusout", () => showReadout(picked));
+      root.addEventListener("pointerover", (event) => {
+        // 觸控的點按不是滑過：讀出列只跟著點選走。
+        if (event.pointerType !== "mouse" && event.pointerType !== "pen") return;
+        const band = bandOf(event.target);
+        if (band) showReadout(band.dataset.lifeItem);
+      });
+      root.addEventListener("pointerleave", () => {
+        const focusedBand = bandOf(doc.activeElement);
+        showReadout(focusedBand ? focusedBand.dataset.lifeItem : picked);
+      });
+      return root;
+    }
+
+    function bandOf(target) {
+      return target && typeof target.closest === "function" ? target.closest(".tl-life-band") : null;
+    }
+
+    function onBandEvent(event) {
+      const band = bandOf(event.target);
+      if (!band) return;
+      pick(band.dataset.lifeItem === picked ? null : band.dataset.lifeItem);
+      if (picked) showReadout(picked);
+    }
+
+    function bandElement(lane, item, rect, vertical) {
+      const group = svg("g", { role: "button", tabindex: -1, "aria-pressed": "false",
+        "aria-label": Model.lifeItemText(lane, item) }, `tl-life-band${item.index % 2 ? " alt" : ""}${item.current ? " is-now" : ""}`);
+      group.dataset.lifeItem = item.id;
+      group.dataset.start = String(item.startDay);
+      group.dataset.end = String(item.endDay);
+      group.appendChild(svg("rect", { x: round(rect.x), y: round(rect.y), width: round(Math.max(1, rect.w)), height: round(Math.max(1, rect.h)), rx: 1.5 }, "tl-life-rect"));
+      if (item.current) {
+        group.appendChild(vertical
+          ? svg("rect", { x: round(rect.x), y: round(rect.y), width: 2.5, height: round(Math.max(1, rect.h)) }, "tl-life-nowmark")
+          : svg("rect", { x: round(rect.x), y: round(rect.y + rect.h - 2.5), width: round(Math.max(1, rect.w)), height: 2.5 }, "tl-life-nowmark"));
+      }
+      const labelLength = [...(item.label || "")].length;
+      const size = vertical
+        ? (rect.h >= 17 ? Model.segmentSize(rect.w, labelLength) : "none")
+        : Model.segmentSize(rect.w, labelLength);
+      if (size !== "none") {
+        const showGlyph = size === "full" || size === "glyph";
+        const showName = size === "full" || size === "name";
+        const content = (showGlyph ? 13 : 0) + (showGlyph && showName ? 3 : 0) + (showName ? 13 * labelLength : 0);
+        let x = rect.x + (rect.w - content) / 2;
+        const middle = rect.y + rect.h / 2;
+        if (showGlyph) {
+          const mark = glyphAt(item.glyph, x, middle - 6.5, 13);
+          if (mark) group.appendChild(mark);
+          x += 16;
+        }
+        if (showName) group.appendChild(text(x, middle + 4.5, item.label, "tl-life-text"));
+      }
+      if (item.loosing) {
+        const cx = vertical ? rect.x + rect.w : rect.x;
+        const cy = rect.y;
+        group.appendChild(svg("path", { d: `M${round(cx)} ${round(cy - 4)}l4 4l-4 4l-4 -4z` }, "tl-life-loose"));
+      }
+      return group;
+    }
+
+    function drawHorizontal(width) {
+      const labelW = width >= 900 ? 168 : 140;
+      const right = 16;
+      const top = 44;
+      const laneH = 38;
+      const sampleH = 30;
+      const gap = 8;
+      const span = overview.endDay - overview.startDay;
+      const x = (day) => labelW + ((day - overview.startDay) / span) * (width - labelW - right);
+      let y = top;
+      const rows = overview.lanes.map((lane, index) => {
+        const previous = overview.lanes[index - 1];
+        if (previous && previous.technique !== lane.technique) y += gap;
+        const h = lane.sample ? sampleH : laneH;
+        const row = { lane, y, h };
+        y += h;
+        return row;
+      });
+      const height = y + 34;
+      const root = frame(width, height, false);
+      // 十年一格的淡線與足歲刻度（上）、西元年（下一行小字）。
+      const grid = svg("g", { "aria-hidden": "true" }, "tl-life-grid");
+      overview.ticks.forEach((tick) => {
+        const tx = x(tick.day);
+        grid.appendChild(svg("line", { x1: round(tx), x2: round(tx), y1: top - 6, y2: y }, "tl-life-gridline"));
+        grid.appendChild(text(tx, 17, tick.age === overview.startAge ? `${tick.age} 歲` : `${tick.age}`, "tl-life-age", "middle"));
+        grid.appendChild(text(tx, 33, tick.calendarYear, "tl-life-year", "middle"));
+      });
+      root.appendChild(grid);
+      const labels = svg("g", { "aria-hidden": "true" }, "tl-life-labels");
+      rows.forEach(({ lane, y: rowY, h }) => {
+        if (lane.sample) {
+          labels.appendChild(text(labelW - 12, rowY + h / 2 + 4.5, `${lane.short}・${lane.sample}`, "tl-life-lane-sample", "end"));
+        } else {
+          labels.appendChild(text(labelW - 12, rowY + h / 2 - 2, lane.title, "tl-life-lane", "end"));
+          labels.appendChild(text(labelW - 12, rowY + h / 2 + 12, lane.note, "tl-life-lane-note", "end"));
+        }
+      });
+      root.appendChild(labels);
+      rows.forEach(({ lane, y: rowY, h }) => {
+        const group = svg("g", { role: "group", "aria-label": lane.title }, "tl-life-lane-row");
+        group.dataset.lane = lane.id;
+        lane.items.forEach((item) => {
+          const left = x(item.startDay);
+          const rect = { x: left + 0.5, y: rowY + 4, w: x(item.endDay) - left - 1, h: h - 8 };
+          group.appendChild(bandElement(lane, item, rect, false));
+          if (item.restart) group.appendChild(svg("line", { x1: round(left), x2: round(left), y1: rowY + 1, y2: rowY + h - 1, "aria-hidden": "true" }, "tl-life-restart"));
+        });
+        root.appendChild(group);
+      });
+      if (overview.today) {
+        const tx = x(overview.today.day);
+        const marker = svg("g", { "aria-hidden": "true" }, "tl-life-today");
+        marker.appendChild(svg("line", { x1: round(tx), x2: round(tx), y1: top - 6, y2: y + 4 }));
+        const label = `今天・${overview.today.age} 足歲`;
+        const labelWidth = 13 * 5 + 7.5 * String(overview.today.age).length + 16;
+        const lx = Math.min(Math.max(tx - labelWidth / 2, labelW), width - right - labelWidth);
+        marker.appendChild(svg("rect", { x: round(lx), y: y + 6, width: round(labelWidth), height: 20, rx: 2 }));
+        marker.appendChild(text(lx + labelWidth / 2, y + 20.5, label, null, "middle"));
+        root.appendChild(marker);
+      }
+      return root;
+    }
+
+    function drawVertical(width) {
+      const axisW = 50;
+      const right = 4;
+      const head = 46;
+      const gap = 4;
+      const yearPx = 9;
+      const columns = overview.lanes.length;
+      const colW = (width - axisW - right - gap * (columns - 1)) / columns;
+      const span = overview.endDay - overview.startDay;
+      const plotH = (span / 365.25) * yearPx;
+      const y = (day) => head + ((day - overview.startDay) / span) * plotH;
+      const height = head + plotH + 26;
+      const root = frame(width, height, true);
+      const colX = (index) => axisW + index * (colW + gap);
+      const grid = svg("g", { "aria-hidden": "true" }, "tl-life-grid");
+      overview.ticks.forEach((tick) => {
+        const ty = y(tick.day);
+        grid.appendChild(svg("line", { x1: axisW - 4, x2: width - right, y1: round(ty), y2: round(ty) }, "tl-life-gridline"));
+        grid.appendChild(text(axisW - 8, ty + 5, tick.age === overview.startAge ? `${tick.age}歲` : `${tick.age}`, "tl-life-age", "end"));
+        grid.appendChild(text(axisW - 8, ty + 19, tick.calendarYear, "tl-life-year", "end"));
+      });
+      root.appendChild(grid);
+      const labels = svg("g", { "aria-hidden": "true" }, "tl-life-labels");
+      overview.lanes.forEach((lane, index) => {
+        const cx = colX(index) + colW / 2;
+        labels.appendChild(text(cx, lane.sample ? 18 : 26, lane.short, "tl-life-lane", "middle"));
+        if (lane.sample) labels.appendChild(text(cx, 36, lane.sample, "tl-life-lane-note", "middle"));
+      });
+      root.appendChild(labels);
+      overview.lanes.forEach((lane, index) => {
+        const group = svg("g", { role: "group", "aria-label": lane.title }, "tl-life-lane-row");
+        group.dataset.lane = lane.id;
+        lane.items.forEach((item) => {
+          const topY = y(item.startDay);
+          const rect = { x: colX(index), y: topY + 0.5, w: colW, h: y(item.endDay) - topY - 1 };
+          group.appendChild(bandElement(lane, item, rect, true));
+          if (item.restart) group.appendChild(svg("line", { x1: round(colX(index) - 1), x2: round(colX(index) + colW + 1), y1: round(topY), y2: round(topY), "aria-hidden": "true" }, "tl-life-restart"));
+        });
+        root.appendChild(group);
+      });
+      if (overview.today) {
+        const ty = y(overview.today.day);
+        const marker = svg("g", { "aria-hidden": "true" }, "tl-life-today");
+        marker.appendChild(svg("line", { x1: axisW - 2, x2: width - right, y1: round(ty), y2: round(ty) }));
+        marker.appendChild(svg("rect", { x: 0, y: round(ty - 10), width: axisW - 4, height: 20, rx: 2 }));
+        marker.appendChild(text((axisW - 4) / 2, ty + 4.5, `今天${overview.today.age}`, null, "middle"));
+        root.appendChild(marker);
+      }
+      return root;
+    }
+
+    // 每條一個 Tab 停點：讀出列正在看的那段，否則今天所在的那段，否則第一段。
+    function setStops(preferred) {
+      figure.querySelectorAll(".tl-life-lane-row").forEach((row) => {
+        const bands = [...row.querySelectorAll(".tl-life-band")];
+        bands.forEach((entry) => entry.setAttribute("tabindex", "-1"));
+        const tabStop = bands.find((entry) => entry.dataset.lifeItem === preferred)
+          || bands.find((entry) => entry.dataset.lifeItem === picked)
+          || bands.find((entry) => entry.classList.contains("is-now")) || bands[0];
+        if (tabStop) tabStop.setAttribute("tabindex", "0");
+      });
+    }
+
+    function onKey(event) {
+      const current = bandOf(event.target);
+      if (!current) return;
+      const vertical = figure.dataset.orientation === "vertical";
+      const along = vertical ? ["ArrowUp", "ArrowDown"] : ["ArrowLeft", "ArrowRight"];
+      const across = vertical ? ["ArrowLeft", "ArrowRight"] : ["ArrowUp", "ArrowDown"];
+      const row = current.closest(".tl-life-lane-row");
+      const bands = [...row.querySelectorAll(".tl-life-band")];
+      const index = bands.indexOf(current);
+      let target = null;
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        pick(current.dataset.lifeItem === picked ? null : current.dataset.lifeItem);
+        if (picked) showReadout(picked);
+        return;
+      }
+      if (event.key === along[1]) target = bands[index + 1];
+      else if (event.key === along[0]) target = bands[index - 1];
+      else if (event.key === "Home") target = bands[0];
+      else if (event.key === "End") target = bands[bands.length - 1];
+      else if (across.includes(event.key)) {
+        const rows = [...figure.querySelectorAll(".tl-life-lane-row")];
+        const other = rows[rows.indexOf(row) + (event.key === across[1] ? 1 : -1)];
+        if (other) {
+          const day = Number(current.dataset.start);
+          const candidates = [...other.querySelectorAll(".tl-life-band")];
+          target = candidates.find((entry) => Number(entry.dataset.start) <= day && day < Number(entry.dataset.end))
+            || candidates.find((entry) => Number(entry.dataset.start) >= day) || candidates[candidates.length - 1];
+        }
+      } else {
+        return;
+      }
+      event.preventDefault();
+      if (!target) return;
+      const targetRow = target.closest(".tl-life-lane-row");
+      targetRow.querySelectorAll(".tl-life-band").forEach((entry) => entry.setAttribute("tabindex", "-1"));
+      if (targetRow !== row) current.setAttribute("tabindex", "0");
+      else current.setAttribute("tabindex", "-1");
+      target.setAttribute("tabindex", "0");
+      target.focus({ preventScroll: true });
+    }
+
+    function stop() {
+      if (observer) observer.disconnect();
+      observer = null;
+      figure = null;
+      readout = null;
+      drawnWidth = 0;
+    }
+
+    function clear() {
+      stop();
+      overview = null;
+      picked = null;
+    }
+
+    return { section, draw, stop, clear };
+  }
+
   const SOLAR_IDS = Object.freeze({
     box: "annual-sr", title: "annual-sr-title", status: "annual-sr-status", load: "annual-sr-load",
     latitude: "annual-sr-latitude", longitude: "annual-sr-longitude", privacy: "annual-sr-privacy",
@@ -1467,7 +1991,8 @@
         shown ? shown.panel.heading : `太陽回歸盤（第 ${year ? year.n + 1 : "—"} 年）`);
       box.id = SOLAR_IDS.box;
       heading.tabIndex = -1;
-      box.append(heading, node("p", "annual-fixed tl-sr-lead", Model.SOLAR_RETURN_FIXED));
+      // 「不替你解盤，也不預測」在章首說過一次；這裡只說這張盤是什麼（匯出與面板仍帶完整的一句）。
+      box.append(heading, node("p", "note tl-sr-lead", Model.SOLAR_RETURN_LEAD));
       const blocked = solarBlocked(year);
       if (blocked) {
         box.appendChild(node("p", "note tl-sr-blocked", blocked));
@@ -1492,7 +2017,7 @@
       button.id = SOLAR_IDS.load;
       button.disabled = state.stale || solar.loading || !state.payload;
       button.addEventListener("click", loadSolarReturn);
-      // 另選地點還沒有開放：不畫那一格，也不提它的說明。
+      // 另選地點的開關關著時不畫那一格，也不提它的說明。
       if (Model.SOLAR_RETURN_RELOCATION_OFFERED) wrap.appendChild(solarPlaceControl());
       wrap.appendChild(button);
       return wrap;
@@ -1719,28 +2244,9 @@
         setSolarStatus("下載失敗：這張回歸盤的星盤圖無法繪製。", "error");
         return;
       }
-      if (format === "svg") {
-        const svg = Wheel.renderSvg(doc, model, { variant: "download" });
-        solarLifecycle.deliverDownload(doc, new win.Blob([Wheel.serializeSvg(svg)], { type: "image/svg+xml" }), SOLAR_WHEEL_FILES.svg);
-        setSolarStatus("已產生 SVG 檔案。", "info");
-        return;
-      }
-      const canvas = doc.createElement("canvas");
-      canvas.width = model.width * Wheel.PNG_SCALE;
-      canvas.height = model.height * Wheel.PNG_SCALE;
-      const context2d = typeof canvas.getContext === "function" ? canvas.getContext("2d") : null;
-      if (!context2d || typeof canvas.toBlob !== "function") {
-        setSolarStatus("下載失敗：這個瀏覽器無法產生 PNG。", "error");
-        return;
-      }
-      Wheel.drawCanvas(context2d, model);
-      canvas.toBlob((blob) => {
-        // toBlob 是非同步的：期間若已清除、過期或換了一年，就不交出這張圖。
-        if (state.stale || state.solar.result !== shown) return;
-        if (!blob) { setSolarStatus("下載失敗：無法產生 PNG。", "error"); return; }
-        solarLifecycle.deliverDownload(doc, blob, SOLAR_WHEEL_FILES.png);
-        setSolarStatus("已產生 PNG 檔案。", "info");
-      }, "image/png");
+      // 期間若已清除、過期或換了一年，就不交出這張圖。
+      Wheel.downloadImage(doc, solarLifecycle, model, format, SOLAR_WHEEL_FILES,
+        () => !state.stale && state.solar.result === shown, setSolarStatus);
     }
 
     function solarTable(table, id) {
@@ -1786,8 +2292,7 @@
 
   function deviceToday(win) {
     const date = new win.Date();
-    const pad = (value) => String(value).padStart(2, "0");
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    return `${date.getFullYear()}-${Model.pad2(date.getMonth() + 1)}-${Model.pad2(date.getDate())}`;
   }
 
   function randomToken(win) {

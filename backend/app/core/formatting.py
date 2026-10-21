@@ -109,14 +109,31 @@ def degree_text(value_degrees: float, places: int) -> str:
     return text
 
 
+# 回應裡某些數量很多的度數（出生時間取樣的包絡、相位幾何、恆星座標）只帶到頁面印出的
+# 精度：10⁻⁶ 度，約 0.004 角秒，比星曆與取樣本身的不確定小得多。
+DEGREE_DECIMAL_PLACES = LONGITUDE_DECIMAL_PLACES
+
+
+def longitude_number(longitude: float) -> float:
+    """黃經化到 [0, 360) 後，取 sign_position 印出的那個十進位值（10⁻⁶ 度，捨入不跨整數度）。
+
+    不跨整數度，所以星座、界與旬的歸屬與原值相同；由這個數讀出的星座就是原值的星座。
+    """
+    return float(degree_text(normalize_longitude(longitude), LONGITUDE_DECIMAL_PLACES))
+
+
+def degrees_number(value: float) -> float:
+    """非黃經的度數（角距、偏差、緯度、高度、每日度數）到 10⁻⁶。"""
+    return round(value, DEGREE_DECIMAL_PLACES) + 0.0
+
+
 # `sign_position` 用 [sign_index, dms_in_sign, longitude_decimal] 三元陣列而不是物件：
 # 約 120 個黃經各帶一份，物件鍵名會多出約 6 KB，而回應預算只剩約 10 KB。
 def sign_position(longitude: float | None) -> list | None:
-    """一個黃經的顯示：[星座索引, 星座內度分秒, 十進位黃經]。唯一產生器。
+    """一個黃經的顯示：[星座索引, 星座內度分秒, 十進位黃經]（規則見 module docstring）。
 
-    `sign_index` 由原始值決定（[30k°, 30k+30°) 半開區間），度分秒與十進位黃經依
-    KEEP_DEG 規則捨入，所以 359.9999999° 是 [11, "29°59′59.99″", "359.999999"]，
-    29.99999995° 是 [0, "29°59′59.99″", "29.999999"]。前端照印，不自己捨入。
+    例：359.9999999° 是 [11, "29°59′59.99″", "359.999999"]，
+    29.99999995° 是 [0, "29°59′59.99″", "29.999999"]。
     """
 
     if longitude is None:
@@ -131,16 +148,12 @@ def sign_position(longitude: float | None) -> list | None:
     ]
 
 
-# ── 附掛點 ────────────────────────────────────────────────────────────────
 # Attach the one sign/DMS/decimal display to every longitude the result page prints.
-#
-# The frontend does not quantize a longitude itself (it would print 359.9999999° as
-# Aries 0°00′00.00″ beside a Pisces dignity row and a decimal column reading
-# 360.000000).  `formatting.sign_position` is the only producer; `attach_sign_positions` below is the only place that decides which longitudes
-# carry it, so a new longitude on the page needs one row here and nothing in the frontend.
-#
-# Every record below gains a `sign_position` (or, for bare numbers, a sibling map);
-# `None` where the longitude is `None`.  Raw values are never changed.
+# The frontend does not quantize (it would print 359.9999999° as Aries 0°00′00.00″
+# beside a Pisces dignity row); `attach_sign_positions` alone decides which
+# longitudes carry it, so a new longitude needs one row here and nothing in the frontend.
+# Records gain `sign_position` (bare numbers a sibling map), `None` for a `None`
+# longitude; raw values never change.
 #
 # `derived_methods.planet_in_house.placements` is not listed: each placement is a body of
 # `astronomical_data.bodies` (the same list, `compute_planet_house_placements(bodies, ...)`)
@@ -150,8 +163,7 @@ def sign_position(longitude: float | None) -> list | None:
 ANGLE_KEYS = ("asc", "mc", "desc", "ic")
 LOT_KEYS = ("fortune", "spirit")
 
-# (layer, dotted path to a list or a dict of records).  Each record's `longitude`
-# gains a sibling `sign_position`.
+# (layer, dotted path to a list or a dict of records).
 RECORD_COLLECTIONS = (
     ("astronomical_data", "bodies"),
     ("astronomical_data", "nodes"),

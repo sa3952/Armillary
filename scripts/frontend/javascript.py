@@ -379,13 +379,50 @@ def shipped_path(name: str) -> str:
     return f"{SHIPPED_DIRECTORY}/{name}"
 
 
-def build_scripts(sources: Path = SOURCES) -> dict[str, str]:
-    """Every shipped script, minified from its readable source, keyed by its
-    path under frontend/."""
+# Scripts shipped as one file made of several readable sources, in order (the
+# last one names the shipped file).  The sources stay split for editing; the
+# page pays one request per bundle, as before the split.  A bundle is one
+# function scope: its sources are joined inside `(function () { ... })();`, so
+# they name each other's top-level declarations directly and none of them
+# becomes a global.  While loading, a source uses only names an earlier source
+# defined; a later source's functions are used only when called.  The first
+# source carries the bundle's "use strict".  frontend/tests/script-bundles.cjs
+# reads them the same way.
+BUNDLES_PATH = Path(__file__).resolve().parent / "script_bundles.json"
 
+
+BUNDLE_OPEN = "(function () {\n"
+BUNDLE_CLOSE = "})();\n"
+
+
+def bundles(path: Path = BUNDLES_PATH) -> dict[str, list[str]]:
+    declared = json.loads(path.read_text(encoding="utf-8"))
+    for name, members in declared.items():
+        if not members or members[-1] != name:
+            raise ValueError(f"bundle {name} must end with its own source")
+    return declared
+
+
+def readable(name: str, sources: Path = SOURCES) -> str:
+    """The readable text behind shipped script `name`: its source, or a
+    bundle's sources joined in order."""
+
+    members = bundles().get(name)
+    if members is None:
+        return (sources / name).read_text(encoding="utf-8")
+    return BUNDLE_OPEN + "\n".join((sources / member).read_text(encoding="utf-8") for member in members) + BUNDLE_CLOSE
+
+
+def build_scripts(sources: Path = SOURCES) -> dict[str, str]:
+    """Every shipped script, minified from its readable source (a bundle from
+    its sources in order), keyed by its path under frontend/."""
+
+    declared = bundles()
+    folded = {member for name, members in declared.items() for member in members if member != name}
     built = {
-        shipped_path(path.name): minify(path.read_text(encoding="utf-8"))
+        shipped_path(path.name): minify(readable(path.name, sources))
         for path in sorted(sources.glob("*.js"))
+        if path.name not in folded
     }
     if not built:
         raise ValueError(f"no readable script in {sources}")

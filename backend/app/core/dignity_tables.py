@@ -8,11 +8,16 @@ from __future__ import annotations
 
 from typing import Any, TypedDict
 
+from .source_reading import DOROTHEUS_BOOK_I_ONLINE, cited
+
 SIGNS = (
     "aries", "taurus", "gemini", "cancer", "leo", "virgo",
     "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces",
 )
 ELEMENTS = ("fire", "earth", "air", "water")
+SEVEN_PLANETS = ("sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn")
+# Slowest to fastest: the order of the planetary hours, the faces and the firdaria partners.
+CHALDEAN_ORDER = ("saturn", "jupiter", "mars", "sun", "venus", "mercury", "moon")
 
 DOMICILE_EXALTATION_PROFILE_ID = (
     "traditional_seven_domicile_exaltation_signs_v1"
@@ -92,19 +97,12 @@ EGYPTIAN_BOUNDS = (
 )
 
 # The complete table printed at the end of Tetrabiblos I.21 in Robbins (1940), p.107
-# (Robbins numbering; Hübner 1998 merges it into I.21); the second table of I.20-21
-# taken together, the only one in I.21.
-# Libra, last segment: the LacusCurtius transcription ends the row with Saturn.
-# The printed Loeb (1964 reprint of the 1940 edition, two scanned copies) prints
-# Mars in both the English table (p.107) and the Greek table (p.106), and the
-# manuscript totals in Robbins p.108 n.1 (Mars 66°) hold only with Mars; this
-# profile uses Mars.  Every cell was read against the English table (p.107) and
-# the Greek table with its cumulative endpoints (p.106) in the same two copies
-# as the Egyptian table, so the row status is the checked one and only Libra
-# carries an exception, for the transcription difference.  The other readings
-# Robbins's own apparatus reports (Proclus, Camerarius) are kept out of the
-# table and disclosed in its manuscript_variants.  The apparatus Robbins
-# prints for Libra concerns lines 3-4 (Mercury/Jupiter), not line 5.
+# (Robbins numbering; Hübner 1998 merges it into I.21); the only table in I.21.
+# Every cell was read against the English table (p.107) and the Greek table with
+# its cumulative endpoints (p.106) in the same two copies as the Egyptian table.
+# Libra, last segment: Mars as printed, not the LacusCurtius Saturn (the Libra
+# row_exception gives the basis).  Robbins's apparatus readings (Proclus,
+# Camerarius) stay out of the table and are disclosed in manuscript_variants.
 PTOLEMY_ROBBINS_BOUNDS = (
     _segments(("jupiter", 6), ("venus", 8), ("mercury", 7), ("mars", 5), ("saturn", 4)),
     _segments(("venus", 8), ("mercury", 7), ("jupiter", 7), ("saturn", 2), ("mars", 6)),
@@ -182,8 +180,7 @@ BOUNDS_SOURCE_STATEMENTS = {
         "Frank E. Robbins trans., Loeb 1940, pp.103-107; authorship of the "
         "complete table is disputed in scholarship"
     ),
-    # Every cell was checked against page images of two first-edition copies and
-    # the 1659 edition; that process note is internal.
+    # The page-image check (see LILLY_RECEIVED_BOUNDS) stays internal.
     "lilly_received_bounds_1647_v1": (
         "William Lilly, Christian Astrology (1647), p.104, Table of the "
         "Essential Dignities, Termes columns; Leo reads Saturn 6, Mercury 7, "
@@ -213,8 +210,7 @@ LILLY_BOUNDS_PLANET_TOTALS_NOTE = (
     f"Mars {_ROBBINS_TOTALS['mars']}); not normalised"
 )
 
-# Closed vocabularies for provenance metadata.  Every value a profile
-# emits in these positions comes from one of these tuples.
+# Closed vocabularies: every provenance value a profile emits comes from these.
 CITATION_VERIFICATION_STATES = (
     "cited_from_methodology_research_report_not_independently_checked",
     # The cited passage was read on page images of the cited printed edition.
@@ -258,8 +254,7 @@ BOUNDS_ROW_VERIFICATION_STATES = (
     "generated_from_stated_textual_rule",
     "checked_against_first_edition_page_images",
     "corrected_against_first_edition_page_images",
-    # The product reading is kept and the
-    # difference from the cited public transcription is disclosed.
+    # Product reading kept; the difference from the cited transcription disclosed.
     "reading_differs_from_cited_transcription",
 )
 TERMS_ATTRIBUTION_STATES = (
@@ -275,8 +270,8 @@ CLAIM_LAYER_STATES = (
     "not_claimed",
 )
 
-# Tests pin every cell of every table.  Bounds are named as transmitted tables; the profile ids stay as they
-# are because renaming them would break stored requests.
+# Tests pin every cell.  Bounds are named as transmitted tables; the profile ids
+# stay because renaming them would break stored requests.
 BOUNDS_SOURCE_DETAILS: dict[str, dict[str, Any]] = {
     "egyptian_bounds_robbins_1940_v1": {
         "attribution": "traditional_name_reported_by_ptolemy",
@@ -292,37 +287,29 @@ BOUNDS_SOURCE_DETAILS: dict[str, dict[str, Any]] = {
             "79°, Mars 66°, Venus 82°, Mercury 76°) equal this table's totals",
         ],
         "row_exceptions": [],
-        # The table is kept; the variant Robbins reports is disclosed.
         "manuscript_variants": [
-            {
-                "citation": "Robbins 1940 p.97 n.2 (Latin apparatus to the Greek table on p.96)",
-                "says": (
-                    "Robbins follows the tables of Vat. gr. 1453 (which contains "
-                    "Proclus's Paraphrase); Camerarius's printing agrees except at "
-                    "lines 26 and 28 of the Greek page, under Capricorn, where it "
-                    "offers Venus 7 and Mars 5; the tables are in manuscripts "
-                    "PLMNAD and omitted in VE"
-                ),
-                "reading": "secondary_only",
-                "read_at": _ROBBINS_APPARATUS_READ_AT.format(pages="n420"),
-                "readings": [
-                    {
-                        "sign": "capricorn", "line": 3,
-                        "witness": "camerarius_printing",
-                        "table": ["venus", 8], "other": ["venus", 7],
-                    },
-                    {
-                        "sign": "capricorn", "line": 5,
-                        "witness": "camerarius_printing",
-                        "table": ["mars", 4], "other": ["mars", 5],
-                    },
-                ],
-                "line_note": (
-                    "Robbins names page lines 26 and 28; Venus and Mars occur in "
-                    "Capricorn only at lines 3 and 5, which is where they are "
-                    "recorded here"
-                ),
-            }
+            cited("Robbins 1940 p.97 n.2 (Latin apparatus to the Greek table on p.96)",
+                  ("Robbins follows the tables of Vat. gr. 1453 (which contains "
+                   "Proclus's Paraphrase); Camerarius's printing agrees except at "
+                   "lines 26 and 28 of the Greek page, under Capricorn, where it "
+                   "offers Venus 7 and Mars 5; the tables are in manuscripts "
+                   "PLMNAD and omitted in VE"),
+                  "secondary_only", _ROBBINS_APPARATUS_READ_AT.format(pages="n420"),
+                  readings=[
+                      {
+                          "sign": "capricorn", "line": 3,
+                          "witness": "camerarius_printing",
+                          "table": ["venus", 8], "other": ["venus", 7],
+                      },
+                      {
+                          "sign": "capricorn", "line": 5,
+                          "witness": "camerarius_printing",
+                          "table": ["mars", 4], "other": ["mars", 5],
+                      },
+                  ],
+                  line_note=("Robbins names page lines 26 and 28; Venus and Mars occur in "
+                             "Capricorn only at lines 3 and 5, which is where they are "
+                             "recorded here"))
         ],
         "chapter_numbering": {
             "robbins_1940": "I.20",
@@ -338,8 +325,10 @@ BOUNDS_SOURCE_DETAILS: dict[str, dict[str, Any]] = {
         ),
         # 見證清單依 Jones & Steele 2011 §1。
         "witnesses": [
-            "checked: Firmicus II.6.4-5, 10; Valens I.3; al-Bīrūnī, Tafhīm §453",
-            "not checked: Dorotheus via Hephaistio; Paulus ch.3; Abū Maʿshar, Abbr. 7.10",
+            "checked: Valens I.3; al-Bīrūnī, Tafhīm §453",
+            "variant witness: Firmicus II.6 (Kroll-Skutsch) differs in Gemini, Cancer "
+            "and Sagittarius (II.6.4-5, 10); the other nine signs agree",
+            "not checked: Dorotheus via Hephaestio; Paulus ch.3; Abū Maʿshar, Abbr. 7.10",
         ],
     },
     "chaldaean_bounds_ptolemy_i_21_v1": {
@@ -368,8 +357,6 @@ BOUNDS_SOURCE_DETAILS: dict[str, dict[str, Any]] = {
             "p.106, Greek table with cumulative endpoints to 30 in every sign "
             "(both copies, Internet Archive page n429)",
         ],
-        # The printed glyph has been read: the value is kept and the difference
-        # from the cited transcription is disclosed.
         "row_exceptions": [
             {
                 "sign": "libra",
@@ -409,90 +396,80 @@ BOUNDS_SOURCE_DETAILS: dict[str, dict[str, Any]] = {
                 ],
             }
         ],
-        # The table is kept; every other reading Robbins's apparatus reports is
-        # disclosed.  "other" carries None where the apparatus gives only the planet.
+        # "other" is None where the apparatus gives only the planet.
         "manuscript_variants": [
-            {
-                "citation": (
-                    "Robbins 1940 p.106 n.1, continued on p.107 (Latin apparatus "
-                    "to the Greek table on p.106)"
-                ),
-                "says": (
-                    "Robbins follows the tables found in Vat. gr. 1453, which "
-                    "contains Proclus's Paraphrase; Camerarius's printing agrees "
-                    "except at lines 4-5 under Capricorn, where its order is Mars 5, "
-                    "Saturn 6; Proclus has some double readings, in Taurus, Cancer, "
-                    "Leo, Libra, Scorpio, Capricorn and Pisces"
-                ),
-                "reading": "secondary_only",
-                "read_at": _ROBBINS_APPARATUS_READ_AT.format(pages="n429-n430"),
-                "readings": [
-                    {
-                        "sign": "capricorn", "line": 4, "witness": "camerarius_printing",
-                        "table": ["saturn", 6], "other": ["mars", 5],
-                    },
-                    {
-                        "sign": "capricorn", "line": 5, "witness": "camerarius_printing",
-                        "table": ["mars", 5], "other": ["saturn", 6],
-                    },
-                    {
-                        "sign": "taurus", "line": 4, "witness": "proclus_paraphrase_double_reading",
-                        "table": ["saturn", 2], "other": ["saturn", 4],
-                    },
-                    {
-                        "sign": "cancer", "line": 2, "witness": "proclus_paraphrase_double_reading",
-                        "table": ["jupiter", 7], "other": ["mercury", None],
-                    },
-                    {
-                        "sign": "cancer", "line": 3, "witness": "proclus_paraphrase_double_reading",
-                        "table": ["mercury", 7], "other": ["jupiter", None],
-                    },
-                    {
-                        "sign": "leo", "line": 3, "witness": "proclus_paraphrase_double_reading",
-                        "table": ["saturn", 6], "other": ["venus", None],
-                    },
-                    {
-                        "sign": "libra", "line": 3, "witness": "proclus_paraphrase_double_reading",
-                        "table": ["mercury", 5], "other": ["jupiter", 8],
-                    },
-                    {
-                        "sign": "libra", "line": 4, "witness": "proclus_paraphrase_double_reading",
-                        "table": ["jupiter", 8], "other": ["mercury", 5],
-                    },
-                    {
-                        "sign": "scorpio", "line": 2, "witness": "proclus_paraphrase_double_reading",
-                        "table": ["venus", 7], "other": ["jupiter", 8],
-                    },
-                    {
-                        "sign": "scorpio", "line": 3, "witness": "proclus_paraphrase_double_reading",
-                        "table": ["jupiter", 8], "other": ["venus", 7],
-                    },
-                    {
-                        "sign": "capricorn", "line": 4, "witness": "proclus_paraphrase_double_reading",
-                        "table": ["saturn", 6], "other": ["mars", None],
-                    },
-                    {
-                        "sign": "capricorn", "line": 5, "witness": "proclus_paraphrase_double_reading",
-                        "table": ["mars", 5], "other": ["saturn", None],
-                    },
-                    {
-                        "sign": "pisces", "line": 4, "witness": "proclus_paraphrase_double_reading",
-                        "table": ["mars", 5], "other": ["mars", 6],
-                    },
-                    {
-                        "sign": "pisces", "line": 5, "witness": "proclus_paraphrase_double_reading",
-                        "table": ["saturn", 5], "other": ["saturn", 4],
-                    },
-                ],
-                "relation_to_lilly_1647": (
-                    "Lilly's p.104 Termes rows are this table with Proclus's other "
-                    "readings in Libra, Scorpio, Capricorn and Pisces; in Taurus "
-                    "Lilly has Saturn 4 (Proclus's other reading) and Mars 4, and in "
-                    "Leo Venus at line 3 (Proclus's other reading) in an otherwise "
-                    "different order; Cancer follows this table; Gemini differs "
-                    "where the apparatus records no variant"
-                ),
-            }
+            cited(("Robbins 1940 p.106 n.1, continued on p.107 (Latin apparatus "
+                   "to the Greek table on p.106)"),
+                  ("Robbins follows the tables found in Vat. gr. 1453, which "
+                   "contains Proclus's Paraphrase; Camerarius's printing agrees "
+                   "except at lines 4-5 under Capricorn, where its order is Mars 5, "
+                   "Saturn 6; Proclus has some double readings, in Taurus, Cancer, "
+                   "Leo, Libra, Scorpio, Capricorn and Pisces"),
+                  "secondary_only", _ROBBINS_APPARATUS_READ_AT.format(pages="n429-n430"),
+                  readings=[
+                      {
+                          "sign": "capricorn", "line": 4, "witness": "camerarius_printing",
+                          "table": ["saturn", 6], "other": ["mars", 5],
+                      },
+                      {
+                          "sign": "capricorn", "line": 5, "witness": "camerarius_printing",
+                          "table": ["mars", 5], "other": ["saturn", 6],
+                      },
+                      {
+                          "sign": "taurus", "line": 4, "witness": "proclus_paraphrase_double_reading",
+                          "table": ["saturn", 2], "other": ["saturn", 4],
+                      },
+                      {
+                          "sign": "cancer", "line": 2, "witness": "proclus_paraphrase_double_reading",
+                          "table": ["jupiter", 7], "other": ["mercury", None],
+                      },
+                      {
+                          "sign": "cancer", "line": 3, "witness": "proclus_paraphrase_double_reading",
+                          "table": ["mercury", 7], "other": ["jupiter", None],
+                      },
+                      {
+                          "sign": "leo", "line": 3, "witness": "proclus_paraphrase_double_reading",
+                          "table": ["saturn", 6], "other": ["venus", None],
+                      },
+                      {
+                          "sign": "libra", "line": 3, "witness": "proclus_paraphrase_double_reading",
+                          "table": ["mercury", 5], "other": ["jupiter", 8],
+                      },
+                      {
+                          "sign": "libra", "line": 4, "witness": "proclus_paraphrase_double_reading",
+                          "table": ["jupiter", 8], "other": ["mercury", 5],
+                      },
+                      {
+                          "sign": "scorpio", "line": 2, "witness": "proclus_paraphrase_double_reading",
+                          "table": ["venus", 7], "other": ["jupiter", 8],
+                      },
+                      {
+                          "sign": "scorpio", "line": 3, "witness": "proclus_paraphrase_double_reading",
+                          "table": ["jupiter", 8], "other": ["venus", 7],
+                      },
+                      {
+                          "sign": "capricorn", "line": 4, "witness": "proclus_paraphrase_double_reading",
+                          "table": ["saturn", 6], "other": ["mars", None],
+                      },
+                      {
+                          "sign": "capricorn", "line": 5, "witness": "proclus_paraphrase_double_reading",
+                          "table": ["mars", 5], "other": ["saturn", None],
+                      },
+                      {
+                          "sign": "pisces", "line": 4, "witness": "proclus_paraphrase_double_reading",
+                          "table": ["mars", 5], "other": ["mars", 6],
+                      },
+                      {
+                          "sign": "pisces", "line": 5, "witness": "proclus_paraphrase_double_reading",
+                          "table": ["saturn", 5], "other": ["saturn", 4],
+                      },
+                  ],
+                  relation_to_lilly_1647=("Lilly's p.104 Termes rows are this table with Proclus's other "
+                                          "readings in Libra, Scorpio, Capricorn and Pisces; in Taurus "
+                                          "Lilly has Saturn 4 (Proclus's other reading) and Mars 4, and in "
+                                          "Leo Venus at line 3 (Proclus's other reading) in an otherwise "
+                                          "different order; Cancer follows this table; Gemini differs "
+                                          "where the apparatus records no variant"))
         ],
         "claim_layers": {
             "ptolemy_prose_discussion_of_terms": "attested_in_cited_text",
@@ -545,8 +522,6 @@ BOUNDS_SOURCE_DETAILS: dict[str, dict[str, Any]] = {
                     "glyph and the 1-7 line under the Leo glyph (read by sequence as "
                     "Leo 7-13, Virgo 1-7)",
                 ],
-                # Every cell of p.104 was re-read; Leo was the only row that
-                # differed, in ruler order only.
             }
         ],
     },
@@ -595,8 +570,7 @@ DECAN_SOURCE_DETAILS: dict[str, dict[str, Any]] = {
             "Firmicus Maternus, Mathesis II.4.3 (complete 36-face table; "
             "Kroll-Skutsch ed. 1897, vol. I p.45; chapter II.4 pp.44-46)"
         ),
-        # Paulus and Firmicus may share a source,
-        # so the witness is parallel, not independent.
+        # Paulus and Firmicus may share a source: parallel, not independent.
         "parallel_witness": (
             "Paulus Alexandrinus, Introduction ch.4 (Boer 1958 numbering, main "
             "text; Schmidt/Hand 1995 pp.9-10), 'seven-zoned sphere' (order and "
@@ -734,7 +708,7 @@ TRIPLICITY_SOURCE_STATEMENTS = {
         "associate of these two', I.28 p.196) participates by day and by night; "
         "the Greek verse in Hephaestio I.6 gives the same four triads (read in an "
         "online transcription following CCAG/TLG; the Pingree 1973 edition and "
-        "Schmidt 1994 p.30 not checked)"
+        "Schmidt's translation (Project Hindsight, 1994) p.30 not checked)"
     ),
     TRIPLICITY_IDS[1]: (
         "Ptolemy, Tetrabiblos I.18 in Frank E. Robbins trans. (1940) = I.19 "
@@ -747,9 +721,8 @@ TRIPLICITY_SOURCE_STATEMENTS = {
         "both assign two planets. secondary_ruler adds no score."
         # Checked against Robbins pp.83-87 and the PAL online Hübner text I.19.
     ),
-    # Lilly's own attribution is stated;
-    # Naibod is named as Lilly's attribution, never as this profile's anchor.
-    # Spelling follows the page ('Ptolomy' on pp.104-105).
+    # Naibod is Lilly's attribution, never this profile's anchor; 'Ptolomy' follows
+    # the page (pp.104-105).
     TRIPLICITY_IDS[2]: (
         "William Lilly, Christian Astrology (1647), p.104, day/night "
         "triplicity table, headed 'according to Ptolomy', columns Di. and Noc. "
@@ -764,30 +737,24 @@ ADDITIONAL_SHARE_APPLICATION_STATES = ("disclosed_not_applied",)
 TRIPLICITY_SOURCE_DETAILS: dict[str, dict[str, Any]] = {
     TRIPLICITY_IDS[0]: {
         "chapter": (
-            "Carmen Astrologicum I.1 (Pingree pp.161-162); use of the rulers I.4 "
-            "(pp.163-164, not checked)"
+            "Carmen Astrologicum I.1 (Pingree 1976 pp.161-162); use of the rulers I.4 "
+            "(pp.163-164)"
         ),
         "third_ruler_term": "third_and_common_ruler",
         "third_ruler_term_source": (
             "Holden's Rhetorius per research report, not checked; Pingree has "
             "'then' (I.1), 'associate' (I.28), 'participant' (I.10)"
         ),
-        "corroboration": {
-            "citation": (
-                "Vettius Valens, Anthologies II.1 (Kroll and Pingree II.1; Pingree "
-                "pp.54-55 by Riley's /P/ markers)"
-            ),
-            "says": (
-                "the same four triads by day and by night as Dorotheus, the third "
-                "planet working with both sects"
-            ),
-            "reading": "translation_read",
-            "read_at": (
-                "Riley's translation, the PDF of his preliminary edition "
-                "(Vettius_Valens_Riley.pdf), p.25"
-            ),
-        },
-        "cross_check_pending": "Dykes, Dorotheus's Carmen Astrologicum, 2nd ed. (not compared)",
+        "corroboration": cited(
+            ("Vettius Valens, Anthologies II.1 (Kroll and Pingree II.1; Pingree "
+             "pp.54-55 by Riley's /P/ markers)"),
+            ("the same four triads by day and by night as Dorotheus, the third "
+             "planet working with both sects"),
+            "translation_read",
+            ("Riley's translation, the PDF of his preliminary edition "
+             "(Vettius_Valens_Riley.pdf), printed p.25 (PDF page 27)")),
+        "cross_check_pending": ("B. Dykes, Carmen Astrologicum: The ʿUmar al-Ṭabarī "
+                                "Translation, 2nd ed. (Cazimi Press, 2019) (not compared)"),
         "sign_specific_additional_shares": [
             {
                 "sign": "virgo",
@@ -801,8 +768,9 @@ TRIPLICITY_SOURCE_DETAILS: dict[str, dict[str, Any]] = {
                 ),
             }
         ],
-        # The table itself (I.1 pp.161-162) and I.28 p.196; the other fields
-        # say which of their citations are not checked.
+        # The table itself (I.1 pp.161-162), the use of the rulers (I.4
+        # pp.163-164) and I.28 p.196, each with its reading in the register
+        # entry's sources; the other fields say which citations are not checked.
         "citation_verification": _EDITION_PAGES_CHECKED,
     },
     TRIPLICITY_IDS[1]: {
@@ -852,7 +820,7 @@ DOMICILE_EXALTATION_SOURCES = [
     },
     {
         "work": "Vettius Valens, Anthologies",
-        "location": "III.4 (Pingree 1986 numbering; Riley, CSUS PDF (2010) p.61)",
+        "location": "III.4 (Pingree 1986 numbering; Riley, CSUS PDF (2010) printed p.61)",
         "role": (
             "also_attested_exaltation_signs_source_also_supplies_"
             "exact_degrees_not_evaluated_by_this_profile"
@@ -860,7 +828,7 @@ DOMICILE_EXALTATION_SOURCES = [
     },
     {
         "work": "Firmicus Maternus, Mathesis",
-        "location": "II.2 and II.3.5-6 (Kroll-Skutsch-Ziegler)",
+        "location": "II.2 and II.3.5-6 (Kroll–Skutsch 1897, vol. I)",
         "role": (
             "also_attested_domiciles_and_exaltation_signs_source_"
             "also_supplies_exact_degrees_not_evaluated_by_this_profile"
@@ -874,99 +842,49 @@ _WRIGHT_READ_AT = "R. Ramsay Wright's translation (1934), archive.org OCR text"
 _LILLY_READ_AT = "the scanned first edition, archive.org/details/b30338724 (leaves n137-n138)"
 DEBILITY_COMPONENT_SOURCES = {
     "detriment": [
-        {
-            "citation": "al-Bīrūnī, Kitāb al-tafhīm §442",
-            "says": (
-                "wabāl: the signs opposite the domiciles of the planets are their "
-                "detriments or debilities; the per-planet figure was not read"
-            ),
-            "reading": "translation_read",
-            "read_at": _WRIGHT_READ_AT,
-        },
-        {
-            "citation": (
-                "William Lilly, Christian Astrology (1647) p.104 table, Detriment "
-                "column; p.105"
-            ),
-            "says": (
-                "one planet per sign; Venus in Aries 'is in a Signe opposite to one "
-                "of her owne Houses, and so is said to be in her Detriment'"
-            ),
-            "reading": "original_language_read",
-            "read_at": _LILLY_READ_AT,
-        },
-        {
-            "citation": "Ptolemy, Tetrabiblos I.17 'Of the Houses' (Robbins pp.79-83; = Hübner 1998 I.18)",
-            "says": (
-                "assigns the domiciles; names no detriment, nor does I.19, which "
-                "gives exaltations and depressions"
-            ),
-            "reading": "translation_read",
-            "read_at": _ROBBINS_READ_AT,
-        },
+        cited("al-Bīrūnī, Kitāb al-tafhīm §442",
+              ("wabāl: the signs opposite the domiciles of the planets are their "
+               "detriments or debilities; the per-planet figure was not read"),
+              "translation_read", _WRIGHT_READ_AT),
+        cited(("William Lilly, Christian Astrology (1647) p.104 table, Detriment "
+               "column; p.105"),
+              ("one planet per sign; Venus in Aries 'is in a Signe opposite to one "
+               "of her owne Houses, and so is said to be in her Detriment'"),
+              "original_language_read", _LILLY_READ_AT),
+        cited("Ptolemy, Tetrabiblos I.17 'Of the Houses' (Robbins pp.79-83; = Hübner 1998 I.18)",
+              ("assigns the domiciles; names no detriment, nor does I.19, which "
+               "gives exaltations and depressions"),
+              "translation_read", _ROBBINS_READ_AT),
     ],
     "fall": [
-        {
-            "citation": "Ptolemy, Tetrabiblos I.19 'Of Exaltations' (Robbins pp.89-91; = Hübner 1998 I.20)",
-            "says": (
-                "each planet's depression is the sign diametrically opposite its "
-                "exaltation; signs only, no degrees"
-            ),
-            "reading": "translation_read",
-            "read_at": _ROBBINS_READ_AT,
-        },
-        {
-            "citation": "Dorotheus of Sidon, Carmen Astrologicum I.2 (Pingree 1976 p.162)",
-            "says": "exaltation degrees; the descent is opposite the ascent",
-            "reading": "translation_read",
-            "read_at": (
-                "the scan of Pingree's translation, archive.org PingreeDS1976, left "
-                "margin cut off; the clipped word read from a 2024 rework of Pingree"
-            ),
-        },
-        {
-            "citation": "Vettius Valens, Anthologies III.4",
-            "says": (
-                "each star has its depression at the point in opposition to its "
-                "exaltation, with a table of degrees"
-            ),
-            "reading": "translation_read",
-            "read_at": (
-                "Riley's translation in a reformatted online copy (github "
-                "janegca/latex-valens)"
-            ),
-        },
-        {
-            "citation": "Firmicus Maternus, Mathesis II.3.1, II.3.5 (Kroll-Skutsch)",
-            "says": (
-                "altitudines et deiectiones: each planet 'deicitur' in the degree "
-                "opposite its exaltation"
-            ),
-            "reading": "original_language_read",
-            "read_at": "Latin text, LacusCurtius",
-        },
-        {
-            "citation": "al-Bīrūnī, Kitāb al-tafhīm §443",
-            "says": (
-                "hubūṭ: the signs and degrees opposite the exaltations are places of "
-                "fall; three opinions on an exaltation's extent, one of them the "
-                "whole sign"
-            ),
-            "reading": "translation_read",
-            "read_at": _WRIGHT_READ_AT,
-        },
-        {
-            "citation": (
-                "William Lilly, Christian Astrology (1647) p.104 table, Fall column; "
-                "p.105"
-            ),
-            "says": (
-                "one planet per sign, by sign only; Saturn in Aries 'is opposite to "
-                "Libra his Exaltation, and so is Infortunate'"
-            ),
-            "reading": "original_language_read",
-            "read_at": _LILLY_READ_AT,
-        },
+        cited("Ptolemy, Tetrabiblos I.19 'Of Exaltations' (Robbins pp.89-91; = Hübner 1998 I.20)",
+              ("each planet's depression is the sign diametrically opposite its "
+               "exaltation; signs only, no degrees"),
+              "translation_read", _ROBBINS_READ_AT),
+        cited("Dorotheus of Sidon, Carmen Astrologicum I.2 (Pingree 1976 p.162)",
+              "exaltation degrees; the descent is opposite the ascent", "translation_read",
+              (f"{DOROTHEUS_BOOK_I_ONLINE}: I.2 on p.162, 'The descent of each one "
+               "of them is opposite to its ascent'; the Arabic not checked")),
+        cited("Vettius Valens, Anthologies III.4",
+              ("each star has its depression at the point in opposition to its "
+               "exaltation, with a table of degrees"),
+              "translation_read",
+              ("Riley's translation in a reformatted online copy (github "
+               "janegca/latex-valens)")),
+        cited("Firmicus Maternus, Mathesis II.3.1, II.3.5 (Kroll-Skutsch)",
+              ("altitudines et deiectiones: each planet 'deicitur' in the degree "
+               "opposite its exaltation"),
+              "original_language_read", "Latin text, LacusCurtius"),
+        cited("al-Bīrūnī, Kitāb al-tafhīm §443",
+              ("hubūṭ: the signs and degrees opposite the exaltations are places of "
+               "fall; three opinions on an exaltation's extent, one of them the "
+               "whole sign"),
+              "translation_read", _WRIGHT_READ_AT),
+        cited(("William Lilly, Christian Astrology (1647) p.104 table, Fall column; "
+               "p.105"),
+              ("one planet per sign, by sign only; Saturn in Aries 'is opposite to "
+               "Libra his Exaltation, and so is Infortunate'"),
+              "original_language_read", _LILLY_READ_AT),
     ],
 }
 DEBILITY_PARTICIPANT_NOTE = (
@@ -995,10 +913,8 @@ PEREGRINE_SOURCE_REF = f"dignities/peregrine_{PEREGRINE_PROFILE_ID}"
 PEREGRINE_SOURCE = (
     "William Lilly, Christian Astrology (1647) p.112, with pp.102-104"
 )
-# The five dignities, in Lilly's p.104 column order; the closed set of
-# dignities_held.
+# Lilly's p.104 column order; the closed set of dignities_held.
 PEREGRINE_DIGNITIES = ("domicile", "exaltation", "triplicity", "term", "face")
-PEREGRINE_DEBILITIES = ("detriment", "fall")
 # undetermined_*: the sect ruler of the triplicity alone decides, and the sect
 # is unknown (date only) or the Sun is inside the near-horizon band.
 PEREGRINE_STATUSES = (
@@ -1015,8 +931,6 @@ PEREGRINE_BASIS = {
     "face_decan": "chaldean_planetary_faces_firmicus_ii_4_v1",
     "scope": "fixed_lilly_1647_set_not_the_selected_profiles",
 }
-# The triplicity table above is labelled research-only when a reader picks it
-# as a table to show; peregrine uses it only to reproduce Lilly's own judgment.
 PEREGRINE_BASIS_NOTE = (
     "The triplicity table used, lilly_triplicity_compact_1647_v1, is labelled "
     "research-only when it is chosen as a table to show beside the others; here "
@@ -1045,118 +959,67 @@ PEREGRINE_TABLE_DEPENDENCE = (
 PEREGRINE_TERM_NOTE = (
     "The term is Arabic-Latin (al-Bīrūnī's gharīb, Latin peregrinus). The "
     "Hellenistic texts read describe a planet 'in alien signs and degrees' "
-    "(Valens II.22) without defining it as a state."
+    "(Valens II.22 Kroll = II.23.24 Pingree) without defining it as a state."
 )
 _LILLY_SCAN = "the scanned first edition, archive.org/details/b30338724"
 _BONATTI_SCAN = "the scanned Basel 1550 printing, archive.org/details/bub_gb_BgWuc5O-JzIC"
 PEREGRINE_SOURCES = [
-    {
-        "citation": "William Lilly, Christian Astrology (1647) p.112 'Peregrine'",
-        "says": (
-            "a planet is peregrine 'in the degrees of any Signe wherein he hath no "
-            "essentiall dignity'; Saturn in Aries 10° is peregrine, in 27° or 28° "
-            "he is in his own term; the Sun in any part of Cancer is peregrine"
-        ),
-        "reading": "original_language_read",
-        "read_at": f"{_LILLY_SCAN} (leaf n145)",
-    },
-    {
-        "citation": "William Lilly, Christian Astrology (1647) p.103",
-        "says": (
-            "a planet in its own face 'cannot then be called peregrine'"
-        ),
-        "reading": "original_language_read",
-        "read_at": f"{_LILLY_SCAN} (leaf n136)",
-    },
-    {
-        "citation": "William Lilly, Christian Astrology (1647) p.102",
-        "says": (
-            "the Sun in Aries by night has his exaltation but no triplicity, "
-            "which by night is Jupiter's; 'this doe generally in all the "
-            "Planets, Mars excepted'"
-        ),
-        "reading": "original_language_read",
-        "read_at": f"{_LILLY_SCAN} (leaf n135)",
-    },
-    {
-        "citation": "William Lilly, Christian Astrology (1647) p.104 table",
-        "says": (
-            "the houses, exaltations, triplicities by day and night, terms and "
-            "faces this judgment uses"
-        ),
-        "reading": "original_language_read",
-        "read_at": f"{_LILLY_SCAN} (leaf n137)",
-    },
-    {
-        "citation": "William Lilly, Christian Astrology (1647) p.115 table",
-        "says": "Peregrine listed among the Debilities; its score is not used",
-        "reading": "original_language_read",
-        "read_at": f"{_LILLY_SCAN} (leaf n148)",
-    },
-    {
-        "citation": "Guido Bonatti, De astronomia (Basel 1550) col.165",
-        "says": (
-            "the eighth of ten impediments: 'ut sit peregrinus, hoc est, ut sit in "
-            "loco in quo non habeat aliquam dignitatem'; not being received is "
-            "listed as other impediments (the seventh and tenth)"
-        ),
-        "reading": "original_language_read",
-        "read_at": f"{_BONATTI_SCAN} (leaf n100)",
-    },
-    {
-        "citation": "Guido Bonatti, De astronomia (Basel 1550) col.178",
-        "says": (
-            "the 40th and 44th considerations: domicile, exaltation, triplicity, "
-            "term and face are the dignities; 'facies non est tantae uirtutis'; a "
-            "malefic in triplicity or face restrains its malice less"
-        ),
-        "reading": "original_language_read",
-        "read_at": f"{_BONATTI_SCAN} (leaf n105)",
-    },
-    {
-        "citation": "Guido Bonatti, De astronomia (Basel 1550) col.181",
-        "says": (
-            "the 55th consideration: one whose significator is peregrine will be "
-            "'callidus, astutus, malitiosus', more inclined to evil than to good"
-        ),
-        "reading": "original_language_read",
-        "read_at": f"{_BONATTI_SCAN} (leaf n106)",
-    },
-    {
-        "citation": "John Gadbury, The Doctrine of Nativities (London 1658) p.44",
-        "says": (
-            "'Pergerine, or a Stranger, when he is out of all his essential "
-            "Dignities, viz. his House, Exaltation, Triplicity, Term and Face'"
-        ),
-        "reading": "original_language_read",
-        "read_at": (
-            "the scanned 1658 edition, archive.org/details/the-doctrine-of-"
-            "nativities-and-horary-questions-by-john-gadbury (leaf n32)"
-        ),
-    },
-    {
-        "citation": "al-Bīrūnī, Kitāb al-tafhīm §493-494",
-        "says": (
-            "a planet without dignity is a stranger (gharīb); in detriment or fall "
-            "calamity is added; §494 ranks domicile, exaltation, term, triplicity "
-            "and face"
-        ),
-        "reading": "translation_read",
-        "read_at": "R. Ramsay Wright's translation (1934), archive.org OCR text",
-    },
-    {
-        "citation": "Māshāʾallāh, De cogitatione",
-        "says": "Saturn in Leo 'peregrinus, non receptus'",
-        "reading": "secondary_only",
-        "read_at": "Houlding, 'The Definition of Peregrine' (STA 2010)",
-    },
-    {
-        "citation": "Vettius Valens, Anthologies II.22 (Kroll p.90)",
-        "says": (
-            "malefics 'in alien signs and degrees' ruin livelihood; a description, "
-            "not a defined state"
-        ),
-        "reading": "translation_read",
-        "read_at": "Riley's translation in a reformatted online copy (github janegca/latex-valens)",
-    },
+    cited("William Lilly, Christian Astrology (1647) p.112 'Peregrine'",
+          ("a planet is peregrine 'in the degrees of any Signe wherein he hath no "
+           "essentiall dignity'; Saturn in Aries 10° is peregrine, in 27° or 28° "
+           "he is in his own term; the Sun in any part of Cancer is peregrine"),
+          "original_language_read", f"{_LILLY_SCAN} (leaf n145)"),
+    cited("William Lilly, Christian Astrology (1647) p.103",
+          "a planet in its own face 'cannot then be called peregrine'", "original_language_read",
+          f"{_LILLY_SCAN} (leaf n136)"),
+    cited("William Lilly, Christian Astrology (1647) p.102",
+          ("the Sun in Aries by night has his exaltation but no triplicity, "
+           "which by night is Jupiter's; 'this doe generally in all the "
+           "Planets, Mars excepted'"),
+          "original_language_read", f"{_LILLY_SCAN} (leaf n135)"),
+    cited("William Lilly, Christian Astrology (1647) p.104 table",
+          ("the houses, exaltations, triplicities by day and night, terms and "
+           "faces this judgment uses"),
+          "original_language_read", f"{_LILLY_SCAN} (leaf n137)"),
+    cited("William Lilly, Christian Astrology (1647) p.115 table",
+          "Peregrine listed among the Debilities; its score is not used", "original_language_read",
+          f"{_LILLY_SCAN} (leaf n148)"),
+    cited("Guido Bonatti, De astronomia (Basel 1550) col.165",
+          ("the eighth of ten impediments: 'ut sit peregrinus, hoc est, ut sit in "
+           "loco in quo non habeat aliquam dignitatem'; not being received is "
+           "listed as other impediments (the seventh and tenth)"),
+          "original_language_read", f"{_BONATTI_SCAN} (leaf n100)"),
+    cited("Guido Bonatti, De astronomia (Basel 1550) col.178",
+          ("the 40th and 44th considerations: domicile, exaltation, triplicity, "
+           "term and face are the dignities; 'facies non est tantae uirtutis'; a "
+           "malefic in triplicity or face restrains its malice less"),
+          "original_language_read", f"{_BONATTI_SCAN} (leaf n105)"),
+    cited("Guido Bonatti, De astronomia (Basel 1550) col.181",
+          ("the 55th consideration: one whose significator is peregrine will be "
+           "'callidus, astutus, malitiosus', more inclined to evil than to good"),
+          "original_language_read", f"{_BONATTI_SCAN} (leaf n106)"),
+    cited("John Gadbury, The Doctrine of Nativities (London 1658) p.44",
+          ("'Pergerine, or a Stranger, when he is out of all his essential "
+           "Dignities, viz. his House, Exaltation, Triplicity, Term and Face'"),
+          "original_language_read",
+          ("the scanned 1658 edition, archive.org/details/the-doctrine-of-"
+           "nativities-and-horary-questions-by-john-gadbury (leaf n32)")),
+    cited("al-Bīrūnī, Kitāb al-tafhīm §493-494",
+          ("a planet without dignity is a stranger (gharīb); in detriment or fall "
+           "calamity is added; §494 ranks domicile, exaltation, term, triplicity "
+           "and face"),
+          "translation_read", "R. Ramsay Wright's translation (1934), archive.org OCR text"),
+    cited("Māshāʾallāh, De cogitatione", "Saturn in Leo 'peregrinus, non receptus'",
+          "translation_read",
+          ("the Latin translation in Heller's edition (Nuremberg 1549), Warburg "
+           "Institute scan fah765mesahw.pdf, PDF page 94 (sig. L iii r): 'qui erat in "
+           "Leone peregrinus, no[n] receptus'; first found through Houlding, 'The "
+           "Definition of Peregrine' (STA 2010); the Arabic is lost")),
+    cited("Vettius Valens, Anthologies II.22 Kroll (= II.23.24 Pingree), Kroll 1908 p.89.30-32",
+          ("malefics 'in alien signs and degrees' ruin livelihood; a description, "
+           "not a defined state"),
+          "translation_read",
+          ("Riley's translation in a reformatted online copy (github janegca/latex-valens); "
+           "the Kroll page and lines checked in the archive.org text of Kroll 1908 "
+           "(bub_gb_OQ_gAAAAMAAJ); the Pingree page not checked online")),
 ]

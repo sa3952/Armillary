@@ -13,7 +13,7 @@ from .formatting import normalize_longitude
 from .module_state import (
     PRODUCT_FORMULA_SOURCE,
     computed_receipt,
-    not_applicable_receipt,
+    frame_table_refusal,
 )
 from .trace import Trace
 
@@ -64,13 +64,12 @@ def antiscia_not_applicable(state: dict, trace: Trace) -> dict:
     the sidereal nutation-off cell stays refused as well.
     """
 
-    trace.add(
-        "反照點計算方法",
-        result={"execution_status": "not_applicable", "reason_code": state["reason_code"]},
+    refusal = frame_table_refusal(
+        state, trace, "反照點計算方法",
         note=(
             "鏡射軸是當日真春分點的至點軸；J2000 或不含章動時，黃經（恆星黃道則是"
             "換算用的 ayanamsa）改以另一個春分點為準，參考框架相容表判定不適用："
             "不鏡射，也不轉換座標。"
         ),
     )
-    return {**not_applicable_receipt(state), "antiscia": [], "contra_antiscia": []}
+    return {**refusal, "antiscia": [], "contra_antiscia": []}

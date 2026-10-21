@@ -1,29 +1,25 @@
 """Per-page stylesheet bundles, built from the readable sources in `styles/`.
 
-Every page used to load tokens.css and the whole of page.css (131 KB, most of
-it the other pages' layouts) as two render-blocking requests.  A page now loads
-one bundle: tokens.css, then the parts of page.css its audience needs, then
-calculate.css and timelords.css on the calculator or article.css on an article,
-all in source order, so the cascade among the rules a page receives is the cascade it always
-had.
+A page loads one render-blocking stylesheet: the rules of tokens.css and
+page.css, then calculate.css and timelords.css on the calculator or article.css
+(and figures.css) on an article, that its page could match, in source order, so
+the cascade among the rules a page receives is the cascade of the sources.
 
-page.css says which pages need which part with marker comments alone on a
-top-level line:
+Which rules a page receives is read from the page itself, not declared: the
+classes and ids its markup carries and its scripts' string literals can add
+(`names_on_page`).  A rule goes to a page when one of its selectors could
+match there (every class and id the selector requires is present), and a
+selector list is cut to the selectors that could (`bundle_items`).  A
+selector made only of elements and attributes could match anywhere and goes
+to every page; a @keyframes block goes where a rule that animates with it goes.
 
-    /* @pages home features */      the rules below go to these audiences
-    /* @pages all */                the rules below go to every page
-
-Rules before the first marker go to every page.  An audience is a surface key
-from frontend/surfaces.json, `blog-article` (every article: a new article
-needs no marker) or `not-found` (the error page).  `build_pages` writes each
-bundle to `frontend/zh-TW/style/<audience>.css` and links it from the page;
-`check_bundle_coverage` refuses a page whose markup or scripts name a class or
-id that page.css styles in a part the page does not receive.
-
-An article whose fragment holds a `<figure data-fx>` (the article figure
-component, scripts/frontend/figures/_fx.py) is the audience
-`blog-article-figures`: the article bundle with figures.css appended, still
-one stylesheet.  Every other article keeps the bundle without it.
+An audience is a surface key from frontend/surfaces.json, `blog-article`
+(every article) or `not-found` (the error page); `build_pages` writes each
+audience's bundle to `frontend/zh-TW/style/<audience>.css`, cut to the names of
+the audience's pages, and links it from them.  An article whose fragment holds
+a `<figure data-fx>` (the article figure component,
+scripts/frontend/figures/_fx.py) is the audience `blog-article-figures`: the
+article bundle with figures.css appended, still one stylesheet.
 """
 
 from __future__ import annotations
@@ -47,15 +43,12 @@ ARTICLE = "article.css"
 FIGURES = "figures.css"
 # Where the bundles live, relative to frontend/ and as served.
 BUNDLE_DIRECTORY = f"{DEFAULT_LOCALE}/style"
-SHARED = "all"
 ARTICLE_AUDIENCE = "blog-article"
 FIGURES_AUDIENCE = "blog-article-figures"
 NOT_FOUND_AUDIENCE = "not-found"
 CALCULATOR_AUDIENCE = "calculate"
-
-_MARKER_START = re.compile(r"/\*\s*@pages\b")
-_MARKER = re.compile(r"/\* @pages ((?:[a-z][a-z0-9-]*)(?: [a-z][a-z0-9-]*)*) \*/")
-
+# At-rules whose block holds rules (rather than declarations or keyframes).
+_GROUPING_AT_RULES = frozenset({"@media", "@supports", "@layer"})
 
 @dataclass(frozen=True)
 class Item:
@@ -134,7 +127,7 @@ def parse(css: str) -> list[Item]:
     """Split a stylesheet into its top-level comments, rules and at-rules.
 
     The source must be plain CSS of the kind these sheets use: rules, comments,
-    and block at-rules (@media, @keyframes, @supports); a statement at-rule
+    and block at-rules (@media, @supports, @layer, @keyframes); a statement at-rule
     (@import, @charset) or a stray token is refused rather than guessed at.
     """
 
@@ -166,44 +159,12 @@ def parse(css: str) -> list[Item]:
         if prelude.startswith("@"):
             name = prelude.split(None, 1)[0].lower()
             body = css[index + 1:end - 1]
-            children = tuple(parse(body)) if name in {"@media", "@supports"} else ()
+            children = tuple(parse(body)) if name in _GROUPING_AT_RULES else ()
             items.append(Item("at", text, prelude, children))
         else:
             items.append(Item("rule", text, prelude))
         index = end
 
-
-def marker_audiences(item: Item) -> frozenset[str] | None:
-    """The audiences a marker comment names, or None for any other item."""
-
-    if item.kind != "comment":
-        return None
-    match = _MARKER.fullmatch(item.text)
-    return frozenset(match.group(1).split()) if match else None
-
-
-def regions(items: Iterable[Item]) -> list[tuple[frozenset[str], list[Item]]]:
-    """The items of page.css grouped under the audiences their marker names."""
-
-    current = frozenset({SHARED})
-    grouped: list[tuple[frozenset[str], list[Item]]] = [(current, [])]
-    for item in items:
-        audiences = marker_audiences(item)
-        if audiences is not None:
-            if SHARED in audiences and len(audiences) > 1:
-                raise ValueError(f"marker names `all` together with other audiences: {item.text}")
-            current = audiences
-            grouped.append((current, []))
-            continue
-        if item.kind == "comment" and _MARKER_START.match(item.text):
-            raise ValueError(f"malformed @pages marker: {item.text!r}")
-        for child in item.children:
-            if child.kind == "comment" and _MARKER_START.match(child.text):
-                raise ValueError("an @pages marker must stand at the top level, not inside an at-rule")
-        if item.kind == "rule" and _MARKER_START.search(item.text):
-            raise ValueError(f"an @pages marker must stand at the top level, not inside a rule: {item.prelude}")
-        grouped[-1][1].append(item)
-    return [(audiences, members) for audiences, members in grouped if members]
 
 
 _FIGURE_DECLARATION = re.compile(r"<figure\b[^>]*\sdata-fx(?=[\s>])")
@@ -231,80 +192,170 @@ def audience_of(row: Mapping[str, object], pages: Path | None = None) -> str:
     return str(row["key"])
 
 
+# Audiences whose bundles come out byte for byte the same share one file, so a
+# reader moving between them downloads it once.  A shared bundle is named here;
+# the build refuses identical bundles that are not, and a name whose members'
+# bundles differ (sharing must never hand a page another page's rules).
+SHARED_BUNDLES: Mapping[str, frozenset[str]] = {
+    "calculate-landing": frozenset({
+        "calculate-decennials", "calculate-firdaria", "calculate-profections", "calculate-zodiacal-releasing",
+    }),
+}
+
+
+def bundle_name(audience: str) -> str:
+    for name, members in SHARED_BUNDLES.items():
+        if audience in members:
+            return name
+    return audience
+
+
 def bundle_path(audience: str) -> str:
-    return f"{BUNDLE_DIRECTORY}/{audience}.css"
+    return f"{BUNDLE_DIRECTORY}/{bundle_name(audience)}.css"
 
 
-def _source(name: str, styles: Path) -> str:
-    return (styles / name).read_text(encoding="utf-8")
+# Every sheet in bundle order, with the audiences whose bundle carries it
+# (None: every page).
+SHEETS: tuple[tuple[str, frozenset[str] | None], ...] = (
+    (DESIGN_SHEET, None),
+    (PAGE, None),
+    *((name, frozenset({CALCULATOR_AUDIENCE})) for name in CALCULATOR_PARTS),
+    (ARTICLE, frozenset({ARTICLE_AUDIENCE, FIGURES_AUDIENCE})),
+    (FIGURES, frozenset({FIGURES_AUDIENCE})),
+)
 
 
-@lru_cache(maxsize=8)
-def _regions_of(css: str) -> list[tuple[frozenset[str], list[Item]]]:
-    return regions(parse(css))
+@lru_cache(maxsize=16)
+def _parsed(css: str) -> tuple[Item, ...]:
+    return tuple(parse(css))
 
 
-def _page_regions(styles: Path) -> list[tuple[frozenset[str], list[Item]]]:
-    """page.css split into its audiences' regions, parsed once per text."""
+def sheet_items(name: str, styles: Path = STYLES) -> tuple[Item, ...]:
+    """A sheet's top-level items, parsed once per text."""
 
-    return _regions_of(_source(PAGE, styles))
-
-
-def page_items_for(audience: str, styles: Path = STYLES) -> list[Item]:
-    # An article with figures receives exactly the article's parts of page.css.
-    audience = ARTICLE_AUDIENCE if audience == FIGURES_AUDIENCE else audience
-    return _items_for(audience, _page_regions(styles))
+    return _parsed((styles / name).read_text(encoding="utf-8"))
 
 
-def _items_for(audience: str, grouped: list[tuple[frozenset[str], list[Item]]]) -> list[Item]:
-    chosen: list[Item] = []
-    for audiences, members in grouped:
-        if SHARED in audiences or audience in audiences:
-            chosen.extend(members)
-    return chosen
+def _sheets_for(audience: str) -> list[str]:
+    return [name for name, receivers in SHEETS if receivers is None or audience in receivers]
 
 
-def declared_audiences(styles: Path = STYLES) -> set[str]:
-    named: set[str] = set()
-    for audiences, _members in _page_regions(styles):
-        named |= audiences
-    return named - {SHARED}
+def bundle_items(
+    audience: str, names: frozenset[str] | set[str] | None = None, styles: Path = STYLES,
+) -> list[tuple[str, Item]]:
+    """The (sheet, item) pairs of `audience`'s bundle, in bundle order: every
+    item of the sheets it receives, cut to what a page naming `names` could
+    match: each rule's selector list keeps the selectors that could match, a
+    rule or at-rule block left with none is dropped, and a @keyframes block
+    stays only where a kept rule names it; with no names, uncut."""
+
+    if names is None:
+        return [(name, item) for name in _sheets_for(audience) for item in sheet_items(name, styles)]
+    present = _presence(names)
+    cut = [
+        (name, item) for name in _sheets_for(audience) for item in _matchable(list(sheet_items(name, styles)), present)
+    ]
+    used = _animations([item for _name, item in cut])
+    return [(name, item) for name, item in cut if _keyframes_used(item, used)]
 
 
-def bundle_source(audience: str, styles: Path = STYLES) -> str:
-    """tokens.css, the page.css parts for `audience`, and calculate.css on the
-    calculator or article.css on an article, readable: the order the separate
-    <link>s used to give them."""
+def bundle_source(audience: str, names: frozenset[str] | set[str] | None = None, styles: Path = STYLES) -> str:
+    """The items `audience`'s bundle carries, readable, in source order."""
 
-    parts = [_source(DESIGN_SHEET, styles).strip()]
-    parts.extend(item.text for item in page_items_for(audience, styles))
-    if audience == CALCULATOR_AUDIENCE:
-        parts.extend(_source(name, styles).strip() for name in CALCULATOR_PARTS)
-    elif audience == ARTICLE_AUDIENCE:
-        parts.append(_source(ARTICLE, styles).strip())
-    elif audience == FIGURES_AUDIENCE:
-        parts.extend(_source(name, styles).strip() for name in (ARTICLE, FIGURES))
-    return "\n".join(parts) + "\n"
+    return "\n".join(item.text for _name, item in bundle_items(audience, names, styles)) + "\n"
 
 
-def build_bundle(audience: str, styles: Path = STYLES) -> str:
+def build_bundle(audience: str, names: frozenset[str] | set[str] | None = None, styles: Path = STYLES) -> str:
     """The bundle as served: `bundle_source` minified."""
 
-    return minify(bundle_source(audience, styles)) + "\n"
+    return minify(bundle_source(audience, names, styles)) + "\n"
 
 
-def build_bundles(rows: Iterable[Mapping[str, object]], styles: Path = STYLES) -> dict[str, str]:
-    """Every bundle the rows need, keyed by its path under frontend/."""
+def _could_match_selector(selector: str, present) -> bool:
+    return all(present(name) for name in required_names(selector))
+
+
+_KEYFRAMES_NAME = re.compile(r"@keyframes\s+(-?[A-Za-z_][A-Za-z0-9_-]*)", re.IGNORECASE)
+
+
+def _animations(items: list[Item]) -> str:
+    """The declaration blocks of every rule in `items`, where a kept rule
+    names the keyframes it animates with."""
+
+    return " ".join(rule.text[_block_start(rule.text):] for rule in style_rules(items))
+
+
+def _keyframes_used(item: Item, used: str) -> bool:
+    match = _KEYFRAMES_NAME.match(item.text) if item.kind == "at" else None
+    return match is None or re.search(rf"(?<![\w-]){re.escape(match.group(1))}(?![\w-])", used) is not None
+
+
+def _matchable(items: list[Item], present) -> list[Item]:
+    kept: list[Item] = []
+    for item in items:
+        if item.kind == "rule":
+            parts = split_selector_list(item.prelude)
+            matching = [part for part in parts if _could_match_selector(part, present)]
+            if len(matching) == len(parts):
+                kept.append(item)
+            elif matching:
+                prelude = ",".join(matching)
+                kept.append(Item("rule", prelude + item.text[_block_start(item.text):], prelude))
+        elif item.kind == "at" and item.children:
+            children = _matchable(list(item.children), present)
+            if children == list(item.children):
+                kept.append(item)
+            elif any(child.kind != "comment" for child in children):
+                head = item.text[:_block_start(item.text)]
+                body = "\n".join(child.text for child in children)
+                kept.append(Item("at", head + "{" + body + "}", item.prelude, tuple(children)))
+        else:
+            kept.append(item)
+    return kept
+
+
+def unmatchable_selectors(css: str, names: frozenset[str] | set[str]) -> list[str]:
+    """Each selector of a (served) stylesheet, read on its own even inside a
+    list, that a page naming `names` could not match."""
+
+    present = _presence(names)
+    return [
+        part
+        for rule in style_rules(parse(css))
+        for part in split_selector_list(rule.prelude)
+        if not _could_match_selector(part, present)
+    ]
+
+
+def build_bundles(
+    rows: Iterable[Mapping[str, object]],
+    names_by_audience: Mapping[str, set[str]],
+    styles: Path = STYLES,
+) -> dict[str, str]:
+    """Every bundle the rows need, keyed by its path under frontend/, each cut
+    to the classes and ids its audience's pages can carry (`names_on_page`)."""
 
     audiences = {audience_of(row) for row in rows}
-    # The figures bundle carries the article parts of page.css too.
-    unknown = declared_audiences(styles) - audiences - ({ARTICLE_AUDIENCE} if FIGURES_AUDIENCE in audiences else set())
-    if unknown:
-        raise ValueError(f"page.css names audiences no page has: {sorted(unknown)}")
-    return {bundle_path(audience): build_bundle(audience, styles) for audience in sorted(audiences)}
+    if audiences & set(SHARED_BUNDLES):
+        raise ValueError(f"a shared bundle is named after an audience: {sorted(audiences & set(SHARED_BUNDLES))}")
+    built = {
+        audience: build_bundle(audience, frozenset(names_by_audience.get(audience, ())), styles)
+        for audience in sorted(audiences)
+    }
+    bundles: dict[str, str] = {}
+    for audience, text in built.items():
+        if bundles.setdefault(bundle_path(audience), text) != text:
+            raise ValueError(f"{bundle_name(audience)} is shared by audiences whose bundles differ: {audience}")
+    by_text: dict[str, set[str]] = {}
+    for audience, text in built.items():
+        by_text.setdefault(text, set()).add(bundle_name(audience))
+    twins = sorted(sorted(names) for names in by_text.values() if len(names) > 1)
+    if twins:
+        raise ValueError(f"identical bundles not shared (name them in SHARED_BUNDLES): {twins}")
+    return bundles
 
 
-# --- coverage: a page that names a styled class must receive its rule ---------
+# --- which rules a page could match -------------------------------------------
 
 _FUNCTIONAL_PSEUDO = re.compile(r":(?:not|is|where|has|nth-child|nth-last-child|nth-of-type|nth-last-of-type)\(")
 _SELECTOR_TOKEN = re.compile(r"([.#])(-?[A-Za-z_][A-Za-z0-9_-]*)")
@@ -369,64 +420,12 @@ def _presence(names: frozenset[str] | set[str]):
     return lambda name: name in names or name.startswith(prefixes)
 
 
-def could_match(rule: Item, names: frozenset[str] | set[str], present=None) -> bool:
-    present = _presence(names) if present is None else present
-    return any(
-        all(present(name) for name in required_names(part))
-        for part in split_selector_list(rule.prelude)
-    )
-
-
-def uncovered_rules(audience: str, names: set[str], styles: Path = STYLES) -> list[str]:
-    """page.css rules that could match a page naming `names` but that the
-    page's bundle leaves out."""
-
-    grouped = _page_regions(styles)
-    received = {id(rule) for rule in style_rules(_items_for(audience, grouped))}
-    present = _presence(names)
-    return [
-        rule.prelude
-        for _audiences, members in grouped
-        for rule in style_rules(members)
-        if id(rule) not in received and could_match(rule, names, present)
-    ]
-
-
-# A rule no page could match although it reaches the page's bundle, by
-# "<sheet>: <selector>", kept on purpose.  Empty: every unused rule was removed.
-UNUSED_RULES_KEPT: frozenset[str] = frozenset()
-
-
-def _receivers(audiences: frozenset[str], served: set[str]) -> set[str]:
-    if SHARED in audiences:
-        return set(served)
-    # The figures bundle carries the article parts of page.css.
-    return set(audiences) | ({FIGURES_AUDIENCE} if ARTICLE_AUDIENCE in audiences else set())
-
-
-def unused_rules(names_by_audience: Mapping[str, set[str]], styles: Path = STYLES) -> list[str]:
-    """Rules of every sheet that no page receiving them could match, as
-    "<sheet>: <selector>", outside `UNUSED_RULES_KEPT`; and any kept entry
-    that is no longer unused, so the list cannot go stale."""
-
-    served = set(names_by_audience)
-    sheets: list[tuple[str, set[str], Iterable[Item]]] = [
-        (PAGE, _receivers(audiences, served), members) for audiences, members in _page_regions(styles)
-    ]
-    sheets.append((DESIGN_SHEET, served, parse(_source(DESIGN_SHEET, styles))))
-    sheets.extend((name, {CALCULATOR_AUDIENCE}, parse(_source(name, styles))) for name in CALCULATOR_PARTS)
-    sheets.append((ARTICLE, {ARTICLE_AUDIENCE, FIGURES_AUDIENCE}, parse(_source(ARTICLE, styles))))
-    sheets.append((FIGURES, {FIGURES_AUDIENCE}, parse(_source(FIGURES, styles))))
-    unused: set[str] = set()
-    for sheet, receivers, items in sheets:
-        names: set[str] = set().union(*(names_by_audience.get(audience, set()) for audience in receivers))
-        present = _presence(names)
-        unused.update(f"{sheet}: {rule.prelude}" for rule in style_rules(items)
-                      if not could_match(rule, names, present))
-    return sorted((unused - UNUSED_RULES_KEPT) | {f"kept but used: {kept}" for kept in UNUSED_RULES_KEPT - unused})
-
-
-_SCRIPT_SOURCE = re.compile(r'<script src="/(' + re.escape(DEFAULT_LOCALE) + r'/[^"?#]+)')
+# A page's scripts: each <script src>, and every script a data-* attribute
+# names for calculate.js to import later, except view-model.js: it builds no
+# elements, and its literals are response keys and prose.
+_SCRIPT_SOURCE = re.compile(
+    r'(?:<script src|\sdata-(?!view-model=)[a-z-]+)="/(' + re.escape(DEFAULT_LOCALE) + r'/[^"?#]+\.js)'
+)
 
 
 def names_on_page(markup: str, frontend: Path) -> set[str]:
@@ -640,7 +639,7 @@ def _minify_items(items: Iterable[Item]) -> str:
             continue
         name = item.prelude.split(None, 1)[0].lower()
         head = _squeeze(prelude, ",").strip()
-        if name in {"@media", "@supports", "@keyframes"}:
+        if name in _GROUPING_AT_RULES | {"@keyframes"}:
             out.append(head + "{" + _minify_items(parse(body)) + "}")
         else:
             out.append(head + "{" + _minify_declarations(body) + "}")

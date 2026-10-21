@@ -31,7 +31,7 @@ from fractions import Fraction
 from .dignity_tables import SIGNS
 from .firdaria import period_instant
 from .profections import DOMICILE_LORD, LORD_TABLE
-from .source_reading import SOURCE_READING_LEVELS
+from .source_reading import ORIGINAL_LANGUAGE_READ, TRANSLATION_READ, cited
 
 RELEASING_PROFILE = "valens_fortune_spirit_releasing_v1"
 SIGN_PERIOD_TABLE_PROFILE = "valens_iv4_sign_periods_capricorn27_v1"
@@ -63,6 +63,18 @@ YEAR_MODELS: dict[str, dict] = {
 
 
 @dataclass(frozen=True)
+class PeriodBounds:
+    """A period builder's scope and its window and lifetime-window JD(UT) bounds."""
+
+    scope: str
+    birth_jd_ut: float
+    window_start_jd_ut: float
+    window_end_jd_ut: float | None
+    lifetime_start_jd_ut: float | None = None
+    lifetime_end_jd_ut: float | None = None
+
+
+@dataclass(frozen=True)
 class ScopeWindow:
     """Which periods a scope keeps, for releasing and core.decennials alike.
 
@@ -72,8 +84,8 @@ class ScopeWindow:
     `lifetime_window` every level-1 period meeting [lifetime start, lifetime
     end) and the whole level 2 of the ones listed.  Outside
     `intersecting_year`, level 2 is listed only inside a period meeting the
-    window.  A window without an end keeps, from birth, every period
-    starting by its start and, otherwise, only what holds its start.
+    window.  A window without an end keeps, from birth, every period starting
+    by its start (otherwise only what holds its start).
     """
 
     scope: str
@@ -85,16 +97,12 @@ class ScopeWindow:
 
     @classmethod
     def of(
-        cls,
-        technique: str,
-        scope: str,
-        to_jd: Callable[[Fraction], float],
-        *,
-        window_start_jd_ut: float,
-        window_end_jd_ut: float | None,
-        lifetime_start_jd_ut: float | None,
-        lifetime_end_jd_ut: float | None,
+        cls, technique: str, bounds: PeriodBounds, to_jd: Callable[[Fraction], float]
     ) -> ScopeWindow:
+        scope, window_start_jd_ut = bounds.scope, bounds.window_start_jd_ut
+        window_end_jd_ut = bounds.window_end_jd_ut
+        lifetime_start_jd_ut = bounds.lifetime_start_jd_ut
+        lifetime_end_jd_ut = bounds.lifetime_end_jd_ut
         if scope not in SCOPES:
             raise ValueError(f"unknown {technique} scope {scope!r}")
         if scope == SCOPES[2] and (lifetime_start_jd_ut is None or lifetime_end_jd_ut is None):
@@ -182,38 +190,23 @@ def releasing_periods(
     start_sign: str,
     fortune_sign: str,
     year_model: str,
-    scope: str,
-    birth_jd_ut: float,
-    window_start_jd_ut: float,
-    window_end_jd_ut: float | None,
     name_lords: bool,
-    lifetime_start_jd_ut: float | None = None,
-    lifetime_end_jd_ut: float | None = None,
+    bounds: PeriodBounds,
 ) -> list[dict]:
     """The level-1 periods (with their level-2 periods) the scope keeps.
 
-    `intersecting_year` keeps what meets [window start, window end);
-    `from_birth_through_year` every level-1 period that starts before the
-    window end, with level 2 only inside the ones meeting the window.
-    `lifetime_window` every level-1 period meeting [lifetime start, lifetime
-    end), with the whole level 2 of the ones meeting the window: a reader
-    asks for a year inside the level-1 period whose level 2 it wants.
-    A window without an end (its end lies outside the supported years) keeps,
-    from birth, every period starting by its start; otherwise only what holds
-    its start.
+    Scope rules are ScopeWindow's.  Under `lifetime_window` a reader asks for
+    a year inside the level-1 period whose level 2 it wants.  A window has no
+    end when its end lies outside the supported years.
     """
 
     days_per_year = YEAR_MODELS[year_model]["days_per_year"]
     unit_days = {1: days_per_year, 2: days_per_year / 12}
 
     def jd(day: Fraction) -> float:
-        return birth_jd_ut + float(day)
+        return bounds.birth_jd_ut + float(day)
 
-    window = ScopeWindow.of(
-        "zodiacal releasing", scope, jd,
-        window_start_jd_ut=window_start_jd_ut, window_end_jd_ut=window_end_jd_ut,
-        lifetime_start_jd_ut=lifetime_start_jd_ut, lifetime_end_jd_ut=lifetime_end_jd_ut,
-    )
+    window = ScopeWindow.of("zodiacal releasing", bounds, jd)
 
     def row(level, index, sign, kind, start, nominal, end, parent_id) -> dict:
         effective_units = (end - start) / unit_days[level]
@@ -323,59 +316,34 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             },
         },
         "sources": [
-            {
-                "citation": "Vettius Valens, Anthologies IV.4 (/160K/-/163K/, /152P/-/154P/)",
-                "says": (
-                    "Fortune and Daimon as starting points; the Aries and Taurus sub-period "
-                    "tables; loosing to the opposite sign after 17 years 7 months; the trine "
-                    "rejected"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": (
-                    "Riley's English translation via the public re-typeset "
-                    "(janegca/latex-valens); Pingree's Greek not checked"
-                ),
-            },
-            {
-                "citation": "Valens IV.6 (the /156P/ marker falls in it)",
-                "says": "why Capricorn allots 27 and Aquarius 30",
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Riley's English translation via the public re-typeset",
-            },
-            {
-                "citation": "Valens IV.7 (/165K/-/167K/, /157P/-/158P/)",
-                "says": "places counted from Fortune; the places square with the lots",
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Riley's English translation via the public re-typeset",
-            },
-            {
-                "citation": "Valens IV.8 'A Compelling Example' (/167K/-/169K/, /158P/-/160P/)",
-                "says": "Fortune in Leo, Daimon in Scorpio, every period length named",
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Riley's English translation via the public re-typeset",
-            },
-            {
-                "citation": "Valens IV.9 'The Universal Year' (Kroll p.169)",
-                "says": (
-                    "the 360-day year of the distribution and the worked conversion 32 x 365 "
-                    "1/4 + 215 days = 33 distribution years 23 days"
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "Kroll's Greek (1908); Riley's English read beside it",
-            },
-            {
-                "citation": (
-                    "Valens IV.10 'The Breakdown into Longer and Shorter Periods' "
-                    "(/169K/-/171K/, /161P/-/162P/)"
-                ),
-                "says": (
-                    "a twelfth of the month gives the days (2 1/2 days a unit), a twelfth of "
-                    "the day the hours (5 hours a unit), with the loosing of the bond at every "
-                    "level and a worked example down to the hours"
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "Kroll's Greek (1908); Riley's English read beside it",
-            },
+            cited("Vettius Valens, Anthologies IV.4 (/160K/-/163K/, /152P/-/154P/)",
+                  ("Fortune and Daimon as starting points; the Aries and Taurus sub-period "
+                   "tables; loosing to the opposite sign after 17 years 7 months; the trine "
+                   "rejected"),
+                  TRANSLATION_READ,
+                  ("Riley's English translation via the public re-typeset "
+                   "(janegca/latex-valens); Pingree's Greek not checked")),
+            cited("Valens IV.6 (the /156P/ marker falls in it)",
+                  "why Capricorn allots 27 and Aquarius 30", TRANSLATION_READ,
+                  "Riley's English translation via the public re-typeset"),
+            cited("Valens IV.7 (/165K/-/167K/, /157P/-/158P/)",
+                  "places counted from Fortune; the places square with the lots",
+                  TRANSLATION_READ,
+                  "Riley's English translation via the public re-typeset"),
+            cited("Valens IV.8 'A Compelling Example' (/167K/-/169K/, /158P/-/160P/)",
+                  "Fortune in Leo, Daimon in Scorpio, every period length named",
+                  TRANSLATION_READ,
+                  "Riley's English translation via the public re-typeset"),
+            cited("Valens IV.9 'The Universal Year' (Kroll p.169)",
+                  ("the 360-day year of the distribution and the worked conversion 32 x 365 "
+                   "1/4 + 215 days = 33 distribution years 23 days"),
+                  ORIGINAL_LANGUAGE_READ, "Kroll's Greek (1908); Riley's English read beside it"),
+            cited(("Valens IV.10 'The Breakdown into Longer and Shorter Periods' "
+                   "(/169K/-/171K/, /161P/-/162P/)"),
+                  ("a twelfth of the month gives the days (2 1/2 days a unit), a twelfth of "
+                   "the day the hours (5 hours a unit), with the loosing of the bond at every "
+                   "level and a worked example down to the hours"),
+                  ORIGINAL_LANGUAGE_READ, "Kroll's Greek (1908); Riley's English read beside it"),
         ],
         "not_from_valens": [
             "the names 'zodiacal releasing' and 'level 1'/'level 2': modern "

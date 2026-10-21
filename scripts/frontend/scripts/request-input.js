@@ -137,8 +137,7 @@
     return problems;
   }
 
-  // ── 模糊民用時刻 ───────────────────────────────────────
-  //
+  // 模糊民用時刻
   // DST 結束當天，同一個時鐘時間在該時區出現兩次，對應兩個相差一小時的
   // UTC 時刻。後端支援 PEP 495 的 `fold` 讓呼叫端指明是哪一次，前端卻
   // 只送得出 `{mode:"iana", iana_name}`，因此永遠是 fold=0——使用者可能
@@ -250,8 +249,7 @@
     };
   }
 
-  // ── 大約時辰：整個民用小時裡有沒有任何一段重複──────
-  //
+  // 大約時辰：整個民用小時裡有沒有任何一段重複
   // 後端對 approximate_hour 取樣的是整個小時（:30 錨點、每 15 分鐘、59:59，
   // 再加上小時內每一次偏移變更的兩側），只要其中有重複的瞬間就要求 fold。
   // 只看 HH:00:00 會漏掉重複區段在小時中間開始或結束的情形：
@@ -370,8 +368,7 @@
     };
   }
 
-  // ── 民國年與日本年號 → 西元國曆 ─────────────────────────
-  //
+  // 民國年與日本年號 → 西元國曆
   // 只是年份的加法：民國紀年自 1912 年、日本自明治 6 年（1873）起都用格里曆的月日，
   // 所以月與日原樣保留。難處在改元日落在年中：明治 45 年與大正元年、大正 15 年與
   // 昭和元年同在一個西元年，因此每個年號都帶第一天與最後一天，兩端之外的日期拒絕，
@@ -401,21 +398,37 @@
     return Boolean((low && compareDates(date, low) < 0) || (high && compareDates(date, high) > 0));
   }
 
-  const BIRTH_DATE_PATTERN = /^(\d{4,})-(\d{2})-(\d{2})$/;
+  // 中文輸入法常送出全形數字（０–９）；先換成半形再比對字面形狀。
+  const halfWidthDigits = (text) => text.replace(/[\uFF10-\uFF19]/g, (digit) => String(digit.charCodeAt(0) - 0xFF10));
+  const DATE_PART_PATTERNS = Object.freeze({ year: /^\d{4}$/, month: /^\d{1,2}$/, day: /^\d{1,2}$/ });
+  const DATE_PART_LIMITS = Object.freeze({ month: [1, 12], day: [1, 31] });
+  const DATE_PART_REASONS = Object.freeze({
+    year: "的年份必須是四位數的西元年（例：1990）",
+    month: "的月份必須是 1 到 12",
+    day: "的日必須是 1 到 31",
+  });
+  const DATE_PART_ORDER = Object.freeze(["year", "month", "day"]);
 
   /**
-   * 出生日期欄（type=date，值是 YYYY-MM-DD）。bounds 是欄位自己的 min／max。表單帶
-   * novalidate，瀏覽器不會擋鍵盤打進來的 1895 年或 2400 年，所以範圍在這裡檢查。
+   * 出生日期的年、月、日三欄（西元年）。bounds 是三欄共用的 min／max（YYYY-MM-DD）。表單帶
+   * novalidate，範圍在這裡檢查。回傳封閉三態；EMPTY 與 INVALID 另帶 fields：要標出的那幾欄。
    */
-  function readBirthDate(raw, bounds) {
-    const text = String(raw === undefined || raw === null ? "" : raw).trim();
-    if (text === "") return empty();
-    const match = BIRTH_DATE_PATTERN.exec(text);
-    if (!match) return invalid("必須寫成 YYYY-MM-DD（例：1990-05-15）");
-    const [year, month, day] = match.slice(1).map(Number);
-    if (!realCalendarDate(year, month, day)) return invalid("在日曆上不存在，請核對月與日");
+  function readBirthDateParts(parts, bounds) {
+    const texts = DATE_PART_ORDER.map((part) => halfWidthDigits(String(parts[part] === undefined || parts[part] === null ? "" : parts[part]).trim()));
+    const blank = DATE_PART_ORDER.filter((_, index) => texts[index] === "");
+    if (blank.length) return { state: EMPTY, fields: blank };
+    const numbers = {};
+    const bad = DATE_PART_ORDER.filter((part, index) => {
+      if (!DATE_PART_PATTERNS[part].test(texts[index])) return true;
+      numbers[part] = Number(texts[index]);
+      const limits = DATE_PART_LIMITS[part];
+      return Boolean(limits && (numbers[part] < limits[0] || numbers[part] > limits[1]));
+    });
+    if (bad.length) return { state: INVALID, reason: DATE_PART_REASONS[bad[0]], fields: bad };
+    const { year, month, day } = numbers;
+    if (!realCalendarDate(year, month, day)) return { state: INVALID, reason: "在日曆上不存在，請核對月與日", fields: ["day"] };
     if (outsideBounds([year, month, day], bounds)) {
-      return invalid(`必須在 ${bounds.min} 到 ${bounds.max} 之間（本計算器的範圍）`);
+      return { state: INVALID, reason: `必須在 ${bounds.min} 到 ${bounds.max} 之間（本計算器的範圍）`, fields: ["year"] };
     }
     return value({ year, month, day, iso: isoDate(year, month, day) });
   }
@@ -480,8 +493,9 @@
     etcGmtOffsetText,
     ERAS,
     readEraDate,
-    readBirthDate,
+    readBirthDateParts,
     isoDate,
+    pad2,
     civilTimeOccurrences,
     civilHourOccurrences,
     readInteger,

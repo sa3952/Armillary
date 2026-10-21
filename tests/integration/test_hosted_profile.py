@@ -155,7 +155,7 @@ def test_hosted_static_openapi_is_generated_offline_not_served():
     components = schema["components"]["schemas"]
 
     assert set(schema["paths"]) == {
-        "/api/chart", "/api/health", "/api/places/search", "/api/time/convert",
+        "/api/chart", "/api/health", "/api/health/ready", "/api/places/search", "/api/time/convert",
     }
     chart = schema["paths"]["/api/chart"]["post"]
     search = schema["paths"]["/api/places/search"]["post"]

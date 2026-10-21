@@ -1,28 +1,14 @@
 """Planetary day and planetary hours: Chaldean order, unequal hours from sunrise.
 
-Definition (method source entry ``planetary_hours``):
+The definition is METHOD_SOURCE_ENTRIES["planetary_hours"].  Sunrise and
+sunset are the horizon module's events (refracted upper limb, topocentric,
+request atmosphere, no dip): the USNO definition the product already checks
+against.  It does not follow the display computation mode.
 
-* The planetary day runs from one sunrise to the next, not from midnight.
-* Its twelve day hours divide sunrise→sunset into equal parts and its twelve
-  night hours divide sunset→next sunrise; day and night hours differ in length
-  except near the equinoxes and the equator.
-* Hours are ruled in the Chaldean order (Saturn, Jupiter, Mars, Sun, Venus,
-  Mercury, Moon, then again Saturn).  The first hour's ruler is the day's ruler,
-  which is the ruler the seven-day week gives the sunrise's civil date in the
-  request's time zone (Sunday the Sun, Monday the Moon, ...).
-
-Sunrise and sunset are the horizon module's events (``horizon_events``): the
-refracted upper limb crossing the apparent horizon, topocentric, with the
-request's atmosphere and no horizon dip.  That is the definition the USNO table
-uses, and the one the product already checks against it.  It does not follow
-the display computation mode.
-
-A planetary day exists only where the Sun rises and sets within one diurnal
-cycle: the sunrise before the instant and the sunrise after it are at most
-``DIURNAL_REGIME_MAX_DAYS`` apart (the horizon module's own bound) with exactly
-one sunset between them.  Anything else (polar day, polar night, the transition
-days around them) is not applicable for the stated reason; the product does not
-stretch an hour across a multi-day day.
+A planetary day exists only within one diurnal cycle (sunrises at most
+``DIURNAL_REGIME_MAX_DAYS`` apart, one sunset between).  Polar day, polar night
+and the transition days are not applicable; no hour is stretched across a
+multi-day day.
 """
 
 from __future__ import annotations
@@ -31,6 +17,7 @@ import datetime as dtmod
 import math
 from typing import Final
 
+from .dignity_tables import CHALDEAN_ORDER
 from ..domain_catalog import CLASSICAL_BODIES
 from .horizon_events import (
     DIURNAL_REGIME_MAX_DAYS,
@@ -41,15 +28,14 @@ from .horizon_events import (
     sun_horizon_crossings,
 )
 from .module_state import computed_receipt, module_state
-from .method_status import method_receipt
-from .source_reading import SOURCE_READING_LEVELS
+from .method_status import method_head
+from .source_reading import ORIGINAL_LANGUAGE_READ, TRANSLATION_READ, cited
 from .time_utils import civil_date as _local_date
 from .time_utils import civil_instant, solved_instant
 from .trace import Trace
 
 def _instant(jd_ut: float, tz_input) -> dict:
-    """A sunrise, a sunset or an hour boundary made from them, printed no finer
-    than the sunrise and sunset themselves are."""
+    """An event or hour boundary, printed no finer than sunrise/sunset are."""
 
     return solved_instant(
         jd_ut, RISE_TRANS_REPEATABILITY_DAYS, lambda jd: civil_instant(jd, tz_input)
@@ -62,7 +48,6 @@ SOURCE_REF: Final = "planetary_hours"
 
 # Descending order of the planets' periods; hour n+1 is ruled by the planet
 # after hour n's.
-CHALDEAN_ORDER: Final = ("saturn", "jupiter", "mars", "sun", "venus", "mercury", "moon")
 # datetime.date.weekday(): Monday is 0.
 WEEKDAYS: Final = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
 WEEKDAY_RULERS: Final = ("moon", "mars", "mercury", "jupiter", "venus", "saturn", "sun")
@@ -70,15 +55,12 @@ PERIODS: Final = ("day", "night")
 HOURS_PER_PERIOD: Final = 12
 
 NO_DIURNAL_CYCLE: Final = "no_sunrise_sunset_cycle_around_instant"
-# Closed reasons this module writes itself.  The frame table's
-# non_earth_observer_center and the event-search refusals are the other
-# producers' codes, written by the chart pipeline.
+# Closed reasons this module writes itself; the frame table's and the
+# event-search refusals are written by the chart pipeline.
 REASON_CODES: Final = (NO_DIURNAL_CYCLE,)
 INTERVALS: Final = ("stated_civil_hour", "civil_day")
 
-# Every sunrise or sunset the hours can need lies within a diurnal cycle of the
-# instants asked about; two days on each side leaves a margin beyond the
-# 1.5-day bound.
+# Two days each side: a margin beyond the 1.5-day diurnal-cycle bound.
 SEARCH_WINDOW_DAYS: Final = 2.0
 
 _NAMES: Final = {body["key"]: body["zh"] for body in CLASSICAL_BODIES}
@@ -112,23 +94,29 @@ METHOD_SOURCE_ENTRIES: Final = {
             "Cassius Dio, Roman History XXXVII.19: the weekday names follow from "
             "giving the planets, from Saturn on, to the successive hours of day and "
             "night. Dio defines neither unequal hours nor a day starting at sunrise; "
-            "those are the standard later tradition, for which no primary text is "
-            "cited. No page numbers"
+            "for those two the primary text cited is Lilly, Christian Astrology "
+            "(1647) ch. XCVII, pp. 482-483"
         ),
-        "primary_text_checked": "dio_xxxvii_19_in_english_translation_only",
+        "primary_text_checked": (
+            "dio_xxxvii_19_in_english_translation_only; lilly_1647_ch_xcvii_in_the_first_edition"
+        ),
         "sources": [
-            {
-                "citation": "Cassius Dio, Roman History XXXVII.19",
-                "says": (
-                    "the weekday names follow from giving the planets, from Saturn on, to "
-                    "the successive hours of day and night"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": (
-                    "an English translation only; the record does not name which, and "
-                    "the Greek not checked"
-                ),
-            },
+            cited("Cassius Dio, Roman History XXXVII.19",
+                  ("the weekday names follow from giving the planets, from Saturn on, to "
+                   "the successive hours of day and night"),
+                  TRANSLATION_READ,
+                  ("Cary's English translation (Loeb, Dio's Roman History vol. III, 1914), "
+                   "p.131, in the LacusCurtius transcription; the Greek not checked")),
+            cited("William Lilly, Christian Astrology (London, 1647), ch. XCVII, pp. 482-484",
+                  ("the first hour of every day goes to the planet of the day, beginning "
+                   "ever at sunrise and numbering on to the next sunrise; sunrise to sunset "
+                   "and sunset to the next sunrise are each divided into twelve equal parts, "
+                   "so the astrological hours are unequal, just sixty minutes only on the "
+                   "day the Sun enters Aries or Libra; worked example: Monday 9:30 a.m. "
+                   "falls in the hour of Mars"),
+                  ORIGINAL_LANGUAGE_READ,
+                  ("the first edition (archive.org/details/b30338724), read in the "
+                   "scan's OCR text of pp. 482-484")),
         ],
         "sunrise_definition": (
             "the horizon module's event: refracted upper limb crossing the apparent "
@@ -254,12 +242,10 @@ def _chart_instant(hour: dict, tz_input) -> dict:
 
 
 def _receipt_head() -> dict:
-    return {
-        "method": METHOD,
-        **method_receipt("planetary_hours"),
-        "source_ref": SOURCE_REF,
-        "sunrise_definition": dict(SUNRISE_DEFINITION),
-    }
+    return method_head(
+        METHOD, "planetary_hours", source_ref=SOURCE_REF,
+        sunrise_definition=dict(SUNRISE_DEFINITION),
+    )
 
 
 def planetary_hours_not_applicable(

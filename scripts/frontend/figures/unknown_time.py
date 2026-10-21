@@ -16,15 +16,14 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 
 from . import _fx, _noaa
-from ._common import SIGNS, TAIPEI, calc_ut, hms as _hms, product_charts, swiss
+from ..javascript import SOURCES, frozen_string_table
+from ._common import PLANETS, SIGNS, TAIPEI, calc_ut, hms as _hms, product_charts, swiss
 
 
 FRAGMENT = "blog-unknown-birth-time"
 DAY = (1988, 7, 22)
 LAT, LON = TAIPEI
 CLASSICAL = ("sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn")
-NAMES = {"sun": "太陽", "moon": "月亮", "mercury": "水星", "venus": "金星", "mars": "火星", "jupiter": "木星",
-         "saturn": "土星"}
 TABLE_HOUR = 5
 ASC = "astronomical_data.angles.sign_positions.asc"
 MC = "astronomical_data.angles.sign_positions.mc"
@@ -83,6 +82,10 @@ def _data() -> dict:
                 "bodies": s["classification_coverage"]["astronomical_data.bodies"]["status"],
                 "transitions": [(_clock(t["lower_bound_local"]), _clock(t["upper_bound_local"]),
                                  t["resolution_seconds"], set(t["changed_paths"])) for t in s["transitions"]],
+                # The extended lots are read at the samples only, not bisected,
+                # so a change of theirs shows here and in no transition.
+                "differing": {path for item in s["classification_coverage"].values()
+                              for path in item["differing_classifications"]},
             })
         d["hours"] = hours
         # Where the day starts: the Ascendant's sign and the sect at local midnight.
@@ -174,6 +177,32 @@ def _sign(chart: dict, path: str) -> str:
     return SIGNS[chart["astronomical_data"]["angles"]["sign_positions"][key][0]]
 
 
+SIGN_KEYS = ("aries taurus gemini cancer leo virgo libra scorpio sagittarius capricorn aquarius pisces").split()
+SECT_NAMES = {"day": "日盤", "night": "夜盤"}
+# The article's first mention of each lot carries its English name.
+LOT_ENGLISH = {"愛慾點": "Lot of Eros", "必然點": "Lot of Necessity", "勇氣點": "Lot of Courage",
+               "勝利點": "Lot of Victory", "復仇點": "Lot of Nemesis"}
+
+
+def _extended_lot_items(paths: set, before: dict, after: dict) -> list[tuple[str, str, str]]:
+    """One row per extended lot whose sign changed: the applied value, else the day or night formula's."""
+    names = frozen_string_table((SOURCES / "labels.js").read_text(encoding="utf-8"), "EXTENDED_LOT_NAMES")
+    lots = [c["derived_methods"]["lots"]["extended_lots"]["lots"] for c in (before, after)]
+    items = []
+    for index, lot in enumerate(lots[0]):
+        name = names[lot["lot_method_id"]]
+        root = f"derived_methods.lots.extended_lots.lots[{index}]"
+        if f"{root}.sign" in paths:
+            before_sign, after_sign = (SIGNS[SIGN_KEYS.index(l[index]["sign"])] for l in lots)
+            items.append((f"{name}星座", before_sign, after_sign))
+            continue
+        for sect, label in SECT_NAMES.items():
+            if f"{root}.by_sect.{sect}.sign" in paths:
+                before_sign, after_sign = (SIGNS[SIGN_KEYS.index(l[index]["by_sect"][sect]["sign"])] for l in lots)
+                items.append((f"{name}（{label}公式）星座", before_sign, after_sign))
+    return items
+
+
 def _table(d: dict) -> str:
     rows: list[str] = []
     for lower, upper, paths, before, after in d["table"]:
@@ -200,6 +229,11 @@ def _table(d: dict) -> str:
             # The table is where the article first names the Lot; its English goes with it once.
             label = "命運點星座" if any("命運點" in row for row in rows) else "命運點（Lot of Fortune）星座"
             items.append((label, _sign(before, FORTUNE), _sign(after, FORTUNE)))
+        for name, was, now in _extended_lot_items(paths, before, after):
+            short = name.removesuffix("星座")
+            if short in LOT_ENGLISH and not any(short in row for row in rows + [n for n, *_ in items]):
+                name = f"{short}（{LOT_ENGLISH[short]}）星座"
+            items.append((name, was, now))
         if not items:
             raise RuntimeError(f"no label for the change at {lower}: {sorted(paths)}")
         for name, was, now in items:
@@ -208,13 +242,6 @@ def _table(d: dict) -> str:
 
 
 # --- the figures -----------------------------------------------------------------
-
-def _checked(markup: str, bound: _fx.Bound) -> str:
-    found = _fx.problems(markup, bound)
-    if found:
-        raise RuntimeError("figure check: " + "; ".join(found))
-    return markup
-
 
 def _mid(pair: tuple) -> float:
     return (_seconds(pair[0]) + _seconds(pair[1])) / 2
@@ -346,9 +373,7 @@ def _day_table(segs: dict, out: dict, bound: _fx.Bound) -> str:
         for (lower, upper), (_, _, before), (_, _, after) in zip(pairs, segs[key], segs[key][1:]):
             rows.append(f'<tr><th scope="row">{name}</th><td class="n">{bound.num(_hms(lower))}–{bound.num(_hms(upper))}</td>'
                         f"<td>{before} → {after}</td></tr>")
-    return ('<details class="fx-data"><summary>圖中的時刻（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">判定</th><th scope="col">翻面區間</th>'
-            f'<th scope="col">之前 → 之後</th></tr></thead><tbody>{"".join(rows)}</tbody></table></div></details>')
+    return _fx.data_table(("判定", "翻面區間", "之前 → 之後"), rows, summary="圖中的時刻（表格）")
 
 
 def _day_figure(d: dict, out: dict) -> str:
@@ -360,14 +385,15 @@ def _day_figure(d: dict, out: dict) -> str:
         f"{bound.num('24')} 個鐘點裡逐一取樣、再用二分法夾出。上面四列是「只知道日期」時也會比對的天體星座；"
         "下面兩列需要已知時刻，只知道日期時本站不算。點狀底的欄是所有判定在各取樣點都相同的鐘點。"
     )
-    return _checked(_fx.figure(
-        fid="fig-day", hero=True,
+    return _fx.figure(
+        fid="fig-day",
+        hero=True,
         title="一天裡各項判定翻面的時刻",
         caption=caption,
-        wide=_day("fx-wide", "fig-day", d, out, segs, bound),
-        narrow=_day("fx-narrow", "fig-day", d, out, segs, bound),
-        notes=[], idle="", table=_day_table(segs, out, bound),
-    ), bound)
+        art=_fx.FigureArt.drawn(_day, "fig-day", d, out, segs, bound),
+        table=_day_table(segs, out, bound),
+        bound=bound,
+    )
 
 
 DECADE = (("none", "七顆都不換", "fx-track"), ("moon_only", "只有月亮換", "fx-fill-hatch"),
@@ -431,14 +457,13 @@ def _decade_figure(ten: dict) -> str:
         f"與隔天 {bound.num('0')} 點七顆古典行星的星座：七顆都不換（空白）、只有月亮換（單線）、有月亮以外的行星換"
         "（交叉線，月亮可能也換）。由本站以 Swiss Ephemeris 自算；一天之內換過去又換回來的情形不在這個統計裡。"
     )
-    return _checked(_fx.figure(
+    return _fx.figure(
         fid="fig-decade",
         title="十年裡的每一天：七顆古典行星有沒有換星座",
         caption=caption,
-        wide=_decade("fx-wide", "fig-decade", ten, bound),
-        narrow=_decade("fx-narrow", "fig-decade", ten, bound),
-        notes=[], idle="",
-    ), bound)
+        art=_fx.FigureArt.drawn(_decade, "fig-decade", ten, bound),
+        bound=bound,
+    )
 
 
 HOUR_ROWS = (("asc", "上升星座會換", "fx-fill-solid"), ("other", "上升不換，其他判定翻面", "fx-fill-hatch"),
@@ -453,13 +478,15 @@ def _flipped(paths: set[str]) -> list[str]:
         names.append("中天星座")
     for key in CLASSICAL:
         if _body(key) in paths:
-            names.append(f"{NAMES[key]}星座")
+            names.append(f"{PLANETS[key]}星座")
     if IS_DAY in paths:
         names.append("日夜盤")
     elif SECT_STATUS in paths:
         names.append("日夜盤狀態")
     if any(path.startswith("derived_methods.lots.sign_positions.") for path in paths):
         names.append("阿拉伯點星座")
+    if any(path.startswith("derived_methods.lots.extended_lots.") and path.endswith(".sign") for path in paths):
+        names.append("其他阿拉伯點星座")
     return names
 
 
@@ -469,6 +496,7 @@ def _hour_kinds(d: dict, out: dict) -> list[tuple[str, list[str]]]:
         names: list[str] = []
         for *_, paths in item["transitions"]:
             names += [name for name in _flipped(paths) if name not in names]
+        names += [name for name in _flipped(item["differing"]) if name not in names]
         kind = "quiet" if hour in out["quiet_hours"] else "asc" if hour in out["asc_hours"] else "other"
         if (kind == "quiet") != (not names):
             raise RuntimeError(f"hour {hour}: classified {kind}, flipped {names}")
@@ -516,9 +544,7 @@ def _hours_table(kinds: list, bound: _fx.Bound) -> str:
     names = {key: name for key, name, _ in HOUR_ROWS}
     rows = [f'<tr><th scope="row">{bound.num(str(hour))} 點</th><td>{names[kind]}</td>'
             f'<td>{"、".join(flipped) or "（無）"}</td></tr>' for hour, (kind, flipped) in enumerate(kinds)]
-    return ('<details class="fx-data"><summary>圖中的鐘點（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">鐘點</th><th scope="col">分類</th>'
-            f'<th scope="col">翻面的判定</th></tr></thead><tbody>{"".join(rows)}</tbody></table></div></details>')
+    return _fx.data_table(("鐘點", "分類", "翻面的判定"), rows, summary="圖中的鐘點（表格）")
 
 
 def _hours_figure(d: dict, out: dict) -> str:
@@ -529,14 +555,14 @@ def _hours_figure(d: dict, out: dict) -> str:
         f"的 {bound.num('24')} 個鐘點，每一個都用「只知道約略小時」算一次，再依結果歸入三列之一：上升星座會換（實心）、"
         "上升不換但有其他判定翻面（單線）、所有判定在各取樣點都相同（點狀）。每個鐘點翻了哪些判定，列在下方的表格裡。"
     )
-    return _checked(_fx.figure(
+    return _fx.figure(
         fid="fig-hours",
         title="一天 24 個鐘點，各歸哪一類",
         caption=caption,
-        wide=_hours("fx-wide", "fig-hours", kinds, bound),
-        narrow=_hours("fx-narrow", "fig-hours", kinds, bound),
-        notes=[], idle="", table=_hours_table(kinds, bound),
-    ), bound)
+        art=_fx.FigureArt.drawn(_hours, "fig-hours", kinds, bound),
+        table=_hours_table(kinds, bound),
+        bound=bound,
+    )
 
 
 def build() -> tuple[dict[str, str], list[str]]:
@@ -547,12 +573,12 @@ def build() -> tuple[dict[str, str], list[str]]:
     (sun_lo, sun_hi), = out["sun"]
     (moon_lo, moon_hi), = out["moon"]
     (jup_lo, jup_hi), = out["jupiter"]
-    names = "、".join(NAMES[key] for key in ("jupiter", "moon", "sun") if key in out["changed"])
+    names = "、".join(PLANETS[key] for key in ("jupiter", "moon", "sun") if key in out["changed"])
     quiet = "、".join(f"{h} 點" for h in out["quiet_hours"])
     sect = out["sect"]
     hour = d["hours"][TABLE_HOUR]
     widths = {width for _, _, width, _ in hour["transitions"]}
-    if hour["bodies"] != "same_at_all_samples" or len(widths) != 1:
+    if hour["bodies"] != "same_at_all_samples" or max(widths) - min(widths) > 1:
         raise RuntimeError(f"the table hour's premise changed: bodies {hour['bodies']}, widths {widths}")
     fortune = sum(FORTUNE in paths for *_, paths in hour["transitions"])
     planets = {key: d["day_spans"][key] for key in CLASSICAL if key != "moon"}
@@ -568,14 +594,15 @@ def build() -> tuple[dict[str, str], list[str]]:
         f"太陽在 {_hms(sun_lo)} 到 {_hms(sun_hi)} 之間",
         f"<b>{len(out['asc_hours'])}</b><span>個鐘點裡上升星座會換",
         f"<b>{len(out['quiet_hours'])}</b><span>個鐘點",
-        f"（{quiet}）",
+        f"（{quiet}）" if quiet else "所有判定都相同的鐘點一個也沒有",
         f"<b>{len(out['body_hours'])}</b><span>個鐘點",
         f"日出那次在 {_hms(sect[0][0])} 到 {_hms(sect[0][1])} 之間，日落那次在 {_hms(sect[1][0])} 到 {_hms(sect[1][1])} 之間",
         f"算出的幾何日出是 {_hms(check['noaa'])}，落在本站的區間裡",
-        f"{len(hour['transitions'])} 個翻面區間，每個寬 {widths.pop()} 秒",
+        f"{len(hour['transitions'])} 個翻面區間，每個寬 "
+        + (f"{min(widths)} 秒" if len(widths) == 1 else f"{min(widths)} 到 {max(widths)} 秒"),
         f"命運點在一小時裡換了{count[fortune]}次星座",
         f"一天裡翻了{'十二' if len(out['asc']) == 12 else len(out['asc'])}次",
-        f"其他行星裡走最多的是{NAMES[fastest]}，約 {planets[fastest]:.1f} 度，其餘都不到 {int(rest) + 1} 度",
+        f"其他行星裡走最多的是{PLANETS[fastest]}，約 {planets[fastest]:.1f} 度，其餘都不到 {int(rest) + 1} 度",
         f"其餘 {others} 個鐘點裡",
         f"月亮這一天走了約 {d['day_spans']['moon']:.1f} 度",
         f"1981 到 1990 年的 {ten['days']} 天裡",

@@ -24,6 +24,8 @@ import stat
 import subprocess
 import tarfile
 
+from scripts.tools.git import git
+
 
 # A public release record, `releases/<release version>/frontend-release.json`,
 # is committed to the public repository after the source revision it describes
@@ -64,13 +66,8 @@ def sha256_file(path: Path) -> str:
         return hashlib.file_digest(handle, "sha256").hexdigest()
 
 
-def _git(root: Path, *arguments: str) -> bytes:
-    completed = subprocess.run(["git", *arguments], cwd=root, check=True, capture_output=True)
-    return completed.stdout
-
-
 def maintained_source_paths(root: Path) -> tuple[str, ...]:
-    output = _git(root, "ls-files", "-z", "--cached", "--others", "--exclude-standard")
+    output = git(root, "ls-files", "-z", "--cached", "--others", "--exclude-standard", text=False)
     paths = tuple(sorted(raw.decode("utf-8") for raw in output.split(b"\0") if raw))
     if not paths:
         raise RuntimeError("maintained source universe is empty")
@@ -223,7 +220,7 @@ def observe_source_tree(root: Path) -> SourceTreeIdentity:
         else:
             raise RuntimeError(f"unsupported maintained source type: {relative!r}")
         content.update(b"\n")
-    index = hashlib.sha256(_git(root, "ls-files", "-s", "-z")).hexdigest()
+    index = hashlib.sha256(git(root, "ls-files", "-s", "-z", text=False)).hexdigest()
     return SourceTreeIdentity(paths, content.hexdigest(), index)
 
 

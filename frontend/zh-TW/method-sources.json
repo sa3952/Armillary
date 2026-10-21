@@ -59,14 +59,14 @@
     },
     {
      "citation": "Kepler, Harmonices mundi (Linz 1619) Lib. IV cap. V, Prop. XII p.145, Prop. XIII pp.147-148, Prop. XIV p.148",
-     "read_at": "level pending: the record gives the 1619 printing's page numbers but does not say whether the Latin text was read; only the reference is claimed until that is confirmed",
-     "reading": "bibliographic_only",
+     "read_at": "the Latin of the Linz 1619 printing in the archive.org scan of the Smithsonian Libraries copy (ioanniskepplerih00kepl), read at the cited pages: p.145 leaf n234, pp.147-148 leaves n236-n237, p.155 leaf n244",
+     "reading": "original_language_read",
      "says": "third grade: trine, sextile, semisextile (Prop. XII); fourth grade: quintile, biquintile, quincunx (Prop. XIII); fifth, weakest grade: decile, tridecile, octile = semisquare, trioctile = sesquiquadrate (Prop. XIV)"
     },
     {
      "citation": "Kepler, Harmonices mundi (1619) Lib. IV cap. VI p.155",
-     "read_at": "level pending: the record gives the 1619 printing's page numbers but does not say whether the Latin text was read; only the reference is claimed until that is confirmed",
-     "reading": "bibliographic_only",
+     "read_at": "the Latin of the Linz 1619 printing in the archive.org scan of the Smithsonian Libraries copy (ioanniskepplerih00kepl), read at the cited pages: p.145 leaf n234, pp.147-148 leaves n236-n237, p.155 leaf n244",
+     "reading": "original_language_read",
      "says": "octile and sesquiquadrate have no power unless the primary aspects are long absent"
     }
    ]
@@ -111,10 +111,10 @@
      "says": "the seven orb values of this table"
     },
     {
-     "citation": "Bonatti, Liber Astronomiae Tract III chs. LXV-LXXI",
-     "read_at": "the reference only; no edition or translation is named, the values and the chapters not checked",
-     "reading": "bibliographic_only",
-     "says": "listed for the same seven values"
+     "citation": "Guido Bonatti, De astronomia tractatus X (Basel 1550), tractatus III part 1 chs. I-VII (one chapter per planet), cols.100-116",
+     "read_at": "the Latin in the archive.org scan bub_gb_BgWuc5O-JzIC: Saturn, Jupiter and Moon read on the scanned columns (n67 = cols.99-100, n68 = cols.101-102, n75 = cols.115-116); Mars col.105 (n70), Sun col.107 (n71), Venus col.111 (n73) and Mercury col.113 (n74) also read on the scanned columns",
+     "reading": "original_language_read",
+     "says": "the same seven values, one in each planet's chapter ('Et quantitas orbis eius est ... graduum'): Saturn 9 (col.100), Jupiter 9 (col.102), Mars 8 (col.105), Sun 15 (col.107), Venus 7 (col.111), Mercury 7 (col.113), Moon 12 (col.116)"
     },
     {
      "citation": "al-Bīrūnī, The Book of Instruction in the Elements of the Art of Astrology, trans. R. Ramsay Wright (London: Luzac 1934) §436",
@@ -193,8 +193,8 @@
     },
     {
      "citation": "Merlini Anglici Ephemeris ... for the Year 1677",
-     "read_at": "level pending: the record does not say whether the 1677 volume itself was read; only the reference is claimed until that is confirmed",
-     "reading": "bibliographic_only",
+     "read_at": "the 1677 almanac itself, read in the archive.org scan of the printed copy (bim_early-english-books-1641-1700_merlini-anglici-ephemeri_almanacs-lilly-william_1677, leaf n32, aphorisms 15-29, no signature on that leaf); the prefatory letter is signed William Lilly, Hersham, 26 Sept. 1676",
+     "reading": "original_language_read",
      "says": "partile within three degrees (aphorism no. 25)"
     }
    ],
@@ -228,8 +228,8 @@
    "sources": [
     {
      "citation": "Merlini Anglici Ephemeris ... for the Year 1677 (London: J. Macock for the Company of Stationers), 'Useful Astrological Aphorisms for Young Students and others', no. 25",
-     "read_at": "level pending: the record does not say whether the 1677 volume itself was read; only the reference is claimed until that is confirmed",
-     "reading": "bibliographic_only",
+     "read_at": "the 1677 almanac itself, read in the archive.org scan of the printed copy (bim_early-english-books-1641-1700_merlini-anglici-ephemeri_almanacs-lilly-william_1677, leaf n32, aphorisms 15-29, no signature on that leaf); the prefatory letter is signed William Lilly, Hersham, 26 Sept. 1676",
+     "reading": "original_language_read",
      "says": "partile within the difference of three degrees"
     },
     {
@@ -274,8 +274,8 @@
    "sources": [
     {
      "citation": "Ptolemy, Tetrabiblos I.13 (Robbins pp.73-75 = Hübner I.14), I.16 (pp.77-79 = Hübner I.17)",
-     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
-     "reading": "bibliographic_only",
+     "read_at": "Robbins's English translation on LacusCurtius (Tetrabiblos/1B*.html): I.13 after the p73 page mark ('four signs, and 120 degrees'), I.16 between the p77 and p79 marks ('either one or five signs apart'); the Greek not read",
+     "reading": "translation_read",
      "says": "aspects counted by the signs between"
     },
     {
@@ -286,15 +286,15 @@
     },
     {
      "citation": "Firmicus Maternus, Mathesis II.22",
-     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
-     "reading": "bibliographic_only",
+     "read_at": "the Latin of Kroll-Skutsch as transcribed on LacusCurtius (Firmicus_Maternus/Mathesis/2*.html), II.22.3: 'Trigonum <est> a signo, a quo initiamus, V. signum'",
+     "reading": "original_language_read",
      "says": "counts inclusively (trine = fifth sign)"
     }
    ]
   },
   "birth_time_sensitivity/approximate_hour": {
    "applies_to": "birth_time_sensitivity (precision approximate_hour)",
-   "method": "Classifications (every non-numeric value each resampled path prints: the sign of every longitude, angle, cusp and Lot; house placements of planets and Lots; motion direction; sect and its near-horizon band; the Lot formula basis; the void-of-course flag only; the twelfth-part of every point the chart lists) are recomputed at the listed sampled instants of the stated civil hour [H:00,H+1:00) in the named fold: a quarter-hour grid plus the seconds either side of any UTC-offset change inside the hour, located by a one-minute UTC scan refined to the second. same_at_all_samples means only that those sampled instants agree; it is not proof that the classification holds between them, and no invariant is applied to exclude a change and reversal between adjacent samples. Adjacent samples that differ are bisected to at most 15 s; each bracket holds at least one change, not necessarily one. A twelfth-part's own sign change is not bisected: its signs are those seen at the samples and at the midpoints other changes needed. Inside the polar circle the Ascendant can reverse between samples, so every path read off it is at most partially evaluated. Numeric values are sampled envelopes, not states. Every sample fails closed when its calculation did not use the Swiss files."
+   "method": "Classifications (every non-numeric value each resampled path prints: the sign of every longitude, angle, cusp and Lot; house placements of planets and Lots; motion direction; sect and its near-horizon band; the Lot formula basis; the void-of-course flag only; the twelfth-part of every point the chart lists) are recomputed at the listed sampled instants of the stated civil hour [H:00,H+1:00) in the named fold: a quarter-hour grid plus the seconds either side of any UTC-offset change inside the hour, located by a one-minute UTC scan refined to the second. same_at_all_samples means only that those sampled instants agree; it is not proof that the classification holds between them, and no invariant is applied to exclude a change and reversal between adjacent samples. Adjacent samples that differ are bisected to at most 15 s; each bracket holds at least one change, not necessarily one. A twelfth-part's or an extended Lot's own change is not bisected: its classifications are those seen at the samples and at the midpoints other changes needed. Inside the polar circle the Ascendant can reverse between samples, so every path read off it is at most partially evaluated. Numeric values are sampled envelopes, not states. Every sample fails closed when its calculation did not use the Swiss files."
   },
   "birth_time_sensitivity/date_only": {
    "applies_to": "birth_time_sensitivity (precision date_only)",
@@ -356,9 +356,9 @@
      "says": "halb: a diurnal planet above the earth by day and below it by night, a nocturnal one the reverse; hayyiz: halb and a male planet in a male sign or a female planet in a female sign; Mars, male and nocturnal, above the earth by night in a male sign; every hayyiz is a halb"
     },
     "dorotheus_carmen_i_5": {
-     "citation": "Dorotheus of Sidon, Carmen astrologicum I.5 (Pingree, from the Arabic)",
-     "read_at": "reported by sevenstarsastrology.com; Pingree's translation not read",
-     "reading": "secondary_only",
+     "citation": "Dorotheus, Carmen Astrologicum I.5 (Pingree 1976 p.164)",
+     "read_at": "Pingree's English translation (Teubner 1976), Book I as put online by the translation's rights holder (D. Houlding, skyscript.co.uk/dorotheus1.pdf, 2013; searchable text keeping the Teubner page breaks): I.5 on p.164; the Arabic not checked",
+     "reading": "translation_read",
      "says": "the best places 1, 10, 11, 5, 7, 4, 9; middling 3, 2, 8; bad 6 and 12"
     },
     "firmicus_mathesis_ii_15_20": {
@@ -524,13 +524,13 @@
     },
     {
      "citation": "Vettius Valens, Anthologies III.11 (Pingree; = III.14 Kroll/Riley, '14K;11P')",
-     "read_at": "level pending: the record does not say whether the Greek, Pingree's or Riley's translation, or a secondary report was read; only the reference is claimed until that is confirmed",
-     "reading": "bibliographic_only",
+     "read_at": "Riley's translation in a reformatted online copy of his preliminary edition (github.com/janegca/latex-valens), the chapter headed '(14K,11P)': for night births Moon to Sun while the Moon is above the earth, 'i.e. until the time it sets', and Sun to Moon after it has set, after Riley's /147P/ marker; the Greek not checked",
+     "reading": "translation_read",
      "says": "at night the formula changes with whether the Moon has set"
     },
     {
      "citation": "Paulus Alexandrinus, Introduction ch.23",
-     "read_at": "the Greek-Latin first printing (Wittenberg 1586); Boer 1958 not checked; level pending: the record does not say whether the Greek or the Latin translation of that printing was read, so only the translation level is claimed",
+     "read_at": "the Greek-Latin first printing (Wittenberg 1586) in the archive.org scan of the Royal Library Copenhagen copy (den-kbd-pil-130018161835-002), 'De septem sortibus, quae sunt in Panareto': Fortune in the Latin on leaf n81, by night 'contraria ratione', Moon to Sun; the Daimon in the Greek on leaf n82, by night 'τὸ ἀνάπαλιν'; Boer 1958 not checked",
      "reading": "translation_read",
      "says": "reversal at night (the product's formula)"
     }
@@ -566,8 +566,8 @@
     },
     {
      "citation": "Merlini Anglici Ephemeris ... for the Year 1677, 'Useful Astrological Aphorisms', no. 25",
-     "read_at": "level pending: the record does not say whether the 1677 volume itself was read; only the reference is claimed until that is confirmed",
-     "reading": "bibliographic_only",
+     "read_at": "the 1677 almanac itself, read in the archive.org scan of the printed copy (bim_early-english-books-1641-1700_merlini-anglici-ephemeri_almanacs-lilly-william_1677, leaf n32, aphorisms 15-29, no signature on that leaf); the prefatory letter is signed William Lilly, Hersham, 26 Sept. 1676",
+     "reading": "original_language_read",
      "says": "partile within three degrees; the aphorism section is unsigned and the prefatory letter is signed William Lilly"
     },
     {
@@ -720,7 +720,7 @@
     ],
     "note": "These five printed cells are treated as known manuscript variants: the rule, not the printed cell, is what the product computes and tests. Which stage introduced them (the re-typeset, Riley's translation or the Greek manuscripts) is not checked against Pingree's edition.",
     "rule": "a cell is the level-2 period's months times the receiving planet's minor years over 129; 44 of the 49 printed cells agree with it within 0.2 hours",
-    "table": "Valens VI.6a (Riley's label; Kroll VI.6, in Pingree part of VI.6; Kroll p.255, Pingree p.244), the third-stage sub-division"
+    "table": "Valens VI.6a (Riley's label; Kroll VI.6, in Pingree part of VI.6; Kroll pp.254-255, Pingree pp.243-244), the third-stage sub-division"
    },
    "levels_emitted": [
     1,
@@ -743,14 +743,14 @@
      "says": "the sect light as starting point if well situated, else the first star after the ascendant; 10 years 9 months each, then the next star in the zodiacal circle of the nativity; the night example (Greek Horoscopes L132): Moon, Venus, Jupiter, Saturn 43 years, then Mars, with Mars 15, Sun 19, Mercury 20, Moon 25, Venus 8, Jupiter 12, Saturn 30 months (44 years 3 months, 51 years 3 months, 53 years 9 months); 52 years and 124 days is 53 distribution years and 37 days, the 667th day of Saturn's sub-period; days and cycles counted in 360-day years"
     },
     {
-     "citation": "Valens VI.6a (Riley's label; Kroll VI.6, in Pingree part of VI.6; Kroll p.255, Pingree p.244)",
-     "read_at": "Riley's English translation via the public re-typeset; the Greek not checked",
+     "citation": "Valens VI.6a (Riley's label; Kroll VI.6, in Pingree part of VI.6; Kroll pp.254-255, Pingree pp.243-244)",
+     "read_at": "Riley's English translation via the public re-typeset; the Greek not checked; the Kroll pages from the chapter headings in the 1908 scan (archive.org bub_gb_OQ_gAAAAMAAJ), the Pingree pages by Riley's /P/ markers",
      "reading": "translation_read",
      "says": "the third-stage sub-division table, 49 cells, listed in the Chaldean order"
     },
     {
-     "citation": "Valens VI.7 (VI.7 in both Kroll and Pingree; Kroll pp.256-257, Pingree pp.245-246)",
-     "read_at": "Riley's English translation via the public re-typeset",
+     "citation": "Valens VI.7 (VI.7 in both Kroll and Pingree; Kroll pp.255-257, Pingree pp.244-246)",
+     "read_at": "Riley's English translation via the public re-typeset; the Kroll pages from the chapter headings in the 1908 scan (archive.org bub_gb_OQ_gAAAAMAAJ), the Pingree pages by Riley's /P/ markers",
      "reading": "translation_read",
      "says": "the lord of the day by 129-day cycles; ordering by the stars' actual signs and degrees at the nativity, not by the Chaldean order from Saturn"
     },
@@ -790,8 +790,8 @@
    "sources": [
     {
      "citation": "Placidus de Titis, Tabulae primi mobilis (Padua: Frambotti 1657), Theses ex II. libro, no. 50, p.9",
-     "read_at": "level pending: the record quotes the thesis but does not say which copy was read; only the reference is claimed",
-     "reading": "bibliographic_only",
+     "read_at": "the 1657 printing as scanned at archive.org (bub_gb_3RHgMAUa5fMC, n28 = p.9), thesis 50: 'Antiscia communiter vocata nos Parallelos ... nuncupamus'",
+     "reading": "original_language_read",
      "says": "the so-called antiscia renamed 'Parallelos', equal distance from the equator, and the contra-parallel"
     },
     {
@@ -875,15 +875,15 @@
   "dignities/dorothean_triplicity_three_rulers_v1": {
    "applies_to": "derived_methods.essential_dignities.profile_results.dorothean_triplicity_three_rulers_v1",
    "details": {
-    "chapter": "Carmen Astrologicum I.1 (Pingree pp.161-162); use of the rulers I.4 (pp.163-164, not checked)",
+    "chapter": "Carmen Astrologicum I.1 (Pingree 1976 pp.161-162); use of the rulers I.4 (pp.163-164)",
     "citation_verification": "checked_against_cited_edition_pages",
     "corroboration": {
      "citation": "Vettius Valens, Anthologies II.1 (Kroll and Pingree II.1; Pingree pp.54-55 by Riley's /P/ markers)",
-     "read_at": "Riley's translation, the PDF of his preliminary edition (Vettius_Valens_Riley.pdf), p.25",
+     "read_at": "Riley's translation, the PDF of his preliminary edition (Vettius_Valens_Riley.pdf), printed p.25 (PDF page 27)",
      "reading": "translation_read",
      "says": "the same four triads by day and by night as Dorotheus, the third planet working with both sects"
     },
-    "cross_check_pending": "Dykes, Dorotheus's Carmen Astrologicum, 2nd ed. (not compared)",
+    "cross_check_pending": "B. Dykes, Carmen Astrologicum: The ʿUmar al-Ṭabarī Translation, 2nd ed. (Cazimi Press, 2019) (not compared)",
     "sign_specific_additional_shares": [
      {
       "application": "disclosed_not_applied",
@@ -898,42 +898,42 @@
    "sources": [
     {
      "citation": "Dorotheus, Carmen Astrologicum I.1 (Pingree 1976 pp.161-162)",
-     "read_at": "Pingree's English translation (1976), checked against the cited pages; the Arabic not checked",
+     "read_at": "Pingree's English translation (Teubner 1976), Book I as put online by the translation's rights holder (D. Houlding, skyscript.co.uk/dorotheus1.pdf, 2013; searchable text keeping the Teubner page breaks): I.1 on pp.161-162, 'and in Virgo is also a share for Mercury' at the head of p.162; the Arabic not checked",
      "reading": "translation_read",
      "says": "the triplicity rulers; in Virgo also a share for Mercury (p.162)"
     },
     {
      "citation": "Dorotheus, Carmen Astrologicum I.28 (Pingree 1976 p.196)",
-     "read_at": "Pingree's English translation (1976), checked against the cited page; the Arabic not checked",
+     "read_at": "Pingree's English translation (Teubner 1976), Book I as put online by the translation's rights holder (D. Houlding, skyscript.co.uk/dorotheus1.pdf, 2013; searchable text keeping the Teubner page breaks): I.28 on p.196, 'the associate of these two'; the Arabic not checked",
      "reading": "translation_read",
      "says": "the third ruler, 'the associate of these two'"
     },
     {
      "citation": "Hephaestio, Apotelesmatica I.6",
-     "read_at": "an online transcription following CCAG/TLG; the Pingree 1973 edition not checked",
+     "read_at": "an online transcription following CCAG/TLG (astrologicon.org, Apotelesmatika book 1, ch. 6 'Peri ton trigonon hos Dorotheos'), re-read at that chapter on 2026-10-19: the four triads and Mercury's share in Virgo; the Pingree 1973 edition not checked",
      "reading": "original_language_read",
      "says": "the Greek verse with the same four triads"
     },
     {
-     "citation": "Schmidt 1994 p.30",
+     "citation": "Hephaestio of Thebes, Apotelesmatics Book I, trans. R. Schmidt (Project Hindsight, 1994) p.30",
      "read_at": "not checked",
      "reading": "bibliographic_only",
      "says": "Hephaestio's verse in translation"
     },
     {
-     "citation": "Dorotheus, Carmen Astrologicum I.4 (Pingree pp.163-164)",
-     "read_at": "not checked",
-     "reading": "bibliographic_only",
+     "citation": "Dorotheus, Carmen Astrologicum I.4 (Pingree 1976 pp.163-164)",
+     "read_at": "Pingree's English translation (Teubner 1976), Book I as put online by the translation's rights holder (D. Houlding, skyscript.co.uk/dorotheus1.pdf, 2013; searchable text keeping the Teubner page breaks): I.4 begins on p.163 with 'the first, second, and third lords of the triplicity' and runs on to p.164, where I.5 begins; the Arabic not checked",
+     "reading": "translation_read",
      "says": "the use of the rulers"
     },
     {
-     "citation": "Dorotheus, Carmen Astrologicum I.10 (Pingree)",
-     "read_at": "level pending: the record does not say this page was read; only the reference is claimed",
-     "reading": "bibliographic_only",
+     "citation": "Dorotheus, Carmen Astrologicum I.10 (Pingree 1976 p.167)",
+     "read_at": "Pingree's English translation (Teubner 1976), Book I as put online by the translation's rights holder (D. Houlding, skyscript.co.uk/dorotheus1.pdf, 2013; searchable text keeping the Teubner page breaks): I.10 at the foot of p.167, 'the first lord of the triplicity of the Moon or its participant by night'; the Arabic not checked",
+     "reading": "translation_read",
      "says": "the word 'participant' for the third ruler"
     }
    ],
-   "statement": "Dorotheus, Carmen Astrologicum I.1 (Arabic recension; Pingree 1976 pp.161-162): the first two rulers exchange by sect and the third ('the associate of these two', I.28 p.196) participates by day and by night; the Greek verse in Hephaestio I.6 gives the same four triads (read in an online transcription following CCAG/TLG; the Pingree 1973 edition and Schmidt 1994 p.30 not checked)"
+   "statement": "Dorotheus, Carmen Astrologicum I.1 (Arabic recension; Pingree 1976 pp.161-162): the first two rulers exchange by sect and the third ('the associate of these two', I.28 p.196) participates by day and by night; the Greek verse in Hephaestio I.6 gives the same four triads (read in an online transcription following CCAG/TLG; the Pingree 1973 edition and Schmidt's translation (Project Hindsight, 1994) p.30 not checked)"
   },
   "dignities/egyptian_bounds_robbins_1940_v1": {
    "applies_to": "derived_methods.essential_dignities.profile_results.egyptian_bounds_robbins_1940_v1",
@@ -991,8 +991,9 @@
     "note": "Ptolemy reports these as the Egyptian terms. The Robbins printing is one realization of a table that later witnesses transmit with local variants. 'Egyptian' is the name Ptolemy reports; Babylonian tablets preserve forerunners (Jones & Steele, ISAW Papers 1, 2011; Steele, JCS 67, 2015); no table is claimed for the tablets.",
     "row_exceptions": [],
     "witnesses": [
-     "checked: Firmicus II.6.4-5, 10; Valens I.3; al-Bīrūnī, Tafhīm §453",
-     "not checked: Dorotheus via Hephaistio; Paulus ch.3; Abū Maʿshar, Abbr. 7.10"
+     "checked: Valens I.3; al-Bīrūnī, Tafhīm §453",
+     "variant witness: Firmicus II.6 (Kroll-Skutsch) differs in Gemini, Cancer and Sagittarius (II.6.4-5, 10); the other nine signs agree",
+     "not checked: Dorotheus via Hephaestio; Paulus ch.3; Abū Maʿshar, Abbr. 7.10"
     ]
    },
    "sources": [
@@ -1009,10 +1010,16 @@
      "says": "the chapter on the Egyptian terms"
     },
     {
-     "citation": "Firmicus Maternus, Mathesis II.6.4-5, 10; Vettius Valens, Anthologies I.3",
-     "read_at": "the witness list says these were checked but not in which text or edition; only the reference is claimed",
+     "citation": "Firmicus Maternus, Mathesis II.6.2-13 (Kroll-Skutsch 1897 vol. I pp.47-49)",
+     "read_at": "the Kroll-Skutsch Latin in the LacusCurtius transcription (Mathesis book II), compared sign by sign with the table's bounds",
+     "reading": "original_language_read",
+     "says": "a variant witness, not support: nine signs agree with the table cell for cell; Gemini (II.6.4: Mercury, Jupiter, Venus, Mars, Saturn 6 each, against Venus 5, Mars 7), Cancer (II.6.5: Mercury 7, Saturn 3, against 6 and 4) and Sagittarius (II.6.10: Mercury 6, Saturn 4, Mars 3, against 4, 5, 4) differ"
+    },
+    {
+     "citation": "Vettius Valens, Anthologies I.3",
+     "read_at": "the witness list says this was checked but not in which text or edition; only the reference is claimed",
      "reading": "bibliographic_only",
-     "says": "witnesses to the Egyptian terms"
+     "says": "a witness to the Egyptian terms"
     }
    ],
    "statement": "Egyptian terms as reported by Ptolemy, Tetrabiblos I.20; Frank E. Robbins trans., Loeb 1940, pp.91-97, table p.97; a transmitted table (Robbins's printed recension), not a single manuscript witness"
@@ -1099,8 +1106,8 @@
    "sources": [
     {
      "citation": "William Lilly, Christian Astrology (1647) p.104, triplicity columns Di. and Noc.; p.105",
-     "read_at": "cited from the methodology research report, not independently checked; the record does not say which copy; only the reference is claimed",
-     "reading": "bibliographic_only",
+     "read_at": "the 1647 printing as scanned at archive.org (b30338724, n137-n138) (= pp.104-105): the water row reads Mars in both columns, and p.105 'ruleth onely that Triplicity both day and night'",
+     "reading": "original_language_read",
      "says": "the day and night triplicity table; Mars rules water by day and night"
     }
    ],
@@ -1142,8 +1149,8 @@
     },
     {
      "citation": "Manilius, Astronomica IV.294-386",
-     "read_at": "IV.310-362 was read (see the editorial correction); for the rest of the passage only the reference is claimed",
-     "reading": "bibliographic_only",
+     "read_at": "Latin text, The Latin Library (manilius4.html), the whole passage from 'Sed nihil in semet totum valet' (294) to 'mixta sed in pluris sociantur sidera vires' (386), the online transcription, not the printed page",
+     "reading": "original_language_read",
      "says": "the decan passage"
     }
    ],
@@ -1227,13 +1234,13 @@
     },
     {
      "citation": "Māshāʾallāh, De cogitatione",
-     "read_at": "Houlding, 'The Definition of Peregrine' (STA 2010)",
-     "reading": "secondary_only",
+     "read_at": "the Latin translation in Heller's edition (Nuremberg 1549), Warburg Institute scan fah765mesahw.pdf, PDF page 94 (sig. L iii r): 'qui erat in Leone peregrinus, no[n] receptus'; first found through Houlding, 'The Definition of Peregrine' (STA 2010); the Arabic is lost",
+     "reading": "translation_read",
      "says": "Saturn in Leo 'peregrinus, non receptus'"
     },
     {
-     "citation": "Vettius Valens, Anthologies II.22 (Kroll p.90)",
-     "read_at": "Riley's translation in a reformatted online copy (github janegca/latex-valens)",
+     "citation": "Vettius Valens, Anthologies II.22 Kroll (= II.23.24 Pingree), Kroll 1908 p.89.30-32",
+     "read_at": "Riley's translation in a reformatted online copy (github janegca/latex-valens); the Kroll page and lines checked in the archive.org text of Kroll 1908 (bub_gb_OQ_gAAAAMAAJ); the Pingree page not checked online",
      "reading": "translation_read",
      "says": "malefics 'in alien signs and degrees' ruin livelihood; a description, not a defined state"
     }
@@ -1246,7 +1253,7 @@
     "undetermined_sect_near_horizon"
    ],
    "table_dependence": "Of 5,040 positions (7 planets x 360 whole-degree midpoints x day and night), Robbins's Ptolemaic bounds in place of Lilly's change the judgment at 161 (3.2%), the Egyptian bounds at 463 (9.2%); the three Dorothean triplicity rulers in place of the sect ruler at 747 (14.8%); Egyptian bounds with the three rulers at 1,049 (20.8%).",
-   "term_note": "The term is Arabic-Latin (al-Bīrūnī's gharīb, Latin peregrinus). The Hellenistic texts read describe a planet 'in alien signs and degrees' (Valens II.22) without defining it as a state."
+   "term_note": "The term is Arabic-Latin (al-Bīrūnī's gharīb, Latin peregrinus). The Hellenistic texts read describe a planet 'in alien signs and degrees' (Valens II.22 Kroll = II.23.24 Pingree) without defining it as a state."
   },
   "dignities/ptolemy_bounds_robbins_1940_v1": {
    "applies_to": "derived_methods.essential_dignities.profile_results.ptolemy_bounds_robbins_1940_v1",
@@ -1556,7 +1563,7 @@
      },
      {
       "citation": "Dorotheus of Sidon, Carmen Astrologicum I.2 (Pingree 1976 p.162)",
-      "read_at": "the scan of Pingree's translation, archive.org PingreeDS1976, left margin cut off; the clipped word read from a 2024 rework of Pingree",
+      "read_at": "Pingree's English translation (Teubner 1976), Book I as put online by the translation's rights holder (D. Houlding, skyscript.co.uk/dorotheus1.pdf, 2013; searchable text keeping the Teubner page breaks): I.2 on p.162, 'The descent of each one of them is opposite to its ascent'; the Arabic not checked",
       "reading": "translation_read",
       "says": "exaltation degrees; the descent is opposite the ascent"
      },
@@ -1604,26 +1611,26 @@
      "work": "Dorotheus of Sidon, Carmen Astrologicum"
     },
     {
-     "location": "III.4 (Pingree 1986 numbering; Riley, CSUS PDF (2010) p.61)",
+     "location": "III.4 (Pingree 1986 numbering; Riley, CSUS PDF (2010) printed p.61)",
      "role": "also_attested_exaltation_signs_source_also_supplies_exact_degrees_not_evaluated_by_this_profile",
      "work": "Vettius Valens, Anthologies"
     },
     {
-     "location": "II.2 and II.3.5-6 (Kroll-Skutsch-Ziegler)",
+     "location": "II.2 and II.3.5-6 (Kroll–Skutsch 1897, vol. I)",
      "role": "also_attested_domiciles_and_exaltation_signs_source_also_supplies_exact_degrees_not_evaluated_by_this_profile",
      "work": "Firmicus Maternus, Mathesis"
     },
     {
-     "citation": "Vettius Valens, Anthologies III.4 (Riley, CSUS PDF (2010) p.61)",
+     "citation": "Vettius Valens, Anthologies III.4 (Riley, CSUS PDF (2010) printed p.61)",
      "read_at": "the chapter was read in a reformatted online copy (github janegca/latex-valens), not in this PDF; only the page reference is claimed",
      "reading": "bibliographic_only",
      "role": "page_locator_of_an_also_attested_source",
-     "says": "the PDF page of the chapter as a locator"
+     "says": "the printed page of the chapter in the PDF (PDF page 63) as a locator"
     },
     {
-     "citation": "Firmicus Maternus, Mathesis II.2 (Kroll-Skutsch-Ziegler)",
-     "read_at": "level pending: the reading recorded is of II.3.1 and II.3.5; for II.2 only the reference is claimed",
-     "reading": "bibliographic_only",
+     "citation": "Firmicus Maternus, Mathesis II.2 (Kroll–Skutsch 1897, vol. I)",
+     "read_at": "the Latin of Kroll-Skutsch as transcribed on LacusCurtius (Firmicus_Maternus/Mathesis/2*.html), II.2 'De Domibus Stellarum', II.2.5 'Saturnus habet domicilium in Aquario et Capricorno'",
+     "reading": "original_language_read",
      "role": "chapter_reference_of_an_also_attested_source",
      "says": "the domiciles"
     }
@@ -1700,7 +1707,7 @@
     {
      "citation": "Vettius Valens, Anthology I.4",
      "example": "Sun Aquarius 22 deg, twelfth-part in Scorpio (fits the 13-fold rule only)",
-     "read_at": "Riley's translation, the PDF of his preliminary edition (Vettius_Valens_Riley.pdf), p.8, between /19K/ and /20K/",
+     "read_at": "Riley's translation, the PDF of his preliminary edition (Vettius_Valens_Riley.pdf), printed p.8 (PDF page 10), between /19K/ and /20K/",
      "reading": "translation_read",
      "rule": "the Sun's twelfth-part used to find the ascendant"
     },
@@ -1947,7 +1954,7 @@
      "says": "Eros, Necessity, Courage, Victory, Nemesis with Fortune and Spirit"
     },
     {
-     "citation": "P.Berol. 9825 (AD 319; Greenbaum and Jones, ISAW Papers 12, 2017, paras. 135, 203-205)",
+     "citation": "P.Berol. 9825 (AD 319; Greenbaum and Jones, ISAW Papers 12, 2017, paras. 203-205)",
      "read_at": "Greenbaum and Jones's article, read in its open-access online text; the papyrus's Greek not checked",
      "reading": "secondary_only",
      "says": "a papyrus computing the seven lots by Paulus's formulae, the only documentary horoscope known to contain all seven"
@@ -2029,7 +2036,7 @@
   },
   "firdaria": {
    "applies_to": "annual_methods.firdaria",
-   "cycle_rule": "after 75 years the same sequence starts again: explicit in Bonatti Tr.9 Ch.3 for the diurnal sequence (after the South Node it returns to the Sun and runs on in order); the nocturnal sequence follows the diurnal one, since Bonatti says 'all as for the day'",
+   "cycle_rule": "after 75 years the same sequence starts again: explicit in Bonatti (Basel 1550 col.814) for the diurnal sequence ('post hoc revertitur dispositio ad Solem', after the South Node); the nocturnal sequence follows the diurnal one, since Bonatti says it goes 'in omnibus et per omnia, ut dictum est' as when it starts from the Sun",
    "diurnal_sequence": [
     "sun",
     "venus",
@@ -2103,10 +2110,10 @@
      "says": "an abridged nocturnal sequence, named by the research notes as the source of the Latin divergence"
     },
     {
-     "citation": "Bonatti, Liber astronomiae Tr.9 Ch.3 (tr. B. Dykes, 2007)",
-     "read_at": "Dykes's English translation",
-     "reading": "translation_read",
-     "says": "the periods, the diurnal sequence and the return after 75 years; for the night the text starts from the Moon and says 'all as for the day'; nocturnal nodes after Mars is Zoller's reading, not Bonatti's words"
+     "citation": "Guido Bonatti, De astronomia (Basel 1550), the nativities treatise, ch.3 'De annis Firdariae et ipsorum dispositoribus', cols.813-814 (Treatise 9 ch.3 in Dykes's numbering)",
+     "read_at": "the Latin in the archive.org scan of the Basel 1550 printing (bub_gb_BgWuc5O-JzIC, leaf n415, running head 'Pars V'), read at the cited columns",
+     "reading": "original_language_read",
+     "says": "the periods (Sun 10, Venus 8, Mercury 13, Moon 9, Saturn 11, Jupiter 12, Mars 7, Head 3, Tail 2; 75 in all), the diurnal sequence with each planet's period in sevenths shared with the planets following in order, the nodes named without sharing, and the return to the Sun; for the night the order starts from the Moon and runs 'in omnibus et per omnia, ut dictum est'; nocturnal nodes after Mars is Zoller's reading, not Bonatti's words"
     },
     {
      "citation": "Schoener (Renaissance)",
@@ -2668,9 +2675,9 @@
      "definition_source": "this product's definition (methods page §07.1)",
      "history": [
       {
-       "citation": "Vettius Valens, Anthology V.6 (Pingree 1986 numbering and pages, pp. 215-216; Kroll V.9, p.227): a chart whose degree-based MC falls in the ninth sign, cited on the methods page and not re-read for this entry",
-       "read_at": "the reference only, as the methods page gives it; the Anthology chapter was not opened for this entry",
-       "reading": "bibliographic_only"
+       "citation": "Vettius Valens, Anthology V.6 (Pingree 1986 numbering and pages, pp. 215-216; Kroll V.9, p.227): a chart whose degree-based MC falls in the ninth sign (Gemini rising, the MC in Aquarius by degree)",
+       "read_at": "Riley's translation (Vettius_Valens_Riley.pdf), printed p.105, at the /227K/ marker between /215P/ and /216P/",
+       "reading": "translation_read"
       }
      ]
     }
@@ -2687,7 +2694,7 @@
    "sources": [
     {
      "citation": "Paulus Alexandrinus, Introduction ch.23",
-     "read_at": "the Greek-Latin first printing (Wittenberg 1586); Boer 1958 not checked; level pending: the record does not say whether the Greek or the Latin translation of that printing was read, so only the translation level is claimed",
+     "read_at": "the Greek-Latin first printing (Wittenberg 1586) in the archive.org scan of the Royal Library Copenhagen copy (den-kbd-pil-130018161835-002), 'De septem sortibus, quae sunt in Panareto': Fortune in the Latin on leaf n81, by night 'contraria ratione', Moon to Sun; the Daimon in the Greek on leaf n82, by night 'τὸ ἀνάπαλιν'; Boer 1958 not checked",
      "reading": "translation_read",
      "says": "reverses Fortune and Spirit at night (the product's formula)"
     },
@@ -2699,15 +2706,15 @@
     },
     {
      "citation": "Vettius Valens, Anthologies III.11 (Pingree p.147; = III.14 Kroll/Riley, '14K;11P')",
-     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
-     "reading": "bibliographic_only",
+     "read_at": "Riley's translation in a reformatted online copy of his preliminary edition (github.com/janegca/latex-valens), the chapter headed '(14K,11P)', after Riley's /147P/ marker: 'After the Moon has set, determine the distance from the Sun to it'; the Greek not checked",
+     "reading": "translation_read",
      "says": "the day formula at night once the Moon has set; not adopted"
     },
     {
-     "citation": "Greenbaum, Culture and Cosmos 11, 2007, p.183",
-     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
-     "reading": "bibliographic_only",
-     "says": "the after-moonset rule (Valens III.11 Pingree = III.14 Kroll/Riley)"
+     "citation": "Greenbaum, 'Calculating the Lots of Fortune and Daemon in Hellenistic Astrology', Culture and Cosmos 11, 2007, p.183 (article pp.163-187)",
+     "read_at": "the article's PDF on cultureandcosmos.org, p.183 and n.54",
+     "reading": "secondary_only",
+     "says": "the after-moonset rule (Valens III.11 Pingree = III.14 Kroll/Riley), with the Greek of III.11.4 in n.54 (p.147.2-6 Pingree)"
     },
     {
      "citation": "al-Bīrūnī, Kitāb al-Tafhīm §476 (Wright 1934; he says after Abū Maʿshar)",
@@ -2877,7 +2884,7 @@
     "lilly_1647_v1": "Lilly 1647: Saturn 2'01\" (p.57), Jupiter 4'59\" (p.61), Mars 31'27\" (p.178; p.65 prints '31 degr. 27 min.'), Sun 59'08\" (p.69), Venus and Mercury the Sun's 59'08\" (p.72, p.76), Moon 13 deg 10'36\" (p.80). The default; it fills rows[]."
    },
    "moon_slow_limit": "The Moon is slow below her mean 13 deg 10'36\", Lilly's p.168 rule; p.80 says less than 13 deg 10' in 24 hours is slow, 'equivalent to a Retrograde Planet'. The 36\" between the two is disclosed, not applied.",
-   "not_applied": "Increasing or decreasing in course (Bonatti's three definitions disagree for the superior planets, cols.129-130; Ptolemy I.24 and al-Biruni §512 keep rapid and increasing apart); al-Biruni's phased orientality (§481-482) and Bonatti's graded phases (tractatus III part 2 ch.5-6); the eastern and western quadrants of the horizon (Ptolemy I.6, III.10; al-Biruni §486); masculine and feminine by orientality (Ptolemy I.6); any speed-percentage station threshold; Lilly's p.115 points.",
+   "not_applied": "Increasing or decreasing in course (Bonatti's three definitions disagree for the superior planets, cols.129-130; Ptolemy I.24 and al-Biruni §512 keep rapid and increasing apart); al-Biruni's phased orientality (§481-482) and Bonatti's graded phases (tractatus III part 2 ch.5-6); the eastern and western quadrants of the horizon (Ptolemy I.6, III.3; al-Biruni §486); masculine and feminine by orientality (Ptolemy I.6); any speed-percentage station threshold; Lilly's p.115 points.",
    "sources": [
     {
      "citation": "William Lilly, Christian Astrology (London 1647) pp.57-58, 61-62, 65, 69-70, 72-73, 76, 80, 114-115, 168, 178",
@@ -2901,14 +2908,14 @@
     },
     {
      "citation": "Vettius Valens, Anthologies IV.14, V.7, V.11 (Kroll), trans. Riley",
-     "read_at": "Riley's PDF pp.84, 100, 110",
+     "read_at": "Riley's PDF (Vettius_Valens_Riley.pdf), printed pp.82, 98, 108 (PDF pages 84, 100, 110)",
      "reading": "translation_read"
     },
     {
-     "citation": "Ptolemy, Tetrabiblos III.10",
-     "read_at": "level pending: the record names the chapter but does not say what was read; only the reference is claimed",
-     "reading": "bibliographic_only",
-     "says": "the eastern and western quadrants of the horizon; not applied"
+     "citation": "Ptolemy, Tetrabiblos III.3 (Robbins pp.235-241, the quadrants on pp.239-241); cf. III.10",
+     "read_at": "Robbins's translation in the LacusCurtius transcription, read at the pp.239-241 page marks",
+     "reading": "translation_read",
+     "says": "oriental and occidental to the Sun and to the horoscope by quadrants: the quadrants preceding each and those opposite are oriental, the others occidental; III.10 only uses the quadrants; not applied"
     }
    ],
    "station_days": "Lilly's days before each turn: Saturn 5 and 5 (p.58), Jupiter 5 and 4 (p.62), Mars 'two or three' taken as 3 and 2 (p.65), Venus 2 and 2 (p.73), Mercury 'Stationary one day' taken as 1 before each turn (p.76); p.114: the superiors move not 2, 3 or 4 days before retrogradation. After a turn: Mars 1 day after direction, 'after, but one day' (p.65); no other planet chapter gives days after a turn, so none. Counting the days after a turn is this site's reading of the planet chapters, not a rule Lilly states. The exact turns within the window are listed."
@@ -2922,18 +2929,24 @@
     "civil_day"
    ],
    "not_applicable_rule": "applicable only when the sunrise before and the sunrise after the instant are at most 1.5 days apart with exactly one sunset between them (the horizon module's diurnal regime); otherwise no_sunrise_sunset_cycle_around_instant",
-   "primary_text_checked": "dio_xxxvii_19_in_english_translation_only",
+   "primary_text_checked": "dio_xxxvii_19_in_english_translation_only; lilly_1647_ch_xcvii_in_the_first_edition",
    "reason_vocabulary": [
     "no_sunrise_sunset_cycle_around_instant"
    ],
-   "source_note": "Cassius Dio, Roman History XXXVII.19: the weekday names follow from giving the planets, from Saturn on, to the successive hours of day and night. Dio defines neither unequal hours nor a day starting at sunrise; those are the standard later tradition, for which no primary text is cited. No page numbers",
+   "source_note": "Cassius Dio, Roman History XXXVII.19: the weekday names follow from giving the planets, from Saturn on, to the successive hours of day and night. Dio defines neither unequal hours nor a day starting at sunrise; for those two the primary text cited is Lilly, Christian Astrology (1647) ch. XCVII, pp. 482-483",
    "source_status": "standard_tradition",
    "sources": [
     {
      "citation": "Cassius Dio, Roman History XXXVII.19",
-     "read_at": "an English translation only; the record does not name which, and the Greek not checked",
+     "read_at": "Cary's English translation (Loeb, Dio's Roman History vol. III, 1914), p.131, in the LacusCurtius transcription; the Greek not checked",
      "reading": "translation_read",
      "says": "the weekday names follow from giving the planets, from Saturn on, to the successive hours of day and night"
+    },
+    {
+     "citation": "William Lilly, Christian Astrology (London, 1647), ch. XCVII, pp. 482-484",
+     "read_at": "the first edition (archive.org/details/b30338724), read in the scan's OCR text of pp. 482-484",
+     "reading": "original_language_read",
+     "says": "the first hour of every day goes to the planet of the day, beginning ever at sunrise and numbering on to the next sunrise; sunrise to sunset and sunset to the next sunrise are each divided into twelve equal parts, so the astrological hours are unequal, just sixty minutes only on the day the Sun enters Aries or Libra; worked example: Monday 9:30 a.m. falls in the hour of Mars"
     }
    ],
    "sunrise_definition": "the horizon module's event: refracted upper limb crossing the apparent horizon, topocentric, request atmosphere, no dip (USNO standard definition; Swiss swe_rise_trans default)"
@@ -2984,8 +2997,8 @@
        "says": "the months of the decennial sub-periods, Sun 19, Moon 25, Saturn 30, Jupiter 12, Mars 15, Venus 8, Mercury 20"
       },
       {
-       "citation": "Dorotheus, Carmen Astrologicum I.23 (Pingree 1976)",
-       "read_at": "Pingree's English translation (1976); the Arabic not checked",
+       "citation": "Dorotheus, Carmen Astrologicum I.23 (Pingree 1976 pp.183-184)",
+       "read_at": "Pingree's English translation (Teubner 1976), Book I as put online by the translation's rights holder (D. Houlding, skyscript.co.uk/dorotheus1.pdf, 2013; searchable text keeping the Teubner page breaks): I.23 from p.183, the Moon's 'twenty-five months' on p.184; the Arabic not checked",
        "reading": "translation_read",
        "says": "the same years for a benefic on an angle; the Moon in a masculine sign only 25 months"
       }
@@ -3131,31 +3144,31 @@
   "sect": {
    "applies_to": "derived_methods.sect",
    "method_provenance": "product_convention_sources_checked_do_not_specify_boundary",
-   "source_summary": "Passages (not independently verified): Dorotheus I.1 (Pingree pp.161–162), I.22 (p.183); Ptolemy I.7 (Robbins p.43); Valens III.5 (Pingree pp.133–134); Paulus ch.6, ch.23 (Boer 1958, main text; Schmidt 1995 pp.13, 43); Firmicus II.7.1–4; Rhetorius ch.2, ch.44 (Holden 2009 numbering, a compilation of epitomes; not verified); Abū Maʿshar, Great Introduction II.9.1 (locator not verified), Abbreviation III.3 (Dykes ITA §III.2); al-Qabīṣī I (Latin 1512); Lilly 1647 p.113 (Hayz), p.42. Most treat a diurnal or nocturnal birth as a given category, or describe planetary conditions as above or below the earth; the closest to a solar day/night criterion are Valens III.11 (Pingree; = III.14 Kroll/Riley, '14K;11P'; the Moon 'above the earth' read as until it sets) and Lilly 1647 p.42 (checking the chart time by the Sun's house). None specifies sun-centre, upper limb or refraction; the >0° rule is a product convention.",
+   "source_summary": "Passages (not independently verified): Dorotheus I.1 (Pingree 1976 pp.161–162), I.22 (Pingree 1976 p.183); Ptolemy I.7 (Robbins p.43); Valens III.5 (Pingree pp.133–134); Paulus ch.6, ch.23 (Boer 1958, main text; Schmidt 1995 pp.13, 43); Firmicus II.7.1–4; Rhetorius ch.2, ch.44 (Holden 2009 numbering, a compilation of epitomes; not verified); Abū Maʿshar, Great Introduction II.9.1 (locator not verified), Abbreviation III.3 (Dykes ITA §III.2); al-Qabīṣī I (Latin 1512); Lilly 1647 p.113 (Hayz), p.42. Most treat a diurnal or nocturnal birth as a given category, or describe planetary conditions as above or below the earth; the closest to a solar day/night criterion are Valens III.11 (Pingree; = III.14 Kroll/Riley, '14K;11P'; the Moon 'above the earth' read as until it sets) and Lilly 1647 p.42 (checking the chart time by the Sun's house). None specifies sun-centre, upper limb or refraction; the >0° rule is a product convention.",
    "sources": [
     {
      "citation": "Dorotheus, Carmen Astrologicum I.1 (Pingree 1976 pp.161-162)",
-     "read_at": "Pingree's English translation (1976); the Arabic not checked",
+     "read_at": "Pingree's English translation (Teubner 1976), Book I as put online by the translation's rights holder (D. Houlding, skyscript.co.uk/dorotheus1.pdf, 2013; searchable text keeping the Teubner page breaks): I.1 on pp.161-162; the Arabic not checked",
      "reading": "translation_read",
      "says": "day and night births as given categories (the triplicity lords by sect)"
     },
     {
      "citation": "Dorotheus, Carmen Astrologicum I.22 (Pingree 1976 p.183)",
-     "read_at": "Pingree's English translation (1976); the Arabic not checked",
+     "read_at": "Pingree's English translation (Teubner 1976), Book I as put online by the translation's rights holder (D. Houlding, skyscript.co.uk/dorotheus1.pdf, 2013; searchable text keeping the Teubner page breaks): I.22 on p.183; the Arabic not checked",
      "reading": "translation_read",
      "says": "the sect light's triplicity lords"
     },
     {
      "citation": "Ptolemy, Tetrabiblos I.7 (Robbins p.43)",
-     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
-     "reading": "bibliographic_only",
+     "read_at": "Robbins's English translation on LacusCurtius (Tetrabiblos/1B*.html), I.7 after the p43 page mark: 'the sun and Jupiter diurnal'; the Greek not read",
+     "reading": "translation_read",
      "says": "diurnal and nocturnal planets"
     },
     {
      "citation": "Vettius Valens, Anthologies III.5 (Pingree pp.133-134)",
-     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
-     "reading": "bibliographic_only",
-     "says": "day and night births as given categories"
+     "read_at": "Riley's translation (Vettius_Valens_Riley.pdf), printed p.62, ch.5 between the /133P/ and /135P/ markers",
+     "reading": "translation_read",
+     "says": "day and night births as given categories (the sects of the stars)"
     },
     {
      "citation": "Paulus Alexandrinus, Introduction ch.6, ch.23 (Boer 1958, main text; Schmidt 1995 pp.13, 43)",
@@ -3164,10 +3177,10 @@
      "says": "sect as a given category; Boer 1958 and Schmidt 1995 not checked"
     },
     {
-     "citation": "Firmicus Maternus, Mathesis II.7.1-4",
-     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
-     "reading": "bibliographic_only",
-     "says": "planets above or below the earth by day and night"
+     "citation": "Firmicus Maternus, Mathesis II.7.1-4 (Kroll-Skutsch 1897 vol. I pp.49-50)",
+     "read_at": "the Kroll-Skutsch Latin in the LacusCurtius transcription (Mathesis book II)",
+     "reading": "original_language_read",
+     "says": "the Sun, Jupiter and (supplied by the editors) Saturn rejoice by day; where they stand is lost in a lacuna after 'in oportunis locis positi' (II.7.2), so 'above or below the earth' is not in the surviving text; the waning Moon with Venus or Mars by night (II.7.3)"
     },
     {
      "citation": "Rhetorius ch.2, ch.44 (Holden 2009 numbering, a compilation of epitomes)",
@@ -3201,14 +3214,14 @@
     },
     {
      "citation": "William Lilly, Christian Astrology (1647) p.42",
-     "read_at": "level pending: a passage named by the method research notes; the record does not say which copy was read, or that it was read, so only the reference is claimed",
-     "reading": "bibliographic_only",
+     "read_at": "the 1647 printing as scanned at archive.org (b30338724, n75 = p.42): 'that they may presently consider whether they have set their Figure right'",
+     "reading": "original_language_read",
      "says": "checking the chart time by the Sun's house"
     },
     {
      "citation": "Vettius Valens, Anthologies III.11 (Pingree; = III.14 Kroll/Riley, '14K;11P')",
-     "read_at": "level pending: a passage named by the method research notes and not independently verified; the record does not say what was read, so only the reference is claimed until that is confirmed",
-     "reading": "bibliographic_only",
+     "read_at": "Riley's translation in a reformatted online copy of his preliminary edition (github.com/janegca/latex-valens), the chapter headed '(14K,11P)': 'if the Moon is above the earth, i.e. until the time it sets'; the Greek not checked",
+     "reading": "translation_read",
      "says": "the Moon 'above the earth' read as until it sets"
     }
    ]
@@ -3225,13 +3238,13 @@
    "sources": [
     {
      "citation": "Dorotheus, Carmen Astrologicum I.1 (Pingree 1976 pp.161-162)",
-     "read_at": "Pingree's English translation (1976); the Arabic not checked",
+     "read_at": "Pingree's English translation (Teubner 1976), Book I as put online by the translation's rights holder (D. Houlding, skyscript.co.uk/dorotheus1.pdf, 2013; searchable text keeping the Teubner page breaks): I.1 on pp.161-162; the Arabic not checked",
      "reading": "translation_read",
      "says": "the triplicity lords and their day and night order"
     },
     {
      "citation": "Dorotheus, Carmen Astrologicum I.22 (Pingree 1976 p.183)",
-     "read_at": "Pingree's English translation (1976); the Arabic not checked",
+     "read_at": "Pingree's English translation (Teubner 1976), Book I as put online by the translation's rights holder (D. Houlding, skyscript.co.uk/dorotheus1.pdf, 2013; searchable text keeping the Teubner page breaks): I.22 on p.183; the Arabic not checked",
      "reading": "translation_read",
      "says": "the sect light's triplicity lords, the first for the beginning of life, the second for its end"
     }
@@ -3408,6 +3421,21 @@
     "far_epoch_extrapolation"
    ]
   },
+  "time/hk_1945_1946_observatory_summer_time": {
+   "applies_to": "calculation_dossier.warnings[code=hk_observatory_summer_time_differs]; zones Asia/Hong_Kong",
+   "differing_local_intervals": {
+    "1945_after_november_18": [
+     "1945-11-18T02:00",
+     "1946-01-01T00:00"
+    ],
+    "1946_april_20": [
+     "1946-04-20T00:00",
+     "1946-04-21T00:00"
+    ]
+   },
+   "note": "香港天文台的〈香港夏令時間〉表把 1945 年全年列為夏令時間（UTC+9），1946 年寫 4 月 20 日開始；IANA 時區資料庫定 1945 年 11 月 18 日 02:00 恢復 UTC+8、1946 年 4 月 21 日 00:00 才開始夏令時間。本服務依時區資料庫換算，不另算一張盤；出生時間落在 1945-11-18 02:00 至 12-31 結束，或 1946-04-20 整天（香港時間）時加一則警告，說明依天文台紀錄鐘面時間可能差 1 小時。",
+   "source": "Hong Kong Observatory, Summer Time in Hong Kong table (1942-1945 listed as the whole year; 1946 from 20 April); IANA tz database, file asia, Hong Kong section (UTC+8 from 1945-11-18 02:00, comments by Phake Nick 2018-10-26 and P Chan 2018-12-31; 1946 summer time from 04-21 00:00 after two newspapers). Civil-time source rows hk-1941-1945 and hk-1946-1979 (backend/app/civil_time_sources.json); article /zh-TW/blog/hong-kong-birth-time."
+  },
   "time/prc_1988_dst_start": {
    "applies_to": "calculation_dossier.warnings[code=prc_1988_dst_start_disputed]; zones Asia/Chongqing, Asia/Harbin, Asia/Shanghai",
    "disputed_local_interval": [
@@ -3440,6 +3468,46 @@
    }
   },
   "void_of_course": {
+   "alternative_methods": {
+    "hellenistic_30_degree_v1": {
+     "method_provenance": "named_pre_modern_text_translation_read",
+     "not_modelled": "the text also counts joining 'by sign'; only degree perfections are searched, so a whole-sign aspect with no degree perfection inside the 30 degrees does not prevent the verdict void",
+     "rule": "void when no aspect (conjunction and the four traditional aspects to a classical planet) perfects while the Moon moves through the next 30 degrees of longitude from its chart position, regardless of the sign boundary",
+     "sources": [
+      {
+       "citation": "Ps.-Porphyry, Introduction ch.23 (Boer-Weinstock, CCAG V/4, 1940, p.202)",
+       "read_at": "an online Greek transcription and Holden 2009 trans. p.18, the CCAG page itself not checked; level pending: the record does not say whether the Greek was read closely enough to count as the original language, so only the translation is claimed",
+       "reading": "translation_read",
+       "says": "the Moon joins no planet, by sign, degree, aspect or kollesis, within the next 30 degrees, regardless of the sign boundary"
+      },
+      {
+       "citation": "Antiochus (as reported by Louis 2013 citing Gramaglia p.188)",
+       "read_at": "not consulted",
+       "reading": "bibliographic_only",
+       "says": "a variant of one day and night (about 13 degrees); not implemented here, the original is not checked"
+      }
+     ]
+    },
+    "lilly_moiety_before_sign_exit_v1": {
+     "method_provenance": "named_author_components_combination_by_product",
+     "not_modelled": "p.112 bounds the void course by the sign but does not itself mention moieties; reading 'apply' there through the moiety rule of p.107 is the product's combination of two passages of the same book; p.107 prints two columns of orbs and the moieties are taken from the first only (the orb profile lilly_1647_experience_v1), not reconciled with the worked example on p.110",
+     "rule": "void when, before the Moon leaves its sign, it does not come within the joint moiety of an applying aspect: the Moon is not void if at the chart moment it already applies within the pair's orb, or it enters that orb while applying before the sign exit; the pair's orb is half the sum of the two planets' orbs in Lilly's table",
+     "sources": [
+      {
+       "citation": "Lilly, Christian Astrology 1647 p.112",
+       "read_at": "reading level as recorded; the record does not say which copy of the 1647 English text was read",
+       "reading": "original_language_read",
+       "says": "'Voyd of course': a planet separated from a planet that does not forthwith, while in that sign, apply to any other (any planet, not only the Moon; the product does not model the separation premise); bounded by the sign; the page does not mention moieties"
+      },
+      {
+       "citation": "Lilly, Christian Astrology 1647 p.107 (again p.110)",
+       "read_at": "reading level as recorded; the record does not say which copy of the 1647 English text was read",
+       "reading": "original_language_read",
+       "says": "the planets' orbs and the rule that a pair's orb is half their sum"
+      }
+     ]
+    }
+   },
    "applies_to": "derived_methods.void_of_course",
    "boundary_simultaneity_policy": {
     "note": "simultaneous_boundary：某個相位精確完成的時刻與月亮離開本星座的時刻，相差不超過求根容差 1e-06 日（約 0.086 秒），數值上分不出先後。此情形既不判為空亡、也不判為非空亡：is_void_of_course 為 null，verdict 為 simultaneous_boundary；該相位與兩個根的括號區間一併列出，供複算。",
@@ -3466,19 +3534,19 @@
    },
    "primary_texts_independently_transcribed": false,
    "sign_boundary_rule_attribution": "unresolved",
-   "sign_condition": "The Moon not perfecting an aspect before leaving its sign: Māshāʾallāh, On Reception ch.1 (Dykes 2008 p.443; ch.7, p.467, not checked); Lilly, Christian Astrology 1647 p.112 'Voyd of course' (bounded by the sign; the page does not mention moieties). Sahl's definition in the Latin Quadripartitum collection (Venice 1519) is that the Moon joins no planet and none joins it; it names neither the sign boundary nor an orb. An earlier explicit statement is attributed to Abū Maʿshar, Abbreviation III.21-22 (not consulted).",
+   "sign_condition": "The Moon not perfecting an aspect before leaving its sign: Māshāʾallāh, On Reception ch.1 (Dykes 2008 p.443; ch.7, p.467, not checked) gives a general sign-boundary rule for planets, and applying it to the Moon and the void course is this site's application; Lilly, Christian Astrology 1647 p.112 'Voyd of course' (bounded by the sign; the page does not mention moieties). Sahl's definition in the Latin Quadripartitum collection (Venice 1519) is that the Moon joins no planet and none joins it; it names neither the sign boundary nor an orb. An earlier explicit statement is attributed to Abū Maʿshar, Abbreviation III.21-22 (not consulted).",
    "sources": [
     {
      "citation": "Lilly, Christian Astrology 1647 p.112",
      "read_at": "reading level as recorded; the record does not say which copy of the 1647 English text was read",
      "reading": "original_language_read",
-     "says": "'Voyd of course': the Moon perfects no aspect before leaving its sign; bounded by the sign; the page does not mention moieties"
+     "says": "'Voyd of course': a planet separated from a planet that does not forthwith, while in that sign, apply to any other (any planet, not only the Moon; the product does not model the separation premise); bounded by the sign; the page does not mention moieties"
     },
     {
      "citation": "Māshāʾallāh, On Reception ch.1 (Dykes 2008 p.443)",
      "read_at": "Dykes's English translation, in the translator's published excerpt pp.443-446",
      "reading": "translation_read",
-     "says": "the Moon not perfecting an aspect before leaving its sign"
+     "says": "a general sign-boundary rule for planets: an aspect not perfected before a planet leaves its sign; applying it to the Moon and the void course is this site's application"
     },
     {
      "citation": "Sahl, 'De cursu planete vacui', in Quadripartitum Ptolomei ... (Venice 1519)",

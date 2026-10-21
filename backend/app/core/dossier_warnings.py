@@ -7,6 +7,7 @@ calculation.  The rules run in a fixed order and the list keeps that order.
 from __future__ import annotations
 
 from collections.abc import Iterator
+from typing import Any
 
 from .invariants import InternalInvariantError
 from ..domain_catalog import PRODUCT_YEAR_RANGE
@@ -18,16 +19,19 @@ from zoneinfo import ZoneInfo
 
 from .planetary_hours import NO_DIURNAL_CYCLE
 from .time_utils import (
+    HK_1945_1946_SOURCE_REF,
+    HK_BIRTH_TIME_ARTICLE_PATH,
+    HK_OBSERVATORY_SUMMER_TIME_INTERVALS,
     PRC_1988_DISPUTED_LOCAL_INTERVAL,
     PRC_1988_DST_SOURCE_REF,
     TZDB_PRE_1970_SOURCE,
+    hk_observatory_summer_time_period,
     prc_1988_dst_start_disputed,
 )
 
-# The reader's name of each module, for the sentences a person reads on the page
-# and in the exports.  The response keeps the keys where a program reads them
-# (calculation_policy.modules, affected_paths); a test holds this table to the
-# dossier's module set and the two states only the warnings read.
+# Reader-facing module names for page and export sentences; programs read the
+# keys.  A test holds this table to the dossier's module set plus the two
+# states only the warnings read.
 MODULE_NAMES_ZH = {
     "core_positions": "核心天體位置",
     "house_division": "宮位分割",
@@ -87,10 +91,9 @@ def _warning(
     affected_paths: list[str],
     params: dict | None = None,
 ) -> dict:
-    # `code` and `params` are the warning; `message` is its Traditional Chinese
-    # sentence for a reader without a catalogue.  `params` holds only numbers,
-    # booleans, keys and closed-set codes, so another language can write the same
-    # sentence from them without parsing `message`.
+    # `code` and `params` are the warning; `message` is its Chinese sentence.
+    # `params` holds only numbers, booleans, keys and closed-set codes, so another
+    # language can write the sentence without parsing `message`.
     return {
         "code": code,
         "severity": severity,
@@ -101,11 +104,9 @@ def _warning(
     }
 
 
-# Presentation thresholds flag sensitivity without changing calculations.  The
-# zone check is a method-layer signal, not a refusal.  Calibration: the most
-# extreme legal pairing in the world is
-# western China, where Kashgar at 76E runs on Beijing time — 2.93 hours.  3.5
-# lets that through and still catches a zone picked from the wrong continent.
+# Presentation thresholds; none changes a calculation or refuses.  Calibration:
+# the most extreme legal pairing is Kashgar (76E) on Beijing time, 2.93 hours;
+# 3.5 lets that through and still catches a zone from the wrong continent.
 GEOGRAPHIC_ZONE_INCOHERENCE_HOURS = 3.5
 SIGN_BOUNDARY_WARNING_DEGREES = 1.0
 CUSP_PROXIMITY_WARNING_DEGREES = 1.0
@@ -114,9 +115,8 @@ CUSP_PROXIMITY_WARNING_DEGREES = 1.0
 def _zone_incoherence_warnings(
     longitude: float, utc_offset_hours: float
 ) -> Iterator[dict]:
-    # Coordinates and a zone each pass their own validation; their relationship
-    # belongs to neither field, so a Taipei latitude paired with a New York zone
-    # produced a chart that is wrong in a way nothing said out loud.
+    # Coordinates and zone each pass their own validation; their relationship
+    # belongs to neither, so a Taipei place with a New York zone went unflagged.
     solar_offset_hours = longitude / 15.0
     # UTC+14 and UTC-10 name the same civil-time neighbourhood across the
     # date line.  Compare offsets on the 24-hour circle, not a line.
@@ -553,8 +553,7 @@ def _time_scale_warnings(request, time_conversion: dict) -> Iterator[dict]:
             },
         )
 
-    # A notice, not a refusal, and nothing more is
-    # asked of the user.
+    # A notice, not a refusal; nothing more is asked of the user.
     if (
         time_conversion["offset_status"]["historical_verification_status"]
         == "pre_1970_database_inferred_not_verified"
@@ -622,15 +621,84 @@ def prc_1988_dst_dispute_warnings(request) -> Iterator[dict]:
     )
 
 
+_HK_PERIOD_TEXT = {
+    "1945_after_november_18": (
+        "1945 年 11 月 18 日 02:00 到 12 月 31 日",
+        "天文台的表把 1945 年全年列為夏令時間（UTC+09:00）；時區資料庫依當時報紙，"
+        "定 1945 年 11 月 18 日 02:00 起恢復 UTC+08:00",
+    ),
+    "1946_april_20": (
+        "1946 年 4 月 20 日",
+        "天文台的表寫 1946 年夏令時間（UTC+09:00）從 4 月 20 日開始；時區資料庫依兩份報紙，"
+        "定在 4 月 21 日 00:00 才開始",
+    ),
+}
+
+
+def hk_observatory_summer_time_warnings(request) -> Iterator[dict]:
+    # Like the 1988 notice: one chart on the tz database's offset, and a note
+    # that the Observatory's record reads summer time.  The used offset is read
+    # from the zone inside the span; the summer offset from the zone's own
+    # neighbouring summer-time hour (before the 1945 span, after the 1946 day).
+    timezone = request.timezone
+    if timezone.mode != "iana":
+        return
+    stated = request.datetime
+    local = dtmod.datetime(stated.year, stated.month, stated.day, stated.hour, stated.minute)
+    period = hk_observatory_summer_time_period(
+        timezone.iana_name, request.birth_time_precision, local, timezone.fold or 0
+    )
+    if period is None:
+        return
+    zone = ZoneInfo(timezone.iana_name)
+    start, end = HK_OBSERVATORY_SUMMER_TIME_INTERVALS[period]
+    used = (start + (end - start) / 2).replace(tzinfo=zone).utcoffset()
+    neighbour = (
+        start - dtmod.timedelta(hours=1)
+        if period == "1945_after_november_18"
+        else end + dtmod.timedelta(hours=1)
+    )
+    summer = neighbour.replace(tzinfo=zone).utcoffset()
+    if used is None or summer is None:
+        raise InternalInvariantError("used is not None and summer is not None")
+    span, sources = _HK_PERIOD_TEXT[period]
+    difference = abs(summer - used).total_seconds() / 3600
+    yield _warning(
+        "hk_observatory_summer_time_differs",
+        "warning",
+        (
+            f"香港 {span}的鐘點，資料來源說法不一：{sources}。"
+            f"你的出生時間落在這段期間，本服務依時區資料庫採用 {_utc_offset_label(used)}；"
+            f"但香港天文台的紀錄這段日子是夏令時間 {_utc_offset_label(summer)}，"
+            f"所以當時的鐘面時間可能差 {difference:g} 小時，上升點與宮位可能不同。"
+            "本服務只算這一張盤，不替你改動時刻；兩種說法的來由見"
+            f"〈香港出生時間怎麼換算？〉（{HK_BIRTH_TIME_ARTICLE_PATH}）。"
+        ),
+        (
+            "Hong Kong Observatory, Summer Time in Hong Kong; IANA tz database asia, Hong Kong; "
+            "civil-time sources hk-1941-1945, hk-1946-1979; "
+            f"method source {HK_1945_1946_SOURCE_REF}; article {HK_BIRTH_TIME_ARTICLE_PATH}"
+        ),
+        ["calculation_dossier.time_conversion", "astronomical_data.time"],
+        {
+            "timezone": timezone.iana_name,
+            "period": period,
+            "utc_offset_hours_used": used.total_seconds() / 3600.0,
+            "utc_offset_hours_if_observatory": summer.total_seconds() / 3600.0,
+            "difference_hours": difference,
+            # The site path the message names, so the page can make it a link.
+            "article_path": HK_BIRTH_TIME_ARTICLE_PATH,
+        },
+    )
+
+
 def _supported_range_warnings(
     request,
     time_conversion: dict,
 ) -> Iterator[dict]:
-    # The ephemeris segments are bounded in UTC, not in the local
-    # calendar, so the boundary test is keyed to the UTC year of the instant
-    # actually computed (a local 2399-12-31 at UTC-10 is UTC 2400-01-01; a
-    # local 1901-01-01 00:30 at UTC+14 is UTC 1900-12-31).  The local year is
-    # still consulted because date_only / approximate_hour sampling windows
+    # Ephemeris segments are bounded in UTC, so the test keys on the computed
+    # instant's UTC year (local 2399-12-31 at UTC-10 is UTC 2400-01-01).  The
+    # local year still counts: date_only / approximate_hour sampling windows
     # span the local civil day around that instant.
     utc_year = int(str(time_conversion["utc_time"])[:4])
     boundary_years = {PRODUCT_YEAR_RANGE[0], PRODUCT_YEAR_RANGE[1]}
@@ -888,8 +956,8 @@ def _true_position_warnings(
                 "astronomical_data.atmosphere",
             ],
         )
-        # Horizon events retain their own apparent topocentric frame.
-        # Only when the module produced the contract it points at.
+        # Horizon events keep their apparent topocentric frame; warn only when
+        # the module produced the contract this points at.
         if request.options.include_rise_set_transits and horizon_contract_present:
             yield _warning(
                 "horizon_events_keep_apparent_frame_under_true_position",
@@ -914,9 +982,8 @@ def _date_only_warnings(
     request,
     sensitivity_coverage: dict | None,
 ) -> Iterator[dict]:
-    # Which method results the civil-day samples never revisited is the
-    # sensitivity ledger's fact; the warning lists those paths instead of
-    # re-deriving them from the options beside it.
+    # The sensitivity ledger says which results the civil-day samples never
+    # revisited; list those paths rather than re-deriving them from options.
     sensitivity_ledger = sensitivity_coverage or {}
     date_only_unscanned_paths = [
         path
@@ -1028,7 +1095,7 @@ def _classical_sect_within_hour_warnings(classical: dict | None) -> Iterator[dic
 
 def structured_warnings(
     *,
-    request,
+    request: Any,
     time_conversion: dict,
     full_ephemeris_files_available: bool,
     input_files_unchanged_during_chart: bool,
@@ -1046,9 +1113,9 @@ def structured_warnings(
     aspect_participants_present: bool,
     horizon_contract_present: bool,
     essential_dignities: dict | None,
-    lunar_mansions: dict | None = None,
-    classical_classifications: dict | None = None,
-    effective_request=None,
+    lunar_mansions: dict | None,
+    classical_classifications: dict | None,
+    effective_request: Any,
 ) -> list[dict]:
     # The time conversion ran on the effective request (an approximate hour's
     # representative minute), so its repeated-time readings are read there.
@@ -1070,6 +1137,7 @@ def structured_warnings(
         *_topocentric_speed_warnings(bodies),
         *_time_scale_warnings(time_request, time_conversion),
         *prc_1988_dst_dispute_warnings(request),
+        *hk_observatory_summer_time_warnings(request),
         *_supported_range_warnings(request, time_conversion),
         *_mixed_origin_moon_warnings(request),
         *_ephemeris_source_warnings(

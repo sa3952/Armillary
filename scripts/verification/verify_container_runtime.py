@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import functools
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import json
@@ -44,6 +45,7 @@ from scripts.publication.verify_image_supply_chain import (
     locked_runtime_versions,
     pyswisseph_sqlite_linkage,
 )
+from scripts.tools.commands import run_checked
 from scripts.tools.output_confinement import external_output_path
 from scripts.tools.source_tree_identity import materialize_git_snapshot
 from scripts.verification.build_release_image import platform_args as _platform_args
@@ -99,8 +101,12 @@ FORBIDDEN_PACKAGES = frozenset({
 # 512 KiB bounds the default /api/chart response (projection=page), which is
 # what the worst-options request receives.  The `detailed` view gets its own,
 # wider documented budget; tests/backend/test_api_properties.py enforces it.
+# The detailed budget is the largest detailed response of that test's weekly
+# universes plus about 10%: 804,492 bytes (2026-10-20, the polar hour with the
+# most birth-time bisection midpoints, every option on, the widest orbs).  The
+# 2026-10-21 trims brought that hour to 673,959 bytes; the budget was kept.
 MAX_BENCHMARK_RESPONSE_BYTES = 512 * 1024
-MAX_DETAILED_RESPONSE_BYTES = 768 * 1024
+MAX_DETAILED_RESPONSE_BYTES = 864 * 1024
 CHART_REQUESTS = PROJECT_ROOT / "frontend" / "tests" / "fixtures" / "chart-requests.json"
 DOCKERFILE = PROJECT_ROOT / "deploy" / "Dockerfile"
 APP_TREE_MANIFEST = PROJECT_ROOT / "deploy" / "image-app-tree.json"
@@ -111,6 +117,8 @@ EXPECTED_IMAGE_ENVIRONMENT = {
     "PYTHONFAULTHANDLER": "1",
     "PYTHONUNBUFFERED": "1",
     "PYTHONDONTWRITEBYTECODE": "1",
+    # The build-time bytecode lives outside /app (deploy/Dockerfile).
+    "PYTHONPYCACHEPREFIX": "/opt/pycache",
 }
 # Keys the pinned python base declares that the application does not set
 # (PATH is extended, PYTHON_VERSION and LANG are pinned above).  With the
@@ -128,24 +136,7 @@ _INSPECTION_SANDBOX = (
 _DIGEST_PINNED_REFERENCE = re.compile(r"[^\s@$]+@sha256:[0-9a-f]{64}")
 
 
-def _run(
-    command: list[str],
-    *,
-    cwd: Path | None = None,
-    check: bool = True,
-    timeout: float = 600,
-    env: dict[str, str] | None = None,
-) -> subprocess.CompletedProcess[str]:
-    completed = subprocess.run(
-        command, cwd=cwd or PROJECT_ROOT, check=False, capture_output=True,
-        text=True, timeout=timeout, env=env,
-    )
-    if check and completed.returncode != 0:
-        detail = (completed.stderr or completed.stdout).strip()
-        raise GateFailure(
-            f"command failed ({completed.returncode}): {' '.join(command[:4])}: {detail[-2000:]}"
-        )
-    return completed
+_run = functools.partial(run_checked, error=GateFailure, cwd=PROJECT_ROOT, timeout=600)
 
 
 def _platform_contract(platform: str) -> tuple[str, str]:

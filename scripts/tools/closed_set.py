@@ -2,18 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from collections.abc import Iterable
 
 
 class ClosedSetError(ValueError):
     pass
-
-
-@dataclass(frozen=True)
-class ClosedSetResult:
-    expected_count: int
-    observed_count: int
 
 
 def _items(values: Iterable[str], *, role: str) -> tuple[str, ...]:
@@ -27,7 +20,7 @@ def _items(values: Iterable[str], *, role: str) -> tuple[str, ...]:
 
 def require_closed_set(
     expected: Iterable[str], observed: Iterable[str], *, role: str, allow_empty: bool = False
-) -> ClosedSetResult:
+) -> None:
     """Require two caller-produced universes to be equal.
 
     The caller owns provenance and enumeration.  This primitive deliberately
@@ -43,4 +36,3 @@ def require_closed_set(
     unexpected = sorted(set(observed_items) - set(expected_items))
     if missing or unexpected:
         raise ClosedSetError(f"{role} differs: missing={missing!r} unexpected={unexpected!r}")
-    return ClosedSetResult(len(expected_items), len(observed_items))

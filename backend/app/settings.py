@@ -25,10 +25,9 @@ BUILD_ENVIRONMENT_REVISION_SOURCE = (
     "build_environment:CLASSICAL_ASTROLOGY_SOURCE_REVISION"
 )
 _SOURCE_REVISION_PATTERN = re.compile(r"^[0-9a-f]{40}$")
-# The annual route is switched on per deployment (the release compose file
-# sets it): unset (or "0") it is not registered at all, so it answers 404
-# unknown_api_path and is absent from the OpenAPI document.  Only "1" registers it; any other value fails start-up
-# rather than guessing which state was meant.
+# Per deployment (the release compose file sets it): unset or "0" leaves the
+# annual route unregistered (404 unknown_api_path, absent from OpenAPI); "1"
+# registers it; any other value fails start-up rather than guess.
 ANNUAL_ROUTE_ENVIRONMENT_VARIABLE = "ARMILLARY_ENABLE_ANNUAL_ROUTE"
 _FLAG_VALUES = {None: False, "": False, "0": False, "1": True}
 
@@ -37,11 +36,8 @@ _FLAG_VALUES = {None: False, "": False, "0": False, "1": True}
 class AppSettings:
     source_revision: str | None = None
     revision_source: str | None = None
-    # Test-owned dependency-injection seam.  Tests
-    # produce a missing/corrupt catalog path; create_app is the consumer and
-    # the hosted unavailable-response regression is the verification entry.
-    # Production intentionally leaves this unset so PlaceCatalog selects its
-    # bundled immutable default.
+    # Test-only seam for a missing/corrupt catalog path; production leaves it
+    # unset so PlaceCatalog selects its bundled immutable default.
     place_catalog_path: str | None = None
     expected_host: str | None = None
     enable_annual_route: bool = False

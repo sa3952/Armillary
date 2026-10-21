@@ -57,7 +57,7 @@
 
   <section class="ds-sec">
     <h2 class="hdr" id="vf-03-title"><span>03</span>算一次合成範例，看清單</h2>
-    <ol class="vf-steps">
+    <ol class="vf-steps howto">
       <li>在計算頁按「載入合成範例（不是真實生辰）」，再按「計算」。</li>
       <li><b>看 Domain 欄：每一列都應該是 <span class="mono">projectarmillary.com</span>。</b>只要有一列不是，就是我們說錯了——請寫信告訴我們（第 07 節最後）。</li>
       <li>點名稱是 <span class="mono">chart</span>、方法是 <span class="mono">POST</span> 的那一列（圖中 ④），看 <b>Payload</b>（Firefox 叫 Request，Safari 在 Headers 底下）：送出去的就是表單上的日期、時間、座標、時區與選項，沒有別的。<b>Response</b> 是算好的星盤。</li>
@@ -111,7 +111,7 @@
       <li><b>Chrome 與 Edge：</b>開發者工具的 <b>Application</b> 分頁，左側 Storage 底下。</li>
       <li><b>Firefox 與 Safari：</b><b>Storage</b> 分頁。</li>
     </ul>
-    <p>逐一展開 <b>Cookies、Local storage、Session storage、IndexedDB、Cache storage</b>，點 <span class="mono">https://projectarmillary.com</span>：<b>每一個都應該是空的</b>（圖中 ⑤）。也可以回到 Network，點任一列看 Headers：回應裡沒有 <span class="mono">Set-Cookie</span>，請求裡也沒有 <span class="mono">Cookie</span>。</p>
+    <p>逐一展開 <b>Cookies、Local storage、Session storage、IndexedDB、Cache storage</b>，點 <span class="mono">https://projectarmillary.com</span>：每一個都應該是空的（圖中 ⑤）。也可以回到 Network，點任一列看 Headers：回應裡沒有 <span class="mono">Set-Cookie</span>，請求裡也沒有 <span class="mono">Cookie</span>。</p>
     <figure class="vf-fig">
       <div class="spec-scroll" tabindex="0" role="region" aria-label="Application 分頁示意圖（可橫向捲動）">
         <svg class="vf-svg" viewBox="0 0 720 250" role="img" aria-label="示意圖，不是截圖。左側是儲存類別：Local storage、Session storage、IndexedDB、Cookies、Cache storage，每一類底下是 https://projectarmillary.com。右側選中 Cookies，表格只有欄位標題 Name 與 Value，下面寫著沒有資料，標著編號 5。">
@@ -143,7 +143,7 @@
     </figure>
     <div class="fail">
       <span class="fail-k">邊界</span>
-      <p>這裡檢查的是<b>本站要瀏覽器存下的東西</b>，結果是沒有。<b>瀏覽器自己仍會留下兩樣：</b>瀏覽紀錄裡的網址，以及樣式、程式檔的暫存（〈<a href="/zh-TW/security#ds-05-title">安全</a>〉第 05 節說過，暫存裡沒有出生資料，也沒有計算結果）。計算結果在你關掉分頁或按「清除」之前，留在這個分頁的記憶體裡。</p>
+      <p>這裡檢查的是<b>本站要瀏覽器存下的東西</b>，結果是沒有。<b>瀏覽器自己仍會留下兩樣：</b>瀏覽紀錄裡的網址，以及樣式、程式檔的暫存（〈<a href="/zh-TW/security#ds-06-title">安全</a>〉第 06 節說過，暫存裡沒有出生資料，也沒有計算結果）。計算結果在你關掉分頁或按「清除」之前，留在這個分頁的記憶體裡。</p>
     </div>
   </section>
 
@@ -207,9 +207,9 @@
       <figcaption>虛線左邊，這一頁的步驟讓你親眼看到；虛線右邊，只能靠公開的設定與原始碼核對。</figcaption>
     </figure>
     <ul class="weak">
-      <li><b>伺服器收到之後做了什麼，這個檢查證明不了。</b>我們能給的是可以核對的東西：日誌每一行的完整欄位（〈<a href="/zh-TW/security#ds-03-title">安全</a>〉第 03 節）、容器沒有對外路由（同頁第 04 節），以及<a href="{{public_repository_url}}">公開的原始碼</a>。</li>
+      <li><b>伺服器收到之後做了什麼，這個檢查證明不了。</b>我們能給的是可以核對的東西：日誌每一行的完整欄位（〈<a href="/zh-TW/security#ds-04-title">安全</a>〉第 04 節）、容器沒有對外路由（同頁第 05 節），以及<a href="{{public_repository_url}}">公開的原始碼</a>。</li>
       <li><b>線上跑的版本不必然等於公開原始碼的最新版。</b>要確認你用的是哪一版，看計算卷宗裡的版本識別碼。</li>
-      <li><b>反向代理看得到你的 IP 位址</b>，否則回應送不回來；它拿來做限流計數，不寫進日誌，也不轉給應用程式（〈<a href="/zh-TW/security#ds-06-title">安全</a>〉第 06 節）。這一點從瀏覽器同樣無法驗證。</li>
+      <li><b>反向代理看得到你的 IP 位址</b>，否則回應送不回來；它拿來做限流計數，不寫進日誌，也不轉給應用程式（〈<a href="/zh-TW/security#ds-04-title">安全</a>〉第 04 節）。這一點從瀏覽器同樣無法驗證。</li>
       <li><b>這張清單是本站頁面要求瀏覽器做的事。</b>瀏覽器本身（安全瀏覽檢查、更新、擴充功能）另外送出的請求不在其中，也不一定會出現在開發者工具裡。</li>
     </ul>
   </section>

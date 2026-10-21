@@ -62,6 +62,19 @@ SCRIPT_ROLES = {
     "view-model.js": "把回應整理成畫面；第一次按「計算」時才載入",
 }
 
+# When the browser fetches each script calculate.js imports later instead of at
+# open.  A deferred script without a line here fails the build.
+MODULE_WHEN = {
+    "chart-glyphs.js": "第一次操作表單時預先載入",
+    "chart-wheel-aspects.js": "第一次操作表單時預先載入",
+    "chart-wheel-model.js": "第一次操作表單時預先載入",
+    "chart-square.js": "第一次操作表單時預先載入",
+    "chart-wheel.js": "第一次操作表單時預先載入",
+    "view-model.js": "第一次操作表單時預先載入",
+    "timelords-model.js": "第一份結果畫出時",
+    "timelords.js": "第一份結果畫出時",
+}
+
 # The calculator's own API calls (frontend/zh-TW/calculate.js `postJson`): the
 # method, the address, whether one calculation always makes it, when it is
 # sent and what it carries.
@@ -182,8 +195,12 @@ class _References(HTMLParser):
             self.found.append(("icon", values["href"]))
         elif tag == "script" and values.get("src"):
             self.found.append(("script", values["src"]))
-        if values.get("data-view-model"):
-            self.found.append(("module", values["data-view-model"]))
+        if tag == "script":
+            # calculate.js imports the scripts named in its data-* attributes later
+            # (the chart scripts and view-model.js on the first submission, the time-lords pair once the
+            # first result is drawn).
+            self.found.extend(("module", value) for name, value in attrs
+                              if name.startswith("data-") and value)
 
 
 def page_references(calculate_page: str) -> list[tuple[str, str]]:
@@ -195,12 +212,16 @@ def page_references(calculate_page: str) -> list[tuple[str, str]]:
     return parser.found
 
 
+def _script_name(url: str) -> str:
+    return PurePosixPath(url.partition("?")[0]).name
+
+
 def _what(kind: str, url: str) -> str:
     if kind == "stylesheet":
         return "這一頁的樣式包"
     if kind == "icon":
         return "網站圖示"
-    name = PurePosixPath(url.partition("?")[0]).name
+    name = _script_name(url)
     if name not in SCRIPT_ROLES:
         raise ValueError(f"the calculator loads a script with no description: {name}")
     return SCRIPT_ROLES[name]
@@ -225,13 +246,17 @@ def calculation_requests(
         cache_control(calculate_surface), "required",
     )]
     for kind, url in page_references(calculate_page):
-        when = "第一次按「計算」" if kind == "module" else "打開計算頁"
+        when = "打開計算頁"
+        if kind == "module":
+            if _script_name(url) not in MODULE_WHEN:
+                raise ValueError(f"the calculator imports a script with no load time: {url}")
+            when = MODULE_WHEN[_script_name(url)]
         group = "icons" if kind == "icon" else "required"
         if kind == "icon":
             when = "瀏覽器自己決定要不要拿"
         rows.append(Request("GET", url, kind, _what(kind, url), when, cache_control(url), group))
     used = {name for name in SCRIPT_ROLES}
-    loaded = {PurePosixPath(row.url.partition("?")[0]).name for row in rows if row.kind in {"script", "module"}}
+    loaded = {_script_name(row.url) for row in rows if row.kind in {"script", "module"}}
     if used != loaded:
         raise ValueError(f"script descriptions name files the page does not load: {sorted(used - loaded)}")
     sent = sent_api_urls({name: script_source(name) for name in sorted(loaded)})
@@ -334,9 +359,9 @@ def network_panel_figure(rows: list[Request], host: str) -> str:
         '<rect class="vf-page" x="12" y="46" width="696" height="92"/>',
         _text(28, 74, "計算頁", "vf-t"),
         '<rect class="vf-button" x="28" y="92" width="150" height="28" rx="2"/>',
-        _text(103, 111, "載入合成範例", "vf-t-on", "middle"),
+        _text(103, 111, "載入合成範例", "vf-t-on vf-t-btn", "middle"),
         '<rect class="vf-button" x="190" y="92" width="80" height="28" rx="2"/>',
-        _text(230, 111, "計算", "vf-t-on", "middle"),
+        _text(230, 111, "計算", "vf-t-on vf-t-btn", "middle"),
         '<rect class="vf-tools" x="12" y="148" width="696" height="' + str(height - 160) + '"/>',
     ]
     tabs = [("Elements", 24), ("Console", 104), ("Sources", 180), ("Network", 256), ("Application", 348)]

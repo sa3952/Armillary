@@ -2,41 +2,11 @@
 it is stationary about a turn, and on which side of the Sun it stands
 (oriental or occidental), as the named texts define them.
 
-Definition (method source entry ``motion_states``):
-
-* Course: the absolute geocentric longitude speed (Swiss Ephemeris's analytic
-  speed at the instant) against the planet's mean daily motion.  Lilly 1647
-  p.168: more than the mean is swift; his p.178 worked example compares a
-  retrograde Saturn's 2′ a day with the mean 2′01″ and calls it slow, so a
-  retrograde planet is compared by the degrees it goes back a day.  Equal to
-  the mean only when the two agree to the last place the source printed (Lilly
-  to the second; Bonatti to the second, Saturn to the third), half a unit either
-  way; no text gives a wider band.  Geocentric even for a topocentric chart: the
-  topocentric Moon's speed swings about ±5.5°/day within a day.
-* Mean motions: Lilly 1647 is the default (Saturn p.57, Jupiter p.61, Mars per
-  p.178 because p.65 prints "31 degr. 27 min.", the Sun p.69 and Venus and
-  Mercury the Sun's p.72, p.76, the Moon p.80); Bonatti 1550 tractatus III cols.
-  129-130 is listed beside it.  The Moon's slow limit is her mean, the p.168
-  rule; p.80's own "less than 13°10′" is disclosed, not applied.
-* Stations: every instant within the window at which a planet's geocentric
-  longitude speed changes sign, found by root-finding.  Lilly's days before a
-  turn mark the planet stationary: Saturn 5 before retrogradation and 5 before
-  direction (p.58), Jupiter 5 and 4 (p.62), Mars 3 ("two or three") and 2
-  (p.65), Venus 2 and 2 (p.73), Mercury 1 (p.76 "Stationary one day").  After
-  a turn the planet stays stationary for the days Lilly gives after it, which
-  is only Mars after direction ("after, but one day", p.65); every other turn
-  has none.  Counting the days after a turn is this site's reading of the
-  planet chapters, not a rule Lilly states.  No speed-percentage threshold:
-  none reproduces Lilly's days for every planet.  The Sun and the Moon never
-  station.
-* Oriental or occidental of the Sun, in the one sense Lilly p.114 gives: the
-  side of the Sun from ``solar_phase`` (west of the Sun on the ecliptic, rising
-  before it, is oriental); the Moon the same (opposition to conjunction is
-  oriental, p.114).  The Sun has no orientality.
-* Lilly p.115 lists swift, and Saturn, Jupiter and Mars oriental, Venus and
-  Mercury occidental, the Moon occidental or increasing, among accidental
-  fortitudes, and the opposites among debilities.  Each row names the list a
-  state is on; no score is given or summed.
+The definitions, the mean-motion profiles, Lilly's station days and their pages
+are stated once, in ``METHOD_SOURCE_ENTRIES`` below.  The speed is geocentric
+even for a topocentric chart: the topocentric Moon's speed swings about
+±5.5°/day within a day.  No speed-percentage station threshold is used: none
+reproduces Lilly's days for every planet.
 """
 
 from __future__ import annotations
@@ -48,21 +18,21 @@ from typing import Final
 
 import swisseph as swe
 
-from ..ephemeris import require_full_ephemeris, require_object_coverage
+from ..ephemeris import guarded_calc
 from .formatting import dms_text
 from .invariants import InternalInvariantError
-from .method_status import method_receipt
+from .method_status import method_head
 from .module_state import (
     PRODUCT_FORMULA_SOURCE,
     STATE_FIELDS,
     computed_receipt,
-    not_applicable_receipt,
+    frame_table_refusal,
 )
 from .root_finding import (
     SOLVER_NAME, find_crossings_around, find_crossings_detailed, wrap_to_signed_180,
 )
-from .solar_phase import SIDES, EclipticSampler, side_of_sun
-from .source_reading import SOURCE_READING_LEVELS, reference_only
+from .solar_phase import SIDES, EclipticSampler, EventClock, side_of_sun
+from .source_reading import ORIGINAL_LANGUAGE_READ, TRANSLATION_READ, cited
 from .time_utils import solved_instant
 from .trace import Trace
 
@@ -82,7 +52,6 @@ LISTED_BODIES: Final = (
     ("jupiter", swe.JUPITER),
     ("saturn", swe.SATURN),
 )
-STATIONING_BODIES: Final = ("mercury", "venus", "mars", "jupiter", "saturn")
 
 COURSES: Final = ("swift", "slow", "equal_to_mean_at_source_precision")
 DIRECTIONS: Final = ("direct", "retrograde")
@@ -246,8 +215,6 @@ def lilly_p115(key: str, course: str, oriental: str) -> dict:
     return {"course": by_course, "relative_to_sun": by_side}
 
 
-# --- Sampling -------------------------------------------------------------
-
 SpeedSampler = Callable[[int, float], float]
 
 
@@ -265,10 +232,7 @@ def make_speed_sampler(flags: int) -> SpeedSampler:
         cached = cache.get((body, jd_ut))
         if cached is not None:
             return cached
-        operation = f"行速與停滯（Swiss body {body} 地心黃經速度）"
-        require_object_coverage(body=body, flags=geocentric, jd_ut=jd_ut, operation=operation)
-        values, retflag = swe.calc_ut(jd_ut, body, geocentric)
-        require_full_ephemeris(retflag, operation=operation, jd_ut=jd_ut)
+        values, _ = guarded_calc(jd_ut, body, geocentric, f"行速與停滯（Swiss body {body} 地心黃經速度）")
         cache[(body, jd_ut)] = values[3]
         return values[3]
 
@@ -396,8 +360,6 @@ def _interval_seen(
     return seen
 
 
-# --- The module -----------------------------------------------------------
-
 def _means_table(profile: str) -> dict:
     return {
         key: {
@@ -413,13 +375,8 @@ def compute_motion_states(
     bodies: list[dict],
     trace: Trace,
     *,
-    time_basis: str,
-    jd_ut: float,
-    instant_of: Callable[[float], dict],
     speed: SpeedSampler,
-    sample: EclipticSampler,
-    interval: str | None = None,
-    interval_spans: list[tuple[float, float]] | None = None,
+    clock: EventClock,
 ) -> dict:
     """Course, station and orientality of the Sun, the Moon and five planets.
 
@@ -429,6 +386,8 @@ def compute_motion_states(
     birth time's ``interval_spans``.
     """
 
+    time_basis, jd_ut, instant_of = clock.time_basis, clock.jd_ut, clock.instant_of
+    sample, interval, interval_spans = clock.sample, clock.interval, clock.interval_spans
     if interval is not None and (interval not in INTERVALS or not interval_spans):
         raise ValueError("a non-exact birth time needs its interval and its stretches")
     by_key = {body["key"]: body for body in bodies}
@@ -511,7 +470,7 @@ def compute_motion_states(
         note="照原典列出。不替你解盤，也不預測。",
     )
     return {
-        **_receipt_head(),
+        **method_head(METHOD, "motion_states", source_ref=SOURCE_REF),
         **computed_receipt(PRODUCT_FORMULA_SOURCE),
         "speed_basis": SPEED_BASIS,
         "mean_motion_profile": DEFAULT_MEAN_MOTION_PROFILE,
@@ -541,31 +500,22 @@ def compute_motion_states(
     }
 
 
-def _receipt_head() -> dict:
-    return {
-        "method": METHOD,
-        **method_receipt("motion_states"),
-        "source_ref": SOURCE_REF,
-    }
-
-
 def motion_states_not_applicable(state: dict, trace: Trace) -> dict:
-    trace.add(
-        "行速、停滯與東出西入",
-        result={"execution_status": "not_applicable", "reason_code": state["reason_code"]},
+    refusal = frame_table_refusal(
+        state, trace, "行速、停滯與東出西入",
         note=(
             "參考框架相容表判定不適用：日心、質心沒有從地球看到的行速與太陽；恆星黃道、J2000 "
             "與不含章動的速度不是原典比的當日回歸黃經速度，不換框架重算。"
         ),
     )
-    return motion_states_unavailable(not_applicable_receipt(state))
+    return motion_states_unavailable(refusal)
 
 
 def motion_states_unavailable(receipt: dict) -> dict:
     """The module with no result, under the six state fields given."""
 
     return {
-        **_receipt_head(),
+        **method_head(METHOD, "motion_states", source_ref=SOURCE_REF),
         **{field: receipt[field] for field in STATE_FIELDS},
         "speed_basis": SPEED_BASIS,
         "mean_motion_profile": None,
@@ -648,58 +598,39 @@ METHOD_SOURCE_ENTRIES: Final = {
             "delays what is expected; the second station removes the delay",
         ],
         "sources": [
-            {
-                "citation": (
-                    "William Lilly, Christian Astrology (London 1647) pp.57-58, 61-62, 65, "
-                    "69-70, 72-73, 76, 80, 114-115, 168, 178"
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": f"{_LILLY_SCAN}; each listed page checked on the scan",
-            },
-            {
-                "citation": (
-                    "Guido Bonatti, De astronomia tractatus X (Basel 1550) tractatus III part 2 "
-                    "ch.1 and 3, cols.129-130"
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "archive.org bub_gb_BgWuc5O-JzIC, scan n82",
-            },
-            {
-                "citation": (
-                    "Ptolemy, Tetrabiblos I.6, I.8, I.24, trans. Robbins (Loeb 1940) "
-                    "pp.41, 45, 115-117"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "LacusCurtius transcription",
-            },
-            {
-                "citation": (
-                    "al-Biruni, Book of Instruction, trans. R. Ramsay Wright (1934) "
-                    "§481-486, §498, §512"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": (
-                    "archive.org typescript OCR; the 1934 page numbers not checked"
-                ),
-            },
-            {
-                "citation": "Vettius Valens, Anthologies IV.14, V.7, V.11 (Kroll), trans. Riley",
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Riley's PDF pp.84, 100, 110",
-            },
-            reference_only(
-                "Ptolemy, Tetrabiblos III.10",
-                "the eastern and western quadrants of the horizon; not applied",
-                "level pending: the record names the chapter but does not say what was "
-                "read; only the reference is claimed",
-            ),
+            cited(("William Lilly, Christian Astrology (London 1647) pp.57-58, 61-62, 65, "
+                   "69-70, 72-73, 76, 80, 114-115, 168, 178"),
+                  None, ORIGINAL_LANGUAGE_READ,
+                  f"{_LILLY_SCAN}; each listed page checked on the scan"),
+            cited(("Guido Bonatti, De astronomia tractatus X (Basel 1550) tractatus III part 2 "
+                   "ch.1 and 3, cols.129-130"),
+                  None, ORIGINAL_LANGUAGE_READ, "archive.org bub_gb_BgWuc5O-JzIC, scan n82"),
+            cited(("Ptolemy, Tetrabiblos I.6, I.8, I.24, trans. Robbins (Loeb 1940) "
+                   "pp.41, 45, 115-117"),
+                  None, TRANSLATION_READ, "LacusCurtius transcription"),
+            cited(("al-Biruni, Book of Instruction, trans. R. Ramsay Wright (1934) "
+                   "§481-486, §498, §512"),
+                  None, TRANSLATION_READ,
+                  "archive.org typescript OCR; the 1934 page numbers not checked"),
+            cited("Vettius Valens, Anthologies IV.14, V.7, V.11 (Kroll), trans. Riley", None,
+                  TRANSLATION_READ,
+                  ("Riley's PDF (Vettius_Valens_Riley.pdf), printed pp.82, 98, 108 "
+                   "(PDF pages 84, 100, 110)")),
+            cited("Ptolemy, Tetrabiblos III.3 (Robbins pp.235-241, the quadrants on pp.239-241); cf. III.10",
+                  ("oriental and occidental to the Sun and to the horoscope by quadrants: the "
+                   "quadrants preceding each and those opposite are oriental, the others "
+                   "occidental; "
+                   "III.10 only uses the quadrants; not applied"),
+                  TRANSLATION_READ,
+                  ("Robbins's translation in the LacusCurtius transcription, read at the "
+                   "pp.239-241 page marks")),
         ],
         "not_applied": (
             "Increasing or decreasing in course (Bonatti's three definitions disagree for the "
             "superior planets, cols.129-130; Ptolemy I.24 and al-Biruni §512 keep rapid and "
             "increasing apart); al-Biruni's phased orientality (§481-482) and Bonatti's "
             "graded phases (tractatus III part 2 ch.5-6); the eastern and western quadrants of the "
-            "horizon (Ptolemy I.6, III.10; al-Biruni §486); masculine and feminine by "
+            "horizon (Ptolemy I.6, III.3; al-Biruni §486); masculine and feminine by "
             "orientality (Ptolemy I.6); any speed-percentage station threshold; Lilly's "
             "p.115 points."
         ),

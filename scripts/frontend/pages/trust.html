@@ -2,8 +2,7 @@
 
   <section class="tr-hero">
     <p class="eyebrow">信任</p>
-    <h1>星盤隱私：渾儀為什麼不儲存你的出生資料</h1>
-    <p class="kicker">你的出生資料，<br>我們沒有地方可以存。</p>
+    <h1>星盤隱私：渾儀為什麼不儲存你的出生資料<span class="h1-sub"><span class="keep">你的出生資料，</span><span class="keep">我們沒有地方可以存。</span></span></h1>
     <p class="lede">不是「我們承諾不保存」。是應用程式裡<b>沒有一個可以保存的位置</b>——沒有帳號資料庫、沒有命盤資料庫、沒有工作階段儲存、沒有請求快取。</p>
     <div class="facts">
       <div><b>0</b><span>個帳號</span><i>免註冊、免 email、無帳號密碼；公開測試（Public Alpha）階段也沒有存取憑證</i></div>
@@ -21,12 +20,12 @@
   </div>
 
   <div class="audit" data-fold-host>
-    <p class="au-k" id="checks" data-fold-head>每一種交付，只能由適用的gate回答</p>
-    <p class="fold-gist"><span class="fold-k">重點</span>檢查分天文正確性、程式與契約、供應鏈與隱私、治理四類，各由適用的 gate 回答，一個 gate 通過不替其他 gate 背書。應用層沒有第三方安全認證，也沒有專業滲透測試；供應商層持 ISO/IEC 27001 認證。</p>
+    <p class="au-k" id="checks" data-fold-head>每一種交付，只能由適用的 gate 回答</p>
+    <p class="fold-gist">檢查分天文正確性、程式與契約、供應鏈與隱私、治理四類，各由適用的 gate 回答，一個 gate 通過不替其他 gate 背書。應用層沒有第三方安全認證，也沒有專業滲透測試；供應商層持 ISO/IEC 27001 認證。</p>
     <details class="sec-fold" data-fold>
       <summary aria-describedby="checks"><span class="fold-closed">展開全文</span><span class="fold-opened">收合</span></summary>
       <div class="fold-body">
-    <p class="au-line">Gate A是普通產品交付、Gate B是repository治理、Gate D是exact image、Gate E是真實host、Gate F是public release（Gate C 已於 2026-10-04 退役：它只核對一份已凍結的歷史稽核登錄表）。<b>一個gate通過不會替其他gate背書；exact執行與結果以current receipt為準。</b></p>
+    <p class="au-line">Gate A 是普通產品交付、Gate B 是 repository 治理、Gate D 是 exact image、Gate E 是真實 host、Gate F 是 public release（Gate C 已於 2026-10-04 退役：它只核對一份已凍結的歷史稽核登錄表）。<b>一個 gate 通過不會替其他 gate 背書；exact 執行與結果以 current receipt 為準。</b></p>
     <div class="roster">
       <div>
         <span class="ro-k">天文正確性</span>
@@ -38,9 +37,9 @@
       <div>
         <span class="ro-k">程式與契約</span>
         <ul>
-          <li><b>Gate A（make check）完整Python產品迴歸測試</b>：只回報通過或失敗，不在本頁手填會漂移的總數；本機找不到 nginx 時跳過真實 NGINX 測試，CI 設為必跑</li>
+          <li><b>Gate A（make check）完整 Python 產品迴歸測試</b>：只回報通過或失敗，不在本頁手填會漂移的總數；本機找不到 nginx 時跳過真實 NGINX 測試，CI 設為必跑</li>
           <li><b>突變測試</b>：固定具名突變體，每一個都必須被自己指定的測試殺死；每週由 CI 排程、發佈前由人跑——<b>這一項檢的不是程式對不對，是測試會不會漏</b></li>
-          <li>mypy 型別檢查（任何錯誤即失敗）、ESLint、前端單元測試與runtime JS closed-set語法檢查</li>
+          <li>mypy 型別檢查（任何錯誤即失敗）、ESLint、前端單元測試與 runtime JS closed-set 語法檢查</li>
         </ul>
       </div>
       <div>
@@ -48,18 +47,18 @@
         <ul>
           <li><b>SBOM</b>：Gate D 由映像以 syft 產生，與 lock 比對，保存在發佈收據中</li>
           <li><b>隱私相依守衛</b>：以具名清單阻擋 analytics、opentelemetry、sentry 這類套件進入相依樹</li>
-          <li>Docker context與staging組態可在source層預檢；exact image的SBOM、parity與runtime只由Gate D回答</li>
+          <li>Docker context 與 staging 組態可在 source 層預檢；exact image 的 SBOM、parity 與 runtime 只由 Gate D 回答</li>
         </ul>
       </div>
       <div>
         <span class="ro-k">治理</span>
         <ul>
-          <li><b>Gate B</b>核對current repository結構與authority的可觀測closed sets</li>
+          <li><b>Gate B</b>核對 current repository 結構與 authority 的可觀測 closed sets</li>
           <li>具名記錄的外部技術審查與多工具對抗測試；每一輪的範圍與結果逐次留存</li>
         </ul>
       </div>
     </div>
-    <p class="au-note">上面同時包含source gate、artifact／host gate與task-triggered獨立驗證；<b>它們不是每次普通交付都會一起執行</b>。應用層沒有第三方安全認證，也沒有專業滲透測試——外部技術審查與多工具測試不等於滲透測試。<b>供應商層</b>持 ISO/IEC 27001:2022 認證，並依合約每年執行入侵測試（見層五）。<b>兩層的證據強度不同，我們不把它們混成一句。</b></p>
+    <p class="au-note">上面同時包含 source gate、artifact／host gate 與 task-triggered 獨立驗證；<b>它們不是每次普通交付都會一起執行</b>。應用層沒有第三方安全認證，也沒有專業滲透測試——外部技術審查與多工具測試不等於滲透測試。<b>供應商層</b>持 ISO/IEC 27001:2022 認證，並依合約每年執行入侵測試（見層五）。兩層的證據強度不同，我們不把它們混成一句。</p>
       </div>
     </details>
   </div>
@@ -68,7 +67,7 @@
   <section class="tr-sec" aria-labelledby="layers" data-fold-host>
     <p class="sig">01</p>
     <h2 id="layers">承諾放在它被執行的那一層</h2>
-    <p class="fold-gist"><span class="fold-k">重點</span>每一項承諾放回它被執行的那一層：應用程式、容器、反向代理與作業系統、你的瀏覽器、供應商。越上層越能由測試反證；最下層只是供應商的合約承諾，證據強度差了一個數量級。</p>
+    <p class="fold-gist">每一項承諾放回它被執行的那一層：應用程式、容器、反向代理與作業系統、你的瀏覽器、供應商。越上層越能由測試反證；最下層只是供應商的合約承諾，證據強度差了一個數量級。</p>
     <details class="sec-fold" data-fold>
       <summary aria-describedby="layers"><span class="fold-closed">展開全文</span><span class="fold-opened">收合</span></summary>
       <div class="fold-body">
@@ -84,9 +83,9 @@
         </div>
         <ul class="claims">
           <li><b>不建立帳號資料庫</b><span>免註冊、免 email、無帳號密碼。公開測試階段沒有存取憑證，應用程式也從不接收任何憑證。</span></li>
-          <li><b>出生資料不寫入資料庫、快取、佇列或檔案</b><span>測試會替換掉 <span class="mono">builtins.open</span>、<span class="mono">io.open</span> 與 <span class="mono">os.open</span>，請求處理期間只要有任何一次帶寫入旗標的呼叫，測試就失敗。<b>涵蓋的是 Python 層的寫入</b>——原生函式庫的行為與記憶體抹除不在內。</span></li>
+          <li><b>出生資料不寫入資料庫、快取、佇列或檔案</b><span>測試會替換掉 <span class="mono">builtins.open</span>、<span class="mono">io.open</span> 與 <span class="mono">os.open</span>，請求處理期間只要有任何一次帶寫入旗標的呼叫，測試就失敗。涵蓋的是 Python 層的寫入——原生函式庫的行為與記憶體抹除不在內。</span></li>
           <li><b>伺服器日誌只允許 {{telemetry_field_count}} 個固定欄位</b><span>{{telemetry_field_list}}。<b>就這 {{telemetry_field_count}} 個</b>，欄位組合不符即拒絕寫出。不含出生資料、IP、User-Agent 或請求內容。</span></li>
-          <li><b>不引入第三方追蹤、分析或遠端日誌相依</b><span>相依守衛以具名清單阻擋（analytics、opentelemetry、sentry 等）。<b>這是對已知名稱的阻擋，不是完整的資訊流分析</b>——一個沒被列名的新套件不會被它擋下。</span></li>
+          <li><b>不引入第三方追蹤、分析或遠端日誌相依</b><span>相依守衛以具名清單阻擋（analytics、opentelemetry、sentry 等）。這是對已知名稱的阻擋，不是完整的資訊流分析——一個沒被列名的新套件不會被它擋下。</span></li>
           <li><b>錯誤訊息不回顯例外原文或本機路徑</b><span>含串流與背景工作的失敗路徑。已知的輸入錯誤仍會回傳你需要的診斷。</span></li>
         </ul>
       </div>
@@ -111,8 +110,8 @@
           <span class="tier-how">只能在真實主機上驗，且只代表驗的那個時間點</span>
         </div>
         <ul class="claims">
-          <li><b>公開存取，以限流與大小上限防濫用</b><span>沒有存取憑證。反向代理以你的 IP 在記憶體中做限流計數，<b>不寫進日誌，也不轉送給應用程式</b>；數值見〈<a href="/zh-TW/security">安全</a>〉。設定可在版控的 nginx 設定檔逐行核對；主機上的實測<b>只涵蓋實測時的exact deployed pair</b>，不自動延伸到後續版本。</span></li>
-          <li><b>不記錄存取日誌、不轉送原始 IP</b><span>有歷史執行證據。<b>供應商、DNS 與 Internet 轉送環節仍會為了建立連線而處理連線 metadata</b>——我們可以不記錄，不能宣稱它在網路上不存在。</span></li>
+          <li><b>公開存取，以限流與大小上限防濫用</b><span>沒有存取憑證。反向代理以你的 IP 在記憶體中做限流計數，不寫進日誌，也不轉送給應用程式；數值見〈<a href="/zh-TW/security">安全</a>〉。設定可在版控的 nginx 設定檔逐行核對；主機上的實測只涵蓋實測時的 exact deployed pair，不自動延伸到後續版本。</span></li>
+          <li><b>不記錄存取日誌、不轉送原始 IP</b><span>有歷史執行證據。供應商、DNS 與 Internet 轉送環節仍會為了建立連線而處理連線 metadata——我們可以不記錄，不能宣稱它在網路上不存在。</span></li>
           <li><b>系統日誌短保留、停用 swap 與當機傾印</b><span>有歷史執行證據。這一層的每一項都需要重新在主機上驗證才能宣稱現況。</span></li>
         </ul>
       </div>
@@ -125,7 +124,7 @@
         </div>
         <ul class="claims">
           <li><b>不使用瀏覽器持久化儲存</b><span>不用 localStorage、sessionStorage、IndexedDB、Cache Storage、beacon。</span></li>
-          <li><b>匯出檔名不含個人資料</b><span>固定通用檔名。<b>你另存或改名之後就不在我們控制內了。</b></span></li>
+          <li><b>匯出檔名不含個人資料</b><span>固定通用檔名。你另存或改名之後就不在我們控制內了。</span></li>
         </ul>
       </div>
 
@@ -139,11 +138,11 @@
           <li><b>資料僅存放於瑞士，且機房為供應商自有</b><span>不是租用第三方雲端再標上「瑞士區域」。<span class="cite-x">使用條款 Art. 15.1</span></span></li>
           <li><b>未經我們書面同意，不得將資料移出 EU／EEA</b><span>這是硬約束，不是盡力條款。它寫的地理範圍是 EU／EEA，與上一條的「瑞士」用語不同；兩者照原文並列，見〈隱私政策〉<a href="/zh-TW/legal/privacy#transfer">第五節</a>。<span class="cite-x">資料處理協議 Art. 13.1</span></span></li>
           <li><b>收到當局索資時須先通知我們，且只能交出對方明確要求的部分</b><span>除非法律明文禁止告知。<span class="cite-x">資料處理協議 Art. 2.1.13、12.1</span></span></li>
-          <li><b>每年執行一次入侵測試</b><span>目的是確保客戶之間不會互相外洩。<b>這是合約義務，不是行銷詞。</b><span class="cite-x">資料處理協議 Art. 2.1.8</span></span></li>
+          <li><b>每年執行一次入侵測試</b><span>目的是確保客戶之間不會互相外洩。這是合約義務，不是行銷詞。<span class="cite-x">資料處理協議 Art. 2.1.8</span></span></li>
           <li><b>服務終止後三十日內刪除所有副本，並出具書面刪除證明</b><span><span class="cite-x">資料處理協議 Art. 7.1–7.2</span></span></li>
           <li><b>員工受職業保密義務拘束，離職後持續有效</b><span>瑞士法下的「職業保密」帶刑事責任，比一般保密協議重。<span class="cite-x">使用條款 Art. 16.2</span></span></li>
-          <li><b>資訊安全管理系統經第三方認證</b><span>ISO/IEC 27001:2022，發證機構 SGS（UKAS 認可、IAF 互認），證號 CH21/0527.00，效期至 2027-03-29，<b>Annex A 無排除項</b>，2021 年起連續認證。<b>這是供應商的認證，不是本產品的認證</b>——應用層沒有任何第三方安全認證。</span></li>
-          <li><b>持有 Swiss Hosting 標章</b><span>該標章要求：持證公司<b>及其管理層</b>在法律上與實體上位於瑞士；機房在瑞士且適用瑞士法；並要求「資料完全留在瑞士，<b>不得被外國組織或政府取得或請求</b>」。<b>這一條補的正是「瑞士機房」平常最大的破洞——機房在瑞士，不代表公司不受外國法律管轄。</b></span></li>
+          <li><b>資訊安全管理系統經第三方認證</b><span>ISO/IEC 27001:2022，發證機構 SGS（UKAS 認可、IAF 互認），證號 CH21/0527.00，效期至 2027-03-29，Annex A 無排除項，2021 年起連續認證。這是供應商的認證，不是本產品的認證——應用層沒有任何第三方安全認證。</span></li>
+          <li><b>持有 Swiss Hosting 標章</b><span>該標章要求：持證公司<b>及其管理層</b>在法律上與實體上位於瑞士；機房在瑞士且適用瑞士法；並要求「資料完全留在瑞士，不得被外國組織或政府取得或請求」。這一條補的正是「瑞士機房」平常最大的破洞——機房在瑞士，不代表公司不受外國法律管轄。</span></li>
         </ul>
       </div>
 
@@ -158,7 +157,7 @@
   <section class="tr-sec" aria-labelledby="jurisdiction" data-fold-host>
     <p class="sig">02</p>
     <h2 id="jurisdiction">如果有人真的來要你的資料</h2>
-    <p class="fold-gist"><span class="fold-k">重點</span>網域、DNS 與主機在同一家瑞士公司。六道防線依觸發順序：沒有東西可拿、不在留存義務範圍、監控得先過法院、事後通知可上訴、外國政府不能自己來、憲法與歐洲人權法院。本站沒有端到端加密。</p>
+    <p class="fold-gist">網域、DNS 與主機在同一家瑞士公司。六道防線依觸發順序：沒有東西可拿、不在留存義務範圍、監控得先過法院、事後通知可上訴、外國政府不能自己來、憲法與歐洲人權法院。本站沒有端到端加密。</p>
     <details class="sec-fold" data-fold>
       <summary aria-describedby="jurisdiction"><span class="fold-closed">展開全文</span><span class="fold-opened">收合</span></summary>
       <div class="fold-body">
@@ -168,34 +167,34 @@
     <ol class="moat">
       <li>
         <div class="mo-h"><span class="mo-n">第一道</span><b>沒有東西可以被拿走</b></div>
-        <p>我們不保存你的出生資料。這件事由測試強制，不是由承諾。<b>一個空的抽屜，搜索票開得再漂亮也搜不出東西。</b></p>
+        <p>我們不保存你的出生資料。這件事由測試強制，不是由承諾。一個空的抽屜，搜索票開得再漂亮也搜不出東西。</p>
         <p class="mo-src">見本頁層一</p>
       </li>
       <li>
         <div class="mo-h"><span class="mo-n">第二道</span><b>我們不在留存義務的範圍內</b></div>
-        <p>瑞士的通訊監控法把協力與留存義務綁在「<b>使人得以進行單向或多向通訊</b>」的服務上——郵政、電信、衍生通訊服務、網路營運者。<b>一個回傳天體位置的計算器，不使任何人與任何人通訊</b>，六類全部不適用。</p>
+        <p>瑞士的通訊監控法把協力與留存義務綁在「使人得以進行單向或多向通訊」的服務上——郵政、電信、衍生通訊服務、網路營運者。一個回傳天體位置的計算器，不使任何人與任何人通訊，六類全部不適用。</p>
         <p class="mo-src">《瑞士郵政與電信監控法》SPTA／LSCPT，SR 780.1，Art. 2；六個月 metadata 留存義務見同法 Art. 26 第 5 項，該義務只綁電信服務商</p>
       </li>
       <li>
         <div class="mo-h"><span class="mo-n">第三道</span><b>要監控，得先過法院</b></div>
-        <p><b>刑事：</b>郵件與電信之監控「須經<b>強制處分法院</b>之授權」；連 metadata 也一樣，且回溯上限六個月。門檻是<b>窮舉的罪名清單</b>加上罪責嚴重性，再加上「其他偵查手段已失敗或顯無實益」。</p>
-        <p><b>情報：</b>需授權的措施——電信監控、定位、竊聽、電腦入侵、搜索處所——必須<b>同時</b>取得<b>聯邦行政法院</b>授權（院長五個工作日內裁定）<b>與國防部長核准</b>，後者還須先諮詢外交部與司法警察部。<b>一個法院加一個政治問責點，缺一不可。</b></p>
+        <p><b>刑事：</b>郵件與電信之監控「須經<b>強制處分法院</b>之授權」；連 metadata 也一樣，且回溯上限六個月。門檻是窮舉的罪名清單加上罪責嚴重性，再加上「其他偵查手段已失敗或顯無實益」。</p>
+        <p><b>情報：</b>需授權的措施——電信監控、定位、竊聽、電腦入侵、搜索處所——必須<b>同時</b>取得<b>聯邦行政法院</b>授權（院長五個工作日內裁定）與國防部長核准，後者還須先諮詢外交部與司法警察部。一個法院加一個政治問責點，缺一不可。</p>
         <p class="mo-src">《瑞士刑事訴訟法》StPO，SR 312.0，Art. 269、272 第 1 項、273 第 2–3 項　／　《瑞士情報服務法》IntelSA／LRens，SR 121，Art. 26、27、29、30</p>
       </li>
       <li>
         <div class="mo-h"><span class="mo-n">第四道</span><b>而且你會被通知，可以上訴</b></div>
-        <p><b>刑事：</b>檢察官「<b>應</b>於預審程序終結前」通知受監控人監控之理由、方式與期間。要延後或免除，必須經強制處分法院同意，且<b>同時</b>滿足兩個條件：所得資料不作為法庭證據，且為保護優越利益所必要。<b>收到通知後可以提起抗告。</b></p>
+        <p><b>刑事：</b>檢察官「<b>應</b>於預審程序終結前」通知受監控人監控之理由、方式與期間。要延後或免除，必須經強制處分法院同意，且<b>同時</b>滿足兩個條件：所得資料不作為法庭證據，且為保護優越利益所必要。收到通知後可以提起抗告。</p>
         <p><b>情報：</b>情報局應於行動結束後<b>一個月內</b>通知受監控人。</p>
         <p class="mo-src">StPO Art. 279（抗告依 Art. 393–397）　／　IntelSA Art. 33</p>
       </li>
       <li>
         <div class="mo-h"><span class="mo-n">第五道</span><b>外國政府不能自己來——那在瑞士是犯罪</b></div>
-        <p>未經授權在瑞士境內代表外國執行公權力，<b>本身就構成刑事犯罪</b>。外國當局只能走司法互助程序，而瑞士在對方另有管道時經常直接拒絕。</p>
+        <p>未經授權在瑞士境內代表外國執行公權力，本身就構成刑事犯罪。外國當局只能走司法互助程序，而瑞士在對方另有管道時經常直接拒絕。</p>
         <p class="mo-src">《瑞士刑法》StGB，SR 311.0，Art. 271</p>
       </li>
       <li>
         <div class="mo-h"><span class="mo-n">第六道</span><b>底下還有憲法，以及一個國內法院之上的法院</b></div>
-        <p>瑞士憲法第 13 條第 2 項：「任何人均有權受保護，<b>免於其個人資料遭濫用</b>。」第 36 條要求限制基本權須有法律依據、公共利益與比例原則，並且<b>「基本權之核心內涵不可侵犯」</b>。</p>
+        <p>瑞士憲法第 13 條第 2 項：「任何人均有權受保護，免於其個人資料遭濫用。」第 36 條要求限制基本權須有法律依據、公共利益與比例原則，並且「基本權之核心內涵不可侵犯」。</p>
         <p>這之上還有《歐洲人權公約》第 8 條；用盡國內救濟後，可向史特拉斯堡的歐洲人權法院個人申訴。</p>
         <p class="mo-src">《瑞士聯邦憲法》SR 101，Art. 13、36　／　《歐洲人權公約》ECHR Art. 8</p>
       </li>
@@ -212,7 +211,7 @@
   <section class="tr-sec" aria-labelledby="your-device" data-fold-host>
     <p class="sig">03</p>
     <h2 id="your-device">這些事發生在你的電腦上</h2>
-    <p class="fold-gist"><span class="fold-k">重點</span>你電腦的記憶體、作業系統留下的副本、你下載的檔案、已拿到你電腦權限的人、連線本身：這些在你這一側，本站不能、也不應該能控制。</p>
+    <p class="fold-gist">你電腦的記憶體、作業系統留下的副本、你下載的檔案、已拿到你電腦權限的人、連線本身：這些在你這一側，本站不能、也不應該能控制。</p>
     <details class="sec-fold" data-fold>
       <summary aria-describedby="your-device"><span class="fold-closed">展開全文</span><span class="fold-opened">收合</span></summary>
       <div class="fold-body">
@@ -234,7 +233,7 @@
   <section class="tr-sec" aria-labelledby="verified" data-fold-host>
     <p class="sig">04</p>
     <h2 id="verified">「已驗證」在這裡分成四種</h2>
-    <p class="fold-gist"><span class="fold-k">重點</span>「已驗證」分四種：已由測試反證、已在主機驗證、已裁決來源、待方法審閱。本站沒有第三方安全認證、專業滲透測試或法規合規認證；技術審查不等於滲透測試。</p>
+    <p class="fold-gist">「已驗證」分四種：已由測試反證、已在主機驗證、已裁決來源、待方法審閱。本站沒有第三方安全認證、專業滲透測試或法規合規認證；技術審查不等於滲透測試。</p>
     <details class="sec-fold" data-fold>
       <summary aria-describedby="verified"><span class="fold-closed">展開全文</span><span class="fold-opened">收合</span></summary>
       <div class="fold-body">
@@ -247,7 +246,7 @@
       <div><span class="gr-k">待方法審閱</span><p>算得出來，但採用哪一套文獻尚未裁決。</p></div>
     </div>
 
-    <p class="limit"><b>repository 裡的測試是設計期的迴歸證據，不會在你每次計算時重跑。</b>卷宗裡的證據欄位是指向那些測試的指標，不是「這一次執行過並通過」的紀錄。最新一次完整執行的exact revision、選集、數量與結果由current delivery evidence記錄；本頁不複製一個會隨開發漂移的總數。</p>
+    <p class="limit"><b>repository 裡的測試是設計期的迴歸證據，不會在你每次計算時重跑。</b>卷宗裡的證據欄位是指向那些測試的指標，不是「這一次執行過並通過」的紀錄。最新一次完整執行的 exact revision、選集、數量與結果由 current delivery evidence 記錄；本頁不複製一個會隨開發漂移的總數。</p>
 
     <p>我們<b>沒有</b>第三方安全認證，<b>沒有</b>專業滲透測試，<b>沒有</b>法規合規認證；<b>有</b>具名記錄的外部技術審查與多工具對抗測試，每一輪的範圍與結果逐次留存。<b>技術審查與滲透測試不是同一種證據，我們不把前者說成後者。</b></p>
       </div>
@@ -258,7 +257,7 @@
   <section class="tr-sec" aria-labelledby="elsewhere" data-fold-host>
     <p class="sig">05</p>
     <h2 id="elsewhere">兩件寫在別頁、但你在這裡就該知道的事</h2>
-    <p class="fold-gist"><span class="fold-k">重點</span>本站只計算，不解盤。每一次計算都產生一份可重算的卷宗，另一個人拿著它可以重建等價請求，核對你的結果。</p>
+    <p class="fold-gist">本站只計算，不解盤。每一次計算都產生一份可重算的卷宗，另一個人拿著它可以重建等價請求，核對你的結果。</p>
     <details class="sec-fold" data-fold>
       <summary aria-describedby="elsewhere"><span class="fold-closed">展開全文</span><span class="fold-opened">收合</span></summary>
       <div class="fold-body">
@@ -274,7 +273,7 @@
   <section class="tr-sec" aria-labelledby="no-sale" data-fold-host>
     <p class="sig">06</p>
     <h2 id="no-sale">我們不會靠你的出生資料賺錢</h2>
-    <p class="fold-gist"><span class="fold-k">重點</span>承諾永遠不出售、交換或分析你的出生資料。分量在結構：沒有帳號、沒有資料庫、處理期間不寫檔，做不到保存，也就做不到出售。</p>
+    <p class="fold-gist">承諾永遠不出售、交換或分析你的出生資料。分量在結構：沒有帳號、沒有資料庫、處理期間不寫檔，做不到保存，也就做不到出售。</p>
     <details class="sec-fold" data-fold>
       <summary aria-describedby="no-sale"><span class="fold-closed">展開全文</span><span class="fold-opened">收合</span></summary>
       <div class="fold-body">
@@ -286,20 +285,26 @@
   </section>
 
   <!-- ═══ 隱私常見問題 ═══ -->
-  <section class="tr-sec" aria-labelledby="privacy-faq" data-fold-host>
+  <!-- 四題各自開合，每一題的第一句是結論。build_pages 從這裡讀出 FAQPage 結構化資料（同一份文字）。 -->
+  <section class="tr-sec" aria-labelledby="privacy-faq">
     <p class="sig">07</p>
     <h2 id="privacy-faq">隱私常見問題</h2>
-    <p class="fold-gist"><span class="fold-k">重點</span>四個常被問到的隱私問題：在這裡輸入出生資料安全嗎、出生時間可以給別人嗎、怎麼自己確認本站沒有存你的資料、可以要求刪除嗎。答案都照隱私政策與〈安全〉寫，不另加承諾。</p>
-    <details class="sec-fold" data-fold>
-      <summary aria-describedby="privacy-faq"><span class="fold-closed">展開全文</span><span class="fold-opened">收合</span></summary>
-      <div class="fold-body">
-    <ul class="ticks">
-      <li><b>在這裡輸入出生資料安全嗎？</b>出生資料只經加密連線送到位於瑞士的主機，用在這一次計算；應用程式裡沒有帳號資料庫、命盤資料庫、工作階段儲存或請求快取，計算結束後我們這裡就沒有了，伺服器也不記你的 IP 與出生資料。這些是降低風險，不是保證沒有漏洞；連線 metadata 與你電腦上的副本不在我們控制內，見本頁〈這些事發生在你的電腦上〉，機制與已知弱點見〈<a href="/zh-TW/security">安全</a>〉。</li>
-      <li><b>出生時間可以給別人嗎？</b>給不給由你決定。本站把出生日期時間加上精確座標視為高度敏感資料；交給別人之後，那一份由對方保存，本站收不回來。分享星盤圖、收據或匯出檔也一樣：即使刪去日期與座標，星盤數值本身也能推回出生時間與地點。替別人排盤時，請留意對方的合理期待。</li>
-      <li><b>怎麼自己確認本站沒有存我的資料？</b>你這一側可以親手查：用瀏覽器內建的開發者工具，看算一次盤送出哪些請求、送到哪個網域，以及瀏覽器裡有沒有留下 cookie 或其他儲存，步驟見〈<a href="/zh-TW/security/verify">親手驗證本站的隱私說明</a>〉。伺服器收到之後做了什麼，從瀏覽器看不到；能核對的是日誌每一行的完整欄位、容器沒有對外路由，以及公開的原始碼，見〈<a href="/zh-TW/security">安全</a>〉。</li>
-      <li><b>可以要求刪除我的資料嗎？</b>可以，寄信到 <span class="mono">privacy@projectarmillary.com</span>。本站不保存命盤，所以我們會回覆查找結果：沒有可刪除的紀錄，不會虛構一份來配合流程；你寄來的信處理完畢後刪除。各項權利與回覆期限見〈<a href="/zh-TW/legal/privacy">隱私政策</a>〉。</li>
-    </ul>
-      </div>
+    <p class="fold-gist">四個常被問到的隱私問題，各自點開。答案都照隱私政策與〈安全〉寫，不另加承諾。</p>
+    <details class="tr-faq" data-fold>
+      <summary>在這裡輸入出生資料安全嗎？</summary>
+      <p>本站做的是降低風險，不是保證沒有漏洞。出生資料只經加密連線送到位於瑞士的主機，用在這一次計算；應用程式裡沒有帳號資料庫、命盤資料庫、工作階段儲存或請求快取，計算結束後我們這裡就沒有了，伺服器也不記你的 IP 與出生資料。連線 metadata 與你電腦上的副本不在我們控制內，見本頁〈這些事發生在你的電腦上〉，機制與已知弱點見〈<a href="/zh-TW/security">安全</a>〉。</p>
+    </details>
+    <details class="tr-faq" data-fold>
+      <summary>出生時間可以給別人嗎？</summary>
+      <p>給不給由你決定。本站把出生日期時間加上精確座標視為高度敏感資料；交給別人之後，那一份由對方保存，本站收不回來。分享星盤圖、收據或匯出檔也一樣：即使刪去日期與座標，星盤數值本身也能推回出生時間與地點。替別人排盤時，請留意對方的合理期待。</p>
+    </details>
+    <details class="tr-faq" data-fold>
+      <summary>怎麼自己確認本站沒有存我的資料？</summary>
+      <p>你這一側可以親手查，伺服器那一側只能核對公開的證據。用瀏覽器內建的開發者工具，看算一次盤送出哪些請求、送到哪個網域，以及瀏覽器裡有沒有留下 cookie 或其他儲存，步驟見〈<a href="/zh-TW/security/verify">親手驗證本站的隱私說明</a>〉。伺服器收到之後做了什麼，從瀏覽器看不到；能核對的是日誌每一行的完整欄位、容器沒有對外路由，以及公開的原始碼，見〈<a href="/zh-TW/security">安全</a>〉。</p>
+    </details>
+    <details class="tr-faq" data-fold>
+      <summary>可以要求刪除我的資料嗎？</summary>
+      <p>可以，寄信到 <span class="mono">privacy@projectarmillary.com</span>。本站不保存命盤，所以我們會回覆查找結果：沒有可刪除的紀錄，不會虛構一份來配合流程；你寄來的信處理完畢後刪除。各項權利與回覆期限見〈<a href="/zh-TW/legal/privacy">隱私政策</a>〉。</p>
     </details>
   </section>
 
@@ -307,7 +312,7 @@
   <section class="tr-sec" aria-labelledby="documents" data-fold-host>
     <p class="sig">08</p>
     <h2 id="documents">完整條文</h2>
-    <p class="fold-gist"><span class="fold-k">重點</span>隱私政策、使用條款、著作權與原始碼、安全、聯絡方式五份條文的入口。本頁是摘要，條文以法律頁為準。</p>
+    <p class="fold-gist">隱私政策、使用條款、著作權與原始碼、安全、聯絡方式五份條文的入口。本頁是摘要，條文以法律頁為準。</p>
     <details class="sec-fold" data-fold>
       <summary aria-describedby="documents"><span class="fold-closed">展開全文</span><span class="fold-opened">收合</span></summary>
       <div class="fold-body">

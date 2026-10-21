@@ -9,7 +9,7 @@
   //
   // 模式只是一組預先勾好的選項，不是另一種計算：送出的仍是同一份 OptionsInput，
   // 收據照舊列出實際生效的每一個選項。模式不記住（不寫任何瀏覽器儲存）；站內連結
-  // 可以帶 ?mode=…，頁面讀一次就從網址拿掉。
+  // 可以帶 ?mode=…（落地頁另帶 &technique=…），頁面讀一次就從網址拿掉。
   //
   // 章是畫面上的分組，不是資料順序：每章內的區段照 view-model 清單的先後，匯出的
   // 區段順序與形狀完全不受影響。新區段要放進某一章，在 SECTION_CHAPTERS 加一列即可；
@@ -17,6 +17,9 @@
   // 畫面上消失（前提是新區段照「接在同類之後」插入清單）。
 
   const MODE_IDS = Object.freeze(["quick", "classical", "custom"]);
+  // 站內落地頁（/zh-TW/calculate/<技法>）帶的 technique：時間主星一章先選哪一種。閉集，與
+  // timelords-model.js 摘要卡的 key 相同（十年期沒有卡，取時間軸上的那一段）。
+  const TECHNIQUE_IDS = Object.freeze(["profection", "firdaria", "releasing", "decennials"]);
 
   const CHAPTER_IDS = Object.freeze(["overview", "positions", "houses_aspects", "classical", "timelords", "receipt"]);
 
@@ -33,7 +36,8 @@
       chapters: Object.freeze(["overview", "positions", "houses_aspects", "receipt"]),
       // 位置表在畫面上先只顯示常用的四欄；匯出照舊全欄。
       compactPositions: true,
-      firstTimeOpen: true,
+      // 星盤圖與三個答案是首屏的第一個東西；導覽收成一行，要看再點開。
+      firstTimeOpen: false,
       exportDetail: "chart_data_only",
       showSettings: false,
       openSettings: false,
@@ -78,7 +82,10 @@
   });
 
   /**
-   * 區段 → 章。enable：這一區「這次沒有算」時，結果頁那一行「加算」要打開的是/否選項；
+   * 區段 → 章。folded：這一區預設收起，只露出標題、第一句說明與「展開這一區」（列印照舊全部印出）。
+   * 收起的是少數人才查的專門項目；多數人要看的位置、宮位、相位與古典判斷的主幹照舊攤開。
+   * 一覽圖已把答案攤在畫面上的區段（行速與停滯）不另外收，免得答案藏進兩層摺疊。
+   * enable：這一區「這次沒有算」時，結果頁那一行「加算」要打開的是/否選項；
    * 沒有 enable 的區段沒算時不列（它不是用一個勾選就能加算的，例如出生時刻敏感度、站心月亮）。
    */
   const SECTION_CHAPTERS = Object.freeze([
@@ -86,16 +93,16 @@
 
     { section: "bodies", chapter: "positions" },
     { section: "nodes", chapter: "positions" },
-    { section: "lunar_apsides", chapter: "positions", enable: ["include_lilith_priapus"] },
-    { section: "parallax_moon", chapter: "positions" },
-    { section: "fixed_stars", chapter: "positions", enable: ["include_fixed_stars"] },
+    { section: "lunar_apsides", chapter: "positions", enable: ["include_lilith_priapus"], folded: true },
+    { section: "parallax_moon", chapter: "positions", folded: true },
+    { section: "fixed_stars", chapter: "positions", enable: ["include_fixed_stars"], folded: true },
     { section: "angles", chapter: "positions" },
-    { section: "extra_angles", chapter: "positions", enable: ["include_extra_angles"] },
-    { section: "lunar_events", chapter: "positions", enable: ["include_lunar_phases", "include_eclipses"] },
-    { section: "prenatal_points", chapter: "positions", enable: ["include_lunar_phases", "include_eclipses"] },
-    { section: "horizon_events", chapter: "positions", enable: ["include_rise_set_transits"] },
-    { section: "antiscia", chapter: "positions", enable: ["include_antiscia"] },
-    { section: "declination_aspects", chapter: "positions", enable: ["include_declination_aspects"] },
+    { section: "extra_angles", chapter: "positions", enable: ["include_extra_angles"], folded: true },
+    { section: "lunar_events", chapter: "positions", enable: ["include_lunar_phases", "include_eclipses"], folded: true },
+    { section: "prenatal_points", chapter: "positions", enable: ["include_lunar_phases", "include_eclipses"], folded: true },
+    { section: "horizon_events", chapter: "positions", enable: ["include_rise_set_transits"], folded: true },
+    { section: "antiscia", chapter: "positions", enable: ["include_antiscia"], folded: true },
+    { section: "declination_aspects", chapter: "positions", enable: ["include_declination_aspects"], folded: true },
     { section: "dodecatemoria", chapter: "positions", enable: ["include_dodecatemoria"] },
 
     { section: "houses", chapter: "houses_aspects" },
@@ -104,18 +111,18 @@
 
     { section: "sect", chapter: "classical", enable: ["include_lots"] },
     { section: "planetary_hours", chapter: "classical" },
-    { section: "lunar_mansions", chapter: "classical", enable: ["include_lunar_mansions"] },
+    { section: "lunar_mansions", chapter: "classical", enable: ["include_lunar_mansions"], folded: true },
     { section: "lots", chapter: "classical", enable: ["include_lots"] },
-    { section: "void_of_course", chapter: "classical", enable: ["include_void_of_course"] },
+    { section: "void_of_course", chapter: "classical", enable: ["include_void_of_course"], folded: true },
     { section: "dignities", chapter: "classical", enable: ["include_domicile_exaltation"] },
     { section: "dignity_domicile_exaltation", chapter: "classical" },
     { section: "dignity_bounds", chapter: "classical" },
     { section: "dignity_face_decan", chapter: "classical" },
     { section: "dignity_triplicity", chapter: "classical" },
     { section: "dignity_peregrine", chapter: "classical" },
-    { section: "solar_phase", chapter: "classical", enable: ["include_solar_phase"] },
+    { section: "solar_phase", chapter: "classical", enable: ["include_solar_phase"], folded: true },
     { section: "motion_states", chapter: "classical", enable: ["include_motion_states"] },
-    { section: "classical_classifications", chapter: "classical", enable: ["include_classical_classifications"] },
+    { section: "classical_classifications", chapter: "classical", enable: ["include_classical_classifications"], folded: true },
 
     { section: "time", chapter: "receipt" },
     { section: "sensitivity", chapter: "receipt" },
@@ -136,6 +143,17 @@
       return null;
     }
     return MODE_IDS.includes(value) ? value : null;
+  }
+
+  /** 網址上的 technique 值：閉集之內才採用，其餘一律當作沒有帶。 */
+  function techniqueFromQuery(search) {
+    let value = null;
+    try {
+      value = new URLSearchParams(String(search || "")).get("technique");
+    } catch (_error) {
+      return null;
+    }
+    return TECHNIQUE_IDS.includes(value) ? value : null;
   }
 
   function mode(id) {
@@ -168,6 +186,12 @@
     });
   }
 
+  /** 這一區是否預設收起（表裡的 folded）；不在表裡的區段不收。 */
+  function foldedByDefault(sectionId) {
+    const row = ROW_BY_SECTION.get(sectionId);
+    return Boolean(row && row.folded);
+  }
+
   /** 沒算的區段要打開哪些是/否選項；不能用勾選加算的回空陣列。 */
   function enableOptions(sectionId) {
     const row = ROW_BY_SECTION.get(sectionId);
@@ -175,7 +199,7 @@
   }
 
   return Object.freeze({
-    MODE_IDS, CHAPTER_IDS, MODES, SECTION_CHAPTERS, SHORT_TITLES,
-    modeFromQuery, mode, modeOptions, firstTimeOpen, assign, enableOptions,
+    MODE_IDS, TECHNIQUE_IDS, CHAPTER_IDS, MODES, SECTION_CHAPTERS, SHORT_TITLES,
+    modeFromQuery, techniqueFromQuery, mode, modeOptions, firstTimeOpen, assign, enableOptions, foldedByDefault,
   });
 });

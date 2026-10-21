@@ -66,7 +66,18 @@ function publicationOmits(relativePath, root = REPOSITORY_ROOT) {
   return markerBound && !entries.some((entry) => entry && entry.path === relativePath);
 }
 
-// 下面三個以真實回應 fixture 驗證的測試在 publicationOmits 為真時 skip；判準一旦恆真，它們就無聲跳過。
+// 以真實回應 fixture 驗證的測試在 publicationOmits 為真時 skip；判準一旦恆真，它們就無聲跳過。
+// relatives 是 fixtures/ 底下的相對路徑；有任何一份被公開邊界省略就 skip 並回傳 true。
+function skipIfOmitted(t, relatives, why = "") {
+  const omitted = relatives.map((name) => `frontend/tests/fixtures/${name}`).filter((relative) => publicationOmits(relative));
+  if (omitted.length) t.skip(`後端回應 fixture 不在公開匯出 allowlist（${omitted.join("、")}）${why}`);
+  return omitted.length > 0;
+}
+const loadResponse = (relative) => JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", relative), "utf8"));
+// view-model 只在 fixture 在場時才載入，與原本各測試在 skip 之後才 require 相同。
+const canonicalDocument = (response) => Exporters.createDocument(
+  response, require("./script-bundles.cjs").load("view-model.js").buildSections(response)
+);
 test("公開匯出省略只在已驗證的匯出樹成立；私有樹缺檔仍要紅", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "public-export-marker-"));
   const target = "omitted/a-private-document.md";
@@ -304,7 +315,38 @@ const SPREADSHEET_CASES = [
   ["\u200b|calc!A1", true], ["  ;=1+1", true], ["\u0001|cmd", true], ["\t;SUM(A1)", true],
   ["a|b", false], ["太陽;月亮", false], ["x;=1+1", false], ["A1=B1", false], ["1|2", false],
   ["+12.5%", false], ["-23°03′30.38″", false],
+  // 沒有基底字元的結合記號（\p{M}）顯示為空，與零寬字元一樣是前導；有基底字元時不是。
+  ["\u0301=1+1", true], ["\u20dd+cmd|calc", true], ["\u0300\u200b@SUM(1)", true], ["e\u0301=1", false],
+  // 原值以撇號開頭也補一個撇號，去掉第一個撇號一律得回原值。
+  ["'s-Gravenwezel, Flanders, BE", true], ["'=1+1", true], ["''", true], ["a'b", false],
 ];
+
+// L-14：負的六十進位值（`-12°34′`）與其他帶號量測值不加撇號。試算表若把它讀成公式，
+// 公式裡也只有數字、小數點、`°′″`、`%`、單位 `℃`／`°C`／`h` 與空白：沒有函式名、括號、儲存格或
+// 工作表參照、DDE 的 `|`／`!`，也沒有字串或連接。這裡用隨機字串窮舉豁免的形狀，確認被豁免、
+// 開頭帶 `+`／`-` 的格一律只由這些字元組成；任何能呼叫、參照或外連的字元都會讓它得到撇號。
+test("帶號量測值豁免的格只由數字、°′″、%、℃／°C／h 組成，沒有可呼叫或參照的字元（L-14）", () => {
+  const alphabet = [..."0123456789.+-°′″%℃Ch \t=@|!:$\"(),;&[]AaHhcmd'E"];
+  let seed = 20261021;
+  const random = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+  const exemptCharacters = /^[\t\r\n +\-0-9.°′″%℃Ch]*$/u;
+  let exempt = 0;
+  for (let index = 0; index < 200000; index += 1) {
+    const length = 2 + Math.floor(random() * 9);
+    let value = random() < 0.5 ? "-" : "+";
+    for (let position = 1; position < length; position += 1) value += alphabet[Math.floor(random() * alphabet.length)];
+    const cell = Exporters.csvCell(value);
+    if (cell.startsWith("'") || cell.startsWith("\"'")) continue;
+    exempt += 1;
+    assert.match(value, exemptCharacters, JSON.stringify(value));
+    assert.doesNotMatch(value, /[A-Za-gi-z]|C(?!$)|h\S/u, JSON.stringify(value));
+  }
+  // The exemption is exercised, not vacuous; the shapes the serializer writes stay unguarded.
+  assert.ok(exempt > 100, String(exempt));
+  for (const value of ["-12°34′", "-12°34′56.7″", "-0°00′00.10″", "-12.5%", "-4.5 ℃", "-1.5h"]) {
+    assert.equal(Exporters.csvCell(value), value);
+  }
+});
 
 test("試算表輸出（CSV、區段複製）在儲存格開頭中和公式；全文複製與 TXT 原樣，tab／換行折成空白", () => {
   for (const [value, guarded] of SPREADSHEET_CASES) {
@@ -318,7 +360,8 @@ test("試算表輸出（CSV、區段複製）在儲存格開頭中和公式；�
     assert.ok(sectionText.includes(`\nv\t${foldControls(neutralized)}`), `區段複製 ${label}`);
     const plain = Exporters.renderPlainText(document);
     assert.ok(plain.includes(`\nv\t${foldControls(value)}`), `全文複製 ${label}`);
-    if (guarded) assert.ok(!plain.includes(`\nv\t'`), `全文複製不帶撇號 ${label}`);
+    if (guarded && !value.startsWith("'")) assert.ok(!plain.includes(`\nv\t'`), `全文複製不帶撇號 ${label}`);
+    assert.equal(neutralized.replace(/^'/, ""), value, `去掉第一個撇號得回原值 ${label}`);
   }
 });
 
@@ -386,16 +429,10 @@ test("真實回應的 CSV 沒有一格會被試算表轉成布林或日期時間
   const names = fs.readdirSync(path.join(__dirname, "fixtures"))
     .filter((name) => /^chart-.*\.json$/.test(name) && name !== "chart-requests.json");
   // 公開樹裡這些 fixture 一個都不在，目錄列不出來；那時改問一個具名的 fixture 是否被省略。
-  const relatives = (names.length ? names : ["chart-exact.json"]).map((name) => `frontend/tests/fixtures/${name}`);
-  const omitted = relatives.filter((relative) => publicationOmits(relative));
-  if (omitted.length) {
-    t.skip(`後端回應 fixture 不在公開匯出 allowlist（${omitted.join("、")}）`);
-    return;
-  }
-  const ViewModel = require("../../scripts/frontend/scripts/view-model.js");
+  if (skipIfOmitted(t, names.length ? names : ["chart-exact.json"])) return;
   const seen = { boolean: 0, date: 0, "date-time": 0, time: 0 };
   for (const name of names) {
-    const response = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", name), "utf8"));
+    const response = loadResponse(name);
     const expectedDossier = new Map();
     (function walk(value, at) {
       if (Array.isArray(value)) {
@@ -408,7 +445,7 @@ test("真實回應的 CSV 沒有一格會被試算表轉成布林或日期時間
         expectedDossier.set(at, value === null ? "null" : String(value));
       }
     })(response.calculation_dossier, "");
-    const document = Exporters.createDocument(response, ViewModel.buildSections(response));
+    const document = canonicalDocument(response);
     for (const mode of Object.values(Exporters.OUTPUT_MODES)) {
       const rows = parseCsvRows(Exporters.buildDownloadArtifact(document, "csv", mode).content);
       rows.slice(1).forEach((row) => {
@@ -631,21 +668,14 @@ function expectedOffset(hours) {
 }
 
 test("UTC 偏移在每一種輸出都是同一個「UTC±hh:mm」字串，不以正負號開頭、不帶公式撇號", (t) => {
-  const relatives = ["page/chart-exact.json", "page/chart-repeated-hour-fold.json"]
-    .map((name) => `frontend/tests/fixtures/${name}`);
-  const omitted = relatives.filter((relative) => publicationOmits(relative));
-  if (omitted.length) {
-    t.skip(`後端回應 fixture 不在公開匯出 allowlist（${omitted.join("、")}）`);
-    return;
-  }
-  const ViewModel = require("../../scripts/frontend/scripts/view-model.js");
+  if (skipIfOmitted(t, ["page/chart-exact.json", "page/chart-repeated-hour-fold.json"])) return;
   const signs = new Set();
   for (const name of ["chart-exact", "chart-repeated-hour-fold"]) {
-    const page = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "page", `${name}.json`), "utf8"));
+    const page = loadResponse(`page/${name}.json`);
     const hours = page.astronomical_data.time.utc_offset_hours;
     signs.add(Math.sign(hours));
     const offset = expectedOffset(hours);
-    const document = Exporters.createDocument(page, ViewModel.buildSections(page));
+    const document = canonicalDocument(page);
     const dataOnly = Exporters.OUTPUT_MODES.chart_data_only;
     const render = (format) => Exporters.buildDownloadArtifact(document, format, dataOnly).content;
     const timeSection = document.sections.find((section) => section.id === "time");
@@ -730,16 +760,8 @@ test("printExpansion 展開每個 details 並在 restore 時還原原狀", () =>
 // 容器卻不見」渲染成「少了幾區」的正常結果。
 test("option_states 說已算出的模組容器缺席時 createDocument 拒絕", (t) => {
   const responseFixtures = ["chart-approximate-hour", "chart-exact", "chart-date-only"];
-  const omitted = responseFixtures
-    .map((name) => `frontend/tests/fixtures/${name}.json`)
-    .filter((relativePath) => publicationOmits(relativePath));
-  if (omitted.length) {
-    t.skip(`後端回應 fixture 不在公開匯出 allowlist（${omitted.join("、")}）；此樹無法以真實回應驗證截斷拒絕`);
-    return;
-  }
-  const load = (name) => JSON.parse(
-    fs.readFileSync(path.join(__dirname, "fixtures", `${name}.json`), "utf8")
-  );
+  if (skipIfOmitted(t, responseFixtures.map((name) => `${name}.json`), "；此樹無法以真實回應驗證截斷拒絕")) return;
+  const load = (name) => loadResponse(`${name}.json`);
   const real = load("chart-approximate-hour");
   assert.doesNotThrow(() => Exporters.createDocument(real, []));
   for (const [label, mutate] of [
@@ -763,18 +785,9 @@ test("option_states 說已算出的模組容器缺席時 createDocument 拒絕",
 // 恆星黃道的盤匯出後與回歸黃道無從分辨。基線 03701324 的運算結果 JSON 在
 // source_response 頂層帶著 computation_mode，這裡要求同一個位置、同一個值。
 test("恆星／回歸黃道的預設匯出四種格式都寫出黃道，JSON 帶 computation_mode", (t) => {
-  const names = ["frontend/tests/fixtures/chart-exact.json", "frontend/tests/fixtures/page/chart-exact.json"];
-  const omitted = names.filter((relativePath) => publicationOmits(relativePath));
-  if (omitted.length) {
-    t.skip(`後端回應 fixture 不在公開匯出 allowlist（${omitted.join("、")}）`);
-    return;
-  }
-  const ViewModel = require("../../scripts/frontend/scripts/view-model.js");
-  const load = (relative) => JSON.parse(
-    fs.readFileSync(path.join(__dirname, "fixtures", relative), "utf8")
-  );
-  const tropicalPage = load("page/chart-exact.json");
-  const tropical = load("chart-exact.json");
+  if (skipIfOmitted(t, ["chart-exact.json", "page/chart-exact.json"])) return;
+  const tropicalPage = loadResponse("page/chart-exact.json");
+  const tropical = loadResponse("chart-exact.json");
   assert.deepEqual(tropicalPage.computation_mode, tropical.computation_mode,
     "頁面投影必須保留與完整回應相同的 computation_mode");
   // 恆星黃道：同一份頁面回應換上恆星黃道的 computation_mode（後端回應裡的形狀）。
@@ -784,10 +797,8 @@ test("恆星／回歸黃道的預設匯出四種格式都寫出黃道，JSON 帶
     ["sidereal", siderealPage, "sidereal", true],
     ["tropical", tropicalPage, "tropical", false],
   ]) {
-    const document = Exporters.createDocument(page, ViewModel.buildSections(page));
-    const render = (format) => Exporters.buildDownloadArtifact(
-      document, format, Exporters.OUTPUT_MODES.chart_data_only
-    ).content;
+    const document = canonicalDocument(page);
+    const render = (format) => Exporters.buildDownloadArtifact(document, format, Exporters.OUTPUT_MODES.chart_data_only).content;
 
     const txt = render("txt");
     const md = render("md");
@@ -842,19 +853,12 @@ function parseCsvRows(content) {
 const SNAKE_CASE = /\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b/;
 const ASCII_WORD = /^[A-Za-z][A-Za-z ]*$/;
 test("匯出的結構字彙是中文，閉集代碼另放在代碼欄（兩種模式、真實回應）", (t) => {
-  const names = ["frontend/tests/fixtures/chart-heliocentric-all.json", "frontend/tests/fixtures/page/chart-heliocentric-all.json"];
-  const omitted = names.filter((relativePath) => publicationOmits(relativePath));
-  if (omitted.length) {
-    t.skip(`後端回應 fixture 不在公開匯出 allowlist（${omitted.join("、")}）`);
-    return;
-  }
-  const ViewModel = require("../../scripts/frontend/scripts/view-model.js");
-  const load = (relative) => JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", relative), "utf8"));
+  if (skipIfOmitted(t, ["chart-heliocentric-all.json", "page/chart-heliocentric-all.json"])) return;
   for (const [mode, response] of [
-    ["chart_data_only", load("page/chart-heliocentric-all.json")],
-    ["reproducibility_detail", load("chart-heliocentric-all.json")],
+    ["chart_data_only", loadResponse("page/chart-heliocentric-all.json")],
+    ["reproducibility_detail", loadResponse("chart-heliocentric-all.json")],
   ]) {
-    const document = Exporters.createDocument(response, ViewModel.buildSections(response));
+    const document = canonicalDocument(response);
     const projected = Exporters.projectOutputDocument(document, mode);
     const dataTables = new Set(projected.sections.flatMap((section) => section.tables.map((table) => table.title)));
     const render = (format) => Exporters.buildDownloadArtifact(document, format, mode).content;
@@ -886,16 +890,11 @@ test("匯出的結構字彙是中文，閉集代碼另放在代碼欄（兩種�
 });
 
 test("一頁摘要的收據身分：三個版本、計算模式與出生時刻把握程度，與純文字匯出（驗算資料）的行逐字相同", (t) => {
-  const names = ["frontend/tests/fixtures/chart-exact.json", "frontend/tests/fixtures/chart-approximate-hour.json"];
-  const omitted = names.filter((relativePath) => publicationOmits(relativePath));
-  if (omitted.length) {
-    t.skip(`後端回應 fixture 不在公開匯出 allowlist（${omitted.join("、")}）`);
-    return;
-  }
-  const ViewModel = require("../../scripts/frontend/scripts/view-model.js");
-  for (const relative of ["chart-exact.json", "chart-approximate-hour.json"]) {
-    const response = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", relative), "utf8"));
-    const document = Exporters.createDocument(response, ViewModel.buildSections(response));
+  const relatives = ["chart-exact.json", "chart-approximate-hour.json"];
+  if (skipIfOmitted(t, relatives)) return;
+  for (const relative of relatives) {
+    const response = loadResponse(relative);
+    const document = canonicalDocument(response);
     const lines = Exporters.renderPlainText(
       Exporters.projectOutputDocument(document, Exporters.OUTPUT_MODES.reproducibility_detail)
     ).split("\n");

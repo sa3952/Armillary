@@ -301,7 +301,7 @@ def _offsets(layout: str, fid: str, eras: list[dict], bound: _fx.Bound) -> str:
                    base - (l9 - 52 if era["key"] in ("lmt", "cst1") else l9 - 8))
         else:
             hit = (14.0, T(t0), W - 28, T(t1) - T(t0))
-        out.append(_row(era, area + _label(era, wide, T, L, base, l8, l9, t0, t1), hit))
+        out.append(_row(era, area + _label(era, wide, T, L, base, l8, l9), hit))
     if wide:
         d = " ".join(f"{'M' if i == 0 else 'L'}{_fx.f(x0)} {_fx.f(y)} L{_fx.f(x1)} {_fx.f(y)}"
                      for i, (x0, y, x1) in enumerate(step))
@@ -353,8 +353,9 @@ def _min_bar(box: tuple[float, float, float, float], wide: bool) -> tuple[float,
     return x, y, w, max(h, 1.6)
 
 
-def _label(era: dict, wide: bool, T, L, base: float, l8: float, l9: float, t0: float, t1: float) -> str:
+def _label(era: dict, wide: bool, T, L, base: float, l8: float, l9: float) -> str:
     """An era's name: inside its area where it fits, otherwise beside it."""
+    t0, t1 = _span(era)
     key = era["key"]
     if wide:
         if key == "lmt":
@@ -377,9 +378,7 @@ def _offset_table(eras: list[dict]) -> str:
     rows = "".join(
         f'<tr data-fx-key="{e["key"]}"><th scope="row">{e["name"]}</th><td>{e["offset_text"]}</td>'
         f'<td>{e["from"]}</td><td>{e["to"]}</td></tr>' for e in eras)
-    return ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">時期</th><th scope="col">鐘面比世界時快</th>'
-            f'<th scope="col">起</th><th scope="col">迄</th></tr></thead><tbody>{rows}</tbody></table></div></details>')
+    return _fx.data_table(("時期", "鐘面比世界時快", "起", "迄"), rows)
 
 
 def _clock(t: datetime) -> str:
@@ -559,16 +558,20 @@ def _figures(pin: dict) -> dict[str, str]:
     years = (b1.scale(str(AXIS[0])), b1.scale(str(AXIS[1])))
     cite = b1.label("[1]")
     offsets = _fx.figure(
-        fid="fig-clock-offset", hero=True,
+        fid="fig-clock-offset",
+        hero=True,
         title="臺灣的鐘面時間比世界時快多少，1890 到 1985 年",
         caption=(f"<b>{b1.label('圖 1')}</b>臺灣的鐘面時間比世界時（UTC）快多少，{years[0]} 到 {years[1]} 年。"
                  "粗線是鐘面比世界時快多少；線下的填法分出三種制度：地方平時（點）、西部標準時與戰後的標準時（空白）、日本的中央標準時（交叉線）；"
                  f"實心細條是實施日光節約時間的{zh(len(_summers(tr)))}個夏季，那段期間鐘面也是 {eras[2]['label']}。"
                  f"依 IANA 時區資料庫 {tzdata} 版<a class=\"ar-cite\" href=\"#ref-1\">{cite}</a>。"),
-        wide=_offsets("fx-wide", "fig-clock-offset", eras, b1),
-        narrow=_offsets("fx-narrow", "fig-clock-offset", eras, b1),
-        notes=[_fx.Note(e["key"], None, e["sentence"]) for e in eras],
-        idle=IDLE, table=_offset_table(eras),
+        art=_fx.FigureArt.drawn(
+            _offsets, "fig-clock-offset", eras, b1,
+            notes=[_fx.Note(e["key"], None, e["sentence"]) for e in eras],
+            idle=IDLE,
+        ),
+        table=_offset_table(eras),
+        bound=b1,
     )
     b2 = _fx.Bound()
     pair = tuple(r for r in tr if _utc(r).year == 1974)
@@ -582,9 +585,8 @@ def _figures(pin: dict) -> dict[str, str]:
                  f"{b2.num(_clock(_local_after(pair[0])))}，單線的那一小時沒有任何瞬間對得上。右：時鐘在午夜撥回 "
                  f"{b2.num(_clock(_local_after(pair[1])))}，交叉線的那一小時，每個鐘面讀數都對到兩個相隔一小時的瞬間。"
                  f"依 IANA 時區資料庫 {b2.num(pin['tzdata'])} 版<a class=\"ar-cite\" href=\"#ref-1\">{b2.label('[1]')}</a>。"),
-        wide=_gap_and_fold("fx-wide", "fig-gap-fold", pair, b2),
-        narrow=_gap_and_fold("fx-narrow", "fig-gap-fold", pair, b2),
-        notes=[], idle="",
+        art=_fx.FigureArt.drawn(_gap_and_fold, "fig-gap-fold", pair, b2),
+        bound=b2,
     )
     b3 = _fx.Bound()
     revisions = _fx.figure(
@@ -595,14 +597,9 @@ def _figures(pin: dict) -> dict[str, str]:
                  f"<a class=\"ar-cite\" href=\"#ref-5\">{b3.label('[5]')}</a>。下：{b3.label('2014f 版')}改寫的年份範圍"
                  f"<a class=\"ar-cite\" href=\"#ref-7\">{b3.label('[7]')}</a>。用不同年代的軟體排這些年份的盤，"
                  "世界時可能相差一小時。"),
-        wide=_revisions("fx-wide", "fig-tz-revisions", pin, b3),
-        narrow=_revisions("fx-narrow", "fig-tz-revisions", pin, b3),
-        notes=[], idle="",
+        art=_fx.FigureArt.drawn(_revisions, "fig-tz-revisions", pin, b3),
+        bound=b3,
     )
-    for markup, bound in ((offsets, b1), (gap, b2), (revisions, b3)):
-        found = _fx.problems(markup, bound)
-        if found:
-            raise RuntimeError("figure check: " + "; ".join(found))
     return {"fx-defs": _fx.defs(()), "clock-offset": offsets, "gap-fold": gap, "tz-revisions": revisions}
 
 

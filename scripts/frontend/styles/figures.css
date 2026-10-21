@@ -75,8 +75,7 @@
 .fx .fx-exc{fill:var(--paper); fill-opacity:.85}
 .fx .fx-exc-edge{stroke:var(--fx-ink); stroke-width:1.2; stroke-dasharray:5 3}
 .fx .fx-inset-bg, .fx .fx-fill-dot{fill:url(#fx-dots)}
-.fx .fx-inset-frame{fill:none; stroke:var(--fx-ink); stroke-width:1}
-.fx .fx-lens{fill:none; stroke:var(--fx-ink); stroke-width:1}
+.fx .fx-inset-frame,.fx .fx-lens{fill:none; stroke:var(--fx-ink); stroke-width:1}
 .fx .fx-leader{stroke:var(--fx-dim); stroke-width:.8; fill:none}
 .fx .fx-disc{fill:var(--paper); stroke:var(--fx-ink); stroke-width:1.4}
 .fx .fx-mk{fill:var(--paper); stroke:var(--fx-ink); stroke-width:1.2}
@@ -154,4 +153,9 @@
   .fx .fx-key, .fx .fx-inset-t{stroke:var(--print-bg)}
   .fx .fx-cursor{stroke:var(--fx-ink); stroke-width:2}
   .fx .fx-cursor-t{fill:var(--fx-ink)}
+}
+
+/* 強制色彩：圖版保留紙底與墨線（理由見 page.css 檔尾）。 */
+@media (forced-colors: active){
+  .fx-art svg.fx-wide,.fx-art svg.fx-narrow{forced-color-adjust:none; background-color:var(--paper)}
 }

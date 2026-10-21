@@ -5,21 +5,18 @@ one shape::
 
     {"detail": {"code": <closed code>, "message": <fixed text>, ...}}
 
-The request boundary, the domain handlers, FastAPI's malformed-JSON path and
-Starlette's own refusals all write it, so a client can branch on ``detail``
-without testing its type, and one condition ("busy, retry") always arrives
-with the same message whichever layer noticed it.  What the ASGI server
-refuses before the application sees a request (uvicorn's h11: a request line
-or framing it cannot parse, such as a non-numeric or conflicting
-Content-Length) is a plain-text 400 outside this shape.
+Every layer writes it (request boundary, domain handlers, FastAPI's
+malformed-JSON path, Starlette), so a client can branch on ``detail`` without
+testing its type, and one condition always arrives with the same message.
+What the ASGI server refuses before the application sees a request (uvicorn's
+h11: an unparseable request line or framing, such as a non-numeric or
+conflicting Content-Length) is a plain-text 400 outside this shape.
 
-This table owns, for each code, the HTTP status, the one fixed message, whether
-the refusal is retryable (and so carries ``Retry-After``), and which declared
-routes can emit it.  The refusal table of the output contract document is
-generated from it, and the
-OpenAPI document built offline by the tests (never served: ``openapi_url`` is
-None), the privacy event vocabulary and the front-end copy coverage test read
-it; none of them keeps its own list.
+This table owns each code's status, fixed message, retryability (and so
+``Retry-After``) and emitting routes.  The output contract's refusal table is
+generated from it; the offline OpenAPI document (never served: ``openapi_url``
+is None), the privacy event vocabulary and the front-end copy coverage test
+read it; none keeps its own list.
 
 Privacy: a message is a constant.  Nothing a request contained — a value, a key
 it invented, a position in its bytes — may appear in a refusal.  Field *names*
@@ -42,6 +39,8 @@ CHART_ROUTE: Final = "/api/chart"
 ANNUAL_ROUTE: Final = "/api/chart/annual"
 PLACE_SEARCH_ROUTE: Final = "/api/places/search"
 HEALTH_ROUTE: Final = "/api/health"
+# Readiness: the bundled ephemeris files are present and match the pinned digests.
+READY_ROUTE: Final = "/api/health/ready"
 TIME_CONVERT_ROUTE: Final = "/api/time/convert"
 # Not an OpenAPI path: the bundled page and its assets under the static mount.
 FRONTEND_ASSETS: Final = "frontend_assets"
@@ -57,12 +56,15 @@ _JSON_BODY_ROUTES: Final = frozenset({
     CHART_ROUTE, PLACE_SEARCH_ROUTE, ANNUAL_ROUTE, TIME_CONVERT_ROUTE,
 })
 _API_ROUTES: Final = frozenset({
-    CHART_ROUTE, PLACE_SEARCH_ROUTE, HEALTH_ROUTE, ANNUAL_ROUTE, TIME_CONVERT_ROUTE,
+    CHART_ROUTE, PLACE_SEARCH_ROUTE, HEALTH_ROUTE, READY_ROUTE, ANNUAL_ROUTE, TIME_CONVERT_ROUTE,
 })
 _COMPUTE_ROUTES: Final = frozenset({CHART_ROUTE, ANNUAL_ROUTE})
 # Every route that reads a birth record's civil time: both calculations and the converter.
 _CIVIL_TIME_ROUTES: Final = _COMPUTE_ROUTES | {TIME_CONVERT_ROUTE}
 _EVERY_ROUTE: Final = _API_ROUTES | {FRONTEND_ASSETS}
+# The edge answers readiness itself (unknown_api_path) before any limiter or
+# upstream, so its own rate and upstream refusals never reach that path.
+_EDGE_PROXIED_API_ROUTES: Final = _API_ROUTES - {READY_ROUTE}
 
 
 class Refusal(NamedTuple):
@@ -76,6 +78,8 @@ REFUSALS: Final[Mapping[str, Refusal]] = MappingProxyType({
     # ── Request boundary (request_limits.py) ────────────────────────────────
     "undeclared_host": Refusal(404, "此服務不回應這個主機名稱。", _EVERY_ROUTE),
     # Answered for a path under /api/ that is not a route; never a declared one.
+    # The public edge writes it too, for readiness, which only the container's
+    # own health check may ask (deploy/staging/nginx-site.conf.template).
     "unknown_api_path": Refusal(404, "此服務沒有這個 API 路徑。", frozenset()),
     "unsupported_method": Refusal(405, "此路徑不接受這個 HTTP 方法。", _API_ROUTES),
     # The edge writes this one too, on every /api path, when a client's
@@ -168,11 +172,9 @@ REFUSALS: Final[Mapping[str, Refusal]] = MappingProxyType({
     "house_system_unavailable": Refusal(
         422, "所選宮位制在這個位置無法計算；reason_code 說明原因。", frozenset({CHART_ROUTE}),
     ),
-    # 422, not 503: the instant is outside the bundled segments, so the
-    # same request is refused the same way every time; nothing transient will
-    # clear it.  A missing segment file or a Swiss fallback the coverage
-    # manifest did not predict is a server fault and leaves as
-    # internal_server_error (main._handle_domain_error), never as this code.
+    # 422, not 503: an instant outside the bundled segments is refused the
+    # same way every time.  A missing segment file or an unpredicted Swiss
+    # fallback is a server fault: internal_server_error (main._handle_domain_error).
     "full_ephemeris_required": Refusal(
         422,
         "這次計算需要的完整 Swiss Ephemeris 資料不在服務的覆蓋範圍內；"
@@ -193,15 +195,13 @@ REFUSALS: Final[Mapping[str, Refusal]] = MappingProxyType({
         frozenset({PLACE_SEARCH_ROUTE}), retryable=True,
     ),
     # ── Edge (deploy/staging/nginx-site.conf.template) ──────────────────────
-    # Written by NGINX, never by this process: its per-client request rate and
-    # an unreachable application.  They are here because a client of an /api
-    # path receives them in this shape and branches on these codes; the
-    # messages are the edge's own page sentences.
+    # Written by NGINX, never by this process; listed because an /api client
+    # receives them in this shape.  The messages are the edge's own sentences.
     "edge_rate_limited": Refusal(
-        429, "短時間內請求過多。請稍後再試。", _API_ROUTES, retryable=True,
+        429, "短時間內請求過多。請稍後再試。", _EDGE_PROXIED_API_ROUTES, retryable=True,
     ),
     "upstream_unavailable": Refusal(
-        502, "服務暫時無法連線。請稍後再試。", _API_ROUTES, retryable=True,
+        502, "服務暫時無法連線。請稍後再試。", _EDGE_PROXIED_API_ROUTES, retryable=True,
     ),
     # ── Framework refusals (Starlette static mount / FastAPI body read) ───────
     "bad_request": Refusal(400, "請求內容無法讀取。", _JSON_BODY_ROUTES),

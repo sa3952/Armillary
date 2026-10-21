@@ -20,6 +20,21 @@ def on():
         yield api
 
 
+@pytest.fixture(scope="module")
+def quiet_client():
+    """A client of the default app that prints no privacy event, answers a
+    server error with its 500 instead of raising it, and follows no redirect
+    (no API path redirects, so that changes no API answer)."""
+    from fastapi.testclient import TestClient
+
+    from app.main import create_app
+    from app.settings import AppSettings
+
+    with TestClient(create_app(AppSettings(), event_emitter=lambda event: True),
+                    raise_server_exceptions=False, follow_redirects=False) as api:
+        yield api
+
+
 @pytest.fixture
 def bundled_ephemeris() -> None:
     """Bind the product's own ephemeris files before the test.
@@ -30,6 +45,35 @@ def bundled_ephemeris() -> None:
     from app import ephemeris
 
     ephemeris.init_ephemeris()
+
+
+@pytest.fixture
+def copied_ephemeris(tmp_path, monkeypatch, request):
+    """A byte copy of the bundled ephemeris directory, bound as the ephemeris
+    directory; the real directory and the manifest cache are bound again
+    afterwards.  Parametrized indirectly with {"link": True} the copy is
+    symbolic links, and {"leave_out": (name, ...)} leaves those files out."""
+    import shutil
+    from pathlib import Path
+
+    import swisseph as swe
+
+    from app import ephemeris
+
+    options = getattr(request, "param", {})
+    real_directory = ephemeris.EPHE_DIR
+    for path in sorted(Path(real_directory).iterdir()):
+        if path.is_file() and path.name not in options.get("leave_out", ()):
+            if options.get("link"):
+                (tmp_path / path.name).symlink_to(path)
+            else:
+                shutil.copy2(path, tmp_path / path.name)
+    swe.close()
+    monkeypatch.setattr(ephemeris, "EPHE_DIR", str(tmp_path))
+    yield tmp_path
+    swe.close()
+    swe.set_ephe_path(real_directory)
+    monkeypatch.setattr(ephemeris, "_MANIFEST_CACHE", None)
 
 
 @pytest.fixture

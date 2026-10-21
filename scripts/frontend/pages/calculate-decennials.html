@@ -1,0 +1,69 @@
+<!-- 計算頁的子頁：十年期的落地頁，任務入口。規則全文、出處與古書例盤的驗算在〈十年期的規則、出處與驗算〉，
+     這裡只用白話說它是什麼、可以選什麼、結果長什麼樣與限制，細節一律連過去，不另抄一份。
+     第一屏的入口只帶 mode 與 technique 兩個閉集旗標（result-chapters.js），計算頁讀一次就從網址拿掉；
+     frontend/tests/e2e/technique-link.spec.cjs 守著網址裡永遠沒有出生資料。
+     合成範例表由 scripts/frontend/figures/_landing.py 從年度計算服務的回應產生，不要手改。 -->
+<div class="wrap page-body ct-sheet">
+
+  <section class="ds-hero">
+    <p class="eyebrow"><a href="/zh-TW/calculate">計算</a></p>
+    <h1>十年期計算：<wbr>線上排出<wbr>十年期時間主星</h1>
+    <p class="lede"><b>十年期</b>（decennials，每段 10 年 9 個月）是古希臘占星書裡的一種<b>時間主星</b>（time lords：把一生切成一段段，每段交給一顆行星輪值）技法，規則出自 Vettius Valens《占星選集》（Anthologiae）第六卷與 Firmicus Maternus《Mathesis》第二卷。輸入出生日期、時間與地點，本站列出每一段由哪顆行星輪值、從哪一天到哪一天，以及每段裡的七小段。</p>
+    <p><a class="cta lp-start" href="/zh-TW/calculate?mode=classical&amp;technique=decennials">開始排十年期 →</a></p>
+    <p class="ds-note"><b>只列計算結果：哪一段時間由哪顆行星輪值。不替你解盤，也不預測。</b>這個連結只替計算頁選好「古典完整」與十年期，不帶任何出生資料；你填的資料只送到本站的計算服務，伺服器不留副本，也不寫進網址。</p>
+  </section>
+
+  <section class="ds-sec" id="what">
+    <h2 class="hdr"><span>01</span>十年期在算什麼</h2>
+    <p>從一顆起點行星開始，依出生時七顆行星在黃道上的實際順序（牡羊、金牛、雙子……的方向）輪下去，每顆行星管 129 個月。這裡的年與月是古代分配時間用的<b>分配年</b>：一年 360 日、一個月 30 日，所以一段是 3,870 日，約 10 年 7 個月的日曆時間。每一段裡再依七顆行星的<b>小年</b>（least years：古書傳下來的固定年數，土星 30、木星 12、火星 15、太陽 19、金星 8、水星 20、月亮 25，合計 129）當作月數，分成七小段。</p>
+    <p>規則四步、Valens 自己的例盤與細分表的逐格驗算，見〈<a href="/zh-TW/methods/decennials">十年期的規則、出處與驗算</a>〉。</p>
+  </section>
+
+  <section class="ds-sec" id="options">
+    <h2 class="hdr"><span>02</span>本站的口徑：起點有三種</h2>
+    <ul>
+      <li><b>日夜盤的光體（預設，Firmicus）。</b><b>光體</b>指太陽與月亮：日盤（出生時太陽在地平線上）從太陽起，夜盤從月亮起，沒有其他條件。</li>
+      <li><b>上升點之後的第一顆行星（Valens）。</b>Valens 規定光體「狀態好」才用光體，兩個都不好才改從這裡起；「狀態好」要判斷，古書沒有人人照做都相同的判準，本站不替你判斷。</li>
+      <li><b>自己指定。</b>七顆行星任選一顆當起點，順序與長度不變。</li>
+    </ul>
+    <p>三種在計算頁時間主星一章的「十年期從哪顆行星起算」選單裡切換，結果寫明這次用的是哪一種。為什麼預設 Firmicus、每一條出處核到哪一層，見方法頁<a href="/zh-TW/methods/decennials">第 03 節</a>。</p>
+  </section>
+
+  <section class="ds-sec" id="output">
+    <h2 class="hdr"><span>03</span>結果長什麼樣</h2>
+    <p>下表是<b>合成範例</b>，不是真人的盤：首頁的示範出生時刻（1990 年 5 月 15 日下午 2 點 30 分，臺北），由本站年度計算服務實際算出、出生後 100 年內的第一層，起點用預設。這張盤是日盤，所以從太陽起；每段 129 個月，七段輪完再從太陽開始。</p>
+    <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="lp-decennials-cap">
+      <table class="spec">
+        <caption id="lp-decennials-cap">合成範例：十年期的第一層（日期是出生地的日期）</caption>
+        <thead><tr><th scope="col">第幾段</th><th scope="col">輪值行星</th><th scope="col">起</th><th scope="col">訖</th></tr></thead>
+        <tbody>
+          <!-- figure:lp-decennials -->
+          <tr><td class="mono">1</td><td>太陽</td><td class="mono">1990-05-15</td><td class="mono">2000-12-18</td></tr>
+          <tr><td class="mono">2</td><td>木星</td><td class="mono">2000-12-18</td><td class="mono">2011-07-24</td></tr>
+          <tr><td class="mono">3</td><td>月亮</td><td class="mono">2011-07-24</td><td class="mono">2022-02-26</td></tr>
+          <tr><td class="mono">4</td><td>土星</td><td class="mono">2022-02-26</td><td class="mono">2032-10-01</td></tr>
+          <tr><td class="mono">5</td><td>火星</td><td class="mono">2032-10-01</td><td class="mono">2043-05-07</td></tr>
+          <tr><td class="mono">6</td><td>金星</td><td class="mono">2043-05-07</td><td class="mono">2053-12-10</td></tr>
+          <tr><td class="mono">7</td><td>水星</td><td class="mono">2053-12-10</td><td class="mono">2064-07-15</td></tr>
+          <tr><td class="mono">8</td><td>太陽</td><td class="mono">2064-07-15</td><td class="mono">2075-02-18</td></tr>
+          <tr><td class="mono">9</td><td>木星</td><td class="mono">2075-02-18</td><td class="mono">2085-09-23</td></tr>
+          <tr><td class="mono">10</td><td>月亮</td><td class="mono">2085-09-23</td><td class="mono">2096-04-28</td></tr>
+          <!-- /figure:lp-decennials -->
+        </tbody>
+      </table>
+    </div>
+    <p>計算頁上，時間主星一章另有選定年度所在那一段的七小段，以及一生的時間軸；同一章也列出年度小限、法達與黃道釋放。</p>
+  </section>
+
+  <section class="ds-sec" id="limits">
+    <h2 class="hdr"><span>04</span>限制</h2>
+    <ul>
+      <li>邊界只會跟著出生時刻前後移動幾分鐘；但月亮每小時大約走半度，月亮靠近另一顆行星時，出生時間差一兩個小時就可能改變兩者的先後，整條順序跟著變。</li>
+      <li>預設起點要先知道日盤或夜盤；只知道日期時排不出來。只知道大約幾點出生時，本站取那段時間的開頭、中間、結尾三個<b>代表性時刻</b>各排一次，三者不同就並列。</li>
+      <li>只算兩層；日期只到日，是出生地的日期，古書只給到年與月。</li>
+    </ul>
+    <p>同類的其他技法：<a href="/zh-TW/calculate/firdaria">法達計算</a>、<a href="/zh-TW/calculate/zodiacal-releasing">黃道釋放計算</a>、<a href="/zh-TW/calculate/profections">小限計算</a>；先讀概念，見〈<a href="/zh-TW/blog/time-lords-introduction">年度時間主星入門</a>〉。</p>
+    <p><a class="cta lp-start" href="/zh-TW/calculate?mode=classical&amp;technique=decennials">開始排十年期 →</a></p>
+  </section>
+
+</div>

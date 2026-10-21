@@ -1,0 +1,5 @@
+(function(root,factory){const api=factory();if(typeof module==="object"&&module.exports)module.exports=api;if(root&&root.document)api.install(root.document,root);})(typeof globalThis!=="undefined"?globalThis:this,function(){"use strict";const HINT="p.scroll-hint";function overflows(box){return Boolean(box)&&box.scrollWidth-box.clientWidth>1;}
+function update(doc){doc.querySelectorAll(HINT).forEach((hint)=>{hint.hidden=!overflows(hint.nextElementSibling);});}
+function install(doc,win){const run=()=>update(doc);if(doc.readyState==="loading")doc.addEventListener("DOMContentLoaded",run,{once:true});else run();if(win&&typeof win.ResizeObserver==="function"){const observer=new win.ResizeObserver(run);const observe=()=>doc.querySelectorAll(HINT).forEach((hint)=>{const box=hint.nextElementSibling;if(!box)return;observer.observe(box);if(box.firstElementChild)observer.observe(box.firstElementChild);});if(doc.readyState==="loading")doc.addEventListener("DOMContentLoaded",observe,{once:true});else observe();}else if(win){win.addEventListener("resize",run);}
+doc.addEventListener("toggle",run,true);}
+return{install,update,overflows};});

@@ -22,20 +22,23 @@ axis label); `problems()` refuses any other digit, so a number typed into a
 label by hand fails `figures --check`.
 
 The planet glyphs are the outlines shipped in chart-glyphs.js (Noto, SIL Open
-Font License 1.1).  `defs()` emits the glyphs a page uses as `<symbol>`s with
-the copyright lines and the licence text in the sprite's `<metadata>`, the
-place the licence allows inside a text file, as chart-glyphs.js carries them
-in its header.  A page whose figures draw no glyph ships no outline, and so no
-licence.
+Font License 1.1).  A figure draws a glyph as a `<use>` of a `<symbol>` in one
+shared, cacheable file, `GLYPH_FILE` (`glyph_file()`, written by build_pages
+with the glyphs the articles name in their `defs()`), which carries the
+copyright lines and the licence text in its `<metadata>`, the place the
+licence allows inside a text file, as chart-glyphs.js carries them in its
+header.  The page's own sprite holds the hatch patterns only.
 """
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from html import escape
 from html.parser import HTMLParser
 from pathlib import Path
 import math
 import re
+from typing import Any
 
 from ._common import ROOT
 
@@ -56,6 +59,8 @@ MIN_PX = {("fx-wide", "1440"): 13.0, ("fx-narrow", "375"): 12.0, ("fx-narrow", "
 
 STYLESHEET = ROOT / "scripts" / "frontend" / "styles" / "figures.css"
 GLYPH_SOURCE = ROOT / "scripts" / "frontend" / "scripts" / "chart-glyphs.js"
+# The shared glyph file, under frontend/; figures name it with a content version.
+GLYPH_FILE = "zh-TW/fx-glyphs.svg"
 _GLYPH = re.compile(
     r'^    (?P<key>[a-z_]+): Object\.freeze\(\{ codepoint: "U\+[0-9A-F]+", '
     r'bbox: Object\.freeze\(\[(?P<bbox>[-0-9., ]+)\]\),\n      d: "(?P<d>[^"]+)" \}\),$',
@@ -155,7 +160,7 @@ def glyph(key: str, cx: float, cy: float, size: float, cls: str = "fx-gl") -> st
     (x0, y0, x1, y1), _ = glyphs()[key]
     w, h = x1 - x0, y1 - y0
     scale = size / max(w, h)
-    return (f'<use href="#fx-gl-{key}" x="{f(cx - w * scale / 2)}" y="{f(cy - h * scale / 2)}" '
+    return (f'<use href="/{GLYPH_FILE}?v={{{{assets}}}}#fx-gl-{key}" x="{f(cx - w * scale / 2)}" y="{f(cy - h * scale / 2)}" '
             f'width="{f(w * scale)}" height="{f(h * scale)}" class="{cls}"/>')
 
 
@@ -171,19 +176,13 @@ def _licence_text() -> str:
 
 def defs(keys: tuple[str, ...]) -> str:
     """The page's sprite as the fragment holds it: the placeholder that
-    `build_pages` replaces with `sprite(keys)`."""
+    `build_pages` replaces with `sprite()`; the glyphs it names go into the
+    shared `glyph_file`."""
     return "{{fx_defs" + (":" + " ".join(keys) if keys else "") + "}}"
 
 
-def sprite(keys: tuple[str, ...]) -> str:
-    """The page's one sprite: the glyphs its figures use, the engraving
-    patterns, and, when it holds any glyph, the glyphs' copyright and licence."""
-    outlines = glyphs()
-    symbols = []
-    for key in keys:
-        (x0, y0, x1, y1), d = outlines[key]
-        symbols.append(f'<symbol id="fx-gl-{key}" viewBox="{f(x0)} {f(y0)} {f(x1 - x0)} {f(y1 - y0)}">'
-                       f'<path d="{d}"/></symbol>')
+def sprite() -> str:
+    """The page's one sprite: the engraving patterns its figures fill with."""
     patterns = (
         # single hatch: in the beams; cross hatch: combust; dots: background of an enlargement
         '<pattern id="fx-h1" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'
@@ -193,16 +192,28 @@ def sprite(keys: tuple[str, ...]) -> str:
         '<pattern id="fx-dots" width="4" height="4" patternUnits="userSpaceOnUse">'
         '<circle cx="2" cy="2" r=".7" class="fx-hpf"/></pattern>'
     )
-    # The licence goes with the outlines: a sprite of patterns alone carries none.
-    metadata = ""
-    if symbols:
-        licence = escape(
-            "Planet and sign glyphs: outlines from chart-glyphs.js, a Modified Version of the "
-            "Noto Sans Symbols, Noto Sans Symbols 2 and Noto Sans fonts, distributed under the same licence.\n"
-            + _licence_text(), quote=False)
-        metadata = f"<metadata>{licence}</metadata>"
-    return (f'<svg class="fx-sprite" aria-hidden="true" focusable="false"><defs>{"".join(symbols)}{patterns}'
-            f'</defs>{metadata}</svg>')
+    return f'<svg class="fx-sprite" aria-hidden="true" focusable="false"><defs>{patterns}</defs></svg>'
+
+
+def glyph_file(keys: Iterable[str]) -> str:
+    """The shared glyph file: a `<symbol>` for each of `keys`, in the order
+    chart-glyphs.js lists them, with the glyphs' copyright and licence."""
+    outlines = glyphs()
+    wanted = set(keys)
+    unknown = sorted(wanted - set(outlines))
+    if unknown:
+        raise ValueError(f"no glyph outline for {unknown}")
+    symbols = []
+    for key in (key for key in outlines if key in wanted):
+        (x0, y0, x1, y1), d = outlines[key]
+        symbols.append(f'<symbol id="fx-gl-{key}" viewBox="{f(x0)} {f(y0)} {f(x1 - x0)} {f(y1 - y0)}">'
+                       f'<path d="{d}"/></symbol>')
+    licence = escape(
+        "Planet and sign glyphs: outlines from chart-glyphs.js, a Modified Version of the "
+        "Noto Sans Symbols, Noto Sans Symbols 2 and Noto Sans fonts, distributed under the same licence.\n"
+        + _licence_text(), quote=False)
+    return (f'<svg xmlns="http://www.w3.org/2000/svg"><metadata>{licence}</metadata>'
+            f'<defs>{"".join(symbols)}</defs></svg>\n')
 
 
 # --- the figure ----------------------------------------------------------------
@@ -218,22 +229,43 @@ class Note:
     step: int | None = None
 
 
+@dataclass(frozen=True)
+class FigureArt:
+    """The drawing at both widths, its pointable notes and the idle readout."""
+
+    wide: str
+    narrow: str
+    notes: list[Note]
+    idle: str
+
+    @classmethod
+    def drawn(cls, draw: Callable[..., str], *args: Any, notes: list[Note] | None = None,
+              idle: str = "") -> FigureArt:
+        """`draw(layout, *args)` at the wide and then the narrow layout."""
+        return cls(draw("fx-wide", *args), draw("fx-narrow", *args), notes or [], idle)
+
+
+@dataclass(frozen=True)
+class FigureControls:
+    """The variant switch and the step slider a figure may carry."""
+
+    variants: tuple[tuple[str, str], ...] = ()
+    switch_label: str = ""
+    steps: int = 0
+    default_step: int = 0
+    scrub_label: str = ""
+
+
 def figure(
     *,
     fid: str,
     title: str,
     caption: str,
-    wide: str,
-    narrow: str,
-    notes: list[Note],
-    idle: str,
-    variants: tuple[tuple[str, str], ...] = (),
-    switch_label: str = "",
+    art: FigureArt,
+    controls: FigureControls = FigureControls(),
     table: str = "",
     hero: bool = False,
-    steps: int = 0,
-    default_step: int = 0,
-    scrub_label: str = "",
+    bound: Bound | None = None,
 ) -> str:
     """One `<figure data-fx>`.  `caption` is trusted markup (a `<b>` number
     then text); everything else is escaped here or built by the helpers.
@@ -241,7 +273,10 @@ def figure(
     `variants` are (id, button label), the first the default.  `steps` is the
     number of precomputed steps a slider moves among (groups and notes carry
     `data-fx-step="0"` … `"steps - 1"`), `default_step` the one drawn without
-    script."""
+    script.  With `bound`, the figure must pass `require_clean` against it."""
+    wide, narrow, notes, idle = art.wide, art.narrow, art.notes, art.idle
+    variants, switch_label = controls.variants, controls.switch_label
+    steps, default_step, scrub_label = controls.steps, controls.default_step, controls.scrub_label
     default = variants[0][0] if variants else None
     attrs = f' data-fx-default-variant="{default}"' if default else ""
     if steps:
@@ -277,10 +312,23 @@ def figure(
         out.append(_data_table(fid, table))
     out.append(f'<figcaption id="{fid}-cap">{caption}</figcaption>')
     out.append("</figure>")
-    return "\n".join(out)
+    markup = "\n".join(out)
+    if bound is not None:
+        require_clean(markup, bound)
+    return markup
 
 
 _EMPTY_HEADER = re.compile(r"<th\b[^>]*>\s*</th>")
+
+
+def data_table(columns: str | Iterable[str], rows: str | Iterable[str], summary: str = "圖中的數字（表格）") -> str:
+    """A figure's numbers as an fx-data fold: `columns` are the header labels
+    (or, as one string, the header row's cells), `rows` the body's rows."""
+    head = columns if isinstance(columns, str) else "".join(f'<th scope="col">{label}</th>' for label in columns)
+    body = rows if isinstance(rows, str) else "".join(rows)
+    return (f'<details class="fx-data"><summary>{summary}</summary><div class="ar-scroll">'
+            f'<table class="ar-table fx-table"><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>'
+            '</div></details>')
 
 
 def _data_table(fid: str, table: str) -> str:
@@ -513,3 +561,10 @@ def problems(markup: str, bound: Bound, stylesheet: Path = STYLESHEET) -> list[s
             if token not in allowed:
                 out.append(f"{fid}: {token!r} in {value!r} is not a number the generator read")
     return out
+
+
+def require_clean(markup: str, bound: Bound) -> None:
+    """Refuse a generated figure that `problems` finds anything wrong with."""
+    found = problems(markup, bound)
+    if found:
+        raise RuntimeError("figure check: " + "; ".join(found))

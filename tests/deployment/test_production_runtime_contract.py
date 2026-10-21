@@ -44,6 +44,7 @@ def test_container_healthcheck_uses_the_declared_host_and_checks_status_and_flag
     observed = []
     answers = {
         "/api/health": {"status": "ok", "ready": True, "readiness_scope": "process_liveness_only"},
+        "/api/health/ready": {"status": "ready", "readiness_scope": "ephemeris_manifest"},
         "/api/chart": {"calculation_dossier": {"provenance": {
             "all_core_calculation_sources_used_full_ephemeris": True}}},
         "/api/places/search": {"results": []},
@@ -74,11 +75,12 @@ def test_container_healthcheck_uses_the_declared_host_and_checks_status_and_flag
 
     assert module.main() == 0                               # the first run is deep
     assert observed == [("GET", "/api/health", "projectarmillary.com", 2.0),
+                        ("GET", "/api/health/ready", "projectarmillary.com", 2.0),
                         ("POST", "/api/chart", "projectarmillary.com", 25.0),
                         ("POST", "/api/places/search", "projectarmillary.com", 8.0)]
     observed.clear()
     assert module.main() == 0                               # then liveness only
-    assert [path for _method, path, _host, _timeout in observed] == ["/api/health"]
+    assert [path for _method, path, _host, _timeout in observed] == ["/api/health", "/api/health/ready"]
     answers["/api/chart"]["calculation_dossier"]["provenance"][
         "all_core_calculation_sources_used_full_ephemeris"] = False
     assert module.check(deep=True) == module.FAILED         # the flag is the only chart value read
@@ -149,6 +151,9 @@ def test_container_healthcheck_reads_only_busy_503s_as_saturation(monkeypatch, t
     class Health:
         status = 200
 
+        def __init__(self, body):
+            self.body = body
+
         def __enter__(self):
             return self
 
@@ -156,7 +161,7 @@ def test_container_healthcheck_reads_only_busy_503s_as_saturation(monkeypatch, t
             return None
 
         def read(self, _limit):
-            return json.dumps(module.LIVENESS).encode()
+            return json.dumps(self.body).encode()
 
     for status, code, expected in (
         (503, "compute_capacity_exhausted", module.SATURATED),
@@ -166,12 +171,41 @@ def test_container_healthcheck_reads_only_busy_503s_as_saturation(monkeypatch, t
     ):
         def open_request(request, *, timeout, status=status, code=code):
             if request.full_url.endswith("/api/health"):
-                return Health()
+                return Health(module.LIVENESS)
+            if request.full_url.endswith("/api/health/ready"):
+                return Health(module.READINESS)
             body = json.dumps({"detail": {"code": code, "message": "x"}}).encode()
             raise module.HTTPError(request.full_url, status, "refused", {}, io.BytesIO(body))
 
         monkeypatch.setattr(module, "_DIRECT_OPENER", SimpleNamespace(open=open_request))
         assert module.check(deep=True) == expected, (status, code)
+
+
+def test_container_healthcheck_fails_when_readiness_answers_not_ready(monkeypatch, tmp_path):
+    """A live process whose ephemeris is missing or altered is not healthy, even on a shallow run."""
+    module = _healthcheck(monkeypatch, tmp_path)
+
+    class Live:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def read(self, _limit):
+            return json.dumps(module.LIVENESS).encode()
+
+    def open_request(request, *, timeout):
+        if request.full_url.endswith("/api/health"):
+            return Live()
+        body = json.dumps({"status": "not_ready", "readiness_scope": "ephemeris_manifest"}).encode()
+        raise module.HTTPError(request.full_url, 503, "not ready", {}, io.BytesIO(body))
+
+    monkeypatch.setattr(module, "_DIRECT_OPENER", SimpleNamespace(open=open_request))
+    assert module.check(deep=False) == module.FAILED
+    assert module.check(deep=True) == module.FAILED
 
 
 def test_container_healthcheck_signals_nothing_outside_a_container(monkeypatch, tmp_path):
@@ -294,6 +328,7 @@ def test_image_environment_holds_the_application_contract(monkeypatch):
         "PYTHON_VERSION=3.14.8", "CLASSICAL_ASTROLOGY_REQUIRE_FRONTEND_RELEASE=1",
         f"CLASSICAL_ASTROLOGY_SOURCE_REVISION={revision}", "PYTHONFAULTHANDLER=1",
         "PYTHONUNBUFFERED=1", "PYTHONDONTWRITEBYTECODE=1", "PYTHON_SHA256=" + "d" * 64,
+        "PYTHONPYCACHEPREFIX=/opt/pycache",
     ]
 
     def inspect_with(items, user="10001:10001"):
@@ -327,7 +362,7 @@ def test_image_environment_holds_the_application_contract(monkeypatch):
 
 def test_exact_image_gate_owns_one_bounded_worst_options_observation(monkeypatch):
     module = _load_script("verify_image_worst_options", CONTAINER_GATE)
-    from app.schemas import ChartRequest
+    from app.schema_chart import ChartRequest
 
     payload = module._worst_options_payload()
     request = ChartRequest.model_validate(payload)

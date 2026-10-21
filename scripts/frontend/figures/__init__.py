@@ -5,7 +5,8 @@ Each module computes its numbers (Swiss Ephemeris with the bundled ephemeris
 files, the product's own tables, limits and chart answers, or the pinned tz
 data) and returns its figure blocks (inline SVG, bar rows, table rows) plus the
 strings its prose quotes.  The article modules are named after their topic,
-the page modules `page_<fragment>`.  In the page fragment every block sits between
+the page modules `page_<fragment>` (the calculate-* landing pages are
+`_landing.PAGES`).  In the page fragment every block sits between
 
     <!-- figure:NAME -->
     ...
@@ -33,21 +34,23 @@ _BLOCK = re.compile(
 
 
 def articles() -> tuple:
-    from . import (accuracy, approximate_hour, birth_time, bounds, combustion, dodecatemoria, era_time,
-                   house_sphere, houses, lots, mansions, nodes, receipt, rising_tables, sect, sidereal, solar_time,
-                   syzygy, taiwan_time, time_lords, unknown_time)
+    from . import (accuracy, antiscia, approximate_hour, ascendant_coordinates, birth_time, bounds, combustion,
+                   dodecatemoria, era_time, firdaria_nodes, hk_time, house_sphere, houses, lilith, lots, mansions, nodes, planetary_hours,
+                   receipt, reference_cases, rising_tables, sect, sidereal, solar_time, syzygy, taiwan_time, time_lords,
+                   topocentric_moon, triplicity, unknown_time)
 
-    return (birth_time, taiwan_time, houses, bounds, nodes, unknown_time, rising_tables, solar_time,
+    return (birth_time, taiwan_time, hk_time, houses, bounds, nodes, unknown_time, rising_tables, solar_time,
             time_lords, dodecatemoria, combustion, mansions, syzygy, house_sphere, era_time, accuracy,
-            approximate_hour, receipt, lots, sect, sidereal)
+            approximate_hour, receipt, lots, sect, sidereal, firdaria_nodes, ascendant_coordinates,
+            reference_cases, triplicity, lilith, topocentric_moon, planetary_hours, antiscia)
 
 
 def pages() -> tuple:
-    from . import (page_features, page_home, page_methods, page_methods_glossary, page_methods_time_lords,
+    from . import (_landing, page_features, page_home, page_methods, page_methods_glossary, page_methods_time_lords,
                    page_roadmap, page_validation)
 
     return (page_home, page_features, page_methods, page_methods_time_lords, page_roadmap, page_validation,
-            page_methods_glossary)
+            page_methods_glossary, *_landing.PAGES)
 
 
 def blocks_in(fragment: str) -> dict[str, str]:
@@ -82,9 +85,12 @@ def problems(fragment_name: str, fragment: str, blocks: dict[str, str], quoted: 
 
 
 def _build_named(name: str) -> tuple[dict[str, str], list[str]]:
+    """Build the module named `name`, or the landing page `<module>:<fragment>`."""
     import importlib
 
-    return importlib.import_module(name).build()
+    module, _, landing = name.partition(":")
+    found = importlib.import_module(module)
+    return (found.page(landing) if landing else found).build()
 
 
 def _build_all(modules) -> dict[str, tuple[dict[str, str], list[str]]]:

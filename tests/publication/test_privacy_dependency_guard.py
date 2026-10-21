@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+import subprocess
+import sys
 
 import pytest
 
@@ -14,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 GUARD = ROOT / "scripts" / "verification" / "verify_privacy_dependencies.py"
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def guard():
     assert GUARD.is_file(), "privacy dependency guard must be repository-owned"
     spec = importlib.util.spec_from_file_location("verify_privacy_dependencies", GUARD)
@@ -103,9 +105,6 @@ def test_the_guard_scans_the_requirement_files_it_discovers(tmp_path, guard):
 ])
 def test_the_guard_cli_fails_closed_unless_it_scanned_a_source(tmp_path, state, program, verdict):
     """The real command on a copied tree: the guard's own file, no monkeypatch."""
-    import subprocess
-    import sys
-
     copied = tmp_path / "scripts" / "verification" / GUARD.name
     copied.parent.mkdir(parents=True)
     copied.write_bytes(GUARD.read_bytes())

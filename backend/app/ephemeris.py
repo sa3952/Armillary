@@ -118,15 +118,9 @@ def init_ephemeris():
 
 
 # The Linux pyswisseph source build initialises its ephemeris path per worker
-# thread, so a path set once on the import thread does not reach the threads
-# FastAPI runs sync endpoints on, and the first calculation in each of those
-# threads silently falls back to Moshier.
-#
-# threading.local() gives each thread its own flag, so a
-# thread binds the path at most once while the flag is set.  The chart worker
-# releases Swiss after every chart (swe.close() and clear the flag, main.py), so
-# in practice each chart binds the path once at its start; within one chart,
-# repeated calls skip it.
+# thread, so a path set on the import thread does not reach FastAPI's sync
+# endpoint threads, whose first calculation silently falls back to Moshier.
+# Hence a per-thread flag.
 _THREAD_STATE = threading.local()
 
 
@@ -165,8 +159,7 @@ def configure_chart_swiss_state(
     returns to Fagan/Bradley and the observer is forgotten.  A reset in the
     middle of a chart therefore has to put it back, or every later Swiss call
     in that chart reads the default ayanamsa or fails for want of an observer.
-    This is the one place that state is set, so the
-    reset re-applies exactly what the chart asked for.
+    This is the one place that state is set, so the reset re-applies exactly it.
     """
 
     swe.set_topo(*geopos)
@@ -188,9 +181,8 @@ def configure_chart_swiss_state(
 # rise_trans; swehel.c sets the observer for the heliacal functions).  The
 # eclipse search sets it to the eclipse's ground point, so every topocentric
 # position later in the chart was computed for that point instead of the
-# birthplace.  A call to any of these must
-# sit inside ``chart_observer_restored()``; tests/backend/test_ephemeris_coverage.py
-# enforces that over the source tree and measures the calls the product makes.
+# birthplace.  A call to any of these must sit inside ``chart_observer_restored()``;
+# tests/backend/test_ephemeris_coverage.py enforces that and measures the calls.
 OBSERVER_MUTATING_SWISS_CALLS: Final = frozenset({
     "sol_eclipse_where", "sol_eclipse_how", "sol_eclipse_when_glob",
     "sol_eclipse_when_loc", "lun_occult_where", "lun_occult_when_glob",
@@ -293,29 +285,20 @@ def _build_manifest() -> dict[str, dict]:
     return manifest
 
 
-# The digests are expensive and the dataset rarely changes, so they are cached;
-# but a cache that outlives the files it describes is a manifest of files that
-# are no longer there.  The key is therefore the directory plus each file's
-# identity as stat reports it now: device, inode, size, mtime and ctime.  A
+# The digests are cached, keyed by the directory plus each file's stat identity
+# (device, inode, size, mtime, ctime), so the cache cannot outlive the files: a
 # removed, replaced or re-pointed file changes the inode; a rewrite in place
-# changes the ctime even when its size and mtime are put back (the ctime cannot
-# be set from user space).  A key that changes while the files are being
-# hashed is not cached, so the next refresh hashes again.  Nor is a key whose
-# file was written within one filesystem timestamp tick of the moment hashing
-# began ("racily clean", as git treats its index): a second write inside that
-# tick can leave size, mtime and ctime as they were, and the cache would then
-# describe bytes that are no longer there.  Such a manifest serves the chart
-# that built it but is rebuilt at the next refresh, until the files are older
-# than the tick.
+# changes the ctime even if size and mtime are put back (ctime cannot be set
+# from user space).  A key that changes during hashing is not cached.  Nor is
+# one whose file was written within a timestamp tick of hashing ("racily clean",
+# as git treats its index): a second write in that tick can leave the identity
+# unchanged.  Such a manifest serves its chart and is rebuilt at the next refresh.
 _TIMESTAMP_TICK_NS: Final = 2_000_000_000  # the coarsest common tick (FAT's 2 s)
 _MANIFEST_RACY = False
-#
-# The re-stat happens at a boundary, not on the hot path.  `require_full_ephemeris`
-# runs after every Swiss call a search makes — several thousand per chart — and
-# three stat calls each tripled the cost of a void-of-course search.  So the
-# signature is checked once per chart (`refresh_ephemeris_file_manifest`, called
-# when a chart starts) and on every explicit file check; between those, the hot
-# path reads the manifest of the files as they were when the chart began.
+# The re-stat is not on the hot path: `require_full_ephemeris` runs after every
+# Swiss call (thousands per chart) and three stats each tripled a void-of-course
+# search.  The signature is checked once per chart start and on explicit file
+# checks; in between the hot path reads the manifest as of the chart's start.
 _MANIFEST_CACHE: tuple[tuple | None, dict[str, dict]] | None = None
 
 
@@ -359,16 +342,22 @@ def refresh_ephemeris_file_manifest() -> dict[str, dict]:
 
 
 def _written_within_a_tick_of(signature: tuple, moment_ns: int) -> bool:
-    """Whether any file's mtime or ctime is less than one tick before ``moment_ns``
-    (or after it)."""
+    """Whether any file's mtime or ctime is within one tick of ``moment_ns``.
+
+    Only a stamp that close can be repeated by a later write in the same tick.
+    A stamp more than a tick in the future (clock skew, a tree copied with its
+    stamps) is not racy: any later write sets ctime to the then-current time,
+    which differs from it, so the identity changes.  Treating it as racy
+    rehashed every file at every chart start and readiness probe.
+    """
 
     for entry in signature[1:]:
         for identity in entry[1:]:
             if identity is None:
                 continue
-            mtime_ns, ctime_ns = identity[3], identity[4]
-            if max(mtime_ns, ctime_ns) > moment_ns - _TIMESTAMP_TICK_NS:
-                return True
+            for stamp_ns in (identity[3], identity[4]):
+                if abs(stamp_ns - moment_ns) < _TIMESTAMP_TICK_NS:
+                    return True
     return False
 
 
@@ -620,6 +609,15 @@ def require_object_coverage(
             )
 
 
+def guarded_calc(jd_ut: float, body: int, flags: int, operation: str) -> tuple[tuple, int]:
+    """swe.calc_ut between the coverage check before and the retflag check after."""
+
+    require_object_coverage(body=body, flags=flags, jd_ut=jd_ut, operation=operation)
+    values, retflag = swe.calc_ut(jd_ut, body, flags)
+    require_full_ephemeris(retflag, operation=operation, jd_ut=jd_ut)
+    return values, retflag
+
+
 def require_full_ephemeris(
     retflag: int,
     *,
@@ -629,9 +627,8 @@ def require_full_ephemeris(
 ) -> None:
     """Fail closed when a file-backed calculation silently changes ephemeris source.
 
-    The retflag test alone is not enough: a missing Moon file
-    yields a Moshier Moon under the SWIEPH flag.  The segment files are
-    therefore required to be present by manifest as well.
+    The retflag alone is not enough (module docstring, point 1): the segment
+    files must also be present by manifest.
     """
 
     if not segment_files_present(*segments):

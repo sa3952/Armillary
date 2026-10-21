@@ -19,14 +19,10 @@ two ends on the two sides of the sign boundary (or the station).
 """
 from __future__ import annotations
 
-from contextlib import contextmanager
-import json
-import shutil
-import subprocess
-from typing import Any, Iterator
+from typing import Any
 
 from . import _fx
-from ._common import ROOT, SIGNS, TAIPEI as PLACE, backend_on_path, calc_ut, swiss
+from ._common import ROOT, SIGNS, TAIPEI as PLACE, backend_on_path, calc_ut, node_json, product_client, swiss
 
 
 FRAGMENT = "blog-approximate-birth-hour"
@@ -40,9 +36,10 @@ LORD_HOWE: dict[str, Any] = {"date": (2024, 10, 6), "hour": 2, "lat": -31.5553, 
 # A clock hour that never happened at all (the clock went from 02:00 to 03:00).
 NEW_YORK: dict[str, Any] = {"date": (2005, 4, 3), "hour": 2, "lat": 40.7128, "lon": -74.006, "tz": "America/New_York"}
 # The product's bisection bound (TRANSITION_RESOLUTION_SECONDS), read, not typed.
-VIEW_MODEL = ROOT / "scripts" / "frontend" / "scripts" / "view-model.js"
-CALCULATE = ROOT / "scripts" / "frontend" / "scripts" / "calculate.js"
-# The headings the result page prints around the summary's lists (calculate.js
+# Runs view-model.js from its readable sources, as the page tests do.
+SCRIPT_BUNDLES = ROOT / "frontend" / "tests" / "script-bundles.cjs"
+CALCULATE = ROOT / "scripts" / "frontend" / "scripts" / "calculate-sections.js"
+# The headings the result page prints around the summary's lists (calculate-sections.js
 # renderBirthTimeSummary); held to that file so a renamed heading stops here.
 HEADINGS = (("same", "不變的"), ("partial", "只比較了一部分"), ("unchecked", "沒有比較，只算了上面那一刻"))
 CHANGED = "會變的"
@@ -66,36 +63,11 @@ def _request(place: dict | None, date: tuple, hour: int, minute: int = 0, second
             "timezone": zone, "computation_mode": {"zodiac": "tropical"}, "options": {}}
 
 
-@contextmanager
-def _service() -> Iterator[Any]:
-    """`post(payload, projection, expected)` against the real application in process."""
-    with backend_on_path():
-        from fastapi.testclient import TestClient
-        from app.main import app
-
-        client = TestClient(app)
-
-        def post(payload: dict, projection: str = "page", expected: int = 200) -> dict:
-            response = client.post(f"/api/chart?projection={projection}", json=payload)
-            if response.status_code != expected:
-                raise RuntimeError(f"chart request answered {response.status_code}: {response.text[:300]}")
-            return response.json()
-
-        yield post
-
-
 def _summaries(responses: list[dict]) -> list[dict]:
     """The result page's summary of each response, built by the calculator's own view-model."""
-    node = shutil.which("node")
-    if node is None:
-        raise RuntimeError("node is required to build the result page's summary")
-    script = ("const VM=require(process.argv[1]);let s='';process.stdin.on('data',d=>s+=d)"
+    script = ("const VM=require(process.argv[1]).load('view-model.js');let s='';process.stdin.on('data',d=>s+=d)"
               ".on('end',()=>process.stdout.write(JSON.stringify(JSON.parse(s).map(r=>VM.birthTimeSummary(r)))));")
-    done = subprocess.run([node, "-e", script, str(VIEW_MODEL)], input=json.dumps(responses), cwd=ROOT,
-                          capture_output=True, text=True, check=False, timeout=60)
-    if done.returncode != 0:
-        raise RuntimeError("the view-model could not summarise: " + done.stderr.strip())
-    out = json.loads(done.stdout)
+    out = node_json(script, SCRIPT_BUNDLES, stdin=responses, timeout=60, what="build the result page's summary")
     if any(summary is None for summary in out):
         raise RuntimeError("the view-model returned no summary for an approximate hour")
     return out
@@ -126,7 +98,7 @@ def _chains(post, sensitivity: dict, hour: int) -> dict[str, dict]:
     """Each angle's change replayed from the product's signs at the samples and midpoints."""
     resolution = _resolution()
     samples = [_offset(_clock(p["input_local_time"]), hour) for p in sensitivity["probes"]]
-    midpoints = {_offset(_clock(p["input_local_time"]), hour) for p in sensitivity["refinement_probes"]}
+    midpoints = set(sensitivity["probe_coverage"]["refinement_offsets_seconds"])
     charts: dict[int, dict] = {}
 
     def chart(offset: int) -> dict:
@@ -223,6 +195,38 @@ def _ladder(layout: str, fid: str, chains: dict, hour: int, bound: _fx.Bound) ->
         return x0 + (x1 - x0) * offset / span
 
     out.append(_fx.line(x0, axis_y, x1, axis_y, "fx-axis"))
+
+    def rung(y: float, k: int, step: dict) -> str:
+        """One halving step of the current chain, at row `y`."""
+        cx = (x0 + x1) / 2
+        bar = y + (8 if wide else 22)
+        lo, mid, hi = (bound.num(_hms(step[v], hour)) for v in ("lo", "mid", "hi"))
+        sign = SIGNS[step["sign"]]
+        label = bound.label(f"第 {k + 1} 次")
+        aria = f"{label}：{lo} 與 {hi} 的中點 {mid}，{ANGLE_NAMES[key]}在{sign}"
+        out = [f'<g class="fx-row" data-fx-key="r{k + 1}" tabindex="0" aria-label="{aria}">',
+               _fx.rect(8, y - (14 if wide else 2), (x1 + 52 if wide else 324) - 8, rh - 4, "fx-hit")]
+        kept = (cx, x1) if step["keep"] == "right" else (x0, cx)
+        dropped = (x0, cx) if step["keep"] == "right" else (cx, x1)
+        out.append(_fx.line(*_pair(dropped, bar), "fx-hair"))
+        out.append(_fx.line(*_pair(kept, bar), "fx-step"))
+        for x in (x0, cx, x1):
+            out.append(_fx.line(x, bar - 6, x, bar + 6, "fx-axis"))
+        out.append(_fx.circle(cx, bar, 5 if wide else 4.5, "fx-mk-on"))
+        if wide:
+            out.append(_fx.text(24, bar + 6, label, "fx-t fx-small"))
+        else:
+            out.append(_fx.text(x0, bar - 12, label, "fx-t fx-small"))
+        out.append(_fx.text(cx, bar - 12, sign, "fx-t fx-small", "middle"))
+        out.append(_fx.text(x0, bar + 22, lo, "fx-t fx-small fx-num fx-dim"))
+        out.append(_fx.text(cx, bar + 22, mid, "fx-t fx-small fx-num", "middle"))
+        out.append(_fx.text(x1, bar + 22, hi, "fx-t fx-small fx-num fx-dim", "end"))
+        nxt = y + rh + (8 if wide else 22)
+        out.append(_fx.line(kept[0], bar + 6, x0, nxt - 6, "fx-leader"))
+        out.append(_fx.line(kept[1], bar + 6, x1, nxt - 6, "fx-leader"))
+        out.append("</g>")
+        return "".join(out)
+
     for key, _ in VARIANTS_1:
         chain = chains[key]
         body = []
@@ -241,8 +245,7 @@ def _ladder(layout: str, fid: str, chains: dict, hour: int, bound: _fx.Bound) ->
         body.append(_fx.line(hx(chain["left"]), axis_y + 6, x0, top, "fx-leader"))
         body.append(_fx.line(hx(chain["right"]), axis_y + 6, x1, top, "fx-leader"))
         for k, step in enumerate(chain["steps"]):
-            body.append(_rung(wide, x0, x1, row0 + k * rh, rh, k, step, key, hour, bound,
-                              last=k == len(chain["steps"]) - 1))
+            body.append(rung(row0 + k * rh, k, step))
         body.append(_band_row(wide, x0, x1, row0 + len(chain["steps"]) * rh, chain, key, hour, bound))
         out.append(_fx.variant_group(key, VARIANTS_1[0][0], "".join(body)))
     for i, s in enumerate(next(iter(chains.values()))["samples"]):
@@ -264,38 +267,6 @@ def _ladder(layout: str, fid: str, chains: dict, hour: int, bound: _fx.Bound) ->
 
 def _anchor(i: int, n: int) -> str:
     return "start" if i == 0 else "end" if i == n - 1 else "middle"
-
-
-def _rung(wide: bool, x0: float, x1: float, y: float, rh: float, k: int, step: dict, key: str, hour: int,
-          bound: _fx.Bound, last: bool) -> str:
-    cx = (x0 + x1) / 2
-    bar = y + (8 if wide else 22)
-    lo, mid, hi = (bound.num(_hms(step[v], hour)) for v in ("lo", "mid", "hi"))
-    sign = SIGNS[step["sign"]]
-    label = bound.label(f"第 {k + 1} 次")
-    aria = f"{label}：{lo} 與 {hi} 的中點 {mid}，{ANGLE_NAMES[key]}在{sign}"
-    out = [f'<g class="fx-row" data-fx-key="r{k + 1}" tabindex="0" aria-label="{aria}">',
-           _fx.rect(8, y - (14 if wide else 2), (x1 + 52 if wide else 324) - 8, rh - 4, "fx-hit")]
-    kept = (cx, x1) if step["keep"] == "right" else (x0, cx)
-    dropped = (x0, cx) if step["keep"] == "right" else (cx, x1)
-    out.append(_fx.line(*_pair(dropped, bar), "fx-hair"))
-    out.append(_fx.line(*_pair(kept, bar), "fx-step"))
-    for x in (x0, cx, x1):
-        out.append(_fx.line(x, bar - 6, x, bar + 6, "fx-axis"))
-    out.append(_fx.circle(cx, bar, 5 if wide else 4.5, "fx-mk-on"))
-    if wide:
-        out.append(_fx.text(24, bar + 6, label, "fx-t fx-small"))
-    else:
-        out.append(_fx.text(x0, bar - 12, label, "fx-t fx-small"))
-    out.append(_fx.text(cx, bar - 12, sign, "fx-t fx-small", "middle"))
-    out.append(_fx.text(x0, bar + 22, lo, "fx-t fx-small fx-num fx-dim"))
-    out.append(_fx.text(cx, bar + 22, mid, "fx-t fx-small fx-num", "middle"))
-    out.append(_fx.text(x1, bar + 22, hi, "fx-t fx-small fx-num fx-dim", "end"))
-    nxt = y + rh + (8 if wide else 22)
-    out.append(_fx.line(kept[0], bar + 6, x0, nxt - 6, "fx-leader"))
-    out.append(_fx.line(kept[1], bar + 6, x1, nxt - 6, "fx-leader"))
-    out.append("</g>")
-    return "".join(out)
 
 
 def _pair(span: tuple[float, float], y: float) -> tuple[float, float, float, float]:
@@ -361,10 +332,7 @@ def _ladder_table(chains: dict, hour: int, bound: _fx.Bound) -> str:
                     f'<td>找到</td><td class="n">{bound.num(_hms(chain["lower"], hour))}–'
                     f'{bound.num(_hms(chain["upper"], hour))}</td><td class="n">—</td>'
                     f'<td>{SIGNS[chain["before"][0]]}→{SIGNS[chain["after"][0]]}</td></tr>')
-    return ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">哪一個</th><th scope="col">第幾次</th>'
-            '<th scope="col">區間</th><th scope="col">中點</th><th scope="col">中點的星座</th></tr></thead>'
-            f'<tbody>{"".join(rows)}</tbody></table></div></details>')
+    return _fx.data_table(("哪一個", "第幾次", "區間", "中點", "中點的星座"), rows)
 
 
 # --- figure 2: the summary for each hour -----------------------------------------
@@ -450,9 +418,7 @@ def _hours_table(hours: dict, bound: _fx.Bound) -> str:
         changes = "；".join(f"{c['what']}：{c['when']}" for c in summary["changes"]) or "—"
         rows.append(f'<tr><th scope="row">{bound.num(f"{hour} 點")}</th><td>{escape(bound.num(summary["lead"]))}</td>'
                     f"<td>{escape(bound.num(changes))}</td></tr>")
-    return ('<details class="fx-data"><summary>七個鐘點的摘要（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">鐘點</th><th scope="col">第一句</th>'
-            f'<th scope="col">會變的與約幾點</th></tr></thead><tbody>{"".join(rows)}</tbody></table></div></details>')
+    return _fx.data_table(("鐘點", "第一句", "會變的與約幾點"), rows, summary="七個鐘點的摘要（表格）")
 
 
 # --- the clock-change table --------------------------------------------------------
@@ -478,7 +444,10 @@ def _clock_rows(cases: list[dict]) -> str:
 # --- build ----------------------------------------------------------------------
 
 def _data() -> dict:
-    with _service() as post:
+    with product_client() as client:
+        def post(payload: dict, projection: str = "page", expected: int = 200) -> dict:
+            return client(f"/api/chart?projection={projection}", payload, expected)
+
         hours = {h: {"page": post(_request(None, DAY, h))} for h in HOURS}
         detailed = post(_request(None, DAY, FEATURED), "detailed")["birth_time_sensitivity"]
         chains = _chains(post, detailed, FEATURED)
@@ -507,7 +476,7 @@ def _data() -> dict:
     source = CALCULATE.read_text(encoding="utf-8")
     for _, label in HEADINGS + (("changes", CHANGED),):
         if f'"{label}"' not in source:
-            raise RuntimeError(f"calculate.js no longer heads a summary list with {label!r}")
+            raise RuntimeError(f"calculate-sections.js no longer heads a summary list with {label!r}")
     # Mercury's station in hour 13
     (mercury,) = [t for t in hours[13]["page"]["birth_time_sensitivity"]["transitions"]
                   if t["changed_paths"] == ["astronomical_data.bodies[mercury].motion_sign"]]
@@ -516,7 +485,7 @@ def _data() -> dict:
     _check_against_swiss(chains, FEATURED, station)
     with backend_on_path():
         from app.core.time_utils import repeated_wall_clock_stretches
-        from app.schemas import TimezoneInput
+        from app.schema_inputs import TimezoneInput
         import datetime as dtmod
 
         year, month, day = sj["date"]
@@ -540,12 +509,17 @@ def build() -> tuple[dict[str, str], list[str]]:
         caption=(f"<b>{b1.label('圖 1')}</b>上面一排是本站在這一小時取的五個時刻，每個點上寫著那一刻的星座；"
                  f"兩端不同的那一段（粗線）往下逐列對半：每一列取中點重算，留下兩端星座不同的那一半（粗線），"
                  f"放大成下一列。按鈕切換這一小時裡的兩次改變。時刻、星座與區間都是本站計算服務的實際回應。"),
-        wide=_ladder("fx-wide", "fig-bisect", chains, FEATURED, b1),
-        narrow=_ladder("fx-narrow", "fig-bisect", chains, FEATURED, b1),
-        notes=_ladder_notes(chains, FEATURED, b1),
-        idle="用 Tab 鍵移到某一列，或用滑鼠指著它，這裡會說明那一次對半取了哪個中點、留下哪一半。",
-        variants=VARIANTS_1, switch_label="切換是哪一次改變",
+        art=_fx.FigureArt.drawn(
+            _ladder, "fig-bisect", chains, FEATURED, b1,
+            notes=_ladder_notes(chains, FEATURED, b1),
+            idle="用 Tab 鍵移到某一列，或用滑鼠指著它，這裡會說明那一次對半取了哪個中點、留下哪一半。",
+        ),
+        controls=_fx.FigureControls(
+            variants=VARIANTS_1,
+            switch_label="切換是哪一次改變",
+        ),
         table=_ladder_table(chains, FEATURED, b1),
+        bound=b1,
     )
     b2 = _fx.Bound()
     callouts = "".join(_callout(i, h, hours[h]["summary"], b2) for i, h in enumerate(HOURS))
@@ -558,16 +532,19 @@ def build() -> tuple[dict[str, str], list[str]]:
                  f"從 {b2.num('12')} 點到 {b2.num('18')} 點每個鐘點各用「只知道約略小時」算一次。拖拉條選一個鐘點："
                  "上面是那一小時的取樣點與本站夾出的改變區段，下面是結果頁「出生時間不確定：哪些結果會變」那一塊的原文，"
                  "由結果頁自己的程式對同一份回應產生。"),
-        wide=_hour_axis("fx-wide", "fig-summary", hours, b2),
-        narrow=_hour_axis("fx-narrow", "fig-summary", hours, b2),
-        notes=hour_notes, idle="拖拉條選一個鐘點，這裡會寫出那一小時結果頁摘要的第一句。", steps=len(HOURS), default_step=HOURS.index(FEATURED),
-        scrub_label=f"選一個鐘點（{b2.num('12')} 點到 {b2.num('18')} 點）",
+        art=_fx.FigureArt.drawn(
+            _hour_axis, "fig-summary", hours, b2,
+            notes=hour_notes,
+            idle="拖拉條選一個鐘點，這裡會寫出那一小時結果頁摘要的第一句。",
+        ),
+        controls=_fx.FigureControls(
+            steps=len(HOURS),
+            default_step=HOURS.index(FEATURED),
+            scrub_label=f"選一個鐘點（{b2.num('12')} 點到 {b2.num('18')} 點）",
+        ),
         table=callouts + _hours_table(hours, b2),
+        bound=b2,
     )
-    for markup, bound in ((ladder, b1), (summary_figure, b2)):
-        found = _fx.problems(markup, bound)
-        if found:
-            raise RuntimeError("figure check: " + "; ".join(found))
     # The callouts sit outside the table the component checks: hold their digits to the bound set too.
     import re
     stray = {t for t in re.findall(r"\d+(?:\.\d+)?", re.sub(r"<[^>]+>", "", callouts))} - b2.tokens()

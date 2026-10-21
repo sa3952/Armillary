@@ -38,16 +38,16 @@ def _flags(swe) -> int:
     return swe.FLG_SWIEPH | swe.FLG_SPEED
 
 
-def _difference(swe, jd: float) -> float:
-    true = calc_ut(swe, jd, swe.TRUE_NODE, _flags(swe))[0]
-    mean = calc_ut(swe, jd, swe.MEAN_NODE, _flags(swe))[0]
+def _difference(swe, jd: float, flags: int) -> float:
+    true = calc_ut(swe, jd, swe.TRUE_NODE, flags)[0]
+    mean = calc_ut(swe, jd, swe.MEAN_NODE, flags)[0]
     return ((true - mean + 180) % 360) - 180
 
 
 def _year_2026(swe) -> dict:
     j0 = swe.julday(2026, 1, 1, 0)
     n = 365 * 4
-    series = [(i / 4, _difference(swe, j0 + i / 4)) for i in range(n + 1)]
+    series = [(i / 4, _difference(swe, j0 + i / 4, _flags(swe))) for i in range(n + 1)]
     changes = []
     previous = None
     for i in range(n + 1):
@@ -83,7 +83,7 @@ def _spells(changes: list[tuple[float, bool]], end: float = 365.0) -> list[tuple
 def _distribution(swe) -> dict:
     """|osculating − mean| at 0h UT of every day 1800-01-01 … 2399-12-31."""
     j0, end = swe.julday(1800, 1, 1, 0), swe.julday(2400, 1, 1, 0)
-    values = [abs(_difference(swe, j0 + i)) for i in range(int(round(end - j0)))]
+    values = [abs(_difference(swe, j0 + i, swe.FLG_SWIEPH)) for i in range(int(round(end - j0)))]
     if max(values) >= BIN * BINS:
         raise RuntimeError(f"a difference of {max(values):.3f}° falls outside figure 3's bins")
     counts = [0] * BINS
@@ -166,13 +166,10 @@ def _spell_table(spells: list, bound: _fx.Bound) -> str:
         end = "年底仍在順行" if b >= 365 else bound.num(_date(b))
         days = f"{b - a:.2f}".rstrip("0").rstrip(".")
         rows.append(f'<tr><td>{bound.num(_date(a))}</td><td>{end}</td><td class="n">{bound.num(days)}</td></tr>')
-    return ('<details class="fx-data"><summary>圖中的順行時段（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">順行開始（約）</th>'
-            '<th scope="col">順行結束（約）</th><th scope="col">天數</th></tr></thead>'
-            f'<tbody>{"".join(rows)}</tbody></table></div></details>')
+    return _fx.data_table(("順行開始（約）", "順行結束（約）", "天數"), rows, summary="圖中的順行時段（表格）")
 
 
-def _figure_2026(d: dict) -> tuple[str, _fx.Bound]:
+def _figure_2026(d: dict) -> str:
     bound = _fx.Bound()
     spells = _spells(d["changes"])
     values = [v for _, v in d["series"]]
@@ -184,15 +181,15 @@ def _figure_2026(d: dict) -> tuple[str, _fx.Bound]:
                "下方的實心短條是密切交點往前走（順行）的時段，"
                f"這一年共 {bound.num(str(len(spells)))} 段，日期列在表格裡（每 {bound.label('6')} 小時取樣，"
                f"起訖以世界時計）。平均交點全年都以固定速度後退<a class=\"ar-cite\" href=\"#ref-4\">{bound.label('[4]')}</a>。")
-    html = _fx.figure(
-        fid="fig-node-2026", hero=True,
+    return _fx.figure(
+        fid="fig-node-2026",
+        hero=True,
         title=f"2026 年全年，{OSCULATING}減平均交點的差，以及密切交點順行的時段",
         caption=caption,
-        wide=_curve("fx-wide", "fig-node-2026", d, spells, bound),
-        narrow=_curve("fx-narrow", "fig-node-2026", d, spells, bound),
-        notes=[], idle="", table=_spell_table(spells, bound),
+        art=_fx.FigureArt.drawn(_curve, "fig-node-2026", d, spells, bound),
+        table=_spell_table(spells, bound),
+        bound=bound,
     )
-    return html, bound
 
 
 # --- figure 2: the schematic ----------------------------------------------------
@@ -347,20 +344,18 @@ def _planes(layout: str, fid: str) -> str:
     return "".join(out)
 
 
-def _figure_planes() -> tuple[str, _fx.Bound]:
+def _figure_planes() -> str:
     bound = _fx.Bound()
-    html = _fx.figure(
+    return _fx.figure(
         fid="fig-node-planes",
         title="示意圖：月亮軌道面、黃道面與交點線，以及平均交點與密切交點沿黃道的走法",
         caption=(f"<b>{bound.label('圖 2')}</b>示意圖，不按比例。左：月亮軌道面與黃道面相交成一條交點線；"
                  "月亮由南往北穿過黃道的一點是北交點（升交點），另一端是南交點（降交點）；軌道在黃道北方的半圈畫實線，"
                  "南方的半圈畫虛線。交點線沿黃道往後退。右：把黃道拉直來看，平均交點只是等速後退；"
                  "密切交點是此刻瞬時軌道與黃道的交點，每個月在平均交點前後擺動。"),
-        wide=_planes("fx-wide", "fig-node-planes"),
-        narrow=_planes("fx-narrow", "fig-node-planes"),
-        notes=[], idle="",
+        art=_fx.FigureArt.drawn(_planes, "fig-node-planes"),
+        bound=bound,
     )
-    return html, bound
 
 
 # --- figure 3: the distribution 1800–2400 ---------------------------------------
@@ -424,17 +419,14 @@ def _most_common(dist: dict) -> str:
     return f"最常見的是 {top[0] * BIN:.1f} 到 {(top[-1] + 1) * BIN:.1f} 度"
 
 
-def _figure_distribution(dist: dict) -> tuple[str, _fx.Bound]:
+def _figure_distribution(dist: dict) -> str:
     bound = _fx.Bound()
     median, peak = bound.num(f"{dist['median']:.2f}"), bound.num(f"{dist['max']:.2f}")
     texts = {"median": f"中位數 {median}°", "max": f"最大 {peak}°"}
     rows = "".join(
         f'<tr><td class="n">{bound.scale(f"{i * BIN:.1f}°–{(i + 1) * BIN:.1f}°")}</td>'
         f'<td class="n">{bound.num(_pct(share))}</td></tr>' for i, share in enumerate(dist["shares"]))
-    table = ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-             '<table class="ar-table fx-table"><thead><tr><th scope="col">相差</th>'
-             '<th scope="col">佔全部時間</th></tr></thead>'
-             f'<tbody>{rows}</tbody></table></div></details>')
+    table = _fx.data_table(("相差", "佔全部時間"), rows)
     count = bound.num(f"{dist['count']:,}")
     caption = (f"<b>{bound.label('圖 3')}</b>密切交點與平均交點相差幾度的分布：{bound.label('1800–2400')} 年，每天世界時 {bound.label('0')} 時取一點"
                f"（共 {count} 點）；每一條是 {bound.scale('0.1')} 度一格，"
@@ -442,15 +434,14 @@ def _figure_distribution(dist: dict) -> tuple[str, _fx.Bound]:
                f"{median} 度，左邊的排線部分是一半的時間；三角形是最大差 {peak} 度。這兩個數和 "
                f"{bound.label('§03')} 每 {bound.label('6')} 小時取樣的結果相同"
                f"<a class=\"ar-cite\" href=\"#ref-4\">{bound.label('[4]')}</a>。")
-    html = _fx.figure(
+    return _fx.figure(
         fid="fig-node-spread",
         title="1800–2400 年，密切交點與平均交點相差幾度的分布",
         caption=caption,
-        wide=_histogram("fx-wide", "fig-node-spread", dist, texts, bound),
-        narrow=_histogram("fx-narrow", "fig-node-spread", dist, texts, bound),
-        notes=[], idle="", table=table,
+        art=_fx.FigureArt.drawn(_histogram, "fig-node-spread", dist, texts, bound),
+        table=table,
+        bound=bound,
     )
-    return html, bound
 
 
 def build() -> tuple[dict[str, str], list[str]]:
@@ -458,13 +449,7 @@ def build() -> tuple[dict[str, str], list[str]]:
         d = _year_2026(swe)
         dist = _distribution(swe)
     speed = -d["mean_speed"]
-    figures = {}
-    for name, (html, bound) in (("difference-2026", _figure_2026(d)), ("planes", _figure_planes()),
-                                ("spread", _figure_distribution(dist))):
-        found = _fx.problems(html, bound)
-        if found:
-            raise RuntimeError("figure check: " + "; ".join(found))
-        figures[name] = html
+    figures = {"difference-2026": _figure_2026(d), "planes": _figure_planes(), "spread": _figure_distribution(dist)}
     daily = {"max": f"{dist['max']:.2f}", "median": f"{dist['median']:.2f}"}
     quoted = [
         _most_common(dist),
@@ -481,7 +466,7 @@ def long_range_statistics() -> dict[str, str]:
         values = []
         j, end = swe.julday(1800, 1, 1, 0), swe.julday(2400, 1, 1, 0)
         while j < end:
-            values.append(abs(_difference(swe, j)))
+            values.append(abs(_difference(swe, j, _flags(swe))))
             j += 0.25
         episodes, days, previous = 0, 0.0, None
         j, end = swe.julday(1950, 1, 1, 0), swe.julday(2050, 1, 1, 0)

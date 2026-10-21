@@ -26,9 +26,8 @@ Schaefer & Liller 1990, PASP 102:796），16′ 與 34′ 相加得到的是視�
 
 ## Lots
 
-採 Valens／Paulus 一系的 sect-reversing 公式（方法登記 `lots`）。Ptolemy 日夜皆
-Sun→Moon、Valens III.11（Pingree 編號；Kroll／Riley 為 III.14）夜生而月亮已沒入地平時改用日盤公式、Ibn Ezra 另立日夜不反轉的
-Spirit，都是具名分歧，本模組照實記錄而不採用。
+採 Valens／Paulus 一系的 sect-reversing 公式（方法登記 `lots`）。Ptolemy、Valens III.11
+（Pingree 編號；Kroll／Riley 為 III.14）與 Ibn Ezra 的具名分歧照實記錄於 `LOTS_SOURCE` 而不採用。
 
 近邊界時兩套公式並列輸出（`by_sect`）：已核的古典與中世紀作者沒有「日夜盤不定就並列
 兩套阿拉伯點」的程序；並列是**現代不確定性傳播策略**，收據如此標明。
@@ -36,14 +35,17 @@ Spirit，都是具名分歧，本模組照實記錄而不採用。
 
 from .formatting import normalize_longitude
 from .frame_compatibility import NON_EARTH_OBSERVER_CENTER
-from .module_state import computed_receipt, not_applicable_receipt
-from .source_reading import SOURCE_READING_LEVELS, reference_only
+from .module_state import computed_receipt, frame_table_refusal
+from .source_reading import (
+    DOROTHEUS_BOOK_I_ONLINE, ORIGINAL_LANGUAGE_READ, SECONDARY_ONLY, TRANSLATION_READ, cited,
+    reference_only,
+)
 from .house_placements import (
     HOUSE_INTERVAL_SEMANTICS,
     METHOD_NAME as HOUSE_PLACEMENT_METHOD_NAME,
     _house_for_longitude,
 )
-from .method_status import method_receipt
+from .method_status import method_head
 from .trace import Trace
 
 SECT_METHOD_NAME = "sun_center_true_altitude_gt_zero_v1"
@@ -52,8 +54,8 @@ SECT_METHOD_PROVENANCE = "product_convention_sources_checked_do_not_specify_boun
 # the response carries SECT_SOURCE_LABEL and source_ref.
 SECT_SOURCE_LABEL = "product_convention"
 SECT_SOURCE = (
-    "Passages (not independently verified): Dorotheus I.1 (Pingree pp.161–162), "
-    "I.22 (p.183); Ptolemy I.7 (Robbins p.43); Valens III.5 (Pingree "
+    "Passages (not independently verified): Dorotheus I.1 (Pingree 1976 pp.161–162), "
+    "I.22 (Pingree 1976 p.183); Ptolemy I.7 (Robbins p.43); Valens III.5 (Pingree "
     "pp.133–134); Paulus ch.6, ch.23 (Boer 1958, main text; Schmidt 1995 pp.13, "
     "43); Firmicus II.7.1–4; Rhetorius ch.2, ch.44 (Holden 2009 numbering, a "
     "compilation of epitomes; not verified); Abū Maʿshar, Great Introduction "
@@ -69,26 +71,32 @@ SECT_SOURCE = (
 # entry records how far the same place was read, that record is used; the rest
 # claim the reference only.
 SECT_SOURCE_CITATIONS = [
-    {
-        "citation": "Dorotheus, Carmen Astrologicum I.1 (Pingree 1976 pp.161-162)",
-        "says": "day and night births as given categories (the triplicity lords by sect)",
-        "reading": SOURCE_READING_LEVELS[1],
-        "read_at": "Pingree's English translation (1976); the Arabic not checked",
-    },
-    {
-        "citation": "Dorotheus, Carmen Astrologicum I.22 (Pingree 1976 p.183)",
-        "says": "the sect light's triplicity lords",
-        "reading": SOURCE_READING_LEVELS[1],
-        "read_at": "Pingree's English translation (1976); the Arabic not checked",
-    },
-    reference_only("Ptolemy, Tetrabiblos I.7 (Robbins p.43)", "diurnal and nocturnal planets"),
-    reference_only("Vettius Valens, Anthologies III.5 (Pingree pp.133-134)",
-                   "day and night births as given categories"),
+    cited("Dorotheus, Carmen Astrologicum I.1 (Pingree 1976 pp.161-162)",
+          "day and night births as given categories (the triplicity lords by sect)",
+          TRANSLATION_READ, f"{DOROTHEUS_BOOK_I_ONLINE}: I.1 on pp.161-162; the Arabic not checked"),
+    cited("Dorotheus, Carmen Astrologicum I.22 (Pingree 1976 p.183)",
+          "the sect light's triplicity lords", TRANSLATION_READ,
+          f"{DOROTHEUS_BOOK_I_ONLINE}: I.22 on p.183; the Arabic not checked"),
+    cited("Ptolemy, Tetrabiblos I.7 (Robbins p.43)", "diurnal and nocturnal planets",
+          TRANSLATION_READ,
+          ("Robbins's English translation on LacusCurtius (Tetrabiblos/1B*.html), I.7 "
+           "after the p43 page mark: 'the sun and Jupiter diurnal'; the Greek not read")),
+    cited("Vettius Valens, Anthologies III.5 (Pingree pp.133-134)",
+          "day and night births as given categories (the sects of the stars)",
+          TRANSLATION_READ,
+          ("Riley's translation (Vettius_Valens_Riley.pdf), printed p.62, ch.5 "
+           "between the /133P/ and /135P/ markers")),
     reference_only(
         "Paulus Alexandrinus, Introduction ch.6, ch.23 (Boer 1958, main text; Schmidt 1995 pp.13, 43)",
         "sect as a given category; Boer 1958 and Schmidt 1995 not checked",
     ),
-    reference_only("Firmicus Maternus, Mathesis II.7.1-4", "planets above or below the earth by day and night"),
+    cited("Firmicus Maternus, Mathesis II.7.1-4 (Kroll-Skutsch 1897 vol. I pp.49-50)",
+          ("the Sun, Jupiter and (supplied by the editors) Saturn rejoice by day; where they stand is lost in a "
+           "lacuna after 'in oportunis locis positi' (II.7.2), so 'above or below the "
+           "earth' is not in the surviving text; the waning Moon with Venus or Mars by "
+           "night (II.7.3)"),
+          ORIGINAL_LANGUAGE_READ,
+          "the Kroll-Skutsch Latin in the LacusCurtius transcription (Mathesis book II)"),
     reference_only(
         "Rhetorius ch.2, ch.44 (Holden 2009 numbering, a compilation of epitomes)",
         "sect as a given category; not verified",
@@ -96,21 +104,20 @@ SECT_SOURCE_CITATIONS = [
     reference_only("Abū Maʿshar, Great Introduction II.9.1", "sect; the locator not verified"),
     reference_only("Abū Maʿshar, Abbreviation III.3 (Dykes ITA §III.2)", "sect as a given category"),
     reference_only("al-Qabīṣī, Introduction I (Latin 1512)", "sect as a given category"),
-    {
-        "citation": "William Lilly, Christian Astrology (1647) p.113, 'Hayz'",
-        "says": "a diurnal planet by day above the earth, a nocturnal planet by night under the earth",
-        "reading": SOURCE_READING_LEVELS[0],
-        "read_at": "archive.org OCR text of a modern reset edition",
-    },
-    reference_only(
-        "William Lilly, Christian Astrology (1647) p.42",
-        "checking the chart time by the Sun's house",
-        "level pending: a passage named by the method research notes; the record does "
-        "not say which copy was read, or that it was read, so only the reference is claimed",
-    ),
-    reference_only(
+    cited("William Lilly, Christian Astrology (1647) p.113, 'Hayz'",
+          "a diurnal planet by day above the earth, a nocturnal planet by night under the earth",
+          ORIGINAL_LANGUAGE_READ, "archive.org OCR text of a modern reset edition"),
+    cited("William Lilly, Christian Astrology (1647) p.42",
+          "checking the chart time by the Sun's house", ORIGINAL_LANGUAGE_READ,
+          ("the 1647 printing as scanned at archive.org (b30338724, n75 = p.42): "
+           "'that they may presently consider whether they have set their Figure right'")),
+    cited(
         "Vettius Valens, Anthologies III.11 (Pingree; = III.14 Kroll/Riley, '14K;11P')",
         "the Moon 'above the earth' read as until it sets",
+        TRANSLATION_READ,
+        ("Riley's translation in a reformatted online copy of his preliminary edition "
+         "(github.com/janegca/latex-valens), the chapter headed '(14K,11P)': 'if the "
+         "Moon is above the earth, i.e. until the time it sets'; the Greek not checked"),
     ),
 ]
 # 近地平敏感提示帶：±50 角分（理由見 module docstring）。
@@ -120,10 +127,10 @@ SECT_ALTITUDE_CENTER = "geocentric"
 # bodies.SECT_SUN_FLAGS：視位置（光行時、光行差）、回歸黃道當日、含章動；與請求的
 # position_mode 無關。「真高度」指未計蒙氣折射的高度。
 SECT_SUN_POSITION = "apparent_geocentric_tropical_of_date"
-# 唯一有名字的替代邊界：USNO 標準日出／日落
-# 定義太陽中心的幾何天頂距為 90°50′（上緣切地平，含平均折射 34′），即真高度 −50′。
-# −50′ < h ≤ 0° 時，本產品的 h > 0° 規則判夜盤，該定義判太陽仍在地平上。數值與提示帶
-# 半寬相同只是巧合關係（提示帶是由它對稱擴成），兩者是不同的量，故分開定義。
+# 唯一有名字的替代邊界：USNO 標準日出／日落定義太陽中心幾何天頂距 90°50′（上緣切地平，
+# 含平均折射 34′），即真高度 −50′；−50′ < h ≤ 0° 時本產品判夜盤，該定義判太陽仍在地平上。
+# 與提示帶半寬數值相同（提示帶由它對稱擴成），
+# 但是不同的量，故分開定義。
 USNO_STANDARD_SUNRISE_CENTRE_ALTITUDE_DEGREES = -50.0 / 60.0
 
 LOTS_METHOD_NAME = "traditional_day_night_formula_v1"
@@ -145,48 +152,43 @@ LOTS_SOURCE = (
 )
 # The loci LOTS_SOURCE names, one citation object each, as for SECT_SOURCE.
 LOTS_SOURCE_CITATIONS = [
-    {
-        "citation": "Paulus Alexandrinus, Introduction ch.23",
-        "says": "reverses Fortune and Spirit at night (the product's formula)",
-        "reading": SOURCE_READING_LEVELS[1],
-        "read_at": (
-            "the Greek-Latin first printing (Wittenberg 1586); Boer 1958 not "
-            "checked; level pending: the record does not say whether the Greek or "
-            "the Latin translation of that printing was read, so only the "
-            "translation level is claimed"
-        ),
-    },
+    cited("Paulus Alexandrinus, Introduction ch.23",
+          "reverses Fortune and Spirit at night (the product's formula)", TRANSLATION_READ,
+          ("the Greek-Latin first printing (Wittenberg 1586) in the archive.org scan of the "
+           "Royal Library Copenhagen copy (den-kbd-pil-130018161835-002), 'De septem "
+           "sortibus, quae sunt in Panareto': Fortune in the Latin on leaf n81, by night "
+           "'contraria ratione', Moon to Sun; the Daimon in the Greek on leaf n82, by night "
+           "'τὸ ἀνάπαλιν'; Boer 1958 not checked")),
     reference_only(
         "Paulus Alexandrinus, Eisagōgika ch.23 (Boer 1958; Schmidt/Hand 1995 pp.43-45)",
         "the same chapter in the modern editions, neither edition checked",
         "neither edition checked; only the reference is claimed",
     ),
-    reference_only(
+    cited(
         "Vettius Valens, Anthologies III.11 (Pingree p.147; = III.14 Kroll/Riley, '14K;11P')",
         "the day formula at night once the Moon has set; not adopted",
+        TRANSLATION_READ,
+        ("Riley's translation in a reformatted online copy of his preliminary edition "
+         "(github.com/janegca/latex-valens), the chapter headed '(14K,11P)', after "
+         "Riley's /147P/ marker: 'After the Moon has set, determine the distance from "
+         "the Sun to it'; the Greek not checked"),
     ),
-    reference_only(
-        "Greenbaum, Culture and Cosmos 11, 2007, p.183",
-        "the after-moonset rule (Valens III.11 Pingree = III.14 Kroll/Riley)",
-    ),
-    {
-        "citation": "al-Bīrūnī, Kitāb al-Tafhīm §476 (Wright 1934; he says after Abū Maʿshar)",
-        "says": "Abū Maʿshar's line of the lots",
-        "reading": SOURCE_READING_LEVELS[1],
-        "read_at": "Wright's English translation (1934)",
-    },
+    cited(("Greenbaum, 'Calculating the Lots of Fortune and Daemon in Hellenistic "
+           "Astrology', Culture and Cosmos 11, 2007, p.183 (article pp.163-187)"),
+          ("the after-moonset rule (Valens III.11 Pingree = III.14 Kroll/Riley), with "
+           "the Greek of III.11.4 in n.54 (p.147.2-6 Pingree)"),
+          SECONDARY_ONLY, "the article's PDF on cultureandcosmos.org, p.183 and n.54"),
+    cited("al-Bīrūnī, Kitāb al-Tafhīm §476 (Wright 1934; he says after Abū Maʿshar)",
+          "Abū Maʿshar's line of the lots", TRANSLATION_READ,
+          "Wright's English translation (1934)"),
     reference_only("Abū Maʿshar, Abbreviation VI.3-4", "the lots; not checked",
                    "not consulted"),
-    {
-        "citation": "Ptolemy, Tetrabiblos III.10 (Robbins pp.275-277; = Hübner III.11)",
-        "says": "the Lot of Fortune from Sun to Moon by day and by night; not adopted",
-        "reading": SOURCE_READING_LEVELS[1],
-        "read_at": (
-            "Robbins's English (Loeb 1940): the whole of III.10 read in the "
-            "LacusCurtius transcription, the Lot of Fortune at pp.275-277; the Greek "
-            "not checked"
-        ),
-    },
+    cited("Ptolemy, Tetrabiblos III.10 (Robbins pp.275-277; = Hübner III.11)",
+          "the Lot of Fortune from Sun to Moon by day and by night; not adopted",
+          TRANSLATION_READ,
+          ("Robbins's English (Loeb 1940): the whole of III.10 read in the "
+           "LacusCurtius transcription, the Lot of Fortune at pp.275-277; the Greek "
+           "not checked")),
     reference_only(
         "Rhetorius, CCAG VIII/4 p.121, via Greenbaum 2007 p.181",
         "at night Ptolemy's Fortune falls on the reversing Spirit's degree",
@@ -207,11 +209,6 @@ _NEAR_CRITICAL_BAND = {
     "source_status": "sources_checked_do_not_specify_this_boundary",
     "source_ref": "sect/near_horizon_band",
 }
-
-
-def _near_horizon_band() -> dict:
-    # The half-width is the sibling near_horizon_band_half_width_degrees.
-    return dict(_NEAR_CRITICAL_BAND)
 
 
 def classify_sect(sun_altitude_true: float | None) -> dict:
@@ -254,11 +251,10 @@ def determine_sect(
     *,
     display_center: str = SECT_ALTITUDE_CENTER,
 ) -> dict:
-    """地心太陽真高度 > 0 視為日生盤 (diurnal)，否則夜生盤 (nocturnal)。
-    這是一條方法規則（採太陽中心、未計入蒙氣折射、地心），不是天文事實本身。"""
+    """地心太陽真高度 > 0 為日生盤，否則夜生盤：方法規則（太陽中心、未計蒙氣折射、地心），
+    不是天文事實。"""
     base = {
-        "method": SECT_METHOD_NAME,
-        **method_receipt("sect"),
+        **method_head(SECT_METHOD_NAME, "sect"),
         "method_provenance": SECT_METHOD_PROVENANCE,
         "source": SECT_SOURCE_LABEL,
         "source_ref": "sect",
@@ -268,7 +264,8 @@ def determine_sect(
         "endpoint_rule": "exactly_zero_is_night_engineering_convention",
         "sect_statuses": list(SECT_STATUSES),
         "near_horizon_band_half_width_degrees": SECT_NEAR_CRITICAL_DEGREES,
-        "near_horizon_band": _near_horizon_band(),
+        # The half-width is the sibling near_horizon_band_half_width_degrees.
+        "near_horizon_band": dict(_NEAR_CRITICAL_BAND),
     }
     if sun_altitude_true is None:
         trace.add(
@@ -372,28 +369,20 @@ def _lot_house_placement(houses: dict | None, primary: dict, trace: Trace) -> di
 
 
 def lots_not_applicable(state: dict, sect: dict | None, trace: Trace) -> dict:
-    """Lots refused by the central frame table.
-
-    The ascendant operand comes from swe.houses_ex (true equator and equinox of
-    date); with J2000 or nutation off the Sun and Moon operands are in another
-    frame, and without an Earth observer there is no ascendant.  Refused Lots
-    also do not join aspects.  Nothing is converted.
-    """
-
-    trace.add(
-        "阿拉伯點：Fortune / Spirit",
-        result={"execution_status": "not_applicable", "reason_code": state["reason_code"]},
+    # Refused Lots do not join aspects either.
+    refusal = frame_table_refusal(
+        state, trace, "阿拉伯點：Fortune / Spirit",
         note=(
             "上升點由當日真春分點框架算出；日月黃經不在同一框架，或沒有地表觀測者，"
             "參考框架相容表判定不適用，不計算、不轉換座標。"
         ),
     )
     return {
-        "method": LOTS_METHOD_NAME,
-        **method_receipt("lots"),
+        **method_head(LOTS_METHOD_NAME, "lots"),
         "method_provenance": LOTS_METHOD_PROVENANCE,
         "formula_profile": LOTS_FORMULA_PROFILE,
-        **not_applicable_receipt(state),
+        **refusal,
+        "execution_status": "not_applicable",
         "fortune": None,
         "spirit": None,
         "formula_basis": None,
@@ -405,8 +394,6 @@ def lots_not_applicable(state: dict, sect: dict | None, trace: Trace) -> dict:
 
 
 def _lots_sect_band_fields(sect: dict) -> dict:
-    """The sect band facts Lots repeat."""
-
     return {
         "sect_in_near_horizon_band": sect.get("in_near_horizon_band"),
         "sect_named_boundary_disagreement": sect.get("named_boundary_disagreement"),
@@ -424,8 +411,7 @@ def compute_lots(
 ) -> dict:
     is_day = sect["is_day"]
     base = {
-        "method": LOTS_METHOD_NAME,
-        **method_receipt("lots"),
+        **method_head(LOTS_METHOD_NAME, "lots"),
         "method_provenance": LOTS_METHOD_PROVENANCE,
         "formula_profile": LOTS_FORMULA_PROFILE,
         "source": LOTS_SOURCE_LABEL,

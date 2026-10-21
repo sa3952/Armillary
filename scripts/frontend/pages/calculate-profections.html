@@ -1,0 +1,73 @@
+<!-- 計算頁的子頁：年度小限與月小限的落地頁，任務入口。規則全文與出處在〈年度時間主星的規則與出處〉第 02 節，
+     這裡只用白話說它是什麼、可以選什麼、結果長什麼樣與限制，細節一律連過去，不另抄一份。
+     第一屏的入口只帶 mode 與 technique 兩個閉集旗標（result-chapters.js），計算頁讀一次就從網址拿掉；
+     frontend/tests/e2e/technique-link.spec.cjs 守著網址裡永遠沒有出生資料。
+     合成範例表由 scripts/frontend/figures/_landing.py 從年度計算服務的回應產生，不要手改。 -->
+<div class="wrap page-body ct-sheet">
+
+  <section class="ds-hero">
+    <p class="eyebrow"><a href="/zh-TW/calculate">計算</a></p>
+    <h1>小限計算：線上排出年度小限、月小限與年主星</h1>
+    <p class="lede"><b>年度小限</b>（annual profection）是古典西洋占星最常用的<b>時間主星</b>（time lords：把一生切成一段段，每段交給一顆行星或一個星座輪值）技法之一：從<b>上升星座</b>（出生那一刻從東方地平線升起的星座）起，每過一年往後推一個星座。輸入出生日期、時間與地點，本站列出每一年推到哪個星座、<b>年主星</b>是誰，選定某一年時再列出那一年的 12 個<b>月小限</b>（monthly profection）。</p>
+    <p><a class="cta lp-start" href="/zh-TW/calculate?mode=classical&amp;technique=profection">開始排小限 →</a></p>
+    <p class="ds-note"><b>只列計算結果：哪一年、哪個月由哪個星座與哪顆行星輪值。不替你解盤，也不預測。</b>這個連結只替計算頁選好「古典完整」與年度小限，不帶任何出生資料；你填的資料只送到本站的計算服務，伺服器不留副本，也不寫進網址。</p>
+  </section>
+
+  <section class="ds-sec" id="what">
+    <h2 class="hdr"><span>01</span>小限在算什麼</h2>
+    <p>第 1 年是上升星座本身，第 2 年往後一個星座，12 年繞一圈，第 13 年又回到上升星座。推到的星座叫<b>小限星座</b>；古書替每個星座指定一顆<b>守護行星</b>，小限星座的守護行星就是這一年的年主星（只用傳統七顆行星：日、月、水、金、火、木、土）。宮位一律<b>整宮制</b>（一個星座就是一宮）。</p>
+    <p>「一年」從<b>太陽回歸</b>（出生後太陽回到出生時黃道位置的那一刻）算起，不是生日日期。月小限把這一年再分成 12 個月：第 1 個月是年度小限星座，每個月往後推一個星座；每個月從太陽比出生時的位置再多走 30 度的那一刻開始，所以一個月大約 29 到 32 天，和日曆上的月份無關。規則與依據見〈<a href="/zh-TW/methods/time-lords#profection">年度時間主星的規則與出處</a>〉第 02 節與<a href="/zh-TW/methods/time-lords#monthly-profection">月小限</a>一段。</p>
+  </section>
+
+  <section class="ds-sec" id="options">
+    <h2 class="hdr"><span>02</span>本站的口徑</h2>
+    <ul>
+      <li><b>「第幾年」怎麼數。</b>第 N 年就是已滿 N−1 歲，與 Valens《占星選集》IV.11「第 35 年」的例子一致；我們讀了這一句的希臘文。</li>
+      <li><b>只從上升星座起算。</b>Ptolemy《占星四書》（Tetrabiblos）IV.10 從上升、太陽、月亮、命運點與中天各推一次，本站只推上升星座這一條，所以不是 Ptolemy 的做法。</li>
+      <li><b>年主星只取守護行星。</b>Valens 讓小限星座裡的行星接手，本站不判斷誰接手，只列守護行星。</li>
+      <li><b>月小限一律用太陽。</b>Valens 夜盤改用月亮，本站不分日夜盤；Ptolemy 每 28 天推一個星座、al-Bīrūnī 一年 13 個月、Bonatti 以度數推進等做法都沒有算。</li>
+    </ul>
+    <p>每一條出處核到哪一層，見方法頁<a href="/zh-TW/methods/time-lords#profection">第 02 節</a>。</p>
+  </section>
+
+  <section class="ds-sec" id="output">
+    <h2 class="hdr"><span>03</span>結果長什麼樣</h2>
+    <p>下表是<b>合成範例</b>，不是真人的盤：首頁的示範出生時刻（1990 年 5 月 15 日下午 2 點 30 分，臺北），由本站年度計算服務實際算出的前 13 年。這張盤的上升星座是天秤，所以第 1 年是天秤、年主星金星，第 13 年回到天秤。</p>
+    <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="lp-profections-cap">
+      <table class="spec">
+        <caption id="lp-profections-cap">合成範例：前 13 年的年度小限（起日是太陽回歸那一天，出生地的日期）</caption>
+        <thead><tr><th scope="col">第幾年</th><th scope="col">已滿幾歲</th><th scope="col">起</th><th scope="col">小限星座</th><th scope="col">年主星</th></tr></thead>
+        <tbody>
+          <!-- figure:lp-profections -->
+          <tr><td class="mono">1</td><td class="mono">0</td><td class="mono">1990-05-15</td><td>天秤</td><td>金星</td></tr>
+          <tr><td class="mono">2</td><td class="mono">1</td><td class="mono">1991-05-15</td><td>天蠍</td><td>火星</td></tr>
+          <tr><td class="mono">3</td><td class="mono">2</td><td class="mono">1992-05-15</td><td>射手</td><td>木星</td></tr>
+          <tr><td class="mono">4</td><td class="mono">3</td><td class="mono">1993-05-15</td><td>摩羯</td><td>土星</td></tr>
+          <tr><td class="mono">5</td><td class="mono">4</td><td class="mono">1994-05-15</td><td>水瓶</td><td>土星</td></tr>
+          <tr><td class="mono">6</td><td class="mono">5</td><td class="mono">1995-05-15</td><td>雙魚</td><td>木星</td></tr>
+          <tr><td class="mono">7</td><td class="mono">6</td><td class="mono">1996-05-15</td><td>牡羊</td><td>火星</td></tr>
+          <tr><td class="mono">8</td><td class="mono">7</td><td class="mono">1997-05-15</td><td>金牛</td><td>金星</td></tr>
+          <tr><td class="mono">9</td><td class="mono">8</td><td class="mono">1998-05-15</td><td>雙子</td><td>水星</td></tr>
+          <tr><td class="mono">10</td><td class="mono">9</td><td class="mono">1999-05-15</td><td>巨蟹</td><td>月亮</td></tr>
+          <tr><td class="mono">11</td><td class="mono">10</td><td class="mono">2000-05-15</td><td>獅子</td><td>太陽</td></tr>
+          <tr><td class="mono">12</td><td class="mono">11</td><td class="mono">2001-05-15</td><td>處女</td><td>水星</td></tr>
+          <tr><td class="mono">13</td><td class="mono">12</td><td class="mono">2002-05-15</td><td>天秤</td><td>金星</td></tr>
+          <!-- /figure:lp-profections -->
+        </tbody>
+      </table>
+    </div>
+    <p>計算頁上，時間主星一章列出今年與一生每一年的年度小限、選定那一年的 12 個月小限與月主星，可以存成行事曆檔或時間主星表；同一章也列出法達、黃道釋放與十年期。</p>
+  </section>
+
+  <section class="ds-sec" id="limits">
+    <h2 class="hdr"><span>04</span>限制</h2>
+    <ul>
+      <li>上升星座對出生時間很敏感，平均大約兩小時換一個星座；上升點靠近星座邊界時，出生時間差幾分鐘，整條小限就差一個星座。上面的合成範例就是這種情形：上升點離天秤開頭不到 2 度。</li>
+      <li>只知道大約幾點出生時，本站取那段時間的開頭、中間、結尾三個<b>代表性時刻</b>各排一次，三者不同就並列；只知道日期時排不出小限，因為算不出上升星座。</li>
+      <li>日期只到日，是出生地的日期；一生的視窗是出生後 100 個回歸年。日小限還沒有算。</li>
+    </ul>
+    <p>同類的其他技法：<a href="/zh-TW/calculate/firdaria">法達計算</a>、<a href="/zh-TW/calculate/zodiacal-releasing">黃道釋放計算</a>、<a href="/zh-TW/calculate/decennials">十年期計算</a>；先讀概念，見〈<a href="/zh-TW/blog/time-lords-introduction">年度時間主星入門</a>〉。</p>
+    <p><a class="cta lp-start" href="/zh-TW/calculate?mode=classical&amp;technique=profection">開始排小限 →</a></p>
+  </section>
+
+</div>

@@ -32,6 +32,7 @@ SOURCE_READING_LEVELS: Final = (
     "secondary_only",
     "bibliographic_only",
 )
+ORIGINAL_LANGUAGE_READ, TRANSLATION_READ, SECONDARY_ONLY, BIBLIOGRAPHIC_ONLY = SOURCE_READING_LEVELS
 
 # A locus the method research notes name, carried as a citation object while
 # the record does not say what was read: only the reference is claimed.
@@ -41,12 +42,26 @@ LEVEL_PENDING_RESEARCH_NOTES: Final = (
     "reference is claimed until that is confirmed"
 )
 
+# The copy of Pingree's Dorotheus Book I read for every citation of it: the
+# translation's rights holder put the book online for study, keeping the
+# Teubner page breaks, so a page cited from it is the 1976 printed page.
+DOROTHEUS_BOOK_I_ONLINE: Final = (
+    "Pingree's English translation (Teubner 1976), Book I as put online by the "
+    "translation's rights holder (D. Houlding, skyscript.co.uk/dorotheus1.pdf, "
+    "2013; searchable text keeping the Teubner page breaks)"
+)
+
+
+def cited(citation: str, says: str | None, reading: str, read_at: str, **after: object) -> dict:
+    """A citation object: the place cited, what it says (None: the key is left out),
+    how far it was read (one of SOURCE_READING_LEVELS) and the copy read; any further
+    keys follow in the order given."""
+    entry: dict = {"citation": citation}
+    if says is not None:
+        entry["says"] = says
+    return entry | {"reading": reading, "read_at": read_at} | after
+
 
 def reference_only(citation: str, says: str, read_at: str = LEVEL_PENDING_RESEARCH_NOTES) -> dict:
     """A citation object claiming the reference alone (`bibliographic_only`)."""
-    return {
-        "citation": citation,
-        "says": says,
-        "reading": SOURCE_READING_LEVELS[3],
-        "read_at": read_at,
-    }
+    return cited(citation, says, BIBLIOGRAPHIC_ONLY, read_at)

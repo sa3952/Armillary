@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from .invariants import InternalInvariantError
 from .frame_compatibility import method_frame_state
 from .module_state import PRODUCT_FORMULA_SOURCE, computed_receipt, unavailable_state
-from .method_status import method_receipt
+from .method_status import method_head
 from .trace import Trace
 
 
@@ -34,12 +34,10 @@ def _house_for_longitude(
 ) -> int:
     """Return the 1-based house for [cusp_n, cusp_n+1) in zodiacal order.
 
-    The comparison is done in exact rational arithmetic.  Shifting a
-    float longitude by +360 to meet an unwrapped cusp rounds: one ulp below cusp
-    12 became cusp 12 itself (a wrong house), and -5e-324 % 360.0 became 360.0,
-    which no half-open interval contains.  Every float is an exact binary
-    rational, so measuring each interval and the point from its start cusp with
-    Fraction partitions the circle with no gaps and no overlaps.
+    Exact rational arithmetic: shifting a float by +360 rounds (one ulp below
+    cusp 12 became cusp 12; -5e-324 % 360.0 became 360.0, in no interval).
+    Every float is an exact binary rational, so Fraction distances from each
+    start cusp partition the circle with no gaps and no overlaps.
 
     ``spans`` is ``_cusp_spans(cusps)`` when the caller places several points
     against the same cusps; it is never kept beyond that caller's loop.
@@ -81,17 +79,14 @@ def compute_planet_house_placements(
 ) -> dict:
     """Place physical planets only; lunar nodes remain separate non-planet points."""
 
-    # The frame premise and its closed reason codes come from the central
-    # compatibility table; this module does not test a frame axis itself.
+    # Frame premise and reason codes come from the central compatibility table.
     reasons = list(method_frame_state("planet_in_house", context.mode)["reason_codes"])
     # A refusal must not depend on the thing it is refusing about: when the
     # observer has no horizon the caller has no houses to hand over, and this
     # function still has to answer.
     placements: list[dict] = []
     receipt = {
-        "method": METHOD_NAME,
-        **method_receipt("planet_in_house"),
-        # The six state fields are written here, once.
+        **method_head(METHOD_NAME, "planet_in_house"),
         **(
             unavailable_state(reasons[0], requested=True)
             if reasons
@@ -104,8 +99,7 @@ def compute_planet_house_placements(
         "house_system_code": houses["system_code"] if houses else None,
         "house_system_name": houses["system_name"] if houses else None,
         "interval_semantics": HOUSE_INTERVAL_SEMANTICS,
-        # The field keeps its
-        # name for compatibility; this says what it measures.
+        # The field keeps its name for compatibility; this says what it measures.
         "distance_to_nearest_cusp_semantics": (
             "ecliptic_longitude_difference_latitude_ignored_not_mundane_house_distance"
         ),

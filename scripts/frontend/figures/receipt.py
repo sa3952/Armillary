@@ -24,21 +24,19 @@ from __future__ import annotations
 import copy
 from html import escape
 import json
-from pathlib import Path
-import shutil
-import subprocess
 
 from . import _fx
-from ._common import ROOT, SIGNS, product_charts
+from ._common import ROOT, SIGNS, node_json, product_charts
 
 
 FRAGMENT = "blog-verify-chart-calculation"
 FIXTURES = ROOT / "frontend" / "tests" / "fixtures"
 FIXTURE = FIXTURES / "chart-exact.json"
-VIEW_MODEL = ROOT / "scripts" / "frontend" / "scripts" / "view-model.js"
+# Runs view-model.js from its readable sources, as the page tests do.
+SCRIPT_BUNDLES = ROOT / "frontend" / "tests" / "script-bundles.cjs"
 
 _NODE_SCRIPT = r"""
-const ViewModel = require(process.argv[1]);
+const ViewModel = require(process.argv[1]).load("view-model.js");
 let input = "";
 process.stdin.on("data", (chunk) => { input += chunk; });
 process.stdin.on("end", () => {
@@ -58,17 +56,9 @@ process.stdin.on("end", () => {
 def rendered(responses: list[dict]) -> list[dict[str, dict[str, str]]]:
     """For each response, the result page's receipt and time tables:
     {"receipt/版本與來源": {label: cell}, …}, as view-model.js prints them."""
-    node = shutil.which("node")
-    if node is None:
-        raise RuntimeError("node is required to read the receipt as the result page prints it")
-    completed = subprocess.run(
-        [node, "-e", _NODE_SCRIPT, str(VIEW_MODEL)], input=json.dumps(responses), cwd=ROOT,
-        capture_output=True, text=True, check=False, timeout=120,
-    )
-    if completed.returncode != 0:
-        raise RuntimeError("view-model.js failed: " + completed.stderr.strip())
-    return [{name: {row[0]: row[1] for row in rows} for name, rows in tables.items()}
-            for tables in json.loads(completed.stdout)]
+    found = node_json(_NODE_SCRIPT, SCRIPT_BUNDLES, stdin=responses, timeout=120,
+                      what="read the receipt as the result page prints it")
+    return [{name: {row[0]: row[1] for row in rows} for name, rows in tables.items()} for tables in found]
 
 
 def request() -> dict:
@@ -212,9 +202,7 @@ def _receipt_table(d: dict, bound: _fx.Bound) -> str:
                 label = f"{label}（SHA-256 開頭）"
             rows.append(f'<tr data-fx-key="{key}"><th scope="row">{number} {escape(label)}</th>'
                         f'<td class="fx-num">{escape(value)}</td></tr>')
-    return ('<details class="fx-data"><summary>收據上的值（表格，軌跡雜湊不截短）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">項目</th><th scope="col">數值</th></tr>'
-            f'</thead><tbody>\n{"\n".join(rows)}\n</tbody></table></div></details>')
+    return _fx.data_table(("項目", "數值"), "\n" + "\n".join(rows) + "\n", summary="收據上的值（表格，軌跡雜湊不截短）")
 
 
 def _receipt_notes(d: dict, bound: _fx.Bound) -> list[_fx.Note]:
@@ -257,20 +245,18 @@ def _receipt_figure(d: dict) -> str:
         "摘出五組。①②④⑤是結果頁「技術細節與驗算資料」裡〈計算收據〉印的原字，③是匯出的卷宗 JSON 裡的星曆檔紀錄；"
         "星曆檔的雜湊只印開頭，完整值在匯出的卷宗裡；軌跡雜湊在圖上分成兩行，表格裡是一整串。"
     )
-    markup = _fx.figure(
+    return _fx.figure(
         fid="fig-receipt",
         title="一張合成星盤的計算收據：版本、時間換算、星曆檔、軌跡雜湊與隱私聲明",
         caption=caption,
-        wide=_receipt("fx-wide", "fig-receipt", d, bound),
-        narrow=_receipt("fx-narrow", "fig-receipt", d, bound),
-        notes=_receipt_notes(d, bound),
-        idle="用 Tab 鍵移到一組，或用滑鼠指著它，這裡會寫出那一組在說什麼。",
+        art=_fx.FigureArt.drawn(
+            _receipt, "fig-receipt", d, bound,
+            notes=_receipt_notes(d, bound),
+            idle="用 Tab 鍵移到一組，或用滑鼠指著它，這裡會寫出那一組在說什麼。",
+        ),
         table=_receipt_table(d, bound),
+        bound=bound,
     )
-    found = _fx.problems(markup, bound)
-    if found:
-        raise RuntimeError("figure check: " + "; ".join(found))
-    return markup
 
 
 # --- figure 2: change one input -------------------------------------------------
@@ -482,7 +468,6 @@ def _diff(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
 
 def _diff_table(d: dict, bound: _fx.Bound) -> str:
     base = d["base"]
-    head = "".join(f'<th scope="col">{escape(name)}</th>' for _, name in VARIANTS)
     rows = []
     for key, label in ROWS:
         cells = []
@@ -494,9 +479,8 @@ def _diff_table(d: dict, bound: _fx.Bound) -> str:
         old, _ = _shown(base, d["variants"]["again"], key, bound)
         rows.append(f'<tr data-fx-key="{key}"><th scope="row">{escape(label)}</th>'
                     f'<td class="fx-num">{escape(old)}</td>{"".join(cells)}</tr>')
-    return ('<details class="fx-data"><summary>四種改法的每一列（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">項目</th><th scope="col">原本</th>'
-            f'{head}</tr></thead><tbody>{"".join(rows)}</tbody></table></div></details>')
+    return _fx.data_table(("項目", "原本", *(escape(name) for _, name in VARIANTS)), rows,
+                          summary="四種改法的每一列（表格）")
 
 
 def _diff_figure(d: dict) -> str:
@@ -509,21 +493,22 @@ def _diff_figure(d: dict) -> str:
         "只改一個沒有用到的選項，所有數字都不變，只有雜湊不同。圖上的雜湊只比相同或不同：同一個請求在不同的電腦上"
         "算，雜湊可能不一樣（見內文），所以這裡只印出圖 1 那一份的開頭。"
     )
-    markup = _fx.figure(
+    return _fx.figure(
         fid="fig-receipt-diff",
         title="改一個輸入，收據上哪幾行會變",
         caption=caption,
-        wide=_diff("fx-wide", "fig-receipt-diff", d, bound),
-        narrow=_diff("fx-narrow", "fig-receipt-diff", d, bound),
-        notes=notes,
-        idle="選一種改法，再用 Tab 鍵移到一列，或用滑鼠指著它，這裡會寫出那一列為什麼變或不變。",
-        variants=VARIANTS, switch_label="選一種改法",
+        art=_fx.FigureArt.drawn(
+            _diff, "fig-receipt-diff", d, bound,
+            notes=notes,
+            idle="選一種改法，再用 Tab 鍵移到一列，或用滑鼠指著它，這裡會寫出那一列為什麼變或不變。",
+        ),
+        controls=_fx.FigureControls(
+            variants=VARIANTS,
+            switch_label="選一種改法",
+        ),
         table=_diff_table(d, bound),
+        bound=bound,
     )
-    found = _fx.problems(markup, bound)
-    if found:
-        raise RuntimeError("figure check: " + "; ".join(found))
-    return markup
 
 
 def _zh_arcsec(value: str) -> str:

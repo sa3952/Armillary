@@ -10,6 +10,14 @@
   Dossier 對算出的結果發出 `provisional_method_result`。
 
 方法狀態只是內部收據欄位：一般畫面不顯示。
+
+每張方法收據也帶時期標籤：
+
+- `period`：產品預設所依循的出處屬於哪個時期（閉集 `METHOD_PERIODS`）。天文計算本身
+  （宮位分割的數值、月亮遠近點、視差）不是古典方法，標 `modern`。
+- `name_status`：輸出用來稱呼這個方法的名字是不是所引出處自己的用語（`source_term`），
+  還是現代整理者或本產品的稱呼（`modern_label`）。「古典」一詞因此可以逐方法標出時期，
+  不必整體宣稱。
 """
 
 from __future__ import annotations
@@ -19,7 +27,6 @@ from collections.abc import Iterable
 METHOD_STATUS_DECIDED = "decided"
 METHOD_STATUS_PROVISIONAL = "provisional_pending_method_audit"
 
-# 已採用的方法。
 DECIDED_METHODS: frozenset[str] = frozenset({
     "house_division",
     "planet_in_house",
@@ -47,19 +54,62 @@ PROVISIONAL_METHODS: frozenset[str] = frozenset({
     "lots", "void_of_course", "aspects", "planetary_hours",
 })
 
-# The flagged annual route's methods: provisional until their "how it is
-# output" rows are decided.  Kept apart so the chart's own partition
-# test can name the methods /api/chart emits.
+# The annual route's methods: provisional until their output rows are decided.
+# Kept apart so the chart's partition test can name what /api/chart emits.
 ANNUAL_PROVISIONAL_METHODS: frozenset[str] = frozenset({
     "annual_profection", "firdaria", "zodiacal_releasing", "extended_lots", "decennials",
     "monthly_profection", "solar_return_chart",
 })
+
+METHOD_PERIODS: tuple[str, ...] = (
+    "hellenistic", "medieval_arabic", "medieval_latin", "renaissance_early_modern", "modern",
+)
+NAME_STATUSES: tuple[str, ...] = ("source_term", "modern_label")
+
+# method module -> (period, name_status)
+METHOD_PERIOD_LABELS: dict[str, tuple[str, str]] = {
+    "house_division": ("modern", "modern_label"),
+    "planet_in_house": ("hellenistic", "modern_label"),
+    "sect": ("hellenistic", "source_term"),
+    "declination_aspects": ("renaissance_early_modern", "modern_label"),
+    "lunar_apsides": ("modern", "modern_label"),
+    "parallax_moon": ("modern", "modern_label"),
+    "essential_dignities": ("medieval_arabic", "source_term"),
+    "dodecatemoria": ("hellenistic", "source_term"),
+    "lunar_mansions": ("medieval_arabic", "source_term"),
+    "solar_phase": ("medieval_arabic", "source_term"),
+    "classical_classifications": ("hellenistic", "modern_label"),
+    "motion_states": ("hellenistic", "modern_label"),
+    "lots": ("hellenistic", "source_term"),
+    # The default VOC definition: attribution unresolved, combined form is modern
+    # (moon.VOC_METHOD_PROVENANCE).  The two alternatives carry their own period
+    # through moon.VOC_METHOD_PERIODS.
+    "void_of_course": ("modern", "source_term"),
+    "aspects": ("hellenistic", "source_term"),
+    "planetary_hours": ("hellenistic", "source_term"),
+    "annual_profection": ("hellenistic", "source_term"),
+    "firdaria": ("medieval_arabic", "source_term"),
+    "zodiacal_releasing": ("hellenistic", "modern_label"),
+    # Formulas from Paulus ch.23 and Valens IV.25; the chart route nests them under
+    # lots (hellenistic), so both routes say the same (report L3).
+    "extended_lots": ("hellenistic", "modern_label"),
+    "decennials": ("hellenistic", "modern_label"),
+    "monthly_profection": ("medieval_arabic", "source_term"),
+    "solar_return_chart": ("medieval_arabic", "modern_label"),
+}
 
 # 列為研究用途的 profile；被選為主要 profile 時也要標出。
 RESEARCH_ONLY_PROFILES: frozenset[str] = frozenset({"lilly_triplicity_compact_1647_v1"})
 
 if DECIDED_METHODS & (PROVISIONAL_METHODS | ANNUAL_PROVISIONAL_METHODS):
     raise RuntimeError("a method is either decided or provisional, never both")
+if set(METHOD_PERIOD_LABELS) != DECIDED_METHODS | PROVISIONAL_METHODS | ANNUAL_PROVISIONAL_METHODS:
+    raise RuntimeError("every method with a status has a period label, and only those")
+if any(
+    period not in METHOD_PERIODS or name not in NAME_STATUSES
+    for period, name in METHOD_PERIOD_LABELS.values()
+):
+    raise RuntimeError("period labels come from the closed sets")
 
 
 def method_status(module: str) -> str:
@@ -73,7 +123,14 @@ def method_status(module: str) -> str:
 def method_receipt(module: str) -> dict[str, str]:
     """The receipt key for spreading into a method receipt."""
 
-    return {"method_status": method_status(module)}
+    period, name_status = METHOD_PERIOD_LABELS[module]
+    return {"method_status": method_status(module), "period": period, "name_status": name_status}
+
+
+def method_head(method: str, module: str, **extra) -> dict:
+    """The keys a method receipt opens with: its name, status, then ``extra``."""
+
+    return {"method": method, **method_receipt(module), **extra}
 
 
 def research_only_profiles(profile_ids: Iterable[str]) -> list[str]:

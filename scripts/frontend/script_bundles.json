@@ -1,0 +1,21 @@
+{
+  "calculate.js": [
+    "calculate-options.js",
+    "calculate-input.js",
+    "calculate-request.js",
+    "calculate-render.js",
+    "calculate-sections.js",
+    "calculate-tables.js",
+    "calculate-export.js",
+    "calculate.js"
+  ],
+  "view-model.js": [
+    "view-model-core.js",
+    "view-model-positions.js",
+    "view-model-events.js",
+    "view-model-dignities.js",
+    "view-model-sensitivity.js",
+    "view-model-sections.js",
+    "view-model.js"
+  ]
+}

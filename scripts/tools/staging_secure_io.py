@@ -149,13 +149,16 @@ def deployment_hostnames(value: str) -> tuple[str, str]:
     return apex, validate_server_name(f"www.{apex}")
 
 
-def atomic_owner_only_replace(path: Path, payload: bytes, *, role: str) -> None:
+def atomic_owner_only_replace(path: Path, payload: bytes, *, role: str, mode: int = 0o600,
+                              directory_mode: int = 0o700) -> None:
+    """Replace `path` by a temporary file in its directory that has `mode` from
+    its first byte; the data and the rename are synced before returning."""
     path = safe_absolute_path(path, role=role)
-    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    path.parent.mkdir(mode=directory_mode, parents=True, exist_ok=True)
     descriptor, name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     temporary = Path(name)
     try:
-        os.fchmod(descriptor, 0o600)
+        os.fchmod(descriptor, mode)
         with os.fdopen(descriptor, "wb") as handle:
             handle.write(payload)
             handle.flush()

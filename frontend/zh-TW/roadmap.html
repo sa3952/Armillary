@@ -3,12 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="only light">
 <meta name="robots" content="index, follow">
 <title>產品現況與後續方向｜渾儀 Armillary</title>
 <meta name="description" content="渾儀的產品現況與後續方向：用三階成熟度區分天文層、方法層與產品營運各自已提供的能力、正在驗證的工作與尚未承諾的方向，並列出未決問題與不打算做的事。">
 <link rel="canonical" href="https://projectarmillary.com/zh-TW/roadmap">
 <link rel="alternate" hreflang="zh-TW" href="https://projectarmillary.com/zh-TW/roadmap">
 <link rel="alternate" hreflang="x-default" href="https://projectarmillary.com/zh-TW/roadmap">
+<link rel="alternate" type="application/atom+xml" title="渾儀 Armillary 文章" href="/feed.xml">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="渾儀 Armillary">
 <meta property="og:locale" content="zh_TW">
@@ -21,11 +23,11 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="渾儀 Armillary：可驗證的古典西洋占星計算器">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/roadmap#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/roadmap#breadcrumb"},"dateModified":"2026-10-18","description":"渾儀的產品現況與後續方向：用三階成熟度區分天文層、方法層與產品營運各自已提供的能力、正在驗證的工作與尚未承諾的方向，並列出未決問題與不打算做的事。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"產品現況與後續方向｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/roadmap"},{"@id":"https://projectarmillary.com/zh-TW/roadmap#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/roadmap","name":"路線","position":2}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","publisher":{"@id":"https://projectarmillary.com/#organization"},"url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/roadmap#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/roadmap#breadcrumb"},"dateModified":"2026-10-21","description":"渾儀的產品現況與後續方向：用三階成熟度區分天文層、方法層與產品營運各自已提供的能力、正在驗證的工作與尚未承諾的方向，並列出未決問題與不打算做的事。","inLanguage":"zh-TW","isAccessibleForFree":true,"isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"產品現況與後續方向｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/roadmap"},{"@id":"https://projectarmillary.com/#organization","@type":"Organization","alternateName":["渾儀","Armillary","Project Armillary"],"disambiguatingDescription":"古典西洋占星的計算網站與開源程式；名稱取自天文儀器渾儀（armillary sphere），本身不是那件儀器。","logo":{"@type":"ImageObject","height":180,"url":"https://projectarmillary.com/apple-touch-icon.png","width":180},"name":"渾儀 Armillary","sameAs":["https://github.com/sa3952/Armillary"],"url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/roadmap#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/roadmap","name":"路線","position":2}]}]}</script>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" href="/zh-TW/favicon.svg?v=c95686a2f029d369" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="/zh-TW/style/roadmap.css?v=d777db4905e47ed2">
+<link rel="stylesheet" href="/zh-TW/style/roadmap.css?v=2f6cd817e31ed7f8">
 </head>
 <body>
 
@@ -68,21 +70,22 @@
   <div class="path">
 
   <section class="rm-sec">
-    <h2 class="way-title" data-step="01">三階成熟度</h2>
+    <p class="sig">01</p>
+    <h2 class="way-title">三階成熟度</h2>
 
     <ol class="rungs">
       <li class="done">
-        <span class="rung-n">一</span>
+        <span class="sig">一</span>
         <div><b>準確的天文資料</b><span>星曆位置、時間尺度、座標轉換、觀測幾何</span></div>
         <span class="rung-s">現行</span>
       </li>
       <li class="here">
-        <span class="rung-n">二</span>
+        <span class="sig">二</span>
         <div><b>準確的判定</b><span>日夜盤、宮位、尊貴、相位——需要選定流派、集合或門檻的結果</span></div>
         <span class="rung-s">進行中 ← 我們在這裡</span>
       </li>
       <li class="blocked">
-        <span class="rung-n">三</span>
+        <span class="sig">三</span>
         <div><b>進階判定與解盤</b><span>例如 Hyleg，以及把判定轉成對這個人的意義</span></div>
         <span class="rung-s">驗證與考據完成前不開放</span>
       </li>
@@ -95,18 +98,19 @@
   </section>
 
   <section class="rm-sec">
-    <h2 class="way-title" data-step="02" id="way-02-title">現況 · 天文層</h2>
+    <p class="sig">02</p>
+    <h2 class="way-title" id="way-02-title">現況 · 天文層</h2>
     <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="way-02-title">
-      <table class="log rm-table">
-        <thead><tr><th>項目</th><th>狀態</th><th>依據</th></tr></thead>
-        <tbody>
-          <tr><td>古典七政、三王星、凱龍星、平均／密切交點（密切交點即 osculating node，常被稱為真交點）與南交點、Lilith 與 Priapus、57 顆恆星與 3 個星團</td><td class="st ok">已完成</td><td>計算頁的天體選項；卷宗中逐項回顯</td></tr>
-          <tr><td>黃道／赤道／地平三套座標並列</td><td class="st ok">已完成</td><td>任一次計算的 <span class="mono">astronomical_data.bodies</span></td></tr>
-          <tr><td>逐步計算軌跡與 SHA-256 收據</td><td class="st ok">已完成</td><td>卷宗的 <span class="mono">trace_receipt</span> 與三個星曆檔的 <span class="mono">sha256</span></td></tr>
-          <tr><td>對外部參考星曆管線（DE442＋Astropy／ERFA，與產品共享 JPL／IAU 譜系，不稱完全獨立）的逐小時比對（1990–2026、七個天體）</td><td class="st ok">已完成</td><td>DE442 驗證報告 2026-07-28</td></tr>
-          <tr><td>五大行星停滯點順逆行分類檢查</td><td class="st ok">零翻轉</td><td>448 個停滯零點、1,792 個 ±1h／±6h probes；同上報告</td></tr>
-          <tr><td><b>太陽速度異常的歸因</b></td><td class="st wip">成因已定位</td><td><b>2026-08-17 定位到成因</b>；底層 frame 的完整分層歸因仍未完成（見〈驗證〉）。見下方說明</td></tr>
-          <tr><td>星座、界、相位、宮頭的邊界語料庫</td><td class="st wip">進行中</td><td>方法契約已定，語料庫尚未建立</td></tr>
+      <table class="log rm-table stack-narrow" role="table">
+        <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">項目</th><th scope="col" role="columnheader">狀態</th><th scope="col" role="columnheader">依據</th></tr></thead>
+        <tbody role="rowgroup">
+          <tr role="row"><td role="cell" data-label="項目">古典七政、三王星、凱龍星、平均／密切交點（密切交點即 osculating node，常被稱為真交點）與南交點、Lilith 與 Priapus、57 顆恆星與 3 個星團</td><td class="st ok" role="cell" data-label="狀態">已完成</td><td role="cell" data-label="依據">計算頁的天體選項；卷宗中逐項回顯</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">黃道／赤道／地平三套座標並列</td><td class="st ok" role="cell" data-label="狀態">已完成</td><td role="cell" data-label="依據">任一次計算的 <span class="mono">astronomical_data.bodies</span></td></tr>
+          <tr role="row"><td role="cell" data-label="項目">逐步計算軌跡與 SHA-256 收據</td><td class="st ok" role="cell" data-label="狀態">已完成</td><td role="cell" data-label="依據">卷宗的 <span class="mono">trace_receipt</span> 與三個星曆檔的 <span class="mono">sha256</span></td></tr>
+          <tr role="row"><td role="cell" data-label="項目">對外部參考星曆管線（DE442＋Astropy／ERFA，與產品共享 JPL／IAU 譜系，不稱完全獨立）的逐小時比對（1990–2026、七個天體）</td><td class="st ok" role="cell" data-label="狀態">已完成</td><td role="cell" data-label="依據">DE442 驗證報告 2026-07-28</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">五大行星停滯點順逆行分類檢查</td><td class="st ok" role="cell" data-label="狀態">零翻轉</td><td role="cell" data-label="依據">448 個停滯零點、1,792 個 ±1h／±6h probes；同上報告</td></tr>
+          <tr role="row"><td role="cell" data-label="項目"><b>太陽速度異常的歸因</b></td><td class="st wip" role="cell" data-label="狀態">成因已定位</td><td role="cell" data-label="依據"><b>2026-08-17 定位到成因</b>；底層 frame 的完整分層歸因仍未完成（見〈驗證〉）。見下方說明</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">星座、界、相位、宮頭的邊界語料庫</td><td class="st wip" role="cell" data-label="狀態">進行中</td><td role="cell" data-label="依據">方法契約已定，語料庫尚未建立</td></tr>
         </tbody>
       </table>
     </div>
@@ -119,59 +123,62 @@
   </section>
 
   <section class="rm-sec">
-    <h2 class="way-title" data-step="03" id="way-03-title">現況 · 方法層</h2>
+    <p class="sig">03</p>
+    <h2 class="way-title" id="way-03-title">現況 · 方法層</h2>
     <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="way-03-title">
-      <table class="log rm-table">
-        <thead><tr><th>項目</th><th>狀態</th><th>依據</th></tr></thead>
-        <tbody>
-          <tr><td>黃道相位：整宮配置層 ＋ 逐度層，另附相位方格</td><td class="st ok">已完成</td><td>計算頁相位組十項控制；方格把逐度層的同一份兩兩組合排成三角形，不另計算</td></tr>
-          <tr><td>四套相位集合、兩套具名容許度表、三種同度判準</td><td class="st ok">已完成</td><td>同上；容許度表逐條列出書目</td></tr>
-          <tr><td>界四套、面／旬兩套、三分性三套，皆具名到來源</td><td class="st ok">已完成</td><td>回應中每套帶作品與章節、行號或頁碼</td></tr>
-          <tr><td>界、面、三分性與十二分部「全部並列」：一次算出各家，逐星對照</td><td class="st ok">已完成</td><td>選項值 <span class="mono">all</span>；回應的 <span class="mono">computed_profiles</span> 寫出展開後的各套，每套結果與單選時相同；「各家相同／有不同」由結果頁比對印出的守護者，不進回應</td></tr>
-          <tr><td>廟旺判定</td><td class="st ok">已完成</td><td>來源：Ptolemy《占星四書》（Tetrabiblos）I.17／I.19（Robbins 編號；Hübner 為 I.18／I.20），並見於 Dorotheus、Valens、Firmicus</td></tr>
-          <tr><td>陷、弱（整星座，古典七政）</td><td class="st ok">已完成</td><td>陷：al-Bīrūnī《占星術入門》§442、Lilly 1647 p.104；Ptolemy 沒有陷。弱：Ptolemy I.19 等六家的星座一致；度數不判</td></tr>
-          <tr><td>外來（peregrine）</td><td class="st ok">已完成</td><td>依 Lilly 1647 p.112 的定義與他自己 p.104 的整套表判定，三分性只算當令（p.102）；換用其他界或三分性約 3%～21% 的位置判定不同，方法頁寫明。古典完整預設開啟</td></tr>
-          <tr><td>接納（含互容）、almuten</td><td class="st ok">已研究，不做</td><td>almuten 的理由見方法頁〈<a href="/zh-TW/methods#almuten">目前不算的東西</a>〉；回應的未評估清單仍列出接納</td></tr>
-          <tr><td>九分部（novenaria）</td><td class="st ok">已研究，只寫說明</td><td>規則各書一致，等於黃經乘以 9；出處與不計算的理由見方法頁〈<a href="/zh-TW/methods#novenaria">十二分部</a>〉一節</td></tr>
-          <tr><td>月空亡（含兩段式求根）</td><td class="st ok">已完成</td><td>求根器回傳括號端點與二分迭代次數</td></tr>
-          <tr><td>日夜盤（含近地平提示與並列輸出）</td><td class="st ok">已完成</td><td>太陽中心真高度 ±50 角分標記 <span class="mono">in_near_horizon_band</span></td></tr>
-          <tr><td>行星日與行星時（從日出起算、晝夜各十二等分、迦勒底序）</td><td class="st ok">已完成</td><td>每張盤的 <span class="mono">derived_methods.planetary_hours</span>；極區沒有日出日落循環時標為不適用</td></tr>
-          <tr><td>行速、停滯與東出西入（古典判斷，選用）</td><td class="st ok">已完成</td><td>平均每日行度照 Lilly 1647（Bonatti 1550 並列），停滯照 Lilly 的天數並列出前後 15 天的轉向時刻，東出西入只取相對太陽一種；平均行度、停滯天數與 p.115 強弱表已核 1647 年版頁影像</td></tr>
-          <tr><td>命運點（Lot of Fortune，也譯福點、幸運點）與精神點（Lot of Spirit）、行星落宮、反照點（antiscia）</td><td class="st ok">已完成</td><td>計算頁的點與幾何選項組</td></tr>
-          <tr><td>年度時間主星（time lords）：年度小限、法達（firdaria）、黃道釋放（zodiacal releasing，兩層）、十年期（decennials，兩層）與七個延伸的阿拉伯點</td><td class="st ok">已完成</td><td>年度結果附內嵌的方法出處清單；規則、文獻分歧與我們採用的做法見〈<a href="/zh-TW/methods/time-lords">年度時間主星的規則與出處</a>〉。只列哪一段時間由誰輪值，不解讀</td></tr>
-          <tr><td>不計算宮位的模式、只知道日期的模式</td><td class="st ok">已完成</td><td>計算頁的出生時刻精度三選一</td></tr>
-          <tr><td>守護星體系的整體採用</td><td class="st ok">已裁決</td><td>所有古典程序固定使用七政主宰表；現代外行星主宰不在產品範圍</td></tr>
-          <tr><td>日夜盤判定基準的文獻考據</td><td class="st wip">進行中</td><td><b>研究筆記所列的古典段落沒有明定太陽中心、上緣或折射的邊界</b>；現行規則標為產品慣例，非古典來源</td></tr>
-          <tr><td>時間主星的一手出處</td><td class="st wip">進行中</td><td>Valens 的關鍵句已對 Kroll 1908 希臘文，法達已讀 al-Bīrūnī 與 Bonatti 的英譯；Abū Maʿshar 原書、Paulus 希臘文與 Pingree 校勘本（學者比對多份古抄本後整理出的版本）尚未讀到，這幾條在出處清單照實標為轉引</td></tr>
-          <tr><td>月空亡星座界線規則的歷史歸屬</td><td class="st open">未解</td><td>星座條件最晚見於 Lilly 1647 p.112；「離座前精確完成」後人文獻歸於 Al H. Morrison（AFA Bulletin 第 28 卷第 10 期，1966 年 10 月；原是當年 AFA 大會的演講，後來印成 AFA 小冊《The Void of Course Moon》；原文未讀），更早的起源尚未查證；兩者合起來的歸屬仍未定。已寫入回應的 <span class="mono">source_verification</span></td></tr>
-          <tr><td>精確擢升與弱的度數</td><td class="st pend">尚未裁決</td><td>目前只判整個星座；回應的方法出處條目寫明度數不判</td></tr>
-          <tr><td>相位容許度表與同度判準的各家對照欄</td><td class="st no">未開始</td><td>做法是每一對相位加一欄「依各表是否在容許度內」，星盤上的相位線照舊依你選的那一套；黃道釋放（zodiacal releasing）的年長度（360 日或 365.25 日）依已有裁決不並列</td></tr>
+      <table class="log rm-table stack-narrow" role="table">
+        <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">項目</th><th scope="col" role="columnheader">狀態</th><th scope="col" role="columnheader">依據</th></tr></thead>
+        <tbody role="rowgroup">
+          <tr role="row"><td role="cell" data-label="項目">黃道相位：整宮配置層 ＋ 逐度層，另附相位方格</td><td class="st ok" role="cell" data-label="狀態">已完成</td><td role="cell" data-label="依據">計算頁相位組十項控制；方格把逐度層的同一份兩兩組合排成三角形，不另計算</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">四套相位集合、兩套具名容許度表、三種同度判準</td><td class="st ok" role="cell" data-label="狀態">已完成</td><td role="cell" data-label="依據">同上；容許度表逐條列出書目</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">界四套、面／旬兩套、三分性三套，皆具名到來源</td><td class="st ok" role="cell" data-label="狀態">已完成</td><td role="cell" data-label="依據">回應中每套帶作品與章節、行號或頁碼</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">界、面、三分性與十二分部「全部並列」：一次算出各家，逐星對照</td><td class="st ok" role="cell" data-label="狀態">已完成</td><td role="cell" data-label="依據">選項值 <span class="mono">all</span>；回應的 <span class="mono">computed_profiles</span> 寫出展開後的各套，每套結果與單選時相同；「各家相同／有不同」由結果頁比對印出的守護者，不進回應</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">廟旺判定</td><td class="st ok" role="cell" data-label="狀態">已完成</td><td role="cell" data-label="依據">來源：Ptolemy《占星四書》（Tetrabiblos）I.17／I.19（Robbins 編號；Hübner 為 I.18／I.20），並見於 Dorotheus、Valens、Firmicus</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">陷、弱（整星座，古典七政）</td><td class="st ok" role="cell" data-label="狀態">已完成</td><td role="cell" data-label="依據">陷：al-Bīrūnī《占星術入門》§442、Lilly 1647 p.104；Ptolemy 沒有陷。弱：Ptolemy I.19 等六家的星座一致；度數不判</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">外來（peregrine）</td><td class="st ok" role="cell" data-label="狀態">已完成</td><td role="cell" data-label="依據">依 Lilly 1647 p.112 的定義與他自己 p.104 的整套表判定，三分性只算當令（p.102）；換用其他界或三分性約 3%～21% 的位置判定不同，方法頁寫明。古典完整預設開啟</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">接納（含互容）、almuten</td><td class="st ok" role="cell" data-label="狀態">已研究，不做</td><td role="cell" data-label="依據">almuten 的理由見方法頁〈<a href="/zh-TW/methods#almuten">目前不算的東西</a>〉；回應的未評估清單仍列出接納</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">九分部（novenaria）</td><td class="st ok" role="cell" data-label="狀態">已研究，只寫說明</td><td role="cell" data-label="依據">規則各書一致，等於黃經乘以 9；出處與不計算的理由見方法頁〈<a href="/zh-TW/methods#novenaria">十二分部</a>〉一節</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">月空亡（含兩段式求根）</td><td class="st ok" role="cell" data-label="狀態">已完成</td><td role="cell" data-label="依據">求根器回傳括號端點與二分迭代次數</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">日夜盤（含近地平提示與並列輸出）</td><td class="st ok" role="cell" data-label="狀態">已完成</td><td role="cell" data-label="依據">太陽中心真高度 ±50 角分標記 <span class="mono">in_near_horizon_band</span></td></tr>
+          <tr role="row"><td role="cell" data-label="項目">行星日與行星時（從日出起算、晝夜各十二等分、迦勒底序）</td><td class="st ok" role="cell" data-label="狀態">已完成</td><td role="cell" data-label="依據">每張盤的 <span class="mono">derived_methods.planetary_hours</span>；極區沒有日出日落循環時標為不適用</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">行速、停滯與東出西入（古典判斷，選用）</td><td class="st ok" role="cell" data-label="狀態">已完成</td><td role="cell" data-label="依據">平均每日行度照 Lilly 1647（Bonatti 1550 並列），停滯照 Lilly 的天數並列出前後 15 天的轉向時刻，東出西入只取相對太陽一種；平均行度、停滯天數與 p.115 強弱表已核 1647 年版頁影像</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">命運點（Lot of Fortune，也譯福點、幸運點）與精神點（Lot of Spirit）、行星落宮、反照點（antiscia）</td><td class="st ok" role="cell" data-label="狀態">已完成</td><td role="cell" data-label="依據">計算頁的點與幾何選項組</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">年度時間主星（time lords）：年度小限、法達（firdaria）、黃道釋放（zodiacal releasing，兩層）、十年期（decennials，兩層）與七個延伸的阿拉伯點</td><td class="st ok" role="cell" data-label="狀態">已完成</td><td role="cell" data-label="依據">年度結果附內嵌的方法出處清單；規則、文獻分歧與我們採用的做法見〈<a href="/zh-TW/methods/time-lords">年度時間主星的規則與出處</a>〉。只列哪一段時間由誰輪值，不解讀</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">不計算宮位的模式、只知道日期的模式</td><td class="st ok" role="cell" data-label="狀態">已完成</td><td role="cell" data-label="依據">計算頁的出生時刻精度三選一</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">守護星體系的整體採用</td><td class="st ok" role="cell" data-label="狀態">已裁決</td><td role="cell" data-label="依據">所有古典程序固定使用七政主宰表；現代外行星主宰不在產品範圍</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">日夜盤判定基準的文獻考據</td><td class="st wip" role="cell" data-label="狀態">進行中</td><td role="cell" data-label="依據"><b>研究筆記所列的古典段落沒有明定太陽中心、上緣或折射的邊界</b>；現行規則標為產品慣例，非古典來源</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">時間主星的一手出處</td><td class="st wip" role="cell" data-label="狀態">進行中</td><td role="cell" data-label="依據">Valens 的關鍵句已對 Kroll 1908 希臘文，法達已讀 al-Bīrūnī 與 Bonatti 的英譯；Abū Maʿshar 原書、Paulus 希臘文與 Pingree 校勘本（學者比對多份古抄本後整理出的版本）尚未讀到，這幾條在出處清單照實標為轉引</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">月空亡星座界線規則的歷史歸屬</td><td class="st open" role="cell" data-label="狀態">未解</td><td role="cell" data-label="依據">星座條件最晚見於 Lilly 1647 p.112；「離座前精確完成」後人文獻歸於 Al H. Morrison（AFA Bulletin 第 28 卷第 10 期，1966 年 10 月；原是當年 AFA 大會的演講，後來印成 AFA 小冊《The Void of Course Moon》；原文未讀），更早的起源尚未查證；兩者合起來的歸屬仍未定。已寫入回應的 <span class="mono">source_verification</span></td></tr>
+          <tr role="row"><td role="cell" data-label="項目">精確擢升與弱的度數</td><td class="st pend" role="cell" data-label="狀態">尚未裁決</td><td role="cell" data-label="依據">目前只判整個星座；回應的方法出處條目寫明度數不判</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">相位容許度表與同度判準的各家對照欄</td><td class="st no" role="cell" data-label="狀態">未開始</td><td role="cell" data-label="依據">做法是每一對相位加一欄「依各表是否在容許度內」，星盤上的相位線照舊依你選的那一套；黃道釋放（zodiacal releasing）的年長度（360 日或 365.25 日）依已有裁決不並列</td></tr>
         </tbody>
       </table>
     </div>
-    <p class="limit"><b>這張表最值得看的是下面五列，不是上面十七列。</b>「已完成」只表示算得出來；「尚未裁決」表示我們知道有這個東西、也知道自己還沒有決定用誰的版本——<b>而在決定之前不會偷偷選一個給你。</b></p>
+    <p class="limit"><b>這張表最值得看的是下面五列，不是上面十七列。</b>「已完成」只表示算得出來；「尚未裁決」表示我們知道有這個東西、也知道自己還沒有決定用誰的版本——而在決定之前不會偷偷選一個給你。</p>
   </section>
 
   <section class="rm-sec">
-    <h2 class="way-title" data-step="04" id="way-04-title">現況 · 產品與營運</h2>
+    <p class="sig">04</p>
+    <h2 class="way-title" id="way-04-title">現況 · 產品與營運</h2>
     <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="way-04-title">
-      <table class="log rm-table">
-        <thead><tr><th>項目</th><th>狀態</th><th>依據</th></tr></thead>
-        <tbody>
-          <tr><td>四十一個公開介面與URL／metadata</td><td class="st ok">已登記</td><td><span class="mono">frontend/surfaces.json</span>與page producer逐頁對應</td></tr>
-          <tr><td>公開原始碼與source archive</td><td class="st ok">每版各自驗證</td><td>每一個live版本都要有自己的exact public source、匿名取得與archive readback驗證收據；一版的收據不外推到其他版本</td></tr>
-          <tr><td>主機、隱私與故障通知</td><td class="st ok">每版各自實測</td><td>每一個live版本都要有自己的具名host、privacy與rollback驗證收據；可用性由容器健康檢查維持（連續失敗時自動重啟容器），故障通知來自外部可用性監控；一版的收據不外推到其他版本</td></tr>
-          <tr><td>原生列印／PDF 輸出</td><td class="st ok">已完成</td><td>結果頁有列印版面：隱藏表單與控制項、展開所有摺疊區塊並印出結果；已取得驗算資料時，收據與驗算資料一併印出</td></tr>
-          <tr><td>多語系框架、英文版</td><td class="st no">未開始</td><td>目前只有繁體中文一個語系</td></tr>
-          <tr><td>外部安全或隱私審查</td><td class="st wip">多輪具名審查</td><td><b>有外部技術審查與多工具對抗測試；沒有本產品專業滲透測試、第三方認證或漏洞獎金</b></td></tr>
+      <table class="log rm-table stack-narrow" role="table">
+        <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">項目</th><th scope="col" role="columnheader">狀態</th><th scope="col" role="columnheader">依據</th></tr></thead>
+        <tbody role="rowgroup">
+          <tr role="row"><td role="cell" data-label="項目">五十四個公開介面與URL／metadata</td><td class="st ok" role="cell" data-label="狀態">已登記</td><td role="cell" data-label="依據"><span class="mono">frontend/surfaces.json</span>與page producer逐頁對應</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">公開原始碼與source archive</td><td class="st ok" role="cell" data-label="狀態">每版各自驗證</td><td role="cell" data-label="依據">每一個live版本都要有自己的exact public source、匿名取得與archive readback驗證收據；一版的收據不外推到其他版本</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">主機、隱私與故障通知</td><td class="st ok" role="cell" data-label="狀態">每版各自實測</td><td role="cell" data-label="依據">每一個live版本都要有自己的具名host、privacy與rollback驗證收據；可用性由容器健康檢查維持（連續失敗時自動重啟容器），故障通知來自外部可用性監控；一版的收據不外推到其他版本</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">原生列印／PDF 輸出</td><td class="st ok" role="cell" data-label="狀態">已完成</td><td role="cell" data-label="依據">結果頁有列印版面：隱藏表單與控制項、展開所有摺疊區塊並印出結果；已取得驗算資料時，收據與驗算資料一併印出</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">多語系框架、英文版</td><td class="st no" role="cell" data-label="狀態">未開始</td><td role="cell" data-label="依據">目前只有繁體中文一個語系</td></tr>
+          <tr role="row"><td role="cell" data-label="項目">外部安全或隱私審查</td><td class="st wip" role="cell" data-label="狀態">多輪具名審查</td><td role="cell" data-label="依據"><b>有外部技術審查與多工具對抗測試；沒有本產品專業滲透測試、第三方認證或漏洞獎金</b></td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
   <section class="rm-sec open-sec">
-    <h2 class="way-title" data-step="05">我們自己列出來的未決問題</h2>
-    <h2>這一節不會被刪短，<br>來讓路線圖看起來更完整。</h2>
+    <p class="sig">05</p>
+    <h2 class="way-title">我們自己列出來的未決問題</h2>
+    <p class="rm-sub">這一節不會被刪短，<br>來讓路線圖看起來更完整。</p>
     <p>下面是我們知道自己還沒有答案的事。<b>一個從不列出未決問題的路線圖，不是比較成熟，是比較不誠實。</b></p>
 
     <ul class="opens">
@@ -189,8 +196,9 @@
   <div class="path intent">
 
   <section class="rm-sec">
-    <h2 class="way-title" data-step="06">意圖</h2>
-    <p class="intent-lead"><b>以下是意圖，不是承諾。</b>沒有日期、沒有排程、可能改變或取消。<br>我們把方向寫出來，是因為隱瞞它對你沒有好處；但<b>如果你正在決定要不要等某個功能，請把下面當成意向，不要當成計畫。</b></p>
+    <p class="sig">06</p>
+    <h2 class="way-title">意圖</h2>
+    <p class="intent-lead"><b>以下是意圖，不是承諾。</b>沒有日期、沒有排程、可能改變或取消。<br>我們把方向寫出來，是因為隱瞞它對你沒有好處；但如果你正在決定要不要等某個功能，請把下面當成意向，不要當成計畫。</p>
     <div class="intents">
       <div>
         <h3>讓來源追上功能</h3>
@@ -209,6 +217,14 @@
         <p>繁體中文是階段選擇，不是產品定位。英文版會做，但排在有一定成果之後。</p>
       </div>
       <div>
+        <h3>下一輪：分享用的結果卡</h3>
+        <p>把一張盤的重點做成一張可以存下來的圖，由你自己決定要不要傳給別人。</p>
+      </div>
+      <div>
+        <h3>更後面：行運、合盤與主限推運</h3>
+        <p>行運（某一天的天象落在本命盤哪裡）、合盤（兩張盤之間的相位，<b>只做計算，不做配對解讀</b>）與主限推運（primary directions）。這三項排在繁體中文網站穩定、英文網站上線之後，同樣只給計算結果與出處。</p>
+      </div>
+      <div>
         <h3>關於收費</h3>
         <p>目前全部免費。未來可能有付費項目。<b>我們不打算靠出售或分析你的出生資料獲利</b>——那會同時違反本產品的隱私原則與它被選擇的理由。任何收費方式的改變都會事先公告。</p>
       </div>
@@ -216,7 +232,8 @@
   </section>
 
   <section class="rm-sec">
-    <h2 class="way-title" data-step="07">不打算做的事</h2>
+    <p class="sig">07</p>
+    <h2 class="way-title">不打算做的事</h2>
     <ul class="ticks">
       <li>不加追蹤器、不加廣告、不加第三方分析。</li>
       <li>不因為別的工具有某個功能就加進來。</li>
@@ -227,13 +244,14 @@
   </section>
 
   <section class="rm-sec">
-    <h2 class="way-title" data-step="08">什麼會改變這一頁</h2>
+    <p class="sig">08</p>
+    <h2 class="way-title">什麼會改變這一頁</h2>
     <ul class="ticks">
       <li>任何一項完成 → 現況表更新，<b>並補上「依據」欄</b>。</li>
       <li>任何一項來源考據完成 → 該項的來源狀態更新，本頁與<a href="/zh-TW/methods">方法</a>同步；是否採用仍由裁決決定。</li>
       <li>某項意圖被放棄 → <b>從本頁刪除，並在此註明曾經列過。</b></li>
     </ul>
-    <p class="limit">最後一條是刻意的。<b>默默刪掉一項意圖，等於假裝從來沒說過。</b>而第一條的「依據」欄同樣是刻意的——<b>一份沒有依據欄的路線圖，過期了也看不出來。</b></p>
+    <p class="limit">最後一條是刻意的。<b>默默刪掉一項意圖，等於假裝從來沒說過。</b>而第一條的「依據」欄同樣是刻意的——一份沒有依據欄的路線圖，過期了也看不出來。</p>
   </section>
 
   </div>
@@ -280,7 +298,7 @@
   <div class="wrap">
     <span>渾儀 ARMILLARY</span>
     <span>只計算，不解盤，不預測</span>
-    <span>最後更新：<time datetime="2026-10-18">2026-10-18</time></span>
+    <span>最後更新：<time datetime="2026-10-21">2026-10-21</time></span>
   </div>
 </footer>
 

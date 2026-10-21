@@ -46,6 +46,7 @@ from urllib.parse import parse_qs, urlparse
 from packaging.markers import Marker, default_environment
 from packaging.requirements import Requirement
 
+from scripts.tools.commands import run_checked
 from scripts.tools.output_confinement import external_output_path
 from scripts.tools.source_tree_identity import sha256_file as _sha256
 
@@ -504,11 +505,7 @@ def triage_decision(
 
 
 def _run(command: list[str], *, timeout: int = 1800) -> str:
-    result = subprocess.run(command, check=False, capture_output=True, text=True, timeout=timeout)
-    if result.returncode:
-        detail = (result.stderr or result.stdout).strip()
-        raise AuditFailure(f"command failed ({result.returncode}): {command[0]}: {detail[-2000:]}")
-    return result.stdout
+    return run_checked(command, error=AuditFailure, timeout=timeout).stdout
 
 
 def _database(grype: str) -> dict[str, Any]:

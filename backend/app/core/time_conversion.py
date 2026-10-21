@@ -5,8 +5,9 @@ UTC.  Every reading comes from ``time_utils.wall_clock_readings``, which runs
 the chart's own conversion once per fold, so the helper and ``/api/chart``
 cannot disagree; what this module adds is the description: whether the time
 repeats or never existed, the abbreviation and summer-time flag the tz database
-gives it, the rule's regime and source row (``civil_time_sources``), the 1988
-warning the chart would carry, and the tz database the process converts with.
+gives it, the rule's regime and source row (``civil_time_sources``), the
+warnings the chart would carry (China 1988, Hong Kong 1945–1946), and the tz
+database the process converts with.
 
 Scope is the four regions the source table covers (Taiwan, Hong Kong, Macau,
 mainland China); any other zone, and a fixed offset, is refused rather than
@@ -23,7 +24,10 @@ from zoneinfo import ZoneInfo
 from .invariants import InternalInvariantError
 from .civil_time_basis import check_zone_civil_time_basis
 from .civil_time_sources import CIVIL_TIME_SOURCES, REGIONS, RULE_ZONES, rule_zone
-from .dossier_warnings import prc_1988_dst_dispute_warnings
+from .dossier_warnings import (
+    hk_observatory_summer_time_warnings,
+    prc_1988_dst_dispute_warnings,
+)
 from .time_utils import (
     MICROSECONDS_PER_SECOND,
     civil_time_label,
@@ -51,7 +55,7 @@ def _utc_iso(instant: dtmod.datetime) -> str:
     ) + "Z"
 
 
-def _wall_label(value: dtmod.datetime) -> str:
+def _wall_clock_text(value: dtmod.datetime) -> str:
     return value.strftime("%Y-%m-%d %H:%M:%S")
 
 
@@ -95,8 +99,8 @@ def _gap(naive: dtmod.datetime, zone: ZoneInfo, kept_under: str) -> dict:
     if abbreviation is None:
         raise InternalInvariantError("abbreviation is not None")
     return {
-        "skipped_local_start": _wall_label((transition + before).replace(tzinfo=None)),
-        "skipped_local_end": _wall_label((transition + after).replace(tzinfo=None)),
+        "skipped_local_start": _wall_clock_text((transition + before).replace(tzinfo=None)),
+        "skipped_local_end": _wall_clock_text((transition + after).replace(tzinfo=None)),
         "offset_before_label": utc_offset_text(before.total_seconds() / 3600),
         "offset_after_label": utc_offset_text(after.total_seconds() / 3600),
         "transition_utc": transition.strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -127,11 +131,11 @@ def convert_civil_time(request) -> dict:
     zone = ZoneInfo(zone_name)
     found = wall_clock_readings(stated, timezone)
     status = STATUSES[2] if not found else STATUSES[1] if len(found) == 2 else STATUSES[0]
+    exact = SimpleNamespace(timezone=timezone, datetime=stated, birth_time_precision="exact")
     warnings = [
         {key: warning[key] for key in _WARNING_KEYS}
-        for warning in prc_1988_dst_dispute_warnings(SimpleNamespace(
-            timezone=timezone, datetime=stated, birth_time_precision="exact",
-        ))
+        for rule in (prc_1988_dst_dispute_warnings, hk_observatory_summer_time_warnings)
+        for warning in rule(exact)
     ]
     region = RULE_ZONES[kept_under]
     return {

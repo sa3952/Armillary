@@ -35,6 +35,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 
 from .invariants import InternalInvariantError
 from ..ephemeris import FullEphemerisRequiredError
@@ -44,13 +45,13 @@ from .module_state import (
     SEARCH_EPHEMERIS_REFUSALS,
     computed_receipt,
     module_state,
-    not_applicable_receipt,
+    frame_table_refusal,
 )
-from .method_status import method_receipt
+from .method_status import method_head
 from .dignity_tables import SIGNS
-from .formatting import normalize_longitude, zodiac_sign_index
+from .formatting import degrees_number, normalize_longitude, zodiac_sign_index
 from .root_finding import SOLVER_NAME, find_crossings_detailed, wrap_to_signed_180
-from .source_reading import SOURCE_READING_LEVELS, reference_only
+from .source_reading import BIBLIOGRAPHIC_ONLY, ORIGINAL_LANGUAGE_READ, TRANSLATION_READ, cited, reference_only
 from .trace import Trace
 from .aspect_profiles import (
     ASPECT_SET_PROFILES,
@@ -110,8 +111,6 @@ SEARCHED_PERFECTION_STATUSES = frozenset({"found", "searched_no_root", "source_u
 # perfection_status 仍計入 perfection.coverage，所以「未搜尋」的計數不因省略而消失。
 ASPECT_TARGET_LISTING = {
     "listed": ["bracketing_exact_angles", "in_orb_true", "perfection_searched"],
-    # 最近相位必是兩個夾住角距離的精確角之一，所以它那一格一定列出；pair 的顯示摘要
-    # nearest_aspect 不另抄判定，消費端以 key 取這一格。
     "nearest_aspect_entry": "always_listed_find_by_nearest_aspect_key",
     "unlisted_semantics": "in_orb_false_or_null_and_perfection_not_searched",
     "unlisted_counted_in": "derived_methods.aspects.perfection.coverage",
@@ -180,9 +179,8 @@ def _pair_listing(evaluated: int, listed: int, rule: str = PAIR_LISTING_RULE) ->
 # 使用者可經 `partile_profile` 改選。
 DEFAULT_PARTILE_PROFILE_KEY = "same_degree_number_v1"
 
-# 產品預設容許度表（預設一組 orb profile，並在介面提示可切換）。所選是 Lilly 1647 的 moiety 表——方法研究筆記認為
-# (orb_A + orb_B) / 2 對 Lilly p.107 是直接實作。schemas.OptionsInput 的預設值必須等於
-# 此鍵（測試看守）；收據以 profile_selection 標明它是產品預設，不是使用者選的。
+# 產品預設容許度表（介面提示可切換）：Lilly 1647 moiety 表，方法研究筆記認為 (orb_A + orb_B) / 2
+# 是 Lilly p.107 的直接實作。schemas.OptionsInput 的預設值必須等於此鍵（測試看守）。
 DEFAULT_ORB_PROFILE_KEY = "lilly_1647_experience_v1"
 
 
@@ -192,12 +190,9 @@ def orb_profile_selection(options) -> str:
 
     One generator for the aspect receipt and the dossier option state.  A fixed
     pair orb with no profile in force is "yielded" whether the profile was left
-    out (the schema's default yields) or sent as null, because the fixed orb is
-    the orb source either way.  Deciding that from the values, not from
-    ``model_fields_set``, lets the ``requested_options`` echo reproduce the
-    state.  "user_declined" is a null
-    profile with no fixed orb.  Whether a profile *key* was sent stays an
-    explicit-or-defaulted fact, as for every option.
+    out or sent as null, since the fixed orb is the orb source either way;
+    deciding from values, not ``model_fields_set``, lets the
+    ``requested_options`` echo reproduce the state.
     """
 
     if options.aspect_orb_profile is not None:
@@ -307,9 +302,8 @@ def _nearest_aspect(
         elif abs(offset) == abs(best_offset):
             tie = True
     if best is None or best_offset is None:
-        # Only reachable with an empty definition set, which no caller produces.
-        # Saying so here beats the TypeError the caller would otherwise raise
-        # one frame later on aspect["angle"].
+        # Only an empty set (no caller passes one) gets here; fail clearly rather
+        # than with a TypeError one frame later.
         raise ValueError("aspect_definitions must not be empty")
     return best, best_offset, tie
 
@@ -327,6 +321,9 @@ def _signed_target(delta: float, angle: float) -> float:
 
 def _same_integer_degree(lon_a: float, lon_b: float) -> bool:
     return int((lon_a % 360.0) % 30.0) == int((lon_b % 360.0) % 30.0)
+
+
+PARTILE_NOT_APPLICABLE_TO_MINOR = "partile_profile_not_applicable_to_modern_minor_aspect"
 
 
 def _partile_for_target(
@@ -354,7 +351,7 @@ def _partile_for_target(
     """
 
     if aspect["classification"] == "modern_minor":
-        return None, "partile_profile_not_applicable_to_modern_minor_aspect"
+        return None, PARTILE_NOT_APPLICABLE_TO_MINOR
     if profile["valid_aspect_precondition"] is None:
         return abs(target_offset) <= profile["threshold_degrees"], None
     if contains_angle:
@@ -400,8 +397,7 @@ def _perfection_times(
     longitude_at: Callable[[int, float], float],
     window_days: float,
 ) -> list[dict]:
-    # Called only with a motion model (both body ids present); the caller
-    # reads crossing["t"] off each crossing record.
+    # Called only with a motion model (both body ids present).
     body_a = participant_a["body_id"]
     body_b = participant_b["body_id"]
 
@@ -421,23 +417,15 @@ def _perfection_times(
     )
 
 
-def _orb_receipt(
-    participants: list[dict],
-    *,
-    profile_key: str | None,
-    profile: dict | None,
-    orb_scale_percent: float | None,
-    fixed_orb_degrees: float | None,
-    angle_orb_degrees: float | None,
-    profile_selection: str | None = None,
-) -> dict:
+def _orb_receipt(participants: list[dict], policy: OrbPolicy) -> dict:
     """Return the effective orb table independently of pair rendering.
 
     Pair records keep their local threshold for convenient inspection; this receipt is
     the request-level table needed to reproduce why a verdict was or was not available.
     """
 
-    scale = (orb_scale_percent if orb_scale_percent is not None else 100.0) / 100.0
+    profile, scale, orb_scale_percent = policy.profile, policy.scale, policy.scale_percent
+    fixed_orb_degrees, angle_orb_degrees = policy.fixed_orb_degrees, policy.angle_orb_degrees
     participant_orbs = []
     for participant in participants:
         eligible = participant["category"] in ORB_ELIGIBLE_CATEGORIES
@@ -467,8 +455,7 @@ def _orb_receipt(
             }
         )
 
-    # profile.get("provenance") may be absent, so the chain's type is str | None
-    # even though the literal branches all assign a string.
+    # str | None: profile.get("provenance") may be absent.
     source: str | None
     if fixed_orb_degrees is not None:
         configuration_mode = "user_fixed_pair_threshold"
@@ -506,8 +493,8 @@ def _orb_receipt(
             reason_code=None if in_force else "orb_profile_not_selected",
         ),
         "configuration_mode": configuration_mode,
-        "profile_key": profile_key,
-        "profile_selection": profile_selection,
+        "profile_key": policy.profile_key,
+        "profile_selection": policy.selection_state,
         "rule": rule,
         "scale_percent": orb_scale_percent,
         "fixed_pair_threshold_degrees": fixed_orb_degrees,
@@ -525,7 +512,7 @@ def _orb_receipt(
         **(
             {
                 "source_verification": _verification_status(
-                    profile["source_verification"], f"aspects/orb/{profile_key}"
+                    profile["source_verification"], f"aspects/orb/{policy.profile_key}"
                 )
             }
             if profile is not None
@@ -535,26 +522,17 @@ def _orb_receipt(
 
 
 def aspects_not_applicable(state: dict, trace: Trace) -> dict:
-    """The aspects module refused by the central frame table.
-
-    Whole-sign configuration, partile (degree of sign) and the orb verdicts all
-    read longitudes against the signs of the tropical ecliptic of date; J2000
-    and mean (nutation-off) longitudes are not that frame.  Lots and angles do
-    not join either.  Nothing is converted.
-    """
-
-    trace.add(
-        f"相位 (method={WHOLE_SIGN_METHOD_NAME})",
-        result={"execution_status": "not_applicable", "reason_code": state["reason_code"]},
+    # Lots and angles do not join a refused aspects module either.
+    refusal = frame_table_refusal(
+        state, trace, f"相位 (method={WHOLE_SIGN_METHOD_NAME})",
         note=(
             "整宮配置、同度與容許度判定都讀當日回歸框架的黃經與星座界線；"
             "J2000 或不含章動的黃經不在這個框架，參考框架相容表判定不適用，不計算、不轉換座標。"
         ),
     )
     return {
-        "method": WHOLE_SIGN_METHOD_NAME,
-        **method_receipt("aspects"),
-        **not_applicable_receipt(state),
+        **method_head(WHOLE_SIGN_METHOD_NAME, "aspects"),
+        **refusal,
         "participants": [],
         "excluded_participant_keys": [],
         "pairs": [],
@@ -563,29 +541,62 @@ def aspects_not_applicable(state: dict, trace: Trace) -> dict:
     }
 
 
+@dataclass(frozen=True)
+class OrbPolicy:
+    """The orb settings one aspect calculation runs under."""
+
+    profile_key: str | None
+    profile: dict | None
+    scale_percent: float | None
+    fixed_orb_degrees: float | None
+    angle_orb_degrees: float | None
+    selection_state: str | None = None
+
+    @property
+    def scale(self) -> float:
+        return (self.scale_percent if self.scale_percent is not None else 100.0) / 100.0
+
+    @property
+    def scaled(self) -> bool:
+        return self.scale_percent is not None
+
+
+@dataclass(frozen=True)
+class AngleUse:
+    """Whether the angles were asked for, could join, and did join."""
+
+    requested: bool
+    applicable: bool
+    used: bool
+
+
+@dataclass(frozen=True)
+class PerfectionSearch:
+    """The perfection search settings shared by every pair."""
+
+    include: bool
+    jd_ut: float | None
+    longitude_at: Callable[[int, float], float] | None
+    window_days: float
+
+
 def _degree_based_receipt(
     usable: list[dict],
     participants: list[dict],
     *,
     aspect_set_profile_key: str,
-    aspect_set_profile: dict,
-    degree_method_name: str,
     partile_profile_key: str,
-    partile_profile: dict,
-    orb_profile_key: str | None,
-    profile: dict | None,
-    orb_scale_percent: float | None,
-    fixed_orb_degrees: float | None,
-    angle_orb_degrees: float | None,
-    orb_profile_selection_state: str | None,
-    angles_requested: bool,
-    angles_applicable: bool,
-    angles_used: bool,
+    degree_method_name: str,
+    orb: OrbPolicy,
+    angles: AngleUse,
 ) -> dict:
     """The degree-based layer's receipt: the set, partile, application and orb policies."""
+    aspect_set_profile = ASPECT_SET_PROFILES[aspect_set_profile_key]
+    partile_profile = PARTILE_PROFILES[partile_profile_key]
+    orb_profile_key, profile = orb.profile_key, orb.profile
+    fixed_orb_degrees, angle_orb_degrees = orb.fixed_orb_degrees, orb.angle_orb_degrees
     return {
-        "method": degree_method_name,
-        **method_receipt("aspects"),
+        **method_head(degree_method_name, "aspects"),
         "aspect_set_profile": aspect_set_profile_key,
         "aspect_set_profile_detail": dict(aspect_set_profile),
         # 識別碼不動，只說明名稱各段指什麼。
@@ -596,13 +607,11 @@ def _degree_based_receipt(
         ),
         "aspect_set_profiles_available": sorted(ASPECT_SET_PROFILES),
         "aspect_keys": list(aspect_set_profile["aspect_keys"]),
-        # 相位中文名的唯一產生器：涵蓋所選集合的每個相位；nearest_aspect 與
-        # aspect_targets 只帶 key，名稱一律從這裡取。
+        # 相位中文名與精確角的唯一一份：nearest_aspect 與 aspect_targets 只帶 key。
         "aspect_names_zh": {
             key: _ASPECT_BY_KEY[key]["zh"]
             for key in aspect_set_profile["aspect_keys"]
         },
-        # 精確角的唯一一份：各組 nearest_aspect 與 aspect_targets 只帶 key。
         "aspect_angles_degrees": {
             key: _ASPECT_BY_KEY[key]["angle"]
             for key in aspect_set_profile["aspect_keys"]
@@ -620,6 +629,15 @@ def _degree_based_receipt(
             _PARTILE_SOURCE_VERIFICATION, "aspects/partile"
         ),
         "partile_profiles_available": sorted(PARTILE_PROFILES),
+        # A reason that holds for every target of an aspect is stated once per
+        # aspect key here; those targets carry partile and partile_reason_code
+        # null.  Today that is the modern minor aspects, which no partile
+        # profile governs.
+        "partile_reason_codes_by_aspect": {
+            key: PARTILE_NOT_APPLICABLE_TO_MINOR
+            for key in aspect_set_profile["aspect_keys"]
+            if _ASPECT_BY_KEY[key]["classification"] == "modern_minor"
+        },
         "partile_note": (
             "三種慣例並存且會給出不同答案，其中兩種都載於 Lilly 名下的著作"
             "（1647 同度、1677 三度以內）。預設採最通行的同度慣例，可經 "
@@ -672,26 +690,18 @@ def _degree_based_receipt(
             or angle_orb_degrees is not None
             else "orb_profile_not_selected"
         ),
-        "orb_receipt": _orb_receipt(
-            usable,
-            profile_key=orb_profile_key,
-            profile=profile,
-            orb_scale_percent=orb_scale_percent,
-            fixed_orb_degrees=fixed_orb_degrees,
-            angle_orb_degrees=angle_orb_degrees,
-            profile_selection=orb_profile_selection_state,
-        ),
+        "orb_receipt": _orb_receipt(usable, orb),
         "angle_participation": {
             **module_state(
-                requested=angles_requested or any(
+                requested=angles.requested or any(
                     item["category"] == "angle" for item in participants
                 ),
-                executed=angles_used,
-                applicable=angles_applicable,
-                available=angles_used,
-                source="astronomical_data.angles.asc_and_mc" if angles_used else None,
+                executed=angles.used,
+                applicable=angles.applicable,
+                available=angles.used,
+                source="astronomical_data.angles.asc_and_mc" if angles.used else None,
                 reason_code=(
-                    None if angles_applicable else "house_calculation_not_executed"
+                    None if angles.applicable else "house_calculation_not_executed"
                 ),
             ),
             "participant_keys": [
@@ -723,9 +733,8 @@ def _perfection_receipt(include_perfection: bool, perfection_window_days: float)
         "search_window_days": (
             perfection_window_days if include_perfection else None
         ),
-        # 只對此刻入相位的 target 往後搜尋；此刻精確、
-        # 出相位、相對站留不搜尋，各以 not_applying 標明（Lilly 1647 p.107 從入相位
-        # 定義成相）。
+        # 只對此刻入相位的 target 往後搜尋；其餘標 not_applying（Lilly 1647 p.107
+        # 從入相位定義成相）。
         "semantics": (
             "forward_search_from_chart_moment_bounded_by_search_window_"
             "applying_targets_only"
@@ -737,23 +746,109 @@ def _perfection_receipt(include_perfection: bool, perfection_window_days: float)
     }
 
 
+def _evaluate_pairs(
+    usable: list[dict],
+    aspect_definitions: tuple[dict, ...],
+    excluded_by_definition: list[dict],
+    *,
+    orb: OrbPolicy,
+    partile_profile: dict,
+    perfection: PerfectionSearch,
+) -> tuple[list[dict], dict]:
+    """Every comparable pair's record, and the perfection status counts."""
+
+    coverage = dict.fromkeys(PERFECTION_STATUSES, 0)
+    evaluated: list[dict] = []
+    for index, participant_a in enumerate(usable):
+        for participant_b in usable[index + 1:]:
+            if (
+                participant_a["category"] == "angle"
+                and participant_b["category"] == "angle"
+            ):
+                continue
+            pair_keys = frozenset({participant_a["key"], participant_b["key"]})
+            exclusion = DEFINITIONAL_EXCLUDED_PAIRS.get(pair_keys)
+            if exclusion is not None:
+                # 同一條交點軸的南北兩端，或兩種交點模型之間：關係是定義或算法差，
+                # 不是發現，不列為相位（bodies.DEFINITIONAL_EXCLUDED_PAIRS；赤緯模組同一表）。
+                excluded_by_definition.append({
+                    "keys": sorted(pair_keys),
+                    "reason_code": exclusion,
+                })
+                continue
+            record, statuses = _pair_record(
+                participant_a,
+                participant_b,
+                aspect_definitions=aspect_definitions,
+                orb=orb,
+                partile_profile=partile_profile,
+                perfection=perfection,
+            )
+            evaluated.append(record)
+            for status in statuses:
+                coverage[status] += 1
+    return evaluated, coverage
+
+
+def _settle_perfection(
+    perfection: dict, coverage: dict, evaluated: list[dict], include_perfection: bool
+) -> None:
+    """Write the search coverage, and a refused source, into the perfection receipt."""
+
+    perfection["coverage"] = coverage
+    if include_perfection:
+        searched = coverage["found"] + coverage["searched_no_root"]
+        perfection["partial"] = searched < sum(coverage.values())
+    if coverage["source_unavailable"]:
+        refused = {
+            target["perfection"]["reason_code"]
+            for pair in evaluated
+            for target in pair["aspect_targets"]
+            if target["perfection_status"] == "source_unavailable"
+        }
+        # A server fault anywhere outranks the request leaving coverage: the
+        # search stays applicable and is merely unavailable.
+        reason_code, applicable = next(
+            refusal
+            for refusal in sorted(
+                SEARCH_EPHEMERIS_REFUSALS.values(), key=lambda refusal: not refusal[1]
+            )
+            if refusal[0] in refused
+        )
+        perfection.update({
+            "executed": True,
+            "applicable": applicable,
+            "available": False,
+            "source": None,
+            "status": "not_applicable",
+            "reason_code": reason_code,
+        })
+
+
+@dataclass(frozen=True)
+class AspectSettings:
+    """The request's aspect options: set, orbs, angles, partile and perfection."""
+
+    orb_profile_key: str | None = None
+    aspect_set_profile_key: str = "ptolemaic_major_v1"
+    orb_scale_percent: float | None = None
+    fixed_orb_degrees: float | None = None
+    angle_orb_degrees: float | None = None
+    angles_requested: bool = False
+    angles_applicable: bool = True
+    partile_profile_key: str = DEFAULT_PARTILE_PROFILE_KEY
+    include_perfection: bool = False
+    jd_ut: float | None = None
+    longitude_at: Callable[[int, float], float] | None = None
+    perfection_window_days: float = DEFAULT_PERFECTION_WINDOW_DAYS
+    orb_profile_selection_state: str | None = None
+
+
 def compute_aspects(
     participants: list[dict],
     trace: Trace,
     *,
-    orb_profile_key: str | None = None,
-    aspect_set_profile_key: str = "ptolemaic_major_v1",
-    orb_scale_percent: float | None = None,
-    fixed_orb_degrees: float | None = None,
-    angle_orb_degrees: float | None = None,
-    angles_requested: bool = False,
-    angles_applicable: bool = True,
-    partile_profile_key: str = DEFAULT_PARTILE_PROFILE_KEY,
-    include_perfection: bool = False,
-    jd_ut: float | None = None,
-    longitude_at: Callable[[int, float], float] | None = None,
-    perfection_window_days: float = DEFAULT_PERFECTION_WINDOW_DAYS,
-    orb_profile_selection_state: str | None = None,
+    settings: AspectSettings = AspectSettings(),
     pair_filter: Callable[[dict], bool] = pair_is_listed,
 ) -> dict:
     """對所有參與者的兩兩組合計算整宮配置與逐度相位。
@@ -766,28 +861,31 @@ def compute_aspects(
     （缺少時不計算成相時刻——阿拉伯點沒有對應的星曆天體）。
     """
 
+    s = settings
+    longitude_at = s.longitude_at
+
     # The request schema already refuses a scale without a profile and a fixed
     # orb beside one; an unknown key is refused here rather than silently
     # running without an orb table.
-    profile = ORB_PROFILES.get(orb_profile_key) if orb_profile_key else None
-    if orb_profile_key and profile is None:
-        raise ValueError(f"unknown orb profile: {orb_profile_key}")
-    aspect_set_profile = ASPECT_SET_PROFILES.get(aspect_set_profile_key)
+    profile = ORB_PROFILES.get(s.orb_profile_key) if s.orb_profile_key else None
+    if s.orb_profile_key and profile is None:
+        raise ValueError(f"unknown orb profile: {s.orb_profile_key}")
+    aspect_set_profile = ASPECT_SET_PROFILES.get(s.aspect_set_profile_key)
     if aspect_set_profile is None:
-        raise ValueError(f"unknown aspect set profile: {aspect_set_profile_key}")
+        raise ValueError(f"unknown aspect set profile: {s.aspect_set_profile_key}")
     aspect_definitions = tuple(
         _ASPECT_BY_KEY[key] for key in aspect_set_profile["aspect_keys"]
     )
     degree_method_name = (
         DEGREE_ASPECT_METHOD_NAME
-        if aspect_set_profile_key == "ptolemaic_major_v1"
-        and fixed_orb_degrees is None
-        and angle_orb_degrees is None
+        if s.aspect_set_profile_key == "ptolemaic_major_v1"
+        and s.fixed_orb_degrees is None
+        and s.angle_orb_degrees is None
         else EXTENDED_DEGREE_ASPECT_METHOD_NAME
     )
-    partile_profile = PARTILE_PROFILES.get(partile_profile_key)
+    partile_profile = PARTILE_PROFILES.get(s.partile_profile_key)
     if partile_profile is None:
-        raise ValueError(f"unknown partile profile: {partile_profile_key}")
+        raise ValueError(f"unknown partile profile: {s.partile_profile_key}")
     if longitude_at is not None:
         # Every pair's perfection search samples the same coarse grid.
         longitude_at = memoized_longitudes(longitude_at)
@@ -801,19 +899,23 @@ def compute_aspects(
         for participant in participants
         if participant.get("longitude") is None
     ]
-    angles_used = any(item["category"] == "angle" for item in usable)
+    orb = OrbPolicy(
+        s.orb_profile_key, profile, s.orb_scale_percent, s.fixed_orb_degrees,
+        s.angle_orb_degrees, s.orb_profile_selection_state,
+    )
+    angles = AngleUse(
+        s.angles_requested, s.angles_applicable,
+        any(item["category"] == "angle" for item in usable),
+    )
 
     receipt: dict = {
-        # 頂層的 method 三欄位讓本模組與其餘 derived_methods 具有相同形狀，
-        # dossier 的 methodology receipt 才能一視同仁地收錄。名稱取整宮層，
-        # 因為那是預設就會產生判斷的那一層；逐度層的方法名另見 degree_based。
-        "method": WHOLE_SIGN_METHOD_NAME,
-        **method_receipt("aspects"),
+        # 頂層 method 欄位讓 dossier methodology receipt 與其餘 derived_methods 同形；
+        # 取整宮層的名稱，因為那層預設就產生判斷。
+        **method_head(WHOLE_SIGN_METHOD_NAME, "aspects"),
         # Availability is settled below, once the pairs exist.
         **computed_receipt(PRODUCT_FORMULA_SOURCE),
         "whole_sign": {
-            "method": WHOLE_SIGN_METHOD_NAME,
-            **method_receipt("aspects"),
+            **method_head(WHOLE_SIGN_METHOD_NAME, "aspects"),
             "method_provenance": "hellenistic_whole_sign_configuration_doctrine",
             "requires_orb": False,
             "source_ref": "aspects/whole_sign",
@@ -821,22 +923,13 @@ def compute_aspects(
         "degree_based": _degree_based_receipt(
             usable,
             participants,
-            aspect_set_profile_key=aspect_set_profile_key,
-            aspect_set_profile=aspect_set_profile,
+            aspect_set_profile_key=s.aspect_set_profile_key,
+            partile_profile_key=s.partile_profile_key,
             degree_method_name=degree_method_name,
-            partile_profile_key=partile_profile_key,
-            partile_profile=partile_profile,
-            orb_profile_key=orb_profile_key,
-            profile=profile,
-            orb_scale_percent=orb_scale_percent,
-            fixed_orb_degrees=fixed_orb_degrees,
-            angle_orb_degrees=angle_orb_degrees,
-            orb_profile_selection_state=orb_profile_selection_state,
-            angles_requested=angles_requested,
-            angles_applicable=angles_applicable,
-            angles_used=angles_used,
+            orb=orb,
+            angles=angles,
         ),
-        "perfection": _perfection_receipt(include_perfection, perfection_window_days),
+        "perfection": _perfection_receipt(s.include_perfection, s.perfection_window_days),
         "participants": [
             {
                 "key": participant["key"],
@@ -854,71 +947,17 @@ def compute_aspects(
         "whole_sign_aversions": [],
     }
 
-    coverage = dict.fromkeys(PERFECTION_STATUSES, 0)
-    evaluated: list[dict] = []
-    for index, participant_a in enumerate(usable):
-        for participant_b in usable[index + 1:]:
-            if (
-                participant_a["category"] == "angle"
-                and participant_b["category"] == "angle"
-            ):
-                continue
-            pair_keys = frozenset({participant_a["key"], participant_b["key"]})
-            exclusion = DEFINITIONAL_EXCLUDED_PAIRS.get(pair_keys)
-            if exclusion is not None:
-                # 同一條交點軸的南北兩端，或兩種交點模型之間：關係是定義或算法差，
-                # 不是發現，不列為相位（bodies.DEFINITIONAL_EXCLUDED_PAIRS；赤緯模組同一表）。
-                receipt["excluded_pairs_by_definition"].append({
-                    "keys": sorted(pair_keys),
-                    "reason_code": exclusion,
-                })
-                continue
-            record, statuses = _pair_record(
-                participant_a,
-                participant_b,
-                profile=profile,
-                aspect_definitions=aspect_definitions,
-                orb_scale_percent=orb_scale_percent,
-                fixed_orb_degrees=fixed_orb_degrees,
-                angle_orb_degrees=angle_orb_degrees,
-                partile_profile=partile_profile,
-                include_perfection=include_perfection,
-                jd_ut=jd_ut,
-                longitude_at=longitude_at,
-                perfection_window_days=perfection_window_days,
-            )
-            evaluated.append(record)
-            for status in statuses:
-                coverage[status] += 1
-
-    receipt["perfection"]["coverage"] = coverage
-    if include_perfection:
-        searched = coverage["found"] + coverage["searched_no_root"]
-        receipt["perfection"]["partial"] = searched < sum(coverage.values())
-    if coverage["source_unavailable"]:
-        refused = {
-            target["perfection"]["reason_code"]
-            for pair in evaluated
-            for target in pair["aspect_targets"]
-            if target["perfection_status"] == "source_unavailable"
-        }
-        # A server fault anywhere outranks the request leaving coverage: the
-        # search stays applicable and is merely unavailable.
-        reason_code, applicable = next(
-            refusal
-            for refusal in sorted(
-                SEARCH_EPHEMERIS_REFUSALS.values(), key=lambda refusal: not refusal[1]
-            )
-            if refusal[0] in refused
-        )
-        receipt["perfection"].update({
-            "executed": True,
-            "applicable": applicable,
-            "available": False,
-            "source": None,
-            "status": "not_applicable",
-            "reason_code": reason_code,
-        })
+    evaluated, coverage = _evaluate_pairs(
+        usable,
+        aspect_definitions,
+        receipt["excluded_pairs_by_definition"],
+        orb=orb,
+        partile_profile=partile_profile,
+        perfection=PerfectionSearch(
+            s.include_perfection, s.jd_ut, longitude_at, s.perfection_window_days
+        ),
+    )
+    _settle_perfection(receipt["perfection"], coverage, evaluated, s.include_perfection)
     receipt["pairs"] = [pair for pair in evaluated if pair_filter(pair)]
     receipt["whole_sign_aversions"] = whole_sign_aversions(evaluated)
     receipt["pair_listing"] = _pair_listing(
@@ -935,7 +974,7 @@ def compute_aspects(
             "reason_code": "no_comparable_participant_pair",
         })
 
-    _trace_summary(receipt, evaluated, trace, orb_profile_key=orb_profile_key)
+    _trace_summary(receipt, evaluated, trace)
     return receipt
 
 
@@ -945,14 +984,14 @@ def _orb_verdict_for_target(
     target_offset: float,
     participant_a: dict,
     participant_b: dict,
-    profile: dict | None,
-    scale: float,
-    scaled: bool,
-    fixed_orb_degrees: float | None,
-    angle_orb_degrees: float | None,
+    orb: OrbPolicy,
     contains_angle: bool,
 ) -> dict:
-    """該 target 的容許度判定；每個 target 各自判定。"""
+    """該 target 的容許度判定。"""
+
+    profile = orb.profile
+    fixed_orb_degrees, angle_orb_degrees = orb.fixed_orb_degrees, orb.angle_orb_degrees
+    scale = orb.scale
 
     orb_a = orb_b = None
     in_orb: bool | None = None
@@ -984,7 +1023,7 @@ def _orb_verdict_for_target(
             reason_code = "no_sourced_orb_for_participant"
         else:
             threshold = (orb_a + orb_b) / 2.0
-            rule = "scaled_moiety" if scaled else "moiety"
+            rule = "scaled_moiety" if orb.scaled else "moiety"
             in_orb = abs(target_offset) <= threshold
     return {
         "in_orb": in_orb,
@@ -1000,64 +1039,8 @@ def _unsearched_perfection(status: str, *, reason_code: str | None = None) -> di
     return {"status": status, "reason_code": reason_code, "crossing_count": None}
 
 
-def _pair_record(
-    participant_a: dict,
-    participant_b: dict,
-    *,
-    profile: dict | None,
-    aspect_definitions: tuple[dict, ...],
-    orb_scale_percent: float | None,
-    fixed_orb_degrees: float | None,
-    angle_orb_degrees: float | None,
-    partile_profile: dict,
-    include_perfection: bool,
-    jd_ut: float | None,
-    longitude_at: Callable[[int, float], float] | None,
-    perfection_window_days: float,
-) -> tuple[dict, list[str]]:
-    """回傳 (pair 紀錄, 所有 target 的 perfection_status)；後者供 coverage 計數。"""
-
-    lon_a = participant_a["longitude"]
-    lon_b = participant_b["longitude"]
-    delta = wrap_to_signed_180(lon_a - lon_b)
-    separation = abs(delta)
-    nearest, _nearest_offset, nearest_is_tied = _nearest_aspect(
-        separation, aspect_definitions
-    )
-
-    speed_a = participant_a.get("speed_longitude")
-    speed_b = participant_b.get("speed_longitude")
-    relative_speed = (
-        speed_a - speed_b
-        if speed_a is not None and speed_b is not None
-        else None
-    )
-    contains_angle = (
-        participant_a["category"] == "angle"
-        or participant_b["category"] == "angle"
-    )
-    scale = (orb_scale_percent if orb_scale_percent is not None else 100.0) / 100.0
-    scaled = orb_scale_percent is not None
-    whole_sign = (
-        {
-            "applicable": False,
-            "reason_code": "angle_not_a_whole_sign_doctrine_participant",
-        }
-        if contains_angle
-        else _whole_sign_configuration(lon_a, lon_b)
-    )
-    has_motion_model = (
-        participant_a.get("body_id") is not None
-        and participant_b.get("body_id") is not None
-        and jd_ut is not None
-        and longitude_at is not None
-        and relative_speed is not None
-    )
-    applying_reason = (
-        "angle_motion_not_modeled" if contains_angle
-        else "relative_speed_unavailable" if relative_speed is None
-        else None
-    )
+def _bracket_keys(separation: float, aspect_definitions: tuple[dict, ...]) -> set[str]:
+    """The aspects just below and just above the separation."""
 
     below = max(
         (item for item in aspect_definitions if item["angle"] <= separation),
@@ -1069,12 +1052,134 @@ def _pair_record(
         key=lambda item: item["angle"],
         default=None,
     )
-    bracket_keys = {item["key"] for item in (below, above) if item is not None}
+    return {item["key"] for item in (below, above) if item is not None}
+
+
+def _nearest_aspect_record(key: str, signed_offset: float, is_tied: bool) -> dict:
+    return {
+        "key": key,
+        "signed_offset_from_exact_degrees": degrees_number(signed_offset),
+        # 相鄰兩相位中點處並列（見 _nearest_aspect）；消費端看旗標得知非唯一解。
+        "is_tied": is_tied,
+        "tie_rule": (
+            "smaller_exact_angle_wins" if is_tied else None
+        ),
+    }
+
+
+def _target_perfection(
+    search: PerfectionSearch,
+    participant_a: dict,
+    participant_b: dict,
+    *,
+    signed_target: float,
+    applying: str | None,
+    verdict: dict,
+    no_motion_reason: str | None,
+    is_nearest: bool,
+) -> dict:
+    """One target's perfection: searched forward, or why it was not."""
+
+    if not search.include:
+        return _unsearched_perfection("not_requested", reason_code="option_not_requested")
+    if no_motion_reason is not None:
+        return _unsearched_perfection("no_motion_model", reason_code=no_motion_reason)
+    if applying != "applying":
+        return _unsearched_perfection("not_applying", reason_code=f"phase_now_{applying}")
+    if verdict["in_orb"] is False:
+        return _unsearched_perfection("outside_effective_orb")
+    if verdict["in_orb"] is None and not is_nearest:
+        return _unsearched_perfection(
+            "no_orb_verdict_nearest_only",
+            reason_code=verdict["in_orb_reason_code"],
+        )
+    # A motion model guarantees jd_ut and the sampler.
+    if search.jd_ut is None or search.longitude_at is None:
+        raise InternalInvariantError("jd_ut is not None and longitude_at is not None")
+    return _search_perfection(
+        participant_a=participant_a,
+        participant_b=participant_b,
+        signed_target=signed_target,
+        jd_ut=search.jd_ut,
+        longitude_at=search.longitude_at,
+        perfection_window_days=search.window_days,
+    )
+
+
+def _pair_motion(
+    participant_a: dict, participant_b: dict, perfection: PerfectionSearch, contains_angle: bool
+) -> tuple[float | None, str | None, str | None]:
+    """(relative speed, why no perfection search can run, why applying is null)."""
+
+    speed_a = participant_a.get("speed_longitude")
+    speed_b = participant_b.get("speed_longitude")
+    relative_speed = (
+        speed_a - speed_b
+        if speed_a is not None and speed_b is not None
+        else None
+    )
+    has_motion_model = (
+        participant_a.get("body_id") is not None
+        and participant_b.get("body_id") is not None
+        and perfection.jd_ut is not None
+        and perfection.longitude_at is not None
+        and relative_speed is not None
+    )
+    no_motion_reason = (
+        None if has_motion_model
+        else "angle_motion_not_modeled" if contains_angle
+        else "participant_has_no_ephemeris_body_or_speed"
+    )
+    applying_reason = (
+        "angle_motion_not_modeled" if contains_angle
+        else "relative_speed_unavailable" if relative_speed is None
+        else None
+    )
+    return relative_speed, no_motion_reason, applying_reason
+
+
+def _pair_record(
+    participant_a: dict,
+    participant_b: dict,
+    *,
+    aspect_definitions: tuple[dict, ...],
+    orb: OrbPolicy,
+    partile_profile: dict,
+    perfection: PerfectionSearch,
+) -> tuple[dict, list[str]]:
+    """回傳 (pair 紀錄, 所有 target 的 perfection_status)；後者供 coverage 計數。"""
+
+    lon_a = participant_a["longitude"]
+    lon_b = participant_b["longitude"]
+    delta = wrap_to_signed_180(lon_a - lon_b)
+    separation = abs(delta)
+    nearest, _nearest_offset, nearest_is_tied = _nearest_aspect(
+        separation, aspect_definitions
+    )
+
+    contains_angle = (
+        participant_a["category"] == "angle"
+        or participant_b["category"] == "angle"
+    )
+    whole_sign = (
+        {
+            "applicable": False,
+            "reason_code": "angle_not_a_whole_sign_doctrine_participant",
+        }
+        if contains_angle
+        else _whole_sign_configuration(lon_a, lon_b)
+    )
+    relative_speed, no_motion_reason, applying_reason = _pair_motion(
+        participant_a, participant_b, perfection, contains_angle
+    )
+
+    bracket_keys = _bracket_keys(separation, aspect_definitions)
     targets: list[dict] = []
     statuses: list[str] = []
     nearest_target: dict | None = None
     nearest_signed_offset = 0.0
     orb_a = orb_b = None
+    pair_orbs: set[tuple[float, str]] = set()
     for aspect in aspect_definitions:
         signed_target = _signed_target(delta, aspect["angle"])
         signed_offset = wrap_to_signed_180(delta - signed_target)
@@ -1084,11 +1189,7 @@ def _pair_record(
             target_offset=offset,
             participant_a=participant_a,
             participant_b=participant_b,
-            profile=profile,
-            scale=scale,
-            scaled=scaled,
-            fixed_orb_degrees=fixed_orb_degrees,
-            angle_orb_degrees=angle_orb_degrees,
+            orb=orb,
             contains_angle=contains_angle,
         )
         applying = None if contains_angle else _applying(signed_offset, relative_speed)
@@ -1104,58 +1205,40 @@ def _pair_record(
         )
         is_nearest = aspect["key"] == nearest["key"]
 
-        if not include_perfection:
-            perfection = _unsearched_perfection("not_requested", reason_code="option_not_requested")
-        elif not has_motion_model:
-            perfection = _unsearched_perfection(
-                "no_motion_model",
-                reason_code=(
-                    "angle_motion_not_modeled" if contains_angle
-                    else "participant_has_no_ephemeris_body_or_speed"
-                ),
-            )
-        elif applying != "applying":
-            perfection = _unsearched_perfection("not_applying", reason_code=f"phase_now_{applying}")
-        elif verdict["in_orb"] is False:
-            perfection = _unsearched_perfection("outside_effective_orb")
-        elif verdict["in_orb"] is None and not is_nearest:
-            perfection = _unsearched_perfection(
-                "no_orb_verdict_nearest_only",
-                reason_code=verdict["in_orb_reason_code"],
-            )
-        else:
-            # has_motion_model guarantees jd_ut and the sampler.
-            if jd_ut is None or longitude_at is None:
-                raise InternalInvariantError("jd_ut is not None and longitude_at is not None")
-            perfection = _search_perfection(
-                participant_a=participant_a,
-                participant_b=participant_b,
-                signed_target=signed_target,
-                jd_ut=jd_ut,
-                longitude_at=longitude_at,
-                perfection_window_days=perfection_window_days,
-            )
+        target_perfection = _target_perfection(
+            perfection,
+            participant_a,
+            participant_b,
+            signed_target=signed_target,
+            applying=applying,
+            verdict=verdict,
+            no_motion_reason=no_motion_reason,
+            is_nearest=is_nearest,
+        )
 
+        if verdict["orb_rule"] is not None:
+            pair_orbs.add((verdict["pair_orb_threshold_degrees"], verdict["orb_rule"]))
         # 名稱與精確角由 key 查 degree_based.aspect_names_zh／aspect_angles_degrees；
-        # applying_reason_code 對整個 pair 相同，放在 pair 層（回應大小預算）。
+        # applying_reason_code 與容許度門檻對整個 pair 相同，放在 pair 層（回應大小預算）。
         target = {
             "key": aspect["key"],
-            "offset_from_exact_degrees": offset,
+            "offset_from_exact_degrees": degrees_number(offset),
             "in_orb": verdict["in_orb"],
             "in_orb_reason_code": verdict["in_orb_reason_code"],
-            "pair_orb_threshold_degrees": verdict["pair_orb_threshold_degrees"],
-            "orb_rule": verdict["orb_rule"],
             "applying": applying,
             "partile": partile,
-            "partile_reason_code": partile_reason,
-            "perfection_status": perfection["status"],
+            # Stated once per aspect in degree_based.partile_reason_codes_by_aspect.
+            "partile_reason_code": (
+                None if partile_reason == PARTILE_NOT_APPLICABLE_TO_MINOR else partile_reason
+            ),
+            "perfection_status": target_perfection["status"],
             "perfection": (
-                perfection
-                if perfection["status"] in SEARCHED_PERFECTION_STATUSES
+                target_perfection
+                if target_perfection["status"] in SEARCHED_PERFECTION_STATUSES
                 else None
             ),
         }
-        statuses.append(perfection["status"])
+        statuses.append(target_perfection["status"])
         if is_nearest:
             nearest_target = target
             nearest_signed_offset = signed_offset
@@ -1163,12 +1246,19 @@ def _pair_record(
         if (
             aspect["key"] in bracket_keys
             or verdict["in_orb"] is True
-            or perfection["status"] in SEARCHED_PERFECTION_STATUSES
+            or target_perfection["status"] in SEARCHED_PERFECTION_STATUSES
         ):
             targets.append(target)
 
     if nearest_target is None:
         raise ValueError("nearest aspect must belong to aspect_definitions")
+    # The threshold depends only on the pair (its participants and the orb
+    # configuration); a target the rule does not govern says why in its
+    # in_orb_reason_code.  Two thresholds in one pair would make the pair-level
+    # value wrong for some target, so that is refused rather than reported.
+    if len(pair_orbs) > 1:
+        raise ValueError("one pair cannot have two orb thresholds")
+    pair_threshold, pair_rule = next(iter(pair_orbs), (None, None))
     if not any(target is nearest_target for target in targets):
         # ASPECT_TARGET_LISTING.nearest_aspect_entry 是消費端唯一的取值路徑。
         raise ValueError("nearest aspect target must be listed in aspect_targets")
@@ -1178,26 +1268,21 @@ def _pair_record(
         "body_a_name": participant_a["name"],
         "body_b": participant_b["key"],
         "body_b_name": participant_b["name"],
-        "separation_degrees": separation,
+        "separation_degrees": degrees_number(separation),
         "whole_sign": whole_sign,
         # 顯示用摘要：只帶最近相位的 key 與幾何。它的判定（in_orb／applying／partile／
         # perfection 與 offset_from_exact_degrees）只有一個家：aspect_targets 裡 key 相同的那一格
         # （ASPECT_TARGET_LISTING 保證它一定列出）。pair 頂層不另抄一份：全選項回應約多
         # 59 KB，會使非精確出生時間的回應超出 512 KiB 預算。
-        "nearest_aspect": {
-            # 精確角由 key 查 degree_based.aspect_angles_degrees，不另存。
-            "key": nearest["key"],
-            "signed_offset_from_exact_degrees": nearest_signed_offset,
-            # 集合內相鄰兩相位的中點處兩者等距（合相＋四種傳統相位下為 30／75／105／150）。
-            # 旗標與規則一併輸出，讓消費端知道這是一個並列而非唯一解。
-            "is_tied": nearest_is_tied,
-            "tie_rule": (
-                "smaller_exact_angle_wins" if nearest_is_tied else None
-            ),
-        },
-        # 每個 target 各自持有 in_orb／applying／partile／perfection。
+        "nearest_aspect": _nearest_aspect_record(
+            nearest["key"], nearest_signed_offset, nearest_is_tied
+        ),
         "aspect_targets": targets,
         "aspects_in_orb": [target["key"] for target in targets if target["in_orb"] is True],
+        # Every target with a verdict（in_orb_reason_code null）was judged by this
+        # threshold and rule; both are null when no target has a verdict.
+        "pair_orb_threshold_degrees": pair_threshold,
+        "orb_rule": pair_rule,
         "moiety_sum_degrees": (
             (orb_a + orb_b) / 2.0
             if orb_a is not None and orb_b is not None
@@ -1209,7 +1294,9 @@ def _pair_record(
         },
         # 對整個 pair 相同（角點不建模、相對速度未知），不屬於任何單一 target。
         "applying_reason_code": applying_reason,
-        "relative_longitude_speed": relative_speed,
+        "relative_longitude_speed": (
+            None if relative_speed is None else degrees_number(relative_speed)
+        ),
     }
     return record, statuses
 
@@ -1236,11 +1323,11 @@ def _search_perfection(
         if error.reason not in SEARCH_EPHEMERIS_REFUSALS:
             raise
         reason_code = SEARCH_EPHEMERIS_REFUSALS[error.reason][0]
+        # The solver and the window are the same for every target and are
+        # stated once in the module's `perfection` receipt.
         return {
             "status": "source_unavailable",
             "reason_code": reason_code,
-            "solver": SOLVER_NAME,
-            "search_window_days": perfection_window_days,
             "crossing_count": 0,
             "hours_from_chart_moment": [],
             "julian_day_ut": [],
@@ -1250,12 +1337,12 @@ def _search_perfection(
     return {
         "status": "found" if times else "searched_no_root",
         "reason_code": None,
-        "solver": SOLVER_NAME,
-        "search_window_days": perfection_window_days,
         "crossing_count": len(times),
         # 距盤時刻只存小時（頁面讀這一份）與 JD；日數是同一個量。
-        "hours_from_chart_moment": [value * 24.0 for value in times],
-        "julian_day_ut": [jd_ut + value for value in times],
+        # To 10⁻⁵ hour and 10⁻⁶ day: finer than the solver's time tolerance
+        # (PERFECTION_TOLERANCE_DAYS), so no digit the search resolved is lost.
+        "hours_from_chart_moment": [round(value * 24.0, 5) for value in times],
+        "julian_day_ut": [round(jd_ut + value, 6) for value in times],
         "not_found_reason_code": (
             None if times else "no_perfection_within_search_window"
         ),
@@ -1269,17 +1356,7 @@ def nearest_aspect_target(pair: dict) -> dict:
     return next(target for target in pair["aspect_targets"] if target["key"] == key)
 
 
-_APPLYING_ZH = {
-    "applying": "入相位",
-    "exact_now": "此刻精確",
-    "separating": "出相位",
-    "indeterminate_relative_station": "相對速度為零，方向未定",
-}
-
-
-def _trace_summary(
-    receipt: dict, evaluated: list[dict], trace: Trace, *, orb_profile_key: str | None
-) -> None:
+def _trace_summary(receipt: dict, evaluated: list[dict], trace: Trace) -> None:
     whole_sign_hits = [
         pair
         for pair in evaluated
@@ -1309,25 +1386,39 @@ def _trace_summary(
         return
 
     in_orb_hits = [pair for pair in evaluated if pair["aspects_in_orb"]]
+    # The step names the settings and the counts; the full orb receipt and every
+    # pair's verdicts are in the response once (degree_based.orb_receipt and the
+    # aspects table), not copied into the trace.
+    settings = {
+        "容許度表": orb_receipt["profile_key"],
+        # Product default or the user's choice: the same table, a different receipt.
+        "容許度表的選擇": orb_receipt["profile_selection"],
+        "容許度比例（%）": orb_receipt["scale_percent"],
+        "固定門檻（度）": orb_receipt["fixed_pair_threshold_degrees"],
+        "軸點門檻（度）": orb_receipt["angle_pair_threshold_degrees"],
+    }
     trace.add(
         f"逐度相位 (method={receipt['degree_based']['method']}, orb_configuration={orb_receipt['configuration_mode']})",
-        # The pair threshold lives in each pair's aspect_targets.
-        formula="成立條件由 degree_based.orb_receipt.pair_threshold_formula 完整記錄",
+        formula="某相位成立：|角距離 − 該相位的精確角| ≤ 該組的容許度門檻（剛好等於也算）；"
+                "門檻算法見 degree_based.orb_receipt.pair_threshold_formula，"
+                "每組用的門檻是 pairs[].pair_orb_threshold_degrees",
         inputs={
-            "orb收據": orb_receipt,
+            **{name: value for name, value in settings.items() if value is not None},
             "逐度相位集合": receipt["degree_based"]["aspect_set_profile"],
+            "完整容許度收據": "derived_methods.aspects.degree_based.orb_receipt",
         },
         result={
             "成逐度相位者": sum(len(pair["aspects_in_orb"]) for pair in in_orb_hits),
-            "明細": [
-                f"{pair['body_a_name']}{'／'.join(str(_ASPECT_BY_KEY[t['key']]['zh']) for t in pair['aspect_targets'] if t['in_orb'])}"
-                f"{pair['body_b_name']}（最近相位差 {nearest_aspect_target(pair)['offset_from_exact_degrees']:+.4f}°"
-                f"，{_APPLYING_ZH.get(nearest_aspect_target(pair)['applying'], '方向未定義')}）"
-                for pair in in_orb_hits
-            ],
+            "有逐度相位的組合": len(in_orb_hits),
+            "逐組明細": "見相位表（derived_methods.aspects.pairs：每組的 aspects_in_orb、"
+                        "各相位的距精確度數與入／出相位）",
         },
-        note="orb 數值出自具名歷史來源，見本模組 docstring；method_status 仍為待審閱，"
-             "不表示本產品已採用該表為正式技法。",
+        note=(
+            "orb 數值出自具名歷史來源（degree_based.orb_profile_detail）；method_status 仍為待審閱，"
+            "不表示本產品已採用該表為正式技法。"
+            if orb_receipt["profile_key"] is not None
+            else "門檻是你指定的固定度數，不是歷史容許度表。"
+        ),
     )
 
 
@@ -1339,63 +1430,45 @@ WHOLE_SIGN_SOURCES = (
 )
 # The loci WHOLE_SIGN_SOURCES names; the record does not say what was read.
 WHOLE_SIGN_SOURCE_CITATIONS = [
-    reference_only(
-        "Ptolemy, Tetrabiblos I.13 (Robbins pp.73-75 = Hübner I.14), I.16 (pp.77-79 = Hübner I.17)",
-        "aspects counted by the signs between",
-    ),
+    cited("Ptolemy, Tetrabiblos I.13 (Robbins pp.73-75 = Hübner I.14), I.16 (pp.77-79 = Hübner I.17)",
+          "aspects counted by the signs between", "translation_read",
+          ("Robbins's English translation on LacusCurtius (Tetrabiblos/1B*.html): I.13 "
+           "after the p73 page mark ('four signs, and 120 degrees'), I.16 between the p77 "
+           "and p79 marks ('either one or five signs apart'); the Greek not read")),
     reference_only(
         "Ps.-Porphyry, 'On bearing testimony' (Antiochus; CCAG V.4 pp.185-228)",
         "aspects by sign; chapter not checked",
     ),
-    reference_only("Firmicus Maternus, Mathesis II.22", "counts inclusively (trine = fifth sign)"),
+    cited("Firmicus Maternus, Mathesis II.22", "counts inclusively (trine = fifth sign)",
+          "original_language_read",
+          ("the Latin of Kroll-Skutsch as transcribed on LacusCurtius "
+           "(Firmicus_Maternus/Mathesis/2*.html), II.22.3: 'Trigonum <est> a signo, a quo "
+           "initiamus, V. signum'")),
 ]
-# The Harmonices mundi locators carry the 1619 printing's page numbers, but the
-# record does not say whether the Latin was read; only the reference is claimed
-# until that is confirmed.
 _HARMONICES_MUNDI_READ_AT = (
-    "level pending: the record gives the 1619 printing's page numbers but does not "
-    "say whether the Latin text was read; only the reference is claimed until that "
-    "is confirmed"
+    "the Latin of the Linz 1619 printing in the archive.org scan of the Smithsonian "
+    "Libraries copy (ioanniskepplerih00kepl), read at the cited pages: p.145 leaf n234, "
+    "pp.147-148 leaves n236-n237, p.155 leaf n244"
 )
 KEPLER_MINOR_ASPECT_SOURCES = [
-    {
-        "citation": (
-            "Kepler, De fundamentis astrologiae certioribus (Pragae: Schumann, 1602), "
-            "Thesis XXXVIII, sig. C1v of the 1602 printing (unpaginated)"
-        ),
-        "says": (
-            "quintile, biquintile and sesquiquadrate added to the five aspects of the "
-            "ancients"
-        ),
-        "reading": SOURCE_READING_LEVELS[0],
-        "read_at": (
-            "the 1602 printing, image 21 of the Royal Library Copenhagen copy, "
-            "archive.org den-kbd-pil-20002065-001; Frisch, Opera omnia I (1858) p.428 "
-            "not checked"
-        ),
-    },
-    {
-        "citation": (
-            "Kepler, Harmonices mundi (Linz 1619) Lib. IV cap. V, Prop. XII p.145, "
-            "Prop. XIII pp.147-148, Prop. XIV p.148"
-        ),
-        "says": (
-            "third grade: trine, sextile, semisextile (Prop. XII); fourth grade: "
-            "quintile, biquintile, quincunx (Prop. XIII); fifth, weakest grade: decile, "
-            "tridecile, octile = semisquare, trioctile = sesquiquadrate (Prop. XIV)"
-        ),
-        "reading": SOURCE_READING_LEVELS[3],
-        "read_at": _HARMONICES_MUNDI_READ_AT,
-    },
-    {
-        "citation": "Kepler, Harmonices mundi (1619) Lib. IV cap. VI p.155",
-        "says": (
-            "octile and sesquiquadrate have no power unless the primary aspects are "
-            "long absent"
-        ),
-        "reading": SOURCE_READING_LEVELS[3],
-        "read_at": _HARMONICES_MUNDI_READ_AT,
-    },
+    cited(("Kepler, De fundamentis astrologiae certioribus (Pragae: Schumann, 1602), "
+           "Thesis XXXVIII, sig. C1v of the 1602 printing (unpaginated)"),
+          ("quintile, biquintile and sesquiquadrate added to the five aspects of the "
+           "ancients"),
+          ORIGINAL_LANGUAGE_READ,
+          ("the 1602 printing, image 21 of the Royal Library Copenhagen copy, "
+           "archive.org den-kbd-pil-20002065-001; Frisch, Opera omnia I (1858) p.428 "
+           "not checked")),
+    cited(("Kepler, Harmonices mundi (Linz 1619) Lib. IV cap. V, Prop. XII p.145, "
+           "Prop. XIII pp.147-148, Prop. XIV p.148"),
+          ("third grade: trine, sextile, semisextile (Prop. XII); fourth grade: "
+           "quintile, biquintile, quincunx (Prop. XIII); fifth, weakest grade: decile, "
+           "tridecile, octile = semisquare, trioctile = sesquiquadrate (Prop. XIV)"),
+          ORIGINAL_LANGUAGE_READ, _HARMONICES_MUNDI_READ_AT),
+    cited("Kepler, Harmonices mundi (1619) Lib. IV cap. VI p.155",
+          ("octile and sesquiquadrate have no power unless the primary aspects are "
+           "long absent"),
+          ORIGINAL_LANGUAGE_READ, _HARMONICES_MUNDI_READ_AT),
 ]
 
 METHOD_SOURCE_ENTRIES: dict[str, dict] = {
@@ -1431,15 +1504,10 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         "boundary_operator": ORB_BOUNDARY_OPERATOR,
         "boundary_provenance": "product_convention",
         "sources": [
-            {
-                "citation": "William Lilly, Christian Astrology (1647) p.110",
-                "says": (
-                    "the planets are not totally separated until 'fully 9 degrees "
-                    "distant' (indirect; reads as leaning exclusive, not a stated rule)"
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": LILLY_1647_READ_AT,
-            },
+            cited("William Lilly, Christian Astrology (1647) p.110",
+                  ("the planets are not totally separated until 'fully 9 degrees "
+                   "distant' (indirect; reads as leaning exclusive, not a stated rule)"),
+                  ORIGINAL_LANGUAGE_READ, LILLY_1647_READ_AT),
         ],
         "note": (
             "No checked pre-modern text states whether an offset exactly equal to the "
@@ -1452,37 +1520,23 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         **_PARTILE_SOURCE_VERIFICATION,
         "tabulated_from": list(PARTILE_TABULATED_FROM),
         "valid_aspect_rule": PARTILE_VALID_ASPECT_RULE,
-        # These sources ground the precondition of the
-        # same-degree profile only; the degree-offset profiles carry none.
+        # These ground only the same-degree profile's precondition.
         "valid_aspect_rule_profiles": sorted(
             key
             for key, profile in PARTILE_PROFILES.items()
             if profile["valid_aspect_precondition"] is not None
         ),
         "valid_aspect_sources": [
-            {
-                "citation": "William Lilly, Christian Astrology (1647) Book I ch. XIX p.106",
-                "says": (
-                    "both partile examples (Venus 9 Aries / Jupiter 9 Leo, Sun 1 Taurus / "
-                    "Moon 1 Cancer) are sign aspects first"
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": LILLY_1647_READ_AT,
-            },
-            {
-                "citation": "William Lilly, Christian Astrology (1647) p.109",
-                "says": "signs that do not behold one another 'cannot have any aspect'",
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": LILLY_1647_READ_AT,
-            },
-            {
-                "citation": (
-                    "al-Bīrūnī, The Book of Instruction, trans. R. Ramsay Wright (1934) §446"
-                ),
-                "says": "partile defined among planets in signs that aspect each other",
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "R. Ramsay Wright's English translation (1934)",
-            },
+            cited("William Lilly, Christian Astrology (1647) Book I ch. XIX p.106",
+                  ("both partile examples (Venus 9 Aries / Jupiter 9 Leo, Sun 1 Taurus / "
+                   "Moon 1 Cancer) are sign aspects first"),
+                  ORIGINAL_LANGUAGE_READ, LILLY_1647_READ_AT),
+            cited("William Lilly, Christian Astrology (1647) p.109",
+                  "signs that do not behold one another 'cannot have any aspect'",
+                  ORIGINAL_LANGUAGE_READ, LILLY_1647_READ_AT),
+            cited("al-Bīrūnī, The Book of Instruction, trans. R. Ramsay Wright (1934) §446",
+                  "partile defined among planets in signs that aspect each other",
+                  TRANSLATION_READ, "R. Ramsay Wright's English translation (1934)"),
         ],
     },
     **{

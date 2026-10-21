@@ -6,19 +6,14 @@ Nothing here calculates, formats or reorders a value, so every value the page
 view keeps is the value `detailed` has at the same path; the chart has one
 producer.
 
-`page` is the default.  It keeps the fields
-the result page reads: what its body renders and what it needs to check the
-response (schema and dossier versions, option states with their response
-paths, the trace digest and build identity that bind a later `detailed`
-request to this one), plus the few fields PAGE_KEPT_UNREAD_PATHS names for
-other readers.  Verification detail -- the step trace, contract text, method
-identity and prose, receipts, unread twins -- is requested separately with
-`projection=detailed`, recomputed from the same input; nothing is stored
-between the two requests.
-
-tests/backend/test_chart_projections.py pins that the page body built
-from `page` equals the one built from `detailed` and that the page reads
-every field `page` keeps.
+`page` is the default.  It keeps the fields the result page reads: what its
+body renders and what it needs to check the response (schema and dossier
+versions, option states with their response paths, the trace digest and build
+identity that bind a later `detailed` request to this one), plus the few fields
+PAGE_KEPT_UNREAD_PATHS names for other readers.  Verification detail -- the
+step trace, contract text, method identity and prose, receipts, unread twins --
+is requested separately with `projection=detailed`, recomputed from the same
+input; nothing is stored between the two requests.
 
 Path syntax: `.` separates object keys, `name[]` means every item of the list
 at `name`, `*` means every value of an object, and `{a,b}` means each of the
@@ -29,7 +24,7 @@ from __future__ import annotations
 
 from typing import Any, get_args
 
-from .schemas import ChartProjection
+from .schema_refusals import ChartProjection
 
 __all__ = [
     "CHART_PROJECTIONS",
@@ -43,7 +38,6 @@ __all__ = [
 CHART_PROJECTIONS: tuple[str, ...] = get_args(ChartProjection)
 DEFAULT_CHART_PROJECTION: ChartProjection = "page"
 
-# ── page ───────────────────────────────────────────────────────────────────
 # What the result page reads from a response, and nothing else.  The page reads
 # a response through its view-model (ChartViewModel.buildSections and
 # buildViewTree), createDocument's checks, the three text serializers of the
@@ -93,9 +87,8 @@ PAGE_KEPT_UNREAD_PATHS: tuple[str, ...] = (
     # operator's deploy tool) read these from the default response.
     "calculation_dossier.input_receipt.location.place_label",
     "calculation_dossier.provenance.all_core_calculation_sources_used_full_ephemeris",
-    # createDocument refuses a response in which an executed option's response
-    # path is missing or an empty object.  One small field keeps
-    # each such path present where the page reads nothing under it.
+    # createDocument refuses an executed option's response path that is missing
+    # or empty; one small field keeps each such path present.
     "calculation_dossier.calculation_policy.body_selection.excluded_optional_body_groups",
     "derived_geometry.antiscia.scope.semantics",
     "derived_methods.aspects.perfection.status",
@@ -132,8 +125,7 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     "calculation_dossier.calculation_policy.modules.*",
     f"calculation_dossier.calculation_policy.option_states.*.{{{_OPTION_STATE},response_paths,"
     "input_presence}",
-    "calculation_dossier.methodology.classical_source_disagreements.items[].{response_path,note_zh}",
-    # Astronomical layer.
+    "calculation_dossier.methodology.classical_source_disagreements.items[].{response_path,note_zh,applied_note_zh}",
     "astronomical_data.time.{input_local_time,input_semantics,timezone_label,utc_offset_hours,"
     "utc_time,time_scale_era,jd_ut,delta_t_seconds,last_hours,true_obliquity,ayanamsa}",
     "astronomical_data.atmosphere.{temperature_c,pressure_hpa,pressure_mode,refraction}",
@@ -184,7 +176,6 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     "result_location,module_refusals}",
     f"astronomical_data.horizon_events.{_SAMPLES}.bodies[].{{key,events_same_as_anchor,"
     f"events.*.{_INSTANT}}}",
-    # Derived geometry.
     f"derived_geometry.antiscia.{{{_RECEIPT}}}",
     "derived_geometry.antiscia.antiscia[].{key,name,sign_position}",
     "derived_geometry.antiscia.contra_antiscia[].{key,sign_position}",
@@ -206,7 +197,7 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     "sampled_houses}",
     "birth_time_sensitivity.angles.*.status",
     "birth_time_sensitivity.angles.asc.sampled_sign_indices",
-    "birth_time_sensitivity.house_cusps[].{house,status}",
+    "birth_time_sensitivity.house_cusps[].{house,status,same_as_angle}",
     "birth_time_sensitivity.{sect,void_of_course}.status",
     "birth_time_sensitivity.lots.{discontinuity,fortune.status,spirit.status,"
     "fortune.house_status,spirit.house_status}",
@@ -217,7 +208,6 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     "resolution_seconds,semantics}",
     "birth_time_sensitivity.moon_boundary_assessment.sampled_sign_boundary_transitions[]."
     "{lower_sample_local,upper_sample_local,semantics}",
-    # Methods.
     f"derived_methods.house_division.{{{_RECEIPT},execution_status,system_code,system_name,cusps,"
     "cusp_sign_positions,availability.state}",
     f"derived_methods.planet_in_house.{{{_RECEIPT},execution_status,house_system_code,house_system_name}}",
@@ -230,12 +220,13 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     f"derived_methods.lots.{{{_RECEIPT},formula_basis,fortune,sign_positions,"
     "house_placement.{fortune,spirit},sect_applied,sect_named_boundary_disagreement}",
     "derived_methods.lots.by_sect.*.{fortune_house,spirit_house,sign_positions}",
+    "derived_methods.lots.extended_lots.lots[].{lot_method_id,sign_position,house}",
     f"derived_methods.void_of_course.{{{_RECEIPT},is_void_of_course,verdict,"
-    "solver,time_to_sign_exit_hours,time_basis}",
+    "solver,time_to_sign_exit_hours,time_basis,search_horizon.kind}",
     "derived_methods.void_of_course.all_candidates[].{body,aspect_angle,time_days}",
     f"derived_methods.declination_aspects.{{{_RECEIPT},aspects,orb_receipt.effective_orb_degrees}}",
     f"derived_methods.aspects.{{{_RECEIPT},pair_listing.unlisted_pairs_without_aspect}}",
-    "derived_methods.aspects.degree_based.{aspect_names_zh,orb_verdict_available,"
+    "derived_methods.aspects.degree_based.{aspect_names_zh,orb_verdict_available,partile_reason_codes_by_aspect,"
     "orb_profile_detail.display_name}",
     "derived_methods.aspects.degree_based.angle_participation.executed",
     f"derived_methods.aspects.degree_based.orb_receipt.{{{_RECEIPT},fixed_pair_threshold_degrees}}",
@@ -249,7 +240,8 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     "derived_methods.aspects.pairs[].aspect_targets[].{key,in_orb,in_orb_reason_code,applying,"
     "offset_from_exact_degrees,"
     "partile,partile_reason_code,perfection_status,"
-    "perfection.{hours_from_chart_moment,search_window_days}}",
+    "perfection.hours_from_chart_moment}",
+    "derived_methods.aspects.perfection.search_window_days",
     f"derived_methods.planetary_hours.{{{_RECEIPT},time_basis}}",
     "derived_methods.planetary_hours.chart_instant.planetary_day.{ruler_name,weekday,"
     "sunrise_local_date,day_hour_minutes,night_hour_minutes}",
@@ -440,8 +432,6 @@ def _keep(node: Any, tree: dict) -> Any:
 
 
 def project_chart_response(response: dict[str, Any], projection: str) -> dict[str, Any]:
-    """Derive the requested view from the one detailed chart response."""
-
     if projection == "detailed":
         return response
     if projection == "page":
@@ -449,8 +439,7 @@ def project_chart_response(response: dict[str, Any], projection: str) -> dict[st
         page_descriptor = {
             "name": "page",
             "derived_from": "detailed",
-            # The rule, not the list: the kept paths are PAGE_KEPT_PATHS, printed
-            # in the output contract's「Projections」.
+            # The rule, not the list (PAGE_KEPT_PATHS, in the output contract).
             "kept": "fields_the_result_page_body_reads",
             "verification_detail": "projection=detailed",
         }

@@ -29,7 +29,7 @@ import os
 # The only variables a check's child sees.
 CHILD_ENVIRONMENT_NAMES = (
     "PATH", "HOME", "USER", "LOGNAME", "LANG", "LC_ALL", "LC_CTYPE", "TERM",
-    "TMPDIR", "XDG_CACHE_HOME", "CI", "GITHUB_ACTIONS", "ARMILLARY_REQUIRE_ALL",
+    "TMPDIR", "XDG_CACHE_HOME", "PYTHONPYCACHEPREFIX", "CI", "GITHUB_ACTIONS", "ARMILLARY_REQUIRE_ALL",
 )
 
 # Variables that change which tests a pytest run collects.
@@ -96,4 +96,8 @@ def require_all(environment: Mapping[str, str] | None = None) -> bool:
 
 
 def skip_is_failure(reason: str, environment: Mapping[str, str] | None = None) -> bool:
-    return require_all(environment) and not any(expected in reason for expected in EXPECTED_SKIPS)
+    # The whole reason must be an expected one (pytest prefixes "Skipped: "):
+    # a reason that merely contains one is another skip.
+    reason = reason.strip()
+    reason = reason.removeprefix("Skipped: ")
+    return require_all(environment) and reason not in EXPECTED_SKIPS

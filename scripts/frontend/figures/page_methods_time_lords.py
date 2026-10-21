@@ -11,16 +11,14 @@ import re
 from fractions import Fraction
 
 from ..javascript import SOURCES, frozen_string_table
-from ._common import SIGNS, backend_on_path
+
+LABELS_SCRIPT = SOURCES / "labels.js"
+from ._common import PLANETS, SIGNS, backend_on_path
 
 
 FRAGMENT = "methods-time-lords"
-BODY = {
-    "sun": "太陽", "moon": "月亮", "mercury": "水星", "venus": "金星", "mars": "火星",
-    "jupiter": "木星", "saturn": "土星", "north_node": "北交點", "south_node": "南交點",
-}
+BODY = {**PLANETS, "north_node": "北交點", "south_node": "南交點"}
 OPERAND = {**BODY, "fortune": "命運點", "spirit": "精神點", "ascendant": "上升點"}
-TIME_LORD_SCRIPT = SOURCES / "timelords-model.js"
 TRADITION = {"Paulus Alexandrinus": "Paulus 第 23 章", "Vettius Valens": "Valens IV.25"}
 # What al-Biruni's list of the planets' lots (Book of Instruction §476, after
 # Abu Ma'shar; Wright 1934) says each same-named lot signifies.  Methods page only:
@@ -81,8 +79,8 @@ def _formula(rule: dict) -> str:
 
 
 def _lot_rows(lots) -> str:
-    # The ratified short names live once, in the time-lord screen's own table.
-    names = frozen_string_table(TIME_LORD_SCRIPT.read_text(encoding="utf-8"), "EXTENDED_LOT_NAMES")
+    # The ratified short names live once, in the shared labels.
+    names = frozen_string_table(LABELS_SCRIPT.read_text(encoding="utf-8"), "EXTENDED_LOT_NAMES")
     if set(names) != {method["lot_method_id"] for method in lots.LOT_METHODS}:
         raise RuntimeError("EXTENDED_LOT_NAMES does not name exactly the backend's extended lots")
     if set(LOT_MEANING) != set(names):

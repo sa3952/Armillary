@@ -27,9 +27,9 @@ import swisseph as swe
 
 from .invariants import InternalInvariantError
 from ..domain_catalog import HOUSE_SYSTEMS, PRODUCT_YEAR_RANGE
-from .method_status import method_receipt
+from .method_status import method_head
 from .module_state import computed_receipt
-from .source_reading import SOURCE_READING_LEVELS
+from .source_reading import SOURCE_READING_LEVELS, TRANSLATION_READ, cited
 from .time_utils import earth_rotation_jd_ut, earth_rotation_shift_days
 from .trace import Trace
 
@@ -52,9 +52,8 @@ QUADRANT_HOUSE_SYSTEM_CODES = frozenset({"P", "R", "B", "O", "C"})
 # and Campanus are refused in the same cells by the cusp-cycle check.
 MC_BELOW_HORIZON_REFUSED_CODES = frozenset({"B", "O"})
 
-# 宮位可用性四態（unavailable 仍 422）。
-# 方法研究筆記的詞彙。available_polar_geometry 不是新的成功路徑：它只標記
-# 「現行本來就算得出來、但落在極區帶」的結果；現行拒絕行為一律保留。
+# 宮位可用性四態（unavailable 仍 422；方法研究筆記的詞彙）。available_polar_geometry 不是新的
+# 成功路徑，只標記本來就算得出、但落在極區帶的結果；拒絕行為一律保留。
 HOUSE_AVAILABILITY_STATES = (
     "available",
     "available_polar_geometry",
@@ -77,7 +76,7 @@ def true_obliquity_degrees(jd_ut: float) -> float:
 
 
 def polar_circle_threshold_degrees(jd_ut: float) -> float:
-    """極圈門檻：90° − 命盤時刻真黃赤交角。與 Swiss 的 Placidus 拒算界線相同。"""
+    """極圈門檻：90° − 命盤時刻真黃赤交角。"""
     return 90.0 - true_obliquity_degrees(jd_ut)
 
 
@@ -105,9 +104,7 @@ EXTRA_ANGLE_PROVENANCE = {
     "vertex": {
         "calculation_source": "swiss_ephemeris_houses_ex",
         "zh": "宿命點",
-        # 「黃道與地平大圓在西方的交點」是**下降點**的定義，不是 Vertex。
-        # Vertex 用的是卯酉圈 (prime vertical)：通過天頂、正東與正西的大圓，
-        # 與地平圈垂直。數值本身取自 swe.houses_ex。
+        # 「黃道與地平圈在西方的交點」是下降點，不是 Vertex；數值取自 swe.houses_ex。
         "definition": "黃道與卯酉圈（prime vertical，過天頂與正東西的大圓）在西方的交點",
         "not_to_be_confused_with": "下降點（黃道與地平圈在西方的交點）",
         "provenance": "modern_20th_century_l_edward_johndro_and_charles_jayne",
@@ -120,13 +117,13 @@ EXTRA_ANGLE_PROVENANCE = {
     },
     "co_ascendant_koch": {
         "calculation_source": "swiss_ephemeris_houses_ex",
-        "zh": "共同上升點(Koch)",
+        "zh": "共同上升點（Koch）",
         "definition": "Walter Koch 定義的共同上升點",
         "provenance": "modern_20th_century_walter_koch",
     },
     "co_ascendant_munkasey": {
         "calculation_source": "swiss_ephemeris_houses_ex",
-        "zh": "共同上升點(Munkasey)",
+        "zh": "共同上升點（Munkasey）",
         "definition": "Michael Munkasey 定義的共同上升點",
         "provenance": "modern_20th_century_michael_munkasey",
     },
@@ -177,9 +174,8 @@ class HouseSystemUnavailableError(Exception):
             "latitude": latitude,
             "refusal_basis": "product_choice",
             "geometric_reason": reason or "Swiss Ephemeris 對此宮位制回報錯誤或自動改用其他宮位制，本產品不接受替代結果",
-            # 隱私：拒絕本文不回帶命盤時刻的門檻（90° − 真黃赤交角）。取到 0.1° 也不行：
-            # 它在 1915–1919 年間由 66.5 變成 66.6，仍是出生年份的一個位元。拒絕只說公式與
-            # 產品年份範圍內的上下界（常數，見 geometric_reason）；成功回應保留全精度。
+            # 隱私：拒絕本文不回帶命盤時刻的門檻（取到 0.1° 仍洩漏出生年份一個位元，見
+            # product_polar_threshold_range_degrees），只說公式與常數上下界；成功回應保留全精度。
         }
         if reason:
             message = (
@@ -255,9 +251,7 @@ def compute_houses(house_system_code: str, jd_ut: float, location, ctx, trace: T
             reason_code="unique_ascendant_undefined",
         )
     if code == "P" and abs(location.latitude) >= polar_threshold:
-        # 產品選擇：整個極區帶拒絕，不逐時刻判半弧是否有解。
-        # 幾何理由：|φ| ≥ 90° − ε 時存在永不升起／永不落下的黃道度數，
-        # 標準 Placidus 半弧三分對這些度數無解；Swiss 在同一界線改用 Porphyry。
+        # 產品選擇：整個極區帶拒絕，不逐時刻判半弧是否有解（幾何理由見 HIGH_LATITUDE_WARNING_DEGREES）。
         raise refusal(
             reason=(
                 "緯度絕對值 ≥ 極圈門檻（90° − 命盤時刻真黃赤交角；{}–{} 年間在 {:.2f}°–{:.2f}° 之間）："
@@ -407,8 +401,7 @@ def printed_house_division(houses: dict, system_code: str) -> dict:
     """`derived_methods.house_division` for one computed house division."""
 
     return {
-        "method": "swiss_ephemeris_house_division_v1",
-        **method_receipt("house_division"),
+        **method_head("swiss_ephemeris_house_division_v1", "house_division"),
         **computed_receipt("Swiss Ephemeris houses_ex"),
         "execution_status": "computed",
         "system_code": system_code,
@@ -510,33 +503,23 @@ HOUSE_SYSTEM_SOURCES: dict[str, dict] = {
         "definition": "The rising sign is the whole first house; each later sign is the next house.",
         "definition_source": "this product's definition (methods page §07.1)",
         "history": [
-            {
-                "citation": (
-                    "Vettius Valens, Anthology V.6 (Pingree 1986 numbering and pages, pp. 215-216; "
-                    "Kroll V.9, p.227): a chart whose "
-                    "degree-based MC falls in the ninth sign, cited on the methods page and "
-                    "not re-read for this entry"
-                ),
-                "reading": _BIBLIOGRAPHIC,
-                "read_at": (
-                    "the reference only, as the methods page gives it; the Anthology chapter was not "
-                    "opened for this entry"
-                ),
-            },
+            cited(("Vettius Valens, Anthology V.6 (Pingree 1986 numbering and pages, pp. 215-216; "
+                   "Kroll V.9, p.227): a chart whose "
+                   "degree-based MC falls in the ninth sign (Gemini rising, the MC in "
+                   "Aquarius by degree)"),
+                  None, TRANSLATION_READ,
+                  ("Riley's translation (Vettius_Valens_Riley.pdf), printed p.105, at the "
+                   "/227K/ marker between /215P/ and /216P/")),
         ],
     },
     "P": {
         "definition": "Cusps 11, 12, 2 and 3 trisect each cusp degree's own semi-diurnal or semi-nocturnal arc.",
         "definition_source": "Swiss Ephemeris General Documentation §6.2.1 Placidus",
         "history": [
-            {
-                "citation": "Named after Placidus de Titis (1590-1668) (Swiss Ephemeris §6.2.1)",
-                "reading": _SECONDARY,
-                "read_at": (
-                    "Swiss Ephemeris General Documentation §6.2.1, when this entry was written "
-                    f"(2026-10-12; {_NO_READING_NOTES}); Placidus's own work not read"
-                ),
-            },
+            cited("Named after Placidus de Titis (1590-1668) (Swiss Ephemeris §6.2.1)", None,
+                  _SECONDARY,
+                  ("Swiss Ephemeris General Documentation §6.2.1, when this entry was written "
+                   f"(2026-10-12; {_NO_READING_NOTES}); Placidus's own work not read")),
         ],
     },
     "R": {
@@ -544,17 +527,11 @@ HOUSE_SYSTEM_SOURCES: dict[str, dict] = {
         "the north and south points of the horizon carry the divisions to the ecliptic.",
         "definition_source": "Swiss Ephemeris General Documentation §6.2.3 Regiomontanus",
         "history": [
-            {
-                "citation": (
-                    "Named after Johannes Müller of Königsberg, called Regiomontanus (1436-1476) "
-                    "(Swiss Ephemeris §6.2.3)"
-                ),
-                "reading": _SECONDARY,
-                "read_at": (
-                    "Swiss Ephemeris General Documentation §6.2.3, when this entry was written "
-                    f"(2026-10-12; {_NO_READING_NOTES}); Regiomontanus's own work not read"
-                ),
-            },
+            cited(("Named after Johannes Müller of Königsberg, called Regiomontanus (1436-1476) "
+                   "(Swiss Ephemeris §6.2.3)"),
+                  None, _SECONDARY,
+                  ("Swiss Ephemeris General Documentation §6.2.3, when this entry was written "
+                   f"(2026-10-12; {_NO_READING_NOTES}); Regiomontanus's own work not read")),
         ],
     },
     "B": {
@@ -562,76 +539,48 @@ HOUSE_SYSTEM_SOURCES: dict[str, dict] = {
         "and projected to the ecliptic through the celestial poles.",
         "definition_source": "Swiss Ephemeris General Documentation §6.2.11 Alcabitus",
         "history": [
-            {
-                "citation": "Named after al-Qabīṣī (Alcabitius, d. 967) (Astrodienst FAQ on house systems)",
-                "reading": _SECONDARY,
-                "read_at": (
-                    "Astrodienst's house-system FAQ, when this entry was written "
-                    f"(2026-10-12; {_NO_READING_NOTES}); al-Qabīṣī's Introduction not read"
-                ),
-            },
+            cited("Named after al-Qabīṣī (Alcabitius, d. 967) (Astrodienst FAQ on house systems)",
+                  None, _SECONDARY,
+                  ("Astrodienst's house-system FAQ, when this entry was written "
+                   f"(2026-10-12; {_NO_READING_NOTES}); al-Qabīṣī's Introduction not read")),
         ],
     },
     "O": {
         "definition": "Each quadrant between ASC, MC, DSC and IC is divided into three equal parts of ecliptic longitude.",
         "definition_source": "Swiss Ephemeris General Documentation §6.2.6.1 Porphyry",
         "history": [
-            {
-                "citation": (
-                    "The trisection of the quadrants appears in Vettius Valens, Anthology book III, in a "
-                    "chapter on the active and inactive places (cited via secondary sources; the chapter "
-                    "was not read, and R. Schmidt reads it as a measure of planetary activity rather than "
-                    "a division into topics)"
-                ),
-                "reading": _SECONDARY,
-                "read_at": (
-                    "the secondary accounts this sentence summarises, including R. Schmidt's reading, "
-                    f"when this entry was written (2026-10-12; {_NO_READING_NOTES}, and they are not named "
-                    "individually); the Valens chapter not read"
-                ),
-            },
-            {
-                "citation": (
-                    "Named after Porphyry of Tyre (3rd century), Introduction to the Tetrabiblos "
-                    "(CCAG V.4; trans. Holden 2009); the chapter number was not verified"
-                ),
-                "reading": _BIBLIOGRAPHIC,
-                "read_at": (
-                    "the bibliographic reference only (edition and translation); neither the Greek nor "
-                    "Holden's English was opened"
-                ),
-            },
+            cited(("The trisection of the quadrants appears in Vettius Valens, Anthology book III, in a "
+                   "chapter on the active and inactive places (cited via secondary sources; the chapter "
+                   "was not read, and R. Schmidt reads it as a measure of planetary activity rather than "
+                   "a division into topics)"),
+                  None, _SECONDARY,
+                  ("the secondary accounts this sentence summarises, including R. Schmidt's reading, "
+                   f"when this entry was written (2026-10-12; {_NO_READING_NOTES}, and they are not named "
+                   "individually); the Valens chapter not read")),
+            cited(("Named after Porphyry of Tyre (3rd century), Introduction to the Tetrabiblos "
+                   "(CCAG V.4; trans. Holden 2009); the chapter number was not verified"),
+                  None, _BIBLIOGRAPHIC,
+                  ("the bibliographic reference only (edition and translation); neither the Greek nor "
+                   "Holden's English was opened")),
         ],
     },
     "E": {
         "definition": "Twelve houses of 30° each, the first beginning at the ascendant's degree.",
         "definition_source": "Swiss Ephemeris General Documentation §6.2.5 Equal systems",
         "history": [
-            {
-                "citation": (
-                    "Ptolemy, Tetrabiblos III.12 in Ashmand's translation (III.10 in Robbins): the places "
-                    "used for the length of life are 30° each, the first from 5° above the horizon to 25° "
-                    "below it. That rule starts 5° earlier than this construction, which starts at the "
-                    "ascendant's degree"
-                ),
-                "reading": _TRANSLATION,
-                "read_at": (
-                    "Ashmand's 1822 English translation, III.12, when this entry was written "
-                    f"(2026-10-12; {_NO_READING_NOTES}); the Robbins chapter number is a concordance, not a "
-                    "second reading"
-                ),
-            },
-            {
-                "citation": (
-                    "Astrodienst's house-system FAQ says equal houses have been used since antiquity, "
-                    "without a named source"
-                ),
-                "reading": _SECONDARY,
-                "read_at": (
-                    "Astrodienst's house-system FAQ, when this entry was written "
-                    f"(2026-10-12; {_NO_READING_NOTES})"
-                ),
-            },
+            cited(("Ptolemy, Tetrabiblos III.12 in Ashmand's translation (III.10 in Robbins): the places "
+                   "used for the length of life are 30° each, the first from 5° above the horizon to 25° "
+                   "below it. That rule starts 5° earlier than this construction, which starts at the "
+                   "ascendant's degree"),
+                  None, _TRANSLATION,
+                  ("Ashmand's 1822 English translation, III.12, when this entry was written "
+                   f"(2026-10-12; {_NO_READING_NOTES}); the Robbins chapter number is a concordance, not a "
+                   "second reading")),
+            cited(("Astrodienst's house-system FAQ says equal houses have been used since antiquity, "
+                   "without a named source"),
+                  None, _SECONDARY,
+                  ("Astrodienst's house-system FAQ, when this entry was written "
+                   f"(2026-10-12; {_NO_READING_NOTES})")),
         ],
     },
     "C": {
@@ -639,28 +588,18 @@ HOUSE_SYSTEM_SOURCES: dict[str, dict] = {
         "the north and south points of the horizon carry the divisions to the ecliptic.",
         "definition_source": "Swiss Ephemeris General Documentation §6.2.4 Campanus",
         "history": [
-            {
-                "citation": "Named after Campanus of Novara (13th century) (Swiss Ephemeris §6.2.4)",
-                "reading": _SECONDARY,
-                "read_at": (
-                    "Swiss Ephemeris General Documentation §6.2.4, when this entry was written "
-                    f"(2026-10-12; {_NO_READING_NOTES}); Campanus's own work not read"
-                ),
-            },
-            {
-                "citation": (
-                    "The prime-vertical method was described earlier in Arabic sources: a treatise by Ibn "
-                    "Muʿādh al-Jayyānī (11th century; studied by J. Casulleras) and, per J. D. North, "
-                    "Horoscopes and History (1986) pp. 175-176, al-Bīrūnī; both cited via secondary "
-                    "sources, not read"
-                ),
-                "reading": _SECONDARY,
-                "read_at": (
-                    "the secondary report of Casulleras's and North's findings, when this entry was "
-                    f"written (2026-10-12; {_NO_READING_NOTES}); North 1986 pp. 175-176 itself, Ibn Muʿādh and "
-                    "al-Bīrūnī not read"
-                ),
-            },
+            cited("Named after Campanus of Novara (13th century) (Swiss Ephemeris §6.2.4)", None,
+                  _SECONDARY,
+                  ("Swiss Ephemeris General Documentation §6.2.4, when this entry was written "
+                   f"(2026-10-12; {_NO_READING_NOTES}); Campanus's own work not read")),
+            cited(("The prime-vertical method was described earlier in Arabic sources: a treatise by Ibn "
+                   "Muʿādh al-Jayyānī (11th century; studied by J. Casulleras) and, per J. D. North, "
+                   "Horoscopes and History (1986) pp. 175-176, al-Bīrūnī; both cited via secondary "
+                   "sources, not read"),
+                  None, _SECONDARY,
+                  ("the secondary report of Casulleras's and North's findings, when this entry was "
+                   f"written (2026-10-12; {_NO_READING_NOTES}); North 1986 pp. 175-176 itself, Ibn Muʿādh and "
+                   "al-Bīrūnī not read")),
         ],
     },
 }

@@ -1,9 +1,7 @@
 """The one canonical JSON form every digest in this service is taken over.
 
-The trace receipt publishes these parameters as part of what it claims, so
-they are a stated fact, and the same three values were once restated
-independently in every module that computed a digest.  One definition, read by
-all of them.
+The trace receipt publishes these parameters as a stated fact, so every
+module that computes a digest reads this one definition.
 """
 
 from __future__ import annotations

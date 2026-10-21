@@ -8,7 +8,9 @@
 欄位名 `utc_time` 沿用既有契約，年代語意由 `time_scale_era`／`time_scale` 說明。
 """
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 import datetime as dtmod
 from decimal import Decimal
 import functools
@@ -22,11 +24,9 @@ from .invariants import InternalInvariantError
 from .trace import Trace
 
 if TYPE_CHECKING:
-    from ..schemas import DateTimeInput, TimezoneInput
+    from ..schema_inputs import DateTimeInput, TimezoneInput
 
 
-# --- ΔT ------------------------------------------------
-#
 # Swiss Ephemeris 2.10.03 swephlib.c calc_deltat(): before 1955-01-01 (JD 2435108.5)
 # the default model is Stephenson, Morrison & Hohenkerk 2016 (swephexp.h
 # SEMOD_DELTAT_DEFAULT), with a 1000-day linear transition from 1952-04-06; from
@@ -197,8 +197,6 @@ def _measured_era_delta_t_note(delta_t_model: dict) -> str:
     ) + basis
 
 
-# --- Sidereal time model --------------------------------------------
-#
 # swe_sidtime0 (swephlib.c) computes the IERS Conventions 2010 sidereal time
 # (Earth rotation angle + IAU 2006 GMST polynomial + equation of the equinoxes
 # with its complementary terms) only strictly between SIDT_LTERM_T0 = JD
@@ -269,11 +267,39 @@ def _wrap_hours(hours: float) -> float:
     return (hours + 12.0) % 24.0 - 12.0
 
 
+# A memo of earth_rotation_shift_days for one calculation only.  Its keys are
+# instants of the request being computed, so a process-wide cache would keep
+# them after the answer is sent (tests/backend/test_request_state_not_retained.py);
+# this one exists only inside earth_rotation_memo() and is emptied when it exits.
+_EARTH_ROTATION_MEMO: ContextVar[dict[float, float] | None] = ContextVar(
+    "armillary_earth_rotation_memo", default=None,
+)
+
+
+@contextmanager
+def earth_rotation_memo() -> Iterator[dict[float, float]]:
+    """Memoise earth_rotation_shift_days for the calculation run inside.
+
+    The rise/set searches of a date-only chart after 2050 ask for the same
+    instants several times over (about 2,200 calls on 340 instants).  Nothing
+    outlives the block: the memo is cleared and the variable reset on exit."""
+    memo: dict[float, float] = {}
+    token = _EARTH_ROTATION_MEMO.set(memo)
+    try:
+        yield memo
+    finally:
+        memo.clear()
+        _EARTH_ROTATION_MEMO.reset(token)
+
+
 def earth_rotation_shift_days(jd_ut: float) -> float:
     """Days to add to jd_ut so that Swiss's apparent sidereal time equals the
     product's (IERS 2010) one.  Exactly 0.0 before 2050-01-01."""
     if jd_ut < SIDEREAL_PRODUCT_CONTINUATION_FROM_JD_UT:
         return 0.0
+    memo = _EARTH_ROTATION_MEMO.get()
+    if memo is not None and jd_ut in memo:
+        return memo[jd_ut]
     target = iers_2010_sidereal_hours(jd_ut)[0]
     shifted = jd_ut
     for _ in range(4):
@@ -281,6 +307,8 @@ def earth_rotation_shift_days(jd_ut: float) -> float:
         if abs(miss) * 3600.0 < 1e-7:
             break
         shifted += miss / 24.0 / _SIDEREAL_RATE
+    if memo is not None:
+        memo[jd_ut] = shifted - jd_ut
     return shifted - jd_ut
 
 
@@ -291,7 +319,7 @@ def earth_rotation_jd_ut(jd_ut: float) -> float:
 
 
 def sidereal_time_hours(jd_ut: float, mean_obliquity: float) -> tuple[float, float]:
-    """(GAST, GMST) in hours: Swiss before 2050-01-01, IERS 2010 from then on."""
+    """(GAST, GMST) hours: Swiss before 2050-01-01, IERS 2010 from then on."""
     if jd_ut < SIDEREAL_PRODUCT_CONTINUATION_FROM_JD_UT:
         return swe.sidtime(jd_ut), swe.sidtime0(jd_ut, mean_obliquity, 0.0)
     return iers_2010_sidereal_hours(jd_ut)
@@ -358,7 +386,6 @@ def sidereal_time_model_receipt(jd_ut: float) -> dict:
     }
 
 
-# --- Time-scale era ------------------------------------
 TIME_SCALE_ERAS = (
     "pre_utc_ut1_estimate",
     "early_utc_era_ut1_by_swiss_rule",
@@ -400,8 +427,6 @@ _CIVIL_SCALE_NOTES = {
 }
 
 
-# --- Swiss stale-leap-table rule --------------------
-#
 # Swiss Ephemeris 2.10.03 swedate.c: from 1972 on, swe_utc_to_jd() takes its input
 # as UT1 instead of UTC when ΔT − (TAI−UTC) − 32.184 s ≥ 1 s at 0h of the input
 # date, i.e. when its ΔT model implies the bundled leap-second table must be out
@@ -682,9 +707,8 @@ def _required_utc_offset_hours(value: dtmod.datetime) -> float:
     return offset.total_seconds() / 3600.0
 
 
-# Two independent axes.
-# Whether the offset was resolved, and whether that resolution can be trusted
-# historically.  The IANA project itself says most pre-1970 entries come from
+# Two independent axes: whether the offset was resolved, and whether that
+# resolution can be trusted historically.  The IANA project itself says most pre-1970 entries come from
 # unreliable sources (theory.html, "Accuracy of the tz database").  Closed sets.
 OFFSET_RESOLUTION_STATUSES = (
     "iana_resolved",
@@ -728,15 +752,65 @@ def prc_1988_dst_start_disputed(
 
     if zone_name not in PRC_RULE_ZONES:
         return False
+    return _stated_time_meets(precision, local, PRC_1988_DISPUTED_LOCAL_INTERVAL)
+
+
+def _stated_time_meets(
+    precision: str, local: dtmod.datetime, interval: tuple[dtmod.datetime, dtmod.datetime]
+) -> bool:
     length = {
         "exact": dtmod.timedelta(0),
         "approximate_hour": dtmod.timedelta(hours=1),
         "date_only": dtmod.timedelta(days=1),
     }[precision]
-    start, end = PRC_1988_DISPUTED_LOCAL_INTERVAL
+    start, end = interval
     if not length:
         return start <= local < end
     return local < end and local + length > start
+
+
+# Local wall-clock spans on Hong Kong time where the Hong Kong Observatory's
+# summer-time table reads UTC+9 and the tz database reads UTC+8: the end of 1945
+# (the table lists the whole year as summer time; the database returns to UTC+8
+# on 11-18 at 02:00, before which both read UTC+9) and 1946-04-20 (the table
+# starts summer time that day; the database at 04-21 00:00).  Keyed by a closed
+# period code that the warning's params carry.
+HK_OBSERVATORY_SUMMER_TIME_INTERVALS = {
+    "1945_after_november_18": (
+        dtmod.datetime(1945, 11, 18, 2, 0),
+        dtmod.datetime(1946, 1, 1, 0, 0),
+    ),
+    "1946_april_20": (
+        dtmod.datetime(1946, 4, 20, 0, 0),
+        dtmod.datetime(1946, 4, 21, 0, 0),
+    ),
+}
+HK_RULE_ZONES = frozenset({"Asia/Hong_Kong"})
+HK_1945_1946_SOURCE_REF = "time/hk_1945_1946_observatory_summer_time"
+HK_BIRTH_TIME_ARTICLE_PATH = "/zh-TW/blog/hong-kong-birth-time"
+
+
+# The tz database repeats 1945-11-18 01:00-01:59: fold=0 is UTC+9 (both sources
+# agree), fold=1 is UTC+8, which the Observatory's table does not have (report F-1).
+HK_1945_REPEATED_HOUR = (dtmod.datetime(1945, 11, 18, 1, 0), dtmod.datetime(1945, 11, 18, 2, 0))
+
+
+def hk_observatory_summer_time_period(
+    zone_name: str | None, precision: str, local: dtmod.datetime, fold: int = 0
+) -> str | None:
+    """The period code whose span the stated birth time meets, if any.
+
+    The stated time is an interval as in ``prc_1988_dst_start_disputed``.
+    """
+
+    if zone_name not in HK_RULE_ZONES:
+        return None
+    for period, interval in HK_OBSERVATORY_SUMMER_TIME_INTERVALS.items():
+        if _stated_time_meets(precision, local, interval):
+            return period
+    if fold == 1 and _stated_time_meets(precision, local, HK_1945_REPEATED_HOUR):
+        return "1945_after_november_18"
+    return None
 
 
 def offset_status(timezone_mode: str, utc_dt: dtmod.datetime, ambiguous: bool) -> dict:
@@ -1042,7 +1116,6 @@ def compute_time_conversion(
             "leap_second_input": leap_second,
         },
         time_scale_era=time_scale_era,
-        input_semantics=input_semantics,
         dst_warning=dst_warning,
     )
 
@@ -1120,7 +1193,6 @@ def _time_conversion_of_jd(
             "leap_second_input": label_millis >= 60 * 1000,
         },
         time_scale_era=time_scale_era,
-        input_semantics=input_semantics,
         dst_warning=None,
     )
 
@@ -1134,10 +1206,10 @@ def _time_conversion_from_jd_ut(
     trace: Trace,
     receipt: dict,
     time_scale_era: str,
-    input_semantics: str,
     dst_warning: str | None,
 ) -> dict:
     swiss_time_input_semantics = receipt["swiss_time_input_semantics"]
+    input_semantics = receipt["input_semantics"]
 
     # The receipted ΔT and TT are the ones the positions use: swe_calc_ut takes
     # TT = JD_UT + swe_deltat_ex(JD_UT, iflag), and only the ephemeris bits of
@@ -1256,7 +1328,7 @@ def _time_conversion_from_jd_ut(
     }
 
 
-# --- date_only anchor and representative samples ---------
+# date_only anchor and representative samples.
 
 DATE_ONLY_ANCHOR_POLICY = "local_noon_or_first_existing_instant_after"
 DATE_ONLY_NOON_POLICY = "local_noon_computational_anchor_not_birth_time"
@@ -1319,8 +1391,6 @@ def _existing_utc_instants(dt_input, tz_input, naive: dtmod.datetime) -> list:
 
 
 def utc_datetime_to_jd_ut(utc_value: dtmod.datetime) -> float:
-    """JD(UT) of an aware UTC datetime through swe.utc_to_jd (Gregorian)."""
-
     return swe.utc_to_jd(
         utc_value.year,
         utc_value.month,
@@ -1332,7 +1402,7 @@ def utc_datetime_to_jd_ut(utc_value: dtmod.datetime) -> float:
     )[1]
 
 
-def _wall_label(utc_value: dtmod.datetime, tz_input) -> tuple[dtmod.datetime, int]:
+def _local_wall_time_and_fold(utc_value: dtmod.datetime, tz_input) -> tuple[dtmod.datetime, int]:
     if tz_input.mode == "iana":
         local = utc_value.astimezone(ZoneInfo(tz_input.iana_name))
         return local.replace(tzinfo=None), local.fold
@@ -1386,7 +1456,7 @@ def _first_existing_instant_at_or_after(
         for fold in (0, 1)
     )
     return first_second_where(
-        low, high, lambda moment: _wall_label(moment, tz_input)[0] >= naive
+        low, high, lambda moment: _local_wall_time_and_fold(moment, tz_input)[0] >= naive
     )
 
 
@@ -1611,15 +1681,14 @@ def civil_hour_spans(tz_input, hour_start: dtmod.datetime) -> list:
 def resolve_date_only_anchor(dt_input, tz_input) -> dict:
     """Local noon, or the first instant after it that the zone actually has.
 
-    Fourteen real civil days have no local noon because a clock change
-    swallowed it; date_only does not refuse them.  A day with no
-    existing instant at all is still refused, and the refusal names no time the
-    user did not enter.
+    Fourteen real civil days have no local noon because a clock change swallowed
+    it; date_only does not refuse them.  A day with no existing instant at all is
+    still refused, and the refusal names no time the user did not enter.
     """
 
     noon = dtmod.datetime(dt_input.year, dt_input.month, dt_input.day, 12)
     anchor_utc = _first_existing_instant_at_or_after(dt_input, tz_input, noon)
-    anchor_local, anchor_fold = _wall_label(anchor_utc, tz_input)
+    anchor_local, anchor_fold = _local_wall_time_and_fold(anchor_utc, tz_input)
     if anchor_local.date() != noon.date():
         zone_label = tz_input.iana_name if tz_input.mode == "iana" else "此固定偏移"
         raise NonexistentLocalTimeError(
@@ -1685,7 +1754,7 @@ def representative_sample_instants(
                 "sample_role": role,
                 "representative": True,
                 "time_basis": "representative_sample_not_birth_time",
-                "reference_local_time": _wall_label(utc_value, tz_input)[0].isoformat(
+                "reference_local_time": _local_wall_time_and_fold(utc_value, tz_input)[0].isoformat(
                     timespec="seconds"
                 ),
                 "reference_utc_time": utc_value.isoformat().replace("+00:00", "Z"),
@@ -1730,6 +1799,30 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "部分中文說明表把 1988 年中國夏令時間的起點寫成 4 月 10 日。本服務依 IANA 時區"
             "資料庫（4 月 17 日 02:00 起）換算，不另算一張盤；出生時間落在 1988-04-10 00:00 至 "
             "04-17 02:00（北京時間）之間時加一則警告，說明兩種說法的 UTC 相差 1 小時。"
+        ),
+    },
+    HK_1945_1946_SOURCE_REF: {
+        "applies_to": (
+            "calculation_dossier.warnings[code=hk_observatory_summer_time_differs]; "
+            "zones " + ", ".join(sorted(HK_RULE_ZONES))
+        ),
+        "differing_local_intervals": {
+            period: [moment.isoformat(timespec="minutes") for moment in interval]
+            for period, interval in HK_OBSERVATORY_SUMMER_TIME_INTERVALS.items()
+        },
+        "source": (
+            "Hong Kong Observatory, Summer Time in Hong Kong table (1942-1945 listed as the "
+            "whole year; 1946 from 20 April); IANA tz database, file asia, Hong Kong section "
+            "(UTC+8 from 1945-11-18 02:00, comments by Phake Nick 2018-10-26 and P Chan "
+            "2018-12-31; 1946 summer time from 04-21 00:00 after two newspapers). Civil-time "
+            "source rows hk-1941-1945 and hk-1946-1979 (backend/app/civil_time_sources.json); "
+            "article " + HK_BIRTH_TIME_ARTICLE_PATH + "."
+        ),
+        "note": (
+            "香港天文台的〈香港夏令時間〉表把 1945 年全年列為夏令時間（UTC+9），1946 年寫 4 月 20 日開始；"
+            "IANA 時區資料庫定 1945 年 11 月 18 日 02:00 恢復 UTC+8、1946 年 4 月 21 日 00:00 才開始夏令時間。"
+            "本服務依時區資料庫換算，不另算一張盤；出生時間落在 1945-11-18 02:00 至 12-31 結束，"
+            "或 1946-04-20 整天（香港時間）時加一則警告，說明依天文台紀錄鐘面時間可能差 1 小時。"
         ),
     },
     "time/sidereal_time_model": {

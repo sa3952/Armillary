@@ -43,6 +43,38 @@ python -m scripts.validation.build_place_catalog \
   --source-date YYYY-MM-DD
 ```
 
+**Rebuilding the shipped catalogue exactly.** `input_archive.json` lists the six inputs of the current
+catalogue: upstream URL, retrieval date (2026-10-09), licence, SHA-256, and where a copy can be
+found. The files are not in this tree, and the upstream URLs no longer serve these bytes (see the list's
+`upstream_note`); a copy is usable only if its SHA-256 equals the list. With the six files in `inputs/`:
+
+```bash
+sha256sum inputs/*          # each must equal input_archive.json
+python -m scripts.validation.build_place_catalog \
+  --geonames-zip inputs/cities500.zip \
+  --geonames-admin1-codes inputs/admin1CodesASCII.txt \
+  --geonames-admin2-codes inputs/admin2Codes.txt \
+  --geonames-alternate-names inputs/alternateNamesV2.zip \
+  --taiwan-admin-csv inputs/taiwan-admin.csv \
+  --taiwan-settlement-csv inputs/taiwan-settlement.csv \
+  --output backend/place_data/places.sqlite3 \
+  --manifest backend/place_data/catalog_manifest.json \
+  --source-date 2026-10-09
+python scripts/verification/verify_place_catalog.py --check
+```
+
+Expected: `places.sqlite3` SHA-256 `a977c5774acb75d5f92ecc09db7bdd4241be3cd7c1af4c98cdc955b918da2f72` (90791936 bytes), and
+`catalog_manifest.json` unchanged (`git diff --exit-code backend/place_data/`). Input digests:
+
+| input | sha256 |
+|---|---|
+| `geonames_admin1_codes` | `1da92a6323a5fec3176f3f743bf4cf4040fd56a876da55e46fbca23c863aa60a` |
+| `geonames_admin2_codes` | `2fbfc577d4d3f7d2db4a5aef851631521c89d3cbbeb5c33bf658054ee05b5af0` |
+| `geonames_alternate_names` | `5e61abd63b30bff4f0b34cb562f850c15ecafbbf9f52c3d56a92e28fb8f47d1b` |
+| `geonames_cities500` | `4022ba76d34abbcd7c7b32597a6f968f51edfa4fb262bf04f15c109624ae3db2` |
+| `taiwan_moi_administrative` | `b9aaca5b04bd19c622a675354d2f5c1b67a5c7d7409263bc1e379191beffdb39` |
+| `taiwan_moi_settlement` | `e1e72eb17fb26852860f4d5dc5f0ca99200bdd8a65b37bc0bd523efbd0fa66a5` |
+
 Catalog、manifest、hashes、row counts、notices、Docker context and publication candidate change as one
 reviewed release unit. Source identity and licenses come from the manifest and distributed notices.
 

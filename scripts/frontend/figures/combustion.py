@@ -17,7 +17,7 @@ from __future__ import annotations
 from html import escape
 
 from . import _fx
-from ._common import TAIPEI, calc_ut, product_charts, swiss
+from ._common import PLANETS, TAIPEI, calc_ut, degree_minute, product_charts, swiss
 from .page_methods import solar_limit_text, solar_phase_limit_rows
 
 
@@ -29,12 +29,13 @@ REQUEST = {
     "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"},
     "options": {"include_solar_phase": True},
 }
-PROFILES = (
-    ("lilly_1647_p113_v1", "Lilly 1647 p.113"),
-    ("hellenistic_15_v1", "希臘化"),
-    ("biruni_wright_v1", "al-Bīrūnī"),
+# (figure variant, the product's solar-phase profile, label)
+VARIANTS = (
+    ("lilly", "lilly_1647_p113_v1", "Lilly 1647 p.113"),
+    ("hellenistic", "hellenistic_15_v1", "希臘化"),
+    ("biruni", "biruni_wright_v1", "al-Bīrūnī"),
 )
-NAMES = {"moon": "月亮", "mercury": "水星", "venus": "金星", "mars": "火星", "jupiter": "木星", "saturn": "土星"}
+NAMES = {key: name for key, name in PLANETS.items() if key != "sun"}
 BAND_NAMES = {
     "cazimi": "日輪內",
     "combust": "焦傷",
@@ -57,8 +58,7 @@ CROSSING_ARCSEC = 0.5
 
 def _dm(degrees: float, signed: bool = False) -> str:
     """「8°18′」, rounded to the whole arcminute; signed: 「+16°34′」「−35°00′」."""
-    minutes = round(abs(degrees) * 60)
-    text = f"{minutes // 60}°{minutes % 60:02d}′"
+    text = degree_minute(abs(degrees))
     return (("−" if degrees < 0 else "+") + text) if signed else text
 
 
@@ -90,7 +90,7 @@ def _summary_cell(table: dict, band: str) -> str:
 
 def _summary_rows(tables: dict) -> str:
     rows = []
-    for profile, name in PROFILES:
+    for _, profile, name in VARIANTS:
         cells = "".join(f"<td>{escape(_summary_cell(tables[profile], band))}</td>" for band, _ in LIMITED)
         rows.append(f'          <tr><th scope="row">{escape(name)}</th>{cells}</tr>')
     return "\n".join(rows)
@@ -101,8 +101,7 @@ def _summary_rows(tables: dict) -> str:
 # is the backend's limit for that body, side and the planet's own motion, and
 # every verdict printed is the backend's band; `_drawn_band` re-reads the
 # verdict from the drawn edges and must agree with it.
-VARIANTS = (("lilly", "lilly_1647_p113_v1"), ("hellenistic", "hellenistic_15_v1"), ("biruni", "biruni_wright_v1"))
-VARIANT_LABELS = (("lilly", "Lilly 1647 p.113"), ("hellenistic", "希臘化"), ("biruni", "al-Bīrūnī"))
+VARIANT_LABELS = tuple((variant, label) for variant, _, label in VARIANTS)
 SIDE_SHORT = {"morning": "西側（晨星）", "evening": "東側（昏星）"}
 # The result page's wording (view-model.js SOLAR_PHASE_SIDE_ZH and SOLAR_PHASE_MOTION_ZH).
 SIDE_LONG = {"morning": "西側，比太陽早升起（晨星）", "evening": "東側，比太陽晚落下（昏星）"}
@@ -237,7 +236,7 @@ def _ruler(layout: str, fid: str, rows: list[dict], verdicts: dict, edges: dict,
     out.append(_fx.glyph("sun", cx, head + (22 if wide else 18), 18 if wide else 15, "fx-sun-gl"))
     out += [_fx.variant_group(variant, VARIANTS[0][0], _band_labels(edges[variant][rows[0]["key"]]["evening"],
                                                                      x, cx, W - 12, top, wide))
-            for variant, _ in VARIANTS]
+            for variant, *_ in VARIANTS]
     out.append(_fx.line(cx, top - 4, cx, bottom + 4, "fx-sunline"))
     for i, row in enumerate(rows):
         y = top + i * rh
@@ -249,7 +248,7 @@ def _ruler(layout: str, fid: str, rows: list[dict], verdicts: dict, edges: dict,
                    f'aria-label="{row["name"]}，{SIDE_SHORT[row["side"]]}，黃經差 {value}">')
         out.append(_fx.rect(8 if wide else 8, y + 1, W - 16, rh - 2, "fx-hit"))
         out.append(_fx.rect(x0, track, x1 - x0, th, "fx-track"))
-        for variant, _ in VARIANTS:
+        for variant, *_ in VARIANTS:
             strips = _strips(edges[variant][key], x, track, th, x0, x1)
             verdict = BAND_NAMES[verdicts[variant][key]]
             label = (_fx.text(x1 + 14, my + 6, verdict, "fx-t fx-small fx-verdict") if wide
@@ -322,7 +321,7 @@ def _rays(layout: str, fid: str, rows: list[dict], verdicts: dict, edges: dict, 
     out.append(_fx.text(x0 - 8, top - 10, "黃緯（只顯示，不判定）", "fx-t fx-small fx-dim"))
     out.append(f'<clipPath id="{fid}-{layout}-plot">{_fx.rect(x0, top, x1 - x0, bottom - top, "")}</clipPath>')
     plot = [f'<g clip-path="url(#{fid}-{layout}-plot)">', _fx.rect(x0, top, x1 - x0, bottom - top, "fx-track")]
-    for variant, _ in VARIANTS:
+    for variant, *_ in VARIANTS:
         e = edges[variant]["venus"]
         body = _strips(e, x, top, bottom - top, x0, x1)
         limit = exceptions[variant]
@@ -335,7 +334,7 @@ def _rays(layout: str, fid: str, rows: list[dict], verdicts: dict, edges: dict, 
     plot.append("</g>")
     out += plot
     out.append(_fx.rect(x0, top, x1 - x0, bottom - top, "fx-inset-frame"))
-    for variant, _ in VARIANTS:
+    for variant, *_ in VARIANTS:
         limit = exceptions[variant]
         if limit is not None:
             # inside the band above the line, either side of the mark at the centre
@@ -376,7 +375,7 @@ def _rays(layout: str, fid: str, rows: list[dict], verdicts: dict, edges: dict, 
         out.append(_fx.line(x(lens), y(lens), ix, iy, "fx-leader") + _fx.line(x(lens), y(-lens), ix, iy + ih, "fx-leader"))
     out.append(f'<clipPath id="{fid}-{layout}-inset">{_fx.rect(ix, iy, iw, ih, "")}</clipPath>')
     inset = [f'<g clip-path="url(#{fid}-{layout}-inset)">', _fx.rect(ix, iy, iw, ih, "fx-inset-bg")]
-    for variant, _ in VARIANTS:
+    for variant, *_ in VARIANTS:
         e = edges[variant]["venus"]
         body = ""
         caz = {side: e[side]["cazimi"] for side in ("morning", "evening")}
@@ -428,16 +427,13 @@ def _first_glossed(notes: list[_fx.Note]) -> list[_fx.Note]:
 
 
 def _ruler_table(rows: list[dict], verdicts: dict, bound: _fx.Bound) -> str:
-    head = "".join(f'<th scope="col">{label}</th>' for _, label in VARIANT_LABELS)
     body = []
     for row in rows:
-        cells = "".join(f"<td>{BAND_NAMES[verdicts[v][row['key']]]}</td>" for v, _ in VARIANTS)
+        cells = "".join(f"<td>{BAND_NAMES[verdicts[v][row['key']]]}</td>" for v, *_ in VARIANTS)
         body.append(f'<tr data-fx-key="{row["key"]}"><th scope="row">{row["name"]}</th>'
                     f'<td class="n">{bound.num(_dm(row["longitude_difference_degrees"], True))}</td>'
                     f'<td>{SIDE_SHORT[row["side"]]}</td>{cells}</tr>')
-    return ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">天體</th><th scope="col">黃經差</th>'
-            f'<th scope="col">太陽哪一側</th>{head}</tr></thead><tbody>{"".join(body)}</tbody></table></div></details>')
+    return _fx.data_table(("天體", "黃經差", "太陽哪一側", *(label for *_, label in VARIANTS)), body)
 
 
 def _figures(answer: dict) -> tuple[dict[str, str], list[str]]:
@@ -446,16 +442,16 @@ def _figures(answer: dict) -> tuple[dict[str, str], list[str]]:
     results = module["profile_results"]
     rows = module["rows"]
     speeds = {body["key"]: body["speed_longitude"] for body in answer["astronomical_data"]["bodies"]}
-    tables = {profile: results[profile]["limits"] for _, profile in VARIANTS}
+    tables = {profile: results[profile]["limits"] for _, profile, _ in VARIANTS}
     edges = {
         variant: {row["key"]: {side: _edges(tables, profile, row["key"], side,
                                             "retrograde" if speeds[row["key"]] < 0 else "direct")
                                for side in ("morning", "evening")} for row in rows}
-        for variant, profile in VARIANTS
+        for variant, profile, _ in VARIANTS
     }
-    verdicts = {variant: results[profile]["bands"] for variant, profile in VARIANTS}
-    exceptions = {variant: results[profile]["venus_latitude_exception_degrees"] for variant, profile in VARIANTS}
-    for variant, _ in VARIANTS:
+    verdicts = {variant: results[profile]["bands"] for variant, profile, _ in VARIANTS}
+    exceptions = {variant: results[profile]["venus_latitude_exception_degrees"] for variant, profile, _ in VARIANTS}
+    for variant, *_ in VARIANTS:
         for row in rows:
             seen = _drawn_band(edges[variant][row["key"]][row["side"]], row["longitude_difference_degrees"],
                                row["ecliptic_latitude_degrees"], exceptions[variant], row["key"])
@@ -473,27 +469,35 @@ def _figures(answer: dict) -> tuple[dict[str, str], list[str]]:
         for _, label in VARIANT_LABELS:
             bound.label(label)
     ruler_notes = _first_glossed([_fx.Note(row["key"], v, _sentence(row, labels[v], verdicts[v][row["key"]], ruler_bound))
-                                  for v, _ in VARIANTS for row in rows])
+                                  for v, *_ in VARIANTS for row in rows])
     moment = MOMENT
     when = ruler_bound.num(f"{moment['year']} 年 {moment['month']} 月 {moment['day']} 日 "
                            f"{moment['hour']:02d}:{moment['minute']:02d}")
     ruler = _fx.figure(
-        fid="fig-beams", hero=True,
+        fid="fig-beams",
+        hero=True,
         title="各星與太陽的黃經差，以及三套界線的距離帶",
         caption=(f"<b>{ruler_bound.label('圖 1')}</b>每一列是一顆星，橫軸是它與太陽的黃經差（等比例），中間的虛線是太陽；左邊是西側（晨星），"
                  f"右邊是東側（昏星）。距離帶由內到外是日輪內（cazimi，實心）、焦傷（combust，交叉線）、"
                  f"在光束下（under the beams，單線），"
                  f"界線依那顆星、那一側與它順行或逆行而定；按鈕切換三套界線。時刻是{ruler_bound.label('表 3')} 的合成時刻：{when}，臺北。"
                  f"相差超過 {ruler_bound.scale(f'{RULER_RANGE:g}')}° 的星畫在邊上的虛線圈裡。"),
-        wide=_ruler("fx-wide", "fig-beams", rows, verdicts, edges, ruler_bound),
-        narrow=_ruler("fx-narrow", "fig-beams", rows, verdicts, edges, ruler_bound),
-        notes=ruler_notes, idle=IDLE, variants=VARIANT_LABELS, switch_label=SWITCH_LABEL,
+        art=_fx.FigureArt.drawn(
+            _ruler, "fig-beams", rows, verdicts, edges, ruler_bound,
+            notes=ruler_notes,
+            idle=IDLE,
+        ),
+        controls=_fx.FigureControls(
+            variants=VARIANT_LABELS,
+            switch_label=SWITCH_LABEL,
+        ),
         table=_ruler_table(rows, verdicts, ruler_bound),
+        bound=ruler_bound,
     )
     plotted = [row for row in rows if abs(row["longitude_difference_degrees"]) <= RAY_RANGE
                and abs(row["ecliptic_latitude_degrees"]) <= RAY_LATITUDE]
     ray_notes = [_fx.Note(row["key"], v, _sentence(row, labels[v], verdicts[v][row["key"]], ray_bound, True))
-                 for v, _ in VARIANTS for row in plotted]
+                 for v, *_ in VARIANTS for row in plotted]
     away = "、".join(row["name"] for row in rows if row not in plotted)
     rays = _fx.figure(
         fid="fig-rays",
@@ -503,14 +507,17 @@ def _figures(answer: dict) -> tuple[dict[str, str], list[str]]:
                  f"仍落在黃經只差 {ray_bound.num(f"{round(abs(venus['longitude_difference_degrees']) * 60)}′")} 的那一條；"
                  f"按鈕切換三套界線，看同一顆金星的三個答案。直條是金星這一刻適用的界線。放大框是太陽前後 {ray_bound.scale('1°')}，"
                  f"橫直同比例，圓是日面。{away}離太陽 {ray_bound.scale(f'{RAY_RANGE:g}')}° 以上，不在圖內。"),
-        wide=_rays("fx-wide", "fig-rays", rows, verdicts, edges, exceptions, semidiameter, ray_bound),
-        narrow=_rays("fx-narrow", "fig-rays", rows, verdicts, edges, exceptions, semidiameter, ray_bound),
-        notes=ray_notes, idle=IDLE, variants=VARIANT_LABELS, switch_label=SWITCH_LABEL,
+        art=_fx.FigureArt.drawn(
+            _rays, "fig-rays", rows, verdicts, edges, exceptions, semidiameter, ray_bound,
+            notes=ray_notes,
+            idle=IDLE,
+        ),
+        controls=_fx.FigureControls(
+            variants=VARIANT_LABELS,
+            switch_label=SWITCH_LABEL,
+        ),
+        bound=ray_bound,
     )
-    for markup, bound in ((ruler, ruler_bound), (rays, ray_bound)):
-        found = _fx.problems(markup, bound)
-        if found:
-            raise RuntimeError("figure check: " + "; ".join(found))
     sprite = _fx.defs(("sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn"))
     return {"fx-defs": sprite, "beams": ruler, "rays": rays}, []
 
@@ -534,7 +541,7 @@ def _check_against_swiss(answer: dict) -> None:
                 raise RuntimeError(f"{row['key']}: product {row['longitude_difference_degrees']} != Swiss {delta}")
             if abs(latitude - row["ecliptic_latitude_degrees"]) * 3600 > SAME_ARCSEC:
                 raise RuntimeError(f"{row['key']}: latitude {row['ecliptic_latitude_degrees']} != Swiss {latitude}")
-        for profile, _ in PROFILES:
+        for _, profile, _ in VARIANTS:
             for crossing in module["profile_results"][profile]["beam_crossings_within_7_days"]["mercury"]:
                 delta, _ = difference(swe.MERCURY, crossing["instant"]["jd_ut"])
                 if abs(abs(delta) - crossing["threshold_degrees"]) * 3600 > CROSSING_ARCSEC:
@@ -554,18 +561,18 @@ def build() -> tuple[dict[str, str], list[str]]:
     if any(results[profile]["bands"]["venus"] != band for profile, band in expected.items()):
         raise RuntimeError("the instant no longer gives Venus three answers")
 
-    tables = {profile: results[profile]["limits"] for profile, _ in PROFILES}
+    tables = {profile: results[profile]["limits"] for _, profile, _ in VARIANTS}
     example = []
     for key, name in NAMES.items():
         row = rows[key]
-        bands = "".join(f"<td>{BAND_NAMES[results[profile]['bands'][key]]}</td>" for profile, _ in PROFILES)
+        bands = "".join(f"<td>{BAND_NAMES[results[profile]['bands'][key]]}</td>" for _, profile, _ in VARIANTS)
         example.append(
             f'          <tr><th scope="row">{name}</th><td class="n">{_dm(row["longitude_difference_degrees"], True)}</td>'
             f'<td class="n">{_dm(row["ecliptic_latitude_degrees"], True)}</td>'
             f'<td class="n">{_dm(row["angular_separation_degrees"])}</td>{bands}</tr>'
         )
     crossings, quoted_offsets = [], []
-    for profile, name in PROFILES:
+    for _, profile, name in VARIANTS:
         found = results[profile]["beam_crossings_within_7_days"]["mercury"]
         if len(found) != 1:
             raise RuntimeError(f"{profile}: Mercury crosses {len(found)} times, the table expects one")

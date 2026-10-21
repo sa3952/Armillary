@@ -7,7 +7,7 @@ from __future__ import annotations
 from html import escape
 
 from . import _site
-from ._common import SIGNS, backend_on_path
+from ._common import PLANETS, SIGNS, backend_on_path
 
 
 FRAGMENT = "methods"
@@ -88,8 +88,6 @@ def solar_phase_limit_rows() -> str:
     return "\n".join(rows)
 
 
-_PLANETS = {"sun": "太陽", "moon": "月亮", "mercury": "水星", "venus": "金星",
-            "mars": "火星", "jupiter": "木星", "saturn": "土星"}
 
 
 def _dignity_tables():
@@ -104,7 +102,7 @@ def dignity_sign_rows() -> str:
     tables = _dignity_tables()
     name = lambda sign: SIGNS[tables.SIGNS.index(sign)]  # noqa: E731
     rows = []
-    for key, planet in _PLANETS.items():
+    for key, planet in PLANETS.items():
         cells = (
             "、".join(name(sign) for sign in tables.DOMICILE_SIGNS[key]),
             name(tables.EXALTATION_SIGNS[key]),
@@ -149,7 +147,7 @@ def novenaria_strip() -> str:
         items.append(
             f'        <li{current}><span class="nv-n">第 {part + 1} 份</span><span class="nv-span">{span}</span>'
             f'<b class="nv-sign">{SIGNS[tables.SIGNS.index(target)]}</b>'
-            f'<span class="nv-ruler">{_PLANETS[_ruler(tables, target)]}</span></li>'
+            f'<span class="nv-ruler">{PLANETS[_ruler(tables, target)]}</span></li>'
         )
     return "\n".join(items)
 

@@ -26,7 +26,7 @@ from collections.abc import Callable
 from .dignity_tables import SIGNS
 from .firdaria import period_instant
 from .profections import DOMICILE_LORD, LORD_TABLE
-from .source_reading import SOURCE_READING_LEVELS
+from .source_reading import SECONDARY_ONLY, TRANSLATION_READ, cited
 
 PROFILES = (
     "monthly_profection_solar_30_degree_months_v1",
@@ -99,77 +99,48 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "read. No degree, no topic of the place and no verdict is emitted."
         ),
         "sources": [
-            {
-                "citation": "Vettius Valens, Anthologies IV.28 (Kroll p.204, Pingree p.194)",
-                "says": (
-                    "for a day birth, the distance from the Sun at the moment in question to "
-                    "the natal Sun, counted from the sign allotted the year, gives the month; "
-                    "for a night birth the Moon's distance; no worked example with numbers. "
-                    "The Greek is not checked, so whether the distance is counted in whole "
-                    "signs or in 30-degree steps is not settled from it"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Riley's English translation via the public re-typeset janegca/latex-valens",
-            },
-            {
-                "citation": (
-                    "Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, "
-                    "Persian Nativities IV (2019)"
-                ),
-                "says": (
-                    "the year's sign is also the first month's sign and each following sign "
-                    "the next month; the monthly revolution charts are cast when the Sun "
-                    "reaches the natal Sun's degree in each following sign, the solar return "
-                    "being also the first month; Ptolemy's monthly method rejected. Timing the "
-                    "profected months by those same instants is the product's reading of that "
-                    "summary"
-                ),
-                "reading": SOURCE_READING_LEVELS[2],
-                "read_at": (
-                    "known only from Dykes's spoken summary (The Astrology Podcast, episode "
-                    "218, 2019); the book is not checked"
-                ),
-            },
-            {
-                "citation": (
-                    "al-Biruni, Book of Instruction in the Elements of the Art of Astrology, tr. "
-                    "R. R. Wright (1934), section 522"
-                ),
-                "says": (
-                    "the monthly revolution is taken each time the Sun reaches the degree and "
-                    "minute it held at the nativity or the revolution; the same section divides "
-                    "the profection year into thirteen months of 28 days 1 hour 51 minutes, the "
-                    "thirteenth repeating the year's sign, which the product does not compute"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Wright's English translation",
-            },
-            {
-                "citation": "Guido Bonatti, Liber astronomiae Tr.9 (Dykes translation)",
-                "says": (
-                    "profection by equal degrees, 30 degrees a year, 2 degrees 30 minutes a "
-                    "month, 5 minutes a day, counted from birth; a different method the product "
-                    "does not compute"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Dykes's English translation",
-            },
+            cited("Vettius Valens, Anthologies IV.28 (Kroll p.204, Pingree p.194)",
+                  ("for a day birth, the distance from the Sun at the moment in question to "
+                   "the natal Sun, counted from the sign allotted the year, gives the month; "
+                   "for a night birth the Moon's distance; no worked example with numbers. "
+                   "The Greek is not checked, so whether the distance is counted in whole "
+                   "signs or in 30-degree steps is not settled from it"),
+                  TRANSLATION_READ,
+                  "Riley's English translation via the public re-typeset janegca/latex-valens"),
+            cited(("Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, "
+                   "Persian Nativities IV (2019)"),
+                  ("the year's sign is also the first month's sign and each following sign "
+                   "the next month; the monthly revolution charts are cast when the Sun "
+                   "reaches the natal Sun's degree in each following sign, the solar return "
+                   "being also the first month; Ptolemy's monthly method rejected. Timing the "
+                   "profected months by those same instants is the product's reading of that "
+                   "summary"),
+                  SECONDARY_ONLY,
+                  ("known only from Dykes's spoken summary (The Astrology Podcast, episode "
+                   "218, 2019); the book is not checked")),
+            cited(("al-Biruni, Book of Instruction in the Elements of the Art of Astrology, tr. "
+                   "R. R. Wright (1934), section 522"),
+                  ("the monthly revolution is taken each time the Sun reaches the degree and "
+                   "minute it held at the nativity or the revolution; the same section divides "
+                   "the profection year into thirteen months of 28 days 1 hour 51 minutes, the "
+                   "thirteenth repeating the year's sign, which the product does not compute"),
+                  TRANSLATION_READ, "Wright's English translation"),
+            cited("Guido Bonatti, Liber astronomiae Tr.9 (Dykes translation)",
+                  ("profection by equal degrees, 30 degrees a year, 2 degrees 30 minutes a "
+                   "month, 5 minutes a day, counted from birth; a different method the product "
+                   "does not compute"),
+                  TRANSLATION_READ, "Dykes's English translation"),
         ],
-        "named_disagreement_not_adopted": {
-            "citation": "Ptolemy, Tetrabiblos IV.10 (Robbins, Loeb p.453 and note 82)",
-            "says": (
-                "months of 28 days to a sign counted from the places that govern the year, "
-                "and days of 2 1/3 days to a sign; the note records 30 days to a sign "
-                "(Bouche-Leclercq, Cardanus, without manuscript support) and 2 1/2 days (two "
-                "manuscripts). About 13.04 such months fall in a year and they do not restart "
-                "at the return, so they do not fit the return year; not computed"
-            ),
-            "reading": SOURCE_READING_LEVELS[1],
-            "read_at": (
-                "Robbins's English (Loeb 1940): the whole of IV.10 read in the LacusCurtius "
-                "transcription; the Greek not checked"
-            ),
-        },
+        "named_disagreement_not_adopted": cited(
+            "Ptolemy, Tetrabiblos IV.10 (Robbins, Loeb p.453 and note 82)",
+            ("months of 28 days to a sign counted from the places that govern the year, "
+             "and days of 2 1/3 days to a sign; the note records 30 days to a sign "
+             "(Bouche-Leclercq, Cardanus, without manuscript support) and 2 1/2 days (two "
+             "manuscripts). About 13.04 such months fall in a year and they do not restart "
+             "at the return, so they do not fit the return year; not computed"),
+            TRANSLATION_READ,
+            ("Robbins's English (Loeb 1940): the whole of IV.10 read in the LacusCurtius "
+             "transcription; the Greek not checked")),
         "not_from_the_sources": [
             "the Sun's 30-degree steps for a night birth: Valens IV.28 uses the Moon by "
             "night; the product uses the Sun for every chart, as Abu Ma'shar is reported "

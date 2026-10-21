@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
 import hashlib
 
 import swisseph as swe
 
+from .dignity_tables import SEVEN_PLANETS
 from ..domain_catalog import OUTER_BODIES, PRODUCT_YEAR_RANGE
 from ..ephemeris import input_file_inventory
 from ..method_sources import method_source_register_receipt
@@ -33,12 +37,14 @@ from .module_state import (
     state_of as _state_of,
 )
 
+if TYPE_CHECKING:
+    from ..chart_stages import TimeResolution
 
-DOSSIER_VERSION = "0.11.0"
 
-# The six-field vocabulary (MODULE_STATUSES, EVENT_SEARCH_REASON_CODES
-# and the builders) lives in module_state; the Dossier copies what each
-# producer wrote.  Both names are re-exported here for the response's readers.
+DOSSIER_VERSION = "0.12.0"
+
+# The six-field vocabulary lives in module_state; the Dossier copies what each
+# producer wrote.  Both names are re-exported for the response's readers.
 __all__ = [
     "DOSSIER_VERSION",
     "EVENT_SEARCH_REASON_CODES",
@@ -114,12 +120,10 @@ def _object_provenance(item: dict) -> dict:
 
 
 def _member_group_state(requested: bool, records: list[dict]) -> dict:
-    """State of an option whose result is a set of emitted records.
+    """State of an option whose result is a set of records (no container).
 
-    Outer planets, Chiron and the derived south nodes have no container; the
-    records are the producer's output.  A record gated before any Swiss call
-    carries a coverage_state other than covered (not executed); a record without
-    a longitude carries the producer's availability_reason_code.
+    A record gated before any Swiss call has coverage_state != covered (not
+    executed); one without a longitude carries availability_reason_code.
     """
 
     if not requested:
@@ -254,11 +258,79 @@ def _methodology_receipt(derived_methods: dict, modules: dict) -> dict:
     # `items` feeds the warnings below and is not emitted.
     return {
         "items": items,
-        # The whitelisted public mark for
-        # methods whose named pre-modern sources disagree; one producer.
+        # Public mark for methods whose named pre-modern sources disagree.
         "classical_source_disagreements": contested_method_marks(
             derived_methods, modules
         ),
+    }
+
+
+_OPTION_TOGGLES = {
+    "include_houses": ("house_division", "derived_methods.house_division"),
+    "include_fixed_stars": ("fixed_stars", "astronomical_data.fixed_stars"),
+    "include_lots": ("lots", "derived_methods.lots"),
+    "include_antiscia": ("antiscia", "derived_geometry.antiscia"),
+    "include_void_of_course": ("void_of_course", "derived_methods.void_of_course"),
+    "include_declination_aspects": ("declination_aspects", "derived_methods.declination_aspects"),
+    "include_outer_planets": ("outer_planets", "astronomical_data.bodies"),
+    "include_chiron": ("chiron", "astronomical_data.bodies"),
+    "include_lilith_priapus": ("lunar_apsides", "astronomical_data.lunar_apsides"),
+    "include_south_nodes": ("south_nodes", "astronomical_data.nodes"),
+    "include_lunar_phases": ("lunar_phases", "astronomical_data.lunar_events"),
+    "include_eclipses": ("eclipses", "astronomical_data.lunar_events.eclipses"),
+    "include_rise_set_transits": ("rise_set_transits", "astronomical_data.horizon_events"),
+    "include_aspects": ("aspects", "derived_methods.aspects"),
+    "include_anti_vertex": ("anti_vertex", "astronomical_data.extra_angles.angles.anti_vertex"),
+    "include_extra_angles": ("extra_angles", "astronomical_data.extra_angles"),
+    "include_dodecatemoria": ("dodecatemoria", "derived_methods.dodecatemoria"),
+    "include_lunar_mansions": ("lunar_mansions", "derived_methods.lunar_mansions"),
+    "include_solar_phase": ("solar_phase", "derived_methods.solar_phase"),
+    "include_motion_states": ("motion_states", "derived_methods.motion_states"),
+    "include_classical_classifications": (
+        "classical_classifications", "derived_methods.classical_classifications",
+    ),
+}
+
+# Every module container an option writes is named here, so a
+# consumer can resolve each null container to the option that owns it.
+_ALSO_WRITTEN = {
+    "include_houses": ("derived_methods.planet_in_house", "astronomical_data.angles"),
+    "include_lots": ("derived_methods.sect",),
+}
+
+_ORB_PATH = "derived_methods.aspects.degree_based.orb_receipt"
+_DEGREE_PATH = "derived_methods.aspects.degree_based"
+_ANGLE_PATH = "derived_methods.aspects.degree_based.angle_participation"
+_PROFILE_PATH = "derived_methods.essential_dignities.profile_results"
+
+_DEPENDENT_OPTIONS = {
+    "antiscia_include_nodes": ("antiscia", "derived_geometry.antiscia.scope"),
+    "include_aspect_perfection": ("aspects", "derived_methods.aspects.perfection"),
+    "aspect_include_angles": ("aspects", _ANGLE_PATH),
+    "triplicity_include_research_comparison": ("essential_dignities", _PROFILE_PATH),
+    "solar_phase_disc_cazimi": ("solar_phase", "derived_methods.solar_phase.disc_cazimi"),
+}
+
+
+def _configuration_options(options) -> dict:
+    """Each configuration option: (selected, owning module, response path)."""
+
+    return {
+        "house_system": (options.include_houses, "house_division", "derived_methods.house_division"),
+        "declination_aspect_orb_degrees": (options.include_declination_aspects, "declination_aspects", "derived_methods.declination_aspects"),
+        "aspect_orb_profile": (options.aspect_orb_profile is not None and options.include_aspects, "aspects", _ORB_PATH),
+        "aspect_set_profile": (options.include_aspects, "aspects", _DEGREE_PATH),
+        "aspect_orb_scale_percent": (options.aspect_orb_scale_percent is not None and options.include_aspects, "aspects", _ORB_PATH),
+        "aspect_fixed_orb_degrees": (options.aspect_fixed_orb_degrees is not None and options.include_aspects, "aspects", _ORB_PATH),
+        "partile_profile": (options.include_aspects, "aspects", _DEGREE_PATH),
+        "aspect_angle_orb_degrees": (options.aspect_angle_orb_degrees is not None and options.include_aspects and options.aspect_include_angles, "aspects", _ANGLE_PATH),
+        "bounds_profile": (options.bounds_profile is not None, "essential_dignities", _PROFILE_PATH),
+        "decan_profile": (options.decan_profile is not None, "essential_dignities", _PROFILE_PATH),
+        "triplicity_profile": (options.triplicity_profile is not None, "essential_dignities", _PROFILE_PATH),
+        "peregrine_profile": (options.peregrine_profile is not None, "essential_dignities", "derived_methods.essential_dignities.peregrine"),
+        "void_of_course_method": (options.include_void_of_course, "void_of_course", "derived_methods.void_of_course"),
+        "dodecatemoria_profile": (options.include_dodecatemoria, "dodecatemoria", "derived_methods.dodecatemoria"),
+        "solar_phase_profile": (options.include_solar_phase, "solar_phase", "derived_methods.solar_phase"),
     }
 
 
@@ -317,44 +389,13 @@ def _option_state_receipts(request, states: dict, response_parts: dict) -> dict:
             return _state_of(value)
         return states[module]
 
-    toggles = {
-        "include_houses": ("house_division", "derived_methods.house_division"),
-        "include_fixed_stars": ("fixed_stars", "astronomical_data.fixed_stars"),
-        "include_lots": ("lots", "derived_methods.lots"),
-        "include_antiscia": ("antiscia", "derived_geometry.antiscia"),
-        "include_void_of_course": ("void_of_course", "derived_methods.void_of_course"),
-        "include_declination_aspects": ("declination_aspects", "derived_methods.declination_aspects"),
-        "include_outer_planets": ("outer_planets", "astronomical_data.bodies"),
-        "include_chiron": ("chiron", "astronomical_data.bodies"),
-        "include_lilith_priapus": ("lunar_apsides", "astronomical_data.lunar_apsides"),
-        "include_south_nodes": ("south_nodes", "astronomical_data.nodes"),
-        "include_lunar_phases": ("lunar_phases", "astronomical_data.lunar_events"),
-        "include_eclipses": ("eclipses", "astronomical_data.lunar_events.eclipses"),
-        "include_rise_set_transits": ("rise_set_transits", "astronomical_data.horizon_events"),
-        "include_aspects": ("aspects", "derived_methods.aspects"),
-        "include_anti_vertex": ("anti_vertex", "astronomical_data.extra_angles.angles.anti_vertex"),
-        "include_extra_angles": ("extra_angles", "astronomical_data.extra_angles"),
-        "include_dodecatemoria": ("dodecatemoria", "derived_methods.dodecatemoria"),
-        "include_lunar_mansions": ("lunar_mansions", "derived_methods.lunar_mansions"),
-        "include_solar_phase": ("solar_phase", "derived_methods.solar_phase"),
-        "include_motion_states": ("motion_states", "derived_methods.motion_states"),
-        "include_classical_classifications": (
-            "classical_classifications", "derived_methods.classical_classifications",
-        ),
-    }
-    # Every module container an option writes is named here, so a
-    # consumer can resolve each null container to the option that owns it.
-    also_written = {
-        "include_houses": ("derived_methods.planet_in_house", "astronomical_data.angles"),
-        "include_lots": ("derived_methods.sect",),
-    }
-    for option_name, (module, path) in toggles.items():
+    for option_name, (module, path) in _OPTION_TOGGLES.items():
         add(
             option_name,
             requested=getattr(options, option_name),
             state=states[module],
             path=path,
-            also_writes=also_written.get(option_name, ()),
+            also_writes=_ALSO_WRITTEN.get(option_name, ()),
         )
 
     add(
@@ -377,27 +418,7 @@ def _option_state_receipts(request, states: dict, response_parts: dict) -> dict:
         ),
     )
 
-    orb_path = "derived_methods.aspects.degree_based.orb_receipt"
-    degree_path = "derived_methods.aspects.degree_based"
-    angle_path = "derived_methods.aspects.degree_based.angle_participation"
-    profile_path = "derived_methods.essential_dignities.profile_results"
-    configurations = {
-        "house_system": (options.include_houses, "house_division", "derived_methods.house_division"),
-        "declination_aspect_orb_degrees": (options.include_declination_aspects, "declination_aspects", "derived_methods.declination_aspects"),
-        "aspect_orb_profile": (options.aspect_orb_profile is not None and options.include_aspects, "aspects", orb_path),
-        "aspect_set_profile": (options.include_aspects, "aspects", degree_path),
-        "aspect_orb_scale_percent": (options.aspect_orb_scale_percent is not None and options.include_aspects, "aspects", orb_path),
-        "aspect_fixed_orb_degrees": (options.aspect_fixed_orb_degrees is not None and options.include_aspects, "aspects", orb_path),
-        "partile_profile": (options.include_aspects, "aspects", degree_path),
-        "aspect_angle_orb_degrees": (options.aspect_angle_orb_degrees is not None and options.include_aspects and options.aspect_include_angles, "aspects", angle_path),
-        "bounds_profile": (options.bounds_profile is not None, "essential_dignities", profile_path),
-        "decan_profile": (options.decan_profile is not None, "essential_dignities", profile_path),
-        "triplicity_profile": (options.triplicity_profile is not None, "essential_dignities", profile_path),
-        "peregrine_profile": (options.peregrine_profile is not None, "essential_dignities", "derived_methods.essential_dignities.peregrine"),
-        "dodecatemoria_profile": (options.include_dodecatemoria, "dodecatemoria", "derived_methods.dodecatemoria"),
-        "solar_phase_profile": (options.include_solar_phase, "solar_phase", "derived_methods.solar_phase"),
-    }
-    for name, (selected, module, path) in configurations.items():
+    for name, (selected, module, path) in _configuration_options(options).items():
         add(
             name,
             requested=selected,
@@ -413,14 +434,7 @@ def _option_state_receipts(request, states: dict, response_parts: dict) -> dict:
         not_requested_reason="configuration_not_selected",
     )
 
-    dependents = {
-        "antiscia_include_nodes": ("antiscia", "derived_geometry.antiscia.scope"),
-        "include_aspect_perfection": ("aspects", "derived_methods.aspects.perfection"),
-        "aspect_include_angles": ("aspects", angle_path),
-        "triplicity_include_research_comparison": ("essential_dignities", profile_path),
-        "solar_phase_disc_cazimi": ("solar_phase", "derived_methods.solar_phase.disc_cazimi"),
-    }
-    for name, (parent, path) in dependents.items():
+    for name, (parent, path) in _DEPENDENT_OPTIONS.items():
         add(
             name,
             requested=getattr(options, name),
@@ -587,13 +601,11 @@ def _available_files_receipt(options) -> list[dict]:
 
 
 def _body_selection_receipt(options) -> dict:
-    # The preset is a request constraint; each body
-    # group's state is on its records and option receipt, not restated here.
+    # The preset is a request constraint; each body group's state is on its
+    # records and option receipt.
     return {
         "source": "product_preset",
-        "classical_body_keys": [
-            "sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn"
-        ],
+        "classical_body_keys": list(SEVEN_PLANETS),
         "excluded_optional_body_groups": (
             ["outer_planets", "chiron", "fixed_stars"]
             if options.body_selection_preset == "classical_seven_v1"
@@ -783,10 +795,8 @@ def _coordinate_conventions() -> dict:
         "altitudes": {
             "true": "without_refraction",
             "apparent": "with_swiss_standard_refraction",
-            # The horizon is the
-            # observer's; altitudes carry diurnal parallax like the
-            # rise/set module, whatever the display center of the
-            # longitudes.  One horizon premise per response.
+            # The horizon is the observer's: altitudes carry diurnal parallax
+            # like rise/set, whatever the display center.  One horizon premise.
             "origin": "topocentric_observer_diurnal_parallax_applied",
             "same_premise_as": "astronomical_data.horizon_events",
         },
@@ -821,31 +831,37 @@ def _fixed_module_frames(context, states: dict) -> dict:
     }
 
 
+@dataclass(frozen=True)
+class _ModuleReceipts:
+    """The module receipts the calculation policy repeats, read once."""
+
+    modules: dict
+    option_states: dict
+    frame_states: dict
+    states: dict
+
+
 def _calculation_policy_section(
     *,
     request,
     effective_request,
     context,
-    modules: dict,
-    option_states: dict,
-    frame_states: dict,
-    states: dict,
+    receipts: _ModuleReceipts,
     derived_methods: dict,
     atmosphere: dict,
     latitude_regime: dict | None,
 ) -> dict:
     return {
         "computation_mode": request.computation_mode.model_dump(mode="json"),
-        # The options as sent are input_receipt.options; the
-        # second copy under another name is gone.
+        # The options as sent are input_receipt.options.
         "effective_datetime": effective_request.datetime.model_dump(
             mode="json"
         ),
         "flag_policy": _flag_policy(context),
-        "modules": modules,
-        "option_states": option_states,
+        "modules": receipts.modules,
+        "option_states": receipts.option_states,
         "method_frame_compatibility": frame_policy_receipt(
-            request.computation_mode, frame_states
+            request.computation_mode, receipts.frame_states
         ),
         "body_selection": _body_selection_receipt(request.options),
         "moon_position": _moon_position_policy(request),
@@ -861,7 +877,7 @@ def _calculation_policy_section(
         },
         "atmosphere": atmosphere,
         "coordinate_conventions": _coordinate_conventions(),
-        "fixed_module_frames": _fixed_module_frames(context, states),
+        "fixed_module_frames": _fixed_module_frames(context, receipts.states),
     }
 
 
@@ -988,29 +1004,26 @@ def _provenance_section(
 
 
 def build_calculation_dossier(
+    time: TimeResolution,
     *,
-    request,
-    effective_request,
-    time_conversion: dict,
-    representative_policy: str,
-    context,
-    library_info: dict,
     astronomical_data: dict,
     derived_methods: dict,
     derived_geometry: dict,
-    trace_steps: list[dict],
+    birth_time_sensitivity: dict,
+    library_info: dict,
     full_ephemeris_files_available: bool,
     input_files_unchanged_during_chart: bool,
     build_identity: dict,
-    birth_time_sensitivity: dict,
+    trace_steps: list[dict],
     event_module_availability: dict,
     latitude_regime: dict | None,
-    method_frame_states: dict,
 ) -> dict:
     """Build the authoritative receipt after all requested calculations finish."""
 
-    # Provenance aggregates every requested ephemeris point group,
-    # the lunar apsides included, rather than a fixed core list.
+    request, effective_request = time.input_request, time.request
+    time_conversion = time.time_conversion
+
+    # Every requested ephemeris point group, lunar apsides included.
     core_records = [
         _object_provenance(item)
         for item in (
@@ -1024,8 +1037,7 @@ def build_calculation_dossier(
         # An unrequested module container is null (option_states owns state).
         for item in astronomical_data["fixed_stars"] or ()
     ]
-    # One reading of the states the producers recorded; every receipt
-    # below is a projection of it.
+    # One reading of the producers' states; every receipt below projects it.
     states = _module_states(
         request.options,
         astronomical_data,
@@ -1047,9 +1059,8 @@ def build_calculation_dossier(
         },
     )
     methodology = _methodology_receipt(derived_methods, modules)
-    # One state per assessable path, joining what the sampling pass
-    # compared with this dossier's module and option receipts (the one
-    # generator of requested/applicable).  None when no interval was sampled.
+    # Joins what the sampling pass compared with the module and option
+    # receipts (the one generator of requested/applicable).  None when unsampled.
     sensitivity_coverage = _sensitivity_coverage_ledger(
         birth_time_sensitivity,
         modules=modules,
@@ -1095,18 +1106,17 @@ def build_calculation_dossier(
         "build_identity": dict(build_identity),
         "input_receipt": request.model_dump(mode="json"),
         "birth_time": _birth_time_section(
-            request, time_conversion, representative_policy, sensitivity_coverage
+            request, time_conversion, time.representative_policy, sensitivity_coverage
         ),
         "location_resolution": _location_section(request),
         "time_conversion": _time_conversion_section(request, time_conversion),
         "calculation_policy": _calculation_policy_section(
             request=request,
             effective_request=effective_request,
-            context=context,
-            modules=modules,
-            option_states=option_states,
-            frame_states=method_frame_states,
-            states=states,
+            context=time.context,
+            receipts=_ModuleReceipts(
+                modules, option_states, time.frame_states, states
+            ),
             derived_methods=derived_methods,
             atmosphere=astronomical_data["atmosphere"],
             latitude_regime=latitude_regime,

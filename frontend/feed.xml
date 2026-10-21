@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="zh-TW">
+  <title>渾儀 Armillary 文章</title>
+  <link rel="self" type="application/atom+xml" href="https://projectarmillary.com/feed.xml"/>
+  <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog"/>
+  <id>https://projectarmillary.com/feed.xml</id>
+  <updated>2026-10-21T00:00:00+08:00</updated>
+  <author><name>渾儀 Armillary</name></author>
+  <entry>
+    <title>行星時怎麼算？行星日從日出起算、晝夜各十二等分與迦勒底序</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/planetary-hours"/>
+    <id>https://projectarmillary.com/zh-TW/blog/planetary-hours</id>
+    <published>2026-10-21T00:00:00+08:00</published>
+    <updated>2026-10-21T00:00:00+08:00</updated>
+    <summary>行星時把白天與夜晚各分成十二等分，依迦勒底序輪給七顆行星，第一時由星期主星開始。四個步驟算出行星時，附一週主星表，並用本站計算服務實算臺北夏至、春分、冬至；說明凌晨出生為什麼算前一天、行星時為什麼排出星期的順序。</summary>
+  </entry>
+  <entry>
+    <title>香港出生時間怎麼換算？夏令時間、日佔時期與天文台的紀錄</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/hong-kong-birth-time"/>
+    <id>https://projectarmillary.com/zh-TW/blog/hong-kong-birth-time</id>
+    <published>2026-10-21T00:00:00+08:00</published>
+    <updated>2026-10-21T00:00:00+08:00</updated>
+    <summary>香港 1941–1979 年實施過三十多段夏令時間，日佔時期用東京時間 UTC+9。逐年對照天文台〈香港夏令時間〉表與 IANA 時區資料庫，列出兩者不同的日子，以及在渾儀怎麼填出世紙上的鐘點與香港地名。</summary>
+  </entry>
+  <entry>
+    <title>地心月亮和站心月亮差多少？月亮度數和別的網站差將近 1 度的原因</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/geocentric-vs-topocentric-moon"/>
+    <id>https://projectarmillary.com/zh-TW/blog/geocentric-vs-topocentric-moon</id>
+    <published>2026-10-21T00:00:00+08:00</published>
+    <updated>2026-10-21T00:00:00+08:00</updated>
+    <summary>從出生地看的月亮（站心）和從地心看的，最多差 1 度，有時換星座。以 2026 年臺北逐時實算差多少、何時最大，並逐一對照 NASA JPL Horizons（差不到 0.2 角秒）。</summary>
+  </entry>
+  <entry>
+    <title>黑月莉莉絲的平均、真與自然差多少？「真 Lilith」其實是密切遠地點</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/black-moon-lilith-mean-true-natural"/>
+    <id>https://projectarmillary.com/zh-TW/blog/black-moon-lilith-mean-true-natural</id>
+    <published>2026-10-21T00:00:00+08:00</published>
+    <updated>2026-10-21T00:00:00+08:00</updated>
+    <summary>平均黑月莉莉絲與「真」Lilith 最多差 30 度。本站內附星曆逐日實算 1950–2049 年：密切（真）Lilith 有 36.3% 的時間和平均 Lilith 不同星座，自然 Lilith 只有 9.9%；三種算法的定義與本站提供哪兩種。</summary>
+  </entry>
+  <entry>
+    <title>反照點是什麼？反照點與反向反照點怎麼算，為什麼以至點為鏡</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/antiscia"/>
+    <id>https://projectarmillary.com/zh-TW/blog/antiscia</id>
+    <published>2026-10-21T00:00:00+08:00</published>
+    <updated>2026-10-21T00:00:00+08:00</updated>
+    <summary>反照點（antiscia）是行星對 0° 巨蟹—0° 摩羯至點軸的鏡像，算法是 180° 減黃經；反向反照點對分點軸鏡射。照 Lilly 1647 與 Firmicus 原文說明由來、星座配對與查表法，實算示範盤，並說明恆星黃道為何不能直接用 180° 去減。</summary>
+  </entry>
+  <entry>
+    <title>三分性是什麼？古典西洋占星三分性主星的三套說法</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/triplicity-rulers"/>
+    <id>https://projectarmillary.com/zh-TW/blog/triplicity-rulers</id>
+    <published>2026-10-20T00:00:00+08:00</published>
+    <updated>2026-10-20T00:00:00+08:00</updated>
+    <summary>古典西洋占星的三分性把十二星座依火、土、風、水分成四組，各交給幾顆行星主管。照出處並列 Dorotheus 的三位主星、Ptolemy 原文的共同主宰與 Lilly 1647 的日夜簡表，說明日盤夜盤怎麼換主星、三套差在水象哪裡，以及本站怎麼讓你選。</summary>
+  </entry>
+  <entry>
+    <title>時間主星參考案例：年度小限、法達、黃道釋放與十年期的完整表格</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/time-lord-reference-cases"/>
+    <id>https://projectarmillary.com/zh-TW/blog/time-lord-reference-cases</id>
+    <published>2026-10-20T00:00:00+08:00</published>
+    <updated>2026-10-20T00:00:00+08:00</updated>
+    <summary>兩張合成盤（一張日盤、一張夜盤）的年度小限年界、法達（夜盤兩種交點排法）、從命運點與精神點起的黃道釋放第一、二層與每一次解鎖，以及十年期第一層。表格全部由本站計算服務產生，可以拿來核對任何排盤工具。</summary>
+  </entry>
+  <entry>
+    <title>法達夜盤的交點排在哪裡？水星之後還是火星之後</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/firdaria-night-node-order"/>
+    <id>https://projectarmillary.com/zh-TW/blog/firdaria-night-node-order</id>
+    <published>2026-10-19T00:00:00+08:00</published>
+    <updated>2026-10-19T00:00:00+08:00</updated>
+    <summary>法達（firdaria）夜盤從月亮起，但北交點與南交點該排在七顆行星之後，還是插在火星與太陽之間，書上與現代讀法不一致。照 al-Bīrūnī、Bonatti 與 Abū Maʿshar 的出處說明兩種排法、差在哪幾年，以及本站預設哪一種、為什麼。</summary>
+  </entry>
+  <entry>
+    <title>為什麼兩個網站算出的上升點差 2 角分？出生地座標差一點的影響</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/ascendant-coordinates"/>
+    <id>https://projectarmillary.com/zh-TW/blog/ascendant-coordinates</id>
+    <published>2026-10-19T00:00:00+08:00</published>
+    <updated>2026-10-19T00:00:00+08:00</updated>
+    <summary>同一個出生時刻、同樣選臺北，兩個排盤工具的上升點常差兩、三角分，原因多半是「臺北」的座標不同。用合成時刻列出從鐘面時間、UT1、恆星時到上升點的每一步，並算出經度差 0.01 度上升點移動多少。</summary>
+  </entry>
+  <entry>
+    <title>回歸黃道與恆星黃道差在哪？歲差值（ayanamsa）是什麼、四種怎麼來</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/tropical-vs-sidereal-zodiac"/>
+    <id>https://projectarmillary.com/zh-TW/blog/tropical-vs-sidereal-zodiac</id>
+    <published>2026-10-18T00:00:00+08:00</published>
+    <updated>2026-10-18T00:00:00+08:00</updated>
+    <summary>回歸黃道從春分點起算，恆星黃道從相對恆星固定的約定點起算，兩者相差一個歲差值（ayanamsa）。說明本站四種歲差值的來歷、換黃道時哪些結果會變、哪些古典表格不套到恆星黃道，並用一張合成的盤比較五種黃道下的位置。</summary>
+  </entry>
+  <entry>
+    <title>命運點（福點、幸運點）怎麼算？日盤夜盤公式為什麼相反，精神點又是什麼</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/lot-of-fortune-formula"/>
+    <id>https://projectarmillary.com/zh-TW/blog/lot-of-fortune-formula</id>
+    <published>2026-10-18T00:00:00+08:00</published>
+    <updated>2026-10-18T00:00:00+08:00</updated>
+    <summary>命運點與精神點都由上升點、太陽與月亮算出：日盤命運點＝上升點＋月亮−太陽，夜盤兩式對調；Ptolemy 主張命運點日夜不反轉。照出處說明兩套公式、本站採用哪一套、太陽靠近地平線時怎麼處理，並用一張合成的夜盤畫出兩個點。</summary>
+  </entry>
+  <entry>
+    <title>日盤夜盤怎麼判斷？太陽在地平線附近時日夜盤怎麼算</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/day-or-night-chart"/>
+    <id>https://projectarmillary.com/zh-TW/blog/day-or-night-chart</id>
+    <published>2026-10-18T00:00:00+08:00</published>
+    <updated>2026-10-18T00:00:00+08:00</updated>
+    <summary>日盤與夜盤看出生時太陽在地平線上還是下。本站以太陽中心的真高度大於 0 度為日盤，這條邊界是工程選擇，古書沒有寫到這麼細；太陽在地平線上下 50 角分以內時結果會提示，命運點兩套公式並列。附日出前後逐分鐘的實算例子。</summary>
+  </entry>
+  <entry>
+    <title>占星排盤工具怎麼挑？選星盤計算網站前可以自己檢查的七件事</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/choose-astrology-chart-calculator"/>
+    <id>https://projectarmillary.com/zh-TW/blog/choose-astrology-chart-calculator</id>
+    <published>2026-10-18T00:00:00+08:00</published>
+    <updated>2026-10-18T00:00:00+08:00</updated>
+    <summary>挑占星排盤工具，可以自己檢查七件事：能不能驗算、出生資料存不存、要不要帳號、有沒有第三方追蹤、原始碼公不公開、宮位制與技法、時區歷史與不確定的出生時間。逐項寫出檢查方法，以及渾儀目前的做法與限制。</summary>
+  </entry>
+  <entry>
+    <title>星盤怎麼驗算？讀懂計算收據與卷宗，自己確認排盤結果</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/verify-chart-calculation"/>
+    <id>https://projectarmillary.com/zh-TW/blog/verify-chart-calculation</id>
+    <published>2026-10-14T00:00:00+08:00</published>
+    <updated>2026-10-14T00:00:00+08:00</updated>
+    <summary>排盤結果怎麼確認？渾儀每張星盤都附計算收據：時間怎麼換算、用了哪一版程式與哪些星曆檔、軌跡雜湊綁住了什麼。一步步讀收據、請別人用卷宗重算比對，並說明它說得出與說不出的事。</summary>
+  </entry>
+  <entry>
+    <title>古典西洋占星年度時間主星入門：小限、月小限、法達、黃道釋放、十年期有什麼不同</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/time-lords-introduction"/>
+    <id>https://projectarmillary.com/zh-TW/blog/time-lords-introduction</id>
+    <published>2026-10-14T00:00:00+08:00</published>
+    <updated>2026-10-14T00:00:00+08:00</updated>
+    <summary>時間主星是把人生分段、每段交給一顆行星或一個星座輪值的古典西洋占星技法。說明年度小限、月小限、法達、黃道釋放與十年期各出自哪本書、怎麼切、文獻說法不同之處，以及時間軸、年表與匯出檔怎麼用。</summary>
+  </entry>
+  <entry>
+    <title>民國年、昭和年怎麼換算西元？日治時期出生的排盤與臺灣時區</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/taiwan-era-years-birth-time"/>
+    <id>https://projectarmillary.com/zh-TW/blog/taiwan-era-years-birth-time</id>
+    <published>2026-10-14T00:00:00+08:00</published>
+    <updated>2026-10-14T00:00:00+08:00</updated>
+    <summary>民國年加 1911、昭和年加 1925、大正年加 1911 就是西元年；改元那一年要看日期。日治時期出生還要看鐘：1937 年 10 月到 1945 年 9 月臺灣用 UTC+9。附逐年對照與計算服務的實際換算。</summary>
+  </entry>
+  <entry>
+    <title>產前朔望（占星）與產前日月食：出生前最後一次新月或滿月</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/prenatal-syzygy"/>
+    <id>https://projectarmillary.com/zh-TW/blog/prenatal-syzygy</id>
+    <published>2026-10-14T00:00:00+08:00</published>
+    <updated>2026-10-14T00:00:00+08:00</updated>
+    <summary>產前朔望是出生前最近一次新月或滿月。說明 Ptolemy 用它的度數推上升點、滿月時取在地平線上方的那一個發光體、日生看朔夜生看望的另一種挑法，以及產前日月食為什麼是二十世紀的做法、半影月食算不算。</summary>
+  </entry>
+  <entry>
+    <title>月宿是什麼？阿拉伯的 28 宿與古中國的二十八宿有什麼不同</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/lunar-mansions"/>
+    <id>https://projectarmillary.com/zh-TW/blog/lunar-mansions</id>
+    <published>2026-10-14T00:00:00+08:00</published>
+    <updated>2026-10-14T00:00:00+08:00</updated>
+    <summary>月宿（Lunar Mansions，阿拉伯文 manāzil al-qamar）把黃道切成 28 段，看月亮落在哪一段。說明等分與起點、宿名為什麼只寫原文、古書拿月宿做什麼、出生時間不精確時怎麼列，以及它和沿赤道劃分、寬窄不一的古中國二十八宿哪裡不同。</summary>
+  </entry>
+  <entry>
+    <title>宮位制有哪些？七種宮位制怎麼把天空切成十二宮</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/house-systems-explained"/>
+    <id>https://projectarmillary.com/zh-TW/blog/house-systems-explained</id>
+    <published>2026-10-14T00:00:00+08:00</published>
+    <updated>2026-10-14T00:00:00+08:00</updated>
+    <summary>宮位制有哪些？整宮、等分宮、Porphyry、Alcabitius、Campanus、Regiomontanus、Placidus 各切天球的哪一個圓，用一顆可以轉的天球畫出來，並整理誰在什麼年代用哪一種，以及極區為什麼有些宮位制不算。</summary>
+  </entry>
+  <entry>
+    <title>十二分部（Dodecatemoria）是什麼：乘以 12 與乘以 13 兩種算法</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/dodecatemoria"/>
+    <id>https://projectarmillary.com/zh-TW/blog/dodecatemoria</id>
+    <published>2026-10-14T00:00:00+08:00</published>
+    <updated>2026-10-14T00:00:00+08:00</updated>
+    <summary>十二分部把一個點在星座裡的度數放大十二或十三倍，對應到另一個星座。以例子說明 Firmicus 與 Paulus 兩種算法、古書怎麼看待它，以及它為什麼對出生時間特別敏感、本站怎麼標出會換星座的列。</summary>
+  </entry>
+  <entry>
+    <title>焦傷、在光束下、日輪內（cazimi）：離太陽多近才算</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/combustion-under-beams-cazimi"/>
+    <id>https://projectarmillary.com/zh-TW/blog/combustion-under-beams-cazimi</id>
+    <published>2026-10-14T00:00:00+08:00</published>
+    <updated>2026-10-14T00:00:00+08:00</updated>
+    <summary>焦傷（combust）、在光束下、日輪內（cazimi）各離太陽多近？Lilly 1647 是 17 角分、8°30′、17°，希臘化只有一條 15° 的線，al-Bīrūnī 依行星 12° 到 18°。三套界線並排，照原典說明各代表什麼。</summary>
+  </entry>
+  <entry>
+    <title>線上排盤準不準？星盤計算的誤差從哪裡來</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/chart-calculation-accuracy"/>
+    <id>https://projectarmillary.com/zh-TW/blog/chart-calculation-accuracy</id>
+    <published>2026-10-14T00:00:00+08:00</published>
+    <updated>2026-10-14T00:00:00+08:00</updated>
+    <summary>線上排盤準不準？星盤的誤差多半來自出生時間、時區與夏令時間、座標，而不是星曆。用合成星盤量出每一種誤差讓上升點移動多少，並列出本站與 JPL、NASA 的比對、容許值，以及怎麼用收據自己重算。</summary>
+  </entry>
+  <entry>
+    <title>只知道大概幾點出生，怎麼排盤？上升與宮位在那一小時的哪一刻會變</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/approximate-birth-hour"/>
+    <id>https://projectarmillary.com/zh-TW/blog/approximate-birth-hour</id>
+    <published>2026-10-14T00:00:00+08:00</published>
+    <updated>2026-10-16T00:00:00+08:00</updated>
+    <summary>只知道大概是哪一個鐘點，也能排星盤。本站在那一小時取五個時刻各算一次，把改變的時刻對半找到 15 秒以內，時鐘撥回或跳過的鐘點也照實處理，再用白話列出哪些結果會變、約幾點變。本站不做出生時間校正。</summary>
+  </entry>
+  <entry>
+    <title>整宮制與 Placidus 差在哪：同一顆行星，兩個宮位</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/whole-sign-vs-placidus"/>
+    <id>https://projectarmillary.com/zh-TW/blog/whole-sign-vs-placidus</id>
+    <published>2026-10-11T00:00:00+08:00</published>
+    <updated>2026-10-14T00:00:00+08:00</updated>
+    <summary>換一種宮位制，行星就換了宮，不代表有一邊算錯。以合成星盤比較整宮、Placidus、Regiomontanus 與 Alcabitius，並說明北極圈內為什麼算不出 Placidus。</summary>
+  </entry>
+  <entry>
+    <title>不知道出生時間，能排星盤嗎？只知道日期、不知道幾點時，哪些結果站得住</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/unknown-birth-time"/>
+    <id>https://projectarmillary.com/zh-TW/blog/unknown-birth-time</id>
+    <published>2026-10-11T00:00:00+08:00</published>
+    <updated>2026-10-16T00:00:00+08:00</updated>
+    <summary>只知道出生日期、不知道幾點，也能排星盤。以合成範例實算：哪些行星星座整天都站得住，上升星座、宮位與日夜盤又在一天裡的哪些鐘點翻面。記得大概幾點或只差幾分鐘的情況，另有兩篇。</summary>
+  </entry>
+  <entry>
+    <title>西洋占星要不要換真太陽時？</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/true-solar-time"/>
+    <id>https://projectarmillary.com/zh-TW/blog/true-solar-time</id>
+    <published>2026-10-11T00:00:00+08:00</published>
+    <updated>2026-10-14T00:00:00+08:00</updated>
+    <summary>西洋占星排盤不用換真太陽時：上升點與宮位由世界時加出生地經度決定。先換真太陽時再輸入，經度會被算兩次。以合成例子逐步列出兩種算法的數字與一年裡的誤差。</summary>
+  </entry>
+  <entry>
+    <title>臺灣夏令時間出生，排盤要減一小時嗎？那些要多看一眼的年份</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/taiwan-time-zone-history"/>
+    <id>https://projectarmillary.com/zh-TW/blog/taiwan-time-zone-history</id>
+    <published>2026-10-11T00:00:00+08:00</published>
+    <updated>2026-10-14T00:00:00+08:00</updated>
+    <summary>1896 年以來臺灣換過三種標準時，並在十九個夏天實施日光節約時間。依 IANA 時區資料庫整理這些年份的換算、不存在與重複的鐘點，以及資料本身仍不確定之處。</summary>
+  </entry>
+  <entry>
+    <title>上升星座查詢表為什麼常常不準</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/rising-sign-tables"/>
+    <id>https://projectarmillary.com/zh-TW/blog/rising-sign-tables</id>
+    <published>2026-10-11T00:00:00+08:00</published>
+    <updated>2026-10-14T00:00:00+08:00</updated>
+    <summary>上升星座查詢表只問出生時段或日期，卻默默假設了出生地的緯度、經度與時鐘規則。以實算比較兩種查表做法與精算，看在臺北、金門、夏令時間年份與國外各有多少時刻查錯。</summary>
+  </entry>
+  <entry>
+    <title>北交點的真交點與平均交點差多少：『真交點』其實是密切交點</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node"/>
+    <id>https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node</id>
+    <published>2026-10-11T00:00:00+08:00</published>
+    <updated>2026-10-14T00:00:00+08:00</updated>
+    <summary>北交點（俗稱龍頭）有兩種算法：排盤軟體的「真交點」與平均交點最多差將近 2 度。說明「真交點」其實是密切交點、兩者差多少、Tycho 怎麼看交點的不均勻，以及古典技法該用哪一個這個問題要怎麼問。</summary>
+  </entry>
+  <entry>
+    <title>四套界表，四個答案：同一個度數為什麼有不同的界主</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/four-bounds-tables"/>
+    <id>https://projectarmillary.com/zh-TW/blog/four-bounds-tables</id>
+    <published>2026-10-11T00:00:00+08:00</published>
+    <updated>2026-10-14T00:00:00+08:00</updated>
+    <summary>界把每個星座切成五段交給五顆行星（各段的行星稱為界主星），但古書留下的切法不只一套。說明埃及界、迦勒底界、Ptolemy 界與 Lilly 1647 的來歷與差異，以及渾儀為什麼不設預設值。</summary>
+  </entry>
+  <entry>
+    <title>知道幾點幾分，但怕差幾分鐘？出生時間差五分鐘，上升星座與宮位會怎麼變</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/birth-time-sensitivity"/>
+    <id>https://projectarmillary.com/zh-TW/blog/birth-time-sensitivity</id>
+    <published>2026-10-11T00:00:00+08:00</published>
+    <updated>2026-10-16T00:00:00+08:00</updated>
+    <summary>出生時刻記到幾點幾分，但記錄可能差幾分鐘：同一天同一地點，行星幾乎不動，上升點與宮位卻可能整組換掉。以合成範例說明原因，以及渾儀怎麼標出不確定。</summary>
+  </entry>
+</feed>

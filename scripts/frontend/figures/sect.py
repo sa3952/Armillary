@@ -22,9 +22,6 @@ FRAGMENT = "blog-day-or-night-chart"
 HOUR = 5
 MINUTES = range(0, 31)
 OPTIONS = {"house_system": "W", "include_houses": True, "include_lots": True}
-STATUS_ZH = {"day": "日盤", "night": "夜盤", "boundary_both_shown": "近地平"}
-
-
 def _request(minute: int) -> dict:
     return {**DEMO, "datetime": {**DEMO["datetime"], "hour": HOUR, "minute": minute}, "options": OPTIONS}
 

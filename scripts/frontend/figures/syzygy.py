@@ -399,15 +399,15 @@ def _figures(events: dict) -> dict[str, str]:
     r = _readings(events)
     timeline_bound = _fx.Bound()
     timeline = _fx.figure(
-        fid="fig-timeline", hero=True,
+        fid="fig-timeline",
+        hero=True,
         title="出生前的新月、滿月與出生，排在同一條日期線上",
         caption=(f"<b>{timeline_bound.label('圖 1')}</b>同一張盤，兩種挑法挑到不同的朔望。"
                  f"{timeline_bound.num('2000 年 1 月 1 日')}中午在臺北出生的合成例子：出生前最近的一次是滿月，"
                  "可是這是日生盤，「日生盤看前一次新月」的挑法會越過它，回頭取更早的新月。"
                  "實心圓是新月，空心圓是滿月；日期與時刻是臺北的鐘面時間。"),
-        wide=_timeline("fx-wide", "fig-timeline", r, timeline_bound),
-        narrow=_timeline("fx-narrow", "fig-timeline", r, timeline_bound),
-        notes=[], idle="",
+        art=_fx.FigureArt.drawn(_timeline, "fig-timeline", r, timeline_bound),
+        bound=timeline_bound,
     )
     data = _horizon_data(events)
     horizon_bound = _fx.Bound()
@@ -421,11 +421,17 @@ def _figures(events: dict) -> dict[str, str]:
                  f"按鈕切換兩個時刻：滿月那一刻（{horizon_bound.num(data['syzygy']['when'])}），月亮在上方、太陽在下方，"
                  f"所以取月亮的度數；出生那一刻（{horizon_bound.num(data['birth']['when'])}），兩個都在上方，"
                  "這個讀法選不出來。"),
-        wide=_horizon("fx-wide", "fig-horizon", data, horizon_bound),
-        narrow=_horizon("fx-narrow", "fig-horizon", data, horizon_bound),
-        notes=[_fx.Note(key, variant, _horizon_sentence(key, variant, data, horizon_bound))
-               for variant, _ in HORIZON_VARIANTS for key in ("sun", "moon")],
-        idle=HORIZON_IDLE, variants=HORIZON_VARIANTS, switch_label=HORIZON_SWITCH,
+        art=_fx.FigureArt.drawn(
+            _horizon, "fig-horizon", data, horizon_bound,
+            notes=[_fx.Note(key, variant, _horizon_sentence(key, variant, data, horizon_bound))
+                   for variant, _ in HORIZON_VARIANTS for key in ("sun", "moon")],
+            idle=HORIZON_IDLE,
+        ),
+        controls=_fx.FigureControls(
+            variants=HORIZON_VARIANTS,
+            switch_label=HORIZON_SWITCH,
+        ),
+        bound=horizon_bound,
     )
     shadow_bound = _fx.Bound()
     shadow = _fx.figure(
@@ -436,14 +442,9 @@ def _figures(events: dict) -> dict[str, str]:
                  "從地球看過去的影子截面，虛線是月亮可能走的三條路：只經過半影是半影月食，一部分進入本影是偏食，"
                  f"整個進入本影是全食。{shadow_bound.label('表 2')} 的「前一次月食（含半影月食）」三種都算，"
                  "「前一次本影月食」只算後兩種。"),
-        wide=_shadow("fx-wide", "fig-shadow", shadow_bound),
-        narrow=_shadow("fx-narrow", "fig-shadow", shadow_bound),
-        notes=[], idle="",
+        art=_fx.FigureArt.drawn(_shadow, "fig-shadow", shadow_bound),
+        bound=shadow_bound,
     )
-    for markup, bound in ((timeline, timeline_bound), (horizon, horizon_bound), (shadow, shadow_bound)):
-        found = _fx.problems(markup, bound)
-        if found:
-            raise RuntimeError("figure check: " + "; ".join(found))
     return {"fx-defs": _fx.defs(("sun", "moon")), "timeline": timeline, "horizon": horizon, "shadow": shadow}
 
 

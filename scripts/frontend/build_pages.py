@@ -18,9 +18,11 @@ drifting away from the fragments.
 from __future__ import annotations
 
 import argparse
-from collections.abc import Mapping
+from collections.abc import Callable, Iterable, Mapping
+import copy
 from datetime import date, datetime, timedelta, timezone
 from functools import lru_cache
+import functools
 import hashlib
 import html
 from html.parser import HTMLParser
@@ -29,17 +31,26 @@ import json
 import os
 from pathlib import Path
 import re
-import shutil
 import subprocess
 import sys
 import textwrap
-from xml.sax.saxutils import escape as xml_escape
 from zoneinfo import ZoneInfo
 
+from scripts.frontend.page_checks import (
+    _ISO_DATE,
+    check_article_references,
+    check_footer_links,
+    check_surface_manifest,
+    is_article,
+    lastmod_binding_errors,
+    parent_surface,
+    reject_inline_style,
+    unclassified_page_paths,
+)
 from scripts.frontend.site_locale import DEFAULT_LOCALE
 
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT: Path = Path(__file__).resolve().parents[2]
 PAGES = ROOT / "scripts" / "frontend" / "pages"
 SHELL = PAGES / "_shell.html"
 SURFACE_MANIFEST = ROOT / "frontend" / "surfaces.json"
@@ -55,7 +66,6 @@ FRONTEND = ROOT / "frontend"
 # each date to the record's first-parent Git history (lastmod_binding_errors).
 PAGE_LASTMOD_PATH = "scripts/frontend/page_lastmod.json"
 PAGE_LASTMOD = ROOT / PAGE_LASTMOD_PATH
-_ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 SITE_NAME = "渾儀 Armillary"
 # The application declares that it is free to use and the
@@ -68,12 +78,10 @@ LICENSE_URL = "https://spdx.org/licenses/AGPL-3.0-only.html"
 # and Public Alpha began.  This is the one producer of that date: the terms and
 # privacy head notes and the about page name it as {{public_alpha_start}}, and
 # the last day of the Private Alpha 1.0.0 terms as {{private_alpha_last_day}}
-# (the day before).  If the wall comes down after midnight, change this value
-# and rebuild; a test refuses any other date written next to the public start,
-# and Gate F (verify_pre_image_readiness) refuses the release that opens Public
-# Alpha unless the date its pages state is the Taiwan calendar day of that run.
+# (the day before).  A test refuses any other date written next to the public
+# start, and Gate F (verify_pre_image_readiness) refuses pages that disagree on
+# it or state it after the day of that run.
 PUBLIC_ALPHA_START = date(2026, 10, 10)
-_PUBLIC_ALPHA_PLACEHOLDER = re.compile(r"\{\{(public_alpha_start|private_alpha_last_day)\}\}")
 
 
 # The privacy and terms head notes write their dates with U+2011 (non-breaking
@@ -95,17 +103,11 @@ def public_alpha_dates(start: date | None = None, *, non_breaking: bool = False)
     }
 
 
-def fill_public_alpha_dates(body: str, start: date | None = None, *, non_breaking: bool = False) -> str:
-    dates = public_alpha_dates(start, non_breaking=non_breaking)
-    return _PUBLIC_ALPHA_PLACEHOLDER.sub(lambda match: dates[match.group(1)], body)
-
-
 # The copyright page's attribution of the Taiwan place names states the day the
 # data was retrieved.  The shipped catalogue's manifest is the one producer of
 # that day (the catalogue builder writes it from --source-date), so a rebuilt
 # catalogue moves the attribution with it.
 PLACE_CATALOG_MANIFEST = ROOT / "backend" / "place_data" / "catalog_manifest.json"
-_PLACE_DATE_PLACEHOLDER = "{{place_source_snapshot_date}}"
 
 
 def place_source_snapshot_date(manifest: Path | None = None) -> str:
@@ -118,19 +120,12 @@ def place_source_snapshot_date(manifest: Path | None = None) -> str:
     return value
 
 
-def fill_place_source_snapshot_date(body: str) -> str:
-    if _PLACE_DATE_PLACEHOLDER not in body:
-        return body
-    return body.replace(_PLACE_DATE_PLACEHOLDER, place_source_snapshot_date())
-
-
 # The copyright page lists the shipped ephemeris files and their SHA-256 so a
 # reader can compare them with the source tree.  deploy/ephemeris.sha256 (which
 # the image build and the entrypoint verify against) is the one statement of
 # them: the fragment writes {{ephemeris_digests}} on a line of its own and
 # {{ephemeris_file_count}} in the sentence above it.
 EPHEMERIS_MANIFEST = ROOT / "deploy" / "ephemeris.sha256"
-_EPHEMERIS_DIGESTS_PLACEHOLDER = re.compile(r"^(?P<indent>[ \t]*)\{\{ephemeris_digests\}\}$", re.MULTILINE)
 _SHA256_LINE = re.compile(r"^([0-9a-f]{64})  backend/ephe/([A-Za-z0-9_.-]+)$")
 
 
@@ -146,21 +141,17 @@ def ephemeris_digests(manifest: Path | None = None) -> list[tuple[str, str]]:
     return rows
 
 
-def fill_ephemeris_digests(body: str) -> str:
-    if "{{ephemeris_" not in body:
+def _fill_block(body: str, name: str, lines: Callable[[str], str]) -> str:
+    """{{name}}, which must stand once on a line of its own, replaced by
+    `lines(indent)`: a block of lines at that line's indent."""
+
+    token = "{{" + name + "}}"
+    if token not in body:
         return body
-    rows = ephemeris_digests()
-    filled, count = _EPHEMERIS_DIGESTS_PLACEHOLDER.subn(
-        lambda match: "\n".join(
-            f'{match.group("indent")}<div><b class="mono">{html.escape(name)}</b>'
-            f'<span class="mono">{digest}</span></div>'
-            for name, digest in rows
-        ),
-        body,
-    )
-    filled = filled.replace("{{ephemeris_file_count}}", zh_count(len(rows)))
-    if count != 1 or "{{ephemeris_" in filled:
-        raise ValueError("{{ephemeris_digests}} must appear once, on a line of its own")
+    filled, count = re.subn(rf"^([ \t]*){re.escape(token)}$", lambda match: lines(match.group(1)), body,
+                            flags=re.MULTILINE)
+    if count != 1 or token in filled:
+        raise ValueError(f"{token} must appear once, on a line of its own")
     return filled
 
 
@@ -169,16 +160,7 @@ def fill_ephemeris_digests(body: str) -> str:
 # page names them as {{advanced_option_count}} and {{advanced_group_count}}, and
 # they are read from the catalogue the page ships, so the sentence cannot drift
 # from the form.
-OPTIONS_CATALOGUE = ROOT / "frontend" / DEFAULT_LOCALE / "options-catalogue.js"
-_OPTIONS_PLACEHOLDER = re.compile(r"\{\{(advanced_option_count|advanced_group_count)\}\}")
 _ZH_DIGITS = "零一二三四五六七八九"
-_CATALOGUE_COUNTS_SCRIPT = (
-    "const C=require(process.argv[1]);"
-    "const groups=new Set(C.GROUPS.filter((g)=>g.in_advanced).map((g)=>g.key));"
-    "process.stdout.write(JSON.stringify({"
-    "options:C.OPTIONS.filter((o)=>groups.has(o.group)).length,"
-    "groups:groups.size}));"
-)
 
 
 def zh_count(value: int) -> str:
@@ -192,28 +174,15 @@ def zh_count(value: int) -> str:
     return ("" if tens == 1 else _ZH_DIGITS[tens]) + "十" + (_ZH_DIGITS[ones] if ones else "")
 
 
-def options_catalogue_counts(node: str | None = None) -> dict[str, str]:
-    node = node or shutil.which("node")
-    if node is None:
-        raise RuntimeError("node is required to read the options catalogue")
-    completed = subprocess.run(
-        [node, "-e", _CATALOGUE_COUNTS_SCRIPT, str(OPTIONS_CATALOGUE)],
-        cwd=ROOT, capture_output=True, text=True, check=False, timeout=30,
-    )
-    if completed.returncode != 0:
-        raise RuntimeError("options catalogue could not be read: " + completed.stderr.strip())
-    counts = json.loads(completed.stdout)
+def options_catalogue_counts() -> dict[str, str]:
+    from scripts.frontend.figures._common import options_catalogue
+
+    catalogue = options_catalogue()
+    groups = set(catalogue["advanced"])
     return {
-        "advanced_option_count": str(counts["options"]),
-        "advanced_group_count": zh_count(counts["groups"]),
+        "advanced_option_count": str(sum(group in groups for group in catalogue["options"])),
+        "advanced_group_count": zh_count(len(groups)),
     }
-
-
-def fill_options_catalogue_counts(body: str) -> str:
-    if not _OPTIONS_PLACEHOLDER.search(body):
-        return body
-    counts = options_catalogue_counts()
-    return _OPTIONS_PLACEHOLDER.sub(lambda match: counts[match.group(1)], body)
 
 
 # Several pages state how many fixed stars and star clusters the calculator
@@ -221,8 +190,6 @@ def fill_options_catalogue_counts(body: str) -> str:
 # of both numbers: an entry whose magnitude is a cluster's integrated light is a
 # cluster, every other entry a star.  The pages write {{fixed_star_count}} and
 # {{fixed_star_cluster_count}} and the build fills them.
-_FIXED_STAR_COUNT_PLACEHOLDER = "{{fixed_star_count}}"
-_FIXED_STAR_CLUSTER_COUNT_PLACEHOLDER = "{{fixed_star_cluster_count}}"
 
 
 def _is_cluster(entry: dict) -> bool:
@@ -235,14 +202,6 @@ def fixed_star_count() -> int:
 
 def fixed_star_cluster_count() -> int:
     return sum(_is_cluster(entry) for entry in _backend("domain_catalog").FIXED_STARS)
-
-
-def fill_fixed_star_count(body: str) -> str:
-    if _FIXED_STAR_COUNT_PLACEHOLDER in body:
-        body = body.replace(_FIXED_STAR_COUNT_PLACEHOLDER, str(fixed_star_count()))
-    if _FIXED_STAR_CLUSTER_COUNT_PLACEHOLDER in body:
-        body = body.replace(_FIXED_STAR_CLUSTER_COUNT_PLACEHOLDER, str(fixed_star_cluster_count()))
-    return body
 
 
 # What the calculator computes, as the home page, the calculator's lede,
@@ -278,7 +237,6 @@ NATAL_FEATURES: tuple[tuple[str, str, str], ...] = (
     ("include_eclipses", "日月食", "eclipses"),
     ("planetary_hours", "行星時", "planetary hours"),
 )
-_TIME_LORD_PLACEHOLDER = "{{time_lord_techniques}}"
 
 
 def time_lord_techniques() -> tuple[tuple[str, str, str], ...]:
@@ -300,7 +258,7 @@ def time_lord_techniques() -> tuple[tuple[str, str, str], ...]:
 def natal_features() -> tuple[tuple[str, str, str], ...]:
     """The natal outputs the pages name, each still owned by an option or a method."""
 
-    options = _backend("schemas").OptionsInput.model_fields
+    options = _backend("schema_chart").OptionsInput.model_fields
     status = _backend("core.method_status")
     methods = status.DECIDED_METHODS | status.PROVISIONAL_METHODS
     missing = [
@@ -324,12 +282,6 @@ def time_lord_series(with_english: bool = True) -> str:
     ])
 
 
-def fill_time_lord_techniques(body: str) -> str:
-    if _TIME_LORD_PLACEHOLDER in body:
-        body = body.replace(_TIME_LORD_PLACEHOLDER, html.escape(time_lord_series(), quote=False))
-    return body
-
-
 def application_features() -> list[str]:
     """The WebApplication featureList: one plain item per computed output."""
 
@@ -347,25 +299,11 @@ def application_features() -> list[str]:
 # The home page's armillary plate is gen_armillary's projection, injected where
 # the fragment writes {{armillary_svg}} on a line of its own and indented to
 # match, so the drawing served is the geometry the currentness test checks.
-_ARMILLARY_PLACEHOLDER = re.compile(r"^(?P<indent>[ \t]*)\{\{armillary_svg\}\}$", re.MULTILINE)
-
-
 @lru_cache(maxsize=1)
 def armillary_svg() -> str:
     from scripts.frontend import gen_armillary
 
     return gen_armillary.build(gen_armillary.HOUR_ANGLE, gen_armillary.AZIM, gen_armillary.ELEV)[0]
-
-
-def fill_armillary_svg(body: str) -> str:
-    if "{{armillary_svg}}" not in body:
-        return body
-    filled, count = _ARMILLARY_PLACEHOLDER.subn(
-        lambda match: textwrap.indent(armillary_svg(), match.group("indent")), body
-    )
-    if count != 1 or "{{armillary_svg}}" in filled:
-        raise ValueError("{{armillary_svg}} must appear once, on a line of its own")
-    return filled
 
 
 # Every backend route lives under this prefix; robots.txt keeps crawlers out of
@@ -386,28 +324,16 @@ OG_IMAGE_ASSET: str | None = f"{DEFAULT_LOCALE}/og-card.png"
 OG_IMAGE_ALT = "渾儀 Armillary：可驗證的古典西洋占星計算器"
 _PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
-# llms.txt: a plain index of the pages for language-model crawlers,
-# built from what the site already says.  The sections are the shared footer's
-# columns, each entry is a surface's title and description, and the optional
-# links take their label from the anchor text the named page already shows; a
-# link that disappears from its page fails the build.  Only the facts list
-# (llms_facts) has labels of its own.
-LLMS_OPTIONAL_LINKS = (
-    ("methods", f"/{DEFAULT_LOCALE}/method-sources.json"),
-    ("legal-copyright", "https://github.com/sa3952/Armillary"),
-)
-
 # Every `?v=` is the content version of the exact file it names: the
 # first sixteen hex digits of its SHA-256, from the one definition in
 # backend/app/frontend_assets.py that the public cache policy also uses to
-# decide whether a request earns the immutable lifetime.  A hand-bumped
-# release constant used to stand in for it, so an asset could change while its
-# URL did not.  Editing a referenced asset without re-running this generator is
-# now page drift that `--check` reports.
+# decide whether a request earns the immutable lifetime, so an asset cannot
+# change while its URL stays.  Editing a referenced asset without re-running
+# this generator is page drift that `--check` reports.
 _VERSIONED_ASSET_REFERENCE = re.compile(
     r'(?P<prefix>(?:src|href|data-[a-z]+(?:-[a-z]+)*)="/(?P<name>'
     + re.escape(DEFAULT_LOCALE)
-    + r'/[^"?#]+)\?v=)\{\{assets\}\}"'
+    + r'/[^"?#]+)\?v=)\{\{assets\}\}(?P<fragment>#[^"]*)?"'
 )
 
 
@@ -506,38 +432,13 @@ def stamp_asset_versions(markup: str, key: str) -> str:
 
     stamped = _VERSIONED_ASSET_REFERENCE.sub(
         lambda match: (
-            f'{match.group("prefix")}{referenced_asset_version(match.group("name"))}"'
+            f'{match.group("prefix")}{referenced_asset_version(match.group("name"))}{match.group("fragment") or ""}"'
         ),
         markup,
     )
     if "{{assets}}" in stamped:
         raise ValueError(f"unversionable {{{{assets}}}} placeholder in page {key!r}")
     return stamped
-
-# The served CSP carries no `style-src 'unsafe-inline'`, so an inline
-# `style=` attribute is silently dropped by the browser while source/output
-# parity stays green.  Match the attribute position
-# (a tag, then whitespace, then the attribute) rather than the bare word, so
-# prose that mentions `style=` is not an offence.
-_INLINE_STYLE_ATTRIBUTE = re.compile(
-    r"<[A-Za-z][^<>]*?\s(style\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s>]+))",
-    re.IGNORECASE | re.DOTALL,
-)
-
-
-def inline_style_attributes(markup: str) -> list[str]:
-    """Every inline `style=` attribute in the markup, verbatim."""
-
-    return [match.group(1) for match in _INLINE_STYLE_ATTRIBUTE.finditer(markup)]
-
-
-def reject_inline_style(markup: str, key: str) -> None:
-    offenders = inline_style_attributes(markup)
-    if offenders:
-        raise ValueError(
-            f"inline style attribute in generated page {key!r} is blocked by the "
-            f"served CSP: {', '.join(offenders)}"
-        )
 
 _TELEMETRY_FIELD_EXPLANATIONS = {
     "event_schema_version": "固定字串",
@@ -623,146 +524,15 @@ def telemetry_field_list(contract: dict[str, tuple[str, ...]] | None = None) -> 
     return "、".join(html.escape(_TELEMETRY_FIELD_LABELS[field]) for field in fields)
 
 
-_FRAGMENT_NAME = re.compile(r"[a-z0-9_-]+")
-# A declared locale: a language subtag, optionally a script and a region.
-_LOCALE_CODE = re.compile(r"[a-z]{2,3}(?:-[A-Z][a-z]{3})?(?:-[A-Z]{2})?")
-
-
-def _common_row_fields_valid(item: dict, locales: list[str]) -> bool:
-    # Surface and error page rows alike: the fragment names a file under pages/, never a path,
-    # and a bad one is refused under its own name.
-    if not (isinstance(item["fragment"], str) and _FRAGMENT_NAME.fullmatch(item["fragment"])):
-        raise ValueError(f"frontend page fragment is invalid: {item.get('key')}")
-    return (
-        item["locale"] in locales
-        and isinstance(item["layers"], list)
-        and bool(item["layers"])
-        and set(item["layers"]) <= {"L1", "L2", "L3"}
-        and isinstance(item["title"], str)
-        and bool(item["title"].strip())
-    )
-
-
-# A surface row's optional fields and their defaults: the fragment is named
-# like the key, the locale is the manifest's default, and a page is indexed.
-SURFACE_DEFAULTS: dict[str, object] = {"fragment": None, "locale": None, "indexable": True}
-
-
 def load_surface_manifest() -> dict:
-    payload = json.loads(SURFACE_MANIFEST.read_text(encoding="utf-8"))
-    if set(payload) != {
-        "schema_version", "origin", "default_locale", "locales", "surfaces", "error_pages",
-    } or payload["schema_version"] != 1:
-        raise ValueError("frontend surface manifest root is invalid")
-    if payload["origin"] != "https://projectarmillary.com":
-        raise ValueError("frontend canonical origin is invalid")
-    # The declared locales are data: a row's locale must be one of them and its
-    # address and output must sit under that locale's directory.
-    locales = payload["locales"]
-    if (
-        not isinstance(locales, list)
-        or not locales
-        or len(set(locales)) != len(locales)
-        or not all(isinstance(code, str) and _LOCALE_CODE.fullmatch(code) for code in locales)
-        or payload["default_locale"] not in locales
-    ):
-        raise ValueError("frontend locale is invalid")
-    default = payload["default_locale"]
-    expected_fields = {"key", "output", "surface", "layers", "title", "description"}
-    seen: dict[str, set[str]] = {name: set() for name in ("key", "output", "surface")}
-    for item in payload["surfaces"]:
-        if not isinstance(item, dict) or set(item) - {"article", *SURFACE_DEFAULTS} != expected_fields:
-            raise ValueError("frontend surface row field set is invalid")
-        # A field a row leaves out takes its default.
-        for field, value in SURFACE_DEFAULTS.items():
-            item.setdefault(field, item["key"] if field == "fragment" else default if field == "locale" else value)
-        if (
-            not _common_row_fields_valid(item, locales)
-            or not isinstance(item["indexable"], bool)
-            or not isinstance(item["description"], str)
-            or not item["description"].strip()
-            or not item["surface"].startswith(f"/{item['locale']}/")
-            or not item["output"].startswith(f"{item['locale']}/")
-            or ".." in Path(item["output"]).parts
-        ):
-            raise ValueError(f"frontend surface row is invalid: {item.get('key')}")
-        _validate_article(item)
-        for field in seen:
-            value = item[field]
-            if not isinstance(value, str) or value in seen[field]:
-                raise ValueError(f"frontend surface {field} is invalid or duplicated")
-            seen[field].add(value)
-    if seen["surface"] != {item["surface"] for item in payload["surfaces"]}:
-        raise ValueError("frontend surface set is invalid")
-    if {f"/{default}/", f"/{default}/calculate"} - seen["surface"]:
-        raise ValueError("frontend entry surfaces are missing")
-    for item in payload["surfaces"]:
-        _validate_sub_page(item, payload["surfaces"])
-    _validate_error_pages(payload, seen, locales)
-    return payload
+    stat = SURFACE_MANIFEST.stat()
+    return copy.deepcopy(_checked_surface_manifest(str(SURFACE_MANIFEST), stat.st_mtime_ns, stat.st_size))
 
 
-# A blog article is a surface like any other page, whose row carries an
-# `article` block with the day it was published and the day it was last
-# revised.  It lives under the blog's address, is linked from the blog page
-# instead of the shared footer, and is described as a BlogPosting.
-BLOG_SURFACE = f"/{DEFAULT_LOCALE}/blog"
-ARTICLE_FIELDS = frozenset({"published", "modified"})
-
-
-def is_article(item: Mapping) -> bool:
-    return "article" in item
-
-
-def _validate_article(item: dict) -> None:
-    under_blog = item["surface"].startswith(BLOG_SURFACE + "/")
-    if not is_article(item):
-        if under_blog:
-            raise ValueError(f"page under the blog address has no article block: {item['key']}")
-        return
-    article = item["article"]
-    slug = item["surface"].removeprefix(BLOG_SURFACE + "/")
-    if (
-        not under_blog
-        or not _FRAGMENT_NAME.fullmatch(slug)
-        or item["output"] != f"{DEFAULT_LOCALE}/blog/{slug}.html"
-        or not isinstance(article, dict)
-        or set(article) != ARTICLE_FIELDS
-        or not all(isinstance(article[name], str) and _ISO_DATE.fullmatch(article[name])
-                   for name in ARTICLE_FIELDS)
-    ):
-        raise ValueError(f"frontend article row is invalid: {item.get('key')}")
-    published, modified = (date.fromisoformat(article[name]) for name in ("published", "modified"))
-    if modified < published:
-        raise ValueError(f"article is modified before it was published: {item['key']}")
-
-
-# A sub-page is a page whose address is another page's address plus one more
-# segment (/zh-TW/security/verify under /zh-TW/security).  Like an article
-# under the blog, it is linked from its parent page instead of the shared
-# footer, and its trail runs home › parent › its own h1.  An article is the
-# blog's kind of child and keeps its own rules; a page whose address prefix is
-# no surface (/zh-TW/legal/privacy) is an ordinary footer page.
-def parent_surface(item: Mapping, surfaces: list[dict]) -> str | None:
-    if is_article(item):
-        return None
-    parent = item["surface"].rsplit("/", 1)[0]
-    return parent if any(other["surface"] == parent for other in surfaces) else None
-
-
-def _validate_sub_page(item: dict, surfaces: list[dict]) -> None:
-    parent = parent_surface(item, surfaces)
-    if parent is None:
-        return
-    slug = item["surface"].removeprefix(parent + "/")
-    owner = next(other for other in surfaces if other["surface"] == parent)
-    if (
-        not _FRAGMENT_NAME.fullmatch(slug)
-        or item["output"] != f"{parent.removeprefix('/')}/{slug}.html"
-        or is_article(owner)
-        or parent_surface(owner, surfaces) is not None
-    ):
-        raise ValueError(f"frontend sub-page row is invalid: {item.get('key')}")
+@lru_cache(maxsize=4)
+def _checked_surface_manifest(path: str, _mtime_ns: int, _size: int) -> dict:
+    # A build reads the manifest once per page; the file's identity keys the cache.
+    return check_surface_manifest(json.loads(Path(path).read_text(encoding="utf-8")), error_page_outputs())
 
 
 # The error pages a release carries, by the status each one answers with, and
@@ -773,62 +543,14 @@ def error_page_outputs() -> dict[int, str]:
     return {404: _frontend_assets_module().NOT_FOUND_PAGE}
 
 
-def _validate_error_pages(payload: dict, seen: dict[str, set[str]], locales: list[str]) -> None:
-    rows = payload["error_pages"]
-    expected_fields = {"key", "fragment", "output", "status", "locale", "layers", "title"}
-    outputs = error_page_outputs()
-    if not isinstance(rows, list):
-        raise ValueError("frontend error page list is invalid")
-    statuses: set[int] = set()
-    for item in rows:
-        if not isinstance(item, dict) or set(item) != expected_fields:
-            raise ValueError("frontend error page row field set is invalid")
-        if (
-            not _common_row_fields_valid(item, locales)
-            or item["status"] not in outputs
-            or item["status"] in statuses
-            or item["output"] != outputs[item["status"]]
-            or item["key"] in seen["key"]
-            or item["output"] in seen["output"]
-        ):
-            raise ValueError(f"frontend error page row is invalid: {item.get('key')}")
-        statuses.add(item["status"])
-        seen["key"].add(item["key"])
-        seen["output"].add(item["output"])
-    if statuses != set(outputs):
-        raise ValueError("frontend error page set is incomplete")
-
-
 def unclassified_pages(payload: dict, frontend: Path) -> list[str]:
-    """HTML pages under ``frontend`` that no surface row classifies.
-
-    Every user-visible surface carries an L1／L2／L3 assignment and
-    an unclassified surface is itself a violation.  frontend/surfaces.json is
-    the only place that assignment lives; this is its consumer in the
-    other direction, so a page added beside the manifest cannot ship
-    unclassified.  The excluded top-level directories are the ones the served
-    asset universe excludes (backend/app/frontend_assets.py).
-    """
-
-    excluded = _frontend_assets_module().EXCLUDED_SOURCE_DIRECTORIES
-    registered = {
-        item["output"] for item in [*payload["surfaces"], *payload["error_pages"]]
-    }
-    pages: set[str] = set()
-    for entry in frontend.iterdir():
-        if entry.name in excluded or entry.is_symlink():
-            continue
-        candidates = [entry] if entry.is_file() else entry.rglob("*")
-        for path in candidates:
-            if path.is_file() and path.suffix.casefold() == ".html":
-                pages.add(path.relative_to(frontend).as_posix())
-    return sorted(pages - registered)
+    return unclassified_page_paths(payload, frontend, _frontend_assets_module().EXCLUDED_SOURCE_DIRECTORIES)
 
 
 _FOOTER_LINK = re.compile(
     r'<a href="(?P<href>/' + re.escape(DEFAULT_LOCALE) + r'/[^"]*)">(?P<label>[^<>]+)</a>'
 )
-HOME_SURFACE = f"/{DEFAULT_LOCALE}/"
+HOME_SURFACE: str = f"/{DEFAULT_LOCALE}/"
 
 
 def _footer(shell: str | None) -> str:
@@ -854,39 +576,7 @@ def footer_link_labels(shell: str | None = None) -> dict[str, str]:
 
 
 def require_footer_links(payload: dict, labels: dict[str, str] | None = None) -> None:
-    """Every surface is reachable through a plain link: a page through the
-    footer on every page, an article through the blog page."""
-
-    labels = footer_link_labels() if labels is None else labels
-    surfaces = payload["surfaces"]
-    unlinked = [
-        item["surface"] for item in surfaces
-        if not is_article(item) and parent_surface(item, surfaces) is None
-        and item["surface"] not in labels
-    ]
-    if unlinked:
-        raise ValueError(
-            "surface is not linked from the shared footer: " + ", ".join(unlinked)
-        )
-    unlinked = []
-    for item in surfaces:
-        parent = parent_surface(item, surfaces)
-        if parent is None:
-            continue
-        owner = next(other for other in surfaces if other["surface"] == parent)
-        body = (PAGES / f"{owner['fragment']}.html").read_text(encoding="utf-8")
-        if f'href="{item["surface"]}"' not in body:
-            unlinked.append(item["surface"])
-    if unlinked:
-        raise ValueError("sub-page is not linked from its parent page: " + ", ".join(unlinked))
-    articles = [item for item in payload["surfaces"] if is_article(item)]
-    if not articles:
-        return
-    blog = next(item for item in payload["surfaces"] if item["surface"] == BLOG_SURFACE)
-    body = (PAGES / f"{blog['fragment']}.html").read_text(encoding="utf-8")
-    unlinked = [item["surface"] for item in articles if f'href="{item["surface"]}"' not in body]
-    if unlinked:
-        raise ValueError("article is not linked from the blog page: " + ", ".join(unlinked))
+    check_footer_links(payload, footer_link_labels() if labels is None else labels, PAGES)
 
 
 def page_headline(body: str, key: str) -> str:
@@ -922,12 +612,60 @@ ARTICLE_TIERS = ("講方法", "帶數據")
 ARTICLE_SIGNER = "Sebastian"
 
 
+# The version an article prints is how many distinct dates its lastmod record
+# entry has held: every committed revision of the record on the first-parent
+# line, and the record the build dates the page from.  The byline carries a
+# placeholder until the page is dated, so the page's digest, which decides its
+# date, never reads its own version.
+ARTICLE_VERSION_PLACEHOLDER = "{{article_version}}"
+_SOURCE_ENTRY = re.compile(r'<li id="ref-\d+">')
+
+
+def article_source_count(body: str) -> int:
+    """How many entries the article's sources section lists."""
+    sections = re.findall(r'<section class="ar-refs".*?</section>', body, re.DOTALL)
+    if len(sections) != 1:
+        raise ValueError("an article has exactly one sources section")
+    count = len(_SOURCE_ENTRY.findall(sections[0]))
+    if count == 0:
+        raise ValueError("an article's sources section lists no source")
+    return count
+
+
+@functools.lru_cache(maxsize=1)
+def _committed_lastmod_dates() -> dict[str, frozenset[str]]:
+    dates: dict[str, set[str]] = {}
+    for _committed, record in committed_page_lastmod():
+        for key, entry in record.get("pages", {}).items():
+            dates.setdefault(key, set()).add(entry["lastmod"])
+    return {key: frozenset(found) for key, found in dates.items()}
+
+
+def article_version(key: str, lastmod: dict) -> int:
+    dates = set(_committed_lastmod_dates().get(key, ()))
+    entry = lastmod["pages"].get(key)
+    if entry is None:
+        raise ValueError(f"article has no lastmod record entry: {key}")
+    dates.add(entry["lastmod"])
+    return len(dates)
+
+
+def fill_article_version(page: str, item: Mapping, lastmod: dict | None) -> str:
+    if ARTICLE_VERSION_PLACEHOLDER not in page:
+        return page
+    if not is_article(item) or page.count(ARTICLE_VERSION_PLACEHOLDER) != 1:
+        raise ValueError(f"{item['key']!r}: an article prints its version once, any other page never")
+    lastmod = load_page_lastmod() if lastmod is None else lastmod
+    return page.replace(ARTICLE_VERSION_PLACEHOLDER, str(article_version(item["key"], lastmod)))
+
+
 def fill_article_byline(body: str, item: Mapping) -> str:
     def byline(match: re.Match) -> str:
         if match.group(1) not in ARTICLE_TIERS:
             raise ValueError(f"article {item['key']!r} names tier {match.group(1)!r}, not one of {ARTICLE_TIERS}")
         return (f'<p class="ar-byline"><span class="ar-tier">{match.group(1)}</span>'
                 '<span>發布 <time datetime="{{article_published}}">{{article_published}}</time></span>'
+                f'<span class="ar-version">第 {ARTICLE_VERSION_PLACEHOLDER} 版・出處 {article_source_count(body)} 則</span>'
                 f"<span>閱讀約 {{{{article_reading_minutes}}}} 分鐘</span><span>{ARTICLE_SIGNER}</span></p>")
 
     found = len(_ARTICLE_BYLINE.findall(body))
@@ -1007,13 +745,29 @@ _FX_DEFS = re.compile(r"\{\{fx_defs(?::([a-z_ ]+))?\}\}")
 
 def fill_fx_defs(body: str) -> str:
     """The figure sprite a figure generator asks for as `{{fx_defs:KEYS}}`
-    (scripts/frontend/figures/_fx.defs), drawn with the glyphs it names."""
+    (scripts/frontend/figures/_fx.defs); the glyphs it names are in the
+    shared glyph file (`figure_glyph_file`)."""
 
     if not _FX_DEFS.search(body):
         return body
     from scripts.frontend.figures import _fx
 
-    return _FX_DEFS.sub(lambda match: _fx.sprite(tuple((match.group(1) or "").split())), body)
+    return _FX_DEFS.sub(lambda _match: _fx.sprite(), body)
+
+
+def figure_glyph_file(surfaces: Iterable[dict]) -> tuple[Path, str]:
+    """The shared figure glyph file: every glyph a page fragment's
+    `{{fx_defs:KEYS}}` names."""
+
+    from scripts.frontend.figures import _fx
+
+    keys = {
+        key
+        for item in surfaces
+        for match in _FX_DEFS.finditer(_template(PAGES / f"{item['fragment']}.html"))
+        for key in (match.group(1) or "").split()
+    }
+    return FRONTEND / _fx.GLYPH_FILE, _fx.glyph_file(keys)
 
 
 # An article figure is interactive when it has marks to point at, a variant
@@ -1057,8 +811,6 @@ _CJK_PER_MINUTE = 400
 _LATIN_WORDS_PER_MINUTE = 200
 _CJK_CHARACTER = re.compile(r"[\u3400-\u9fff\uf900-\ufaff]")
 _LATIN_WORD = re.compile(r"[A-Za-z0-9][A-Za-z0-9'’.\-]*")
-_REFERENCE_LINK = re.compile(r'href="#(ref-\d+)"')
-_REFERENCE_TARGET = re.compile(r'\bid="(ref-\d+)"')
 
 
 def reading_minutes(markup: str) -> int:
@@ -1072,19 +824,6 @@ def reading_minutes(markup: str) -> int:
                     // (_CJK_PER_MINUTE * _LATIN_WORDS_PER_MINUTE)))
 
 
-def check_article_references(body: str, key: str) -> None:
-    """Every numbered citation (href="#ref-N") lands on a listed source
-    (id="ref-N"), and every listed source is cited."""
-
-    links = set(_REFERENCE_LINK.findall(body))
-    targets = _REFERENCE_TARGET.findall(body)
-    if len(set(targets)) != len(targets) or links != set(targets):
-        raise ValueError(
-            f"article {key!r} citations and sources disagree: "
-            f"unlisted {sorted(links - set(targets))}, uncited {sorted(set(targets) - links)}"
-        )
-
-
 def fill_article_reading_time(body: str, item: dict) -> str:
     if not is_article(item):
         if "{{article_reading_minutes}}" in body:
@@ -1092,13 +831,6 @@ def fill_article_reading_time(body: str, item: dict) -> str:
         return body
     check_article_references(body, item["key"])
     return body.replace("{{article_reading_minutes}}", str(reading_minutes(body)))
-
-
-def fill_published_article_count(body: str) -> str:
-    if "{{published_article_count}}" not in body:
-        return body
-    count = sum(1 for item in load_surface_manifest()["surfaces"] if is_article(item))
-    return body.replace("{{published_article_count}}", str(count))
 
 
 class _SlateTopics(HTMLParser):
@@ -1199,308 +931,6 @@ def fill_slate_numbers(body: str) -> str:
     return body
 
 
-# The site as the publisher of the application and the articles.  It names
-# no person.  The alternate names are the two halves of the site name and the
-# domain's form of it; the description tells the site apart from the
-# astronomical instrument it is named after (the about page's 這個名字), and
-# `sameAs` is the public source repository, as on the application.
-ORGANIZATION_ID = "/#organization"
-ORGANIZATION_ALTERNATE_NAMES = (*SITE_NAME.split(" "), "Project Armillary")
-ORGANIZATION_DISAMBIGUATION = (
-    "古典西洋占星的計算網站與開源程式；名稱取自天文儀器渾儀（armillary sphere），本身不是那件儀器。"
-)
-
-
-def _organization(origin: str) -> dict:
-    return {
-        "@type": "Organization",
-        "@id": origin + ORGANIZATION_ID,
-        "name": SITE_NAME,
-        "alternateName": list(ORGANIZATION_ALTERNATE_NAMES),
-        "url": origin + "/",
-        "disambiguatingDescription": ORGANIZATION_DISAMBIGUATION,
-        "logo": _organization_logo(origin),
-        "sameAs": [_backend("frontend_release").PUBLIC_REPOSITORY_URL],
-    }
-
-
-def _organization_logo(origin: str, frontend: Path | None = None) -> dict:
-    """The site's mark as its logo: the square, opaque touch icon that
-    scripts/frontend/favicon.py draws, at the root URL every page's head
-    already links; its size is read from the PNG."""
-
-    from scripts.frontend import favicon
-
-    path = (FRONTEND if frontend is None else frontend) / favicon.TOUCH_ASSET
-    if not path.is_file():
-        raise ValueError(f"organization logo is missing: {favicon.TOUCH_ASSET}")
-    width, height = png_dimensions(path.read_bytes())
-    return {"@type": "ImageObject", "url": f"{origin}/{favicon.TOUCH_ASSET}", "width": width, "height": height}
-
-
-# The pages that describe the calculator itself carry the one WebApplication
-# node: the entry page and the calculator page.  Both state the same node, built
-# from the entry page's row, so the two cannot describe two applications.
-CALCULATE_SURFACE = f"/{DEFAULT_LOCALE}/calculate"
-APPLICATION_SURFACES = (HOME_SURFACE, CALCULATE_SURFACE)
-APPLICATION_ID = "/#application"
-
-
-def _web_application(origin: str, home: Mapping) -> dict:
-    # No `creator` (no person is named in the structured data); free to
-    # use, and the license it is published under.
-    return {
-        "@type": "WebApplication",
-        "@id": origin + APPLICATION_ID,
-        "url": origin + home["surface"],
-        "name": SITE_NAME,
-        "alternateName": "Armillary",
-        "description": home["description"],
-        "applicationCategory": "ReferenceApplication",
-        "operatingSystem": "Web",
-        "inLanguage": home["locale"],
-        "isAccessibleForFree": True,
-        # Engines read "free" from an Offer; the pages say 目前全部免費.
-        "offers": {"@type": "Offer", "price": "0", "priceCurrency": "TWD"},
-        "featureList": application_features(),
-        "license": LICENSE_URL,
-        # The public source repository tells this application apart from
-        # same-named ones; it names no person or organisation.
-        "sameAs": [_backend("frontend_release").PUBLIC_REPOSITORY_URL],
-        "publisher": {"@id": origin + ORGANIZATION_ID},
-    }
-
-
-SOURCE_CODE_ID = "/#source-code"
-SOURCE_CODE_LANGUAGES = ("Python", "JavaScript")
-
-
-def _source_code(origin: str) -> dict:
-    # The application's public source: the repository, its licence and the
-    # languages its code is written in, published by the site; no person.
-    return {
-        "@type": "SoftwareSourceCode",
-        "@id": origin + SOURCE_CODE_ID,
-        "name": f"{SITE_NAME} 原始碼",
-        "codeRepository": _backend("frontend_release").PUBLIC_REPOSITORY_URL,
-        "license": LICENSE_URL,
-        "programmingLanguage": list(SOURCE_CODE_LANGUAGES),
-        "targetProduct": {"@id": origin + APPLICATION_ID},
-        "publisher": {"@id": origin + ORGANIZATION_ID},
-    }
-
-
-class _GlossaryEntries(HTMLParser):
-    """A glossary page's entries as the reader sees them: each `div.gl-item`
-    inside `dl.gl-list`, with its anchor (the div's id), its term (the `dt`
-    without its original-language span), that span's text, and the entry's
-    explanation (the first `p` of its `dd`)."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.entries: list[dict] = []
-        self._in_list = False
-        self._field: str | None = None
-        self._paragraphs = 0
-
-    def handle_starttag(self, tag, attrs):
-        attributes = dict(attrs)
-        classes = (attributes.get("class") or "").split()
-        if tag == "dl" and "gl-list" in classes:
-            self._in_list = True
-        elif not self._in_list:
-            return
-        elif tag == "div" and "gl-item" in classes:
-            self.entries.append({"id": attributes.get("id") or "", "term": "", "en": "", "text": ""})
-            self._paragraphs = 0
-        elif tag == "dt" and self.entries:
-            self._field = "term"
-        elif tag == "span" and self._field == "term" and "en" in classes:
-            self._field = "en"
-        elif tag == "p" and self.entries:
-            self._paragraphs += 1
-            self._field = "text" if self._paragraphs == 1 else None
-
-    def handle_endtag(self, tag):
-        if tag == "dl":
-            self._in_list = False
-        elif tag == "span" and self._field == "en":
-            self._field = "term"
-        elif tag in {"dt", "p"}:
-            self._field = None
-
-    def handle_data(self, data):
-        if self._field and self.entries:
-            self.entries[-1][self._field] += data
-
-
-def glossary_entries(body: str) -> list[dict]:
-    if "gl-list" not in body:
-        return []  # the parser only collects inside a dl.gl-list
-    parser = _GlossaryEntries()
-    parser.feed(body)
-    entries = [{name: re.sub(r"\s+", " ", value).strip() for name, value in entry.items()}
-               for entry in parser.entries]
-    if any(not entry["id"] or not entry["term"] or not entry["text"] for entry in entries):
-        raise ValueError("a glossary entry has no anchor, term or explanation")
-    if len({entry["id"] for entry in entries}) != len(entries):
-        raise ValueError("two glossary entries share an anchor")
-    return entries
-
-
-def _defined_term_set(item: Mapping, origin: str, entries: list[dict]) -> dict:
-    """The glossary as a DefinedTermSet: one DefinedTerm per entry, in the
-    page's words, each at the entry's own anchor on the page."""
-
-    canonical = origin + item["surface"]
-    terms = []
-    for entry in entries:
-        term = {
-            "@type": "DefinedTerm",
-            "@id": f"{canonical}#{entry['id']}",
-            "url": f"{canonical}#{entry['id']}",
-            "name": entry["term"],
-            "description": entry["text"],
-            "inDefinedTermSet": {"@id": canonical + "#terms"},
-        }
-        if entry["en"]:
-            term["alternateName"] = entry["en"]
-        terms.append(term)
-    return {
-        "@type": "DefinedTermSet",
-        "@id": canonical + "#terms",
-        "url": canonical,
-        "name": item["title"].split("｜")[0],
-        "inLanguage": item["locale"],
-        "hasDefinedTerm": terms,
-    }
-
-
-def _json_ld(item: dict, origin: str, headline: str | None = None,
-             updated: str | None = None, body: str | None = None) -> str:
-    canonical = origin + item["surface"]
-    labels = footer_link_labels()
-    graph: list[dict] = [
-        {
-            "@type": "WebSite",
-            "@id": origin + "/#website",
-            "url": origin + "/",
-            "name": SITE_NAME,
-            # The two halves of the name, which search engines may show as the
-            # site name on their own.
-            "alternateName": SITE_NAME.split(" "),
-            "inLanguage": item["locale"],
-        },
-        {
-            "@type": "WebPage",
-            "@id": canonical + "#webpage",
-            "url": canonical,
-            "name": item["title"],
-            "description": item["description"],
-            "inLanguage": item["locale"],
-            "isPartOf": {"@id": origin + "/#website"},
-        },
-    ]
-    if updated is not None:
-        # The page's recorded lastmod, the sitemap's date and the footer's.
-        # No datePublished: no page other than an article has a recorded
-        # first-publication date.
-        graph[1]["dateModified"] = updated
-    if item["surface"] in APPLICATION_SURFACES or is_article(item):
-        graph.append(_organization(origin))
-    if item["surface"] in APPLICATION_SURFACES:
-        home = item if item["surface"] == HOME_SURFACE else next(
-            row for row in load_surface_manifest()["surfaces"] if row["surface"] == HOME_SURFACE
-        )
-        graph.append(_web_application(origin, home))
-        graph.append(_source_code(origin))
-        graph[1]["about"] = {"@id": origin + APPLICATION_ID}
-    if item["surface"] != HOME_SURFACE:
-        # A page's trail is home and the page, named by their footer links; an
-        # article's is home, the blog and the article's own headline, and a
-        # sub-page's home, its parent and its own headline.
-        trail = [(HOME_SURFACE, labels.get(HOME_SURFACE))]
-        parent = BLOG_SURFACE if is_article(item) else parent_surface(
-            item, load_surface_manifest()["surfaces"]
-        )
-        if parent is not None:
-            if not headline:
-                raise ValueError(f"page has no headline: {item['surface']}")
-            trail += [(parent, labels.get(parent)), (item["surface"], headline)]
-        else:
-            trail.append((item["surface"], labels.get(item["surface"])))
-        if not all(name for _, name in trail):
-            raise ValueError(f"surface has no footer label: {item['surface']}")
-        graph.append({
-            "@type": "BreadcrumbList",
-            "@id": canonical + "#breadcrumb",
-            "itemListElement": [
-                {
-                    "@type": "ListItem",
-                    "position": position,
-                    "name": name,
-                    "item": origin + surface,
-                }
-                for position, (surface, name) in enumerate(trail, start=1)
-            ],
-        })
-        graph[1]["breadcrumb"] = {"@id": canonical + "#breadcrumb"}
-    entries = glossary_entries(body) if body is not None else []
-    if entries:
-        graph.append(_defined_term_set(item, origin, entries))
-        graph[1]["mainEntity"] = {"@id": canonical + "#terms"}
-    if is_article(item):
-        # The site is both publisher and author: the byline on the page names a
-        # person, and the structured data names none.
-        post = {
-            "@type": "BlogPosting",
-            "@id": canonical + "#article",
-            "url": canonical,
-            "headline": headline,
-            "description": item["description"],
-            "datePublished": item["article"]["published"],
-            "dateModified": item["article"]["modified"],
-            "inLanguage": item["locale"],
-            "mainEntityOfPage": {"@id": canonical + "#webpage"},
-            "isPartOf": {"@id": origin + BLOG_SURFACE + "#webpage"},
-            "publisher": {"@id": origin + ORGANIZATION_ID},
-            "author": {"@id": origin + ORGANIZATION_ID},
-        }
-        image = og_image_url(origin)
-        if image is not None:
-            post["image"] = image
-        graph.append(post)
-    return json.dumps(
-        {"@context": "https://schema.org", "@graph": graph},
-        ensure_ascii=False,
-        sort_keys=True,
-        separators=(",", ":"),
-    ).replace("<", "\\u003c")
-
-
-def metadata_values(item: dict, origin: str, headline: str | None = None,
-                    updated: str | None = None, body: str | None = None) -> dict[str, str]:
-    canonical = origin + item["surface"]
-    return {
-        "og_type": "article" if is_article(item) else "website",
-        "og_article": "".join(
-            f'<meta property="article:{name}_time" content="{item["article"][name]}">\n'
-            for name in ("published", "modified")
-        ) if is_article(item) else "",
-        "robots": "index, follow" if item["indexable"] else "noindex, follow",
-        "locale": html.escape(item["locale"], quote=True),
-        "og_locale": html.escape(item["locale"].replace("-", "_"), quote=True),
-        "site_name": html.escape(SITE_NAME, quote=True),
-        "title": html.escape(item["title"], quote=True),
-        "description": html.escape(item["description"], quote=True),
-        "canonical": html.escape(canonical, quote=True),
-        "surface": html.escape(
-            f"{item['surface']} · {' ＋ '.join(item['layers'])}", quote=True
-        ),
-        "json_ld": _json_ld(item, origin, headline, updated, body),
-    }
-
-
 _DISCOVERY_SECTION = re.compile(r"\{\{#discovery\}\}\n(?P<body>.*?)\{\{/discovery\}\}\n", re.DOTALL)
 
 
@@ -1564,8 +994,14 @@ def calculation_requests(origin: str) -> list:
             _backend("privacy_logging"), _frontend_assets_module(), FRONTEND
         ),
         # The readable source, not the shipped copy this build may be rewriting.
-        lambda name: (ROOT / "scripts" / "frontend" / "scripts" / name).read_text(encoding="utf-8"),
+        _readable_script,
     )
+
+
+def _readable_script(name: str) -> str:
+    from scripts.frontend import javascript
+
+    return javascript.readable(name)
 
 
 def fill_calculation_requests(body: str, origin: str) -> str:
@@ -1580,6 +1016,12 @@ def fill_calculation_requests(body: str, origin: str) -> str:
         headers=lambda: dict(_backend("privacy_logging")._SECURITY_HEADERS),
         repository_url=lambda: _backend("frontend_release").PUBLIC_REPOSITORY_URL,
     )
+
+
+def fill_table_layout(body: str) -> str:
+    from scripts.frontend import table_layout
+
+    return table_layout.fill(body)
 
 
 def fill_civil_time_tables(body: str) -> str:
@@ -1621,40 +1063,94 @@ def recorded_page_date(item: Mapping, lastmod: dict | None = None) -> str | None
 def render(item: dict, origin: str, lastmod: dict | None = None) -> str:
     """The page as shipped, dated from `lastmod` (default: the committed record)."""
 
-    return _render_dated(item, origin, *_render_parts(item, origin),
-                         recorded_page_date(item, lastmod))
+    return fill_article_version(_render_dated(item, origin, *_render_parts(item, origin),
+                                              recorded_page_date(item, lastmod)), item, lastmod)
+
+
+def _public_alpha_date(item: Mapping, key: str) -> str:
+    return public_alpha_dates(non_breaking=item["fragment"] in NON_BREAKING_DATE_FRAGMENTS)[key]
+
+
+# The values a fragment writes as {{name}}, each produced from its one owner
+# only when the fragment names it: (row) -> text.
+SCALARS: dict[str, Callable[[Mapping], str]] = {
+    "telemetry_contract_rows": lambda item: telemetry_contract_rows(),
+    "telemetry_field_count": lambda item: telemetry_field_count(),
+    "telemetry_field_list": lambda item: telemetry_field_list(),
+    "public_alpha_start": lambda item: _public_alpha_date(item, "public_alpha_start"),
+    "private_alpha_last_day": lambda item: _public_alpha_date(item, "private_alpha_last_day"),
+    "place_source_snapshot_date": lambda item: place_source_snapshot_date(),
+    "ephemeris_file_count": lambda item: zh_count(len(ephemeris_digests())),
+    "advanced_option_count": lambda item: options_catalogue_counts()["advanced_option_count"],
+    "advanced_group_count": lambda item: options_catalogue_counts()["advanced_group_count"],
+    "fixed_star_count": lambda item: str(fixed_star_count()),
+    "fixed_star_cluster_count": lambda item: str(fixed_star_cluster_count()),
+    "time_lord_techniques": lambda item: html.escape(time_lord_series(), quote=False),
+    "published_article_count": lambda item: str(
+        sum(1 for row in load_surface_manifest()["surfaces"] if is_article(row))),
+}
+_SCALAR = re.compile(r"\{\{([a-z_]+)\}\}")
+# The placeholder the shell stage fills after the body: the content version.
+_LATER_PLACEHOLDERS = frozenset({"assets", "article_version"})
+
+
+def fill_scalars(body: str, item: Mapping) -> str:
+    """Every {{name}} of SCALARS in `body`, each producer run once."""
+
+    values: dict[str, str] = {}
+
+    def value(match: re.Match) -> str:
+        name = match.group(1)
+        if name not in SCALARS:
+            return match.group(0)
+        if name not in values:
+            values[name] = SCALARS[name](item)
+        return values[name]
+
+    return _SCALAR.sub(value, body)
+
+
+def _ephemeris_lines(indent: str) -> str:
+    return "\n".join(f'{indent}<div><b class="mono">{html.escape(name)}</b><span class="mono">{digest}</span></div>'
+                     for name, digest in ephemeris_digests())
+
+
+# Every fill a page fragment goes through, in order: (body, row, origin) -> body.
+# A filler is a no-op on a fragment without its placeholder.
+BODY_FILLERS: tuple[Callable[[str, dict, str], str], ...] = (
+    lambda body, item, origin: fill_scalars(body, item),
+    lambda body, item, origin: _fill_block(body, "ephemeris_digests", _ephemeris_lines),
+    lambda body, item, origin: _fill_block(body, "armillary_svg",
+                                           lambda indent: textwrap.indent(armillary_svg(), indent)),
+    lambda body, item, origin: fill_fx_defs(body),
+    lambda body, item, origin: fill_article_byline(body, item),
+    lambda body, item, origin: fill_source_legend(body, item),
+    lambda body, item, origin: fill_article_dates(body, item),
+    lambda body, item, origin: fill_article_reading_time(body, item),
+    lambda body, item, origin: fill_slate_numbers(body),
+    lambda body, item, origin: fill_slate_counts(body),
+    lambda body, item, origin: fill_calculation_requests(body, origin),
+    lambda body, item, origin: fill_civil_time_tables(body),
+    lambda body, item, origin: fill_figure_script(body, item),
+    lambda body, item, origin: fill_table_layout(body),
+)
+
+
+def fill_placeholders(text: str, values: Mapping[str, str]) -> str:
+    """`{{name}}` replaced by each value in turn, in the mapping's order."""
+
+    for name, value in values.items():
+        text = text.replace("{{" + name + "}}", value)
+    return text
 
 
 def _render_parts(item: dict, origin: str) -> tuple[str, str | None]:
-    name = item["fragment"]
-    body = _template(PAGES / f"{name}.html").rstrip("\n")
-    if "{{telemetry_" in body:
-        contract = telemetry_contract()
-        body = (
-            body.replace("{{telemetry_contract_rows}}", telemetry_contract_rows(contract))
-            .replace("{{telemetry_field_count}}", telemetry_field_count(contract))
-            .replace("{{telemetry_field_list}}", telemetry_field_list(contract))
-        )
-    if "{{telemetry_" in body:
-        raise ValueError(f"unknown telemetry placeholder in fragment {name!r}")
-    body = fill_public_alpha_dates(body, non_breaking=name in NON_BREAKING_DATE_FRAGMENTS)
-    body = fill_place_source_snapshot_date(body)
-    body = fill_ephemeris_digests(body)
-    body = fill_options_catalogue_counts(body)
-    body = fill_fixed_star_count(body)
-    body = fill_time_lord_techniques(body)
-    body = fill_armillary_svg(body)
-    body = fill_fx_defs(body)
-    body = fill_article_byline(body, item)
-    body = fill_source_legend(body, item)
-    body = fill_article_dates(body, item)
-    body = fill_article_reading_time(body, item)
-    body = fill_published_article_count(body)
-    body = fill_slate_numbers(body)
-    body = fill_slate_counts(body)
-    body = fill_calculation_requests(body, origin)
-    body = fill_civil_time_tables(body)
-    body = fill_figure_script(body, item)
+    body = _template(PAGES / f"{item['fragment']}.html").rstrip("\n")
+    for fill in BODY_FILLERS:
+        body = fill(body, item, origin)
+    unknown = sorted({name for name in _SCALAR.findall(body) if name not in _LATER_PLACEHOLDERS})
+    if unknown:
+        raise ValueError(f"page {item['key']!r} names unknown placeholders: {unknown}")
     reject_inline_style(body, item["key"])
     headline = (
         page_headline(body, item["key"])
@@ -1665,7 +1161,7 @@ def _render_parts(item: dict, origin: str) -> tuple[str, str | None]:
 
 
 def _render_dated(item: dict, origin: str, body: str, headline: str | None,
-                  updated: str | None) -> str:
+                  updated: str | None, stamp: bool = True) -> str:
     if updated is not None and not is_dated(item):
         raise ValueError(f"an article states its own dates, not a page date: {item['key']}")
     shell = _mark_nav_cta(_template(SHELL), item["surface"])
@@ -1674,83 +1170,46 @@ def _render_dated(item: dict, origin: str, body: str, headline: str | None,
     shell = shell.replace(
         _PAGE_UPDATED_PLACEHOLDER, "" if updated is None else page_updated_line(updated)
     )
-    metadata = metadata_values(item, origin, headline, updated, body)
+    metadata = structured_data.metadata_values(item, origin, headline, updated, body)
     og_image, twitter_card = og_image_markup(origin)
     # {{body}} 先插入，{{assets}} 後蓋上內容版本，順序不可調換：頁面片段自己
     # 也需要版本鍵。/zh-TW/ 的敏感度示範腳本只屬於該頁，放進 _shell.html 會讓
     # 其他每一頁都載入一個對它們無用的檔案；留在片段裡，就必須讓片段也能寫
     # ?v={{assets}}。每個靜態資產引用都帶正確的內容版本，由
     # tests/integration/test_hosted_profile.py 逐頁檢查。
-    return stamp_asset_versions(
-        _shell_with_discovery(shell, keep=True)
-        .replace("{{og_image}}", og_image)
-        .replace("{{twitter_card}}", twitter_card)
-        .replace("{{og_type}}", metadata["og_type"])
-        .replace("{{og_article}}", metadata["og_article"])
-        .replace("{{robots}}", metadata["robots"])
-        .replace("{{locale}}", metadata["locale"])
-        .replace("{{og_locale}}", metadata["og_locale"])
-        .replace("{{site_name}}", metadata["site_name"])
-        .replace("{{title}}", metadata["title"])
-        .replace("{{description}}", metadata["description"])
-        .replace("{{canonical}}", metadata["canonical"])
-        .replace("{{json_ld}}", metadata["json_ld"])
-        .replace("{{surface}}", metadata["surface"])
-        .replace("{{stylesheets}}", stylesheet_link(item))
-        .replace("{{body}}", body),
-        item["key"],
-    )
+    page = fill_placeholders(_shell_with_discovery(shell, keep=True), {
+        "og_image": og_image,
+        "twitter_card": twitter_card,
+        **{key: metadata[key] for key in (
+            "og_type", "og_article", "robots", "locale", "og_locale", "site_name", "title",
+            "description", "canonical", "json_ld", "surface",
+        )},
+        "stylesheets": stylesheet_link(item),
+        "body": body,
+    })
+    return stamp_asset_versions(page, item["key"]) if stamp else page
 
 
-def render_error_page(item: dict) -> str:
+def render_error_page(item: dict, stamp: bool = True) -> str:
     """An error page: the shared header and footer, which link home and to
     every surface, around the page's own fragment, under `noindex`."""
 
     shell = _shell_with_discovery(_template(SHELL), keep=False)
     body = _template(PAGES / f"{item['fragment']}.html").rstrip("\n")
     reject_inline_style(body, item["key"])
-    rendered = (
-        shell.replace("{{robots}}", "noindex")
-        .replace("{{locale}}", html.escape(item["locale"], quote=True))
-        .replace("{{title}}", html.escape(item["title"], quote=True))
-        .replace("{{surface}}", html.escape(
-            f"{item['status']} · {' ＋ '.join(item['layers'])}", quote=True
-        ))
-        .replace("{{stylesheets}}", stylesheet_link(item))
-        .replace(_PAGE_UPDATED_PLACEHOLDER, "")
-        .replace("{{body}}", body)
-    )
+    rendered = fill_placeholders(shell, {
+        "robots": "noindex",
+        "locale": html.escape(item["locale"], quote=True),
+        "title": html.escape(item["title"], quote=True),
+        "surface": html.escape(f"{item['status']} · {' ＋ '.join(item['layers'])}", quote=True),
+        "stylesheets": stylesheet_link(item),
+        "page_updated": "",
+        "body": body,
+    })
     leftover = re.findall(r"\{\{(?!assets\}\})[^{}]*\}\}", rendered)
     if leftover:
         raise ValueError(f"unfilled placeholder in error page {item['key']!r}: {leftover}")
-    return stamp_asset_versions(rendered, item["key"])
-
-
-def robots_text(payload: dict) -> str:
-    """The crawl posture: every page may be fetched, the API may not.
-
-    Whether a page is indexed is the page's own `<meta name="robots">`, read
-    off the surface's `indexable` field.  A surface that is not indexable is
-    deliberately NOT disallowed here: a crawler that may not fetch a page never
-    sees its noindex, and an outside link can still list the bare URL (the blog's
-    Disallow-plus-noindex conflict was resolved that way).  The
-    publication verifier compares the served file against this function.
-
-    Crawlers for AI answers and AI training are admitted like any other, and
-    the Content Signals line (contentsignals.org) says so in the one group;
-    there is deliberately no per-bot block.
-    """
-
-    origin = payload["origin"]
-    return "\n".join([
-        "User-agent: *",
-        "Content-Signal: search=yes, ai-input=yes, ai-train=yes",
-        f"Disallow: {API_PATH_PREFIX}",
-        "Allow: /",
-        "",
-        f"Sitemap: {origin}/sitemap.xml",
-        "",
-    ])
+    return stamp_asset_versions(rendered, item["key"]) if stamp else rendered
 
 
 # A page's content, for its <lastmod>, is what a reader reads and a search
@@ -1763,26 +1222,16 @@ _MAIN_CONTENT = re.compile(r'<main id="main-content">(.*?)</main>', re.S)
 _PAGE_TITLE = re.compile(r"<title>(.*?)</title>", re.S)
 _PAGE_DESCRIPTION = re.compile(r'<meta name="description" content="([^"]*)">')
 # A version a page prints, whole or shortened to a few digits and an ellipsis
-# (the verify page's request list), and a class attribute, which names a style
-# rather than what the reader reads.
-_PRINTED_VERSION = re.compile(r"\?v=[0-9a-f]{6,16}…?")
+# (the verify page's request list) or not yet stamped, and a class attribute,
+# which names a style rather than what the reader reads.
+_PRINTED_VERSION = re.compile(r"\?v=(?:[0-9a-f]{6,16}…?|\{\{assets\}\})")
 _CLASS_ATTRIBUTE = re.compile(r' class="[^"]*"')
+# An article's version and source count restate its record and its sources
+# section; the line itself is not content that moves the page's date.
+_ARTICLE_VERSION_LINE = re.compile(r'<span class="ar-version">[^<]*</span>')
 # The digest scheme the record's content_sha256 values are written under; a
 # record of another scheme has no digest comparable with these.
 PAGE_LASTMOD_SCHEMA = 2
-
-
-def _uncovered_styles(item: Mapping, page: str, names_by_audience: dict[str, set[str]]) -> list[str]:
-    """A page.css rule the page's markup or scripts could match but its
-    bundle leaves out, as "<page>: <selector>"; the page's names are added to
-    its audience's in `names_by_audience`."""
-
-    from scripts.frontend import stylesheets
-
-    audience = stylesheets.audience_of(item)
-    names = stylesheets.names_on_page(page, FRONTEND)
-    names_by_audience.setdefault(audience, set()).update(names)
-    return [f"{item['key']}: {selector}" for selector in stylesheets.uncovered_rules(audience, names)]
 
 
 def page_digest(page: str) -> str:
@@ -1791,7 +1240,7 @@ def page_digest(page: str) -> str:
     description = _PAGE_DESCRIPTION.findall(page)
     if len(main) != 1 or len(title) != 1 or len(description) > 1:
         raise ValueError("a page to date has one <main id=\"main-content\">, one <title> and at most one description")
-    body = _CLASS_ATTRIBUTE.sub("", _PRINTED_VERSION.sub("?v=", main[0]))
+    body = _CLASS_ATTRIBUTE.sub("", _PRINTED_VERSION.sub("?v=", _ARTICLE_VERSION_LINE.sub("", main[0])))
     content = "\0".join([title[0], *description, body])
     return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
@@ -1860,36 +1309,6 @@ def committed_page_lastmod(root: Path = ROOT) -> list[tuple[str, dict]]:
     return history
 
 
-def lastmod_binding_errors(record: dict, history: list[tuple[str, dict]], today: str) -> list[str]:
-    """A page's date stays what it was committed with while its content digest
-    is unchanged, is no later than the commit that introduced that digest
-    (today, if none has yet) and no earlier than the page's previous date.
-    History stops at the first record of another digest scheme, whose digests
-    say nothing about these."""
-
-    errors = []
-    for key, entry in sorted(record["pages"].items()):
-        introduced, previous = today, None
-        for committed, revision in history:
-            if revision.get("schema_version") != record["schema_version"]:
-                break
-            old = revision.get("pages", {}).get(key)
-            if not isinstance(old, dict) or old.get("content_sha256") != entry["content_sha256"]:
-                previous = old.get("lastmod") if isinstance(old, dict) else None
-                break
-            if old.get("lastmod") != entry["lastmod"]:
-                errors.append(f"{key}: lastmod {entry['lastmod']}, but the same content was "
-                              f"committed with {old.get('lastmod')}")
-                break
-            introduced = committed
-        if entry["lastmod"] > introduced:
-            errors.append(f"{key}: lastmod {entry['lastmod']} is after {introduced}, "
-                          "when its content was introduced")
-        if previous is not None and entry["lastmod"] < previous:
-            errors.append(f"{key}: lastmod {entry['lastmod']} is before its previous date {previous}")
-    return errors
-
-
 def page_lastmod_text(record: dict) -> str:
     return json.dumps(record, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
 
@@ -1912,215 +1331,7 @@ def build_date(environment: Mapping[str, str] | None = None) -> str:
         else datetime.now(timezone.utc)
     )
     return moment.astimezone(SITE_DATE_ZONE).date().isoformat()
-
-
-def sitemap_date(item: Mapping, lastmod: dict) -> str:
-    """A page's <lastmod>: its lastmod record date; for an article, the later of
-    that and the article's own modified date, so the sitemap never names a day
-    before the dateModified the page's structured data states."""
-
-    recorded = lastmod["pages"][item["key"]]["lastmod"]
-    return max(recorded, item["article"]["modified"]) if is_article(item) else recorded
-
-
-def sitemap_text(payload: dict, lastmod: dict) -> str:
-    origin = payload["origin"]
-    entries = []
-    for item in payload["surfaces"]:
-        if not item["indexable"]:
-            continue
-        url = xml_escape(origin + item["surface"])
-        date = sitemap_date(item, lastmod)
-        entries.append(f"  <url><loc>{url}</loc><lastmod>{date}</lastmod></url>")
-    return "\n".join([
-        '<?xml version="1.0" encoding="UTF-8"?>',
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-        *entries,
-        "</urlset>",
-        "",
-    ])
-
-
-_FOOTER_COLUMN = re.compile(
-    r'<div class="sitemap-col">\s*<h2>(?P<heading>[^<>]+)</h2>(?P<links>.*?)</div>',
-    re.DOTALL,
-)
-
-
-def footer_columns(shell: str | None = None) -> list[tuple[str, list[str]]]:
-    """The shared footer's columns: each heading and the surfaces it links, in order."""
-
-    return [
-        (
-            html.unescape(match.group("heading")).strip(),
-            [link.group("href") for link in _FOOTER_LINK.finditer(match.group("links"))],
-        )
-        for match in _FOOTER_COLUMN.finditer(_footer(shell))
-    ]
-
-
-def _anchor_label(fragment: str, href: str) -> str:
-    """The visible text of the one link to `href` on a page fragment."""
-
-    body = (PAGES / f"{fragment}.html").read_text(encoding="utf-8")
-    labels = [
-        html.unescape(re.sub(r"<[^<>]+>", "", match.group(1))).strip()
-        for match in re.finditer(
-            r'<a href="' + re.escape(href) + r'"[^<>]*>(.*?)</a>', body, re.DOTALL
-        )
-    ]
-    if not labels or not labels[0]:
-        raise ValueError(f"page {fragment!r} has no link to {href}")
-    return labels[0]
-
-
-def _markdown_text(value: str) -> str:
-    """One line of llms.txt prose: no line breaks, no link syntax characters."""
-
-    return re.sub(r"\s+", " ", value).replace("[", "［").replace("]", "］").strip()
-
-
-def footer_tagline(shell: str | None = None) -> str:
-    """The line closing the shared footer: what the site does not do."""
-
-    shell = SHELL.read_text(encoding="utf-8") if shell is None else shell
-    end = shell.find("</footer>")
-    match = re.search(r"<span>([^<>]+)</span>(?:\{\{page_updated\}\})?\s*</div>\s*$", shell[:end])
-    if end < 0 or match is None:
-        raise ValueError("page shell footer has no closing line")
-    return html.unescape(match.group(1)).strip()
-
-
-# The facts llms.txt states before its page lists, each read from its owner:
-# the license from LICENSE_URL, the source repository and the engine pin from
-# the backend, the house systems from the backend's table (in the order the
-# calculate page lists them), the time-lord techniques and the natal outputs
-# from time_lord_techniques() and natal_features(), the phase from
-# PUBLIC_ALPHA_START with the about page's own words for it, and three links.  The known limitations are the
-# public repository's docs/KNOWN_LIMITATIONS.md, in English; the plain-text
-# companion is llms_full_text's output.
-REQUIREMENTS = ROOT / "backend" / "requirements.txt"
 LLMS_HOUSE_SYSTEM_ORDER = ("W", "E", "O", "B", "C", "R", "P")
-LLMS_KNOWN_LIMITATIONS_PATH = "/blob/main/docs/KNOWN_LIMITATIONS.md"
-LLMS_PRIVACY_CHECK_SURFACE = f"/{DEFAULT_LOCALE}/security/verify"
-
-
-def pinned_version(package: str, requirements: Path | None = None) -> str:
-    text = (REQUIREMENTS if requirements is None else requirements).read_text(encoding="utf-8")
-    pins = re.findall(rf"^{re.escape(package)}==(\S+)$", text, re.MULTILINE)
-    if len(pins) != 1:
-        raise ValueError(f"backend requirements pin {package} {len(pins)} times")
-    return pins[0]
-
-
-def _license_id() -> str:
-    return LICENSE_URL.rsplit("/", 1)[1].removesuffix(".html")
-
-
-def llms_facts(origin: str, by_surface: Mapping[str, dict]) -> list[str]:
-    houses = _backend("domain_catalog").HOUSE_SYSTEMS
-    if set(houses) != set(LLMS_HOUSE_SYSTEM_ORDER):
-        raise ValueError("llms.txt house-system order does not match the backend's table")
-    repository = _backend("frontend_release").PUBLIC_REPOSITORY_URL
-    license_id = _license_id()
-    facts: tuple[tuple[str, str], ...] = (
-        ("授權", f"{license_id}（{LICENSE_URL}）"),
-        ("原始碼", repository),
-        ("計算引擎", f"Swiss Ephemeris（pyswisseph {pinned_version('pyswisseph')}）"),
-        ("宮位制", "、".join(houses[code] for code in LLMS_HOUSE_SYSTEM_ORDER)),
-        ("時間主星", time_lord_series() + "；只列哪一段時間由哪顆行星或哪個星座輪值"),
-        ("本命盤", "；".join(zh for _, zh, _ in natal_features())),
-        ("狀態", f"公開測試（Public Alpha），自{PUBLIC_ALPHA_START.isoformat()}起"),
-        ("已知限制（英文）", repository + LLMS_KNOWN_LIMITATIONS_PATH),
-        ("方法頁全文與文章重點（純文字）", f"{origin}/{LLMS_FULL_NAME}"),
-    )
-    check = by_surface.get(LLMS_PRIVACY_CHECK_SURFACE)
-    if check is not None and check["indexable"]:
-        facts += (("親手驗證隱私", origin + LLMS_PRIVACY_CHECK_SURFACE),)
-    return [f"- {label}：{value}" for label, value in facts]
-
-
-def _english_series(names: list[str]) -> str:
-    return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
-
-
-def llms_english_summary() -> str:
-    """The one English passage on a Chinese-only site, for crawlers that read
-    English: what the site is, its boundary, the licence, no accounts or trackers."""
-
-    return (
-        "Armillary (渾儀) is a classical Western astrology calculator with a Traditional Chinese interface: "
-        "enter a birth date, time and place to get a natal chart, with the method source and a calculation "
-        "receipt for every number. It also computes the annual time lords: "
-        + _english_series([en for _, _, en in time_lord_techniques()])
-        + ", listing which planet or sign rules each period. The natal chart covers "
-        + _english_series([en for _, _, en in natal_features()])
-        + ". It only calculates; it does not interpret charts or make predictions. "
-        f"The code is licensed {_license_id()}, and the site has no accounts, no cookies and no third-party "
-        "analytics or trackers."
-    )
-
-
-def llms_text(payload: dict, shell: str | None = None) -> str:
-    """/llms.txt (llmstxt.org): the site's name, its summary and its pages.
-
-    The name, the entry page's description as the summary, the footer's
-    column headings as sections, each surface's title and description, and
-    the optional links' own anchor text are words already on the site.  A
-    surface the footer does not group fails the build rather than going
-    unlisted.  The footer's closing line follows the summary, so the site's
-    boundary is quoted with it, the facts list (llms_facts) follows that, and
-    the English summary (llms_english_summary) closes the head.
-    """
-
-    origin = payload["origin"]
-    by_surface = {item["surface"]: item for item in payload["surfaces"]}
-    home = by_surface[HOME_SURFACE]
-    lines = [
-        f"# {SITE_NAME}", "", f"> {_markdown_text(home['description'])}", "",
-        _markdown_text(footer_tagline(shell)) + "。", "",
-        *llms_facts(origin, by_surface), "",
-        llms_english_summary(), "",
-    ]
-    listed: set[str] = set()
-    columns = footer_columns(shell)
-    articles = [item for item in payload["surfaces"] if is_article(item) and item["indexable"]]
-    if articles:
-        # Articles are linked from the blog page, not the footer; they get a
-        # section of their own, headed by the blog's footer label.
-        columns.append((footer_link_labels(shell)[BLOG_SURFACE], [item["surface"] for item in articles]))
-    for heading, surfaces in columns:
-        # A sub-page follows its parent, in the parent's column.
-        surfaces = [
-            listed_surface
-            for surface in surfaces
-            for listed_surface in [surface, *(
-                item["surface"] for item in payload["surfaces"]
-                if parent_surface(item, payload["surfaces"]) == surface
-            )]
-        ]
-        entries = [by_surface[surface] for surface in surfaces if surface in by_surface]
-        if not entries:
-            continue
-        lines += [f"## {_markdown_text(heading)}", ""]
-        for item in entries:
-            if item["surface"] in listed or not item["indexable"]:
-                continue
-            listed.add(item["surface"])
-            lines.append(
-                f"- [{_markdown_text(item['title'])}]({origin}{item['surface']}): "
-                f"{_markdown_text(item['description'])}"
-            )
-        lines.append("")
-    unlisted = {item["surface"] for item in payload["surfaces"] if item["indexable"]} - listed
-    if unlisted:
-        raise ValueError("indexable surface missing from llms.txt: " + ", ".join(sorted(unlisted)))
-    lines += ["## Optional", ""]
-    for fragment, href in LLMS_OPTIONAL_LINKS:
-        url = origin + href if href.startswith("/") else href
-        lines.append(f"- [{_markdown_text(_anchor_label(fragment, href))}]({url})")
-    lines.append("")
-    return "\n".join(lines)
 
 
 # llms-full.txt: the long companion llms.txt links, for a reader that wants
@@ -2131,177 +1342,6 @@ def llms_text(payload: dict, shell: str | None = None) -> str:
 # so it can only say what the pages say.
 LLMS_FULL_NAME = "llms-full.txt"
 LLMS_FULL = FRONTEND / LLMS_FULL_NAME
-LLMS_FULL_PAGE_KEYS = ("methods",)
-# Interface text with no meaning outside the page: the fold toggles' 展開／收合,
-# the fold-all buttons, the in-page section index and the numbered citation
-# marks, whose sources are not carried here.
-_PLAIN_SKIPPED_TAGS = frozenset({"script", "style", "svg", "button", "summary", "template", "nav"})
-_PLAIN_SKIPPED_CLASSES = frozenset({"ar-cite"})
-_PLAIN_VOID_TAGS = frozenset({"br", "hr", "img", "input", "meta", "link", "source", "wbr", "col", "area"})
-_PLAIN_BLOCK_TAGS = frozenset({
-    "p", "div", "section", "article", "header", "footer", "nav", "aside", "main", "ul", "ol",
-    "li", "dl", "dt", "dd", "table", "thead", "tbody", "tr", "caption", "figure", "figcaption",
-    "details", "blockquote", "h1", "h2", "h3", "h4", "h5", "h6", "pre",
-})
-_PLAIN_HEADING_MARKS = {"h2": "### ", "h3": "#### ", "h4": "#### "}
-
-
-class _PlainText(HTMLParser):
-    """A page body as lines of plain text: one line per block, list items
-    marked `- `, table cells joined by `｜`, h2 and h3 as Markdown headings.
-    Hidden elements and interface text are left out."""
-
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self.lines: list[str] = []
-        self._line: list[str] = []
-        self._skip: list[str] = []
-        self._labels: list[bool] = []
-        self._cell = False
-        # Two inline elements with nothing between them (a number and its
-        # label in a tally) get a space, so they do not read as one word.
-        self._after_inline = False
-
-    def _break(self) -> None:
-        text = re.sub(r"\s+", " ", "".join(self._line)).strip()
-        if text and text not in {"-", "- "}:
-            self.lines.append(text)
-        self._line = []
-
-    def handle_starttag(self, tag, attrs):
-        if tag in _PLAIN_VOID_TAGS:
-            return
-        attributes = dict(attrs)
-        classes = set((attributes.get("class") or "").split())
-        if self._skip or tag in _PLAIN_SKIPPED_TAGS or classes & _PLAIN_SKIPPED_CLASSES \
-                or "hidden" in attributes or attributes.get("aria-hidden") == "true":
-            self._skip.append(tag)
-            return
-        if tag not in _PLAIN_BLOCK_TAGS and tag not in {"td", "th"}:
-            if self._after_inline and self._line and not self._line[-1].endswith(" "):
-                self._line.append(" ")
-        self._after_inline = False
-        if tag in {"td", "th"}:
-            if self._cell:
-                self._line.append(" ｜ ")
-            self._cell = True
-        elif tag in _PLAIN_BLOCK_TAGS:
-            self._break()
-            if tag == "tr":
-                self._cell = False
-            elif tag == "li":
-                self._line.append("- ")
-            elif tag in _PLAIN_HEADING_MARKS:
-                self.lines.append("")
-                self._line.append(_PLAIN_HEADING_MARKS[tag])
-        # The 重點 label opening a fold's gist reads as a label, not as the
-        # first word of the sentence after it.
-        self._labels.append("fold-k" in classes)
-
-    def handle_endtag(self, tag):
-        if tag in _PLAIN_VOID_TAGS:
-            return
-        if self._skip:
-            if self._skip[-1] == tag:
-                self._skip.pop()
-            return
-        if self._labels and self._labels.pop():
-            self._line.append("：")
-        self._after_inline = tag not in _PLAIN_BLOCK_TAGS and tag not in {"td", "th"}
-        if tag in _PLAIN_BLOCK_TAGS:
-            self._break()
-            if tag in _PLAIN_HEADING_MARKS:
-                self.lines.append("")
-
-    def handle_data(self, data):
-        if not self._skip:
-            self._line.append(data)
-            if data.strip():
-                self._after_inline = False
-
-    def text(self) -> str:
-        self._break()
-        lines: list[str] = []
-        for line in self.lines:
-            if line == "" and (not lines or lines[-1] == ""):
-                continue
-            lines.append(line)
-        while lines and lines[-1] == "":
-            lines.pop()
-        return "\n".join(lines)
-
-
-def plain_text(markup: str) -> str:
-    parser = _PlainText()
-    parser.feed(markup)
-    parser.close()
-    return parser.text()
-
-
-def _article_summary_parts(body: str, key: str) -> tuple[str, str]:
-    """An article's opening paragraph and its key points, as plain text."""
-
-    lead = re.findall(r'<p class="ar-lead">.*?</p>', body, re.DOTALL)
-    points = re.findall(r'<section class="ar-points"[^<>]*>.*?(<ul>.*?</ul>)\s*</section>', body, re.DOTALL)
-    if len(lead) != 1 or len(points) != 1:
-        raise ValueError(f"article {key!r} needs exactly one p.ar-lead and one list in section.ar-points")
-    return plain_text(lead[0]), plain_text(points[0])
-
-
-def llms_full_text(payload: dict, bodies: Mapping[str, str] | None = None) -> str:
-    """/llms-full.txt: the methods page in full and every published article's
-    summary, opening and key points, in plain text.  `bodies` maps a surface
-    key to its rendered page body (main() passes the bodies it has already
-    rendered); a missing body is rendered here."""
-
-    origin = payload["origin"]
-
-    def body(item: dict) -> str:
-        if bodies is not None and item["key"] in bodies:
-            return bodies[item["key"]]
-        return _render_parts(item, origin)[0]
-
-    by_key = {item["key"]: item for item in payload["surfaces"]}
-    lines = [
-        f"# {SITE_NAME}：方法頁全文與文章重點", "",
-        f"> {_markdown_text(by_key['home']['description'])}", "",
-        f"這是 {origin}/llms.txt 的全文版：方法頁的全部文字，以及每一篇已發表文章的摘要、開頭一段與重點，"
-        "由網站的建置程式從頁面本身轉成純文字。圖表與表單沒有收錄；完整內容與出處請看各頁網址。", "",
-    ]
-    for key in LLMS_FULL_PAGE_KEYS:
-        item = by_key[key]
-        lines += [
-            f"## {_markdown_text(item['title'])}", "",
-            f"網址：{origin}{item['surface']}", "",
-            plain_text(body(item)), "",
-        ]
-    articles = [item for item in payload["surfaces"] if is_article(item) and item["indexable"]]
-    if articles:
-        lines += ["## 文章", ""]
-    for item in articles:
-        lead, points = _article_summary_parts(body(item), item["key"])
-        dates = item["article"]
-        lines += [
-            f"### {_markdown_text(item['title'])}", "",
-            f"網址：{origin}{item['surface']}",
-            f"發表：{dates['published']}；更新：{dates['modified']}", "",
-            f"摘要：{_markdown_text(item['description'])}", "",
-            lead, "",
-            "重點：", points, "",
-        ]
-    return "\n".join(lines).rstrip("\n") + "\n"
-
-
-def _discovery_outputs(payload: dict, lastmod: dict) -> dict[Path, str]:
-    assets = _frontend_assets_module()
-    return {
-        ROOT / "frontend" / "robots.txt": robots_text(payload),
-        ROOT / "frontend" / "sitemap.xml": sitemap_text(payload, lastmod),
-        ROOT / "frontend" / "llms.txt": llms_text(payload),
-        # Exactly the key, with no line end: an IndexNow engine compares the
-        # file with the key it was sent.
-        ROOT / "frontend" / assets.INDEXNOW_KEY_FILE: assets.INDEXNOW_KEY,
-    }
 
 
 IANA_ZONE_NAMES = ROOT / "backend" / "app" / "iana_zone_names.json"
@@ -2320,7 +1360,19 @@ def timezone_names_script() -> str:
     names = json.loads(IANA_ZONE_NAMES.read_text(encoding="utf-8"))["names"]
     if not names:
         raise ValueError(f"{IANA_ZONE_NAMES} lists no time-zone names")
-    listed = "\n".join(f"    {json.dumps(name)}," for name in names)
+    # Packed by area: one run of consecutive names per prefix (the part before the
+    # first "/"; none for UTC), space-separated, unpacked in the same order at load.
+    runs: list[tuple[str, list[str]]] = []
+    for name in names:
+        area, slash, rest = name.partition("/")
+        prefix, local = (area, rest) if slash else ("", name)
+        if " " in local:
+            raise ValueError(f"time-zone name with a space: {name!r}")
+        if runs and runs[-1][0] == prefix:
+            runs[-1][1].append(local)
+        else:
+            runs.append((prefix, [local]))
+    listed = "\n".join(f"    [{json.dumps(prefix)}, {json.dumps(' '.join(locals_))}]," for prefix, locals_ in runs)
     return (
         "// 由 scripts/frontend/build_pages.py 依 backend/app/iana_zone_names.json 產生，不要手改。\n"
         "// 服務接受的 IANA 時區名稱；手動輸入的時區在送出前以同一份名單檢查。\n"
@@ -2330,9 +1382,11 @@ def timezone_names_script() -> str:
         "  if (root) root.TimezoneNames = api;\n"
         "})(typeof globalThis !== \"undefined\" ? globalThis : this, function () {\n"
         "  \"use strict\";\n"
-        "  const NAMES = new Set([\n"
+        "  // [區域, 以空格分開的其餘部分]：依名單原順序展開（沒有區域的名稱如 UTC，區域是空字串）。\n"
+        "  const RUNS = [\n"
         f"{listed}\n"
-        "  ]);\n"
+        "  ];\n"
+        "  const NAMES = new Set(RUNS.flatMap(([area, rest]) => rest.split(\" \").map((name) => (area ? `${area}/${name}` : name))));\n"
         "  return Object.freeze({\n"
         "    accepts: (name) => NAMES.has(name),\n"
         "    size: NAMES.size,\n"
@@ -2388,6 +1442,60 @@ def _write_or_compare(outputs: Mapping[str, str], directory: Path, pattern: str,
     return []
 
 
+OPTIONS_CATALOGUE_SCRIPT = ROOT / "scripts" / "frontend" / "scripts" / "options-catalogue.js"
+_OPTIONS_SCHEMA_BLOCK = re.compile(
+    r"(  // <options-schema>[^\n]*\n)  const SCHEMA = Object\.freeze\(\{.*?\}\);\n(  // </options-schema>)", re.S,
+)
+
+
+def options_schema_entries() -> dict[str, dict]:
+    """The machine part of the options catalogue: each OptionsInput field's
+    type, default, value set and bounds, read from the request schema."""
+
+    options_input = _backend("schema_chart").OptionsInput
+    properties = options_input.model_json_schema()["properties"]
+    entries: dict[str, dict] = {}
+    for key, prop in properties.items():
+        variants = prop.get("anyOf", [prop])
+        nullable = any(variant.get("type") == "null" for variant in variants)
+        (main,) = [variant for variant in variants if variant.get("type") != "null"]
+        # A factory default (no "default" in the schema) is the value an empty request gets.
+        default = prop["default"] if "default" in prop else getattr(options_input(), key)
+        if main["type"] == "boolean" and not nullable:
+            entry: dict = {"type": "boolean", "default": default}
+        elif main["type"] == "string" and ("enum" in main or "const" in main):
+            values = list(main["enum"]) if "enum" in main else [main["const"]]
+            entry = {"type": "choice", "default": default, "values": values + ([None] if nullable else [])}
+        elif main["type"] == "number":
+            exclusive = "exclusiveMinimum" in main
+            entry = {
+                "type": "number", "default": default,
+                "min": main["exclusiveMinimum"] if exclusive else main["minimum"],
+                "exclusive_min": exclusive, "max": main["maximum"],
+            }
+        else:
+            raise ValueError(f"OptionsInput.{key}: no catalogue type for schema {prop!r}")
+        entries[key] = entry
+    return entries
+
+
+def options_catalogue_script() -> str:
+    """options-catalogue.js with its schema block regenerated from OptionsInput;
+    the hand-written labels, grouping and help text around it are kept."""
+
+    source = OPTIONS_CATALOGUE_SCRIPT.read_text(encoding="utf-8")
+    lines = "".join(
+        f"    {json.dumps(key)}: {json.dumps(entry, ensure_ascii=False)},\n"
+        for key, entry in options_schema_entries().items()
+    )
+    replaced, count = _OPTIONS_SCHEMA_BLOCK.subn(
+        lambda match: f"{match.group(1)}  const SCHEMA = Object.freeze({{\n{lines}  }});\n{match.group(2)}", source,
+    )
+    if count != 1:
+        raise ValueError(f"{OPTIONS_CATALOGUE_SCRIPT} has no single <options-schema> block")
+    return replaced
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true")
@@ -2413,59 +1521,56 @@ def main() -> int:
     # the shipped script as it is on disk.  The time-zone list's readable
     # script comes first, then every shipped script from its readable source.
     _emit(TIMEZONE_NAMES_SCRIPT, timezone_names_script(), TIMEZONE_NAMES_SCRIPT.name, drift, check=args.check)
+    _emit(OPTIONS_CATALOGUE_SCRIPT, options_catalogue_script(), OPTIONS_CATALOGUE_SCRIPT.name, drift, check=args.check)
     from scripts.frontend import javascript
 
     drift.extend(_write_or_compare(
         javascript.build_scripts(), FRONTEND / javascript.SHIPPED_DIRECTORY, "*.js", check=args.check,
     ))
+    # Before the pages too: their figures name the glyph file by content version.
+    glyph_target, glyph_text = figure_glyph_file(payload["surfaces"])
+    _emit(glyph_target, glyph_text, glyph_target.name, drift, check=args.check)
     from scripts.frontend import stylesheets
 
-    rows = [*payload["surfaces"], *payload["error_pages"]]
-    drift.extend(_write_or_compare(
-        stylesheets.build_bundles(rows), FRONTEND / stylesheets.BUNDLE_DIRECTORY, "*", check=args.check,
-    ))
-    uncovered: list[str] = []
-    names_by_audience: dict[str, set[str]] = {}
     digests: dict[str, str] = {}
     parts: dict[str, tuple[str, str | None]] = {}
     for item in payload["surfaces"]:
         parts[item["key"]] = _render_parts(item, payload["origin"])
         # The digest is of the undated page: a page's date is not its content.
         digests[item["key"]] = page_digest(
-            _render_dated(item, payload["origin"], *parts[item["key"]], None)
+            _render_dated(item, payload["origin"], *parts[item["key"]], None, stamp=False)
         )
 
     lastmod = updated_page_lastmod(load_page_lastmod(), digests, args.date or build_date())
+    # A page's stylesheet bundle holds the rules its own classes and ids could
+    # match (stylesheets.py), so the bundles are cut from the pages, unstamped,
+    # and written before the pages that name them by content version.
+    names_by_audience: dict[str, set[str]] = {}
     for item in payload["surfaces"]:
-        rendered = _render_dated(item, payload["origin"], *parts[item["key"]],
-                                 recorded_page_date(item, lastmod))
-        uncovered.extend(_uncovered_styles(item, rendered, names_by_audience))
+        page = _render_dated(item, payload["origin"], *parts[item["key"]],
+                             recorded_page_date(item, lastmod), stamp=False)
+        names_by_audience.setdefault(stylesheets.audience_of(item), set()).update(
+            stylesheets.names_on_page(page, FRONTEND))
+    for item in payload["error_pages"]:
+        names_by_audience.setdefault(stylesheets.audience_of(item), set()).update(
+            stylesheets.names_on_page(render_error_page(item, stamp=False), FRONTEND))
+    drift.extend(_write_or_compare(
+        stylesheets.build_bundles([*payload["surfaces"], *payload["error_pages"]], names_by_audience),
+        FRONTEND / stylesheets.BUNDLE_DIRECTORY, "*", check=args.check,
+    ))
+    for item in payload["surfaces"]:
+        # Again: a fragment may print a bundle's content version (the verify page's request list).
+        parts[item["key"]] = _render_parts(item, payload["origin"])
+        rendered = fill_article_version(_render_dated(item, payload["origin"], *parts[item["key"]],
+                                                      recorded_page_date(item, lastmod)), item, lastmod)
         _emit(ROOT / "frontend" / item["output"], rendered, item["key"], drift, check=args.check)
 
-    outputs = dict(_discovery_outputs(payload, lastmod))
-    outputs[LLMS_FULL] = llms_full_text(
+    outputs = dict(discovery.discovery_outputs(payload, lastmod))
+    outputs[LLMS_FULL] = discovery.llms_full_text(
         payload, {key: body for key, (body, _) in parts.items()}
     )
     for item in payload["error_pages"]:
         outputs[ROOT / "frontend" / item["output"]] = render_error_page(item)
-        uncovered.extend(_uncovered_styles(item, outputs[ROOT / "frontend" / item["output"]], names_by_audience))
-    if uncovered:
-        print("UNCOVERED STYLE: " + "; ".join(uncovered), file=sys.stderr)
-        print(
-            "add the page to the @pages marker above these rules in "
-            "scripts/frontend/styles/page.css",
-            file=sys.stderr,
-        )
-        return 1
-    unused = stylesheets.unused_rules(names_by_audience)
-    if unused:
-        print("UNUSED STYLE: " + "; ".join(unused), file=sys.stderr)
-        print(
-            "no page these rules reach names their classes or ids: delete them, or list them in "
-            "stylesheets.UNUSED_RULES_KEPT",
-            file=sys.stderr,
-        )
-        return 1
     outputs[PAGE_LASTMOD] = page_lastmod_text(lastmod)
     if args.check:
         # Both calendars: a build dated in Taiwan or in the committer's zone is not in the future.
@@ -2500,10 +1605,16 @@ def main() -> int:
     print(
         f"PAGES {'CHECKED' if args.check else 'BUILT'}: "
         f"{len(payload['surfaces'])} surfaces + {len(payload['error_pages'])} error page(s) "
-        "+ 5 discovery assets + page lastmod record + method source register"
+        "+ 6 discovery assets + page lastmod record + method source register"
         " + time-zone name list + shipped scripts"
     )
     return 0
+
+
+# Imported last: they read this module's paths and helpers at call time (so a
+# test that repoints PAGES or SHELL repoints them too), and their own
+# module-level names are built from this module's constants.
+from scripts.frontend import discovery, structured_data  # noqa: E402
 
 
 if __name__ == "__main__":

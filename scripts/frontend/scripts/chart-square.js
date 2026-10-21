@@ -1,13 +1,9 @@
 (function attachChartSquare(root, factory) {
   const commonJs = typeof module === "object" && module.exports;
-  const api = factory(
-    commonJs ? require("./chart-glyphs.js") : root.ArmillaryChartGlyphs,
-    commonJs ? require("./labels.js") : root.ArmillaryLabels,
-    commonJs ? require("./chart-wheel-model.js") : root.ChartWheelModel,
-  );
+  const api = factory(commonJs ? require("./chart-wheel-model.js") : root.ChartWheelModel);
   if (commonJs) module.exports = api;
   if (root) root.ChartSquare = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function buildChartSquare(Glyphs, Labels, WheelModel) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function buildChartSquare(WheelModel) {
   "use strict";
 
   // 方盤：中世紀到文藝復興時期的方形星盤。純函式，不碰 DOM；輸出與圓盤（chart-wheel-model.js）同一種
@@ -55,7 +51,7 @@
   // 下載檔名：與圓盤分開，兩種圖下載到同一個資料夾不會互相覆蓋。
   const FILES = Object.freeze({ svg: "classical-astrology-square-chart.svg", png: "classical-astrology-square-chart.png" });
 
-  // ── 幾何（viewBox 寬 600；方框 10–590；頁尾在方框下方，由圓盤模型的 footerLayout 排，高度隨行數）
+  // 幾何（viewBox 寬 600；方框 10–590；頁尾在方框下方，由圓盤模型的 footerLayout 排，高度隨行數）
   const G = Object.freeze({ width: 600, x0: 10, y0: 10, side: 580, inset: 3 });
   // 字級：與圓盤一樣依圖在畫面上的寬度選（WheelModel.presetForWidth）；下載檔一律 standard。
   const PRESETS = Object.freeze({
@@ -63,9 +59,12 @@
     standard: Object.freeze({ text: 1 }),
     wide: Object.freeze({ text: 0.9 }),
   });
+  // 與圓盤同一套標籤語言：符號依墨框光學正規化、度星座分是一行拉丁襯線數字，全圖兩種字級——
+  // 符號一級（glyph），其餘的字（度分、星座符號、宮號、中央的宮位制與四軸）一級（text）；
+  // ℞ 與交點的下標是掛在符號上的記號，不算一級字。
   const SIZE = Object.freeze({
-    glyph: 16, text: 13, sign: 13, mark: 9, suffix: 9, number: 10, row: 15,
-    angleName: 12, centre: 12, centreRow: 22,
+    glyph: 24, text: 14, sign: 14, mark: 10, suffix: 10, number: 14, row: 18,
+    angleName: 14, centre: 14, centreRow: 24,
   });
   // 格子太擠時，整張圖的標籤一起等比縮小（與圓盤相同的作法），直到每一格都放得下。
   const LABEL_SCALES = Object.freeze([1, 0.92, 0.85, 0.78, 0.72, 0.66, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35]);
@@ -108,7 +107,7 @@
     return CELLS[house - 1].at.map(corner);
   }
 
-  // ── 凸多邊形的小工具（格子都是三角形）
+  // 凸多邊形的小工具（格子都是三角形）
   /** 往內縮 d：每條邊沿內側法線平移，相鄰兩條的交點是新頂點。 */
   function insetPolygon(points, d) {
     const n = points.length;
@@ -164,15 +163,15 @@
     return high > low ? [low, high] : null;
   }
 
-  // ── 標籤：一列，由左到右是符號（℞ 在右上、交點與 Lilith 的下標在右下）、度、星座、分。
+  // 標籤：一列，由左到右是符號（℞ 在右上、交點與 Lilith 的下標在右下）、度、星座、分。
   // 每一段記下相對於標籤左緣的中心 x 與相對於列中線的 y 位移。
   function glyphPart(part, glyph, x, size, fill, dy = 0) {
     const box = R.glyphBox(glyph, size);
     return { piece: { kind: "glyph", part, glyph, cx: x + box.w / 2, dy, size, fill }, w: box.w, h: box.h };
   }
-  function monoPart(part, text, x, size, fill) {
-    const { w } = R.monoBox(text, size);
-    return { piece: { kind: "text", part, text, cx: x + w / 2, dy: 0, size, font: "mono", fill, anchor: "middle" }, w };
+  function numPart(part, text, x, size, fill) {
+    const { w } = R.numBox(text, size);
+    return { piece: { kind: "text", part, text, cx: x + w / 2, dy: 0, size, font: "serif", fill, anchor: "middle" }, w };
   }
 
   function bodyLabel(item, fs) {
@@ -194,14 +193,14 @@
         font: "sans", fill: "dim", anchor: "start" });
       x += 0.8 * fs + w;
     }
-    x += 3 * fs;
-    const degree = monoPart("sq-text", item.deg, x, SIZE.text * fs, "fg");
+    x += 2.5 * fs;
+    const degree = numPart("sq-text", item.deg, x, SIZE.text * fs, "fg");
     pieces.push(degree.piece);
     x += degree.w + 1.5 * fs;
     const sign = glyphPart("sq-sign", SIGN_KEYS[item.sign], x, SIZE.sign * fs, "dim");
     pieces.push(sign.piece);
     x += sign.w + 1.5 * fs;
-    const minute = monoPart("sq-text", item.min, x, SIZE.text * fs, "fg");
+    const minute = numPart("sq-text", item.min, x, SIZE.text * fs, "fg");
     pieces.push(minute.piece);
     x += minute.w;
     return { w: x, h, pieces };
@@ -212,7 +211,7 @@
     const h = SIZE.row * fs;
     const pieces = [];
     let x = 0;
-    const number = monoPart("sq-house-number", String(cusp.house), x, SIZE.number * fs, "dim");
+    const number = numPart("sq-house-number", String(cusp.house), x, SIZE.number * fs, "dim");
     pieces.push(number.piece);
     x += number.w + 3 * fs;
     const sign = glyphPart("sq-cusp-sign", SIGN_KEYS[cusp.sign], x, SIZE.sign * fs, "dim");
@@ -220,18 +219,17 @@
     x += sign.w;
     if (!wholeSign) {
       x += 1.5 * fs;
-      const degree = monoPart("sq-cusp-text", cusp.deg, x, SIZE.text * fs, "dim");
+      const degree = numPart("sq-cusp-text", cusp.deg, x, SIZE.text * fs, "dim");
       pieces.push(degree.piece);
       x += degree.w;
-      const minute = monoPart("sq-cusp-text", cusp.min, x, SIZE.text * fs, "dim");
+      const minute = numPart("sq-cusp-text", cusp.min, x, SIZE.text * fs, "dim");
       pieces.push(minute.piece);
       x += minute.w;
     }
     return { w: x, h, pieces };
   }
 
-  // ── 每一格的排版
-  //
+  // 每一格的排版
   // 由上往下一列一列排：第一行只放宮號與宮頭（左邊三格靠左、右邊三格靠右，上下六格置中），之後每列
   // 由左往右放天體、放得下就放，列內置中。這一格排不下就整格換小一號的字重排（只縮這一格，其他格的
   // 字不跟著變小）。全部決定性：同一份回應永遠同一張圖。
@@ -294,21 +292,7 @@
     return last;
   }
 
-  // ── 讀回應
-  /** 12 個宮頭（含星座與度分字串）、宮位制代碼與名稱；不齊就回 null（方盤不畫）。 */
-  function readCusps(response) {
-    const houses = isRecord(response.derived_methods) ? response.derived_methods.house_division : null;
-    if (!isRecord(houses) || houses.available !== true || !Array.isArray(houses.cusp_sign_positions)) return null;
-    if (houses.cusp_sign_positions.length !== 12) return null;
-    const cusps = houses.cusp_sign_positions.map(R.readPosition);
-    if (cusps.some((cusp) => !cusp)) return null;
-    return {
-      cusps: cusps.map((cusp, index) => ({ ...cusp, house: index + 1 })),
-      code: typeof houses.system_code === "string" ? houses.system_code : null,
-      text: Labels.houseSystemText(houses.system_code, houses.system_name),
-    };
-  }
-
+  // 讀回應
   /** 每一點在哪一宮：只讀後端的落宮（行星與整宮制下的月交點、Lilith）；沒有就回 null（不放進格子）。 */
   function houseOf(point, placements) {
     if (!placements.has(point.key)) return null;
@@ -316,7 +300,7 @@
     return house >= 1 && house <= 12 ? house : null;
   }
 
-  // ── 場景圖元：圓盤模型的那一套（paint 是角色名，由各繪製端決定顏色）
+  // 場景圖元：圓盤模型的那一套（paint 是角色名，由各繪製端決定顏色）
   /** 一個標籤（左上角在 box）的圖元。 */
   function labelPrims(label, box) {
     const midY = (box.y0 + box.y1) / 2;
@@ -352,7 +336,7 @@
     rows.forEach((row, index) => {
       const y = centre.y + (index - (rows.length - 1) / 2) * rowHeight;
       if (row.kind === "title") {
-        prims.push(textPrim("sq-centre-title", centre.x, y, row.line, titleSize, "sans", "dim"));
+        prims.push(textPrim("sq-centre-title", centre.x, y, row.line, titleSize, "book", "dim"));
         return;
       }
       // 兩欄：名稱靠右對齊到中線左側，星座與度分從中線右側開始；字寬只是估計，這樣排不會擠到。
@@ -361,16 +345,16 @@
       const nameWidth = R.textWidth(angle.name, nameSize);
       const sign = R.glyphBox(SIGN_KEYS[angle.sign], SIZE.sign * fs);
       const textSize = SIZE.text * fs;
-      const degreeWidth = R.monoBox(angle.deg, textSize).w;
-      const minuteWidth = R.monoBox(angle.min, textSize).w;
+      const degreeWidth = R.numBox(angle.deg, textSize).w;
+      const minuteWidth = R.numBox(angle.min, textSize).w;
       const h = SIZE.row * fs;
-      const items = [textPrim("sq-angle-name", centre.x - 4 * fs, y, angle.name, nameSize, "sans", "accent", { anchor: "end" })];
+      const items = [textPrim("sq-angle-name", centre.x - 4 * fs, y, angle.name, nameSize, "book", "accent", { anchor: "end" })];
       let x = centre.x + 4 * fs;
       items.push(glyphPrim("sq-angle-sign", SIGN_KEYS[angle.sign], x + sign.w / 2, y, SIZE.sign * fs, "accent"));
       x += sign.w + 1.5 * fs;
-      items.push(textPrim("sq-angle-text", x + degreeWidth / 2, y, angle.deg, textSize, "mono", "accent"));
+      items.push(textPrim("sq-angle-text", x + degreeWidth / 2, y, angle.deg, textSize, "serif", "accent"));
       x += degreeWidth;
-      items.push(textPrim("sq-angle-text", x + minuteWidth / 2, y, angle.min, textSize, "mono", "accent"));
+      items.push(textPrim("sq-angle-text", x + minuteWidth / 2, y, angle.min, textSize, "serif", "accent"));
       x += minuteWidth;
       angleRows.push({ angle, items, box: { x0: centre.x - 4 * fs - nameWidth, y0: y - h / 2, x1: x, y1: y + h / 2 } });
     });
@@ -384,7 +368,7 @@
    */
   function build(response, options = {}) {
     if (!isRecord(response)) throw new Error("方盤需要一份回應。");
-    const division = readCusps(response);
+    const division = R.readCusps(response);
     if (!division) throw new Error("方盤需要 12 個宮頭。");
     const presetName = Object.hasOwn(PRESETS, options.preset) ? options.preset : "standard";
     const preset = PRESETS[presetName];
@@ -534,16 +518,20 @@
 
   /**
    * 給星盤圖區塊（ChartWheel.createSection 的 alternate）的方盤：模型、方盤的引言與切換鈕。
-   * 這份回應畫不出方盤（沒有宮位、或模型失敗）時回 null：區塊上就不出現切換鈕。
+   * 這份回應畫不出方盤（沒有 12 個宮頭）時回 null：區塊上就不出現切換鈕。模型在第一次切到方盤
+   * （chart-wheel.js 讀 model）時才算，之後沿用同一份。
    */
   function sectionOption(response) {
-    let model;
-    try {
-      model = buildModel(response);
-    } catch (_error) {
-      return null;
-    }
-    return Object.freeze({ model, lead: TEXT.lead, control: styleControl });
+    if (!isRecord(response) || !R.readCusps(response)) return null;
+    let model = null;
+    return Object.freeze({
+      get model() {
+        if (!model) model = buildModel(response);
+        return model;
+      },
+      lead: TEXT.lead,
+      control: styleControl,
+    });
   }
 
   return Object.freeze({

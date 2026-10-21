@@ -248,10 +248,7 @@ def _hour_table(p: dict, bound: _fx.Bound) -> str:
         houses = "".join(f'<td class="n">{bound.num(str(step["houses"][key]))}</td>' for key in ("sun", "moon"))
         rows.append(f'<tr><th scope="row">{bound.num(_hm(step["clock"]))}{mark}</th>'
                     f'<td>{sign}座 {bound.num(dm)}</td>{houses}</tr>')
-    return ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">時刻</th><th scope="col">上升點</th>'
-            '<th scope="col">太陽落宮</th><th scope="col">月亮落宮</th></tr></thead>'
-            f'<tbody>{"".join(rows)}</tbody></table></div></details>')
+    return _fx.data_table(("時刻", "上升點", "太陽落宮", "月亮落宮"), rows)
 
 
 def _hour_figure(d: dict, p: dict) -> str:
@@ -267,20 +264,24 @@ def _hour_figure(d: dict, p: dict) -> str:
         "之間跨過處女座與天秤座的界線（虛線）。圓圈是本站實際取樣的五個時刻；直線標出的時刻可以用拖拉條每五分鐘移動一次，"
         "說明列寫出本站在那一刻算出的上升點與落宮。點狀底是天秤座。"
     )
-    markup = _fx.figure(
-        fid="fig-asc-hour", hero=True,
+    return _fx.figure(
+        fid="fig-asc-hour",
+        hero=True,
         title="一小時裡的上升點：從處女座走進天秤座",
         caption=caption,
-        wide=_hour("fx-wide", "fig-asc-hour", d, p, bound),
-        narrow=_hour("fx-narrow", "fig-asc-hour", d, p, bound),
-        notes=notes, idle="拖拉選一個時刻，這裡會寫出那一刻的上升點與落宮。",
-        steps=len(p["steps"]), default_step=DEFAULT_STEP, scrub_label="時刻",
+        art=_fx.FigureArt.drawn(
+            _hour, "fig-asc-hour", d, p, bound,
+            notes=notes,
+            idle="拖拉選一個時刻，這裡會寫出那一刻的上升點與落宮。",
+        ),
+        controls=_fx.FigureControls(
+            steps=len(p["steps"]),
+            default_step=DEFAULT_STEP,
+            scrub_label="時刻",
+        ),
         table=_hour_table(p, bound),
+        bound=bound,
     )
-    found = _fx.problems(markup, bound)
-    if found:
-        raise RuntimeError("figure check: " + "; ".join(found))
-    return markup
 
 
 # --- figure 2: five minutes on one scale ---------------------------------------
@@ -374,18 +375,13 @@ def _five_figure(d: dict) -> str:
         f"畫在同一把尺上（單位是角分，{bound.scale('60 角分是 1 度')}）。太陽那一段短到幾乎看不見，下方把前 "
         f"{bound.scale(f'{LENS:g}')} 角分放大，才看得出太陽與月亮。由本站以 Swiss Ephemeris 自算。"
     )
-    markup = _fx.figure(
+    return _fx.figure(
         fid="fig-five-minutes",
         title="五分鐘裡太陽、月亮與上升點各走了多遠",
         caption=caption,
-        wide=_five("fx-wide", "fig-five-minutes", rows, bound),
-        narrow=_five("fx-narrow", "fig-five-minutes", rows, bound),
-        notes=[], idle="",
+        art=_fx.FigureArt.drawn(_five, "fig-five-minutes", rows, bound),
+        bound=bound,
     )
-    found = _fx.problems(markup, bound)
-    if found:
-        raise RuntimeError("figure check: " + "; ".join(found))
-    return markup
 
 
 # --- figure 3: rising times, Taipei or London -----------------------------------
@@ -453,10 +449,8 @@ def _rise_table(minutes: dict, bound: _fx.Bound) -> str:
         key = _pair_key(next(pair for pair in PAIRS if s in pair))
         cells = "".join(f'<td class="n">{bound.num(f"{minutes[v][s]:.0f}")}</td>' for v, _ in VARIANTS)
         rows.append(f'<tr data-fx-key="{key}"><th scope="row">{SIGNS[s]}</th>{cells}</tr>')
-    return ('<details class="fx-data"><summary>圖中的數字（表格，單位：分鐘）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">星座</th>'
-            f'<th scope="col">臺北（北緯 {bound.label("25.05")}°）</th><th scope="col">倫敦（北緯 {bound.label("51.5")}°）</th>'
-            f'</tr></thead><tbody>{"".join(rows)}</tbody></table></div></details>')
+    return _fx.data_table(("星座", f"臺北（北緯 {bound.label('25.05')}°）", f"倫敦（北緯 {bound.label('51.5')}°）"),
+                          rows, summary="圖中的數字（表格，單位：分鐘）")
 
 
 def _rise_figure(d: dict) -> str:
@@ -488,20 +482,22 @@ def _rise_figure(d: dict) -> str:
         f"{bound.num(f'{max(d['rising_minutes'][k] for k in range(3, 9)):.0f}')} 分鐘。十二段加起來是一個恆星日。"
         f"實心的兩段（處女、天秤）是{bound.label('圖 1')} 那一小時經過的星座。"
     )
-    markup = _fx.figure(
+    return _fx.figure(
         fid="fig-rising-times",
         title="每個星座升起所需的時間：臺北與倫敦",
         caption=caption,
-        wide=_rise("fx-wide", "fig-rising-times", minutes, bound),
-        narrow=_rise("fx-narrow", "fig-rising-times", minutes, bound),
-        notes=notes, idle="用 Tab 鍵移到一組星座上，或用滑鼠指著它，這裡會寫出它升起所需的時間。",
-        variants=VARIANTS, switch_label="切換緯度",
+        art=_fx.FigureArt.drawn(
+            _rise, "fig-rising-times", minutes, bound,
+            notes=notes,
+            idle="用 Tab 鍵移到一組星座上，或用滑鼠指著它，這裡會寫出它升起所需的時間。",
+        ),
+        controls=_fx.FigureControls(
+            variants=VARIANTS,
+            switch_label="切換緯度",
+        ),
         table=_rise_table(minutes, bound),
+        bound=bound,
     )
-    found = _fx.problems(markup, bound)
-    if found:
-        raise RuntimeError("figure check: " + "; ".join(found))
-    return markup
 
 
 def build() -> tuple[dict[str, str], list[str]]:

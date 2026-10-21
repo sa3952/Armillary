@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Container-local health probe that restarts its own container when it stays down.
 
-Every run asks ``/api/health`` (process liveness).  Until a deep check has
+Every run asks ``/api/health`` (process liveness) and ``/api/health/ready``
+(the bundled ephemeris files present with their pinned digests; 503 otherwise).  Until a deep check has
 passed once in this container, every ``DEEP_EVERY``-th run after that, and every
 run that follows a failure, it also posts a synthetic chart and a place search
 and requires HTTP 200 and the chart's full-ephemeris flag; no value is compared.
@@ -50,6 +51,7 @@ CHART_TIMEOUT_SECONDS = 25.0
 HEALTHY, FAILED, SATURATED = "healthy", "failed", "saturated"
 MAX_RESPONSE_BYTES = 4 * 1024 * 1024
 LIVENESS = {"status": "ok", "ready": True, "readiness_scope": "process_liveness_only"}
+READINESS = {"status": "ready", "readiness_scope": "ephemeris_manifest"}
 SYNTHETIC_CHART = {
     "birth_time_precision": "exact",
     "datetime": {"year": 2000, "month": 1, "day": 1, "hour": 12, "minute": 0, "second": 0},
@@ -93,9 +95,11 @@ def _request(path: str, body: object | None = None, timeout: float = 2.0) -> obj
 
 
 def check(deep: bool) -> str:
-    """Liveness, and with ``deep`` the synthetic chart and place search (status and flag only)."""
+    """Liveness and readiness, and with ``deep`` the synthetic chart and place search (status and flag only)."""
     try:
         if _request("/api/health") != LIVENESS:
+            return FAILED
+        if _request("/api/health/ready") != READINESS:
             return FAILED
         if deep:
             chart = _request("/api/chart", SYNTHETIC_CHART, timeout=CHART_TIMEOUT_SECONDS)

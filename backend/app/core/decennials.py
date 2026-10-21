@@ -28,7 +28,7 @@ from fractions import Fraction
 from .dignity_tables import DOROTHEAN, ELEMENTS, SIGNS, TRIPLICITY_IDS
 from .firdaria import period_instant
 from .planetary_years import MINOR_YEARS, SEVEN_PLANETS
-from .source_reading import SOURCE_READING_LEVELS
+from .source_reading import DOROTHEUS_BOOK_I_ONLINE, ORIGINAL_LANGUAGE_READ, TRANSLATION_READ, cited
 # The scopes, their window and the level-2 reason are releasing's, shared as they are;
 # SCOPES is re-exported here as this technique's own scope list.
 from .zodiacal_releasing import (
@@ -36,6 +36,7 @@ from .zodiacal_releasing import (
     LEVEL_2_OUTSIDE_YEAR,
     SCOPES,
     YEAR_MODELS,
+    PeriodBounds,
     ScopeWindow,
 )
 
@@ -66,9 +67,6 @@ if tuple(sorted(MINOR_YEARS)) != tuple(sorted(SEVEN_PLANETS)) or MONTHS_PER_LEVE
 
 def days_per_month() -> Fraction:
     return DAYS_PER_YEAR / 12
-
-
-# ── order and starting planet ──────────────────────────────────────────────
 
 
 def natal_order(longitudes: dict[str, float], start: str) -> tuple[str, ...]:
@@ -125,9 +123,6 @@ def start_planet(
     raise ValueError(f"unknown decennials start profile {profile!r}")
 
 
-# ── periods ────────────────────────────────────────────────────────────────
-
-
 def subdivide(parent_months: Fraction, order: tuple[str, ...]) -> list[tuple[str, Fraction]]:
     """Share a period among the seven in `order`, each in proportion to its
     minor years out of 129; level 2 of a 129-month period is the minor years
@@ -139,34 +134,19 @@ def subdivide(parent_months: Fraction, order: tuple[str, ...]) -> list[tuple[str
 def decennial_periods(
     *,
     order: tuple[str, ...],
-    scope: str,
-    birth_jd_ut: float,
-    window_start_jd_ut: float,
-    window_end_jd_ut: float | None,
-    lifetime_start_jd_ut: float | None = None,
-    lifetime_end_jd_ut: float | None = None,
+    bounds: PeriodBounds,
 ) -> list[dict]:
     """The level-1 periods (with their level-2 periods) the scope keeps.
 
-    `intersecting_year` keeps what meets [window start, window end);
-    `from_birth_through_year` every level-1 period starting before the window
-    end, with level 2 only inside the ones meeting the window;
-    `lifetime_window` every level-1 period meeting [lifetime start, lifetime
-    end), with the whole level 2 of the ones meeting the window, as zodiacal
-    releasing does.  A window without an end keeps, from birth, every period
-    starting by its start; otherwise only what holds its start.
+    Scope rules are zodiacal_releasing.ScopeWindow's, shared with releasing.
     """
 
     month_days = days_per_month()
 
     def jd(months: Fraction) -> float:
-        return birth_jd_ut + float(months * month_days)
+        return bounds.birth_jd_ut + float(months * month_days)
 
-    window = ScopeWindow.of(
-        "decennials", scope, jd,
-        window_start_jd_ut=window_start_jd_ut, window_end_jd_ut=window_end_jd_ut,
-        lifetime_start_jd_ut=lifetime_start_jd_ut, lifetime_end_jd_ut=lifetime_end_jd_ut,
-    )
+    window = ScopeWindow.of("decennials", bounds, jd)
     if len(order) != 7 or set(order) != set(SEVEN_PLANETS):
         raise ValueError("the order lists the seven planets once each")
 
@@ -227,8 +207,6 @@ def decennial_periods(
     return periods
 
 
-# ── the sect light's triplicity lords (Dorotheus) ─────────────────────────
-
 TRIPLICITY_TABLE = TRIPLICITY_IDS[0]
 TRIPLICITY_PERIODS_REASON = "dorotheus_gives_no_handover_ages"
 
@@ -244,14 +222,9 @@ def sect_light_triplicity_lords(*, is_day: bool, sun_sign: str, moon_sign: str) 
     return {"sect_light": light, "sect_light_sign": sign, "element": element, "lords": lords}
 
 
-# ── the printed sub-division table (Valens VI.6a) ─────────────────────────
-
-# The five cells of VI.6a that disagree with the proportional rule by more
-# than a fifth of an hour; the other 44 agree within 0.2 hours.  The values
-# are Riley's as re-typeset (months, days, hours), with the rule's value in
-# hours beside them.  Jupiter→Sun and Sun→Jupiter should be equal by the rule
-# and are printed 12 hours apart, so these are copying slips at some stage
-# (re-typeset, translation or manuscripts; Pingree's Greek not checked).
+# The five VI.6a cells off the proportional rule by more than 0.2 hours, as
+# Riley re-typeset (months, days, hours).  Jupiter→Sun and Sun→Jupiter should
+# be equal yet are printed 12 hours apart, so these are copying slips.
 VI_6A_KNOWN_VARIANTS: tuple[tuple[str, str, tuple[int, int, float]], ...] = (
     ("saturn", "saturn", (6, 29, 6.25)),
     ("jupiter", "sun", (1, 23, 20.5)),
@@ -334,7 +307,7 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         "known_variants": {
             "table": (
                 "Valens VI.6a (Riley's label; Kroll VI.6, in Pingree part of VI.6; Kroll "
-                "p.255, Pingree p.244), the third-stage sub-division"
+                "pp.254-255, Pingree pp.243-244), the third-stage sub-division"
             ),
             "rule": (
                 "a cell is the level-2 period's months times the receiving planet's minor "
@@ -355,53 +328,41 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "order for finding the lord. The product follows the example and VI.7."
         ),
         "sources": [
-            {
-                "citation": (
-                    "Vettius Valens, Anthologies VI.6 (Pingree's chapter number; Kroll VI.5; "
-                    "Kroll pp.252-254, Pingree pp.241-243)"
-                ),
-                "says": (
-                    "the sect light as starting point if well situated, else the first star "
-                    "after the ascendant; 10 years 9 months each, then the next star in the "
-                    "zodiacal circle of the nativity; the night example (Greek Horoscopes "
-                    "L132): Moon, Venus, Jupiter, Saturn 43 years, then Mars, with Mars 15, Sun "
-                    "19, Mercury 20, Moon 25, Venus 8, Jupiter 12, Saturn 30 months (44 years 3 "
-                    "months, 51 years 3 months, 53 years 9 months); 52 years and 124 days is 53 "
-                    "distribution years and 37 days, the 667th day of Saturn's sub-period; days "
-                    "and cycles counted in 360-day years"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Riley's English translation via the public re-typeset janegca/latex-valens",
-            },
-            {
-                "citation": (
-                    "Valens VI.6a (Riley's label; Kroll VI.6, in Pingree part of VI.6; "
-                    "Kroll p.255, Pingree p.244)"
-                ),
-                "says": "the third-stage sub-division table, 49 cells, listed in the Chaldean order",
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Riley's English translation via the public re-typeset; the Greek not checked",
-            },
-            {
-                "citation": "Valens VI.7 (VI.7 in both Kroll and Pingree; Kroll pp.256-257, Pingree pp.245-246)",
-                "says": (
-                    "the lord of the day by 129-day cycles; ordering by the stars' actual signs "
-                    "and degrees at the nativity, not by the Chaldean order from Saturn"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Riley's English translation via the public re-typeset",
-            },
-            {
-                "citation": "Firmicus Maternus, Mathesis II.26-27 (Kroll-Skutsch Teubner)",
-                "says": (
-                    "by day from the Sun, by night from the Moon, no condition; 10 years 9 "
-                    "months each, passed on in the order of the signs; each star shares its "
-                    "period among the seven, itself first, in months equal to the minor years; "
-                    "VI.33-39 describe each star's decennial"
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "the Latin text of the Kroll-Skutsch Teubner edition, LacusCurtius",
-            },
+            cited(("Vettius Valens, Anthologies VI.6 (Pingree's chapter number; Kroll VI.5; "
+                   "Kroll pp.252-254, Pingree pp.241-243)"),
+                  ("the sect light as starting point if well situated, else the first star "
+                   "after the ascendant; 10 years 9 months each, then the next star in the "
+                   "zodiacal circle of the nativity; the night example (Greek Horoscopes "
+                   "L132): Moon, Venus, Jupiter, Saturn 43 years, then Mars, with Mars 15, Sun "
+                   "19, Mercury 20, Moon 25, Venus 8, Jupiter 12, Saturn 30 months (44 years 3 "
+                   "months, 51 years 3 months, 53 years 9 months); 52 years and 124 days is 53 "
+                   "distribution years and 37 days, the 667th day of Saturn's sub-period; days "
+                   "and cycles counted in 360-day years"),
+                  TRANSLATION_READ,
+                  "Riley's English translation via the public re-typeset janegca/latex-valens"),
+            cited(("Valens VI.6a (Riley's label; Kroll VI.6, in Pingree part of VI.6; "
+                   "Kroll pp.254-255, Pingree pp.243-244)"),
+                  "the third-stage sub-division table, 49 cells, listed in the Chaldean order",
+                  TRANSLATION_READ,
+                  ("Riley's English translation via the public re-typeset; the Greek not "
+                   "checked; the Kroll pages from the chapter headings in the 1908 scan "
+                   "(archive.org bub_gb_OQ_gAAAAMAAJ), the Pingree pages by Riley's /P/ "
+                   "markers")),
+            cited(("Valens VI.7 (VI.7 in both Kroll and Pingree; Kroll pp.255-257, "
+                   "Pingree pp.244-246)"),
+                  ("the lord of the day by 129-day cycles; ordering by the stars' actual signs "
+                   "and degrees at the nativity, not by the Chaldean order from Saturn"),
+                  TRANSLATION_READ,
+                  ("Riley's English translation via the public re-typeset; the Kroll "
+                   "pages from the chapter headings in the 1908 scan (archive.org "
+                   "bub_gb_OQ_gAAAAMAAJ), the Pingree pages by Riley's /P/ markers")),
+            cited("Firmicus Maternus, Mathesis II.26-27 (Kroll-Skutsch Teubner)",
+                  ("by day from the Sun, by night from the Moon, no condition; 10 years 9 "
+                   "months each, passed on in the order of the signs; each star shares its "
+                   "period among the seven, itself first, in months equal to the minor years; "
+                   "VI.33-39 describe each star's decennial"),
+                  ORIGINAL_LANGUAGE_READ,
+                  "the Latin text of the Kroll-Skutsch Teubner edition, LacusCurtius"),
         ],
         "not_from_the_sources": [
             "the names 'level 1' and 'level 2' and the profile names: modern labels",
@@ -427,21 +388,14 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "al-Qabisi), not Dorotheus."
         ),
         "sources": [
-            {
-                "citation": "Dorotheus, Carmen Astrologicum I.1 (Pingree 1976 pp.161-162)",
-                "says": "the triplicity lords and their day and night order",
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Pingree's English translation (1976); the Arabic not checked",
-            },
-            {
-                "citation": "Dorotheus, Carmen Astrologicum I.22 (Pingree 1976 p.183)",
-                "says": (
-                    "the sect light's triplicity lords, the first for the beginning of life, "
-                    "the second for its end"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Pingree's English translation (1976); the Arabic not checked",
-            },
+            cited("Dorotheus, Carmen Astrologicum I.1 (Pingree 1976 pp.161-162)",
+                  "the triplicity lords and their day and night order", TRANSLATION_READ,
+                  f"{DOROTHEUS_BOOK_I_ONLINE}: I.1 on pp.161-162; the Arabic not checked"),
+            cited("Dorotheus, Carmen Astrologicum I.22 (Pingree 1976 p.183)",
+                  ("the sect light's triplicity lords, the first for the beginning of life, "
+                   "the second for its end"),
+                  TRANSLATION_READ,
+                  f"{DOROTHEUS_BOOK_I_ONLINE}: I.22 on p.183; the Arabic not checked"),
         ],
     },
 }

@@ -116,10 +116,9 @@ def _require_closed_readings(value: Any, ref: str) -> None:
     """Every `reading` in a published entry is one of the closed levels."""
 
     from .core.source_reading import (
-        SOURCE_READING_LEVELS,
-        TRANSLATION_MARKERS_CITATION,
-        TRANSLATION_MARKERS_READ_AT,
-    )
+    ORIGINAL_LANGUAGE_READ, SOURCE_READING_LEVELS, TRANSLATION_MARKERS_CITATION,
+    TRANSLATION_MARKERS_READ_AT,
+)
 
     if isinstance(value, dict):
         for key, item in value.items():
@@ -130,7 +129,7 @@ def _require_closed_readings(value: Any, ref: str) -> None:
         says_translation = TRANSLATION_MARKERS_READ_AT.search(
             str(value.get("read_at") or "")
         ) or TRANSLATION_MARKERS_CITATION.search(str(value.get("citation") or ""))
-        if value.get("reading") == SOURCE_READING_LEVELS[0] and says_translation:
+        if value.get("reading") == ORIGINAL_LANGUAGE_READ and says_translation:
             raise ValueError(
                 f"{ref}: reading 'original_language_read' on a cited translation"
             )
@@ -139,9 +138,8 @@ def _require_closed_readings(value: Any, ref: str) -> None:
             _require_closed_readings(item, ref)
 
 
-# Where the annual route stands (closed set).  It was a candidate behind its
-# deployment flag; it is now released to the public, still served only where
-# the deployment sets the flag.  Its response says which.
+# Where the annual route stands (closed set): published, though still served
+# only where the deployment sets its flag.  Its response says which.
 ANNUAL_ROUTE_STATUSES: Final = ("candidate_behind_flag", "published")
 ANNUAL_ROUTE_STATUS: Final = ANNUAL_ROUTE_STATUSES[1]
 

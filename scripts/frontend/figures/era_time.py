@@ -22,7 +22,7 @@ import re
 from typing import Any
 
 from . import _fx, taiwan_time
-from ._common import ROOT, backend_on_path
+from ._common import ROOT, product_client
 
 
 FRAGMENT = "blog-taiwan-era-years-birth-time"
@@ -74,7 +74,7 @@ def read_eras() -> dict[str, dict[str, Any]]:
 
 
 def calculator_first_year() -> int:
-    match = re.search(r'<input type="date" id="date"[^>]* min="(\d{4})-01-01"', CALCULATE.read_text(encoding="utf-8"))
+    match = re.search(r'id="date-parts"[^>]* data-min="(\d{4})-01-01"', CALCULATE.read_text(encoding="utf-8"))
     if match is None:
         raise RuntimeError("the calculate page's birth-date field names no first year")
     return int(match[1])
@@ -111,22 +111,16 @@ def clock_periods(pin: dict) -> list[dict]:
 
 def convert(examples: tuple, eras: dict) -> list[dict]:
     """Each example sent to the time-conversion service in process."""
-    with backend_on_path():
-        from fastapi.testclient import TestClient
-        from app.main import app
-
-        client = TestClient(app)
+    with product_client() as post:
         out = []
         for key, n, month, day, hour, minute in examples:
             year = n + eras[key]["offset"]
-            response = client.post("/api/time/convert", json={
+            body = post("/api/time/convert", {
                 "datetime": {"year": year, "month": month, "day": day, "hour": hour, "minute": minute, "second": 0},
                 "timezone": {"mode": "iana", "iana_name": ZONE},
             })
-            if response.status_code != 200:
-                raise RuntimeError(f"time conversion answered {response.status_code}: {response.text[:300]}")
             out.append({"era": key, "n": n, "year": year, "month": month, "day": day, "hour": hour,
-                        "minute": minute, "body": response.json()})
+                        "minute": minute, "body": body})
         return out
 
 
@@ -387,9 +381,7 @@ def _band_table(bands: list[dict]) -> str:
     rows = "".join(
         f'<tr data-fx-key="{x["key"]}"><th scope="row">{x["name"]}</th><td>{x["label"].replace("　", " ")}</td>'
         f'<td>{x["sentence"]}</td></tr>' for x in bands if x["key"])
-    return ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">紀年或時制</th><th scope="col">圖上寫的</th>'
-            f'<th scope="col">說明</th></tr></thead><tbody>{rows}</tbody></table></div></details>')
+    return _fx.data_table(("紀年或時制", "圖上寫的", "說明"), rows)
 
 
 # --- figure 2: one year at a time ----------------------------------------------
@@ -476,10 +468,7 @@ def _year_table(years: list[int], eras: dict, periods: list[dict], names: dict, 
             (f"{md(first, b)}起 " if i else "") + utc_text(p["offset"], b) for i, (first, _, p) in enumerate(spans))
         rows.append(f'<tr><th scope="row" class="n">{b(year)}</th><td>{roc_year(year, eras, b)}</td><td>{jp}</td>'
                     f'<td>{clock}</td></tr>')
-    return ('<details class="fx-data"><summary>逐年對照（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">西元</th><th scope="col">民國</th>'
-            '<th scope="col">日本年號</th><th scope="col">臺灣的鐘面</th></tr></thead>'
-            f'<tbody>{"".join(rows)}</tbody></table></div></details>')
+    return _fx.data_table(("西元", "民國", "日本年號", "臺灣的鐘面"), rows, summary="逐年對照（表格）")
 
 
 # --- table 1: what the service answers -----------------------------------------
@@ -552,7 +541,8 @@ def build() -> tuple[dict[str, str], list[str]]:
     lmt = periods[0]["offset"]
     jst = next(x for x in bands if x["key"] == "jst")
     timeline = _fx.figure(
-        fid="fig-era-clock", hero=True,
+        fid="fig-era-clock",
+        hero=True,
         title=f"日本年號、民國紀年與臺灣的鐘面，{AXIS[0]} 到 {AXIS[1] - 1} 年",
         caption=(f"<b>{b1.label('圖 1')}</b>從 {n1(AXIS[0])} 到 {n1(AXIS[1] - 1)} 年，同一段時間的三種讀法：日本年號、民國紀年（點：民國前），"
                  "以及臺灣的鐘面比世界時快多少。鐘面那一條，空白是 "
@@ -561,11 +551,13 @@ def build() -> tuple[dict[str, str], list[str]]:
                  f"年號依本站換算助手的年號表，鐘面依 IANA 時區資料庫 {n1(pin['tzdata'])} 版"
                  f"<a class=\"ar-cite\" href=\"#ref-1\">{b1.label('[1]')}</a><a class=\"ar-cite\" href=\"#ref-4\">"
                  f"{b1.label('[4]')}</a>。"),
-        wide=_timeline("fx-wide", "fig-era-clock", bands, lmt, b1),
-        narrow=_timeline("fx-narrow", "fig-era-clock", bands, lmt, b1),
-        notes=[_fx.Note(x["key"], None, x["sentence"]) for x in bands if x["key"]],
-        idle="用 Tab 鍵移到一段年號或時制上，或用滑鼠指著它，這裡會寫出它的換算與起訖。",
+        art=_fx.FigureArt.drawn(
+            _timeline, "fig-era-clock", bands, lmt, b1,
+            notes=[_fx.Note(x["key"], None, x["sentence"]) for x in bands if x["key"]],
+            idle="用 Tab 鍵移到一段年號或時制上，或用滑鼠指著它，這裡會寫出它的換算與起訖。",
+        ),
         table=_band_table(bands),
+        bound=b1,
     )
 
     b2 = _fx.Bound()
@@ -578,16 +570,19 @@ def build() -> tuple[dict[str, str], list[str]]:
                  f"{nb2(first_year)} 年起算）。上方三欄是同一年的三種寫法；下方兩條把這一年從 1 月到 12 月攤開："
                  "年號那一條標出改元的日子，鐘面那一條標出 UTC 偏移，交叉線是日本中央標準時，單線是夏令時間。"
                  "朱紅直線是這一年裡改元或改制的日子。表格列出每一年。"),
-        wide=_year_layout("fx-wide", "fig-era-year", years, eras, periods, names, b2),
-        narrow=_year_layout("fx-narrow", "fig-era-year", years, eras, periods, names, b2),
-        notes=notes, idle="拖拉選一個年份，這裡會寫出那一年的三種寫法與鐘面。",
-        steps=len(years), default_step=years.index(DEFAULT_YEAR), scrub_label="西元年",
+        art=_fx.FigureArt.drawn(
+            _year_layout, "fig-era-year", years, eras, periods, names, b2,
+            notes=notes,
+            idle="拖拉選一個年份，這裡會寫出那一年的三種寫法與鐘面。",
+        ),
+        controls=_fx.FigureControls(
+            steps=len(years),
+            default_step=years.index(DEFAULT_YEAR),
+            scrub_label="西元年",
+        ),
         table=_year_table(years, eras, periods, names, b2),
+        bound=b2,
     )
-    for markup, bound in ((timeline, b1), (converter, b2)):
-        found = _fx.problems(markup, bound)
-        if found:
-            raise RuntimeError("figure check: " + "; ".join(found))
 
     answers = convert(EXAMPLES, eras)
     rows, quoted = _example_rows(answers, eras, names)

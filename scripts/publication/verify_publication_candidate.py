@@ -21,6 +21,7 @@ import argparse
 import codecs
 import hashlib
 import io
+import ipaddress
 import json
 import re
 import subprocess
@@ -135,6 +136,11 @@ BINARY_SNIFF_BYTES = 8192
 # other bytes, is refused rather than skipped.  Updating the place catalog, an
 # ephemeris file or an image means approving its new digest here.
 BINARY_APPROVALS = "publication/public_binary_files.json"
+# An approved binary up to this size is still searched for the secret patterns:
+# only the large data files (the place catalog) cost the scan its time, and
+# approving an image's new digest in the same commit must not let a token
+# appended to it through.
+APPROVED_BINARY_PATTERN_SCAN_BYTES = 16 * 1024 * 1024
 # What a public .npmrc may set: the registry, the engine check and the release
 # cool-down, nothing that authenticates.
 NPMRC_SETTING = re.compile(
@@ -266,11 +272,6 @@ def matches_in_parts(parts: list[tuple[int, str]], pattern: re.Pattern[str]) -> 
         for line, part in parts
         for match in pattern.finditer(part)
     ]
-
-
-def ticket_ids(relative: str, data: bytes) -> list[str]:
-    """Ticket ids in the comments, prose, Python strings or JSON of one file."""
-    return [code for _line, code in matches_in_parts(id_parts(relative, data), TICKET_ID)]
 
 
 def scan_comment_codes(
@@ -477,6 +478,27 @@ def load_binary_approvals(root: Path) -> dict[str, str]:
     return dict(files)
 
 
+# Deployment configuration the export carries (compose files, NGINX templates,
+# deploy JSON and scripts): a host's public address there is operating detail,
+# not source.  Loopback, private and documentation ranges pass; package
+# versions (a.b.c.d) live in the lock files and the Dockerfile, not here.
+HOST_CONFIG_SUFFIXES = (".json", ".yaml", ".yml", ".conf", ".template", ".sh", ".py", ".env")
+_IPV4 = re.compile(rb"(?<![0-9.])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9.])")
+
+
+def _verify_no_host_address(relative: str, data: bytes) -> None:
+    if not (relative.startswith("deploy/") and relative.endswith(HOST_CONFIG_SUFFIXES)):
+        return
+    for match in _IPV4.finditer(data):
+        try:
+            address = ipaddress.IPv4Address(match.group().decode("ascii"))
+        except ValueError:
+            continue
+        if address.is_global:
+            raise CandidateFailure(f"public IPv4 address {address} in {relative}: a host's address "
+                                   "is operating detail, not source")
+
+
 def _verify_npmrc(relative: str, data: bytes) -> None:
     lines = [line.strip() for line in data.splitlines() if line.strip()]
     unreviewed = [line for line in lines if NPMRC_SETTING.fullmatch(line) is None]
@@ -487,21 +509,37 @@ def _verify_npmrc(relative: str, data: bytes) -> None:
         )
 
 
+# (approved SHA-256, marker-set digest) pairs whose bytes this process has
+# already searched for every marker and found clean.  An approved binary is
+# skipped only when both its digest and the marker set match an earlier full
+# scan; changed bytes or a changed marker set are scanned again in full.
+_MARKER_CLEAN_BINARIES: set[tuple[str, str]] = set()
+
+
+def _sha256_path(path: Path) -> str:
+    with path.open("rb") as handle:
+        return hashlib.file_digest(handle, "sha256").hexdigest()
+
+
 def scan_candidate_content(
     root: Path,
     *,
     forbidden_markers: set[str] = FORBIDDEN_TEXT,
     secret_patterns: dict[str, re.Pattern[bytes]] | None = None,
     binary_files: dict[str, str] | None = None,
+    file_check: Callable[[str, bytes], None] | None = None,
 ) -> None:
     """Scan every regular file's bytes outside `.git`, whatever its suffix.
 
+    `file_check(path, bytes)` also runs, from the same read, on every file
+    outside third_party/ that does not start (first 8 KiB) with a NUL byte.
+
     Every byte of every file is searched, case-insensitively, for the literal
     markers.  Every byte of every file is searched for the patterns too, except
-    a binary approved by path and SHA-256 (BINARY_APPROVALS, or `binary_files`):
-    regular expressions over the 80 MB place catalog and the ephemeris files
-    took about 25 s per export and cannot match what a person wrote, so those
-    exact bytes are approved once instead.  Any other binary (a NUL byte
+    a binary over APPROVED_BINARY_PATTERN_SCAN_BYTES approved by path and
+    SHA-256 (BINARY_APPROVALS, or `binary_files`): regular expressions over the
+    80 MB place catalog took most of 25 s per export and cannot match what a
+    person wrote, so those exact bytes are approved once instead.  Any other binary (a NUL byte
     anywhere, or bytes that are not UTF-8) is refused: what the scan cannot
     read as text it does not pass.
     """
@@ -512,6 +550,7 @@ def scan_candidate_content(
         (marker, marker.encode("utf-8").lower()) for marker in sorted(forbidden_markers)
     )
     overlap = max([512, *(len(value) for _, value in literals)])
+    marker_key = hashlib.sha256(b"\0".join(value for _, value in literals)).hexdigest()
     scanned = 0
     approved_seen: set[str] = set()
     for path in sorted(root.rglob("*")):
@@ -521,7 +560,22 @@ def scan_candidate_content(
         scanned += 1
         rendered = relative.as_posix()
         approved = approvals.get(rendered)
+        try:
+            searched = approved is None or path.stat().st_size <= APPROVED_BINARY_PATTERN_SCAN_BYTES
+        except OSError as error:
+            raise CandidateFailure(f"cannot scan {rendered}: {error}") from None
+        if not searched and (approved, marker_key) in _MARKER_CLEAN_BINARIES:
+            # These exact bytes already passed these exact markers: hash only.
+            try:
+                if _sha256_path(path) == approved:
+                    approved_seen.add(rendered)
+                    continue
+            except OSError as error:
+                raise CandidateFailure(f"cannot scan {rendered}: {error}") from None
         digest = hashlib.sha256()
+        kept: list[bytes] | None = (
+            [] if file_check is not None and relative.parts[0] != "third_party" else None
+        )
         decoder = codecs.getincrementaldecoder("utf-8")()
         binary = False
         tail = b""
@@ -533,15 +587,21 @@ def scan_candidate_content(
                     for marker, encoded in literals:
                         if encoded in lowered:
                             raise CandidateFailure(f"private marker {marker!r} in {rendered}")
+                    if kept is not None:
+                        # file_check reads no comment or id in a NUL-sniffed binary.
+                        if not tail and b"\0" in chunk[:BINARY_SNIFF_BYTES]:
+                            kept = None
+                        else:
+                            kept.append(chunk)
                     if approved is not None:
                         digest.update(chunk)
-                    else:
-                        if not binary:
-                            try:
-                                decoder.decode(chunk)
-                                binary = b"\0" in chunk
-                            except UnicodeDecodeError:
-                                binary = True
+                    elif not binary:
+                        try:
+                            decoder.decode(chunk)
+                            binary = b"\0" in chunk
+                        except UnicodeDecodeError:
+                            binary = True
+                    if searched:
                         for label, pattern in patterns:
                             if pattern.search(window):
                                 raise CandidateFailure(f"possible {label} in {rendered}")
@@ -553,11 +613,18 @@ def scan_candidate_content(
                     binary = True
             if path.name == ".npmrc":
                 _verify_npmrc(rendered, path.read_bytes())
+            if approved is None and not binary:
+                _verify_no_host_address(rendered, path.read_bytes())
+            if kept is not None and file_check is not None:
+                file_check(rendered, b"".join(kept))
         except OSError as error:
             raise CandidateFailure(f"cannot scan {rendered}: {error}") from None
         if approved is not None:
             approved_seen.add(rendered)
-            if digest.hexdigest() != approved:
+            if digest.hexdigest() == approved:
+                if kept is None:
+                    _MARKER_CLEAN_BINARIES.add((approved, marker_key))
+            else:
                 raise CandidateFailure(
                     f"approved binary changed: {rendered} (sha256 {digest.hexdigest()}; "
                     f"{BINARY_APPROVALS} approves {approved})"

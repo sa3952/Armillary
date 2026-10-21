@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="only light">
+<meta name="robots" content="index, follow">
+<title>為什麼兩個網站算出的上升點差 2 角分？出生地座標差一點的影響｜渾儀 Armillary</title>
+<meta name="description" content="同一個出生時刻、同樣選臺北，兩個排盤工具的上升點常差兩、三角分，原因多半是「臺北」的座標不同。用合成時刻列出從鐘面時間、UT1、恆星時到上升點的每一步，並算出經度差 0.01 度上升點移動多少。">
+<link rel="canonical" href="https://projectarmillary.com/zh-TW/blog/ascendant-coordinates">
+<link rel="alternate" hreflang="zh-TW" href="https://projectarmillary.com/zh-TW/blog/ascendant-coordinates">
+<link rel="alternate" hreflang="x-default" href="https://projectarmillary.com/zh-TW/blog/ascendant-coordinates">
+<link rel="alternate" type="application/atom+xml" title="渾儀 Armillary 文章" href="/feed.xml">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="渾儀 Armillary">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:title" content="為什麼兩個網站算出的上升點差 2 角分？出生地座標差一點的影響｜渾儀 Armillary">
+<meta property="og:description" content="同一個出生時刻、同樣選臺北，兩個排盤工具的上升點常差兩、三角分，原因多半是「臺北」的座標不同。用合成時刻列出從鐘面時間、UT1、恆星時到上升點的每一步，並算出經度差 0.01 度上升點移動多少。">
+<meta property="og:url" content="https://projectarmillary.com/zh-TW/blog/ascendant-coordinates">
+<meta property="article:published_time" content="2026-10-19">
+<meta property="article:modified_time" content="2026-10-19">
+<meta property="og:image" content="https://projectarmillary.com/zh-TW/og-card.png?v=16c9900d06168aab">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="渾儀 Armillary：可驗證的古典西洋占星計算器">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","publisher":{"@id":"https://projectarmillary.com/#organization"},"url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/blog/ascendant-coordinates#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/blog/ascendant-coordinates#breadcrumb"},"description":"同一個出生時刻、同樣選臺北，兩個排盤工具的上升點常差兩、三角分，原因多半是「臺北」的座標不同。用合成時刻列出從鐘面時間、UT1、恆星時到上升點的每一步，並算出經度差 0.01 度上升點移動多少。","inLanguage":"zh-TW","isAccessibleForFree":true,"isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"為什麼兩個網站算出的上升點差 2 角分？出生地座標差一點的影響｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/blog/ascendant-coordinates"},{"@id":"https://projectarmillary.com/#organization","@type":"Organization","alternateName":["渾儀","Armillary","Project Armillary"],"disambiguatingDescription":"古典西洋占星的計算網站與開源程式；名稱取自天文儀器渾儀（armillary sphere），本身不是那件儀器。","logo":{"@type":"ImageObject","height":180,"url":"https://projectarmillary.com/apple-touch-icon.png","width":180},"name":"渾儀 Armillary","sameAs":["https://github.com/sa3952/Armillary"],"url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/blog/ascendant-coordinates#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/blog","name":"文章","position":2},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/blog/ascendant-coordinates","name":"為什麼兩個網站算出的上升差 2′？出生地座標差一點，上升點就差幾角分","position":3}]},{"@id":"https://projectarmillary.com/zh-TW/blog/ascendant-coordinates#faq","@type":"FAQPage","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/zh-TW/blog/ascendant-coordinates#webpage"},"mainEntity":[{"@type":"Question","acceptedAnswer":{"@type":"Answer","text":"大多不會。只有上升點剛好落在星座交界附近幾角分內時，差 2 角分才可能換星座；整宮制的宮位跟著上升星座走，也只在那時才會變。"},"name":"上升點差 2 角分，會影響星座或宮位嗎？"},{"@type":"Question","acceptedAnswer":{"@type":"Answer","text":"都只是代表點，沒有哪一個是你的出生地。差幾角分要緊時，請用出生地的實際經緯度。"},"name":"哪一個臺北座標才是對的？"},{"@type":"Question","acceptedAnswer":{"@type":"Answer","text":"不會。宮位制只改其他宮頭；上升點只由時間、經度、緯度與黃道的選擇決定。"},"name":"換宮位制會讓上升點變嗎？"}],"url":"https://projectarmillary.com/zh-TW/blog/ascendant-coordinates"},{"@id":"https://projectarmillary.com/zh-TW/blog/ascendant-coordinates#article","@type":"BlogPosting","author":{"@id":"https://projectarmillary.com/#organization"},"citation":[{"@id":"https://projectarmillary.com/zh-TW/blog/ascendant-coordinates#ref-1","@type":"CreativeWork","name":"本站公開的原始碼：backend/app/core/houses.py（上升點與中天由 Swiss Ephemeris houses_ex 以 UT1 儒略日、緯度與東經算出）。球面三角的重算公式與 tests/backend/solar_return_oracle.py 相同。"},{"@id":"https://projectarmillary.com/zh-TW/blog/ascendant-coordinates#ref-2","@type":"CreativeWork","name":"渾儀方法頁〈時間尺度〉與本站原始碼 backend/app/core/time_utils.py：UTC 換成 UT1、ΔT 的來源，以及收據與卷宗寫出的時間欄位。","url":"https://projectarmillary.com/zh-TW/methods#time-scales"},{"@id":"https://projectarmillary.com/zh-TW/blog/ascendant-coordinates#ref-3","@type":"CreativeWork","name":"表 1、表 2、圖 1 與正文的數字：本站計算服務對合成請求的回應，1990 年 1 月 15 日 12:00 臺北（Asia/Taipei，地點為目錄的臺北列），2026 年 10 月以本機的同版服務自算；另以 Swiss Ephemeris 的 utc_to_jd、sidtime 與真黃赤交角，用球面三角對三組座標與一段經度逐點重算。"},{"@id":"https://projectarmillary.com/zh-TW/blog/ascendant-coordinates#ref-4","@type":"CreativeWork","name":"本站地名目錄（GeoNames cities500），臺北列 GeoNames 1668341；內政部地名資料的臺北市列為搜尋「臺北」的第一筆；授權與版本見著作權與原始碼頁。","url":"https://projectarmillary.com/zh-TW/legal/copyright"}],"dateModified":"2026-10-19","datePublished":"2026-10-19","description":"同一個出生時刻、同樣選臺北，兩個排盤工具的上升點常差兩、三角分，原因多半是「臺北」的座標不同。用合成時刻列出從鐘面時間、UT1、恆星時到上升點的每一步，並算出經度差 0.01 度上升點移動多少。","headline":"為什麼兩個網站算出的上升差 2′？出生地座標差一點，上升點就差幾角分","image":"https://projectarmillary.com/zh-TW/og-card.png?v=16c9900d06168aab","inLanguage":"zh-TW","isAccessibleForFree":true,"isBasedOn":{"@id":"https://projectarmillary.com/#application","@type":"WebApplication","name":"渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/"},"isPartOf":{"@id":"https://projectarmillary.com/zh-TW/blog#webpage"},"mainEntityOfPage":{"@id":"https://projectarmillary.com/zh-TW/blog/ascendant-coordinates#webpage"},"mentions":[{"@id":"https://projectarmillary.com/zh-TW/methods/glossary#asc","@type":"DefinedTerm","inDefinedTermSet":{"@id":"https://projectarmillary.com/zh-TW/methods/glossary#terms"},"name":"上升星座","url":"https://projectarmillary.com/zh-TW/methods/glossary#asc"},{"@id":"https://projectarmillary.com/zh-TW/methods/glossary#whole_sign","@type":"DefinedTerm","alternateName":"Whole Sign","inDefinedTermSet":{"@id":"https://projectarmillary.com/zh-TW/methods/glossary#terms"},"name":"整宮制","url":"https://projectarmillary.com/zh-TW/methods/glossary#whole_sign"},{"@id":"https://projectarmillary.com/zh-TW/methods/glossary#receipt","@type":"DefinedTerm","inDefinedTermSet":{"@id":"https://projectarmillary.com/zh-TW/methods/glossary#terms"},"name":"收據","url":"https://projectarmillary.com/zh-TW/methods/glossary#receipt"}],"publisher":{"@id":"https://projectarmillary.com/#organization"},"url":"https://projectarmillary.com/zh-TW/blog/ascendant-coordinates"}]}</script>
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="/zh-TW/favicon.svg?v=c95686a2f029d369" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/zh-TW/style/blog-article-figures.css?v=51cf4e8f0a0c650d">
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">跳到主要內容</a>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="/zh-TW/">
+      <svg class="mark" viewBox="0 0 40 40" aria-hidden="true">
+        <circle cx="20" cy="20" r="16"/>
+        <ellipse cx="20" cy="20" rx="16" ry="4.5"/>
+        <ellipse cx="20" cy="20" rx="16" ry="8" transform="rotate(-32 20 20)" class="mark-ecliptic"/>
+        <ellipse cx="20" cy="20" rx="5" ry="16"/>
+        <line x1="20" y1="4" x2="20" y2="36" transform="rotate(-18 20 20)"/>
+      </svg>
+      <span>渾儀<small>ARMILLARY</small></span>
+    </a>
+    <nav class="site-nav" aria-label="主要導覽">
+      <a href="/zh-TW/features">功能</a>
+      <a href="/zh-TW/methods">方法</a>
+      <a href="/zh-TW/validation">驗證</a>
+      <a href="/zh-TW/trust">信任</a>
+      <a href="/zh-TW/blog">文章</a>
+      <a href="/zh-TW/about">關於</a>
+      <a class="nav-cta" href="/zh-TW/calculate">排一張盤</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main-content">
+<div class="wrap page-body article">
+
+<svg class="fx-sprite" aria-hidden="true" focusable="false"><defs><pattern id="fx-h1" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" class="fx-hp"/></pattern><pattern id="fx-h2" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="4" class="fx-hp"/><line x1="0" y1="0" x2="4" y2="0" class="fx-hp"/></pattern><pattern id="fx-dots" width="4" height="4" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r=".7" class="fx-hpf"/></pattern></defs></svg>
+
+  <div class="ar-head">
+    <p class="eyebrow"><a href="/zh-TW/blog">文章</a></p>
+    <h1>為什麼兩個網站算出的上升差 2′？<br>出生地座標差一點，上升點就差幾角分</h1>
+    <p class="ar-dek">同一個出生時刻、同樣選「臺北」，兩個排盤工具給的上升點常常差兩、三角分。多半不是誰算錯，而是兩邊心中的「臺北」不是同一個點。這篇用一個合成時刻，把從鐘面時間到上升點的每一步數字攤開，算出經度差 0.01 度，上升點會移動多少。</p>
+    <p class="ar-byline"><span class="ar-tier">講方法</span><span>發布 <time datetime="2026-10-19">2026-10-19</time></span><span class="ar-version">第 2 版・出處 4 則</span><span>閱讀約 8 分鐘</span><span>Sebastian</span></p>
+  </div>
+
+  <div class="ar-body">
+    <p class="ar-lead"><b>上升點（Ascendant，出生那一刻正在東方地平線升起的黃道度數）由世界時、出生地的經度與緯度決定。</b>「臺北」在不同資料庫裡是不同的代表點，彼此相差幾公里；以本文的合成時刻來說，經度每往東 0.01 度，上升點約前進 0.75 角分，所以兩組常見的臺北座標，上升點就差約 3.6′<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-3">[3]</a>。</p>
+
+    <section class="ar-points" aria-labelledby="points">
+      <h2 id="points">重點</h2>
+      <ul>
+        <li>本文的合成時刻，本站用地名目錄的臺北點，算出上升點金牛 4°18′46.82″<a class="ar-cite" href="#ref-3">[3]</a>。</li>
+        <li>同一刻換成另一組常見的臺北座標，上升點是 4°21.19′ 或 4°17.63′；差別幾乎全來自座標<a class="ar-cite" href="#ref-3">[3]</a>。</li>
+        <li>在這個時刻與緯度，經度每差 0.01 度（東西方向約 1 公里），上升點約差 0.75′；緯度每差 0.01 度，約差 0.21′<a class="ar-cite" href="#ref-3">[3]</a>。</li>
+        <li>剩下約 6″ 的差，來自把鐘面時間換成地球自轉時間（UT1）時的 0.30 秒；這一步本站有做，簡單的算法常略過<a class="ar-cite" href="#ref-2">[2]</a><a class="ar-cite" href="#ref-3">[3]</a>。</li>
+      </ul>
+    </section>
+
+    <h2 id="steps"><span class="ar-sec">§01</span>從鐘面時間到上升點，每一步的數字</h2>
+    <p>先看本站自己怎麼算。下面表 1 是同一張盤從輸入到上升點的每一步；每一行都可以在結果頁最後一章「收據與匯出」或匯出的卷宗裡找到<a class="ar-cite" href="#ref-2">[2]</a>。</p>
+    <ul>
+      <li><b>換成世界時。</b>臺北 1990 年沒有夏令時間，鐘面 12:00 減 8 小時，是協調世界時（UTC）04:00。</li>
+      <li><b>換成地球自轉的時間。</b>上升點看的是地球轉到哪裡，用的是 UT1（依地球實際自轉定義的世界時）。UTC 用閏秒追著 UT1，兩者當時差 0.30 秒；ΔT（均勻的地球時減 UT1）是 56.88 秒<a class="ar-cite" href="#ref-2">[2]</a>。</li>
+      <li><b>恆星時。</b>恆星時是「以恆星為準的鐘」，告訴你此刻天球轉到哪個角度；格林威治的恆星時加上出生地的東經，就是當地的恆星時，也就是此刻正南方子午線上的赤經。</li>
+      <li><b>黃赤交角。</b>黃道（太陽一年走的路）與天球赤道的夾角，約 23.44 度。</li>
+      <li><b>上升點與中天（MC）。</b>有了當地恆星時、黃赤交角與緯度，用球面三角就能算出黃道和東方地平線的交點（上升點），以及黃道過子午線的那一點（中天）<a class="ar-cite" href="#ref-1">[1]</a>。</li>
+    </ul>
+  </div>
+
+  <p class="scroll-hint" hidden>表格可左右捲動</p>
+  <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab1-cap">
+    <table class="ar-table">
+      <caption id="tab1-cap">表 1　合成時刻 1990 年 1 月 15 日 12:00（臺北，本站目錄的臺北點）從輸入到上升點的每一步。上升點與中天另以一條不經本站程式的球面三角公式重算，兩者相差不到 0.05 角秒<a class="ar-cite" href="#ref-3">[3]</a>。</caption>
+      <thead><tr><th scope="col">步驟</th><th scope="col">值</th></tr></thead>
+      <tbody>
+          <tr><th scope="row">鐘面時間（臺北）</th><td class="n">1990-01-15 12:00:00</td></tr>
+          <tr><th scope="row">換成協調世界時（UTC）</th><td class="n">1990-01-15 04:00:00</td></tr>
+          <tr><th scope="row">UT1 − UTC</th><td class="n">+0.30 秒</td></tr>
+          <tr><th scope="row">儒略日 JD(UT1)</th><td class="n">2447906.666670</td></tr>
+          <tr><th scope="row">ΔT（地球時減世界時）</th><td class="n">56.88 秒</td></tr>
+          <tr><th scope="row">格林威治視恆星時</th><td class="n">11h37m24.35s</td></tr>
+          <tr><th scope="row">地方恆星時（加上東經）</th><td class="n">295.8778°</td></tr>
+          <tr><th scope="row">黃赤交角（真）</th><td class="n">23.4424°</td></tr>
+          <tr><th scope="row">上升點</th><td class="n">金牛 4°18′47″</td></tr>
+          <tr><th scope="row">中天（MC）</th><td class="n">摩羯 23°59′30″</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="ar-body">
+    <h2 id="coordinates"><span class="ar-sec">§02</span>同樣叫「臺北」，座標不一樣</h2>
+    <p>城市的座標是一個<b>代表點</b>，不是你出生的那棟房子。本文用本站地名目錄裡 GeoNames 的臺北點，北緯 25.05306 度、東經 121.52639 度<a class="ar-cite" href="#ref-4">[4]</a>。在計算頁搜尋「臺北」時，它是第二筆「臺北市（Taipei）」；第一筆「臺北市, TW」是內政部地名資料的臺北市代表點，北緯 25.0553、東經 121.5483。選第一筆，同一刻的上升點是金牛 4°20.48′，比第二筆多約 1.7′——同一個網站、同樣叫臺北，就差了這麼多，正是本文要說的事<a class="ar-cite" href="#ref-3">[3]</a>。此外，網路上另外流傳的臺北座標，常見的有北緯 25.0330、東經 121.5654，或北緯 25.04、東經 121.516。三個點彼此相距幾公里，都在臺北市裡。</p>
+    <p>表 2 把同一刻放到這三個點上。和本站目錄的點相比，A 點往東 0.039°、往南 0.020°：往東讓上升點前進，往南讓它稍微後退，加起來是 2.50′。這就是兩個網站「差 2′」最常見的原因<a class="ar-cite" href="#ref-3">[3]</a>。</p>
+  </div>
+
+  <p class="scroll-hint" hidden>表格可左右捲動</p>
+  <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab2-cap">
+    <table class="ar-table">
+      <caption id="tab2-cap">表 2　同一刻放到三組臺北座標上，上升點在金牛座內的度數。「用 UT1」是本站的做法；「把 UTC 當 UT1」是略過 0.30 秒那一步的簡單算法<a class="ar-cite" href="#ref-3">[3]</a>。</caption>
+      <thead><tr><th scope="col">座標</th><th scope="col">北緯, 東經</th><th scope="col">用 UT1</th><th scope="col">把 UTC 當 UT1</th></tr></thead>
+      <tbody>
+          <tr><th scope="row">本站目錄（GeoNames 1668341）</th><td class="n">25.05306, 121.52639</td><td class="n">4°18.78′</td><td class="n">4°18.69′</td></tr>
+          <tr><th scope="row">另一組常見座標 A</th><td class="n">25.0330, 121.5654</td><td class="n">4°21.28′</td><td class="n">4°21.19′</td></tr>
+          <tr><th scope="row">另一組常見座標 B</th><td class="n">25.0400, 121.5160</td><td class="n">4°17.72′</td><td class="n">4°17.63′</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="ar-body">
+    <p>如果另一個工具用 A 點、又略過 UT1 那一步，它會給 4°21.19′；本站給 4°18′46.82″，也就是 4°18.78′，兩邊差約 2.4′。用 B 點則是 4°17.63′。A 與 B 兩點之間就差約 3.6′。</p>
+
+    <h2 id="sensitivity"><span class="ar-sec">§03</span>經度差 0.01 度，上升點差多少</h2>
+    <p>上升點對經度特別敏感，因為經度直接加進恆星時：東經多 1 度，當地恆星時就多 1 度，相當於天球多轉了 4 分鐘。上升點跟著天球轉，所以經度差一點，就像出生時間差幾秒。</p>
+  </div>
+
+<figure class="fx ar-fig" id="fig-asc-longitude" data-fx>
+<div class="fx-art" role="group" aria-labelledby="fig-asc-longitude-title fig-asc-longitude-cap">
+<span class="fx-title" id="fig-asc-longitude-title">同一刻、同一緯度，只改經度：上升點怎麼移動</span>
+<svg class="fx-wide" viewBox="0 0 880 392" role="group" aria-labelledby="fig-asc-longitude-title"><rect x="1" y="1" width="878" height="390" class="fx-frame"/><rect x="6" y="6" width="868" height="380" class="fx-frame-in"/><text x="96" y="34" class="fx-t fx-small fx-dim">上升點（金牛座內），北緯 25.05306°</text><rect x="96" y="70" width="744" height="250" class="fx-inset-frame"/><line x1="96" y1="70" x2="96" y2="320" class="fx-hair"/><text x="96" y="344" class="fx-t fx-small fx-num" text-anchor="middle">121.48°</text><line x1="220" y1="70" x2="220" y2="320" class="fx-hair"/><text x="220" y="344" class="fx-t fx-small fx-num" text-anchor="middle">121.50°</text><line x1="344" y1="70" x2="344" y2="320" class="fx-hair"/><text x="344" y="344" class="fx-t fx-small fx-num" text-anchor="middle">121.52°</text><line x1="468" y1="70" x2="468" y2="320" class="fx-hair"/><text x="468" y="344" class="fx-t fx-small fx-num" text-anchor="middle">121.54°</text><line x1="592" y1="70" x2="592" y2="320" class="fx-hair"/><text x="592" y="344" class="fx-t fx-small fx-num" text-anchor="middle">121.56°</text><line x1="716" y1="70" x2="716" y2="320" class="fx-hair"/><text x="716" y="344" class="fx-t fx-small fx-num" text-anchor="middle">121.58°</text><line x1="840" y1="70" x2="840" y2="320" class="fx-hair"/><text x="840" y="344" class="fx-t fx-small fx-num" text-anchor="middle">121.60°</text><text x="88" y="325" class="fx-t fx-small fx-num" text-anchor="end">4°15′</text><text x="88" y="275" class="fx-t fx-small fx-num" text-anchor="end">4°17′</text><text x="88" y="225" class="fx-t fx-small fx-num" text-anchor="end">4°19′</text><text x="88" y="175" class="fx-t fx-small fx-num" text-anchor="end">4°21′</text><text x="88" y="125" class="fx-t fx-small fx-num" text-anchor="end">4°23′</text><text x="88" y="75" class="fx-t fx-small fx-num" text-anchor="end">4°25′</text><path d="M96 312.6 L108.4 308.8 L120.8 305.1 L133.2 301.3 L145.6 297.6 L158 293.8 L170.4 290.1 L182.8 286.3 L195.2 282.5 L207.6 278.8 L220 275 L232.4 271.3 L244.8 267.5 L257.2 263.8 L269.6 260 L282 256.3 L294.4 252.5 L306.8 248.7 L319.2 245 L331.6 241.2 L344 237.5 L356.4 233.7 L368.8 230 L381.2 226.2 L393.6 222.5 L406 218.7 L418.4 215 L430.8 211.2 L443.2 207.5 L455.6 203.7 L468 199.9 L480.4 196.2 L492.8 192.4 L505.2 188.7 L517.6 184.9 L530 181.2 L542.4 177.4 L554.8 173.7 L567.2 169.9 L579.6 166.2 L592 162.4 L604.4 158.7 L616.8 154.9 L629.2 151.2 L641.6 147.4 L654 143.6 L666.4 139.9 L678.8 136.1 L691.2 132.4 L703.6 128.6 L716 124.9 L728.4 121.1 L740.8 117.4 L753.2 113.6 L765.6 109.9 L778 106.1 L790.4 102.4 L802.8 98.6 L815.2 94.9 L827.6 91.1 L840 87.4" class="fx-curve"/><text x="840" y="370" class="fx-t fx-small fx-dim" text-anchor="end">東經</text><g data-fx-key="here" tabindex="0" aria-label="本站目錄的臺北點：東經 121.52639°，4°18.78′" role="img"><circle cx="383.6" cy="225.5" r="7" class="fx-mk-on"/><text x="395.6" y="211.5" class="fx-t fx-small fx-num" text-anchor="start">4°18.78′</text></g><g data-fx-key="east" tabindex="0" aria-label="往東約 0.04°：東經 121.5654°，4°21.71′" role="img"><circle cx="625.5" cy="152.3" r="7" class="fx-mk"/><text x="613.5" y="178.3" class="fx-t fx-small fx-num" text-anchor="end">4°21.71′</text></g></svg>
+<svg class="fx-narrow" viewBox="0 0 340 370" role="group" aria-labelledby="fig-asc-longitude-title"><rect x="1" y="1" width="338" height="368" class="fx-frame"/><rect x="6" y="6" width="328" height="358" class="fx-frame-in"/><text x="14" y="28" class="fx-t fx-small fx-dim">上升點（金牛座內），北緯 25.05306°</text><rect x="52" y="66" width="272" height="234" class="fx-inset-frame"/><line x1="52" y1="66" x2="52" y2="300" class="fx-hair"/><text x="52" y="324" class="fx-t fx-small fx-num" text-anchor="middle">121.48°</text><line x1="142.7" y1="66" x2="142.7" y2="300" class="fx-hair"/><text x="142.7" y="324" class="fx-t fx-small fx-num" text-anchor="middle">121.52°</text><line x1="233.3" y1="66" x2="233.3" y2="300" class="fx-hair"/><text x="233.3" y="324" class="fx-t fx-small fx-num" text-anchor="middle">121.56°</text><line x1="324" y1="66" x2="324" y2="300" class="fx-hair"/><text x="324" y="324" class="fx-t fx-small fx-num" text-anchor="middle">121.60°</text><text x="44" y="305" class="fx-t fx-small fx-num" text-anchor="end">4°15′</text><text x="44" y="211.4" class="fx-t fx-small fx-num" text-anchor="end">4°19′</text><text x="44" y="117.8" class="fx-t fx-small fx-num" text-anchor="end">4°23′</text><path d="M52 293.1 L56.5 289.5 L61.1 286 L65.6 282.5 L70.1 279 L74.7 275.5 L79.2 272 L83.7 268.5 L88.3 264.9 L92.8 261.4 L97.3 257.9 L101.9 254.4 L106.4 250.9 L110.9 247.4 L115.5 243.9 L120 240.3 L124.5 236.8 L129.1 233.3 L133.6 229.8 L138.1 226.3 L142.7 222.8 L147.2 219.3 L151.7 215.7 L156.3 212.2 L160.8 208.7 L165.3 205.2 L169.9 201.7 L174.4 198.2 L178.9 194.7 L183.5 191.1 L188 187.6 L192.5 184.1 L197.1 180.6 L201.6 177.1 L206.1 173.6 L210.7 170.1 L215.2 166.5 L219.7 163 L224.3 159.5 L228.8 156 L233.3 152.5 L237.9 149 L242.4 145.5 L246.9 142 L251.5 138.4 L256 134.9 L260.5 131.4 L265.1 127.9 L269.6 124.4 L274.1 120.9 L278.7 117.4 L283.2 113.9 L287.7 110.3 L292.3 106.8 L296.8 103.3 L301.3 99.8 L305.9 96.3 L310.4 92.8 L314.9 89.3 L319.5 85.8 L324 82.2" class="fx-curve"/><text x="324" y="350" class="fx-t fx-small fx-dim" text-anchor="end">東經</text><g data-fx-key="here" tabindex="0" aria-label="本站目錄的臺北點：東經 121.52639°，4°18.78′" role="img"><circle cx="157.2" cy="211.5" r="6" class="fx-mk-on"/><text x="169.2" y="197.5" class="fx-t fx-small fx-num" text-anchor="start">4°18.78′</text></g><g data-fx-key="east" tabindex="0" aria-label="往東約 0.04°：東經 121.5654°，4°21.71′" role="img"><circle cx="245.6" cy="143" r="6" class="fx-mk"/><text x="233.6" y="169" class="fx-t fx-small fx-num" text-anchor="end">4°21.71′</text></g></svg>
+</div>
+<p class="fx-readout" data-fx-readout aria-live="polite" hidden>指向圖上的點，這裡會寫出那個經度的上升點。</p>
+<ul data-fx-notes hidden><li data-fx-key="here">本站地點目錄的臺北點（GeoNames 1668341）：東經 121.52639°，上升點金牛 4°18.78′。</li><li data-fx-key="east">緯度不變、經度換成 121.5654°（往東約 0.04°）：上升點金牛 4°21.71′。</li></ul>
+<details class="fx-data"><summary id="fig-asc-longitude-data">圖中的數字（表格）</summary><p class="scroll-hint" hidden>表格可左右捲動</p>
+<div class="ar-scroll" tabindex="0" role="region" aria-labelledby="fig-asc-longitude-data"><table class="ar-table fx-table"><thead><tr><th scope="col">東經</th><th scope="col">上升點（金牛座內）</th></tr></thead><tbody><tr><th scope="row">121.48°</th><td class="n">4°15.30′</td></tr><tr><th scope="row">121.50°</th><td class="n">4°16.80′</td></tr><tr><th scope="row">121.52°</th><td class="n">4°18.30′</td></tr><tr><th scope="row">121.54°</th><td class="n">4°19.80′</td></tr><tr><th scope="row">121.56°</th><td class="n">4°21.30′</td></tr><tr><th scope="row">121.58°</th><td class="n">4°22.80′</td></tr><tr><th scope="row">121.60°</th><td class="n">4°24.31′</td></tr></tbody></table></div></details>
+<figcaption id="fig-asc-longitude-cap"><b>圖 1</b>合成時刻（不是任何人的出生資料）：1990 年 1 月 15 日 12:00，臺北時間。緯度固定在本站目錄臺北點的北緯 25.05306°，只改經度：每往東 0.01°，上升點約前進 0.75′。實心點是本站目錄的臺北點，空心點是同緯度、往東約 0.04° 的地方。</figcaption>
+</figure>
+
+  <div class="ar-body">
+    <p>在這個時刻與緯度，經度每差 0.01 度，上升點約差 0.75′；緯度每差 0.01 度，約差 0.21′。這兩個比例會隨時刻與緯度改變：上升點在一天裡走得有快有慢，緯度越高差越大，所以不要把 0.75′ 當作常數<a class="ar-cite" href="#ref-3">[3]</a>。0.01 度經度在臺北約 1 公里，所以「我出生在臺北」和「我出生在臺北的哪一區」，上升點就可能差上一兩角分。</p>
+    <p>時間那一步的影響小得多：本站把 UTC 換成 UT1，多了 0.30 秒，上升點因此差約 6″。這一步不影響星座，只在你和別人逐角秒比對時才看得到<a class="ar-cite" href="#ref-2">[2]</a>。</p>
+
+    <h2 id="check"><span class="ar-sec">§04</span>自己核對：拿到兩邊的收據</h2>
+    <p>本站沒有提供現成的範例收據檔；要拿到這張盤的收據，在<a href="/zh-TW/calculate">計算頁</a>輸入本文的時刻、搜尋「臺北」選第二筆「臺北市（Taipei）」，算完後到最後一章「收據與匯出」，選「運算結果＋驗算資料」匯出 JSON。檔案裡有本站實際用的經緯度、UTC、儒略日、ΔT、恆星時、黃赤交角與上升點；拿另一個工具的座標與時間逐項比對，通常第一個不一樣的就是座標<a class="ar-cite" href="#ref-2">[2]</a>。收據怎麼讀，見〈<a href="/zh-TW/blog/verify-chart-calculation">怎麼自己驗算一張星盤</a>〉。</p>
+    <p>如果你知道出生地更精確的座標，在計算頁改用自己輸入的經緯度，結果與收據會照你的座標算，不再是城市的代表點。</p>
+
+    <h2 id="faq"><span class="ar-sec">§05</span>常見問題</h2>
+    <h3>上升點差 2 角分，會影響星座或宮位嗎？</h3>
+    <p>大多不會。只有上升點剛好落在星座交界附近幾角分內時，差 2 角分才可能換星座；整宮制的宮位跟著上升星座走，也只在那時才會變。</p>
+    <h3>哪一個臺北座標才是對的？</h3>
+    <p>都只是代表點，沒有哪一個是你的出生地。差幾角分要緊時，請用出生地的實際經緯度。</p>
+    <h3>換宮位制會讓上升點變嗎？</h3>
+    <p>不會。宮位制只改其他宮頭；上升點只由時間、經度、緯度與黃道的選擇決定。</p>
+
+    <aside class="ar-scope" aria-labelledby="scope-1">
+      <span class="ar-k" id="scope-1">本文的範圍</span>
+      <ul>
+        <li>本文只談上升點怎麼算、座標差多少；不談上升星座的意義，本站也不解盤。</li>
+        <li>文中的時刻是合成的，不是任何人的出生資料；另外兩組座標是網路上常見的臺北座標，不是哪一個網站的資料。</li>
+      </ul>
+    </aside>
+  </div>
+
+  <section class="ar-refs" aria-labelledby="refs">
+    <h2 id="refs">出處</h2>
+    <p>每一條後面標明我核到哪一層：<span class="rs rs-register">本站出處清單</span>是本站公開的方法說明與原始碼；<span class="rs rs-computed">本站自算</span>是本站計算服務或我依標明版本的程式算出、可以照著重算的結果。</p>
+    <ol>
+      <li id="ref-1"><span>本站公開的原始碼：<code>backend/app/core/houses.py</code>（上升點與中天由 Swiss Ephemeris <code>houses_ex</code> 以 UT1 儒略日、緯度與東經算出）。球面三角的重算公式與 <code>tests/backend/solar_return_oracle.py</code> 相同。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-2"><span>渾儀<a href="/zh-TW/methods#time-scales">方法頁</a>〈時間尺度〉與本站原始碼 <code>backend/app/core/time_utils.py</code>：UTC 換成 UT1、ΔT 的來源，以及收據與卷宗寫出的時間欄位。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-3"><span>表 1、表 2、圖 1 與正文的數字：本站計算服務對合成請求的回應，1990 年 1 月 15 日 12:00 臺北（Asia/Taipei，地點為目錄的臺北列），2026 年 10 月以本機的同版服務自算；另以 Swiss Ephemeris 的 <code>utc_to_jd</code>、<code>sidtime</code> 與真黃赤交角，用球面三角對三組座標與一段經度逐點重算。<span class="rs rs-computed">本站自算</span></span></li>
+      <li id="ref-4"><span>本站地名目錄（GeoNames cities500），臺北列 GeoNames 1668341；內政部地名資料的臺北市列為搜尋「臺北」的第一筆；授權與版本見<a href="/zh-TW/legal/copyright">著作權與原始碼</a>頁。<span class="rs rs-register">本站出處清單</span></span></li>
+    </ol>
+  </section>
+
+  <section class="ar-next" aria-labelledby="next-cta">
+    <div>
+      <h2 id="next-cta">用你自己的座標，<br>算一次上升點。</h2>
+      <p>在計算頁改用自己輸入的經緯度，結果與收據會寫出這一次實際用的座標與每一步的時間。</p>
+      <p><a class="btn-paper" href="/zh-TW/calculate">排一張盤 →</a></p>
+    </div>
+    <div>
+      <span class="ar-k">延伸閱讀</span>
+      <ul>
+        <li><a href="/zh-TW/blog/verify-chart-calculation">怎麼自己驗算一張星盤：計算收據與卷宗</a></li>
+        <li><a href="/zh-TW/blog/chart-calculation-accuracy">線上排盤準不準？星盤的誤差從哪裡來</a></li>
+        <li><a href="/zh-TW/blog/true-solar-time">西洋占星要不要換真太陽時？</a></li>
+      </ul>
+    </div>
+  </section>
+
+</div>
+<script src="/zh-TW/article-figures.js?v=4cd184aec2c28336" defer></script>
+<script src="/zh-TW/table-scroll.js?v=902f20a5b04bbed0" defer></script>
+</main>
+
+<footer>
+  <div class="wrap sitemap">
+    <div class="sitemap-col">
+      <h2>產品</h2>
+      <a href="/zh-TW/">首頁</a>
+      <a href="/zh-TW/calculate">計算</a>
+      <a href="/zh-TW/features">功能</a>
+      <a href="/zh-TW/roadmap">路線</a>
+      <a href="/zh-TW/blog">文章</a>
+    </div>
+    <div class="sitemap-col">
+      <h2>可查證性</h2>
+      <a href="/zh-TW/methods">方法</a>
+      <a href="/zh-TW/validation">驗證</a>
+      <a href="/zh-TW/trust">信任</a>
+      <a href="/zh-TW/security">安全</a>
+    </div>
+    <div class="sitemap-col">
+      <h2>法律與聯絡</h2>
+      <a href="/zh-TW/legal/privacy">隱私政策</a>
+      <a href="/zh-TW/legal/terms">使用條款</a>
+      <a href="/zh-TW/legal/copyright">著作權與原始碼</a>
+      <a href="/zh-TW/contact">聯絡方式</a>
+      <a href="/zh-TW/about">關於</a>
+    </div>
+  </div>
+
+  <div class="wrap footer-rule"><span class="ring-strip" aria-hidden="true"></span></div>
+  <div class="wrap">
+    <span>渾儀 ARMILLARY</span>
+    <span>只計算，不解盤，不預測</span>
+  </div>
+</footer>
+
+</body>
+</html>

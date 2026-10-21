@@ -3,12 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="only light">
 <meta name="robots" content="index, follow">
 <title>親手驗證本站的隱私說明｜渾儀 Armillary</title>
 <meta name="description" content="用瀏覽器內建的開發者工具，自己檢查算一次盤會送出哪些請求、送到哪個網域、瀏覽器裡有沒有留下 cookie 或儲存，以及這個檢查證明不了什麼。">
 <link rel="canonical" href="https://projectarmillary.com/zh-TW/security/verify">
 <link rel="alternate" hreflang="zh-TW" href="https://projectarmillary.com/zh-TW/security/verify">
 <link rel="alternate" hreflang="x-default" href="https://projectarmillary.com/zh-TW/security/verify">
+<link rel="alternate" type="application/atom+xml" title="渾儀 Armillary 文章" href="/feed.xml">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="渾儀 Armillary">
 <meta property="og:locale" content="zh_TW">
@@ -21,11 +23,11 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="渾儀 Armillary：可驗證的古典西洋占星計算器">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/security/verify#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/security/verify#breadcrumb"},"dateModified":"2026-10-18","description":"用瀏覽器內建的開發者工具，自己檢查算一次盤會送出哪些請求、送到哪個網域、瀏覽器裡有沒有留下 cookie 或儲存，以及這個檢查證明不了什麼。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"親手驗證本站的隱私說明｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/security/verify"},{"@id":"https://projectarmillary.com/zh-TW/security/verify#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/security","name":"安全","position":2},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/security/verify","name":"不必相信我們，打開瀏覽器自己看。","position":3}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","publisher":{"@id":"https://projectarmillary.com/#organization"},"url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/security/verify#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/security/verify#breadcrumb"},"dateModified":"2026-10-21","description":"用瀏覽器內建的開發者工具，自己檢查算一次盤會送出哪些請求、送到哪個網域、瀏覽器裡有沒有留下 cookie 或儲存，以及這個檢查證明不了什麼。","inLanguage":"zh-TW","isAccessibleForFree":true,"isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"親手驗證本站的隱私說明｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/security/verify"},{"@id":"https://projectarmillary.com/#organization","@type":"Organization","alternateName":["渾儀","Armillary","Project Armillary"],"disambiguatingDescription":"古典西洋占星的計算網站與開源程式；名稱取自天文儀器渾儀（armillary sphere），本身不是那件儀器。","logo":{"@type":"ImageObject","height":180,"url":"https://projectarmillary.com/apple-touch-icon.png","width":180},"name":"渾儀 Armillary","sameAs":["https://github.com/sa3952/Armillary"],"url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/security/verify#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/security","name":"安全","position":2},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/security/verify","name":"不必相信我們，打開瀏覽器自己看。","position":3}]},{"@id":"https://projectarmillary.com/zh-TW/security/verify#howto-1","@type":"HowTo","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/zh-TW/security/verify#webpage"},"name":"算一次合成範例，看清單","step":[{"@type":"HowToStep","position":1,"text":"在計算頁按「載入合成範例（不是真實生辰）」，再按「計算」。"},{"@type":"HowToStep","position":2,"text":"看 Domain 欄：每一列都應該是 projectarmillary.com。只要有一列不是，就是我們說錯了——請寫信告訴我們（第 07 節最後）。"},{"@type":"HowToStep","position":3,"text":"點名稱是 chart、方法是 POST 的那一列（圖中 ④），看 Payload（Firefox 叫 Request，Safari 在 Headers 底下）：送出去的就是表單上的日期、時間、座標、時區與選項，沒有別的。Response 是算好的星盤。"}]}]}</script>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" href="/zh-TW/favicon.svg?v=c95686a2f029d369" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="/zh-TW/style/security-verify.css?v=37ff0ecc5771104d">
+<link rel="stylesheet" href="/zh-TW/style/security-verify.css?v=83d90028a17decc3">
 </head>
 <body>
 
@@ -111,7 +113,7 @@
 
   <section class="ds-sec">
     <h2 class="hdr" id="vf-03-title"><span>03</span>算一次合成範例，看清單</h2>
-    <ol class="vf-steps">
+    <ol class="vf-steps howto">
       <li>在計算頁按「載入合成範例（不是真實生辰）」，再按「計算」。</li>
       <li><b>看 Domain 欄：每一列都應該是 <span class="mono">projectarmillary.com</span>。</b>只要有一列不是，就是我們說錯了——請寫信告訴我們（第 07 節最後）。</li>
       <li>點名稱是 <span class="mono">chart</span>、方法是 <span class="mono">POST</span> 的那一列（圖中 ④），看 <b>Payload</b>（Firefox 叫 Request，Safari 在 Headers 底下）：送出去的就是表單上的日期、時間、座標、時區與選項，沒有別的。<b>Response</b> 是算好的星盤。</li>
@@ -127,9 +129,9 @@
 <rect class="vf-page" x="12" y="46" width="696" height="92"/>
 <text class="vf-t" x="28" y="74">計算頁</text>
 <rect class="vf-button" x="28" y="92" width="150" height="28" rx="2"/>
-<text class="vf-t-on" x="103" y="111" text-anchor="middle">載入合成範例</text>
+<text class="vf-t-on vf-t-btn" x="103" y="111" text-anchor="middle">載入合成範例</text>
 <rect class="vf-button" x="190" y="92" width="80" height="28" rx="2"/>
-<text class="vf-t-on" x="230" y="111" text-anchor="middle">計算</text>
+<text class="vf-t-on vf-t-btn" x="230" y="111" text-anchor="middle">計算</text>
 <rect class="vf-tools" x="12" y="148" width="696" height="638"/>
 <text class="vf-t-dim vf-mono" x="24" y="168">Elements</text>
 <text class="vf-t-dim vf-mono" x="104" y="168">Console</text>
@@ -157,22 +159,22 @@
 <text class="vf-t vf-mono" x="396" y="248">200</text>
 <text class="vf-t vf-mono" x="450" y="248">projectarmillary.com</text>
 <text class="vf-t-dim vf-mono" x="616" y="248">document</text>
-<text class="vf-t vf-mono" x="24" y="272">calculate.css?v=4c30e7…</text>
+<text class="vf-t vf-mono" x="24" y="272">calculate.css?v=e5bd64…</text>
 <text class="vf-t vf-mono" x="330" y="272">GET</text>
 <text class="vf-t vf-mono" x="396" y="272">200</text>
 <text class="vf-t vf-mono" x="450" y="272">projectarmillary.com</text>
 <text class="vf-t-dim vf-mono" x="616" y="272">stylesheet</text>
-<text class="vf-t vf-mono" x="24" y="296">labels.js?v=6882c6…</text>
+<text class="vf-t vf-mono" x="24" y="296">labels.js?v=23c814…</text>
 <text class="vf-t vf-mono" x="330" y="296">GET</text>
 <text class="vf-t vf-mono" x="396" y="296">200</text>
 <text class="vf-t vf-mono" x="450" y="296">projectarmillary.com</text>
 <text class="vf-t-dim vf-mono" x="616" y="296">script</text>
-<text class="vf-t vf-mono" x="24" y="320">client-context.js?v=1481d4…</text>
+<text class="vf-t vf-mono" x="24" y="320">client-context.js?v=e70dc1…</text>
 <text class="vf-t vf-mono" x="330" y="320">GET</text>
 <text class="vf-t vf-mono" x="396" y="320">200</text>
 <text class="vf-t vf-mono" x="450" y="320">projectarmillary.com</text>
 <text class="vf-t-dim vf-mono" x="616" y="320">script</text>
-<text class="vf-t vf-mono" x="24" y="344">exporters.js?v=88cf0d…</text>
+<text class="vf-t vf-mono" x="24" y="344">exporters.js?v=23b218…</text>
 <text class="vf-t vf-mono" x="330" y="344">GET</text>
 <text class="vf-t vf-mono" x="396" y="344">200</text>
 <text class="vf-t vf-mono" x="450" y="344">projectarmillary.com</text>
@@ -182,17 +184,17 @@
 <text class="vf-t vf-mono" x="396" y="368">200</text>
 <text class="vf-t vf-mono" x="450" y="368">projectarmillary.com</text>
 <text class="vf-t-dim vf-mono" x="616" y="368">script</text>
-<text class="vf-t vf-mono" x="24" y="392">options-catalogue.js?v=8a1083…</text>
+<text class="vf-t vf-mono" x="24" y="392">options-catalogue.js?v=48ac30…</text>
 <text class="vf-t vf-mono" x="330" y="392">GET</text>
 <text class="vf-t vf-mono" x="396" y="392">200</text>
 <text class="vf-t vf-mono" x="450" y="392">projectarmillary.com</text>
 <text class="vf-t-dim vf-mono" x="616" y="392">script</text>
-<text class="vf-t vf-mono" x="24" y="416">request-input.js?v=b09811…</text>
+<text class="vf-t vf-mono" x="24" y="416">request-input.js?v=4c51bc…</text>
 <text class="vf-t vf-mono" x="330" y="416">GET</text>
 <text class="vf-t vf-mono" x="396" y="416">200</text>
 <text class="vf-t vf-mono" x="450" y="416">projectarmillary.com</text>
 <text class="vf-t-dim vf-mono" x="616" y="416">script</text>
-<text class="vf-t vf-mono" x="24" y="440">timezone-names.js?v=a27b23…</text>
+<text class="vf-t vf-mono" x="24" y="440">timezone-names.js?v=24317e…</text>
 <text class="vf-t vf-mono" x="330" y="440">GET</text>
 <text class="vf-t vf-mono" x="396" y="440">200</text>
 <text class="vf-t vf-mono" x="450" y="440">projectarmillary.com</text>
@@ -202,57 +204,57 @@
 <text class="vf-t vf-mono" x="396" y="464">200</text>
 <text class="vf-t vf-mono" x="450" y="464">projectarmillary.com</text>
 <text class="vf-t-dim vf-mono" x="616" y="464">script</text>
-<text class="vf-t vf-mono" x="24" y="488">chart-glyphs.js?v=adcee9…</text>
+<text class="vf-t vf-mono" x="24" y="488">result-chapters.js?v=1ad018…</text>
 <text class="vf-t vf-mono" x="330" y="488">GET</text>
 <text class="vf-t vf-mono" x="396" y="488">200</text>
 <text class="vf-t vf-mono" x="450" y="488">projectarmillary.com</text>
 <text class="vf-t-dim vf-mono" x="616" y="488">script</text>
-<text class="vf-t vf-mono" x="24" y="512">chart-wheel-aspects.js?v=9c0934…</text>
+<text class="vf-t vf-mono" x="24" y="512">glossary.js?v=72ea9a…</text>
 <text class="vf-t vf-mono" x="330" y="512">GET</text>
 <text class="vf-t vf-mono" x="396" y="512">200</text>
 <text class="vf-t vf-mono" x="450" y="512">projectarmillary.com</text>
 <text class="vf-t-dim vf-mono" x="616" y="512">script</text>
-<text class="vf-t vf-mono" x="24" y="536">chart-wheel-model.js?v=035cf1…</text>
+<text class="vf-t vf-mono" x="24" y="536">calculate.js?v=c9b6d7…</text>
 <text class="vf-t vf-mono" x="330" y="536">GET</text>
 <text class="vf-t vf-mono" x="396" y="536">200</text>
 <text class="vf-t vf-mono" x="450" y="536">projectarmillary.com</text>
 <text class="vf-t-dim vf-mono" x="616" y="536">script</text>
-<text class="vf-t vf-mono" x="24" y="560">chart-square.js?v=c5f0a5…</text>
+<text class="vf-t vf-mono" x="24" y="560">chart-glyphs.js?v=adcee9…</text>
 <text class="vf-t vf-mono" x="330" y="560">GET</text>
 <text class="vf-t vf-mono" x="396" y="560">200</text>
 <text class="vf-t vf-mono" x="450" y="560">projectarmillary.com</text>
 <text class="vf-t-dim vf-mono" x="616" y="560">script</text>
-<text class="vf-t vf-mono" x="24" y="584">chart-wheel.js?v=02a147…</text>
+<text class="vf-t vf-mono" x="24" y="584">chart-wheel-aspects.js?v=07fc64…</text>
 <text class="vf-t vf-mono" x="330" y="584">GET</text>
 <text class="vf-t vf-mono" x="396" y="584">200</text>
 <text class="vf-t vf-mono" x="450" y="584">projectarmillary.com</text>
 <text class="vf-t-dim vf-mono" x="616" y="584">script</text>
-<text class="vf-t vf-mono" x="24" y="608">timelords-model.js?v=a59041…</text>
+<text class="vf-t vf-mono" x="24" y="608">chart-wheel-model.js?v=04000f…</text>
 <text class="vf-t vf-mono" x="330" y="608">GET</text>
 <text class="vf-t vf-mono" x="396" y="608">200</text>
 <text class="vf-t vf-mono" x="450" y="608">projectarmillary.com</text>
 <text class="vf-t-dim vf-mono" x="616" y="608">script</text>
-<text class="vf-t vf-mono" x="24" y="632">timelords.js?v=3a5b3f…</text>
+<text class="vf-t vf-mono" x="24" y="632">chart-square.js?v=cce333…</text>
 <text class="vf-t vf-mono" x="330" y="632">GET</text>
 <text class="vf-t vf-mono" x="396" y="632">200</text>
 <text class="vf-t vf-mono" x="450" y="632">projectarmillary.com</text>
 <text class="vf-t-dim vf-mono" x="616" y="632">script</text>
-<text class="vf-t vf-mono" x="24" y="656">result-chapters.js?v=22cef6…</text>
+<text class="vf-t vf-mono" x="24" y="656">chart-wheel.js?v=84562d…</text>
 <text class="vf-t vf-mono" x="330" y="656">GET</text>
 <text class="vf-t vf-mono" x="396" y="656">200</text>
 <text class="vf-t vf-mono" x="450" y="656">projectarmillary.com</text>
 <text class="vf-t-dim vf-mono" x="616" y="656">script</text>
-<text class="vf-t vf-mono" x="24" y="680">glossary.js?v=72ea9a…</text>
+<text class="vf-t vf-mono" x="24" y="680">view-model.js?v=489ff2…</text>
 <text class="vf-t vf-mono" x="330" y="680">GET</text>
 <text class="vf-t vf-mono" x="396" y="680">200</text>
 <text class="vf-t vf-mono" x="450" y="680">projectarmillary.com</text>
 <text class="vf-t-dim vf-mono" x="616" y="680">script</text>
-<text class="vf-t vf-mono" x="24" y="704">calculate.js?v=df5d0a…</text>
+<text class="vf-t vf-mono" x="24" y="704">timelords-model.js?v=8d87cb…</text>
 <text class="vf-t vf-mono" x="330" y="704">GET</text>
 <text class="vf-t vf-mono" x="396" y="704">200</text>
 <text class="vf-t vf-mono" x="450" y="704">projectarmillary.com</text>
 <text class="vf-t-dim vf-mono" x="616" y="704">script</text>
-<text class="vf-t vf-mono" x="24" y="728">view-model.js?v=dc07e1…</text>
+<text class="vf-t vf-mono" x="24" y="728">timelords.js?v=9a5601…</text>
 <text class="vf-t vf-mono" x="330" y="728">GET</text>
 <text class="vf-t vf-mono" x="396" y="728">200</text>
 <text class="vf-t vf-mono" x="450" y="728">projectarmillary.com</text>
@@ -270,36 +272,38 @@
     </figure>
 
     <p><b>每一次計算都會出現的請求一共 22 個；加上瀏覽器可能另外要的圖示，以及只有你做了某件事才會出現的請求，全部列在下面三張表。</b>這幾張表不是手抄的：網站每次更新時，由程式從計算頁實際載入的檔案重新產生；另有自動測試用真的瀏覽器跑一次合成範例，<b>觀察到的請求和這幾張表不一致，測試就失敗。</b></p>
+    <p class="scroll-hint" hidden>表格可左右捲動</p>
     <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="vf-required-title">
       <table class="spec vf-reqs">
         <caption id="vf-required-title">每一次計算都會出現的請求</caption>
         <thead><tr><th scope="col">方法</th><th scope="col">位址</th><th scope="col">是什麼</th><th scope="col">什麼時候</th><th scope="col">快取（Cache-Control）</th></tr></thead>
         <tbody>
 <tr data-request="GET /zh-TW/calculate" data-cache-control="no-cache"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>calculate</td><td>頁面：計算頁本身</td><td>打開計算頁</td><td class="mono val">no-cache</td></tr>
-<tr data-request="GET /zh-TW/style/calculate.css?v=4c30e78189fc52a4" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>style/<wbr>calculate.css<wbr>?v=4c30e78189fc52a4</td><td>樣式：這一頁的樣式包</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
-<tr data-request="GET /zh-TW/labels.js?v=6882c640256c9e6c" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>labels.js<wbr>?v=6882c640256c9e6c</td><td>程式：代碼的中文名稱，結果與匯出共用</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
-<tr data-request="GET /zh-TW/client-context.js?v=1481d420f159d66d" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>client-context.js<wbr>?v=1481d420f159d66d</td><td>程式：把錯誤代碼換成看得懂的說明與下一步</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
-<tr data-request="GET /zh-TW/exporters.js?v=88cf0d752661fa3c" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>exporters.js<wbr>?v=88cf0d752661fa3c</td><td>程式：複製與下載檔案的內容，在你的瀏覽器裡產生</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
+<tr data-request="GET /zh-TW/style/calculate.css?v=e5bd64ad19e346fb" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>style/<wbr>calculate.css<wbr>?v=e5bd64ad19e346fb</td><td>樣式：這一頁的樣式包</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
+<tr data-request="GET /zh-TW/labels.js?v=23c814342466d9f8" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>labels.js<wbr>?v=23c814342466d9f8</td><td>程式：代碼的中文名稱，結果與匯出共用</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
+<tr data-request="GET /zh-TW/client-context.js?v=e70dc157281ccfbc" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>client-context.js<wbr>?v=e70dc157281ccfbc</td><td>程式：把錯誤代碼換成看得懂的說明與下一步</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
+<tr data-request="GET /zh-TW/exporters.js?v=23b21898d9c64b8a" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>exporters.js<wbr>?v=23b21898d9c64b8a</td><td>程式：複製與下載檔案的內容，在你的瀏覽器裡產生</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
 <tr data-request="GET /zh-TW/privacy-lifecycle.js?v=e6676eaaf9d1ffad" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>privacy-lifecycle.js<wbr>?v=e6676eaaf9d1ffad</td><td>程式：按「清除」或離開頁面時丟掉結果、中止請求</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
-<tr data-request="GET /zh-TW/options-catalogue.js?v=8a108372b97fb8ae" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>options-catalogue.js<wbr>?v=8a108372b97fb8ae</td><td>程式：進階選項的清單</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
-<tr data-request="GET /zh-TW/request-input.js?v=b098115dad831050" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>request-input.js<wbr>?v=b098115dad831050</td><td>程式：檢查欄位、組出要送出的請求內容</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
-<tr data-request="GET /zh-TW/timezone-names.js?v=a27b23859fb3909d" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>timezone-names.js<wbr>?v=a27b23859fb3909d</td><td>程式：服務接受的時區名稱，送出前先在本機檢查</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
+<tr data-request="GET /zh-TW/options-catalogue.js?v=48ac305fc5c2dbb5" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>options-catalogue.js<wbr>?v=48ac305fc5c2dbb5</td><td>程式：進階選項的清單</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
+<tr data-request="GET /zh-TW/request-input.js?v=4c51bc6828354997" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>request-input.js<wbr>?v=4c51bc6828354997</td><td>程式：檢查欄位、組出要送出的請求內容</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
+<tr data-request="GET /zh-TW/timezone-names.js?v=24317e1f702f3a36" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>timezone-names.js<wbr>?v=24317e1f702f3a36</td><td>程式：服務接受的時區名稱，送出前先在本機檢查</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
 <tr data-request="GET /zh-TW/location-receipt.js?v=c2a0c234511244d2" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>location-receipt.js<wbr>?v=c2a0c234511244d2</td><td>程式：地點收據：你選的地點與座標</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
-<tr data-request="GET /zh-TW/chart-glyphs.js?v=adcee940cd2a7a71" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>chart-glyphs.js<wbr>?v=adcee940cd2a7a71</td><td>程式：星盤圖的符號（取自開源字型的輪廓，不另載字型）</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
-<tr data-request="GET /zh-TW/chart-wheel-aspects.js?v=9c09347f6f39365d" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>chart-wheel-aspects.js<wbr>?v=9c09347f6f39365d</td><td>程式：依回應的相位結果畫出星盤圖中央的相位線，在你的瀏覽器裡排版</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
-<tr data-request="GET /zh-TW/chart-wheel-model.js?v=035cf1519384f18f" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>chart-wheel-model.js<wbr>?v=035cf1519384f18f</td><td>程式：把回應裡的位置排成星盤圖，在你的瀏覽器裡計算版面</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
-<tr data-request="GET /zh-TW/chart-square.js?v=c5f0a50ba4e2bc04" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>chart-square.js<wbr>?v=c5f0a50ba4e2bc04</td><td>程式：把同一份位置依宮位排成方盤（方形的星盤），在你的瀏覽器裡計算版面</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
-<tr data-request="GET /zh-TW/chart-wheel.js?v=02a147b97f8c7da9" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>chart-wheel.js<wbr>?v=02a147b97f8c7da9</td><td>程式：畫出星盤圖、放大檢視與 SVG／PNG 下載，在你的瀏覽器裡產生</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
-<tr data-request="GET /zh-TW/timelords-model.js?v=a5904123562a2dd7" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>timelords-model.js<wbr>?v=a5904123562a2dd7</td><td>程式：把年度回應整理成時間主星的時間軸、年表、行事曆檔與時間主星表，在你的瀏覽器裡計算版面</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
-<tr data-request="GET /zh-TW/timelords.js?v=3a5b3fbfa5864ed2" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>timelords.js<wbr>?v=3a5b3fbfa5864ed2</td><td>程式：畫出時間主星一區；按「排出時間主星」，或在「古典完整」模式勾著接著排出時算完星盤，才送出年度請求</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
-<tr data-request="GET /zh-TW/result-chapters.js?v=22cef6614c202c38" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>result-chapters.js<wbr>?v=22cef6614c202c38</td><td>程式：三種模式各預先勾哪些選項、結果的每一區放在哪一章</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
+<tr data-request="GET /zh-TW/result-chapters.js?v=1ad01859ec8c6203" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>result-chapters.js<wbr>?v=1ad01859ec8c6203</td><td>程式：三種模式各預先勾哪些選項、結果的每一區放在哪一章</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
 <tr data-request="GET /zh-TW/glossary.js?v=72ea9a1188ca1b5d" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>glossary.js<wbr>?v=72ea9a1188ca1b5d</td><td>程式：名詞解釋的詞條與抽屜，不送出任何請求</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
-<tr data-request="GET /zh-TW/calculate.js?v=df5d0a0726bd8c03" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>calculate.js<wbr>?v=df5d0a0726bd8c03</td><td>程式：頁面本身的程式：收表單、送出請求、畫出結果</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
-<tr data-request="GET /zh-TW/view-model.js?v=dc07e1d59093dd3e" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>view-model.js<wbr>?v=dc07e1d59093dd3e</td><td>程式：把回應整理成畫面；第一次按「計算」時才載入</td><td>第一次按「計算」</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
+<tr data-request="GET /zh-TW/calculate.js?v=c9b6d72a4acda170" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>calculate.js<wbr>?v=c9b6d72a4acda170</td><td>程式：頁面本身的程式：收表單、送出請求、畫出結果</td><td>打開計算頁</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
+<tr data-request="GET /zh-TW/chart-glyphs.js?v=adcee940cd2a7a71" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>chart-glyphs.js<wbr>?v=adcee940cd2a7a71</td><td>程式：星盤圖的符號（取自開源字型的輪廓，不另載字型）</td><td>第一次操作表單時預先載入</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
+<tr data-request="GET /zh-TW/chart-wheel-aspects.js?v=07fc6467c5b5dd31" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>chart-wheel-aspects.js<wbr>?v=07fc6467c5b5dd31</td><td>程式：依回應的相位結果畫出星盤圖中央的相位線，在你的瀏覽器裡排版</td><td>第一次操作表單時預先載入</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
+<tr data-request="GET /zh-TW/chart-wheel-model.js?v=04000ffac8c1b72e" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>chart-wheel-model.js<wbr>?v=04000ffac8c1b72e</td><td>程式：把回應裡的位置排成星盤圖，在你的瀏覽器裡計算版面</td><td>第一次操作表單時預先載入</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
+<tr data-request="GET /zh-TW/chart-square.js?v=cce3333d37123d24" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>chart-square.js<wbr>?v=cce3333d37123d24</td><td>程式：把同一份位置依宮位排成方盤（方形的星盤），在你的瀏覽器裡計算版面</td><td>第一次操作表單時預先載入</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
+<tr data-request="GET /zh-TW/chart-wheel.js?v=84562d612341d0c6" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>chart-wheel.js<wbr>?v=84562d612341d0c6</td><td>程式：畫出星盤圖、放大檢視與 SVG／PNG 下載，在你的瀏覽器裡產生</td><td>第一次操作表單時預先載入</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
+<tr data-request="GET /zh-TW/view-model.js?v=489ff2b3d3fd40f1" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>view-model.js<wbr>?v=489ff2b3d3fd40f1</td><td>程式：把回應整理成畫面；第一次按「計算」時才載入</td><td>第一次操作表單時預先載入</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
+<tr data-request="GET /zh-TW/timelords-model.js?v=8d87cbbd619a4939" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>timelords-model.js<wbr>?v=8d87cbbd619a4939</td><td>程式：把年度回應整理成時間主星的時間軸、年表、行事曆檔與時間主星表，在你的瀏覽器裡計算版面</td><td>第一份結果畫出時</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
+<tr data-request="GET /zh-TW/timelords.js?v=9a5601f08ac0914c" data-cache-control="public, max-age=31536000, immutable"><td class="mono">GET</td><td class="mono val">/<wbr>zh-TW/<wbr>timelords.js<wbr>?v=9a5601f08ac0914c</td><td>程式：畫出時間主星一區；按「排出時間主星」，或在「古典完整」模式勾著接著排出時算完星盤，才送出年度請求</td><td>第一份結果畫出時</td><td class="mono val">public, max-age=31536000, immutable</td></tr>
 <tr data-request="POST /api/chart" data-cache-control="no-store"><td class="mono">POST</td><td class="mono val">/<wbr>api/<wbr>chart</td><td>計算／查詢：出生日期時間、座標、時區與你選的選項；回應是星盤與計算卷宗</td><td>按下「計算」</td><td class="mono val">no-store</td></tr>
         </tbody>
       </table>
     </div>
+    <p class="scroll-hint" hidden>表格可左右捲動</p>
     <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="vf-icons-title">
       <table class="spec vf-reqs">
         <caption id="vf-icons-title">瀏覽器可能另外要的圖示</caption>
@@ -311,6 +315,7 @@
         </tbody>
       </table>
     </div>
+    <p class="scroll-hint" hidden>表格可左右捲動</p>
     <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="vf-optional-title">
       <table class="spec vf-reqs">
         <caption id="vf-optional-title">只有你做了某件事才會出現的請求</caption>
@@ -337,7 +342,7 @@
       <li><b>Chrome 與 Edge：</b>開發者工具的 <b>Application</b> 分頁，左側 Storage 底下。</li>
       <li><b>Firefox 與 Safari：</b><b>Storage</b> 分頁。</li>
     </ul>
-    <p>逐一展開 <b>Cookies、Local storage、Session storage、IndexedDB、Cache storage</b>，點 <span class="mono">https://projectarmillary.com</span>：<b>每一個都應該是空的</b>（圖中 ⑤）。也可以回到 Network，點任一列看 Headers：回應裡沒有 <span class="mono">Set-Cookie</span>，請求裡也沒有 <span class="mono">Cookie</span>。</p>
+    <p>逐一展開 <b>Cookies、Local storage、Session storage、IndexedDB、Cache storage</b>，點 <span class="mono">https://projectarmillary.com</span>：每一個都應該是空的（圖中 ⑤）。也可以回到 Network，點任一列看 Headers：回應裡沒有 <span class="mono">Set-Cookie</span>，請求裡也沒有 <span class="mono">Cookie</span>。</p>
     <figure class="vf-fig">
       <div class="spec-scroll" tabindex="0" role="region" aria-label="Application 分頁示意圖（可橫向捲動）">
         <svg class="vf-svg" viewBox="0 0 720 250" role="img" aria-label="示意圖，不是截圖。左側是儲存類別：Local storage、Session storage、IndexedDB、Cookies、Cache storage，每一類底下是 https://projectarmillary.com。右側選中 Cookies，表格只有欄位標題 Name 與 Value，下面寫著沒有資料，標著編號 5。">
@@ -369,13 +374,14 @@
     </figure>
     <div class="fail">
       <span class="fail-k">邊界</span>
-      <p>這裡檢查的是<b>本站要瀏覽器存下的東西</b>，結果是沒有。<b>瀏覽器自己仍會留下兩樣：</b>瀏覽紀錄裡的網址，以及樣式、程式檔的暫存（〈<a href="/zh-TW/security#ds-05-title">安全</a>〉第 05 節說過，暫存裡沒有出生資料，也沒有計算結果）。計算結果在你關掉分頁或按「清除」之前，留在這個分頁的記憶體裡。</p>
+      <p>這裡檢查的是<b>本站要瀏覽器存下的東西</b>，結果是沒有。<b>瀏覽器自己仍會留下兩樣：</b>瀏覽紀錄裡的網址，以及樣式、程式檔的暫存（〈<a href="/zh-TW/security#ds-06-title">安全</a>〉第 06 節說過，暫存裡沒有出生資料，也沒有計算結果）。計算結果在你關掉分頁或按「清除」之前，留在這個分頁的記憶體裡。</p>
     </div>
   </section>
 
   <section class="ds-sec">
     <h2 class="hdr" id="vf-05-title"><span>05</span>看回應標頭</h2>
     <p>在 Network 清單點任一列，打開 <b>Headers</b>，往下找 <b>Response Headers</b>。本站的每一個回應都帶著下面這一組，值應該一字不差：</p>
+    <p class="scroll-hint" hidden>表格可左右捲動</p>
     <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="vf-05-title">
       <table class="spec vf-headers">
         <thead><tr><th scope="col">標頭</th><th scope="col">值</th><th scope="col">意思</th></tr></thead>
@@ -439,9 +445,9 @@
       <figcaption>虛線左邊，這一頁的步驟讓你親眼看到；虛線右邊，只能靠公開的設定與原始碼核對。</figcaption>
     </figure>
     <ul class="weak">
-      <li><b>伺服器收到之後做了什麼，這個檢查證明不了。</b>我們能給的是可以核對的東西：日誌每一行的完整欄位（〈<a href="/zh-TW/security#ds-03-title">安全</a>〉第 03 節）、容器沒有對外路由（同頁第 04 節），以及<a href="https://github.com/sa3952/Armillary">公開的原始碼</a>。</li>
+      <li><b>伺服器收到之後做了什麼，這個檢查證明不了。</b>我們能給的是可以核對的東西：日誌每一行的完整欄位（〈<a href="/zh-TW/security#ds-04-title">安全</a>〉第 04 節）、容器沒有對外路由（同頁第 05 節），以及<a href="https://github.com/sa3952/Armillary">公開的原始碼</a>。</li>
       <li><b>線上跑的版本不必然等於公開原始碼的最新版。</b>要確認你用的是哪一版，看計算卷宗裡的版本識別碼。</li>
-      <li><b>反向代理看得到你的 IP 位址</b>，否則回應送不回來；它拿來做限流計數，不寫進日誌，也不轉給應用程式（〈<a href="/zh-TW/security#ds-06-title">安全</a>〉第 06 節）。這一點從瀏覽器同樣無法驗證。</li>
+      <li><b>反向代理看得到你的 IP 位址</b>，否則回應送不回來；它拿來做限流計數，不寫進日誌，也不轉給應用程式（〈<a href="/zh-TW/security#ds-04-title">安全</a>〉第 04 節）。這一點從瀏覽器同樣無法驗證。</li>
       <li><b>這張清單是本站頁面要求瀏覽器做的事。</b>瀏覽器本身（安全瀏覽檢查、更新、擴充功能）另外送出的請求不在其中，也不一定會出現在開發者工具裡。</li>
     </ul>
   </section>
@@ -455,6 +461,7 @@
   </section>
 
 </div>
+<script src="/zh-TW/table-scroll.js?v=902f20a5b04bbed0" defer></script>
 </main>
 
 <footer>
@@ -488,7 +495,7 @@
   <div class="wrap">
     <span>渾儀 ARMILLARY</span>
     <span>只計算，不解盤，不預測</span>
-    <span>最後更新：<time datetime="2026-10-18">2026-10-18</time></span>
+    <span>最後更新：<time datetime="2026-10-21">2026-10-21</time></span>
   </div>
 </footer>
 

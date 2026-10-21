@@ -43,9 +43,7 @@ CHIRON_JPL_SBDB_REFERENCE: dict[str, Any] = {
     "absolute_magnitude_h": 5.54,
     "retrieved": "2026-10-04",
 }
-# Disclose the source, do not override it, and say
-# so in words a reader understands.  The sentence is built from the numbers
-# above, so it cannot drift from the parameters it explains.
+# Built from the numbers above, so it cannot drift from the parameters it explains.
 CHIRON_PHYSICAL_PARAMETERS_EXPLANATION_ZH = (
     "凱龍星的「視直徑」與「視星等」，是用星曆程式 Swiss Ephemeris 內建的大小與亮度"
     f"參數算出來的：直徑 {_CHIRON_BUILTIN_DIAMETER_KM:g} 公里、絕對星等 {_CHIRON_BUILTIN_H:g}。"
@@ -80,9 +78,8 @@ MODERN_MINOR_BODIES = [
     },
 ]
 
-# 這些是月球軌道遠近地點，不是
-# 物理天體，也不是小行星 1181 Lilith。Natural Priapus 必須用 Swiss 的
-# INTP_PERG 獨立計算；Swiss 文件明示 natural apogee/perigee 通常不精確對沖。
+# 月球軌道遠近地點，不是物理天體，也不是小行星 1181 Lilith。Natural Priapus 必須用
+# Swiss 的 INTP_PERG 獨立計算；Swiss 文件明示 natural apogee/perigee 通常不精確對沖。
 LUNAR_APSIDES = [
     {
         "key": "mean_lilith",
@@ -133,7 +130,6 @@ LUNAR_APSIDES = [
 #    month, viz. at the times when the Moon crosses the ecliptic."
 #   §2.2.5 "There are no planetary nodes or apsides ... that really deserve the label
 #    'true'. ... It is more appropriate to call them 'osculating'."
-# （第二句在 §2.2.5，不在 §2.2.2。）
 # 所謂真交點是密切軌道(osculating orbit)的交點：把此刻的瞬時軌道當成兩體問題來解，
 # 只在月亮實際穿越黃道的那兩個時刻為真，其餘時間是數學構造。它在平均交點附近振盪，
 # 並有短暫的「順行」——那個順行是模型產物，不是天象。Swiss 文件沒有給振盪幅度；本產品
@@ -141,16 +137,15 @@ LUNAR_APSIDES = [
 # 與天數）由 scripts/frontend/figures/nodes.py 每 6 小時取樣算出，印在部落格〈平均交點與
 # 密切交點〉（方法頁引用其中兩個），不在這裡另抄一份。
 #
-# **正式技法採平均交點**，
-# 理由是古代與中世紀的主要天文表以平均運動給交點（Ptolemy《實用天文表》（Procheiroi kanones）、印度 siddhānta）；
+# **正式技法採平均交點**，理由是古代與中世紀的主要天文表以平均運動給交點（Ptolemy《實用天文表》（Procheiroi kanones）、印度 siddhānta）；
 # Tycho（1587 年之後）已發現交點運動不均勻並給出改正（Dreyer 1890 ch.XII，真平差可達
 # 1°46′），但那不是現代的密切交點，前現代技法也不以它為輸入。
 # 本產品定位為古典西洋占星。兩者仍並列輸出，因為差距最大約 2°，讀者有權看到。
 #
 # API 鍵值 true_node 維持不變以保相容；顯示標籤如實寫「密切」。
 NODE_BODIES = [
-    {"key": "true_node", "zh": "北交點(密切)", "id": swe.TRUE_NODE},
-    {"key": "mean_node", "zh": "北交點(平均)", "id": swe.MEAN_NODE},
+    {"key": "true_node", "zh": "北交點（密切）", "id": swe.TRUE_NODE},
+    {"key": "mean_node", "zh": "北交點（平均）", "id": swe.MEAN_NODE},
 ]
 
 BODY_ID_BY_KEY = {
@@ -169,13 +164,13 @@ BODY_ID_BY_KEY = {
 # 不重排：內部來源表依位置記錄每顆星的來歷。計算輸出不逐星標來歷。
 FIXED_STARS = [
     {"key": "algol", "zh": "大陵五", "name": "Algol"},
-    {"key": "alcyone", "zh": "昴宿六(昴星團)", "name": "Alcyone"},
+    {"key": "alcyone", "zh": "昴宿六（昴星團）", "name": "Alcyone"},
     {"key": "aldebaran", "zh": "畢宿五", "name": "Aldebaran"},
     {"key": "capella", "zh": "五車二", "name": "Capella"},
     {"key": "sirius", "zh": "天狼星", "name": "Sirius"},
     {"key": "procyon", "zh": "南河三", "name": "Procyon"},
     {"key": "regulus", "zh": "軒轅十四", "name": "Regulus"},
-    {"key": "alkaid", "zh": "搖光(大熊座η)", "name": "Alkaid"},
+    {"key": "alkaid", "zh": "搖光（大熊座η）", "name": "Alkaid"},
     {"key": "algorab", "zh": "軫宿三", "name": "Algorab"},
     {"key": "spica", "zh": "角宿一", "name": "Spica"},
     {"key": "arcturus", "zh": "大角", "name": "Arcturus"},
@@ -184,7 +179,7 @@ FIXED_STARS = [
     {"key": "vega", "zh": "織女一", "name": "Vega"},
     {"key": "deneb_algedi", "zh": "壘壁陣四", "name": "Deneb Algedi"},
     {"key": "rigel", "zh": "參宿七", "name": "Rigel"},
-    {"key": "altair", "zh": "河鼓二(牛郎星)", "name": "Altair"},
+    {"key": "altair", "zh": "河鼓二（牛郎星）", "name": "Altair"},
     {"key": "castor", "zh": "北河二", "name": "Castor"},
     {"key": "pollux", "zh": "北河三", "name": "Pollux"},
     {"key": "betelgeuse", "zh": "參宿四", "name": "Betelgeuse"},
@@ -195,7 +190,7 @@ FIXED_STARS = [
     {"key": "vindemiatrix", "zh": "東次將", "name": "Vindemiatrix"},
     {"key": "fomalhaut", "zh": "北落師門", "name": "Fomalhaut"},
     {"key": "achernar", "zh": "水委一", "name": "Achernar"},
-    {"key": "polaris", "zh": "勾陳一(北極星)", "name": "Polaris"},
+    {"key": "polaris", "zh": "勾陳一（北極星）", "name": "Polaris"},
     {"key": "deneb", "zh": "天津四", "name": "Deneb"},
     {"key": "hadar", "zh": "馬腹一", "name": "Hadar"},
     # sefstars.txt 裡 "Menkar" 這個名字被兩顆不同的星共用（alCet 鯨魚座α本尊，
@@ -237,9 +232,9 @@ FIXED_STARS = [
     # 星團：magnitude_basis 標明星等是整團合計，不是單星。單寫 "Praesepe" 查不到記錄。
     {"key": "praesepe", "zh": "鬼宿星團", "name": "Praesepe Cluster,M44",
      "magnitude_basis": "cluster_integrated"},
-    {"key": "capulus", "zh": "英仙h星團(NGC 869)", "name": "Capulus",
+    {"key": "capulus", "zh": "英仙h星團（NGC 869）", "name": "Capulus",
      "magnitude_basis": "cluster_integrated"},
-    {"key": "acumen", "zh": "托勒密星團(通常認定為M7，有爭議)", "name": "Acumen",
+    {"key": "acumen", "zh": "托勒密星團（通常認定為M7，有爭議）", "name": "Acumen",
      "magnitude_basis": "cluster_integrated"},
 ]
 

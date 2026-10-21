@@ -10,14 +10,16 @@ import os
 from pathlib import Path
 from collections.abc import Callable, Coroutine
 from contextvars import ContextVar
-from typing import Any
+from typing import Any, cast
 
 import swisseph as swe
 from fastapi import FastAPI, Request
 from fastapi.routing import APIRoute
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, RedirectResponse
+from pydantic import BaseModel
 
+import anyio.to_thread
 from starlette.concurrency import run_in_threadpool
 from starlette.responses import Response
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -25,14 +27,13 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from .ephemeris import (
     FULL_EPHEMERIS_OUT_OF_COVERAGE,
     FullEphemerisRequiredError,
+    refresh_ephemeris_file_manifest,
     release_ephemeris_for_thread,
 )
-from .schemas import (
-    AnnualRequest,
-    ChartRequest,
-    PlaceSearchRequest,
+from .schemas import AnnualRequest, PlaceSearchRequest, TimeConversionRequest
+from .schema_chart import ChartRequest
+from .schema_refusals import (
     RefusalResponse,
-    TimeConversionRequest,
     StrictJsonBodyError,
     check_strict_json_body,
     check_strict_query,
@@ -44,6 +45,7 @@ from .refusals import (
     CHART_ROUTE,
     HEALTH_ROUTE,
     PLACE_SEARCH_ROUTE,
+    READY_ROUTE,
     TIME_CONVERT_ROUTE,
     refusal_response,
     routes_refusals,
@@ -51,6 +53,7 @@ from .refusals import (
 from .core.time_utils import (
     AmbiguousLocalTimeChoiceRequiredError,
     NonexistentLocalTimeError,
+    earth_rotation_memo,
 )
 from .core.civil_time_basis import (
     CivilTimeBasisNotApplicableError,
@@ -67,7 +70,7 @@ from .response_projection import (
     ChartProjection,
     project_chart_response,
 )
-from .annual_projection import DEFAULT_ANNUAL_PROJECTION, project_annual_response
+from .annual_projection import project_annual_response
 from .core.place_catalog import (
     CatalogLocationMismatchError,
     CatalogRecordUnknownError,
@@ -123,6 +126,28 @@ async def health_check() -> dict[str, object]:
     }
 
 
+def ephemeris_ready() -> bool:
+    """Every bundled ephemeris input is present and has its pinned digest."""
+    manifest = refresh_ephemeris_file_manifest()
+    return bool(manifest) and all(
+        entry["present"] and entry["matches_pinned_sha256"] for entry in manifest.values()
+    )
+
+
+# The probe is exempt from admission; one thread for all of its checks keeps a
+# flood of probes from taking the threads place search and chart binding run on.
+_READINESS_THREADS = anyio.CapacityLimiter(1)
+
+
+async def readiness_check() -> Response:
+    """Whether this process can calculate from its pinned ephemeris; a closed body."""
+    ready = await anyio.to_thread.run_sync(ephemeris_ready, limiter=_READINESS_THREADS)
+    return JSONResponse(
+        {"status": "ready" if ready else "not_ready", "readiness_scope": "ephemeris_manifest"},
+        status_code=200 if ready else 503,
+    )
+
+
 def _refuse(request: Request, code: str, **kwargs: Any) -> JSONResponse:
     """Every refusal written here: record the closed code, then serialize once."""
 
@@ -163,11 +188,7 @@ _STATIC_MOUNT_METHODS = "GET, HEAD"
 
 
 async def _handle_http_exception(request: Request, exc: Exception):
-    """Give the framework's own refusals the one shape this service declares.
-
-    Every refusal, the framework's included, carries the same object-shaped
-    `detail`, so a consumer can branch on it.
-    """
+    """Give the framework's own refusals the same object-shaped `detail`."""
 
     status_code = getattr(exc, "status_code", 500)
     headers = dict(getattr(exc, "headers", None) or {})
@@ -181,8 +202,7 @@ async def _handle_http_exception(request: Request, exc: Exception):
 
 
 def _declared_request_names(request: Request) -> frozenset[str]:
-    # The answering route's own names only; a route that declared
-    # nothing, or none at all, leaves every name masked.
+    # The answering route's own names only; no route means every name masked.
     return getattr(request.scope.get("route"), "declared_request_names", frozenset())
 
 
@@ -233,8 +253,11 @@ class _StrictJsonRoute(APIRoute):
         declared_query = frozenset(
             parameter.alias for parameter in self.dependant.query_params
         )
+        # pydantic types a field's annotation as any type form; every API body
+        # here is a model, which request_field_names walks.
         declared_fields = request_field_names(
-            self.body_field.field_info.annotation if self.body_field is not None else None
+            cast("type[BaseModel] | None", self.body_field.field_info.annotation)
+            if self.body_field is not None else None
         )
         # Read back by the validation handler: a refusal names only these.
         self.declared_request_names = declared_fields | declared_query
@@ -255,8 +278,7 @@ class _StrictJsonRoute(APIRoute):
 
 
 # Swiss center／sidereal mode are process-global; serialize per worker.  The
-# line is the mutual exclusion: requests are admitted in arrival order
-# and a place is released only when its Swiss worker thread has exited.
+# FIFO line is the mutual exclusion.
 _COMPUTE_QUEUE = FifoComputeQueue()
 
 # Bound queue wait without interrupting an in-flight Swiss calculation.  The
@@ -277,7 +299,8 @@ class ComputeCapacityExhaustedError(Exception):
 
 def _in_worker(work: Callable[[Any], Any], req: Any):
     try:
-        return work(req)
+        with earth_rotation_memo():
+            return work(req)
     finally:
         release_ephemeris_for_thread()
 
@@ -293,11 +316,9 @@ async def compute_annual_for_request(req: AnnualRequest, request: Request):
 async def _compute_in_line(work: Callable[[Any], Any], req: Any, request: Request):
     """Wait in line for Swiss, then compute; cancel only queued work.
 
-    The line is first come, first served, and the wait is bounded from arrival.
-    A request whose client has gone never enters Swiss: the check and the mark
-    that it entered happen in one event-loop step, so a disconnect noticed in
-    the same turn as the hand-over still wins.  Once Swiss starts, the place
-    in line and the admission are kept until its worker exits.
+    A request whose client has gone never enters Swiss: the check and the
+    entered mark happen in one event-loop step, so a disconnect noticed in the
+    same turn as the hand-over still wins.
     """
 
     if not await _COMPUTE_QUEUE.acquire(timeout=_COMPUTE_LOCK_WAIT_TIMEOUT_SECONDS):
@@ -322,8 +343,8 @@ async def _compute_in_line(work: Callable[[Any], Any], req: Any, request: Reques
     try:
         return await asyncio.shield(worker)
     except asyncio.CancelledError:
-        # Native Swiss work cannot be cancelled safely.  Keep this request's
-        # capacity and its place in line until its worker actually exits.
+        # Native Swiss work cannot be cancelled safely; hold capacity and the
+        # line until the worker exits.
         await asyncio.shield(worker)
         raise
 
@@ -358,6 +379,17 @@ def _declared_refusals(route: str) -> dict[int | str, dict[str, Any]]:
     }
 
 
+async def _identified(req, request: Request, compute, project, projection, place_catalog, identity):
+    # Before the compute line: a refusal here costs no Swiss slot.
+    await run_in_threadpool(check_request_places, req, place_catalog.record)
+    token = _BUILD_IDENTITY_CONTEXT.set(identity)
+    try:
+        # page is derived from this one detailed response.
+        return project(await compute(req, request), projection)
+    finally:
+        _BUILD_IDENTITY_CONTEXT.reset(token)
+
+
 def _add_api_routes(
     application: FastAPI,
     *,
@@ -376,16 +408,21 @@ def _add_api_routes(
         request: Request,
         projection: ChartProjection = DEFAULT_CHART_PROJECTION,
     ):
-        # Before the compute line: a refusal here costs no Swiss slot.
-        await run_in_threadpool(check_request_places, req, place_catalog.record)
-        token = _BUILD_IDENTITY_CONTEXT.set(runtime_build_identity)
-        try:
-            # page is derived from this one detailed response.
-            return project_chart_response(
-                await compute_chart_for_request(req, request), projection
-            )
-        finally:
-            _BUILD_IDENTITY_CONTEXT.reset(token)
+        return await _identified(
+            req, request, compute_chart_for_request, project_chart_response, projection,
+            place_catalog, runtime_build_identity,
+        )
+
+    async def identified_compute_annual(
+        req: AnnualRequest,
+        request: Request,
+        projection: ChartProjection = DEFAULT_CHART_PROJECTION,
+    ):
+        # The same natal input as /api/chart, so the same question first.
+        return await _identified(
+            req, request, compute_annual_for_request, project_annual_response, projection,
+            place_catalog, runtime_build_identity,
+        )
 
     def search_places(request: PlaceSearchRequest):
         return place_catalog.search(
@@ -399,107 +436,49 @@ def _add_api_routes(
     async def convert_time(request: TimeConversionRequest):
         return convert_civil_time(request)
 
-    api_method_routes = {
-        # HEAD wherever GET is served.
-        "/api/health": frozenset({"GET", "HEAD"}),
-        "/api/chart": frozenset({"POST"}),
-        "/api/places/search": frozenset({"POST"}),
-        TIME_CONVERT_ROUTE: frozenset({"POST"}),
-    }
-    # GET and HEAD are separate routes so each has its own OpenAPI operation ID;
-    # one route carrying both methods published a duplicate ID.
-    for method, route_name in (("GET", "health_check"), ("HEAD", "health_check_head")):
-        application.add_api_route(
-            "/api/health",
-            health_check,
-            methods=[method],
-            name=route_name,
-            response_model=dict[str, object],
-            response_description=(
-                "Process-liveness response; this is not end-to-end calculation readiness."
-            ),
-            responses=_declared_refusals(HEALTH_ROUTE),
-        )
-    application.add_api_route(
-        "/api/chart",
-        identified_compute_chart,
-        methods=["POST"],
-        name="compute_chart",
-        response_model=dict[str, Any],
-        response_description=(
-            "Versioned chart response; see output_contract and deploy/frontend-contract.json."
-        ),
-        responses=_declared_refusals(CHART_ROUTE),
-    )
-    application.add_api_route(
-        "/api/places/search",
-        search_places,
-        methods=["POST"],
-        name="search_places",
-        response_model=dict[str, Any],
-        response_description=(
-            "Bundled-catalog search response with query and execution receipts."
-        ),
-        responses=_declared_refusals(PLACE_SEARCH_ROUTE),
-    )
-    application.add_api_route(
-        TIME_CONVERT_ROUTE,
-        convert_time,
-        methods=["POST"],
-        name="convert_time",
-        response_model=dict[str, Any],
-        response_description=(
-            "Every reading of one wall-clock time, with its rule's source row and the tz database."
-        ),
-        responses=_declared_refusals(TIME_CONVERT_ROUTE),
-    )
+    # GET and HEAD of the health route are separate routes so each has its own
+    # OpenAPI operation ID; one route carrying both methods published a duplicate ID.
+    routes: list[tuple[str, Callable[..., Any], str, str, Any, str]] = [
+        (HEALTH_ROUTE, health_check, "GET", "health_check", dict[str, object],
+         "Process-liveness response; this is not end-to-end calculation readiness."),
+        (HEALTH_ROUTE, health_check, "HEAD", "health_check_head", dict[str, object],
+         "Process-liveness response; this is not end-to-end calculation readiness."),
+        (READY_ROUTE, readiness_check, "GET", "readiness_check", dict[str, object],
+         "200 when the bundled ephemeris files are present and match their pinned digests; 503 otherwise."),
+        (CHART_ROUTE, identified_compute_chart, "POST", "compute_chart", dict[str, Any],
+         "Versioned chart response; see output_contract and deploy/frontend-contract.json."),
+        (PLACE_SEARCH_ROUTE, search_places, "POST", "search_places", dict[str, Any],
+         "Bundled-catalog search response with query and execution receipts."),
+        (TIME_CONVERT_ROUTE, convert_time, "POST", "convert_time", dict[str, Any],
+         "Every reading of one wall-clock time, with its rule's source row and the tz database."),
+    ]
     if enable_annual_route:
-        async def identified_compute_annual(
-            req: AnnualRequest,
-            request: Request,
-            projection: ChartProjection = DEFAULT_ANNUAL_PROJECTION,
-        ):
-            # The same natal input as /api/chart, so the same question first.
-            await run_in_threadpool(check_request_places, req, place_catalog.record)
-            token = _BUILD_IDENTITY_CONTEXT.set(runtime_build_identity)
-            try:
-                # page is derived from this one detailed response.
-                return project_annual_response(
-                    await compute_annual_for_request(req, request), projection
-                )
-            finally:
-                _BUILD_IDENTITY_CONTEXT.reset(token)
-
+        routes.append((
+            ANNUAL_ROUTE, identified_compute_annual, "POST", "compute_annual", dict[str, Any],
+            "Annual-techniques response (year boundary, profection, "
+            "firdaria, extended lots, zodiacal releasing); see output_contract.",
+        ))
+    api_method_routes: dict[str, frozenset[str]] = {}
+    for path, endpoint, method, name, model, description in routes:
         application.add_api_route(
-            ANNUAL_ROUTE,
-            identified_compute_annual,
-            methods=["POST"],
-            name="compute_annual",
-            response_model=dict[str, Any],
-            response_description=(
-                "Annual-techniques response (year boundary, profection, "
-                "firdaria, extended lots, zodiacal releasing); see output_contract."
-            ),
-            responses=_declared_refusals(ANNUAL_ROUTE),
+            path, endpoint, methods=[method], name=name, response_model=model,
+            response_description=description, responses=_declared_refusals(path),
         )
-        api_method_routes[ANNUAL_ROUTE] = frozenset({"POST"})
+        api_method_routes[path] = api_method_routes.get(path, frozenset()) | {method}
     return api_method_routes
 
 
 def _add_refusal_handlers(application: FastAPI) -> None:
     # Validation output never echoes rejected birth values.
+    domain_errors = (
+        NonexistentLocalTimeError, AmbiguousLocalTimeChoiceRequiredError,
+        FullEphemerisRequiredError, HouseSystemUnavailableError, CivilTimeBasisRequiredError,
+        CivilTimeBasisNotApplicableError, CatalogRecordUnknownError,
+        CatalogLocationMismatchError, TimeConversionZoneNotCoveredError,
+        PlaceCatalogUnavailableError, PlaceSearchBudgetExceededError,
+    )
     for error_type, handler in (
-        (NonexistentLocalTimeError, _handle_domain_error),
-        (AmbiguousLocalTimeChoiceRequiredError, _handle_domain_error),
-        (FullEphemerisRequiredError, _handle_domain_error),
-        (HouseSystemUnavailableError, _handle_domain_error),
-        (CivilTimeBasisRequiredError, _handle_domain_error),
-        (CivilTimeBasisNotApplicableError, _handle_domain_error),
-        (CatalogRecordUnknownError, _handle_domain_error),
-        (CatalogLocationMismatchError, _handle_domain_error),
-        (TimeConversionZoneNotCoveredError, _handle_domain_error),
-        (PlaceCatalogUnavailableError, _handle_domain_error),
-        (PlaceSearchBudgetExceededError, _handle_domain_error),
+        *((error, _handle_domain_error) for error in domain_errors),
         (StrictJsonBodyError, _handle_strict_json_body),
         (RequestValidationError, _handle_request_validation),
         (ComputeCapacityExhaustedError, _handle_domain_error),
@@ -517,9 +496,8 @@ def _mount_frontend(
 ) -> Callable[[str], str | None] | None:
     """Mount the frontend when it exists; returns its content-version source."""
 
-    # The public cache policy asks the static mount for the content
-    # version of the bytes it serves.  Without a mounted frontend there is no
-    # version source, and nothing is ever immutable.
+    # Without a mounted frontend there is no content-version source, so
+    # nothing is ever cached as immutable.
     if not os.path.isdir(frontend_dir):
         return None
     allowed_assets = (
@@ -536,6 +514,7 @@ def _mount_frontend(
         directory=frontend_dir,
         html=True,
         allowed_assets=allowed_assets,
+        asset_digests=release_assets,
     )
     application.mount("/", runtime_static, name="frontend")
     return runtime_static.content_version
@@ -609,7 +588,6 @@ def create_app(
         redoc_url=None,
         openapi_url=None,
     )
-    # Every API route reads its JSON body strictly.
     application.router.route_class = _StrictJsonRoute
     api_method_routes = _add_api_routes(
         application,
@@ -640,11 +618,9 @@ def create_app(
 
 
 
-# `uvicorn app.main:app` and the tests read a module-level application; it is
-# built on that first read, not at import, because the image's
-# `uvicorn --factory app.main:create_app` imports this module and then calls the
-# factory, and an import-time build would make a second, unused application in
-# every worker.
+# `uvicorn app.main:app` and the tests read a module-level application, built
+# on first read: the image's `uvicorn --factory app.main:create_app` imports
+# this module, so an import-time build would make a second, unused app per worker.
 app: FastAPI
 
 

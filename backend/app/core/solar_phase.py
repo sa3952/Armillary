@@ -2,36 +2,9 @@
 of a named tradition that puts them in: in the heart of the Sun (cazimi),
 combust, under the Sun's beams, or clear of them.
 
-Definition (method source entry ``solar_phase``):
-
-* The deciding distance is the signed difference of ecliptic longitude,
-  planet minus Sun, in (-180°, 180°].  The texts give their limits in degrees
-  of the zodiac, and al-Bīrūnī and Abū Maʿshar both write a separate exception
-  for Venus far north of the ecliptic: a Venus with the Sun's longitude but
-  about 8° of latitude is plainly visible, and the exception is only needed if
-  the limits were read on longitude.  The true angular separation on the sky
-  and the ecliptic latitude are listed beside it and decide nothing (except in
-  the optional solar-disc reading of cazimi below, which says so).
-* The listed bodies are the five planets and the Moon, as in the texts; the
-  outer planets, nodes and points are not listed.
-* The limits are a named profile.  The default is Lilly 1647 p.113 (17′, 8°30′
-  and 17°, the half and the whole of his solar orb on p.107); Hellenistic
-  15° (one band, no cazimi or combust band) and al-Bīrūnī (16′, 6°, a limit
-  per planet, and his Venus latitude exception) are named alternatives.
-  Each limit records whether it is inclusive, as its source words it.
-* Lilly also says combustion happens only by bodily conjunction in the same
-  sign; no other text read has that rule and his own p.300 puts a planet under
-  the beams "in what sign soever", so the rule is reported (``same_sign_as_sun``)
-  and not applied.
-* Optional solar-disc cazimi: the planet's centre within the Sun's apparent
-  disc, that is, the true angular separation at most the Sun's apparent
-  semidiameter at that instant.  Only the cazimi band changes; the other bands
-  stay on longitude.  No default: it is offered beside the longitude reading.
-* For each of the five planets, every instant within 7 days before and after
-  the chart instant at which it crosses the profile's under-the-beams limit,
-  emerging or sinking.  Stations are not searched.  The Moon is not searched.
-* For a birth time known only to the hour or the day, every band each body is
-  in during that hour or day, from the roots of the band edges over it.
+The definition, the profiles, the argument for deciding on ecliptic longitude,
+the reported-not-applied same-sign rule, the 7-day search and the birth-time
+interval rule are stated once, in ``METHOD_SOURCE_ENTRIES`` below.
 
 The Moon is the effective Moon of ``astronomical_data.bodies`` (with the
 Moon-only topocentric profile, the topocentric one), so its distance from the
@@ -43,26 +16,27 @@ from __future__ import annotations
 
 import math
 from collections.abc import Callable
+from dataclasses import dataclass
 from fractions import Fraction
 from typing import Final, Literal
 
 import swisseph as swe
 
 from .invariants import InternalInvariantError
-from ..ephemeris import require_full_ephemeris, require_object_coverage
+from ..ephemeris import guarded_calc
 from .formatting import dms_text, zodiac_sign_index
-from .method_status import method_receipt
+from .method_status import method_head
 from .module_state import (
     PRODUCT_FORMULA_SOURCE,
     STATE_FIELDS,
     computed_receipt,
     module_state,
-    not_applicable_receipt,
+    frame_table_refusal,
 )
 from .root_finding import (
     SOLVER_NAME, find_crossings_around, find_crossings_detailed, wrap_to_signed_180,
 )
-from .source_reading import SOURCE_READING_LEVELS
+from .source_reading import ORIGINAL_LANGUAGE_READ, SECONDARY_ONLY, TRANSLATION_READ, cited
 from .time_utils import solved_instant
 from .trace import Trace
 
@@ -138,14 +112,7 @@ PROFILES: Final[dict[str, dict]] = {
         },
         "venus_latitude_exception_degrees": None,
     },
-    # Book of Instruction §481-484: samīm under 16′; combust to 6° (the
-    # superior planets, and the inferior ones retrograde), to 7° for an
-    # inferior planet in direct motion (§482); the Moon combust under 7°.
-    # Under the rays: rising in the east (morning side) to 12° for Venus and
-    # Mercury, 15° Saturn and Jupiter, 16° Mars; setting in the west (evening
-    # side) from 16° Saturn and Jupiter, 18° Mars; the inferior planets' west
-    # "resembles" the superior ones' and has no number of its own, so their 12°
-    # serves both sides; the Moon 12°.
+    # Book of Instruction §481-484, as stated in METHOD_SOURCE_ENTRIES "profiles".
     "biruni_wright_v1": {
         "limits": {
             "cazimi": {"*": (16 * 60, False)},
@@ -211,7 +178,7 @@ def _limit_degrees(profile: str, band: str, key: str, side: str) -> float | None
     return None if limit is None else limit[0] / _ARCSEC_PER_DEGREE
 
 
-def _within(distance: Fraction, limit: _Limit | None) -> bool:
+def _inside_limit(distance: Fraction, limit: _Limit | None) -> bool:
     if limit is None:
         return False
     arcsec, inclusive = limit
@@ -268,11 +235,11 @@ def classify(
             raise ValueError("the solar-disc cazimi needs the Sun's semidiameter")
         band = "cazimi" if separation <= sun_semidiameter else None
     else:
-        band = "cazimi" if _within(distance, _limit(profile, "cazimi", key, side, motion)) else None
+        band = "cazimi" if _inside_limit(distance, _limit(profile, "cazimi", key, side, motion)) else None
     if band is None:
-        if _within(distance, _limit(profile, "combust", key, side, motion)):
+        if _inside_limit(distance, _limit(profile, "combust", key, side, motion)):
             band = "combust"
-        elif _within(distance, _limit(profile, "under_beams", key, side, motion)):
+        elif _inside_limit(distance, _limit(profile, "under_beams", key, side, motion)):
             band = "under_beams"
         else:
             band = "clear"
@@ -323,9 +290,24 @@ def limits_table(profile: str) -> dict:
     }
 
 
-# --- Sampling (event searches) --------------------------------------------
-
 EclipticSampler = Callable[[int, float], tuple[float, float]]
+
+
+@dataclass(frozen=True)
+class EventClock:
+    """The chart instant and how to read and label other instants around it.
+
+    ``sample`` reads effective longitudes at further instants; ``instant_of``
+    labels a found crossing; ``interval`` and ``interval_spans`` are a
+    non-exact birth time's stretches.
+    """
+
+    time_basis: str
+    jd_ut: float
+    instant_of: Callable[[float], dict]
+    sample: EclipticSampler
+    interval: str | None = None
+    interval_spans: list[tuple[float, float]] | None = None
 
 
 def make_ecliptic_sampler(flags: int, moon_flags: int) -> EclipticSampler:
@@ -342,10 +324,7 @@ def make_ecliptic_sampler(flags: int, moon_flags: int) -> EclipticSampler:
         if cached is not None:
             return cached
         effective = moon_flags if body == swe.MOON else flags
-        operation = f"焦傷與光束下搜尋（Swiss body {body} 黃經黃緯）"
-        require_object_coverage(body=body, flags=effective, jd_ut=jd_ut, operation=operation)
-        values, retflag = swe.calc_ut(jd_ut, body, effective)
-        require_full_ephemeris(retflag, operation=operation, jd_ut=jd_ut)
+        values, _ = guarded_calc(jd_ut, body, effective, f"焦傷與光束下搜尋（Swiss body {body} 黃經黃緯）")
         cache[(body, jd_ut)] = (values[0], values[1])
         return cache[(body, jd_ut)]
 
@@ -540,8 +519,6 @@ def _interval_record(
     }
 
 
-# --- The module -----------------------------------------------------------
-
 def _band(profile: str, body: dict, dl: float, separation: float,
           sun_semidiameter: float | None, disc_requested: bool) -> str:
     disc = disc_requested and profile_has_cazimi(profile)
@@ -566,20 +543,43 @@ def _disc_receipt(requested: bool, profile: str) -> dict:
     return computed_receipt(PRODUCT_FORMULA_SOURCE)
 
 
+def _empty_profile_results(disc_cazimi: bool, interval: str | None) -> dict[str, dict]:
+    """Every profile's limits and empty per-body tables, filled body by body."""
+
+    return {
+        pid: {
+            "limits": limits_table(pid),
+            "venus_latitude_exception_degrees": PROFILES[pid]["venus_latitude_exception_degrees"],
+            "disc_cazimi_applied": disc_cazimi and profile_has_cazimi(pid),
+            "bands": {},
+            "beam_crossings_within_7_days": {},
+            "bands_seen_in_birth_time_interval": None if interval is None else {},
+        }
+        for pid in PROFILE_IDS
+    }
+
+
+def _seven_day_search(time_basis: str) -> dict:
+    return {
+        "window_days": SEARCH_WINDOW_DAYS,
+        "bodies": list(SEARCHED_BODIES),
+        "threshold_rule": "profile_under_beams_limit_on_the_side_crossed",
+        "stations": "not_searched",
+        "solver": SOLVER_NAME,
+        "coarse_step_days": PLANET_STEP_DAYS,
+        "reference_instant": time_basis,
+    }
+
+
 def compute_solar_phase(
     bodies: list[dict],
     trace: Trace,
     *,
     profile: str,
     disc_cazimi: bool,
-    time_basis: str,
     moon_center: str,
-    jd_ut: float,
-    instant_of: Callable[[float], dict],
-    sample: EclipticSampler,
     sun_flags: int,
-    interval: str | None = None,
-    interval_spans: list[tuple[float, float]] | None = None,
+    clock: EventClock,
 ) -> dict:
     """Every listed body's distance from the Sun and its band under every
     profile; ``rows`` carry the selected ``profile``.
@@ -590,6 +590,8 @@ def compute_solar_phase(
     labels a found crossing with its UTC and birth-place time.
     """
 
+    time_basis, jd_ut, instant_of = clock.time_basis, clock.jd_ut, clock.instant_of
+    sample, interval, interval_spans = clock.sample, clock.interval, clock.interval_spans
     by_key = {body["key"]: body for body in bodies}
     sun = by_key["sun"]
     diameter = sun.get("apparent_diameter")
@@ -606,17 +608,7 @@ def compute_solar_phase(
     if interval is not None and (interval not in INTERVALS or not interval_spans):
         raise ValueError("a non-exact birth time needs its interval and its stretches")
 
-    profile_results: dict[str, dict] = {
-        pid: {
-            "limits": limits_table(pid),
-            "venus_latitude_exception_degrees": PROFILES[pid]["venus_latitude_exception_degrees"],
-            "disc_cazimi_applied": disc_cazimi and profile_has_cazimi(pid),
-            "bands": {},
-            "beam_crossings_within_7_days": {},
-            "bands_seen_in_birth_time_interval": None if interval is None else {},
-        }
-        for pid in PROFILE_IDS
-    }
+    profile_results = _empty_profile_results(disc_cazimi, interval)
     rows = []
     interval_rows = []
     for key, body_id, body in listed:
@@ -696,7 +688,7 @@ def compute_solar_phase(
         note="照原典列出各分法的距離帶；不替這張盤做個人解讀，也不預測。",
     )
     return {
-        **_receipt_head(),
+        **method_head(METHOD, "solar_phase", source_ref=SOURCE_REF),
         **computed_receipt(PRODUCT_FORMULA_SOURCE),
         "profile": profile,
         "decision_basis": DECISION_BASIS,
@@ -711,15 +703,7 @@ def compute_solar_phase(
         "scope": {"listed": [key for key, _ in LISTED_BODIES], "not_listed": list(NOT_LISTED)},
         "rows": rows,
         "profile_results": profile_results,
-        "seven_day_search": {
-            "window_days": SEARCH_WINDOW_DAYS,
-            "bodies": list(SEARCHED_BODIES),
-            "threshold_rule": "profile_under_beams_limit_on_the_side_crossed",
-            "stations": "not_searched",
-            "solver": SOLVER_NAME,
-            "coarse_step_days": PLANET_STEP_DAYS,
-            "reference_instant": time_basis,
-        },
+        "seven_day_search": _seven_day_search(time_basis),
         "birth_time_interval": (
             None if interval is None
             else {"interval": interval, "range_sampling": RANGE_SAMPLING, "rows": interval_rows}
@@ -727,30 +711,19 @@ def compute_solar_phase(
     }
 
 
-def _receipt_head() -> dict:
-    return {
-        "method": METHOD,
-        **method_receipt("solar_phase"),
-        "source_ref": SOURCE_REF,
-    }
-
-
 def solar_phase_not_applicable(state: dict, trace: Trace) -> dict:
-    """Refuse instead of measuring from a Sun that is not seen from the Earth."""
-
-    trace.add(
-        "各行星離太陽多遠（焦傷與光束下）",
-        result={"execution_status": "not_applicable", "reason_code": state["reason_code"]},
+    refusal = frame_table_refusal(
+        state, trace, "各行星離太陽多遠（焦傷與光束下）",
         note="參考框架相容表判定不適用：日心、質心沒有從地球看到的太陽，不換框架重算。",
     )
-    return solar_phase_unavailable(not_applicable_receipt(state))
+    return solar_phase_unavailable(refusal)
 
 
 def solar_phase_unavailable(receipt: dict) -> dict:
     """The module with no result, under the six state fields given."""
 
     return {
-        **_receipt_head(),
+        **method_head(METHOD, "solar_phase", source_ref=SOURCE_REF),
         **{field: receipt[field] for field in STATE_FIELDS},
         "profile": None,
         "decision_basis": DECISION_BASIS,
@@ -854,72 +827,39 @@ METHOD_SOURCE_ENTRIES: Final = {
             "the Sun is admitted to destroy or to aid",
         ],
         "sources": [
-            {
-                "citation": "William Lilly, Christian Astrology (London 1647) Book I, pp.111, 113-114",
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": (
-                    "archive.org full text of the 1647 printing and of a 1659 transcription; "
-                    "pp.111 and 113 not checked on the scan. The p.115 table of fortitudes "
-                    "and debilities was read on the scan (Wellcome Library copy, "
-                    "archive.org b30338724 n148); it is cited under motion_states"
-                ),
-            },
-            {
-                "citation": "William Lilly, Christian Astrology, aphorism 26 (p.300 per Houlding)",
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "archive.org 1659 transcription; page number from Houlding",
-            },
-            {
-                "citation": (
-                    "al-Biruni, The Book of Instruction in the Elements of the Art of "
-                    "Astrology, trans. R. Ramsay Wright (London 1934) §481-486"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": (
-                    "archive.org typescript OCR (the Skyscript facsimile, pp.88-93 of the "
-                    "facsimile); the 1934 page numbers not checked"
-                ),
-            },
-            {
-                "citation": (
-                    "Abu Ma'shar, Great Introduction VII.2, Latin of Hermann of Carinthia "
-                    "(Liber introductorius maior), Wurzburg Arabic-Latin Corpus lines 130_123-126; "
-                    "English: Dykes's translation p.418, publication year not checked"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": (
-                    "Hermann's Latin translation read online, the Arabic not read; "
-                    "Dykes's English only as cited by Tony Louis"
-                ),
-            },
-            {
-                "citation": "Ptolemy, Tetrabiblos III.10, trans. Robbins (Loeb 1940) p.285",
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "LacusCurtius transcription",
-            },
-            {
-                "citation": (
-                    "Porphyry, Introduction ch.2 and ch.30; Antiochus; Rhetorius "
-                    "(Holden 2009 pp.24, 134); Brennan, Hellenistic Astrology (2017)"
-                ),
-                "reading": SOURCE_READING_LEVELS[2],
-                "read_at": "secondary pages and search excerpts only",
-            },
-            {
-                "citation": (
-                    "William Lilly, Christian Astrology (1647) Book I ch. XIX p.107, "
-                    "first column"
-                ),
-                "says": "the Sun's orb of 17 degrees, which the default limits halve",
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "the first edition (archive.org/details/b30338724)",
-            },
-            {
-                "citation": "Bonatti, as given in Dykes 2007 p.211",
-                "says": "cazimi requires the latitude as well as the longitude within 16 minutes",
-                "reading": SOURCE_READING_LEVELS[2],
-                "read_at": "Dykes 2007, a secondary report; Bonatti's Latin not read",
-            },
+            cited("William Lilly, Christian Astrology (London 1647) Book I, pp.111, 113-114", None,
+                  ORIGINAL_LANGUAGE_READ,
+                  ("archive.org full text of the 1647 printing and of a 1659 transcription; "
+                   "pp.111 and 113 not checked on the scan. The p.115 table of fortitudes "
+                   "and debilities was read on the scan (Wellcome Library copy, "
+                   "archive.org b30338724 n148); it is cited under motion_states")),
+            cited("William Lilly, Christian Astrology, aphorism 26 (p.300 per Houlding)", None,
+                  ORIGINAL_LANGUAGE_READ,
+                  "archive.org 1659 transcription; page number from Houlding"),
+            cited(("al-Biruni, The Book of Instruction in the Elements of the Art of "
+                   "Astrology, trans. R. Ramsay Wright (London 1934) §481-486"),
+                  None, TRANSLATION_READ,
+                  ("archive.org typescript OCR (the Skyscript facsimile, pp.88-93 of the "
+                   "facsimile); the 1934 page numbers not checked")),
+            cited(("Abu Ma'shar, Great Introduction VII.2, Latin of Hermann of Carinthia "
+                   "(Liber introductorius maior), Wurzburg Arabic-Latin Corpus lines 130_123-126; "
+                   "English: Dykes's translation p.418, publication year not checked"),
+                  None, TRANSLATION_READ,
+                  ("Hermann's Latin translation read online, the Arabic not read; "
+                   "Dykes's English only as cited by Tony Louis")),
+            cited("Ptolemy, Tetrabiblos III.10, trans. Robbins (Loeb 1940) p.285", None,
+                  TRANSLATION_READ, "LacusCurtius transcription"),
+            cited(("Porphyry, Introduction ch.2 and ch.30; Antiochus; Rhetorius "
+                   "(Holden 2009 pp.24, 134); Brennan, Hellenistic Astrology (2017)"),
+                  None, SECONDARY_ONLY, "secondary pages and search excerpts only"),
+            cited(("William Lilly, Christian Astrology (1647) Book I ch. XIX p.107, "
+                   "first column"),
+                  "the Sun's orb of 17 degrees, which the default limits halve",
+                  ORIGINAL_LANGUAGE_READ, "the first edition (archive.org/details/b30338724)"),
+            cited("Bonatti, as given in Dykes 2007 p.211",
+                  "cazimi requires the latitude as well as the longitude within 16 minutes",
+                  SECONDARY_ONLY,
+                  "Dykes 2007, a secondary report; Bonatti's Latin not read"),
         ],
         "not_applied": (
             "Bonatti and al-Qabisi require the latitude as well as the longitude within "

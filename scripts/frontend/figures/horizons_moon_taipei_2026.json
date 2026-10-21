@@ -1,0 +1,19 @@
+{
+  "provenance": {
+    "authority": "NASA/JPL Solar System Dynamics, Horizons On-Line Ephemeris System (API version 1.2)",
+    "retrieved_at": "2026-10-21",
+    "target": "301 (Moon)",
+    "quantity": "31 = observer-centred ecliptic-of-date longitude and latitude of the apparent position, degrees (EXTRA_PREC)",
+    "topocentric_query": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND='301'&OBJ_DATA='NO'&MAKE_EPHEM='YES'&EPHEM_TYPE='OBSERVER'&CENTER='coord@399'&COORD_TYPE='GEODETIC'&SITE_COORD='121.52639,25.05306,0'&TLIST='<tt_jd>,...'&TLIST_TYPE='JD'&TIME_TYPE='TT'&QUANTITIES='31'&ANG_FORMAT='DEG'&EXTRA_PREC='YES'&CSV_FORMAT='YES'",
+    "geocentric_query": "the same with CENTER='500@399' and no COORD_TYPE or SITE_COORD",
+    "instants": "2026-12-24 00:00, 06:00, 12:00 and 18:00 Asia/Taipei; tt_jd is the product's jd_et for each request (Swiss Ephemeris 2.10.03)",
+    "raw_responses": "kept outside the repository; topo.json sha256 25ef9a4a02142bbc4d63d3d9d82df86ff20ca10dd7aec28c747afe5b2ba6f6a2, geo.json sha256 b9140bdb9ed0e8353f41e77dd1713e800666d1dee3b93db083c24671af27f5e0"
+  },
+  "site": {"latitude": 25.05306, "longitude": 121.52639, "altitude_km": 0.0},
+  "epochs": [
+    {"local_hour": 0, "tt_jd": 2461398.1674674074, "topocentric_longitude": 86.0593298, "geocentric_longitude": 86.1900448},
+    {"local_hour": 6, "tt_jd": 2461398.4174674074, "topocentric_longitude": 89.0873589, "geocentric_longitude": 90.0174117},
+    {"local_hour": 12, "tt_jd": 2461398.6674674074, "topocentric_longitude": 93.8702150, "geocentric_longitude": 93.8476878},
+    {"local_hour": 18, "tt_jd": 2461398.9174674074, "topocentric_longitude": 98.6309701, "geocentric_longitude": 97.6778998}
+  ]
+}

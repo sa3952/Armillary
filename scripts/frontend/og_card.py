@@ -30,10 +30,10 @@ import json
 import math
 import os
 from pathlib import Path
-import shutil
-import subprocess
 import sys
 import tempfile
+
+from scripts.frontend.figures._common import node_json
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -114,10 +114,6 @@ def card_html() -> str:
 """
 
 
-def _sha256(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
-
-
 def render_record_errors(record_path: Path | None = None, card_path: Path | None = None) -> list[str]:
     """Why the committed card is not the photograph of the current source."""
     record_path = RENDER_RECORD if record_path is None else record_path
@@ -136,46 +132,44 @@ def render_record_errors(record_path: Path | None = None, card_path: Path | None
         "width", "height", "renderer",
     } or record.get("schema_version") != 1 or record.get("asset") != CARD_ASSET:
         return ["og card render record is invalid"]
-    if record["source_html_sha256"] != _sha256(card_html().encode("utf-8")):
+    if record["source_html_sha256"] != hashlib.sha256(card_html().encode("utf-8")).hexdigest():
         errors.append("og card source changed since the card was rendered; "
                       "re-run: python -m scripts.frontend.og_card --render")
-    if record["renderer_script_sha256"] != _sha256(RENDERER.read_bytes()):
+    if record["renderer_script_sha256"] != hashlib.sha256(RENDERER.read_bytes()).hexdigest():
         errors.append("og card renderer script changed since the card was rendered; "
                       "re-run: python -m scripts.frontend.og_card --render")
-    if record["png_sha256"] != _sha256(card_path.read_bytes()):
+    if record["png_sha256"] != hashlib.sha256(card_path.read_bytes()).hexdigest():
         errors.append("og card PNG is not the one the render record names")
     if (record["width"], record["height"]) != (WIDTH, HEIGHT):
         errors.append("og card render record names the wrong size")
     return errors
 
 
-def render(node: str | None = None) -> dict:
+def run_renderer(script: Path, *args: object, timeout: int, what: str) -> dict:
+    """Run a local headless-Chromium script; its last output line is its report,
+    which must count no external request."""
+    report = node_json(script, *args, timeout=timeout, what=what, cwd=ROOT / "frontend")
+    if report.get("external_requests") != 0:
+        raise RuntimeError(f"an external request was attempted to {what}")
+    return report
+
+
+def render() -> dict:
     """Photograph card_html() in local headless Chromium; write the PNG and its record."""
-    node = node or shutil.which("node")
-    if node is None:
-        raise RuntimeError("node is required to render the og card")
     html = card_html()
     with tempfile.TemporaryDirectory(prefix="armillary-og-card-") as scratch:
         source = Path(scratch) / "card.html"
         output = Path(scratch) / "card.png"
         source.write_text(html, encoding="utf-8")
-        completed = subprocess.run(
-            [node, str(RENDERER), str(source), str(output), str(WIDTH), str(HEIGHT)],
-            cwd=ROOT / "frontend", capture_output=True, text=True, check=False, timeout=120,
-        )
-        if completed.returncode != 0:
-            raise RuntimeError("og card render failed: " + completed.stderr.strip())
-        report = json.loads(completed.stdout.strip().splitlines()[-1])
-        if report.get("external_requests") != 0:
-            raise RuntimeError("og card render attempted an external request")
+        report = run_renderer(RENDERER, source, output, WIDTH, HEIGHT, timeout=120, what="render the og card")
         png = output.read_bytes()
     CARD_PATH.write_bytes(png)
     record = {
         "schema_version": 1,
         "asset": CARD_ASSET,
-        "source_html_sha256": _sha256(html.encode("utf-8")),
-        "renderer_script_sha256": _sha256(RENDERER.read_bytes()),
-        "png_sha256": _sha256(png),
+        "source_html_sha256": hashlib.sha256(html.encode("utf-8")).hexdigest(),
+        "renderer_script_sha256": hashlib.sha256(RENDERER.read_bytes()).hexdigest(),
+        "png_sha256": hashlib.sha256(png).hexdigest(),
         "width": WIDTH,
         "height": HEIGHT,
         "renderer": report["renderer"],

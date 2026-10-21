@@ -3,28 +3,35 @@
 from __future__ import annotations
 
 import copy
+from dataclasses import dataclass, field
 from collections.abc import Callable
 import datetime as dtmod
 from typing import Any, TypedDict
 from zoneinfo import ZoneInfo
 
 from .invariants import InternalInvariantError
-from ..domain_catalog import BODY_ID_BY_KEY, LUNAR_APSIDES, NODE_BODIES
+from ..domain_catalog import LUNAR_APSIDES
 from ..ephemeris import require_full_ephemeris, require_object_coverage
 from .bodies import (
     DATE_ONLY_NO_BIRTH_TIME_REASON,
     EFFECTIVE_TOPOCENTRIC_MOON_LABELS,
-    SOUTH_NODE_DERIVATIONS,
+    append_south_nodes,
     compute_bodies,
+    node_definitions,
     withhold_horizontal_coordinates,
-    derive_node_antipode,
     effective_participants,
     geocentric_sun_true_altitude,
     make_longitude_sampler,
 )
 from .computation_mode import ComputationContext
 from .dodecatemoria import compute_dodecatemoria
-from .formatting import ANGLE_KEYS, attach_sign_positions, zodiac_sign_index
+from .formatting import (
+    ANGLE_KEYS,
+    attach_sign_positions,
+    degrees_number,
+    longitude_number,
+    zodiac_sign_index,
+)
 from .frame_compatibility import method_frame_state
 from .house_placements import compute_planet_house_placements, whole_sign_point_placements
 from .houses import (
@@ -33,6 +40,7 @@ from .houses import (
     printed_angles,
     printed_house_division,
 )
+from .extended_lots import attach_extended_lots
 from .lots import classify_sect, compute_lots, determine_sect
 from .moon import evaluate_void_of_course as void_of_course_verdict
 from .time_utils import (
@@ -40,7 +48,7 @@ from .time_utils import (
     NonexistentLocalTimeError,
     _existing_utc_instants,
     _to_utc_datetime,
-    _wall_label,
+    _local_wall_time_and_fold,
     MICROSECONDS_PER_SECOND,
     civil_hour_spans,
     civil_time_label,
@@ -52,11 +60,9 @@ from .time_utils import (
 from .trace import Trace
 
 
-# The one closed sensitivity
-# vocabulary.  Every per-object, per-path and aggregate state in the sensitivity
-# block and in the dossier ledger is one of these.  Whether the pass ran at all
-# is a different fact with its own field: the block's `status` uses the
-# event-module vocabulary every search uses.
+# The one closed sensitivity vocabulary for every per-object, per-path and
+# aggregate state in the block and the dossier ledger.  Whether the pass ran is
+# a separate fact: the block's `status`, in the event-module vocabulary.
 #
 #   not_requested            the module that owns the path was not requested
 #   not_applicable           requested, but nothing to compare in this mode or
@@ -89,15 +95,13 @@ SENSITIVITY_STATES = (
 ) = SENSITIVITY_STATES
 
 # Which response paths a sensitivity pass can speak about, and which dossier
-# receipt says whether the module behind each one was requested and applicable.
-# The dossier's module and option receipts are the one generator of that fact;
-# this table only names which receipt answers for which path.
+# receipt (the one generator of that fact) says whether each path's module was
+# requested and applicable.
 #
-# The universe is fixed rather than narrowed to the modules a given request
-# asked for.  A ledger that shrinks with the request answers "was this
-# assessed?" only for what happened to be switched on, and leaves the reader to
-# infer the rest from an absence.  Paths that describe the request rather than a
-# result (atmosphere, time conversion, fixed-star policy) are not assessable.
+# The universe is fixed, not narrowed to the request: a ledger that shrinks
+# with the request leaves the reader to infer the rest from an absence.  Paths
+# describing the request (atmosphere, time conversion, fixed-star policy) are
+# not assessable.
 ASSESSABLE_RESPONSE_PATHS: dict[str, tuple[str, tuple[str, ...]]] = {
     "astronomical_data.angles": ("modules", ("house_division",)),
     "astronomical_data.bodies": ("modules", ("core_positions",)),
@@ -121,12 +125,10 @@ ASSESSABLE_RESPONSE_PATHS: dict[str, tuple[str, tuple[str, ...]]] = {
     "derived_methods.classical_classifications": ("modules", ("classical_classifications",)),
 }
 
-# Which response paths each pass recomputes at every sample when the owning
-# module was computed.  Requested-ness is not in this table: it comes from the
-# dossier receipts above.  What is compared inside a path is not listed
-# anywhere: it is every classification the path prints
-# (printed_classifications), and the pass states per path how many it compared,
-# which differed and how many it could not compare (classification_coverage).
+# Which paths each pass recomputes at every sample when the owning module was
+# computed (requested-ness comes from the dossier receipts).  What is compared
+# inside a path is every classification it prints (printed_classifications);
+# classification_coverage states per path what was compared and what differed.
 RESAMPLED_PATHS_BY_PRECISION: dict[str, tuple[str, ...]] = {
     "approximate_hour": (
         "astronomical_data.angles",
@@ -145,6 +147,9 @@ RESAMPLED_PATHS_BY_PRECISION: dict[str, tuple[str, ...]] = {
     ),
 }
 DODECATEMORIA_PATH = "derived_methods.dodecatemoria"
+EXTENDED_LOTS_PATH = "derived_methods.lots.extended_lots"
+# Paths whose own changes are read at the samples only, never bisected.
+_SAMPLED_ONLY_PATHS = (DODECATEMORIA_PATH, EXTENDED_LOTS_PATH)
 # The void-of-course probe recomputes only the flag; the separating sign exit,
 # the next perfected aspect, its time and the solver evidence are not
 # re-evaluated at the samples, so they stay among the path's classifications
@@ -152,13 +157,11 @@ DODECATEMORIA_PATH = "derived_methods.dodecatemoria"
 VOID_OF_COURSE_PATH = "derived_methods.void_of_course"
 VOID_OF_COURSE_FLAG = f"{VOID_OF_COURSE_PATH}.is_void_of_course"
 
-# A probe that cannot evaluate one sample degrades that sample and says which
-# declared domain refusal it was.  A clock instant the zone never had and a
-# house system with no cusps at that instant are different facts, each with its
-# own label.  A repeated instant with no fold is not here: it is the caller's
-# choice to make, so the hour is refused before any probe
-# (approximate_hour_representative_request) and a probe that still met one
-# would let the refusal through rather than shrink the hour.
+# A probe that cannot evaluate one sample degrades that sample and names the
+# declared domain refusal.  A repeated instant with no fold is not here: that is
+# the caller's choice, so the hour is refused before any probe
+# (approximate_hour_representative_request), and a probe still meeting one
+# lets the refusal through rather than shrink the hour.
 UNEVALUABLE_SAMPLE_REASON_CODES: dict[type[Exception], str] = {
     NonexistentLocalTimeError: "local_time_nonexistent",
     HouseSystemUnavailableError: "house_system_unavailable_at_sample",
@@ -204,8 +207,9 @@ SENSITIVITY_METHOD = {
         "no invariant is applied to exclude a change and reversal between "
         "adjacent samples. Adjacent samples that differ are bisected to at most "
         "15 s; each bracket holds at least one change, not necessarily one. "
-        "A twelfth-part's own sign change is not bisected: its signs are those "
-        "seen at the samples and at the midpoints other changes needed. "
+        "A twelfth-part's or an extended Lot's own change is not bisected: its "
+        "classifications are those seen at the samples and at the midpoints "
+        "other changes needed. "
         "Inside the polar circle the Ascendant can reverse between samples, so "
         "every path read off it is at most partially evaluated. "
         "Numeric values are sampled envelopes, not states. Every sample fails "
@@ -314,11 +318,9 @@ def representative_semantics_for_offset(representative_offset_seconds: int) -> s
 def approximate_hour_representative_request(request):
     """Choose the midpoint when real, otherwise the first real governed probe.
 
-    Returns the effective request, its offset into the hour and its UTC instant.
     The hour is the whole civil hour, so a repeat anywhere in it needs the
-    caller's fold even when HH:30 itself occurs once; checking only the
-    representative instant let a partly repeated hour through, and its repeated
-    probes were then dropped as unevaluable.
+    caller's fold even when HH:30 itself occurs once (else the repeated probes
+    would be dropped as unevaluable).
     """
 
     timezone_input = request.timezone
@@ -359,7 +361,7 @@ _ONE_SECOND = dtmod.timedelta(seconds=1)
 
 
 def _resolved_instant(request, utc_value: dtmod.datetime) -> _ResolvedLocalInstant:
-    label, fold = _wall_label(utc_value, request.timezone)
+    label, fold = _local_wall_time_and_fold(utc_value, request.timezone)
     return {
         "local_time": label.isoformat(timespec="seconds"),
         "fold": fold,
@@ -397,9 +399,13 @@ def _classified_envelope(values: list[float]) -> dict:
 
 
 def _circular_envelope(values: list[float]) -> dict:
-    """Return the smallest sampled arc, avoiding a false 0°/360° min/max span."""
+    """Return the smallest sampled arc, avoiding a false 0°/360° min/max span.
 
-    normalized = sorted(value % 360.0 for value in values)
+    Each sampled value is the number sign_position prints (10⁻⁶°, never across
+    a whole degree), so a sign read off it is the sign of the raw value.
+    """
+
+    normalized = sorted(longitude_number(value) for value in values)
     # One value is its own arc: the only gap is (x - x) % 360 = 0.0.
     gaps = [
         ((normalized[(index + 1) % len(normalized)] - left) % 360.0, index)
@@ -408,7 +414,7 @@ def _circular_envelope(values: list[float]) -> dict:
     _largest_gap, gap_index = max(gaps)
     start = normalized[(gap_index + 1) % len(normalized)]
     end = normalized[gap_index]
-    span = (end - start) % 360.0
+    span = degrees_number((end - start) % 360.0)
     return {
         "start_degrees": start,
         "end_degrees": end,
@@ -432,12 +438,9 @@ def _probe_request(request, offset_seconds: int):
 def _require_file_backed_samples(items: list[dict], jd_ut: float) -> None:
     """Fail closed at every sample, as the dossier's source policy says.
 
-    The receipt reads "Swiss files required; fail closed on Moshier
-    fallback", yet only the representative chart's source was ever recorded.  A
-    sample whose calculation silently changed source now fails through the
-    check the event searches use (a missing segment file leaves the pass
-    unavailable; a fallback the manifest did not predict fails the request), so
-    the claim covers every sample without carrying a retflag per sample.
+    A sample whose calculation silently changed source fails through the check
+    the event searches use (a missing segment file leaves the pass unavailable;
+    a fallback the manifest did not predict fails the request).
     """
 
     for item in items:
@@ -454,12 +457,10 @@ def _require_file_backed_samples(items: list[dict], jd_ut: float) -> None:
 def _require_sample_coverage(defs: list[dict], jd_ut: float, context) -> None:
     """Refuse a sample before Swiss when a segment it reads does not cover it.
 
-    The anchor's optional bodies are gated by manifest in chart_pipeline.py, but a sample
-    an hour or a day away can leave a segment the anchor is inside: Chiron at
-    2399-12-31 23:59:59 UT is past seas_18 (23:51 UT), and a warm worker
-    extrapolated it under the SWIEPH flag, which the retflag check after the
-    call accepted.  The refusal is the
-    one the module already has for a sample that leaves the files.
+    A sample an hour or a day from the (manifest-gated) anchor can leave a
+    segment: Chiron at 2399-12-31 23:59:59 UT is past seas_18 (23:51 UT), and a
+    warm worker extrapolated it under SWIEPH, which the after-call retflag
+    check accepted.
     """
 
     for definition in defs:
@@ -510,8 +511,7 @@ def _compute_effective_bodies(
 def _probe_points(request, jd_ut: float, context, trace: Trace) -> list[dict]:
     """The nodes and lunar apsides a chart with this request emits, at a probe."""
 
-    node_defs = [{"id": b["id"], "key": b["key"], "zh": b["zh"]} for b in NODE_BODIES]
-    defs = node_defs + (
+    defs = node_definitions() + (
         [dict(body) for body in LUNAR_APSIDES] if request.options.include_lilith_priapus else []
     )
     _require_sample_coverage(defs, jd_ut, context)
@@ -519,20 +519,7 @@ def _probe_points(request, jd_ut: float, context, trace: Trace) -> list[dict]:
         defs, jd_ut, context, request.atmosphere, trace, physical=False, moon_relative=True,
     )
     if request.options.include_south_nodes:
-        by_key = {item["key"]: item for item in points}
-        points.extend(
-            derive_node_antipode(
-                by_key[north_key],
-                key=south_key,
-                name=south_name,
-                body_id=BODY_ID_BY_KEY[north_key],
-                jd_ut=jd_ut,
-                ctx=context,
-                atmosphere=request.atmosphere,
-                trace=trace,
-            )
-            for north_key, south_key, south_name in SOUTH_NODE_DERIVATIONS
-        )
+        append_south_nodes(points, jd_ut, context, request.atmosphere, trace)
     return points
 
 
@@ -599,9 +586,7 @@ def _extract_probe(
             "placements": [],
         }
 
-    # Day or night by the chart's one sect rule, at every probe: the sect-dependent
-    # dignities are printed for the representative instant only, and the reader
-    # is told when the hour holds the other sect too (_sect_dependent_dignity_limit).
+    # Day or night at every probe, for _sect_dependent_dignity_limit.
     sect_is_day = (
         classify_sect(
             geocentric_sun_true_altitude(jd_ut, context, probe_request.atmosphere)
@@ -628,6 +613,9 @@ def _extract_probe(
                 trace,
                 houses=houses,
             )
+            attach_extended_lots(
+                lots, ascendant=houses["asc"], bodies_by_key=body_map, houses=houses
+            )
     dodecatemoria = _sample_dodecatemoria(
         probe_request, bodies, angles=houses, lots=lots, trace=trace
     )
@@ -639,6 +627,7 @@ def _extract_probe(
                 trace,
                 jd_ut=jd_ut,
                 longitude_at=make_longitude_sampler(context, moon_ctx=moon_context),
+                method=probe_request.options.void_of_course_method,
             )
             if method_frame_state("void_of_course", probe_request.computation_mode)[
                 "applicable"
@@ -731,10 +720,8 @@ def _dodecatemoria_signs(representative: dict | None, samples: list[dict | None]
 LOTS_ENVELOPE_DISCONTINUITIES = ("none", "sect_flip")
 
 
-# A body may legitimately have no longitude: a heliocentric chart returns the
-# Sun that way, and the primary response says so rather than inventing a value.
-# Anything that re-reads those bodies must carry the same allowance, or it
-# re-imposes a premise the chart already relaxed.
+# A body may legitimately have no longitude (the heliocentric Sun); anything
+# re-reading bodies must carry the same allowance.
 UNAVAILABLE_COORDINATE_STATUS = NOT_APPLICABLE_STATE
 
 # A sign is printed as the first member of a sign position; the other two
@@ -1131,14 +1118,16 @@ def _refine_transitions(
         if left_state == right_state:
             continue
 
-        # A twelfth-part changes sign twelve times faster than its point, so
-        # bisecting each change would multiply the probes; its signs are read
-        # at the samples and at the midpoints other changes need, not bisected.
+        # A twelfth-part changes sign twelve times faster than its point, and
+        # the extended lots are many points each moving with the Ascendant, so
+        # bisecting their changes would multiply the probes (about four times
+        # for a chart with Lots); their classifications are read at the
+        # samples and at the midpoints other changes need, not bisected.
         changed_paths = sorted(
             key
             for key in set(left_state) | set(right_state)
             if left_state.get(key, missing) != right_state.get(key, missing)
-            and not key.startswith(DODECATEMORIA_PATH)
+            and not key.startswith(_SAMPLED_ONLY_PATHS)
         )
         if stretch_of[segment_left] != stretch_of[segment_right]:
             if changed_paths:
@@ -1203,7 +1192,7 @@ def _probe_fold(request, offset_seconds: int) -> int:
 
     probe = _probe_request(request, offset_seconds)
     utc_value, _offset, _label, _warning = _to_utc_datetime(probe.datetime, probe.timezone)
-    return _wall_label(utc_value, request.timezone)[1]
+    return _local_wall_time_and_fold(utc_value, request.timezone)[1]
 
 
 def _probe_utc(request, offset_seconds: int) -> dtmod.datetime:
@@ -1250,7 +1239,7 @@ def _clock_change_edge_offsets(request) -> list[int]:
         for moment in (start, end - _ONE_SECOND)
     ]
     for moment in candidates:
-        label, _fold = _wall_label(moment, timezone_input)
+        label, _fold = _local_wall_time_and_fold(moment, timezone_input)
         if not hour_start <= label < hour_end:
             continue
         offset_seconds = int((label - hour_start).total_seconds())
@@ -1305,58 +1294,12 @@ def _probe_receipt(request, probe: dict) -> dict:
     }
 
 
-def build_approximate_hour_sensitivity(
-    *,
-    request,
-    body_defs: list[dict],
-    representative_bodies: list[dict],
-    representative_houses: dict | None,
-    representative_placements: dict,
-    representative_sect: dict | None,
-    representative_lots: dict | None,
-    representative_void_of_course: dict | None,
-    representative_offset_seconds: int,
-    representative_semantics: str,
-    representative_dodecatemoria: dict | None = None,
-    representative_essential_dignities: dict | None = None,
-) -> dict:
-    """Build governed probes and reuse the selected real representative chart."""
+def _sample_hour_probes(
+    request, body_defs: list[dict], requested_offsets: list[int],
+    representative: dict, representative_offset_seconds: int,
+) -> tuple[dict[int, dict], list[dict]]:
+    """Each requested offset's probe (the representative chart reused), and the skipped ones."""
 
-    representative = {
-        "input_local_time": civil_time_label(
-            request.datetime.year,
-            request.datetime.month,
-            request.datetime.day,
-            request.datetime.hour,
-            representative_offset_seconds // 60,
-            representative_offset_seconds % 60 * MICROSECONDS_PER_SECOND,
-        ),
-        "bodies": representative_bodies,
-        "houses": representative_houses,
-        "placements": representative_placements,
-        "sect": representative_sect,
-        "sect_is_day": (
-            representative_essential_dignities["sect"]["is_day"]
-            if isinstance(representative_essential_dignities, dict)
-            and representative_essential_dignities.get("available")
-            else None
-        ),
-        "lots": representative_lots,
-        "dodecatemoria": representative_dodecatemoria,
-        "void_of_course": representative_void_of_course,
-        "void_of_course_evaluated": representative_void_of_course is not None,
-    }
-    # 半小時位移的時區（例如 Australia/Lord_Howe）會讓一個
-    # 民用小時**部分**不存在：2024-10-06 的 02:00–02:29 不存在，02:30–02:59 存在。
-    # 任何一個探針擲出 NonexistentLocalTimeError 就讓整個請求變成 422 是錯的：那會說
-    # 「該時鐘從未指向 02:00，請改正出生時間」——但使用者說的是「生於 02 那個小時」，
-    # 那句陳述與該時區規則相容，代表時刻 02:30 的整張盤也算得出來。錯誤歸因不成立。
-    #
-    # 這裡只跳過取不到的取樣點並具名回報原因，不改變「整個小時都不存在」時的拒絕：
-    # 那一種仍然是使用者陳述本身不可能，應該擋下（見下方 usable_offsets 為空的分支）。
-    requested_offsets = sorted(
-        set(PROBE_OFFSETS_SECONDS) | set(_clock_change_edge_offsets(request))
-    )
     probes_by_offset: dict[int, dict] = {}
     skipped: list[dict] = []
     for offset_seconds in requested_offsets:
@@ -1379,82 +1322,13 @@ def build_approximate_hour_sensitivity(
                     "reason_code": _unevaluable_reason(error),
                 }
             )
+    return probes_by_offset, skipped
 
-    usable_offsets = [
-        offset for offset in requested_offsets if offset in probes_by_offset
-    ]
-    if not usable_offsets:
-        # 整個小時都不存在。維持既有行為：由呼叫端轉成 422。
-        raise NonexistentLocalTimeError(
-            "no instant in the stated civil hour exists in this time zone"
-        )
-    probes = [probes_by_offset[offset] for offset in usable_offsets]
-    spans = civil_hour_spans(request.timezone, _hour_start(request))
-    transitions, refinement = _refine_transitions(
-        request=request,
-        body_defs=body_defs,
-        probes_by_offset=probes_by_offset,
-        stretch_of={
-            offset: _stretch_index(spans, _probe_utc(request, offset))
-            for offset in probes_by_offset
-        },
-    )
-    # The bisection computes every classification at each midpoint; what those
-    # midpoints showed joins the sets, envelopes and states instead of being
-    # thrown away.  A midpoint that skipped the void-of-course search adds
-    # nothing to that flag.
-    refinement_offsets = sorted(refinement)
-    refinement_probes = [refinement[offset] for offset in refinement_offsets]
-    evaluated = probes + refinement_probes
-    voc_evaluated = [probe for probe in evaluated if probe["void_of_course_evaluated"]]
-    representative_index = usable_offsets.index(representative_offset_seconds)
-    probe_coverage = {
-        "requested_offsets_seconds": requested_offsets,
-        "sampled_offsets_seconds": usable_offsets,
-        "refinement_offsets_seconds": refinement_offsets,
-        "skipped": skipped,
-        "semantics": (
-            "a sample that cannot be evaluated is skipped with its reason; "
-            "states, sets and envelopes below cover only the sampled instants, "
-            "the probes and the bisection midpoints"
-        ),
-    }
 
-    # What the representative chart prints at each resampled path is the
-    # universe; every listed sample is held against it.
-    printed = _approximate_hour_printed_objects(representative, request)
-    universe = _classifications_by_path(printed)
-    # An unrequested module is an empty container, not a receipt.
-    voc_usable = (
-        isinstance(representative_void_of_course, dict)
-        and bool(representative_void_of_course)
-        and representative_void_of_course.get("applicable") is not False
-    )
-    if voc_usable:
-        printed[VOID_OF_COURSE_PATH] = representative_void_of_course
-        universe[VOID_OF_COURSE_PATH] = printed_classifications(
-            representative_void_of_course, VOID_OF_COURSE_PATH
-        )
-    sampled_states = [_classification_state(probe, request) for probe in probes]
-    refinement_states = [_classification_state(probe, request) for probe in refinement_probes]
-    classification_coverage = _classification_coverage(
-        printed, universe, sampled_states, refinement_states,
-    )
-    evaluation_limits = _evaluation_limits(
-        representative_houses,
-        skipped=_ascendant_classes_skipped(
-            [
-                (offset, _stretch_index(spans, _probe_utc(request, offset)), state)
-                for offset, state in zip(
-                    usable_offsets + refinement_offsets, sampled_states + refinement_states
-                )
-            ]
-        ),
-    )
-    evaluation_limits += _sect_dependent_dignity_limit(
-        representative_essential_dignities, probes + refinement_probes
-    )
-    _apply_evaluation_limits(classification_coverage, evaluation_limits)
+def _hour_body_signs(
+    body_defs: list[dict], evaluated: list[dict], representative_index: int
+) -> list[dict]:
+    """Each body's sampled signs and longitude envelope."""
 
     body_signs = []
     for body_def in body_defs:
@@ -1475,6 +1349,13 @@ def build_approximate_hour_sensitivity(
             ),
             envelope_key="longitude_envelope",
         ))
+    return body_signs
+
+
+def _hour_planet_in_house(
+    body_defs: list[dict], representative_placements: dict, evaluated: list[dict]
+) -> list[dict]:
+    """Each body's representative and sampled houses."""
 
     planet_in_house = []
     if representative_placements["execution_status"] == "computed":
@@ -1503,32 +1384,58 @@ def build_approximate_hour_sensitivity(
                     "status": _state(sampled_houses),
                 }
             )
+    return planet_in_house
 
-    # One branch maps each angle to an envelope, the other returns a receipt.
-    # Stating the union beats letting whichever branch mypy reads first decide.
+
+_ANGLE_AT_CUSP = {1: "asc", 4: "ic", 7: "desc", 10: "mc"}
+
+
+def _hour_angle_envelopes(
+    representative_houses: dict | None, evaluated: list[dict]
+) -> tuple[dict, list[dict]]:
+    """The angles' and house cusps' sampled envelopes."""
+
+    # Declared so mypy does not type it from whichever branch it reads first.
     angles: dict
+    house_cusps: list[dict]
     if representative_houses is not None:
-        angles = {
-            key: _classified_envelope(
-                [probe["houses"][key] for probe in evaluated]
-            )
-            for key in ANGLE_KEYS
+        angle_values = {
+            key: [probe["houses"][key] for probe in evaluated] for key in ANGLE_KEYS
         }
-        house_cusps = [
-            {
-                "house": index + 1,
-                **_classified_envelope(
-                    [probe["houses"]["cusps"][index] for probe in evaluated]
-                ),
-            }
-            for index in range(12)
-        ]
+        angles = {key: _classified_envelope(values) for key, values in angle_values.items()}
+        house_cusps = []
+        for index in range(12):
+            values = [probe["houses"]["cusps"][index] for probe in evaluated]
+            # A quadrant system's cusps 1/4/7/10 are the angles themselves; a
+            # cusp equal to its angle at every sample names the angle instead
+            # of repeating its envelope.  Whole-sign, equal-from-MC and the
+            # like differ from the angle, so they keep their own.
+            angle = _ANGLE_AT_CUSP.get(index + 1)
+            if angle is not None and angle_values[angle] == values:
+                house_cusps.append({
+                    "house": index + 1,
+                    "same_as_angle": angle,
+                    "status": angles[angle]["status"],
+                })
+            else:
+                house_cusps.append({
+                    "house": index + 1,
+                    "same_as_angle": None,
+                    **_classified_envelope(values),
+                })
     else:
         angles = {
             "status": NOT_REQUESTED_STATE,
             "reason_code": "house_calculation_not_executed",
         }
         house_cusps = []
+    return angles, house_cusps
+
+
+def _hour_sect_summary(
+    classification_coverage: dict, representative_sect: dict | None, evaluated: list[dict]
+) -> dict | None:
+    """The day/night flag and sect band across the samples, when sect printed."""
 
     sect_summary = None
     if "derived_methods.sect" in classification_coverage:
@@ -1547,6 +1454,13 @@ def build_approximate_hour_sensitivity(
             # and the named boundary disagreement.
             "status": classification_coverage["derived_methods.sect"]["status"],
         }
+    return sect_summary
+
+
+def _hour_lots_summary(
+    classification_coverage: dict, representative_lots: dict | None, evaluated: list[dict]
+) -> dict[str, Any] | None:
+    """The Lots' envelopes and houses across the samples, when the Lots printed."""
 
     lots_summary: dict[str, Any] | None = None
     if "derived_methods.lots" in classification_coverage:
@@ -1588,6 +1502,13 @@ def build_approximate_hour_sensitivity(
         lots_summary["status"] = classification_coverage["derived_methods.lots"][
             "status"
         ]
+    return lots_summary
+
+
+def _hour_voc_summary(
+    voc_usable: bool, representative_void_of_course: dict | None, voc_evaluated: list[dict]
+) -> dict | None:
+    """The void-of-course verdicts across the samples that searched."""
 
     voc_summary = None
     if voc_usable:
@@ -1606,8 +1527,173 @@ def build_approximate_hour_sensitivity(
             "sampled_is_void_of_course": sampled,
             "status": _state(sampled),
         }
+    return voc_summary
 
+
+def _hour_local_time_label(request, offset_seconds: int) -> str:
+    return civil_time_label(
+        request.datetime.year,
+        request.datetime.month,
+        request.datetime.day,
+        request.datetime.hour,
+        offset_seconds // 60,
+        offset_seconds % 60 * MICROSECONDS_PER_SECOND,
+    )
+
+
+def _probe_coverage(
+    requested_offsets: list[int], usable_offsets: list[int],
+    refinement_offsets: list[int], skipped: list[dict],
+) -> dict:
+    return {
+        "requested_offsets_seconds": requested_offsets,
+        "sampled_offsets_seconds": usable_offsets,
+        "refinement_offsets_seconds": refinement_offsets,
+        "skipped": skipped,
+        "semantics": (
+            "a sample that cannot be evaluated is skipped with its reason; "
+            "states, sets and envelopes below cover only the sampled instants, "
+            "the probes and the bisection midpoints"
+        ),
+    }
+
+
+def _hour_printed_universe(representative: dict, request) -> tuple[dict, dict, bool]:
+    """What the representative chart prints at each resampled path, its
+    classifications, and whether a void-of-course receipt joins them."""
+
+    representative_void_of_course = representative["void_of_course"]
+    printed = _approximate_hour_printed_objects(representative, request)
+    universe = _classifications_by_path(printed)
+    # An unrequested module is an empty container, not a receipt.
+    voc_usable = (
+        isinstance(representative_void_of_course, dict)
+        and bool(representative_void_of_course)
+        and representative_void_of_course.get("applicable") is not False
+    )
+    if voc_usable:
+        printed[VOID_OF_COURSE_PATH] = representative_void_of_course
+        universe[VOID_OF_COURSE_PATH] = printed_classifications(
+            representative_void_of_course, VOID_OF_COURSE_PATH
+        )
+    return printed, universe, voc_usable
+
+
+@dataclass(frozen=True)
+class RepresentativeChart:
+    """The real chart computed at the representative instant of the interval.
+
+    Each sensitivity builder reads the parts it reuses; the rest stay None.
+    """
+
+    bodies: list[dict]
+    semantics: str
+    houses: dict | None = None
+    placements: dict = field(default_factory=dict)
+    sect: dict | None = None
+    lots: dict | None = None
+    void_of_course: dict | None = None
+    offset_seconds: int = 0
+    nodes: list[dict] | None = None
+    local_time: str = ""
+    dodecatemoria: dict | None = None
+    essential_dignities: dict | None = None
+
+
+def build_approximate_hour_sensitivity(
+    *,
+    request,
+    body_defs: list[dict],
+    chart: RepresentativeChart,
+) -> dict:
+    """Build governed probes and reuse the selected real representative chart."""
+
+    representative = {
+        "input_local_time": _hour_local_time_label(request, chart.offset_seconds),
+        "bodies": chart.bodies,
+        "houses": chart.houses,
+        "placements": chart.placements,
+        "sect": chart.sect,
+        "sect_is_day": (
+            chart.essential_dignities["sect"]["is_day"]
+            if isinstance(chart.essential_dignities, dict)
+            and chart.essential_dignities.get("available")
+            else None
+        ),
+        "lots": chart.lots,
+        "dodecatemoria": chart.dodecatemoria,
+        "void_of_course": chart.void_of_course,
+        "void_of_course_evaluated": chart.void_of_course is not None,
+    }
+    # 半小時位移的時區（例如 Australia/Lord_Howe 2024-10-06）會讓民用小時部分不存在
+    # （02:00–02:29 不存在，02:30–02:59 存在）；「生於 02 那個小時」仍與時區規則相容，
+    # 所以只跳過取不到的取樣點並具名回報。整個小時都不存在時仍拒絕（見下方空分支）。
+    requested_offsets = sorted(
+        set(PROBE_OFFSETS_SECONDS) | set(_clock_change_edge_offsets(request))
+    )
+    probes_by_offset, skipped = _sample_hour_probes(
+        request, body_defs, requested_offsets, representative, chart.offset_seconds
+    )
+
+    usable_offsets = [
+        offset for offset in requested_offsets if offset in probes_by_offset
+    ]
+    if not usable_offsets:
+        # 整個小時都不存在。維持既有行為：由呼叫端轉成 422。
+        raise NonexistentLocalTimeError(
+            "no instant in the stated civil hour exists in this time zone"
+        )
+    probes = [probes_by_offset[offset] for offset in usable_offsets]
     start = _hour_start(request)
+    spans = civil_hour_spans(request.timezone, start)
+    transitions, refinement = _refine_transitions(
+        request=request,
+        body_defs=body_defs,
+        probes_by_offset=probes_by_offset,
+        stretch_of={
+            offset: _stretch_index(spans, _probe_utc(request, offset))
+            for offset in probes_by_offset
+        },
+    )
+    # Midpoint classifications join the sets, envelopes and states; a midpoint
+    # that skipped the void-of-course search adds nothing to that flag.
+    refinement_offsets = sorted(refinement)
+    refinement_probes = [refinement[offset] for offset in refinement_offsets]
+    evaluated = probes + refinement_probes
+    voc_evaluated = [probe for probe in evaluated if probe["void_of_course_evaluated"]]
+    representative_index = usable_offsets.index(chart.offset_seconds)
+
+    # What the representative chart prints at each resampled path is the
+    # universe; every listed sample is held against it.
+    printed, universe, voc_usable = _hour_printed_universe(representative, request)
+    sampled_states = [_classification_state(probe, request) for probe in probes]
+    refinement_states = [_classification_state(probe, request) for probe in refinement_probes]
+    classification_coverage = _classification_coverage(
+        printed, universe, sampled_states, refinement_states,
+    )
+    evaluation_limits = _evaluation_limits(
+        chart.houses,
+        skipped=_ascendant_classes_skipped(
+            [
+                (offset, _stretch_index(spans, _probe_utc(request, offset)), state)
+                for offset, state in zip(
+                    usable_offsets + refinement_offsets, sampled_states + refinement_states
+                )
+            ]
+        ),
+    )
+    evaluation_limits += _sect_dependent_dignity_limit(
+        chart.essential_dignities, probes + refinement_probes
+    )
+    _apply_evaluation_limits(classification_coverage, evaluation_limits)
+
+    body_signs = _hour_body_signs(body_defs, evaluated, representative_index)
+    planet_in_house = _hour_planet_in_house(body_defs, chart.placements, evaluated)
+    angles, house_cusps = _hour_angle_envelopes(chart.houses, evaluated)
+    sect_summary = _hour_sect_summary(classification_coverage, chart.sect, evaluated)
+    lots_summary = _hour_lots_summary(classification_coverage, chart.lots, evaluated)
+    voc_summary = _hour_voc_summary(voc_usable, chart.void_of_course, voc_evaluated)
+
     end = start + dtmod.timedelta(hours=1)
     return {
         "precision": "approximate_hour",
@@ -1616,19 +1702,24 @@ def build_approximate_hour_sensitivity(
         "method_source_ref": "birth_time_sensitivity/approximate_hour",
         "interval_start_local": start.isoformat(timespec="minutes"),
         "interval_end_exclusive_local": end.isoformat(timespec="minutes"),
-        "representative_minute": representative_offset_seconds // 60,
+        "representative_minute": chart.offset_seconds // 60,
         "representative_local_time": representative["input_local_time"],
-        "representative_semantics": representative_semantics,
+        "representative_semantics": chart.semantics,
         "sampling_semantics": "discrete_probes_not_continuous_hour_proof",
-        "probe_coverage": probe_coverage,
+        "probe_coverage": _probe_coverage(
+            requested_offsets, usable_offsets, refinement_offsets, skipped
+        ),
         "evaluation_limits": evaluation_limits,
         "probes": [_probe_receipt(request, probe) for probe in probes],
+        # One record per probe_coverage.refinement_offsets_seconds entry, in
+        # that order; the offset gives the wall-clock time (interval start plus
+        # offset), so a record keeps only what the offset does not say.
         "refinement_probes": [
             {
-                **_probe_receipt(request, probe),
+                "fold": _probe_fold(request, offset),
                 "void_of_course_evaluated": probe["void_of_course_evaluated"],
             }
-            for probe in refinement_probes
+            for offset, probe in zip(refinement_offsets, refinement_probes, strict=True)
         ],
         "transitions": transitions,
         "transition_refinement_policy": (
@@ -1643,7 +1734,7 @@ def build_approximate_hour_sensitivity(
         "lots": lots_summary,
         "void_of_course": voc_summary,
         "dodecatemoria_signs": _dodecatemoria_signs(
-            representative_dodecatemoria,
+            chart.dodecatemoria,
             [probe.get("dodecatemoria") for probe in evaluated],
         ),
     }
@@ -1693,22 +1784,19 @@ def _date_only_sample_instants(
     )
 
     # The day is the time step's civil day (resolve_civil_day): every UTC
-    # stretch the zone labels with this date.  A midnight jump need not be whole
-    # minutes, a date-line crossing can skip the next date, and a clock set back
-    # just after midnight returns to this date after a break, so the instant
-    # that ends the day may carry a later date's label and the day need not be
-    # one stretch.
+    # stretch the zone labels with this date.  Midnight jumps need not be whole
+    # minutes, a date-line crossing can skip a date, and a clock set back after
+    # midnight returns to this date, so the day's end may carry a later date's
+    # label and the day need not be one stretch.
     day_start = _resolved_instant(request, civil_day["start_utc"])
     next_day_start = _resolved_instant(request, civil_day["end_exclusive_utc"])
 
     def on_this_date(moment: dtmod.datetime) -> bool:
         return any(left <= moment < right for left, right in civil_day["spans"])
 
-    # An hourly clock grid assumes every clock change is a whole
-    # hour on the hour.  Lord Howe repeats thirty minutes, so the grid never
-    # entered the second fold and left 90 minutes unsampled.  The schedule adds
-    # the first and last second of each stretch of the day and both sides of
-    # every UTC-offset change inside it that fall on this date, which keeps
+    # An hourly grid assumes whole-hour clock changes (Lord Howe's 30-minute
+    # repeat left 90 minutes unsampled).  Adding each stretch's first and last
+    # second and both sides of every UTC-offset change on this date keeps
     # adjacent samples within a stretch at most an hour apart.
     for span_start, span_end in civil_day["spans"]:
         samples.append(_resolved_instant(request, span_start))
@@ -1735,17 +1823,107 @@ def _date_only_sample_instants(
     return samples, day_start, next_day_start, schedule
 
 
+def _date_only_sample_nodes(request, node_defs: list[dict], jd_ut: float, context, trace: Trace) -> list[dict]:
+    """The nodes at one date sample, south nodes derived when requested."""
+
+    _require_sample_coverage(node_defs, jd_ut, context)
+    nodes = compute_bodies(
+        node_defs, jd_ut, context, request.atmosphere, trace, physical=False, moon_relative=True,
+    )
+    _require_file_backed_samples(nodes, jd_ut)
+    if request.options.include_south_nodes:
+        append_south_nodes(nodes, jd_ut, context, request.atmosphere, trace)
+    return nodes
+
+
+def _date_only_position_ranges(
+    sampled_objects: dict[str, dict], representative_bodies: list[dict], representative_nodes: list[dict]
+) -> list[dict]:
+    """Each object's sampled signs and longitude envelope, by key."""
+
+    representative_map = {
+        item["key"]: item
+        for item in representative_bodies + representative_nodes
+    }
+    position_ranges = []
+    for key, record in sampled_objects.items():
+        values = [item["longitude"] for item in record["values"]]
+        representative = representative_map.get(key)
+        longitude = representative.get("longitude") if representative is not None else None
+        position_ranges.append(_sampled_sign_row(
+            key, record["name"], values or None,
+            representative=("representative_longitude", lambda _found: longitude),
+            envelope_key="sampled_longitude_envelope",
+        ))
+    position_ranges.sort(key=lambda item: item["key"])
+    return position_ranges
+
+
+def _moon_sign_transitions(moon_values: list[dict], sample_instants: list[_ResolvedLocalInstant], civil_day: dict) -> list[dict]:
+    """The Moon's sign changes between adjacent date samples."""
+
+    # A date can be more than one UTC stretch (a clock set back just after
+    # midnight labels the next hour with the previous date).  The last second of
+    # one stretch and the first of the next are adjacent samples, but the
+    # crossing between them may lie in time the clock gave to another date.
+    stretch_of = {
+        sample["utc_time"]: next(
+            index
+            for index, (start, end) in enumerate(civil_day["spans"])
+            if start <= sample["utc_datetime"] < end
+        )
+        for sample in sample_instants
+    }
+    moon_transitions = []
+    for left, right in zip(moon_values, moon_values[1:]):
+        left_sign = zodiac_sign_index(left["longitude"])
+        right_sign = zodiac_sign_index(right["longitude"])
+        if left_sign != right_sign:
+            moon_transitions.append(
+                {
+                    "from_sign_index": left_sign,
+                    "to_sign_index": right_sign,
+                    "lower_sample_local": left["local_time"],
+                    "upper_sample_local": right["local_time"],
+                    "semantics": (
+                        MOON_TRANSITION_WITHIN_ONE_STRETCH
+                        if stretch_of[left["utc_time"]] == stretch_of[right["utc_time"]]
+                        else MOON_TRANSITION_ACROSS_ANOTHER_DATE
+                    ),
+                }
+            )
+    return moon_transitions
+
+
+def _record_sample_longitudes(sampled_objects: dict[str, dict], objects: list[dict], sample: _ResolvedLocalInstant) -> None:
+    """Append one sample's longitudes to each object's row."""
+
+    for item in objects:
+        # An object with no longitude keeps its row instead of vanishing.
+        record = sampled_objects.setdefault(
+            item["key"],
+            {"key": item["key"], "name": item["name"], "values": []},
+        )
+        longitude = item.get("longitude")
+        if longitude is None:
+            continue
+        record["values"].append(
+            {
+                "longitude": longitude,
+                "local_time": sample["local_time"],
+                "fold": sample["fold"],
+                "utc_time": sample["utc_time"],
+            }
+        )
+
+
 def build_date_only_sensitivity(
     *,
     request,
     body_defs: list[dict],
     node_defs: list[dict],
-    representative_bodies: list[dict],
-    representative_nodes: list[dict],
     civil_day: dict,
-    representative_local_time: str,
-    representative_semantics: str,
-    representative_dodecatemoria: dict | None = None,
+    chart: RepresentativeChart,
 ) -> dict:
     """Return sampled daily longitude envelopes without inventing a birth time.
 
@@ -1756,6 +1934,7 @@ def build_date_only_sensitivity(
     silently dropped.
     """
 
+    representative_nodes = chart.nodes or []
     sample_instants, day_start, next_day_start, schedule = (
         _date_only_sample_instants(request, civil_day)
     )
@@ -1763,7 +1942,7 @@ def build_date_only_sensitivity(
     sampled_objects: dict[str, dict] = {}
     sample_states: list[dict[str, Any]] = []
     sample_dodecatemoria: list[dict | None] = []
-    representative_twelfth_parts: dict = representative_dodecatemoria or {}
+    representative_twelfth_parts: dict = chart.dodecatemoria or {}
     dodecatemoria_printed = _usable(representative_twelfth_parts)
 
     for sample in sample_instants:
@@ -1776,32 +1955,7 @@ def build_date_only_sensitivity(
             context=context,
             trace=trace,
         )
-        _require_sample_coverage(node_defs, jd_ut, context)
-        nodes = compute_bodies(
-            node_defs,
-            jd_ut,
-            context,
-            request.atmosphere,
-            trace,
-            physical=False,
-            moon_relative=True,
-        )
-        _require_file_backed_samples(nodes, jd_ut)
-        if request.options.include_south_nodes:
-            node_map = {item["key"]: item for item in nodes}
-            nodes.extend(
-                derive_node_antipode(
-                    node_map[north_key],
-                    key=south_key,
-                    name=south_name,
-                    body_id=BODY_ID_BY_KEY[north_key],
-                    jd_ut=jd_ut,
-                    ctx=context,
-                    atmosphere=request.atmosphere,
-                    trace=trace,
-                )
-                for north_key, south_key, south_name in SOUTH_NODE_DERIVATIONS
-            )
+        nodes = _date_only_sample_nodes(request, node_defs, jd_ut, context, trace)
         # The anchor prints no horizon position for a date; neither does a sample.
         for record in effective_bodies + nodes:
             withhold_horizontal_coordinates(record, DATE_ONLY_NO_BIRTH_TIME_REASON)
@@ -1834,28 +1988,10 @@ def build_date_only_sensitivity(
                 for leaf, value in leaves.items()
             }
         )
-        objects = effective_bodies + nodes
-        for item in objects:
-            # An object with no longitude in this mode keeps its
-            # row and says so, instead of vanishing from the ranges.
-            record = sampled_objects.setdefault(
-                item["key"],
-                {"key": item["key"], "name": item["name"], "values": []},
-            )
-            longitude = item.get("longitude")
-            if longitude is None:
-                continue
-            record["values"].append(
-                {
-                    "longitude": longitude,
-                    "local_time": sample["local_time"],
-                    "fold": sample["fold"],
-                    "utc_time": sample["utc_time"],
-                }
-            )
+        _record_sample_longitudes(sampled_objects, effective_bodies + nodes, sample)
 
     printed: dict[str, Any] = {
-        "astronomical_data.bodies": representative_bodies,
+        "astronomical_data.bodies": chart.bodies,
         "astronomical_data.nodes": representative_nodes,
     }
     if dodecatemoria_printed:
@@ -1864,65 +2000,21 @@ def build_date_only_sensitivity(
     classification_coverage = _classification_coverage(
         printed, _classifications_by_path(printed), sample_states, []
     )
-    representative_map = {
-        item["key"]: item
-        for item in representative_bodies + representative_nodes
-    }
-    position_ranges = []
-    for key, record in sampled_objects.items():
-        values = [item["longitude"] for item in record["values"]]
-        representative = representative_map.get(key)
-        longitude = representative.get("longitude") if representative is not None else None
-        position_ranges.append(_sampled_sign_row(
-            key, record["name"], values or None,
-            representative=("representative_longitude", lambda _found: longitude),
-            envelope_key="sampled_longitude_envelope",
-        ))
-    position_ranges.sort(key=lambda item: item["key"])
+    position_ranges = _date_only_position_ranges(
+        sampled_objects, chart.bodies, representative_nodes
+    )
 
     moon_values = sampled_objects["moon"]["values"]
-    # A date can be more than one UTC stretch (a clock set back just after
-    # midnight labels the next hour with the previous date).  The last second of
-    # one stretch and the first of the next are adjacent samples, but the
-    # crossing between them may lie in time the clock gave to another date.
-    stretch_of = {
-        sample["utc_time"]: next(
-            index
-            for index, (start, end) in enumerate(civil_day["spans"])
-            if start <= sample["utc_datetime"] < end
-        )
-        for sample in sample_instants
-    }
-    moon_transitions = []
-    for left, right in zip(moon_values, moon_values[1:]):
-        left_sign = zodiac_sign_index(left["longitude"])
-        right_sign = zodiac_sign_index(right["longitude"])
-        if left_sign != right_sign:
-            moon_transitions.append(
-                {
-                    "from_sign_index": left_sign,
-                    "to_sign_index": right_sign,
-                    "lower_sample_local": left["local_time"],
-                    "upper_sample_local": right["local_time"],
-                    "semantics": (
-                        MOON_TRANSITION_WITHIN_ONE_STRETCH
-                        if stretch_of[left["utc_time"]] == stretch_of[right["utc_time"]]
-                        else MOON_TRANSITION_ACROSS_ANOTHER_DATE
-                    ),
-                }
-            )
+    moon_transitions = _moon_sign_transitions(moon_values, sample_instants, civil_day)
     minimum_boundary_distance = min(
         min(value["longitude"] % 30.0, 30.0 - value["longitude"] % 30.0)
         for value in moon_values
     )
-    # The sum of the date's stretches, not end minus start: the bounds below
-    # are the first stretch's start and the last one's end, and between them
-    # the clock may show another date (astronomical_data.time.civil_day lists
-    # the stretches).
+    # The sum of the date's stretches, not end minus start: between the bounds
+    # the clock may show another date.
     duration_hours = civil_day["duration_seconds"] / 3600.0
-    # The local bounds are the local rendering of the same two instants the UTC
-    # bounds are taken from.  Writing them independently from the nominal date
-    # is how a receipt comes to state a local midnight that the zone never had.
+    # Local bounds render the same instants as the UTC bounds; deriving them from
+    # the nominal date could state a local midnight the zone never had.
     return {
         "precision": "date_only",
         "status": "computed",
@@ -1934,11 +2026,9 @@ def build_date_only_sensitivity(
         "interval_end_exclusive_utc": next_day_start["utc_time"],
         "civil_day_duration_hours": duration_hours,
         # Local noon, or the first existing instant after it: the chart's own
-        # anchor, passed in, so the two cannot name different anchors.
-        "representative_local_time": _whole_second_label(representative_local_time),
-        # Local noon, or the first existing instant after a noon the clock
-        # skipped: the time step's own label (time_utils.representative_policy).
-        "representative_semantics": representative_semantics,
+        # anchor and label, passed in, so the two cannot disagree.
+        "representative_local_time": _whole_second_label(chart.local_time),
+        "representative_semantics": chart.semantics,
         "sampling_semantics": (
             "hourly_local_clock_samples_plus_day_end_not_continuous_extrema_proof"
         ),
@@ -1956,7 +2046,7 @@ def build_date_only_sensitivity(
         "classification_coverage": classification_coverage,
         "position_ranges": position_ranges,
         "dodecatemoria_signs": _dodecatemoria_signs(
-            representative_dodecatemoria, sample_dodecatemoria
+            chart.dodecatemoria, sample_dodecatemoria
         ),
         # The Moon's signs and envelope are its position_ranges row; this adds
         # only what that row cannot say.

@@ -37,13 +37,13 @@ from ..domain_catalog import (
 )
 from ..ephemeris import FIXED_STAR, object_used_full_ephemeris
 from .bodies import horizontal_fields, horizontal_position
+from .formatting import degrees_number, longitude_number
 from .module_state import module_state
 from .trace import Trace
 
 FIXED_STAR_METHOD_CLASSIFICATION = "research_only"
 FIXED_STAR_SOURCE = "Swiss Ephemeris fixstar2_ut"
-# Every star failing is not a computed module; some
-# failing is still usable but says so.
+# All failing: not computed.  Some failing: usable, but says so.
 FIXED_STAR_REASON_CODES = ("fixed_star_query_failed", "fixed_star_query_partially_failed")
 # What `magnitude` measures. Closed set: one star's V magnitude, or a cluster's
 # integrated magnitude (the whole cluster's light summed, not one star).
@@ -83,9 +83,7 @@ def _zh_name_verification(star_defs: list) -> dict:
 def fixed_star_receipt(star_defs: list, requested: bool, results: list) -> dict:
     """恆星模組的分類收據與模組狀態，與座標結果分開，供 dossier 與前端一致引用。
 
-    狀態由逐星結果量出：至少一顆查到才 available；
-    全部失敗為 fixed_star_query_failed，部分失敗仍可用但附 fixed_star_query_partially_failed
-    與成功／失敗數。
+    狀態由逐星結果量出：至少一顆查到才 available；部分失敗仍可用但附原因碼與成功／失敗數。
     """
 
     failed = sum(1 for star in results if star.get("error"))
@@ -195,11 +193,22 @@ def compute_fixed_stars(star_defs: list, jd_ut: float, ctx, atmosphere, trace: T
             results.append(_failed_star_record(star, magnitude_basis))
             continue
 
-        ecl_lon, ecl_lat, dist, _speed_lon, _speed_lat, _speed_dist = ecl
-        ra, dec, _dist2, _speed_ra, _speed_dec, _sd2 = equ
+        # A star's place to 10⁻⁶° (the page's precision; the catalogue's own is
+        # milliarcseconds at best) and its distance to the AU: the parallax a
+        # catalogue distance comes from carries far fewer digits.
+        ecl_lon, ecl_lat, dist = longitude_number(ecl[0]), degrees_number(ecl[1]), round(ecl[2]) + 0.0
+        ra, dec = longitude_number(equ[0]), degrees_number(equ[1])
+        if az is not None:
+            az = longitude_number(az)
+        if az_raw is not None:
+            az_raw = longitude_number(az_raw)
+        if true_alt is not None:
+            true_alt = degrees_number(true_alt)
+        if app_alt is not None:
+            app_alt = degrees_number(app_alt)
         catalog_name = _canonical_catalog_name(name, matched_name)
-        # An Earth-centred star position reads the Earth through
-        # the Moon segment, which the retflag does not report.
+        # An Earth-centred star position reads the Earth through the Moon
+        # segment, which the retflag does not report.
         used_full_ephemeris = object_used_full_ephemeris(
             retflag_ecl, body=FIXED_STAR, flags=flags, jd_ut=jd_ut,
         ) and object_used_full_ephemeris(

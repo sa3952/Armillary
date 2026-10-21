@@ -13,6 +13,9 @@ requirement locks（`deploy/requirements.lock`、`deploy/build-requirements.lock
 each artifact pip may install, and `publication/third_party_source_lock.json` names each dependency's single source
 distribution on PyPI.
 
+This tree alone does not rebuild offline: the dependencies are fetched from PyPI and checked against
+those hashes, so a rebuild needs PyPI (or a mirror serving the same bytes) to still carry them.
+
 The supported reconstruction creates a fresh environment in the digest-pinned builder recorded in `deploy/Dockerfile`
 and installs the development lock from PyPI over HTTPS with `--require-hashes`; pyswisseph is built from its source.
 Some upstream Rust sdists are not self-contained, so an all-sdist build is not claimed.

@@ -7,36 +7,32 @@
  * viewBox 寬度壓在 720 以內、字級不小於 20 單位：390px 寬的螢幕上約 10–11px，
  * 只用於圖上標註；要讀的數字另外寫在圖說或表格裡。 */
 
-.article{max-width:68rem}
 .article section{border-top:0; padding:0}
 
 /* ─── 頁首 ─── */
 .ar-head{padding:var(--s2) 0 var(--s3); border-bottom:2px solid var(--ink); margin-bottom:var(--s4)}
 .ar-head .eyebrow a{color:inherit; border-bottom:1px solid var(--hair)}
 @media (hover:hover){.ar-head .eyebrow a:hover{color:var(--accent); border-bottom-color:var(--accent)}}
-.page-body.article h1{
-  font-size:clamp(2rem,4.6vw,3.3rem); line-height:1.3; max-width:46rem;
-  margin:var(--s2) 0 var(--s2);
-}
 .ar-dek{font-family:var(--serif); font-size:clamp(1.12rem,2vw,1.32rem); line-height:1.8;
   color:var(--ink-dim); max-width:42rem; margin-bottom:var(--s3) !important}
 .ar-byline{display:flex; flex-wrap:wrap; align-items:center; gap:.4rem 1.4rem;
-  font-family:var(--mono); font-size:var(--fs-small); letter-spacing:.06em; color:var(--ink-faint);
+  font-family:var(--sans); font-size:var(--fs-small); letter-spacing:0; color:var(--ink-faint);
   border-top:1px solid var(--hair); padding-top:var(--s1); margin:0 !important}
-.ar-tier{background:var(--ink); color:var(--paper); padding:.18rem .55rem; letter-spacing:.12em}
+/* 文章類型（講方法／帶數據）與頁面的眉標同一種：淡墨小字，不用黑底、不加字距。 */
+.ar-tier{color:var(--ink-dim); letter-spacing:0}
 
 /* ─── 正文欄 ─── */
 .ar-body{display:grid; grid-template-columns:5.5rem minmax(0,40rem) minmax(0,1fr); column-gap:var(--s3)}
 .ar-body > *{grid-column:2}
-.ar-body p{font-size:var(--fs-body); line-height:1.95; margin-bottom:var(--s2)}
+.ar-body p{font-size:var(--fs-body); line-height:var(--lh-body); margin-bottom:var(--s2)}
 .ar-body p b, .ar-body li b{color:var(--ink)}
-.ar-body ul, .ar-body ol{max-width:none; font-size:var(--fs-body); line-height:1.9}
-.ar-lead{font-size:var(--fs-lead) !important; line-height:1.95 !important; color:var(--ink)}
+.ar-body ul, .ar-body ol{max-width:none; font-size:var(--fs-body); line-height:var(--lh-body)}
+.ar-lead{font-size:var(--fs-lead) !important; line-height:var(--lh-body) !important; color:var(--ink)}
 .ar-lead::first-letter{font-family:var(--serif); font-size:2.6em; float:left; line-height:1;
   margin:.12em .12em 0 0; color:var(--accent)}
 
 .ar-body h2{position:relative; font-family:var(--serif); font-weight:400;
-  font-size:1.6rem; line-height:1.45; margin:var(--s4) 0 var(--s2); padding-top:var(--s2);
+  font-size:1.6rem; line-height:var(--lh-head); margin:var(--s4) 0 var(--s2); padding-top:var(--s2);
   border-top:1px solid var(--hair)}
 .ar-sec{position:absolute; left:calc(-5.5rem - var(--s3)); top:var(--s2); width:5.5rem;
   font-family:var(--mono); font-size:var(--fs-note); letter-spacing:.08em; color:var(--accent);
@@ -55,9 +51,9 @@
   border-bottom:1px solid var(--hair); padding:var(--s2) 0; margin:var(--s3) 0 !important}
 .ar-key{background:var(--paper-2); border-left:3px solid var(--accent);
   padding:var(--s2) var(--s2) var(--s1); margin:var(--s2) 0 var(--s3)}
-.ar-key > .ar-k, .ar-scope > .ar-k{display:block; font-family:var(--mono); font-size:var(--fs-small);
-  letter-spacing:.16em; color:var(--accent); margin-bottom:.4rem}
-.ar-key p{font-size:var(--fs-aside) !important; margin-bottom:var(--s1) !important}
+.ar-key > .ar-k, .ar-scope > .ar-k{display:block; font-family:var(--sans); font-size:var(--fs-small);
+  letter-spacing:0; color:var(--accent); margin-bottom:.4rem}
+.ar-key p{font-size:var(--fs-aside); margin-bottom:var(--s1)}
 .ar-scope{border:1px solid var(--ink); padding:var(--s2); margin:var(--s3) 0}
 .ar-scope ul{margin:0; padding-left:1.2rem; color:var(--ink-dim); font-size:var(--fs-aside)}
 .ar-scope li{margin-bottom:.45rem}
@@ -66,7 +62,7 @@
 .ar-body > .ar-points{background:var(--paper-2); border-left:3px solid var(--accent);
   padding:var(--s2) var(--s2) var(--s1); margin:0 0 var(--s3)}
 .ar-body .ar-points h2{font-family:var(--mono); font-size:var(--fs-small); letter-spacing:0;
-  line-height:1.6; color:var(--accent); border-top:0; margin:0 0 .4rem; padding-top:0}
+  line-height:var(--lh-head); color:var(--accent); border-top:0; margin:0 0 .4rem; padding-top:0}
 .ar-points ul{margin:0; padding-left:1.2rem; font-size:var(--fs-aside)}
 .ar-points li{margin-bottom:.45rem}
 
@@ -81,11 +77,11 @@
 
 /* ─── 圖版 ─── */
 .ar-fig{margin:var(--s3) 0 var(--s4)}
-.ar-fig svg{display:block; width:100%; max-width:48rem; height:auto; overflow:visible}
-.ar-hero svg{max-width:56rem; margin:0 auto}
-.ar-fig figcaption{font-size:var(--fs-note); line-height:1.85; color:var(--ink-dim);
+.ar-fig svg{display:block; width:100%; height:auto; overflow:visible}
+.ar-hero svg{margin:0 auto}
+.ar-fig figcaption{font-size:var(--fs-note); line-height:var(--lh-note); color:var(--ink-dim);
   border-top:1px solid var(--hair); padding-top:var(--s1); margin-top:var(--s1); max-width:var(--measure-cjk)}
-.ar-fig figcaption b{font-family:var(--mono); font-weight:400; letter-spacing:.1em;
+.ar-fig figcaption b{font-family:var(--serif-num); font-variant-numeric:lining-nums tabular-nums; font-weight:400; letter-spacing:0;
   color:var(--accent); margin-right:.6em}
 .ar-hero{margin:0 0 var(--s4); padding:var(--s3) var(--s3) var(--s2); background:var(--paper-2);
   border:1px solid var(--hair)}
@@ -107,13 +103,13 @@
 .ar-table .diff{color:var(--accent); font-weight:700}
 
 /* ─── 出處 ─── */
-.ar-refs{margin-top:var(--s5) !important; padding-top:var(--s3) !important; border-top:2px solid var(--ink) !important}
+.ar-refs{margin-top:var(--s5); padding-top:var(--s3) !important; border-top:2px solid var(--ink) !important}
 .ar-refs h2{font-family:var(--serif); font-weight:400; font-size:1.5rem; margin:0 0 var(--s1)}
 .ar-refs > p{max-width:var(--measure-cjk); color:var(--ink-dim); font-size:var(--fs-aside)}
 .ar-refs ol{list-style:none; counter-reset:ref; padding:0; margin:var(--s2) 0 0; max-width:52rem}
 .ar-refs li{counter-increment:ref; display:grid; grid-template-columns:2.6rem minmax(0,1fr);
   gap:0 var(--s1); padding:.75rem 0; border-top:1px solid var(--hair-soft);
-  font-size:var(--fs-aside); line-height:1.85; color:var(--ink-dim)}
+  font-size:var(--fs-aside); line-height:var(--lh-body); color:var(--ink-dim)}
 .ar-refs li::before{content:counter(ref); font-family:var(--mono); color:var(--accent); font-size:var(--fs-note)}
 .ar-refs li:target{background:var(--paper-2)}
 .ar-refs li > span{min-width:0; overflow-wrap:anywhere}
@@ -125,18 +121,18 @@
 .rs-computed{color:var(--ink-dim)}
 
 /* ─── 收尾 ─── */
-.ar-next{margin-top:var(--s5) !important; display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);
+.ar-next{margin-top:var(--s5); display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);
   gap:0; border:2px solid var(--ink)}
 .ar-next > div{padding:var(--s3)}
 .ar-next > div:first-child{background:var(--plate); color:var(--plate-fg)}
-.ar-next h2{font-family:var(--serif); font-weight:400; font-size:1.45rem; line-height:1.5; margin:0 0 var(--s2)}
+.ar-next h2{font-family:var(--serif); font-weight:400; font-size:1.45rem; line-height:var(--lh-head); margin:0 0 var(--s2)}
 .ar-next p{color:var(--plate-dim); font-size:var(--fs-aside)}
 .page-body .ar-next .btn-paper{display:inline-block; background:var(--paper); color:var(--plate);
   padding:.75rem 1.5rem; border-bottom:0; margin-top:var(--s1)}
 @media (hover:hover){.page-body .ar-next .btn-paper:hover{background:var(--accent-rev); color:var(--paper)}}
 .ar-next ul{list-style:none; padding:0; margin:0}
 .ar-next li{padding:.55rem 0; border-bottom:1px solid var(--hair-soft); font-size:var(--fs-aside)}
-.ar-next .ar-k{display:block; font-family:var(--mono); font-size:var(--fs-small); letter-spacing:.16em;
+.ar-next .ar-k{display:block; font-family:var(--sans); font-size:var(--fs-small); letter-spacing:0;
   color:var(--ink-faint); margin-bottom:var(--s1)}
 
 @media (max-width:60rem){
@@ -255,7 +251,6 @@
 .hs-strip .hs-t-bar-a{fill:var(--paper); font-size:24px}
 .hs-strip .hs-t-bar-b{fill:var(--fx-ink); font-size:24px; paint-order:stroke; stroke:var(--paper); stroke-width:5px}
 @media (max-width:640px){
-  .hs-strip .hs-t{font-size:34px}
   .hs-strip .hs-t-bar-a, .hs-strip .hs-t-bar-b{font-size:30px}
 }
 .hs-table td{padding:.25rem .6rem .25rem 0}
@@ -276,4 +271,9 @@
 @media print{
   .hs-live, .hs-live[hidden]{display:none}
   .hs-nojs[hidden]{display:block}
+}
+
+/* 強制色彩：宮位球的圖與下方時間條保留紙底與墨線（理由見 page.css 檔尾）。 */
+@media (forced-colors: active){
+  .hs-svg,.hs-strip{forced-color-adjust:none; background-color:var(--paper)}
 }

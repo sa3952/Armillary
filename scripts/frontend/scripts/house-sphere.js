@@ -98,7 +98,7 @@
     return low === high ? `每一宮都是 ${low} 度。` : `宮的大小從 ${low} 度到 ${high} 度。`;
   }
 
-  // ── 場景 ───────────────────────────────────────────────
+  // 場景
   const SIZE = 640;
   // 球在圖上的位置與大小。頁面上可以轉的那一張用 LIVE；文章圖版（寬版與手機直版）的靜態圖由
   // house_sphere.py 傳入自己的 frame（plate: true），字改用圖版元件的字級 class。
@@ -480,7 +480,7 @@
     return element;
   }
 
-  // ── 頁面上可以轉的那一張 ─────────────────────────────────
+  // 頁面上可以轉的那一張
   function mount(container) {
     const document = container.ownerDocument;
     const window = document.defaultView;
@@ -503,7 +503,8 @@
     }
 
     // 圖上的字級跟著 article.css 的 --hs-font（窄螢幕較大）；量到不同就照新的字級重畫一次。
-    const view = { font: BASE_FONT, compact: false };
+    // 字級只隨視窗寬度變：第一次畫好與視窗改變大小時才量，轉動或播放的每一幀不讀 computed style。
+    const view = { font: BASE_FONT, compact: false, measured: false };
     function measureFont(svg) {
       const font = parseFloat(window.getComputedStyle(svg).getPropertyValue("--hs-font"));
       if (!(font > 0) || font === view.font) return;
@@ -526,7 +527,10 @@
       else stage.prepend(svg);
       bindSvg(svg);
       side();
-      measureFont(svg);
+      if (!view.measured) {
+        view.measured = true;
+        measureFont(svg);
+      }
     }
     function schedule() {
       if (pending) return;

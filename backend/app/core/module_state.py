@@ -15,21 +15,17 @@ STATE_FIELDS = (
 )
 MODULE_STATUSES = ("not_requested", "computed", "not_applicable")
 MODULE_NOT_REQUESTED, MODULE_COMPUTED, MODULE_NOT_APPLICABLE = MODULE_STATUSES
-# Why an event search that was attempted produced nothing (containment, not a
-# failed chart): the chart pipeline writes one of these, the dossier warnings
-# read them.
+# Why an attempted event search produced nothing (contained, not a failed
+# chart); written by the chart pipeline, read by the dossier warnings.
 EVENT_SEARCH_REASON_CODES = (
     "full_ephemeris_unavailable_for_search_window",
     "ephemeris_segment_file_missing",
     "swiss_ephemeris_error_in_search",
 )
-# A search the ephemeris refused, by FullEphemerisRequiredError.reason: its
-# reason code and whether the request's configuration still permits the
-# search.  Leaving the bundled coverage is the request's own (not applicable);
-# a segment file missing from this deployment is the server's fault, so the
-# search stays applicable and is merely unavailable.  Any other reason (a
-# Swiss fallback the manifest did not predict) is not contained here: it fails
-# the request, as for the core chart.
+# FullEphemerisRequiredError.reason -> (reason code, still applicable).  Leaving
+# the bundled coverage is the request's own (not applicable); a missing segment
+# file is the server's fault (applicable, merely unavailable).  Any other reason
+# (an unpredicted Swiss fallback) is not contained: it fails the request.
 SEARCH_EPHEMERIS_REFUSALS = {
     "segment_out_of_coverage": (EVENT_SEARCH_REASON_CODES[0], False),
     "segment_file_missing": (EVENT_SEARCH_REASON_CODES[1], True),
@@ -121,3 +117,15 @@ def module_status_word(state: dict) -> str:
     if not state["requested"]:
         return MODULE_NOT_REQUESTED
     return MODULE_COMPUTED if state["available"] else MODULE_NOT_APPLICABLE
+
+
+def frame_table_refusal(state: dict, trace, title: str, note: str, **trace_fields) -> dict:
+    """Trace the frame table's refusal of a module and return its receipt."""
+
+    trace.add(
+        title,
+        result={"execution_status": "not_applicable", "reason_code": state["reason_code"]},
+        note=note,
+        **trace_fields,
+    )
+    return not_applicable_receipt(state)

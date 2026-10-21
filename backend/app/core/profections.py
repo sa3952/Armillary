@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from .dignity_tables import DOMICILE_SIGNS, SIGNS
 from .frame_compatibility import method_frame_state
-from .source_reading import SOURCE_READING_LEVELS
+from .source_reading import BIBLIOGRAPHIC_ONLY, ORIGINAL_LANGUAGE_READ, SECONDARY_ONLY, TRANSLATION_READ, cited
 
 PROFECTION_PROFILE = "annual_profection_ascendant_sign_v1"
 PROFECTION_PROVENANCE = "hellenistic_annual_profection_from_ascendant_v1"
@@ -68,53 +68,31 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "topic of the place and no verdict is emitted."
         ),
         "sources": [
-            {
-                "citation": "Vettius Valens, Anthologies IV.11 (Kroll p.174, Pingree p.165)",
-                "says": (
-                    "in Riley's English: 'We are investigating the 35th year. I divide <35> by 12 ... remainder "
-                    "11 ... 11 signs from the Ascendant and Mars <in Virgo> to Saturn in "
-                    "Cancer'"
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": (
-                    "Kroll's Greek (1908, p.174) for the sentence on the 35th year (see "
-                    "counting_note); the rest in Riley's English; Pingree's edition not checked"
-                ),
-            },
-            {
-                "citation": "Vettius Valens, Anthologies IV.9 (Kroll 1908 p.169), Kroll's note on the 33rd year",
-                "says": "reads the 31st and 32nd years as complete and the 33rd as not yet complete",
-                "reading": SOURCE_READING_LEVELS[3],
-                "read_at": (
-                    "level pending: the counting note reports Kroll's note, but the record "
-                    "does not say p.169 was read; only the reference is claimed"
-                ),
-            },
-            {
-                "citation": "Firmicus Maternus, Mathesis II.27.3-4, II.28.3 (Kroll-Skutsch 1897 vol.1 pp.76-77)",
-                "says": "annual profection and lord of the year",
-                "reading": SOURCE_READING_LEVELS[2],
-                "read_at": "as checked by the project's research notes, not re-read for this entry",
-            },
-            {
-                "citation": "Paulus Alexandrinus ch.31",
-                "says": "profection",
-                "reading": SOURCE_READING_LEVELS[2],
-                "read_at": "as cited by the research notes after their correction, not re-read for this entry",
-            },
+            cited("Vettius Valens, Anthologies IV.11 (Kroll p.174, Pingree p.165)",
+                  ("in Riley's English: 'We are investigating the 35th year. I divide <35> by 12 ... remainder "
+                   "11 ... 11 signs from the Ascendant and Mars <in Virgo> to Saturn in "
+                   "Cancer'"),
+                  ORIGINAL_LANGUAGE_READ,
+                  ("Kroll's Greek (1908, p.174) for the sentence on the 35th year (see "
+                   "counting_note); the rest in Riley's English; Pingree's edition not checked")),
+            cited("Vettius Valens, Anthologies IV.9 (Kroll 1908 p.169), Kroll's note on the 33rd year",
+                  "reads the 31st and 32nd years as complete and the 33rd as not yet complete",
+                  BIBLIOGRAPHIC_ONLY,
+                  ("level pending: the counting note reports Kroll's note, but the record "
+                   "does not say p.169 was read; only the reference is claimed")),
+            cited("Firmicus Maternus, Mathesis II.27.3-4, II.28.3 (Kroll-Skutsch 1897 vol.1 pp.76-77)",
+                  "annual profection and lord of the year", SECONDARY_ONLY,
+                  "as checked by the project's research notes, not re-read for this entry"),
+            cited("Paulus Alexandrinus ch.31", "profection", SECONDARY_ONLY,
+                  "as cited by the research notes after their correction, not re-read for this entry"),
         ],
-        "named_disagreement_not_adopted": {
-            "citation": "Ptolemy, Tetrabiblos IV.10 (Robbins, Loeb p.453)",
-            "says": (
-                "profections from each of several releasing places; v1 profects the "
-                "ascendant only and is not Ptolemy's procedure"
-            ),
-            "reading": SOURCE_READING_LEVELS[1],
-            "read_at": (
-                "Robbins's English (Loeb 1940): the whole of IV.10 read in the LacusCurtius "
-                "transcription; the Greek not checked"
-            ),
-        },
+        "named_disagreement_not_adopted": cited(
+            "Ptolemy, Tetrabiblos IV.10 (Robbins, Loeb p.453)",
+            ("profections from each of several releasing places; v1 profects the "
+             "ascendant only and is not Ptolemy's procedure"),
+            TRANSLATION_READ,
+            ("Robbins's English (Loeb 1940): the whole of IV.10 read in the LacusCurtius "
+             "transcription; the Greek not checked")),
         "counting_note": (
             "Valens's '35th year' is an ordinal, so it is 34 completed years: Kroll's "
             "Greek (1908, p.174) has the singular with the article, 'ἐν τῷ λε' ἔτει', "

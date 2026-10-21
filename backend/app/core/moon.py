@@ -5,17 +5,17 @@
 獨立成 determine_void_of_course()，不與搜尋結果混在一起，方便日後替換不同流派規則。
 
 本模組實作的是「月亮離開現在的星座前不完成合相與四種傳統相位中的任何一個」＋要求相位
-精確完成。兩個成分來歷不同：星座條件最晚見於 Lilly, Christian Astrology 1647 p.112，
-更早亦見於 Māshāʾallāh；「必須在離座前精確完成、不採容許度」，後人文獻歸於 Al H.
+精確完成。兩個成分來歷不同：星座條件最晚見於 Lilly, Christian Astrology 1647 p.112；
+Māshāʾallāh《On Reception》第 1 章給的是行星通用的星座邊界規則，把它用在月亮與月空亡上是
+本站的引申；「必須在離座前精確完成、不採容許度」，後人文獻歸於 Al H.
 Morrison（AFA Bulletin 第 28 卷第 10 期，1966 年 10 月；原是當年 AFA 大會的演講，後來
 印成 AFA 小冊《The Void of Course Moon》；原文未讀），更早的起源尚未查證。兩者
 合起來的歷史歸屬仍未定（VOC_SOURCE_VERIFICATION；方法登記 `void_of_course`）。其他具名
 定義：Ps.-Porphyry 的「未來 30° 內不與行星接合」（方法登記
 `contested/void_of_course_definition`）；Antiochus 名下「一日一夜（約 13°）內不與任何行星
 結合」之說只見二手轉述（Louis 2013 引 Gramaglia p.188），原文未核。方法名稱因此不含
-"classical"；日後若要提供古典定義，應另立具名方法
-並列（例如 hellenistic_30_degree_kenodromia_v1、lilly_moiety_application_v1），而非改寫
-本方法。
+"classical"；日後若要提供古典定義，應另立具名方法並列（例如 hellenistic_30_degree_kenodromia_v1、
+lilly_moiety_application_v1），而非改寫本方法。
 
 數值解法：由 `core/root_finding.py` 的兩段式求根器求解，**換座邊界本身也以求根**而非
 除法外插——月亮在 2.5 天內的黃經速度變化足以讓「(邊界 − 現在黃經) / 現在速度」產生
@@ -24,10 +24,11 @@ Morrison（AFA Bulletin 第 28 卷第 10 期，1966 年 10 月；原是當年 AF
 """
 
 import math
-from typing import cast
+from collections.abc import Mapping
+from typing import Any, Literal, cast, get_args
 
 from ..domain_catalog import BODY_ID_BY_KEY, CLASSICAL_BODIES
-from .aspect_profiles import LILLY_1647_READ_AT, PTOLEMAIC_ASPECTS
+from .aspect_profiles import LILLY_1647_READ_AT, ORB_PROFILES, PTOLEMAIC_ASPECTS
 from .aspects import EXACT_NOW_EPSILON_DEGREES
 from .bodies import memoized_longitudes
 from .module_state import (
@@ -35,9 +36,9 @@ from .module_state import (
     computed_receipt,
     not_applicable_receipt,
 )
-from .method_status import method_receipt
+from .method_status import method_head
 from .root_finding import SOLVER_NAME, find_crossings_detailed, wrap_to_signed_180
-from .source_reading import SOURCE_READING_LEVELS
+from .source_reading import BIBLIOGRAPHIC_ONLY, ORIGINAL_LANGUAGE_READ, TRANSLATION_READ, cited
 from .trace import Trace
 
 # The conjunction and the four traditional aspects, in the aspect table's order.
@@ -46,22 +47,30 @@ _ASPECT_ANGLES: tuple[float, ...] = tuple(
 )
 
 VOC_METHOD_NAME = "modern_sign_bounded_exact_perfection_v1"
+# Two named definitions offered beside the default.  The default stays first and
+# its output is unchanged; the others each carry their own provenance and sources.
+VOC_HELLENISTIC_30_METHOD = "hellenistic_30_degree_v1"
+VOC_LILLY_MOIETY_METHOD = "lilly_moiety_before_sign_exit_v1"
+VocMethod = Literal[
+    "modern_sign_bounded_exact_perfection_v1",
+    "hellenistic_30_degree_v1",
+    "lilly_moiety_before_sign_exit_v1",
+]
+VOC_METHODS: tuple[str, ...] = get_args(VocMethod)
+DEFAULT_VOC_METHOD: VocMethod = "modern_sign_bounded_exact_perfection_v1"
+# How far the Moon's own motion is followed under the 30-degree definition.
+HELLENISTIC_HORIZON_DEGREES = 30.0
+# The Lilly definition uses his moiety table (p.107), the same numbers as the
+# aspect module's lilly_1647_experience_v1 profile; the pair's orb is half the sum.
+_LILLY_ORBS = ORB_PROFILES["lilly_1647_experience_v1"]["orbs_degrees"]
 
-# 現行預設的來源尚未解決，而輸出必須說出這件事。
-#
-# `modern_sign_bounded_exact_perfection_v1` 的核心規則是「星座界線阻斷 application」，
-# 由兩個成分組成：星座條件已在 Māshāʾallāh（Dykes 2008 p.443 節錄）與 Lilly 1647 p.112
-# 讀到；「離座前精確完成」後人文獻歸於 Al H. Morrison（1966，原文未讀），更早的起源
-# 未查證。收據明示未轉錄一手文本，且 `method_provenance` 說出合起來的歸屬未定，不只說
-# 「現代、非古典」。
-#
-# 被揭露的是**規則本身的來源強度**，不是判定數值：換座時刻與相位完成時刻由求根器算出。
-# 星座條件最晚見於 Lilly 1647 p.112，所以不把整條規則判給 20 世紀；「非古典」仍成立，
-# 歸屬則未定，與 VOC_SOURCE_VERIFICATION 一致。
+# 現行預設的來源尚未解決，而輸出必須說出這件事（兩個成分的來歷見模組說明與
+# VOC_SOURCE_VERIFICATION）。收據明示未轉錄一手文本，`method_provenance` 說出合起來的
+# 歸屬未定，不只說「現代、非古典」：星座條件最晚見於 Lilly 1647 p.112，所以不把整條規則
+# 判給 20 世紀。被揭露的是**規則本身的來源強度**，不是判定數值（時刻由求根器算出）。
 VOC_METHOD_PROVENANCE = "not_classical_attribution_unresolved"
-# The two components have
-# different histories, so each carries its own attribution; method_status is not
-# raised.  Closed vocabularies.
+# The two components have different histories, so each carries its own
+# attribution; method_status is not raised.  Closed vocabularies.
 VOC_SIGN_CONDITION_ATTRIBUTIONS = (
     "attested_masha_allah_and_lilly_1647_earliest_unresolved",
 )
@@ -91,7 +100,9 @@ VOC_SOURCE_VERIFICATION = {
     "sign_boundary_rule_attribution": "unresolved",
     "sign_condition": (
         "The Moon not perfecting an aspect before leaving its sign: Māshāʾallāh, "
-        "On Reception ch.1 (Dykes 2008 p.443; ch.7, p.467, not checked); Lilly, "
+        "On Reception ch.1 (Dykes 2008 p.443; ch.7, p.467, not checked) gives a "
+        "general sign-boundary rule for planets, and applying it to the Moon and the "
+        "void course is this site's application; Lilly, "
         "Christian Astrology 1647 p.112 'Voyd of course' (bounded by the sign; the "
         "page does not mention moieties). Sahl's definition in the Latin "
         "Quadripartitum collection (Venice 1519) is that the Moon joins no planet "
@@ -110,85 +121,49 @@ VOC_SOURCE_VERIFICATION = {
         "medieval_arabic_transmission",
     ),
     "sources": (
-        {
-            "citation": "Lilly, Christian Astrology 1647 p.112",
-            "says": (
-                "'Voyd of course': the Moon perfects no aspect before leaving its sign; "
-                "bounded by the sign; the page does not mention moieties"
-            ),
-            "reading": SOURCE_READING_LEVELS[0],
-            "read_at": LILLY_1647_READ_AT,
-        },
-        {
-            "citation": "Māshāʾallāh, On Reception ch.1 (Dykes 2008 p.443)",
-            "says": "the Moon not perfecting an aspect before leaving its sign",
-            "reading": SOURCE_READING_LEVELS[1],
-            "read_at": (
-                "Dykes's English translation, in the translator's published excerpt "
-                "pp.443-446"
-            ),
-        },
-        {
-            "citation": (
-                "Sahl, 'De cursu planete vacui', in Quadripartitum Ptolomei ... (Venice 1519)"
-            ),
-            "says": (
-                "the Moon joins no planet and none joins it; it names neither the sign "
-                "boundary nor an orb"
-            ),
-            "reading": SOURCE_READING_LEVELS[1],
-            "read_at": (
-                "the medieval Latin translation in the 1519 printing; Seville copy, "
-                "archive.org ARes08317, PDF p.246, left column"
-            ),
-        },
-        {
-            "citation": (
-                "Al H. Morrison, a talk at the AFA's 1966 meeting, printed in the AFA "
-                "Bulletin vol. 28 no. 10 (October 1966) and later as the AFA booklet The "
-                "Void of Course Moon"
-            ),
-            "says": (
-                "later literature attributes to this article the requirement of exact "
-                "perfection before the sign exit"
-            ),
-            "reading": SOURCE_READING_LEVELS[3],
-            "read_at": (
-                "located through an AFA author index; the periodical's name and the "
-                "booklet as given by a bibliography of the booklet, which we have not "
-                "seen ourselves; the text was not read"
-            ),
-        },
-        {
-            "citation": "Māshāʾallāh, On Reception ch.7 (Dykes 2008 p.467)",
-            "says": "a further statement of the sign condition, not checked",
-            "reading": SOURCE_READING_LEVELS[3],
-            "read_at": _VOC_NOT_CONSULTED,
-        },
-        {
-            "citation": "Abū Maʿshar, Abbreviation III.21-22 (Brill 1994 / ARHAT 1997)",
-            "says": "an earlier explicit statement of the sign condition is attributed to it",
-            "reading": SOURCE_READING_LEVELS[3],
-            "read_at": _VOC_NOT_CONSULTED,
-        },
-        {
-            "citation": "al-Qabīṣī, Introduction III (Warburg 2004)",
-            "says": "a definition of the void course still to be checked",
-            "reading": SOURCE_READING_LEVELS[3],
-            "read_at": _VOC_NOT_CONSULTED,
-        },
-        {
-            "citation": "Sahl, Introduction §5.10 (Dykes 2008 p.35) and the Arabic text",
-            "says": "a definition of the void course still to be checked",
-            "reading": SOURCE_READING_LEVELS[3],
-            "read_at": _VOC_NOT_CONSULTED,
-        },
-        {
-            "citation": "Bonatti, Tract 3 definition chapter",
-            "says": "a definition of the void course still to be checked",
-            "reading": SOURCE_READING_LEVELS[3],
-            "read_at": _VOC_NOT_CONSULTED,
-        },
+        cited("Lilly, Christian Astrology 1647 p.112",
+              ("'Voyd of course': a planet separated from a planet that does not forthwith, "
+               "while in that sign, apply to any other (any planet, not only the Moon; the "
+               "product does not model the separation premise); "
+               "bounded by the sign; the page does not mention moieties"),
+              ORIGINAL_LANGUAGE_READ, LILLY_1647_READ_AT),
+        cited("Māshāʾallāh, On Reception ch.1 (Dykes 2008 p.443)",
+              ("a general sign-boundary rule for planets: an aspect not perfected "
+               "before a planet leaves its sign; applying it to the Moon and the void "
+               "course is this site's application"),
+              TRANSLATION_READ,
+              ("Dykes's English translation, in the translator's published excerpt "
+               "pp.443-446")),
+        cited("Sahl, 'De cursu planete vacui', in Quadripartitum Ptolomei ... (Venice 1519)",
+              ("the Moon joins no planet and none joins it; it names neither the sign "
+               "boundary nor an orb"),
+              TRANSLATION_READ,
+              ("the medieval Latin translation in the 1519 printing; Seville copy, "
+               "archive.org ARes08317, PDF p.246, left column")),
+        cited(("Al H. Morrison, a talk at the AFA's 1966 meeting, printed in the AFA "
+               "Bulletin vol. 28 no. 10 (October 1966) and later as the AFA booklet The "
+               "Void of Course Moon"),
+              ("later literature attributes to this article the requirement of exact "
+               "perfection before the sign exit"),
+              BIBLIOGRAPHIC_ONLY,
+              ("located through an AFA author index; the periodical's name and the "
+               "booklet as given by a bibliography of the booklet, which we have not "
+               "seen ourselves; the text was not read")),
+        cited("Māshāʾallāh, On Reception ch.7 (Dykes 2008 p.467)",
+              "a further statement of the sign condition, not checked", BIBLIOGRAPHIC_ONLY,
+              _VOC_NOT_CONSULTED),
+        cited("Abū Maʿshar, Abbreviation III.21-22 (Brill 1994 / ARHAT 1997)",
+              "an earlier explicit statement of the sign condition is attributed to it",
+              BIBLIOGRAPHIC_ONLY, _VOC_NOT_CONSULTED),
+        cited("al-Qabīṣī, Introduction III (Warburg 2004)",
+              "a definition of the void course still to be checked", BIBLIOGRAPHIC_ONLY,
+              _VOC_NOT_CONSULTED),
+        cited("Sahl, Introduction §5.10 (Dykes 2008 p.35) and the Arabic text",
+              "a definition of the void course still to be checked", BIBLIOGRAPHIC_ONLY,
+              _VOC_NOT_CONSULTED),
+        cited("Bonatti, Tract 3 definition chapter",
+              "a definition of the void course still to be checked", BIBLIOGRAPHIC_ONLY,
+              _VOC_NOT_CONSULTED),
     ),
     "consequence": (
         "method_status cannot be raised to adopted until the attribution is "
@@ -196,14 +171,83 @@ VOC_SOURCE_VERIFICATION = {
     ),
 }
 
-# 換座搜尋視窗。
-#
-# 「月亮速度介於 11.7–15.4 度/日，故 30/11.7 ≈ 2.57 日，取 3.0 日有餘裕」這個
-# 推理不能用：**那個速度區間只對地心成立**。實測
-# topocentric 模式在高海拔測站可低到 6.21 度/日、高到 21.15 度/日——視差在一天
-# 之內就能讓瞬時黃經速度變動一倍以上。以最低瞬時速度外推，跨越 30 度需要 4.83 日，
-# 超過 3.0 日的視窗。
-#
+_PORPHYRY_30_READ_AT = (
+    "an online Greek transcription and Holden 2009 trans. p.18, the CCAG page itself "
+    "not checked; level pending: the record does not say whether the Greek was read "
+    "closely enough to count as the original language, so only the translation is claimed"
+)
+# The receipts of the two alternative definitions.  Neither claims more than the
+# default does: primary texts are not independently transcribed here either.
+VOC_ALTERNATIVE_SOURCES = {
+    VOC_HELLENISTIC_30_METHOD: {
+        "method_provenance": "named_pre_modern_text_translation_read",
+        "source_verification": {
+            "primary_texts_independently_transcribed": False,
+            "rule_attribution": "ps_porphyry_introduction_ch23",
+            "source_ref": "void_of_course",
+        },
+        "rule": (
+            "void when no aspect (conjunction and the four traditional aspects to a "
+            "classical planet) perfects while the Moon moves through the next 30 "
+            "degrees of longitude from its chart position, regardless of the sign "
+            "boundary"
+        ),
+        "not_modelled": (
+            "the text also counts joining 'by sign'; only degree perfections are "
+            "searched, so a whole-sign aspect with no degree perfection inside the "
+            "30 degrees does not prevent the verdict void"
+        ),
+        "sources": (
+            cited("Ps.-Porphyry, Introduction ch.23 (Boer-Weinstock, CCAG V/4, 1940, p.202)",
+                  ("the Moon joins no planet, by sign, degree, aspect or kollesis, "
+                   "within the next 30 degrees, regardless of the sign boundary"),
+                  TRANSLATION_READ, _PORPHYRY_30_READ_AT),
+            cited("Antiochus (as reported by Louis 2013 citing Gramaglia p.188)",
+                  ("a variant of one day and night (about 13 degrees); not implemented "
+                   "here, the original is not checked"),
+                  BIBLIOGRAPHIC_ONLY, _VOC_NOT_CONSULTED),
+        ),
+    },
+    VOC_LILLY_MOIETY_METHOD: {
+        "method_provenance": "named_author_components_combination_by_product",
+        "source_verification": {
+            "primary_texts_independently_transcribed": False,
+            "rule_attribution": "lilly_1647_p112_sign_condition_with_p107_moieties",
+            "source_ref": "void_of_course",
+        },
+        "rule": (
+            "void when, before the Moon leaves its sign, it does not come within the "
+            "joint moiety of an applying aspect: the Moon is not void if at the chart "
+            "moment it already applies within the pair's orb, or it enters that orb "
+            "while applying before the sign exit; the pair's orb is half the sum of "
+            "the two planets' orbs in Lilly's table"
+        ),
+        "not_modelled": (
+            "p.112 bounds the void course by the sign but does not itself mention "
+            "moieties; reading 'apply' there through the moiety rule of p.107 is the "
+            "product's combination of two passages of the same book; p.107 prints two "
+            "columns of orbs and the moieties are taken from the first only (the orb "
+            "profile lilly_1647_experience_v1), not reconciled with the worked example "
+            "on p.110"
+        ),
+        "sources": (
+            cited("Lilly, Christian Astrology 1647 p.112",
+                  ("'Voyd of course': a planet separated from a planet that does not forthwith, "
+               "while in that sign, apply to any other (any planet, not only the Moon; the "
+               "product does not model the separation premise); "
+                   "bounded by the sign; the page does not mention moieties"),
+                  ORIGINAL_LANGUAGE_READ, LILLY_1647_READ_AT),
+            cited("Lilly, Christian Astrology 1647 p.107 (again p.110)",
+                  "the planets' orbs and the rule that a pair's orb is half their sum",
+                  ORIGINAL_LANGUAGE_READ, LILLY_1647_READ_AT),
+        ),
+    },
+}
+
+# 換座搜尋視窗。「月亮速度介於 11.7–15.4 度/日，故 30/11.7 ≈ 2.57 日，取 3.0 日有餘裕」
+# 這個推理不能用：**那個速度區間只對地心成立**。實測 topocentric 模式在高海拔測站可低到
+# 6.21 度/日、高到 21.15 度/日——視差在一天之內就能讓瞬時黃經速度變動一倍以上。以最低
+# 瞬時速度外推，跨越 30 度需要 4.83 日，超過 3.0 日的視窗。
 # 實際量測：在該測站掃描一整年、每 3 小時起算一次，最久的一次換座是 2.65 日，
 # 且 topocentric 黃經在取樣中未曾倒退（monotonic），故「第一個根即換座時刻」的
 # 前提成立。2.65 對 3.0 只有 12% 餘裕，而該量測只涵蓋一個測站一年，
@@ -264,43 +308,141 @@ BOUNDARY_SIMULTANEITY_POLICY = {
     ),
 }
 
-# Closed sets: a perfection that
-# cannot be ordered against the sign exit returns `simultaneous_boundary`.
-# The page words each verdict itself (ChartViewModel VOC_VERDICT_ZH).
+# Closed set; a perfection that cannot be ordered against the sign exit returns
+# `simultaneous_boundary`.  The page words each verdict (ChartViewModel VOC_VERDICT_ZH).
 VOC_VERDICTS = ("void", "not_void", "simultaneous_boundary", "not_evaluated")
 
 
-def voc_receipt_head() -> dict:
-    """The keys every VOC receipt opens with."""
+# Each definition's period (report M1 / F-2): the default's attribution is
+# unresolved and its combined form modern; the 30-degree reading is Hellenistic;
+# the moiety reading is Lilly 1647.
+VOC_METHOD_PERIODS: dict[str, str] = {
+    "modern_sign_bounded_exact_perfection_v1": "modern",
+    "hellenistic_30_degree_v1": "hellenistic",
+    "lilly_moiety_before_sign_exit_v1": "renaissance_early_modern",
+}
 
-    return {"method": VOC_METHOD_NAME, **method_receipt("void_of_course")}
+
+def voc_receipt_head(method: str = DEFAULT_VOC_METHOD) -> dict:
+    return {**method_head(method, "void_of_course"), "period": VOC_METHOD_PERIODS[method]}
 
 
 _SEARCH_HEAD_KEYS = (
-    "method", "method_status", "method_provenance", "source_verification",
+    "method", "method_status", "period", "name_status", "method_provenance", "source_verification",
     "solver", "solver_status",
 )
 
 
-def _search_head(solver_status: str) -> dict:
+def _search_head(solver_status: str, method: str = DEFAULT_VOC_METHOD) -> dict:
     """The keys the search result and the verdict built from it open with."""
 
+    alternative = VOC_ALTERNATIVE_SOURCES.get(method)
     return {
-        **voc_receipt_head(),
-        "method_provenance": VOC_METHOD_PROVENANCE,
-        "source_verification": dict(VOC_SOURCE_STATUS),
+        **voc_receipt_head(method),
+        "method_provenance": (
+            alternative["method_provenance"] if alternative else VOC_METHOD_PROVENANCE
+        ),
+        "source_verification": dict(
+            cast(Mapping[str, Any], alternative["source_verification"]) if alternative else VOC_SOURCE_STATUS
+        ),
         "solver": SOLVER_NAME,
         "solver_status": solver_status,
     }
 
 
-def _find_sign_exit_days(moon_id, jd_ut, longitude_at, current_longitude):
-    """求月亮實際跨過下一個星座界線的時刻（自盤上時刻起算的日數）。
+def _find_longitude_reached_days(moon_id, jd_ut, longitude_at, target):
+    """The first time the Moon reaches ``target`` longitude (days from the chart)."""
 
-    以「距離下一個星座起點還差幾度」為求根函式，在整個搜尋視窗上實際查星曆，
-    因此不受月亮速度變化影響。月亮在視窗內不可能逆行（其黃經速度恆為正），
-    故第一個根即為換座時刻。
+    def distance(offset_days: float) -> float:
+        return wrap_to_signed_180(longitude_at(moon_id, jd_ut + offset_days) - target)
+
+    crossings = find_crossings_detailed(
+        distance,
+        window_days=_SIGN_EXIT_SEARCH_WINDOW_DAYS,
+        coarse_step_days=_COARSE_STEP_DAYS,
+        tolerance_days=_TOLERANCE_DAYS,
+        max_roots=1,
+    )
+    return crossings[0] if crossings else None
+
+
+def joint_moiety_degrees(body_key: str) -> float:
+    """Half the sum of the Moon's and the other planet's orbs (Lilly p.107)."""
+
+    return (_LILLY_ORBS["moon"] + _LILLY_ORBS[body_key]) / 2.0
+
+
+# Step for the sign of the rate of the offset at the chart moment (about 8.6 s).
+_APPLYING_STEP_DAYS = 1e-4
+
+
+def _find_moiety_entries(moon_id, body, jd_ut, longitude_at, window_days):
+    """Moiety events for one planet: (applying within orb now, entering orb later).
+
+    An entry is a time the absolute offset from an exact aspect falls through the
+    joint moiety; a planet already inside the orb at the chart moment counts only
+    while the offset is shrinking (applying).
     """
+
+    present_events: list[dict] = []
+    future_events: list[dict] = []
+    body_id = body["body_id"]
+    orb = joint_moiety_degrees(body["key"])
+    for aspect_angle in _ASPECT_ANGLES:
+        targets = {
+            wrap_to_signed_180(aspect_angle),
+            wrap_to_signed_180(-aspect_angle),
+        }
+        for target in targets:
+            def offset_at(offset_days: float, _target=target) -> float:
+                moment = jd_ut + offset_days
+                return wrap_to_signed_180(
+                    longitude_at(moon_id, moment)
+                    - longitude_at(body_id, moment)
+                    - _target
+                )
+
+            def outside_orb(offset_days: float) -> float:
+                return abs(offset_at(offset_days)) - orb
+
+            base = {
+                "body": body["name"],
+                "body_key": body["key"],
+                "aspect_angle": aspect_angle,
+                "joint_moiety_degrees": orb,
+            }
+            now = offset_at(0.0)
+            if abs(now) <= orb and abs(offset_at(_APPLYING_STEP_DAYS)) < abs(now):
+                present_events.append(
+                    {**base, "time_days": 0.0, "offset_at_chart_moment_degrees": now}
+                )
+            for record in find_crossings_detailed(
+                outside_orb,
+                window_days=window_days,
+                coarse_step_days=_COARSE_STEP_DAYS,
+                tolerance_days=_TOLERANCE_DAYS,
+            ):
+                bracket = record["bracket"]
+                if not (
+                    bracket["low_offset_degrees"] > 0.0 > bracket["high_offset_degrees"]
+                ):
+                    continue
+                future_events.append(
+                    {
+                        **base,
+                        "time_days": record["t"],
+                        "solver_evidence": {
+                            "bracket": bracket,
+                            "bisection_iterations": record["iterations"],
+                            "residual_degrees": record["residual_degrees"],
+                        },
+                    }
+                )
+    return present_events, future_events
+
+
+def _find_sign_exit_days(moon_id, jd_ut, longitude_at, current_longitude):
+    """求月亮實際跨過下一個星座界線的時刻（自盤上時刻起算的日數）；月亮不逆行，第一個根即換座。"""
 
     boundary = math.floor(current_longitude / 30.0) * 30.0 + 30.0
 
@@ -411,8 +553,14 @@ def find_voc_candidates(
     jd_ut: float,
     longitude_at,
     moon_id: int,
+    method: str = DEFAULT_VOC_METHOD,
 ) -> dict:
-    """回傳距離換座邊界的時間，以及邊界前會精確成立的所有候選入相位事件（依時間排序）。"""
+    """回傳距離換座邊界的時間，以及邊界前會精確成立的所有候選入相位事件（依時間排序）。
+
+    method 選擇定義：預設為換座前精確完成；hellenistic_30_degree_v1 以月亮自盤上位置
+    再走 30° 為界（不管換座）；lilly_moiety_before_sign_exit_v1 以換座為界，但以進入
+    兩星 moiety 容許度內的入相位為準。
+    """
 
     moon_lon = moon["longitude"]
     moon_speed = moon["speed_longitude"]
@@ -435,7 +583,7 @@ def find_voc_candidates(
             ),
         )
         return {
-            **_search_head("sign_exit_not_found_in_search_window"),
+            **_search_head("sign_exit_not_found_in_search_window", method),
             "time_to_sign_exit_hours": None,
             "candidates": [],
             "exact_at_chart_moment": [],
@@ -471,12 +619,57 @@ def find_voc_candidates(
         ),
     )
 
+    # The search horizon: the sign exit, or for the 30-degree definition the
+    # moment the Moon has moved 30 degrees from its chart position.
+    horizon_extra: dict = {}
+    horizon_days = time_to_boundary_days
+    horizon_bracket = sign_exit["bracket"]
+    if method == VOC_HELLENISTIC_30_METHOD:
+        horizon_longitude = (moon_lon + HELLENISTIC_HORIZON_DEGREES) % 360.0
+        reached = _find_longitude_reached_days(
+            moon_id, jd_ut, longitude_at, horizon_longitude
+        )
+        if reached is None:
+            return {
+                **_search_head("horizon_not_found_in_search_window", method),
+                "time_to_sign_exit_hours": None,
+                "candidates": [],
+                "exact_at_chart_moment": [],
+                "simultaneous_boundary_events": [],
+            }
+        horizon_days = reached["t"]
+        horizon_bracket = reached["bracket"]
+        horizon_extra = {
+            "search_horizon": {
+                "kind": "moon_motion_30_degrees",
+                "longitude": horizon_longitude,
+                "time_hours": horizon_days * 24.0,
+                "bracket": reached["bracket"],
+                "bisection_iterations": reached["iterations"],
+                "residual_degrees": reached["residual_degrees"],
+            }
+        }
+        trace.add(
+            "VOC候選搜尋：月亮再走 30° 的時刻",
+            formula="以 root_finding 求 月亮黃經(t) − (盤上月亮黃經 + 30°) = 0 的最早時刻",
+            inputs={"月亮黃經": moon_lon, "搜尋界線黃經": horizon_longitude},
+            result={"距界線時間(天)": horizon_days},
+        )
+    elif method == VOC_LILLY_MOIETY_METHOD:
+        horizon_extra = {
+            "search_horizon": {"kind": "sign_exit_moiety_entry"},
+        }
+    find_events = (
+        _find_moiety_entries if method == VOC_LILLY_MOIETY_METHOD
+        else _find_aspect_perfections
+    )
+
     exact_now: list[dict] = []
     future: list[dict] = []
     for body in other_bodies:
         if body["longitude"] is None or body["speed_longitude"] is None:
             continue
-        present_events, future_events = _find_aspect_perfections(
+        present_events, future_events = find_events(
             moon_id,
             body,
             jd_ut,
@@ -484,30 +677,20 @@ def find_voc_candidates(
             # The window runs past the exit by the simultaneity tolerance so
             # a perfection that cannot be ordered against the exit is found
             # and named, rather than falling either side by rounding.
-            time_to_boundary_days + _SIMULTANEITY_TOLERANCE_DAYS,
+            horizon_days + _SIMULTANEITY_TOLERANCE_DAYS,
         )
         exact_now.extend(present_events)
         future.extend(future_events)
 
-    # **恰在盤上時刻精確成立的相位
-    # 計入空亡判定。** 理由是它此刻正在完成——有事情正在發生，月亮不是空亡。
-    #
-    # 需要區分的不是「t=0 是否計入」，而是它不得**默默**被當成一個未來事件
-    # 回報：求根器會讓 t=0 混進 candidates。
-    #
-    # 因此實作是「計入，但可分辨」：t=0 的事件另列在
-    # exact_at_chart_moment，不混進代表未來的 candidates；空亡判定則同時看兩者。
-    # all_candidates 只列**未來**相位，依時間排序，可能為空。
-    #
-    # 與換座時刻在求根容差內分不出先後的
-    # 完成點，既不是「邊界前」也不是「邊界後」，另列 simultaneous_boundary_events，
-    # 並帶上換座根的括號區間，讓第三方能看出兩個根為何無法排序。
-    #
-    # 「此刻」以角度判定（距精確 ≤ 1″，與相位模組同一常數）。
-    exit_low = time_to_boundary_days - _SIMULTANEITY_TOLERANCE_DAYS
+    # 盤上時刻恰好精確（距精確 ≤ 1″，與相位模組同一常數）的相位計入空亡判定：它此刻正在
+    # 完成，月亮不是空亡。但它不得**默默**當成未來事件回報（求根器會讓 t=0 混進 candidates），
+    # 所以另列 exact_at_chart_moment；all_candidates 只列**未來**相位，依時間排序，可能為空。
+    # 與換座時刻在求根容差內分不出先後的完成點既不在邊界前也不在邊界後，另列
+    # simultaneous_boundary_events，並帶上換座根的括號區間，讓第三方能看出兩根為何無法排序。
+    exit_low = horizon_days - _SIMULTANEITY_TOLERANCE_DAYS
     candidates = [event for event in future if event["time_days"] < exit_low]
     simultaneous = [
-        {**event, "sign_exit_bracket": sign_exit["bracket"]}
+        {**event, "sign_exit_bracket": horizon_bracket}
         for event in future
         if event["time_days"] >= exit_low
     ]
@@ -516,7 +699,7 @@ def find_voc_candidates(
     simultaneous.sort(key=lambda c: c["time_days"])
 
     trace.add(
-        f"VOC候選搜尋 (method={VOC_METHOD_NAME}, solver={SOLVER_NAME})",
+        f"VOC候選搜尋 (method={method}, solver={SOLVER_NAME})",
         formula="對合相與四種傳統相位角(0/60/90/120/180°)的兩個帶號目標，"
                 "以粗掃描分割根區間後二分求根；盤上時刻距精確 ≤ 1″ 者列為此刻完成，"
                 "換座時刻前（超出求根容差）者列為候選，與換座時刻在求根容差內"
@@ -538,7 +721,8 @@ def find_voc_candidates(
     )
 
     return {
-        **_search_head("converged"),
+        **_search_head("converged", method),
+        **horizon_extra,
         "time_to_sign_exit_hours": time_to_boundary_days * 24.0,
         "sign_exit_solver_evidence": {
             "boundary_longitude": boundary,
@@ -630,6 +814,8 @@ def determine_void_of_course(voc_data: dict, trace: Trace) -> dict:
                 voc_data.get("solver_status") if verdict == "not_evaluated" else None
             ),
         ),
+        **({"search_horizon": voc_data["search_horizon"]}
+           if "search_horizon" in voc_data else {}),
         "verdict": verdict,
         "is_void_of_course": is_void,
         "simultaneous_boundary_events": simultaneous,
@@ -646,7 +832,8 @@ _VOC_OTHER_BODY_KEYS = frozenset(
 
 
 def evaluate_void_of_course(
-    bodies: list[dict], trace: Trace, *, jd_ut: float, longitude_at
+    bodies: list[dict], trace: Trace, *, jd_ut: float, longitude_at,
+    method: str = DEFAULT_VOC_METHOD,
 ) -> dict:
     """The VOC verdict from one set of computed bodies.
 
@@ -669,12 +856,15 @@ def evaluate_void_of_course(
             jd_ut=jd_ut,
             longitude_at=longitude_at,
             moon_id=BODY_ID_BY_KEY["moon"],
+            method=method,
         ),
         trace,
     )
 
 
-def void_of_course_not_applicable(state: dict, trace: Trace) -> dict:
+def void_of_course_not_applicable(
+    state: dict, trace: Trace, method: str = DEFAULT_VOC_METHOD
+) -> dict:
     """VOC refused by the central frame table.
 
     The sign exit is a boundary of the tropical ecliptic of date, and the method
@@ -690,7 +880,7 @@ def void_of_course_not_applicable(state: dict, trace: Trace) -> dict:
         ),
     )
     return {
-        **voc_receipt_head(),
+        **voc_receipt_head(method),
         **not_applicable_receipt(state),
         "verdict": "not_evaluated",
         "is_void_of_course": None,
@@ -707,5 +897,15 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         **VOC_SOURCE_VERIFICATION,
         "present_instant_policy": dict(PRESENT_INSTANT_POLICY),
         "boundary_simultaneity_policy": dict(BOUNDARY_SIMULTANEITY_POLICY),
+        # The selectable definitions beside the default (option void_of_course_method).
+        "alternative_methods": {
+            name: {
+                "method_provenance": entry["method_provenance"],
+                "rule": entry["rule"],
+                "not_modelled": entry["not_modelled"],
+                "sources": entry["sources"],
+            }
+            for name, entry in VOC_ALTERNATIVE_SOURCES.items()
+        },
     },
 }

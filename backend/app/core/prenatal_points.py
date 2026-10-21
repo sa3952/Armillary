@@ -14,14 +14,10 @@ turns them into the input of another technique:
 * the eclipse degree, the previous eclipse reaching the umbra beside the
   previous lunar eclipse of any kind, and an eclipse under way at birth.
 
-"Above the horizon" is the product's one criterion, the sect rule's: the
-body's centre, geocentric true altitude (no refraction), above 0°, with the
-same ±50′ near-horizon band (``lots.classify_sect``).  Inside the band no
-luminary is chosen and both degrees stay listed.  Within the band the
-alternative boundaries (upper limb, refraction, the Moon's topocentric
-parallax of up to about a degree) can decide differently; outside it they do
-not change the answer for the Sun, and the Moon's parallax is disclosed in the
-register entry.
+"Above the horizon" is the sect rule's criterion (``lots.classify_sect``; the
+register entry's ``horizon_criterion``).  Alternative boundaries (upper limb,
+refraction, the Moon's parallax) can decide differently only inside its ±50′
+band, where no luminary is chosen; outside it they do not change the Sun's answer.
 
 Every longitude is the lunar events' fixed contract: apparent geocentric
 tropical of date.  A sidereal chart also gets the same points in its own zodiac.
@@ -37,6 +33,7 @@ import swisseph as swe
 
 from ..ephemeris import (
     chart_observer_restored,
+    guarded_calc,
     require_full_ephemeris,
     require_object_coverage,
 )
@@ -47,14 +44,13 @@ from .lots import SECT_NEAR_CRITICAL_DEGREES, classify_sect
 from .root_finding import wrap_to_signed_180
 from .lunar_events import (
     PHASE_FLAGS,
-    PHASES,
     _eclipse_result,
     _phase_event,
     _phase_state,
     previous_phase_strictly_before,
 )
 from .time_utils import civil_instant, earth_rotation_jd_ut
-from .source_reading import SOURCE_READING_LEVELS
+from .source_reading import ORIGINAL_LANGUAGE_READ, SECONDARY_ONLY, TRANSLATION_READ, cited
 from .trace import Trace
 
 SYZYGY_DEGREE_SOURCE_REF = "lunar_events/prenatal_syzygy_degree"
@@ -106,13 +102,8 @@ class PrenatalPlace:
 def _luminaries(jd_ut: float, operation: str) -> tuple[tuple, tuple]:
     """Sun and Moon at one instant under the lunar events' flags."""
 
-    for body in (swe.SUN, swe.MOON):
-        require_object_coverage(body=body, flags=PHASE_FLAGS, jd_ut=jd_ut, operation=operation)
-    sun, sun_flag = swe.calc_ut(jd_ut, swe.SUN, PHASE_FLAGS)
-    moon, moon_flag = swe.calc_ut(jd_ut, swe.MOON, PHASE_FLAGS)
-    require_full_ephemeris(sun_flag, operation=operation, jd_ut=jd_ut)
-    require_full_ephemeris(moon_flag, operation=operation, jd_ut=jd_ut)
-    return tuple(sun), tuple(moon)
+    return tuple(guarded_calc(jd_ut, swe.SUN, PHASE_FLAGS, operation)[0]), tuple(
+        guarded_calc(jd_ut, swe.MOON, PHASE_FLAGS, operation)[0])
 
 
 def _chart_zodiac(jd_ut: float, place: PrenatalPlace, longitudes: dict) -> dict | None:
@@ -420,9 +411,6 @@ def prenatal_syzygy_at_birth(
     }
 
 
-# ── eclipses ───────────────────────────────────────────────────────────────
-
-
 def _enrich_eclipse(record: dict, place: PrenatalPlace) -> dict:
     jd_ut = record["jd_ut_maximum"]
     sun, moon = _luminaries(jd_ut, "日月食（日月位置）")
@@ -596,30 +584,19 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "syzygy; reported beside the altitude reading, never used to choose"
         ),
         "sources": [
-            {
-                "citation": (
-                    "Ptolemy, Tetrabiblos III.2 (Robbins, Loeb 1940, pp. 229-235, the syzygy "
-                    "rule on pp. 231-233; Hübner III.3)"
-                ),
-                "says": (
-                    "take the degree of the most recent syzygy before birth, at a new Moon the "
-                    "degree of both luminaries, at a full Moon that of the luminary above the "
-                    "earth; then find the planet that rules that degree"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Robbins's English translation; the Greek not checked",
-            },
-            {
-                "citation": "Robbins, note 9 to Tetrabiblos III.2 (Loeb 1940)",
-                "says": (
-                    "the text follows the two chief manuscripts and the anonymous commentator "
-                    "in judging 'above the earth' at the syzygy; another reading judges it at "
-                    "the birth. The second reading is reported as information "
-                    "(prenatal_syzygy_at_birth.luminaries_above_horizon_at_birth)"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Robbins's English translation and note; the Greek not checked",
-            },
+            cited(("Ptolemy, Tetrabiblos III.2 (Robbins, Loeb 1940, pp. 229-235, the syzygy "
+                   "rule on pp. 231-233; Hübner III.3)"),
+                  ("take the degree of the most recent syzygy before birth, at a new Moon the "
+                   "degree of both luminaries, at a full Moon that of the luminary above the "
+                   "earth; then find the planet that rules that degree"),
+                  TRANSLATION_READ, "Robbins's English translation; the Greek not checked"),
+            cited("Robbins, note 9 to Tetrabiblos III.2 (Loeb 1940)",
+                  ("the text follows the two chief manuscripts and the anonymous commentator "
+                   "in judging 'above the earth' at the syzygy; another reading judges it at "
+                   "the birth. The second reading is reported as information "
+                   "(prenatal_syzygy_at_birth.luminaries_above_horizon_at_birth)"),
+                  TRANSLATION_READ,
+                  "Robbins's English translation and note; the Greek not checked"),
         ],
         "not_done": (
             "the ascendant corrected by this degree (the animodar) is not computed and the "
@@ -638,31 +615,18 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "picked and both are listed"
         ),
         "sources": [
-            {
-                "citation": (
-                    "Ptolemy, Tetrabiblos III.10 (Robbins pp. 271-307; the relevant passage "
-                    "pp. 277-279; Hübner III.11)"
-                ),
-                "says": (
-                    "in a day nativity the candidates include the preceding new Moon, in a "
-                    "night nativity the preceding full Moon; the text does not say whether a "
-                    "nearer syzygy of the other kind is passed over"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Robbins's English translation; the Greek not checked",
-            },
-            {
-                "citation": "William Lilly, Christian Astrology (1647), Book III, ch. CIV, pp. 527-529",
-                "says": (
-                    "by day the preceding new Moon, by night the preceding full Moon, passing "
-                    "over the nearer one"
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": (
-                    "the English of 1647, read for the product's methods page; the pages "
-                    "were not re-read for this entry"
-                ),
-            },
+            cited(("Ptolemy, Tetrabiblos III.10 (Robbins pp. 271-307; the relevant passage "
+                   "pp. 277-279; Hübner III.11)"),
+                  ("in a day nativity the candidates include the preceding new Moon, in a "
+                   "night nativity the preceding full Moon; the text does not say whether a "
+                   "nearer syzygy of the other kind is passed over"),
+                  TRANSLATION_READ, "Robbins's English translation; the Greek not checked"),
+            cited("William Lilly, Christian Astrology (1647), Book III, ch. CIV, pp. 527-529",
+                  ("by day the preceding new Moon, by night the preceding full Moon, passing "
+                   "over the nearer one"),
+                  ORIGINAL_LANGUAGE_READ,
+                  ("the English of 1647, read for the product's methods page; the pages "
+                   "were not re-read for this entry")),
         ],
     },
     ECLIPSE_SELECTION_SOURCE_REF: {
@@ -707,48 +671,26 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         ),
         "visibility": "whether the eclipse could be seen at the birthplace is not evaluated",
         "sources": [
-            {
-                "citation": (
-                    "Swiss Ephemeris 2.10.03: swe_sol_eclipse_when_glob, swe_lun_eclipse_when "
-                    "(ECL_PARTIAL|ECL_TOTAL for the umbral search)"
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "the Swiss Ephemeris programmer's documentation",
-            },
-            {
-                "citation": (
-                    "NASA GSFC Five Millennium Canon of Solar Eclipses and Catalog of Lunar "
-                    "Eclipses (Espenak & Meeus): the test oracle. Eclipse Predictions by Fred "
-                    "Espenak and Jean Meeus (NASA's GSFC)"
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "the catalogue pages, parsed for the tests",
-            },
-            {
-                "citation": "Ptolemy, Tetrabiblos II.4-II.8 (Robbins, Loeb 1940)",
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Robbins's English translation; the Greek not checked",
-            },
-            {
-                "citation": (
-                    "the last eclipse before birth as a point of the nativity: Robert C. "
-                    "Jansky, Interpreting the Eclipses (Para Research 1977); Rose Lineman, "
-                    "Eclipses (AFA 1984) and Your Prenatal Eclipse (AFA 1992); Bernadette "
-                    "Brady, The Eagle and the Lark (Weiser 1992); Philip Graves, "
-                    "Introduction to Prenatal Eclipses (web article, 2004)"
-                ),
-                "reading": SOURCE_READING_LEVELS[2],
-                "read_at": (
-                    "secondary reports only: Graves's web article seen only in summary; "
-                    "the books known only from bibliographies and publishers' descriptions"
-                ),
-            },
+            cited(("Swiss Ephemeris 2.10.03: swe_sol_eclipse_when_glob, swe_lun_eclipse_when "
+                   "(ECL_PARTIAL|ECL_TOTAL for the umbral search)"),
+                  None, ORIGINAL_LANGUAGE_READ, "the Swiss Ephemeris programmer's documentation"),
+            cited(("NASA GSFC Five Millennium Canon of Solar Eclipses and Catalog of Lunar "
+                   "Eclipses (Espenak & Meeus): the test oracle. Eclipse Predictions by Fred "
+                   "Espenak and Jean Meeus (NASA's GSFC)"),
+                  None, ORIGINAL_LANGUAGE_READ, "the catalogue pages, parsed for the tests"),
+            cited("Ptolemy, Tetrabiblos II.4-II.8 (Robbins, Loeb 1940)", None,
+                  TRANSLATION_READ, "Robbins's English translation; the Greek not checked"),
+            cited(("the last eclipse before birth as a point of the nativity: Robert C. "
+                   "Jansky, Interpreting the Eclipses (Para Research 1977); Rose Lineman, "
+                   "Eclipses (AFA 1984) and Your Prenatal Eclipse (AFA 1992); Bernadette "
+                   "Brady, The Eagle and the Lark (Weiser 1992); Philip Graves, "
+                   "Introduction to Prenatal Eclipses (web article, 2004)"),
+                  None, SECONDARY_ONLY,
+                  ("secondary reports only: Graves's web article seen only in summary; "
+                   "the books known only from bibliographies and publishers' descriptions")),
         ],
     },
 }
-
-
-# ── pipeline entry points ──────────────────────────────────────────────────
 
 
 def attach_prenatal_syzygy(

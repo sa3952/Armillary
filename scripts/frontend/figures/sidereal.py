@@ -16,7 +16,7 @@ from __future__ import annotations
 import functools
 from typing import Any
 
-from ._common import SIGNS, product_charts
+from ._common import SIGNS, degree_minute, product_charts
 from ._demo import DEMO, zodiacal_minutes
 
 
@@ -78,11 +78,6 @@ def answers() -> dict:
     return out
 
 
-def _dm(degrees: float) -> str:
-    units = round(degrees * 60)
-    return f"{units // 60}°{units % 60:02d}′"
-
-
 def _check(data: dict) -> None:
     tropical = data["tropical"]
     if tropical["ayanamsa"] is not None or tropical["dignities"] is not None or tropical["mansions"] is not None:
@@ -119,7 +114,7 @@ def _rows(data: dict) -> str:
     out = []
     for key, name in (("tropical", "回歸黃道"),) + tuple((k, f"恆星：{n}") for k, n in AYANAMSAS):
         chart = data[key]
-        ayanamsa = "—" if chart["ayanamsa"] is None else _dm(chart["ayanamsa"])
+        ayanamsa = "—" if chart["ayanamsa"] is None else degree_minute(chart["ayanamsa"])
         first = _sign((chart["asc"] // 30) * 30)
         out.append(
             f'          <tr><th scope="row">{name}</th><td class="n">{ayanamsa}</td>'
@@ -129,7 +124,7 @@ def _rows(data: dict) -> str:
 
 
 def _years(data: dict) -> str:
-    return "\n".join(f'          <tr><th scope="row">{year} 年 1 月 1 日</th><td class="n">{_dm(data["years"][year])}</td></tr>'
+    return "\n".join(f'          <tr><th scope="row">{year} 年 1 月 1 日</th><td class="n">{degree_minute(data["years"][year])}</td></tr>'
                      for year in YEARS)
 
 
@@ -148,7 +143,7 @@ def build() -> tuple[dict[str, str], list[str]]:
     if stayed != ["saturn"] or changed != {pair for pair in fb["whole_sign"] if "saturn" in pair}:
         raise RuntimeError(f"the example no longer keeps only Saturn in its sign, changing every pair with it: {stayed}")
     quoted = [
-        f"扣掉 {_dm(fb['ayanamsa'])}",
+        f"扣掉 {degree_minute(fb['ayanamsa'])}",
         f"太陽從{zodiacal_minutes(tropical['sun'])}變成{zodiacal_minutes(fb['sun'])}",
         f"上升點從{zodiacal_minutes(tropical['asc'])}變成{zodiacal_minutes(fb['asc'])}",
         f"四種之間最多相差約 {spread:.1f}°",

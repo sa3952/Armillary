@@ -20,6 +20,7 @@ Search model (method research notes):
 """
 
 import math
+from dataclasses import dataclass
 from typing import Final, NamedTuple
 
 import swisseph as swe
@@ -69,8 +70,6 @@ FRAME_DECLARATION = {
     ),
 }
 
-# --- Closed vocabularies -----------------------------------------------------
-#
 # Per-event (rise / set / upper_transit / lower_transit) status.  The seven
 # values and their meanings are the method research note's vocabulary, taken
 # verbatim so the receipt and the note can be read against each other.
@@ -107,8 +106,6 @@ VISIBILITY_STATES: Final = (
     "method_not_applicable",                         # published closed set; no producer since only bodies are searched
 )
 
-# --- Search parameters -------------------------------------------------------
-#
 # Seasonal horizon.  Polar day/night at the geographic pole lasts about half a
 # year; 200 days on each side covers every transition for |lat| < 90 with a
 # margin, so a body that finds no crossing here is genuinely without one across
@@ -275,15 +272,13 @@ VISIBILITY_EVIDENCE_METHOD: Final = {
 
 PROVENANCE: Final = {
     "event_definition": "Swiss Ephemeris swe_rise_trans default: refracted upper limb crossing the apparent horizon",
-    # 定義來源與狀態詞彙來源分開寫。
     "event_definition_sources": (
         "Swiss swephprg.htm (2.10.03) §8.12, §8.12.1; USNO RST_defs (Sun centre at "
         "zenith distance 90.8333° = 16′ + 34′); USNO Astronomical Almanac Glossary "
         "(2023 ed.). Upper limb as USNO for Sun and Moon; planets likewise by Swiss, "
         "arc-second semidiameters"
     ),
-    # 方法研究筆記：七態 enum、'event not found' 不得等於 'never rises'；
-    # 拱極判準；中天定義。
+    # 來源：方法研究筆記（七態 enum、'event not found' ≠ 'never rises'、拱極判準、中天定義）。
     "state_vocabulary_source": (
         "這組狀態詞彙是產品的分類，不是 USNO 的；'event not found' 不等於 'never rises'"
     ),
@@ -296,8 +291,6 @@ PROVENANCE: Final = {
     ),
 }
 
-# --- Ephemeris coverage of the whole search ------------------------
-#
 # Every other module refuses, by manifest and before calling Swiss, a position
 # whose segment does not cover its instant (ephemeris.require_object_coverage).
 # swe_rise_trans returns no retflag, so past a segment end (the second half of
@@ -446,8 +439,7 @@ def _swiss_rise_trans(
     return result, times[0] - earth_rotation_shift_days(times[0])
 
 
-# --- Per-chart probe reuse (performance only; never changes a result) --------
-#
+# Per-chart probe reuse (performance only; never changes a result).
 # At 70 N a chart with rise/set on makes about 640 Swiss rise_trans probes, and
 # an hour-level or date-only chart four times as many, because the
 # representative samples repeat the whole search (one of them at exactly the
@@ -481,15 +473,14 @@ def _swiss_rise_trans(
 # alone.  Inside the bundled segments it does.  Past a segment end Swiss falls
 # back to Moshier, whose answer also depends on the calls made before it (a
 # 2400-03 Venus set from the same arguments measured about 1e-9 day apart
-# depending on what had been computed earlier).  A chart
-# whose search can reach past the manifest coverage is therefore computed with
-# no reuse at all, so it makes exactly the calls an uncached search makes.
-# The margin covers the representative samples (within a day of the anchor),
-# Swiss's own window past a probe start (about 1.2 days), the pre-filter's
-# second instant and the altitude envelope (1.5 days).
-# A search that would read past the coverage is refused before any
-# Swiss call (require_search_coverage), so no reused probe can come from past
-# the segment end; this gate stays as a second, independent guard.
+# depending on what had been computed earlier).  A chart whose search can reach
+# past the manifest coverage is therefore computed with no reuse at all, so it
+# makes exactly the calls an uncached search makes.  The margin covers the
+# representative samples (within a day of the anchor), Swiss's own window past
+# a probe start (about 1.2 days), the pre-filter's second instant and the
+# altitude envelope (1.5 days).  A search that would read past the coverage is
+# refused before any Swiss call (require_search_coverage), so no reused probe
+# can come from past the segment end; this gate stays as a second guard.
 PROBE_REUSE_COVERAGE_MARGIN_DAYS: Final = 5.0
 COMBINED_CROSSING_FLAG: Final = swe.CALC_RISE | swe.CALC_SET
 _UNSETTLED: Final = object()
@@ -770,8 +761,6 @@ def _walk_probe(
     )
 
 
-# --- Search grid -------------------------------------------------------------
-#
 # Swiss states no tolerance for swe_rise_trans, and the same event solved from
 # different starting instants comes back up to about a second apart (a lunar
 # lower transit; method notes of 2026-10-18).  A walk that starts from the
@@ -800,14 +789,21 @@ def _walk_bound_exceeded() -> swe.Error:
     return swe.Error(WALK_BOUND_EXCEEDED_MESSAGE)
 
 
+@dataclass(frozen=True)
+class _Observer:
+    """Where and through what air Swiss looks for a horizon event."""
+
+    geopos: tuple[float, float, float]
+    pressure_hpa: float
+    temperature_c: float
+
+
 def _grid_interval_events(
     grid_start: float,
     stop_after: float,
     body_id: int,
     event_name: str,
-    geopos: tuple[float, float, float],
-    pressure_hpa: float,
-    temperature_c: float,
+    observer: _Observer,
     probe_cache: HorizonProbeCache | None,
     *,
     within_empty_run: bool,
@@ -819,6 +815,9 @@ def _grid_interval_events(
     the pre-filter proves crossing-free has none, which is what its probe would
     have answered.
     """
+    geopos, pressure_hpa, temperature_c = (
+        observer.geopos, observer.pressure_hpa, observer.temperature_c
+    )
     if event_name in HORIZON_CROSSINGS and not _crossing_geometrically_possible(
         grid_start, body_id, geopos, pressure_hpa, temperature_c, probe_cache
     ):
@@ -858,8 +857,9 @@ def _first_event_after(
     within_empty_run = False
     while grid_start < end_jd_ut:
         events = _grid_interval_events(
-            grid_start, after_jd_ut, body_id, event_name, geopos, pressure_hpa,
-            temperature_c, probe_cache, within_empty_run=within_empty_run,
+            grid_start, after_jd_ut, body_id, event_name,
+            _Observer(geopos, pressure_hpa, temperature_c), probe_cache,
+            within_empty_run=within_empty_run,
         )
         within_empty_run = not events
         for found in events:
@@ -889,8 +889,9 @@ def sun_horizon_crossings(
             crossings.extend(
                 (found, name)
                 for found in _grid_interval_events(
-                    grid_start, math.inf, swe.SUN, name, geopos, pressure_hpa,
-                    atmosphere.temperature_c, None, within_empty_run=False,
+                    grid_start, math.inf, swe.SUN, name,
+                    _Observer(geopos, pressure_hpa, atmosphere.temperature_c), None,
+                    within_empty_run=False,
                 )
                 if start_jd_ut < found <= end_jd_ut
             )
@@ -939,8 +940,9 @@ def _search_previous(
     within_empty_run = False
     while grid_start + SEARCH_GRID_DAYS > start:
         events = _grid_interval_events(
-            grid_start, before_reference, body_id, event_name, geopos, pressure_hpa,
-            temperature_c, probe_cache, within_empty_run=within_empty_run,
+            grid_start, before_reference, body_id, event_name,
+            _Observer(geopos, pressure_hpa, temperature_c), probe_cache,
+            within_empty_run=within_empty_run,
         )
         within_empty_run = not events
         earlier = [found for found in events if start < found < reference_jd_ut]
@@ -1042,9 +1044,9 @@ def _refined_extreme(values: list[float], index: int, *, maximum: bool) -> float
     Samples 30 minutes apart can sit about 0.04 degrees from the true extreme,
     four times the 0.01-degree grazing tolerance, so a body that really grazes the
     horizon was classified as always above or always below unless a sample fell
-    near the extreme.  Three-point interpolation needs
-    no extra Swiss calls; the vertex is used only when it lies between the
-    neighbours and is more extreme than the sample itself.  `values` must be a
+    near the extreme.  Three-point interpolation needs no extra Swiss calls; the
+    vertex is used only when it lies between the neighbours and is more extreme
+    than the sample itself.  `values` must be a
     smooth function of time: the caller passes TRUE altitudes, never refracted
     ones, which jump where Swiss switches refraction off.
     """
@@ -1126,8 +1128,6 @@ def _sample_altitude_envelope(
             return apparent_altitude
         return _apparent_altitude(jd_ut, azimuth, refined, geopos, pressure_hpa, temperature_c)
 
-    # 方法、座標原點與圓面位置對每個天體、每個代表性取樣都相同，只寫在
-    # contract.visibility_evidence_window（VISIBILITY_EVIDENCE_METHOD）；逐體只帶兩個極值。
     return {
         "minimum_apparent_upper_limb_altitude_degrees": extreme(False),
         "maximum_apparent_upper_limb_altitude_degrees": extreme(True),
@@ -1208,6 +1208,35 @@ def _visibility(events: dict, bracket: dict, envelope: dict | None) -> str:
         "above_horizon_between_bracketing_events"
         if above
         else "below_horizon_between_bracketing_events"
+    )
+
+
+def _trace_horizon_events(
+    trace: Trace, reference_jd_ut: float, geopos: tuple[float, float, float],
+    pressure_hpa: float, temperature_c: float, body_count: int,
+) -> None:
+    trace.add(
+        "天體升降與上下中天",
+        formula=(
+            "swe.rise_trans；每側在有界季節區間內逐日搜尋（升降 ±200 日、中天 ±3 日），"
+            "Swiss 一律從固定的整數儒略日格點（UT 12:00）起算，同一事件不隨參考時刻改變；"
+            "探測日與次日首尾兩端赤緯同號、且 |δ| 都超過 90°−|φ| 加該半球的餘裕（contract."
+            "crossing_prefilter_margins_degrees，含本次大氣下的折射）才跳過，首尾異號的日子一律問 Swiss；"
+            "previous 取參考時刻前最後一次事件，next 取其後第一次；地理極點上下中天不適用"
+        ),
+        inputs={
+            "reference_JD_UT": reference_jd_ut,
+            "geopos": geopos,
+            "pressure_hPa": pressure_hpa,
+            "temperature_C": temperature_c,
+            "rise_set_disc": "upper_limb",
+            "refraction": "enabled",
+            "flags": EPHEMERIS_FLAGS,
+            "search_horizon_days": SEARCH_HORIZON_DAYS,
+        },
+        result={"body_count": body_count},
+        note="上下中天不使用 disc/refraction；升降使用 Swiss upper-limb + standard-refraction default。"
+             "上中天是時角 0 的時刻，不是高度極大值時刻。",
     )
 
 
@@ -1293,28 +1322,8 @@ def compute_horizon_events(
             "events": events,
         })
 
-    trace.add(
-        "天體升降與上下中天",
-        formula=(
-            "swe.rise_trans；每側在有界季節區間內逐日搜尋（升降 ±200 日、中天 ±3 日），"
-            "Swiss 一律從固定的整數儒略日格點（UT 12:00）起算，同一事件不隨參考時刻改變；"
-            "探測日與次日首尾兩端赤緯同號、且 |δ| 都超過 90°−|φ| 加該半球的餘裕（contract."
-            "crossing_prefilter_margins_degrees，含本次大氣下的折射）才跳過，首尾異號的日子一律問 Swiss；"
-            "previous 取參考時刻前最後一次事件，next 取其後第一次；地理極點上下中天不適用"
-        ),
-        inputs={
-            "reference_JD_UT": reference_jd_ut,
-            "geopos": geopos,
-            "pressure_hPa": pressure_hpa,
-            "temperature_C": atmosphere.temperature_c,
-            "rise_set_disc": "upper_limb",
-            "refraction": "enabled",
-            "flags": EPHEMERIS_FLAGS,
-            "search_horizon_days": SEARCH_HORIZON_DAYS,
-        },
-        result={"body_count": len(results)},
-        note="上下中天不使用 disc/refraction；升降使用 Swiss upper-limb + standard-refraction default。"
-             "上中天是時角 0 的時刻，不是高度極大值時刻。",
+    _trace_horizon_events(
+        trace, reference_jd_ut, geopos, pressure_hpa, atmosphere.temperature_c, len(results)
     )
     samples = _envelope_sample_instants(reference_jd_ut)
     return {

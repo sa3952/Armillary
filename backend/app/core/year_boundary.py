@@ -12,9 +12,8 @@ SR_N 是出生後太陽黃經第 N 次回到本命太陽黃經的瞬間。目標
 
 求根器是產品自己的 ``two_stage_scan_then_bisection_v1``：以 t₀ = 出生 + N × 平均年為中心、
 寬 6 日的視窗粗掃 0.5 日，二分到 1e-9 日。平均年依黃道取回歸年 365.24219 日或恆星年
-365.256363 日，只決定**在哪裡找**，不進入任何結果；恆星黃道若也用回歸年，根每年晚約
-20 分鐘，約 211 年後就漂出 ±3 日的視窗。地心太陽黃經不逆行，視窗內應恰好一根；根數
-不是 1 時不挑一根，回報 ``solar_return_root_count_unexpected``。
+365.256363 日，只決定**在哪裡找**，不進入任何結果。地心太陽黃經不逆行，視窗內應恰好
+一根；根數不是 1 時不挑一根，回報 ``solar_return_root_count_unexpected``。
 
 ## 黃道
 
@@ -46,7 +45,7 @@ import swisseph as swe
 
 from ..domain_catalog import PRODUCT_YEAR_RANGE
 from .root_finding import SOLVER_NAME, find_crossings_detailed, wrap_to_signed_180
-from .source_reading import SOURCE_READING_LEVELS
+from .source_reading import BIBLIOGRAPHIC_ONLY, ORIGINAL_LANGUAGE_READ, SECONDARY_ONLY, TRANSLATION_READ, cited
 from .time_utils import jd_ut_to_iso_utc, time_scale_for_jd_ut
 
 YEAR_BOUNDARY_DEFINITION = "solar_return_root_v1"
@@ -130,11 +129,10 @@ class SolarReturnClock:
     caller passes the emitted body longitude, which is that value). ``zodiac`` is
     that frame's zodiac; it places the search window and nothing else.
 
-    The searches ask for each Sun instant once per clock: each root is rescanned
-    and bisected again at every refinement depth on grids that share points,
-    which without the cache doubles the Swiss calls.  The longitude is a pure
-    function of the instant under the request's fixed flags, so the cache cannot
-    change a result; a refused position raises and is not cached.
+    Each Sun instant is read once per clock: refinement rescans grids that share
+    points, which without the cache doubles the Swiss calls.  The longitude is a
+    pure function of the instant under fixed flags, so the cache cannot change a
+    result; a refused position raises and is not cached.
     """
 
     def __init__(
@@ -222,11 +220,10 @@ class SolarReturnClock:
         has moved ``steps`` × 30° past its natal longitude (rule
         SOLAR_MONTH_RULE).  Steps 0 and 12 are SR_n and SR_n+1 themselves.
 
-        The window is centred on the year's own twelfth (or the mean year's
-        when SR_n+1 cannot be dated) and is wide enough for the Sun's uneven
-        speed, which puts a 30° step up to 3.9 days off the twelfth (an early
-        April return at the 1900 eccentricity); like the return search, the
-        centre only places the search.
+        The window is centred on the year's own twelfth (the mean year's when
+        SR_n+1 cannot be dated); the centre only places the search.  The 3.9-day
+        worst case (SOLAR_MONTH_RULE) is an early April return at the 1900
+        eccentricity.
         """
 
         if not 0 <= steps <= 12:
@@ -337,24 +334,15 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "birth)."
         ),
         "sources": [
-            {
-                "citation": (
-                    "Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, "
-                    "Persian Nativities IV (2019)"
-                ),
-                "says": "revolutions used together with profections and firdaria",
-                "reading": SOURCE_READING_LEVELS[3],
-                "read_at": "bibliographic record only; chapter and page not verified",
-            },
-            {
-                "citation": "Swiss Ephemeris 2.10.03 swe_solcross_ut",
-                "says": (
-                    "the crossing the test suite compares the product's own search against "
-                    "(same engine, another algorithm)"
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "the library's source code and documentation",
-            },
+            cited(("Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, "
+                   "Persian Nativities IV (2019)"),
+                  "revolutions used together with profections and firdaria",
+                  BIBLIOGRAPHIC_ONLY,
+                  "bibliographic record only; chapter and page not verified"),
+            cited("Swiss Ephemeris 2.10.03 swe_solcross_ut",
+                  ("the crossing the test suite compares the product's own search against "
+                   "(same engine, another algorithm)"),
+                  ORIGINAL_LANGUAGE_READ, "the library's source code and documentation"),
         ],
     },
     "solar_return_chart": {
@@ -378,134 +366,69 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "return chart; the Fagan and Bradley sources for that practice were not read."
         ),
         "sources": [
-            {
-                "citation": (
-                    "Abraham Ibn Ezra, The Book of the Revolution (Sefer ha-Tequfah) §1:1, "
-                    "ed. and tr. S. Sela (2014) p.373"
-                ),
-                "says": "the revolution is the Sun's return to its natal degree and minute",
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Sela's English translation at the cited place",
-            },
-            {
-                "citation": (
-                    "Abraham Ibn Ezra, The Book of Nativities (Sefer ha-Moladot) IV 1:9 and "
-                    "2:3, ed. and tr. S. Sela (2014) p.185"
-                ),
-                "says": (
-                    "the year's ascendant is found with the rising times of the native's own "
-                    "country; the yearly addition he adopts is 87°15′, a tropical-year length"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Sela's English translation at the cited place",
-            },
-            {
-                "citation": (
-                    "al-Bīrūnī, The Book of Instruction in the Elements of the Art of "
-                    "Astrology, trans. R. Ramsay Wright (1934) §522, p.119"
-                ),
-                "says": (
-                    "the revolution (taḥwīl) is when the Sun arrives at the degree and minute "
-                    "it occupied at the nativity"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Wright's English translation at the cited place",
-            },
-            {
-                "citation": (
-                    "[Abū Maʿshar], De revolutionibus nativitatum I.1, I.3-6, Latin "
-                    "translation printed under the name of Hermes (Basel 1559) pp.211-214"
-                ),
-                "says": (
-                    "the year begins when the Sun returns to its place; the return does not "
-                    "override the nativity; the figure has twelve houses with cusps by "
-                    "quadrant division and marks the natal ascendant, the profected sign and "
-                    "the year's ascendant; the place of casting is not discussed"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": (
-                    "the medieval Latin translation at the cited pages; its attribution to "
-                    "Abū Maʿshar is the scholarly consensus, not checked here"
-                ),
-            },
-            {
-                "citation": "Guido Bonatti, De astronomia, Pars IV preface (Basel 1550) cols. 489-490",
-                "says": (
-                    "the nativity's yearly revolution runs from the minute of the natal Sun "
-                    "until the Sun returns to the same point"
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "the Latin at the cited columns; his chapter on judging it not located",
-            },
-            {
-                "citation": "William Lilly, Christian Astrology (1647) ch. CLXXII pp.734-736",
-                "says": (
-                    "the revolution is the Sun's return to its natal degree and minute; one "
-                    "minute of the natal Sun moves the instant about 24 minutes; the example "
-                    "is cast with the birth latitude's table of houses; relocation not "
-                    "discussed"
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "the 1647 first edition at the cited pages",
-            },
-            {
-                "citation": (
-                    "J.-B. Morin, Astrologia Gallica XXIII (1661) ch. 4 pp.600-601, ch. 5 "
-                    "p.602, ch. 7 p.609, ch. 9 p.634"
-                ),
-                "says": (
-                    "the return chart is to be erected for the place where the native is at "
-                    "the return; the ancients left this undetermined and the common practice "
-                    "was the place of birth; the return does not override the nativity"
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "the Latin at the cited pages",
-            },
-            {
-                "citation": "John Gadbury, The Doctrine of Nativities (1658) ch. XXXII pp.209-211",
-                "says": (
-                    "the return is the Sun's coming back to its natal sign, degree and minute; "
-                    "the houses are taken from a table of houses for the latitude"
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "the 1658 printing at the cited pages; the house system is not named",
-            },
-            {
-                "citation": "B. Dykes, Persian Nativities III (2010), introduction pp.6, 10",
-                "says": (
-                    "Abū Maʿshar casts the return with quadrant cusps and weighs three "
-                    "ascendants: the natal, the profected sign and the year's"
-                ),
-                "reading": SOURCE_READING_LEVELS[2],
-                "read_at": "Dykes's introduction; the Arabic text he translates not read",
-            },
-            {
-                "citation": "Ptolemy, Tetrabiblos IV.10 (Robbins, Loeb p.453)",
-                "says": "times by profections and ingresses; no return chart",
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "an English translation at the cited chapter",
-            },
-            {
-                "citation": "Vettius Valens, Anthologies V (Riley's English, '5K', p.97)",
-                "says": (
-                    "a chart is recast each year, but its moment is set by the Moon's return "
-                    "to its natal degree, not the Sun's"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Riley's English at the cited place",
-            },
-            {
-                "citation": "Dorotheus, Carmen Astrologicum IV 1.4 (Arabic recension)",
-                "says": (
-                    "the year begins when the Sun enters the minute it occupied at birth; the "
-                    "recension passed through Persian and Arabic hands"
-                ),
-                "reading": SOURCE_READING_LEVELS[2],
-                "read_at": (
-                    "a modern rewritten text that reproduces Pingree's 1976 translation; "
-                    "Pingree's own pages not consulted"
-                ),
-            },
+            cited(("Abraham Ibn Ezra, The Book of the Revolution (Sefer ha-Tequfah) §1:1, "
+                   "ed. and tr. S. Sela (2014) p.373"),
+                  "the revolution is the Sun's return to its natal degree and minute",
+                  TRANSLATION_READ, "Sela's English translation at the cited place"),
+            cited(("Abraham Ibn Ezra, The Book of Nativities (Sefer ha-Moladot) IV 1:9 and "
+                   "2:3, ed. and tr. S. Sela (2014) p.185"),
+                  ("the year's ascendant is found with the rising times of the native's own "
+                   "country; the yearly addition he adopts is 87°15′, a tropical-year length"),
+                  TRANSLATION_READ, "Sela's English translation at the cited place"),
+            cited(("al-Bīrūnī, The Book of Instruction in the Elements of the Art of "
+                   "Astrology, trans. R. Ramsay Wright (1934) §522, p.119"),
+                  ("the revolution (taḥwīl) is when the Sun arrives at the degree and minute "
+                   "it occupied at the nativity"),
+                  TRANSLATION_READ, "Wright's English translation at the cited place"),
+            cited(("[Abū Maʿshar], De revolutionibus nativitatum I.1, I.3-6, Latin "
+                   "translation printed under the name of Hermes (Basel 1559) pp.211-214"),
+                  ("the year begins when the Sun returns to its place; the return does not "
+                   "override the nativity; the figure has twelve houses with cusps by "
+                   "quadrant division and marks the natal ascendant, the profected sign and "
+                   "the year's ascendant; the place of casting is not discussed"),
+                  TRANSLATION_READ,
+                  ("the medieval Latin translation at the cited pages; its attribution to "
+                   "Abū Maʿshar is the scholarly consensus, not checked here")),
+            cited("Guido Bonatti, De astronomia, Pars IV preface (Basel 1550) cols. 489-490",
+                  ("the nativity's yearly revolution runs from the minute of the natal Sun "
+                   "until the Sun returns to the same point"),
+                  ORIGINAL_LANGUAGE_READ,
+                  "the Latin at the cited columns; his chapter on judging it not located"),
+            cited("William Lilly, Christian Astrology (1647) ch. CLXXII pp.734-736",
+                  ("the revolution is the Sun's return to its natal degree and minute; one "
+                   "minute of the natal Sun moves the instant about 24 minutes; the example "
+                   "is cast with the birth latitude's table of houses; relocation not "
+                   "discussed"),
+                  ORIGINAL_LANGUAGE_READ, "the 1647 first edition at the cited pages"),
+            cited(("J.-B. Morin, Astrologia Gallica XXIII (1661) ch. 4 pp.600-601, ch. 5 "
+                   "p.602, ch. 7 p.609, ch. 9 p.634"),
+                  ("the return chart is to be erected for the place where the native is at "
+                   "the return; the ancients left this undetermined and the common practice "
+                   "was the place of birth; the return does not override the nativity"),
+                  ORIGINAL_LANGUAGE_READ, "the Latin at the cited pages"),
+            cited("John Gadbury, The Doctrine of Nativities (1658) ch. XXXII pp.209-211",
+                  ("the return is the Sun's coming back to its natal sign, degree and minute; "
+                   "the houses are taken from a table of houses for the latitude"),
+                  ORIGINAL_LANGUAGE_READ,
+                  "the 1658 printing at the cited pages; the house system is not named"),
+            cited("B. Dykes, Persian Nativities III (2010), introduction pp.6, 10",
+                  ("Abū Maʿshar casts the return with quadrant cusps and weighs three "
+                   "ascendants: the natal, the profected sign and the year's"),
+                  SECONDARY_ONLY,
+                  "Dykes's introduction; the Arabic text he translates not read"),
+            cited("Ptolemy, Tetrabiblos IV.10 (Robbins, Loeb p.453)",
+                  "times by profections and ingresses; no return chart", TRANSLATION_READ,
+                  "an English translation at the cited chapter"),
+            cited("Vettius Valens, Anthologies V (Riley's English, '5K', p.97)",
+                  ("a chart is recast each year, but its moment is set by the Moon's return "
+                   "to its natal degree, not the Sun's"),
+                  TRANSLATION_READ, "Riley's English at the cited place"),
+            cited("Dorotheus, Carmen Astrologicum IV 1.4 (Arabic recension)",
+                  ("the year begins when the Sun enters the minute it occupied at birth; the "
+                   "recension passed through Persian and Arabic hands"),
+                  SECONDARY_ONLY,
+                  ("a modern rewritten text that reproduces Pingree's 1976 translation; "
+                   "Pingree's own pages not consulted")),
         ],
     },
 }

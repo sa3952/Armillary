@@ -5,14 +5,13 @@ ephemeris files' own headers, the surface list and the options catalogue.
 """
 from __future__ import annotations
 
+import collections
 import functools
 import json
 import re
-import shutil
-import subprocess
 from typing import Union, get_args, get_origin, get_type_hints
 
-from ._common import ROOT, backend_on_path
+from ._common import ROOT, backend_on_path, options_catalogue
 
 
 def _choices(model, field: str) -> tuple[str, ...]:
@@ -29,12 +28,12 @@ def _choices(model, field: str) -> tuple[str, ...]:
 @functools.lru_cache(maxsize=1)
 def product() -> dict:
     with backend_on_path():
-        from app import domain_catalog, request_limits, schemas
+        from app import domain_catalog, request_limits, schema_chart, schema_inputs
         from app.core.birth_time_sensitivity import TRANSITION_RESOLUTION_SECONDS
         from app.core.lots import SECT_NEAR_CRITICAL_DEGREES
         from app.privacy_logging import _SECURITY_HEADERS
 
-        options, mode = schemas.OptionsInput, schemas.ComputationModeInput
+        options, mode = schema_chart.OptionsInput, schema_inputs.ComputationModeInput
         defaults, mode_defaults = options(), mode()
         named = {
             field: (_choices(options, field), getattr(defaults, field))
@@ -47,7 +46,7 @@ def product() -> dict:
             raise RuntimeError("the request schema and the ayanamsa table name different ayanamsas")
         return {
             "named": named,
-            "precisions": _choices(schemas.ChartRequest, "birth_time_precision"),
+            "precisions": _choices(schema_chart.ChartRequest, "birth_time_precision"),
             "years": domain_catalog.PRODUCT_YEAR_RANGE,
             "max_chart_bytes": request_limits.MAX_CHART_REQUEST_BYTES,
             "general_pool": request_limits.MAX_HOSTED_REQUESTS_PER_WORKER,
@@ -98,16 +97,6 @@ def surface_count() -> int:
     return len(surfaces)
 
 
-@functools.lru_cache(maxsize=1)
 def catalogue_group_sizes() -> dict[str, int]:
     """Options per group in the calculator's options catalogue."""
-    node = shutil.which("node")
-    if node is None:
-        raise RuntimeError("node is required to read the options catalogue")
-    script = ("const C=require(process.argv[1]);const n={};"
-              "for(const o of C.OPTIONS){n[o.group]=(n[o.group]||0)+1;}process.stdout.write(JSON.stringify(n));")
-    completed = subprocess.run([node, "-e", script, str(ROOT / "frontend/zh-TW/options-catalogue.js")],
-                               cwd=ROOT, capture_output=True, text=True, check=False, timeout=30)
-    if completed.returncode != 0:
-        raise RuntimeError("options catalogue could not be read: " + completed.stderr.strip())
-    return json.loads(completed.stdout)
+    return dict(collections.Counter(options_catalogue()["options"]))

@@ -6,6 +6,8 @@
 各自的 core 模組內進行。
 """
 
+import math
+
 import swisseph as swe
 
 from ..domain_catalog import AYANAMSA_OPTIONS
@@ -60,11 +62,9 @@ class ComputationContext:
         true tropical ecliptic coordinates of date at that boundary.
         True/apparent position remains an intentional physical choice.
 
-        The horizon is an observer-on-the-surface concept, so the ecliptic
-        input is always topocentric (diurnal parallax applied) whatever the
-        display center of the longitudes.  This is the same premise the
-        rise/set module uses: one
-        response, one horizon.  For the Moon the difference reaches a degree;
+        The horizon is an observer-on-the-surface concept, so the input is
+        always topocentric whatever the display center: the rise/set premise,
+        one horizon per response.  For the Moon the difference reaches a degree;
         for the Sun and planets it is seconds of arc.
         """
         return (
@@ -137,3 +137,94 @@ class ComputationContext:
                 "ayanamsa數值(度)": ayan,
             },
         )
+
+
+_AU_LIGHT_DAYS = 499.004783836 / 86400.0  # light time for one astronomical unit, in days
+
+
+def _xyz_to_polar(x: float, y: float, z: float) -> tuple[float, float, float]:
+    distance = math.sqrt(x * x + y * y + z * z)
+    longitude = math.degrees(math.atan2(y, x)) % 360.0
+    latitude = math.degrees(math.asin(z / distance))
+    return longitude, latitude, distance
+
+
+def _orthonormal_triad(a, b):
+    def unit(v):
+        n = math.sqrt(sum(x * x for x in v))
+        return [x / n for x in v]
+
+    def cross(u, v):
+        return [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]]
+
+    first = unit(a)
+    second = unit(cross(first, b))
+    return first, second, cross(first, second)
+
+
+def _turn_into_frame_at(jd_ut: float, vector, source_flags: int, target_flags: int):
+    """Turn a vector from Swiss's ``source_flags`` frame into its ``target_flags`` frame at jd_ut.
+
+    Swiss applies one rotation (precession, nutation, ayanamsa, equator) to
+    every body at an instant, so two reference bodies seen in both frames fix
+    it.  Of the Earth, Jupiter and Saturn the pair furthest from parallel is used.
+    """
+    references = [
+        (swe.calc_ut(jd_ut, body, source_flags)[0][:3], swe.calc_ut(jd_ut, body, target_flags)[0][:3])
+        for body in (swe.EARTH, swe.JUPITER, swe.SATURN)
+    ]
+
+    def separation(pair):
+        (a, _), (b, _) = pair
+        cosine = sum(a[i] * b[i] for i in range(3)) / math.sqrt(
+            sum(x * x for x in a) * sum(x * x for x in b))
+        return abs(cosine)
+
+    first, second = min(
+        ((references[i], references[j]) for i in range(3) for j in range(i + 1, 3)), key=separation)
+    source = _orthonormal_triad(first[0], second[0])
+    target = _orthonormal_triad(first[1], second[1])
+    coordinates = [sum(axis[i] * vector[i] for i in range(3)) for axis in source]
+    return [sum(coordinates[k] * target[k][i] for k in range(3)) for i in range(3)]
+
+
+def heliocentric_apparent_calc_ut(jd_ut: float, body_id: int, flags: int) -> tuple[tuple, int]:
+    """A heliocentric apparent position with light time measured from the Sun.
+
+    Definition: the body is placed where it was at t - tau, the Sun where it is
+    at t, and tau is the Sun-body distance at t - tau divided by c (iterated to
+    convergence).  No aberration or light deflection is applied, as for Swiss
+    heliocentric output.  Swiss's own apparent heliocentric output takes its
+    light time from the barycentric distance, which is up to about one
+    arcsecond off for Mercury.
+
+    Positions come from Swiss geometric (``FLG_TRUEPOS``) vectors in the fixed
+    J2000 frame, turned at the end into the frame the flags request at t.  An
+    of-date frame read at t - tau would carry precession and nutation of the
+    light-time interval (about 0.05" for Neptune, 0.08" for Pluto).  Speeds
+    are Swiss's own apparent heliocentric speeds, which differ from these by a
+    negligible amount.  Returns the same shape as ``swe.calc_ut``.
+    """
+    swiss_apparent, retflag = swe.calc_ut(jd_ut, body_id, flags)
+    requested = (flags | swe.FLG_TRUEPOS | swe.FLG_XYZ) & ~swe.FLG_SPEED
+    geometric = (requested & ~swe.FLG_SIDEREAL) | swe.FLG_J2000 | swe.FLG_NONUT
+    bary = (geometric & ~swe.FLG_HELCTR) | swe.FLG_BARYCTR
+    sun_now = swe.calc_ut(jd_ut, swe.SUN, bary)[0]
+    tau = 0.0
+    for _ in range(4):
+        planet_helio = swe.calc_ut(jd_ut - tau, body_id, geometric)[0]
+        sun_then = swe.calc_ut(jd_ut - tau, swe.SUN, bary)[0]
+        # P(t-tau) - S(t) = [P(t-tau) - S(t-tau)] - [S(t) - S(t-tau)]
+        vector = [planet_helio[i] - (sun_now[i] - sun_then[i]) for i in range(3)]
+        tau = _xyz_to_polar(*vector)[2] * _AU_LIGHT_DAYS
+    if requested != geometric:
+        vector = _turn_into_frame_at(jd_ut, vector, geometric, requested)
+    if flags & swe.FLG_XYZ:
+        position = tuple(vector)
+    else:
+        position = _xyz_to_polar(*vector)
+    return position + tuple(swiss_apparent[3:6]), retflag
+
+
+def uses_sun_centre_light_time(ctx) -> bool:
+    return ctx.mode.center == "heliocentric" and ctx.mode.position_mode == "apparent"

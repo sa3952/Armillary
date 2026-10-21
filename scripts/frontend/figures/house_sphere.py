@@ -21,15 +21,12 @@ obliquity the script uses.  No date, time or place of birth.
 """
 from __future__ import annotations
 
-import json
 import re
-import shutil
-import subprocess
 
 from html import escape
 
 from . import _fx
-from ._common import ROOT, SIGNS, swiss
+from ._common import ROOT, SIGNS, node_json, swiss
 
 
 FRAGMENT = "blog-house-systems-explained"
@@ -93,17 +90,14 @@ def run_script(cusps: list, scenes: list, describes: list | None = None) -> dict
     """The article script's own answers: cusps and site statuses for (system,
     latitude, ARMC) triples, the static markup of scene states, and the screen
     reader summary for (system, latitude, ARMC) triples."""
-    node = shutil.which("node")
-    if node is None:
-        raise RuntimeError("node is required to draw the house-system figures")
-    completed = subprocess.run(
-        [node, "-e", _NODE_SCRIPT, str(SCRIPTS / "house-sphere-core.js"), str(SCRIPTS / "house-sphere.js")],
-        input=json.dumps({"cusps": cusps, "scenes": scenes, "describes": describes or []}), cwd=ROOT, capture_output=True, text=True,
-        check=False, timeout=120,
-    )
-    if completed.returncode != 0:
-        raise RuntimeError("the house-sphere script failed: " + completed.stderr.strip())
-    return json.loads(completed.stdout)
+    return sphere_node(_NODE_SCRIPT, {"cusps": cusps, "scenes": scenes, "describes": describes or []})
+
+
+def sphere_node(script: str, job: object = None) -> dict:
+    """A Node program run with house-sphere-core.js and house-sphere.js as its
+    first two arguments (and `job` as JSON on stdin)."""
+    return node_json(script, SCRIPTS / "house-sphere-core.js", SCRIPTS / "house-sphere.js", stdin=job,
+                     timeout=120, what="run the house-sphere script")
 
 
 def swiss_cusps(swe, sys: str, lat: float, armc: float, obliquity: float) -> list[float] | None:
@@ -251,9 +245,10 @@ def _wrap(text: str, limit: float) -> list[str]:
     return lines
 
 
-def _plate(layout: str, fid: str, name: str, sys: str, lat: float, armc: float, scene: str,
-           status: dict, sizes: list[float] | None, bound: _fx.Bound, script: dict) -> str:
+def _plate(layout: str, name: str, sys: str, scene: str, status: dict, sizes: list[float] | None,
+           bound: _fx.Bound, script: dict) -> str:
     """One layout of one static figure: the script's sphere and the plate around it."""
+    fid = f"fig-{name}"
     wide = layout == "fx-wide"
     W = _fx.WIDE if wide else _fx.NARROW
     keys = KEY_COMMON + (KEY_POLAR if sizes is None and sys == "P" else KEY_SYSTEM[sys])
@@ -331,8 +326,8 @@ def _plate(layout: str, fid: str, name: str, sys: str, lat: float, armc: float, 
             + re.sub(r">\s+<", "><", scene) + "".join(out) + "</svg>")
 
 
-def _static_figure(name: str, sys: str, lat: float, armc: float, scenes: dict, status: dict,
-                   swiss_cusps_: list[float] | None, script: dict) -> tuple[str, _fx.Bound]:
+def _static_figure(name: str, sys: str, scenes: dict, status: dict,
+                   swiss_cusps_: list[float] | None, script: dict) -> str:
     bound = _fx.Bound()
     fid = f"fig-{name}"
     sizes = None
@@ -342,14 +337,18 @@ def _static_figure(name: str, sys: str, lat: float, armc: float, scenes: dict, s
         bound.scale(str(n))  # the house numbers along the ecliptic
     caption = _bind(CAPTIONS[name], bound)
     number = bound.label(f"圖 {FIGURE_NUMBERS[name]}")
-    markup = _fx.figure(
-        fid=fid, title=script["describe"][name],
+    return _fx.figure(
+        fid=fid,
+        title=script["describe"][name],
         caption=f"<b>{number}</b>{escape(caption)}",
-        wide=_plate("fx-wide", fid, name, sys, lat, armc, scenes["fx-wide"], status, sizes, bound, script),
-        narrow=_plate("fx-narrow", fid, name, sys, lat, armc, scenes["fx-narrow"], status, sizes, bound, script),
-        notes=[], idle="",
+        art=_fx.FigureArt(
+            wide=_plate("fx-wide", name, sys, scenes["fx-wide"], status, sizes, bound, script),
+            narrow=_plate("fx-narrow", name, sys, scenes["fx-narrow"], status, sizes, bound, script),
+            notes=[],
+            idle="",
+        ),
+        bound=bound,
     )
-    return markup, bound
 
 
 def build() -> tuple[dict[str, str], list[str]]:
@@ -385,11 +384,7 @@ def build() -> tuple[dict[str, str], list[str]]:
             theirs = swiss_cusps(swe, s, lat, armc, script["obliquity"])
         meta = {"flag": script["flag"], "names": script["names"], "captions": script["captions"],
                 "fmt_lat": {name: texts["lat"]}, "fmt_lst": {name: texts["lst"]}, "describe": {name: texts["describe"]}}
-        markup, bound = _static_figure(name, s, lat, armc, scenes, statuses[name], theirs, meta)
-        found = _fx.problems(markup, bound)
-        if found:
-            raise RuntimeError("figure check: " + "; ".join(found))
-        blocks[name] = markup
+        blocks[name] = _static_figure(name, s, scenes, statuses[name], theirs, meta)
     blocks["fx-defs"] = _fx.defs(())
     blocks["cusps"] = _table(reference)
 

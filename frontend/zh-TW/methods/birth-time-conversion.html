@@ -3,12 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="only light">
 <meta name="robots" content="index, follow">
 <title>出生時間換算的規則與出處｜渾儀 Armillary</title>
 <meta name="description" content="計算頁的換算助手如何把民國年與日本年號換成西元，如何由伺服器回顯鐘面時間在臺灣、香港、澳門與中國當時的 UTC 偏移，以及每一條時區規則的出處與我們核到哪一層。">
 <link rel="canonical" href="https://projectarmillary.com/zh-TW/methods/birth-time-conversion">
 <link rel="alternate" hreflang="zh-TW" href="https://projectarmillary.com/zh-TW/methods/birth-time-conversion">
 <link rel="alternate" hreflang="x-default" href="https://projectarmillary.com/zh-TW/methods/birth-time-conversion">
+<link rel="alternate" type="application/atom+xml" title="渾儀 Armillary 文章" href="/feed.xml">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="渾儀 Armillary">
 <meta property="og:locale" content="zh_TW">
@@ -21,11 +23,11 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="渾儀 Armillary：可驗證的古典西洋占星計算器">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/methods/birth-time-conversion#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/methods/birth-time-conversion#breadcrumb"},"dateModified":"2026-10-18","description":"計算頁的換算助手如何把民國年與日本年號換成西元，如何由伺服器回顯鐘面時間在臺灣、香港、澳門與中國當時的 UTC 偏移，以及每一條時區規則的出處與我們核到哪一層。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"出生時間換算的規則與出處｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/methods/birth-time-conversion"},{"@id":"https://projectarmillary.com/zh-TW/methods/birth-time-conversion#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/methods","name":"方法","position":2},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/methods/birth-time-conversion","name":"出生時間換算的規則與出處","position":3}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","publisher":{"@id":"https://projectarmillary.com/#organization"},"url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/methods/birth-time-conversion#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/methods/birth-time-conversion#breadcrumb"},"dateModified":"2026-10-21","description":"計算頁的換算助手如何把民國年與日本年號換成西元，如何由伺服器回顯鐘面時間在臺灣、香港、澳門與中國當時的 UTC 偏移，以及每一條時區規則的出處與我們核到哪一層。","inLanguage":"zh-TW","isAccessibleForFree":true,"isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"出生時間換算的規則與出處｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/methods/birth-time-conversion"},{"@id":"https://projectarmillary.com/#organization","@type":"Organization","alternateName":["渾儀","Armillary","Project Armillary"],"disambiguatingDescription":"古典西洋占星的計算網站與開源程式；名稱取自天文儀器渾儀（armillary sphere），本身不是那件儀器。","logo":{"@type":"ImageObject","height":180,"url":"https://projectarmillary.com/apple-touch-icon.png","width":180},"name":"渾儀 Armillary","sameAs":["https://github.com/sa3952/Armillary"],"url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/methods/birth-time-conversion#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/methods","name":"方法","position":2},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/methods/birth-time-conversion","name":"出生時間換算的規則與出處","position":3}]}]}</script>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" href="/zh-TW/favicon.svg?v=c95686a2f029d369" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="/zh-TW/style/methods-birth-time-conversion.css?v=10f453b047c306e3">
+<link rel="stylesheet" href="/zh-TW/style/methods-birth-time-conversion.css?v=152e65a28bdd66cc">
 </head>
 <body>
 
@@ -68,6 +70,7 @@
   <section class="ds-sec">
     <h2 class="hdr"><span>01</span>民國年與日本年號</h2>
     <p>民國紀年自 1912 年起、日本自明治 6 年（1873 年）起，月與日都用格里曆，所以換算只是年份的加法，月日不變。</p>
+    <p class="scroll-hint" hidden>表格可左右捲動</p>
     <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="ct-era-cap">
       <table class="spec">
         <caption id="ct-era-cap">年號與西元年</caption>
@@ -101,6 +104,7 @@
     <h2 class="hdr"><span>03</span>四地的規則與出處</h2>
     <p>每一列是一條規則：它涵蓋的鐘面期間、UTC 偏移、依據的文件，以及我們核到哪一層。逐段的轉換時刻收在每張表下方。期間與偏移由時區資料庫產生；服務用的時區資料庫與本表不一致時，建置會失敗，換算結果也不會列出處。</p>
 <h3 id="rules-taiwan">臺灣</h3>
+<p class="scroll-hint" hidden>表格可左右捲動</p>
 <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="tab-taiwan-taipei">
   <table class="spec ct-rules" role="table">
     <caption id="tab-taiwan-taipei">表 1　臺灣（Asia/Taipei）的規則與出處</caption>
@@ -119,6 +123,7 @@
 </div>
 <details class="ct-transitions">
   <summary>臺灣（Asia/Taipei）逐段轉換時刻（40 次）</summary>
+  <p class="scroll-hint" hidden>表格可左右捲動</p>
   <div class="spec-scroll" tabindex="0" role="region" aria-label="臺灣（Asia/Taipei）逐段轉換時刻（可橫向捲動）">
     <table class="spec">
       <thead><tr><th scope="col">世界時</th><th scope="col">當地鐘面</th><th scope="col">UTC 偏移</th><th scope="col">之後是</th><th scope="col">規則</th></tr></thead>
@@ -168,6 +173,7 @@
   </div>
 </details>
 <h3 id="rules-hong_kong">香港</h3>
+<p class="scroll-hint" hidden>表格可左右捲動</p>
 <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="tab-hong_kong-hong-kong">
   <table class="spec ct-rules" role="table">
     <caption id="tab-hong_kong-hong-kong">表 2　香港（Asia/Hong_Kong）的規則與出處</caption>
@@ -183,6 +189,7 @@
 </div>
 <details class="ct-transitions">
   <summary>香港（Asia/Hong_Kong）逐段轉換時刻（69 次）</summary>
+  <p class="scroll-hint" hidden>表格可左右捲動</p>
   <div class="spec-scroll" tabindex="0" role="region" aria-label="香港（Asia/Hong_Kong）逐段轉換時刻（可橫向捲動）">
     <table class="spec">
       <thead><tr><th scope="col">世界時</th><th scope="col">當地鐘面</th><th scope="col">UTC 偏移</th><th scope="col">之後是</th><th scope="col">規則</th></tr></thead>
@@ -261,6 +268,7 @@
   </div>
 </details>
 <h3 id="rules-macau">澳門</h3>
+<p class="scroll-hint" hidden>表格可左右捲動</p>
 <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="tab-macau-macau">
   <table class="spec ct-rules" role="table">
     <caption id="tab-macau-macau">表 3　澳門（Asia/Macau）的規則與出處</caption>
@@ -276,6 +284,7 @@
 </div>
 <details class="ct-transitions">
   <summary>澳門（Asia/Macau）逐段轉換時刻（71 次）</summary>
+  <p class="scroll-hint" hidden>表格可左右捲動</p>
   <div class="spec-scroll" tabindex="0" role="region" aria-label="澳門（Asia/Macau）逐段轉換時刻（可橫向捲動）">
     <table class="spec">
       <thead><tr><th scope="col">世界時</th><th scope="col">當地鐘面</th><th scope="col">UTC 偏移</th><th scope="col">之後是</th><th scope="col">規則</th></tr></thead>
@@ -356,6 +365,7 @@
   </div>
 </details>
 <h3 id="rules-mainland_china">中國</h3>
+<p class="scroll-hint" hidden>表格可左右捲動</p>
 <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="tab-mainland_china-shanghai">
   <table class="spec ct-rules" role="table">
     <caption id="tab-mainland_china-shanghai">表 4　中國（北京時間，Asia/Shanghai）的規則與出處</caption>
@@ -374,6 +384,7 @@
 </div>
 <details class="ct-transitions">
   <summary>中國（北京時間，Asia/Shanghai）逐段轉換時刻（29 次）</summary>
+  <p class="scroll-hint" hidden>表格可左右捲動</p>
   <div class="spec-scroll" tabindex="0" role="region" aria-label="中國（北京時間，Asia/Shanghai）逐段轉換時刻（可橫向捲動）">
     <table class="spec">
       <thead><tr><th scope="col">世界時</th><th scope="col">當地鐘面</th><th scope="col">UTC 偏移</th><th scope="col">之後是</th><th scope="col">規則</th></tr></thead>
@@ -411,6 +422,7 @@
     </table>
   </div>
 </details>
+<p class="scroll-hint" hidden>表格可左右捲動</p>
 <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="tab-mainland_china-urumqi">
   <table class="spec ct-rules" role="table">
     <caption id="tab-mainland_china-urumqi">表 5　中國（新疆時間，Asia/Urumqi）的規則與出處</caption>
@@ -423,6 +435,7 @@
 </div>
 <details class="ct-transitions">
   <summary>中國（新疆時間，Asia/Urumqi）逐段轉換時刻（1 次）</summary>
+  <p class="scroll-hint" hidden>表格可左右捲動</p>
   <div class="spec-scroll" tabindex="0" role="region" aria-label="中國（新疆時間，Asia/Urumqi）逐段轉換時刻（可橫向捲動）">
     <table class="spec">
       <thead><tr><th scope="col">世界時</th><th scope="col">當地鐘面</th><th scope="col">UTC 偏移</th><th scope="col">之後是</th><th scope="col">規則</th></tr></thead>
@@ -496,6 +509,7 @@
   </section>
 
 </div>
+<script src="/zh-TW/table-scroll.js?v=902f20a5b04bbed0" defer></script>
 </main>
 
 <footer>
@@ -529,7 +543,7 @@
   <div class="wrap">
     <span>渾儀 ARMILLARY</span>
     <span>只計算，不解盤，不預測</span>
-    <span>最後更新：<time datetime="2026-10-18">2026-10-18</time></span>
+    <span>最後更新：<time datetime="2026-10-21">2026-10-21</time></span>
   </div>
 </footer>
 

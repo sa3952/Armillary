@@ -15,6 +15,7 @@ import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
+from types import MappingProxyType
 import re
 import stat
 from typing import Any, Collection, Final, Mapping
@@ -41,7 +42,6 @@ BACKEND_IMAGE_ENV = "CLASSICAL_ASTROLOGY_BACKEND_IMAGE_ID"
 REVISION_RE = re.compile(r"^[0-9a-f]{40}$")
 DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
 IMAGE_ID_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
-#: The two values a manifest's `source_url_status` may take.
 SOURCE_URL_STATUSES: Final = frozenset({
     "published_and_expected_anonymously_reachable",
     "provisional_pending_publication",
@@ -58,7 +58,6 @@ def _load_object(path: Path) -> dict[str, Any]:
 
 
 def source_url_for(repository: str, revision: str) -> str:
-    """The exact-revision tree URL of `revision` in `repository`."""
     return f"{repository}/tree/{revision}"
 
 
@@ -187,10 +186,8 @@ def _verify_manifest(
         "artifact_type",
         "frontend_public_source_revision",
         "source_url",
-        # A manifest is immutable, so the URL it names cannot be corrected
-        # later. Until the Corresponding Source is published this field says
-        # the URL is provisional rather than letting the reader assume it
-        # resolves.
+        # An immutable manifest cannot correct its URL later, so until the
+        # Corresponding Source is published this says the URL is provisional.
         "source_url_status",
         "source_publication",
         "formal_legal_release_fields",
@@ -294,7 +291,8 @@ def load_runtime_release(
     backend_public_source_revision: str | None,
     api_schema_version: str,
     dossier_version: str,
-) -> tuple[Path | None, dict[str, object] | None, frozenset[str] | None]:
+) -> tuple[Path | None, dict[str, object] | None, Mapping[str, str] | None]:
+    """The mounted release, its identity, and each file's receipted SHA-256."""
     requirement = environment.get(REQUIRE_ENV)
     if requirement in (None, ""):
         return None, None, None
@@ -360,4 +358,5 @@ def load_runtime_release(
     verified_files = verified["files"]
     if not isinstance(verified_files, dict):
         raise RuntimeError("verified frontend file receipt is invalid")
-    return release_root, identity, frozenset(verified_files)
+    digests = {name: receipt["sha256"] for name, receipt in verified_files.items()}
+    return release_root, identity, MappingProxyType(digests)

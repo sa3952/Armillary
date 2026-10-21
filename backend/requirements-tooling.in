@@ -2,4 +2,4 @@
 # test dependency: it is installed only into a throwaway environment, from
 # requirements-tooling.lock with --require-hashes, so the process that mints
 # the project's hashes is held to the same integrity rule as their consumers.
-pip-tools==7.6.1
+pip-tools==7.6.2

@@ -18,15 +18,12 @@
 
 from __future__ import annotations
 
-from .dignity_tables import SIGNS
-from .formatting import normalize_longitude, zodiac_sign_index
+from .dignity_tables import SEVEN_PLANETS, SIGNS
+from .formatting import normalize_longitude, sign_position, zodiac_sign_index
 from .house_placements import _house_for_longitude
-from .source_reading import SOURCE_READING_LEVELS
+from .source_reading import ORIGINAL_LANGUAGE_READ, SECONDARY_ONLY, TRANSLATION_READ, cited
 
-OPERANDS = (
-    "sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn",
-    "fortune", "spirit",
-)
+OPERANDS = (*SEVEN_PLANETS, "fortune", "spirit")
 SECT_CANDIDATES = ("day", "night")
 
 _PAULUS = {
@@ -146,42 +143,25 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         "applies_to": "natal_lots.lots[source_ref=extended_lots/paulus_hermetic_ch23]",
         "lot_methods": [m for m in LOT_METHODS if m["source_author"] == "Paulus Alexandrinus"],
         "sources": [
-            {
-                "citation": "Paulus Alexandrinus, Eisagogika ch.23 (Boer 1958; Schmidt/Hand 1995 pp.43-45)",
-                "says": "Eros, Necessity, Courage, Victory, Nemesis with Fortune and Spirit",
-                "reading": SOURCE_READING_LEVELS[2],
-                "read_at": (
-                    "citation as corrected by the research notes after checking; the editions "
-                    "not checked again for this entry"
-                ),
-            },
-            {
-                "citation": (
-                    "P.Berol. 9825 (AD 319; Greenbaum and Jones, ISAW Papers 12, 2017, "
-                    "paras. 135, 203-205)"
-                ),
-                "says": (
-                    "a papyrus computing the seven lots by Paulus's formulae, the only "
-                    "documentary horoscope known to contain all seven"
-                ),
-                "reading": SOURCE_READING_LEVELS[2],
-                "read_at": (
-                    "Greenbaum and Jones's article, read in its open-access online text; "
-                    "the papyrus's Greek not checked"
-                ),
-            },
-            {
-                "citation": "al-Bīrūnī, Kitāb al-Tafhīm §476 (Wright 1934; he says after Abū Maʿshar)",
-                "says": (
-                    "the list of planetary lots whose meanings the annual methods page translates "
-                    "by name (Eros: friendship and love; Necessity: despair, poverty and fraud; "
-                    "Courage: valour and daring; Victory: victory, triumph and help; Nemesis: "
-                    "captivity, prison and escape); the meanings are on the methods page only "
-                    "and not output on a chart"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Wright's English translation (1934)",
-            },
+            cited("Paulus Alexandrinus, Eisagogika ch.23 (Boer 1958; Schmidt/Hand 1995 pp.43-45)",
+                  "Eros, Necessity, Courage, Victory, Nemesis with Fortune and Spirit",
+                  SECONDARY_ONLY,
+                  ("citation as corrected by the research notes after checking; the editions "
+                   "not checked again for this entry")),
+            cited(("P.Berol. 9825 (AD 319; Greenbaum and Jones, ISAW Papers 12, 2017, "
+                   "paras. 203-205)"),
+                  ("a papyrus computing the seven lots by Paulus's formulae, the only "
+                   "documentary horoscope known to contain all seven"),
+                  SECONDARY_ONLY,
+                  ("Greenbaum and Jones's article, read in its open-access online text; "
+                   "the papyrus's Greek not checked")),
+            cited("al-Bīrūnī, Kitāb al-Tafhīm §476 (Wright 1934; he says after Abū Maʿshar)",
+                  ("the list of planetary lots whose meanings the annual methods page translates "
+                   "by name (Eros: friendship and love; Necessity: despair, poverty and fraud; "
+                   "Courage: valour and daring; Victory: victory, triumph and help; Nemesis: "
+                   "captivity, prison and escape); the meanings are on the methods page only "
+                   "and not output on a chart"),
+                  TRANSLATION_READ, "Wright's English translation (1934)"),
 
         ],
         "courage_direction_note": (
@@ -198,16 +178,12 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         "applies_to": "natal_lots.lots[source_ref=extended_lots/valens_iv25]",
         "lot_methods": [m for m in LOT_METHODS if m["source_author"] == "Vettius Valens"],
         "sources": [
-            {
-                "citation": "Vettius Valens, Anthologies IV.25 (Kroll 1908, p.202)",
-                "says": (
-                    "the formulas (Riley: 'from Fortune to the Daimon, counted from the "
-                    "Ascendant; at night the reverse') are in Kroll's main text; Riley marks "
-                    "the passage as a marginal note"
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "Kroll's Greek (1908, p.202); Pingree's treatment not checked",
-            },
+            cited("Vettius Valens, Anthologies IV.25 (Kroll 1908, p.202)",
+                  ("the formulas (Riley: 'from Fortune to the Daimon, counted from the "
+                   "Ascendant; at night the reverse') are in Kroll's main text; Riley marks "
+                   "the passage as a marginal note"),
+                  ORIGINAL_LANGUAGE_READ,
+                  "Kroll's Greek (1908, p.202); Pingree's treatment not checked"),
         ],
         "separate_tradition_note": (
             "Listed beside the Paulus lots of the same name, never merged with them "
@@ -219,3 +195,22 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         ),
     },
 }
+
+
+def attach_extended_lots(lots: dict, *, ascendant: float, bodies_by_key: dict, houses: dict | None) -> dict:
+    """The chart's Lots module with the extended lots beside Fortune and Spirit.
+
+    Same sect candidate as ``lots`` and the same house division; each row also
+    carries the printed ``sign_position``.  The birth-time probes call this too,
+    so the samples compare what the response prints.
+    """
+    extended = compute_extended_lots(
+        ascendant=ascendant,
+        longitudes={key: bodies_by_key[key]["longitude"] for key in SEVEN_PLANETS},
+        lots=lots,
+        houses=houses,
+    )
+    for lot in extended["lots"]:
+        lot["sign_position"] = sign_position(lot["longitude"])
+    lots["extended_lots"] = extended
+    return lots

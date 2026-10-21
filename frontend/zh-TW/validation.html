@@ -3,12 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="only light">
 <meta name="robots" content="index, follow">
 <title>星盤準不準：古典占星天文計算的驗證方法｜渾儀 Armillary</title>
 <meta name="description" content="星盤準不準？渾儀把天體位置與 JPL DE442、JPL Horizons 比對，日食、恆星時、宮位、回歸時刻與時區換算另以 NASA、USNO 與獨立算法核對；本頁列出每組的範圍、樣本、最大差與重現方法，也寫明證明不了什麼。">
 <link rel="canonical" href="https://projectarmillary.com/zh-TW/validation">
 <link rel="alternate" hreflang="zh-TW" href="https://projectarmillary.com/zh-TW/validation">
 <link rel="alternate" hreflang="x-default" href="https://projectarmillary.com/zh-TW/validation">
+<link rel="alternate" type="application/atom+xml" title="渾儀 Armillary 文章" href="/feed.xml">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="渾儀 Armillary">
 <meta property="og:locale" content="zh_TW">
@@ -21,11 +23,11 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="渾儀 Armillary：可驗證的古典西洋占星計算器">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/validation#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/validation#breadcrumb"},"dateModified":"2026-10-18","description":"星盤準不準？渾儀把天體位置與 JPL DE442、JPL Horizons 比對，日食、恆星時、宮位、回歸時刻與時區換算另以 NASA、USNO 與獨立算法核對；本頁列出每組的範圍、樣本、最大差與重現方法，也寫明證明不了什麼。","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"星盤準不準：古典占星天文計算的驗證方法｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/validation"},{"@id":"https://projectarmillary.com/zh-TW/validation#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/validation","name":"驗證","position":2}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","publisher":{"@id":"https://projectarmillary.com/#organization"},"url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/validation#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/validation#breadcrumb"},"dateModified":"2026-10-21","description":"星盤準不準？渾儀把天體位置與 JPL DE442、JPL Horizons 比對，日食、恆星時、宮位、回歸時刻與時區換算另以 NASA、USNO 與獨立算法核對；本頁列出每組的範圍、樣本、最大差與重現方法，也寫明證明不了什麼。","inLanguage":"zh-TW","isAccessibleForFree":true,"isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"星盤準不準：古典占星天文計算的驗證方法｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/validation"},{"@id":"https://projectarmillary.com/#organization","@type":"Organization","alternateName":["渾儀","Armillary","Project Armillary"],"disambiguatingDescription":"古典西洋占星的計算網站與開源程式；名稱取自天文儀器渾儀（armillary sphere），本身不是那件儀器。","logo":{"@type":"ImageObject","height":180,"url":"https://projectarmillary.com/apple-touch-icon.png","width":180},"name":"渾儀 Armillary","sameAs":["https://github.com/sa3952/Armillary"],"url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/validation#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/validation","name":"驗證","position":2}]},{"@id":"https://projectarmillary.com/zh-TW/validation#howto-1","@type":"HowTo","inLanguage":"zh-TW","isPartOf":{"@id":"https://projectarmillary.com/zh-TW/validation#webpage"},"name":"你可以怎麼自己核對","step":[{"@type":"HowToStep","position":1,"text":"對 JPL Horizons 查行星位置。用收據上的世界時，在 Horizons 查同一時刻的地心視黃經，和結果頁的位置相減。差多少，可以對照上面的表 1：在 2000 年附近，應該只差零點幾角秒。"},{"@type":"HowToStep","position":2,"text":"請別人用同一份卷宗重算。匯出時選「運算結果＋驗算資料」，把卷宗交給另一個人，用同一版 Swiss Ephemeris 與收據上的旗標重算行星與宮位。步驟寫在〈星盤怎麼驗算？〉。卷宗含有你的出生資料，交出去之前請先想清楚。"},{"@type":"HowToStep","position":3,"text":"看瀏覽器送出了什麼。計算在本站的伺服器上進行；瀏覽器送出什麼、送到哪裡，可以照〈自己檢查瀏覽器送出什麼〉用開發者工具親手看。"}]}]}</script>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" href="/zh-TW/favicon.svg?v=c95686a2f029d369" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="/zh-TW/style/validation.css?v=2b4f63b01bf89de5">
+<link rel="stylesheet" href="/zh-TW/style/validation.css?v=2e631893dbbaeec7">
 </head>
 <body>
 
@@ -58,8 +60,8 @@
 <main id="main-content">
 <div class="wrap page-body validation-page">
   <section class="validation-hero">
-    <h1>渾儀怎麼驗證星盤計算：與 JPL 星曆比對的範圍與誤差</h1>
-    <p class="kicker">驗證不是口號。<br>範圍才是答案。</p>
+    <p class="eyebrow">驗證</p>
+    <h1>渾儀怎麼驗證<wbr>星盤計算：<wbr>與 JPL 星曆比對的<wbr>範圍與誤差<span class="h1-sub"><span class="keep">驗證不是口號。</span><span class="keep">範圍才是答案。</span></span></h1>
     <p class="lede">渾儀的主要位置結果曾與另一條以JPL DE442、Astropy與ERFA組成的管線逐小時比較，另有一組常設測試拿 JPL Horizons、NASA 日食典與美國海軍天文臺的數值核對。底下直接列結論、方法、每一組比對的範圍與差距，以及沒有涵蓋的地方。</p>
     <div class="validation-metrics" role="group" aria-label="歷史驗證批次摘要">
       <div><b>2,244,088</b><span>天體—小時比對列</span><small>1990–2026，七個天體，每列含多個欄位</small></div>
@@ -112,6 +114,7 @@
       <h2>每一組比對：比什麼、和誰比、差多少</h2>
       <p>上面的逐小時比對是規模最大的一批，但不是唯一的一批。下表列出本站目前每一組拿外部數值或另一套算法核對的地方：比的是哪一個量、對照的答案從哪裡來、涵蓋哪些年代、有幾個樣本、容許差多少、實際差多少，以及要怎麼重現。</p>
       <p>「容許」是測試寫死的界線，超出就算失敗、不能交付；「實測」是最近一次跑出來的最大差。兩者都不是物理上的精度保證：沒有超出容許，只表示在這些樣本上沒有被抓到錯，不表示其他時刻、其他模式也一樣。</p>
+      <p class="scroll-hint" hidden>表格可左右捲動</p>
       <div class="validation-scroll" tabindex="0" role="region" aria-labelledby="comparisons-caption">
         <table class="validation-table">
           <caption id="comparisons-caption">表 1　渾儀的天文與時間計算拿什麼核對（容許與實測）</caption>
@@ -206,7 +209,7 @@
     <div>
       <h2>你可以怎麼自己核對</h2>
       <p>不必相信這一頁的數字。每一張盤的結果頁最下方都有「技術細節與驗算資料」，寫著這次計算用的世界時、儒略日、ΔT、時區資料庫版本、Swiss Ephemeris 版本與計算政策。拿這些數值，你可以做三件事：</p>
-      <ol class="validation-steps">
+      <ol class="validation-steps howto">
         <li><b>對 JPL Horizons 查行星位置。</b>用收據上的世界時，在 Horizons 查同一時刻的地心視黃經，和結果頁的位置相減。差多少，可以對照上面的表 1：在 2000 年附近，應該只差零點幾角秒。</li>
         <li><b>請別人用同一份卷宗重算。</b>匯出時選「運算結果＋驗算資料」，把卷宗交給另一個人，用同一版 Swiss Ephemeris 與收據上的旗標重算行星與宮位。步驟寫在〈<a href="/zh-TW/blog/verify-chart-calculation">星盤怎麼驗算？</a>〉。卷宗含有你的出生資料，交出去之前請先想清楚。</li>
         <li><b>看瀏覽器送出了什麼。</b>計算在本站的伺服器上進行；瀏覽器送出什麼、送到哪裡，可以照〈<a href="/zh-TW/security/verify">自己檢查瀏覽器送出什麼</a>〉用開發者工具親手看。</li>
@@ -215,6 +218,7 @@
     </div>
   </section>
 </div>
+<script src="/zh-TW/table-scroll.js?v=902f20a5b04bbed0" defer></script>
 </main>
 
 <footer>
@@ -248,7 +252,7 @@
   <div class="wrap">
     <span>渾儀 ARMILLARY</span>
     <span>只計算，不解盤，不預測</span>
-    <span>最後更新：<time datetime="2026-10-18">2026-10-18</time></span>
+    <span>最後更新：<time datetime="2026-10-21">2026-10-21</time></span>
   </div>
 </footer>
 

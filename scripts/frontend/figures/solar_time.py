@@ -203,9 +203,7 @@ def _pipeline_table(e: dict, bound: _fx.Bound) -> str:
             ("上升點", _asc(e["right"]["asc"]), _asc(e["wrong"]["asc"])))
     body = "".join(f'<tr><th scope="row">{name}</th><td class="n">{bound.num(a)}</td><td class="n">{bound.num(b)}</td></tr>'
                    for name, a, b in rows)
-    return ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">項目</th><th scope="col">本站的做法</th>'
-            f'<th scope="col">先換真太陽時</th></tr></thead><tbody>{body}</tbody></table></div></details>')
+    return _fx.data_table(("項目", "本站的做法", "先換真太陽時"), body)
 
 
 # --- figure 2: three readings of one instant -----------------------------------
@@ -367,11 +365,7 @@ def _year_table(year: dict, bound: _fx.Bound) -> str:
                     f'<td class="n">{bound.num(_signed(offset))}</td><td class="n">{bound.num(_signed(offset + lo))}</td>'
                     f'<td class="n">{bound.num(_signed(offset + hi))}</td>'
                     f'<td class="n">{bound.num(f"{year["share"][name]:.0%}")}</td></tr>')
-    return ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">地點</th><th scope="col">東經</th>'
-            '<th scope="col">經度修正（分鐘）</th><th scope="col">一年內最少（分鐘）</th>'
-            '<th scope="col">一年內最多（分鐘）</th><th scope="col">上升星座被換掉的時刻</th></tr></thead>'
-            f'<tbody>{"".join(rows)}</tbody></table></div></details>')
+    return _fx.data_table(("地點", "東經", "經度修正（分鐘）", "一年內最少（分鐘）", "一年內最多（分鐘）", "上升星座被換掉的時刻"), rows)
 
 
 def _figures(e: dict, year: dict, gained: float, asc_moved: float) -> dict[str, str]:
@@ -380,15 +374,17 @@ def _figures(e: dict, year: dict, gained: float, asc_moved: float) -> dict[str, 
     bound = _fx.Bound()
     when = bound.num(f"{EXAMPLE.year} 年 {EXAMPLE.month} 月 {EXAMPLE.day} 日")
     g, m = bound.num(f"{gained:.1f}"), bound.num(f"{asc_moved:.1f}")
-    out["two-pipelines"] = (_fx.figure(
-        fid="fig-solar-pipelines", hero=True,
+    out["two-pipelines"] = _fx.figure(
+        fid="fig-solar-pipelines",
+        hero=True,
         title="同一個鐘面時刻的兩種算法：本站的做法，以及先換真太陽時再輸入",
         caption=(f"<b>{bound.label('圖 1')}</b>合成範例（不是任何人的出生資料）：{when}下午兩點，臺北。"
                  "「本站的做法」是本站的算法；「先換真太陽時」先把鐘面時間換成真太陽時，再把它當成鐘面時間填進同一個計算服務。"
                  "兩邊的數字都是本站計算服務的實際回應；排線標出用到出生地經度的一步。"),
-        wide=_pipelines("fx-wide", "fig-solar-pipelines", e, g, m, bound),
-        narrow=_pipelines("fx-narrow", "fig-solar-pipelines", e, g, m, bound),
-        notes=[], idle="", table=_pipeline_table(e, bound)), bound)
+        art=_fx.FigureArt.drawn(_pipelines, "fig-solar-pipelines", e, g, m, bound),
+        table=_pipeline_table(e, bound),
+        bound=bound,
+    )
     # figure 2
     bound = _fx.Bound()
     lon_minutes = (TAIPEI[1] - ZONE_MERIDIAN) * 4
@@ -411,19 +407,24 @@ def _figures(e: dict, year: dict, gained: float, asc_moved: float) -> dict[str, 
     narrow_texts = dict(texts, clock=(texts["clock"][0], f"出生紀錄上的時間（{bound.label('UTC+8')}）"),
                         mean=(texts["mean"][0], "依出生地經度"))
     when = bound.num(f"{EXAMPLE.year} 年 {EXAMPLE.month} 月 {EXAMPLE.day} 日")
-    out["three-times"] = (_fx.figure(
+    out["three-times"] = _fx.figure(
         fid="fig-solar-three",
         title="同一個瞬間的三種「幾點」：鐘面時間、地方平時、真太陽時",
         caption=(f"<b>{bound.label('圖 2')}</b>同一個瞬間的三種「幾點」，畫在同一條時間軸上。合成範例：{when}下午兩點，臺北。"
                  f"鐘面時間加上經度修正 {bound.num(_signed(lon_minutes))} 分鐘是地方平時；再加上那天的均時差 "
                  f"{bound.num(_signed(e['eot']))} 分鐘，是真太陽時 {bound.num(_clock(solar))}。真太陽時是本站計算服務的回應，"
                  "地方平時是世界時加上出生地經度。"),
-        wide=_three("fx-wide", "fig-solar-three", times, texts, bound),
-        narrow=_three("fx-narrow", "fig-solar-three", times, narrow_texts, bound),
-        notes=[], idle=""), bound)
+        art=_fx.FigureArt(
+            wide=_three("fx-wide", "fig-solar-three", times, texts, bound),
+            narrow=_three("fx-narrow", "fig-solar-three", times, narrow_texts, bound),
+            notes=[],
+            idle="",
+        ),
+        bound=bound,
+    )
     # figure 3
     bound = _fx.Bound()
-    out["year-shift"] = (_fx.figure(
+    out["year-shift"] = _fx.figure(
         fid="fig-solar-year",
         title=f"{YEAR} 年每天中午，先換真太陽時再輸入，地方恆星時多出或少掉的分鐘數：臺北與金門",
         caption=(f"<b>{bound.label('圖 3')}</b>先換真太陽時、再當成鐘面時間輸入時，地方恆星時多出（正）或少掉（負）的分鐘數，"
@@ -431,18 +432,19 @@ def _figures(e: dict, year: dict, gained: float, asc_moved: float) -> dict[str, 
                  "按鈕切換臺北與金門，另一地畫成淡色虛線。均時差以 Swiss Ephemeris 的 <code>swe_time_equ</code> 計算，"
                  f"本站結果頁的真太陽時用的也是它；上升星座被換掉的比例，以 {bound.label(str(YEAR))} 年每 "
                  f"{bound.label('10')} 分鐘的時刻計算。"),
-        wide=_year_art("fx-wide", "fig-solar-year", year, bound),
-        narrow=_year_art("fx-narrow", "fig-solar-year", year, bound),
-        notes=_year_sentences(year, bound), idle=YEAR_IDLE,
-        variants=tuple((v, name) for v, name, _ in PLACES), switch_label="切換地點",
-        table=_year_table(year, bound)), bound)
-    checked = {}
-    for name, (html, bound) in out.items():
-        found = _fx.problems(html, bound)
-        if found:
-            raise RuntimeError("figure check: " + "; ".join(found))
-        checked[name] = html
-    return checked
+        art=_fx.FigureArt.drawn(
+            _year_art, "fig-solar-year", year, bound,
+            notes=_year_sentences(year, bound),
+            idle=YEAR_IDLE,
+        ),
+        controls=_fx.FigureControls(
+            variants=tuple((v, name) for v, name, _ in PLACES),
+            switch_label="切換地點",
+        ),
+        table=_year_table(year, bound),
+        bound=bound,
+    )
+    return out
 
 
 def build() -> tuple[dict[str, str], list[str]]:

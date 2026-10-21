@@ -10,8 +10,16 @@ import threading
 import time
 import unicodedata
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Final
 
+from .hong_kong_place_aliases import (
+    ALIAS_SOURCE,
+    ALIAS_TABLE_NAME,
+    ALIAS_TIER,
+    ALIASES_SHARED_WITH_TAIWAN,
+    HONG_KONG_ALIASES,
+    alias_key,
+)
 from .civil_time_basis import (
     CIVIL_TIME_BASIS_ZONES,
     check_civil_time_basis,
@@ -46,13 +54,9 @@ SUPPORTED_SCHEMA_VERSIONS = frozenset({5})
 # Producer-assigned record-id prefix of the derived county representative points.
 TAIWAN_COUNTY_RECORD_PREFIX = "tw-moi-county-derived:"
 
-# FTS5 的 bm25() 欄位權重。四個欄位依序為 name、aliases、admin1、admin2。
-#
-# 為什麼需要權重：`place_search` 是 contentless FTS5 表，bm25 只看索引，而 bm25
-# 本質上偏好較短的文件。GeoNames 給倫敦的 alternate names 有數百個語言變體，
-# 使 London(GB) 的文件長度遠大於美國那些同名小鎮，於是倫敦的 bm25 分數反而更差。
-# 提高 name 欄的權重，讓「查詢字串命中的是地名本身」這件事主導相關度，
-# 而不是讓「別名寫得少」變成優勢。
+# FTS5 bm25() 欄位權重（name、aliases、admin1、admin2）。`place_search` 是 contentless FTS5 表，
+# bm25 只看索引且偏好較短的文件；GeoNames 給倫敦數百個語言變體別名，使 London(GB) 的分數
+# 反而比美國同名小鎮差。提高 name 欄權重，讓「命中地名本身」而非「別名寫得少」主導相關度。
 BM25_COLUMN_WEIGHTS = (8.0, 2.0, 1.0, 1.0)
 
 # 排序法的具名版本。排序規則的變更會直接改變使用者選到哪一個地點、
@@ -122,8 +126,7 @@ _EXECUTION_RECEIPT = {"catalog_mode": "bundled_read_only_sqlite", "runtime_outbo
 def _ranking_receipt() -> dict:
     return {
         "method": RANKING_METHOD_NAME,
-        # 這份清單必須與 ORDER BY 逐項對應（同一個 RANKING_STEPS 產生兩者）。
-        # 排序結果本身是確定的，可能出錯的是這份自述——而自述錯誤等於
+        # 必須與 ORDER BY 逐項對應（同一個 RANKING_STEPS 產生兩者）；自述錯誤等於
         # 可追溯性宣稱不實。
         "order": [description for _sql, description in RANKING_STEPS],
         "why_the_tier_precedes_population": (
@@ -132,6 +135,18 @@ def _ranking_receipt() -> dict:
             "exact_name，層級排在人口之前也不會讓人口 0 的『臺北小別墅』（name_prefix）"
             "壓過臺北市。同層之內臺灣縣市代表點優先，所以 Penghu、Nantou 不會先給同名的"
             "中國地點。"
+        ),
+        "curated_alias": (
+            f"{ALIAS_TABLE_NAME}: a curated Chinese name of a Hong Kong district or place "
+            "(灣仔、將軍澳、北區…) adds that catalogue row with match_tier curated_alias, "
+            "outside the ORDER BY: second when the query does not begin with 香港 and the "
+            "ranked first answer lies outside Hong Kong and matches by its own name "
+            "(exact_name or name_prefix) or the alias is 北區、南區、東區 or 中西區, "
+            "which Taiwanese cities also have; first otherwise; "
+            "query.curated_alias says whether and where; a query beginning with 香港, "
+            "香港特區, hong kong or hk whose rest is no curated name and whose whole "
+            "text finds nothing is searched again as the rest alone, Hong Kong rows "
+            "first (query.curated_alias.prefix_stripped)"
         ),
         "population_semantics": (
             "zero_means_the_source_gives_no_population_and_sorts_after_every_known_population"
@@ -147,9 +162,9 @@ class PlaceSearchBudgetExceededError(RuntimeError):
     """The statement budget interrupted a search; the catalogue itself is fine.
 
     SQLite reports a progress-handler interrupt as the same `sqlite3.Error` a
-    missing or corrupt file raises; this keeps the two apart, because for a
-    broad prefix query under load, retrying or narrowing the query is exactly
-    the remedy, and "catalogue unavailable" carries no Retry-After.
+    missing or corrupt file raises; this keeps them apart, because retrying or
+    narrowing the query is the remedy, and "catalogue unavailable" carries no
+    Retry-After.
     """
 
     code = "place_search_timeout"
@@ -172,11 +187,9 @@ def _word_tokens(value: str) -> list[str]:
     """
 
     normalized = normalize_search_text(value)
-    # unicode61 keeps only letters, marks and numbers as token characters;
-    # "_" (category Pc) is a separator to FTS5, so it is a separator here too.
-    # Treating it as a word character let "a_b" pass the prefix-length guard
-    # as one three-character token while FTS5 ran two one-character prefix
-    # scans.
+    # unicode61 keeps only letters, marks and numbers as token characters; "_"
+    # (Pc) must separate here too, or "a_b" passes the prefix-length guard as
+    # one token while FTS5 runs two one-character prefix scans.
     token_text = "".join(
         character
         if unicodedata.category(character)[0] in {"L", "M", "N"}
@@ -407,13 +420,10 @@ SEARCH_RECEIPT_ROW_LISTS_SOURCE = "backend/place_data/catalog_manifest.json"
 
 
 def _artifact_digest(path: Path) -> dict:
-    """SHA-256 of the catalogue file the runtime opens, cached per file identity.
+    """SHA-256 of the catalogue file the runtime opens, cached per (path, size, mtime).
 
-    The receipt carried the input digests copied from catalogue
-    metadata but nothing that identified the artifact actually loaded.  The
-    digest is computed from the file itself, once per (path, size, mtime), so
-    a coordinate can be traced to bytes the same way the engine manifest traces
-    ephemeris files.
+    Metadata digests describe the inputs, not the artifact loaded; this lets a
+    coordinate be traced to bytes as the engine manifest traces ephemeris files.
     """
 
     resolved = path.resolve()
@@ -612,8 +622,97 @@ def _search_sql(*, spelling_fallback: bool) -> str:
                 """
 
 
+_ALIAS_SQL = """
+                SELECT source, source_record_id, name, display_name, country_code, admin1,
+                    admin1_name, admin2, admin3, name_zh, disambiguator, latitude, longitude,
+                    timezone, location_precision, population, :tier AS match_tier
+                FROM places
+                WHERE source = :source AND source_record_id = :record AND country_code = 'HK'
+                """
+
+
+def _curated_alias(query: str, country_code: str | None) -> tuple[dict, str | None]:
+    """The alias receipt and the record id a curated Hong Kong name points to, if any."""
+
+    key, names_hong_kong = alias_key(normalize_search_text(query))
+    record = HONG_KONG_ALIASES.get(key)
+    receipt = {
+        # Internal: the stripped key, for the prefix fallback; removed before the response.
+        "alias_lookup_key": key,
+        "table": ALIAS_TABLE_NAME,
+        "status": "no_alias",
+        "alias": None,
+        "names_hong_kong": names_hong_kong,
+        "placement": None,
+    }
+    if record is None:
+        return receipt, None
+    receipt["alias"] = key
+    if country_code not in (None, "HK"):
+        receipt["status"] = "not_applicable_country_filter"
+        return receipt, None
+    return receipt, record
+
+
+# A query that begins with 香港／香港特區／hong kong／hk, whose rest is no curated
+# name and whose whole text finds nothing, is searched again without the prefix,
+# Hong Kong rows first.  Closed vocabulary.
+PREFIX_STRIPPED_NOT_NAMED = "not_named"
+PREFIX_STRIPPED_NOT_NEEDED = "not_needed"
+PREFIX_STRIPPED_APPLIED = "applied"
+PREFIX_STRIPPED_NO_RESULT = "no_result"
+
+
+def _prefix_stripped_receipt(status: str, remainder: str | None = None) -> dict:
+    searched = status in (PREFIX_STRIPPED_APPLIED, PREFIX_STRIPPED_NO_RESULT)
+    return {
+        "status": status,
+        "remainder": remainder if searched else None,
+        "hong_kong_rows_first": searched,
+    }
+
+
+def _place_alias_row(rows: list, alias_row, receipt: dict, limit: int) -> list:
+    """Put the alias row first, or second after another place's own name match.
+
+    Second when the query does not name Hong Kong and the ranked first answer
+    lies elsewhere and either matches by its own name (灣仔 in Taipei) or the
+    alias is a district name Taiwanese cities also use (北區 of Tainan).
+    """
+
+    identity = (alias_row["source"], alias_row["source_record_id"])
+    others = [row for row in rows if (row["source"], row["source_record_id"]) != identity]
+    leader = others[0] if others else None
+    yields = (
+        not receipt["names_hong_kong"]
+        and leader is not None
+        and leader["country_code"] != "HK"
+        and (
+            leader["match_tier"] in ("exact_name", "name_prefix")
+            or receipt["alias"] in ALIASES_SHARED_WITH_TAIWAN
+        )
+    )
+    first = not yields
+    receipt["status"] = "applied"
+    receipt["placement"] = "first" if first else "after_first"
+    others.insert(0 if first else 1, alias_row)
+    return others[:limit]
+
+
 _SEARCH_SQL = _search_sql(spelling_fallback=False)
 _SPELLING_FALLBACK_SQL = _search_sql(spelling_fallback=True)
+
+
+# The catalog columns a search result carries, in response order.
+# `disambiguator` is set only when another row shares the display_name: the
+# producer chose the first human-meaningful level that separates the group (see
+# catalog.label_disambiguation).  `match_tier` 讓呼叫端看出是地名本身相符，還是只有別名或
+# 行政區欄位相符。
+_RESULT_COLUMNS: Final = (
+    "source", "source_record_id", "name", "display_name", "country_code", "admin1",
+    "admin1_name", "admin2", "admin3", "name_zh", "disambiguator", "latitude", "longitude",
+    "timezone", "location_precision", "population", "match_tier",
+)
 
 
 class PlaceCatalog:
@@ -634,12 +733,6 @@ class PlaceCatalog:
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA query_only = ON")
         return connection
-
-    def metadata(self, connection: sqlite3.Connection) -> dict:
-        return {
-            key: json.loads(value_json)
-            for key, value_json in self._metadata_json(connection).items()
-        }
 
     def _metadata_json(self, connection: sqlite3.Connection) -> dict[str, str]:
         """The metadata rows as stored, read once per file identity.
@@ -728,11 +821,7 @@ class PlaceCatalog:
         }
 
     def record(self, source: str, source_record_id: str) -> dict | None:
-        """One catalogue row by its identity, or None if the catalogue has none.
-
-        ``(source, source_record_id)`` is the table's UNIQUE key, so this is one
-        indexed lookup.
-        """
+        """One catalogue row by its UNIQUE ``(source, source_record_id)`` key, or None."""
 
         connection = self._connect()
         try:
@@ -750,6 +839,27 @@ class PlaceCatalog:
             connection.close()
         return None if row is None else dict(row)
 
+    def _remainder_rows(self, connection, remainder: str, country_code: str | None, limit: int) -> list:
+        """The ranked rows for the query's rest, Hong Kong rows first (order kept within each)."""
+
+        match_query, receipt = _fts_query(remainder, self._county_prefixes(connection))
+        if not match_query:
+            return []
+        tier_query = place_tier_key(" ".join(receipt["tokens_used"]))
+        rows = connection.execute(
+            _SEARCH_SQL,
+            {
+                "match": match_query,
+                "country": country_code,
+                "exact_key": MATCH_KEY_SEPARATOR + tier_query + MATCH_KEY_SEPARATOR,
+                "key_prefix": MATCH_KEY_SEPARATOR + tier_query,
+                # Read wider than the limit so Hong Kong rows ranked lower still surface.
+                "limit": max(limit, 50),
+            },
+        ).fetchall()
+        rows = sorted(rows, key=lambda row: row["country_code"] != "HK")
+        return rows[:limit]
+
     def search(
         self,
         *,
@@ -759,9 +869,8 @@ class PlaceCatalog:
     ) -> dict:
         connection = self._connect()
         deadline = time.monotonic() + SEARCH_STATEMENT_BUDGET_SECONDS
-        # Whether *this* handler interrupted is recorded rather than inferred
-        # from the clock afterwards, which would also label a genuine fault
-        # that happened to finish late.
+        # Recorded, not inferred from the clock afterwards, which would also
+        # label a genuine fault that happened to finish late.
         interrupted = False
 
         def spend_statement_budget() -> int:
@@ -782,18 +891,18 @@ class PlaceCatalog:
                 # Nothing reached FTS5: say so in a closed field and keep the
                 # response the same shape as a search that found nothing.
                 query_receipt["spelling_fallback"] = _spelling_fallback_receipt(SPELLING_FALLBACK_NOT_ELIGIBLE)
+                empty_alias = _curated_alias(query, country_code)[0]
+                del empty_alias["alias_lookup_key"]
+                empty_alias["prefix_stripped"] = _prefix_stripped_receipt(PREFIX_STRIPPED_NOT_NAMED)
+                query_receipt["curated_alias"] = empty_alias
                 return self._response([], metadata, query_receipt)
-            # Tier classification must describe the same sanitized, bounded
-            # token sequence that reached FTS5.  Comparing the raw normalized
-            # string instead made ``London!!!`` execute as ``london`` yet
-            # report ``other_field``; a truncated query had the same drift.
+            # The tier must describe the same bounded tokens that reached FTS5;
+            # the raw string made ``London!!!`` run as ``london`` yet report
+            # ``other_field``.
             tier_query = place_tier_key(" ".join(query_receipt["tokens_used"]))
-            # The match key was computed in the projection twice and in the
-            # ordering twice more: four Python calls for every FTS hit, and a
-            # common prefix matches tens of thousands of rows.  Under the GIL
-            # that made concurrent searches exceed the statement budget and
-            # refuse.  The producer already stored each row's key; runtime
-            # Python normalizes only the query and SQL reads the stored value.
+            # SQL reads each row's producer-stored match key; computing it in
+            # Python per FTS hit (tens of thousands for a common prefix) made
+            # concurrent searches exceed the budget under the GIL.
             rows = connection.execute(
                 _SEARCH_SQL,
                 {
@@ -830,6 +939,33 @@ class PlaceCatalog:
                     ).fetchall()
                 fallback = SPELLING_FALLBACK_APPLIED if rows else SPELLING_FALLBACK_NO_NAME
             query_receipt["spelling_fallback"] = _spelling_fallback_receipt(fallback)
+            alias_receipt, alias_record = _curated_alias(query, country_code)
+            alias_receipt["prefix_stripped"] = _prefix_stripped_receipt(PREFIX_STRIPPED_NOT_NAMED)
+            if alias_receipt["names_hong_kong"] and alias_record is None:
+                if rows:
+                    status = PREFIX_STRIPPED_NOT_NEEDED
+                else:
+                    # 「香港赤柱」「hong kong stanley」: the whole query finds nothing and
+                    # the rest is no curated name, so search the rest, Hong Kong first.
+                    rows = self._remainder_rows(
+                        connection, alias_receipt["alias_lookup_key"], country_code, limit
+                    )
+                    status = PREFIX_STRIPPED_APPLIED if rows else PREFIX_STRIPPED_NO_RESULT
+                alias_receipt["prefix_stripped"] = _prefix_stripped_receipt(
+                    status, alias_receipt["alias_lookup_key"]
+                )
+            del alias_receipt["alias_lookup_key"]
+            if alias_record is not None:
+                alias_row = connection.execute(
+                    _ALIAS_SQL,
+                    {"tier": ALIAS_TIER, "source": ALIAS_SOURCE, "record": alias_record},
+                ).fetchone()
+                if alias_row is None:
+                    raise PlaceCatalogUnavailableError(
+                        "curated place alias points at no catalogue row"
+                    )
+                rows = _place_alias_row(list(rows), alias_row, alias_receipt, limit)
+            query_receipt["curated_alias"] = alias_receipt
         except (sqlite3.Error, PlaceCatalogUnavailableError) as exc:
             if interrupted:
                 raise PlaceSearchBudgetExceededError(
@@ -846,28 +982,7 @@ class PlaceCatalog:
 
         results = [
             {
-                "source": row["source"],
-                "source_record_id": row["source_record_id"],
-                "name": row["name"],
-                "display_name": row["display_name"],
-                "country_code": row["country_code"],
-                "admin1": row["admin1"],
-                "admin1_name": row["admin1_name"],
-                "admin2": row["admin2"],
-                "admin3": row["admin3"],
-                "name_zh": row["name_zh"],
-                # Set only when another row shares this display_name;
-                # the producer chose the first human-meaningful level
-                # that separates the group (see catalog.label_disambiguation).
-                "disambiguator": row["disambiguator"],
-                "latitude": row["latitude"],
-                "longitude": row["longitude"],
-                "timezone": row["timezone"],
-                "location_precision": row["location_precision"],
-                "population": row["population"],
-                # 排序層級一併回傳，讓呼叫端能看出某一筆是「地名
-                # 本身相符」還是「只有別名或行政區欄位相符」，不必反推。
-                "match_tier": row["match_tier"],
+                **{column: row[column] for column in _RESULT_COLUMNS},
                 "coordinate_semantics": (
                     "dataset_representative_point_not_birth_address"
                 ),
@@ -889,19 +1004,14 @@ class PlaceCatalog:
         return self._response(results, metadata, query_receipt)
 
 
-# ── A catalogue location in a chart request is the catalogue's row ──────────
-#
-# A request that names a record (location_source other than "manual") is
-# computed only when every field the row holds arrives exactly as the row holds
-# it: the label is the row's display_name as stored text, less surrounding
-# whitespace as for every request string; latitude and
-# longitude are compared as IEEE-754 binary64, the type the catalogue stores
-# them in, so any JSON spelling of the stored number matches and the next
-# representable double does not; the precision is the row's; the zone is the
-# row's, or for a place that keeps two clocks the zone of the clock the request
-# names.  Anyone who wants other coordinates or another zone sends them as
-# manual coordinates.  The order of the checks is the order a refusal names the
-# first difference in.
+# A catalogue location in a chart request is the catalogue's row.  A request
+# naming a record (location_source other than "manual") is computed only when
+# every field arrives exactly as the row holds it: the label is display_name less
+# surrounding whitespace; latitude and longitude compare as IEEE-754 binary64,
+# so any JSON spelling of the stored number matches and the next double does
+# not; the precision is the row's; the zone is the row's, or for a two-clock
+# place that of the clock the request names.  Other coordinates or zones go as
+# manual.  Check order is the order a refusal names the first difference in.
 CATALOG_LOCATION_MISMATCH_REASONS = (
     "place_label_differs",
     "latitude_differs",

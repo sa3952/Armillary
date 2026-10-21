@@ -100,7 +100,7 @@ _VERSIONED_ASSET_REFERENCE = re.compile(rb'(?:src|href)="(/zh-TW/[^"?#]+)\?v=([0
 # (scripts/deployment/submit_indexnow.py).
 _INDEXNOW_KEY_PATH = "/" + INDEXNOW_KEY_FILE
 _PUBLIC_DISCOVERY_FILES = (
-    "/robots.txt", "/sitemap.xml", "/llms.txt", "/llms-full.txt", "/.well-known/security.txt",
+    "/robots.txt", "/sitemap.xml", "/feed.xml", "/llms.txt", "/llms-full.txt", "/.well-known/security.txt",
     _INDEXNOW_KEY_PATH,
 )
 
@@ -206,6 +206,8 @@ _DISCOVERY_MEDIA_TYPES = {
     "/llms-full.txt": ("text/plain",),
     "/.well-known/security.txt": ("text/plain",),
     "/sitemap.xml": ("application/xml", "text/xml"),
+    # RFC 4287 §7: feed readers expect the Atom type, not plain XML.
+    "/feed.xml": ("application/atom+xml",),
     _INDEXNOW_KEY_PATH: ("text/plain",),
 }
 # Every other spelling of a page is a permanent redirect to its one address,
@@ -263,6 +265,9 @@ def _public_discovery_cases(base_url: str, page: bytes) -> dict[str, bool]:
         status, body, headers = _request(base_url + path)
         kind, parameters = media_type(headers)
         typed.append(status == 200 and kind in accepted and parameters.get("charset") == "utf-8")
+        if path == "/feed.xml":
+            cases["atom_feed_served"] = status == 200 and b"<feed" in body \
+                and kind == "application/atom+xml"
         if path == "/llms.txt":
             cases["llms_txt_served"] = status == 200 and body.startswith(b"# ")
         if path == "/llms-full.txt":
@@ -420,7 +425,8 @@ def verify(base_url: str, *, approved_hostname: str | None = None, noindex: bool
     cases["robots_txt_served"] = status == 200 and b"Sitemap:" in body
     status, body, _ = _request(base_url + "/sitemap.xml")
     cases["sitemap_xml_served"] = status == 200 and b"<urlset" in body
-    for path in ("/openapi.json", "/api/runtime-health"):
+    # Readiness is the container health check's; the edge answers it 404 itself.
+    for path in ("/openapi.json", "/api/runtime-health", "/api/health/ready"):
         cases[path] = _request(base_url + path)[0] == 404
     return {"schema_version": 6, "edge_noindex": noindex,
             "result": "pass" if all(cases.values()) else "fail", "cases": cases,

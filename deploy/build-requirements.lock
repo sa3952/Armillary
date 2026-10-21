@@ -437,9 +437,9 @@ types-psutil==7.2.2.20260906 \
     --hash=sha256:93abf22cf9a62b915f724e433bde702995ac274865425fd4a76d1d9b5828da1a \
     --hash=sha256:db00baf7f96c3f63421c4d3d68d373923094a0dfddf13e922c5c5fbc42488159
     # via -r deploy/build-requirements.in
-types-setuptools==84.0.0.20260812 \
-    --hash=sha256:09bedc248ebbb7a232c9419dfcdca329706e61bf2aa5743e9424d027f1d956b4 \
-    --hash=sha256:799c08e4bc6a288e8a0b538afb5f5ff320a08927ba8dbedb30c74ee3ba5d867b
+types-setuptools==84.0.0.20261006 \
+    --hash=sha256:0f123655f44390a15ec62c9fa30b57f6dafe53014524d28b62cab1edbc303059 \
+    --hash=sha256:f435ec88f8f2319316969e37b5a1ca49496b276889124de249b422b061b492fe
     # via -r deploy/build-requirements.in
 typing-extensions==4.16.0 \
     --hash=sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8 \
@@ -449,9 +449,9 @@ uv-dynamic-versioning==0.14.1 \
     --hash=sha256:8642db686ce5c50417035e7a257ac73b7e5c3a7a32c33e45bd7e36ba22eeb648 \
     --hash=sha256:f9db710cc2ce9dccf06fab958ad10c45cae43cff70e3eccaa89365b040e98306
     # via -r deploy/build-requirements.in
-vcs-versioning==2.5.0 \
-    --hash=sha256:956a796e31f80fe714d219d6d1df15a6bf247d10f6d851bf4b98279d0a42da55 \
-    --hash=sha256:dbf44f6303dc817e5792cb7d0e9cc90e3046ee1e32eaa357b20ad368811313d0
+vcs-versioning==2.6.0 \
+    --hash=sha256:22e9159288e2d8bca2fa6f6c31c34c9c66aec157f60e9e526f5d160d2516d60f \
+    --hash=sha256:f8bebd1302ebc12e67ceb30fc7dd698ec969414b6fa43b30c3f14ac9b1e72c41
     # via setuptools-scm
 wheel==0.48.0 \
     --hash=sha256:3217dcc807155e45db462d7ef2431f5ddda0d7273b700d05a67b271ceb1287ab \

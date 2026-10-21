@@ -19,18 +19,17 @@ from .module_state import (
     PRODUCT_FORMULA_SOURCE,
     computed_receipt,
     module_state,
-    not_applicable_receipt,
+    frame_table_refusal,
 )
-from .method_status import method_receipt
-from .source_reading import reference_only
+from .method_status import method_head
+from .source_reading import cited, reference_only
 from .trace import Trace
 
 DECLINATION_ASPECT_METHOD_NAME = "parallel_contra_parallel_fixed_orb_v1"
 DECLINATION_ASPECT_CLASSIFICATION = "research_only"
 DECLINATION_ASPECT_PROVENANCE = "not_classical_earliest_use_attribution_unverified"
-# The 1657 printed theses define the technique, so the status names that
-# attestation.  Closed set: the first value is the state
-# before a primary page is read; the second is the 1657 attestation.
+# Closed set: the state before a primary page is read, then the 1657
+# attestation (the printed theses define the technique).
 DECLINATION_ATTRIBUTION_STATES = (
     "attributed_pending_primary_check",
     "attested_placidus_1657",
@@ -62,8 +61,7 @@ DECLINATION_ASPECT_PROVENANCE_ATTRIBUTION = {
 }
 # 預設 1° 容許度是本產品的選擇，不歸屬任何作者；研究報告稱未找到 Placidus 的靜態本命 orb。
 DECLINATION_DEFAULT_ORB_PROVENANCE = "modern_product_default"
-# orb 0 是合法值，定義為「赤緯完全相等才算」。
-# 比較式仍是 |差| ≤ orb，所以 0 自然退化成相等，不另設特例。
+# orb 0 合法：比較式 |差| ≤ orb 自然退化為赤緯完全相等，不另設特例。
 ZERO_ORB_SEMANTICS = "exact_equality_only"
 # 參與者由 app.core.bodies.effective_participants 選出——與黃道相位、反照點共用同一個
 # helper。本模組只接收選好的名單，不自帶交點或現代點的納入規則（否則凱龍星會在開啟時
@@ -85,9 +83,8 @@ def compute_declination_aspects(
     participant_policy: dict | None = None,
     orb_explicit: bool | None = None,
 ) -> dict:
-    # The request path passes whether the orb was in the request's
-    # fields set, so an explicit 1.0 is the user's choice.  None is only for unit
-    # callers that hold no request.
+    # The request path says whether the orb was sent, so an explicit 1.0 is the
+    # user's choice.  None is only for unit callers that hold no request.
     explicit = orb != default_orb if orb_explicit is None else orb_explicit
     trace.add(
         f"赤緯相位判斷方法 (method={DECLINATION_ASPECT_METHOD_NAME})",
@@ -125,8 +122,7 @@ def compute_declination_aspects(
             )
 
     return {
-        "method": DECLINATION_ASPECT_METHOD_NAME,
-        **method_receipt("declination_aspects"),
+        **method_head(DECLINATION_ASPECT_METHOD_NAME, "declination_aspects"),
         "method_classification": DECLINATION_ASPECT_CLASSIFICATION,
         "method_provenance": DECLINATION_ASPECT_PROVENANCE,
         "method_provenance_attribution": {
@@ -161,25 +157,17 @@ def compute_declination_aspects(
 
 
 def declination_aspects_not_applicable(state: dict, trace: Trace) -> dict:
-    """Parallels compare declinations on the equator of date.
-
-    With J2000 or nutation off the emitted declinations are measured from another
-    equator; the central frame table refuses and nothing is converted.
-    """
-
-    trace.add(
-        f"赤緯相位判斷方法 (method={DECLINATION_ASPECT_METHOD_NAME})",
-        result={"execution_status": "not_applicable", "reason_code": state["reason_code"]},
+    refusal = frame_table_refusal(
+        state, trace, f"赤緯相位判斷方法 (method={DECLINATION_ASPECT_METHOD_NAME})",
         note=(
             "赤緯平行比較的是當日赤道上的赤緯；J2000 或不含章動的赤道不是這個框架，"
             "參考框架相容表判定不適用，不計算、不轉換座標。"
         ),
     )
     return {
-        "method": DECLINATION_ASPECT_METHOD_NAME,
-        **method_receipt("declination_aspects"),
+        **method_head(DECLINATION_ASPECT_METHOD_NAME, "declination_aspects"),
         "method_classification": DECLINATION_ASPECT_CLASSIFICATION,
-        **not_applicable_receipt(state),
+        **refusal,
         "participant_keys": [],
         "excluded_participant_keys": [],
         "participant_policy": None,
@@ -193,14 +181,14 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         "method_provenance": DECLINATION_ASPECT_PROVENANCE,
         "attribution": dict(DECLINATION_ASPECT_PROVENANCE_ATTRIBUTION),
         "sources": [
-            reference_only(
-                "Placidus de Titis, Tabulae primi mobilis (Padua: Frambotti 1657), Theses "
-                "ex II. libro, no. 50, p.9",
-                "the so-called antiscia renamed 'Parallelos', equal distance from the "
-                "equator, and the contra-parallel",
-                "level pending: the record quotes the thesis but does not say which copy "
-                "was read; only the reference is claimed",
-            ),
+            cited(("Placidus de Titis, Tabulae primi mobilis (Padua: Frambotti 1657), "
+                   "Theses ex II. libro, no. 50, p.9"),
+                  ("the so-called antiscia renamed 'Parallelos', equal distance from the "
+                   "equator, and the contra-parallel"),
+                  "original_language_read",
+                  ("the 1657 printing as scanned at archive.org "
+                   "(bub_gb_3RHgMAUa5fMC, n28 = p.9), thesis 50: 'Antiscia "
+                   "communiter vocata nos Parallelos ... nuncupamus'")),
             reference_only(
                 "Ptolemy, Tetrabiblos I.14-I.15",
                 "signs of equal rising and the same parallel, as Placidus presents it",

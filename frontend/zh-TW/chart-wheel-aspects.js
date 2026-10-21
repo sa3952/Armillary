@@ -13,4 +13,4 @@ if(result.missingPoints.length){const count=result.omitted.filter((item)=>item.r
 if(result.omitted.some((item)=>item.reason===OMIT_REASON.ENDPOINT_ANCHOR_ONLY)){out.push("只有日期：月亮一天約走 13°，月亮的相位線不畫（見相位表）。");}
 if(result.omitted.some((item)=>item.reason===OMIT_REASON.STYLE_UNKNOWN)){out.push("有相位沒有對應的線型，未畫（見相位表）。");}
 if(result.status===STATUS.ORB_NOT_SELECTED)out.push("本次沒有選定容許度表，不畫相位線。");return out;}
-return Object.freeze({build,legendLines,STATUS,OMIT_REASON,STYLES,DEFAULT_GEOMETRY,round3,mod360,isRecord});});
+return Object.freeze({build,legendLines,STATUS,OMIT_REASON,STYLES,DEFAULT_GEOMETRY,round3,mod360,isRecord,polar});});

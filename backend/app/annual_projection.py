@@ -32,15 +32,10 @@ from .core.birth_time_sensitivity import (
 from .core import monthly_profections
 from .core.module_state import MODULE_COMPUTED, MODULE_NOT_REQUESTED
 from .response_projection import (
-    DEFAULT_CHART_PROJECTION,
     _keep,
     _kept_tree,
     project_chart_response,
 )
-from .schemas import ChartProjection
-
-# The same default as /api/chart: the page view, with the trace by name.
-DEFAULT_ANNUAL_PROJECTION: ChartProjection = DEFAULT_CHART_PROJECTION
 
 SEGMENTS_BASES = ("single_instant", "representative_anchor_sample", "each_sample")
 EVENT_KINDS = ("year_start", "period_start")
@@ -120,9 +115,6 @@ ANNUAL_PAGE_KEPT_PATHS: tuple[str, ...] = (
 _PAGE_TREE = _kept_tree(ANNUAL_PAGE_KEPT_PATHS)
 
 
-# ── lanes ───────────────────────────────────────────────────────────────────
-
-
 @dataclass(frozen=True)
 class _Source:
     """One list of rows a lane reads, with where it sits and whose sample it is."""
@@ -196,10 +188,6 @@ def _releasing_lists(lot: str) -> Callable[[dict, str], tuple[list[_Source], str
     return lists
 
 
-def _firdaria_flags(row: dict) -> list[str]:
-    return ["node_period"] if row.get("level_2_reason_code") == "node_period_not_subdivided" else []
-
-
 def _releasing_flags(row: dict) -> list[str]:
     return [
         flag for flag, held in (
@@ -222,7 +210,9 @@ def _firdaria_lane(level: int) -> PeriodLane:
         label_kind="body",
         label_field="level_1_lord" if level == 1 else "level_2_partner", lord_field=None,
         end_field="end", detail_fields=_FIRDARIA_DETAIL[level], lists=plain_period_lists,
-        flags=_firdaria_flags,
+        flags=lambda row: (
+            ["node_period"] if row.get("level_2_reason_code") == "node_period_not_subdivided" else []
+        ),
     )
 
 
@@ -267,9 +257,6 @@ LANES: tuple[PeriodLane, ...] = (
     _decennials_lane(1), _decennials_lane(2),
 )
 LANE_IDS: tuple[str, ...] = (PROFECTION_LANE_ID, *(lane.lane_id for lane in LANES))
-
-
-# ── segments ────────────────────────────────────────────────────────────────
 
 
 def _boundary(
@@ -396,16 +383,13 @@ def _profection_segments(response: dict) -> tuple[list[dict], str, str]:
     return segments, basis, "annual_methods.annual_profection"
 
 
-# ── the timeline ────────────────────────────────────────────────────────────
-
-
 def _status(module: dict | None) -> tuple[str, str | None]:
     if module is None:
         return MODULE_NOT_REQUESTED, None
     return module["status"], module["reason_code"]
 
 
-def _within(jd: float | None, start: float | None, end: float | None) -> bool:
+def _jd_in_window(jd: float | None, start: float | None, end: float | None) -> bool:
     return jd is not None and start is not None and jd >= start and (end is None or jd < end)
 
 
@@ -454,10 +438,8 @@ def annual_timeline(response: dict) -> dict:
         unit = lane.unit
         if lane.unit_by_profile is not None and module is not None:
             unit = lane.unit_by_profile[module["profile"]]
-        # A month names its year's segment id even when this response did not
-        # compute the profection lane: a client that asked only for the months
-        # (and the level-2 periods) attaches them to the year an earlier
-        # response listed.
+        # A month names its year's segment id even without the profection lane,
+        # so a client can attach it to the year an earlier response listed.
         lanes.append(lane_entry(
             lane.lane_id, lane.technique, lane.level, lane.label_kind, unit,
             lane.parent_lane_id, module, built,
@@ -468,7 +450,7 @@ def annual_timeline(response: dict) -> dict:
         (
             (segment[_START_JD], order[lane["lane_id"]], lane["lane_id"], segment)
             for lane in lanes for segment in lane["segments"]
-            if _within(segment[_START_JD], start_jd, end_jd)
+            if _jd_in_window(segment[_START_JD], start_jd, end_jd)
         ),
         key=lambda item: item[:2],
     )
@@ -499,8 +481,6 @@ def annual_timeline(response: dict) -> dict:
 
 
 def project_annual_response(response: dict[str, Any], projection: str) -> dict[str, Any]:
-    """Derive the requested view from the one detailed annual response."""
-
     if projection == "detailed":
         return response
     if projection == "page":
@@ -516,8 +496,7 @@ def project_annual_response(response: dict[str, Any], projection: str) -> dict[s
             "projection": {
                 "name": "page",
                 "derived_from": "detailed",
-                # The rule, not the list: the kept paths are
-                # ANNUAL_PAGE_KEPT_PATHS, printed in the output contract.
+                # The rule, not the list (ANNUAL_PAGE_KEPT_PATHS, in the output contract).
                 "kept": "module_heads_and_the_annual_timeline",
                 "verification_detail": "projection=detailed",
             },

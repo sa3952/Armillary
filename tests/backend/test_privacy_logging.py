@@ -9,24 +9,31 @@ from __future__ import annotations
 
 import asyncio
 import builtins
-from contextlib import contextmanager
+import functools
+import hashlib
 import io
 import json
 import math
 import os
 from pathlib import Path
+import sqlite3
 import subprocess
 import sys
-import time
-from types import SimpleNamespace
-from urllib.error import URLError
 
 from fastapi.testclient import TestClient
 import pytest
 import swisseph as swe
+
+from app import main as app_main, privacy_logging, request_limits
+from app.main import create_app
+from app.privacy_logging import ALLOWED_EVENT_FIELDS, PrivacyBoundaryMiddleware, build_request_event
+from app.refusals import REFUSALS
+from app.request_limits import MAX_HOSTED_HEADER_BYTES, RequestCapacityBoundary
+from app.settings import AppSettings
+from scripts.verification.verify_container_runtime import _worst_options_payload
 from tests.backend import http_request as _request
 from tests.backend import minimal_chart_payload
-from tests.backend import unused_local_port as _unused_local_port
+from tests.backend import real_uvicorn_probe as _real_uvicorn_probe
 from tests.backend.privacy_event_oracle import assert_events_hold_no
 
 
@@ -51,9 +58,13 @@ def _payload() -> dict:
     )
 
 
-def _event(**overrides) -> dict:
-    from app.privacy_logging import build_request_event
+def _recorder() -> tuple[list[dict], object]:
+    """A list and an event emitter that appends to it."""
+    events: list[dict] = []
+    return events, lambda event: events.append(event) or True
 
+
+def _event(**overrides) -> dict:
     return build_request_event(**{
         "request_id": "0123456789abcdef0123456789abcdef", "method": "POST",
         "path": "/api/chart", "status_code": 200, "duration_ms": 10.0,
@@ -78,59 +89,10 @@ def _run(middleware, scope=None, send=_ignore_send) -> None:
     asyncio.run(middleware(scope or {**HEALTH_SCOPE, "headers": []}, _empty_request, send))
 
 
-@contextmanager
-def _real_uvicorn_probe(label: str, *setup: str, command: list[str] | None = None):
-    port = _unused_local_port()
-    if command is None:
-        script = "\n".join((
-            "import uvicorn",
-            *setup,
-            f"uvicorn.run(main.app, host='127.0.0.1', port={port}, access_log=False, http='h11')",
-        ))
-        command = [sys.executable, "-c", script]
-    else:
-        command = [*command, "--port", str(port)]
-    process = subprocess.Popen(
-        command, cwd=BACKEND_ROOT,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-    )
-    probe = SimpleNamespace(base_url=f"http://127.0.0.1:{port}", output="")
-    try:
-        deadline = time.monotonic() + 20
-        while time.monotonic() < deadline:
-            if process.poll() is not None:
-                raise AssertionError(f"{label} server stopped early:\n" + process.stdout.read())
-            try:
-                if _request(probe.base_url + "/api/health")[0] == 200:
-                    break
-            except URLError:
-                pass
-            time.sleep(0.05)
-        else:
-            raise AssertionError(f"{label} server startup timed out")
-        yield probe
-    finally:
-        if process.poll() is None:
-            process.terminate()
-            try:
-                process.wait(timeout=8)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait(timeout=5)
-        probe.output = process.stdout.read()
-
-
 def test_structured_event_schema_is_closed_and_discards_attacker_controlled_text():
-    from app.privacy_logging import ALLOWED_EVENT_FIELDS, build_request_event
-
-    event = build_request_event(
-        request_id=f"server-generated-{CANARY_TEXT}",
-        method=f"POST\r\n{CANARY_TEXT}",
-        path=f"/attacker/{CANARY_TEXT}",
-        status_code=422,
-        duration_ms=731.0,
-        content_length=f"invalid-{CANARY_TEXT}",
-        error_code="request_rejected",
+    event = _event(
+        request_id=f"server-generated-{CANARY_TEXT}", method=f"POST\r\n{CANARY_TEXT}", path=f"/attacker/{CANARY_TEXT}",
+        status_code=422, duration_ms=731.0, content_length=f"invalid-{CANARY_TEXT}", error_code="request_rejected",
     )
     encoded = json.dumps(event, ensure_ascii=False)
 
@@ -147,25 +109,23 @@ def test_structured_event_schema_is_closed_and_discards_attacker_controlled_text
     ):
         assert forbidden_field not in event
     # An error code outside the closed vocabulary is reduced, never echoed.
-    unfamiliar = build_request_event(
-        request_id="r", method="POST", path="/api/chart", status_code=422, duration_ms=1.0,
-        content_length="10", error_code=f"attacker-{CANARY_TEXT}",
+    unfamiliar = _event(
+        request_id="r", status_code=422, duration_ms=1.0, content_length="10", error_code=f"attacker-{CANARY_TEXT}",
     )
     assert unfamiliar["error_code"] == "unclassified"
     assert CANARY_TEXT not in json.dumps(unfamiliar, ensure_ascii=False)
 
-    # Place search is logged under its fixed route label, never with the query.
-    place = _event(path="/api/places/search", content_length="72")
-    assert place["route"] == "/api/places/search"
-    assert "query" not in place
-    # So is the time-conversion helper, never with the birth time it was asked about.
-    conversion = _event(path="/api/time/convert", content_length="120")
-    assert conversion["route"] == "/api/time/convert"
-    assert "datetime" not in conversion and "timezone" not in conversion
-    # The annual route has its own label, not the page fetches' bucket.
-    annual = _event(path="/api/chart/annual", content_length="300")
-    assert annual["route"] == "/api/chart/annual"
-    assert "annual" not in annual and "datetime" not in annual
+    # Place search is logged under its fixed route label, never with the query;
+    # so is the time-conversion helper, never with the birth time it was asked
+    # about; the annual route has its own label, not the page fetches' bucket.
+    for path, content_length, absent in (
+        ("/api/places/search", "72", {"query"}),
+        ("/api/time/convert", "120", {"datetime", "timezone"}),
+        ("/api/chart/annual", "300", {"annual", "datetime"}),
+    ):
+        labelled = _event(path=path, content_length=content_length)
+        assert labelled["route"] == path
+        assert not absent & set(labelled), path
 
 
 @pytest.mark.parametrize("enabled", (True, False))
@@ -175,14 +135,8 @@ def test_the_annual_route_is_logged_under_its_own_label_with_or_without_its_flag
     unknown-path refusal the same path gets with the flag off are both events of
     the annual label, carrying no input; a child path the application never
     declares stays unmatched."""
-    from app.main import create_app
-    from app.settings import AppSettings
-
-    events: list[dict] = []
-    application = create_app(
-        AppSettings(enable_annual_route=enabled),
-        event_emitter=lambda event: events.append(event) or True,
-    )
+    events, emitter = _recorder()
+    application = create_app(AppSettings(enable_annual_route=enabled), event_emitter=emitter)
     payload = minimal_chart_payload(year=1987, minute=41)
     payload["annual"] = {
         "target_kind": "completed_years", "target_value": 3, "include_solar_return_chart": True,
@@ -206,14 +160,14 @@ def test_the_annual_route_is_logged_under_its_own_label_with_or_without_its_flag
 def test_duration_bucket_rejects_non_finite_values():
     for duration, bucket in (
         (math.nan, "invalid"), (math.inf, "invalid"), (-math.inf, "invalid"),
+        (0.0, "lt_10ms"), (9.9, "lt_10ms"), (10.0, "10_to_49ms"), (49.9, "10_to_49ms"),
+        (50.0, "50_to_249ms"), (249.9, "50_to_249ms"), (250.0, "250_to_999ms"),
         (999.9, "250_to_999ms"), (1_000.0, "gte_1000ms"),
     ):
         assert _event(duration_ms=duration)["duration_bucket"] == bucket, duration
 
 
 def test_completion_event_failures_do_not_escape_the_asgi_boundary(monkeypatch):
-    from app import privacy_logging
-
     class CompletionProbe(BaseException):
         pass
 
@@ -226,18 +180,15 @@ def test_completion_event_failures_do_not_escape_the_asgi_boundary(monkeypatch):
     async def send(message):
         sent.append(message)
 
-    _run(privacy_logging.PrivacyBoundaryMiddleware(_no_content_app), send=send)
+    _run(PrivacyBoundaryMiddleware(_no_content_app), send=send)
     assert sent[0]["status"] == 204
 
 
 def test_capacity_rejection_stays_inside_headers_and_telemetry_boundary():
-    from app.privacy_logging import PrivacyBoundaryMiddleware
-    from app.request_limits import RequestCapacityBoundary
-
     async def exercise():
         release, all_entered = asyncio.Event(), asyncio.Event()
         entered = 0
-        events: list[dict] = []
+        events, emitter = _recorder()
 
         async def held_app(_scope, _receive, send):
             nonlocal entered
@@ -247,10 +198,7 @@ def test_capacity_rejection_stays_inside_headers_and_telemetry_boundary():
             await release.wait()
             await _no_content_app(_scope, _receive, send)
 
-        boundary = PrivacyBoundaryMiddleware(
-            RequestCapacityBoundary(held_app, max_concurrent=2),
-            event_emitter=lambda event: events.append(event) or True,
-        )
+        boundary = PrivacyBoundaryMiddleware(RequestCapacityBoundary(held_app, max_concurrent=2), event_emitter=emitter)
 
         async def call():
             messages = []
@@ -283,8 +231,6 @@ def test_capacity_rejection_stays_inside_headers_and_telemetry_boundary():
 
 
 def test_boundary_reason_producer_and_privacy_consumer_are_closed():
-    from app import privacy_logging, request_limits
-
     for reason in sorted(request_limits.BOUNDARY_REASON_CODES):
         scope = {"type": "http", "state": {}}
         request_limits._mark_boundary_reason(scope, reason)
@@ -325,15 +271,8 @@ def test_boundary_reason_producer_and_privacy_consumer_are_closed():
 def test_each_request_rejection_reaches_telemetry_under_its_own_code():
     """Through the real application, the wire code and the event code are the
     same closed value for every in-process rejection, and no two share one."""
-    from app.main import create_app
-    from app.request_limits import MAX_HOSTED_HEADER_BYTES
-    from app.settings import AppSettings
-
-    events: list[dict] = []
-    application = create_app(
-        AppSettings(expected_host="armillary.test"),
-        event_emitter=lambda event: events.append(event) or True,
-    )
+    events, emitter = _recorder()
+    application = create_app(AppSettings(expected_host="armillary.test"), event_emitter=emitter)
     json_type = (b"content-type", b"application/json")
 
     def headers(*extra, body=b"", host=b"armillary.test", content_type=json_type):
@@ -402,8 +341,6 @@ def test_each_request_rejection_reaches_telemetry_under_its_own_code():
 
 
 def test_hostile_scope_header_iterator_is_reduced_without_escaping():
-    from app import privacy_logging
-
     class HeaderProbe(BaseException):
         pass
 
@@ -411,17 +348,13 @@ def test_hostile_scope_header_iterator_is_reduced_without_escaping():
         def __iter__(self):
             raise HeaderProbe("header-iterator-canary")
 
-    captured_events = []
-    middleware = privacy_logging.PrivacyBoundaryMiddleware(
-        _no_content_app, event_emitter=lambda event: captured_events.append(event) or True,
-    )
+    captured_events, emitter = _recorder()
+    middleware = PrivacyBoundaryMiddleware(_no_content_app, event_emitter=emitter)
     _run(middleware, {**HEALTH_SCOPE, "headers": HostileHeaders()})
     assert captured_events[-1]["request_size_bucket"] == "absent"
 
 
 def test_process_control_base_exceptions_remain_propagating():
-    from app import privacy_logging
-
     class PrivacyProbe(BaseException):
         pass
 
@@ -444,8 +377,6 @@ def test_process_control_base_exceptions_remain_propagating():
     ids=["app_cancelled", "app_cancelled_group", "event_emitter_cancelled"],
 )
 def test_process_control_exceptions_propagate_through_middleware(source, control_error):
-    from app import privacy_logging
-
     captured_events = []
 
     async def failing_app(_scope, _receive, _send):
@@ -457,11 +388,8 @@ def test_process_control_exceptions_propagate_through_middleware(source, control
         captured_events.append(event)
         return True
 
-    middleware = privacy_logging.PrivacyBoundaryMiddleware(
-        failing_app if source == "app" else _no_content_app, event_emitter=emitter,
-    )
     with pytest.raises(BaseException) as captured:
-        _run(middleware)
+        _run(PrivacyBoundaryMiddleware(failing_app if source == "app" else _no_content_app, event_emitter=emitter))
 
     if isinstance(control_error, BaseExceptionGroup):
         assert privacy_logging._is_process_control_exception(captured.value)
@@ -474,21 +402,17 @@ def test_process_control_exceptions_propagate_through_middleware(source, control
 
 
 def test_mixed_exception_group_propagates_only_process_control_subgroup():
-    from app import privacy_logging
-
     class PrivacyProbe(BaseException):
         pass
 
     sensitive_canary = "MIXED_BASE_EXCEPTION_PRIVACY_CANARY"
-    mixed_error = BaseExceptionGroup(
-        "mixed task group", [asyncio.CancelledError(), PrivacyProbe(sensitive_canary)],
-    )
+    mixed_error = BaseExceptionGroup("mixed task group", [asyncio.CancelledError(), PrivacyProbe(sensitive_canary)])
 
     async def app(_scope, _receive, _send):
         raise mixed_error
 
     with pytest.raises(BaseExceptionGroup) as captured:
-        _run(privacy_logging.PrivacyBoundaryMiddleware(app))
+        _run(PrivacyBoundaryMiddleware(app))
 
     assert privacy_logging._is_process_control_exception(captured.value)
     assert sensitive_canary not in repr(captured.value)
@@ -498,8 +422,6 @@ def test_mixed_exception_group_propagates_only_process_control_subgroup():
 def test_emitter_refuses_unsafe_events_and_survives_a_failing_sink(capsys, monkeypatch):
     """The emitter is the last gate before the log: every field's closed domain,
     the exact field set, and a failing sink all end in `False`, never a leak."""
-    from app import privacy_logging
-
     event = _event()
     assert privacy_logging.emit_security_event(dict(event)) is True
     capsys.readouterr()
@@ -524,12 +446,8 @@ def test_emitter_refuses_unsafe_events_and_survives_a_failing_sink(capsys, monke
 
 
 def test_caller_supplied_request_id_is_ignored(monkeypatch):
-    from app import main as app_main
-
-    captured_events: list[dict] = []
-    monkeypatch.setattr(
-        app_main, "emit_security_event", lambda event: captured_events.append(event) or True,
-    )
+    captured_events, emitter = _recorder()
+    monkeypatch.setattr(app_main, "emit_security_event", emitter)
 
     with TestClient(app_main.app) as client:
         response = client.get("/api/health", headers={"X-Request-ID": CANARY_TEXT})
@@ -558,11 +476,6 @@ def test_caller_supplied_request_id_is_ignored(monkeypatch):
 def test_public_cache_policy_separates_api_html_and_versioned_assets():
     """Only the exact content digest of the served bytes earns the one-year
     immutable entry; any other `?v=` (or other query) is not stored at all."""
-    import hashlib
-
-    from app.main import create_app
-    from app.settings import AppSettings
-
     # Independent oracle for the `?v=` token: SHA-256 prefix of the served bytes.
     page_css, tokens_css = (
         hashlib.sha256((ROOT / "frontend/zh-TW" / name).read_bytes()).hexdigest()[:16]
@@ -601,9 +514,6 @@ def test_public_cache_policy_separates_api_html_and_versioned_assets():
 
 def _all_modules_payload(precision: str) -> dict:
     """Every module on, with the widest option values the container gate uses."""
-
-    from scripts.verification.verify_container_runtime import _worst_options_payload
-
     payload = _payload()
     payload["birth_time_precision"] = precision
     if precision == "date_only":
@@ -618,18 +528,21 @@ def _raise_unexpected(_request):
     raise RuntimeError(CANARY_TEXT)
 
 
+def _convert(zone: str) -> dict:
+    return {"datetime": {"year": 1974, "month": 9, "day": 30, "hour": 23, "minute": 30},
+            "timezone": {"mode": "iana", "iana_name": zone}}
+
+
 # The published privacy pages promise that a write during request handling fails
 # a test, on every route and outcome class.  (method, path, body, compute
 # override, expected status)
 _WRITE_GUARD_CASES = {
     "chart_default": ("POST", "/api/chart", _payload, None, 200),
-    "chart_all_modules_exact": ("POST", "/api/chart", lambda: _all_modules_payload("exact"), None, 200),
-    "chart_all_modules_approximate_hour": (
-        "POST", "/api/chart", lambda: _all_modules_payload("approximate_hour"), None, 200,
-    ),
-    "chart_all_modules_date_only": (
-        "POST", "/api/chart", lambda: _all_modules_payload("date_only"), None, 200,
-    ),
+    **{
+        f"chart_all_modules_{precision}": ("POST", "/api/chart", functools.partial(_all_modules_payload, precision),
+                                           None, 200)
+        for precision in ("exact", "approximate_hour", "date_only")
+    },
     "chart_detailed_projection": ("POST", "/api/chart?projection=detailed", _payload, None, 200),
     "chart_validation_refusal": (
         "POST", "/api/chart", lambda: {**_payload(), "location": {"latitude": 999}}, None, 422,
@@ -647,18 +560,8 @@ _WRITE_GUARD_CASES = {
     "chart_unexpected_error": ("POST", "/api/chart", _payload, _raise_unexpected, 500),
     "place_search": ("POST", "/api/places/search", {"query": "Tainan"}, None, 200),
     "place_search_refusal": ("POST", "/api/places/search", {"query": CANARY_TEXT * 10}, None, 422),
-    "time_convert": (
-        "POST", "/api/time/convert",
-        {"datetime": {"year": 1974, "month": 9, "day": 30, "hour": 23, "minute": 30},
-         "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"}},
-        None, 200,
-    ),
-    "time_convert_refusal": (
-        "POST", "/api/time/convert",
-        {"datetime": {"year": 1974, "month": 9, "day": 30, "hour": 23, "minute": 30},
-         "timezone": {"mode": "iana", "iana_name": "Europe/London"}},
-        None, 422,
-    ),
+    "time_convert": ("POST", "/api/time/convert", _convert("Asia/Taipei"), None, 200),
+    "time_convert_refusal": ("POST", "/api/time/convert", _convert("Europe/London"), None, 422),
     "health": ("GET", "/api/health", None, None, 200),
     "static_page": ("GET", "/zh-TW/calculate", None, None, 200),
     "static_asset": ("GET", "/zh-TW/calculate.js", None, None, 200),
@@ -668,11 +571,6 @@ _WRITE_GUARD_CASES = {
 
 @pytest.mark.parametrize("case", sorted(_WRITE_GUARD_CASES))
 def test_request_handling_does_not_use_python_file_write_apis(monkeypatch, case):
-    import sqlite3
-
-    from app import main as app_main
-    from app.settings import AppSettings
-
     method, path, body, compute_override, expected_status = _WRITE_GUARD_CASES[case]
     if callable(body):
         body = body()
@@ -715,13 +613,9 @@ def test_request_handling_does_not_use_python_file_write_apis(monkeypatch, case)
         monkeypatch.setattr(os, "open", guarded_os_open)
         monkeypatch.setattr(sqlite3, "connect", guarded_sqlite_connect)
         if isinstance(body, bytes):
-            response = client.request(
-                method, path, content=body, headers={"Content-Type": "application/json"},
-            )
-        elif body is None:
-            response = client.request(method, path)
+            response = client.request(method, path, content=body, headers={"Content-Type": "application/json"})
         else:
-            response = client.request(method, path, json=body)
+            response = client.request(method, path, **({} if body is None else {"json": body}))
 
     assert observed_writes == [], case
     # Each case reached the outcome it names, so the guard watched that path.
@@ -743,21 +637,14 @@ def test_backend_has_no_third_party_telemetry_or_persistence_dependency():
     [(RuntimeError, "internal_server_error"), (swe.Error, "swiss_ephemeris_error")],
     ids=["unexpected_exception", "swisseph_error"],
 )
-def test_chart_failure_returns_closed_refusal_and_logs_no_exception_text(
-    monkeypatch, error_type, code,
-):
-    from app import main as app_main, privacy_logging
-    from app.refusals import REFUSALS
-
-    captured_events: list[dict] = []
+def test_chart_failure_returns_closed_refusal_and_logs_no_exception_text(monkeypatch, error_type, code):
+    captured_events, emitter = _recorder()
 
     def fail_with_sensitive_exception(_request):
         raise error_type(f"{CANARY_TEXT}:{CANARY_LATITUDE}:{CANARY_LONGITUDE}")
 
     monkeypatch.setattr(app_main, "_compute_chart_locked", fail_with_sensitive_exception)
-    monkeypatch.setattr(
-        app_main, "emit_security_event", lambda event: captured_events.append(event) or True,
-    )
+    monkeypatch.setattr(app_main, "emit_security_event", emitter)
 
     with TestClient(app_main.app, raise_server_exceptions=False) as client:
         response = client.post("/api/chart", json=_payload())
@@ -765,9 +652,7 @@ def test_chart_failure_returns_closed_refusal_and_logs_no_exception_text(
     assert response.status_code == 500
     assert response.json() == {"detail": {"code": code, "message": REFUSALS[code].message}}
     if code == "internal_server_error":
-        assert REFUSALS[code].message == (
-            "伺服器無法完成本次計算。請重新嘗試；若持續發生，請回報 request ID。"
-        )
+        assert REFUSALS[code].message == "伺服器無法完成本次計算。請重新嘗試；若持續發生，請回報 request ID。"
     for canary in (CANARY_TEXT, str(CANARY_LATITUDE), str(CANARY_LONGITUDE)):
         assert canary not in response.text
     # The user is told which failure it was; the event keeps its category.
@@ -825,13 +710,10 @@ def test_real_uvicorn_unexpected_errors_emit_no_traceback_or_canary():
     assert "RuntimeError" not in output.replace('"failure_class":"RuntimeError"', "")
 
     marker = "PRIVACY_EVENT "
-    records = [
-        json.loads(line.split(marker, 1)[1]) for line in output.splitlines() if marker in line
-    ]
+    records = [json.loads(line.split(marker, 1)[1]) for line in output.splitlines() if marker in line]
     unmatched_failures = [
         record for record in records
-        if record["route"] == "frontend_or_unmatched"
-        and record["error_code"] == "internal_server_error"
+        if record["route"] == "frontend_or_unmatched" and record["error_code"] == "internal_server_error"
     ]
     # Base exception (500) plus the two post-start failures (status already 200).
     assert sorted(record["status_code"] for record in unmatched_failures) == [200, 200, 500]
@@ -869,10 +751,7 @@ def test_real_uvicorn_started_without_access_log_flag_logs_no_url(launch):
     `--no-access-log` (or passes access_log=True) still writes no URL."""
     query_canary = "PRIVACY_ACCESS_LOG_CANARY_6C_734991"
     if launch == "cli_without_flag":
-        command = [
-            sys.executable, "-m", "uvicorn", "app.main:app",
-            "--host", "127.0.0.1", "--http", "h11",
-        ]
+        command = [sys.executable, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--http", "h11"]
     else:
         command = [sys.executable, "-c", "\n".join((
             "import sys, uvicorn",
@@ -881,13 +760,8 @@ def test_real_uvicorn_started_without_access_log_flag_logs_no_url(launch):
             " access_log=True, http='h11')",
         ))]
     with _real_uvicorn_probe(f"access-log-{launch}", command=command) as probe:
-        assert _request(
-            probe.base_url + f"/zh-TW/calculate?birth={query_canary}"
-        )[0] == 200
-        status, _body = _request(
-            probe.base_url + f"/api/chart?dob={query_canary}",
-            json.dumps(_payload()).encode(),
-        )
+        assert _request(probe.base_url + f"/zh-TW/calculate?birth={query_canary}")[0] == 200
+        status, _body = _request(probe.base_url + f"/api/chart?dob={query_canary}", json.dumps(_payload()).encode())
         assert status == 422
     output = probe.output
     assert query_canary not in output
@@ -917,3 +791,53 @@ def test_fault_handler_dump_names_frames_but_carries_no_values():
     assert "chart_frame" in output and "line 4" in output
     for canary in (CANARY_TEXT, str(CANARY_LATITUDE), str(CANARY_LONGITUDE)):
         assert canary not in output
+
+
+def test_real_uvicorn_solar_return_place_reaches_no_log_on_any_path(monkeypatch):
+    """Privacy 1.2.0: the solar return's other place 「不保存、不寫進日誌」.
+
+    One real server, the annual route on: a computed answer (the place is
+    echoed in the response's calculation trace, as the policy says), a 422
+    on the place itself, a 500 raised from inside the solar return chart with
+    the place in the exception text, and a query string naming the place.
+    The server's whole output holds none of it."""
+    monkeypatch.setenv("ARMILLARY_ENABLE_ANNUAL_ROUTE", "1")
+    label = "PRIVACY_SR_PLACE_CANARY_6C_734991"
+    latitude, longitude, failing_latitude = 47.123456, 8.654321, 47.111111
+
+    def payload(lat: float) -> bytes:
+        body = minimal_chart_payload(year=1987, minute=41)
+        body["annual"] = {
+            "target_kind": "completed_years", "target_value": 3, "include_solar_return_chart": True,
+            "solar_return_location": {"latitude": lat, "longitude": longitude, "place_label": label},
+        }
+        return json.dumps(body).encode()
+
+    with _real_uvicorn_probe(
+        "solar-return-place",
+        "from app import main",
+        "from app import annual_pipeline",
+        "computed = annual_pipeline.compute_chart_response",
+        "def fail_at_canary(request, **kwargs):",
+        f"    if request.location.latitude == {failing_latitude}:",
+        "        raise RuntimeError(f'solar return at {request.location!r}')",
+        "    return computed(request, **kwargs)",
+        "annual_pipeline.compute_chart_response = fail_at_canary",
+    ) as probe:
+        status, body = _request(probe.base_url + "/api/chart/annual", payload(latitude))
+        assert status == 200
+        answer = json.loads(body)["solar_return_chart"]
+        assert answer["status"] == "computed"
+        assert answer["location"]["source"] == "solar_return_location"
+        assert answer["location"]["place_label"] == label
+        status, body = _request(probe.base_url + "/api/chart/annual", payload(91.123456))
+        assert status == 422 and label.encode() not in body and b"91.12" not in body
+        status, body = _request(probe.base_url + "/api/chart/annual", payload(failing_latitude))
+        assert status == 500 and json.loads(body)["detail"]["code"] == "internal_server_error"
+        assert label.encode() not in body and b"47.11" not in body
+        status, _body = _request(probe.base_url + f"/api/chart/annual?sr={label}", payload(latitude))
+        assert status == 422
+    output = probe.output
+    assert '"route":"/api/chart/annual"' in output
+    for canary in (label, "47.12", "8.65", "91.12", "47.11", "Traceback"):
+        assert canary not in output, canary

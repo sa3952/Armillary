@@ -19,15 +19,13 @@ from fractions import Fraction
 from typing import Any
 
 from . import _fx
-from ._common import SIGNS, TAIPEI, backend_on_path, product_charts
+from ._common import PLANETS, SIGNS, TAIPEI, backend_on_path, product_charts
 
 
 FRAGMENT = "blog-dodecatemoria"
 TWELVE = "twelvefold_from_sign_start_v1"
 THIRTEEN = "thirteenfold_from_sign_start_v1"
 RULES = (TWELVE, THIRTEEN)
-LORD = {"saturn": "土星", "jupiter": "木星", "mars": "火星", "sun": "太陽", "venus": "金星", "mercury": "水星",
-        "moon": "月亮"}
 CATEGORY = {"classical_planet": "行星", "angle": "軸點", "lot": "阿拉伯點"}
 
 # The books' examples: (who, where, the point, its longitude, the rule the book
@@ -222,7 +220,7 @@ def _walk_steps(twelfth_part, lords: dict[str, str]) -> list[dict]:
         step: dict[str, Any] = {"d": d, "point": float(point)}
         for rule, multiplier, _, _ in RULE_LABELS:
             value = _checked(twelfth_part, point, rule, multiplier)
-            step[rule] = {"longitude": value, "lord": LORD[lords[SIGN_KEYS[int(value // 30)]]]}
+            step[rule] = {"longitude": value, "lord": PLANETS[lords[SIGN_KEYS[int(value // 30)]]]}
         step["same"] = int(step[TWELVE]["longitude"] // 30) == int(step[THIRTEEN]["longitude"] // 30)
         if (step[THIRTEEN]["longitude"] - step[TWELVE]["longitude"] - d) % 360 > 1e-9:
             raise RuntimeError(f"step {d}: times 13 is not times 12 plus the degree")
@@ -319,10 +317,7 @@ def _wheel_table(steps: list[dict], bound: _fx.Bound) -> str:
                         for rule in RULES)
         rows.append(f'<tr><th scope="row">{bound.num(f"{SIGNS[WALK_SIGN]} {step["d"]}°")}</th>{cells}'
                     f'<td>{"同一個" if step["same"] else "不同"}</td></tr>')
-    return ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">點</th>'
-            f'<th scope="col">{bound.label("乘以 12")}（守護行星）</th><th scope="col">{bound.label("乘以 13")}（守護行星）</th>'
-            f'<th scope="col">星座</th></tr></thead><tbody>{"".join(rows)}</tbody></table></div></details>')
+    return _fx.data_table(("點", f"{bound.label('乘以 12')}（守護行星）", f"{bound.label('乘以 13')}（守護行星）", "星座"), rows)
 
 
 def _ruler(layout: str, fid: str, pair: dict, bound: _fx.Bound) -> str:
@@ -344,7 +339,7 @@ def _ruler(layout: str, fid: str, pair: dict, bound: _fx.Bound) -> str:
     jumped = bound.num(f"約 {round((after['longitude'] - before['longitude']) % 360)}°")
     times = (bound.num("14:30"), bound.num("14:34"))
     boundary = at(RULER_START + 30)
-    lords = (LORD[before["domicile_lord"]], LORD[after["domicile_lord"]])
+    lords = (PLANETS[before["domicile_lord"]], PLANETS[after["domicile_lord"]])
     if int(before["longitude"] // 30) != 6 or int(after["longitude"] // 30) != 7:
         raise RuntimeError("figure 3: the twelfth-part no longer crosses from Libra into Scorpio")
     if wide:
@@ -411,11 +406,8 @@ def _ruler_table(pair: dict, bound: _fx.Bound) -> str:
         asc = pair[minute]["asc"]
         rows.append(f'<tr><th scope="row">{bound.num(f"14:{minute}")}</th>'
                     f'<td class="n">{bound.num(_minutes(asc["point_longitude"]))}</td>'
-                    f'<td class="n">{bound.num(_minutes(asc["longitude"]))}</td><td>{LORD[asc["domicile_lord"]]}</td></tr>')
-    return ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">出生時間</th><th scope="col">上升點</th>'
-            f'<th scope="col">十二分部（{bound.label("乘以 12")}）</th><th scope="col">守護行星</th></tr></thead>'
-            f'<tbody>{"".join(rows)}</tbody></table></div></details>')
+                    f'<td class="n">{bound.num(_minutes(asc["longitude"]))}</td><td>{PLANETS[asc["domicile_lord"]]}</td></tr>')
+    return _fx.data_table(("出生時間", "上升點", f"十二分部（{bound.label('乘以 12')}）", "守護行星"), rows)
 
 
 def _figures(twelfth_part, lords: dict[str, str], pair: dict) -> dict[str, str]:
@@ -426,16 +418,16 @@ def _figures(twelfth_part, lords: dict[str, str], pair: dict) -> dict[str, str]:
     twelve_part = walk_bound.num(_arc_text(Fraction(30, 12)))
     thirteen_part = walk_bound.num(_arc_text(Fraction(30, 13)))
     walk = _fx.figure(
-        fid="fig-sign-walk", hero=True,
+        fid="fig-sign-walk",
+        hero=True,
         title="一個點從牡羊座 0° 走到 30° 時，兩種算法的十二分部各落在哪個星座",
         caption=(f"<b>{walk_bound.label('圖 1')}</b>一個點從牡羊座 {walk_bound.scale('0°')} 走到 {walk_bound.scale('30°')} 時，"
                  f"它的十二分部落在哪個星座。上排乘以 {walk_bound.label('12')}，點每走 {twelve_part} 換一個星座，"
                  f"從牡羊一路數到雙魚；下排乘以 {walk_bound.label('13')}，每約 {thirteen_part} 換一個，數完雙魚，"
                  f"最後一小段又回到牡羊。最下面一條的交叉排線標出兩種算法落在不同星座的度數，合計 "
                  f"{walk_bound.num(f'{30 - int(agree)}°')}，一半{_cite(walk_bound, 9)}。"),
-        wide=_walk("fx-wide", "fig-sign-walk", cells, differ, walk_bound),
-        narrow=_walk("fx-narrow", "fig-sign-walk", cells, differ, walk_bound),
-        notes=[], idle="",
+        art=_fx.FigureArt.drawn(_walk, "fig-sign-walk", cells, differ, walk_bound),
+        bound=walk_bound,
     )
 
     steps = _walk_steps(twelfth_part, lords)
@@ -450,12 +442,18 @@ def _figures(twelfth_part, lords: dict[str, str], pair: dict) -> dict[str, str]:
                  f"兩者都從金牛的起點往後數。圓心旁的弧是乘以 13 比乘以 12 多走的那一段，正好等於點在星座內的度數，"
                  f"所以點越往後，兩者分得越開。預設停在 {wheel_bound.scale(f'{WALK_DEFAULT}°')}，接近上面例子裡太陽的 "
                  f"{wheel_bound.num(sun['point_sign_position'][1].split('.')[0] + '″')}{_cite(wheel_bound, 9)}。"),
-        wide=_wheel("fx-wide", "fig-two-rules", steps, wheel_bound),
-        narrow=_wheel("fx-narrow", "fig-two-rules", steps, wheel_bound),
-        notes=[_fx.Note(None, None, _wheel_sentence(step, wheel_bound), step=step["d"]) for step in steps],
-        idle="拖拉滑桿，選這個點在金牛座裡的度數。",
-        steps=WALK_STEPS, default_step=WALK_DEFAULT, scrub_label="點在金牛座裡的度數",
+        art=_fx.FigureArt.drawn(
+            _wheel, "fig-two-rules", steps, wheel_bound,
+            notes=[_fx.Note(None, None, _wheel_sentence(step, wheel_bound), step=step["d"]) for step in steps],
+            idle="拖拉滑桿，選這個點在金牛座裡的度數。",
+        ),
+        controls=_fx.FigureControls(
+            steps=WALK_STEPS,
+            default_step=WALK_DEFAULT,
+            scrub_label="點在金牛座裡的度數",
+        ),
         table=_wheel_table(steps, wheel_bound),
+        bound=wheel_bound,
     )
 
     ruler_bound = _fx.Bound()
@@ -469,15 +467,10 @@ def _figures(twelfth_part, lords: dict[str, str], pair: dict) -> dict[str, str]:
                  f"{ruler_bound.label('12')}），從{ruler_bound.num(_minutes(before['longitude']))} 跨進"
                  f"{ruler_bound.num(_minutes(after['longitude']))}。兩排用同一把尺，空心圓是 14:30，實心圓是 14:34，"
                  f"虛線連起同一個時刻的上升點與它的十二分部{_cite(ruler_bound, 9)}。"),
-        wide=_ruler("fx-wide", "fig-four-minutes", pair, ruler_bound),
-        narrow=_ruler("fx-narrow", "fig-four-minutes", pair, ruler_bound),
-        notes=[], idle="",
+        art=_fx.FigureArt.drawn(_ruler, "fig-four-minutes", pair, ruler_bound),
         table=_ruler_table(pair, ruler_bound),
+        bound=ruler_bound,
     )
-    for markup, bound in ((walk, walk_bound), (wheel, wheel_bound), (ruler, ruler_bound)):
-        found = _fx.problems(markup, bound)
-        if found:
-            raise RuntimeError("figure check: " + "; ".join(found))
     return {"fx-defs": _fx.defs(()), "sign-walk": walk, "two-rules": wheel, "four-minutes": ruler}
 
 
@@ -530,7 +523,7 @@ def _hour(post) -> tuple[str, dict]:
             position += "（這段時間內會換星座，取樣到：" + "、".join(SIGNS[i] for i in _zodiac_order(signs)) + "）"
         original = f"{SIGNS[point['point_sign_position'][0]]} {point['point_sign_position'][1]}"
         rows.append(f'          <tr><th scope="row">{name}</th><td>{CATEGORY[point["category"]]}</td>'
-                    f"<td>{original}</td><td>{position}</td><td>{LORD[point['domicile_lord']]}</td></tr>")
+                    f"<td>{original}</td><td>{position}</td><td>{PLANETS[point['domicile_lord']]}</td></tr>")
     return "\n".join(rows), {"many": many, "samples": sampled}
 
 

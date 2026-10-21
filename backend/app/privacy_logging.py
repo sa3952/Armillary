@@ -32,6 +32,7 @@ from .refusals import (
     ANNUAL_ROUTE,
     CHART_ROUTE,
     HEALTH_ROUTE,
+    READY_ROUTE,
     PLACE_SEARCH_ROUTE,
     REFUSALS,
     TIME_CONVERT_ROUTE,
@@ -70,14 +71,13 @@ _ALLOWED_METHODS: Final = frozenset({"GET", "POST", "HEAD", "OPTIONS"})
 # the label is the fixed path, never request text, and an unregistered probe of
 # it stays distinguishable from a page fetch.
 _ALLOWED_ROUTES: Final = frozenset({
-    ANNUAL_ROUTE, CHART_ROUTE, HEALTH_ROUTE, PLACE_SEARCH_ROUTE, TIME_CONVERT_ROUTE,
+    ANNUAL_ROUTE, CHART_ROUTE, HEALTH_ROUTE, PLACE_SEARCH_ROUTE, READY_ROUTE, TIME_CONVERT_ROUTE,
 })
-# A refusal whose occurrence is decided by the birth date, time or place says
-# something about the birth record: a skipped or repeated local hour, a place
-# that keeps two clocks, a time zone outside the helper's sources, a latitude
-# where the house system fails, an instant outside the ephemeris.  The user is
-# still answered with the exact code; the event keeps only its category, so the
-# log holds no attribute of the birth data.
+# A refusal decided by the birth date, time or place says something about the
+# birth record (a skipped or repeated hour, a two-clock place, a zone outside
+# the helper's sources, a latitude where the house system fails, an instant
+# outside the ephemeris).  The user gets the exact code; the event keeps only
+# the category, so the log holds no attribute of the birth data.
 TELEMETRY_CATEGORY: Final[Mapping[str, str]] = MappingProxyType({
     "nonexistent_local_time": "domain_refused",
     "ambiguous_local_time_choice_required": "domain_refused",
@@ -90,10 +90,9 @@ TELEMETRY_CATEGORY: Final[Mapping[str, str]] = MappingProxyType({
     "catalog_record_unknown": "domain_refused",
     "catalog_location_mismatch": "domain_refused",
 })
-# Every other refusal code is an event code as it is (the boundary reasons and
-# the remaining domain errors are refusal codes); the refusal table in
-# refusals.py is the owner, so a new refusal cannot reach a response while
-# telemetry reduces it to `unclassified`.  The rest are telemetry's own words.
+# Every other refusal code is an event code as it is, owned by refusals.py, so
+# a new refusal cannot reach a response while telemetry reduces it to
+# `unclassified`.  The rest are telemetry's own words.
 _ALLOWED_ERROR_CODES: Final = frozenset(
     {"request_rejected", "server_error", "unclassified"}
 ) | CLOSURE_REASON_CODES | (frozenset(REFUSALS) - frozenset(TELEMETRY_CATEGORY)) | frozenset(
@@ -159,26 +158,19 @@ _DOMAIN_FAILURE_CODES: Final = frozenset({
     "domain_failed",
     "place_catalog_unavailable",
 })
+# (exclusive upper bound in ms, label) for durations; (inclusive upper bound in
+# bytes, label) for request sizes; past the last bound the overflow label.
+_DURATION_BUCKETS: Final = ((10, "lt_10ms"), (50, "10_to_49ms"), (250, "50_to_249ms"),
+                            (1_000, "250_to_999ms"))
+_DURATION_OVERFLOW: Final = "gte_1000ms"
+_SIZE_BUCKETS: Final = ((1_024, "1_to_1024b"), (16_384, "1025_to_16384b"),
+                        (131_072, "16385_to_131072b"))
+_SIZE_OVERFLOW: Final = "gt_131072b"
 _ALLOWED_DURATION_BUCKETS: Final = frozenset(
-    {
-        "invalid",
-        "lt_10ms",
-        "10_to_49ms",
-        "50_to_249ms",
-        "250_to_999ms",
-        "gte_1000ms",
-    }
+    {"invalid", _DURATION_OVERFLOW, *(label for _bound, label in _DURATION_BUCKETS)}
 )
 _ALLOWED_SIZE_BUCKETS: Final = frozenset(
-    {
-        "absent",
-        "invalid",
-        "empty",
-        "1_to_1024b",
-        "1025_to_16384b",
-        "16385_to_131072b",
-        "gt_131072b",
-    }
+    {"absent", "invalid", "empty", _SIZE_OVERFLOW, *(label for _bound, label in _SIZE_BUCKETS)}
 )
 _ALLOWED_OUTCOMES: Final = frozenset({"success", "rejected", "error", "unknown"})
 _REQUEST_ID_PATTERN: Final = re.compile(r"^[0-9a-f]{32}$")
@@ -269,15 +261,7 @@ def _duration_bucket(value: object) -> str:
         or value < 0
     ):
         return "invalid"
-    if value < 10:
-        return "lt_10ms"
-    if value < 50:
-        return "10_to_49ms"
-    if value < 250:
-        return "50_to_249ms"
-    if value < 1_000:
-        return "250_to_999ms"
-    return "gte_1000ms"
+    return next((label for bound, label in _DURATION_BUCKETS if value < bound), _DURATION_OVERFLOW)
 
 
 def _request_size_bucket(value: object) -> str:
@@ -293,19 +277,12 @@ def _request_size_bucket(value: object) -> str:
         return "invalid"
     if size == 0:
         return "empty"
-    if size <= 1_024:
-        return "1_to_1024b"
-    if size <= 16_384:
-        return "1025_to_16384b"
-    if size <= 131_072:
-        return "16385_to_131072b"
-    return "gt_131072b"
+    return next((label for bound, label in _SIZE_BUCKETS if size <= bound), _SIZE_OVERFLOW)
 
 
 def _outcome(status_code: int, error_code: str | None) -> str:
-    # A response can fail after its HTTP status has already been sent.  Keep the
-    # wire status truthful while allowing telemetry to record the completed
-    # operation as an error.
+    # A response can fail after its status was sent: the wire status stays
+    # truthful while telemetry records the operation as an error.
     if error_code in CLOSURE_REASON_CODES:
         # The client left before a response existed: the service neither
         # refused nor failed it, and there is no status to classify.
@@ -497,20 +474,17 @@ def _cache_control(
     suffix = PurePosixPath(path).suffix.casefold()
     query = scope.get("query_string", b"")
     if query:
-        # A query on a page or asset address may carry birth data typed
-        # or linked by someone else (the reason the 308 drops it).  Only the
-        # one query this site writes itself — exactly `v=<content version of
-        # the bytes served here>`, byte for byte — may be stored; anything else
-        # is answered but never kept under that URL.
+        # A query may carry birth data typed or linked by someone else (why the
+        # 308 drops it).  Only the site's own `v=<content version of these
+        # bytes>`, byte for byte, may be stored; anything else is never kept.
         version = (
             asset_content_version(path)
             if asset_content_version is not None
             and suffix in _IMMUTABLE_STATIC_SUFFIXES
             else None
         )
-        # The year-long immutable entry is bound to the bytes, not to
-        # the presence of a key; a label, a stale or foreign digest, a second
-        # parameter, or an application with no version source never earns it.
+        # Immutable is bound to the bytes, not the key: a label, stale or
+        # foreign digest, second parameter, or no version source never earns it.
         if version is not None and query == b"v=" + version.encode("ascii"):
             return "public, max-age=31536000, immutable"
         return "no-store"
@@ -536,12 +510,7 @@ class PrivacyBoundaryMiddleware:
         self.cache_policy = cache_policy
         self.asset_content_version = asset_content_version
 
-    async def __call__(
-        self,
-        scope: Scope,
-        receive: Receive,
-        send: Send,
-    ) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
@@ -588,10 +557,8 @@ class PrivacyBoundaryMiddleware:
         try:
             await self.app(scope, receive, send_with_boundary)
             if not response_started and client_disconnected(scope):
-                # The request boundary stopped because the client had gone.
-                # No response is owed to a closed connection, and a
-                # synthesized 500 would count a client abort as a server
-                # fault.  The status stays 0: none was sent.
+                # The client had gone: no response is owed, and a synthesized
+                # 500 would count a client abort as a server fault.  Status 0.
                 error_code = CLIENT_DISCONNECTED
             elif not response_started:
                 error_code = "internal_server_error"
@@ -604,10 +571,9 @@ class PrivacyBoundaryMiddleware:
             # carry a birth time or a coordinate, the type cannot, and the
             # allowlist below reduces anything unfamiliar to `unclassified`.
             unexpected_failure = error
-            # Do not re-raise into ServerErrorMiddleware/Uvicorn: their default
-            # error logger includes exception text and tracebacks.  Before
-            # response start we can still replace the response with a stable
-            # generic 500.  Afterwards the HTTP status cannot be changed.
+            # Never re-raise into ServerErrorMiddleware/Uvicorn: their error
+            # logger writes exception text and tracebacks.  Before response
+            # start a generic 500 replaces the response; after, the status stays.
             error_code = "internal_server_error"
             if not response_started:
                 await send_generic_500()

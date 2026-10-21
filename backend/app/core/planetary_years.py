@@ -18,9 +18,9 @@ from __future__ import annotations
 
 from fractions import Fraction
 
-from .source_reading import SOURCE_READING_LEVELS
+from .dignity_tables import SEVEN_PLANETS
+from .source_reading import DOROTHEUS_BOOK_I_ONLINE, ORIGINAL_LANGUAGE_READ, SECONDARY_ONLY, TRANSLATION_READ, cited
 
-SEVEN_PLANETS = ("sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn")
 
 YEAR_KINDS = ("minor", "middle", "greater", "greatest")
 VERIFICATION_STATES = (
@@ -36,8 +36,6 @@ MINOR_YEARS: dict[str, int] = {
 GREATER_YEARS: dict[str, int] = {
     "saturn": 57, "jupiter": 79, "mars": 66, "sun": 120, "venus": 82, "mercury": 76, "moon": 108,
 }
-# No source has been checked for the greatest years, so no number is given:
-# the cell keeps its place and its state, and its value is null.
 GREATEST_YEARS: dict[str, None] = {planet: None for planet in SEVEN_PLANETS}
 MIDDLE_YEARS: dict[str, Fraction] = {
     planet: Fraction(MINOR_YEARS[planet] + GREATER_YEARS[planet], 2) for planet in SEVEN_PLANETS
@@ -53,54 +51,35 @@ _SOURCES: dict[str, dict] = {
     "minor": {
         "verification": ATTESTED,
         "sources": [
-            {
-                "citation": "Vettius Valens, Anthologies IV.1 and IV.30",
-                "says": (
-                    "the quarter periods are a quarter of these least periods (Saturn 7 1/2, "
-                    "Jupiter 3, Mars 3 3/4, Venus 2, Mercury 5, Sun 4 3/4, Moon 6 1/4)"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Riley's English translation via the public re-typeset janegca/latex-valens",
-            },
-            {
-                "citation": "Firmicus Maternus, Mathesis II.27 (Kroll-Skutsch Teubner)",
-                "says": (
-                    "the months of the decennial sub-periods, Sun 19, Moon 25, Saturn 30, "
-                    "Jupiter 12, Mars 15, Venus 8, Mercury 20"
-                ),
-                "reading": SOURCE_READING_LEVELS[0],
-                "read_at": "the Latin text of the Kroll-Skutsch Teubner edition, LacusCurtius",
-            },
-            {
-                "citation": "Dorotheus, Carmen Astrologicum I.23 (Pingree 1976)",
-                "says": (
-                    "the same years for a benefic on an angle; the Moon in a masculine sign "
-                    "only 25 months"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Pingree's English translation (1976); the Arabic not checked",
-            },
+            cited("Vettius Valens, Anthologies IV.1 and IV.30",
+                  ("the quarter periods are a quarter of these least periods (Saturn 7 1/2, "
+                   "Jupiter 3, Mars 3 3/4, Venus 2, Mercury 5, Sun 4 3/4, Moon 6 1/4)"),
+                  TRANSLATION_READ,
+                  "Riley's English translation via the public re-typeset janegca/latex-valens"),
+            cited("Firmicus Maternus, Mathesis II.27 (Kroll-Skutsch Teubner)",
+                  ("the months of the decennial sub-periods, Sun 19, Moon 25, Saturn 30, "
+                   "Jupiter 12, Mars 15, Venus 8, Mercury 20"),
+                  ORIGINAL_LANGUAGE_READ,
+                  "the Latin text of the Kroll-Skutsch Teubner edition, LacusCurtius"),
+            cited("Dorotheus, Carmen Astrologicum I.23 (Pingree 1976 pp.183-184)",
+                  ("the same years for a benefic on an angle; the Moon in a masculine sign "
+                   "only 25 months"),
+                  TRANSLATION_READ,
+                  (f"{DOROTHEUS_BOOK_I_ONLINE}: I.23 from p.183, the Moon's 'twenty-five "
+                   "months' on p.184; the Arabic not checked")),
         ],
     },
     "greater": {
         "verification": ATTESTED,
         "sources": [
-            {
-                "citation": "Valens, Anthologies IV.30",
-                "says": (
-                    "the row he calls 'maximum', i.e. the periods usually called the greater "
-                    "years; III.10 mentions giving the greatest, the mean or the least years "
-                    "as the case requires"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "Riley's English translation via the re-typeset",
-            },
-            {
-                "citation": "Valens, Anthologies III.10, the re-typeset's editor's note",
-                "says": "Venus's greater years are 'usually 82, not 84' (an editor's note, not Valens's text)",
-                "reading": SOURCE_READING_LEVELS[2],
-                "read_at": "the re-typeset of Riley's English translation",
-            },
+            cited("Valens, Anthologies IV.30",
+                  ("the row he calls 'maximum', i.e. the periods usually called the greater "
+                   "years; III.10 mentions giving the greatest, the mean or the least years "
+                   "as the case requires"),
+                  TRANSLATION_READ, "Riley's English translation via the re-typeset"),
+            cited("Valens, Anthologies III.10, the re-typeset's editor's note",
+                  "Venus's greater years are 'usually 82, not 84' (an editor's note, not Valens's text)",
+                  SECONDARY_ONLY, "the re-typeset of Riley's English translation"),
         ],
         "note": (
             "Venus 82 as printed in IV.30; the re-typeset's note at III.10 says Venus's "

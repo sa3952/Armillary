@@ -27,6 +27,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
+from scripts.tools.git import git, require_clean_head
 from scripts.tools.source_tree_identity import observe_publication_tree, sha256_file as _sha256
 from scripts.tools.output_confinement import external_output_path
 
@@ -44,7 +45,7 @@ from app.frontend_release import (
     SOURCE_URL_PREFIX,
     artifact_digest as _runtime_artifact_digest,
     combined_release_id,
-    exact_contract as _runtime_exact_contract,
+    exact_contract,
     source_url_for,
     verify_release as _verify_release_tree,
 )
@@ -446,20 +447,20 @@ def formal_legal_release_fields(
     }
 
 
+def _chmod_dirs(root: Path, mode: int, deepest_first: bool) -> None:
+    """`mode` on every directory under `root` by depth, then on `root`."""
+    for directory in sorted((path for path in root.rglob("*") if path.is_dir()),
+                            key=lambda path: len(path.parts), reverse=deepest_first):
+        os.chmod(directory, mode)
+    os.chmod(root, mode)
+
+
 def _make_tree_removable(root: Path) -> None:
-    for directory in sorted(
-        (path for path in root.rglob("*") if path.is_dir()), key=lambda path: len(path.parts)
-    ):
-        os.chmod(directory, 0o755)
-    os.chmod(root, 0o755)
+    _chmod_dirs(root, 0o755, deepest_first=False)
 
 
 def runtime_asset_names(source_root: Path = ROOT) -> set[str]:
     return set(discover_source_assets(source_root / "frontend"))
-
-
-def exact_contract(source_root: Path = ROOT) -> dict[str, str | int]:
-    return _runtime_exact_contract(source_root)
 
 
 def _manifest_payload(
@@ -535,16 +536,9 @@ def build_release(
         else None
     )
     if require_clean_revision:
-        status = subprocess.run(
-            ["git", "status", "--porcelain"], cwd=source_root, check=True, text=True, capture_output=True
-        ).stdout
-        revision = subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=source_root, check=True, text=True, capture_output=True
-        ).stdout.strip()
-        if status:
-            raise RuntimeError("frontend release requires a clean source tree")
-        if revision != public_source_revision:
-            raise RuntimeError("frontend release revision differs from source HEAD")
+        require_clean_head(source_root, public_source_revision,
+                           dirty="frontend release requires a clean source tree",
+                           moved="frontend release revision differs from source HEAD")
     frontend = source_root / "frontend"
     if not frontend.is_dir() or frontend.is_symlink():
         raise ValueError("frontend source must be a regular directory")
@@ -565,13 +559,8 @@ def build_release(
             target = temporary / name
             target.parent.mkdir(parents=True, exist_ok=True)
             if require_clean_revision:
-                committed = subprocess.run(
-                    ["git", "show", f"{public_source_revision}:frontend/{name}"],
-                    cwd=source_root,
-                    check=True,
-                    capture_output=True,
-                ).stdout
-                target.write_bytes(committed)
+                target.write_bytes(git(source_root, "show", f"{public_source_revision}:frontend/{name}",
+                                       text=False))
             else:
                 shutil.copyfile(source, target)
             os.chmod(target, RELEASE_FILE_MODE)
@@ -588,13 +577,7 @@ def build_release(
         manifest_path = temporary / MANIFEST_NAME
         manifest_path.write_bytes(canonical_json_bytes(manifest) + b"\n")
         os.chmod(manifest_path, RELEASE_FILE_MODE)
-        for directory in sorted(
-            (path for path in temporary.rglob("*") if path.is_dir()),
-            key=lambda path: len(path.parts),
-            reverse=True,
-        ):
-            os.chmod(directory, RELEASE_DIRECTORY_MODE)
-        os.chmod(temporary, RELEASE_DIRECTORY_MODE)
+        _chmod_dirs(temporary, RELEASE_DIRECTORY_MODE, deepest_first=True)
         destination = output_parent / digest
         if destination.exists() or destination.is_symlink():
             raise FileExistsError(f"frontend release already exists: {destination}")
@@ -670,10 +653,9 @@ def verify_release(
     current repository.
     """
     if required_contracts is not None:
-        if authority_root is not None:
-            raise ValueError("frontend release needs exactly one contract authority")
         return verify_published_release(
             release_directory,
+            authority_root=authority_root,
             required_contracts=required_contracts,
             source_repositories=RECORDED_PUBLIC_REPOSITORY_URLS,
         )
@@ -744,13 +726,7 @@ def install_release(
             finally:
                 os.close(descriptor)
             os.chmod(target, RELEASE_FILE_MODE)
-        for directory in sorted(
-            (path for path in temporary.rglob("*") if path.is_dir()),
-            key=lambda path: len(path.parts),
-            reverse=True,
-        ):
-            os.chmod(directory, RELEASE_DIRECTORY_MODE)
-        os.chmod(temporary, RELEASE_DIRECTORY_MODE)
+        _chmod_dirs(temporary, RELEASE_DIRECTORY_MODE, deepest_first=True)
         materialized = verify_published_release(
             temporary, authority_root=authority_root, require_digest_directory_name=False
         )

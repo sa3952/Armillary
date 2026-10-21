@@ -16,7 +16,7 @@ from html import escape
 import functools
 
 from . import _fx
-from ._common import SIGNS, product_charts
+from ._common import SIGNS, degree_minute, product_charts
 from ._demo import DEMO, zodiacal_minutes
 
 
@@ -79,12 +79,6 @@ def _check(chart: dict, sect: str) -> None:
 def _arc(chart: dict) -> float:
     """The arc from the Moon forward to the Sun, in zodiacal order."""
     return (chart["sun"] - chart["moon"]) % 360
-
-
-def _dm(degrees: float) -> str:
-    """「116°03′」: whole arcminutes."""
-    units = round(degrees * 60)
-    return f"{units // 60}°{units % 60:02d}′"
 
 
 # --- figure 1 --------------------------------------------------------------------
@@ -217,7 +211,7 @@ def _wheel(layout: str, fid: str, chart: dict, text: dict, bound: _fx.Bound) -> 
 
 def _notes(chart: dict, bound: _fx.Bound) -> list[_fx.Note]:
     points = _points(chart)
-    arc = bound.num(_dm(_arc(chart)))
+    arc = bound.num(degree_minute(_arc(chart)))
     notes = []
     for variant, _ in VARIANTS:
         notes.append(_fx.Note("asc", variant, f"上升點在{bound.num(zodiacal_minutes(chart['asc']))}。兩個點都從這裡量起。"))
@@ -249,10 +243,7 @@ def _table(chart: dict, bound: _fx.Bound) -> str:
         f'<tr data-fx-key="{key}"><th scope="row">{escape(name)}</th><td class="n">{bound.num(position)}</td>'
         f"<td>{escape(night)}</td><td>{escape(day)}</td></tr>"
         for key, name, position, night, day in rows)
-    return ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">點</th><th scope="col">位置</th>'
-            '<th scope="col">夜盤公式下</th><th scope="col">日盤公式下</th></tr></thead>'
-            f"<tbody>{body}</tbody></table></div></details>")
+    return _fx.data_table(("點", "位置", "夜盤公式下", "日盤公式下"), body)
 
 
 def _figure(chart: dict) -> str:
@@ -262,14 +253,15 @@ def _figure(chart: dict) -> str:
     for _, label in VARIANTS:
         bound.label(label)
     when = bound.num("1990 年 5 月 15 日 22:30")
-    arc = bound.num(_dm(_arc(chart)))
+    arc = bound.num(degree_minute(_arc(chart)))
     text = {
         "heading": {"night": "夜盤公式（Valens、Paulus）", "day": "日盤公式"},
         "arc": f"這張盤是 {arc}",
     }
     points = _points(chart)
-    markup = _fx.figure(
-        fid="fig-lot-wheel", hero=True,
+    return _fx.figure(
+        fid="fig-lot-wheel",
+        hero=True,
         title=(f"一張合成的夜盤（{when}，臺北）：上升點在左，黃道依逆時針排列。月亮到太陽的弧是 {arc}，"
                f"從上升點沿黃道順序量一次落在{bound.num(zodiacal_minutes(points['fwd']))}，逆著量一次落在"
                f"{bound.num(zodiacal_minutes(points['back']))}。夜盤公式把前者叫命運點（Lot of Fortune）、後者叫精神點（Lot of Spirit）；"
@@ -279,15 +271,18 @@ def _figure(chart: dict) -> str:
                  "按鈕切換用哪一套公式替它們命名：夜盤公式是本站對夜盤的做法，日盤公式是 Ptolemy 日夜都用的命運點。"
                  "兩套公式算出的位置相同，只有名字對調"
                  '<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-10">[10]</a>。'),
-        wide=_wheel("fx-wide", "fig-lot-wheel", chart, text, bound),
-        narrow=_wheel("fx-narrow", "fig-lot-wheel", chart, text, bound),
-        notes=_notes(chart, bound), idle=IDLE, variants=VARIANTS, switch_label=SWITCH,
+        art=_fx.FigureArt.drawn(
+            _wheel, "fig-lot-wheel", chart, text, bound,
+            notes=_notes(chart, bound),
+            idle=IDLE,
+        ),
+        controls=_fx.FigureControls(
+            variants=VARIANTS,
+            switch_label=SWITCH,
+        ),
         table=_table(chart, bound),
+        bound=bound,
     )
-    found = _fx.problems(markup, bound)
-    if found:
-        raise RuntimeError("figure check: " + "; ".join(found))
-    return markup
 
 
 def _house(chart: dict, key: str) -> str:
@@ -324,7 +319,7 @@ def build() -> tuple[dict[str, str], list[str]]:
         f"上升點在{zodiacal_minutes(night['asc'])}",
         f"太陽在{zodiacal_minutes(night['sun'])}",
         f"月亮在{zodiacal_minutes(night['moon'])}",
-        f"從月亮沿黃道順序量到太陽是 {_dm(_arc(night))}",
+        f"從月亮沿黃道順序量到太陽是 {degree_minute(_arc(night))}",
         f"命運點落在{zodiacal_minutes(night['fortune'])}",
         f"精神點落在{zodiacal_minutes(night['spirit'])}",
         f"Ptolemy 的命運點落在{zodiacal_minutes(night['by_sect']['day']['fortune'])}",

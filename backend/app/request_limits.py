@@ -15,6 +15,7 @@ from .refusals import (
     CHART_ROUTE,
     HEALTH_ROUTE,
     PLACE_SEARCH_ROUTE,
+    READY_ROUTE,
     RETRY_AFTER_SECONDS,
     TIME_CONVERT_ROUTE,
     refusal_response,
@@ -31,58 +32,50 @@ MAX_HOSTED_REQUESTS_PER_WORKER: Final = 32
 # accept connections independently, so simultaneous charts are not spread
 # evenly and only one worker's pool is guaranteed (measured on 2026-10-04).
 MAX_HOSTED_COMPUTE_REQUESTS_PER_WORKER: Final = 4
-# The annual route's own calculation pool.  An annual projection costs a small
-# part of a polar chart (at most about 0.4 CPU-s measured on 2026-10-18) but it
-# held a chart slot while waiting for Swiss, so a burst of annual requests left
-# no chart admitted.  Both routes still wait in the one Swiss line, where an
-# admitted annual request delays a chart by its own compute time only, and a
-# full chart pool does not refuse an annual request.
-MAX_HOSTED_ANNUAL_REQUESTS_PER_WORKER: Final = 2
-# Place lookup and time conversion.  They are neither page traffic nor chart
-# computation: an admitted place lookup holds a worker thread for up to the
-# catalogue statement budget, and in the general pool a burst of lookups refused
-# assets and the health probe.  A time conversion is microseconds on the event
-# loop, but its body is birth data and it is the same kind of explicit-action
-# request, so it shares this pool rather than the page's.  The page starts either
-# only on an explicit action and aborts the previous one, so four per worker is
-# not a typeahead budget.
+# The annual route's own pool.  An annual projection costs at most ~0.4 CPU-s
+# (2026-10-18) but held a chart slot while waiting for Swiss, so an annual
+# burst left no chart admitted.  Both still share the one Swiss line, where an
+# annual request delays a chart by its own compute time only.  Eight admitted
+# annual requests wait in that line within the queue budget rather than being
+# refused on arrival; at ~0.4 s each a full annual pool delays a chart by about
+# 3 s, inside the budget, and the chart pool stays separate.
+MAX_HOSTED_ANNUAL_REQUESTS_PER_WORKER: Final = 8
+# Place lookup and time conversion.  A lookup holds a worker thread for up to
+# the catalogue statement budget, and in the general pool a burst of lookups
+# refused assets and the health probe.  A time conversion is microseconds, but
+# its body is birth data and it is the same explicit-action kind, so it shares
+# this pool.  The page starts either only on an explicit action and aborts the
+# previous one, so four per worker is not a typeahead budget.
 MAX_HOSTED_SEARCH_REQUESTS_PER_WORKER: Final = 4
 # RETRY_AFTER_SECONDS (re-exported above) is the one retry contract for every
 # admission refusal; refusal_response adds it.
-# Total time a bounded JSON body may take, from the first read to the last
-# byte.  The per-chunk gap timeout this replaces did not bound the total: one
-# byte sent just inside the gap kept a 16 KiB body arriving for hours.  In the
-# deployed path NGINX buffers the whole body before proxying
-# (`proxy_request_buffering on`, `client_body_timeout 10s`), so this deadline is
-# defence in depth there.  How many connections may sit in the body phase is
-# the edge's `limit_conn`; this module bounds each body's size and time only.
+# Total time for a bounded JSON body, first read to last byte.  A per-chunk
+# gap timeout let one byte per gap keep a 16 KiB body arriving for hours.
+# Deployed, NGINX buffers the body first (`proxy_request_buffering on`,
+# `client_body_timeout 10s`), so this is defence in depth; how many connections
+# sit in the body phase is the edge's `limit_conn`.
 REQUEST_BODY_DEADLINE_SECONDS: Final = 10.0
-# How long a chart may wait for the Swiss lock is derived from what is waiting
-# for its answer.  The edge gives `/api/chart` 30 s to answer
-# (`proxy_read_timeout` in `location = /api/chart` of
-# deploy/staging/nginx-site.conf.template) and the page aborts at the same 30 s
-# (`REQUEST_TIMEOUT_MS` in frontend/zh-TW/calculate.js); both copies are pinned
-# to this constant by tests/backend/test_compute_queue.py, because the template
-# is rendered by literal replacement and cannot import it.  A chart that starts
-# computing later than the wait budget below would, at the p99 compute time,
-# finish after both have given up: it is refused while the refusal is still
-# readable and retryable, instead of spending the worker's CPU on an answer
-# nobody receives.
+# The Swiss-lock wait budget is derived from who waits for the answer.  The
+# edge gives `/api/chart` 30 s (`proxy_read_timeout` in `location = /api/chart`
+# of deploy/staging/nginx-site.conf.template) and the page aborts at 30 s
+# (`REQUEST_TIMEOUT_MS` in frontend/zh-TW/calculate.js); tests/backend/
+# test_compute_queue.py pins both copies, since the template cannot import it.
+# A chart starting later than the budget would, at p99, finish after both gave
+# up, so it is refused while the refusal is still readable and retryable.
 EDGE_CHART_READ_TIMEOUT_SECONDS: Final = 30.0
-# p99 wall time of one chart calculation, an estimate, not a measurement of the
-# host: the slowest single request measured locally (Apple M1, 2026-10-10)
-# is ~1.5 s CPU, every module at 69°N on a date only in 2150, its high-latitude
-# rise/set searches skipping only days the direction-aware pre-filter proves
-# crossing-free (~6.5 s before that pre-filter; at the end of 2399 the chart
-# itself is computed, and only the search modules, whose windows run past the
-# bundled segments, are refused out-of-coverage before any Swiss call), and
-# ~2.9 s for the worst-options chart under amd64 emulation on 2026-10-04,
-# doubled when the two workers share one CPU.  On 2026-10-18 the rise/set
-# pre-filter began reading the request's own refraction and each body's own
-# disc, and the walks moved to a fixed day grid shared by every representative
-# sample: the slowest polar chart of that day's grid fell from 2,505 to 327
-# Swiss probes (median CPU on one machine 1.27 -> 0.19 s for 68.5 N,
-# 2150-03-21, date only).  Revisit with a measurement on the production host.
+# p99 wall time of one chart: an estimate, not a host measurement.  Slowest
+# local request (Apple M1, 2026-10-10) ~1.5 s CPU, every module at 69°N, date
+# only, 2150 (~6.5 s before the direction-aware rise/set pre-filter; at the end
+# of 2399 only the search modules are refused out-of-coverage, before any Swiss
+# call); ~2.9 s worst-options under amd64 emulation (2026-10-04), doubled when
+# two workers share one CPU.  2026-10-18: pre-filter reads the request's
+# refraction and each body's disc on a shared fixed day grid; slowest polar
+# chart 2,505 -> 327 Swiss probes (median CPU 1.27 -> 0.19 s, 68.5 N,
+# 2150-03-21, date only).  The slowest chart is no longer a polar date-only
+# one but every module at an approximate hour, whose birth-time sensitivity
+# probes re-derive the extended lots: 0.84 CPU-s at 68.5 N, 2150-12-21 on an
+# idle 8-vCPU amd64 host (red-team performance review, 2026-10-21), well inside this
+# estimate.  Revisit with a production-host measurement.
 COMPUTE_P99_ESTIMATE_SECONDS: Final = 8.0
 # Serialization, compression and the edge hop after the calculation returns
 # (tens of milliseconds measured), plus the page's own request set-up inside
@@ -97,30 +90,28 @@ API_PATH_PREFIX: Final = "/api/"
 # "Takes a bounded JSON body" and "which admission pool" are separate
 # questions with separate sets.
 _BOUNDED_JSON_PATHS: Final = frozenset({CHART_ROUTE, PLACE_SEARCH_ROUTE, TIME_CONVERT_ROUTE})
-# The calculation pool.  An application that registers another calculation
-# route (the flagged annual route) passes both sets with it; a route it did not
-# register is never bounded or admitted here, so it reaches the API boundary's
-# unknown_api_path like any other undeclared path.
+# The calculation pool.  An app registering another calculation route (the
+# flagged annual route) passes both sets; an unregistered route is never
+# admitted here and reaches unknown_api_path like any undeclared path.
 _COMPUTE_PATHS: Final = frozenset({CHART_ROUTE})
 _LOOKUP_PATHS: Final = frozenset({PLACE_SEARCH_ROUTE, TIME_CONVERT_ROUTE})
 # The liveness probe returns a constant on the event loop and is never charged
 # to a pool: a full pool of any class must not make the container look dead.
-_ADMISSION_EXEMPT_PATHS: Final = frozenset({HEALTH_ROUTE})
+# The readiness probe reads the cached ephemeris manifest (a stat per file
+# unless the files changed), so it is exempt for the same reason.
+_ADMISSION_EXEMPT_PATHS: Final = frozenset({HEALTH_ROUTE, READY_ROUTE})
 BOUNDARY_REASON_STATE_KEY: Final = "armillary.boundary_reason.v1"
 COMPUTE_ENTERED_STATE_KEY: Final = "armillary.compute_entered.v1"
-# Set by the boundary the moment it learns the client has gone.  It is
-# read synchronously before a queued chart enters Swiss, so a disconnect that
-# arrives in the same loop turn as the lock hand-over is still honoured.
+# Read synchronously before a queued chart enters Swiss, so a disconnect in
+# the same loop turn as the lock hand-over is still honoured.
 CLIENT_DISCONNECTED_STATE_KEY: Final = "armillary.client_disconnected.v1"
 # Not a refusal: no response is written to a client that has gone.  It names,
 # for telemetry only, why a request ended without one.
 CLIENT_DISCONNECTED: Final = "client_disconnected"
 CLOSURE_REASON_CODES: Final = frozenset({CLIENT_DISCONNECTED})
 
-# One vocabulary owns every reason this boundary can place in the request
-# scope.  Call sites still name the reason they observed; this set makes an
-# unregistered new reason fail at the producer instead of disappearing later
-# in telemetry or public documentation.
+# Every reason this boundary can place in the request scope: an unregistered
+# reason fails at the producer instead of vanishing in telemetry or docs.
 BOUNDARY_REASON_CODES: Final = frozenset({
     "undeclared_host",
     "unknown_api_path",
@@ -138,8 +129,6 @@ BOUNDARY_REASON_CODES: Final = frozenset({
 
 
 def _state(scope: Scope) -> dict:
-    """The request's scope state, created on first use."""
-
     state = scope.get("state")
     if not isinstance(state, dict):
         state = {}
@@ -159,8 +148,6 @@ def _mark_boundary_reason(scope: Scope, reason: str) -> None:
 async def _refuse(
     scope: Scope, receive: Receive, send: Send, code: str, **kwargs
 ) -> None:
-    """Record the boundary reason, then send its refusal."""
-
     _mark_boundary_reason(scope, code)
     await refusal_response(code, **kwargs)(scope, receive, send)
 
@@ -206,16 +193,14 @@ def _grant(future: asyncio.Future[None]) -> None:
 class FifoComputeQueue:
     """First come, first served admission to the Swiss lock.
 
-    Each waiter takes a place in line and a release hands ownership directly
-    to the head of the line, so no later arrival can take it in between.  With
-    polling, whichever poll landed first after a release would win, and the
-    earliest arrival would be the one most likely to run out of its wait
-    budget.
+    A release hands ownership directly to the head of the line, so no later
+    arrival can take it in between (with polling, the earliest arrival was the
+    most likely to run out of budget).
 
-    Ownership passes under one thread lock, so a release from a worker thread
-    and a waiter giving up (timeout or cancellation) cannot both decide who
-    owns the queue.  A waiter that gives up after it was granted passes the
-    grant on.  Nothing about a request is kept, only its place in line.
+    Ownership passes under one thread lock, so a worker-thread release and a
+    waiter giving up cannot both decide who owns the queue; a waiter that gives
+    up after being granted passes the grant on.  Nothing about a request is
+    kept, only its place in line.
     """
 
     def __init__(self) -> None:
@@ -295,12 +280,7 @@ class ApiMethodBoundary:
         self.app = app
         self.route_methods = dict(route_methods)
 
-    async def __call__(
-        self,
-        scope: Scope,
-        receive: Receive,
-        send: Send,
-    ) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope.get("type") == "http":
             path = scope["path"]
             methods = self.route_methods.get(path)
@@ -331,32 +311,22 @@ class RequestCapacityBoundary:
         max_annual_concurrent: int = MAX_HOSTED_ANNUAL_REQUESTS_PER_WORKER,
         compute_paths: frozenset[str] = _COMPUTE_PATHS,
     ) -> None:
-        if max_concurrent <= 0:
-            raise ValueError("max_concurrent must be positive")
-        if max_compute_concurrent <= 0:
-            raise ValueError("max_compute_concurrent must be positive")
-        if max_search_concurrent <= 0:
-            raise ValueError("max_search_concurrent must be positive")
-        if max_annual_concurrent <= 0:
-            raise ValueError("max_annual_concurrent must be positive")
+        self._limits = {
+            "max_concurrent": max_concurrent,
+            "max_compute_concurrent": max_compute_concurrent,
+            "max_search_concurrent": max_search_concurrent,
+            "max_annual_concurrent": max_annual_concurrent,
+        }
+        for name, limit in self._limits.items():
+            if limit <= 0:
+                raise ValueError(f"{name} must be positive")
         self.app = app
-        self.max_concurrent = max_concurrent
-        self.max_compute_concurrent = max_compute_concurrent
-        self.max_search_concurrent = max_search_concurrent
-        self.max_annual_concurrent = max_annual_concurrent
         self.compute_paths = frozenset(compute_paths)
-        self._active = 0
-        self._active_compute = 0
-        self._active_annual = 0
-        self._active_search = 0
+        # Admitted requests per pool, keyed like the limits.
+        self._active = dict.fromkeys(self._limits, 0)
         self._lock = threading.Lock()
 
-    async def __call__(
-        self,
-        scope: Scope,
-        receive: Receive,
-        send: Send,
-    ) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         path = scope.get("path")
         if scope["type"] != "http" or path in _ADMISSION_EXEMPT_PATHS:
             await self.app(scope, receive, send)
@@ -365,25 +335,14 @@ class RequestCapacityBoundary:
         compute = path in self.compute_paths
         # The annual calculation has its own pool; every other calculation
         # path counts against the chart's.
-        annual = compute and path == ANNUAL_ROUTE
-        search = path in _LOOKUP_PATHS
+        if compute:
+            pool = "max_annual_concurrent" if path == ANNUAL_ROUTE else "max_compute_concurrent"
+        else:
+            pool = "max_search_concurrent" if path in _LOOKUP_PATHS else "max_concurrent"
         with self._lock:
-            if annual:
-                accepted = self._active_annual < self.max_annual_concurrent
-                if accepted:
-                    self._active_annual += 1
-            elif compute:
-                accepted = self._active_compute < self.max_compute_concurrent
-                if accepted:
-                    self._active_compute += 1
-            elif search:
-                accepted = self._active_search < self.max_search_concurrent
-                if accepted:
-                    self._active_search += 1
-            else:
-                accepted = self._active < self.max_concurrent
-                if accepted:
-                    self._active += 1
+            accepted = self._active[pool] < self._limits[pool]
+            if accepted:
+                self._active[pool] += 1
         if not accepted:
             # Lookup and general refusals share the non-compute code; the
             # request event's `route` says which pool answered.
@@ -400,21 +359,9 @@ class RequestCapacityBoundary:
                 await self.app(scope, receive, send)
         finally:
             with self._lock:
-                if annual:
-                    self._active_annual -= 1
-                elif compute:
-                    self._active_compute -= 1
-                elif search:
-                    self._active_search -= 1
-                else:
-                    self._active -= 1
+                self._active[pool] -= 1
 
-    async def _run_compute(
-        self,
-        scope: Scope,
-        receive: Receive,
-        send: Send,
-    ) -> None:
+    async def _run_compute(self, scope: Scope, receive: Receive, send: Send) -> None:
         queue: asyncio.Queue[Message] = asyncio.Queue(maxsize=1)
         disconnected = asyncio.Event()
 
@@ -539,17 +486,13 @@ def _is_supported_json_content_type(scope: Scope) -> bool:
 class ChartRequestBoundary:
     """Refuse an undeclared host, then bound hosted JSON POST bodies.
 
-    The host check comes first, before any budget is spent on the request.
-    The service is public and asks no caller to authenticate.  The proxy in
-    front of it sets the host it declares and strips `Authorization`,
-    `Proxy-Authorization` and the forwarding headers before the request reaches
-    the application, which has no authorization of its own; that is
-    deliberate.  What the application can do cheaply is notice that it was reached by
-    a route the deployment never declared — the shape a published container port
-    produces, where a scanner sends the address as the host.  A caller who can
-    reach the socket can also set this header, so this catches the accident, not
-    the attacker, and the difference is stated rather than implied.  Unset
-    (development and tests) means no check.
+    The host check comes first, before any budget is spent.  The service is
+    public and deliberately has no authorization; the proxy sets the declared
+    host and strips `Authorization`, `Proxy-Authorization` and forwarding
+    headers.  The check notices a route the deployment never declared — a
+    published container port, where a scanner sends the address as the host.
+    A caller who can reach the socket can also set this header, so this catches
+    the accident, not the attacker.  Unset (development and tests): no check.
 
     The header budget then applies to every path; the body limit runs before
     JSON/Pydantic parsing.
@@ -581,12 +524,7 @@ class ChartRequestBoundary:
         )
         self.max_body_bytes = max_body_bytes
 
-    async def __call__(
-        self,
-        scope: Scope,
-        receive: Receive,
-        send: Send,
-    ) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if self.expected_host is not None and scope.get("type") == "http":
             # RFC 9110 §7.2 / RFC 9112 §3.2: more than one Host is refused.
             # A dict over the headers kept the last copy while Starlette reads
@@ -616,10 +554,9 @@ class ChartRequestBoundary:
             content_length = _content_length(scope)
         except ValueError:
             content_length = -1
-        # In order: the first failing header check answers.  A declared empty
-        # body would otherwise reach Pydantic as a JSON parse failure and come
-        # back as a 422 listing every missing field, which describes the schema
-        # rather than the actual fault; the framing is this boundary's own.
+        # The first failing header check answers.  A declared empty body would
+        # otherwise come back as a 422 listing every missing field, describing
+        # the schema rather than the fault.
         refusal = (
             "unsupported_media_type"
             if not _is_supported_json_content_type(scope)
@@ -637,12 +574,9 @@ class ChartRequestBoundary:
             await _refuse(scope, receive, send, refusal)
             return
 
-        # Read the complete, already bounded JSON body before entering the
-        # application.  This prevents an application that responds before
-        # consuming its whole receive stream from starting a 2xx response and
-        # only then discovering a late oversized chunk.  It is also why this
-        # boundary sits outside admission: a body still arriving holds no pool
-        # slot, and the deadline covers the whole body rather than each chunk.
+        # Buffer the whole bounded body first, so an app that responds before
+        # draining receive cannot start a 2xx and then meet an oversized chunk.
+        # Also why this sits outside admission: an arriving body holds no slot.
         buffered: list[Message] = []
         received_bytes = 0
         loop = asyncio.get_running_loop()
@@ -657,9 +591,8 @@ class ChartRequestBoundary:
                 await _refuse(scope, receive, send, "request_body_read_timeout")
                 return
             if message["type"] != "http.request":
-                # The client went away before its body was complete.
-                # Nothing is owed to it, and the application would only have
-                # failed to parse half a body and been logged as a 500.
+                # Client gone mid-body: nothing is owed, and the app would only
+                # have failed to parse half a body as a logged 500.
                 mark_client_disconnected(scope)
                 return
             received_bytes += len(message.get("body", b""))
@@ -673,8 +606,7 @@ class ChartRequestBoundary:
         async def receive_buffered() -> Message:
             if buffered:
                 return buffered.pop(0)
-            # Once the bounded body has been replayed, preserve the real ASGI
-            # receive channel.  Fabricating disconnect here made every normal
+            # Then the real channel: fabricating a disconnect here made every
             # request look abandoned to downstream admission control.
             return await receive()
 

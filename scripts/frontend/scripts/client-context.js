@@ -29,10 +29,10 @@
   // 由 tests/integration/test_frontend_contract.py 對照後端的閉集抓到。
   // 頁面自己組 JSON：這類拒絕表示頁面版本過舊或傳輸出錯，不是使用者填錯。
   const STALE_PAGE_REQUEST = (
-    "頁面送出的資料無法被服務解讀；這通常表示頁面版本過舊，請重新載入頁面後再試。"
+    "頁面送出的資料無法被服務解讀；這通常表示頁面版本過舊，請重新載入頁面後再試一次。"
   );
   const PAGE_SERVICE_MISMATCH = (
-    "頁面與服務的版本不一致，服務不認得這個請求；請重新載入頁面後再試。"
+    "頁面與服務的版本不一致，服務不認得這個請求；請重新載入頁面後再試一次。"
   );
   // 本頁沒有固定 UTC 偏移的控制項；出路是地名查詢或手動的 IANA 欄位。
   const TIMEZONE_NAME_GUIDANCE = (
@@ -47,8 +47,8 @@
 
   // 429 與 5xx 的狀態後備文案；邊緣（NGINX）對 /api 路徑回的閉集代碼
   // （edge_rate_limited、upstream_unavailable）在代碼表裡引用同一句。
-  const RATE_LIMITED_MESSAGE = "服務目前忙碌，這不是你的輸入有問題；請依提示稍後重試。";
-  const SERVER_UNAVAILABLE_MESSAGE = "服務暫時無法完成計算。請稍後重試；若持續發生，請聯絡服務管理者。";
+  const RATE_LIMITED_MESSAGE = "網站目前忙碌，這不是你的輸入有問題；請依提示稍後再試一次。";
+  const SERVER_UNAVAILABLE_MESSAGE = "網站暫時無法完成計算。請稍後再試一次；若持續發生，請透過聯絡頁回報。";
 
   const ERROR_CODE_MESSAGES = Object.freeze({
     nonexistent_local_time: (
@@ -90,25 +90,25 @@
     // 載入——那是伺服器端的資料檔問題，重載不會改變它。
     place_catalog_unavailable: (
       "內建地名目錄暫時無法讀取，這次查不了地點。這不是你的輸入有問題；"
-      + "請展開「改為手動輸入座標與時區」輸入座標與時區，或稍後重試。"
+      + "請展開「改為手動輸入座標與時區」輸入座標與時區，或稍後再試一次。"
     ),
-    unsupported_media_type: "送出的資料格式不受支援，請重新載入頁面後再試。",
-    invalid_content_length: "送出的資料長度資訊無效，請重新載入頁面後再試。",
-    request_body_too_large: "送出的資料超過服務允許大小，請重新載入頁面後再試。",
+    unsupported_media_type: "送出的資料格式不受支援，請重新載入頁面後再試一次。",
+    invalid_content_length: "送出的資料長度資訊無效，請重新載入頁面後再試一次。",
+    request_body_too_large: "送出的資料超過服務允許大小，請重新載入頁面後再試一次。",
     // 選配模組的星曆失敗已在模組內標為不可用，走到這裡的是核心命盤
     // 本身；同一組輸入重送會得到同一個錯誤，所以不再建議「稍後重試」。
     swiss_ephemeris_error: (
       "天文計算函式庫無法完成這次計算；同一組輸入重送通常會得到相同結果。"
-      + "請核對出生日期、時刻與地點；若確認無誤，請聯絡服務管理者。"
+      + "請核對出生日期、時刻與地點；若確認無誤，請透過聯絡頁回報。"
     ),
     internal_server_error: SERVER_UNAVAILABLE_MESSAGE,
     edge_rate_limited: RATE_LIMITED_MESSAGE,
     upstream_unavailable: SERVER_UNAVAILABLE_MESSAGE,
     request_capacity_exhausted: (
-      "服務目前忙碌，這不是你的輸入有問題；請稍後重試。"
+      "網站目前忙碌，這不是你的輸入有問題；請稍後再試一次。"
     ),
     compute_capacity_exhausted: (
-      "計算佇列仍在忙碌，暫時無法開始這次計算；請依下方提示稍後重試。"
+      "計算佇列仍在忙碌，暫時無法開始這次計算；請依下方提示稍後再試一次。"
     ),
     // 語句預算中斷不是目錄壞了；可以重試，出路同樣是手動輸入。
     place_search_timeout: (
@@ -177,6 +177,9 @@
     civil_time_basis_zone_mismatch: STALE_PAGE_REQUEST,
     place_label_forbidden_codepoint: (
       "地點名稱含有不可顯示的控制字元；請重新用「地名查詢」選定地點。"
+    ),
+    place_label_has_no_base_character: (
+      "地點名稱只有組合記號或連接字元，沒有可辨識的文字；請重新用「地名查詢」選定地點，或改填一個看得見的名稱。"
     ),
     location_precision_not_accepted_for_source: LOCATION_RECEIPT_MISMATCH,
     source_record_id_not_allowed_for_manual: LOCATION_RECEIPT_MISMATCH,
@@ -249,7 +252,7 @@
 
     if (type === "missing") return `${label}尚未填寫。`;
     if (type === "extra_forbidden") {
-      return "頁面送出了目前版本不支援的欄位，請重新載入後再試。";
+      return "頁面送出了目前版本不支援的欄位，請重新載入後再試一次。";
     }
     if (locationKeys.has("timezone") || locationKeys.has("iana_name")) {
       return TIMEZONE_NAME_GUIDANCE;
@@ -279,7 +282,7 @@
     ) {
       return `${label}超出允許範圍；請檢查欄位旁的格式說明。`;
     }
-    return `${label}格式無效；請檢查後再試。`;
+    return `${label}格式無效；請檢查後再試一次。`;
   }
 
   // 每個拒絕都是 { code, message, ... }；只有 request_validation_failed 的 issues
@@ -336,21 +339,21 @@
     ) {
       return ERROR_CODE_MESSAGES[detail.code];
     }
-    if (statusCode === 413) return "送出的資料超過服務允許大小，請重新載入頁面後再試。";
-    if (statusCode === 415) return "送出的資料格式不受支援，請重新載入頁面後再試。";
+    if (statusCode === 413) return "送出的資料超過服務允許大小，請重新載入頁面後再試一次。";
+    if (statusCode === 415) return "送出的資料格式不受支援，請重新載入頁面後再試一次。";
     if (statusCode === 422) return "部分輸入無法驗證；請檢查必填欄位與格式。";
     if (statusCode === 429) return RATE_LIMITED_MESSAGE;
     if (statusCode >= 500) {
       return SERVER_UNAVAILABLE_MESSAGE;
     }
-    return `服務拒絕本次請求（HTTP ${statusCode}）。請檢查輸入後再試。`;
+    return "網站沒有接受這次請求。請檢查輸入後再試一次。";
   }
 
   // 伺服器 422 點名的欄位 → 頁面控制項 id。只列確定的對應；
   // 對不到的欄位回空陣列（錯誤訊息照常顯示，只是不標任何欄位）。選項一律是 opt-<key>，
   // 由 calculate.js 依選項目錄的 rendered_by 換成看得見的那個控制項。
   const DATETIME_CONTROL_IDS = Object.freeze({
-    year: "date", month: "date", day: "date", hour: "hour", minute: "minute", second: "second",
+    year: "date-year", month: "date-month", day: "date-day", hour: "hour", minute: "minute", second: "second",
   });
   const LOCATION_CONTROL_IDS = Object.freeze({
     latitude: "latitude", longitude: "longitude", altitude_m: "altitude",
@@ -369,7 +372,7 @@
     house_system_unavailable: ["opt-house_system"],
   });
   const TIMEZONE_CONTROL_ID = "timezone";
-  const DATE_CONTROL_ID = "date";
+  const DATE_CONTROL_ID = "date-year";
   // 這個模組可能點名的每一個固定控制項 id，由上面幾張表導出（opt-<key> 另由
   // 選項目錄決定）。頁面層測試拿它對開機後的 DOM 驗證，不另抄一份清單。
   const KNOWN_CONTROL_IDS = Object.freeze([...new Set([
@@ -419,7 +422,7 @@
   }
 
   function networkErrorMessage() {
-    return "無法連線到命盤計算服務。請確認網路連線後再試；若持續發生，請透過聯絡頁回報。";
+    return "連不上本站的計算功能。請確認網路連線後再試一次；若持續發生，請透過聯絡頁回報。";
   }
 
   // 所選方法在這個緯度或時刻本來就算不出（422）：同一組輸入每次都會被拒，錯誤訊息
@@ -443,8 +446,8 @@
       const seconds = /^\d+$/.test(raw) ? Number(raw) : 0;
       actions.push(
         seconds >= 1 && seconds <= 3600
-          ? `約 ${seconds} 秒後重試。`
-          : "稍後重試。"
+          ? `約 ${seconds} 秒後再試一次。`
+          : "稍後再試一次。"
       );
     } else {
       actions.push("修正輸入後再送出一次。");

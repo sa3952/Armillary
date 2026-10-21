@@ -20,7 +20,7 @@ from html import escape
 import math
 
 from . import _fx
-from ._common import SIGNS, TAIPEI, backend_on_path, calc_ut, indent, product_charts, swiss
+from ._common import SIGNS, TAIPEI, backend_on_path, calc_ut, product_charts, swiss
 
 
 FRAGMENT = "blog-lunar-mansions"
@@ -242,9 +242,7 @@ def _wheel_table(t: dict, bound: _fx.Bound) -> str:
         f'<tr data-fx-key="m{i + 1}"><td class="n">{bound.scale(str(i + 1))}</td><td>{escape(name)}</td>'
         f'<td class="n">{bound.num(_position(t["positions"][i]))}</td></tr>'
         for i, name in enumerate(t["names"]))
-    return ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">宿</th><th scope="col">宿名（轉寫）</th>'
-            f'<th scope="col">起點</th></tr></thead><tbody>{rows}</tbody></table></div></details>')
+    return _fx.data_table(("宿", "宿名（轉寫）", "起點"), rows)
 
 
 def _drawn_mansion(shift: float, width: float, longitude: float) -> int:
@@ -255,32 +253,6 @@ def _drawn_mansion(shift: float, width: float, longitude: float) -> int:
     if min(longitude - start, start + width - longitude) < EDGE:
         raise RuntimeError("the Moon sits on a drawn boundary: inclusiveness would decide")
     return k % 28 + 1
-
-
-def _count_row(x, y: float, h: float, shift: float, hit: int, active: bool, xm: float, width: float,
-               lo: float, hi: float, bound: _fx.Bound, wide: bool) -> str:
-    """One count drawn along the strip: its boundaries, its numbers, the Moon's mansion hatched."""
-    out = [_fx.rect(x(lo), y, x(hi) - x(lo), h, "fx-track")]
-    lines = []
-    for k in range(math.floor((lo - shift) / width), math.ceil((hi - shift) / width) + 1):
-        start = shift + k * width
-        a, b = max(start, lo), min(start + width, hi)
-        n = k % 28 + 1
-        if b > a:
-            if n == hit:
-                out.append(_fx.rect(x(a), y, x(b) - x(a), h, "fx-fill-hatch" if active else "fx-fill-dot"))
-            if x(b) - x(a) > (24 if wide else 20):
-                tx = (x(a) + x(b)) / 2
-                if abs(tx - xm) < (20 if wide else 14):  # keep the number clear of the Moon's line
-                    tx = (x(a) + xm) / 2 if xm - x(a) > x(b) - xm else (xm + x(b)) / 2
-                cls = "fx-t fx-num fx-key" if active else "fx-t fx-small fx-num fx-dim fx-key"
-                if not wide:
-                    cls = cls.replace("fx-t fx-num", "fx-t fx-small fx-num")
-                out.append(_fx.text(tx, y + h / 2 + (6 if wide else 4), bound.scale(str(n)), cls, "middle"))
-        if lo <= start <= hi:
-            cls = "fx-frame" if k % 28 == 0 else "fx-axis" if active else "fx-hair"
-            lines.append(_fx.line(x(start), y, x(start), y + h, cls))
-    return "".join(out + lines)
 
 
 def _counts(layout: str, fid: str, t: dict, d: dict, bound: _fx.Bound) -> str:
@@ -305,13 +277,39 @@ def _counts(layout: str, fid: str, t: dict, d: dict, bound: _fx.Bound) -> str:
         out.append(_fx.line(x(30 * sign), rows["tropical"] - 6, x(30 * sign), bottom + 6, "fx-hair"))
     labels = {"tropical": "從春分點起數（本站）",
               "sidereal": f"從恆星牡羊 {bound.scale('0')}° 起數（示意，本站不輸出）"}
+
+    def count_row(y: float, shift: float, hit: int, active: bool) -> str:
+        """One count drawn along the strip: its boundaries, its numbers, the Moon's mansion hatched."""
+        width = t["width"]
+        out = [_fx.rect(x(lo), y, x(hi) - x(lo), h, "fx-track")]
+        lines = []
+        for k in range(math.floor((lo - shift) / width), math.ceil((hi - shift) / width) + 1):
+            start = shift + k * width
+            a, b = max(start, lo), min(start + width, hi)
+            n = k % 28 + 1
+            if b > a:
+                if n == hit:
+                    out.append(_fx.rect(x(a), y, x(b) - x(a), h, "fx-fill-hatch" if active else "fx-fill-dot"))
+                if x(b) - x(a) > (24 if wide else 20):
+                    tx = (x(a) + x(b)) / 2
+                    if abs(tx - xm) < (20 if wide else 14):  # keep the number clear of the Moon's line
+                        tx = (x(a) + xm) / 2 if xm - x(a) > x(b) - xm else (xm + x(b)) / 2
+                    cls = "fx-t fx-num fx-key" if active else "fx-t fx-small fx-num fx-dim fx-key"
+                    if not wide:
+                        cls = cls.replace("fx-t fx-num", "fx-t fx-small fx-num")
+                    out.append(_fx.text(tx, y + h / 2 + (6 if wide else 4), bound.scale(str(n)), cls, "middle"))
+            if lo <= start <= hi:
+                cls = "fx-frame" if k % 28 == 0 else "fx-axis" if active else "fx-hair"
+                lines.append(_fx.line(x(start), y, x(start), y + h, cls))
+        return "".join(out + lines)
+
     for variant, _ in COUNTS:
         body = []
         for row, shift in (("tropical", 0.0), ("sidereal", ayan)):
             active = row == variant
             y = rows[row]
             body.append(_fx.text(x0, y - 10, labels[row], "fx-t fx-key" if active else "fx-t fx-dim fx-key"))
-            body.append(_count_row(x, y, h, shift, hits[row], active, xm, t["width"], lo, hi, bound, wide))
+            body.append(count_row(y, shift, hits[row], active))
         out.append(_fx.variant_group(variant, COUNTS[0][0], "".join(body)))
     # the two starting points and the arc between them
     by = bottom + (26 if wide else 22)
@@ -368,10 +366,7 @@ def _count_table(t: dict, d: dict, bound: _fx.Bound) -> str:
         f'<tr><th scope="row">{label}</th><td class="n">{bound.num(_sign_text(moon["sign_position"]))}</td>'
         f'<td>第 {bound.num(str(n))} 宿 {escape(t["names"][n - 1])}</td></tr>'
         for _, label, moon, n in rows)
-    return ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-            '<table class="ar-table fx-table"><thead><tr><th scope="col">從哪裡起數</th>'
-            '<th scope="col">月亮的黃經（各自的黃道）</th><th scope="col">落在</th></tr></thead>'
-            f'<tbody>{body}</tbody></table></div></details>')
+    return _fx.data_table(("從哪裡起數", "月亮的黃經（各自的黃道）", "落在"), body)
 
 
 def _span_mansions(start: float, end: float, width: float) -> list[int]:
@@ -522,7 +517,8 @@ def _figures(t: dict, d: dict) -> dict[str, str]:
                  f"到{wheel_bound.num(_position(t['positions'][(i + 1) % 28]))}為止（不含終點）。")
         for i, name in enumerate(t["names"])]
     wheel = _fx.figure(
-        fid="fig-wheel", hero=True,
+        fid="fig-wheel",
+        hero=True,
         title=(f"黃道一圈的兩種切法疊在一起：外圈是十二星座，每個 30 度；內圈是 28 個月宿，每宿 {t['width_text']}，"
                "從牡羊 0 度（春分點）起依序編號。第 1、8、15、22 宿的起點正好落在牡羊、巨蟹、天秤、摩羯的 0 度，以粗線標出；"
                "其餘的宿界大多落在星座中間。"),
@@ -530,9 +526,9 @@ def _figures(t: dict, d: dict) -> dict[str, str]:
                  f"每一宿一樣寬，從春分點（牡羊 {wheel_bound.scale('0')}°）起依序編號；只有第 "
                  f"{'、'.join(wheel_bound.scale(str(n)) for n in (1, 8, 15, 22))} 宿的起點正好落在星座的起點（粗線），"
                  '其餘的宿界都落在星座中間<a class="ar-cite" href="#ref-6">[6]</a>。'),
-        wide=_wheel("fx-wide", "fig-wheel", t, wheel_bound),
-        narrow=_wheel("fx-narrow", "fig-wheel", t, wheel_bound),
-        notes=wheel_notes, idle=WHEEL_IDLE, table=_wheel_table(t, wheel_bound),
+        art=_fx.FigureArt.drawn(_wheel, "fig-wheel", t, wheel_bound, notes=wheel_notes, idle=WHEEL_IDLE),
+        table=_wheel_table(t, wheel_bound),
+        bound=wheel_bound,
     )
     count_notes = _count_notes(t, d, count_bound)
     counts = _fx.figure(
@@ -545,10 +541,13 @@ def _figures(t: dict, d: dict) -> dict[str, str]:
                  f"{count_bound.num(f'{d['ayanamsa']:.1f}')}°。單線排線是月亮落入的那一宿；按鈕切換以哪一列為主。"
                  "古書也有以星群為準、寬窄不一的劃法，以及從其他位置起算的刻度，這張圖沒有畫"
                  '<a class="ar-cite" href="#ref-6">[6]</a><a class="ar-cite" href="#ref-7">[7]</a>。'),
-        wide=_counts("fx-wide", "fig-counts", t, d, count_bound),
-        narrow=_counts("fx-narrow", "fig-counts", t, d, count_bound),
-        notes=count_notes, idle=COUNT_IDLE, variants=COUNTS, switch_label=COUNT_SWITCH,
+        art=_fx.FigureArt.drawn(_counts, "fig-counts", t, d, count_bound, notes=count_notes, idle=COUNT_IDLE),
+        controls=_fx.FigureControls(
+            variants=COUNTS,
+            switch_label=COUNT_SWITCH,
+        ),
         table=_count_table(t, d, count_bound),
+        bound=count_bound,
     )
     day_rows = _day_rows(t, d, day_bound)
     hour, day = (d[p]["module"]["birth_time_interval"]["moon_longitudes"][0] for p in ("approximate_hour", "date_only"))
@@ -559,14 +558,13 @@ def _figures(t: dict, d: dict) -> dict[str, str]:
                  f"那一小時月亮走了約 {day_bound.num(f'{(hour[1] - hour[0]) % 360:.1f}')}°，沒有跨過宿界；"
                  f"那一天走了約 {day_bound.num(f'{(day[1] - day[0]) % 360:.1f}')}°，跨過兩條宿界，"
                  "所以只知道日期時列出三宿。點線是宿界。"),
-        wide=_day("fx-wide", "fig-day", t, day_rows, day_bound),
-        narrow=_day("fx-narrow", "fig-day", t, day_rows, day_bound),
-        notes=[_fx.Note(row["key"], None, row["sentence"]) for row in day_rows], idle=DAY_IDLE,
+        art=_fx.FigureArt.drawn(
+            _day, "fig-day", t, day_rows, day_bound,
+            notes=[_fx.Note(row["key"], None, row["sentence"]) for row in day_rows],
+            idle=DAY_IDLE,
+        ),
+        bound=day_bound,
     )
-    for markup, bound in ((wheel, wheel_bound), (counts, count_bound), (days, day_bound)):
-        found = _fx.problems(markup, bound)
-        if found:
-            raise RuntimeError("figure check: " + "; ".join(found))
     return {"fx-defs": _fx.defs(("moon",)), "wheel": wheel, "counts": counts, "day": days}
 
 

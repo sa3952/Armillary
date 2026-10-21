@@ -11,10 +11,14 @@
 # A zone key cannot be changed by reload; applying a change to one requires a
 # full restart, and the operator procedure owns verifying that the restart took
 # effect.
-# Chart computation (the chart and, where enabled, the annual route).  The
-# slowest chart of the 2026-10-18 polar grid asks Swiss for 327 rise/set
-# probes, about a quarter of a CPU-second measured, so the sustained rate keeps
-# one client near an eighth of a CPU; the burst (7 beyond the first) fits the
+# Chart computation (the chart and, where enabled, the annual route).  A
+# default chart costs milliseconds; the slowest measured is every module at an
+# approximate hour (birth-time sensitivity probes), 68.5 N, 2150-12-21: 0.84
+# CPU-s on an idle 8-vCPU amd64 host (red-team performance review, 2026-10-21).  At
+# 30r/m one client sending only that chart sustains about 0.42 CPU, so two or
+# three clients can hold the container's one CPU (compose `cpus: 1.0`); the
+# compute pools and the Swiss queue budget then refuse with a retryable 503
+# rather than queueing without bound.  The burst (7 beyond the first) fits the
 # two workers' eight chart slots.
 limit_req_zone $binary_remote_addr zone=armillary_chart_client:10m rate=30r/m;
 # Place lookup and time conversion each have their own bucket: typing a few
@@ -425,6 +429,17 @@ server {
         proxy_set_header X-Real-IP "";
         proxy_set_header Forwarded "";
         proxy_pass http://172.31.240.2:8000;
+    }
+
+    # Readiness is for the container health check, which asks uvicorn inside
+    # the container and never passes through here.  From outside it would only
+    # tell a stranger whether the ephemeris files are intact, so the edge
+    # answers it as an API path that does not exist (the application's
+    # unknown_api_path refusal) before any limiter or upstream is involved.
+    # An operator on the host asks the container address directly.
+    location = /api/health/ready {
+        default_type application/json;
+        return 404 '{"detail":{"code":"unknown_api_path","message":"此服務沒有這個 API 路徑。"}}';
     }
 
     location / {

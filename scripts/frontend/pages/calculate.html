@@ -2,8 +2,7 @@
 
     <section class="compose" aria-labelledby="compose-heading">
       <div class="eyebrow">計算</div>
-      <h1 id="compose-heading">線上排古典西洋占星本命盤<span class="h1-qual">（整宮制等七種宮位制）</span></h1>
-      <p class="kicker">排一張本命盤，每一步都能檢查。</p>
+      <h1 id="compose-heading">線上排古典西洋占星本命盤<span class="h1-qual">（整宮制等七種宮位制）</span><span class="h1-sub">排一張本命盤，每一步都能檢查。</span></h1>
       <!-- 引言：第一句與最後一句（伺服器不留副本）常駐；中間那一句在 <details> 裡（預設收起，不靠 JavaScript
            也點得開）。手機上「更多說明」排在兩句之後（calculate.css）；寬螢幕把三句攤成原來的同一段、不顯示「更多」
            那一行（::details-content），不支援的瀏覽器照舊是一行可點開的「更多」。標籤之間不留空白：攤成同一段時，
@@ -15,8 +14,8 @@
       <p class="skip-to-form"><a href="#mode-choice">直接開始填 ↓</a></p>
       <!-- 載入提示不寫成頁面文字（搜尋引擎曾拿它當這一頁的摘要）：calculate.css 在 calculate.js 把它藏起來之前，
            從 data-message 畫出這句；沒有 JavaScript 時不畫，改由 noscript 那一句說明。 -->
-      <p class="status-line" id="bootstrap-status" role="status" aria-live="polite" data-tone="warning" data-message="計算介面正在載入。若這段訊息持續顯示，代表頁面未完整載入；請重新整理，仍有問題請稍後再試。"></p>
-      <noscript><p class="status-line calc-noscript" data-tone="warning">這個計算器需要 JavaScript 才能計算：請在瀏覽器開啟 JavaScript 後重新整理這一頁。</p></noscript>
+      <p class="status-line" id="bootstrap-status" role="status" aria-live="polite" data-tone="warning" data-message="計算介面正在載入。若這段訊息持續顯示，代表頁面沒有完整載入；請重新載入這一頁，仍有問題請稍後再試一次。"></p>
+      <noscript><p class="status-line calc-noscript" data-tone="warning">這個計算器需要 JavaScript 才能計算：請在瀏覽器開啟 JavaScript 後重新載入這一頁。</p></noscript>
 
       <!-- 三種模式：只是預先勾好的一組選項，送出的仍是同一份選項；收據照舊列出實際生效的每一項。
            不記住選了哪一種（不用任何瀏覽器儲存）；站內連結帶的 ?mode= 由 calculate.js 讀一次就從網址拿掉。
@@ -38,16 +37,16 @@
             <span><b>自訂</b><span>我要自己挑每個選項：從快速看盤的設定開始，全部選項攤開；匯出預設帶驗算資料，含出生地的精確經緯度與海拔。結果分六章。</span></span>
           </label>
         </div>
-        <p class="note mode-choice-timelords" id="mode-choice-timelords">古典完整會在星盤算完後接著排出年度時間主星：{{time_lord_techniques}}。規則與出處見〈<a href="/zh-TW/methods/time-lords">年度時間主星的規則與出處</a>〉。</p>
+        <p class="note mode-choice-timelords" id="mode-choice-timelords">古典完整會在星盤算完後接著排出年度時間主星：{{time_lord_techniques}}。規則與出處見〈<a href="/zh-TW/methods/time-lords">年度時間主星的規則與出處</a>〉；各技法的入門與合成範例：<a href="/zh-TW/calculate/firdaria">法達</a>、<a href="/zh-TW/calculate/zodiacal-releasing">黃道釋放</a>、<a href="/zh-TW/calculate/profections">小限</a>、<a href="/zh-TW/calculate/decennials">十年期</a>。</p>
         <p class="mode-choice-actions"><button type="button" class="ghost small glossary-open" data-glossary-open>名詞解釋</button></p>
       </fieldset>
 
       <form id="chart-form" novalidate autocomplete="off">
 
         <fieldset>
-          <legend>出生日期與時間 <span class="en" lang="en">Date and time</span></legend>
+          <legend>出生日期與時間</legend>
           <fieldset class="choice-group" id="precision-choice" aria-describedby="precision-help">
-          <legend class="choice-lead" id="precision-lead">你對出生時刻的把握程度 <span class="en" lang="en">Birth time precision</span></legend>
+          <legend class="choice-lead" id="precision-lead">你對出生時刻的把握程度</legend>
           <p class="note" id="precision-help">不知道確切出生時間？選『只知道日期』或『只知道約略小時』，結果會告訴你上升點與宮位在這段時間裡有沒有換（只知道日期時不算上升點與宮位）。</p>
           <div class="choice">
             <label>
@@ -67,26 +66,32 @@
           <p class="consequence" id="precision-consequence" aria-live="polite"></p>
 
           <div class="grid four">
-            <div class="field">
-              <label for="date">出生日期</label>
-              <input type="date" id="date" aria-describedby="date-hint date-hint-more" min="1900-01-01" max="2399-12-31" autocomplete="off">
+            <!-- 年／月／日三欄而不是 type=date：後者的欄位順序跟著瀏覽器語系（mm/dd/yyyy）。三欄沒有 name，
+                 範圍寫在 data-min／data-max，由送出守衛讀；不自動跳欄，Tab 照常移動。 -->
+            <fieldset class="field date-field" id="field-date">
+              <legend id="date-legend">出生日期</legend>
+              <div class="date-parts" id="date-parts" data-min="1900-01-01" data-max="2399-12-31">
+                <span class="date-part"><input type="text" id="date-year" aria-labelledby="date-legend date-year-unit" aria-describedby="date-hint date-hint-more" inputmode="numeric" maxlength="4" size="4" autocomplete="off" spellcheck="false"><span class="date-unit" id="date-year-unit">年</span></span>
+                <span class="date-part"><input type="text" id="date-month" aria-labelledby="date-legend date-month-unit" aria-describedby="date-hint" inputmode="numeric" maxlength="2" size="2" autocomplete="off" spellcheck="false"><span class="date-unit" id="date-month-unit">月</span></span>
+                <span class="date-part"><input type="text" id="date-day" aria-labelledby="date-legend date-day-unit" aria-describedby="date-hint" inputmode="numeric" maxlength="2" size="2" autocomplete="off" spellcheck="false"><span class="date-unit" id="date-day-unit">日</span></span>
+              </div>
               <!-- 說明的第一句常駐；其餘收在「?」裡（窄螢幕），寬螢幕攤成同一段。兩段都是日期欄的描述。 -->
               <div class="hint-group">
                 <span class="hint" id="date-hint">西元 1900–2399，以格里曆解讀；</span><details class="hint-more"><summary aria-label="出生日期的其餘說明">?</summary><span class="hint" id="date-hint-more">原始紀錄若是儒略曆，請先換算。民國年與日本年號可用下方的換算助手；農曆請先換算成西元國曆。</span></details>
               </div>
-            </div>
+            </fieldset>
             <div class="field" id="field-hour">
-              <label for="hour">小時 <span class="en" lang="en">hour</span></label>
+              <label for="hour">小時</label>
               <input type="number" id="hour" aria-describedby="hour-hint" min="0" max="23" step="1" inputmode="numeric" autocomplete="off">
               <span class="hint" id="hour-hint">24 小時制 0–23</span>
             </div>
             <div class="field" id="field-minute">
-              <label for="minute">分 <span class="en" lang="en">minute</span></label>
+              <label for="minute">分</label>
               <input type="number" id="minute" aria-describedby="minute-hint" min="0" max="59" step="1" inputmode="numeric" autocomplete="off">
               <span class="hint" id="minute-hint">0–59</span>
             </div>
             <div class="field" id="field-second">
-              <label for="second">秒 <span class="en" lang="en">second</span></label>
+              <label for="second">秒</label>
               <input type="number" id="second" aria-describedby="second-hint" min="0" max="60" step="any" inputmode="decimal" autocomplete="off" placeholder="0">
               <span class="hint" id="second-hint">0–59，可填小數（最多六位），不填視為 0</span>
             </div>
@@ -131,7 +136,7 @@
             <button type="button" class="ghost small" id="era-apply">換算並填入出生日期</button>
             <p class="status-line" id="era-echo" role="status" aria-live="polite"></p>
             <div class="time-check">
-              <p class="note" id="time-check-note">填好出生日期、時刻並選定出生地點後，可以先核對：這個鐘面時間在當地是 UTC 加幾小時、當時是否實施夏令時間或日本時間、是否根本不存在或出現兩次，以及這條規則出自哪份文件、我們核到哪一層。核對由計算服務以排盤時同一份時區資料庫回答；送出的只有日期、時刻與時區，不含座標，服務不留副本。目前涵蓋臺灣、香港、澳門與中國；四地的規則與出處見〈<a href="/zh-TW/methods/birth-time-conversion">出生時間換算的規則與出處</a>〉。</p>
+              <p class="note" id="time-check-note">填好出生日期、時刻並選定出生地點後，可以先核對：這個鐘面時間在當地是 UTC 加幾小時、當時是否實施夏令時間或日本時間、是否根本不存在或出現兩次，以及這條規則出自哪份文件、我們核到哪一層。核對由計算服務以排盤時同一份時區資料庫回答；送出的只有日期、時刻與時區，不含座標，服務不留副本。目前涵蓋臺灣、香港、澳門與中國；四地的規則與出處見〈<a href="/zh-TW/methods/birth-time-conversion">出生時間換算的規則與出處</a>〉，香港 1941–1979 年逐年的夏令時間與日佔時期見〈<a href="/zh-TW/blog/hong-kong-birth-time">香港出生時間怎麼換算</a>〉。</p>
               <button type="button" class="ghost small" id="time-check-button">核對這個鐘面時間</button>
               <p class="status-line" id="time-check-status" role="status" aria-live="polite"></p>
               <div class="time-check-result" id="time-check-result" hidden></div>
@@ -141,7 +146,7 @@
 
         <!-- ── 地點：離線目錄查詢優先，手動輸入為後備 ── -->
         <fieldset>
-          <legend>出生地點 <span class="en" lang="en">Birth place</span></legend>
+          <legend>出生地點</legend>
           <div class="place-search">
             <div class="field grow">
               <label for="place-query">地名查詢</label>
@@ -177,24 +182,24 @@
             <p class="note">目錄查不到、或你握有比目錄更精確的座標時使用。手動輸入的座標不會附帶目錄收據。</p>
             <div class="grid three">
               <div class="field">
-                <label for="latitude">緯度 <span class="en" lang="en">latitude</span></label>
+                <label for="latitude">緯度</label>
                 <input type="number" id="latitude" aria-describedby="latitude-hint" step="any" min="-90" max="90" inputmode="decimal" autocomplete="off">
                 <span class="hint" id="latitude-hint">−90…90，北為正</span>
               </div>
               <div class="field">
-                <label for="longitude">經度 <span class="en" lang="en">longitude</span></label>
+                <label for="longitude">經度</label>
                 <input type="number" id="longitude" aria-describedby="longitude-hint" step="any" min="-180" max="180" inputmode="decimal" autocomplete="off">
                 <span class="hint" id="longitude-hint">−180…180，東為正</span>
               </div>
               <div class="field">
-                <label for="altitude">海拔（公尺） <span class="en" lang="en">altitude</span></label>
+                <label for="altitude">海拔（公尺）</label>
                 <input type="number" id="altitude" aria-describedby="altitude-hint" step="any" min="-500" max="10000" inputmode="decimal" autocomplete="off">
                 <span class="hint" id="altitude-hint">−500…10000，不確定時填 0</span>
               </div>
             </div>
             <div class="grid">
               <div class="field">
-                <label for="timezone">IANA 時區名稱 <span class="en" lang="en">IANA timezone</span></label>
+                <label for="timezone">IANA 時區名稱</label>
                 <input type="text" id="timezone" aria-describedby="timezone-hint timezone-offset" autocomplete="off" placeholder="Asia/Taipei" list="timezone-suggestions">
                 <datalist id="timezone-suggestions"></datalist>
                 <span class="hint" id="timezone-hint">依出生地當時實際適用的時區。1970 年前的偏移是 IANA 資料庫推定，未經歷史驗證</span>
@@ -236,14 +241,14 @@
 
         <!-- ── 計算口徑 ── -->
         <fieldset id="settings-mode">
-          <legend>計算口徑 <span class="en" lang="en">Computation mode</span></legend>
+          <legend>計算口徑</legend>
           <details class="advanced mode" id="mode">
             <summary><span id="mode-summary">回歸黃道 · 整宮制</span></summary>
             <div class="advanced-body">
               <p class="note">視高度與升降事件的大氣折射使用15°C；氣壓未指定時由海拔估算。地平取平坦、無遮蔽的數學地平，不計眼高俯角。此有效輸入會列在結果與匯出中。</p>
           <div class="grid">
             <div class="field">
-              <label for="zodiac">黃道 <span class="en" lang="en">zodiac</span></label>
+              <label for="zodiac">黃道</label>
               <select id="zodiac">
                 <option value="tropical">回歸 tropical</option>
                 <option value="sidereal">恆星 sidereal</option>
@@ -262,7 +267,7 @@
           </div>
           <div class="grid">
             <div class="field">
-              <label id="house-system-label">宮位制 <span class="en" lang="en">house system</span></label>
+              <label id="house-system-label">宮位制</label>
               <div class="inline-control" id="house-system-slot"></div>
               <span class="hint" id="opt-house_system-detail"></span>
               <span class="hint" id="opt-house_system-hint">整宮與等分宮每宮都是 30 度。四分宮制先用上升點與中天（黃道在上子午圈的那一點；子午圈是通過天頂與正南、正北的大圓）把一圈分成四段，每段再分成三宮，所以宮的大小不一。七種平等提供，本產品不排序其歷史適用性；一次計算一種。</span>
@@ -275,7 +280,7 @@
         </fieldset>
 
         <fieldset id="settings-advanced">
-          <legend>進階選項 <span class="en" lang="en">Advanced options</span></legend>
+          <legend>進階選項</legend>
           <details class="advanced" id="advanced">
             <summary><span id="advanced-summary">全部為產品預設</span></summary>
             <div class="advanced-body">
@@ -341,7 +346,7 @@
       <!-- 出生時間不確定時，結果最上方一行（每一章都看得到），連到星盤圖之後的白話摘要。 -->
       <p class="birth-time-notice" id="birth-time-notice" hidden></p>
 
-      <!-- 注意事項：寬螢幕整張清單常駐（摘要那一行不顯示）；窄螢幕先收成一行，點開看全文。開合由 calculate.js 依寬度設定，列印前一律展開。 -->
+      <!-- 注意事項：全是提醒時先收成一行，點開看全文；有一則影響時間、時區或方法時整張打開。開合由 calculate.js 設定，列印前一律展開。 -->
       <details class="warnings-fold" id="warnings-fold" hidden>
         <summary class="warnings-summary" id="warnings-summary"></summary>
         <ul class="warnings" id="warnings" hidden></ul>
@@ -361,21 +366,10 @@
       <p class="note chapter-mode-note" id="chapter-mode-note" hidden></p>
 
       <section class="chapter" id="chapter-overview" data-chapter="overview" aria-labelledby="chapter-overview-title">
-        <div class="chapter-head">
-          <h2 id="chapter-overview-title" tabindex="-1">總覽</h2>
-          <p class="chapter-lead">這一章是這張盤最常被問的部分：星盤圖，以及太陽、月亮、<button type="button" class="term" data-term="asc">上升星座</button>三個星座。數字和後面各章的表格是同一份。</p>
-        </div>
-        <details class="first-time" id="first-time">
-          <summary>第一次看星盤？三步讀這一頁</summary>
-          <ol>
-            <li><b>先看「本命盤速覽」的三件事。</b>上升星座是出生那一刻東方地平線上的星座，需要準確的出生時間。</li>
-            <li><b>再看圖。</b>外圈是 12 個星座，裡面的符號是行星，數字 1–12 是宮位。點任何一個符號，會跳到它在「位置」一章的那一列。</li>
-            <li><b>看不懂的詞，按「名詞解釋」。</b>想核對數字怎麼來的，到最後一章「收據與匯出」。</li>
-          </ol>
-          <p class="note">照原典列出。不替你解盤，也不預測。</p>
-        </details>
+        <!-- 章節列已標示「總覽」：標題只給輔助科技與大綱，首屏留給星盤圖。 -->
+        <h2 id="chapter-overview-title" class="visually-hidden" tabindex="-1">總覽</h2>
 
-      <!-- 結果首屏：本命盤速覽（calculate.js 建在最前面）、星盤圖、常用匯出。桌機左圖右速覽，窄螢幕依原始碼順序上下排：
+      <!-- 結果首屏：本命盤速覽（calculate.js 建在最前面）、星盤圖、常用匯出。寬螢幕左圖、右邊上速覽下匯出，窄螢幕依原始碼順序上下排：
            速覽之後緊接著圖，匯出在圖之後。 -->
       <div class="result-lead" id="result-lead">
         <div class="result-lead-wheel" id="chart-wheel-host"></div>
@@ -401,6 +395,17 @@
            填入，所以這裡是 role=region 的 div：靜態頁上沒有標題的 section 會是無名的大綱項目。 -->
       <div class="sampling-callout" id="sampling-callout" role="region" hidden aria-labelledby="sampling-callout-title"></div>
 
+      <!-- 讀圖的三步說明排在圖、速覽與出生時間摘要之後：首屏留給星盤圖。 -->
+      <details class="first-time" id="first-time">
+        <summary>第一次看星盤？三步讀這一頁</summary>
+        <ol class="howto">
+          <li><b>先看圖旁的太陽、月亮與上升三格。</b>上升星座是出生那一刻東方地平線上的星座，需要準確的出生時間。</li>
+          <li><b>再看圖。</b>外圈是 12 個星座，裡面的符號是行星，數字 1–12 是宮位。點任何一個符號，會跳到它在「位置」一章的那一列。</li>
+          <li><b>看不懂的詞，按「名詞解釋」。</b>想核對數字怎麼來的，到最後一章「收據與匯出」。</li>
+        </ol>
+        <p class="note">照原典列出。不替你解盤，也不預測。</p>
+      </details>
+
       <!-- 一頁摘要的隱私句與頁尾：畫面上不顯示。 -->
       <div class="print-brief print-brief-body" id="print-brief-body">
         <p class="note" id="print-brief-privacy">這份摘要預設不印出生日期、時間與地點；但星盤數值本身也能推回出生時間與地點。</p>
@@ -413,7 +418,7 @@
       <section class="chapter" id="chapter-positions" data-chapter="positions" aria-labelledby="chapter-positions-title" hidden>
         <div class="chapter-head">
           <h2 id="chapter-positions-title" tabindex="-1">位置</h2>
-          <p class="chapter-lead">每顆行星與每個點（例如<button type="button" class="term" data-term="node">月交點</button>）在黃道上的位置、是否<button type="button" class="term" data-term="retrograde">逆行</button>，以及由位置直接推出來的點（例如<button type="button" class="term" data-term="dodecatemoria">十二分部</button>）。</p>
+          <p class="chapter-lead">每顆行星與每個點（例如<button type="button" class="term" data-term="node">月交點</button>、<button type="button" class="term" data-term="asc">上升星座</button>）在黃道上的位置、是否<button type="button" class="term" data-term="retrograde">逆行</button>，以及由位置直接推出來的點（例如<button type="button" class="term" data-term="dodecatemoria">十二分部</button>）。</p>
         </div>
         <div class="chapter-sections" data-chapter-host="positions"></div>
       </section>
@@ -463,6 +468,22 @@
             </select>
           </span>
           <p class="note">十年期（每段 10 年 9 個月）的起點，古書有不同的規則；本站預設不需要判斷的 Firmicus 規則，不替你判斷光體（太陽與月亮）的好壞。說明見〈<a href="/zh-TW/methods/decennials">十年期的規則、出處與驗算</a>〉。</p>
+          <div class="annual-choice">
+          <label for="annual-fir-node">法達夜盤的兩個月交點排在哪裡</label>
+          <select id="annual-fir-node">
+            <option value="abu_mashar_nodes_after_mercury_v1" selected>交點排在水星之後（al-Bīrūnī 的表，預設）</option>
+            <option value="bonatti_reading_nodes_after_mars_v1">交點排在火星之後（Zoller 對 Bonatti 的讀法）</option>
+          </select>
+          <p class="note">只影響夜盤（出生時太陽在地平線下）；日盤兩種排法相同。兩種都不標為唯一正確，結果上印出用的是哪一種。為什麼預設排在水星之後，見〈<a href="/zh-TW/blog/firdaria-night-node-order">法達夜盤的交點排在哪裡？</a>〉。</p>
+          </div>
+          <div class="annual-choice">
+          <label for="annual-zr-year">黃道釋放的一年</label>
+          <select id="annual-zr-year">
+            <option value="zr_year_360_days_v1" selected>360 日（Valens 的分配年，預設）</option>
+            <option value="zr_year_365_25_days_v1">365.25 日（部分現代軟體的設定）</option>
+          </select>
+          <p class="note">Valens 把黃道釋放的年數換成 360 日的分配年；部分現代軟體改用 365.25 日。兩種年長不並列，結果上印出用的是哪一種。說明見〈<a href="/zh-TW/methods/time-lords#releasing">年度時間主星的規則與出處</a>〉第 04 節。</p>
+          </div>
         </div>
         <div class="annual-start" id="annual-start">
           <button type="button" class="ghost small" id="annual-load">排出時間主星</button>
@@ -513,9 +534,14 @@
         </div>
         <p class="note">兩者都會讓舊的複製與下載按鈕立即失效，並撤銷已建立的下載連結。<strong>但已經複製到系統剪貼簿、或已經存到你磁碟上的檔案，本頁無法收回。</strong></p>
       </div>
+      <!-- 回到頂端：捲進結果一段之後才出現，按了回到結果標題（章節列就在它下面）。手機上只在往回捲時出現，
+           平常不蓋住表格；寬螢幕放在內容欄右側的留白裡。開合由 calculate.js 設定，列印不印。 -->
+      <button type="button" class="back-to-top" id="back-to-top" hidden>回到頂端</button>
     </section>
 
-    <!-- 常見問題：可見的問答，不另做 FAQPage 結構化資料。每一題的答案對照產品的實際行為。 -->
+    <!-- 常見問題：每一題的答案對照產品的實際行為。build_pages 從這裡讀出 FAQPage 結構化資料（同一份文字，不另抄）。
+       「兩個網站算出的上升星座不一樣」與「怎麼逐項對照」兩題的先後（先輸入、後黃道；宮位制不改上升點）
+       與首頁、功能頁、〈線上排盤準不準？〉相同，由 tests/publication/test_faq_copy.py 守著。 -->
     <section class="calc-faq" aria-labelledby="faq-heading">
       <h2 id="faq-heading">常見問題</h2>
       <details>
@@ -528,7 +554,11 @@
       </details>
       <details>
         <summary>為什麼兩個網站算出的上升星座不一樣？</summary>
-        <p>常見原因有時區、夏令時間、經緯度、回歸或恆星黃道。渾儀會把用了哪一套寫在結果裡。各種原因讓上升點差多少，見〈<a href="/zh-TW/blog/chart-calculation-accuracy">線上排盤準不準？</a>〉。</p>
+        <p>多半是輸入不同：時區、夏令時間、出生地經緯度或出生時間填得不一樣。這些都一樣還是不同，再看黃道是回歸還是恆星。宮位制只決定宮頭，不改上升點本身。渾儀把用了哪一套都寫在結果的收據裡。各種原因讓上升點差多少，見〈<a href="/zh-TW/blog/chart-calculation-accuracy">線上排盤準不準？</a>〉。</p>
+      </details>
+      <details>
+        <summary>跟其他排盤網站對不上時，怎麼逐項對照？</summary>
+        <p>依序對照：①時區與夏令時間（對照收據上的世界時）；②出生地經緯度；③出生時間；④黃道（回歸或恆星）；⑤交點用平均還是真交點；⑥位置是視位置還是真位置。宮位制只影響宮頭，不影響上升點與行星位置。收據在哪裡、怎麼重算，見〈<a href="/zh-TW/blog/verify-chart-calculation">怎麼自己驗算</a>〉。</p>
       </details>
       <details>
         <summary>上升星座查詢表準嗎？</summary>
@@ -541,6 +571,14 @@
       <details>
         <summary>民國年、昭和年怎麼換成西元？</summary>
         <p>民國年加 1911，昭和年加 1925（大正加 1911、明治加 1867），月與日不變；改元那一年要核對日期。本頁出生日期下方的「換算助手」可以直接換算並填入，農曆與時辰目前不換算。見〈<a href="/zh-TW/blog/taiwan-era-years-birth-time">民國年、昭和年怎麼換算西元？</a>〉。</p>
+      </details>
+      <details>
+        <summary>可以排哪些年份？農曆生日或時辰可以直接填嗎？</summary>
+        <p>西元 1900 到 2399 年，日期以國曆（格里曆）解讀。農曆和時辰目前不能直接填：農曆要先換成國曆；時辰是兩小時的區間，換成單一鐘點等於替你猜出生時間，所以不自動換。民國年、日本年號，可以用出生日期下方的換算助手。</p>
+      </details>
+      <details>
+        <summary>日治時期出生，要自己加一小時嗎？</summary>
+        <p>不用。照出生紀錄上的鐘點填，地點選臺灣，渾儀會依時區資料庫自動套用當時的標準時：1937 年 10 月 1 日以前是 UTC+8，之後到 1945 年 9 月 21 日是 UTC+9。歷年的時區與夏令時間，見〈<a href="/zh-TW/blog/taiwan-time-zone-history">臺灣夏令時間出生，排盤要減一小時嗎？</a>〉。</p>
       </details>
       <details>
         <summary>出生在夏令時間的年份，要先減一小時嗎？</summary>
@@ -571,24 +609,44 @@
         <p>每張盤都附計算收據，在結果最下方的「技術細節與驗算資料」：寫出時間怎麼換算、用了哪一版程式與哪些星曆檔，以及整串計算步驟的雜湊；在同一個網站上用同一份輸入再算一次、比對雜湊即可。自己架設的一份拿來比，雜湊可能因電腦不同而不同，要比數值。見〈<a href="/zh-TW/blog/verify-chart-calculation">星盤怎麼驗算？</a>〉。</p>
       </details>
       <details>
+        <summary>數字算錯了，怎麼回報？</summary>
+        <p>寄信或開 GitHub issue 都可以，要寫什麼、怎麼不附真實出生資料，見〈<a href="/zh-TW/contact#wrong-number">聯絡：數字算錯了</a>〉。</p>
+      </details>
+      <details>
         <summary>線上排盤要錢嗎？要註冊嗎？</summary>
         <p>目前免費，也不需註冊：沒有帳號，不要求 email。出生資料只用於這一次計算，回應送出後伺服器不留副本；各項承諾由哪一層執行，見〈<a href="/zh-TW/trust">信任</a>〉。</p>
       </details>
       <details>
+        <summary>以後會收費嗎？</summary>
+        <p>目前免費，不需註冊。現有的排盤與匯出功能沒有計畫改成收費；之後可能增加贊助管道。</p>
+      </details>
+      <details>
+        <summary>替個案或學生排盤，匯出或列印會帶出出生資料嗎？</summary>
+        <p>列印「一頁摘要」預設不印出生日期、時間與地點，要印得勾選「摘要加印出生日期、時間與地點」。匯出檔都含出生時刻與計算結果：「運算結果」不列出生地座標，「運算結果＋驗算資料」則含出生地的精確經緯度、海拔與完整計算過程。要知道的是：就算不印出生資料，上升點、中天與行星位置本身也能推回出生時間與地點，所以交給別人之前，請把它當成含個人資料的文件。要不要附，由你決定。</p>
+      </details>
+      <details>
         <summary>可以排印度占星（吠陀）星盤嗎？</summary>
-        <p>恆星黃道目前提供四種歲差值，沒有 Lahiri。</p>
+        <p>目前不行。恆星黃道只提供四種歲差值，沒有印度占星常用的 Lahiri；宮位、分盤與大運也都還沒做。</p>
       </details>
       <details>
         <summary>渾儀會解盤或看運勢嗎？</summary>
-        <p>不會，只計算。</p>
+        <p>不會，只計算。古書怎麼說，我們照原文列出、附出處；說吉就寫吉，說凶就寫凶，但不替你把這些綜合成對你人生的判斷，也不預測。</p>
       </details>
       <details>
         <summary>福點（幸運點）在哪裡查？</summary>
         <p>渾儀叫它「命運點」（Lot of Fortune）。選「古典完整」就會一起算，列在結果「古典判斷」章的「阿拉伯點」；用「自訂」時，在進階選項的「點與軸」勾「阿拉伯點」。依日盤或夜盤採用對應的公式；太陽靠近地平時，日盤和夜盤公式的結果都列出。公式與出處見〈<a href="/zh-TW/methods#lots">方法頁：阿拉伯點</a>〉。</p>
       </details>
       <details>
-        <summary>可以排合盤、行運或太陽回歸盤嗎？</summary>
-        <p>太陽回歸盤可以：選「古典完整」或「自訂」，算完本命盤後到「時間主星」一章排出時間主星，選一個年度，再按「排出第 N 年的太陽回歸盤」。太陽回歸盤是太陽回到出生時黃經位置那一刻的星盤，在出生地起盤、宮位制預設與本命盤相同，需要確切的出生時間；只列計算結果，不替你解盤，也不預測。合盤與行運目前沒有。</p>
+        <summary>可以排合盤、行運、推運或太陽回歸盤嗎？</summary>
+        <p>太陽回歸盤可以；合盤、行運、推運目前都還沒有。要排太陽回歸盤：選「古典完整」或「自訂」，算完本命盤後到「時間主星」一章排出時間主星，選一個年度，再按「排出第 N 年的太陽回歸盤」。太陽回歸盤是太陽回到出生時黃經位置那一刻的星盤，預設在出生地起盤（也可以改填另一個地點）、宮位制預設與本命盤相同，需要確切的出生時間；只列計算結果，不替你解盤，也不預測。</p>
+      </details>
+      <details>
+        <summary>有英文版嗎？</summary>
+        <p>正在準備完整的英文版，預計和公開測試版（Public Beta）一起上線。</p>
+      </details>
+      <details>
+        <summary>可以自己架設或離線跑嗎？</summary>
+        <p>可以。原始碼依 AGPL 公開在 GitHub，README 有在自己電腦上執行的步驟。本站不提供打包好的映像或安裝檔，著作權頁寫的「僅託管服務」指的就是這點：我們只經營這個網站，不另外散布執行檔。</p>
       </details>
     </section>
 </div>
@@ -601,13 +659,6 @@
 <script src="/zh-TW/request-input.js?v={{assets}}" defer></script>
 <script src="/zh-TW/timezone-names.js?v={{assets}}" defer></script>
 <script src="/zh-TW/location-receipt.js?v={{assets}}" defer></script>
-<script src="/zh-TW/chart-glyphs.js?v={{assets}}" defer></script>
-<script src="/zh-TW/chart-wheel-aspects.js?v={{assets}}" defer></script>
-<script src="/zh-TW/chart-wheel-model.js?v={{assets}}" defer></script>
-<script src="/zh-TW/chart-square.js?v={{assets}}" defer></script>
-<script src="/zh-TW/chart-wheel.js?v={{assets}}" defer></script>
-<script src="/zh-TW/timelords-model.js?v={{assets}}" defer></script>
-<script src="/zh-TW/timelords.js?v={{assets}}" defer></script>
 <script src="/zh-TW/result-chapters.js?v={{assets}}" defer></script>
 <script src="/zh-TW/glossary.js?v={{assets}}" defer></script>
-<script src="/zh-TW/calculate.js?v={{assets}}" data-view-model="/zh-TW/view-model.js?v={{assets}}" defer></script>
+<script src="/zh-TW/calculate.js?v={{assets}}" data-chart-glyphs="/zh-TW/chart-glyphs.js?v={{assets}}" data-chart-wheel-aspects="/zh-TW/chart-wheel-aspects.js?v={{assets}}" data-chart-wheel-model="/zh-TW/chart-wheel-model.js?v={{assets}}" data-chart-square="/zh-TW/chart-square.js?v={{assets}}" data-chart-wheel="/zh-TW/chart-wheel.js?v={{assets}}" data-view-model="/zh-TW/view-model.js?v={{assets}}" data-timelords-model="/zh-TW/timelords-model.js?v={{assets}}" data-timelords="/zh-TW/timelords.js?v={{assets}}" defer></script>

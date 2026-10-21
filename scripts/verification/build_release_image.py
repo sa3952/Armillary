@@ -15,6 +15,7 @@ publication status.
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 from pathlib import Path
 import re
@@ -27,6 +28,7 @@ from typing import Any
 
 from scripts.deployment.frontend_release import validate_publication_receipt
 from scripts.publication.prepare_third_party_sources import SourcePreparationError, parse_lock
+from scripts.tools.commands import run_checked
 from scripts.tools.output_confinement import external_output_path
 from scripts.tools.source_tree_identity import materialize_git_snapshot, sha256_file
 from scripts.verification.verify_docker_context import DockerContextFailure, verify as verify_context
@@ -170,18 +172,7 @@ def publication_status_for_build(
     return "published_anonymously_reachable"
 
 
-def _run(
-    command: list[str], *, cwd: Path | None = None, timeout: int = 1800, check: bool = True,
-) -> subprocess.CompletedProcess[str]:
-    completed = subprocess.run(
-        command, cwd=cwd, check=False, capture_output=True, text=True, timeout=timeout
-    )
-    if check and completed.returncode:
-        raise BuildTransactionFailure(
-            f"command failed ({completed.returncode}): {' '.join(command[:4])}\n"
-            f"{completed.stderr[-4000:]}"
-        )
-    return completed
+_run = functools.partial(run_checked, error=BuildTransactionFailure, timeout=1800)
 
 
 def _revision(root: Path, require_clean: bool) -> str:

@@ -15,7 +15,7 @@ firdaria notation gap is the methods page's own computation.
 from __future__ import annotations
 
 from . import _fx, page_methods_time_lords
-from ._common import SIGNS, backend_on_path, swiss
+from ._common import SIGNS, backend_on_path, product_client, swiss
 from ._demo import DEMO
 
 
@@ -28,12 +28,7 @@ BODY = page_methods_time_lords.BODY
 ANGULARITY = {"angular": "角宮", "succedent": "續宮", "cadent": "果宮"}
 
 def _answer() -> dict:
-    with backend_on_path():
-        from fastapi.testclient import TestClient
-        from app.main import create_app
-        from app.settings import AppSettings
-
-        client = TestClient(create_app(AppSettings(enable_annual_route=True)))
+    with product_client(annual=True) as post:
         payload = {key: DEMO[key] for key in ("datetime", "location", "timezone")}
         payload["annual"] = {
             "target_kind": "year_of_life", "target_value": YEAR_OF_LIFE,
@@ -41,10 +36,7 @@ def _answer() -> dict:
             "include_firdaria": True, "include_zodiacal_releasing": True,
             "include_decennials": True,
         }
-        response = client.post("/api/chart/annual", params={"projection": "detailed"}, json=payload)
-        if response.status_code != 200:
-            raise RuntimeError(f"annual request answered {response.status_code}: {response.text[:300]}")
-        return response.json()
+        return post("/api/chart/annual?projection=detailed", payload)
 
 
 def _end(period: dict) -> dict:
@@ -141,12 +133,7 @@ FIRDARIA_VARIANTS = (
 
 def _lifetime() -> dict:
     """The demonstration chart's hundred return years, as the annual route answers them."""
-    with backend_on_path():
-        from fastapi.testclient import TestClient
-        from app.main import create_app
-        from app.settings import AppSettings
-
-        client = TestClient(create_app(AppSettings(enable_annual_route=True)))
+    with product_client(annual=True) as post:
         payload = {key: DEMO[key] for key in ("datetime", "location", "timezone")}
         payload["annual"] = {
             "target_kind": "year_of_life", "target_value": YEAR_OF_LIFE,
@@ -155,10 +142,7 @@ def _lifetime() -> dict:
             "include_zodiacal_releasing": True, "zr_scope": "lifetime_window",
             "include_decennials": True, "decennials_scope": "lifetime_window",
         }
-        response = client.post("/api/chart/annual", params={"projection": "detailed"}, json=payload)
-        if response.status_code != 200:
-            raise RuntimeError(f"lifetime request answered {response.status_code}: {response.text[:300]}")
-        return response.json()
+        return post("/api/chart/annual?projection=detailed", payload)
 
 
 def _swiss_ascendant_sign() -> int:
@@ -559,10 +543,7 @@ def _life_table(shown: list[dict], rows: list[dict], bound: _fx.Bound) -> str:
         f'<td>{names("firdaria", item)}</td><td>{names("firdaria-sub", item)}</td>'
         f'<td>{names("zr-fortune", item)}</td><td>{names("zr-spirit", item)}</td><td>{names("decennials", item)}</td></tr>'
         for item in shown)
-    head = "".join(f'<th scope="col">{h}</th>' for h in (
-        "年", "起", "年度小限（年主星）", "法達主期", "法達子期", "黃道釋放（命運點）", "黃道釋放（精神點）", "十年期"))
-    return ('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-            f'<table class="ar-table fx-table"><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div></details>')
+    return _fx.data_table(("年", "起", "年度小限（年主星）", "法達主期", "法達子期", "黃道釋放（命運點）", "黃道釋放（精神點）", "十年期"), body)
 
 
 def _figures(lifetime: dict) -> dict[str, str]:
@@ -598,13 +579,13 @@ def _figures(lifetime: dict) -> dict[str, str]:
                  f"{b1.scale(str(WHEEL_YEARS))} 個年份。第 {b1.num(str(signs[0]['years'][0]))} 年是上升星座本身，"
                  f"第 {b1.num(str(signs[0]['years'][1]))} 年又回到這裡。"
                  "數字取自本站年度計算服務的回應。"),
-        wide=_profection_wheel("fx-wide", "fig-profection-wheel", signs, b1),
-        narrow=_profection_wheel("fx-narrow", "fig-profection-wheel", signs, b1),
-        notes=notes, idle="用 Tab 鍵移到一個星座上，或用滑鼠指著它，這裡會寫出輪到它的年份與年主星。",
-        table=('<details class="fx-data"><summary>圖中的數字（表格）</summary><div class="ar-scroll">'
-               '<table class="ar-table fx-table"><thead><tr><th scope="col">星座</th><th scope="col">年主星</th>'
-               f'<th scope="col">第幾年（前 {b1.num(str(len(years)))} 年）</th></tr></thead><tbody>{table1}</tbody>'
-               '</table></div></details>'),
+        art=_fx.FigureArt.drawn(
+            _profection_wheel, "fig-profection-wheel", signs, b1,
+            notes=notes,
+            idle="用 Tab 鍵移到一個星座上，或用滑鼠指著它，這裡會寫出輪到它的年份與年主星。",
+        ),
+        table=_fx.data_table(("星座", "年主星", f"第幾年（前 {b1.num(str(len(years)))} 年）"), table1),
+        bound=b1,
     )
 
     # Figure 2: the product's day chart follows the diurnal order it draws.
@@ -623,10 +604,12 @@ def _figures(lifetime: dict) -> dict[str, str]:
         caption=(f"<b>{b2.label('圖 2')}</b>法達從出生起的 {b2.num(str(firdaria.CYCLE_YEARS))} 年，一段是一個主期，寬度照年數畫。"
                  "細刻度把行星的主期七等分成子期；單線排線是月亮的兩個交點，不分子期。按鈕切換日盤與夜盤的兩種順序，"
                  "年數與順序都取自本站計算用的表，和方法頁那張表相同。"),
-        wide=_firdaria_band("fx-wide", "fig-firdaria", firdaria, b2),
-        narrow=_firdaria_band("fx-narrow", "fig-firdaria", firdaria, b2),
-        notes=[], idle="", variants=tuple((key, label) for key, _, label in FIRDARIA_VARIANTS),
-        switch_label="切換日盤與夜盤的順序",
+        art=_fx.FigureArt.drawn(_firdaria_band, "fig-firdaria", firdaria, b2),
+        controls=_fx.FigureControls(
+            variants=tuple((key, label) for key, _, label in FIRDARIA_VARIANTS),
+            switch_label="切換日盤與夜盤的順序",
+        ),
+        bound=b2,
     )
 
     # Figure 3: the Saturn decennial of the same chart, its months the minor years.
@@ -645,9 +628,8 @@ def _figures(lifetime: dict) -> dict[str, str]:
                  f"{b3.num(str(sum(releasing.SIGN_PERIOD_YEARS.values())))} 年；排線的{differing}不等於守護行星的小年。"
                  f"右：同一張合成星盤的十年期，{BODY[decennial['lord']]}那一段的 {b3.num(str(decennial['months']))} 個月，"
                  "依七顆行星的小年分成七小段，順序取自本站年度計算服務的回應。"),
-        wide=_minor_years("fx-wide", "fig-minor-years", releasing, data["lords"], minor, decennial, b3),
-        narrow=_minor_years("fx-narrow", "fig-minor-years", releasing, data["lords"], minor, decennial, b3),
-        notes=[], idle="",
+        art=_fx.FigureArt.drawn(_minor_years, "fig-minor-years", releasing, data["lords"], minor, decennial, b3),
+        bound=b3,
     )
 
     # Figure 4.
@@ -662,16 +644,19 @@ def _figures(lifetime: dict) -> dict[str, str]:
                  "每一排是一種技法的一層：年度小限每年一格（星座符號與年主星），法達的主期與子期，黃道釋放從兩個點起的大期，"
                  f"十年期的第一層。框線是第 {b4.num(str(YEAR_OF_LIFE))} 年，可以拖拉選別的年。"
                  "數字取自本站年度計算服務的回應。"),
-        wide=_lifespan("fx-wide", "fig-lifespan", years, rows, b4),
-        narrow=_lifespan("fx-narrow", "fig-lifespan", years, rows, b4),
-        notes=steps, idle="拖拉選一年，這裡會寫出那一年各技法輪到誰。",
-        steps=len(shown), default_step=YEAR_OF_LIFE - WINDOW[0], scrub_label="第幾年",
+        art=_fx.FigureArt.drawn(
+            _lifespan, "fig-lifespan", years, rows, b4,
+            notes=steps,
+            idle="拖拉選一年，這裡會寫出那一年各技法輪到誰。",
+        ),
+        controls=_fx.FigureControls(
+            steps=len(shown),
+            default_step=YEAR_OF_LIFE - WINDOW[0],
+            scrub_label="第幾年",
+        ),
         table=_life_table(shown, rows, b4),
+        bound=b4,
     )
-    for markup, bound in ((wheel, b1), (band, b2), (rings, b3), (life, b4)):
-        found = _fx.problems(markup, bound)
-        if found:
-            raise RuntimeError("figure check: " + "; ".join(found))
     planets = ("sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn", "north_node", "south_node")
     return {"fx-defs": _fx.defs(planets + SIGN_KEYS), "profection-wheel": wheel, "firdaria-band": band,
             "minor-years": rings, "lifespan": life}

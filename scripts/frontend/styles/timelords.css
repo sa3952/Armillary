@@ -6,11 +6,14 @@
 .annual section{padding:0; border-top:0}
 .annual[hidden]{display:none}
 .annual > h2{font-family:var(--serif); font-weight:400; font-size:1.45rem; margin:.4rem 0 .3rem}
-.annual-fixed{display:inline-block; border:1px solid var(--hair); background:var(--paper-2); padding:.2rem .6rem; font-size:var(--fs-note); color:var(--ink); margin:.3rem 0 .5rem}
+/* 「只列計算結果…」：章首一次，小號淡墨字，不加框。 */
+.annual-fixed{font-size:var(--fs-small); color:var(--ink-faint); margin:.3rem 0 .5rem; max-width:var(--measure-cjk)}
 /* 十年期的起點：排出之前選，排出之後仍可改。 */
 .annual-options{display:flex; flex-wrap:wrap; gap:.4rem .7rem; align-items:center; margin:var(--s2) 0 0}
 .annual-options select{width:auto; max-width:100%; min-width:0}
 .annual-options .note{flex-basis:100%; margin:0}
+/* 法達夜盤交點與黃道釋放的一年：各自一列，與十年期的起點同一種排法。 */
+.annual-choice{flex-basis:100%; display:flex; flex-wrap:wrap; gap:.4rem .7rem; align-items:center; margin-top:var(--s1)}
 .annual-dec-planet{display:inline-flex; flex-wrap:wrap; gap:.4rem; align-items:center}
 .annual-dec-planet[hidden]{display:none}
 .annual-start{margin:var(--s2) 0}
@@ -21,51 +24,53 @@
 .annual .tl-code{margin-left:.4rem; font-size:var(--fs-small); color:var(--ink-faint); overflow-wrap:anywhere}
 .annual .tl-code code{font-family:var(--mono); font-size:inherit}
 .annual .note{max-width:var(--measure-cjk)}
+/* 日期與足歲：與表格數字同一套拉丁襯線。 */
+.annual .tl-num{font-family:var(--serif-num); font-variant-numeric:lining-nums tabular-nums}
 
 svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em; fill:currentColor; flex:none}
 
 /* 分段切換：呈現方式與範圍 */
 .annual .tl-view-switch, .annual .tl-toolbar{display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; margin:var(--s2) 0 .6rem}
-.annual .tl-seg{display:inline-flex; border:1px solid var(--ink-dim); max-width:100%}
+.annual .tl-seg{display:inline-flex; gap:.2rem; max-width:100%}
 .annual .tl-seg button{background:transparent; color:var(--ink); border:0; border-radius:0; padding:.35rem .8rem; font-size:var(--fs-note)}
-.annual .tl-seg button + button{border-left:1px solid var(--ink-dim)}
 .annual .tl-seg button[aria-pressed="true"]{background:var(--selected-bg); color:var(--ink); box-shadow:inset 0 calc(-1 * var(--selected-mark-w)) 0 var(--selected-mark)}
 
 /* 年度導覽 */
 .annual .tl-year-nav{display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; margin:.4rem 0 .6rem}
-.annual .tl-year-nav button{background:var(--paper); color:var(--ink); border:1px solid var(--hair); padding:.35rem .7rem; font-size:var(--fs-note)}
-.annual .tl-year-title{font-family:var(--serif); font-size:var(--fs-subhead); font-weight:700}
+.annual .tl-year-nav button{background:transparent; color:var(--ink); border:0; padding:.35rem .7rem; font-size:var(--fs-note)}
+.annual .tl-year-title{font-family:var(--serif); font-size:1.35rem; font-weight:400}
 .annual .tl-year-range{font-size:var(--fs-note); line-height:var(--lh-label); color:var(--ink-dim); flex-basis:100%; margin-bottom:.4rem}
 
 /* 今年摘要卡 */
-.annual .tl-summary{display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); border:1px solid var(--hair); background:var(--paper)}
+/* 外框只留給時間軸（.tl-frame）；切換鈕、年度導覽、摘要、提示、標記、細節欄、年表與各小區塊都不加框，只用上下髮線與選取記號。字重一律 400，層級靠字級與位置。 */
+.annual .tl-summary{display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); border-top:1px solid var(--hair); border-bottom:1px solid var(--hair); background:var(--paper)}
 .annual .tl-tile{display:flex; flex-direction:column; gap:var(--gap-related); text-align:left; background:transparent; color:var(--ink); border:0; border-right:1px solid var(--hair); border-radius:0; padding:var(--pad-card); font-size:var(--fs-body); line-height:var(--lh-label); min-width:0}
 .annual .tl-tile:last-child{border-right:0}
 .annual button.tl-tile:focus-visible{background:var(--paper-2); color:var(--ink); border-color:var(--hair)}
 .annual button.tl-tile[aria-pressed="true"]{background:var(--selected-bg); box-shadow:inset 0 calc(-1 * var(--selected-mark-w)) 0 var(--selected-mark)}
 .annual .tl-tile-key{font-size:var(--fs-small); color:var(--ink-dim)}
-.annual .tl-tile-value{font-family:var(--serif); font-size:1.3rem; font-weight:700; line-height:1.3; overflow-wrap:anywhere}
+.annual .tl-tile-value{font-family:var(--serif); font-size:1.45rem; font-weight:400; line-height:1.3; overflow-wrap:anywhere}
 .annual .tl-tile-value .tl-small{display:inline; font-size:.75em; font-weight:400; color:var(--ink-dim)}
 .annual .tl-tile-sub{font-size:var(--fs-note); line-height:var(--lh-label); overflow-wrap:anywhere}
 /* 名詞解釋與上面的數值是不同的兩組：上方留一條細線與組距，字級與行距照小字說明。 */
 .annual .tl-tile-gloss{font-size:var(--fs-note); color:var(--ink-faint); line-height:var(--lh-note); margin-top:calc(var(--gap-group) - var(--gap-related)); padding-top:.7rem; border-top:1px solid var(--hair-soft)}
 .annual .tl-reference{margin:.6rem 0 0}
 
-.annual .tl-notice{border:1px solid var(--state-unavailable); border-left-width:4px; padding:.8rem 1.1rem; margin:var(--gap-group) 0; font-size:var(--fs-note); line-height:var(--lh-body); background:var(--paper); max-width:calc(var(--measure-cjk) + 2.5rem)}
+.annual .tl-notice{border:0; border-top:1px solid var(--hair); border-bottom:1px solid var(--hair); padding:.8rem 0; margin:var(--gap-group) 0; font-size:var(--fs-note); line-height:var(--lh-body); background:var(--paper); max-width:calc(var(--measure-cjk) + 2.5rem)}
 .annual .tl-notice strong{color:var(--state-unavailable)}
 
 /* 主欄＋細節欄 */
 .annual .tl-layout{display:grid; grid-template-columns:minmax(0, 1fr) 24rem; gap:var(--s2); margin-top:var(--s2); align-items:start}
 .annual .tl-main{min-width:0}
 .annual .tl-panel-title{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:.3rem 1rem}
-.annual .tl-panel-title h3{font-family:var(--serif); font-size:var(--fs-subhead); font-weight:700}
+.annual .tl-panel-title h3{font-family:var(--serif); font-size:var(--fs-subhead); font-weight:400}
 
 /* 方案 A：橫向時間軸 */
 .annual .tl-frame{display:grid; grid-template-columns:9.5rem minmax(0, 1fr); border:1px solid var(--hair); background:var(--paper)}
 .annual .tl-labels{border-right:1px solid var(--hair)}
 .annual .tl-axis-label{height:46px; border-bottom:1px solid var(--hair); font-size:var(--fs-small); line-height:1.3; color:var(--ink-faint); padding:.3rem .5rem}
 .annual .tl-lane-label{display:flex; flex-direction:column; justify-content:center; padding:0 .5rem; border-bottom:1px solid var(--hair-soft); line-height:1.15; overflow:hidden}
-.annual .tl-lane-label b{font-size:var(--fs-note); font-weight:600}
+.annual .tl-lane-label b{font-size:var(--fs-note); font-weight:400}
 .annual .tl-lane-label small{font-size:var(--fs-small); color:var(--ink-faint)}
 .annual .tl-lane-label .tl-short{display:none}
 .annual .tl-lane-label.first, .annual .tl-lane.first{border-top:1px solid var(--hair)}
@@ -77,7 +82,7 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 .annual .tl-canvas{position:relative; padding-bottom:18px}
 .annual .tl-axis{position:relative; height:46px; border-bottom:1px solid var(--hair)}
 .annual .tl-tick{position:absolute; top:0; height:100%; border-left:1px solid var(--hair); padding-left:3px; font-size:var(--fs-small); line-height:1.25; color:var(--ink-dim); white-space:nowrap}
-.annual .tl-tick b{font-weight:600; color:var(--ink)}
+.annual .tl-tick b{font-weight:400; color:var(--ink)}
 .annual .tl-lane{position:relative; border-bottom:1px solid var(--hair-soft)}
 .annual button.tl-seg-item{position:absolute; top:3px; bottom:3px; display:flex; align-items:center; padding:0 4px; overflow:clip; white-space:nowrap; font-size:var(--fs-small); line-height:1; text-align:left; background:var(--paper); color:var(--ink); border:1px solid var(--hair); border-radius:var(--radius)}
 .annual button.tl-seg-item.alt{background:var(--paper-2)}
@@ -109,13 +114,13 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 .annual .tl-lg-node{width:16px; height:12px; border:1px dashed var(--ink-faint); background:repeating-linear-gradient(90deg, var(--paper-2) 0 4px, transparent 4px 8px)}
 
 /* 方案 B：直向年表 */
-.annual .tl-decade{border:1px solid var(--hair); border-top:0; background:var(--paper)}
+.annual .tl-decade{border-bottom:1px solid var(--hair); background:var(--paper)}
 .annual .tl-decade:first-of-type{border-top:1px solid var(--hair)}
-.annual .tl-decade > summary{cursor:pointer; padding:.45rem .7rem; font-weight:600; font-size:var(--fs-note); background:var(--paper-2)}
+.annual .tl-decade > summary{cursor:pointer; padding:.45rem .7rem; font-weight:400; font-size:var(--fs-note); background:var(--paper-2)}
 .annual .tl-book-wrap{overflow-x:auto}
 .annual .tl-book-table{width:100%; border-collapse:collapse; font-size:var(--fs-note)}
 .annual .tl-book-table th, .annual .tl-book-table td{text-align:left; vertical-align:top; padding:.4rem .5rem; border-bottom:1px solid var(--hair-soft)}
-.annual .tl-book-table thead th{font-weight:600; font-size:var(--fs-small); color:var(--ink-dim); border-bottom:1px solid var(--hair); white-space:normal; word-break:keep-all}
+.annual .tl-book-table thead th{font-weight:400; font-size:var(--fs-small); color:var(--ink-dim); border-bottom:1px solid var(--hair); white-space:normal; word-break:keep-all}
 .annual .tl-book-table tr.is-current > *{background:var(--paper-2)}
 .annual .tl-book-table tr.is-current > th{box-shadow:inset 4px 0 0 var(--accent)}
 .annual .tl-book-table tr.is-selected > th b{text-decoration:underline}
@@ -132,8 +137,8 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 .annual button.tl-chip{display:inline-flex; align-items:center; gap:.2rem; background:transparent; color:var(--ink); border:0; border-bottom:1px dotted var(--ink-faint); border-radius:0; padding:0; font-size:inherit; line-height:1.5; text-align:left}
 .annual button.tl-chip[aria-pressed="true"]{background:var(--selected-bg); color:var(--ink); border-bottom:var(--selected-mark-w) solid var(--selected-mark)}
 .annual button.tl-chip.node{color:var(--ink-faint)}
-.annual .tl-mark{font-size:var(--fs-small); border:1px solid var(--ink); padding:0 .25rem; margin-left:.25rem}
-.annual .tl-mark.dashed{border-style:dashed; border-color:var(--ink-faint); color:var(--ink-dim)}
+.annual .tl-mark{font-size:var(--fs-small); color:var(--ink-dim); margin-left:.35rem}
+.annual .tl-mark.dashed{color:var(--ink-faint); border-bottom:1px dashed var(--ink-faint)}
 .annual .tl-print-note{display:none}
 /* 手機年表：年度列是展開／收起的按鈕（只在窄螢幕由 timelords.js 畫出），外觀照原本的年度格。 */
 .annual button.tl-book-toggle{
@@ -144,8 +149,8 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 
 /* 滑過的樣式只給真的能滑過的指標：觸控點過之後不會一直停在反白。 */
 @media (hover: hover){
-  .annual .tl-seg button:hover:not(:disabled){background:var(--ink); color:var(--paper); border-color:var(--ink-dim)}
-  .annual .tl-year-nav button:hover:not(:disabled){background:var(--ink); color:var(--paper); border-color:var(--ink)}
+  .annual .tl-seg button:hover:not(:disabled){background:var(--paper-2); color:var(--ink)}
+  .annual .tl-year-nav button:hover:not(:disabled){background:var(--paper-2); color:var(--ink)}
   .annual button.tl-tile:hover:not(:disabled){background:var(--paper-2); color:var(--ink); border-color:var(--hair)}
   .annual button.tl-seg-item:hover:not(:disabled){background:var(--paper-2); color:var(--ink); border-color:var(--ink-dim)}
   .annual button.tl-chip:hover:not(:disabled){background:transparent; color:var(--ink); border-bottom-color:var(--ink)}
@@ -154,10 +159,10 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 }
 
 /* 細節欄 */
-.annual .tl-detail{border:1px solid var(--hair); background:var(--paper); position:sticky; top:calc(var(--index-bar-h, 0px) + .75rem); max-height:calc(100vh - 2rem); overflow:auto}
+.annual .tl-detail{border-top:1px solid var(--ink); border-bottom:1px solid var(--hair); background:var(--paper); position:sticky; top:calc(var(--index-bar-h, 0px) + .75rem); max-height:calc(100vh - 2rem); overflow:auto}
 .annual .tl-detail-head{display:flex; justify-content:space-between; align-items:start; gap:.5rem; padding:1rem 1.25rem .8rem; border-bottom:1px solid var(--hair)}
 /* 小字用墨色：赭色 --ring-3 對紙色只有 4.05:1，只當邊線（.tl-explain）。 */
-.annual .tl-detail-kind{font-family:var(--mono); font-size:var(--fs-small); letter-spacing:.06em; color:var(--ink-dim)}
+.annual .tl-detail-kind{font-size:var(--fs-small); color:var(--ink-dim)}
 .annual .tl-detail-head h3{font-family:var(--serif); font-size:1.2rem; line-height:1.45; margin:.25rem 0 0}
 .annual .tl-detail-head h3:focus{outline:none}
 .annual .tl-detail-head h3:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
@@ -166,39 +171,34 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 .annual .tl-detail dl{display:grid; grid-template-columns:4.8rem minmax(0, 1fr); gap:.55rem 1rem; margin:0 0 var(--gap-group)}
 .annual .tl-detail dt{color:var(--ink-dim); font-size:var(--fs-small); line-height:inherit; padding-top:.1em}
 .annual .tl-detail dd{margin:0; line-height:1.6; overflow-wrap:anywhere}
-.annual .tl-explain{border-left:3px solid var(--ring-3); padding:.2rem 0 .2rem .9rem; margin:var(--gap-group) 0; line-height:var(--lh-body)}
+.annual .tl-explain{padding:.2rem 0; margin:var(--gap-group) 0; line-height:var(--lh-body)}
 .annual .tl-detail details{border-top:1px solid var(--hair); margin-top:.8rem; padding-top:.6rem}
-.annual .tl-detail summary{cursor:pointer; font-size:var(--fs-note); font-weight:600}
+.annual .tl-detail summary{cursor:pointer; font-size:var(--fs-note); font-weight:400}
 /* 「出處」摺疊的標題照結果區的 .section-sources（calculate.css），不用細節欄的粗體標題。 */
 .annual .tl-detail .tl-sources > summary{
-  display:list-item; width:max-content; padding:.3rem 0; font-family:var(--mono); font-size:var(--fs-small);
-  font-weight:400; letter-spacing:.06em; color:var(--ink-dim)}
+  display:list-item; width:max-content; padding:.3rem 0; font-size:var(--fs-small);
+  font-weight:400; color:var(--ink-dim)}
 .annual .tl-detail ul{font-size:var(--fs-note); line-height:var(--lh-note); margin:.5rem 0 .2rem; padding-left:1.1rem}
 .annual .tl-detail li + li{margin-top:.5rem}
 .annual .tl-receipt pre{font-size:var(--fs-small); line-height:1.5; white-space:pre-wrap; word-break:break-all; background:var(--paper-2); padding:.5rem; margin:.4rem 0 0}
-.annual .tl-detail-foot{font-size:var(--fs-note); line-height:1.6; color:var(--ink-faint); border-top:1px solid var(--hair-soft); margin-top:.8rem; padding-top:.6rem}
 
 /* 約定、樣本、匯出、擴充點 */
-.annual .tl-box{border:1px solid var(--hair); background:var(--paper); padding:1.25rem 1.5rem 1.4rem; margin-top:var(--s2)}
+.annual .tl-box{border-top:1px solid var(--hair); background:var(--paper); padding:1.25rem 0 1.4rem; margin-top:var(--s2)}
 .annual .tl-box h3{font-family:var(--serif); font-size:var(--fs-subhead); margin-bottom:.6rem}
 .annual .tl-box ul{margin:.6rem 0 0; padding-left:1.2rem; font-size:var(--fs-note); line-height:var(--lh-note); max-width:var(--measure-cjk)}
 .annual .tl-box li + li{margin-top:.55rem}
 .annual .tl-export button{margin:.8rem 0}
 .annual .tl-table-actions{display:flex; flex-wrap:wrap; gap:.5rem; margin:.8rem 0}
 .annual .tl-table-actions button{margin:0}
-.annual .tl-na{border:1px dashed var(--state-absent); color:var(--ink); padding:.7rem 1rem; font-size:var(--fs-note); line-height:var(--lh-note); margin:.6rem 0; max-width:none}
+.annual .tl-na{border:0; border-top:1px dashed var(--state-absent); color:var(--ink); padding:.7rem 0; font-size:var(--fs-note); line-height:var(--lh-note); margin:.6rem 0; max-width:none}
 .annual .tl-na strong{color:var(--state-absent)}
-.annual .tl-lots > summary{cursor:pointer; font-weight:600}
-.annual .tl-lots-table{border-collapse:collapse; font-size:var(--fs-note); margin-top:.4rem}
-.annual .tl-lots-table th, .annual .tl-lots-table td{text-align:left; padding:.25rem .8rem .25rem 0; border-bottom:1px solid var(--hair-soft)}
-.annual .tl-lots-table thead th{font-size:var(--fs-small); color:var(--ink-dim); font-weight:600}
 
 /* 太陽回歸盤：控制項、事實表、圖與四張表。圖是本命盤同一個區塊元件（calculate.css 的 section.chart-wheel），
    有放大檢視與下載；這裡只改它在這一格裡的留白與標題級數。表格在自己的框裡橫捲（.table-wrap）。 */
 .annual .tl-sr-lead{margin:0 0 .6rem}
 .annual .tl-sr-controls{display:flex; flex-direction:column; align-items:flex-start; gap:.6rem}
 .annual .tl-sr-place{width:100%}
-.annual .tl-sr-place > summary{cursor:pointer; font-size:var(--fs-note); font-weight:600}
+.annual .tl-sr-place > summary{cursor:pointer; font-size:var(--fs-note); font-weight:400}
 .annual .tl-sr-fields{display:flex; flex-wrap:wrap; gap:.6rem 1.2rem; margin:.5rem 0}
 .annual .tl-sr-field{display:flex; flex-direction:column; gap:.25rem; min-width:0; flex:1 1 10rem; max-width:14rem}
 .annual .tl-sr-field label{font-size:var(--fs-small); color:var(--ink-dim)}
@@ -211,11 +211,11 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 .annual .tl-sr-facts dt, .annual .tl-sr-ascendants dt{color:var(--ink-dim)}
 .annual .tl-sr-facts dd, .annual .tl-sr-ascendants dd{margin:0; overflow-wrap:anywhere}
 .annual section.tl-sr-wheel{margin:var(--gap-group) 0; padding:0; border-bottom:0}
-.annual .tl-sr-wheel h4{font-family:var(--serif); font-size:var(--fs-aside); font-weight:600}
+.annual .tl-sr-wheel h4{font-family:var(--serif); font-size:var(--fs-aside); font-weight:400}
 .annual .tl-sr-wheel .chart-wheel-figure{max-width:min(100%, 520px)}
 .annual .tl-sr-table{margin-top:var(--gap-group)}
 .annual .tl-sr-compare{margin-top:calc(var(--gap-group) * 1.5); border-top:1px solid var(--hair-soft); padding-top:var(--gap-group)}
-.annual .tl-sr-compare .tl-sr-compare-title{font-family:var(--serif); font-size:var(--fs-aside); font-weight:600; margin:0 0 .6rem}
+.annual .tl-sr-compare .tl-sr-compare-title{font-family:var(--serif); font-size:var(--fs-aside); font-weight:400; margin:0 0 .6rem}
 .annual .tl-sr-compare .tl-sr-ascendants{margin-bottom:var(--gap-related)}
 .annual .tl-sr-asc-house{margin:0; font-size:var(--fs-note); line-height:var(--lh-note)}
 .annual .tl-sr-compare-note{margin-top:var(--gap-related)}
@@ -286,9 +286,61 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
   .annual .tl-tile:last-child{border-bottom:0}
 }
 
+/* ── 人生時間軸：每種技法的第一層並列在同一條足歲軸上（timelords.js 的 createLifeOverview）──
+ * 圖是 SVG，位置寫在屬性上；顏色、字體只在這裡。上下兩條線框住圖，不加外框，像書裡的一張附表。 */
+.annual .tl-life{margin:var(--s2) 0 var(--s3)}
+.annual .tl-life-head h3{font-family:var(--serif); font-size:var(--fs-subhead); font-weight:400; margin:0 0 .25rem}
+.annual .tl-life-lead{font-size:var(--fs-note); line-height:var(--lh-note); color:var(--ink-dim); max-width:var(--measure-cjk); margin:0 0 .8rem}
+.annual .tl-life-figure{border-top:1px solid var(--ink); border-bottom:1px solid var(--hair); background:var(--paper); padding:.7rem 0 .3rem; min-width:0}
+.annual svg.tl-life-svg{display:block; width:100%; height:auto; overflow:visible}
+.annual .tl-life-age{font-family:var(--serif-num); font-size:13px; fill:var(--ink); font-variant-numeric:lining-nums tabular-nums}
+.annual .tl-life-year{font-family:var(--serif-num); font-size:11px; fill:var(--ink-faint); font-variant-numeric:lining-nums tabular-nums}
+.annual .tl-life-lane{font-family:var(--serif); font-size:14.5px; fill:var(--ink)}
+.annual .tl-life-lane-note{font-family:var(--sans); font-size:11.5px; fill:var(--ink-faint)}
+.annual .tl-life-lane-sample{font-family:var(--sans); font-size:12px; fill:var(--ink-dim)}
+.annual .tl-life-gridline{stroke:var(--hair-soft); stroke-width:1}
+.annual .tl-life-band{cursor:pointer; outline:none}
+.annual .tl-life-rect{fill:var(--paper); stroke:var(--hair); stroke-width:1}
+.annual .tl-life-band.alt .tl-life-rect{fill:var(--paper-2)}
+@media (hover: hover){.annual .tl-life-band:hover .tl-life-rect{stroke:var(--ink-dim)}}
+.annual .tl-life-band.is-picked .tl-life-rect{fill:var(--selected-bg); stroke:var(--ink); stroke-width:2}
+.annual .tl-life-band:focus-visible .tl-life-rect{stroke:var(--accent); stroke-width:2}
+.annual .tl-life-text{font-family:var(--sans); font-size:13px; fill:var(--ink)}
+.annual svg.tl-life-glyph{fill:var(--ink)}
+.annual .tl-life-nowmark{fill:var(--ink)}
+.annual .tl-life-restart{stroke:var(--ink-dim); stroke-width:1.5}
+.annual .tl-life-loose{fill:var(--ink)}
+.annual .tl-life-today line{stroke:var(--accent); stroke-width:1.5}
+.annual .tl-life-today rect{fill:var(--accent)}
+.annual .tl-life-today text{fill:var(--on-accent); font-family:var(--sans); font-size:12px}
+.annual .tl-life-readout{max-width:none; display:flex; flex-wrap:wrap; gap:.2rem .9rem; align-items:baseline; min-height:2.9rem; margin:0; padding:.6rem 0; border-bottom:1px solid var(--hair); font-size:var(--fs-note); line-height:var(--lh-label)}
+.annual .tl-life-prompt{color:var(--ink-faint)}
+.annual .tl-life-read-lane{color:var(--ink-dim); font-size:var(--fs-small)}
+.annual .tl-life-read-ruler{font-family:var(--serif); font-size:1.15rem; display:inline-flex; align-items:baseline; gap:.2rem}
+.annual .tl-life-read-ruler svg.tl-glyph{align-self:center}
+.annual .tl-life-read-ages{color:var(--ink-dim)}
+.annual .tl-life-read-mark{font-size:var(--fs-small); color:var(--ink-dim)}
+.annual button.tl-life-open{margin-left:auto; background:transparent; color:var(--ink); border:0; border-bottom:1px solid var(--ink-faint); border-radius:0; padding:.25rem 0; font-size:var(--fs-small)}
+.annual .tl-life-legend{display:flex; flex-wrap:wrap; gap:.3rem .9rem; font-size:var(--fs-small); color:var(--ink-dim); margin:.55rem 0 .2rem}
+.annual .tl-life-legend i{display:inline-block; vertical-align:middle; margin-right:.3rem}
+.annual .tl-life-lg-today{width:2px; height:14px; background:var(--accent)}
+.annual .tl-life-lg-now{width:16px; height:11px; border:1px solid var(--hair); border-bottom:3px solid var(--ink); background:var(--paper)}
+.annual .tl-life-lg-restart{width:0; height:14px; border-left:2px solid var(--ink-dim)}
+.annual .tl-life-lg-loose{width:8px; height:8px; background:var(--ink); transform:rotate(45deg)}
+.annual .tl-life-note{font-size:var(--fs-small); color:var(--ink-faint); margin:.2rem 0 .5rem}
+.annual .tl-life-table > summary{font-size:var(--fs-note); cursor:pointer; padding:.3rem 0}
+.annual .tl-life-table-wrap{overflow-x:auto; max-width:100%}
+.annual .tl-life-table table{border-collapse:collapse; font-size:var(--fs-note); margin:.4rem 0}
+.annual .tl-life-table caption{text-align:left; font-size:var(--fs-small); color:var(--ink-faint); padding-bottom:.3rem}
+.annual .tl-life-table th, .annual .tl-life-table td{padding:.2rem .7rem .2rem 0; border-bottom:1px solid var(--hair-soft); text-align:left; vertical-align:top; font-weight:400}
+.annual .tl-life-table thead th{color:var(--ink-dim); font-size:var(--fs-small); border-bottom:1px solid var(--hair)}
+.annual .tl-life-table tbody th{font-family:var(--serif)}
+
 @media print{
   /* 還沒排出：紙上只會剩標題與說明，整區不印。 */
   .annual:has(> .annual-body[hidden]){display:none !important}
+  .annual .tl-life-readout, .annual .tl-life-table, .annual .tl-life-open{display:none !important}
+  .annual .tl-life{break-inside:avoid}
   .annual .tl-view-switch, .annual .tl-toolbar, .annual .tl-year-nav button, .annual .tl-export, .annual .annual-start, .annual .annual-options, .annual .tl-detail-close{display:none !important}
   /* calculate.css 在紙上藏起所有 button；這一區的摘要卡、期間與年表格子是 button，卻是內容。 */
   .annual button.tl-tile{display:flex !important}

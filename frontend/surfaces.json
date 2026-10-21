@@ -29,6 +29,46 @@
       "description": "目前免費、不需註冊：輸入出生日期、時間與地點，查個人星盤的上升點、中天、下降點與行星落宮，可選整宮制、等分宮制、Placidus、Regiomontanus 等七種宮位制。不知道確切出生時間也能算：只知道日期或大約幾點時，會標出哪些結果在這段時間內會改變。"
     },
     {
+      "key": "calculate-firdaria",
+      "output": "zh-TW/calculate/firdaria.html",
+      "surface": "/zh-TW/calculate/firdaria",
+      "layers": [
+        "L1"
+      ],
+      "title": "古典西洋占星法達計算：線上排出法達（firdaria）時間主星｜渾儀 Armillary",
+      "description": "輸入出生日期、時間與地點，線上排出古典西洋占星法達的一生主期與子期：哪一段由哪顆行星或月交點輪值、從哪一天到哪一天。夜盤交點預設排在水星之後（al-Bīrūnī），附合成範例與出處連結。只列計算結果，不替你解盤，也不預測。"
+    },
+    {
+      "key": "calculate-zodiacal-releasing",
+      "output": "zh-TW/calculate/zodiacal-releasing.html",
+      "surface": "/zh-TW/calculate/zodiacal-releasing",
+      "layers": [
+        "L1"
+      ],
+      "title": "古典西洋占星黃道釋放計算：線上排出命運點與精神點的大期、小期｜渾儀 Armillary",
+      "description": "輸入出生日期、時間與地點，從命運點與精神點各排一條黃道釋放（zodiacal releasing），列出第一層大期與第二層小期、解鎖與從命運點數第幾個星座；一年 360 日，依 Valens 第四卷。附合成範例與出處連結。只列計算結果，不替你解盤，也不預測。"
+    },
+    {
+      "key": "calculate-profections",
+      "output": "zh-TW/calculate/profections.html",
+      "surface": "/zh-TW/calculate/profections",
+      "layers": [
+        "L1"
+      ],
+      "title": "古典西洋占星小限計算：線上排出年度小限、月小限與年主星｜渾儀 Armillary",
+      "description": "輸入出生日期、時間與地點，依古典西洋占星的規則從上升星座起排出每一年的年度小限（annual profection）與年主星，選定某一年再列出 12 個月小限；一年從太陽回歸算起。附合成範例與出處連結。只列計算結果，不替你解盤，也不預測。"
+    },
+    {
+      "key": "calculate-decennials",
+      "output": "zh-TW/calculate/decennials.html",
+      "surface": "/zh-TW/calculate/decennials",
+      "layers": [
+        "L1"
+      ],
+      "title": "古典西洋占星十年期計算：線上排出十年期（decennials）時間主星｜渾儀 Armillary",
+      "description": "輸入出生日期、時間與地點，排出十年期（每段 10 年 9 個月）的輪值行星與每段裡的七小段；起點可選 Firmicus 的日夜盤光體（預設）、Valens 的上升點後第一顆行星或自己指定。附合成範例與出處連結。只列計算結果，不替你解盤，也不預測。"
+    },
+    {
       "key": "features",
       "output": "zh-TW/features.html",
       "surface": "/zh-TW/features",
@@ -46,8 +86,8 @@
       "layers": [
         "L1"
       ],
-      "title": "古典占星計算方法：宮位制、界、三分性與廟旺的來源｜渾儀 Armillary",
-      "description": "說明渾儀採用及可選的宮位制、界（四套具名表，不設預設）、面與旬、三分性、廟旺、相位、阿拉伯點與年度時間主星的計算規則，每條規則寫明來源狀態，也列出目前不算的東西。"
+      "title": "古典西洋占星計算方法：宮位制、界、三分性與廟旺的來源｜渾儀 Armillary",
+      "description": "說明渾儀在古典西洋占星裡採用及可選的宮位制、界（四套具名表，不設預設）、面與旬、三分性、廟旺、相位、阿拉伯點與年度時間主星的計算規則，每條規則寫明來源狀態，也列出目前不算的東西。"
     },
     {
       "key": "methods-birth-time-conversion",
@@ -66,8 +106,8 @@
       "layers": [
         "L1"
       ],
-      "title": "年度小限、法達、黃道釋放與十年期：年度時間主星的規則與出處｜渾儀 Armillary",
-      "description": "年度小限、法達、黃道釋放、十年期與七個延伸的阿拉伯點，各照什麼規則算、根據哪些古典文獻、我們核到哪一層，以及文獻說法不同時用的是哪一種。只列哪一段時間由誰輪值；不替你解盤，也不預測。"
+      "title": "年度小限、法達、黃道釋放與十年期：古典西洋占星年度時間主星的規則與出處｜渾儀 Armillary",
+      "description": "古典西洋占星的年度小限、法達、黃道釋放、十年期與七個延伸的阿拉伯點，各照什麼規則算、根據哪些古典文獻、我們核到哪一層，以及文獻說法不同時用的是哪一種。只列哪一段時間由誰輪值；不替你解盤，也不預測。"
     },
     {
       "key": "methods-decennials",
@@ -247,6 +287,21 @@
       }
     },
     {
+      "key": "blog-hong-kong-birth-time",
+      "output": "zh-TW/blog/hong-kong-birth-time.html",
+      "surface": "/zh-TW/blog/hong-kong-birth-time",
+      "layers": [
+        "L2",
+        "L3"
+      ],
+      "title": "香港出生時間怎麼換算？夏令時間、日佔時期與天文台的紀錄｜渾儀 Armillary",
+      "description": "香港 1941–1979 年實施過三十多段夏令時間，日佔時期用東京時間 UTC+9。逐年對照天文台〈香港夏令時間〉表與 IANA 時區資料庫，列出兩者不同的日子，以及在渾儀怎麼填出世紙上的鐘點與香港地名。",
+      "article": {
+        "published": "2026-10-21",
+        "modified": "2026-10-21"
+      }
+    },
+    {
       "key": "blog-whole-sign-vs-placidus",
       "output": "zh-TW/blog/whole-sign-vs-placidus.html",
       "surface": "/zh-TW/blog/whole-sign-vs-placidus",
@@ -359,8 +414,8 @@
         "L2",
         "L3"
       ],
-      "title": "年度時間主星入門：小限、月小限、法達、黃道釋放、十年期有什麼不同｜渾儀 Armillary",
-      "description": "時間主星是把人生分段、每段交給一顆行星或一個星座輪值的古典技法。說明年度小限、月小限、法達、黃道釋放與十年期各出自哪本書、怎麼切、文獻說法不同之處，以及時間軸、年表與匯出檔怎麼用。",
+      "title": "古典西洋占星年度時間主星入門：小限、月小限、法達、黃道釋放、十年期有什麼不同｜渾儀 Armillary",
+      "description": "時間主星是把人生分段、每段交給一顆行星或一個星座輪值的古典西洋占星技法。說明年度小限、月小限、法達、黃道釋放與十年期各出自哪本書、怎麼切、文獻說法不同之處，以及時間軸、年表與匯出檔怎麼用。",
       "article": {
         "published": "2026-10-14",
         "modified": "2026-10-14"
@@ -482,8 +537,8 @@
       "title": "占星排盤工具怎麼挑？選星盤計算網站前可以自己檢查的七件事｜渾儀 Armillary",
       "description": "挑占星排盤工具，可以自己檢查七件事：能不能驗算、出生資料存不存、要不要帳號、有沒有第三方追蹤、原始碼公不公開、宮位制與技法、時區歷史與不確定的出生時間。逐項寫出檢查方法，以及渾儀目前的做法與限制。",
       "article": {
-        "published": "2026-10-16",
-        "modified": "2026-10-16"
+        "published": "2026-10-18",
+        "modified": "2026-10-18"
       }
     },
     {
@@ -497,8 +552,8 @@
       "title": "命運點（福點、幸運點）怎麼算？日盤夜盤公式為什麼相反，精神點又是什麼｜渾儀 Armillary",
       "description": "命運點與精神點都由上升點、太陽與月亮算出：日盤命運點＝上升點＋月亮−太陽，夜盤兩式對調；Ptolemy 主張命運點日夜不反轉。照出處說明兩套公式、本站採用哪一套、太陽靠近地平線時怎麼處理，並用一張合成的夜盤畫出兩個點。",
       "article": {
-        "published": "2026-10-16",
-        "modified": "2026-10-16"
+        "published": "2026-10-18",
+        "modified": "2026-10-18"
       }
     },
     {
@@ -512,8 +567,53 @@
       "title": "日盤夜盤怎麼判斷？太陽在地平線附近時日夜盤怎麼算｜渾儀 Armillary",
       "description": "日盤與夜盤看出生時太陽在地平線上還是下。本站以太陽中心的真高度大於 0 度為日盤，這條邊界是工程選擇，古書沒有寫到這麼細；太陽在地平線上下 50 角分以內時結果會提示，命運點兩套公式並列。附日出前後逐分鐘的實算例子。",
       "article": {
-        "published": "2026-10-16",
-        "modified": "2026-10-16"
+        "published": "2026-10-18",
+        "modified": "2026-10-18"
+      }
+    },
+    {
+      "key": "blog-triplicity-rulers",
+      "output": "zh-TW/blog/triplicity-rulers.html",
+      "surface": "/zh-TW/blog/triplicity-rulers",
+      "layers": [
+        "L2",
+        "L3"
+      ],
+      "title": "三分性是什麼？古典西洋占星三分性主星的三套說法｜渾儀 Armillary",
+      "description": "古典西洋占星的三分性把十二星座依火、土、風、水分成四組，各交給幾顆行星主管。照出處並列 Dorotheus 的三位主星、Ptolemy 原文的共同主宰與 Lilly 1647 的日夜簡表，說明日盤夜盤怎麼換主星、三套差在水象哪裡，以及本站怎麼讓你選。",
+      "article": {
+        "published": "2026-10-20",
+        "modified": "2026-10-20"
+      }
+    },
+    {
+      "key": "blog-firdaria-night-node-order",
+      "output": "zh-TW/blog/firdaria-night-node-order.html",
+      "surface": "/zh-TW/blog/firdaria-night-node-order",
+      "layers": [
+        "L2",
+        "L3"
+      ],
+      "title": "法達夜盤的交點排在哪裡？水星之後還是火星之後｜渾儀 Armillary",
+      "description": "法達（firdaria）夜盤從月亮起，但北交點與南交點該排在七顆行星之後，還是插在火星與太陽之間，書上與現代讀法不一致。照 al-Bīrūnī、Bonatti 與 Abū Maʿshar 的出處說明兩種排法、差在哪幾年，以及本站預設哪一種、為什麼。",
+      "article": {
+        "published": "2026-10-19",
+        "modified": "2026-10-19"
+      }
+    },
+    {
+      "key": "blog-time-lord-reference-cases",
+      "output": "zh-TW/blog/time-lord-reference-cases.html",
+      "surface": "/zh-TW/blog/time-lord-reference-cases",
+      "layers": [
+        "L2",
+        "L3"
+      ],
+      "title": "時間主星參考案例：年度小限、法達、黃道釋放與十年期的完整表格｜渾儀 Armillary",
+      "description": "兩張合成盤（一張日盤、一張夜盤）的年度小限年界、法達（夜盤兩種交點排法）、從命運點與精神點起的黃道釋放第一、二層與每一次解鎖，以及十年期第一層。表格全部由本站計算服務產生，可以拿來核對任何排盤工具。",
+      "article": {
+        "published": "2026-10-20",
+        "modified": "2026-10-20"
       }
     },
     {
@@ -527,8 +627,83 @@
       "title": "回歸黃道與恆星黃道差在哪？歲差值（ayanamsa）是什麼、四種怎麼來｜渾儀 Armillary",
       "description": "回歸黃道從春分點起算，恆星黃道從相對恆星固定的約定點起算，兩者相差一個歲差值（ayanamsa）。說明本站四種歲差值的來歷、換黃道時哪些結果會變、哪些古典表格不套到恆星黃道，並用一張合成的盤比較五種黃道下的位置。",
       "article": {
-        "published": "2026-10-16",
-        "modified": "2026-10-16"
+        "published": "2026-10-18",
+        "modified": "2026-10-18"
+      }
+    },
+    {
+      "key": "blog-ascendant-coordinates",
+      "output": "zh-TW/blog/ascendant-coordinates.html",
+      "surface": "/zh-TW/blog/ascendant-coordinates",
+      "layers": [
+        "L2",
+        "L3"
+      ],
+      "title": "為什麼兩個網站算出的上升點差 2 角分？出生地座標差一點的影響｜渾儀 Armillary",
+      "description": "同一個出生時刻、同樣選臺北，兩個排盤工具的上升點常差兩、三角分，原因多半是「臺北」的座標不同。用合成時刻列出從鐘面時間、UT1、恆星時到上升點的每一步，並算出經度差 0.01 度上升點移動多少。",
+      "article": {
+        "published": "2026-10-19",
+        "modified": "2026-10-19"
+      }
+    },
+    {
+      "key": "blog-black-moon-lilith-mean-true-natural",
+      "output": "zh-TW/blog/black-moon-lilith-mean-true-natural.html",
+      "surface": "/zh-TW/blog/black-moon-lilith-mean-true-natural",
+      "layers": [
+        "L2",
+        "L3"
+      ],
+      "title": "黑月莉莉絲的平均、真與自然差多少？「真 Lilith」其實是密切遠地點｜渾儀 Armillary",
+      "description": "平均黑月莉莉絲與「真」Lilith 最多差 30 度。本站內附星曆逐日實算 1950–2049 年：密切（真）Lilith 有 36.3% 的時間和平均 Lilith 不同星座，自然 Lilith 只有 9.9%；三種算法的定義與本站提供哪兩種。",
+      "article": {
+        "published": "2026-10-21",
+        "modified": "2026-10-21"
+      }
+    },
+    {
+      "key": "blog-geocentric-vs-topocentric-moon",
+      "output": "zh-TW/blog/geocentric-vs-topocentric-moon.html",
+      "surface": "/zh-TW/blog/geocentric-vs-topocentric-moon",
+      "layers": [
+        "L2",
+        "L3"
+      ],
+      "title": "地心月亮和站心月亮差多少？月亮度數和別的網站差將近 1 度的原因｜渾儀 Armillary",
+      "description": "從出生地看的月亮（站心）和從地心看的，最多差 1 度，有時換星座。以 2026 年臺北逐時實算差多少、何時最大，並逐一對照 NASA JPL Horizons（差不到 0.2 角秒）。",
+      "article": {
+        "published": "2026-10-21",
+        "modified": "2026-10-21"
+      }
+    },
+    {
+      "key": "blog-planetary-hours",
+      "output": "zh-TW/blog/planetary-hours.html",
+      "surface": "/zh-TW/blog/planetary-hours",
+      "layers": [
+        "L2",
+        "L3"
+      ],
+      "title": "行星時怎麼算？行星日從日出起算、晝夜各十二等分與迦勒底序｜渾儀 Armillary",
+      "description": "行星時把白天與夜晚各分成十二等分，依迦勒底序輪給七顆行星，第一時由星期主星開始。四個步驟算出行星時，附一週主星表，並用本站計算服務實算臺北夏至、春分、冬至；說明凌晨出生為什麼算前一天、行星時為什麼排出星期的順序。",
+      "article": {
+        "published": "2026-10-21",
+        "modified": "2026-10-21"
+      }
+    },
+    {
+      "key": "blog-antiscia",
+      "output": "zh-TW/blog/antiscia.html",
+      "surface": "/zh-TW/blog/antiscia",
+      "layers": [
+        "L2",
+        "L3"
+      ],
+      "title": "反照點是什麼？反照點與反向反照點怎麼算，為什麼以至點為鏡｜渾儀 Armillary",
+      "description": "反照點（antiscia）是行星對 0° 巨蟹—0° 摩羯至點軸的鏡像，算法是 180° 減黃經；反向反照點對分點軸鏡射。照 Lilly 1647 與 Firmicus 原文說明由來、星座配對與查表法，實算示範盤，並說明恆星黃道為何不能直接用 180° 去減。",
+      "article": {
+        "published": "2026-10-21",
+        "modified": "2026-10-21"
       }
     }
   ],

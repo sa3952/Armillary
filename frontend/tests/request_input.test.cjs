@@ -153,41 +153,45 @@ test("兩位數年份不被當成 19xx：西元 50 年的台北沒有夏令時�
   assert.equal(RequestInput.civilTimeOccurrences(civil(1950, 9, 30, 23, 30), "Asia/Taipei").state, "ambiguous");
 });
 
-// ── 出生日期欄：表單 novalidate，HTML 的 min／max 只是提示，範圍要在這裡檢查 ──────────
-test("出生日期：格式、日曆與範圍不合就指名拒絕，範圍兩端與一般日期原樣通過", () => {
+// ── 出生日期三欄（年／月／日）：表單 novalidate，範圍要在這裡檢查 ──────────
+// 期待值逐筆手打；fields 是要標紅的那幾欄，供頁面逐欄標 aria-invalid。
+const parts = (year, month, day) => ({ year, month, day });
+test("出生日期三欄：格式、日曆與範圍不合就指名拒絕並指出是哪一欄，範圍兩端與一般日期原樣通過", () => {
   const bounds = { min: "1900-01-01", max: "2399-12-31" };
   for (const [raw, expected] of [
-    ["1990-05-15", { year: 1990, month: 5, day: 15, iso: "1990-05-15" }],
-    ["1900-01-01", { year: 1900, month: 1, day: 1, iso: "1900-01-01" }],
-    ["2399-12-31", { year: 2399, month: 12, day: 31, iso: "2399-12-31" }],
-    [" 2000-02-29 ", { year: 2000, month: 2, day: 29, iso: "2000-02-29" }],
+    [parts("1990", "5", "15"), { year: 1990, month: 5, day: 15, iso: "1990-05-15" }],
+    [parts("1990", "05", "05"), { year: 1990, month: 5, day: 5, iso: "1990-05-05" }],
+    [parts("1900", "1", "1"), { year: 1900, month: 1, day: 1, iso: "1900-01-01" }],
+    [parts("2399", "12", "31"), { year: 2399, month: 12, day: 31, iso: "2399-12-31" }],
+    [parts(" 2000 ", " 2 ", " 29 "), { year: 2000, month: 2, day: 29, iso: "2000-02-29" }],
+    // 中文輸入法常送出全形數字。
+    [parts("１９９０", "１", "１５"), { year: 1990, month: 1, day: 15, iso: "1990-01-15" }],
   ]) {
-    assert.deepEqual(RequestInput.readBirthDate(raw, bounds), { state: VALUE, value: expected }, raw);
+    assert.deepEqual(RequestInput.readBirthDateParts(raw, bounds), { state: VALUE, value: expected }, JSON.stringify(raw));
   }
-  assert.equal(RequestInput.readBirthDate("", bounds).state, EMPTY);
-  assert.equal(RequestInput.readBirthDate("   ", bounds).state, EMPTY);
-  for (const [raw, pattern] of [
-    ["1895-05-15", /1900-01-01 到 2399-12-31/],
-    ["1899-12-31", /1900-01-01 到 2399-12-31/],
-    ["2400-01-01", /1900-01-01 到 2399-12-31/],
-    ["2150-05-15", null],   // 在範圍內：紅隊以為上限是 2099，實際是 2399
-    ["0050-05-15", /1900-01-01 到 2399-12-31/],
-    // 字串比較會讓 21000 年落在 1900 與 2399 之間；範圍必須以數值比較。
-    ["21000-05-15", /1900-01-01 到 2399-12-31/],
-    ["1900-02-29", /不存在/],
-    ["1990-13-01", /不存在/],
-    ["1990/05/15", /YYYY-MM-DD/],
-    ["15-05-1990", /YYYY-MM-DD/],
-    ["abc", /YYYY-MM-DD/],
+  assert.deepEqual(RequestInput.readBirthDateParts(parts("", "", ""), bounds), { state: EMPTY, fields: ["year", "month", "day"] });
+  assert.deepEqual(RequestInput.readBirthDateParts(parts("1990", " ", ""), bounds), { state: EMPTY, fields: ["month", "day"] });
+  for (const [raw, pattern, fields] of [
+    [parts("1895", "5", "15"), /1900-01-01 到 2399-12-31/, ["year"]],
+    [parts("1899", "12", "31"), /1900-01-01 到 2399-12-31/, ["year"]],
+    [parts("2400", "1", "1"), /1900-01-01 到 2399-12-31/, ["year"]],
+    [parts("0050", "5", "15"), /1900-01-01 到 2399-12-31/, ["year"]],
+    [parts("21000", "5", "15"), /四位數/, ["year"]],
+    [parts("90", "5", "15"), /四位數/, ["year"]],
+    [parts("1990", "13", "1"), /月份必須是 1 到 12/, ["month"]],
+    [parts("1990", "0", "1"), /月份必須是 1 到 12/, ["month"]],
+    [parts("1990", "1", "32"), /日必須是 1 到 31/, ["day"]],
+    [parts("1990", "1.5", "3"), /月份必須是 1 到 12/, ["month"]],
+    [parts("abc", "x", "1"), /四位數/, ["year", "month"]],
+    [parts("1990", "2", "30"), /不存在/, ["day"]],
+    [parts("1900", "2", "29"), /不存在/, ["day"]],
   ]) {
-    const read = RequestInput.readBirthDate(raw, bounds);
-    if (pattern === null) {
-      assert.equal(read.state, VALUE, raw);
-      continue;
-    }
-    assert.equal(read.state, INVALID, raw);
-    assert.match(read.reason, pattern, raw);
+    const read = RequestInput.readBirthDateParts(raw, bounds);
+    assert.equal(read.state, INVALID, JSON.stringify(raw));
+    assert.match(read.reason, pattern, JSON.stringify(raw));
+    assert.deepEqual(read.fields, fields, JSON.stringify(raw));
   }
+  assert.equal(RequestInput.readBirthDateParts(parts("2150", "5", "15"), bounds).state, VALUE, "上限是 2399，不是 2099");
 });
 
 // ── 民國年與日本年號 ──────────────────────────────────────────────

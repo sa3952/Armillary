@@ -1,21 +1,6 @@
 """Lunar mansions (Arabic manāzil al-qamar): which of 28 equal parts of the
-zodiac the Moon is in.
-
-Definition (method source entry ``lunar_mansions``):
-
-* The tropical zodiac of date is cut into 28 equal mansions of 360°/28
-  (12°51′25.714…″, which medieval texts round to 12°51′26″), the first starting
-  at 0° Aries, the vernal point.  Mansion n is the half-open interval
-  [(n−1)·360°/28, n·360°/28).
-* Only the Moon is placed: the mansions are the Moon's stations, and no source
-  the product read places another body in them.  The Moon is the effective Moon
-  of ``astronomical_data.bodies`` (with the Moon-only topocentric profile, the
-  topocentric one), so the mansion is read from the longitude the page prints.
-* The mansions are a division of the ecliptic, not the 二十八宿 (xiu) of
-  ancient China: those are unequal lodges measured along the equator from
-  determinative stars.  Only the Arabic names are given, in the original
-  (Arabic script and transliteration) with no Chinese translation, and no
-  interpretation is output.
+zodiac the Moon is in.  The definition, the points placed, the names and how the
+mansions differ from the Chinese xiu are stated in ``METHOD_SOURCE_ENTRIES`` below.
 
 Membership is decided exactly: the float longitude is read as the rational it is
 (``Fraction``), so a longitude on a boundary belongs to the mansion that starts
@@ -37,14 +22,14 @@ from fractions import Fraction
 from typing import Final
 
 from .formatting import dms_text, sign_position
-from .method_status import method_receipt
+from .method_status import method_head
 from .module_state import (
     PRODUCT_FORMULA_SOURCE,
     STATE_FIELDS,
     computed_receipt,
-    not_applicable_receipt,
+    frame_table_refusal,
 )
-from .source_reading import SOURCE_READING_LEVELS
+from .source_reading import TRANSLATION_READ, cited
 from .trace import Trace
 
 METHOD: Final = "equal_28_mansions_from_tropical_0_aries_v1"
@@ -60,8 +45,7 @@ BOUNDARY_FLAG_DEGREES: Final = 1.0 / 60.0
 INTERVALS: Final = ("stated_civil_hour", "civil_day")
 PLACED_BODIES: Final = ("moon",)
 
-# (Arabic script, transliteration).  The names are al-Biruni's (Chronology,
-# ch. XXI).  They are given in the original only, with no translated name.
+# (Arabic script, transliteration), al-Biruni's names; original only, no translation.
 MANSIONS: Final = (
     ("الشرطان", "al-Sharaṭān"),
     ("البطين", "al-Buṭayn"),
@@ -104,23 +88,12 @@ METHOD_SOURCE_ENTRIES: Final = {
             "mansion n is [(n−1)·360°/28, n·360°/28); only the Moon is placed"
         ),
         "sources": [
-            {
-                "citation": (
-                    "Agrippa, De occulta philosophia II.33 (English translation, London 1651)"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "the archive.org scan of the 1651 English translation and its OCR text",
-            },
-            {
-                "citation": (
-                    "al-Biruni, Chronology of Ancient Nations ch. XXI (tr. Sachau 1879, pp. 335-366)"
-                ),
-                "reading": SOURCE_READING_LEVELS[1],
-                "read_at": "a scanned copy of Sachau's translation",
-            },
+            cited("Agrippa, De occulta philosophia II.33 (English translation, London 1651)", None,
+                  TRANSLATION_READ,
+                  "the archive.org scan of the 1651 English translation and its OCR text"),
+            cited("al-Biruni, Chronology of Ancient Nations ch. XXI (tr. Sachau 1879, pp. 335-366)",
+                  None, TRANSLATION_READ, "a scanned copy of Sachau's translation"),
         ],
-        # Counting from the tropical vernal point of date is this product's
-        # choice for the equal parts; no source read starts there.
         "zero_point_basis": "product_convention",
         "source_note": (
             "Agrippa, De occulta philosophia II.33 (English translation, London 1651): "
@@ -291,7 +264,7 @@ def compute_lunar_mansions(
         note="只計算月亮所在的月宿與它在宿內的位置，不解讀。",
     )
     return {
-        **_receipt_head(),
+        **method_head(METHOD, "lunar_mansions", source_ref=SOURCE_REF),
         **computed_receipt(PRODUCT_FORMULA_SOURCE),
         "division": {
             "count": MANSION_COUNT,
@@ -306,32 +279,15 @@ def compute_lunar_mansions(
     }
 
 
-def _receipt_head() -> dict:
-    return {
-        "method": METHOD,
-        **method_receipt("lunar_mansions"),
-        "source_ref": SOURCE_REF,
-    }
-
-
 def lunar_mansions_not_applicable(state: dict, trace: Trace) -> dict:
-    """Refuse instead of dividing another frame's zodiac.
-
-    The mansions start at the vernal point of date on the tropical ecliptic: a
-    sidereal zodiac, the J2000 ecliptic or a mean equinox would each move the
-    zero point, and a chart seen from the Sun or the barycentre has no Moon's
-    station to name.  Nothing is converted.
-    """
-
-    trace.add(
-        "月宿",
-        result={"execution_status": "not_applicable", "reason_code": state["reason_code"]},
+    refusal = frame_table_refusal(
+        state, trace, "月宿",
         note=(
             "月宿從當日真春分點（回歸黃道牡羊 0°）起算；恆星黃道、J2000、不含章動或"
             "非地心觀測點會移動起點或沒有月亮的「宿」可言，參考框架相容表判定不適用。"
         ),
     )
-    return lunar_mansions_unavailable(not_applicable_receipt(state))
+    return lunar_mansions_unavailable(refusal)
 
 
 def lunar_mansions_unavailable(receipt: dict) -> dict:
@@ -342,7 +298,7 @@ def lunar_mansions_unavailable(receipt: dict) -> dict:
     """
 
     return {
-        **_receipt_head(),
+        **method_head(METHOD, "lunar_mansions", source_ref=SOURCE_REF),
         **{field: receipt[field] for field in STATE_FIELDS},
         "division": None,
         "boundary_flag_degrees": None,
