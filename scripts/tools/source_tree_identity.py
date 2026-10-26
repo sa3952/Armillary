@@ -224,14 +224,39 @@ def observe_source_tree(root: Path) -> SourceTreeIdentity:
     return SourceTreeIdentity(paths, content.hexdigest(), index)
 
 
+def archive_environment(root: Path, environment: dict[str, str] | None = None) -> dict[str, str]:
+    """Use committed attributes only, refusing unrecorded repository overrides."""
+    from scripts.tools.child_environment import without_tool_control
+    inherited = without_tool_control(environment)
+    inherited.pop("GIT_ATTR_SOURCE", None)
+    inherited.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull,
+                     GIT_ATTR_NOSYSTEM="1", GIT_NO_REPLACE_OBJECTS="1")
+    raw = git(root, "rev-parse", "--git-path", "info/attributes", env=inherited).strip()
+    attributes = Path(raw)
+    if not attributes.is_absolute():
+        attributes = root / attributes
+    if attributes.exists() or attributes.is_symlink():
+        if not attributes.is_file() or attributes.is_symlink():
+            raise RuntimeError("repository-local archive attributes are not a regular file")
+        try:
+            lines = attributes.read_text(encoding="utf-8").splitlines()
+        except (OSError, UnicodeError):
+            raise RuntimeError("repository-local archive attributes cannot be read") from None
+        if any(line.strip(" \t\r\n") and not line.lstrip(" \t").startswith("#") for line in lines):
+            raise RuntimeError("repository-local archive attributes must be removed before publication")
+    return inherited
+
+
 def materialize_git_snapshot(
     root: Path, revision: str, destination: Path, paths: tuple[str, ...] = ()
 ) -> Path:
     """Extract `revision` (optionally only `paths` of it) from Git's object store."""
+    environment = archive_environment(root)
     destination.mkdir(parents=True)
     process = subprocess.Popen(
-        ["git", "archive", "--format=tar", revision, *(("--", *paths) if paths else ())],
+        ["git", "-c", f"core.attributesFile={os.devnull}", "archive", "--format=tar", revision, *(("--", *paths) if paths else ())],
         cwd=root,
+        env=environment,
         stdout=subprocess.PIPE,
     )
     if process.stdout is None:

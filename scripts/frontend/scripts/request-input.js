@@ -433,6 +433,26 @@
     return value({ year, month, day, iso: isoDate(year, month, day) });
   }
 
+  // 出生日期的一欄寫法：年月日之間用 - / . 空白或「年」「月」隔開（2000-04-04、2000/4/4、
+  // 2000年4月4日），或連寫成八位數字（20000404）。年份一律四位、在前。
+  const DATE_TEXT_SEPARATED = /^(\d{4})\s*[-/.年\s]\s*(\d{1,2})\s*[-/.月\s]\s*(\d{1,2})\s*日?$/;
+  const DATE_TEXT_COMPACT = /^(\d{4})(\d{2})(\d{2})$/;
+  const DATE_TEXT_REASON = "要寫成年、月、日，例如 2000-04-04、2000/4/4 或 20000404";
+
+  /**
+   * 出生日期一欄：先拆成年、月、日，其餘檢查（日曆、範圍）與 readBirthDateParts 相同。
+   */
+  function readBirthDateText(text, bounds) {
+    const normalized = halfWidthDigits(String(text === undefined || text === null ? "" : text))
+      .replace(/[\uFF0D\uFF0F\uFF0E\u3000]/g, (mark) => ({ "\uFF0D": "-", "\uFF0F": "/", "\uFF0E": ".", "\u3000": " " })[mark])
+      .trim();
+    if (normalized === "") return { state: EMPTY, fields: ["date"] };
+    const match = DATE_TEXT_SEPARATED.exec(normalized) || DATE_TEXT_COMPACT.exec(normalized);
+    if (!match) return { state: INVALID, reason: DATE_TEXT_REASON, fields: ["date"] };
+    const read = readBirthDateParts({ year: match[1], month: match[2], day: match[3] }, bounds);
+    return read.state === INVALID ? { ...read, fields: ["date"] } : read;
+  }
+
   /**
    * 讀年號、年、月、日四欄，換成西元日期。bounds 是出生日期欄的 min／max
    * （YYYY-MM-DD），範圍只有那一個出處。回傳封閉三態；value 帶回顯用的換算式。
@@ -494,6 +514,7 @@
     ERAS,
     readEraDate,
     readBirthDateParts,
+    readBirthDateText,
     isoDate,
     pad2,
     civilTimeOccurrences,

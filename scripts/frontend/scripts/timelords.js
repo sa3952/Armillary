@@ -1589,6 +1589,9 @@
       const wrap = node("details", "tl-life-table");
       wrap.appendChild(node("summary", null, "以表格列出全部期間"));
       const scroller = node("div", "tl-life-table-wrap");
+      scroller.tabIndex = 0;
+      scroller.setAttribute("role", "region");
+      scroller.setAttribute("aria-label", "人生時間軸的期間表");
       const grid = node("table");
       grid.appendChild(node("caption", null, `人生時間軸的期間（${overview.startAge} 至 ${overview.endAge} 足歲；日期是${Model.DATE_NOTE}）`));
       const head = node("thead");

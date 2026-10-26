@@ -1,221 +1,229 @@
 {
   "pages": {
     "about": {
-      "content_sha256": "e59a3ebd915228ac37bfae1a5fd193829f2b98f31b9aa4f21fb24799949710ef",
-      "lastmod": "2026-10-21"
+      "content_sha256": "121d68e59eef4b5974e3ebaa7ff339001526b61c56d01661084aa0d056d42862",
+      "lastmod": "2026-10-26"
+    },
+    "accessibility": {
+      "content_sha256": "056d9f8ffed11f0b0dedea45542831f27e3d7f31b85a6b656329f10a51bae9a2",
+      "lastmod": "2026-10-26"
     },
     "blog": {
-      "content_sha256": "0449d50c5fbf6be7703f57b659c0222d5482cea668d69e85cb2fbb2e39ad15f8",
-      "lastmod": "2026-10-21"
+      "content_sha256": "19e50583e739b841746ab835da8648b2dd791c2e3588074db54be58768b0a710",
+      "lastmod": "2026-10-26"
     },
     "blog-antiscia": {
-      "content_sha256": "27da3c37061bba7b44d784a7bf3f68206ef373d5249cfbdf57962416c265f778",
-      "lastmod": "2026-10-21"
+      "content_sha256": "d6a9883ea14d9a0149ae1d1d26cfd0bf7f3e3bbf66e6aad14f32c10f9811cbfc",
+      "lastmod": "2026-10-26"
     },
     "blog-approximate-birth-hour": {
-      "content_sha256": "2bf0886bdc3ddf1e7ded76a3d64ed052a205a66e946e6629d30c0d9d19b7cc40",
-      "lastmod": "2026-10-21"
+      "content_sha256": "7702bb5ded4e8696ef5ff2e30d73bba05fc7769f77391859e1e29fe519c076ce",
+      "lastmod": "2026-10-26"
     },
     "blog-ascendant-coordinates": {
-      "content_sha256": "f75404117ed906598dd0ac7db25ab7934fbfa45ead175306393ae66bf9d3ea8f",
-      "lastmod": "2026-10-21"
+      "content_sha256": "d1af985de082024d0abb285a919110eb2c73f5ea4aed2c280a3eaf4728c67ca3",
+      "lastmod": "2026-10-22"
     },
     "blog-birth-time-sensitivity": {
-      "content_sha256": "96025c3430615bf247a74baacb70e6549515b2b1a6fcc7b4ad734e07886c8017",
-      "lastmod": "2026-10-21"
+      "content_sha256": "355ce7b66422404b7b6619847e34e0e34ce1b42624f28008a799f3c833703bb6",
+      "lastmod": "2026-10-26"
     },
     "blog-black-moon-lilith-mean-true-natural": {
-      "content_sha256": "c92de3fe6344b252cfd4c157d986b8f4682bdeb5db9b80f530945fa3ac9cd6de",
+      "content_sha256": "d3ca7d7d7f9fc94fe5795ccb9e6e8b2231faced7666b4bcdd3e3e81656e53028",
       "lastmod": "2026-10-21"
     },
     "blog-chart-calculation-accuracy": {
-      "content_sha256": "622a97675ef125802df8c132f6ba11e5f34f1c271ab0d5364989144b9dbcdf47",
-      "lastmod": "2026-10-21"
+      "content_sha256": "465a7bd82dc400a91d94f2ba3719cd9a9985bbbf690529607f9912142c3bf1bc",
+      "lastmod": "2026-10-26"
     },
     "blog-choose-astrology-chart-calculator": {
-      "content_sha256": "228c6b8345e9cbe24fcdad59674f08a4b5026b652ca17cc39016ea44072fd0e8",
-      "lastmod": "2026-10-21"
+      "content_sha256": "fd3b812bfab85f9d2fca2f620a09fab7f6963ba8829e618c7af71050a3ebcdb3",
+      "lastmod": "2026-10-26"
     },
     "blog-combustion-under-beams-cazimi": {
-      "content_sha256": "0b4be120dc16771d1cdf6ee7efec4a70b1031fd5419e02f7e053ad790b8767cc",
+      "content_sha256": "057c8ea6314dd63ec3978b6c5d68f758931023e5f52e5b1d1ded05e6a76b2d55",
       "lastmod": "2026-10-21"
     },
     "blog-day-or-night-chart": {
-      "content_sha256": "1cda8535a60f4ad81dea6b2257777806b6b2609bd556db5c22b084e63c806561",
+      "content_sha256": "436217ce9f951dd933ad1586b89860f7357147709702bed15eb6fe743f062e0e",
       "lastmod": "2026-10-21"
     },
     "blog-dodecatemoria": {
-      "content_sha256": "4a763655a5efe66153b740d02b7e8f8f7ba793c870ab4982a2f64501c6f06610",
+      "content_sha256": "e7dbfcac37a10c7e9856478e5ed0ce4427823f418e1965e2de82a3a722aca22d",
       "lastmod": "2026-10-21"
     },
     "blog-firdaria-night-node-order": {
-      "content_sha256": "472d61133c000f5a7950020f887848ffeacc36aa4401ce404349bfecd429aa5b",
-      "lastmod": "2026-10-21"
+      "content_sha256": "63a005694882bb3fa386becf404dac2082eda39555c7611c53bea57027d4930c",
+      "lastmod": "2026-10-22"
     },
     "blog-four-bounds-tables": {
-      "content_sha256": "ce4af56705dd9fb44d7188e527bca557d84218fd934fb41b2d2d9bb8a27a0a6f",
+      "content_sha256": "e61cdb552f0dbcc889ec7a029e461b73b947ad2229a67c24ca27283c3636acf8",
       "lastmod": "2026-10-21"
     },
     "blog-geocentric-vs-topocentric-moon": {
-      "content_sha256": "ecf8b492d3bfdcb423581b0d6a6ea2dccbad8cb6c615430edc5650e320efb131",
+      "content_sha256": "ca36a1095443a5963468fadba8c54431b625a07cde9f2f43103e2ed2f5865db0",
       "lastmod": "2026-10-21"
     },
     "blog-hong-kong-birth-time": {
-      "content_sha256": "bdb57fd168a80415d47318e9a81d08761e388a8154958294f3f8952334dc7a5b",
-      "lastmod": "2026-10-21"
+      "content_sha256": "2aa351467bbed95aff7c38de65153caacc1118c78dcbb4cc96a0cd219e0ccf36",
+      "lastmod": "2026-10-26"
     },
     "blog-house-systems-explained": {
-      "content_sha256": "d98ed76fbe245bcddeb5c8bd7a347b037217c172664b600aafef0d7a7675b26d",
+      "content_sha256": "98dc0f14c47f713e9201075a044e0cc812c9f2381c788c55cc7cf51f1bad7252",
       "lastmod": "2026-10-21"
     },
     "blog-lot-of-fortune-formula": {
-      "content_sha256": "275819457d216c7b8921e7d61cafb6bf00becf9c537102d8777f729f9cceec5c",
+      "content_sha256": "983ffd0bf450a585c98fe55e7ce5758bc98319107b47b05f7e2a2546de10de3e",
       "lastmod": "2026-10-21"
     },
     "blog-lunar-mansions": {
-      "content_sha256": "202179d4d9f2e317a2e85946c1ca0d87973d36ed72f4dff74aabb68882df1311",
+      "content_sha256": "eb41dee4a93ad92102a2e2f67dc2604568f9f36bc33067c50579544a55a33715",
       "lastmod": "2026-10-21"
     },
     "blog-mean-vs-osculating-node": {
-      "content_sha256": "1b786a76fb04a85c84229698b46db025ab4e1727cdd2f6fa705e3c92b614beb1",
+      "content_sha256": "ec17d3c6849a30338c5eae14a6284d57cce955fa6ee0aa41607dbec6d9fb243e",
       "lastmod": "2026-10-21"
     },
+    "blog-mercury-retrograde-2026": {
+      "content_sha256": "d15b564dd5a96886cf74ed9d202bd6fdcf5bfb860e4ddc533db21a7f66b70aa4",
+      "lastmod": "2026-10-26"
+    },
     "blog-planetary-hours": {
-      "content_sha256": "7934a555d9390d3ab479d53631d1017364922e8d60ac0ba25db040e9d1b73c17",
+      "content_sha256": "9b495cd4cbe9b4ed8333c31ddeba6ba423eb5c54d47babd397b6fc5db242f8bf",
       "lastmod": "2026-10-21"
     },
     "blog-prenatal-syzygy": {
-      "content_sha256": "b6fdd09d236a8ac0008ac65c59fee6703821dd09295318f52853bddb3ad30383",
+      "content_sha256": "c3973fca93b695e7b7437cc808a9a4a789839a9aefe8adcf1a2416da3639210f",
       "lastmod": "2026-10-21"
     },
     "blog-rising-sign-tables": {
-      "content_sha256": "48a698853f1bdcdab39a851ac1605c6bf3ae12bbfa2b0094689eee0044f1a2a2",
+      "content_sha256": "5c9a3e69bdc7a8362bf04f89966cf324ef67059badfbe6ab52153e722d29e8e1",
       "lastmod": "2026-10-21"
     },
     "blog-taiwan-era-years-birth-time": {
-      "content_sha256": "faf6b1d82dfa673c43bd120d0d12aec20bcc9b9380b8574ddb7b74e428800b64",
+      "content_sha256": "375fd26dc0416ecf5e87157ebe6ddc881cafc1f6ea39b80663db3315ebba6f13",
       "lastmod": "2026-10-21"
     },
     "blog-taiwan-time-zone-history": {
-      "content_sha256": "ebb2a77be1d5cf2110941553260f809641cd7d8b6b711c022356def446efb9fd",
+      "content_sha256": "3dac6b1a84b5d4be3623737821233fd369c40db4576fa146a85b61dd17aa441d",
       "lastmod": "2026-10-21"
     },
     "blog-time-lord-reference-cases": {
-      "content_sha256": "92b5250ba5a0f39b1cbb3e3ba2aaece15065d5bd7c740ad0c62e37e7e523951b",
-      "lastmod": "2026-10-21"
+      "content_sha256": "04d84ab6ae9e69d262a848b2334b35f5c087d45e0f4da9549f77611679a45d6c",
+      "lastmod": "2026-10-26"
     },
     "blog-time-lords-introduction": {
-      "content_sha256": "1c585a6f9e3950026963c21d9def6a93af27608bdae95554554329bfa66247b6",
+      "content_sha256": "1c77600e9d9163fb09972741acd6bfb43aff521713e743702b99c4390223fa50",
       "lastmod": "2026-10-21"
     },
     "blog-triplicity-rulers": {
-      "content_sha256": "332a9f73a2a153139f849283bbd01403fe8e218201a665be40673f8493308bf2",
-      "lastmod": "2026-10-21"
+      "content_sha256": "8b2f71931a50cabe10eeaf579e4203651f1a68d03c176af955ca41a34c49119c",
+      "lastmod": "2026-10-22"
     },
     "blog-tropical-vs-sidereal-zodiac": {
-      "content_sha256": "80d9349c81fa1d729250a8c6a9c70c4ed728eb1e085245f37cf90c3221813471",
+      "content_sha256": "68f8bc0d7c3d46d0a1bab23433d2572645bf430e8fa3e5677ccc69b5bc8e71f2",
       "lastmod": "2026-10-21"
     },
     "blog-true-solar-time": {
-      "content_sha256": "b2875298db86ec95df68efcbbc22dcde5936c6db8bd37f52510c256a5f308744",
+      "content_sha256": "a8b0503b829af4f7f96dff1ee58c80255278ee4eea7442ce0d8a424ae8f6bf09",
       "lastmod": "2026-10-21"
     },
     "blog-unknown-birth-time": {
-      "content_sha256": "4324e4238de3f9427b1e37cb54f8bb6da543fd483acd4d8d54268b34868db2a1",
+      "content_sha256": "009454252057b85afefcbe83773d71d4c0dce33a829fd966268d083712932c04",
       "lastmod": "2026-10-21"
     },
     "blog-verify-chart-calculation": {
-      "content_sha256": "968361f1c23d6380f83d4ca88bbf928444926f423559182c8526f2e6d04759d2",
-      "lastmod": "2026-10-21"
+      "content_sha256": "1bdbd134d65b84e3ef1d8a0b711bba240ff4e83131ebc89da8e12bb2eef4cf4b",
+      "lastmod": "2026-10-26"
     },
     "blog-whole-sign-vs-placidus": {
-      "content_sha256": "627dc95c101b8db0733f9e6a85d12a0ec62ca1e26c43db167108aac40a7060ac",
-      "lastmod": "2026-10-21"
+      "content_sha256": "a44d32e4569e87e215762768053c714520983c3c69e80eab97c5c6f72e02b70e",
+      "lastmod": "2026-10-26"
     },
     "calculate": {
-      "content_sha256": "921b8902ae40f96fbc8ea00119394b4a69bc39f652cd04109c05c7d863e4098f",
-      "lastmod": "2026-10-21"
+      "content_sha256": "ebb03d1382350822d33ba6127aead157860f9886e13c3d7166248e61897052d7",
+      "lastmod": "2026-10-26"
     },
     "calculate-decennials": {
-      "content_sha256": "b9c057a2d6da43a91bbb1440affaa80a332514ede25729181486cf563a969e7b",
+      "content_sha256": "81fdb255ea2a09dca8522e661330eec3193a33dcce76dddd29f7d435716c12e9",
       "lastmod": "2026-10-21"
     },
     "calculate-firdaria": {
-      "content_sha256": "ef06ab546a216f9a2688cdee1a0187f2961b5ad3bbf96c3924a9ccf7c22b8a34",
+      "content_sha256": "f8feb41b497017f4a3dfa0458b3daafb52f38201afd1ef3f7afa670e0f7f8584",
       "lastmod": "2026-10-21"
     },
     "calculate-profections": {
-      "content_sha256": "7426be3f7d6351fc4a2903dce57fc9d50d31c34718f477b5c77d26a97d186671",
+      "content_sha256": "82e297484d336b666843bb53dfafa6180df2091a85cfd7d389cecf6d6a53e49f",
       "lastmod": "2026-10-21"
     },
     "calculate-zodiacal-releasing": {
-      "content_sha256": "52ad4cb012e6781abd31d499f39bb532a693ee54fee2e63f0e574850c66173e3",
+      "content_sha256": "d22657463ee2c1512cb94d1c6bd1e23e1b9dc9d7ac95bfe77bda9c9ab7fe83cc",
       "lastmod": "2026-10-21"
     },
     "contact": {
-      "content_sha256": "32135fe36ffef1c0ea6ad3038aec4c8535c1d44fd39328990402139b9e7cd76f",
-      "lastmod": "2026-10-19"
+      "content_sha256": "efb68d87626e641534e841bfda65072984935f8ca0715ccb271908b63bd234c3",
+      "lastmod": "2026-10-26"
     },
     "features": {
-      "content_sha256": "74d884d650d472c1e496b79721257da9cdcfbe6a6a0e13967d5ac082637fb3c8",
-      "lastmod": "2026-10-21"
+      "content_sha256": "e711120530d42a50d28286db8f2e139e25612d39283b4651175ee1de33789e29",
+      "lastmod": "2026-10-26"
     },
     "home": {
-      "content_sha256": "1e4755938b2976cd936dd0ffdbaa4c67695f8f18d48d8e79063be8012673b761",
-      "lastmod": "2026-10-21"
+      "content_sha256": "373302b95a98857de6146b2a68d83bee5d5c01c8d88f65ec222f8c322ce3b08b",
+      "lastmod": "2026-10-26"
     },
     "legal-copyright": {
-      "content_sha256": "ecbb0633391eeea17e69906bc75fd932981fda98390a600a50c969b1143016ac",
-      "lastmod": "2026-10-19"
+      "content_sha256": "7fa9c33d5c6e1feb2eeb13c219bb5a0349490eeafdfe2010e5fa2e2e3ed70af6",
+      "lastmod": "2026-10-26"
     },
     "legal-privacy": {
-      "content_sha256": "c1d3d7c2d1635462afe2f1da6e0b2de2aff33f33937d3e2525f580b05bbd2dfe",
-      "lastmod": "2026-10-21"
+      "content_sha256": "5d0fcbb775b473d54e2c7a82a16d19d61cb14e7b08996adc27f089ca2343ae5f",
+      "lastmod": "2026-10-26"
     },
     "legal-terms": {
-      "content_sha256": "8aa48bd6f6af23d97815eaf22ca27603f11d415f89290038f18cc57a75f6b085",
-      "lastmod": "2026-10-18"
+      "content_sha256": "2e005f9b289aa40e454559122eb5413be91a18b42b12c99d4cf040598be8685d",
+      "lastmod": "2026-10-26"
     },
     "methods": {
-      "content_sha256": "35e9b8ba68b2365d694d103b798878fef3bbff78ff5e0ebedc939869ce1f78c1",
-      "lastmod": "2026-10-21"
+      "content_sha256": "28b1e2c3e3da873c49734d23e2aa848bb4e92ddaa4637cb9e391400953adbc1d",
+      "lastmod": "2026-10-26"
     },
     "methods-birth-time-conversion": {
-      "content_sha256": "d81f64c946d4b2ab5bc88156160534e2e358eff66da51a792dd79ce4306cd2f3",
+      "content_sha256": "67684ecb0f126879f6ade2526b90621918a80ca6f2f9c6400d612c5595021b3e",
       "lastmod": "2026-10-21"
     },
     "methods-decennials": {
-      "content_sha256": "d6b5a02873cbe2f39dedb131b2aff6dc246188b409bf3fbfad17d77c1aa0d392",
+      "content_sha256": "114f04945aae4c570688627a5c33daada35a23af5d736be7a2d8de27ec85bc09",
       "lastmod": "2026-10-21"
     },
     "methods-glossary": {
-      "content_sha256": "b5af377f7ec6699c9568663eb7b29a829828b23761ba38f3f1867eaed18d7501",
-      "lastmod": "2026-10-18"
+      "content_sha256": "9557cf28008c789951ca5995d9679563c92bb90587abb3312b49fcd14622ceae",
+      "lastmod": "2026-10-26"
     },
     "methods-time-lords": {
-      "content_sha256": "ecfc2d2af8ff63edeec0e7bbee054b05b46f6acbe9d3e9172356ff9c7322249d",
+      "content_sha256": "4a747fa69664ce08eedfda02a07a88894a3644a7094d8b015eabefa640e3f66a",
       "lastmod": "2026-10-21"
     },
     "roadmap": {
-      "content_sha256": "6a35a7e999f88aec8958c2c36928abb61404e0dd51fec4960d2cc864bb13fac3",
-      "lastmod": "2026-10-21"
+      "content_sha256": "9cf07bc517e5f41d26b80845a6e3922aeef000028a872fd3919a0da0b491201b",
+      "lastmod": "2026-10-26"
     },
     "security": {
-      "content_sha256": "03daceb2a67e841b3f90c263d23a350496055eaf6b38615cc16984e7f1876245",
-      "lastmod": "2026-10-21"
+      "content_sha256": "6c793fcfe70d6a99a859fa050b59a019fae3fa452478645c0224ff01217f4992",
+      "lastmod": "2026-10-26"
     },
     "security-verify": {
-      "content_sha256": "6f9cbb3d5e974dc361165bdc2cf83495cd96bb30946dcd1bf7664bf80d54c713",
-      "lastmod": "2026-10-21"
+      "content_sha256": "dc5e8a9b02e184d1ff70353d634f651a5c5bbec9a19e98bb9bd15ae2f51fba33",
+      "lastmod": "2026-10-26"
     },
     "trust": {
-      "content_sha256": "0d4899cc321b86668be93ed1ee918402eba3c2cdfe73ec659a734793e9319bf4",
-      "lastmod": "2026-10-21"
+      "content_sha256": "f5cb2272d7b0aa8cfe8a9c50045b616a3df585ea37caede070cc5c6d4f3d1fed",
+      "lastmod": "2026-10-26"
     },
     "validation": {
-      "content_sha256": "874602a56c0781a184753fee40f5e01f7def75ca1ccb9b08647cb035d9b565b8",
+      "content_sha256": "875e5fd7261c63f8b5f7aecb32ed3e1d7f129bb778e509312f7c952beb034afb",
       "lastmod": "2026-10-21"
     }
   },
-  "schema_version": 2
+  "schema_version": 3
 }

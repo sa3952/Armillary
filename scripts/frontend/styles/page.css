@@ -85,7 +85,7 @@ header .wrap{
 /* ─── 首屏行動列：次要按鈕指向範例卷宗，不交出生資料也能看到完整輸出。 ─── */
 .hero-act{display:flex; flex-wrap:wrap; align-items:center; gap:var(--s3); margin-top:var(--s3)}
 .btn.rev{background:var(--paper); color:var(--plate)}
-@media (hover:hover){.btn.rev:hover{background:var(--accent-rev); color:var(--paper)}}
+@media (hover:hover){.btn.rev:hover{background:var(--accent-rev); color:var(--plate)}}
 
 /* ─── 首屏憑證列：內容須為可查證事實（AGPL-3.0 見 /legal/copyright，追蹤器為零見 /security）。 ─── */
 .hero .creds{flex-wrap:wrap}
@@ -515,7 +515,7 @@ a.brand:hover .mark line{stroke:var(--plate-fg)}}
   background:var(--paper); color:var(--plate);
   padding:.5rem 1.15rem; margin-left:.6rem;
 }
-@media (hover:hover){.site-nav a.nav-cta:hover{background:var(--accent-rev); color:var(--paper)}}
+@media (hover:hover){.site-nav a.nav-cta:hover{background:var(--accent-rev); color:var(--plate)}}
 /* 在入口自己的目的地（計算頁），build_pages 替它加上 aria-current="page"：
    不再是待按的實心按鈕，改為髮絲框的「你在這裡」。 */
 .site-nav a.nav-cta[aria-current="page"]{
@@ -1875,6 +1875,9 @@ footer .sitemap{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); g
   color:var(--ink); margin:var(--s3) 0 var(--s2);
 }
 .covenant .cv-main p,.ledger .lg-sec p,.dispatch .ds-sec p,.desk .dk-sec p{max-width:var(--measure); line-height:var(--lh-body); font-size:var(--fs-body)}
+/* 條號與段號是段落元素：上面兩條段落規則（與 .statute .art p）的權重比它們自己的規則高，字級會被拉成
+   內文的 --fs-body。這裡以更高的權重把字級還給 --fs-lead，與其他頁的 .sig 同一級。 */
+.statute .art > p.art-n,.covenant .cv-main p.cv-n,.ledger .lg-sec p.lg-n{font-size:var(--fs-lead)}
 .covenant .cv-main b{color:var(--ink)}
 
 /* 右欄 */

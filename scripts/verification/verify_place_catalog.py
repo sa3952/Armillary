@@ -101,6 +101,19 @@ def _check_producer_freshness(manifest: dict) -> None:
     for record_id, correction in admin1_table.items():
         if recorded_admin1[record_id].get("corrected") != correction["corrected"]:
             raise SystemExit(f"recorded admin1 correction for {record_id} differs from the producer")
+    chinese = producer.SOURCE_CHINESE_NAME_EXCLUSIONS
+    if manifest.get("source_chinese_name_exclusions_table_sha256") != _table_sha256(chinese):
+        raise SystemExit("producer Chinese-name exclusion table changed since the catalogue was built; rebuild it")
+    recorded_chinese = {
+        item.get("source_record_id"): item for item in manifest.get("source_chinese_name_exclusions") or []
+    }
+    if set(recorded_chinese) != set(chinese) or any(
+        recorded_chinese[record_id].get("names") != entry["names"] for record_id, entry in chinese.items()
+    ):
+        raise SystemExit("producer Chinese-name exclusion table and recorded exclusions differ")
+    folding = manifest.get("han_script_folding") or {}
+    if folding.get("source_table_sha256") != _table_sha256(producer.load_han_fold_source()["simplified_to_traditional"]):
+        raise SystemExit("the Simplified-to-Traditional table changed since the catalogue was built; rebuild it")
     exclusions = producer.SOURCE_ROW_EXCLUSIONS
     if manifest.get("source_exclusions_table_sha256") != _table_sha256(exclusions):
         raise SystemExit("producer exclusion table changed since the catalogue was built; rebuild it")
@@ -196,6 +209,68 @@ def _check_exclusions(connection: sqlite3.Connection, manifest: dict) -> None:
                 raise SystemExit(f"place catalog exclusion {record_id}: row {wanted} found {found} times, expected {count}")
 
 
+def _stored_metadata(connection: sqlite3.Connection, key: str):
+    stored = connection.execute("SELECT value_json FROM catalog_metadata WHERE key = ?", (key,)).fetchone()
+    return None if stored is None else json.loads(stored[0])
+
+
+def _check_chinese_name_exclusions(connection: sqlite3.Connection, manifest: dict) -> None:
+    """No row leads its label with a Chinese name the producer excludes for it."""
+
+    exclusions = manifest.get("source_chinese_name_exclusions")
+    if not isinstance(exclusions, list) or not exclusions:
+        raise SystemExit("place catalog manifest records no Chinese-name exclusion list")
+    if _stored_metadata(connection, "source_chinese_name_exclusions") != exclusions:
+        raise SystemExit("catalogue and manifest record different Chinese-name exclusions")
+    for item in exclusions:
+        record_id, names = item.get("source_record_id"), item.get("names")
+        if item.get("status") not in {"excluded", "not_offered"} or not names:
+            raise SystemExit(f"Chinese-name exclusion {record_id} has no recorded outcome")
+        rows = connection.execute(
+            "SELECT name_zh, display_name, match_keys FROM places "
+            "WHERE source = 'geonames_cities500' AND source_record_id = ?",
+            (record_id,),
+        ).fetchall()
+        for name_zh, display_name, match_keys in rows:
+            if name_zh in names or any(name in display_name for name in names) or any(
+                f"\x1f{name}\x1f" in match_keys for name in names
+            ):
+                raise SystemExit(f"place catalog row {record_id} still carries an excluded Chinese name")
+
+
+def _check_han_script_folding(connection: sqlite3.Connection, manifest: dict) -> int:
+    """The folding table the runtime reads holds no character a MOI name writes.
+
+    Folding a query character that a Taiwanese name uses as written (后 of
+    后里) would send that name elsewhere; the check reads the catalogue's own
+    MOI rows, not the producer's account of them.
+    """
+
+    folding = manifest.get("han_script_folding")
+    if not isinstance(folding, dict) or not isinstance(folding.get("simplified_to_traditional"), dict):
+        raise SystemExit("place catalog manifest records no script folding table")
+    if _stored_metadata(connection, "han_script_folding") != folding:
+        raise SystemExit("catalogue and manifest record different script folding tables")
+    table = folding["simplified_to_traditional"]
+    if manifest.get("han_script_folding_table_sha256") != _table_sha256(table) or _stored_metadata(
+        connection, "han_script_folding_table_sha256"
+    ) != _table_sha256(table):
+        raise SystemExit("script folding table digest does not match the table")
+    written: set[str] = set()
+    for row in connection.execute(
+        "SELECT name, coalesce(admin1, ''), coalesce(admin2, ''), coalesce(admin3, '') FROM places "
+        "WHERE source = 'taiwan_moi_place_names' AND substr(source_record_id, 1, 15) != 'tw-moi-county-d' "
+        "AND substr(source_record_id, 1, 13) != 'tw-moi-town-d'"
+    ):
+        written.update("".join(row))
+    kept = set(folding.get("kept_as_written_because_taiwan_names_use_them") or "")
+    if not written or written & set(table):
+        raise SystemExit(f"script folding would rewrite characters MOI names use: {''.join(sorted(written & set(table)))}")
+    if kept & set(table):
+        raise SystemExit("script folding both keeps and folds a character")
+    return len(table)
+
+
 def _check_taiwan_counties(connection: sqlite3.Connection, expected_count: int | None) -> int:
     """Each county has one derived point carrying its full, short and an English name.
 
@@ -278,6 +353,11 @@ def _check_timezone_check(metadata: dict, manifest: dict) -> str:
         return f"timezone/coordinate cross-check passed ({rows} rows, {engine})"
     if (status == "not_run" and outcome.get("engine") is None
             and outcome.get("reason") in TIMEZONE_CHECK_NOT_RUN_REASONS):
+        audit = outcome.get("offline_audit")
+        if isinstance(audit, dict):
+            return (f"timezone/coordinate cross-check NOT RUN ({outcome['reason']}) at build; the build applied "
+                    f"the offline audit table ({audit.get('engine')}: {audit.get('corrections')} corrections, "
+                    f"{audit.get('left_as_source')} rows left as the source has them)")
         return (f"timezone/coordinate cross-check NOT RUN ({outcome['reason']}): no GeoNames zone was "
                 "compared with its coordinate when this catalogue was built")
     raise SystemExit(f"unknown timezone/coordinate check outcome: {outcome!r}")
@@ -336,6 +416,8 @@ def verify(*, installed_image: bool = False) -> None:
                             THEN 'taiwan_moi_settlement'
                         WHEN source_record_id LIKE 'tw-moi-county-derived:%'
                             THEN 'taiwan_moi_county_representative'
+                        WHEN source_record_id LIKE 'tw-moi-town-derived:%'
+                            THEN 'taiwan_moi_town_representative'
                     END AS source,
                     COUNT(*) AS count
                 FROM places
@@ -343,7 +425,8 @@ def verify(*, installed_image: bool = False) -> None:
                 """
             )
         }
-        if counts != manifest["row_counts"]:
+        # A kind the inputs yield no row of (a test catalogue without townships) has no row to count.
+        if counts != {kind: count for kind, count in manifest["row_counts"].items() if count}:
             raise SystemExit(
                 f"place catalog row counts differ: {counts!r}"
             )
@@ -353,6 +436,8 @@ def verify(*, installed_image: bool = False) -> None:
         corrected_rows = _check_corrections(connection, manifest)
         admin1_rows = _check_admin1_corrections(connection, manifest)
         _check_exclusions(connection, manifest)
+        _check_chinese_name_exclusions(connection, manifest)
+        folded_characters = _check_han_script_folding(connection, manifest)
         _check_taiwan_counties(
             connection, None if installed_image else len(_load_producer().TAIWAN_COUNTY_CODES)
         )
@@ -377,7 +462,8 @@ def verify(*, installed_image: bool = False) -> None:
 
     print(
         f"PLACE CATALOG VERIFIED ({corrected_rows} corrected rows and "
-        f"{admin1_rows} admin1-corrected rows read back; {timezone_check})"
+        f"{admin1_rows} admin1-corrected rows read back; {folded_characters} folding characters "
+        f"checked against the MOI names; {timezone_check})"
     )
 
 

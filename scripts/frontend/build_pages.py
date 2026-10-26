@@ -448,7 +448,7 @@ _TELEMETRY_FIELD_EXPLANATIONS = {
     "method": "GET／POST／HEAD／OPTIONS／OTHER",
     # A client that leaves before any response is recorded with 0.
     "status_code": "0（沒有送出回應：用戶端在回應之前已中斷連線）或 100–599",
-    "duration_bucket": "固定分組，不記精確耗時",
+    "duration_bucket": "以秒分三組（不到 1 秒、1–9 秒、10 秒以上），不記精確耗時",
     "request_size_bucket": "固定區間，不記內容",
     "outcome": "success／rejected／error／unknown",
 }
@@ -614,7 +614,8 @@ ARTICLE_SIGNER = "Sebastian"
 
 # The version an article prints is how many distinct dates its lastmod record
 # entry has held: every committed revision of the record on the first-parent
-# line, and the record the build dates the page from.  The byline carries a
+# line (less the withdrawn dates below), and the record the build dates the
+# page from.  The byline carries a
 # placeholder until the page is dated, so the page's digest, which decides its
 # date, never reads its own version.
 ARTICLE_VERSION_PLACEHOLDER = "{{article_version}}"
@@ -632,12 +633,36 @@ def article_source_count(body: str) -> int:
     return count
 
 
+# Record revisions whose new dates were not content changes: a rebuild that
+# only marked table frames for a script moved the date of every page with a
+# table while the digest still read those attributes.  A date one of these
+# gave a page is not a version of it.
+WITHDRAWN_LASTMOD_REVISIONS = ("e1d22173c30d192a45440ffc7de54c1a98e352a7",)
+
+
+def _withdrawn_lastmod_dates(root: Path = ROOT) -> set[tuple[str, str]]:
+    withdrawn = set()
+    for revision in WITHDRAWN_LASTMOD_REVISIONS:
+        try:
+            before, after = (json.loads(subprocess.run(
+                ["git", "show", f"{commit}:{PAGE_LASTMOD_PATH}"], cwd=root, check=True,
+                capture_output=True, timeout=120).stdout) for commit in (f"{revision}^", revision))
+        except (OSError, ValueError, subprocess.SubprocessError) as error:
+            raise ValueError(f"the article versions need record revision {revision[:8]}: {error}") from None
+        for key, entry in after["pages"].items():
+            if before["pages"].get(key, {}).get("lastmod") != entry["lastmod"]:
+                withdrawn.add((key, entry["lastmod"]))
+    return withdrawn
+
+
 @functools.lru_cache(maxsize=1)
 def _committed_lastmod_dates() -> dict[str, frozenset[str]]:
     dates: dict[str, set[str]] = {}
+    withdrawn = _withdrawn_lastmod_dates()
     for _committed, record in committed_page_lastmod():
         for key, entry in record.get("pages", {}).items():
-            dates.setdefault(key, set()).add(entry["lastmod"])
+            if (key, entry["lastmod"]) not in withdrawn:
+                dates.setdefault(key, set()).add(entry["lastmod"])
     return {key: frozenset(found) for key, found in dates.items()}
 
 
@@ -1216,22 +1241,41 @@ def render_error_page(item: dict, stamp: bool = True) -> str:
 # result shows: the title, the description and what <main> holds.  The shared
 # header and footer, the head's links and the structured data are restated by
 # every build that touches the site's chrome, a `?v=` stamp is the version of a
-# file the page names, not the page, and a class only picks a style; none of
-# them moves the date.
+# file the page names, not the page, a class only picks a style, and a data-*
+# hook, a tab stop, a landmark role or a script the page loads only changes how
+# the page behaves; none of them moves the date.
 _MAIN_CONTENT = re.compile(r'<main id="main-content">(.*?)</main>', re.S)
 _PAGE_TITLE = re.compile(r"<title>(.*?)</title>", re.S)
 _PAGE_DESCRIPTION = re.compile(r'<meta name="description" content="([^"]*)">')
 # A version a page prints, whole or shortened to a few digits and an ellipsis
-# (the verify page's request list) or not yet stamped, and a class attribute,
-# which names a style rather than what the reader reads.
+# (the verify page's request list) or not yet stamped.
 _PRINTED_VERSION = re.compile(r"\?v=(?:[0-9a-f]{6,16}…?|\{\{assets\}\})")
-_CLASS_ATTRIBUTE = re.compile(r' class="[^"]*"')
+# Attributes that name a style or a behaviour rather than what the reader reads,
+# and the scripts the page loads.  A data-* attribute a stylesheet prints with
+# attr() (a stacked table's column label, the calculator's status message) is
+# text the reader reads, so it stays.
+_BEHAVIOUR_ATTRIBUTE = re.compile(r' (class|data-[a-z0-9-]+|tabindex|role)(?:="[^"]*")?(?=[\s/>])')
+_LOADED_SCRIPT = re.compile(r'\s*<script [^>]*\bsrc="[^"]*"[^>]*></script>')
+_STYLE_PRINTED_ATTRIBUTE = re.compile(r"attr\((data-[a-z0-9-]+)\)")
+
+
+@functools.lru_cache(maxsize=1)
+def _printed_data_attributes() -> frozenset[str]:
+    from scripts.frontend import stylesheets
+
+    return frozenset(name for sheet in sorted(stylesheets.STYLES.glob("*.css"))
+                     for name in _STYLE_PRINTED_ATTRIBUTE.findall(sheet.read_text(encoding="utf-8")))
+
+
+def _without_behaviour_attributes(body: str) -> str:
+    printed = _printed_data_attributes()
+    return _BEHAVIOUR_ATTRIBUTE.sub(lambda found: found.group(0) if found.group(1) in printed else "", body)
 # An article's version and source count restate its record and its sources
 # section; the line itself is not content that moves the page's date.
 _ARTICLE_VERSION_LINE = re.compile(r'<span class="ar-version">[^<]*</span>')
 # The digest scheme the record's content_sha256 values are written under; a
 # record of another scheme has no digest comparable with these.
-PAGE_LASTMOD_SCHEMA = 2
+PAGE_LASTMOD_SCHEMA = 3
 
 
 def page_digest(page: str) -> str:
@@ -1240,7 +1284,8 @@ def page_digest(page: str) -> str:
     description = _PAGE_DESCRIPTION.findall(page)
     if len(main) != 1 or len(title) != 1 or len(description) > 1:
         raise ValueError("a page to date has one <main id=\"main-content\">, one <title> and at most one description")
-    body = _CLASS_ATTRIBUTE.sub("", _PRINTED_VERSION.sub("?v=", _ARTICLE_VERSION_LINE.sub("", main[0])))
+    body = _LOADED_SCRIPT.sub("", _without_behaviour_attributes(
+        _PRINTED_VERSION.sub("?v=", _ARTICLE_VERSION_LINE.sub("", main[0]))))
     content = "\0".join([title[0], *description, body])
     return hashlib.sha256(content.encode("utf-8")).hexdigest()
 

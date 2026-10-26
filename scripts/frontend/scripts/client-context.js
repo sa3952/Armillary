@@ -46,9 +46,14 @@
   const LEAP_SECOND_GUIDANCE = "請把「秒」改為 0 到 59。";
 
   // 429 與 5xx 的狀態後備文案；邊緣（NGINX）對 /api 路徑回的閉集代碼
-  // （edge_rate_limited、upstream_unavailable）在代碼表裡引用同一句。
-  const RATE_LIMITED_MESSAGE = "網站目前忙碌，這不是你的輸入有問題；請依提示稍後再試一次。";
-  const SERVER_UNAVAILABLE_MESSAGE = "網站暫時無法完成計算。請稍後再試一次；若持續發生，請透過聯絡頁回報。";
+  // （edge_rate_limited、upstream_unavailable）在代碼表裡引用同一句。地名查詢、時間換算
+  // 與年度時間主星共用這兩句，所以只說「這次請求」，不說「計算」；等多久由動作清單依
+  // Retry-After 給，沒有就不提。
+  const RATE_LIMITED_MESSAGE = "網站目前忙碌，這不是你的輸入有問題；請稍後再試一次。";
+  const SERVER_UNAVAILABLE_MESSAGE = "網站暫時無法完成這次請求。請稍後再試一次；若持續發生，請透過聯絡頁回報。";
+  // 2xx 卻沒有可讀的答案（截斷的 JSON、一頁 HTML、空的 204）：問題在網站或中途的網路，不在輸入。
+  const UNREADABLE_ANSWER_MESSAGE = "網站的回應無法讀取，這不是你的輸入有問題；請稍後再試一次。";
+  const isSuccessStatus = (statusCode) => statusCode >= 200 && statusCode < 300;
 
   const ERROR_CODE_MESSAGES = Object.freeze({
     nonexistent_local_time: (
@@ -343,6 +348,7 @@
     if (statusCode === 415) return "送出的資料格式不受支援，請重新載入頁面後再試一次。";
     if (statusCode === 422) return "部分輸入無法驗證；請檢查必填欄位與格式。";
     if (statusCode === 429) return RATE_LIMITED_MESSAGE;
+    if (isSuccessStatus(statusCode)) return UNREADABLE_ANSWER_MESSAGE;
     if (statusCode >= 500) {
       return SERVER_UNAVAILABLE_MESSAGE;
     }
@@ -353,7 +359,7 @@
   // 對不到的欄位回空陣列（錯誤訊息照常顯示，只是不標任何欄位）。選項一律是 opt-<key>，
   // 由 calculate.js 依選項目錄的 rendered_by 換成看得見的那個控制項。
   const DATETIME_CONTROL_IDS = Object.freeze({
-    year: "date-year", month: "date-month", day: "date-day", hour: "hour", minute: "minute", second: "second",
+    year: "birth-date", month: "birth-date", day: "birth-date", hour: "hour", minute: "minute", second: "second",
   });
   const LOCATION_CONTROL_IDS = Object.freeze({
     latitude: "latitude", longitude: "longitude", altitude_m: "altitude",
@@ -372,7 +378,7 @@
     house_system_unavailable: ["opt-house_system"],
   });
   const TIMEZONE_CONTROL_ID = "timezone";
-  const DATE_CONTROL_ID = "date-year";
+  const DATE_CONTROL_ID = "birth-date";
   // 這個模組可能點名的每一個固定控制項 id，由上面幾張表導出（opt-<key> 另由
   // 選項目錄決定）。頁面層測試拿它對開機後的 DOM 驗證，不另抄一份清單。
   const KNOWN_CONTROL_IDS = Object.freeze([...new Set([
@@ -437,11 +443,16 @@
     "swiss_ephemeris_error",
   ]);
 
+  // 狀態列的一句：只有 4xx 是服務拒絕；忙碌或伺服器出錯時這次計算只是沒有完成。
+  function refusalStatus(statusCode) {
+    return statusCode === 429 || statusCode >= 500 ? "這次計算沒有完成。" : "服務拒絕了這次計算。";
+  }
+
   function apiErrorActions(statusCode, retryAfterHeader, code) {
     const actions = [];
     if (NON_RETRYABLE_SERVER_REFUSALS.includes(code)) {
       actions.push("核對出生日期、時刻與地點後再送出。");
-    } else if (statusCode === 429 || statusCode >= 500) {
+    } else if (statusCode === 429 || statusCode >= 500 || isSuccessStatus(statusCode)) {
       const raw = typeof retryAfterHeader === "string" ? retryAfterHeader.trim() : "";
       const seconds = /^\d+$/.test(raw) ? Number(raw) : 0;
       actions.push(
@@ -494,6 +505,7 @@
     fieldControlIds,
     KNOWN_CONTROL_IDS,
     apiErrorActions,
+    refusalStatus,
     networkErrorMessage,
     placeQueryNotice,
   });

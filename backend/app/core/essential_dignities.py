@@ -20,7 +20,7 @@ from typing import Any
 from .formatting import dms_text, normalize_longitude, zodiac_sign_index
 from .frame_compatibility import method_frame_state
 from .module_state import computed_receipt, frame_table_refusal
-from .method_status import method_head, research_only_profiles
+from .method_status import method_head, profile_period, research_only_profiles
 from .source_reading import (
     DOROTHEUS_BOOK_I_ONLINE, ORIGINAL_LANGUAGE_READ, SOURCE_READING_LEVELS, cited, reference_only,
 )
@@ -109,6 +109,7 @@ def _profile_header(
         "technique": technique,
         "source": sources[profile_id],
         "source_ref": f"dignities/{profile_id}",
+        "period": profile_period(profile_id),
         **{
             key: details[profile_id][key]
             for key in SOURCE_STATUS_KEYS
@@ -316,6 +317,7 @@ def _domicile_exaltation_profile(bodies: list[dict]) -> dict:
         "technique": "domicile_exaltation",
         "source": _DOMICILE_EXALTATION_SOURCE,
         "source_ref": f"dignities/{DOMICILE_EXALTATION_PROFILE_ID}",
+        "period": profile_period(DOMICILE_EXALTATION_PROFILE_ID),
         "match_basis": "whole_tropical_sign",
         # The degree policy and the list of what is not evaluated are constant
         # text in the register entry source_ref names.
@@ -451,6 +453,7 @@ def _peregrine_profile(bodies: list[dict], sect_classification: dict) -> dict:
         "technique": "peregrine",
         "source": PEREGRINE_SOURCE,
         "source_ref": PEREGRINE_SOURCE_REF,
+        "period": profile_period(PEREGRINE_PROFILE_ID),
         "basis": dict(PEREGRINE_BASIS),
         "statuses": list(PEREGRINE_STATUSES),
         "participant_scope": "classical_seven_planets_only",
@@ -927,7 +930,7 @@ METHOD_SOURCE_ENTRIES: dict[str, dict[str, Any]] = {
                 ),
                 "role": "page_locator_of_an_also_attested_source",
             },
-            cited("Firmicus Maternus, Mathesis II.2 (Kroll–Skutsch 1897, vol. I)", "the domiciles",
+            cited("Firmicus Maternus, Mathesis II.2 (Kroll–Skutsch 1897, vol. I, pp.42-43)", "the domiciles",
                   "original_language_read",
                   ("the Latin of Kroll-Skutsch as transcribed on LacusCurtius "
                    "(Firmicus_Maternus/Mathesis/2*.html), II.2 'De Domibus Stellarum', "

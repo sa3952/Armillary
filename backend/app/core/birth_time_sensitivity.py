@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 from dataclasses import dataclass, field
 from collections.abc import Callable
 import datetime as dtmod
@@ -732,12 +731,18 @@ SIGN_POSITION_KEYS = frozenset(
 )
 
 
+# A pointer to where the method is documented: fixed per response shape, so no
+# sample can move it and counting it would only inflate the count.
+_NOT_CLASSIFICATIONS = frozenset({"source_ref"})
+
+
 def printed_classifications(value: Any, path: str) -> dict[str, Any]:
     """Every classification a printed response object carries, by response path.
 
     A classification is any printed value that is not a number on a
     continuum: a boolean, an integer, a string or a null, and the sign of every
-    printed sign position.  Floats move inside any interval and are reported
+    printed sign position.  A `source_ref` is a documentation pointer, not a
+    classification.  Floats move inside any interval and are reported
     as sampled envelopes.  Nothing is named here, so a classification a module
     starts printing (a Lot's house, sect's band status, a planet's motion) is
     compared without anyone remembering to add it.
@@ -761,6 +766,8 @@ def _member_name(item: Any, index: int) -> str:
 def _collect(value: Any, path: str, found: dict[str, Any]) -> None:
     if isinstance(value, dict):
         for key, item in value.items():
+            if key in _NOT_CLASSIFICATIONS:
+                continue
             child = f"{path}.{key}"
             if key in SIGN_POSITION_KEYS:
                 _collect_sign_positions(item, child, found)
@@ -824,7 +831,7 @@ def _with_sign_positions(objects: dict[str, Any]) -> dict[str, Any]:
     layers: dict[str, dict[str, Any]] = {
         "astronomical_data": {}, "derived_geometry": {}, "derived_methods": {},
     }
-    for path, value in copy.deepcopy(objects).items():
+    for path, value in _container_copy(objects).items():
         layer, name = path.split(".", 1)
         layers[layer][name] = value
     attach_sign_positions(
@@ -838,6 +845,24 @@ def _with_sign_positions(objects: dict[str, Any]) -> dict[str, Any]:
         for layer, values in layers.items()
         for name, value in values.items()
     }
+
+
+def _container_copy(value: Any) -> Any:
+    """A copy of every dict, list and tuple in a printed object, leaves shared.
+
+    attach_sign_positions only adds keys to dicts, so copying the containers is
+    all that keeps it off the chart's own records; the leaves (numbers,
+    strings, None) are immutable.  copy.deepcopy would do the same at several
+    times the cost, once per sample.
+    """
+
+    if isinstance(value, dict):
+        return {key: _container_copy(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_container_copy(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_container_copy(item) for item in value)
+    return value
 
 
 def _classifications_by_path(objects: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -972,6 +997,12 @@ def _twelve_step_class(leaf: str, value: Any) -> bool:
 
     if not isinstance(value, int) or isinstance(value, bool):
         return False
+    return _twelve_step_leaf(leaf)
+
+
+def _twelve_step_leaf(leaf: str) -> bool:
+    """Whether a leaf path names a sign or a house read off the Ascendant."""
+
     module = next((path for path in ASCENDANT_DEPENDENT_PATHS if leaf.startswith(path + ".")), None)
     if module is None:
         return False
@@ -988,12 +1019,20 @@ def _ascendant_classes_skipped(evaluated: list[tuple[int, int, dict[str, Any]]])
     """
 
     ordered = sorted(evaluated, key=lambda item: item[0])
+    # Every instant prints the same few thousand leaves; whether a path is one
+    # of the twelve-step classes is read once per path, not once per pair.
+    leaf_kinds: dict[str, bool] = {}
     for (_, left_stretch, left), (_, right_stretch, right) in zip(ordered, ordered[1:]):
         if left_stretch != right_stretch:
             continue
         for leaf, value in left.items():
+            if not isinstance(value, int) or isinstance(value, bool):
+                continue
+            kind = leaf_kinds.get(leaf)
+            if kind is None:
+                kind = leaf_kinds[leaf] = _twelve_step_leaf(leaf)
             other = right.get(leaf)
-            if _twelve_step_class(leaf, value) and _twelve_step_class(leaf, other):
+            if kind and isinstance(other, int) and _twelve_step_class(leaf, other):
                 step = (other - value) % 12
                 if min(step, 12 - step) >= 2:
                     return True
@@ -1069,11 +1108,13 @@ def _refine_transitions(
     body_defs: list[dict],
     probes_by_offset: dict[int, dict],
     stretch_of: dict[int, int],
-) -> tuple[list[dict], dict[int, dict]]:
+) -> tuple[list[dict], dict[int, dict], dict[int, dict]]:
     """Refine only sampled classification changes; hidden reversals remain possible.
 
-    Returns the brackets and every midpoint probe the bisection computed, so
-    the classifications those midpoints printed are not thrown away.
+    Returns the brackets, every midpoint probe the bisection computed (so the
+    classifications those midpoints printed are not thrown away), and the
+    classification state of every probe it read, by offset, each the state of
+    the probe kept for that offset.
     ``stretch_of`` gives each probe offset's UTC stretch of the hour; a change
     between two stretches is reported at their facing ends, not bisected, since
     the clock seconds between them name instants outside the hour.
@@ -1167,7 +1208,7 @@ def _refine_transitions(
             records, key=lambda record: record[0]
         )
     ]
-    return transitions, refinement
+    return transitions, refinement, states
 
 
 def _whole_second_label(iso_local: str) -> str:
@@ -1646,7 +1687,7 @@ def build_approximate_hour_sensitivity(
     probes = [probes_by_offset[offset] for offset in usable_offsets]
     start = _hour_start(request)
     spans = civil_hour_spans(request.timezone, start)
-    transitions, refinement = _refine_transitions(
+    transitions, refinement, states = _refine_transitions(
         request=request,
         body_defs=body_defs,
         probes_by_offset=probes_by_offset,
@@ -1666,8 +1707,18 @@ def build_approximate_hour_sensitivity(
     # What the representative chart prints at each resampled path is the
     # universe; every listed sample is held against it.
     printed, universe, voc_usable = _hour_printed_universe(representative, request)
-    sampled_states = [_classification_state(probe, request) for probe in probes]
-    refinement_states = [_classification_state(probe, request) for probe in refinement_probes]
+    # The bisection already read the state of every probe it compared (a lone
+    # sample has no neighbour, so it is read here).
+    def state_of(offset: int, probe: dict) -> dict[str, Any]:
+        return states[offset] if offset in states else _classification_state(probe, request)
+
+    sampled_states = [
+        state_of(offset, probe) for offset, probe in zip(usable_offsets, probes, strict=True)
+    ]
+    refinement_states = [
+        state_of(offset, probe)
+        for offset, probe in zip(refinement_offsets, refinement_probes, strict=True)
+    ]
     classification_coverage = _classification_coverage(
         printed, universe, sampled_states, refinement_states,
     )

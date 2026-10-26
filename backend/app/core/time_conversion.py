@@ -73,7 +73,7 @@ def _reading(fold: int, utc: dtmod.datetime, offset_hours: float, zone: ZoneInfo
         "utc_offset_label": utc_offset_text(offset_hours),
         "abbreviation": abbreviation,
         "summer_time": bool(local.dst()),
-        "offset_status": offset_status("iana", utc, repeated),
+        "offset_status": offset_status("iana", utc, repeated, zone_name=zone.key),
         "rule": CIVIL_TIME_SOURCES.rule_receipt(
             kept_under, utc, offset=offset, abbreviation=abbreviation,
             summer_time=bool(local.dst()),
@@ -131,12 +131,25 @@ def convert_civil_time(request) -> dict:
     zone = ZoneInfo(zone_name)
     found = wall_clock_readings(stated, timezone)
     status = STATUSES[2] if not found else STATUSES[1] if len(found) == 2 else STATUSES[0]
-    exact = SimpleNamespace(timezone=timezone, datetime=stated, birth_time_precision="exact")
-    warnings = [
-        {key: warning[key] for key in _WARNING_KEYS}
-        for rule in (prc_1988_dst_dispute_warnings, hk_observatory_summer_time_warnings)
-        for warning in rule(exact)
-    ]
+    # Every reading listed is one the person may choose, so each is checked
+    # under its own fold (1945-11-18 01:30 Hong Kong: only the UTC+8 reading
+    # is in the Observatory's disputed span).
+    # A warning is listed once, with the folds of the readings it belongs to;
+    # a time that never existed has no reading, so its warnings name none.
+    warnings: list[dict] = []
+    reading_folds = sorted({reading[0] for reading in found})
+    for fold in reading_folds or [0]:
+        exact = SimpleNamespace(timezone=timezone.model_copy(update={"fold": fold}), datetime=stated,
+                                birth_time_precision="exact")
+        for rule in (prc_1988_dst_dispute_warnings, hk_observatory_summer_time_warnings):
+            for warning in rule(exact):
+                kept = {key: warning[key] for key in _WARNING_KEYS}
+                listed = next((w for w in warnings if {k: w[k] for k in _WARNING_KEYS} == kept), None)
+                if listed is None:
+                    listed = {**kept, "folds": []}
+                    warnings.append(listed)
+                if fold in reading_folds:
+                    listed["folds"].append(fold)
     region = RULE_ZONES[kept_under]
     return {
         "input_local_time": civil_time_label(

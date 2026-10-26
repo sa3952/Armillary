@@ -23,7 +23,9 @@ tests and the byte-identical host config readback.
     from inside the chart computation.  The response must be the generic 500
     and the process must keep serving.
 
-Every response and each container's log stream is searched for the canary.
+Every response, each container's log stream and every file of each
+container's tmpfs (/tmp and /dev/shm, after its drills) is searched for the
+canary.
 
 Gate D runs this module after the image artifact acceptance.  The module exits 1
 unless all three drills passed and the canary matched nothing.
@@ -51,7 +53,7 @@ from scripts.verification.verify_container_runtime import (
     _compose_run_arguments, _compose_service_model, _wait_healthy,
 )
 
-RECEIPT_SCHEMA_VERSION = 3
+RECEIPT_SCHEMA_VERSION = 4
 # The disposable fault runtime holds the compute lock this long.  It must
 # exceed the application's queue wait, which the drill observes rather than
 # restates: the queued chart has to be refused before the holder returns.
@@ -222,6 +224,38 @@ print(json.dumps({"supervisor_found": True, "workers_before": len(before), "work
                   "inflight_echo": any(item["echo"] for item in inflight), "health": health, "after": chart}))
 '''
 
+# Every regular file under the roots, read up to 4 MiB each; the fragments
+# are counted, never printed.  Runs as the container's own user after the
+# drills, so it reads what the application could have left there.
+TMPFS_SCAN = r'''
+import json, os, sys
+d = json.load(sys.stdin)
+fragments = [f.encode() for f in d["fragments"]]
+files = matches = unreadable = 0
+for root in d.get("roots", ["/tmp", "/dev/shm"]):
+    for directory, _dirs, names in os.walk(root):
+        for name in names:
+            path = os.path.join(directory, name)
+            if os.path.islink(path) or not os.path.isfile(path): continue
+            try:
+                with open(path, "rb") as handle: data = handle.read(4 * 1024 * 1024)
+            except OSError:
+                unreadable += 1; continue
+            files += 1
+            matches += sum(1 for fragment in fragments if fragment in data)
+print(json.dumps({"files_read": files, "unreadable": unreadable, "match_count": matches}))
+'''
+
+
+def tmpfs_sink(observed: dict[str, Any]) -> dict[str, Any]:
+    """The receipt entry of one container's tmpfs scan; a file it could not read counts as a match."""
+    unreadable = int(observed.get("unreadable", 1))
+    return {"sink_role": "disposable_container_tmpfs",
+            "match_count": int(observed.get("match_count", 1)) + unreadable,
+            "files_read": int(observed.get("files_read", 0)), "unreadable": unreadable,
+            "disposition": "observed_activity"}
+
+
 # The fault runtime: the exact image's application, one worker, with one
 # function replaced.  The replacement is selected by the chart's `second`
 # (58 raises with the marker and the request in the message, 59 holds the
@@ -290,7 +324,8 @@ class Runtime(Protocol):
     """How a disposable container of the image starts."""
 
     def disposable(self, kind: Where, canary: Canary) -> Any:
-        """A context manager yielding a handle with `probe(program, payload)` and `log_sink(canary)`."""
+        """A context manager yielding a handle with `probe(program, payload)`, `log_sink(canary)`
+        and `tmpfs_sink(canary)`."""
         ...
 
 
@@ -311,6 +346,7 @@ def run_disposable_drills(runtime: Runtime, canary: Canary) -> tuple[dict[str, d
         with runtime.disposable(Where.DISPOSABLE_TWIN, canary) as twin:
             drills["worker_restart"] = evaluate_worker_restart(twin.probe(WORKER_RESTART_PROBE, {}))
             sinks.append(twin.log_sink(canary))
+            sinks.append(twin.tmpfs_sink(canary))
     except (OSError, RuntimeError, ValueError, subprocess.SubprocessError, json.JSONDecodeError) as error:
         drills["worker_restart"] = _drill(DrillResult.NOT_OBSERVED, reason=f"twin: {type(error).__name__}")
     try:
@@ -318,12 +354,15 @@ def run_disposable_drills(runtime: Runtime, canary: Canary) -> tuple[dict[str, d
             drills["timeout"] = evaluate_timeout(faulty.probe(TIMEOUT_PROBE, {}))
             drills["unexpected_error"] = evaluate_unexpected_error(faulty.probe(UNEXPECTED_ERROR_PROBE, {}))
             sinks.append(faulty.log_sink(canary))
+            sinks.append(faulty.tmpfs_sink(canary))
     except (OSError, RuntimeError, ValueError, subprocess.SubprocessError, json.JSONDecodeError) as error:
         for name in ("timeout", "unexpected_error"):
             drills.setdefault(name, _drill(DrillResult.NOT_OBSERVED,
                                            reason=f"fault runtime: {type(error).__name__}"))
     for sink in sinks:
-        sink["sink_role"] = "disposable_container_docker_log_stream"
+        sink.setdefault("sink_role", "disposable_container_docker_log_stream")
+        if sink["sink_role"] == "exact_container_docker_log_stream":
+            sink["sink_role"] = "disposable_container_docker_log_stream"
     return drills, sinks
 
 
@@ -346,6 +385,9 @@ class _DockerDisposable:
 
     def log_sink(self, canary: Canary) -> dict[str, Any]:
         return scan_application_logs(canary, self.container, since=0.0)
+
+    def tmpfs_sink(self, canary: Canary) -> dict[str, Any]:
+        return tmpfs_sink(self.probe(TMPFS_SCAN, {"roots": ["/tmp", "/dev/shm"]}))
 
 
 class ImageRuntime:
@@ -405,7 +447,8 @@ def run_image_drills(runtime: Runtime, image: dict[str, str] | None = None) -> d
     for name, drill in drills.items():
         drill["where"] = DRILL_LOCATIONS[name].value
     matches = sum(sink["match_count"] for sink in sinks)
-    privacy = "pass" if matches == 0 and len(sinks) == 2 else "fail"
+    # A log stream and a tmpfs scan for each of the two disposable containers.
+    privacy = "pass" if matches == 0 and len(sinks) == 4 else "fail"
     passed = all(drills[name]["result"] == DrillResult.PASSED.value for name in DRILLS)
     return {
         "schema_version": RECEIPT_SCHEMA_VERSION,

@@ -60,6 +60,7 @@ SCRIPT_ROLES = {
     "glossary.js": "名詞解釋的詞條與抽屜，不送出任何請求",
     "calculate.js": "頁面本身的程式：收表單、送出請求、畫出結果",
     "view-model.js": "把回應整理成畫面；第一次按「計算」時才載入",
+    "visit-count.js": "網站的瀏覽數與每日訪客數計數：送出兩個沒有內容的請求，伺服器只把計數器加一",
 }
 
 # When the browser fetches each script calculate.js imports later instead of at
@@ -85,6 +86,8 @@ class ApiCall:
     required: bool
     when: str
     carries: str
+    # The Cache-Control to print when it is not one fixed value.
+    cache: str | None = None
 
 
 API_CALLS = (
@@ -117,8 +120,25 @@ GATED_API_CALLS = (
         "按「排出時間主星」，或在「古典完整」模式勾著「算完星盤後，接著排出時間主星」時算完星盤；"
         "之後每換到一個還沒取過月小限的年度，就再取那一年的月小限（同一個請求也帶回那一年"
         "所在大期的第二層）；捲到另一個大期或打開另一段十年時，再取那一段的第二層（黃道釋放的小期、十年期的第二層）",
-        "與「計算」相同的出生資料，加上要查的年份、技法與十年期的起點；回應是一生的分期與那一年"
+        "與「計算」相同的出生資料，加上要查的年份、技法與十年期的起點；選填太陽回歸盤的另一個地點時，"
+        "也會送出該地點的緯度與經度。回應是一生的分期與那一年"
         "由哪顆行星或哪個星座輪值（小限、月小限、法達、黃道釋放、十年期）與計算卷宗",
+    ),
+)
+
+# Every page's visit-count.js sends these two on open, unless the browser
+# signals Global Privacy Control.  They carry nothing; the service adds one to a
+# counter and keeps no record of the request (backend/app/visit_counts.py).
+COUNT_CALLS = (
+    ApiCall(
+        "POST", "/api/visit", True, "打開任何一頁（瀏覽器開了 Global Privacy Control 則不送）",
+        "沒有內容；伺服器只把瀏覽數加一，不記錄這一筆請求",
+    ),
+    ApiCall(
+        "GET", "/api/visit/daily", True,
+        "每天第一次打開本站的頁面（之後到臺灣午夜前，瀏覽器直接讀自己的快取，不再送出）",
+        "沒有內容；伺服器只把今日訪客數加一，不記錄這一筆請求，也分不出是誰",
+        "private, max-age=（到臺灣午夜的秒數）",
     ),
 )
 
@@ -266,10 +286,10 @@ def calculation_requests(
     stale = {call.url for call in API_CALLS} - sent
     if stale:
         raise ValueError(f"the list describes a request the calculator no longer sends: {sorted(stale)}")
-    for call in (*API_CALLS, *(call for call in GATED_API_CALLS if call.url in sent)):
+    for call in (*COUNT_CALLS, *API_CALLS, *(call for call in GATED_API_CALLS if call.url in sent)):
         rows.append(Request(
             call.method, call.url, "fetch", call.carries, call.when,
-            cache_control(call.url), "required" if call.required else "optional",
+            call.cache or cache_control(call.url), "required" if call.required else "optional",
         ))
     if len({(row.method, row.url) for row in rows}) != len(rows):
         raise ValueError("the calculator's request list names one request twice")

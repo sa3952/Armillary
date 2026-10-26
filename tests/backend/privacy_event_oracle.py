@@ -46,7 +46,7 @@ COARSE_EVENT_CODES = frozenset({
     "domain_refused", "domain_failed",
 })
 _REQUEST_ID = re.compile(r"[0-9a-f]{32}|invalid")
-DURATION_BUCKETS = frozenset({"invalid", "lt_10ms", "10_to_49ms", "50_to_249ms", "250_to_999ms", "gte_1000ms"})
+DURATION_BUCKETS = frozenset({"invalid", "lt_1s", "1_to_9s", "gte_10s"})
 SIZE_BUCKETS = frozenset({"absent", "invalid", "empty", "1_to_1024b", "1025_to_16384b", "16385_to_131072b",
                           "gt_131072b"})
 _FAILURE_CLASS = re.compile(r"[A-Z][A-Za-z]*(?:Error|Exception)?|unclassified")
@@ -64,7 +64,7 @@ def shape_problems(event: object) -> list[str]:
         if not ok:
             problems.append(f"{field}={event[field]!r}")
 
-    need("event_schema_version", event["event_schema_version"] == "privacy-request-event-v2")
+    need("event_schema_version", event["event_schema_version"] == "privacy-request-event-v3")
     need("event", event["event"] == "http_request_completed")
     need("request_id", isinstance(event["request_id"], str) and bool(_REQUEST_ID.fullmatch(event["request_id"])))
     need("route", event["route"] in ROUTES)

@@ -49,9 +49,14 @@ beside that exact sdist as `SWEPHELP_README.txt` and `SWEPHELP_LICENSE`.
   <https://data.gov.tw/dataset/40281>、<https://data.gov.tw/dataset/53677>，
   [Taiwan Government Data Open License 1.0](https://data.gov.tw/license)，attribution to the
   Department of Land Administration. Attribution statement：內政部地政司 2026「臺灣地區地名資料_行政區域類」、
-  「臺灣地區地名資料_聚落類」（retrieved 2026-10-09；no dataset version number is published）。此開放資料依政府資料
+  「臺灣地區地名資料_聚落類」（retrieved 2026-10-26；no dataset version number is published）。此開放資料依政府資料
   開放授權條款 (Open Government Data License) 進行公眾釋出，使用者於遵守本條款各項規定之前提下，得利用之。政府資料
   開放授權條款：https://data.gov.tw/license.
+
+The GeoNames data is modified here：named rows have their timezone or first-level administrative code
+corrected, a few duplicate rows are left out, and labels are rebuilt from the administrative names；every change is
+listed in `backend/place_data/catalog_manifest.json`. The Ministry of the Interior names are used as published, except
+that a character the files draw as an image is shown as ●.
 
 Coordinates are representative points, not verified addresses；neither provider endorses this service.
 
@@ -88,7 +93,9 @@ https://github.com/sa3952/Armillary/tree/<public_source_revision>
 ```
 
 Release engineering verifies anonymous reachability. Do not infer a deployed revision from the latest
-branch. The runtime image contains notices and license text but not locks、manifests or source archives.
+branch. The runtime image contains notices and license text but not locks、manifests or source archives：this
+file and `LICENSE` under `/app`, and the pyswisseph, Swiss Ephemeris and Swephelp licence texts, taken from the
+exact sdist the image compiles, under `/app/third_party/pyswisseph/` with the names used above.
 
 ## Debian base and other dependencies
 
@@ -96,7 +103,8 @@ The image uses the digest-pinned Debian-based Python image named in`deploy/Docke
 currently conveyed through a registry or to a third party；this notice is not a Debian source offer. If
 that changes, Debian source-fulfilment must be reassessed before conveyance.
 
-The other Python dependencies are permissively licensed and this tree does not carry their archives. Their
+The other Python dependencies are under permissive licences or, for the build and development tools pathspec and
+hypothesis, the Mozilla Public License 2.0; this tree does not carry their archives. Their
 exact versions and SHA-256 hashes are pinned in `deploy/requirements.lock`（production）、
 `deploy/build-requirements.lock`（build）and `backend/requirements-dev.lock`（development）, and
 `publication/third_party_source_lock.json` names each one's single source distribution on PyPI by its SHA-256.

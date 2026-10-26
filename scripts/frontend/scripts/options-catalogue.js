@@ -318,7 +318,7 @@
         { value: "lilly_received_bounds_1647_v1", label_zh: Labels.VOCABULARIES.dignity_profile.lilly_received_bounds_1647_v1, label_en: "Lilly 1647 received" },
         { value: "all", ...ALL_SIDE_BY_SIDE },
       ],
-      help_zh: "四套平等提供。迦勒底界在日夜盤未知時無法選定守護星，回應會同時給出日盤與夜盤候選，由你判讀，本產品不替你選一個。"
+      help_zh: "四套平等提供。迦勒底界在日夜盤未知時無法選定守護行星，回應會同時給出日盤與夜盤候選，由你判讀，本產品不替你選一個。"
         + ALL_HELP_ZH },
     { key: "decan_profile", group: "dignities",
       label_zh: "面／旬", label_en: "Face / decan",

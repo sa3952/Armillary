@@ -150,6 +150,41 @@ def release_ephemeris_for_thread() -> bool:
     return True
 
 
+def swiss_state_scope(library=swe) -> str:
+    """``thread`` when Swiss keeps its state per thread, ``process`` when threads share it.
+
+    A compile-time property of the library (its TLS switch), not of this code:
+    the shipped Linux image's build is per thread, a macOS build is shared.  The
+    compute line serializes either way; the image gate reads this to confirm the
+    build it ships.  Observed in two fresh threads, so no request's state is touched:
+    the first sets an observer and reads the Moon, the second sets another
+    observer, and the first reads again.  Moshier needs no file.
+    """
+
+    readings: list[float] = []
+
+    def moon() -> float:
+        return library.calc_ut(2451545.0, library.MOON, library.FLG_MOSEPH | library.FLG_TOPOCTR)[0][0]
+
+    def other_observer() -> None:
+        library.set_topo(-74.0, 40.7, 0.0)
+
+    def first() -> None:
+        library.set_topo(121.5, 25.0, 0.0)
+        readings.append(moon())
+        intruder = threading.Thread(target=other_observer)
+        intruder.start()
+        intruder.join()
+        readings.append(moon())
+
+    probe = threading.Thread(target=first)
+    probe.start()
+    probe.join()
+    if len(readings) != 2:
+        raise RuntimeError("the Swiss state probe did not finish")
+    return "thread" if readings[0] == readings[1] else "process"
+
+
 def configure_chart_swiss_state(
     *, geopos: tuple[float, float, float], sid_mode: int | None
 ) -> None:

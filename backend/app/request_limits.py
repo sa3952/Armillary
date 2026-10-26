@@ -32,13 +32,16 @@ MAX_HOSTED_REQUESTS_PER_WORKER: Final = 32
 # accept connections independently, so simultaneous charts are not spread
 # evenly and only one worker's pool is guaranteed (measured on 2026-10-04).
 MAX_HOSTED_COMPUTE_REQUESTS_PER_WORKER: Final = 4
-# The annual route's own pool.  An annual projection costs at most ~0.4 CPU-s
-# (2026-10-18) but held a chart slot while waiting for Swiss, so an annual
-# burst left no chart admitted.  Both still share the one Swiss line, where an
-# annual request delays a chart by its own compute time only.  Eight admitted
-# annual requests wait in that line within the queue budget rather than being
-# refused on arrival; at ~0.4 s each a full annual pool delays a chart by about
-# 3 s, inside the budget, and the chart pool stays separate.
+# The annual route's own pool.  An annual projection with every technique and
+# lifetime scopes at an approximate hour measured 0.44-0.46 CPU-s (2026-10-26,
+# Apple M-series, in process, 1 to 300 completed years, Taipei and 68.5 N), and
+# a 2026-10-24 review measured 0.59 CPU-s on amd64.  It once held a chart slot
+# while waiting for Swiss, so an annual burst left no chart admitted.  Both still
+# share the one Swiss line, where an annual request delays a chart by its own
+# compute time only.  Eight admitted annual requests wait in that line within
+# the queue budget rather than being refused on arrival; at 0.6 s each a full
+# annual pool delays a chart by about 5 s, inside the budget, and the chart pool
+# stays separate.
 MAX_HOSTED_ANNUAL_REQUESTS_PER_WORKER: Final = 8
 # Place lookup and time conversion.  A lookup holds a worker thread for up to
 # the catalogue statement budget, and in the general pool a burst of lookups
@@ -74,8 +77,12 @@ EDGE_CHART_READ_TIMEOUT_SECONDS: Final = 30.0
 # 2150-03-21, date only).  The slowest chart is no longer a polar date-only
 # one but every module at an approximate hour, whose birth-time sensitivity
 # probes re-derive the extended lots: 0.84 CPU-s at 68.5 N, 2150-12-21 on an
-# idle 8-vCPU amd64 host (red-team performance review, 2026-10-21), well inside this
-# estimate.  Revisit with a production-host measurement.
+# idle 8-vCPU amd64 host, and 1.2-1.75 CPU-s on a loaded host (two later
+# reviews), well inside this estimate.  2026-10-26 sweep (Apple M-series, in
+# process): Placidus at 2200-12-21 on the southern polar circle, approximate
+# hour, 0.79 CPU-s against a 0.22 median; tests/backend/test_compute_cost.py
+# holds that chart under 3 CPU-s and under 8x an ordinary one.  Revisit with a
+# production-host measurement.
 COMPUTE_P99_ESTIMATE_SECONDS: Final = 8.0
 # Serialization, compression and the edge hop after the calculation returns
 # (tens of milliseconds measured), plus the page's own request set-up inside
@@ -602,6 +609,10 @@ class ChartRequestBoundary:
             buffered.append(message)
             if not message.get("more_body", False):
                 break
+        if received_bytes == 0:
+            # A chunked body that ends at once is as empty as Content-Length: 0.
+            await _refuse(scope, receive, send, "empty_request_body")
+            return
 
         async def receive_buffered() -> Message:
             if buffered:

@@ -9,7 +9,8 @@ import sqlite3
 import threading
 import time
 import unicodedata
-from collections.abc import Callable
+from collections import Counter
+from collections.abc import Callable, Sequence
 from typing import Any, Final
 
 from .hong_kong_place_aliases import (
@@ -53,6 +54,8 @@ SUPPORTED_SCHEMA_VERSIONS = frozenset({5})
 
 # Producer-assigned record-id prefix of the derived county representative points.
 TAIWAN_COUNTY_RECORD_PREFIX = "tw-moi-county-derived:"
+# A township, district or county-administered city: the same derivation one level down.
+TAIWAN_TOWN_RECORD_PREFIX = "tw-moi-town-derived:"
 
 # FTS5 bm25() 欄位權重（name、aliases、admin1、admin2）。`place_search` 是 contentless FTS5 表，
 # bm25 只看索引且偏好較短的文件；GeoNames 給倫敦數百個語言變體別名，使 London(GB) 的分數
@@ -61,20 +64,24 @@ BM25_COLUMN_WEIGHTS = (8.0, 2.0, 1.0, 1.0)
 
 # 排序法的具名版本。排序規則的變更會直接改變使用者選到哪一個地點、
 # 進而改變整張星盤，因此必須是可具名、可比對、可回報的。
-RANKING_METHOD_NAME = "match_tier_then_taiwan_county_then_population_then_weighted_bm25_v3"
+RANKING_METHOD_NAME = "match_tier_then_taiwan_county_then_town_then_population_then_weighted_bm25_v4"
 _BM25_SQL = ", ".join(str(value) for value in BM25_COLUMN_WEIGHTS)
 RANKING_STEPS = (
     (
         "CASE match_tier WHEN 'exact_name' THEN 0 "
         "WHEN 'name_prefix' THEN 1 ELSE 2 END ASC",
         "1. match_tier (exact_name → 0, name_prefix → 1, other_field and spelling_fallback → 2) ASC; "
-        "the tier compares the name, the Traditional-Chinese name, a Taiwan county's "
-        "short and English names and a Taiwan GeoNames row's Chinese aliases, with 台 read as 臺",
+        "the tier compares the name, the Traditional-Chinese name, a Taiwan county's or township's "
+        "short and English names, a MOI place's phonetic names, a Taiwan GeoNames row's aliases and "
+        "a large foreign city's corroborated Chinese names, with 台 read as 臺 and the query read in "
+        "Traditional characters",
     ),
     (
         f"CASE WHEN substr(source_record_id, 1, {len(TAIWAN_COUNTY_RECORD_PREFIX)}) "
-        f"= '{TAIWAN_COUNTY_RECORD_PREFIX}' THEN 0 ELSE 1 END ASC",
-        "2. is_taiwan_county_representative (→ 0, otherwise → 1) ASC",
+        f"= '{TAIWAN_COUNTY_RECORD_PREFIX}' THEN 0 "
+        f"WHEN substr(source_record_id, 1, {len(TAIWAN_TOWN_RECORD_PREFIX)}) "
+        f"= '{TAIWAN_TOWN_RECORD_PREFIX}' THEN 1 ELSE 2 END ASC",
+        "2. Taiwan representative point (county/city → 0, township/district → 1, otherwise → 2) ASC",
     ),
     (
         "population DESC",
@@ -117,6 +124,12 @@ SPELLING_FALLBACK_APPLIED = "applied"
 # How often the name scan, which runs in Python and not under the progress
 # handler, looks at the clock.
 _SPELLING_SCAN_CLOCK_INTERVAL = 4096
+# A fallback answer is ordered by how far its name lies from the query before
+# the ranking: Kending (one letter) before Kunming (two) for 「Kenting」.  The
+# order counts a swap of two neighbouring letters as one edit (Taipie, Kaohsuing);
+# which names qualify is still decided by the Levenshtein bound above.
+SPELLING_FALLBACK_ORDER_SQL = "fallback_distance ASC"
+SPELLING_FALLBACK_ORDER = "optimal_string_alignment_distance_then_the_ranking_order"
 
 
 # How every search ran: the bundled read-only catalog, no network.
@@ -255,6 +268,43 @@ def county_prefixes(county_names) -> tuple[str, ...]:
     return tuple(sorted(folded, key=lambda name: (-len(name), name)))
 
 
+def former_county_names(counties) -> dict[str, str]:
+    """A former county name a derived county point carries as a match key → that county.
+
+    臺北縣 became 新北市 (2010) and 桃園縣 桃園市 (2014); the producer gives each
+    successor its former name, and the runtime reads them from there.
+    """
+
+    former: dict[str, str] = {}
+    for county, keys in counties:
+        current = county.replace("台", "臺")
+        for key in keys:
+            if key != current and key.endswith(("縣", "市")) and len(key) >= 3 and not key.isascii():
+                former[key] = current
+    return dict(sorted(former.items(), key=lambda item: (-len(item[0]), item[0])))
+
+
+_TOWN_TYPE_SUFFIXES = ("鄉", "鎮", "市")
+
+
+def _former_county_split(token: str, former: dict[str, str]) -> tuple[str, str, str] | None:
+    """Split 「臺北縣板橋市」 into the former county, its successor and the town.
+
+    Every township and county-administered city of a former county is now a
+    district (板橋市 → 板橋區, 三峽鎮 → 三峽區), so the town is searched without
+    its 鄉／鎮／市 when two characters remain.
+    """
+
+    folded = token.replace("台", "臺")
+    for name, successor in former.items():
+        rest = token[len(name):]
+        if folded.startswith(name) and len(rest) >= MIN_PREFIX_TOKEN_LENGTH:
+            if rest.endswith(_TOWN_TYPE_SUFFIXES) and len(rest) - 1 >= MIN_PREFIX_TOKEN_LENGTH:
+                rest = rest[:-1]
+            return token[: len(name)], successor, rest
+    return None
+
+
 def _county_prefix_split(token: str, prefixes: tuple[str, ...]) -> tuple[str, str] | None:
     """Split 「臺北市大安區」 into 「臺北市」 and 「大安區」.
 
@@ -327,7 +377,9 @@ def _fts_prefix_length(sub_token: str) -> int:
     return length
 
 
-def _fts_query(value: str, prefixes: tuple[str, ...] = ()) -> tuple[str, dict]:
+def _fts_query(
+    value: str, prefixes: tuple[str, ...] = (), former: dict[str, str] | None = None
+) -> tuple[str, dict]:
     """Build a bounded FTS5 MATCH expression, and report what the bound removed.
 
     Tokenisation keeps only word characters, so no FTS5 metacharacter can
@@ -348,10 +400,20 @@ def _fts_query(value: str, prefixes: tuple[str, ...] = ()) -> tuple[str, dict]:
     dropped = tokens[MAX_SEARCH_TOKENS:]
     terms = []
     county_splits: list[list[str]] = []
+    former_splits: list[list[str]] = []
     for token in bounded:
         term = _fts_term(token)
         if term is None:
             continue
+        former_split = _former_county_split(token, former or {})
+        if former_split is not None:
+            typed, successor, town = former_split
+            former_terms = [_fts_term(successor), _fts_term(town)]
+            if all(former_terms):
+                terms.append(f"({term} OR ({' '.join(str(item) for item in former_terms)}))")
+                county_splits.append([typed, token[len(typed):]])
+                former_splits.append([typed, successor, town])
+                continue
         split = _county_prefix_split(token, prefixes)
         split_terms = [_fts_term(part) for part in split] if split else []
         if split and all(split_terms):
@@ -373,13 +435,19 @@ def _fts_query(value: str, prefixes: tuple[str, ...] = ()) -> tuple[str, dict]:
         # Words that began with a county name and were also searched as
         # [county, remainder]; the tier still compares the words as typed.
         "county_prefix_splits": county_splits,
+        # A split whose prefix is a former county name (臺北縣): searched as
+        # [former, successor, town] — the successor and the town without its
+        # 鄉／鎮／市.
+        "former_county_splits": former_splits,
         "reason": (
             "token_limit_protects_against_broad_prefix_term_cost"
             if dropped
             else None
         ),
     }
-    return " ".join(terms), receipt
+    # Explicit AND: FTS5 reads a bare term after a parenthesised group (a county
+    # split) as a syntax error, which answered 台北市大安區 復興南路 with a 503.
+    return " AND ".join(terms), receipt
 
 
 def _fts_term(token: str) -> str | None:
@@ -403,7 +471,9 @@ def _fts_term(token: str) -> str | None:
 
 
 _COUNTY_PREFIX_LOCK = threading.Lock()
-_COUNTY_PREFIX_CACHE: dict[tuple[str, int, int], tuple[str, ...]] = {}
+_COUNTY_PREFIX_CACHE: dict[tuple, tuple[tuple[str, ...], dict[str, str]]] = {}
+_FOLD_TABLE_LOCK = threading.Lock()
+_FOLD_TABLE_CACHE: dict[tuple, tuple[str, dict[str, str]]] = {}
 _ARTIFACT_DIGEST_LOCK = threading.Lock()
 _ARTIFACT_DIGEST_CACHE: dict[tuple[str, int, int], str] = {}
 _METADATA_LOCK = threading.Lock()
@@ -415,12 +485,19 @@ _METADATA_CACHE: dict[tuple[str, int, int], dict[str, str]] = {}
 # rows are in the published catalogue manifest, which the catalogue verifier
 # (scripts/verification/verify_place_catalog.py) requires to equal the
 # database's own copy.
-SEARCH_RECEIPT_OMITTED_METADATA = ("source_admin1_corrections", "source_corrections")
+SEARCH_RECEIPT_OMITTED_METADATA = ("han_script_folding", "source_admin1_corrections", "source_corrections")
 SEARCH_RECEIPT_ROW_LISTS_SOURCE = "backend/place_data/catalog_manifest.json"
 
 
+def _file_identity(resolved: Path, status) -> tuple:
+    """Path plus device, inode, size and both timestamps: a file replaced in
+    place with the same size and mtime is still a different file."""
+    return (str(resolved), status.st_dev, status.st_ino, status.st_size,
+            status.st_mtime_ns, status.st_ctime_ns)
+
+
 def _artifact_digest(path: Path) -> dict:
-    """SHA-256 of the catalogue file the runtime opens, cached per (path, size, mtime).
+    """SHA-256 of the catalogue file the runtime opens, cached per file identity.
 
     Metadata digests describe the inputs, not the artifact loaded; this lets a
     coordinate be traced to bytes as the engine manifest traces ephemeris files.
@@ -428,7 +505,7 @@ def _artifact_digest(path: Path) -> dict:
 
     resolved = path.resolve()
     status = resolved.stat()
-    key = (str(resolved), status.st_size, status.st_mtime_ns)
+    key = _file_identity(resolved, status)
     with _ARTIFACT_DIGEST_LOCK:
         digest = _ARTIFACT_DIGEST_CACHE.get(key)
     if digest is None:
@@ -451,6 +528,7 @@ def _spelling_fallback_receipt(status: str) -> dict:
         "edit_distance": "levenshtein",
         "max_edit_distance": SPELLING_FALLBACK_MAX_DISTANCE,
         "min_latin_letters": SPELLING_FALLBACK_MIN_LETTERS,
+        "order": SPELLING_FALLBACK_ORDER,
     }
 
 
@@ -471,24 +549,36 @@ def _spelling_fallback_eligible(key: str) -> bool:
 
 
 _SPELLING_VOCABULARY_LOCK = threading.Lock()
+# One name scan at a time per worker.  The scan is pure Python and holds the
+# GIL; scans run side by side each took the time of all of them, so four at once
+# each passed the budget and all four were refused.  Queued one after another
+# each finishes in its own time, and a wait that would pass the budget is refused.
+_SPELLING_SCAN_LOCK = threading.Lock()
 _SPELLING_VOCABULARY_CACHE: dict[tuple[str, int, int], dict[int, str]] = {}
 
 
-def _spelling_vocabulary(path: Path) -> dict[int, str]:
-    """The catalogue's Latin match keys, per key length, read once per file identity.
+def _spelling_vocabulary(path: Path, *, deadline: float | None = None) -> dict[int, str]:
+    """Catalogue-only Latin keys, packed by length and shared per file identity.
 
-    Each length's keys are sorted and packed into one string of fixed-width
-    slots, which holds about 200,000 names in a few megabytes instead of one
-    Python object per name.  The read (about half a second of CPU) runs on its
-    own connection, outside a search's progress handler: a search that runs
-    out of budget while it is read still leaves it for the next one, and the
-    search itself checks its deadline before and during the scan.
+    Waiting for another initializer consumes the caller's search budget. The
+    single catalogue-only initialization finishes even if its initiating request
+    expires, so slower workers do not restart the same build on every request.
+    The expired caller is refused after publishing the complete vocabulary.
     """
 
+    def check_budget() -> None:
+        if deadline is not None and time.monotonic() > deadline:
+            raise PlaceSearchBudgetExceededError("place search exceeded its statement budget")
+
+    check_budget()
     resolved = path.resolve()
     status = resolved.stat()
-    identity = (str(resolved), status.st_size, status.st_mtime_ns)
-    with _SPELLING_VOCABULARY_LOCK:
+    identity = _file_identity(resolved, status)
+    timeout = -1 if deadline is None else max(0.0, deadline - time.monotonic())
+    if not _SPELLING_VOCABULARY_LOCK.acquire(timeout=timeout):
+        raise PlaceSearchBudgetExceededError("place search exceeded its statement budget")
+    try:
+        check_budget()
         cached = _SPELLING_VOCABULARY_CACHE.get(identity)
         if cached is not None:
             return cached
@@ -504,10 +594,15 @@ def _spelling_vocabulary(path: Path) -> dict[int, str]:
         by_length: dict[int, list[str]] = {}
         for key in keys:
             by_length.setdefault(len(key), []).append(key)
-        packed = {length: "".join(sorted(group)) for length, group in by_length.items()}
+        packed = {}
+        for length, group in by_length.items():
+            packed[length] = "".join(sorted(group))
         _SPELLING_VOCABULARY_CACHE.clear()
         _SPELLING_VOCABULARY_CACHE[identity] = packed
+        check_budget()
         return packed
+    finally:
+        _SPELLING_VOCABULARY_LOCK.release()
 
 
 def _within_edit_distance(left: str, right: str, limit: int) -> bool:
@@ -540,16 +635,33 @@ def _within_edit_distance(left: str, right: str, limit: int) -> bool:
     return previous[-1] <= limit
 
 
+def _optimal_string_alignment_distance(left: str, right: str) -> int:
+    """Levenshtein distance in which swapping two neighbouring characters is one edit."""
+
+    rows = [list(range(len(right) + 1))]
+    for row in range(1, len(left) + 1):
+        current = [row] + [0] * len(right)
+        for column in range(1, len(right) + 1):
+            cost = left[row - 1] != right[column - 1]
+            current[column] = min(rows[-1][column] + 1, current[column - 1] + 1, rows[-1][column - 1] + cost)
+            if (row > 1 and column > 1 and left[row - 1] == right[column - 2]
+                    and left[row - 2] == right[column - 1]):
+                current[column] = min(current[column], rows[-2][column - 2] + 1)
+        rows.append(current)
+    return rows[-1][-1]
+
+
 def _names_within_edit_distance(vocabulary: dict[int, str], key: str, *, deadline: float) -> list[str]:
     """Every vocabulary key within SPELLING_FALLBACK_MAX_DISTANCE of key, sorted.
 
-    A key k edits away from the query changes its set of characters by at most
-    2·k (a substitution drops one character and adds one), so the cheap set test
-    discards most names before the edit distance is computed.
+    Each deletion or substitution loses at most one query character. Counting
+    missing occurrences rejects impossible candidates even for repeated-letter
+    queries; set comparison loses that information. str.count runs in C, while
+    the remaining candidates still use the exact distance algorithm.
     """
 
     limit = SPELLING_FALLBACK_MAX_DISTANCE
-    characters = set(key)
+    characters = sorted(Counter(key).items(), key=lambda item: -item[1])
     found: list[str] = []
     seen = 0
     for length in range(max(1, len(key) - limit), len(key) + limit + 1):
@@ -559,8 +671,16 @@ def _names_within_edit_distance(vocabulary: dict[int, str], key: str, *, deadlin
             if seen % _SPELLING_SCAN_CLOCK_INTERVAL == 0 and time.monotonic() > deadline:
                 raise PlaceSearchBudgetExceededError("place search exceeded its statement budget")
             name = packed[start:start + length]
-            if len(characters.symmetric_difference(name)) <= 2 * limit and _within_edit_distance(key, name, limit):
-                found.append(name)
+            missing = 0
+            for character, required in characters:
+                present = name.count(character) if required > 1 else int(character in name)
+                if present < required:
+                    missing += required - present
+                if missing > limit:
+                    break
+            else:
+                if _within_edit_distance(key, name, limit):
+                    found.append(name)
     if time.monotonic() > deadline:
         raise PlaceSearchBudgetExceededError("place search exceeded its statement budget")
     return sorted(found)
@@ -570,14 +690,21 @@ def _search_sql(*, spelling_fallback: bool) -> str:
     """The search statement; the fallback differs only in which rows it keeps and their tier."""
 
     if spelling_fallback:
-        keep = (
-            "AND EXISTS (SELECT 1 FROM fallback_names AS f "
+        keep = "AND fallback_distance IS NOT NULL"
+        tier = f"'{SPELLING_FALLBACK_TIER}'"
+        names = (
+            "fallback_names(name, distance) AS MATERIALIZED (SELECT json_extract(value, '$[0]'), "
+            "json_extract(value, '$[1]') FROM json_each(:fallback_names)),\n                "
+        )
+        distance = (
+            "(SELECT MIN(f.distance) FROM fallback_names AS f "
             "WHERE instr(p.match_keys, :separator || f.name || :separator) > 0)"
         )
-        tier = f"'{SPELLING_FALLBACK_TIER}'"
-        names = "fallback_names(name) AS MATERIALIZED (SELECT value FROM json_each(:fallback_names)),\n                "
+        order = f"{SPELLING_FALLBACK_ORDER_SQL},\n                    {_ORDER_BY_SQL}"
     else:
         keep = ""
+        distance = "NULL"
+        order = _ORDER_BY_SQL
         tier = """CASE
                         WHEN instr(match_keys, :exact_key) > 0 THEN 'exact_name'
                         WHEN instr(match_keys, :key_prefix) > 0 THEN 'name_prefix'
@@ -605,19 +732,20 @@ def _search_sql(*, spelling_fallback: bool) -> str:
                         p.population,
                         p.source_priority,
                         p.match_keys,
+                        {distance} AS fallback_distance,
                         bm25(place_search, {_BM25_SQL}) AS bm25_rank
                     FROM place_search
                     JOIN places AS p ON p.rowid = place_search.rowid
                     WHERE place_search MATCH :match
                       AND (:country IS NULL OR p.country_code = :country)
-                      {keep}
                 )
                 SELECT
                     *,
                     {tier} AS match_tier
                 FROM matched
+                WHERE 1 {keep}
                 ORDER BY
-                    {_ORDER_BY_SQL}
+                    {order}
                 LIMIT :limit
                 """
 
@@ -654,6 +782,17 @@ def _curated_alias(query: str, country_code: str | None) -> tuple[dict, str | No
     return receipt, record
 
 
+def _curated_alias_of(typed: str, folded: str, country_code: str | None) -> tuple[dict, str | None]:
+    """The alias as typed (恒安 is written so in Hong Kong), else as folded (柯士甸 for a Simplified 柯士甸)."""
+
+    receipt, record = _curated_alias(typed, country_code)
+    if receipt["alias"] is None and folded != typed:
+        folded_receipt, folded_record = _curated_alias(folded, country_code)
+        if folded_receipt["alias"] is not None:
+            return folded_receipt, folded_record
+    return receipt, record
+
+
 # A query that begins with 香港／香港特區／hong kong／hk, whose rest is no curated
 # name and whose whole text finds nothing, is searched again without the prefix,
 # Hong Kong rows first.  Closed vocabulary.
@@ -663,12 +802,13 @@ PREFIX_STRIPPED_APPLIED = "applied"
 PREFIX_STRIPPED_NO_RESULT = "no_result"
 
 
-def _prefix_stripped_receipt(status: str, remainder: str | None = None) -> dict:
+def _prefix_stripped_receipt(status: str, remainder: str | None = None, rows: Sequence[Any] = ()) -> dict:
     searched = status in (PREFIX_STRIPPED_APPLIED, PREFIX_STRIPPED_NO_RESULT)
     return {
         "status": status,
         "remainder": remainder if searched else None,
-        "hong_kong_rows_first": searched,
+        # True only when Hong Kong rows were found and put first.
+        "hong_kong_rows_first": searched and any(row["country_code"] == "HK" for row in rows),
     }
 
 
@@ -744,7 +884,7 @@ class PlaceCatalog:
 
         resolved = self.path.resolve()
         status = resolved.stat()
-        key = (str(resolved), status.st_size, status.st_mtime_ns)
+        key = _file_identity(resolved, status)
         with _METADATA_LOCK:
             cached = _METADATA_CACHE.get(key)
         if cached is None:
@@ -762,26 +902,51 @@ class PlaceCatalog:
                 _METADATA_CACHE[key] = cached
         return cached
 
-    def _county_prefixes(self, connection: sqlite3.Connection) -> tuple[str, ...]:
-        """County names of the catalogue's derived points, read once per file identity."""
+    def _county_tables(self, connection: sqlite3.Connection) -> tuple[tuple[str, ...], dict[str, str]]:
+        """County names and former county names of the catalogue's derived points, read once per file identity."""
 
         resolved = self.path.resolve()
         status = resolved.stat()
-        key = (str(resolved), status.st_size, status.st_mtime_ns)
+        key = _file_identity(resolved, status)
         with _COUNTY_PREFIX_LOCK:
             cached = _COUNTY_PREFIX_CACHE.get(key)
         if cached is None:
-            names = [
-                row[0]
+            rows = [
+                (row[0], [item for item in row[1].split(MATCH_KEY_SEPARATOR) if item])
                 for row in connection.execute(
-                    "SELECT name FROM places WHERE substr(source_record_id, 1, ?) = ?",
+                    "SELECT name, match_keys FROM places WHERE substr(source_record_id, 1, ?) = ?",
                     (len(TAIWAN_COUNTY_RECORD_PREFIX), TAIWAN_COUNTY_RECORD_PREFIX),
                 )
             ]
-            cached = county_prefixes(names)
+            cached = (county_prefixes([name for name, _keys in rows]), former_county_names(rows))
             with _COUNTY_PREFIX_LOCK:
                 _COUNTY_PREFIX_CACHE.clear()
                 _COUNTY_PREFIX_CACHE[key] = cached
+        return cached
+
+    def _county_prefixes(self, connection: sqlite3.Connection) -> tuple[str, ...]:
+        return self._county_tables(connection)[0]
+
+    def _former_counties(self, connection: sqlite3.Connection) -> dict[str, str]:
+        return self._county_tables(connection)[1]
+
+    def _fold_table(self, connection: sqlite3.Connection) -> tuple[str, dict[str, str]]:
+        """The catalogue's Simplified-to-Traditional table, decoded once per file identity."""
+
+        resolved = self.path.resolve()
+        key = _file_identity(resolved, resolved.stat())
+        with _FOLD_TABLE_LOCK:
+            cached = _FOLD_TABLE_CACHE.get(key)
+        if cached is None:
+            stored = self._metadata_json(connection).get("han_script_folding")
+            folding = json.loads(stored) if stored else {}
+            table = folding.get("simplified_to_traditional")
+            if not isinstance(table, dict) or not table or not isinstance(folding.get("table"), str):
+                raise PlaceCatalogUnavailableError("bundled place catalog has no script folding table")
+            cached = (folding["table"], table)
+            with _FOLD_TABLE_LOCK:
+                _FOLD_TABLE_CACHE.clear()
+                _FOLD_TABLE_CACHE[key] = cached
         return cached
 
     def _served_metadata(self, connection: sqlite3.Connection) -> dict:
@@ -820,6 +985,29 @@ class PlaceCatalog:
             "execution": dict(_EXECUTION_RECEIPT),
         }
 
+    def warm(self) -> bool:
+        """Read what every search shares before the first request: the metadata,
+        the county and folding tables and the spelling vocabulary.
+
+        A worker otherwise built the vocabulary inside its first misspelt
+        search, whose budget it outlasted, and workers are replaced every
+        thousand or so requests.  A catalogue that cannot be read is left for
+        the search itself to refuse; False says so.
+        """
+
+        try:
+            connection = self._connect()
+            try:
+                self._served_metadata(connection)
+                self._county_tables(connection)
+                self._fold_table(connection)
+            finally:
+                connection.close()
+            _spelling_vocabulary(self.path)
+        except (PlaceCatalogUnavailableError, sqlite3.Error, OSError):
+            return False
+        return True
+
     def record(self, source: str, source_record_id: str) -> dict | None:
         """One catalogue row by its UNIQUE ``(source, source_record_id)`` key, or None."""
 
@@ -842,7 +1030,9 @@ class PlaceCatalog:
     def _remainder_rows(self, connection, remainder: str, country_code: str | None, limit: int) -> list:
         """The ranked rows for the query's rest, Hong Kong rows first (order kept within each)."""
 
-        match_query, receipt = _fts_query(remainder, self._county_prefixes(connection))
+        match_query, receipt = _fts_query(
+            remainder, self._county_prefixes(connection), self._former_counties(connection)
+        )
         if not match_query:
             return []
         tier_query = place_tier_key(" ".join(receipt["tokens_used"]))
@@ -886,12 +1076,23 @@ class PlaceCatalog:
         )
         try:
             metadata = self._served_metadata(connection)
-            match_query, query_receipt = _fts_query(query, self._county_prefixes(connection))
+            fold_name, fold_table = self._fold_table(connection)
+            typed = query
+            query = "".join(fold_table.get(character, character) for character in typed)
+            match_query, query_receipt = _fts_query(
+                query, self._county_prefixes(connection), self._former_counties(connection)
+            )
+            query_receipt["han_script_folding"] = {
+                "table": fold_name,
+                # Closed: "folded" read at least one Simplified character as
+                # Traditional (嘉义 → 嘉義); the words used are the folded ones.
+                "status": "folded" if query != typed else "unchanged",
+            }
             if not match_query:
                 # Nothing reached FTS5: say so in a closed field and keep the
                 # response the same shape as a search that found nothing.
                 query_receipt["spelling_fallback"] = _spelling_fallback_receipt(SPELLING_FALLBACK_NOT_ELIGIBLE)
-                empty_alias = _curated_alias(query, country_code)[0]
+                empty_alias = _curated_alias_of(typed, query, country_code)[0]
                 del empty_alias["alias_lookup_key"]
                 empty_alias["prefix_stripped"] = _prefix_stripped_receipt(PREFIX_STRIPPED_NOT_NAMED)
                 query_receipt["curated_alias"] = empty_alias
@@ -921,9 +1122,13 @@ class PlaceCatalog:
             elif not _spelling_fallback_eligible(tier_query):
                 fallback = SPELLING_FALLBACK_NOT_ELIGIBLE
             else:
-                names = _names_within_edit_distance(
-                    _spelling_vocabulary(self.path), tier_query, deadline=deadline
-                )
+                vocabulary = _spelling_vocabulary(self.path, deadline=deadline)
+                if not _SPELLING_SCAN_LOCK.acquire(timeout=max(0.0, deadline - time.monotonic())):
+                    raise PlaceSearchBudgetExceededError("place search exceeded its statement budget")
+                try:
+                    names = _names_within_edit_distance(vocabulary, tier_query, deadline=deadline)
+                finally:
+                    _SPELLING_SCAN_LOCK.release()
                 if names:
                     rows = connection.execute(
                         _SPELLING_FALLBACK_SQL,
@@ -932,14 +1137,17 @@ class PlaceCatalog:
                             # key holds only letters and single spaces.
                             "match": " OR ".join(f'"{name}"' for name in names),
                             "country": country_code,
-                            "fallback_names": json.dumps(names, ensure_ascii=False),
+                            "fallback_names": json.dumps(
+                                [[name, _optimal_string_alignment_distance(tier_query, name)] for name in names],
+                                ensure_ascii=False,
+                            ),
                             "separator": MATCH_KEY_SEPARATOR,
                             "limit": limit,
                         },
                     ).fetchall()
                 fallback = SPELLING_FALLBACK_APPLIED if rows else SPELLING_FALLBACK_NO_NAME
             query_receipt["spelling_fallback"] = _spelling_fallback_receipt(fallback)
-            alias_receipt, alias_record = _curated_alias(query, country_code)
+            alias_receipt, alias_record = _curated_alias_of(typed, query, country_code)
             alias_receipt["prefix_stripped"] = _prefix_stripped_receipt(PREFIX_STRIPPED_NOT_NAMED)
             if alias_receipt["names_hong_kong"] and alias_record is None:
                 if rows:
@@ -952,7 +1160,7 @@ class PlaceCatalog:
                     )
                     status = PREFIX_STRIPPED_APPLIED if rows else PREFIX_STRIPPED_NO_RESULT
                 alias_receipt["prefix_stripped"] = _prefix_stripped_receipt(
-                    status, alias_receipt["alias_lookup_key"]
+                    status, alias_receipt["alias_lookup_key"], rows if status == PREFIX_STRIPPED_APPLIED else ()
                 )
             del alias_receipt["alias_lookup_key"]
             if alias_record is not None:

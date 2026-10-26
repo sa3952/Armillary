@@ -267,7 +267,7 @@ ORB_PROFILES: dict[str, dict] = {
         "pair_combination_rule_provenance": "named_author_text",
         "source_verification": {
             # p.107 was read on first-edition page images and the first column
-            # matches; Sebastian ruled the profile checked on that reading.
+            # matches; the profile counts as checked on that reading.
             "primary_texts_independently_transcribed": True,
             "evidence_standard": "checked_against_first_edition_page_images",
         },

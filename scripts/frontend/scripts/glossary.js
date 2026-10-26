@@ -44,7 +44,7 @@
     { key: "triplicity", term: "三分性", en: "Triplicity", chapter: "古典判斷",
       text: "火、土、風、水四個元素各有幾顆守護行星；日盤與夜盤由不同的行星主事。古書有好幾套，本站平等提供，不替你選。" },
     { key: "lots", term: "命運點與精神點", en: "Lot of Fortune, Lot of Spirit", chapter: "古典判斷",
-      text: "用太陽、月亮與上升點的位置算出來的點，不是天體。日盤與夜盤的公式不同。命運點也叫福點、幸運點。" },
+      text: "用太陽、月亮與上升點的位置算出來的點，不是天體。日盤與夜盤的公式不同。命運點也叫福點、幸運點。這類點統稱阿拉伯點（Lots），也有人稱希臘點；本站一律寫阿拉伯點。" },
     { key: "dodecatemoria", term: "十二分部", en: "Dodecatemoria", chapter: "位置",
       text: "把一個點在星座裡走了幾度乘以 12，從同一個星座的起點往後數，數到的位置。Firmicus《Mathesis》II.13 用乘以 12，Manilius《Astronomica》II.693–748 把每個星座分成十二段，落到的星座相同；Paulus《導論》第 22 章另用乘以 13（Paulus 這一條只讀到二手轉述）。" },
     { key: "novenaria", term: "九分部", en: "Novenaria", chapter: "位置（十二分部一區的說明）",
@@ -90,7 +90,7 @@
         + "Lilly《Christian Astrology》1647 年版 p.114 這樣定義；月亮從滿月到新月是東出。古書另有以天空四象限分東西的用法，本站不輸出。" },
     { key: "void_of_course", term: "月空亡", en: "Void of course", chapter: "古典判斷",
       text: "月亮離開它所在的星座之前，不再與任何行星完成相位。Lilly《Christian Astrology》1647 年版 p.112 有這一條，"
-        + "並說在卜卦（就一個問題起盤）裡，月亮空亡時事情很少順利進展。本站另要求相位在換星座前精確完成；"
+        + "並說在卜卦（就一個問題起盤）裡，月空亡時事情很少順利進展。本站另要求相位在換星座前精確完成；"
         + "這兩個條件合起來是誰定的，至今沒有定論，所以名稱不掛古人，見方法頁〈月空亡〉一節。" },
     { key: "joys", term: "喜樂宮", en: "Joys", chapter: "古典判斷",
       text: "古書說每顆行星在某一宮特別「喜樂」：水星第 1 宮、月亮第 3 宮、金星第 5 宮、火星第 6 宮、太陽第 9 宮、"
@@ -142,8 +142,10 @@
       if (text !== undefined) element.textContent = text;
       return element;
     };
-    const drawer = node("aside", "glossary");
+    // div 而不是 aside：窄螢幕上它是 dialog，而 aside 不能掛 dialog 的角色；寬螢幕是側欄，標成 complementary。
+    const drawer = node("div", "glossary");
     drawer.id = "glossary";
+    drawer.setAttribute("role", "complementary");
     drawer.setAttribute("aria-labelledby", "glossary-title");
     drawer.hidden = true;
     const head = node("div", "glossary-head");
@@ -174,7 +176,7 @@
 
     // 窄螢幕（與 calculate.css 的底部抽屜同一個斷點）上，抽屜蓋住大半個畫面，實際上是模態：
     // 打開時標成 dialog／aria-modal，並把抽屜以外的頁面設為 inert，Tab 不會跑到被蓋住的連結；
-    // 關閉時還原。寬螢幕是側欄，維持非模態，不加任何標記。
+    // 關閉時還原成側欄（complementary）。寬螢幕是側欄，維持非模態。
     let inerted = [];
     const narrow = () => Boolean(win && typeof win.matchMedia === "function"
       && win.matchMedia(NARROW_SHEET_QUERY).matches);
@@ -192,7 +194,7 @@
     function releaseModal() {
       inerted.forEach((item) => item.removeAttribute("inert"));
       inerted = [];
-      drawer.removeAttribute("role");
+      drawer.setAttribute("role", "complementary");
       drawer.removeAttribute("aria-modal");
     }
 

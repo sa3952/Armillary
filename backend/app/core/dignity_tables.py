@@ -743,7 +743,7 @@ TRIPLICITY_SOURCE_DETAILS: dict[str, dict[str, Any]] = {
         "third_ruler_term": "third_and_common_ruler",
         "third_ruler_term_source": (
             "Holden's Rhetorius per research report, not checked; Pingree has "
-            "'then' (I.1), 'associate' (I.28), 'participant' (I.10)"
+            "'then' (I.1), 'associate' (I.28), 'participant' (I.10, the translator's reading of the Arabic, not checked as the third ruler)"
         ),
         "corroboration": cited(
             ("Vettius Valens, Anthologies II.1 (Kroll and Pingree II.1; Pingree "
@@ -793,7 +793,7 @@ TRIPLICITY_SOURCE_DETAILS: dict[str, dict[str, Any]] = {
             "Mars. Lilly keeps Mars for water by day and night without "
             "Ptolemy's Venus/Moon co-rulers."
         ),
-        "citation_verification": _RESEARCH_CITED,
+        "citation_verification": _EDITION_PAGES_CHECKED,
     },
 }
 
@@ -828,7 +828,7 @@ DOMICILE_EXALTATION_SOURCES = [
     },
     {
         "work": "Firmicus Maternus, Mathesis",
-        "location": "II.2 and II.3.5-6 (Kroll–Skutsch 1897, vol. I)",
+        "location": "II.2 (pp.42-43) and II.3.5-6 (p.44) (Kroll–Skutsch 1897, vol. I)",
         "role": (
             "also_attested_domiciles_and_exaltation_signs_source_"
             "also_supplies_exact_degrees_not_evaluated_by_this_profile"
@@ -871,7 +871,7 @@ DEBILITY_COMPONENT_SOURCES = {
               "translation_read",
               ("Riley's translation in a reformatted online copy (github "
                "janegca/latex-valens)")),
-        cited("Firmicus Maternus, Mathesis II.3.1, II.3.5 (Kroll-Skutsch)",
+        cited("Firmicus Maternus, Mathesis II.3.1, II.3.5 (Kroll-Skutsch, p.44)",
               ("altitudines et deiectiones: each planet 'deicitur' in the degree "
                "opposite its exaltation"),
               "original_language_read", "Latin text, LacusCurtius"),
@@ -1015,11 +1015,12 @@ PEREGRINE_SOURCES = [
            "Institute scan fah765mesahw.pdf, PDF page 94 (sig. L iii r): 'qui erat in "
            "Leone peregrinus, no[n] receptus'; first found through Houlding, 'The "
            "Definition of Peregrine' (STA 2010); the Arabic is lost")),
-    cited("Vettius Valens, Anthologies II.22 Kroll (= II.23.24 Pingree), Kroll 1908 p.89.30-32",
+    cited("Vettius Valens, Anthologies II.22 Kroll (= II.23.24 Pingree), Kroll 1908 p.89.30-32, Pingree 1986 p.85",
           ("malefics 'in alien signs and degrees' ruin livelihood; a description, "
            "not a defined state"),
           "translation_read",
           ("Riley's translation in a reformatted online copy (github janegca/latex-valens); "
            "the Kroll page and lines checked in the archive.org text of Kroll 1908 "
-           "(bub_gb_OQ_gAAAAMAAJ); the Pingree page not checked online")),
+           "(bub_gb_OQ_gAAAAMAAJ); the Pingree page (p.85, running head ANTHOLOGIAE II 23, §24) "
+           "located by an external citation review and not re-read for this record")),
 ]

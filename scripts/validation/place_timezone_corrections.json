@@ -1,0 +1,2930 @@
+{
+ "engine": "timezonefinder 9.2.0",
+ "zone_tab": "zone.tab",
+ "offset_sampling": "UTC 12:00 on the 15th of January, April, July and October, 1900-2030",
+ "corrections": [
+  {
+   "source_record_id": "1215694",
+   "expected": "Asia/Samarkand",
+   "corrected": "Asia/Tashkent",
+   "place": "Zomin Shaharchasi (39.96056, 68.39583), UZ"
+  },
+  {
+   "source_record_id": "1216189",
+   "expected": "Asia/Bishkek",
+   "corrected": "Asia/Tashkent",
+   "place": "Shohimardon (39.98322, 71.80512), UZ"
+  },
+  {
+   "source_record_id": "1512278",
+   "expected": "Asia/Samarkand",
+   "corrected": "Asia/Tashkent",
+   "place": "Zarbdor Shaharchasi (40.08083, 68.16454), UZ"
+  },
+  {
+   "source_record_id": "1512286",
+   "expected": "Asia/Samarkand",
+   "corrected": "Asia/Tashkent",
+   "place": "Zafarobod Shaharchasi (40.38903, 67.82169), UZ"
+  },
+  {
+   "source_record_id": "1512298",
+   "expected": "Asia/Samarkand",
+   "corrected": "Asia/Tashkent",
+   "place": "G’oliblar Qishlog’i (40.49528, 67.87594), UZ"
+  },
+  {
+   "source_record_id": "1512493",
+   "expected": "Asia/Samarkand",
+   "corrected": "Asia/Tashkent",
+   "place": "Uchtepa Qishlog’i (40.20447, 67.90396), UZ"
+  },
+  {
+   "source_record_id": "1513038",
+   "expected": "Asia/Samarkand",
+   "corrected": "Asia/Tashkent",
+   "place": "Paxtakor Shahri (40.31181, 67.95667), UZ"
+  },
+  {
+   "source_record_id": "1513886",
+   "expected": "Asia/Samarkand",
+   "corrected": "Asia/Tashkent",
+   "place": "Jizzax (40.13351, 67.82956), UZ"
+  },
+  {
+   "source_record_id": "1514008",
+   "expected": "Asia/Samarkand",
+   "corrected": "Asia/Tashkent",
+   "place": "G’allaorol Shahri (40.02696, 67.58781), UZ"
+  },
+  {
+   "source_record_id": "1514011",
+   "expected": "Asia/Samarkand",
+   "corrected": "Asia/Tashkent",
+   "place": "Gagarin Shahri (40.66473, 68.16768), UZ"
+  },
+  {
+   "source_record_id": "1514125",
+   "expected": "Asia/Samarkand",
+   "corrected": "Asia/Tashkent",
+   "place": "Do’stlik Shahri (40.52881, 68.03153), UZ"
+  },
+  {
+   "source_record_id": "1515007",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Uliastay (47.74167, 96.84444), MN"
+  },
+  {
+   "source_record_id": "1515106",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Tseel (45.56667, 95.86667), MN"
+  },
+  {
+   "source_record_id": "1515131",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Tsagaan-Olom (46.71327, 96.52588), MN"
+  },
+  {
+   "source_record_id": "1515157",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Tsagaanchuluut (47.11196, 96.67145), MN"
+  },
+  {
+   "source_record_id": "1515167",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Tosontsengel (48.75667, 98.28389), MN"
+  },
+  {
+   "source_record_id": "1515187",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Tögrög (45.82976, 94.81544), MN"
+  },
+  {
+   "source_record_id": "1515208",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Tegsh (48.75132, 95.99974), MN"
+  },
+  {
+   "source_record_id": "1515213",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Taygan (46.35356, 97.36633), MN"
+  },
+  {
+   "source_record_id": "1515229",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Talshand (45.33333, 97.98333), MN"
+  },
+  {
+   "source_record_id": "1515247",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Tahilt (45.3466, 96.6457), MN"
+  },
+  {
+   "source_record_id": "1515303",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Shiree (47.49714, 96.80311), MN"
+  },
+  {
+   "source_record_id": "1515331",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Sharga (46.25, 95.26667), MN"
+  },
+  {
+   "source_record_id": "1515367",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Sayn-Ust (47.35732, 94.52448), MN"
+  },
+  {
+   "source_record_id": "1515378",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Sangiyn Dalay (45.13333, 97.75), MN"
+  },
+  {
+   "source_record_id": "1515402",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Oygon (48.98562, 96.54339), MN"
+  },
+  {
+   "source_record_id": "1515405",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Övögdiy (48.64278, 97.61861), MN"
+  },
+  {
+   "source_record_id": "1515454",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Nuga (48.31667, 95.11667), MN"
+  },
+  {
+   "source_record_id": "1515580",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Jargalant (45.70954, 97.17596), MN"
+  },
+  {
+   "source_record_id": "1515736",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Holboo (48.58876, 95.43257), MN"
+  },
+  {
+   "source_record_id": "1515762",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Hödrögö (48.87284, 96.96259), MN"
+  },
+  {
+   "source_record_id": "1515878",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Haliun (45.9296, 96.16239), MN"
+  },
+  {
+   "source_record_id": "1515986",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Dzuunmod (48.21987, 97.3744), MN"
+  },
+  {
+   "source_record_id": "1516136",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Chandmanĭ (48.05, 96.25), MN"
+  },
+  {
+   "source_record_id": "1516146",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Buyant (47.21211, 97.60666), MN"
+  },
+  {
+   "source_record_id": "1516148",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Buyanbat (46.97838, 95.92532), MN"
+  },
+  {
+   "source_record_id": "1516199",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Buga (47.65013, 95.0005), MN"
+  },
+  {
+   "source_record_id": "1516267",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Bayan-Uhaa (48.71906, 98.79181), MN"
+  },
+  {
+   "source_record_id": "1516274",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Bayan-Ovoo (44.61667, 94.91667), MN"
+  },
+  {
+   "source_record_id": "1516296",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Bayangol (45.55655, 94.36449), MN"
+  },
+  {
+   "source_record_id": "1516309",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Bayan (46.9929, 95.19962), MN"
+  },
+  {
+   "source_record_id": "1516329",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Balgatay (46.9, 97.15), MN"
+  },
+  {
+   "source_record_id": "1516392",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Altay (49.70317, 96.3592), MN"
+  },
+  {
+   "source_record_id": "1516393",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Altai (46.37222, 96.25833), MN"
+  },
+  {
+   "source_record_id": "1516399",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Altanbulag (49.30688, 96.34237), MN"
+  },
+  {
+   "source_record_id": "1516400",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Altan (48.11667, 95.71667), MN"
+  },
+  {
+   "source_record_id": "1516403",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Aldar (47.64226, 96.53687), MN"
+  },
+  {
+   "source_record_id": "1521368",
+   "expected": "Asia/Qostanay",
+   "corrected": "Asia/Qyzylorda",
+   "place": "Baikonur (45.61667, 63.31667), KZ"
+  },
+  {
+   "source_record_id": "1639304",
+   "expected": "Asia/Jakarta",
+   "corrected": "Asia/Pontianak",
+   "place": "Kualakapuas (-3.00913, 114.38759), ID"
+  },
+  {
+   "source_record_id": "1733782",
+   "expected": "Asia/Kuala_Lumpur",
+   "corrected": "Asia/Kuching",
+   "place": "Labuan (5.28028, 115.2475), MY"
+  },
+  {
+   "source_record_id": "2119447",
+   "expected": "Asia/Sakhalin",
+   "corrected": "Asia/Magadan",
+   "place": "Yuzhno-Kurilsk (44.02734, 145.86146), RU"
+  },
+  {
+   "source_record_id": "2120048",
+   "expected": "Asia/Magadan",
+   "corrected": "Asia/Ust-Nera",
+   "place": "Ust-Nera (64.56968, 143.237), RU"
+  },
+  {
+   "source_record_id": "2122311",
+   "expected": "Asia/Magadan",
+   "corrected": "Asia/Ust-Nera",
+   "place": "Oymyakon (63.46217, 142.79491), RU"
+  },
+  {
+   "source_record_id": "2127047",
+   "expected": "Asia/Magadan",
+   "corrected": "Asia/Ust-Nera",
+   "place": "Artyk (64.18069, 145.12676), RU"
+  },
+  {
+   "source_record_id": "3391387",
+   "expected": "America/Santarem",
+   "corrected": "America/Belem",
+   "place": "Porto de Moz (-1.74833, -52.23833), BR"
+  },
+  {
+   "source_record_id": "3398535",
+   "expected": "America/Bahia",
+   "corrected": "America/Fortaleza",
+   "place": "Guaribas (-9.39547, -43.69293), BR"
+  },
+  {
+   "source_record_id": "3436230",
+   "expected": "America/Argentina/Buenos_Aires",
+   "corrected": "America/Argentina/Cordoba",
+   "place": "Avellaneda (-29.11761, -59.65834), AR"
+  },
+  {
+   "source_record_id": "3445792",
+   "expected": "America/Bahia",
+   "corrected": "America/Sao_Paulo",
+   "place": "Umburatiba (-17.25583, -40.57278), BR"
+  },
+  {
+   "source_record_id": "3449505",
+   "expected": "America/Bahia",
+   "corrected": "America/Sao_Paulo",
+   "place": "Santo Antônio do Jacinto (-16.53389, -40.17583), BR"
+  },
+  {
+   "source_record_id": "3471834",
+   "expected": "America/Sao_Paulo",
+   "corrected": "America/Cuiaba",
+   "place": "Araguaiana (-15.73389, -51.83139), BR"
+  },
+  {
+   "source_record_id": "3483310",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Santa Apolonia (25.64351, -97.98381), MX"
+  },
+  {
+   "source_record_id": "3483393",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Ciudad Gustavo Díaz Ordaz (26.2318, -98.59647), MX"
+  },
+  {
+   "source_record_id": "3514515",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Xicoténcatl (17.51703, -92.70374), MX"
+  },
+  {
+   "source_record_id": "3514625",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Viva México (14.91109, -92.32669), MX"
+  },
+  {
+   "source_record_id": "3514670",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Villahermosa (17.98625, -92.93928), MX"
+  },
+  {
+   "source_record_id": "3514678",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "El Triunfo (17.92264, -91.17056), MX"
+  },
+  {
+   "source_record_id": "3514685",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Villa Comaltitlán (15.21292, -92.57606), MX"
+  },
+  {
+   "source_record_id": "3514868",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Valle Hermoso (25.67317, -97.81272), MX"
+  },
+  {
+   "source_record_id": "3514886",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Valadeces (26.23268, -98.67595), MX"
+  },
+  {
+   "source_record_id": "3514919",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Unión Buenavista (15.79448, -92.54483), MX"
+  },
+  {
+   "source_record_id": "3514972",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Tzimol (16.17935, -92.18544), MX"
+  },
+  {
+   "source_record_id": "3515001",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Tuxtla (16.75357, -93.11578), MX"
+  },
+  {
+   "source_record_id": "3515202",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Totolapa (16.54383, -92.68121), MX"
+  },
+  {
+   "source_record_id": "3515600",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Tila (17.30032, -92.42595), MX"
+  },
+  {
+   "source_record_id": "3515938",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Teopisca (16.54144, -92.47288), MX"
+  },
+  {
+   "source_record_id": "3516125",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Tecpatán (17.1354, -93.31039), MX"
+  },
+  {
+   "source_record_id": "3516149",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Tecolutilla (18.28251, -93.33352), MX"
+  },
+  {
+   "source_record_id": "3516210",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Teapa (17.55602, -92.94788), MX"
+  },
+  {
+   "source_record_id": "3516249",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Tapotzingo (18.20365, -93.01575), MX"
+  },
+  {
+   "source_record_id": "3516253",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Tapijulapa (17.45977, -92.77903), MX"
+  },
+  {
+   "source_record_id": "3516266",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Tapachula de Córdova y Ordóñez (14.91074, -92.26452), MX"
+  },
+  {
+   "source_record_id": "3516344",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Tamulté de las Sabanas (18.16047, -92.78367), MX"
+  },
+  {
+   "source_record_id": "3516499",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Suchiapa (16.62473, -93.09894), MX"
+  },
+  {
+   "source_record_id": "3516648",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Cantón Sinaí (15.19972, -92.32345), MX"
+  },
+  {
+   "source_record_id": "3516755",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Simón Sarlat (18.34179, -92.80668), MX"
+  },
+  {
+   "source_record_id": "3517659",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Pantelhó (17.0052, -92.47057), MX"
+  },
+  {
+   "source_record_id": "3518137",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Chalchihuitán (16.96356, -92.61825), MX"
+  },
+  {
+   "source_record_id": "3518510",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Capitán Luis Ángel Vidal (15.60074, -92.62766), MX"
+  },
+  {
+   "source_record_id": "3519537",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "San Cristóbal de las Casas (16.73006, -92.63825), MX"
+  },
+  {
+   "source_record_id": "3519707",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "San Antonio la Pinada (15.61626, -92.32197), MX"
+  },
+  {
+   "source_record_id": "3520271",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Ciudad Río Bravo (25.98507, -98.08964), MX"
+  },
+  {
+   "source_record_id": "3520407",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Reforma (17.85904, -93.15381), MX"
+  },
+  {
+   "source_record_id": "3520416",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Redención del Campesino (17.32804, -91.28393), MX"
+  },
+  {
+   "source_record_id": "3520589",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Cantón Rancho Nuevo (15.06352, -92.52657), MX"
+  },
+  {
+   "source_record_id": "3522121",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "El Palmar Grande (15.50101, -92.25384), MX"
+  },
+  {
+   "source_record_id": "3522164",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Palenque (17.50914, -91.98125), MX"
+  },
+  {
+   "source_record_id": "3522225",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Pablo L. Sidar (15.83042, -92.27884), MX"
+  },
+  {
+   "source_record_id": "3522226",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Pablo Galeana (15.57072, -92.53964), MX"
+  },
+  {
+   "source_record_id": "3522253",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Oxiacaque (18.2148, -92.94631), MX"
+  },
+  {
+   "source_record_id": "3522334",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Omoha (14.8376, -92.22651), MX"
+  },
+  {
+   "source_record_id": "3522444",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Ocozocoautla de Espinosa (16.7612, -93.37426), MX"
+  },
+  {
+   "source_record_id": "3522525",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Nuevo Progreso (26.05378, -97.95149), MX"
+  },
+  {
+   "source_record_id": "3522532",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Nuevo Pacayal (15.6612, -92.31493), MX"
+  },
+  {
+   "source_record_id": "3522595",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Nueva Victoria (15.01973, -92.47246), MX"
+  },
+  {
+   "source_record_id": "3522601",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Barrio Nuevo (15.24343, -92.69174), MX"
+  },
+  {
+   "source_record_id": "3522605",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Nueva Palestina (15.80472, -92.75168), MX"
+  },
+  {
+   "source_record_id": "3522617",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Nueva Ciudad Guerrero (26.56414, -99.22624), MX"
+  },
+  {
+   "source_record_id": "3522731",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Nicolás Ruiz (16.4389, -92.58218), MX"
+  },
+  {
+   "source_record_id": "3522888",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Multé (17.68758, -91.37893), MX"
+  },
+  {
+   "source_record_id": "3522926",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Motozintla de Mendoza (15.36419, -92.24727), MX"
+  },
+  {
+   "source_record_id": "3523002",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Monte Redondo (15.651, -92.05053), MX"
+  },
+  {
+   "source_record_id": "3523006",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Monte Ordóñez (15.5643, -92.17525), MX"
+  },
+  {
+   "source_record_id": "3523222",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Mier (26.43017, -99.15159), MX"
+  },
+  {
+   "source_record_id": "3523401",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Mecatepec (17.8893, -93.52421), MX"
+  },
+  {
+   "source_record_id": "3523690",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Male (15.44926, -92.24725), MX"
+  },
+  {
+   "source_record_id": "3523794",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Macultepec (18.14326, -92.85962), MX"
+  },
+  {
+   "source_record_id": "3523801",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Mactún (17.59134, -91.29156), MX"
+  },
+  {
+   "source_record_id": "3524051",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Los Guerra (26.3914, -99.07888), MX"
+  },
+  {
+   "source_record_id": "3524163",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Los Ángeles (26.38231, -98.98917), MX"
+  },
+  {
+   "source_record_id": "3524377",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Libertad del Pajal (15.77944, -92.6591), MX"
+  },
+  {
+   "source_record_id": "3524420",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Lázaro Cárdenas (15.71781, -92.25502), MX"
+  },
+  {
+   "source_record_id": "3524615",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Las Salvias (15.45282, -92.30634), MX"
+  },
+  {
+   "source_record_id": "3524699",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "La Soledad (15.57767, -92.4863), MX"
+  },
+  {
+   "source_record_id": "3524744",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Las Margaritas (16.31281, -91.98224), MX"
+  },
+  {
+   "source_record_id": "3524848",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Cantón las Delicias (15.10152, -92.50117), MX"
+  },
+  {
+   "source_record_id": "3524882",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Las Cruces (15.28148, -92.73158), MX"
+  },
+  {
+   "source_record_id": "3525167",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "La Polka (15.9571, -93.66314), MX"
+  },
+  {
+   "source_record_id": "3525623",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "La Hacienda (15.64975, -92.28232), MX"
+  },
+  {
+   "source_record_id": "3525707",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "La Grandeza (15.51078, -92.22603), MX"
+  },
+  {
+   "source_record_id": "3525944",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Constancia y Venecia (18.43511, -92.82452), MX"
+  },
+  {
+   "source_record_id": "3526462",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Jolochero (17.52374, -91.07722), MX"
+  },
+  {
+   "source_record_id": "3526489",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Jiquilpan (15.31952, -92.80463), MX"
+  },
+  {
+   "source_record_id": "3526855",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Huixtla (15.13783, -92.46574), MX"
+  },
+  {
+   "source_record_id": "3526888",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Huitiupán (17.17166, -92.68526), MX"
+  },
+  {
+   "source_record_id": "3526908",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Huimanguillo (17.83498, -93.38902), MX"
+  },
+  {
+   "source_record_id": "3527116",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Hidalgo (27.78994, -99.87699), MX"
+  },
+  {
+   "source_record_id": "3527232",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Guaytalpa (18.21546, -93.03163), MX"
+  },
+  {
+   "source_record_id": "3527361",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Guadalupe Maravillas (15.94995, -92.45615), MX"
+  },
+  {
+   "source_record_id": "3527542",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Frontera Comalapa (15.65977, -92.14161), MX"
+  },
+  {
+   "source_record_id": "3527548",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Francisco I. Madero (15.34286, -92.41938), MX"
+  },
+  {
+   "source_record_id": "3527576",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Francisco I. Madero (18.46848, -92.73777), MX"
+  },
+  {
+   "source_record_id": "3527581",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Francisco I. Madero (15.82759, -92.68642), MX"
+  },
+  {
+   "source_record_id": "3527605",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Flores Magón (15.40873, -92.83726), MX"
+  },
+  {
+   "source_record_id": "3528054",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "El Tarral (15.21514, -92.38479), MX"
+  },
+  {
+   "source_record_id": "3528433",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "El Porvenir de Velasco Suárez (15.4576, -92.28079), MX"
+  },
+  {
+   "source_record_id": "3528555",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "El Palmar (17.44692, -91.03809), MX"
+  },
+  {
+   "source_record_id": "3529204",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "El Chamizal (17.49668, -91.055), MX"
+  },
+  {
+   "source_record_id": "3529309",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "El Capulín (17.70608, -91.08562), MX"
+  },
+  {
+   "source_record_id": "3529884",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Cupilco (18.23776, -93.1273), MX"
+  },
+  {
+   "source_record_id": "3530367",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Comitán (16.24004, -92.13668), MX"
+  },
+  {
+   "source_record_id": "3530383",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Comales (26.1814, -98.91862), MX"
+  },
+  {
+   "source_record_id": "3530385",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Comalcalco (18.26496, -93.22432), MX"
+  },
+  {
+   "source_record_id": "3530434",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Cándido Aguilar (25.47929, -97.98443), MX"
+  },
+  {
+   "source_record_id": "3530546",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Coapilla (17.13024, -93.15876), MX"
+  },
+  {
+   "source_record_id": "3530588",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Pemex (17.88302, -92.47947), MX"
+  },
+  {
+   "source_record_id": "3530590",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Ciudad Miguel Alemán (26.39823, -99.02857), MX"
+  },
+  {
+   "source_record_id": "3530595",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Ciudad Hidalgo (14.67974, -92.15083), MX"
+  },
+  {
+   "source_record_id": "3530602",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Ciudad Camargo (26.31481, -98.83313), MX"
+  },
+  {
+   "source_record_id": "3530935",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Chicomuselo (15.7417, -92.28577), MX"
+  },
+  {
+   "source_record_id": "3530940",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Chicoasén (16.96775, -93.10564), MX"
+  },
+  {
+   "source_record_id": "3531115",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Chapultenango (17.34015, -93.12981), MX"
+  },
+  {
+   "source_record_id": "3531290",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Chablé (17.85764, -91.78105), MX"
+  },
+  {
+   "source_record_id": "3531904",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Cacahoatán (14.99422, -92.16588), MX"
+  },
+  {
+   "source_record_id": "3532182",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Bochil (16.99618, -92.8947), MX"
+  },
+  {
+   "source_record_id": "3532254",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Berriozábal (16.79944, -93.27219), MX"
+  },
+  {
+   "source_record_id": "3532310",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Belén (17.78703, -92.61296), MX"
+  },
+  {
+   "source_record_id": "3532526",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Ayapa (18.22315, -93.1121), MX"
+  },
+  {
+   "source_record_id": "3532806",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Apatzingán (17.60892, -91.0648), MX"
+  },
+  {
+   "source_record_id": "3532930",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Amatán (17.37329, -92.81795), MX"
+  },
+  {
+   "source_record_id": "3532957",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Álvaro Obregón (17.29018, -91.22854), MX"
+  },
+  {
+   "source_record_id": "3533483",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Acala (16.5561, -92.80772), MX"
+  },
+  {
+   "source_record_id": "3533491",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Acacoyagua (15.34198, -92.67478), MX"
+  },
+  {
+   "source_record_id": "3801997",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "La Estrella (18.60365, -92.58077), MX"
+  },
+  {
+   "source_record_id": "3802049",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Cocohital (18.39742, -93.34469), MX"
+  },
+  {
+   "source_record_id": "3802066",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Potreritos (18.31039, -93.28222), MX"
+  },
+  {
+   "source_record_id": "3802082",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Miguel Hidalgo (18.25476, -93.30589), MX"
+  },
+  {
+   "source_record_id": "3802097",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Quintín Arauz (18.36725, -93.21419), MX"
+  },
+  {
+   "source_record_id": "3802101",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Francisco I. Madero (18.33402, -93.20463), MX"
+  },
+  {
+   "source_record_id": "3802121",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Chichicapa (18.26122, -93.18156), MX"
+  },
+  {
+   "source_record_id": "3802129",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Gobernador Cruz (18.43394, -92.87293), MX"
+  },
+  {
+   "source_record_id": "3802132",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Fronterita (18.41874, -92.82705), MX"
+  },
+  {
+   "source_record_id": "3802139",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "San Juan (18.4088, -92.97829), MX"
+  },
+  {
+   "source_record_id": "3802144",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Vicente Guerrero (18.38932, -92.89549), MX"
+  },
+  {
+   "source_record_id": "3802181",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "José María Pino Suárez (18.3044, -92.21833), MX"
+  },
+  {
+   "source_record_id": "3802190",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Cuauhtemoczín (18.20498, -94.1266), MX"
+  },
+  {
+   "source_record_id": "3802191",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "El Yucateco (18.21129, -94.01895), MX"
+  },
+  {
+   "source_record_id": "3802196",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "La Venta (18.09798, -94.0452), MX"
+  },
+  {
+   "source_record_id": "3802224",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Palo Mulato (18.02114, -93.7764), MX"
+  },
+  {
+   "source_record_id": "3802254",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Ignacio Gutiérrez Gómez (18.24705, -93.39764), MX"
+  },
+  {
+   "source_record_id": "3802279",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "La Lucha (18.18139, -93.32265), MX"
+  },
+  {
+   "source_record_id": "3802287",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "El Tular (18.15038, -93.33517), MX"
+  },
+  {
+   "source_record_id": "3802294",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Amado Gómez (18.14773, -93.35579), MX"
+  },
+  {
+   "source_record_id": "3802330",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Mecoacán (18.23749, -93.08229), MX"
+  },
+  {
+   "source_record_id": "3802338",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Pueblo Viejo (18.2013, -93.08638), MX"
+  },
+  {
+   "source_record_id": "3802349",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Nicolás Bravo (18.16084, -93.08173), MX"
+  },
+  {
+   "source_record_id": "3802358",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Jalupa (18.13686, -93.04741), MX"
+  },
+  {
+   "source_record_id": "3802376",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Rancho Nuevo (18.07272, -93.07083), MX"
+  },
+  {
+   "source_record_id": "3802380",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Huacapa y Amestoy (18.05321, -93.19818), MX"
+  },
+  {
+   "source_record_id": "3802384",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Gregorio Méndez (18.04726, -93.08282), MX"
+  },
+  {
+   "source_record_id": "3802398",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Mazateupa (18.20346, -93.00959), MX"
+  },
+  {
+   "source_record_id": "3802591",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Tecominoacán (17.91952, -93.56299), MX"
+  },
+  {
+   "source_record_id": "3802682",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Emiliano Zapata (17.9946, -92.96296), MX"
+  },
+  {
+   "source_record_id": "3802683",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Dos Montes (17.98608, -92.82765), MX"
+  },
+  {
+   "source_record_id": "3802684",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Pajonal (17.99381, -92.79564), MX"
+  },
+  {
+   "source_record_id": "3802685",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "La Palma (17.97974, -92.80416), MX"
+  },
+  {
+   "source_record_id": "3802688",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "La Cruz del Bajío (17.97241, -92.78527), MX"
+  },
+  {
+   "source_record_id": "3802710",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Parrilla (17.91297, -92.91752), MX"
+  },
+  {
+   "source_record_id": "3802719",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Pueblo Nuevo de las Raíces (17.84496, -92.878), MX"
+  },
+  {
+   "source_record_id": "3802739",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Río de Teapa (17.77473, -92.90217), MX"
+  },
+  {
+   "source_record_id": "3802806",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "La Curva (17.86819, -92.48835), MX"
+  },
+  {
+   "source_record_id": "3802870",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Playa Larga (17.93633, -91.80908), MX"
+  },
+  {
+   "source_record_id": "3803065",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Manuel Buelta y Rayón (17.70391, -92.95384), MX"
+  },
+  {
+   "source_record_id": "3803248",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Zunú y Patastal (17.47301, -92.81321), MX"
+  },
+  {
+   "source_record_id": "3803262",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "La Raya Zaragoza (17.40494, -92.68418), MX"
+  },
+  {
+   "source_record_id": "3803273",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Arena de Hidalgo (17.4573, -91.58779), MX"
+  },
+  {
+   "source_record_id": "3815488",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Juárez (17.60747, -93.19253), MX"
+  },
+  {
+   "source_record_id": "3815772",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Rincón Chamula (17.20811, -92.939), MX"
+  },
+  {
+   "source_record_id": "3816055",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Veinte de Noviembre (16.54108, -92.89624), MX"
+  },
+  {
+   "source_record_id": "3816150",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Aldama (16.91603, -92.68914), MX"
+  },
+  {
+   "source_record_id": "3816251",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Altamirano (16.73369, -92.03882), MX"
+  },
+  {
+   "source_record_id": "3816586",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Nuevo Vicente Guerrero (16.03929, -92.97643), MX"
+  },
+  {
+   "source_record_id": "3816598",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Jericó (16.28803, -92.96669), MX"
+  },
+  {
+   "source_record_id": "3816612",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "El Parral (16.37117, -93.004), MX"
+  },
+  {
+   "source_record_id": "3816623",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Revolución Mexicana (16.17096, -93.0754), MX"
+  },
+  {
+   "source_record_id": "3816721",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Tonalá (16.09163, -93.75218), MX"
+  },
+  {
+   "source_record_id": "3816757",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "La Gloria (16.14875, -94.09326), MX"
+  },
+  {
+   "source_record_id": "3816758",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Emiliano Zapata (16.17222, -94.06423), MX"
+  },
+  {
+   "source_record_id": "3816812",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "La Central (15.72604, -93.29946), MX"
+  },
+  {
+   "source_record_id": "3816852",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Guanajuato (15.64772, -93.15689), MX"
+  },
+  {
+   "source_record_id": "3816869",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Progreso (15.59976, -93.14458), MX"
+  },
+  {
+   "source_record_id": "3816873",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Hermenegildo Galeana (15.5527, -93.00685), MX"
+  },
+  {
+   "source_record_id": "3816971",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "El Sacrificio (14.88889, -92.22897), MX"
+  },
+  {
+   "source_record_id": "3816987",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Texcaltic (14.78957, -92.18843), MX"
+  },
+  {
+   "source_record_id": "3816992",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "El Gancho (14.56688, -92.25927), MX"
+  },
+  {
+   "source_record_id": "3840087",
+   "expected": "America/Argentina/Rio_Gallegos",
+   "corrected": "America/Argentina/Catamarca",
+   "place": "Puerto Pirámides (-42.57212, -64.28436), AR"
+  },
+  {
+   "source_record_id": "3973416",
+   "expected": "America/Monterrey",
+   "corrected": "America/Mexico_City",
+   "place": "Tanque Nuevo (24.38182, -100.96689), MX"
+  },
+  {
+   "source_record_id": "3977907",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Paso del Tío Pío (28.47877, -100.90343), MX"
+  },
+  {
+   "source_record_id": "3978101",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Madero del Río (29.22578, -100.82578), MX"
+  },
+  {
+   "source_record_id": "3979706",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Zaragoza (28.4932, -100.9223), MX"
+  },
+  {
+   "source_record_id": "3980122",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Villa Unión (28.22228, -100.72624), MX"
+  },
+  {
+   "source_record_id": "3980123",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Villa Union (28.21667, -100.71667), MX"
+  },
+  {
+   "source_record_id": "3985606",
+   "expected": "America/Monterrey",
+   "corrected": "America/Mexico_City",
+   "place": "San Luis Potosí (22.15234, -100.97135), MX"
+  },
+  {
+   "source_record_id": "3986685",
+   "expected": "America/Ojinaga",
+   "corrected": "America/Ciudad_Juarez",
+   "place": "San Isidro (31.54736, -106.28032), MX"
+  },
+  {
+   "source_record_id": "3987473",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Ejido San Carlos (29.03272, -100.90556), MX"
+  },
+  {
+   "source_record_id": "3988043",
+   "expected": "America/Ojinaga",
+   "corrected": "America/Ciudad_Juarez",
+   "place": "Samalayuca (31.34357, -106.47745), MX"
+  },
+  {
+   "source_record_id": "3988628",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Río Bravo (28.31212, -100.91722), MX"
+  },
+  {
+   "source_record_id": "3995050",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Nava (28.42071, -100.76565), MX"
+  },
+  {
+   "source_record_id": "3995395",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Morelos (28.40676, -100.88854), MX"
+  },
+  {
+   "source_record_id": "3998238",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Los Álamos (28.35611, -100.94636), MX"
+  },
+  {
+   "source_record_id": "3998364",
+   "expected": "America/Ojinaga",
+   "corrected": "America/Ciudad_Juarez",
+   "place": "Loma Blanca (31.5793, -106.29759), MX"
+  },
+  {
+   "source_record_id": "4003937",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Jiménez (29.06975, -100.67895), MX"
+  },
+  {
+   "source_record_id": "4005111",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Guerrero (28.30884, -100.37877), MX"
+  },
+  {
+   "source_record_id": "4009204",
+   "expected": "America/Ojinaga",
+   "corrected": "America/Ciudad_Juarez",
+   "place": "El Millón (31.45598, -106.20095), MX"
+  },
+  {
+   "source_record_id": "4018761",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Allende (28.34124, -100.85111), MX"
+  },
+  {
+   "source_record_id": "4029308",
+   "expected": "America/Mazatlan",
+   "corrected": "America/Bahia_Banderas",
+   "place": "San José del Valle (20.76376, -105.22813), MX"
+  },
+  {
+   "source_record_id": "4029309",
+   "expected": "America/Mazatlan",
+   "corrected": "America/Bahia_Banderas",
+   "place": "El Porvenir (20.75379, -105.24196), MX"
+  },
+  {
+   "source_record_id": "4029337",
+   "expected": "America/Mazatlan",
+   "corrected": "America/Bahia_Banderas",
+   "place": "Las Jarretaderas (20.6925, -105.27389), MX"
+  },
+  {
+   "source_record_id": "4068506",
+   "expected": "America/Chicago",
+   "corrected": "America/New_York",
+   "place": "Huguley (32.83457, -85.22966), US"
+  },
+  {
+   "source_record_id": "4071763",
+   "expected": "America/Kentucky/Louisville",
+   "corrected": "America/New_York",
+   "place": "Lanett (32.86874, -85.1905), US"
+  },
+  {
+   "source_record_id": "4090684",
+   "expected": "America/Kentucky/Louisville",
+   "corrected": "America/New_York",
+   "place": "Smiths Station (32.54014, -85.09855), US"
+  },
+  {
+   "source_record_id": "4095186",
+   "expected": "America/Kentucky/Louisville",
+   "corrected": "America/New_York",
+   "place": "Valley (32.81874, -85.17939), US"
+  },
+  {
+   "source_record_id": "4263848",
+   "expected": "America/Chicago",
+   "corrected": "America/Indiana/Indianapolis",
+   "place": "Rockport (39.88087, -87.2789), US"
+  },
+  {
+   "source_record_id": "4653999",
+   "expected": "America/Chicago",
+   "corrected": "America/New_York",
+   "place": "Rockwood (35.86563, -84.68494), US"
+  },
+  {
+   "source_record_id": "5554566",
+   "expected": "America/Juneau",
+   "corrected": "America/Sitka",
+   "place": "Klawock (55.55222, -133.09583), US"
+  },
+  {
+   "source_record_id": "5845544",
+   "expected": "America/Juneau",
+   "corrected": "America/Sitka",
+   "place": "Craig (55.47639, -133.14833), US"
+  },
+  {
+   "source_record_id": "5861117",
+   "expected": "America/Anchorage",
+   "corrected": "America/Nome",
+   "place": "Dutch Harbor (53.8898, -166.5422), US"
+  },
+  {
+   "source_record_id": "5877208",
+   "expected": "America/Anchorage",
+   "corrected": "America/Nome",
+   "place": "Unalaska (53.87413, -166.53408), US"
+  },
+  {
+   "source_record_id": "5879048",
+   "expected": "America/Anchorage",
+   "corrected": "America/Nome",
+   "place": "Akutan (54.1343, -165.77515), US"
+  },
+  {
+   "source_record_id": "5882953",
+   "expected": "America/Edmonton",
+   "corrected": "America/Inuvik",
+   "place": "Aklavik (68.21913, -135.01071), CA"
+  },
+  {
+   "source_record_id": "5886182",
+   "expected": "America/Halifax",
+   "corrected": "America/Glace_Bay",
+   "place": "Antigonish (45.61685, -61.99858), CA"
+  },
+  {
+   "source_record_id": "5889156",
+   "expected": "America/Halifax",
+   "corrected": "America/Glace_Bay",
+   "place": "Baddeck (46.10014, -60.74849), CA"
+  },
+  {
+   "source_record_id": "5895070",
+   "expected": "America/Regina",
+   "corrected": "America/Swift_Current",
+   "place": "Battleford (52.73486, -108.3091), CA"
+  },
+  {
+   "source_record_id": "5939449",
+   "expected": "America/Halifax",
+   "corrected": "America/Glace_Bay",
+   "place": "Dingwall (46.90014, -60.46516), CA"
+  },
+  {
+   "source_record_id": "5955898",
+   "expected": "America/Edmonton",
+   "corrected": "America/Inuvik",
+   "place": "Fort McPherson (67.43863, -134.88543), CA"
+  },
+  {
+   "source_record_id": "5983225",
+   "expected": "America/Halifax",
+   "corrected": "America/Glace_Bay",
+   "place": "Ingonish (46.70014, -60.36516), CA"
+  },
+  {
+   "source_record_id": "5983628",
+   "expected": "America/Halifax",
+   "corrected": "America/Glace_Bay",
+   "place": "Inverness (46.23344, -61.29852), CA"
+  },
+  {
+   "source_record_id": "5988173",
+   "expected": "America/Halifax",
+   "corrected": "America/Glace_Bay",
+   "place": "Judique (45.87627, -61.49117), CA"
+  },
+  {
+   "source_record_id": "6060800",
+   "expected": "America/Halifax",
+   "corrected": "America/Glace_Bay",
+   "place": "Louisdale (45.60686, -61.06636), CA"
+  },
+  {
+   "source_record_id": "6062534",
+   "expected": "America/Halifax",
+   "corrected": "America/Glace_Bay",
+   "place": "Mabou (46.06684, -61.38183), CA"
+  },
+  {
+   "source_record_id": "6084035",
+   "expected": "America/Halifax",
+   "corrected": "America/Glace_Bay",
+   "place": "Mulgrave (45.61246, -61.39119), CA"
+  },
+  {
+   "source_record_id": "6089404",
+   "expected": "America/Regina",
+   "corrected": "America/Swift_Current",
+   "place": "North Battleford (52.77972, -108.2967), CA"
+  },
+  {
+   "source_record_id": "6111867",
+   "expected": "America/Halifax",
+   "corrected": "America/Glace_Bay",
+   "place": "Port Hawkesbury (45.61652, -61.35636), CA"
+  },
+  {
+   "source_record_id": "6111874",
+   "expected": "America/Halifax",
+   "corrected": "America/Glace_Bay",
+   "place": "Port Hood (46.01684, -61.53185), CA"
+  },
+  {
+   "source_record_id": "6113466",
+   "expected": "America/Halifax",
+   "corrected": "America/Glace_Bay",
+   "place": "Princeville (45.76684, -61.29853), CA"
+  },
+  {
+   "source_record_id": "6157828",
+   "expected": "America/Halifax",
+   "corrected": "America/Glace_Bay",
+   "place": "St. Peter's (45.65659, -60.87421), CA"
+  },
+  {
+   "source_record_id": "6175609",
+   "expected": "America/Detroit",
+   "corrected": "America/Toronto",
+   "place": "Walpole Island (42.6152, -82.51398), CA"
+  },
+  {
+   "source_record_id": "6181367",
+   "expected": "America/Halifax",
+   "corrected": "America/Glace_Bay",
+   "place": "Whycocomagh (45.98344, -61.11521), CA"
+  },
+  {
+   "source_record_id": "6182001",
+   "expected": "America/Regina",
+   "corrected": "America/Swift_Current",
+   "place": "Wilkie (52.41683, -108.70142), CA"
+  },
+  {
+   "source_record_id": "6317915",
+   "expected": "America/Bahia",
+   "corrected": "America/Sao_Paulo",
+   "place": "Pedro Canário (-18.03028, -40.15056), BR"
+  },
+  {
+   "source_record_id": "6988111",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Asgat (49.51082, 96.79944), MN"
+  },
+  {
+   "source_record_id": "7306526",
+   "expected": "Pacific/Kwajalein",
+   "corrected": "Pacific/Majuro",
+   "place": "Jabat (7.75003, 168.97513), MH"
+  },
+  {
+   "source_record_id": "7627586",
+   "expected": "Pacific/Pohnpei",
+   "corrected": "Pacific/Chuuk",
+   "place": "Namoluk (5.924, 153.152), FM"
+  },
+  {
+   "source_record_id": "8015082",
+   "expected": "America/Hermosillo",
+   "corrected": "America/Mazatlan",
+   "place": "Punta Abreojos (26.71541, -113.57451), MX"
+  },
+  {
+   "source_record_id": "8858271",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Colonia Venustiano Carranza (28.63861, -100.55667), MX"
+  },
+  {
+   "source_record_id": "8862431",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Ampliación Río Bravo (25.94028, -98.1275), MX"
+  },
+  {
+   "source_record_id": "8862470",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Brecha 124 con Vía de FFCC (25.99139, -97.96889), MX"
+  },
+  {
+   "source_record_id": "9532420",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Estación Tuzantán (15.10547, -92.45076), MX"
+  },
+  {
+   "source_record_id": "9858283",
+   "expected": "Asia/Qostanay",
+   "corrected": "Asia/Qyzylorda",
+   "place": "Tyuratam (45.65005, 63.31163), KZ"
+  },
+  {
+   "source_record_id": "10276717",
+   "expected": "Asia/Pontianak",
+   "corrected": "Asia/Jakarta",
+   "place": "Sabang Mawang Barat (3.63306, 108.11333), ID"
+  },
+  {
+   "source_record_id": "11425680",
+   "expected": "America/Merida",
+   "corrected": "America/Mexico_City",
+   "place": "Parrilla II (17.87702, -92.92468), MX"
+  },
+  {
+   "source_record_id": "13118656",
+   "expected": "Asia/Pontianak",
+   "corrected": "Asia/Jakarta",
+   "place": "Ranai Kota (3.94005, 108.37771), ID"
+  },
+  {
+   "source_record_id": "13405902",
+   "expected": "Asia/Ho_Chi_Minh",
+   "corrected": "Asia/Pontianak",
+   "place": "Kota Sambas (1.36259, 109.30093), ID"
+  },
+  {
+   "source_record_id": "13535832",
+   "expected": "Asia/Pontianak",
+   "corrected": "Asia/Brunei",
+   "place": "Kampong Ayer (4.88265, 114.94487), BN"
+  },
+  {
+   "source_record_id": "13631316",
+   "expected": "Pacific/Chatham",
+   "corrected": "Pacific/Auckland",
+   "place": "Windsor Park (-36.73966, 174.7423), NZ"
+  },
+  {
+   "source_record_id": "13631317",
+   "expected": "Pacific/Chatham",
+   "corrected": "Pacific/Auckland",
+   "place": "Wairau Valley (-36.77235, 174.74107), NZ"
+  },
+  {
+   "source_record_id": "13645359",
+   "expected": "Europe/Kirov",
+   "corrected": "Europe/Moscow",
+   "place": "Narian-Mar (67.66782, 53.09792), RU"
+  }
+ ],
+ "left_as_source": [
+  {
+   "source_record_id": "18918",
+   "expected": "Asia/Famagusta",
+   "corrected": "Asia/Nicosia",
+   "place": "Protaras (35.0125, 34.05833), CY",
+   "reason": "Northern Cyprus: Asia/Famagusta and Asia/Nicosia follow a disputed line"
+  },
+  {
+   "source_record_id": "146033",
+   "expected": "Asia/Famagusta",
+   "corrected": "Asia/Nicosia",
+   "place": "Trachóni (34.65756, 32.96534), CY",
+   "reason": "Northern Cyprus: Asia/Famagusta and Asia/Nicosia follow a disputed line"
+  },
+  {
+   "source_record_id": "146154",
+   "expected": "Asia/Famagusta",
+   "corrected": "Asia/Nicosia",
+   "place": "Frénaros (35.04121, 33.92242), CY",
+   "reason": "Northern Cyprus: Asia/Famagusta and Asia/Nicosia follow a disputed line"
+  },
+  {
+   "source_record_id": "146189",
+   "expected": "Asia/Nicosia",
+   "corrected": "Asia/Famagusta",
+   "place": "Pérgamos (35.04167, 33.70833), CY",
+   "reason": "Northern Cyprus: Asia/Famagusta and Asia/Nicosia follow a disputed line"
+  },
+  {
+   "source_record_id": "146209",
+   "expected": "Asia/Famagusta",
+   "corrected": "Asia/Nicosia",
+   "place": "Paralímni (35.03945, 33.98181), CY",
+   "reason": "Northern Cyprus: Asia/Famagusta and Asia/Nicosia follow a disputed line"
+  },
+  {
+   "source_record_id": "146286",
+   "expected": "Asia/Nicosia",
+   "corrected": "Asia/Famagusta",
+   "place": "Mórfou (35.19869, 32.99338), CY",
+   "reason": "Northern Cyprus: Asia/Famagusta and Asia/Nicosia follow a disputed line"
+  },
+  {
+   "source_record_id": "146375",
+   "expected": "Asia/Famagusta",
+   "corrected": "Asia/Nicosia",
+   "place": "Liopétri (35.00885, 33.89256), CY",
+   "reason": "Northern Cyprus: Asia/Famagusta and Asia/Nicosia follow a disputed line"
+  },
+  {
+   "source_record_id": "146392",
+   "expected": "Asia/Nicosia",
+   "corrected": "Asia/Famagusta",
+   "place": "Léfka (35.11199, 32.84997), CY",
+   "reason": "Northern Cyprus: Asia/Famagusta and Asia/Nicosia follow a disputed line"
+  },
+  {
+   "source_record_id": "146661",
+   "expected": "Asia/Famagusta",
+   "corrected": "Asia/Nicosia",
+   "place": "Derýneia (35.06484, 33.96083), CY",
+   "reason": "Northern Cyprus: Asia/Famagusta and Asia/Nicosia follow a disputed line"
+  },
+  {
+   "source_record_id": "146748",
+   "expected": "Asia/Famagusta",
+   "corrected": "Asia/Nicosia",
+   "place": "Ayia Napa (34.98213, 34.00183), CY",
+   "reason": "Northern Cyprus: Asia/Famagusta and Asia/Nicosia follow a disputed line"
+  },
+  {
+   "source_record_id": "146761",
+   "expected": "Asia/Famagusta",
+   "corrected": "Asia/Nicosia",
+   "place": "Avgórou (35.03615, 33.83918), CY",
+   "reason": "Northern Cyprus: Asia/Famagusta and Asia/Nicosia follow a disputed line"
+  },
+  {
+   "source_record_id": "281285",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Alei Zahav (32.07213, 35.06327), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "281286",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Yiẕhar (32.16744, 35.23875), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "281303",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Yaqqir (32.14969, 35.11528), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "281711",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Suseya (31.39116, 35.11368), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "281872",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Shave Shomeron (32.26372, 35.18482), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "282027",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Sal‘it (32.24295, 35.05272), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "282154",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Rosh Ẕurim (31.66796, 35.12634), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "282353",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Qedumim (32.21207, 35.1575), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "282354",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Qedar (31.75406, 35.31058), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "282431",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Qarne Shomeron (32.16667, 35.08333), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "282482",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Pesagot (31.89904, 35.22417), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "282485",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Pedu’el (32.06241, 35.05321), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "282489",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Ofra (31.95633, 35.26008), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "282536",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Neve Daniel (31.67676, 35.14375), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "282595",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Bat A'in (31.65756, 35.10345), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "282772",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Mevo H̱oron (31.84923, 35.0359), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "282988",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Ma‘ale Mikhmas (31.87972, 35.3054), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "282991",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Ma‘ale Efrayim (32.07142, 35.39868), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "282993",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Ma‘ale Adummim (31.7774, 35.29875), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "283046",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Kokhav Ya‘aqov (31.88102, 35.24384), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "283313",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Kefar ‘Eẕyon (31.65, 35.11667), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "283314",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Kefar Adummim (31.82614, 35.33558), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "283324",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Karme Ẕur (31.6098, 35.10167), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "283610",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "‘Immanu‘el (32.16075, 35.13611), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "283681",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "H̱innanit (32.47999, 35.17357), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "283743",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Har Gillo (31.72119, 35.1724), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "283805",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "H̱allamish (32.004, 35.12372), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "283978",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "‘Ez Efrayim (32.11985, 35.04705), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "283986",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Elqana (32.11012, 35.03233), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "283991",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Efrata (31.65305, 35.15013), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "284279",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Bet Arye (32.03333, 35.05), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "284375",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Battir (31.7, 35.11667), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "284408",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Barqan (32.10914, 35.112), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "285026",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "‘Almon (31.83193, 35.29687), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "285101",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Alfei Menasheh (32.17265, 35.01179), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "611847",
+   "expected": "Europe/Moscow",
+   "corrected": "Asia/Tbilisi",
+   "place": "Sokhumi (43.00697, 40.9893), GE",
+   "reason": "Abkhazia and South Ossetia: disputed territories"
+  },
+  {
+   "source_record_id": "701419",
+   "expected": "Europe/Kyiv",
+   "corrected": "Europe/Simferopol",
+   "place": "Mekenziyevi Hory (44.65279, 33.59137), UA",
+   "reason": "Crimea: a disputed territory"
+  },
+  {
+   "source_record_id": "712796",
+   "expected": "Europe/Kyiv",
+   "corrected": "Europe/Simferopol",
+   "place": "Barteniyivka (44.63629, 33.54797), UA",
+   "reason": "Crimea: a disputed territory"
+  },
+  {
+   "source_record_id": "1215810",
+   "expected": "Asia/Samarkand",
+   "corrected": "Asia/Tashkent",
+   "place": "Usmat Shaharchasi (39.73982, 67.6479), UZ",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "1280244",
+   "expected": "Asia/Shanghai",
+   "corrected": "Asia/Urumqi",
+   "place": "Qilanbulak (38.386, 90.15696), CN",
+   "reason": "Xinjiang keeps both Asia/Urumqi and Beijing time; the producer's hand table settles rows by their neighbours"
+  },
+  {
+   "source_record_id": "1280625",
+   "expected": "Asia/Shanghai",
+   "corrected": "Asia/Urumqi",
+   "place": "Mangnai Zhen (38.38554, 90.15553), CN",
+   "reason": "Xinjiang keeps both Asia/Urumqi and Beijing time; the producer's hand table settles rows by their neighbours"
+  },
+  {
+   "source_record_id": "1512355",
+   "expected": "Asia/Samarkand",
+   "corrected": "Asia/Tashkent",
+   "place": "Bog'don (40.41517, 67.17946), UZ",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "1514025",
+   "expected": "Asia/Samarkand",
+   "corrected": "Asia/Tashkent",
+   "place": "Eski Forish (40.55425, 66.90063), UZ",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "1515662",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Hungiy (48.51672, 94.29428), MN",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "1515979",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Dzüyl (46.30686, 93.90409), MN",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "1515996",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Dzür (49.65796, 95.79323), MN",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "1516099",
+   "expected": "Asia/Hovd",
+   "corrected": "Asia/Ulaanbaatar",
+   "place": "Darvi (46.45, 94.11667), MN",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "1565760",
+   "expected": "Asia/Bangkok",
+   "corrected": "Asia/Ho_Chi_Minh",
+   "place": "Ái Tử (16.76886, 107.16504), VN",
+   "reason": "Vietnam's 1954-1976 line is applied by the producer's own north/south table"
+  },
+  {
+   "source_record_id": "1569850",
+   "expected": "Asia/Bangkok",
+   "corrected": "Asia/Ho_Chi_Minh",
+   "place": "Phú Vang (16.43911, 107.71438), VN",
+   "reason": "Vietnam's 1954-1976 line is applied by the producer's own north/south table"
+  },
+  {
+   "source_record_id": "1570863",
+   "expected": "Asia/Bangkok",
+   "corrected": "Asia/Ho_Chi_Minh",
+   "place": "Phong Điền (16.58321, 107.36438), VN",
+   "reason": "Vietnam's 1954-1976 line is applied by the producer's own north/south table"
+  },
+  {
+   "source_record_id": "1579363",
+   "expected": "Asia/Bangkok",
+   "corrected": "Asia/Ho_Chi_Minh",
+   "place": "Khe Sanh (16.62825, 106.73884), VN",
+   "reason": "Vietnam's 1954-1976 line is applied by the producer's own north/south table"
+  },
+  {
+   "source_record_id": "1580092",
+   "expected": "Asia/Bangkok",
+   "corrected": "Asia/Ho_Chi_Minh",
+   "place": "Hương Trà (16.52539, 107.4755), VN",
+   "reason": "Vietnam's 1954-1976 line is applied by the producer's own north/south table"
+  },
+  {
+   "source_record_id": "1580240",
+   "expected": "Asia/Bangkok",
+   "corrected": "Asia/Ho_Chi_Minh",
+   "place": "Huế (16.4619, 107.59546), VN",
+   "reason": "Vietnam's 1954-1976 line is applied by the producer's own north/south table"
+  },
+  {
+   "source_record_id": "1580262",
+   "expected": "Asia/Bangkok",
+   "corrected": "Asia/Ho_Chi_Minh",
+   "place": "Hồ Xá (17.06836, 107.0052), VN",
+   "reason": "Vietnam's 1954-1976 line is applied by the producer's own north/south table"
+  },
+  {
+   "source_record_id": "1581317",
+   "expected": "Asia/Bangkok",
+   "corrected": "Asia/Ho_Chi_Minh",
+   "place": "Hải Lăng (16.69347, 107.25124), VN",
+   "reason": "Vietnam's 1954-1976 line is applied by the producer's own north/south table"
+  },
+  {
+   "source_record_id": "1581673",
+   "expected": "Asia/Bangkok",
+   "corrected": "Asia/Ho_Chi_Minh",
+   "place": "Gio Linh (16.9248, 107.08438), VN",
+   "reason": "Vietnam's 1954-1976 line is applied by the producer's own north/south table"
+  },
+  {
+   "source_record_id": "1582926",
+   "expected": "Asia/Bangkok",
+   "corrected": "Asia/Ho_Chi_Minh",
+   "place": "Ðông Hà (16.81625, 107.10031), VN",
+   "reason": "Vietnam's 1954-1976 line is applied by the producer's own north/south table"
+  },
+  {
+   "source_record_id": "1586384",
+   "expected": "Asia/Bangkok",
+   "corrected": "Asia/Ho_Chi_Minh",
+   "place": "Cam Lộ (16.80797, 106.99405), VN",
+   "reason": "Vietnam's 1954-1976 line is applied by the producer's own north/south table"
+  },
+  {
+   "source_record_id": "1594548",
+   "expected": "Asia/Bangkok",
+   "corrected": "Asia/Ho_Chi_Minh",
+   "place": "A Lưới (16.27228, 107.23385), VN",
+   "reason": "Vietnam's 1954-1976 line is applied by the producer's own north/south table"
+  },
+  {
+   "source_record_id": "1790891",
+   "expected": "Asia/Urumqi",
+   "corrected": "Asia/Shanghai",
+   "place": "Wuyang (21.34766, 110.68829), CN",
+   "reason": "Xinjiang keeps both Asia/Urumqi and Beijing time; the producer's hand table settles rows by their neighbours"
+  },
+  {
+   "source_record_id": "1915237",
+   "expected": "Asia/Urumqi",
+   "corrected": "Asia/Shanghai",
+   "place": "Tangwei (21.39545, 110.72832), CN",
+   "reason": "Xinjiang keeps both Asia/Urumqi and Beijing time; the producer's hand table settles rows by their neighbours"
+  },
+  {
+   "source_record_id": "2013918",
+   "expected": "Asia/Vladivostok",
+   "corrected": "Asia/Khandyga",
+   "place": "Ust-Maya (60.41553, 134.54405), RU",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "2016305",
+   "expected": "Asia/Vladivostok",
+   "corrected": "Asia/Khandyga",
+   "place": "Solnechnyy (60.30217, 137.55563), RU",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "2022773",
+   "expected": "Asia/Vladivostok",
+   "corrected": "Asia/Khandyga",
+   "place": "Khandyga (62.65302, 135.56649), RU",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "2024626",
+   "expected": "Asia/Vladivostok",
+   "corrected": "Asia/Khandyga",
+   "place": "Dzhebariki-Khaya (62.21084, 135.84876), RU",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "2119283",
+   "expected": "Asia/Magadan",
+   "corrected": "Asia/Srednekolymsk",
+   "place": "Zyryanka (65.73539, 150.89387), RU",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "2121025",
+   "expected": "Asia/Magadan",
+   "corrected": "Asia/Srednekolymsk",
+   "place": "Srednekolymsk (67.45588, 153.70399), RU",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "2121385",
+   "expected": "Asia/Magadan",
+   "corrected": "Asia/Srednekolymsk",
+   "place": "Kasivobara (50.67328, 156.12371), RU",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "2124598",
+   "expected": "Asia/Magadan",
+   "corrected": "Asia/Srednekolymsk",
+   "place": "Khonuu (66.45545, 143.22294), RU",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "2126123",
+   "expected": "Asia/Magadan",
+   "corrected": "Asia/Srednekolymsk",
+   "place": "Chokurdakh (70.61828, 147.89693), RU",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "2126199",
+   "expected": "Asia/Magadan",
+   "corrected": "Asia/Srednekolymsk",
+   "place": "Cherskiy (68.75322, 161.33099), RU",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "2126785",
+   "expected": "Asia/Magadan",
+   "corrected": "Asia/Srednekolymsk",
+   "place": "Belaya Gora (68.53823, 146.1852), RU",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "2521029",
+   "expected": "Europe/Madrid",
+   "corrected": "Africa/Ceuta",
+   "place": "Benzú (35.91653, -5.37293), ES",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "3389462",
+   "expected": "America/Bahia",
+   "corrected": "America/Recife",
+   "place": "Santa Maria da Boa Vista (-8.80778, -39.82556), BR",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "3393929",
+   "expected": "America/Santarem",
+   "corrected": "America/Manaus",
+   "place": "Nhamundá (-2.18611, -56.71306), BR",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "3453300",
+   "expected": "America/Bahia",
+   "corrected": "America/Maceio",
+   "place": "Poço Verde (-10.70833, -38.18333), BR",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "3457495",
+   "expected": "America/Bahia",
+   "corrected": "America/Sao_Paulo",
+   "place": "Mata Verde (-15.68639, -40.74111), BR",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "3465999",
+   "expected": "America/Sao_Paulo",
+   "corrected": "America/Cuiaba",
+   "place": "Cocalinho (-14.39722, -50.99583), BR",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "3471041",
+   "expected": "America/Cuiaba",
+   "corrected": "America/Sao_Paulo",
+   "place": "Baliza (-16.19611, -52.545), BR",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "3874926",
+   "expected": "America/Santiago",
+   "corrected": "America/Punta_Arenas",
+   "place": "Puerto Williams (-54.93355, -67.60963), CL",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "3985572",
+   "expected": "America/Mazatlan",
+   "corrected": "America/Bahia_Banderas",
+   "place": "Lo de Marcos (20.95231, -105.3549), MX",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "3985912",
+   "expected": "America/Mazatlan",
+   "corrected": "America/Bahia_Banderas",
+   "place": "San Juan de Abajo (20.81501, -105.19303), MX",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "3994534",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Ocampo (27.31477, -102.3966), MX",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "3996682",
+   "expected": "America/Chihuahua",
+   "corrected": "America/Ojinaga",
+   "place": "Manuel Benavides (29.10722, -103.90639), MX",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "4012672",
+   "expected": "America/Chihuahua",
+   "corrected": "America/Ojinaga",
+   "place": "Santiago de Coyame (29.46196, -105.0947), MX",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "4029304",
+   "expected": "America/Mazatlan",
+   "corrected": "America/Bahia_Banderas",
+   "place": "El Colomo (20.86962, -105.15597), MX",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "4266307",
+   "expected": "America/Chicago",
+   "corrected": "America/Indiana/Vincennes",
+   "place": "Vincennes (38.67727, -87.52863), US",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "5710035",
+   "expected": "America/Los_Angeles",
+   "corrected": "America/Denver",
+   "place": "West Wendover (40.7391, -114.07335), US",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "5764864",
+   "expected": "America/Chicago",
+   "corrected": "America/Denver",
+   "place": "Fort Pierre (44.35359, -100.37374), US",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "5899982",
+   "expected": "America/Regina",
+   "corrected": "America/Swift_Current",
+   "place": "Biggar (52.05978, -107.98844), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "5900745",
+   "expected": "America/Regina",
+   "corrected": "America/Swift_Current",
+   "place": "Big River (53.83341, -107.01783), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "5937538",
+   "expected": "America/Regina",
+   "corrected": "America/Swift_Current",
+   "place": "Delisle (51.9236, -107.13518), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "5945364",
+   "expected": "America/Regina",
+   "corrected": "America/Swift_Current",
+   "place": "Eastend (49.51674, -108.81813), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "5949601",
+   "expected": "America/Regina",
+   "corrected": "America/Swift_Current",
+   "place": "Eston (51.1501, -108.75144), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "5955840",
+   "expected": "America/Edmonton",
+   "corrected": "America/Inuvik",
+   "place": "Fort Good Hope (66.25698, -128.6374), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "5955887",
+   "expected": "America/Edmonton",
+   "corrected": "America/Inuvik",
+   "place": "Fort Liard (60.23947, -123.47371), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "5955953",
+   "expected": "America/Edmonton",
+   "corrected": "America/Inuvik",
+   "place": "Fort Simpson (61.86269, -121.35159), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "5967988",
+   "expected": "America/Regina",
+   "corrected": "America/Swift_Current",
+   "place": "Gull Lake (50.10007, -108.48471), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "5974093",
+   "expected": "America/Regina",
+   "corrected": "America/Swift_Current",
+   "place": "Herbert (50.43337, -107.21799), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "5991284",
+   "expected": "America/Regina",
+   "corrected": "America/Swift_Current",
+   "place": "Kerrobert (51.91682, -109.13479), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "5992154",
+   "expected": "America/Regina",
+   "corrected": "America/Swift_Current",
+   "place": "Kindersley (51.46681, -109.16818), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "6063429",
+   "expected": "America/Regina",
+   "corrected": "America/Swift_Current",
+   "place": "Macklin (52.33344, -109.93484), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "6065592",
+   "expected": "America/Regina",
+   "corrected": "America/Swift_Current",
+   "place": "Maple Creek (49.90628, -109.48094), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "6071421",
+   "expected": "America/Regina",
+   "corrected": "America/Swift_Current",
+   "place": "Meadow Lake (54.13348, -108.43471), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "6085532",
+   "expected": "America/Edmonton",
+   "corrected": "America/Inuvik",
+   "place": "Nahanni Butte (61.03346, -123.38639), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "6089245",
+   "expected": "America/Edmonton",
+   "corrected": "America/Inuvik",
+   "place": "Norman Wells (65.28201, -126.8329), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "6095416",
+   "expected": "America/Regina",
+   "corrected": "America/Swift_Current",
+   "place": "Outlook (51.48803, -107.05644), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "6127749",
+   "expected": "America/Regina",
+   "corrected": "America/Swift_Current",
+   "place": "Rosetown (51.5501, -108.00136), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "6145425",
+   "expected": "America/Regina",
+   "corrected": "America/Swift_Current",
+   "place": "Shaunavon (49.65005, -108.4181), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "6158673",
+   "expected": "America/Regina",
+   "corrected": "America/Swift_Current",
+   "place": "St. Walburg (53.635, -109.203), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "6170031",
+   "expected": "America/Edmonton",
+   "corrected": "America/Inuvik",
+   "place": "Tuktoyaktuk (69.44472, -133.03422), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "6172009",
+   "expected": "America/Regina",
+   "corrected": "America/Swift_Current",
+   "place": "Unity (52.45014, -109.16816), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "6317136",
+   "expected": "America/Recife",
+   "corrected": "America/Noronha",
+   "place": "Fernando de Noronha (Distrito Estadual) (-3.84028, -32.41083), BR",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "6317413",
+   "expected": "America/Bahia",
+   "corrected": "America/Sao_Paulo",
+   "place": "Juvenília (-14.2625, -44.16028), BR",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "6362987",
+   "expected": "Europe/Madrid",
+   "corrected": "Africa/Ceuta",
+   "place": "Ceuta (35.88919, -5.32042), ES",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "6844287",
+   "expected": "Asia/Urumqi",
+   "corrected": "Asia/Shanghai",
+   "place": "Haibin (21.39876, 110.78328), CN",
+   "reason": "Xinjiang keeps both Asia/Urumqi and Beijing time; the producer's hand table settles rows by their neighbours"
+  },
+  {
+   "source_record_id": "6930488",
+   "expected": "Asia/Vladivostok",
+   "corrected": "Asia/Khandyga",
+   "place": "Nezhdaninskoe (62.50523, 139.05104), RU",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "6943714",
+   "expected": "America/Edmonton",
+   "corrected": "America/Inuvik",
+   "place": "Deline (65.19844, -123.40565), CA",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "7261646",
+   "expected": "America/Phoenix",
+   "corrected": "America/Denver",
+   "place": "LeChee (36.86211, -111.44063), US",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "8259951",
+   "expected": "Europe/Madrid",
+   "corrected": "Africa/Ceuta",
+   "place": "Principe (35.87924, -5.34695), ES",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "8347767",
+   "expected": "Australia/Brisbane",
+   "corrected": "Australia/Lindeman",
+   "place": "Whitsundays (-20.11943, 148.91325), AU",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "8521718",
+   "expected": "Asia/Shanghai",
+   "corrected": "Asia/Urumqi",
+   "place": "Bole (44.89334, 82.06993), CN",
+   "reason": "Xinjiang keeps both Asia/Urumqi and Beijing time; the producer's hand table settles rows by their neighbours"
+  },
+  {
+   "source_record_id": "8521719",
+   "expected": "Asia/Shanghai",
+   "corrected": "Asia/Urumqi",
+   "place": "Alashankou (45.17018, 82.56981), CN",
+   "reason": "Xinjiang keeps both Asia/Urumqi and Beijing time; the producer's hand table settles rows by their neighbours"
+  },
+  {
+   "source_record_id": "8550587",
+   "expected": "Asia/Urumqi",
+   "corrected": "Asia/Shanghai",
+   "place": "Duobagou (39.75181, 93.48198), CN",
+   "reason": "Xinjiang keeps both Asia/Urumqi and Beijing time; the producer's hand table settles rows by their neighbours"
+  },
+  {
+   "source_record_id": "8558517",
+   "expected": "Asia/Urumqi",
+   "corrected": "Asia/Shanghai",
+   "place": "Meilu (21.43412, 110.77555), CN",
+   "reason": "Xinjiang keeps both Asia/Urumqi and Beijing time; the producer's hand table settles rows by their neighbours"
+  },
+  {
+   "source_record_id": "8558983",
+   "expected": "Asia/Yakutsk",
+   "corrected": "Asia/Shanghai",
+   "place": "Kunheda Woerzu Manzu (49.88477, 127.5032), CN",
+   "reason": "Xinjiang keeps both Asia/Urumqi and Beijing time; the producer's hand table settles rows by their neighbours"
+  },
+  {
+   "source_record_id": "8594765",
+   "expected": "Asia/Yakutsk",
+   "corrected": "Asia/Shanghai",
+   "place": "Shangmachang (50.37191, 127.32717), CN",
+   "reason": "Xinjiang keeps both Asia/Urumqi and Beijing time; the producer's hand table settles rows by their neighbours"
+  },
+  {
+   "source_record_id": "8647224",
+   "expected": "Asia/Makassar",
+   "corrected": "Asia/Pontianak",
+   "place": "Jenamas (-2.4464, 114.908), ID",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "8650753",
+   "expected": "Asia/Bangkok",
+   "corrected": "Asia/Ho_Chi_Minh",
+   "place": "Krông Klang (16.68906, 106.8874), VN",
+   "reason": "Vietnam's 1954-1976 line is applied by the producer's own north/south table"
+  },
+  {
+   "source_record_id": "8656112",
+   "expected": "Asia/Bangkok",
+   "corrected": "Asia/Ho_Chi_Minh",
+   "place": "Khe Tre (16.1691, 107.71793), VN",
+   "reason": "Vietnam's 1954-1976 line is applied by the producer's own north/south table"
+  },
+  {
+   "source_record_id": "8656203",
+   "expected": "Asia/Bangkok",
+   "corrected": "Asia/Ho_Chi_Minh",
+   "place": "Sịa (16.57452, 107.51066), VN",
+   "reason": "Vietnam's 1954-1976 line is applied by the producer's own north/south table"
+  },
+  {
+   "source_record_id": "8656219",
+   "expected": "Asia/Bangkok",
+   "corrected": "Asia/Ho_Chi_Minh",
+   "place": "Hương Nguyên (16.23873, 107.44103), VN",
+   "reason": "Vietnam's 1954-1976 line is applied by the producer's own north/south table"
+  },
+  {
+   "source_record_id": "8656223",
+   "expected": "Asia/Bangkok",
+   "corrected": "Asia/Ho_Chi_Minh",
+   "place": "A Roàng Hai (16.11247, 107.39699), VN",
+   "reason": "Vietnam's 1954-1976 line is applied by the producer's own north/south table"
+  },
+  {
+   "source_record_id": "8858502",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Laguna del Rey (Químicas del Rey) (27.03056, -103.36667), MX",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "8858928",
+   "expected": "America/Monterrey",
+   "corrected": "America/Matamoros",
+   "place": "Chula Vista (27.04083, -103.36611), MX",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "9887822",
+   "expected": "Asia/Hebron",
+   "corrected": "Asia/Jerusalem",
+   "place": "Merav (32.45285, 35.42152), IL",
+   "reason": "Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "11979628",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Alon shvut (31.65483, 35.12587), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "11979645",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Bruchin (32.08191, 35.08994), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "11979646",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Geva Binyamin (31.85031, 35.27405), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "11979652",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Shaked (32.4735, 35.16877), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "11979770",
+   "expected": "Asia/Jerusalem",
+   "corrected": "Asia/Hebron",
+   "place": "Otniel (31.43932, 35.02859), PS",
+   "reason": "West Bank and Gaza: Asia/Hebron and Asia/Jerusalem follow who administers a place, which the product does not decide"
+  },
+  {
+   "source_record_id": "12060431",
+   "expected": "Europe/Athens",
+   "corrected": "Asia/Nicosia",
+   "place": "Tsada - Tremithousa - Tala (Borders) (34.8343, 32.45363), CY",
+   "reason": "Northern Cyprus: Asia/Famagusta and Asia/Nicosia follow a disputed line"
+  },
+  {
+   "source_record_id": "12184638",
+   "expected": "Asia/Pontianak",
+   "corrected": "Asia/Jakarta",
+   "place": "Raas (-5.57102, 114.41414), ID",
+   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
+  },
+  {
+   "source_record_id": "13645465",
+   "expected": "Africa/Casablanca",
+   "corrected": "Africa/El_Aaiun",
+   "place": "Bir Ghandouz (22.05318, -16.74836), EH",
+   "reason": "Western Sahara: a disputed territory"
+  }
+ ]
+}

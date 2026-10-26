@@ -100,7 +100,8 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 const NUMERIC_CELL = /^[+\-−]?\d+(?:\.\d+)?(?:°\d+′\d+(?:\.\d+)?″)?$/;
 const NEUTRAL_CELL = (text) => text === "" || text === "—";
 // 時刻（「1990-05-15 05:18:34 UTC+08:00」）與度數範圍（「26°–30°」）不靠右，但字面與數字欄相同。
-const NUMERIC_TEXT_CELL = /^(?:\d{4}-\d\d-\d\d[ T]\d\d:\d\d(?::\d\d(?:\.\d+)?)?Z?(?: UTC[+-]\d\d:\d\d(?::\d\d)?)?|\d+°(?:\d\d′)?\s*[–-]\s*\d+°(?:\d\d′)?)$/;
+// 時刻（同欄同一天只印時分秒的格也算）與度數範圍。
+const NUMERIC_TEXT_CELL = /^(?:(?:\d{4}-\d\d-\d\d[ T])?\d\d:\d\d(?::\d\d(?:\.\d+)?)?Z?(?: UTC[+-]\d\d:\d\d(?::\d\d)?)?|\d+°(?:\d\d′)?\s*[–-]\s*\d+°(?:\d\d′)?)$/;
 
 function numericColumns(model) {
   return model.columns.map((_column, index) => {
@@ -255,65 +256,39 @@ function addListBreaks(cell) {
   });
 }
 
-// 畫面上的排字（只給畫面：「複製本區」與每一種匯出讀 view-model 原字，一字不改）。
-// 時刻：ISO 8601 的「T…Z」是給程式的寫法，畫面寫成「1987-11-22 06:39:26」，零毫秒不印；
-// 同一欄上一格已寫過同一天時只印時刻（「15:43:45」），日期換了才再寫。時間尺度寫在欄頭。
-const ISO_INSTANT = /(\d{4}-\d\d-\d\d)T(\d\d:\d\d(?::\d\d)?)(?:\.0+(?=Z))?(\.\d+)?Z/g;
-const DATED_CELL = /^(\d{4}-\d\d-\d\d) (?=\d\d:\d\d)/;
-// 欄頭與表題的尺度標籤「世界時（UT1（舊協調世界時期間））」：括號裡再套括號難讀，寫成「世界時 UT1（舊協調世界時期間）」。
-const NESTED_SCALE = /（([^（）]*UT1[^（）]*（[^（）]*）)）/g;
-function screenHeading(text) {
-  return typeof text === "string" ? text.replace(NESTED_SCALE, " $1") : text;
-}
-function screenInstants(text) {
-  return text.replace(ISO_INSTANT, "$1 $2$3").replace(NESTED_SCALE, " $1");
-}
-
-// 「本次請求的選項」：選項鍵與閉集值在畫面上寫表單上的中文名；沒有中文名的（數字、null）照原字。
-// 匯出與複製仍是代碼，拿去重現同一次計算。
-function requestedOptionText(columnIndex, row) {
-  const option = Catalogue.BY_KEY[row[0]];
-  const raw = String(row[columnIndex] == null ? "" : row[columnIndex]);
-  if (!option) return raw;
-  if (columnIndex === 1 && raw === "null（未選定）") return "未選定";
-  if (columnIndex === 0) return option.label_zh || raw;
-  if (option.type === "boolean" && (raw === "true" || raw === "false")) return raw === "true" ? "是" : "否";
-  if (option.type === "choice") {
-    const value = (option.values || []).find((entry) => entry.value === raw);
-    if (value && value.label_zh) return value.label_zh;
-    if (row[0] === "house_system") {
-      const zh = Labels.ownLabel(Labels.VOCABULARIES.house_system, raw);
-      if (zh) return zh;
-    }
-  }
-  return raw;
+// 日期（1990-05-15）是一個數，不在連字號斷行：每一格裡的日期包成不換行的 span，字一個不改（textContent 相同）。
+// 驗算軌跡的長串也一樣，換行點仍由 addListBreaks 給。
+const WHOLE_DATE = /(\d{4}-\d\d-\d\d)/;
+function keepDatesWhole(cell) {
+  const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+  const texts = [];
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) texts.push(node);
+  texts.forEach((text) => {
+    const parts = text.data.split(WHOLE_DATE);
+    if (parts.length < 2) return;
+    const fragment = document.createDocumentFragment();
+    parts.forEach((part, index) => {
+      if (index % 2 === 1) fragment.append(make("span", "date-whole", part));
+      else if (part) fragment.append(part);
+    });
+    text.replaceWith(fragment);
+  });
 }
 
-/** 畫面寫法與 view-model 原字不同時，原字記在 data-canonical：畫面 ⊆ 匯出的對照讀這一份。 */
+// 時刻、欄頭的時間尺度與「本次請求的選項」的排字在 view-model（displayFormat），畫面與匯出讀同一份字。
+// 同一欄上一格已寫過同一天時，view-model 只印時刻；這種欄的格長短不一，靠右排時分秒才上下對齊。
+const DATED_CELL = /^\d{4}-\d\d-\d\d \d\d:\d\d/;
+const CLOCK_CELL = /^\d\d:\d\d(?::\d\d)?(?:\.\d+)?$/;
+function elidedDateColumns(model) {
+  return model.columns.map((_column, index) => index > 0
+    && model.rows.some((row) => typeof row[index] === "string" && CLOCK_CELL.test(row[index]))
+    && model.rows.some((row) => typeof row[index] === "string" && DATED_CELL.test(row[index])));
+}
+
+/** 畫面上的數字寫法與 view-model 原字不同時，原字記在 data-canonical：畫面 ⊆ 匯出的對照讀這一份。 */
 function markCanonical(node, raw) {
   const original = String(raw == null ? "" : raw);
-  if (screenHeading(original) !== original || node.textContent !== Labels.displayNumber(original)) {
-    node.dataset.canonical = original;
-  }
-}
-
-/** 一張表畫面上的字：與 model.rows 同形，只換寫法（見上）。 */
-function screenRows(model, sectionId) {
-  const rows = model.rows.map((row) => row.map((cell, index) => {
-    if (sectionId === "requested_options" && index < 2) return requestedOptionText(index, row);
-    return cell == null ? cell : screenInstants(String(cell));
-  }));
-  model.columns.forEach((_column, index) => {
-    if (index === 0) return;
-    let previous = null;
-    rows.forEach((row) => {
-      const match = typeof row[index] === "string" ? DATED_CELL.exec(row[index]) : null;
-      if (!match) { previous = null; return; }
-      if (match[1] === previous) row[index] = row[index].slice(match[0].length);
-      previous = match[1];
-    });
-  });
-  return rows;
+  if (node.textContent !== Labels.displayNumber(original)) node.dataset.canonical = original;
 }
 
 function materializeTable(model, sectionId, sectionTitle) {
@@ -333,28 +308,27 @@ function materializeTable(model, sectionId, sectionTitle) {
   }
   if (model.title) {
     const caption = document.createElement("caption");
-    caption.textContent = screenHeading(model.title);
-    markCanonical(caption, model.title);
+    caption.textContent = model.title;
     table.appendChild(caption);
   }
   // 相位方格的格內是相位與度數的組合，不是單一數值，維持置中；欄頭是天體名稱。
   const isGrid = model.variant === "aspect_grid";
   const numeric = isGrid ? model.columns.map(() => false) : numericColumns(model);
+  const clockColumns = isGrid ? model.columns.map(() => false) : elidedDateColumns(model);
   const thead = document.createElement("thead");
   const headRow = document.createElement("tr");
   model.columns.forEach((column, index) => {
     const th = document.createElement("th");
     th.scope = "col";
     if (numeric[index]) th.className = "num";
+    if (clockColumns[index]) th.classList.add("num-time");
     const columnKey = isGrid && model.points && Array.isArray(model.points.columns) ? model.points.columns[index] : null;
-    fillCell(th, screenHeading(column), isGrid && index > 0, columnKey ? [columnKey] : null);
-    markCanonical(th, column);
+    fillCell(th, column, isGrid && index > 0, columnKey ? [columnKey] : null);
     headRow.appendChild(th);
   });
   thead.appendChild(headRow);
   table.appendChild(thead);
   const tbody = document.createElement("tbody");
-  const shown = isGrid ? model.rows : screenRows(model, sectionId);
   model.rows.forEach((row, rowIndex) => {
     const tr = document.createElement("tr");
     const rowKeys = model.points && Array.isArray(model.points.rows) ? model.points.rows[rowIndex] : null;
@@ -365,6 +339,7 @@ function materializeTable(model, sectionId, sectionTitle) {
       if (index === 0) node.scope = "row";
       if (numeric[index]) node.className = "num";
       else if (index > 0 && NUMERIC_TEXT_CELL.test(String(cell == null ? "" : cell).trim())) node.className = "num-text";
+      if (clockColumns[index]) node.classList.add("num-time");
       // 格內連結（十二宮表的宮名連到方法頁宮義對照表的那一列）：文字照原字，包在連結裡。
       const href = index > 0 && model.links && model.links.column === index && Array.isArray(model.links.rows)
         ? model.links.rows[rowIndex] : null;
@@ -389,8 +364,7 @@ function materializeTable(model, sectionId, sectionTitle) {
         host.append(make("span", "visually-hidden", String(cell)));
         node.classList.add("asp-cell", "asp-aversion");
       } else {
-        const text = shown[rowIndex][index];
-        fillCell(host, String(text == null ? "" : text), index === 0, index === 0 && Array.isArray(rowKeys) ? rowKeys : null);
+        fillCell(host, String(cell == null ? "" : cell), index === 0, index === 0 && Array.isArray(rowKeys) ? rowKeys : null);
         markCanonical(node, cell);
       }
       tr.appendChild(node);
@@ -398,6 +372,7 @@ function materializeTable(model, sectionId, sectionTitle) {
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
+  table.querySelectorAll("th, td").forEach(keepDatesWhole);
   if (BREAKABLE_SECTIONS.has(sectionId)) table.querySelectorAll("td").forEach(addListBreaks);
   linkTableCells(table, model, sectionId);
   wrap.appendChild(table);

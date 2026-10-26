@@ -64,7 +64,8 @@ const INFORMATIONAL_NOTICES = new Set([
 ]);
 const informational = (warning) => INFORMATIONAL_NOTICES.has(warning.code);
 // 警告文字裡提到的本站文章（後端 params.article_path，view tree 帶成 article_path）在畫面上做成連結；只接受本站
-// /zh-TW/ 下的路徑，文字照後端原句，匯出仍是純文字。
+// /zh-TW/ 下的路徑，匯出仍是後端原句的純文字。句子寫成「〈篇名〉（路徑）」時，畫面以篇名作連結文字、
+// 不再印出路徑（連結文字是一串網址時，讀者與螢幕閱讀器都看不出要去哪裡）；其他寫法就把路徑本身做成連結。
 const SITE_ARTICLE_PATH = /^\/zh-TW\/[a-z0-9/-]+$/;
 function appendWarningMessage(host, warning) {
   const message = String(warning.message);
@@ -76,6 +77,13 @@ function appendWarningMessage(host, warning) {
   }
   const link = document.createElement("a");
   link.href = path;
+  const titled = message.slice(0, at).match(/〈([^〈〉]+)〉（$/);
+  if (titled && message.startsWith("）", at + path.length)) {
+    const start = at - titled[0].length;
+    link.textContent = `〈${titled[1]}〉`;
+    host.append(message.slice(0, start), link, message.slice(at + path.length + 1));
+    return;
+  }
   link.textContent = path;
   host.append(message.slice(0, at), link, message.slice(at + path.length));
 }
@@ -326,6 +334,10 @@ function timeReceipt(sectionNode) {
 function unfoldTarget(target) {
   const chapter = chapterOf(target);
   if (chapter && !chapterVisible(chapter)) showChapter(chapter);
+  // 這一章的區塊全部排版（calculate.css 的 content-visibility 對它不再生效）：未排版的區塊只有估計
+  // 高度，捲到途中它們才排版、高度一變，目標就被推離章節列底下。只排這一章，其他章照樣延後。
+  const chapterNode = chapter ? chapterNodes.get(chapter) : null;
+  if (chapterNode) chapterNode.dataset.laidOut = "";
   for (let node = target; node; node = node.parentElement) {
     if (node.tagName === "DETAILS" && !node.open) node.open = true;
   }
@@ -943,9 +955,15 @@ document.querySelectorAll('input[name="export-detail-mode"]').forEach((input) =>
 // 可捲動表格的 region：
 // 只有真的橫向溢出的表格才是 region 與 tab 停留點；未溢出時多一個
 // 停留點只是噪音。標籤帶區塊標題，報讀時才分得出是哪一區的表。
-function applyOverflowRegions() {
+// 結果區塊在畫面上是 content-visibility:auto（calculate.css）：離畫面遠的區塊不排版。量它裡面的
+// 表格會逼它排版，把省下的時間吃回去，所以只量已排版的區塊；其餘的在接近畫面、開始排版時
+// （contentvisibilityautostatechange）再量。不支援 content-visibility 的瀏覽器照舊全部量。
+const laidOut = (node) => typeof node.checkVisibility !== "function"
+  || !("contentVisibility" in document.documentElement.style)
+  || node.checkVisibility({ contentVisibilityAuto: true });
+function applyOverflowRegions(scope) {
   // 先量完全部再寫：邊量邊寫時，每寫一次屬性，下一次量就得重排一次版面。
-  const wraps = [...results.querySelectorAll(".table-wrap")];
+  const wraps = [...(scope instanceof Element ? scope : results).querySelectorAll(".table-wrap")].filter(laidOut);
   // 差 1 px 以內是次像素取整，不算溢出（不給它鍵盤停留點）。
   const overflowing = wraps.map((wrap) => wrap.scrollWidth > wrap.clientWidth + 1);
   wraps.forEach((wrap, index) => {
@@ -961,8 +979,12 @@ function applyOverflowRegions() {
   });
 }
 window.addEventListener("resize", () => {
-  window.requestAnimationFrame(applyOverflowRegions);
+  window.requestAnimationFrame(() => applyOverflowRegions());
 });
+// 這個事件不冒泡：在結果區以捕捉階段聽，任何一個區塊開始排版都量它自己的表格。
+results.addEventListener("contentvisibilityautostatechange", (event) => {
+  if (!event.skipped) applyOverflowRegions(event.target);
+}, true);
 
 // 結果的章：
 // 捲動的 behavior：偏好減少動態效果時直接跳到位置，否則平滑捲動。
@@ -1054,7 +1076,10 @@ function clearChapterNav() {
   el("chapter-mode-note").replaceChildren();
   el("chapter-mode-note").hidden = true;
   // 沒有結果時每一章都收起；總覽不另收，它在 #results 裡跟著整區隱藏。
-  chapterNodes.forEach((node, id) => { node.hidden = id !== "overview"; });
+  chapterNodes.forEach((node, id) => {
+    node.hidden = id !== "overview";
+    delete node.dataset.laidOut;
+  });
 }
 
 function indexLink(target, title, status) {

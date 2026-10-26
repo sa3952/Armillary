@@ -29,7 +29,7 @@ test("拒絕文案逐字對照", () => {
     [{ code: "house_system_unavailable", message: "Placidus 在緯度 89.123456° 無法計算", latitude: 89.123456 }, 422,
       "所選宮位制無法在這個緯度計算；請在「宮位制」選單改選「整宮」，或選「不計算宮位」。"],
     [{ code: "internal_server_error", message: "raw traceback detail" }, 500,
-      "網站暫時無法完成計算。請稍後再試一次；若持續發生，請透過聯絡頁回報。"],
+      "網站暫時無法完成這次請求。請稍後再試一次；若持續發生，請透過聯絡頁回報。"],
     // 舊的裸陣列不再當成欄位發現。
     [[{ type: "calendar_date_invalid", loc: ["body", "datetime", "day"] }], 422, GENERIC_INVALID],
   ]) {
@@ -42,7 +42,7 @@ test("拒絕文案必須說出的與不得說出的", () => {
     [{ code: "request_capacity_exhausted" }, 503, [/不是.*輸入|忙碌/], []],
     [{ code: "compute_capacity_exhausted" }, 503, [/稍後|再試一次/], []],
     ["caller supplied secret", 400, [], ["secret"]],
-    [null, 500, [/網站暫時無法完成計算/], []],
+    [null, 500, [/網站暫時無法完成這次請求/], []],
     // 訊息只描述情況：出路由 calculate.js 依選擇區是否真的出現導出，訊息不得自行宣稱頁面能或不能
     // 做什麼，也不得指向本頁不存在的固定偏移輸入，或回顯後端原文。
     [{
@@ -162,8 +162,8 @@ test("422 欄位錯誤對應到控制項 id", () => {
   for (const [detail, expected] of [
     [issue("value_error", "timezone"), ["timezone"]],
     [issue("missing", "timezone", "iana_name"), ["timezone"]],
-    [issue("greater_than_equal", "datetime", "year"), ["date-year"]],
-    [issue("calendar_date_invalid", "datetime", "day"), ["date-day"]],
+    [issue("greater_than_equal", "datetime", "year"), ["birth-date"]],
+    [issue("calendar_date_invalid", "datetime", "day"), ["birth-date"]],
     [issue("less_than_equal", "datetime", "hour"), ["hour"]],
     [issue("less_than_equal", "location", "latitude"), ["latitude"]],
     [issue("finite_number", "location", "altitude_m"), ["altitude"]],
@@ -187,5 +187,25 @@ test("422 欄位錯誤對應到控制項 id", () => {
     // 頁面上是否真有這個 id 由頁面層測試驗；這裡只要求它屬於模組宣告的集合。
     ids.filter((id) => !id.startsWith("opt-"))
       .forEach((id) => assert.ok(KNOWN_CONTROL_IDS.includes(id), `${id} 不在 KNOWN_CONTROL_IDS`));
+  }
+});
+
+// 錯誤文案在排盤以外的情境（地名查詢、時間換算、年度時間主星）也要說得對：
+// 5xx 不說「計算」、429 不叫人「依提示」（沒有提示時就沒有提示可依）；
+// 2xx 卻讀不出答案（截斷的 JSON、HTML、204）是網站的問題，不叫人檢查輸入。
+test("共用錯誤文案不怪使用者、不假設情境", () => {
+  for (const status of [200, 204]) {
+    const message = formatApiError(null, status);
+    assert.ok(message.includes("不是你的輸入有問題"), `${status}: ${message}`);
+    assert.doesNotMatch(message, /檢查輸入|修正輸入|請核對/, `${status}: ${message}`);
+    assert.ok(!apiErrorActions(status, null, undefined).some((action) => /修正輸入/.test(action)), String(status));
+  }
+  assert.doesNotMatch(formatApiError(null, 429), /依提示/);
+  for (const status of [500, 502, 503]) {
+    assert.doesNotMatch(formatApiError(null, status), /計算/, String(status));
+  }
+  assert.equal(ClientContext.refusalStatus(422), "服務拒絕了這次計算。");
+  for (const status of [429, 500, 502, 503]) {
+    assert.doesNotMatch(ClientContext.refusalStatus(status), /拒絕/, String(status));
   }
 });

@@ -19,7 +19,7 @@
   <a href="#english">English</a>
 </p>
 
-<p align="center"><sub>AGPL-3.0 · 繁體中文 · Swiss Ephemeris · 免註冊 · 沒有帳號與星盤資料庫 · Public Alpha</sub></p>
+<p align="center"><sub>AGPL-3.0-only · 繁體中文 · Swiss Ephemeris · 免註冊 · 沒有帳號與星盤資料庫 · Public Alpha</sub></p>
 <p align="center"><sub>訂閱文章更新 · Article feed：<a href="https://projectarmillary.com/feed.xml">feed.xml（Atom）</a></sub></p>
 
 ## 簡介 · Introduction
@@ -36,13 +36,13 @@
 
 **Privacy as architecture.** No accounts and no chart database. The calculator makes no third-party requests, sets no cookies and stores nothing in your browser; a [hands-on check page](https://projectarmillary.com/zh-TW/security/verify) shows how to confirm this with your browser's developer tools.
 
-**費用、授權與語言。** 目前免費，不需註冊。原始碼以 AGPL-3.0 公開。介面目前只有繁體中文，英文版在規劃中。
+**費用、授權與語言。** 目前免費，不需註冊。原始碼以 AGPL-3.0-only 公開。介面目前只有繁體中文，英文版在規劃中。
 
-**Cost, licence, language.** Free for now, with no signup. The source is under AGPL-3.0. The interface is Traditional Chinese only; an English version is planned.
+**Cost, licence, language.** Free for now, with no signup. The source is under AGPL-3.0-only. The interface is Traditional Chinese only; an English version is planned.
 
 **界線。** 可計算 1900–2399 年。不做合盤、行運或推運；太陽回歸盤預設在出生地起盤，也可以改用另一個地點；恆星黃道沒有 Lahiri。
 
-**Limits.** Dates from 1900 to 2399. No synastry, transits or progressions; the solar return is cast for the birth place only; no Lahiri ayanamsa for the sidereal zodiac.
+**Limits.** Dates from 1900 to 2399. No synastry, transits or progressions; the solar return is cast for the birth place unless you give another place; no Lahiri ayanamsa for the sidereal zodiac.
 
 **數字算錯了？** 依〈[聯絡](https://projectarmillary.com/zh-TW/contact)〉寫信，或開 GitHub issue：寫明哪一個數值、你看到什麼、預期什麼，以及你拿來對照的參考值（某本書的表、另一個軟體）。請用合成資料，不要貼真實生辰。漏洞請依 [SECURITY.md](SECURITY.md) 私下通報。
 
@@ -56,7 +56,7 @@
 
 ## 渾儀是什麼
 
-渾儀 Armillary 是一套以繁體中文為主、可檢查且可重現的古典西洋占星計算工具。輸入出生日期、時間與地點，它以 Swiss Ephemeris 算出星盤，並把這張盤用了哪一套座標、哪一種時間換算、哪一條方法規則與出處，連同數字一起交給你。網站目前免費、不需註冊：<https://projectarmillary.com/zh-TW/>。這個 repository 是網站的對應原始碼（AGPL-3.0）。
+渾儀 Armillary 是一套以繁體中文為主、可檢查且可重現的古典西洋占星計算工具。輸入出生日期、時間與地點，它以 Swiss Ephemeris 算出星盤，並把這張盤用了哪一套座標、哪一種時間換算、哪一條方法規則與出處，連同數字一起交給你。網站目前免費、不需註冊：<https://projectarmillary.com/zh-TW/>。這個 repository 是網站的對應原始碼（AGPL-3.0-only）。
 
 | 它做的事 | 它不做的事 |
 |---|---|
@@ -92,7 +92,8 @@
   [`method-sources.json`](frontend/zh-TW/method-sources.json)。產品能計算某項結果，不代表所有歷史占星方法都已定論或被正式採用；方法的狀態保留在完整的machine-readable result（`projection=detailed`，即驗算匯出）中。
 - **對過外部基準，也寫出沒對過的地方。** 主要位置結果曾與另一條以 JPL DE442、Astropy 與 ERFA 組成的參考管線逐小時比較；月相事件與臺北的日月升降另與 USNO 資料交叉核對。比較範圍、門檻與沒有涵蓋的地方在〈[驗證](https://projectarmillary.com/zh-TW/validation)〉。這是具名範圍的驗證，不是全系統認證。
 - **版本寫在結果裡。** 每次計算回報引擎、星曆與時區資料庫的版本；你這一次用的公開原始碼版本，寫在計算收據上。
-  後端的公開原始碼版本與映像識別碼是部署時宣告的，公開材料無法重算；只有前端的 artifact digest 能只用公開材料重算（見下方「核對線上那一版」）。
+  後端的公開原始碼 revision 與映像識別碼是部署時宣告的，這個宣告本身不是遠端證明。公開原始碼可以重建與測試，
+  但目前只有前端的 artifact digest 有依公開材料重算的流程；後端沒有保證第三方必然得到相同 image digest 的重現流程（見下方「核對線上那一版」）。
 - **收據的界線。** 計算收據是逐步軌跡的 SHA-256：只能偵測意外損壞，不證明來源，也不證明沒被刻意修改。
 
 ## 隱私：出生資料只是計算的輸入
@@ -186,12 +187,12 @@ notice，詳見 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 **Armillary (渾儀)** is an open-source, Traditional-Chinese-first calculator for classical Western astrology. It
 computes a chart with Swiss Ephemeris and hands you, alongside the chart, the coordinate frame, the time
 conversion, and the named method and source behind each method result. The hosted service is free for now and needs no
-account: <https://projectarmillary.com/zh-TW/>. This repository is its Corresponding Source under AGPL-3.0.
+account: <https://projectarmillary.com/zh-TW/>. This repository is its Corresponding Source under AGPL-3.0-only.
 
 **What it does.** Ecliptic, equatorial and horizontal coordinates side by side; houses and angles; aspects,
 essential dignities, sect and lots, each rule named and its sources listed on the methods page; birth-time sensitivity that samples a whole
 hour when the time is uncertain; annual time lords (profections, firdaria, zodiacal releasing, decennials) and,
-for a chosen year, the solar-return chart cast for the birth place, with each return body's natal house; a
+for a chosen year, the solar-return chart cast for the birth place or another place you give, with each return body's natal house; a
 step-by-step calculation trace with the engine, ephemeris and time-zone database versions.
 
 **What it does not do.** No interpretation and no prediction: there are no transits, progressions or synastry,

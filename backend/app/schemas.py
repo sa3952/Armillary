@@ -54,7 +54,7 @@ ClassicalPlanet = Literal["sun", "moon", "mercury", "venus", "mars", "jupiter", 
 
 
 # Casting the solar-return chart for a place other than the birth place is
-# offered (privacy policy 1.2.0 discloses the optional place).  Switched off,
+# offered (privacy policy 1.2.0 and later disclose the optional place).  Switched off,
 # the route refuses `solar_return_location` with a closed-set code instead of
 # computing it; the frontend's SOLAR_RETURN_RELOCATION_OFFERED must agree.
 SOLAR_RETURN_LOCATION_OFFERED: bool = True

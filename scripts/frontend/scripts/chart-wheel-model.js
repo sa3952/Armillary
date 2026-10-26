@@ -224,7 +224,7 @@
   /** 粗估一行字的寬：CJK 一個字一 em，其餘約半 em。只用來換行、排右對齊與量下標。 */
   function textWidth(text, size) {
     let width = 0;
-    for (const char of text) width += /[⺀-鿿豈-﫿＀-￯]/.test(char) ? size : size * 0.56;
+    for (const char of text) width += /[\u2E80-\u9FFF\uAC00-\uD7AF\uF900-\uFAFF\uFF00-\uFFEF]/.test(char) ? size : size * 0.56;
     return width;
   }
   /** 在「；」「、」或空白之後換行，數字與日期不從中間切開；單段太長才逐字切。 */
@@ -984,7 +984,9 @@
     moon: "斜線弧：月亮當天取樣到的位置範圍", asc: "斜線扇形：上升在這一小時內取樣到的範圍",
   });
   const CENTRE_NOTE = Object.freeze(["只知日期", "沒有宮位"]);
-  const MOON_RANGE = Object.freeze({ rIn: 233, rOut: 255, weight: 1.6 });
+  // 內緣停在標籤堆疊外緣（G.rLabelTop）之外一點：字框是正放的矩形，斜放時角會略超出那一圈，
+  // 範圍帶從那裡往外畫，就不會壓到任何天體的符號與度數。
+  const MOON_RANGE = Object.freeze({ rIn: G.rLabelTop + 2, rOut: 255, weight: 1.6 });
   // 回應少了這些端點時，與表格一樣以 response_incomplete 拒絕（不畫成一個確定的點、也不默默略過範圍）。
   function incomplete(detail) {
     const error = new Error(`回應結構不完整：缺少 ${detail}，星盤圖不能畫出不確定的範圍。`);
@@ -1048,8 +1050,8 @@
       const range = ranges[key];
       if (!range) continue;
       const from = range.start - reference;
-      // 只知日期時月亮的範圍是這張圖的主要訊息：由星座環內緣一路畫到行星標籤的外緣（刻線帶加引線帶，
-      // 寬一倍多）、線也加粗，讓它成為圖上第二顯眼的東西；天體刻線畫在它上面，標籤不被壓住。
+      // 只知日期時月亮的範圍是這張圖的主要訊息：由星座環內緣一路畫到行星標籤的外緣（刻線帶加大半條
+      // 引線帶）、線也加粗，讓它成為圖上第二顯眼的東西；天體刻線畫在它上面，標籤在它內側、不被壓住。
       // 上升的扇形留在刻線帶。
       items.push(...(key === "moon"
         ? hatchedBand("range-moon", from, range.span, MOON_RANGE.rIn, MOON_RANGE.rOut, [key], MOON_RANGE.weight)

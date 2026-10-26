@@ -14,8 +14,9 @@ Each stage reads the typed results of the stages before it:
 
 The stage results are typed in ``chart_stages``.  Stages run in this order
 and append to the trace in this order, so the Swiss call order is the order
-written here.  Swiss state is process-global: the
-caller (``main``) holds the compute line.  ``response_projection`` derives
+written here.  Whether Swiss's state is per thread depends on how the library
+was built (per thread in the shipped Linux image, shared on macOS), so the
+caller (``main``) holds the compute line either way.  ``response_projection`` derives
 every other view from the response.
 """
 
@@ -55,7 +56,7 @@ from .chart_astronomy import _astronomical_facts, _houses, _positions
 from .chart_methods import _derived_chart, _sect_and_lots
 
 
-SCHEMA_VERSION = "0.20.0"
+SCHEMA_VERSION = "0.21.0"
 
 # Python distribution and embedded Swiss C-library versions are distinct.
 try:

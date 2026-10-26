@@ -17,6 +17,7 @@ import logging
 import math
 from pathlib import PurePosixPath
 import re
+import threading
 import time
 import uuid
 
@@ -31,11 +32,14 @@ from .core.invariants import InternalInvariantError
 from .refusals import (
     ANNUAL_ROUTE,
     CHART_ROUTE,
+    DAILY_VISIT_ROUTE,
     HEALTH_ROUTE,
     READY_ROUTE,
     PLACE_SEARCH_ROUTE,
     REFUSALS,
     TIME_CONVERT_ROUTE,
+    VERSION_ROUTE,
+    VISIT_ROUTE,
     refusal_response,
 )
 from .request_limits import (
@@ -48,7 +52,7 @@ from .request_limits import (
 )
 
 
-EVENT_SCHEMA_VERSION: Final = "privacy-request-event-v2"
+EVENT_SCHEMA_VERSION: Final = "privacy-request-event-v3"
 EVENT_NAME: Final = "http_request_completed"
 DOMAIN_ERROR_STATE_KEY: Final = "project_armillary_domain_error_code"
 
@@ -67,11 +71,13 @@ ALLOWED_EVENT_FIELDS: Final = (
 )
 
 _ALLOWED_METHODS: Final = frozenset({"GET", "POST", "HEAD", "OPTIONS"})
+_COUNTING_ROUTES: Final = frozenset({VISIT_ROUTE, DAILY_VISIT_ROUTE})
 # The annual route keeps its own label whether or not its flag registered it:
 # the label is the fixed path, never request text, and an unregistered probe of
 # it stays distinguishable from a page fetch.
 _ALLOWED_ROUTES: Final = frozenset({
     ANNUAL_ROUTE, CHART_ROUTE, HEALTH_ROUTE, PLACE_SEARCH_ROUTE, READY_ROUTE, TIME_CONVERT_ROUTE,
+    VISIT_ROUTE, DAILY_VISIT_ROUTE, VERSION_ROUTE,
 })
 # A refusal decided by the birth date, time or place says something about the
 # birth record (a skipped or repeated hour, a two-clock place, a zone outside
@@ -160,9 +166,21 @@ _DOMAIN_FAILURE_CODES: Final = frozenset({
 })
 # (exclusive upper bound in ms, label) for durations; (inclusive upper bound in
 # bytes, label) for request sizes; past the last bound the overflow label.
-_DURATION_BUCKETS: Final = ((10, "lt_10ms"), (50, "10_to_49ms"), (250, "50_to_249ms"),
-                            (1_000, "250_to_999ms"))
-_DURATION_OVERFLOW: Final = "gte_1000ms"
+# Durations are counted in whole seconds: a chart's milliseconds follow how
+# precise the birth time was (an exact time is faster than an hour or a date
+# sampled), so a finer bucket would record whether the person knew it.
+_DURATION_BUCKETS: Final = ((1_000, "lt_1s"), (10_000, "1_to_9s"))
+_DURATION_OVERFLOW: Final = "gte_10s"
+# Every request header the application reads: Host for the allowlist, the body
+# framing, content negotiation and the conditional and range requests of the
+# static mount.  Anything else is dropped at the boundary.
+_APPLICATION_REQUEST_HEADERS: Final = frozenset({
+    b"host", b"content-type", b"content-length", b"transfer-encoding", b"accept", b"accept-encoding",
+    b"if-none-match", b"if-modified-since", b"if-range", b"range",
+})
+_SERVER_SIDE_CODES: Final = frozenset({
+    "internal_server_error", "server_error", "request_capacity_exhausted", "compute_capacity_exhausted",
+})
 _SIZE_BUCKETS: Final = ((1_024, "1_to_1024b"), (16_384, "1025_to_16384b"),
                         (131_072, "16385_to_131072b"))
 _SIZE_OVERFLOW: Final = "gt_131072b"
@@ -219,6 +237,11 @@ class _DropEveryRecord(logging.Filter):
         return False
 
 
+class _DropBelowWarning(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        return record.levelno >= logging.WARNING
+
+
 def silence_server_access_log() -> None:
     """Turn the ASGI server's access log off from inside the app.
 
@@ -231,6 +254,22 @@ def silence_server_access_log() -> None:
     access_logger.disabled = True
     if not any(isinstance(item, _DropEveryRecord) for item in access_logger.filters):
         access_logger.addFilter(_DropEveryRecord())
+
+
+def quiet_server_error_log() -> None:
+    """Keep only WARNING and above on the ASGI server's error logger.
+
+    Below WARNING uvicorn writes the client address and, at trace level, the
+    request line with its query string; a launch flag (`--log-level`) must not
+    be what keeps them out of the journal.  The filter sits on the logger, so
+    every handler a later configuration attaches sees only what it lets through.
+    """
+    # uvicorn.asgi carries the trace-level ASGI messages, scope (client address
+    # and query string) included.
+    for name in ("uvicorn.error", "uvicorn.asgi"):
+        server_logger = logging.getLogger(name)
+        if not any(isinstance(item, _DropBelowWarning) for item in server_logger.filters):
+            server_logger.addFilter(_DropBelowWarning())
 
 
 def _safe_method(value: object) -> str:
@@ -437,6 +476,85 @@ def emit_security_event(event: dict) -> bool:
     return True
 
 
+# Busy refusals are not written one by one.  Under a flood each refusal would be
+# one ~350 B line (thousands a second, enough to fill the host journal in a
+# minute and evict everything else); instead each worker writes, for each clock
+# second that had any, one line of totals by route label and code.  The totals
+# hold no request id, size or timing, only what the per-request line also had.
+AGGREGATED_REFUSAL_CODES: Final = frozenset({"compute_capacity_exhausted", "request_capacity_exhausted"})
+REFUSAL_TOTALS_EVENT: Final = "admission_refusals"
+REFUSAL_TOTALS_FIELDS: Final = ("event", "second_utc", "totals")
+
+
+def log_refusal_totals(line: dict) -> None:
+    if tuple(line) != REFUSAL_TOTALS_FIELDS:
+        return
+    try:
+        _SECURITY_LOGGER.info(
+            "PRIVACY_REFUSALS %s", json.dumps(line, ensure_ascii=True, separators=(",", ":")),
+        )
+    except BaseException as error:
+        _raise_if_process_control(error)
+
+
+class RefusalTotals:
+    """Busy refusals per (route label, code), written once per clock second."""
+
+    def __init__(self, emit: Callable[[dict], None] = log_refusal_totals,
+                 clock: Callable[[], float] = time.time) -> None:
+        self._lock = threading.Lock()
+        self._emit = emit
+        self._clock = clock
+        self._second = int(clock())
+        self._counts: dict[tuple[str, str], int] = {}
+
+    def _take(self) -> dict | None:
+        counts, self._counts = self._counts, {}
+        if not counts:
+            return None
+        return {
+            "event": REFUSAL_TOTALS_EVENT,
+            "second_utc": time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(self._second)),
+            "totals": [
+                {"route": route, "error_code": code, "count": count}
+                for (route, code), count in sorted(counts.items())
+            ],
+        }
+
+    def _advance(self) -> dict | None:
+        second = int(self._clock())
+        if second == self._second:
+            return None
+        finished = self._take()
+        self._second = second
+        return finished
+
+    def count(self, route: str, error_code: str) -> None:
+        if error_code not in AGGREGATED_REFUSAL_CODES or route not in _ALLOWED_ROUTES | {"frontend_or_unmatched"}:
+            raise ValueError(error_code)
+        with self._lock:
+            finished = self._advance()
+            self._counts[(route, error_code)] = self._counts.get((route, error_code), 0) + 1
+        if finished is not None:
+            self._emit(finished)
+
+    def tick(self) -> None:
+        """Write a finished second's totals; any request's completion calls it."""
+
+        with self._lock:
+            finished = self._advance()
+        if finished is not None:
+            self._emit(finished)
+
+    def flush(self) -> None:
+        """Write the open second now (the worker is stopping)."""
+
+        with self._lock:
+            line = self._take()
+        if line is not None:
+            self._emit(line)
+
+
 def _content_length_from_scope(scope: Scope) -> str | None:
     """Return only the raw Content-Length value for later numeric bucketing."""
 
@@ -465,10 +583,15 @@ def _cache_control(
     status_code: int,
     policy: str,
     asset_content_version: Callable[[str], str | None] | None = None,
+    relayed: str | None = None,
 ) -> str:
     if policy == "no_store" or status_code >= 400:
         return "no-store"
     path = scope.get("path")
+    if path == DAILY_VISIT_ROUTE and status_code == 204 and relayed is not None:
+        # The one API answer meant to be kept: its lifetime is what limits the
+        # daily-visitor count to one per browser per day (visit_counts.py).
+        return relayed
     if not isinstance(path, str) or is_api_path(path):
         return "no-store"
     suffix = PurePosixPath(path).suffix.casefold()
@@ -493,6 +616,31 @@ def _cache_control(
     return "public, max-age=300"
 
 
+def _response_cache_control(message: Message) -> str | None:
+    for name, value in message.get("headers", ()):
+        if name.lower() == b"cache-control":
+            return value.decode("latin-1")
+    return None
+
+
+class ApplicationHeaderAllowlist:
+    """The innermost layer: the routes see only the request headers they read,
+    so a client address or identity header that a proxy added never reaches
+    them.  It runs after the boundaries that budget and refuse headers, which
+    still see every header the client sent."""
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http":
+            scope = {**scope, "headers": [
+                (name, value) for name, value in scope.get("headers", [])
+                if name.lower() in _APPLICATION_REQUEST_HEADERS
+            ]}
+        await self.app(scope, receive, send)
+
+
 class PrivacyBoundaryMiddleware:
 
     def __init__(
@@ -502,11 +650,13 @@ class PrivacyBoundaryMiddleware:
         event_emitter: Callable[[dict], bool] = emit_security_event,
         cache_policy: str = "no_store",
         asset_content_version: Callable[[str], str | None] | None = None,
+        refusal_totals: RefusalTotals | None = None,
     ) -> None:
         if cache_policy not in {"no_store", "public_split"}:
             raise ValueError("unsupported response cache policy")
         self.app = app
         self.event_emitter = event_emitter
+        self.refusal_totals = refusal_totals if refusal_totals is not None else RefusalTotals()
         self.cache_policy = cache_policy
         self.asset_content_version = asset_content_version
 
@@ -514,7 +664,6 @@ class PrivacyBoundaryMiddleware:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
-
         request_id = uuid.uuid4().hex
         started = time.perf_counter()
         response_started = False
@@ -536,6 +685,7 @@ class PrivacyBoundaryMiddleware:
                         status_code,
                         self.cache_policy,
                         self.asset_content_version,
+                        _response_cache_control(message),
                     ),
                 )
             elif message["type"] == "http.response.body":
@@ -597,8 +747,27 @@ class PrivacyBoundaryMiddleware:
                     elif status_code >= 500:
                         error_code = "server_error"
 
+                # A page or asset request is not logged (a launch ruling); an API path,
+                # matched or not, is, and so is a page the server failed or
+                # refused for capacity (what an operator must see).
+                path = scope.get("path")
+                # The two counting routes are never logged one by one: only
+                # their hourly totals are (visit_counts.py).
+                logged = (
+                    (isinstance(path, str) and is_api_path(path)
+                     and not (path in _COUNTING_ROUTES and error_code is None))
+                    or error_code in _SERVER_SIDE_CODES
+                )
                 try:
-                    event = build_request_event(
+                    if logged and status_code == 503 and error_code in AGGREGATED_REFUSAL_CODES:
+                        self.refusal_totals.count(_safe_route(scope.get("path")), error_code)
+                        logged = False
+                    else:
+                        self.refusal_totals.tick()
+                except BaseException as totals_error:
+                    _raise_if_process_control(totals_error)
+                try:
+                    event = None if not logged else build_request_event(
                         request_id=request_id,
                         method=scope.get("method"),
                         # ASGI scope path excludes the query string.  Unknown/static
@@ -610,7 +779,8 @@ class PrivacyBoundaryMiddleware:
                         error_code=error_code,
                         failure=unexpected_failure,
                     )
-                    self.event_emitter(event)
+                    if event is not None:
+                        self.event_emitter(event)
                 except BaseException as event_error:
                     _raise_if_process_control(event_error)
                     # Completion telemetry is best-effort.  A reviewed future

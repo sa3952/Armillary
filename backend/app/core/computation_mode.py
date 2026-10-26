@@ -7,6 +7,9 @@
 """
 
 import math
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 
 import swisseph as swe
 
@@ -162,6 +165,25 @@ def _orthonormal_triad(a, b):
     return first, second, cross(first, second)
 
 
+# The rotation between two frames at one instant is the same for every body, so
+# one calculation reads its reference bodies once per (instant, frames).  Its
+# keys are instants of the request, so the memo exists only inside
+# frame_turn_memo() and is emptied when it exits, like the earth-rotation memo.
+_FRAME_TURN_MEMO: ContextVar[dict | None] = ContextVar("armillary_frame_turn_memo", default=None)
+
+
+@contextmanager
+def frame_turn_memo() -> Iterator[dict]:
+    """Memoise the frame rotation for the calculation run inside."""
+    memo: dict = {}
+    token = _FRAME_TURN_MEMO.set(memo)
+    try:
+        yield memo
+    finally:
+        memo.clear()
+        _FRAME_TURN_MEMO.reset(token)
+
+
 def _turn_into_frame_at(jd_ut: float, vector, source_flags: int, target_flags: int):
     """Turn a vector from Swiss's ``source_flags`` frame into its ``target_flags`` frame at jd_ut.
 
@@ -169,6 +191,19 @@ def _turn_into_frame_at(jd_ut: float, vector, source_flags: int, target_flags: i
     every body at an instant, so two reference bodies seen in both frames fix
     it.  Of the Earth, Jupiter and Saturn the pair furthest from parallel is used.
     """
+    memo = _FRAME_TURN_MEMO.get()
+    key = (jd_ut, source_flags, target_flags)
+    triads = memo.get(key) if memo is not None else None
+    if triads is None:
+        triads = _frame_triads(jd_ut, source_flags, target_flags)
+        if memo is not None:
+            memo[key] = triads
+    source, target = triads
+    coordinates = [sum(axis[i] * vector[i] for i in range(3)) for axis in source]
+    return [sum(coordinates[k] * target[k][i] for k in range(3)) for i in range(3)]
+
+
+def _frame_triads(jd_ut: float, source_flags: int, target_flags: int):
     references = [
         (swe.calc_ut(jd_ut, body, source_flags)[0][:3], swe.calc_ut(jd_ut, body, target_flags)[0][:3])
         for body in (swe.EARTH, swe.JUPITER, swe.SATURN)
@@ -182,10 +217,7 @@ def _turn_into_frame_at(jd_ut: float, vector, source_flags: int, target_flags: i
 
     first, second = min(
         ((references[i], references[j]) for i in range(3) for j in range(i + 1, 3)), key=separation)
-    source = _orthonormal_triad(first[0], second[0])
-    target = _orthonormal_triad(first[1], second[1])
-    coordinates = [sum(axis[i] * vector[i] for i in range(3)) for axis in source]
-    return [sum(coordinates[k] * target[k][i] for k in range(3)) for i in range(3)]
+    return _orthonormal_triad(first[0], second[0]), _orthonormal_triad(first[1], second[1])
 
 
 def heliocentric_apparent_calc_ut(jd_ut: float, body_id: int, flags: int) -> tuple[tuple, int]:

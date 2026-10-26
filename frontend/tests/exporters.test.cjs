@@ -220,6 +220,20 @@ test("section and full copy are rendered from the canonical section model; non-r
   }
 });
 
+test("CSV preserves a single field when a spreadsheet enables additional separators", () => {
+  for (const separator of [";", "\t", "|"]) {
+    for (const value of [
+      `label${separator}=1+1`, `label${separator}+SUM(A1)`,
+      `label${separator}@SUM(A1)`, `label${separator}-1+2`,
+      `label${separator}text`, `say "hello"${separator}=1+1`,
+      `label${separator}\u200b=1+1`, `label${separator}  =1+1`,
+    ]) {
+      const record = `before,${Exporters.csvCell(value)},after`;
+      assert.deepEqual(parseCsvRows(record, ",;\t|"), [["before", value, "after"]], JSON.stringify(value));
+    }
+  }
+});
+
 test("CSV uses a stable long-form schema and RFC 4180 escaping", () => {
   const csv = Exporters.renderCsv(fixtureDocument());
   const lines = csv.split("\r\n");
@@ -283,7 +297,7 @@ function cellsDocument(rows, response = fixture().response) {
   }]);
 }
 
-const csvField = (value) => (/[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value);
+const csvField = (value) => (/[",;|\t\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value);
 const foldControls = (value) => value.replace(/[\t\r\n]+/g, " ");
 
 // [儲存格內容, 是否加公式撇號]。量測值是反向控制：一份普通星盤匯出曾有九格被加上撇號，
@@ -511,7 +525,16 @@ const markdownCases = () => [
   // GFM 的延伸自動連結會把散文裡的 http(s)://、ftp:// 與 www. 變成可點的連結；
   // 跳脫冒號與點之後渲染出的文字不變，但不再是連結。相鄰控制：不接 // 的冒號與一般的點不動。
   ["純文字網址不被自動轉成連結", hostileDocument("見 https://evil.example/x 或 WWW.example.invalid、ftp://h/f"), null,
-    ["https\\://evil.example/x", "WWW\\.example.invalid", "ftp\\://h/f"], ["https://", "WWW.example", "ftp://"]],
+    ["https\\:/\\/evil.example/x", "WWW\\.example.invalid", "ftp\\:/\\/h/f"], ["https:", "WWW.example", "ftp:", "//"]],
+  // 其他會被自動轉成連結的寫法：緊貼在英數字後面的 scheme、mailto:／xmpp:、電子郵件地址，
+  // 以及只剩 // 開頭的網址（markdown-it 的 linkify 認得）。
+  ["緊貼英數字的 scheme、mailto、xmpp、電子郵件與 // 網址都不成連結",
+    hostileDocument("1http://glued.example mailto:a@b.example xmpp:c@d.example user@host.example x;//rel.example"), null,
+    ["1http\\:/\\/glued.example", "mailto\\:a\\@b.example", "xmpp\\:c\\@d.example", "user\\@host.example",
+      "x;/\\/rel.example"],
+    ["http:", "mailto:", "xmpp:", "a@b", "user@host", ";//"]],
+  ["不像網址或郵件的 @ 與斜線不跳脫（相鄰控制）", hostileDocument("@ 開頭、結尾@、1/2、a / b"), null,
+    ["@ 開頭、結尾@、1/2、a / b"], ["\\@", "\\/"]],
   ["時刻的冒號與小數點不跳脫（相鄰控制）", hostileDocument("12:30 與 22.9908、abcwww.x"), null,
     ["12:30 與 22.9908、abcwww.x"], ["12\\:30", "22\\.9908", "abcwww\\."]],
   ["表格儲存格只 escape 一次、裸 CR 不破表", hostileDocument("alpha|beta\\gamma\rnext"), null,
@@ -825,7 +848,7 @@ test("恆星／回歸黃道的預設匯出四種格式都寫出黃道，JSON 帶
 });
 
 // RFC 4180 讀回（CRLF 列界、雙引號跳脫）；BOM 只在下載前綴，renderCsv 本身沒有。
-function parseCsvRows(content) {
+function parseCsvRows(content, delimiters = ",") {
   const rows = [];
   let row = [];
   let cell = "";
@@ -838,7 +861,7 @@ function parseCsvRows(content) {
       else if (char === '"') quoted = false;
       else cell += char;
     } else if (char === '"') quoted = true;
-    else if (char === ",") { row.push(cell); cell = ""; }
+    else if (delimiters.includes(char)) { row.push(cell); cell = ""; }
     else if (char === "\r" && body[index + 1] === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; index += 1; }
     else cell += char;
   }

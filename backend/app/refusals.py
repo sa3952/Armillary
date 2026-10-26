@@ -42,6 +42,11 @@ HEALTH_ROUTE: Final = "/api/health"
 # Readiness: the bundled ephemeris files are present and match the pinned digests.
 READY_ROUTE: Final = "/api/health/ready"
 TIME_CONVERT_ROUTE: Final = "/api/time/convert"
+# Counting only (visit_counts.py): one per page load, one per browser per day.
+VISIT_ROUTE: Final = "/api/visit"
+DAILY_VISIT_ROUTE: Final = "/api/visit/daily"
+# The running build and where its source is, without computing a chart.
+VERSION_ROUTE: Final = "/api/version"
 # Not an OpenAPI path: the bundled page and its assets under the static mount.
 FRONTEND_ASSETS: Final = "frontend_assets"
 
@@ -57,6 +62,7 @@ _JSON_BODY_ROUTES: Final = frozenset({
 })
 _API_ROUTES: Final = frozenset({
     CHART_ROUTE, PLACE_SEARCH_ROUTE, HEALTH_ROUTE, READY_ROUTE, ANNUAL_ROUTE, TIME_CONVERT_ROUTE,
+    VISIT_ROUTE, DAILY_VISIT_ROUTE, VERSION_ROUTE,
 })
 _COMPUTE_ROUTES: Final = frozenset({CHART_ROUTE, ANNUAL_ROUTE})
 # Every route that reads a birth record's civil time: both calculations and the converter.
@@ -107,7 +113,7 @@ REFUSALS: Final[Mapping[str, Refusal]] = MappingProxyType({
     ),
     "request_body_too_large": Refusal(413, "請求內容超過 16 KiB 上限。", _JSON_BODY_ROUTES),
     "empty_request_body": Refusal(
-        400, "此端點需要 JSON 請求內容，但 Content-Length 為 0。", _JSON_BODY_ROUTES,
+        400, "此端點需要 JSON 請求內容，但收到的請求內容是空的。", _JSON_BODY_ROUTES,
     ),
     "request_body_read_timeout": Refusal(408, "讀取請求內容逾時。", _JSON_BODY_ROUTES),
     # ── JSON text (main.py strict JSON route; schemas.strict_json_problem) ───
@@ -170,7 +176,7 @@ REFUSALS: Final[Mapping[str, Refusal]] = MappingProxyType({
         frozenset({TIME_CONVERT_ROUTE}),
     ),
     "house_system_unavailable": Refusal(
-        422, "所選宮位制在這個位置無法計算；reason_code 說明原因。", frozenset({CHART_ROUTE}),
+        422, "所選宮位制在這個位置無法計算；reason_code 說明原因。", _COMPUTE_ROUTES,
     ),
     # 422, not 503: an instant outside the bundled segments is refused the
     # same way every time.  A missing segment file or an unpredicted Swiss

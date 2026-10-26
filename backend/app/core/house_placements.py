@@ -9,6 +9,7 @@ from .invariants import InternalInvariantError
 from .frame_compatibility import method_frame_state
 from .module_state import PRODUCT_FORMULA_SOURCE, computed_receipt, unavailable_state
 from .method_status import method_head
+from .request_memo import remembered
 from .trace import Trace
 
 
@@ -43,23 +44,69 @@ def _house_for_longitude(
     against the same cusps; it is never kept beyond that caller's loop.
     """
 
-    point = Fraction(longitude) % _FULL_CIRCLE
     if spans is None:
         spans = _cusp_spans(cusps)
+    house = _house_clear_of_cusps(longitude, cusps)
+    if house is not None:
+        return house
+    point = Fraction(longitude) % _FULL_CIRCLE
     for index in range(12):
         if (point - Fraction(cusps[index])) % _FULL_CIRCLE < spans[index]:
             return index + 1
     raise RuntimeError("longitude did not match any house interval")
 
 
+# Float arithmetic decides a placement only with this much room on both sides.
+# A float difference of two longitudes, reduced mod 360, is within about 1e-13
+# degrees of the exact one while every value is under _CLEAR_MAGNITUDE_LIMIT,
+# so a margin this wide cannot be crossed by rounding.
+_CLEAR_MARGIN_DEGREES = 1e-6
+_CLEAR_MAGNITUDE_LIMIT = 1e4
+
+
+def _house_clear_of_cusps(longitude: float, cusps: Sequence[float]) -> int | None:
+    """The house a point lies well inside of, by floats; None when near a cusp.
+
+    Only called after _cusp_spans has checked that the twelve intervals tile
+    the circle, so exactly one interval holds the point in exact arithmetic.
+    An interval that holds it in floats with the margin to spare on both ends
+    is therefore that one.  Every other case (a point near a cusp, a narrow
+    house, a non-finite or huge value) is left to the exact rational test,
+    which is what keeps the half-open boundary exact.  The rational test costs
+    many times the float one, and an hour-level chart places some fifty
+    points at each of its forty-odd samples.
+    """
+
+    if not abs(longitude) < _CLEAR_MAGNITUDE_LIMIT:
+        return None
+    for index in range(12):
+        start = cusps[index]
+        end = cusps[(index + 1) % 12]
+        if not (abs(start) < _CLEAR_MAGNITUDE_LIMIT and abs(end) < _CLEAR_MAGNITUDE_LIMIT):
+            return None
+        into = (longitude - start) % 360.0
+        width = (end - start) % 360.0
+        if _CLEAR_MARGIN_DEGREES < into < width - _CLEAR_MARGIN_DEGREES:
+            return index + 1
+    return None
+
+
 def _cusp_spans(cusps: Sequence[float]) -> tuple[Fraction, ...]:
     """The exact width of each house interval, checked.
 
-    Not memoized across calls: cusps follow from the birth instant and place,
-    and a process-wide memo would keep them in worker memory after the request.
-    A caller placing many points computes this once and passes it down.
+    Not memoized across requests: cusps follow from the birth instant and
+    place, and a process-wide memo would keep them in worker memory after the
+    request.  Within one calculation (request_memo) the same cusps are asked
+    for by the planets, the Lots and the extended Lots at every birth-time
+    sample, so the answer is kept there.  A caller placing many points computes
+    this once and passes it down.
     """
 
+    cusps = tuple(cusps)
+    return remembered("cusp_spans", cusps, lambda: _checked_cusp_spans(cusps))
+
+
+def _checked_cusp_spans(cusps: tuple[float, ...]) -> tuple[Fraction, ...]:
     spans = []
     for index in range(12):
         span = _exact_forward_distance(cusps[index], cusps[(index + 1) % 12])

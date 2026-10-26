@@ -1,0 +1,1 @@
+(function(){"use strict";if(navigator.globalPrivacyControl===true)return;try{fetch("/api/visit",{method:"POST",credentials:"omit",keepalive:true}).catch(()=>{});fetch("/api/visit/daily",{credentials:"omit",cache:"default"}).catch(()=>{});}catch(_){}})();

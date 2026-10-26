@@ -893,7 +893,7 @@
      }
     ],
     "third_ruler_term": "third_and_common_ruler",
-    "third_ruler_term_source": "Holden's Rhetorius per research report, not checked; Pingree has 'then' (I.1), 'associate' (I.28), 'participant' (I.10)"
+    "third_ruler_term_source": "Holden's Rhetorius per research report, not checked; Pingree has 'then' (I.1), 'associate' (I.28), 'participant' (I.10, the translator's reading of the Arabic, not checked as the third ruler)"
    },
    "sources": [
     {
@@ -1095,7 +1095,7 @@
   "dignities/lilly_triplicity_compact_1647_v1": {
    "applies_to": "derived_methods.essential_dignities.profile_results.lilly_triplicity_compact_1647_v1",
    "details": {
-    "citation_verification": "cited_from_methodology_research_report_not_independently_checked",
+    "citation_verification": "checked_against_cited_edition_pages",
     "not_an_alias_of": [
      "dorothean_triplicity_three_rulers_v1",
      "ptolemy_triplicity_textual_corulership_v1"
@@ -1239,8 +1239,8 @@
      "says": "Saturn in Leo 'peregrinus, non receptus'"
     },
     {
-     "citation": "Vettius Valens, Anthologies II.22 Kroll (= II.23.24 Pingree), Kroll 1908 p.89.30-32",
-     "read_at": "Riley's translation in a reformatted online copy (github janegca/latex-valens); the Kroll page and lines checked in the archive.org text of Kroll 1908 (bub_gb_OQ_gAAAAMAAJ); the Pingree page not checked online",
+     "citation": "Vettius Valens, Anthologies II.22 Kroll (= II.23.24 Pingree), Kroll 1908 p.89.30-32, Pingree 1986 p.85",
+     "read_at": "Riley's translation in a reformatted online copy (github janegca/latex-valens); the Kroll page and lines checked in the archive.org text of Kroll 1908 (bub_gb_OQ_gAAAAMAAJ); the Pingree page (p.85, running head ANTHOLOGIAE II 23, §24) located by an external citation review and not re-read for this record",
      "reading": "translation_read",
      "says": "malefics 'in alien signs and degrees' ruin livelihood; a description, not a defined state"
     }
@@ -1574,7 +1574,7 @@
       "says": "each star has its depression at the point in opposition to its exaltation, with a table of degrees"
      },
      {
-      "citation": "Firmicus Maternus, Mathesis II.3.1, II.3.5 (Kroll-Skutsch)",
+      "citation": "Firmicus Maternus, Mathesis II.3.1, II.3.5 (Kroll-Skutsch, p.44)",
       "read_at": "Latin text, LacusCurtius",
       "reading": "original_language_read",
       "says": "altitudines et deiectiones: each planet 'deicitur' in the degree opposite its exaltation"
@@ -1616,7 +1616,7 @@
      "work": "Vettius Valens, Anthologies"
     },
     {
-     "location": "II.2 and II.3.5-6 (Kroll–Skutsch 1897, vol. I)",
+     "location": "II.2 (pp.42-43) and II.3.5-6 (p.44) (Kroll–Skutsch 1897, vol. I)",
      "role": "also_attested_domiciles_and_exaltation_signs_source_also_supplies_exact_degrees_not_evaluated_by_this_profile",
      "work": "Firmicus Maternus, Mathesis"
     },
@@ -1628,7 +1628,7 @@
      "says": "the printed page of the chapter in the PDF (PDF page 63) as a locator"
     },
     {
-     "citation": "Firmicus Maternus, Mathesis II.2 (Kroll–Skutsch 1897, vol. I)",
+     "citation": "Firmicus Maternus, Mathesis II.2 (Kroll–Skutsch 1897, vol. I, pp.42-43)",
      "read_at": "the Latin of Kroll-Skutsch as transcribed on LacusCurtius (Firmicus_Maternus/Mathesis/2*.html), II.2 'De Domibus Stellarum', II.2.5 'Saturnus habet domicilium in Aquario et Capricorno'",
      "reading": "original_language_read",
      "role": "chapter_reference_of_an_also_attested_source",
@@ -3436,6 +3436,44 @@
    "note": "香港天文台的〈香港夏令時間〉表把 1945 年全年列為夏令時間（UTC+9），1946 年寫 4 月 20 日開始；IANA 時區資料庫定 1945 年 11 月 18 日 02:00 恢復 UTC+8、1946 年 4 月 21 日 00:00 才開始夏令時間。本服務依時區資料庫換算，不另算一張盤；出生時間落在 1945-11-18 02:00 至 12-31 結束，或 1946-04-20 整天（香港時間）時加一則警告，說明依天文台紀錄鐘面時間可能差 1 小時。",
    "source": "Hong Kong Observatory, Summer Time in Hong Kong table (1942-1945 listed as the whole year; 1946 from 20 April); IANA tz database, file asia, Hong Kong section (UTC+8 from 1945-11-18 02:00, comments by Phake Nick 2018-10-26 and P Chan 2018-12-31; 1946 summer time from 04-21 00:00 after two newspapers). Civil-time source rows hk-1941-1945 and hk-1946-1979 (backend/app/civil_time_sources.json); article /zh-TW/blog/hong-kong-birth-time."
   },
+  "time/offshore_islands_before_1950": {
+   "applies_to": "calculation_dossier.warnings[code=offshore_island_civil_time_not_taiwan_rule]; calculation_dossier.time_conversion.offset_status; zone Asia/Taipei",
+   "areas_degrees": {
+    "kinmen": {
+     "latitude": [
+      24.3,
+      24.6
+     ],
+     "longitude": [
+      118.1,
+      118.6
+     ]
+    },
+    "matsu": {
+     "latitude": [
+      25.9,
+      26.45
+     ],
+     "longitude": [
+      119.85,
+      120.55
+     ]
+    },
+    "wuqiu": {
+     "latitude": [
+      24.9,
+      25.1
+     ],
+     "longitude": [
+      119.35,
+      119.6
+     ]
+    }
+   },
+   "before_local": "1950-01-01T00:00",
+   "note": "金門、烏坵、馬祖在 1950 年以前不在臺灣的行政範圍內，時區資料庫仍把它們併在 Asia/Taipei。本服務依時區資料庫換算，不另算一張盤；出生地在這三處、出生時間在 1950 年以前時加一則警告，並且不把這段偏移標為「已對照出處」。",
+   "source": "IANA tz database, file asia, Taiwan section: one zone (Asia/Taipei) for Taiwan, Penghu, Kinmen and Matsu. The documents behind its rules before 1950 (civil-time source rows tw-*, backend/app/civil_time_sources.json) were issued for Taiwan; no source for the clocks of Kinmen, Wuqiu or Matsu before 1950 is cited."
+  },
   "time/prc_1988_dst_start": {
    "applies_to": "calculation_dossier.warnings[code=prc_1988_dst_start_disputed]; zones Asia/Chongqing, Asia/Harbin, Asia/Shanghai",
    "disputed_local_interval": [
@@ -3500,7 +3538,7 @@
        "says": "'Voyd of course': a planet separated from a planet that does not forthwith, while in that sign, apply to any other (any planet, not only the Moon; the product does not model the separation premise); bounded by the sign; the page does not mention moieties"
       },
       {
-       "citation": "Lilly, Christian Astrology 1647 p.107 (again p.110)",
+       "citation": "Lilly, Christian Astrology 1647 p.107 (orb table); p.110 (worked example, not reconciled)",
        "read_at": "reading level as recorded; the record does not say which copy of the 1647 English text was read",
        "reading": "original_language_read",
        "says": "the planets' orbs and the rule that a pair's orb is half their sum"

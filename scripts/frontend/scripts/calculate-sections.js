@@ -251,6 +251,9 @@ function materializeSection(section) {
 
 // 手機上相位一區先給相位方格（一眼看完的那張），逐度相位長表收進摺疊（原生 details，鍵盤可開合）；
 // 寬螢幕照原順序攤開。只搬節點、不改內容，斷點跨越時（轉向、縮放視窗）換回另一種排法。
+// 上一份結果的窄螢幕監聽；換下一份結果時中止，免得舊結果的 DOM 被它一直握住。
+let pairsNarrowListener = null;
+
 function arrangeAspectsForPhones(host) {
   const grid = host.querySelector(":scope > .aspect-grid-wrap");
   const pairs = grid && [...host.querySelectorAll(":scope > .table-wrap")].find((wrap) => wrap !== grid
@@ -277,7 +280,11 @@ function arrangeAspectsForPhones(host) {
   arrange(narrowScreen());
   if (typeof window.matchMedia === "function") {
     const query = window.matchMedia(NARROW_QUERY);
-    if (typeof query.addEventListener === "function") query.addEventListener("change", (event) => arrange(event.matches));
+    if (pairsNarrowListener) pairsNarrowListener.abort();
+    pairsNarrowListener = new AbortController();
+    if (typeof query.addEventListener === "function") {
+      query.addEventListener("change", (event) => arrange(event.matches), { signal: pairsNarrowListener.signal });
+    }
   }
 }
 
@@ -699,7 +706,8 @@ function linkCrossReferences(host, sectionId) {
 // 對照表各欄的代碼（profile_id）：view-model 把它寫在說明裡一句（匯出照帶）。畫面上那一句拆成
 // 一張兩欄小表，代碼用 <code>，蛇形底線的識別碼不夾在中文段落裡；複製與匯出仍是原句。
 const PROFILE_ID_PREFIX = "對照表各欄的代碼（profile_id，與 JSON 的 profile_results 同名，供程式對應）：";
-const PROFILE_ID_PAIR = /([^、＝：]+)＝([a-z0-9_]+)/g;
+// 欄名限 120 字：不設上限時，一段很長又沒有「＝」的文字會讓每個起點都掃到段尾（二次方）。
+const PROFILE_ID_PAIR = /([^、＝：]{1,120})＝([a-z0-9_]+)/g;
 function profileIdTables(host) {
   host.querySelectorAll("p.section-note").forEach((note) => {
     const text = note.textContent;
@@ -802,7 +810,8 @@ function answerGroups(answers) {
 /** 答案前加符號：行星或星座（十二分部「金牛（金星）」取括號前的星座）；其他照原字。 */
 function answerLabel(text) {
   const node = make("span", "cmp-answer");
-  const match = /^(.+?)（(.+)）$/.exec(text);
+  // 名稱不含「（」：第一個全形左括號就是分界，不必在每個「（」都回溯到句尾。
+  const match = /^([^（]+)（(.+)）$/.exec(text);
   const head = match ? match[1] : text;
   const glyph = tableGlyphs().bodies.get(head) || tableGlyphs().signs.get(head);
   if (glyph) node.appendChild(tableGlyph(glyph));
@@ -1020,7 +1029,8 @@ function plateStrip(parent, x, y, w, h, row, hatchId) {
   const anchor = cx - x < 24 ? "start" : x + w - cx < 24 ? "end" : "middle";
   plateText(parent, anchor === "start" ? x : anchor === "end" ? x + w : cx, y + h + 14, label, "bp-t bp-small", anchor);
 }
-const plateDegree = (text) => text.replace(/\d+(?:\.\d+)?″$/, "");
+// 只從數字串的開頭試：從中間的每一位數起跑，一長串不以 ″ 結尾的數字會變成二次方。
+const plateDegree = (text) => text.replace(/(?<!\d)\d+(?:\.\d+)?″$/, "");
 const plateDiffers = (model, index) => new Set(model.profiles.map((profile) => profile.rows[index].ruler)).size > 1;
 
 function boundsPlateMatrix(model) {
@@ -1301,7 +1311,8 @@ function renderSummary(section, linkable) {
   }
   const targets = new Map(linkable.map((item) => [item.title, `#section-${item.id}`]));
   node.querySelectorAll(".section-block").forEach((note) => {
-    const parts = note.textContent.split(/〈([^〉]+)〉/);
+    // 篇名不含「〈」：沒有收尾的「〈」不會讓後面每一個「〈」都掃到句尾。
+    const parts = note.textContent.split(/〈([^〈〉]+)〉/);
     if (parts.length === 1) return;
     note.replaceChildren();
     parts.forEach((part, index) => {

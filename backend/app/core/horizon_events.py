@@ -421,9 +421,15 @@ def _swiss_rise_trans(
     rsmi = event_flag
     # Swiss default for rise/set is the upper limb with standard refraction.
     # Do not add BIT_DISC_CENTER or BIT_NO_REFRACTION; expose that choice in metadata.
+    # Swiss searches by its own sidereal time; from 2050 on the product's is
+    # the IERS 2010 one, the Earth's turn reaching Swiss's angle `shift` later.
+    # The search starts at the Swiss instant of the product's start, so the
+    # event it finds is the product's first one after the start (searching from
+    # the product's start itself could return an event before it, or step over
+    # one just after it, when the shift is the larger).
     with chart_observer_restored():
         result, times = swe.rise_trans(
-            start_jd_ut,
+            start_jd_ut + earth_rotation_shift_days(start_jd_ut),
             body_id,
             rsmi,
             geopos,
@@ -433,9 +439,8 @@ def _swiss_rise_trans(
         )
     if result != 0:
         return result, None
-    # Swiss solves the crossing with its own sidereal time; from 2050 on the
-    # product's sidereal time is the IERS 2010 one, which the Earth reaches
-    # earlier or later by the shift (under a second; the bodies do not move).
+    # The crossing back on the product's clock (the shift is under a second
+    # until about 2400; the bodies do not move).
     return result, times[0] - earth_rotation_shift_days(times[0])
 
 

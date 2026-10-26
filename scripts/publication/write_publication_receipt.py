@@ -30,6 +30,7 @@ from datetime import datetime, timezone
 import gzip
 import hashlib
 import io
+import os
 import json
 from pathlib import Path, PurePosixPath
 import re
@@ -45,6 +46,7 @@ from urllib.parse import urlparse
 from scripts.deployment import frontend_release as consumer
 from scripts.tools.output_confinement import external_output_path
 from scripts.tools.source_tree_identity import (
+    archive_environment,
     git_executable,
     is_public_release_record,
     observe_publication_tree,
@@ -59,6 +61,8 @@ RECEIPT_NAME = "publication-receipt.json"
 EVIDENCE_NAME = "publication-evidence.json"
 EVIDENCE_SCHEMA = "corresponding-source-publication-evidence-v3"
 MAX_EVIDENCE_BYTES = 32 * 1024
+# The only identity a public commit or release tag may carry (no personal address).
+NOREPLY_EMAIL = re.compile(r"[^@\s]+@users\.noreply\.github\.com", re.IGNORECASE)
 REVISION_RE = re.compile(r"^[0-9a-f]{40}$")
 MAX_ARCHIVE_EXPANDED_BYTES = 2 * 1024 * 1024 * 1024
 _scrubbed_git_environment = consumer.anonymous_git_environment
@@ -211,7 +215,8 @@ def anonymous_clone(clone_url: str, destination: Path, revision: str) -> str:
                 raise ReceiptRefusal(f"anonymous git {arguments[0]} failed: {completed.stderr[-2000:]}")
             return completed.stdout.strip()
 
-        git("clone", "--quiet", "--no-checkout", "--no-tags", clone_url, str(destination))
+        # Tags come along: Gate F verifies the release tag in this checkout.
+        git("clone", "--quiet", "--no-checkout", clone_url, str(destination))
         try:
             git("checkout", "--quiet", "--detach", revision, cwd=destination)
         except ReceiptRefusal:
@@ -419,23 +424,36 @@ def compare_commit(*, candidate: Path, checkout: Path) -> str:
     name = accepted_repository().split("/", 1)[1]
     try:
         with tempfile.TemporaryDirectory(prefix="compare-home-") as raw_home:
-            environment = _scrubbed_git_environment(Path(raw_home))
+            environment = archive_environment(checkout, _scrubbed_git_environment(Path(raw_home)))
             revision = subprocess.run(
                 ["git", "rev-parse", "HEAD"], cwd=checkout, capture_output=True,
                 text=True, check=True, env=environment,
             ).stdout.strip()
             archive = subprocess.run(
-                ["git", "archive", "--format=tar.gz", f"--prefix={name}-{revision}/", "HEAD"],
+                ["git", "-c", f"core.attributesFile={os.devnull}", "archive", "--format=tar.gz", f"--prefix={name}-{revision}/", "HEAD"],
                 cwd=checkout, capture_output=True, check=True, env=environment,
             ).stdout
-            # NUL-separated: commit id, then its whole message.
+            # Raw metadata ignores mailmap aliases: privacy is about the bytes
+            # actually stored in each commit that would become public.
             added = subprocess.run(
-                ["git", "log", "--format=%H%x00%B%x00", "HEAD", "--not", "--remotes"],
+                ["git", "log", "-z", "--no-show-signature", "--format=%H%x00%ae%x00%ce%x00%B", "HEAD", "--not", "--remotes"],
                 cwd=checkout, capture_output=True, text=True, check=True, env=environment,
             ).stdout.split("\0")
-    except (OSError, subprocess.CalledProcessError) as error:
+    except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
         raise ReceiptRefusal(f"cannot read the commit to be published: {error}") from None
-    for commit, message in zip(added[0::2], added[1::2]):
+    if added == [""]:
+        added = []
+    elif not added or added[-1] != "" or (len(added) - 1) % 4:
+        raise ReceiptRefusal("cannot parse publication commit metadata")
+    else:
+        added.pop()
+    for offset in range(0, len(added), 4):
+        commit, author, committer, message = added[offset:offset + 4]
+        if not REVISION_RE.fullmatch(commit):
+            raise ReceiptRefusal("cannot parse publication commit identity")
+        for role, email in (("author", author), ("committer", committer)):
+            if NOREPLY_EMAIL.fullmatch(email) is None:
+                raise ReceiptRefusal(f"commit to be published {commit} {role} must use a GitHub noreply identity")
         if "\n" in message.strip():
             raise ReceiptRefusal(
                 f"commit to be published {commit.strip()} must carry only its subject line"

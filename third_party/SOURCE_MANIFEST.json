@@ -1,8 +1,61 @@
 {
-  "license_expression": "AGPL-3.0-only",
-  "schema_version": 2,
+  "license_expression": "LicenseRef-PublicDomain AND (AGPL-3.0-or-later OR LicenseRef-SwissEphemeris-Professional) AND blessing AND GPL-2.0-or-later AND AGPL-3.0-or-later",
+  "schema_version": 3,
   "sources": [
     {
+      "components": [
+        {
+          "license": "LicenseRef-PublicDomain",
+          "name": "Swiss Ephemeris sample program",
+          "paths": [
+            "libswe/swemini.c"
+          ],
+          "statement": "libswe/swemini.c header"
+        },
+        {
+          "except": [
+            "libswe/swemini.c"
+          ],
+          "license": "AGPL-3.0-or-later OR LicenseRef-SwissEphemeris-Professional",
+          "name": "Swiss Ephemeris",
+          "paths": [
+            "libswe/*"
+          ],
+          "statement": "libswe/LICENSE",
+          "used_under": "AGPL-3.0-or-later"
+        },
+        {
+          "license": "blessing",
+          "name": "SQLite amalgamation bundled with Swephelp (not compiled: the image links Debian's libsqlite3)",
+          "paths": [
+            "swephelp/sqlite3/*"
+          ],
+          "statement": "swephelp/sqlite3/sqlite3.c header"
+        },
+        {
+          "except": [
+            "swephelp/sqlite3/*"
+          ],
+          "license": "GPL-2.0-or-later",
+          "name": "Swephelp",
+          "paths": [
+            "swephelp/*"
+          ],
+          "statement": "swephelp/LICENSE.txt and file headers"
+        },
+        {
+          "except": [
+            "libswe/*",
+            "swephelp/*"
+          ],
+          "license": "AGPL-3.0-or-later",
+          "name": "pyswisseph (binding, build files, documentation and tests)",
+          "paths": [
+            "*"
+          ],
+          "statement": "LICENSE.txt and the pyswisseph.c and setup.py headers"
+        }
+      ],
       "contains": "Python binding and Swiss Ephemeris C source",
       "filename": "pyswisseph-2.10.3.2.tar.gz",
       "modified": false,

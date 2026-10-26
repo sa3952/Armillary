@@ -29,6 +29,7 @@ import os
 # The only variables a check's child sees.
 CHILD_ENVIRONMENT_NAMES = (
     "PATH", "HOME", "USER", "LOGNAME", "LANG", "LC_ALL", "LC_CTYPE", "TERM",
+    "ARMILLARY_PUBLICATION_RULES_FILE",
     "TMPDIR", "XDG_CACHE_HOME", "PYTHONPYCACHEPREFIX", "CI", "GITHUB_ACTIONS", "ARMILLARY_REQUIRE_ALL",
 )
 
@@ -83,11 +84,18 @@ def selection_environment(environment: Mapping[str, str] | None = None) -> tuple
 
 REQUIRE_ALL = "ARMILLARY_REQUIRE_ALL"
 
-# Skips that are a property of who runs the suite, not a layer left unobserved.
-EXPECTED_SKIPS = (
-    "the refusal is for another user than root",
-    "root lists every directory",
-)
+# Skips that are a property of who runs the suite, not a layer left unobserved:
+# each names the one test (pytest node id, parameters aside) that may skip, with
+# its reason, and only as root.  A reason alone would admit any test using it.
+EXPECTED_SKIPS = {
+    "tests/repository/test_verifiers_fail_closed_on_empty_input.py"
+    "::test_root_owned_tree_check_refuses_a_subtree_it_cannot_list": "root lists every directory",
+    "tests/repository/test_verifiers_fail_closed_on_empty_input.py"
+    "::test_candidate_clean_script_fails_when_its_pollution_search_fails": "root lists every directory",
+    "tests/deployment/test_host_install.py"
+    "::test_the_readback_of_the_host_itself_refuses_to_run_without_root":
+        "the refusal is for another user than root",
+}
 
 
 def require_all(environment: Mapping[str, str] | None = None) -> bool:
@@ -95,9 +103,21 @@ def require_all(environment: Mapping[str, str] | None = None) -> bool:
     return source.get(REQUIRE_ALL) == "1"
 
 
-def skip_is_failure(reason: str, environment: Mapping[str, str] | None = None) -> bool:
-    # The whole reason must be an expected one (pytest prefixes "Skipped: "):
+def _dotted_test(node_id: str) -> str:
+    """One spelling for a pytest node id and its JUnit form (dotted class name
+    plus test name), without parameters."""
+    return node_id.split("[", 1)[0].replace(".py::", ".").replace("/", ".").replace("::", ".")
+
+
+_EXPECTED_DOTTED = {_dotted_test(node_id): reason for node_id, reason in EXPECTED_SKIPS.items()}
+
+
+def skip_is_failure(reason: str, node_id: str, environment: Mapping[str, str] | None = None,
+                    *, euid: int | None = None) -> bool:
+    # The whole reason must be the expected one (pytest prefixes "Skipped: "):
     # a reason that merely contains one is another skip.
-    reason = reason.strip()
-    reason = reason.removeprefix("Skipped: ")
-    return require_all(environment) and reason not in EXPECTED_SKIPS
+    if not require_all(environment):
+        return False
+    reason = reason.strip().removeprefix("Skipped: ")
+    euid = os.geteuid() if euid is None else euid
+    return not (euid == 0 and _EXPECTED_DOTTED.get(_dotted_test(node_id)) == reason)

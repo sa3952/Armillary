@@ -46,5 +46,11 @@
    "upstream_path": "ephe/sepl_18.se1",
    "git_blob_sha1": "786702cd04506371ee6223af1ebac02d54c848b8"
   }
+ },
+ "upstream_cross_check": {
+  "checked_on": "2026-10-26",
+  "method": "each file fetched from https://raw.githubusercontent.com/aloistr/swisseph/<upstream_commit>/ephe/<name> and its SHA-256 compared with deploy/ephemeris.sha256",
+  "result": "all five files match",
+  "on_replacement": "repeat this comparison at the new upstream_commit before deploy/ephemeris.sha256 changes"
  }
 }

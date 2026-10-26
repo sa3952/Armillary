@@ -2,10 +2,10 @@
 
 [English](#english) · [繁體中文](#繁體中文)
 
-This project is a free, single-operator calculator. This policy says how to report a vulnerability, what
+This project is a free, small calculator. This policy says how to report a vulnerability, what
 happens next, and where the boundaries are. Nothing here claims that vulnerabilities are absent.
 
-本專案是一個免費、由一人營運的計算工具。這份政策說明怎麼回報漏洞、回報之後會發生什麼，以及界線在哪裡。
+本專案是一個免費的小型計算工具。這份政策說明怎麼回報漏洞、回報之後會發生什麼，以及界線在哪裡。
 這裡沒有任何一句宣稱本專案沒有漏洞。
 
 ---
@@ -48,8 +48,8 @@ Reports in Traditional Chinese or English are both welcome.
 
 ### What happens next
 
-- **Acknowledgement:** the operator aims to acknowledge a complete report within seven days. This is
-  best-effort, not an SLA.
+- **Acknowledgement:** the operator aims to acknowledge a complete report promptly. This is best-effort,
+  not round-the-clock and not an SLA.
 - **Triage:** we reproduce the issue against the supported versions and tell you whether we consider it a
   vulnerability, a hardening item or out of scope, with the reason.
 - **Fix:** a fix ships as a normal release through the documented release gates; the release notes and the
@@ -141,7 +141,7 @@ suitability.
 
 ### 回報之後
 
-- **確認收到：**營運者會盡量在七天內回覆一份完整的回報。這是盡力而為，不是服務等級承諾（SLA）。
+- **確認收到：**營運者會盡快回覆一份完整的回報。這是盡力而為，不是全天候值班，也不是服務等級承諾（SLA）。
 - **分類：**我們在支援的版本上重現問題，並告訴你我們認為它是漏洞、加固項目，或不在範圍內，以及理由。
 - **修補：**修補以一般發布的方式、經過既有的發布閘門上線；release 說明與計算收據會寫出修正後的 revision。
 - **揭露：**我們偏好協調揭露——和你約定日期，修補上線後發布 GitHub security advisory。在那之前請不要公開。若無法取得共識，我們會說明原因。

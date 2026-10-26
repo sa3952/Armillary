@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 
-FROM python:3.14.8-slim-trixie@sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170 AS builder
+FROM python:3.14.9-slim-trixie@sha256:b347e2dcbc7f0b6f9fb7182e9da6a187fb10ae715e0692518c1aed0eec94a700 AS builder
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -19,14 +19,14 @@ ENV CXX="g++" \
 WORKDIR /build
 
 # Install the toolchain from the same Debian snapshot the pinned base
-# image records in its sources (20261005T000000Z, the commented snapshot URIs
+# image records in its sources (20261020T213255Z, the commented snapshot URIs
 # of its /etc/apt/sources.list.d/debian.sources), not from whatever the mirror
 # serves on build day.  The snapshot's Release files are past their
 # Valid-Until, so that check is off; they are fetched over HTTPS so a party on
 # the path cannot replay an older, still validly signed Release.  pkg-config
 # and libsqlite3-dev make pyswisseph's setup.py link Debian's libsqlite3 (security-maintained, the runtime base
 # already carries libsqlite3-0) instead of compiling Swephelp's bundled SQLite.
-ARG DEBIAN_SNAPSHOT=20261005T000000Z
+ARG DEBIAN_SNAPSHOT=20261020T213255Z
 RUN sed -i \
         -e "s|http://deb.debian.org/debian-security|https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT}|" \
         -e "s|http://deb.debian.org/debian|https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}|" \
@@ -76,12 +76,25 @@ RUN --network=none python -c 'import re,sys; from pathlib import Path; blocks=re
         --no-deps \
         {} + \
     && /opt/venv/bin/python -c \
-        'import platform,sys,swisseph; ok=platform.python_version()=="3.14.8" and swisseph.version=="2.10.03"; sys.exit(0 if ok else "Python or Swiss Ephemeris version mismatch")' \
+        'import platform,sys,swisseph; ok=platform.python_version()=="3.14.9" and swisseph.version=="2.10.03"; sys.exit(0 if ok else "Python or Swiss Ephemeris version mismatch")' \
     && ldd /opt/venv/lib/python3.14/site-packages/swisseph.*.so | grep -q 'libsqlite3\.so\.0 => /' \
     && /opt/venv/bin/python -m pip uninstall --yes pip \
     && find /opt/venv -depth -type d -name __pycache__ -exec rm --recursive {} +
 
-FROM python:3.14.8-slim-trixie@sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170
+# The licence texts of what the extension compiles, taken from the exact sdist
+# above: the runtime image's THIRD_PARTY_NOTICES.md names them.
+RUN --network=none mkdir --parents /licenses \
+    && tar --extract --gzip --to-stdout --file /source/pyswisseph-2.10.3.2.tar.gz \
+        pyswisseph-2.10.3.2/LICENSE.txt > /licenses/LICENSE.txt \
+    && tar --extract --gzip --to-stdout --file /source/pyswisseph-2.10.3.2.tar.gz \
+        pyswisseph-2.10.3.2/libswe/LICENSE > /licenses/SWISS_EPHEMERIS_LICENSE \
+    && tar --extract --gzip --to-stdout --file /source/pyswisseph-2.10.3.2.tar.gz \
+        pyswisseph-2.10.3.2/swephelp/LICENSE.txt > /licenses/SWEPHELP_LICENSE \
+    && grep -q 'GNU AFFERO GENERAL PUBLIC LICENSE' /licenses/LICENSE.txt \
+    && grep -q 'This file is part of Swiss Ephemeris' /licenses/SWISS_EPHEMERIS_LICENSE \
+    && grep -q 'GNU GENERAL PUBLIC LICENSE' /licenses/SWEPHELP_LICENSE
+
+FROM python:3.14.9-slim-trixie@sha256:b347e2dcbc7f0b6f9fb7182e9da6a187fb10ae715e0692518c1aed0eec94a700
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -98,7 +111,7 @@ RUN case "${VCS_REF}" in \
     esac
 LABEL org.opencontainers.image.title="Classical Astrology" \
       org.opencontainers.image.revision="${VCS_REF}" \
-      org.opencontainers.image.source="public Git exact revision and release source archive" \
+      org.opencontainers.image.source="https://github.com/sa3952/Armillary" \
       org.projectarmillary.publication.status="${PUBLICATION_STATUS}" \
       org.classical-astrology.frontend.mode="external-release-v1"
 
@@ -165,6 +178,9 @@ COPY deploy/container_healthcheck.py /app/deploy/container_healthcheck.py
 COPY scripts/verification/verify_ephemeris_integrity.py /app/scripts/verification/verify_ephemeris_integrity.py
 COPY scripts/verification/verify_place_catalog.py /app/scripts/verification/verify_place_catalog.py
 COPY LICENSE /app/LICENSE
+COPY --from=builder /licenses/LICENSE.txt /app/third_party/pyswisseph/LICENSE.txt
+COPY --from=builder /licenses/SWISS_EPHEMERIS_LICENSE /app/third_party/pyswisseph/SWISS_EPHEMERIS_LICENSE
+COPY --from=builder /licenses/SWEPHELP_LICENSE /app/third_party/pyswisseph/SWEPHELP_LICENSE
 
 RUN --mount=type=bind,target=/build-context,readonly \
     if [ -f /build-context/THIRD_PARTY_NOTICES.md ]; then \
@@ -200,18 +216,52 @@ RUN chmod 0555 /app/deploy/entrypoint.sh \
     && find /app /opt/venv /opt/pycache -type d -exec chmod 0555 {} + \
     && find /app /opt/venv /opt/pycache -type f -exec chmod go-w {} +
 
+# A service that never installs a package, logs anyone in, changes user or
+# account, or mounts anything needs none of the tools for it, so code running
+# as the application user finds none of them.  This runs last because the
+# steps above still query the package database; the database itself stays, so
+# image scanners still see every package the base installed.  Gate D compares
+# what is left with deploy/image-executables.json.
+RUN set -eu; \
+    for tool in \
+        apt apt-cache apt-cdrom apt-config apt-get apt-mark \
+        dpkg dpkg-deb dpkg-divert dpkg-maintscript-helper dpkg-query dpkg-realpath dpkg-split \
+        dpkg-statoverride dpkg-trigger dpkg-preconfigure dpkg-reconfigure \
+        debconf debconf-apt-progress debconf-communicate debconf-copydb debconf-escape \
+        debconf-set-selections debconf-show update-alternatives deb-systemd-helper deb-systemd-invoke \
+        su sg newgrp login sulogin runuser passwd chage chfn chsh expiry gpasswd \
+        chpasswd chgpasswd newusers useradd userdel usermod groupadd groupdel groupmod \
+        adduser addgroup deluser delgroup vipw vigr pwck grpck pwconv pwunconv grpconv grpunconv \
+        shadowconfig faillock unix_chkpwd unix_update pam-auth-update pam_getenv pam_timestamp_check \
+        pam_namespace_helper pwhistory_helper mkhomedir_helper \
+        mount umount losetup swapon swapoff mkswap swaplabel mkfs fsck findfs blkid blkdiscard blkzone \
+        blockdev wipefs fsfreeze fstrim isosize zramctl chcpu chmem ldattach rtcwake readprofile \
+        nsenter unshare setpriv chroot pivot_root switch_root mknod \
+        agetty getty start-stop-daemon invoke-rc.d update-rc.d service policy-rc.d installkernel \
+        add-shell remove-shell update-shells update-passwd \
+        perl; do \
+        rm -f "/usr/bin/$tool" "/usr/sbin/$tool"; \
+    done; \
+    rm -f /usr/bin/perl5.*; \
+    for tool in apt-get dpkg su mount nsenter unshare setpriv perl; do \
+        if [ -e "/usr/bin/$tool" ] || [ -e "/usr/sbin/$tool" ]; then \
+            echo "$tool survived the tool removal" >&2; exit 1; \
+        fi; \
+    done
+
 USER 10001:10001
 EXPOSE 8000
 
 # Every 30 s: liveness, plus a synthetic chart and place search every 10th run
 # and after any failure; three consecutive failures in a container that was
 # healthy once make the probe end PID 1 so the restart policy restarts it
-# (deploy/container_healthcheck.py).  A busy 503 is not a failure until it has
-# lasted ten minutes.  The 40 s timeout covers liveness (2 s), a chart that
+# (deploy/container_healthcheck.py).  A busy 503 is never a failure; after ten
+# minutes of nothing else the container is marked unhealthy, not restarted.
+# The 45 s timeout covers liveness and readiness (3.5 s each), a chart that
 # waits out the 18 s queue budget (25 s) and the place search (8 s).  Start
 # runs are 2 s apart (Docker >= 25).
-HEALTHCHECK --interval=30s --timeout=40s --start-period=60s --start-interval=2s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=45s --start-period=60s --start-interval=2s --retries=3 \
     CMD ["/opt/venv/bin/python", "/app/deploy/container_healthcheck.py"]
 
 ENTRYPOINT ["/app/deploy/entrypoint.sh"]
-CMD ["/opt/venv/bin/python", "-m", "uvicorn", "app.main:create_app", "--factory", "--app-dir", "/app/backend", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--loop", "asyncio", "--http", "h11", "--ws", "none", "--no-access-log", "--timeout-worker-healthcheck", "5", "--timeout-graceful-shutdown", "25", "--backlog", "32"]
+CMD ["/opt/venv/bin/python", "-m", "uvicorn", "app.main:create_app", "--factory", "--app-dir", "/app/backend", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--loop", "asyncio", "--http", "h11", "--ws", "none", "--no-access-log", "--timeout-worker-healthcheck", "20", "--timeout-graceful-shutdown", "25", "--backlog", "32", "--limit-max-requests", "1000", "--limit-max-requests-jitter", "200", "--no-proxy-headers"]

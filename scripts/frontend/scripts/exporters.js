@@ -7,7 +7,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function buildExportPipeline(Labels) {
   "use strict";
 
-  const EXPORT_CONTRACT_VERSION = "0.4.0";
+  const EXPORT_CONTRACT_VERSION = "0.5.0";
   // 畫面（view-model.js）與匯出共用這一份；與後端 time_utils.py 同字由
   // tests/integration/test_frontend_contract.py 對照。1972 年前與約 2033-09 以後的盤
   // 是 UT1 而不是 UTC；這時欄位值結尾的 Z 只是沿用欄位格式，所以一併去掉。
@@ -114,7 +114,7 @@
     "trace", "requested_options", "contract", "receipt",
   ]);
   const SUPPORTED_RESPONSE_CONTRACTS = Object.freeze({
-    "0.20.0": Object.freeze(["0.12.0"]),
+    "0.21.0": Object.freeze(["0.13.0"]),
   });
 
   function assertCompatibleSourceResponse(sourceResponse) {
@@ -588,7 +588,7 @@
   // 試算表驗過，寧可多一個撇號。前導的「看不見」也包括 Unicode 定為可忽略的字元（韓文填充字
   // U+115F、U+1160、U+3164、U+FFA0 等）與點字空格 U+2800：它們不是空白類別，卻一樣顯示為空。
   // `|` 開頭可被讀成 DDE 呼叫（`|calc!A1`）；以分號為欄界讀入時（部分語系的預設），
-  // `;=1+1` 會切出一格 `=1+1`。只看開頭：儲存格中間的 `|`、`;` 不加撇號。
+  // `;=1+1` 會切出一格 `=1+1`。中間的分隔符由 csvCell 引用整格，避免被另拆成公式。
   // 結合記號（\p{M}）沒有基底字元時同樣顯示為空，也算前導。
   const CSV_FORMULA_LEAD = /^[\s\p{Cf}\p{Cc}\p{Default_Ignorable_Code_Point}\u2800\p{M}]*[=+\-@|;]/u;
   // 完整量測值不是公式。只接受目前serializer實際產生的封閉形狀；
@@ -611,7 +611,7 @@
   function csvCell(value) {
     let raw = spreadsheetScalar(value);
     if (CSV_TYPED_LITERAL.test(raw)) raw = "'" + raw;
-    return /[",\r\n]/.test(raw) ? `"${raw.replace(/"/g, '""')}"` : raw;
+    return /[",;|\t\r\n]/.test(raw) ? `"${raw.replace(/"/g, '""')}"` : raw;
   }
 
   function renderCsv(document) {
@@ -736,9 +736,13 @@
       // 類裡，因為它們只在行首有意義；換行已折成 <br>，所以只看字串開頭。
       .replace(/^(\s{0,3})-(?=[\s-]|$)/, "$1\\-")
       .replace(/^(\s{0,3})(\d{1,9})\.(?=\s|$)/, "$1$2\\.")
-      // GFM 的延伸自動連結把散文裡的 http(s)://、ftp:// 與 www. 變成可點的連結；跳脫冒號與點，
-      // 渲染出的文字相同，但不再是連結。CommonMark 的 <…> 自動連結已因 < 被換掉而不成立。
-      .replace(/(^|[^A-Za-z0-9])(https?|ftp):(?=\/\/)/gi, "$1$2\\:")
+      // GFM 的延伸自動連結把散文裡的 http(s)://、ftp://、mailto:、xmpp:、電子郵件地址與 www. 變成
+      // 可點的連結，markdown-it 的 linkify 另認得只剩 // 開頭的網址；跳脫 scheme 的冒號（不論前面
+      // 接什麼：1http:// 在 GFM 也成連結）、// 的第二條斜線、郵件地址的 @ 與 www 後的點，渲染出的
+      // 文字相同，但不再是連結。CommonMark 的 <…> 自動連結已因 < 被換掉而不成立。
+      .replace(/(https?|ftp|mailto|xmpp):/gi, "$1\\:")
+      .replace(/\/\/(?=[A-Za-z0-9])/g, "/\\/")
+      .replace(/([A-Za-z0-9._%+-])@(?=[A-Za-z0-9])/g, "$1\\@")
       .replace(/(^|[^A-Za-z0-9])(www)\.(?=\S)/gi, "$1$2\\.")
       .replace(/\r\n?|\n/g, "<br>");
   }

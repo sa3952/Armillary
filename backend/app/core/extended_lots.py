@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from .dignity_tables import SEVEN_PLANETS, SIGNS
 from .formatting import normalize_longitude, sign_position, zodiac_sign_index
-from .house_placements import _house_for_longitude
+from .house_placements import _cusp_spans, _house_for_longitude
 from .source_reading import ORIGINAL_LANGUAGE_READ, SECONDARY_ONLY, TRANSLATION_READ, cited
 
 OPERANDS = (*SEVEN_PLANETS, "fortune", "spirit")
@@ -77,11 +77,13 @@ def _operand_longitude(operand: str, longitudes: dict, candidate: dict) -> float
     return longitudes[operand]
 
 
-def _position(longitude: float, houses: dict | None) -> dict:
+def _position(longitude: float, houses: dict | None, spans: tuple | None) -> dict:
     return {
         "longitude": longitude,
         "sign": SIGNS[zodiac_sign_index(longitude)],
-        "house": None if houses is None else _house_for_longitude(longitude, houses["cusps"]),
+        "house": (
+            None if houses is None else _house_for_longitude(longitude, houses["cusps"], spans)
+        ),
     }
 
 
@@ -99,6 +101,9 @@ def compute_extended_lots(
     """
 
     primary = lots["sect_applied"]
+    # Every method under both candidates against one set of cusps: the
+    # interval widths once, not once per place.
+    spans = None if houses is None else _cusp_spans(houses["cusps"])
     results = []
     for method in LOT_METHODS:
         by_sect = {}
@@ -109,7 +114,7 @@ def compute_extended_lots(
             minus = _operand_longitude(rule["minus"], longitudes, fortune_spirit)
             longitude = normalize_longitude(ascendant + plus - minus)
             by_sect[candidate] = {
-                **_position(longitude, houses),
+                **_position(longitude, houses, spans),
                 "formula_expanded": {
                     "projector": {"operand": "ascendant", "longitude": ascendant},
                     "plus": {"operand": rule["plus"], "longitude": plus},

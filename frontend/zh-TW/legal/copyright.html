@@ -23,11 +23,11 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="渾儀 Armillary：可驗證的古典西洋占星計算器">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","publisher":{"@id":"https://projectarmillary.com/#organization"},"url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/legal/copyright#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/legal/copyright#breadcrumb"},"dateModified":"2026-10-19","description":"渾儀的著作權與授權：怎麼取得你正在使用那一版的 AGPLv3 對應原始碼與它的範圍，以及 Swiss Ephemeris、地名資料、Debian 基底與其他第三方依賴的授權揭露。","inLanguage":"zh-TW","isAccessibleForFree":true,"isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"著作權、授權與對應原始碼｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/legal/copyright"},{"@id":"https://projectarmillary.com/#organization","@type":"Organization","alternateName":["渾儀","Armillary","Project Armillary"],"disambiguatingDescription":"古典西洋占星的計算網站與開源程式；名稱取自天文儀器渾儀（armillary sphere），本身不是那件儀器。","logo":{"@type":"ImageObject","height":180,"url":"https://projectarmillary.com/apple-touch-icon.png","width":180},"name":"渾儀 Armillary","sameAs":["https://github.com/sa3952/Armillary"],"url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/legal/copyright#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/legal/copyright","name":"著作權與原始碼","position":2}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","publisher":{"@id":"https://projectarmillary.com/#organization"},"url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/legal/copyright#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/legal/copyright#breadcrumb"},"dateModified":"2026-10-26","description":"渾儀的著作權與授權：怎麼取得你正在使用那一版的 AGPLv3 對應原始碼與它的範圍，以及 Swiss Ephemeris、地名資料、Debian 基底與其他第三方依賴的授權揭露。","inLanguage":"zh-TW","isAccessibleForFree":true,"isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"著作權、授權與對應原始碼｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/legal/copyright"},{"@id":"https://projectarmillary.com/#organization","@type":"Organization","alternateName":["渾儀","Armillary","Project Armillary"],"disambiguatingDescription":"古典西洋占星的計算網站與開源程式；名稱取自天文儀器渾儀（armillary sphere），本身不是那件儀器。","logo":{"@type":"ImageObject","height":180,"url":"https://projectarmillary.com/apple-touch-icon.png","width":180},"name":"渾儀 Armillary","sameAs":["https://github.com/sa3952/Armillary"],"url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/legal/copyright#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/legal/copyright","name":"著作權與原始碼","position":2}]}]}</script>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" href="/zh-TW/favicon.svg?v=c95686a2f029d369" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="/zh-TW/style/legal-copyright.css?v=829aacd31d9de942">
+<link rel="stylesheet" href="/zh-TW/style/legal-copyright.css?v=6c1330b032f40e01">
 </head>
 <body>
 
@@ -80,6 +80,8 @@
     <h2>取得你正在使用的那一版</h2>
 
     <p>AGPL 第 13 條要求你能取得的，是<b>你正在互動的那一版</b>的對應原始碼——不是程式庫當下的最新狀態。後端會持續更新，<b>線上跑的版本不必然等於公開程式庫的最新提交</b>，所以取得路徑必須從你這一側的證據出發，而不是從我們的說法出發。</p>
+
+    <p><b>不必先排盤。</b>打開 <a class="mono" href="/api/version">/api/version</a>，服務會直接回報目前這一版的建置識別、後端原始碼網址、本專案授權與契約版號；它和每張盤的〈計算收據〉讀的是同一份識別。</p>
 
     <ol class="steps">
       <li>
@@ -152,7 +154,7 @@
         <tr>
           <td><b>臺灣地名</b><br><span class="sub">行政區域 ＋ 聚落</span></td>
           <td class="lic">政府資料開放<br>授權條款 1.0</td>
-          <td>內政部地政司 2026「臺灣地區地名資料_行政區域類」、「臺灣地區地名資料_聚落類」（2026-10-09 取得；資料集未標版本號）<br><span class="mono">data.gov.tw/dataset/40281</span><br><span class="mono">data.gov.tw/dataset/53677</span><br>此開放資料依政府資料開放授權條款 (Open Government Data License) 進行公眾釋出，使用者於遵守本條款各項規定之前提下，得利用之。政府資料開放授權條款：<span class="mono">https://data.gov.tw/license</span></td>
+          <td>內政部地政司 2026「臺灣地區地名資料_行政區域類」、「臺灣地區地名資料_聚落類」（2026-10-26 取得；資料集未標版本號）<br><span class="mono">data.gov.tw/dataset/40281</span><br><span class="mono">data.gov.tw/dataset/53677</span><br>此開放資料依政府資料開放授權條款 (Open Government Data License) 進行公眾釋出，使用者於遵守本條款各項規定之前提下，得利用之。政府資料開放授權條款：<span class="mono">https://data.gov.tw/license</span></td>
         </tr>
         <tr>
           <td><b>星盤符號</b><br><span class="sub">取自字型輪廓的 SVG 路徑，不散布字型檔</span></td>
@@ -172,7 +174,7 @@
         <tr>
           <td><b>容器基礎映像</b></td>
           <td class="lic">Debian，多為<br>GPL / LGPL</td>
-          <td><span class="mono">python:3.14.8-slim-trixie</span>，以摘要釘選於 <span class="mono">deploy/Dockerfile</span></td>
+          <td><span class="mono">python:3.14.9-slim-trixie</span>，以摘要釘選於 <span class="mono">deploy/Dockerfile</span></td>
         </tr>
       </tbody>
     </table>
@@ -285,6 +287,7 @@
       <a href="/zh-TW/legal/copyright">著作權與原始碼</a>
       <a href="/zh-TW/contact">聯絡方式</a>
       <a href="/zh-TW/about">關於</a>
+      <a href="/zh-TW/accessibility">無障礙</a>
     </div>
   </div>
 
@@ -292,9 +295,10 @@
   <div class="wrap">
     <span>渾儀 ARMILLARY</span>
     <span>只計算，不解盤，不預測</span>
-    <span>最後更新：<time datetime="2026-10-19">2026-10-19</time></span>
+    <span>最後更新：<time datetime="2026-10-26">2026-10-26</time></span>
   </div>
 </footer>
+<script src="/zh-TW/visit-count.js?v=a01917f51b18a502" defer></script>
 
 </body>
 </html>

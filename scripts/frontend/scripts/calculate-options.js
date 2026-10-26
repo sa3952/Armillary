@@ -339,8 +339,9 @@ function buildOptionRow(option) {
   return row;
 }
 
-// 動態產生的控制項都關閉表單還原：否則重新載入時瀏覽器復原 checkbox 並觸發 change，
-// 送出的模組組合與畫面初始狀態不符。
+// 動態產生的控制項都關閉表單還原：否則重新載入時瀏覽器復原控制項並觸發 change，
+// 送出的模組組合與畫面初始狀態不符。checkbox 與 radio 沒有 autocomplete 屬性可用（HTML 不給
+// 它意義），它們由所屬表單的 autocomplete="off" 關掉還原。
 function markNoRestore(control) {
   control.setAttribute("autocomplete", "off");
   return control;
@@ -361,7 +362,7 @@ function buildControl(option) {
     return select;
   }
   if (option.type === "boolean") {
-    const input = markNoRestore(document.createElement("input"));
+    const input = document.createElement("input");
     input.type = "checkbox";
     input.id = `opt-${option.key}`;
     input.className = "option-control";

@@ -156,7 +156,11 @@ def test_hosted_static_openapi_is_generated_offline_not_served():
 
     assert set(schema["paths"]) == {
         "/api/chart", "/api/health", "/api/health/ready", "/api/places/search", "/api/time/convert",
+        "/api/visit", "/api/visit/daily", "/api/version",
     }
+    for path, method in (("/api/visit", "post"), ("/api/visit/daily", "get")):
+        assert set(schema["paths"][path]) == {method}
+        assert "content" not in schema["paths"][path][method]["responses"]["204"]
     chart = schema["paths"]["/api/chart"]["post"]
     search = schema["paths"]["/api/places/search"]["post"]
     convert = schema["paths"]["/api/time/convert"]["post"]
@@ -556,3 +560,35 @@ def test_importing_the_application_module_builds_no_application():
     completed = subprocess.run([sys.executable, "-c", probe], cwd=BACKEND_ROOT,
                                capture_output=True, text=True, timeout=60, check=False)
     assert completed.returncode == 0, completed.stderr[-2000:]
+
+
+@pytest.mark.parametrize("method", ["get", "head"])
+@pytest.mark.parametrize("path", ["/zh-TW%2F%2E", "/zh-TW%2F%2E%2F", "/zh-TW/style/%2E%2E"])
+def test_encoded_directory_aliases_never_redirect_query_to_an_absolute_http_url(path, method):
+    with _client(follow_redirects=False) as client:
+        response = getattr(client, method)(path + "?synthetic_private_query=sample")
+    assert response.status_code == 308
+    assert response.headers["location"] == "/zh-TW/"
+    assert "synthetic_private_query" not in response.headers["location"]
+
+
+@pytest.mark.parametrize("path", ["/zh-TW/style/", "/zh-TW/not-a-page/%2e"])
+def test_non_assets_and_double_encoding_never_emit_location(path):
+    with _client(follow_redirects=False) as client:
+        response = client.get(path + "?synthetic_private_query=sample")
+    assert response.status_code == 404
+    assert "location" not in response.headers
+
+
+def test_a_staticfiles_redirect_cannot_bypass_the_canonical_producer(monkeypatch):
+    from starlette.responses import RedirectResponse
+    from fastapi.staticfiles import StaticFiles
+
+    async def unsafe_directory_redirect(self, path, scope):
+        return RedirectResponse("http://example.invalid/?synthetic_private_query=sample", status_code=307)
+
+    monkeypatch.setattr(StaticFiles, "get_response", unsafe_directory_redirect)
+    with _client(follow_redirects=False) as client:
+        response = client.get("/not-an-asset")
+    assert response.status_code == 404
+    assert "location" not in response.headers

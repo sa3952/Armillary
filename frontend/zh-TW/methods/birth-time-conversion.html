@@ -27,7 +27,7 @@
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" href="/zh-TW/favicon.svg?v=c95686a2f029d369" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="/zh-TW/style/methods-birth-time-conversion.css?v=152e65a28bdd66cc">
+<link rel="stylesheet" href="/zh-TW/style/methods-birth-time-conversion.css?v=62d18502cdadce70">
 </head>
 <body>
 
@@ -71,7 +71,7 @@
     <h2 class="hdr"><span>01</span>民國年與日本年號</h2>
     <p>民國紀年自 1912 年起、日本自明治 6 年（1873 年）起，月與日都用格里曆，所以換算只是年份的加法，月日不變。</p>
     <p class="scroll-hint" hidden>表格可左右捲動</p>
-    <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="ct-era-cap">
+    <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="ct-era-cap" data-scroll-frame>
       <table class="spec">
         <caption id="ct-era-cap">年號與西元年</caption>
         <thead><tr><th scope="col">紀年</th><th scope="col">換算</th><th scope="col">第一天</th><th scope="col">最後一天</th></tr></thead>
@@ -105,7 +105,7 @@
     <p>每一列是一條規則：它涵蓋的鐘面期間、UTC 偏移、依據的文件，以及我們核到哪一層。逐段的轉換時刻收在每張表下方。期間與偏移由時區資料庫產生；服務用的時區資料庫與本表不一致時，建置會失敗，換算結果也不會列出處。</p>
 <h3 id="rules-taiwan">臺灣</h3>
 <p class="scroll-hint" hidden>表格可左右捲動</p>
-<div class="spec-scroll" tabindex="0" role="region" aria-labelledby="tab-taiwan-taipei">
+<div class="spec-scroll" tabindex="0" role="region" aria-labelledby="tab-taiwan-taipei" data-scroll-frame>
   <table class="spec ct-rules" role="table">
     <caption id="tab-taiwan-taipei">表 1　臺灣（Asia/Taipei）的規則與出處</caption>
     <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">規則</th><th scope="col" role="columnheader">期間（當地鐘面）</th><th scope="col" role="columnheader">UTC 偏移</th><th scope="col" role="columnheader">依據文件</th><th scope="col" role="columnheader">核到哪一層</th></tr></thead>
@@ -124,7 +124,7 @@
 <details class="ct-transitions">
   <summary>臺灣（Asia/Taipei）逐段轉換時刻（40 次）</summary>
   <p class="scroll-hint" hidden>表格可左右捲動</p>
-  <div class="spec-scroll" tabindex="0" role="region" aria-label="臺灣（Asia/Taipei）逐段轉換時刻（可橫向捲動）">
+  <div class="spec-scroll" tabindex="0" role="region" aria-label="臺灣（Asia/Taipei）逐段轉換時刻（可橫向捲動）" data-scroll-frame>
     <table class="spec">
       <thead><tr><th scope="col">世界時</th><th scope="col">當地鐘面</th><th scope="col">UTC 偏移</th><th scope="col">之後是</th><th scope="col">規則</th></tr></thead>
       <tbody>
@@ -174,7 +174,7 @@
 </details>
 <h3 id="rules-hong_kong">香港</h3>
 <p class="scroll-hint" hidden>表格可左右捲動</p>
-<div class="spec-scroll" tabindex="0" role="region" aria-labelledby="tab-hong_kong-hong-kong">
+<div class="spec-scroll" tabindex="0" role="region" aria-labelledby="tab-hong_kong-hong-kong" data-scroll-frame>
   <table class="spec ct-rules" role="table">
     <caption id="tab-hong_kong-hong-kong">表 2　香港（Asia/Hong_Kong）的規則與出處</caption>
     <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">規則</th><th scope="col" role="columnheader">期間（當地鐘面）</th><th scope="col" role="columnheader">UTC 偏移</th><th scope="col" role="columnheader">依據文件</th><th scope="col" role="columnheader">核到哪一層</th></tr></thead>
@@ -190,7 +190,7 @@
 <details class="ct-transitions">
   <summary>香港（Asia/Hong_Kong）逐段轉換時刻（69 次）</summary>
   <p class="scroll-hint" hidden>表格可左右捲動</p>
-  <div class="spec-scroll" tabindex="0" role="region" aria-label="香港（Asia/Hong_Kong）逐段轉換時刻（可橫向捲動）">
+  <div class="spec-scroll" tabindex="0" role="region" aria-label="香港（Asia/Hong_Kong）逐段轉換時刻（可橫向捲動）" data-scroll-frame>
     <table class="spec">
       <thead><tr><th scope="col">世界時</th><th scope="col">當地鐘面</th><th scope="col">UTC 偏移</th><th scope="col">之後是</th><th scope="col">規則</th></tr></thead>
       <tbody>
@@ -269,7 +269,7 @@
 </details>
 <h3 id="rules-macau">澳門</h3>
 <p class="scroll-hint" hidden>表格可左右捲動</p>
-<div class="spec-scroll" tabindex="0" role="region" aria-labelledby="tab-macau-macau">
+<div class="spec-scroll" tabindex="0" role="region" aria-labelledby="tab-macau-macau" data-scroll-frame>
   <table class="spec ct-rules" role="table">
     <caption id="tab-macau-macau">表 3　澳門（Asia/Macau）的規則與出處</caption>
     <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">規則</th><th scope="col" role="columnheader">期間（當地鐘面）</th><th scope="col" role="columnheader">UTC 偏移</th><th scope="col" role="columnheader">依據文件</th><th scope="col" role="columnheader">核到哪一層</th></tr></thead>
@@ -285,7 +285,7 @@
 <details class="ct-transitions">
   <summary>澳門（Asia/Macau）逐段轉換時刻（71 次）</summary>
   <p class="scroll-hint" hidden>表格可左右捲動</p>
-  <div class="spec-scroll" tabindex="0" role="region" aria-label="澳門（Asia/Macau）逐段轉換時刻（可橫向捲動）">
+  <div class="spec-scroll" tabindex="0" role="region" aria-label="澳門（Asia/Macau）逐段轉換時刻（可橫向捲動）" data-scroll-frame>
     <table class="spec">
       <thead><tr><th scope="col">世界時</th><th scope="col">當地鐘面</th><th scope="col">UTC 偏移</th><th scope="col">之後是</th><th scope="col">規則</th></tr></thead>
       <tbody>
@@ -366,7 +366,7 @@
 </details>
 <h3 id="rules-mainland_china">中國</h3>
 <p class="scroll-hint" hidden>表格可左右捲動</p>
-<div class="spec-scroll" tabindex="0" role="region" aria-labelledby="tab-mainland_china-shanghai">
+<div class="spec-scroll" tabindex="0" role="region" aria-labelledby="tab-mainland_china-shanghai" data-scroll-frame>
   <table class="spec ct-rules" role="table">
     <caption id="tab-mainland_china-shanghai">表 4　中國（北京時間，Asia/Shanghai）的規則與出處</caption>
     <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">規則</th><th scope="col" role="columnheader">期間（當地鐘面）</th><th scope="col" role="columnheader">UTC 偏移</th><th scope="col" role="columnheader">依據文件</th><th scope="col" role="columnheader">核到哪一層</th></tr></thead>
@@ -385,7 +385,7 @@
 <details class="ct-transitions">
   <summary>中國（北京時間，Asia/Shanghai）逐段轉換時刻（29 次）</summary>
   <p class="scroll-hint" hidden>表格可左右捲動</p>
-  <div class="spec-scroll" tabindex="0" role="region" aria-label="中國（北京時間，Asia/Shanghai）逐段轉換時刻（可橫向捲動）">
+  <div class="spec-scroll" tabindex="0" role="region" aria-label="中國（北京時間，Asia/Shanghai）逐段轉換時刻（可橫向捲動）" data-scroll-frame>
     <table class="spec">
       <thead><tr><th scope="col">世界時</th><th scope="col">當地鐘面</th><th scope="col">UTC 偏移</th><th scope="col">之後是</th><th scope="col">規則</th></tr></thead>
       <tbody>
@@ -423,7 +423,7 @@
   </div>
 </details>
 <p class="scroll-hint" hidden>表格可左右捲動</p>
-<div class="spec-scroll" tabindex="0" role="region" aria-labelledby="tab-mainland_china-urumqi">
+<div class="spec-scroll" tabindex="0" role="region" aria-labelledby="tab-mainland_china-urumqi" data-scroll-frame>
   <table class="spec ct-rules" role="table">
     <caption id="tab-mainland_china-urumqi">表 5　中國（新疆時間，Asia/Urumqi）的規則與出處</caption>
     <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">規則</th><th scope="col" role="columnheader">期間（當地鐘面）</th><th scope="col" role="columnheader">UTC 偏移</th><th scope="col" role="columnheader">依據文件</th><th scope="col" role="columnheader">核到哪一層</th></tr></thead>
@@ -436,7 +436,7 @@
 <details class="ct-transitions">
   <summary>中國（新疆時間，Asia/Urumqi）逐段轉換時刻（1 次）</summary>
   <p class="scroll-hint" hidden>表格可左右捲動</p>
-  <div class="spec-scroll" tabindex="0" role="region" aria-label="中國（新疆時間，Asia/Urumqi）逐段轉換時刻（可橫向捲動）">
+  <div class="spec-scroll" tabindex="0" role="region" aria-label="中國（新疆時間，Asia/Urumqi）逐段轉換時刻（可橫向捲動）" data-scroll-frame>
     <table class="spec">
       <thead><tr><th scope="col">世界時</th><th scope="col">當地鐘面</th><th scope="col">UTC 偏移</th><th scope="col">之後是</th><th scope="col">規則</th></tr></thead>
       <tbody>
@@ -509,7 +509,7 @@
   </section>
 
 </div>
-<script src="/zh-TW/table-scroll.js?v=902f20a5b04bbed0" defer></script>
+<script src="/zh-TW/table-scroll.js?v=5319860fadf798cd" defer></script>
 </main>
 
 <footer>
@@ -536,6 +536,7 @@
       <a href="/zh-TW/legal/copyright">著作權與原始碼</a>
       <a href="/zh-TW/contact">聯絡方式</a>
       <a href="/zh-TW/about">關於</a>
+      <a href="/zh-TW/accessibility">無障礙</a>
     </div>
   </div>
 
@@ -546,6 +547,7 @@
     <span>最後更新：<time datetime="2026-10-21">2026-10-21</time></span>
   </div>
 </footer>
+<script src="/zh-TW/visit-count.js?v=a01917f51b18a502" defer></script>
 
 </body>
 </html>

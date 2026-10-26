@@ -154,7 +154,7 @@ function summaryCell(sampled, position) {
     : null;
   if (indices && indices.length > 1) {
     const names = zodiacOrder(indices).map((index) => SIGNS[index]);
-    return `${names.slice(0, -1).join("、")}或${names[names.length - 1]}${SUMMARY_CHANGES}`;
+    return `取樣到 ${names.join("、")}${SUMMARY_CHANGES}`;
   }
   if (indices && indices.length === 0) return samplingStatus(sampled.status);
   return signPosition(position);
@@ -235,7 +235,7 @@ function buildSections(response) {
     contractSection(response),
     receiptSection(response),
   ];
-  return collapseUniformColumns(withReasonLabels([
+  return displayFormat(collapseUniformColumns(withReasonLabels([
     // 速覽在最前面：剛算完的人先看到最常被問到的三個星座，細節在後面各區。
     summarySection(response, angles),
     timeSection(response),
@@ -269,7 +269,71 @@ function buildSections(response) {
     dodecatemoriaSection(response),
     classicalClassificationsSection(response),
     ...verification,
-  ]));
+  ])));
+}
+
+/* 表格的排字：畫面、「複製本區」與每一種匯出都讀這一份，不另在畫面改字。
+   時刻：ISO 8601 的「T…Z」寫成「1987-11-22 06:39:26」，零毫秒不印；同一欄上一格已寫過同一天時
+   只印時刻（「15:43:45」），日期換了才再寫。時間尺度寫在欄頭。驗算軌跡例外：它的欄頭與表題不寫
+   時間尺度，格裡的時刻照原字（保留 Z），才看得出是世界時。相位方格的格不是時刻，不動。
+   欄頭與表題的尺度標籤「世界時（UT1（舊協調世界時期間））」：括號裡再套括號難讀，寫成
+   「世界時 UT1（舊協調世界時期間）」。「本次請求的選項」：選項鍵與閉集值寫表單上的中文名；
+   沒有中文名的（數字、null）照原字。程式要讀的代碼在 JSON 匯出的 source_response.requested_options。 */
+const ISO_INSTANT = /(\d{4}-\d\d-\d\d)T(\d\d:\d\d(?::\d\d)?)(?:\.0+(?=Z))?(\.\d+)?Z/g;
+const DATED_CELL = /^(\d{4}-\d\d-\d\d) (?=\d\d:\d\d)/;
+// 只試括號裡第一個 UT1：其餘的 UT1 不改變後面能不能接上內層括號，逐一回溯是二次方。
+const NESTED_SCALE = /（((?:(?!UT1)[^（）])*UT1[^（）]*（[^（）]*）)）/g;
+function displayHeading(text) {
+  return typeof text === "string" ? text.replace(NESTED_SCALE, " $1") : text;
+}
+function displayInstants(text) {
+  return text.replace(ISO_INSTANT, "$1 $2$3").replace(NESTED_SCALE, " $1");
+}
+function requestedOptionText(columnIndex, row) {
+  const option = Catalogue.BY_KEY[row[0]];
+  const raw = String(row[columnIndex] == null ? "" : row[columnIndex]);
+  if (!option) return raw;
+  if (columnIndex === 1 && raw === "null（未選定）") return "未選定";
+  if (columnIndex === 0) return option.label_zh || raw;
+  if (option.type === "boolean" && (raw === "true" || raw === "false")) return raw === "true" ? "是" : "否";
+  if (option.type === "choice") {
+    const value = (option.values || []).find((entry) => entry.value === raw);
+    if (value && value.label_zh) return value.label_zh;
+    if (row[0] === "house_system") {
+      const zh = Labels.ownLabel(Labels.VOCABULARIES.house_system, raw);
+      if (zh) return zh;
+    }
+  }
+  return raw;
+}
+function displayRows(table, sectionId) {
+  const rows = table.rows.map((row) => row.map((cell, index) => {
+    if (sectionId === "requested_options" && index < 2) return requestedOptionText(index, row);
+    if (sectionId === "trace" || typeof cell !== "string") return cell;
+    return displayInstants(cell);
+  }));
+  table.columns.forEach((_column, index) => {
+    if (index === 0) return;
+    let previous = null;
+    rows.forEach((row) => {
+      const match = typeof row[index] === "string" ? DATED_CELL.exec(row[index]) : null;
+      if (!match) { previous = null; return; }
+      if (match[1] === previous) row[index] = row[index].slice(match[0].length);
+      previous = match[1];
+    });
+  });
+  return rows;
+}
+function displayFormat(sections) {
+  return sections.map((section) => ({
+    ...section,
+    tables: section.tables.map((table) => ({
+      ...table,
+      ...(table.title ? { title: displayHeading(table.title) } : {}),
+      columns: table.columns.map(displayHeading),
+      rows: table.variant === "aspect_grid" ? table.rows : displayRows(table, section.id),
+    })),
+  }));
 }
 
 /* 整欄都一樣的狀態欄收成一句：
@@ -465,7 +529,7 @@ function dodecatemoriaSection(response) {
       && response.birth_time_sensitivity.precision === "date_only"
       ? DODECATEMORIA_LOTS_NEED_TIME_NOTE
       : presentClosedVocabulary(code, DODECATEMORIA_NOT_LISTED_ZH, "未列原因"))),
-    "中天不列：讀過的古書沒有算中天的十二分部。只列位置與守護行星。不替你解盤，也不預測。",
+    "中天不列：讀過的古書沒有算中天的十二分部。只列位置與守護行星。",
     "九分部（novenaria；吠陀占星稱 navamsa）把每個星座分成九份，本站不算；規則與出處見方法頁〈十二分部〉一節。",
   ];
   if (points.some((point) => point.category === "angle")) {

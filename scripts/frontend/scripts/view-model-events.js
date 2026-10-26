@@ -617,7 +617,8 @@ function planetaryHoursSection(response) {
     "行星日從日出算起，不從午夜算起：日出到日落十二等分為晝時，日落到下一次日出十二等分為夜時，"
     + "所以晝時與夜時通常不等長。第一時之主是日出那天（民用日：出生地日曆上的那一天，從午夜到午夜）的七曜之主，"
     + "之後依迦勒底序（土星、木星、火星、太陽、金星、水星、月亮）逐時輪替。",
-    "日出與日落用太陽上緣、含標準大氣折射、從地表觀測者看、不計地平俯角，與「升降與中天」同一個定義。",
+    "日出與日落用太陽上緣、含標準大氣折射、從地表觀測者看、不計地平俯角，與「升降與中天」同一個定義。"
+    + "日盤夜盤的判定另用太陽中心是否在地平線上、不計折射，所以日出後約幾分鐘內，可能行星時已是晝時、日夜盤仍判為夜盤。",
   ];
   const candidates = anchored ? planetaryCandidates(interval, hour, response.birth_time_sensitivity) : [];
   if (anchored) {
@@ -719,7 +720,7 @@ function lunarMansionsSection(response) {
     + "這是中世紀阿拉伯與歐洲占星書的分法；宿名是阿拉伯星名，照原名的拉丁字母轉寫，不譯成中文。",
     "這不是古中國的二十八宿：二十八宿沿天球赤道、以各宿的距星（每宿起點的那顆星）劃分，寬窄不一，"
     + "名稱與範圍都不同，這裡不換算成二十八宿。",
-    "只列月亮落在哪一宿。不替你解盤，也不預測。",
+    "只列月亮落在哪一宿。",
   ];
   const near = placements.filter((item) => item("near_boundary", "boolean"));
   if (!interval && near.length) {
@@ -1186,7 +1187,7 @@ const MOTION_PROFILE_ZH = Object.freeze({
   lilly_1647_v1: "Lilly 1647",
   bonatti_1550_v1: "Bonatti 1550",
 });
-const MOTION_FIXED_SENTENCE = "照原典列出。不替你解盤，也不預測。";
+const MOTION_FIXED_SENTENCE = "照原典列出。";
 const MOTION_SOURCE_LINES = Object.freeze([
   ["William Lilly, Christian Astrology (London 1647)",
     "出處：Lilly《Christian Astrology》1647 年版：各行星章的平均每日行度與停滯天數（pp.57–58、61–62、65、69、72–73、76、80）；"

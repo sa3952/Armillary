@@ -24,19 +24,31 @@ kernel included), every file under /var/log changed since then, and the log
 stream of every container on the host.  A sink that was
 neither observed nor proven quiet by that model is ``not_observed``; it is
 never assumed clean, and the receipt cannot pass.
+
+``--address-family 6`` (or ``4``) sends every request over that family only,
+resolving the host names to that family's addresses; ``--connect-address``
+sends every request to one literal address instead of resolving at all, so
+IPv6 is verifiable before its AAAA record exists.  TLS still names the host
+(SNI, certificate, Host).  The receipt's ``transport`` names the family asked
+for and counts the connections each family carried; one in the other family
+fails the receipt.
 """
 from __future__ import annotations
 
 import argparse
 import base64
 from enum import Enum
+import contextlib
 import gzip
 import hashlib
+import http.client
+import ipaddress
 import json
 import os
 from pathlib import Path
 import re
 import secrets
+import socket
 import stat
 import subprocess
 import sys
@@ -45,7 +57,7 @@ import time
 from typing import Any, NamedTuple, cast
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote_from_bytes, urlparse
-from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
+from urllib.request import HTTPHandler, HTTPRedirectHandler, HTTPSHandler, ProxyHandler, Request, build_opener
 from urllib.robotparser import RobotFileParser
 
 from scripts.tools.staging_secure_io import (
@@ -83,7 +95,8 @@ DEFERRED_REQUEST_CASES = {
 
 def hsts_is_sufficient(value: str) -> bool:
     match = re.search(r"(?:^|;)\s*max-age=(\d+)(?:;|$)", value.casefold())
-    return bool(match and int(match.group(1)) >= HSTS_MIN_AGE_SECONDS)
+    return bool(match and int(match.group(1)) >= HSTS_MIN_AGE_SECONDS
+                and "includesubdomains" in {part.strip().casefold() for part in value.split(";")})
 
 
 # --- public cache policy, as a browser or shared cache would read it -------------
@@ -311,7 +324,115 @@ class _NoRedirect(HTTPRedirectHandler):
         return None
 
 
-_DIRECT_OPENER = build_opener(ProxyHandler({}), _NoRedirect())
+# --- the transport: which address family carries the requests ----------------------
+ADDRESS_FAMILIES = {"any": socket.AF_UNSPEC, "4": socket.AF_INET, "6": socket.AF_INET6}
+
+
+def _connect_in_family(host: str, port: int, family: int, timeout, source_address) -> socket.socket:
+    """socket.create_connection, restricted to one address family."""
+    error: OSError | None = None
+    for af, kind, protocol, _name, address in socket.getaddrinfo(host, port, family, socket.SOCK_STREAM):
+        connection = socket.socket(af, kind, protocol)
+        try:
+            if isinstance(timeout, (int, float)):
+                connection.settimeout(timeout)
+            if source_address:
+                connection.bind(source_address)
+            connection.connect(address)
+            return connection
+        except OSError as failure:
+            error = failure
+            connection.close()
+    raise error or OSError(f"{host} has no address in the requested family")
+
+
+class ConnectionRoute:
+    """Where this verifier's connections go: the resolver's choice (`any`), only
+    one family's addresses of the host name, or one literal address.  It counts
+    the family each connection actually used; the receipt carries the counts."""
+
+    def __init__(self, family: str = "any", address: str | None = None) -> None:
+        if family not in ADDRESS_FAMILIES:
+            raise ValueError(f"address family must be one of {sorted(ADDRESS_FAMILIES)}")
+        if address is not None:
+            literal = ipaddress.ip_address(address)   # a name is refused here
+            if getattr(literal, "scope_id", None):
+                raise ValueError("--connect-address must not carry a zone (%…): it is the host's global address")
+            if family not in ("any", str(literal.version)):
+                raise ValueError(f"--connect-address is IPv{literal.version}, not the requested family {family}")
+            family, address = str(literal.version), literal.compressed
+        self.family, self.address = family, address
+        self.connections = {"4": 0, "6": 0}
+
+    def connect(self, host_port, timeout=None, source_address=None) -> socket.socket:
+        host, port = host_port
+        if self.address is not None:
+            connection = _connect_in_family(self.address, port, ADDRESS_FAMILIES[self.family],
+                                            timeout, source_address)
+        else:
+            connection = _connect_in_family(host, port, ADDRESS_FAMILIES[self.family], timeout, source_address)
+        self.connections["6" if connection.family == socket.AF_INET6 else "4"] += 1
+        return connection
+
+    def openssl_target(self, hostname: str) -> tuple[str, tuple[str, ...]]:
+        """`openssl s_client`'s -connect value and family flag for the same route."""
+        if self.address is not None:
+            return (f"[{self.address}]:443" if self.family == "6" else f"{self.address}:443"), ()
+        return f"{hostname}:443", (() if self.family == "any" else (f"-{self.family}",))
+
+    def receipt(self) -> dict[str, object]:
+        # The address itself is not recorded, as the base URL is not.
+        return {"address_family": self.family, "address_source": "literal" if self.address else "dns",
+                "connections": dict(self.connections)}
+
+    def as_requested(self) -> bool:
+        """`any` takes what the resolver gives; a named family must have carried
+        every connection, and at least one."""
+        if self.family == "any":
+            return True
+        other = "4" if self.family == "6" else "6"
+        return self.connections[self.family] > 0 and self.connections[other] == 0
+
+
+_ROUTE = ConnectionRoute()
+
+
+@contextlib.contextmanager
+def connection_route(route: ConnectionRoute):
+    """Every request (and TLS probe) inside the block takes `route`."""
+    global _ROUTE
+    previous, _ROUTE = _ROUTE, route
+    try:
+        yield route
+    finally:
+        _ROUTE = previous
+
+
+class _RoutedHTTPConnection(http.client.HTTPConnection):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._create_connection = _ROUTE.connect
+
+
+class _RoutedHTTPSConnection(http.client.HTTPSConnection):
+    """Connects by the route; SNI, the certificate check and Host still use the host name."""
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._create_connection = _ROUTE.connect
+
+
+class _RoutedHTTPHandler(HTTPHandler):
+    def http_open(self, req):
+        return self.do_open(_RoutedHTTPConnection, req)
+
+
+class _RoutedHTTPSHandler(HTTPSHandler):
+    def https_open(self, req):
+        return self.do_open(_RoutedHTTPSConnection, req, context=self._context)  # type: ignore[attr-defined]
+
+
+_DIRECT_OPENER = build_opener(ProxyHandler({}), _NoRedirect(), _RoutedHTTPHandler(), _RoutedHTTPSHandler())
 
 
 def read_approved_hostname(path: Path) -> str:
@@ -395,9 +516,12 @@ def tls12_signature_case(hostname: str, *, address: str | None = None) -> bool:
     """An ordinary TLS 1.2 client completes its handshake, and one that offers
     only SHA-224 or only SHA-1 signatures is refused (the edge's
     ssl_conf_command SignatureAlgorithms).  A client that cannot run proves nothing."""
-    address = address or f"{hostname}:443"
-    ordinary = _tls_handshake_signed(address, hostname, "-tls1_2")
-    weak = [_tls_handshake_signed(address, hostname, "-tls1_2", "-sigalgs", offered, "-cipher", "DEFAULT:@SECLEVEL=0")
+    family: tuple[str, ...] = ()
+    if address is None:
+        address, family = _ROUTE.openssl_target(hostname)
+    ordinary = _tls_handshake_signed(address, hostname, *family, "-tls1_2")
+    weak = [_tls_handshake_signed(address, hostname, *family, "-tls1_2", "-sigalgs", offered,
+                                  "-cipher", "DEFAULT:@SECLEVEL=0")
             for offered in _WEAK_SIGNATURES]
     return ordinary is True and all(result is False for result in weak)
 
@@ -428,7 +552,7 @@ def verify(base_url: str, *, approved_hostname: str | None = None, noindex: bool
     # Readiness is the container health check's; the edge answers it 404 itself.
     for path in ("/openapi.json", "/api/runtime-health", "/api/health/ready"):
         cases[path] = _request(base_url + path)[0] == 404
-    return {"schema_version": 6, "edge_noindex": noindex,
+    return {"schema_version": 7, "edge_noindex": noindex,
             "result": "pass" if all(cases.values()) else "fail", "cases": cases,
             "base_url_recorded": False}
 
@@ -1228,8 +1352,19 @@ def main() -> None:
                         "default: the compose armillary-app container")
     parser.add_argument("--expected-image-id")
     parser.add_argument("--apply", action="store_true", help="send real requests; absent means dry run")
+    parser.add_argument("--address-family", choices=list(ADDRESS_FAMILIES), default="any",
+                        help="carry every request over IPv4 or IPv6 only (default: the resolver's choice)")
+    parser.add_argument("--connect-address",
+                        help="connect every request to this literal global address instead of resolving the "
+                             "host names (TLS and Host still name the host): IPv6 before its AAAA record exists")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
+    try:
+        route = ConnectionRoute(args.address_family, args.connect_address)
+        if args.connect_address and not ipaddress.ip_address(args.connect_address).is_global:
+            raise ValueError("--connect-address must be the host's global address")
+    except ValueError as error:
+        parser.error(str(error))
     if os.geteuid() == 0:
         # As root (Gate E) it hands this checkout's compose files to Docker, so
         # the checkout must be one root can trust.
@@ -1238,21 +1373,23 @@ def main() -> None:
         except (OSError, ValueError) as error:
             raise SystemExit(f"HTTP VERIFIER REFUSED: {error}") from None
     if not args.apply:
-        print(json.dumps({"mode": "plan", "edge_noindex": args.noindex, "network_requests_sent": False},
-                         indent=2))
+        print(json.dumps({"mode": "plan", "edge_noindex": args.noindex, "network_requests_sent": False,
+                          "transport": route.receipt()}, indent=2))
         return
     if not args.expected_image_id:
         # Without it any container would do as the application sink.
         raise SystemExit("--apply requires --expected-image-id (the image the live pair records)")
     approved = read_approved_hostname(safe_path(args.approved_hostname_file))
-    receipt = verify(args.base_url, approved_hostname=approved, noindex=args.noindex)
-    canary = privacy_canary(
-        validate_base_url(args.base_url, approved_hostname=approved),
-        application_container=args.application_container or _compose_app_container(),
-        expected_image_id=args.expected_image_id,
-        edge_configuration=_effective_edge_configuration())
+    with connection_route(route):
+        receipt = verify(args.base_url, approved_hostname=approved, noindex=args.noindex)
+        canary = privacy_canary(
+            validate_base_url(args.base_url, approved_hostname=approved),
+            application_container=args.application_container or _compose_app_container(),
+            expected_image_id=args.expected_image_id,
+            edge_configuration=_effective_edge_configuration())
     receipt["privacy_canary"] = canary
-    if canary["result"] != "pass":
+    receipt["transport"] = {**route.receipt(), "as_requested": route.as_requested()}
+    if canary["result"] != "pass" or not route.as_requested():
         receipt["result"] = "fail"
     emit_json_receipt(receipt, args.output)
 

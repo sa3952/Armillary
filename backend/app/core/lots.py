@@ -43,6 +43,7 @@ from .source_reading import (
 from .house_placements import (
     HOUSE_INTERVAL_SEMANTICS,
     METHOD_NAME as HOUSE_PLACEMENT_METHOD_NAME,
+    _cusp_spans,
     _house_for_longitude,
 )
 from .method_status import method_head
@@ -343,21 +344,25 @@ def _formulas(asc: float, sun_lon: float, moon_lon: float) -> dict:
 # A Lot's house uses the planet rule exactly: the same half-open function.
 
 
-def _lot_house(longitude: float | None, houses: dict | None) -> int | None:
+def _lot_house(
+    longitude: float | None, houses: dict | None, spans: tuple | None = None
+) -> int | None:
     if houses is None or longitude is None:
         return None
-    return _house_for_longitude(longitude, houses["cusps"])
+    return _house_for_longitude(longitude, houses["cusps"], spans)
 
 
-def _lot_house_placement(houses: dict | None, primary: dict, trace: Trace) -> dict | None:
+def _lot_house_placement(
+    houses: dict | None, primary: dict, trace: Trace, spans: tuple | None = None
+) -> dict | None:
     if houses is None:
         return None
     placement = {
         "method": HOUSE_PLACEMENT_METHOD_NAME,
         "house_system_code": houses.get("system_code"),
         "interval_semantics": HOUSE_INTERVAL_SEMANTICS,
-        "fortune": _lot_house(primary["fortune"], houses),
-        "spirit": _lot_house(primary["spirit"], houses),
+        "fortune": _lot_house(primary["fortune"], houses, spans),
+        "spirit": _lot_house(primary["spirit"], houses, spans),
     }
     trace.add(
         "阿拉伯點落宮",
@@ -368,7 +373,7 @@ def _lot_house_placement(houses: dict | None, primary: dict, trace: Trace) -> di
     return placement
 
 
-def lots_not_applicable(state: dict, sect: dict | None, trace: Trace) -> dict:
+def lots_not_applicable(state: dict, sect: dict, trace: Trace) -> dict:
     # Refused Lots do not join aspects either.
     refusal = frame_table_refusal(
         state, trace, "阿拉伯點：Fortune / Spirit",
@@ -386,7 +391,8 @@ def lots_not_applicable(state: dict, sect: dict | None, trace: Trace) -> dict:
         "fortune": None,
         "spirit": None,
         "formula_basis": None,
-        "sect_status": (sect or {}).get("sect_status"),
+        # The chart's own sect receipt, refused or not: always a dict from determine_sect.
+        "sect_status": sect["sect_status"],
         "sect_applied": None,
         "by_sect": None,
         "house_placement": None,
@@ -460,7 +466,9 @@ def compute_lots(
             ),
         )
 
-    house_placement = _lot_house_placement(houses, primary, trace)
+    # Six Lot places against one set of cusps: their interval widths once.
+    spans = None if houses is None else _cusp_spans(houses["cusps"])
+    house_placement = _lot_house_placement(houses, primary, trace, spans)
     return {
         **base,
         **computed_receipt(LOTS_SOURCE_LABEL),
@@ -475,8 +483,8 @@ def compute_lots(
                 "formula_basis": value["formula_basis"],
                 "fortune": value["fortune"],
                 "spirit": value["spirit"],
-                "fortune_house": _lot_house(value["fortune"], houses),
-                "spirit_house": _lot_house(value["spirit"], houses),
+                "fortune_house": _lot_house(value["fortune"], houses, spans),
+                "spirit_house": _lot_house(value["spirit"], houses, spans),
                 "formula_fortune": value["formula_fortune"],
                 "formula_spirit": value["formula_spirit"],
             }

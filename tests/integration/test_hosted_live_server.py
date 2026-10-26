@@ -169,7 +169,8 @@ def test_real_hosted_server_success_rejections_and_process_output_are_bounded():
     for leaked in (CANARY, coordinate, '"POST /api/chart HTTP/', TRACEBACK):
         assert leaked not in output, leaked
     assert output.count('"route":"/api/chart"') == 8
-    assert output.count('"route":"frontend_or_unmatched"') == 5
+    # /openapi.json is a page path and is not logged; the four API paths are.
+    assert output.count('"route":"frontend_or_unmatched"') == 4
 
 
 def test_real_hosted_server_logs_the_flagged_annual_route_under_its_label_without_its_input():
@@ -377,3 +378,26 @@ def test_real_server_slow_place_searches_leave_health_and_assets_answerable():
         assert headers.get("retry-after") == str(RETRY_AFTER_SECONDS)
         assert json.loads(payload)["detail"]["code"] == "request_capacity_exhausted"
     assert TRACEBACK not in server.output
+
+
+def test_encoded_static_redirects_are_query_free_over_real_http():
+    import http.client
+    cases = [
+        ("/zh-TW%2F%2E", 308, "/zh-TW/"),
+        ("/zh-TW%2F%2E%2F", 308, "/zh-TW/"),
+        ("/zh-TW/style/%2E%2E", 308, "/zh-TW/"),
+        ("/zh-TW%252F%252E", 404, None),
+        ("/zh-TW/%252e", 404, None),
+    ]
+    with _hosted_server() as server:
+        for method in ("GET", "HEAD"):
+            for path, status, location in cases:
+                connection = http.client.HTTPConnection("127.0.0.1", server.port, timeout=10)
+                try:
+                    connection.request(method, path + "?synthetic_private_query=redirect_canary")
+                    response = connection.getresponse()
+                    assert (response.status, response.getheader("Location")) == (status, location), (method, path)
+                    response.read()
+                finally:
+                    connection.close()
+    assert "redirect_canary" not in server.output

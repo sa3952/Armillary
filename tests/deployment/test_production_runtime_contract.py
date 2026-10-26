@@ -14,6 +14,8 @@ import os
 from pathlib import Path
 import re
 import shutil
+import subprocess
+import sys
 import tarfile
 from types import SimpleNamespace
 
@@ -74,8 +76,9 @@ def test_container_healthcheck_uses_the_declared_host_and_checks_status_and_flag
     monkeypatch.setattr(module, "_DIRECT_OPENER", SimpleNamespace(open=open_request))
 
     assert module.main() == 0                               # the first run is deep
-    assert observed == [("GET", "/api/health", "projectarmillary.com", 2.0),
-                        ("GET", "/api/health/ready", "projectarmillary.com", 2.0),
+    # 3.5 s: one lost SYN (the 1 s first retransmission, then 2 s) still answers in time.
+    assert observed == [("GET", "/api/health", "projectarmillary.com", 3.5),
+                        ("GET", "/api/health/ready", "projectarmillary.com", 3.5),
                         ("POST", "/api/chart", "projectarmillary.com", 25.0),
                         ("POST", "/api/places/search", "projectarmillary.com", 8.0)]
     observed.clear()
@@ -116,8 +119,10 @@ def test_container_healthcheck_restarts_only_after_three_failures_of_a_once_heal
     assert module._read_state()["failures"] == 0
 
 
-def test_container_healthcheck_counts_busy_refusals_only_after_ten_minutes(monkeypatch, tmp_path):
-    """A 503 busy refusal neither fails nor resets; ten minutes of nothing else is one failure."""
+def test_container_healthcheck_marks_long_saturation_unhealthy_but_never_restarts_for_it(monkeypatch, tmp_path):
+    """A 503 busy refusal neither fails nor resets.  Ten minutes of nothing else marks the
+    container unhealthy (exit 1) for as long as it lasts, but is never a failure toward a
+    restart: load is not a fault, and restarting under a flood only drops the requests in flight."""
     module = _healthcheck(monkeypatch, tmp_path)
     signals, deep_runs, clock = [], [], [1000]
     monkeypatch.setattr(module, "_pid1_is_container_init", lambda: True)
@@ -137,12 +142,15 @@ def test_container_healthcheck_counts_busy_refusals_only_after_ten_minutes(monke
         assert run(module.SATURATED) == 0
     assert all(deep_runs[2:]) and signals == []             # every run after the failure is deep
     assert run(module.SATURATED, advance=59) == 0           # 599 s: not yet ten minutes
-    assert run(module.SATURATED, advance=1) == 1            # 600 s of busy refusals: one failure
-    assert module._read_state()["failures"] == 2 and signals == []
-    assert run(module.FAILED) == 1                          # a real failure breaks the streak
+    assert run(module.SATURATED, advance=1) == 1            # 600 s of busy refusals: unhealthy
+    for _ in range(120):                                    # an hour more of it: still only marked
+        assert run(module.SATURATED) == 1
+    assert module._read_state()["failures"] == 1 and signals == []
+    assert run(module.FAILED) == 1                          # real failures still count from where they were
+    assert run(module.FAILED) == 1
     assert signals == [(1, module.signal.SIGTERM)]
     assert run(module.HEALTHY) == 0
-    assert module._read_state() == {"runs": 25, "failures": 0, "deep_passed": 1, "saturated_since": 0}
+    assert module._read_state()["failures"] == 0 and module._read_state()["saturated_since"] == 0
 
 
 def test_container_healthcheck_reads_only_busy_503s_as_saturation(monkeypatch, tmp_path):
@@ -166,6 +174,7 @@ def test_container_healthcheck_reads_only_busy_503s_as_saturation(monkeypatch, t
     for status, code, expected in (
         (503, "compute_capacity_exhausted", module.SATURATED),
         (503, "request_capacity_exhausted", module.SATURATED),
+        (503, "place_search_timeout", module.SATURATED),
         (503, "place_catalog_unavailable", module.FAILED),
         (500, "compute_capacity_exhausted", module.FAILED),
     ):
@@ -287,6 +296,20 @@ def test_the_ephemeris_verifier_rejects_a_changed_digest_and_an_extra_input(tmp_
     assert module.verify(tmp_path / "ephemeris.sha256") == [f"digest mismatch: {changed}"]
 
 
+def test_the_ephemeris_verifier_command_the_entrypoint_runs_exits_non_zero_on_a_mismatch(tmp_path):
+    """deploy/entrypoint.sh runs the script by path and relies on its exit
+    status alone; verify() returning errors is not enough if main() exits 0."""
+    script = ROOT / "scripts/verification/verify_ephemeris_integrity.py"
+    lines = (ROOT / "deploy/ephemeris.sha256").read_text(encoding="utf-8").splitlines()
+    digest, relative_path = lines[0].split(maxsplit=1)
+    lines[0] = f"{'0' if digest[0] != '0' else '1'}{digest[1:]}  {relative_path}"
+    (tmp_path / "tampered.sha256").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    for manifest, status in ((ROOT / "deploy/ephemeris.sha256", 0), (tmp_path / "tampered.sha256", 1)):
+        completed = subprocess.run([sys.executable, str(script), "--check", "--manifest", str(manifest)],
+                                   capture_output=True, text=True, check=False)
+        assert completed.returncode == status, completed.stderr
+
+
 @pytest.mark.parametrize("replacement", ["symlink_to_same_bytes", "directory", "absent"])
 def test_the_ephemeris_verifier_refuses_an_input_that_is_not_a_regular_file(
     tmp_path, monkeypatch, replacement
@@ -325,15 +348,18 @@ def test_image_environment_holds_the_application_contract(monkeypatch):
     revision = "a" * 40
     environment = [
         "PATH=/opt/venv/bin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "LANG=C.UTF-8",
-        "PYTHON_VERSION=3.14.8", "CLASSICAL_ASTROLOGY_REQUIRE_FRONTEND_RELEASE=1",
+        "PYTHON_VERSION=3.14.9", "CLASSICAL_ASTROLOGY_REQUIRE_FRONTEND_RELEASE=1",
         f"CLASSICAL_ASTROLOGY_SOURCE_REVISION={revision}", "PYTHONFAULTHANDLER=1",
         "PYTHONUNBUFFERED=1", "PYTHONDONTWRITEBYTECODE=1", "PYTHON_SHA256=" + "d" * 64,
         "PYTHONPYCACHEPREFIX=/opt/pycache",
     ]
 
-    def inspect_with(items, user="10001:10001"):
+    source = "https://github.com/sa3952/Armillary"
+
+    def inspect_with(items, user="10001:10001", labels=None):
         payload = [{"Id": "sha256:" + "c" * 64, "Os": "linux", "Architecture": "amd64", "Config": {
-            "User": user, "Env": items, "Labels": {"org.opencontainers.image.revision": revision},
+            "User": user, "Env": items, "Labels": {**{"org.opencontainers.image.revision": revision,
+                                                      "org.opencontainers.image.source": source}, **(labels or {})},
             "Healthcheck": {"Test": ["CMD", "container_healthcheck.py"]}}}]
         monkeypatch.setattr(module, "_run", lambda *_args, **_kwargs: SimpleNamespace(stdout=json.dumps(payload)))
         return module._inspect_image("fixture", "linux/amd64")
@@ -354,6 +380,10 @@ def test_image_environment_holds_the_application_contract(monkeypatch):
             inspect_with([*environment, extra])
     with pytest.raises(module.GateFailure, match="unexpected image user"):
         inspect_with(environment, user="0:0")
+    # The OCI source annotation is the URL of the public repository, not prose.
+    for wrong in ("public Git exact revision and release source archive", "https://github.com/someone/fork", None):
+        with pytest.raises(module.GateFailure, match="org.opencontainers.image.source"):
+            inspect_with(environment, labels={"org.opencontainers.image.source": wrong})
     # The platform vocabulary is build_release_image's; the gate refuses in its own terms.
     assert module._platform_contract("linux/arm64/v8") == ("linux", "arm64")
     with pytest.raises(module.GateFailure):
@@ -404,7 +434,7 @@ def test_container_log_gate_accepts_only_closed_chart_telemetry_and_canaries_fro
     values = {
         "event_schema_version": emitter.EVENT_SCHEMA_VERSION, "event": "http_request_completed",
         "request_id": "0" * 32, "route": "/api/chart", "method": "POST", "status_code": 200,
-        "duration_bucket": "50_to_249ms", "request_size_bucket": "1_to_1024b", "outcome": "success",
+        "duration_bucket": "lt_1s", "request_size_bucket": "1_to_1024b", "outcome": "success",
         "error_code": None, "failure_class": None,
     }
     assert set(values) == set(emitter.ALLOWED_EVENT_FIELDS), "this fixture omits a field the emitter declares"
@@ -428,7 +458,7 @@ def test_container_log_gate_accepts_only_closed_chart_telemetry_and_canaries_fro
     assert module._verify_container_logs("PRIVACY_EVENT " + lucky_id, canaries)["privacy_event_count"] == 1
     # The same digits anywhere else, or in a value that is not an emitted id, are still a disclosure.
     for leaked in ("year 1990\nPRIVACY_EVENT " + safe_event,
-                   "PRIVACY_EVENT " + safe_event.replace('"50_to_249ms"', '"1990_to_249ms"'),
+                   "PRIVACY_EVENT " + safe_event.replace('"lt_1s"', '"lt_1990s"'),
                    "PRIVACY_EVENT " + lucky_id.replace('"request_id":"ab1990', '"request_id":"AB1990'),
                    "PRIVACY_EVENT " + lucky_id.replace('"request_id":"ab1990', '"request_id":"ab19900'),
                    "PRIVACY_EVENT " + safe_event + "\n22.9908"):
@@ -733,3 +763,106 @@ def test_bundled_star_catalogue_fits_the_fixed_star_name_buffer():
     assert longest <= limit, longest
     pinned = (ROOT / "deploy/ephemeris.sha256").read_text(encoding="utf-8")
     assert "sefstars.txt" in pinned
+
+
+def test_the_image_recycles_each_worker_after_a_bounded_number_of_requests():
+    """A worker keeps recent requests' fragments in its memory until the
+    process ends.  The image's CMD ends each worker after a bounded, jittered
+    number of requests, and runs more than one worker, so uvicorn's supervisor
+    starts a fresh process in its place instead of the service stopping."""
+
+    options = uvicorn_options(image_command())
+    assert options["workers"] > 1
+    assert 0 < options["limit_max_requests"] <= 2000
+    assert 0 < options["limit_max_requests_jitter"] < options["limit_max_requests"]
+
+
+def test_the_image_and_gate_d_trust_no_forwarding_header():
+    """uvicorn rewrites the client address from X-Forwarded-For when the peer is
+    in --forwarded-allow-ips (loopback by default).  The edge blanks those
+    headers, and the readiness route trusts the loopback peer, so the server
+    must take the address from the socket only: proxy headers are off in the
+    image's CMD and in the command Gate D runs."""
+
+    runtime = _load_script("container_runtime_gate", CONTAINER_GATE)
+    for command in (image_command(), runtime.SINGLE_WORKER_COMMAND):
+        assert uvicorn_options(command)["proxy_headers"] is False
+
+
+def test_a_worker_has_time_to_start_on_one_busy_cpu():
+    """On one CPU under load importing the application took about 3.3 s, and a
+    5 s worker health-check timeout killed and respawned workers eight times
+    before the first answer.  The image and Gate D give a worker 20 s."""
+
+    runtime = _load_script("container_runtime_gate", CONTAINER_GATE)
+    for command in (image_command(), runtime.SINGLE_WORKER_COMMAND):
+        assert uvicorn_options(command)["timeout_worker_healthcheck"] >= 20
+
+
+def test_a_full_tmp_restarts_a_once_healthy_container(monkeypatch, tmp_path):
+    """The probe keeps its state on the /tmp tmpfs; filling /tmp made every
+    write fail, every run a first run, and the self-restart never fired.  A
+    once-healthy container whose probe cannot record its state now asks for a
+    restart, which also empties the tmpfs."""
+    module = _healthcheck(monkeypatch, tmp_path)
+    signals = []
+    monkeypatch.setattr(module, "_pid1_is_container_init", lambda: True)
+    monkeypatch.setattr(module.os, "kill", lambda pid, number: signals.append((pid, number)))
+    monkeypatch.setattr(module, "check", lambda deep: module.HEALTHY)
+    assert module.main() == 0 and signals == []
+
+    def full(*_args, **_kwargs):
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(module.Path, "write_text", full)
+    assert module.main() == 1
+    assert signals == [(1, module.signal.SIGTERM)]
+
+
+def test_the_dockerfile_labels_the_image_with_the_public_repository_url():
+    """OCI image-spec: org.opencontainers.image.source is the URL of the source.  The
+    Dockerfile's value is the one public repository the application itself names."""
+    from app.frontend_release import PUBLIC_REPOSITORY_URL
+    from scripts.verification.verify_docker_context import dockerfile_logical_lines
+    import shlex
+
+    labels = {}
+    for line in dockerfile_logical_lines((ROOT / "deploy/Dockerfile").read_text(encoding="utf-8")):
+        words = shlex.split(line)
+        if words[0].upper() == "LABEL":
+            labels.update(word.split("=", 1) for word in words[1:])
+    assert labels["org.opencontainers.image.source"] == PUBLIC_REPOSITORY_URL
+
+
+def _tool_removal_step() -> str:
+    """The runtime stage's last RUN, as the shell receives it."""
+    text = (ROOT / "deploy/Dockerfile").read_text(encoding="utf-8")
+    start = text.index("RUN set -eu; \\\n    for tool in \\\n")
+    end = text.index("\n\nUSER 10001:10001", start)
+    return text[start + len("RUN "):end].replace("\\\n", " ")
+
+
+@pytest.mark.parametrize("drop_from_loop", (None, "su"))
+def test_the_runtime_stage_removes_package_login_mount_and_namespace_tools(tmp_path, drop_from_loop):
+    """Run the Dockerfile's removal step against a stand-in /usr: the forbidden tools
+    go, what the service and Gate D use stays, and a tool the loop misses fails the build."""
+    import subprocess
+
+    from scripts.verification.verify_container_runtime import FORBIDDEN_EXECUTABLES
+
+    step = _tool_removal_step().replace("/usr/", f"{tmp_path}/usr/")
+    if drop_from_loop:
+        step = step.replace(f" {drop_from_loop} sg ", " sg ", 1)
+    kept = ("bin/sh", "bin/bash", "bin/id", "bin/true", "local/bin/python3")
+    for relative in (*kept, *(f"bin/{name}" for name in FORBIDDEN_EXECUTABLES),
+                     "sbin/nsenter", "sbin/useradd", "bin/perl5.40.1"):
+        path = tmp_path / "usr" / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+    result = subprocess.run(["bash", "-c", step], capture_output=True, text=True, timeout=30)
+    if drop_from_loop:
+        assert result.returncode != 0 and f"{drop_from_loop} survived the tool removal" in result.stderr
+        return
+    assert result.returncode == 0, result.stderr
+    left = {str(path.relative_to(tmp_path / "usr")) for path in (tmp_path / "usr").rglob("*") if path.is_file()}
+    assert left == set(kept)

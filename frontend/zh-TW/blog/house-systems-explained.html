@@ -29,7 +29,7 @@
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" href="/zh-TW/favicon.svg?v=c95686a2f029d369" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="/zh-TW/style/blog-article-figures.css?v=51cf4e8f0a0c650d">
+<link rel="stylesheet" href="/zh-TW/style/blog-article-figures.css?v=859fe55410705852">
 </head>
 <body>
 
@@ -129,7 +129,7 @@
         <p class="hs-warn" data-hs="warn" hidden></p>
         <div class="hs-strip" data-hs="strip"></div>
         <p class="scroll-hint" hidden>表格可左右捲動</p>
-        <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="hs-table-cap">
+        <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="hs-table-cap" data-scroll-frame>
           <table class="ar-table hs-table">
             <caption id="hs-table-cap">十二個宮頭的黃經與每一宮的大小。這是示意圖算的；你自己的宮頭請用計算頁。</caption>
             <thead><tr><th>宮</th><th>宮頭</th><th class="n">大小</th></tr></thead>
@@ -247,7 +247,7 @@
     <h2 id="side-by-side"><span class="ar-sec">§06</span>同一片天空，七種宮頭並排</h2>
     <p>表 1 是圖 2 到圖 8 那片天空的十二個宮頭，由 Swiss Ephemeris（本站計算用的天文程式庫）直接算出<a class="ar-cite" href="#ref-11">[11]</a>。五種四分宮制的第 1、4、7、10 宮頭彼此相同，因為它們都是上升、天底、下降、中天；差別全在中間的宮頭。以第 11 宮頭為例，五種四分宮制從雙魚 9°16′到雙魚 17°17′，相差 8.0 度。整宮與等分宮的宮頭則完全不看中天。</p>
     <p class="scroll-hint" hidden>表格可左右捲動</p>
-    <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab1-cap">
+    <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab1-cap" data-scroll-frame>
       <table class="ar-table">
         <caption id="tab1-cap">表 1　緯度 25.05°、地方恆星時 21 時 00 分、黃赤交角 23.44° 的十二個宮頭（黃經）。這是一般幾何，不是任何人的命盤。</caption>
         <thead><tr><th class="n">宮</th><th class="n">整宮</th><th class="n">等分宮</th><th class="n">Porphyry</th><th class="n">Alcabitius</th><th class="n">Campanus</th><th class="n">Regiomontanus</th><th class="n">Placidus</th></tr></thead>
@@ -290,7 +290,7 @@
 <figcaption id="fig-sphere-mc-below-cap"><b>圖 10</b>北緯 69.65°、地方恆星時 18 時 00 分的 Regiomontanus。中天沉到地平線下；照 Swiss Ephemeris 的定義，第十宮頭改用地平線上方的天底，宮號因此繞反方向。本站在這種情形不算這種宮位制，可以改用整宮或等分宮。</figcaption>
 </figure>
     <p class="scroll-hint" hidden>表格可左右捲動</p>
-    <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab2-cap">
+    <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab2-cap" data-scroll-frame>
       <table class="ar-table">
         <caption id="tab2-cap">表 2　本站在高緯度怎麼處理七種宮位制（依本站方法頁 §07.1 與出處清單 houses/availability）。在地理極點上，上升點沒有唯一定義，七種都不算。</caption>
         <thead><tr><th>宮位制</th><th>緯度 60° 以上</th><th>極區帶內（約 66.56° 以上）</th><th>中天沉到地平線下</th></tr></thead>
@@ -390,7 +390,7 @@
 
 <script src="/zh-TW/house-sphere-core.js?v=d707de478285ad20" defer></script>
 <script src="/zh-TW/house-sphere.js?v=9f3271e020e65e72" defer></script>
-<script src="/zh-TW/table-scroll.js?v=902f20a5b04bbed0" defer></script>
+<script src="/zh-TW/table-scroll.js?v=5319860fadf798cd" defer></script>
 </main>
 
 <footer>
@@ -417,6 +417,7 @@
       <a href="/zh-TW/legal/copyright">著作權與原始碼</a>
       <a href="/zh-TW/contact">聯絡方式</a>
       <a href="/zh-TW/about">關於</a>
+      <a href="/zh-TW/accessibility">無障礙</a>
     </div>
   </div>
 
@@ -426,6 +427,7 @@
     <span>只計算，不解盤，不預測</span>
   </div>
 </footer>
+<script src="/zh-TW/visit-count.js?v=a01917f51b18a502" defer></script>
 
 </body>
 </html>

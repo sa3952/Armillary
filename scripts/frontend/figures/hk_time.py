@@ -467,7 +467,7 @@ def _summer_rows(years: list[int], periods: list[dict], pin: dict, diffs: list[d
                 (names[p["regime"]] + " " if p["regime"] != "summer_time" else "")
                 + ("全年" if (s, e) == (datetime(year, 1, 1), datetime(year + 1, 1, 1)) else
                    f"{at(s, b) if s != datetime(year, 1, 1) else '1 月 1 日'}至 "
-                   f"{at(e, b) if e != datetime(year + 1, 1, 1) else '12 月 31 日'}")
+                   f"{(at(e, b) if e != datetime(year + 1, 1, 1) else '12 月 31 日').rstrip()}")
                 for s, e, p in spans)
         mine = [d for d in diffs if d["first"].year == year]
         verdict = "一致" if not mine else "不同"

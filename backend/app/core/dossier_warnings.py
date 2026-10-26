@@ -22,10 +22,12 @@ from .time_utils import (
     HK_1945_1946_SOURCE_REF,
     HK_BIRTH_TIME_ARTICLE_PATH,
     HK_OBSERVATORY_SUMMER_TIME_INTERVALS,
+    OFFSHORE_ISLAND_SOURCE_REF,
     PRC_1988_DISPUTED_LOCAL_INTERVAL,
     PRC_1988_DST_SOURCE_REF,
     TZDB_PRE_1970_SOURCE,
     hk_observatory_summer_time_period,
+    offshore_island_before_taiwan_rule,
     prc_1988_dst_start_disputed,
 )
 
@@ -692,6 +694,47 @@ def hk_observatory_summer_time_warnings(request) -> Iterator[dict]:
     )
 
 
+_OFFSHORE_ISLAND_NAMES = {"kinmen": "金門", "wuqiu": "烏坵", "matsu": "馬祖"}
+
+
+def offshore_island_civil_time_warnings(request, time_conversion: dict) -> Iterator[dict]:
+    # Like the Hong Kong notice: one chart on the tz database's offset, and a
+    # note that the documents behind that offset did not govern the islands.
+    timezone = request.timezone
+    if timezone.mode != "iana":
+        return
+    stated = request.datetime
+    local = dtmod.datetime(stated.year, stated.month, stated.day, stated.hour, stated.minute)
+    area = offshore_island_before_taiwan_rule(
+        timezone.iana_name, request.birth_time_precision, local,
+        request.location.latitude, request.location.longitude,
+    )
+    if area is None:
+        return
+    name = _OFFSHORE_ISLAND_NAMES[area]
+    used = time_conversion["utc_offset_hours"]
+    yield _warning(
+        "offshore_island_civil_time_not_taiwan_rule",
+        "warning",
+        (
+            f"{name}在 1950 年以前不在臺灣的行政範圍內。時區資料庫把{name}併在 Asia/Taipei，"
+            "這段期間的規則（日治時期的標準時、戰後的夏令時間）出自在臺灣施行的命令；"
+            f"本站沒有找到{name}當時鐘點的出處。本服務依時區資料庫採用 {_offset_hours_label(used)}，"
+            "當地實際用的鐘點可能不同，上升點與宮位可能跟著不同。本服務只算這一張盤，不替你改動時刻。"
+        ),
+        (
+            "IANA tz database asia, Taiwan (Asia/Taipei); civil-time sources tw-*; "
+            f"method source {OFFSHORE_ISLAND_SOURCE_REF}"
+        ),
+        ["calculation_dossier.time_conversion", "astronomical_data.time"],
+        {"timezone": timezone.iana_name, "area": area, "utc_offset_hours_used": used},
+    )
+
+
+def _offset_hours_label(hours: float) -> str:
+    return _utc_offset_label(dtmod.timedelta(hours=hours))
+
+
 def _supported_range_warnings(
     request,
     time_conversion: dict,
@@ -1138,6 +1181,7 @@ def structured_warnings(
         *_time_scale_warnings(time_request, time_conversion),
         *prc_1988_dst_dispute_warnings(request),
         *hk_observatory_summer_time_warnings(request),
+        *offshore_island_civil_time_warnings(request, time_conversion),
         *_supported_range_warnings(request, time_conversion),
         *_mixed_origin_moon_warnings(request),
         *_ephemeris_source_warnings(

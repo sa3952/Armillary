@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 import gzip
 import hashlib
 import os
+import posixpath
 import re
 import stat
-from typing import Any, Iterable, Mapping
+from typing import Any, AsyncIterator, Iterable, Mapping
 
 from fastapi.staticfiles import StaticFiles
 from starlette.datastructures import Headers, MutableHeaders
@@ -90,6 +92,10 @@ def _file_identity(stat_result: os.stat_result) -> tuple[int, ...]:
 @dataclass(frozen=True)
 class _AssetSnapshot:
     identity: tuple[int, ...]
+    # The bytes read and the open file's own status: a receipted release
+    # serves exactly these, never a second read of the path.
+    body: bytes
+    stat_result: os.stat_result
     version: str
     sha256: str
     gzip_body: bytes | None
@@ -123,6 +129,10 @@ def accepts_gzip(request_headers: Headers) -> bool:
     return False
 
 
+_RANGE_SPEC = r"(?:[0-9]+-[0-9]*|-[0-9]+)"
+_STRICT_RANGE = re.compile(rf"bytes={_RANGE_SPEC}(?:[ \t]*,[ \t]*{_RANGE_SPEC})*")
+
+
 class _RangeLenientFileResponse(FileResponse):
     """A file answer that ignores a Range it cannot serve.
 
@@ -136,6 +146,8 @@ class _RangeLenientFileResponse(FileResponse):
         requested = Headers(scope=scope).get("range")
         if requested is not None and self.stat_result is not None:
             try:
+                if not _STRICT_RANGE.fullmatch(requested):
+                    raise MalformedRangeHeader()
                 self._parse_range_header(requested, self.stat_result.st_size)
             except (MalformedRangeHeader, RangeNotSatisfiable):
                 scope = {
@@ -146,6 +158,46 @@ class _RangeLenientFileResponse(FileResponse):
                     ],
                 }
         await super().__call__(scope, receive, send)
+
+
+class _HeldBytes:
+    """The read and seek a file answer uses, over bytes already in memory."""
+
+    def __init__(self, body: bytes) -> None:
+        self._body = body
+        self._position = 0
+
+    async def seek(self, position: int) -> None:
+        self._position = position
+
+    async def read(self, size: int) -> bytes:
+        chunk = self._body[self._position:self._position + size]
+        self._position += len(chunk)
+        return chunk
+
+
+class _HeldFileResponse(_RangeLenientFileResponse):
+    """A file answer whose bytes are the ones already checked against the receipt.
+
+    Reading the path again to send it would let a file changed between the
+    check and the send go out unchecked; the server's pathsend shortcut would
+    do the same, so it is not offered.
+    """
+
+    def __init__(self, *args: Any, body: bytes, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._held = body
+
+    @asynccontextmanager
+    async def _open_file(self) -> AsyncIterator[Any]:
+        yield _HeldBytes(self._held)
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        extensions = {
+            key: value for key, value in scope.get("extensions", {}).items()
+            if key != "http.response.pathsend"
+        }
+        await super().__call__({**scope, "extensions": extensions}, receive, send)
 
 
 class RuntimeStaticFiles(StaticFiles):
@@ -209,7 +261,7 @@ class RuntimeStaticFiles(StaticFiles):
         original = scope.get("path")
         if not isinstance(original, str) or not original.startswith("/"):
             return None
-        name = re.sub(r"/{2,}", "/", original).strip("/")
+        name = posixpath.normpath(re.sub(r"/{2,}", "/", original)).strip("/")
         target: str | None
         if name in _ENTRY_SPELLINGS and DEFAULT_LOCALE_ENTRYPOINT in self._assets:
             target = _ENTRY_PATH
@@ -248,7 +300,16 @@ class RuntimeStaticFiles(StaticFiles):
         )
         if stat_result is None or not stat.S_ISREG(stat_result.st_mode):
             return None
+        held = self._receipted(self._not_found_page, full_path, stat_result)
         scope.setdefault("state", {})[DOMAIN_ERROR_STATE_KEY] = "not_found"
+        if held is not None:
+            return _HeldFileResponse(
+                full_path,
+                status_code=404,
+                stat_result=held.stat_result,
+                media_type=_media_type(full_path),
+                body=held.body,
+            )
         return FileResponse(
             full_path,
             status_code=404,
@@ -261,7 +322,13 @@ class RuntimeStaticFiles(StaticFiles):
         if redirect is not None:
             return RedirectResponse(redirect, status_code=308)
         try:
-            return await super().get_response(path, scope)
+            response = await super().get_response(path, scope)
+            if 300 <= response.status_code < 400 and "location" in response.headers:
+                # Directory redirects from StaticFiles build an absolute URL
+                # from the upstream scheme and retain its query parameters.
+                # Only the canonical producer above may redirect a static URL.
+                raise HTTPException(status_code=404)
+            return response
         except HTTPException as error:
             if error.status_code == 404:
                 page = self.not_found_response(scope)
@@ -309,6 +376,29 @@ class RuntimeStaticFiles(StaticFiles):
             return "", None
         return full_path, stat_result
 
+    def _receipted(
+        self, name: str, full_path: str, stat_result: os.stat_result
+    ) -> _AssetSnapshot | None:
+        """The receipted bytes of a release file, read once; None without receipts.
+
+        The lookup has already held the file to its receipt, but the file can
+        change again before the answer is sent, so the bytes sent are taken from
+        one read that is itself held to the receipt.  A file that no longer
+        matches is refused (404).
+        """
+        if self._asset_digests is None:
+            return None
+        expected = self._asset_digests.get(name)
+        if expected is None:
+            return None
+        try:
+            snapshot = self._snapshot(full_path, stat_result)
+        except OSError:
+            raise HTTPException(status_code=404) from None
+        if snapshot.sha256 != expected:
+            raise HTTPException(status_code=404)
+        return snapshot
+
     def _snapshot(
         self, full_path: str, stat_result: os.stat_result
     ) -> _AssetSnapshot:
@@ -319,6 +409,8 @@ class RuntimeStaticFiles(StaticFiles):
         with open(full_path, "rb") as handle:
             data = handle.read()
             opened = os.fstat(handle.fileno())
+        if opened.st_size != len(data):
+            raise OSError(f"{full_path} changed while it was read")
         encoded: bytes | None = None
         if os.path.splitext(full_path)[1].casefold() in COMPRESSIBLE_ASSET_SUFFIXES:
             encoded = gzip.compress(data, compresslevel=GZIP_LEVEL, mtime=0)
@@ -326,6 +418,8 @@ class RuntimeStaticFiles(StaticFiles):
                 encoded = None
         snapshot = _AssetSnapshot(
             identity=_file_identity(opened),
+            body=data,
+            stat_result=opened,
             version=asset_content_version(data),
             sha256=hashlib.sha256(data).hexdigest(),
             gzip_body=encoded,
@@ -363,12 +457,27 @@ class RuntimeStaticFiles(StaticFiles):
     ) -> Response:
         suffix = os.path.splitext(os.fspath(full_path))[1].casefold()
         request_headers = Headers(scope=scope)
-        identity = _RangeLenientFileResponse(
-            full_path,
-            status_code=status_code,
-            stat_result=stat_result,
-            media_type=_media_type(full_path),
-        )
+        held: _AssetSnapshot | None = None
+        if self._asset_digests is not None:
+            root = os.path.realpath(self.directory or ".")
+            name = os.path.relpath(os.fspath(full_path), root).replace(os.sep, "/")
+            held = self._receipted(name, os.fspath(full_path), stat_result)
+        identity: FileResponse
+        if held is not None:
+            identity = _HeldFileResponse(
+                full_path,
+                status_code=status_code,
+                stat_result=held.stat_result,
+                media_type=_media_type(full_path),
+                body=held.body,
+            )
+        else:
+            identity = _RangeLenientFileResponse(
+                full_path,
+                status_code=status_code,
+                stat_result=stat_result,
+                media_type=_media_type(full_path),
+            )
         page_links = self._page_links if status_code == 200 and suffix == ".html" else None
         if page_links is not None:
             identity.headers["link"] = page_links
@@ -381,7 +490,7 @@ class RuntimeStaticFiles(StaticFiles):
         snapshot: _AssetSnapshot | None = None
         # A byte range addresses the identity bytes, never a gzip stream.
         if "range" not in request_headers and accepts_gzip(request_headers):
-            snapshot = self._snapshot(os.fspath(full_path), stat_result)
+            snapshot = held or self._snapshot(os.fspath(full_path), stat_result)
         if snapshot is None or snapshot.gzip_body is None:
             if self.is_not_modified(identity.headers, request_headers):
                 return NotModifiedResponse(identity.headers)

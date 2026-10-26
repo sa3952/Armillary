@@ -6,9 +6,11 @@ Importing it imports the pipeline, which binds the bundled ephemeris.
 """
 
 import asyncio
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 import os
 from pathlib import Path
-from collections.abc import Callable, Coroutine
+from collections.abc import AsyncIterator, Callable, Coroutine
 from contextvars import ContextVar
 from typing import Any, cast
 
@@ -43,10 +45,13 @@ from .schema_refusals import (
 from .refusals import (
     ANNUAL_ROUTE,
     CHART_ROUTE,
+    DAILY_VISIT_ROUTE,
     HEALTH_ROUTE,
     PLACE_SEARCH_ROUTE,
     READY_ROUTE,
     TIME_CONVERT_ROUTE,
+    VERSION_ROUTE,
+    VISIT_ROUTE,
     refusal_response,
     routes_refusals,
 )
@@ -55,6 +60,7 @@ from .core.time_utils import (
     NonexistentLocalTimeError,
     earth_rotation_memo,
 )
+from .core.request_memo import request_memo
 from .core.civil_time_basis import (
     CivilTimeBasisNotApplicableError,
     CivilTimeBasisRequiredError,
@@ -64,6 +70,7 @@ from .core.time_conversion import (
     TimeConversionZoneNotCoveredError,
     convert_civil_time,
 )
+from .core.computation_mode import frame_turn_memo
 from .core.dossier import DOSSIER_VERSION
 from .response_projection import (
     DEFAULT_CHART_PROJECTION,
@@ -81,8 +88,11 @@ from .core.place_catalog import (
 )
 from .privacy_logging import (
     DOMAIN_ERROR_STATE_KEY,
+    ApplicationHeaderAllowlist,
     PrivacyBoundaryMiddleware,
+    RefusalTotals,
     emit_security_event,
+    quiet_server_error_log,
     silence_server_access_log,
 )
 from .request_limits import (
@@ -99,9 +109,10 @@ from .request_limits import (
     mark_compute_entered,
 )
 from .runtime_static import ChartResultCompression, RuntimeStaticFiles
-from .frontend_release import load_runtime_release
+from .frontend_release import PUBLIC_REPOSITORY_URL, SOURCE_URL_PREFIX, load_runtime_release
 from .frontend_assets import discover_source_assets
 from .settings import AppSettings, load_settings
+from .visit_counts import DAILY_VISITOR, PAGE_VIEW, VisitCounter, seconds_until_next_count_day
 
 # Imported last: importing the pipeline binds the bundled ephemeris path and
 # reads the bundled file set once, after every other module has loaded.
@@ -146,6 +157,20 @@ async def readiness_check() -> Response:
         {"status": "ready" if ready else "not_ready", "readiness_scope": "ephemeris_manifest"},
         status_code=200 if ready else 503,
     )
+
+
+# Only the in-container health check asks for readiness, over the loopback
+# interface; the edge answers the path as unknown, and so does the application
+# to any other client.
+_READINESS_CLIENTS: frozenset[str] = frozenset({"127.0.0.1", "::1"})
+
+
+async def readiness_route(request: Request) -> Response:
+    """Readiness for the container's own health check; unknown to anyone else."""
+    client = request.client.host if request.client is not None else None
+    if client not in _READINESS_CLIENTS:
+        return _refuse(request, "unknown_api_path")
+    return await readiness_check()
 
 
 def _refuse(request: Request, code: str, **kwargs: Any) -> JSONResponse:
@@ -277,8 +302,11 @@ class _StrictJsonRoute(APIRoute):
         return strict_handler
 
 
-# Swiss center／sidereal mode are process-global; serialize per worker.  The
-# FIFO line is the mutual exclusion.
+# One chart in Swiss at a time per worker.  Whether Swiss's observer, sidereal
+# mode and files are per thread is a compile-time property of the library: the
+# shipped Linux build keeps them per thread, a macOS build shares them across the
+# process (ephemeris.swiss_state_scope; the image gate checks the shipped one).
+# Isolation does not rest on the build: this FIFO line is the mutual exclusion.
 _COMPUTE_QUEUE = FifoComputeQueue()
 
 # Bound queue wait without interrupting an in-flight Swiss calculation.  The
@@ -299,7 +327,7 @@ class ComputeCapacityExhaustedError(Exception):
 
 def _in_worker(work: Callable[[Any], Any], req: Any):
     try:
-        with earth_rotation_memo():
+        with earth_rotation_memo(), request_memo(), frame_turn_memo():
             return work(req)
     finally:
         release_ephemeris_for_thread()
@@ -395,6 +423,7 @@ def _add_api_routes(
     *,
     place_catalog: PlaceCatalog,
     runtime_build_identity: dict,
+    visit_counter: VisitCounter,
     enable_annual_route: bool = False,
 ) -> dict[str, frozenset[str]]:
     """The API routes; returns the methods each one serves.
@@ -436,6 +465,20 @@ def _add_api_routes(
     async def convert_time(request: TimeConversionRequest):
         return convert_civil_time(request)
 
+    # The build a user is talking to, and its source, without a chart first:
+    # the same identity the chart routes stamp into their receipts.
+    revision = runtime_build_identity.get("source_revision")
+    version_answer = {
+        "build_identity": runtime_build_identity,
+        "source_url": f"{SOURCE_URL_PREFIX}{revision}" if revision else None,
+        "public_repository": PUBLIC_REPOSITORY_URL,
+        "license": "AGPL-3.0-only",
+        "contracts": {"api_schema_version": SCHEMA_VERSION, "dossier_version": DOSSIER_VERSION},
+    }
+
+    async def running_version():
+        return version_answer
+
     # GET and HEAD of the health route are separate routes so each has its own
     # OpenAPI operation ID; one route carrying both methods published a duplicate ID.
     routes: list[tuple[str, Callable[..., Any], str, str, Any, str]] = [
@@ -443,7 +486,7 @@ def _add_api_routes(
          "Process-liveness response; this is not end-to-end calculation readiness."),
         (HEALTH_ROUTE, health_check, "HEAD", "health_check_head", dict[str, object],
          "Process-liveness response; this is not end-to-end calculation readiness."),
-        (READY_ROUTE, readiness_check, "GET", "readiness_check", dict[str, object],
+        (READY_ROUTE, readiness_route, "GET", "readiness_check", dict[str, object],
          "200 when the bundled ephemeris files are present and match their pinned digests; 503 otherwise."),
         (CHART_ROUTE, identified_compute_chart, "POST", "compute_chart", dict[str, Any],
          "Versioned chart response; see output_contract and deploy/frontend-contract.json."),
@@ -451,7 +494,21 @@ def _add_api_routes(
          "Bundled-catalog search response with query and execution receipts."),
         (TIME_CONVERT_ROUTE, convert_time, "POST", "convert_time", dict[str, Any],
          "Every reading of one wall-clock time, with its rule's source row and the tz database."),
+        (VERSION_ROUTE, running_version, "GET", "running_version", dict[str, Any],
+         "The running build's identity, its public source URL and licence, and the contract versions."),
     ]
+    async def count_page_view() -> Response:
+        visit_counter.count(PAGE_VIEW)
+        return Response(status_code=204)
+
+    async def count_daily_visitor() -> Response:
+        visit_counter.count(DAILY_VISITOR)
+        # The browser's cache is what keeps the count to one per browser per day;
+        # the boundary middleware relays this lifetime for this route only.
+        return Response(status_code=204, headers={
+            "Cache-Control": f"private, max-age={seconds_until_next_count_day(datetime.now(timezone.utc))}",
+        })
+
     if enable_annual_route:
         routes.append((
             ANNUAL_ROUTE, identified_compute_annual, "POST", "compute_annual", dict[str, Any],
@@ -465,6 +522,18 @@ def _add_api_routes(
             response_description=description, responses=_declared_refusals(path),
         )
         api_method_routes[path] = api_method_routes.get(path, frozenset()) | {method}
+    for path, endpoint, method, name, description in (
+        (VISIT_ROUTE, count_page_view, "POST", "count_page_view",
+         "No content; adds one to the worker's page-view count and keeps nothing else."),
+        (DAILY_VISIT_ROUTE, count_daily_visitor, "GET", "count_daily_visitor",
+         "No content; adds one to the daily-visitor count, cacheable until midnight in Taiwan."),
+    ):
+        application.add_api_route(
+            path, endpoint, methods=[method], name=name, status_code=204,
+            response_class=Response, response_description=description,
+            responses=_declared_refusals(path),
+        )
+        api_method_routes[path] = frozenset({method})
     return api_method_routes
 
 
@@ -528,10 +597,13 @@ def _add_boundary_middleware(
     expected_host: Any,
     event_emitter: Callable[[dict], bool] | None,
     static_asset_version: Callable[[str], str | None] | None,
+    refusal_totals: RefusalTotals,
 ) -> None:
     # Innermost: it sees only what the routes and their refusal handlers send,
     # and the privacy boundary adds Cache-Control and the security headers to
     # both representations.
+    # Added first, so it is innermost: every boundary below sees the client's headers.
+    application.add_middleware(ApplicationHeaderAllowlist)
     application.add_middleware(ChartResultCompression)
     application.add_middleware(
         ApiMethodBoundary,
@@ -558,6 +630,7 @@ def _add_boundary_middleware(
         event_emitter=emitter,
         cache_policy="public_split",
         asset_content_version=static_asset_version,
+        refusal_totals=refusal_totals,
     )
 
 
@@ -565,9 +638,11 @@ def create_app(
     settings: AppSettings | None = None,
     *,
     event_emitter: Callable[[dict], bool] | None = None,
+    visit_counter: VisitCounter | None = None,
 ) -> FastAPI:
     resolved_settings = settings or load_settings()
     silence_server_access_log()
+    quiet_server_error_log()
     authority_root = os.path.abspath(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
     )
@@ -582,17 +657,30 @@ def create_app(
     if release_identity is not None:
         runtime_build_identity["release_identity"] = release_identity
     place_catalog = PlaceCatalog(resolved_settings.place_catalog_path)
+    counter = visit_counter or VisitCounter()
+    refusal_totals = RefusalTotals()
+
+    @asynccontextmanager
+    async def write_counts_on_stop(_application: FastAPI) -> AsyncIterator[None]:
+        # Before the first request, so no search pays for the catalogue's shared tables.
+        await run_in_threadpool(place_catalog.warm)
+        yield
+        counter.flush()
+        refusal_totals.flush()
+
     application = FastAPI(
         title="古典西洋占星天文計算 API",
         docs_url=None,
         redoc_url=None,
         openapi_url=None,
+        lifespan=write_counts_on_stop,
     )
     application.router.route_class = _StrictJsonRoute
     api_method_routes = _add_api_routes(
         application,
         place_catalog=place_catalog,
         runtime_build_identity=runtime_build_identity,
+        visit_counter=counter,
         enable_annual_route=resolved_settings.enable_annual_route,
     )
     _add_refusal_handlers(application)
@@ -613,6 +701,7 @@ def create_app(
         expected_host=resolved_settings.expected_host,
         event_emitter=event_emitter,
         static_asset_version=static_asset_version,
+        refusal_totals=refusal_totals,
     )
     return application
 

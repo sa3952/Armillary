@@ -3,8 +3,10 @@
 
 Checked here: the image identity (non-root user, bounded healthcheck, pinned
 base, platform, revision label, application environment); its `/app` tree
-equals deploy/image-app-tree.json, no setuid file and no development or
-secret path is present, and the installed Python distributions equal the
+equals deploy/image-app-tree.json and each /app file's SHA-256 equals the
+source root file the build copies there, no setuid file and no development or
+secret path is present, its executable directories hold only the entries of
+deploy/image-executables.json, and the installed Python distributions equal the
 marker-evaluated runtime lock; one container started with compose's own
 production settings (read-only root, all capabilities dropped,
 no-new-privileges, resource limits) becomes healthy as non-root, refuses the
@@ -35,6 +37,7 @@ from typing import Any
 import uuid
 
 from scripts.deployment.frontend_release import (
+    PUBLIC_REPOSITORY_URL,
     build_release as build_frontend_release,
     combined_release_id,
 )
@@ -110,9 +113,23 @@ MAX_DETAILED_RESPONSE_BYTES = 864 * 1024
 CHART_REQUESTS = PROJECT_ROOT / "frontend" / "tests" / "fixtures" / "chart-requests.json"
 DOCKERFILE = PROJECT_ROOT / "deploy" / "Dockerfile"
 APP_TREE_MANIFEST = PROJECT_ROOT / "deploy" / "image-app-tree.json"
+EXECUTABLE_ALLOWLIST = PROJECT_ROOT / "deploy" / "image-executables.json"
+# What code running as the application user must not find: installing software,
+# changing identity or accounts, mounting, and entering or creating namespaces.
+# The allowlist file may never name one of these.
+FORBIDDEN_EXECUTABLES = frozenset({
+    "apt", "apt-get", "apt-cache", "apt-config", "apt-mark", "dpkg", "dpkg-deb", "dpkg-query",
+    "dpkg-divert", "dpkg-trigger", "update-alternatives", "debconf",
+    "su", "sg", "newgrp", "login", "sulogin", "runuser", "passwd", "chage", "chfn", "chsh",
+    "gpasswd", "chpasswd", "useradd", "userdel", "usermod", "groupadd", "groupdel", "groupmod",
+    "adduser", "deluser", "unix_chkpwd",
+    "mount", "umount", "losetup", "swapon", "mkfs", "mknod",
+    "nsenter", "unshare", "setpriv", "chroot", "pivot_root", "switch_root",
+    "start-stop-daemon", "perl",
+})
 EXPECTED_IMAGE_ENVIRONMENT = {
     "LANG": "C.UTF-8",
-    "PYTHON_VERSION": "3.14.8",
+    "PYTHON_VERSION": "3.14.9",
     "CLASSICAL_ASTROLOGY_REQUIRE_FRONTEND_RELEASE": "1",
     "PYTHONFAULTHANDLER": "1",
     "PYTHONUNBUFFERED": "1",
@@ -211,6 +228,12 @@ def _inspect_image(image: str, platform: str | None) -> dict[str, Any]:
         pairs[key] = value
     labels = config.get("Labels") or {}
     revision = labels.get("org.opencontainers.image.revision")
+    # OCI image-spec: the source annotation is the URL where the source is found.
+    if labels.get("org.opencontainers.image.source") != PUBLIC_REPOSITORY_URL:
+        raise GateFailure(
+            f"image label org.opencontainers.image.source is "
+            f"{labels.get('org.opencontainers.image.source')!r}, not {PUBLIC_REPOSITORY_URL}"
+        )
     expected = {**EXPECTED_IMAGE_ENVIRONMENT, "CLASSICAL_ASTROLOGY_SOURCE_REVISION": revision}
     differing = sorted(key for key, value in expected.items() if pairs.get(key) != value)
     if differing or not pairs.get("PATH", "").startswith("/opt/venv/bin:"):
@@ -255,12 +278,69 @@ def _forbidden_image_path(normalized: str) -> bool:
     )
 
 
+def _allowed_executables() -> tuple[frozenset[str], tuple[str, ...]]:
+    """The reviewed executable entries and the directories they are read from."""
+
+    try:
+        document = json.loads(EXECUTABLE_ALLOWLIST.read_text(encoding="utf-8"))
+        directories = tuple(sorted(document["directories"]))
+        paths = frozenset(document["paths"])
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        raise GateFailure(f"cannot read {EXECUTABLE_ALLOWLIST}: {error}") from None
+    if not paths or not directories:
+        raise GateFailure(f"{EXECUTABLE_ALLOWLIST} lists no executable or no directory")
+    if not all(isinstance(path, str) and path.rsplit("/", 1)[0] in directories for path in paths):
+        raise GateFailure(f"{EXECUTABLE_ALLOWLIST} lists a path outside its directories")
+    forbidden = sorted(path for path in paths
+                       if path.rsplit("/", 1)[1] in FORBIDDEN_EXECUTABLES
+                       or path.rsplit("/", 1)[1].startswith(("perl5", "dpkg-", "apt-")))
+    if forbidden:
+        raise GateFailure(f"{EXECUTABLE_ALLOWLIST} names a forbidden tool: {forbidden}")
+    return paths, directories
+
+
+def _expected_app_digests() -> dict[str, str]:
+    """SHA-256 of each /app regular file, read from the source root's files
+    the build copies; the revision label and the path list alone do not show
+    that the image holds this revision's bytes."""
+    from scripts.verification.verify_docker_context import (
+        PYSWISSEPH_SDIST, STAGE_APP_FILES_FROM_SDIST, app_file_sources,
+    )
+
+    digests = {}
+    for path, source in app_file_sources(PROJECT_ROOT).items():
+        with source.open("rb") as handle:
+            digests[path] = hashlib.file_digest(handle, "sha256").hexdigest()
+    # The licence texts the builder extracts from the vendored sdist.
+    with tarfile.open(PROJECT_ROOT / PYSWISSEPH_SDIST) as sdist:
+        for path, member in STAGE_APP_FILES_FROM_SDIST.items():
+            extracted = sdist.extractfile(member)
+            if extracted is None:
+                raise GateFailure(f"{PYSWISSEPH_SDIST} has no regular member {member}")
+            digests[path] = hashlib.sha256(extracted.read()).hexdigest()
+    return digests
+
+
+def _assert_app_contents(app_files: dict[str, str]) -> None:
+    expected = _expected_app_digests()
+    if not expected:
+        raise GateFailure("the source root names no /app file to compare the image with")
+    differing = sorted(path for path in expected.keys() | app_files.keys()
+                       if expected.get(path) != app_files.get(path))
+    if differing:
+        raise GateFailure(f"image /app files are not the source revision's bytes: {differing[:20]}"
+                          + (f" and {len(differing) - 20} more" if len(differing) > 20 else ""))
+
+
 def _inventory_image(image: str, platform: str | None) -> dict[str, Any]:
     inspection = _inspect_image(image, platform)
+    allowed_executables, executable_directories = _allowed_executables()
+    executables: list[str] = []
     architecture = str(inspection["architecture"])
     container = f"armillary-inventory-{uuid.uuid4().hex[:12]}"
     _run(["docker", "create", *_platform_args(platform), "--name", container, image])
     app_entries: list[str] = []
+    app_files: dict[str, str] = {}
     try:
         with tempfile.TemporaryDirectory(prefix="armillary-inventory-") as raw:
             archive_path = Path(raw) / "rootfs.tar"
@@ -273,8 +353,22 @@ def _inventory_image(image: str, platform: str | None) -> dict[str, Any]:
                         raise GateFailure(f"forbidden path included in image: {normalized}")
                     if normalized.startswith("/app/"):
                         app_entries.append(normalized)
+                        handle = archive.extractfile(member) if member.isfile() else None
+                        if handle is not None:
+                            digest = hashlib.sha256()
+                            for block in iter(lambda: handle.read(1024 * 1024), b""):
+                                digest.update(block)
+                            app_files[normalized] = digest.hexdigest()
+                    if not member.isdir() and normalized.rsplit("/", 1)[0] in executable_directories:
+                        executables.append(normalized)
     finally:
         _run(["docker", "rm", "--force", container], check=False)
+    unlisted = sorted(set(executables) - allowed_executables)
+    if unlisted:
+        raise GateFailure(
+            f"image executable directories hold entries outside the executable allowlist "
+            f"(deploy/image-executables.json): {unlisted}"
+        )
     expected_tree = sorted(json.loads(APP_TREE_MANIFEST.read_text(encoding="utf-8"))["paths"])
     if sorted(app_entries) != expected_tree:
         raise GateFailure(
@@ -282,20 +376,32 @@ def _inventory_image(image: str, platform: str | None) -> dict[str, Any]:
             f"unexpected={sorted(set(app_entries) - set(expected_tree))}, "
             f"missing={sorted(set(expected_tree) - set(app_entries))}"
         )
+    _assert_app_contents(app_files)
     runtime = json.loads(_run([
         "docker", "run", "--rm", *_platform_args(platform), *_INSPECTION_SANDBOX,
         "--entrypoint", "/opt/venv/bin/python", image, "-c",
-        "import importlib.metadata,json,platform,re,zoneinfo;"
+        "import importlib.metadata,json,platform,re,sys,zoneinfo;"
+        "sys.path.insert(0,'/app/backend');from app.ephemeris import swiss_state_scope;"
         "print(json.dumps({"
+        "'swiss_state':swiss_state_scope(),"
         "'packages':sorted({re.sub(r'[-_.]+','-',d.metadata['Name']).lower() "
         "for d in importlib.metadata.distributions()}),"
         "'python':platform.python_version(),'machine':platform.machine(),"
         "'pyswisseph':importlib.metadata.version('pyswisseph'),"
-        "'timezones':sorted(zoneinfo.available_timezones())}))",
+        "'timezones':sorted(zoneinfo.available_timezones()),"
+        "'tzdata':next((m.group(1) for p in zoneinfo.TZPATH for f in ['tzdata.zi'] "
+        "for m in [re.match(r'# version (\\d{4}[a-z])',(open(p+'/'+f).readline() "
+        "if __import__('os').path.exists(p+'/'+f) else ''))] if m),None)}))",
     ]).stdout.strip().splitlines()[-1])
+    # One chart per worker is in Swiss at a time either way; a build that shares
+    # Swiss's state across threads would make that line the only isolation left,
+    # and the comments and tests describe the per-thread build that ships.
+    if runtime.pop("swiss_state", None) != "thread":
+        raise GateFailure("the image's Swiss Ephemeris build does not keep its state per thread")
     runtime["accepted_iana_zone_names"] = _assert_zone_names_are_the_images(
         runtime.pop("timezones", None) or []
     )
+    runtime["tzdata"] = _assert_tzdata_is_the_checked_release(runtime.get("tzdata"))
     packages = frozenset(runtime.pop("packages"))
     expected_packages = frozenset(
         locked_runtime_versions(PROJECT_ROOT / "deploy" / "requirements.lock", architecture)
@@ -308,7 +414,7 @@ def _inventory_image(image: str, platform: str | None) -> dict[str, Any]:
             f"of which forbidden={sorted(FORBIDDEN_PACKAGES & unexpected)}"
         )
     if (
-        runtime["python"] != "3.14.8"
+        runtime["python"] != "3.14.9"
         or runtime["pyswisseph"] != "2.10.3.2"
         or runtime.get("machine") != MACHINE_BY_DOCKER_ARCHITECTURE.get(architecture)
     ):
@@ -322,6 +428,7 @@ def _inventory_image(image: str, platform: str | None) -> dict[str, Any]:
     )
     return {
         "app_tree_entries": len(app_entries),
+        "executables": len(executables),
         "production_packages": sorted(packages),
         "runtime": runtime,
     }
@@ -346,6 +453,23 @@ def _assert_zone_names_are_the_images(image_zones: list[str]) -> int:
             f"in list only={sorted(expected - actual)}"
         )
     return len(pinned["names"])
+
+
+def _assert_tzdata_is_the_checked_release(image_version: str | None) -> str:
+    """The civil-time sources were checked against one tz release
+    (backend/app/civil_time_sources.json tzdb_version_checked); the image must
+    ship that release, or a conversion may follow rules nobody checked."""
+    checked = json.loads(
+        (PROJECT_ROOT / "backend" / "app" / "civil_time_sources.json").read_text(encoding="utf-8")
+    )["tzdb_version_checked"]
+    if image_version is None or image_version != checked:
+        raise GateFailure(
+            f"the image ships tzdata {image_version!r}; civil_time_sources.json was checked against {checked!r}. "
+            "Align both to the newest IANA tz release (the image's tzdata, then the civil-time check and "
+            "tzdb_version_checked), never one down to the other, as the dependency and data lifecycle "
+            "procedure「tzdata 版本不符」orders"
+        )
+    return image_version
 
 
 def _assert_system_sqlite(extension: bytes, sdist: Path) -> str:
@@ -544,8 +668,8 @@ SINGLE_WORKER_COMMAND = (
     "--factory", "--app-dir", "/app/backend", "--host", "0.0.0.0",
     "--port", "8000", "--workers", "1",
     "--loop", "asyncio", "--http", "h11", "--ws", "none",
-    "--no-access-log", "--timeout-worker-healthcheck", "5",
-    "--timeout-graceful-shutdown", "25", "--backlog", "32",
+    "--no-access-log", "--timeout-worker-healthcheck", "20",
+    "--timeout-graceful-shutdown", "25", "--backlog", "32", "--no-proxy-headers",
 )
 
 

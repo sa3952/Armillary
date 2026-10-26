@@ -190,11 +190,10 @@ function printInputEntries() {
   };
   const precision = form.querySelector('input[name="precision"]:checked');
   if (precision) add("出生時刻把握程度", precision.closest("label").querySelector("b").textContent.trim());
-  // 出生日期照舊印成 YYYY-MM-DD；三欄還不成日期時照填的字印出。
+  // 出生日期印成 YYYY-MM-DD；還不成日期時照填的字印出。
   const dateRead = readDateField();
-  const typedDate = datePartInputs().map((input) => input.value.trim());
-  add(el("date-legend").textContent.trim(), dateRead.state === RI.STATES.VALUE ? dateRead.value.iso
-    : typedDate.some(Boolean) ? typedDate.join("-") : "");
+  const typedDate = datePartInputs().map((input) => input.value.trim()).join("");
+  add(el("date-legend").textContent.trim(), dateRead.state === RI.STATES.VALUE ? dateRead.value.iso : typedDate);
   ["hour", "minute", "second"].forEach((id) => add(fieldLabel(id), shownField(id)));
   // 選了目錄地點時，收據是畫面上的地點、座標與時區；手動欄位展開時以欄位為準。
   const receipt = new Map();

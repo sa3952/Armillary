@@ -29,7 +29,8 @@ ALIAS_TIER: Final = "curated_alias"
 ALIAS_SOURCE: Final = "geonames_cities500"
 
 # Prefixes that make a query clearly about Hong Kong; stripped before lookup.
-HONG_KONG_PREFIXES: Final = ("香港特別行政區", "香港特區", "香港", "hong kong", "hk")
+HONG_KONG_PREFIXES: Final = ("香港特別行政區", "香港特區", "香港", "hong kong", "hong-kong", "hongkong", "hk")
+_SPECIAL_REGION: Final = frozenset({"香港特別行政區", "香港特區"})
 
 # The 18 districts (區議會分區), each with its main or largest catalogued place.
 _DISTRICTS: Final = {
@@ -105,12 +106,84 @@ _PLACES: Final = {
     "堅尼地城": "1819638",
 }
 
+# MTR stations whose name the catalogue gives no Hong Kong row for, each with
+# the catalogued place it lies in or beside (stations named after a catalogued
+# place, 旺角 or 尖沙咀, are found by that row or by the tables above).  Stations
+# whose nearest catalogued place is uncertain are left out: 欣澳、博覽館、機場、
+# 迪士尼、大學、馬場.
+_MTR_STATIONS: Final = {
+    "香港大學": "1819031",   # Sai Wan
+    "上環": "8223932",       # Central
+    "杏花邨": "12719592",    # Heng Fa Chuen
+    "柴灣": "12719606",      # Chai Wan Estate
+    "葵興": "1819595",       # Kwai Chung
+    "葵芳": "1819595",
+    "荔景": "1819595",
+    "荔枝角": "1819952",     # Cheung Sha Wan
+    "太子": "1819353",       # Mong Kok (the Prince Edward row lies east, in Kowloon City)
+    "黃埔": "12689057",      # Whampoa
+    "鑽石山": "1818304",     # Wong Tai Sin (黃大仙區)
+    "彩虹": "1819932",       # Choi Hung
+    "牛頭角": "1819577",     # Kwun Tong
+    "寶琳": "1818506",       # Tseung Kwan O
+    "康城": "12719433",      # LOHAS Park
+    "日出康城": "12719433",
+    "奧運": "12689056",      # Olympic
+    "南昌": "12689055",      # Nam Cheong
+    "會展": "1818379",       # Wan Chai
+    "旺角東": "1819353",     # Mong Kok
+    "太和": "1818616",       # Tai Wo
+    "羅湖": "1818845",       # Sheung Shui
+    "落馬洲": "1818996",     # San Tin, Yuen Long
+    "烏溪沙": "12719443",    # Wu Kai Sha
+    "恒安": "1819400",       # Ma On Shan
+    "大水坑": "1818654",     # Tai Shui Hang
+    "石門": "1818920",       # Sha Tin
+    "沙田圍": "1818916",     # Sha Tin Wai
+    "車公廟": "1818628",     # Tai Wai
+    "顯徑": "1818628",
+    "尖東": "1818501",       # Tsim Sha Tsui
+    "柯士甸": "8224045",     # Jordan
+    "荃灣西": "1818209",     # Tsuen Wan
+    "錦上路": "1819685",     # Kam Tin
+    "朗屏": "1818225",       # Yuen Long
+    "兆康": "1818446",       # Tuen Mun
+    "海洋公園": "9172583",   # Wong Chuk Hang
+    "海怡半島": "12719432",  # South Horizons
+    "淺水灣": "1818818",     # Shouson Hill, the nearest catalogued place
+}
+
 # English names GeoNames lacks a row for.
 _ENGLISH: Final = {
     "north point": "7778986",
     "lantau": "11101593",
     "lantau island": "11101593",
     "lamma island": "1818211",
+    "hku": "1819031",
+    "sheung wan": "8223932",
+    "kwai hing": "1819595",
+    "kwai fong": "1819595",
+    "lai king": "1819595",
+    "lai chi kok": "1819952",
+    "diamond hill": "1818304",
+    "ngau tau kok": "1819577",
+    "po lam": "1818506",
+    "exhibition centre": "1818379",
+    "mong kok east": "1819353",
+    "lo wu": "1818845",
+    "lok ma chau": "1818996",
+    "heng on": "1819400",
+    "shek mun": "1818920",
+    "che kung temple": "1818628",
+    "hin keng": "1818628",
+    "east tsim sha tsui": "1818501",
+    "austin": "8224045",
+    "tsuen wan west": "1818209",
+    "kam sheung road": "1819685",
+    "long ping": "1818225",
+    "siu hong": "1818446",
+    "ocean park": "9172583",
+    "repulse bay": "1818818",
 }
 
 
@@ -122,6 +195,7 @@ def _build() -> dict[str, str]:
         if len(name) > 1:
             table[name] = record
     table.update(_PLACES)
+    table.update(_MTR_STATIONS)
     table.update(_ENGLISH)
     # The rest of the place search reads 台 as 臺 (place_catalog.place_tier_key);
     # an alias must too, or 炮臺山 misses 炮台山.
@@ -148,11 +222,20 @@ def alias_key(query: str) -> tuple[str, bool]:
     text = query.strip()
     if _compact(text) in HONG_KONG_ALIASES:
         return _compact(text), False  # 香港仔 is a name, not 香港 + 仔
+    if _compact(text) in _SPECIAL_REGION:
+        return "香港", True  # 香港特區 alone: search 香港
     for prefix in HONG_KONG_PREFIXES:
-        if text.startswith(prefix) and len(text) > len(prefix):
-            rest = text[len(prefix):].lstrip(" ,，、")
-            if rest:
-                return _compact(rest), True
+        if not text.startswith(prefix) or len(text) <= len(prefix):
+            continue
+        # hka, hkust, hongkongese: a Latin prefix ends at a word boundary.
+        if prefix.isascii() and text[len(prefix)].isascii() and text[len(prefix)].isalnum():
+            continue
+        rest = _compact(text[len(prefix):].lstrip(" ,，、"))
+        # 香港x, hk 1: one character is no place name to search for.  The
+        # longest prefix that matched decides: 香港特區x is not 香港 + 特區x.
+        if len(rest) >= 2:
+            return rest, True
+        break
     return _compact(text), False
 
 

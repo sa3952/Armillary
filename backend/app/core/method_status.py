@@ -77,16 +77,18 @@ METHOD_PERIOD_LABELS: dict[str, tuple[str, str]] = {
     "essential_dignities": ("medieval_arabic", "source_term"),
     "dodecatemoria": ("hellenistic", "source_term"),
     "lunar_mansions": ("medieval_arabic", "source_term"),
-    "solar_phase": ("medieval_arabic", "source_term"),
+    "solar_phase": ("renaissance_early_modern", "source_term"),
     "classical_classifications": ("hellenistic", "modern_label"),
-    "motion_states": ("hellenistic", "modern_label"),
+    "motion_states": ("renaissance_early_modern", "modern_label"),
     "lots": ("hellenistic", "source_term"),
     # The default VOC definition: attribution unresolved, combined form is modern
     # (moon.VOC_METHOD_PROVENANCE).  The two alternatives carry their own period
     # through moon.VOC_METHOD_PERIODS.
     "void_of_course": ("modern", "source_term"),
     "aspects": ("hellenistic", "source_term"),
-    "planetary_hours": ("hellenistic", "source_term"),
+    # Unequal hours counted from sunrise are cited only to Lilly 1647; Dio gives
+    # no more than the weekday order.
+    "planetary_hours": ("renaissance_early_modern", "source_term"),
     "annual_profection": ("hellenistic", "source_term"),
     "firdaria": ("medieval_arabic", "source_term"),
     "zodiacal_releasing": ("hellenistic", "modern_label"),
@@ -97,6 +99,49 @@ METHOD_PERIOD_LABELS: dict[str, tuple[str, str]] = {
     "monthly_profection": ("medieval_arabic", "source_term"),
     "solar_return_chart": ("medieval_arabic", "modern_label"),
 }
+
+# Each selectable named profile's own period: a module's profiles can follow sources
+# of different periods (Lilly's bounds beside Ptolemy's), so a profile result
+# carries this besides its module's `period`.  The period is that of the sources
+# the profile cites; a modern editor reporting an unnamed older usage is modern.
+PROFILE_PERIODS: dict[str, str] = {
+    # Essential dignities.
+    "traditional_seven_domicile_exaltation_signs_v1": "hellenistic",
+    "egyptian_bounds_robbins_1940_v1": "hellenistic",
+    "chaldaean_bounds_ptolemy_i_21_v1": "hellenistic",
+    "ptolemy_bounds_robbins_1940_v1": "hellenistic",
+    "lilly_received_bounds_1647_v1": "renaissance_early_modern",
+    "chaldean_planetary_faces_firmicus_ii_4_v1": "hellenistic",
+    "manilius_sign_decans_astronomica_iv_v1": "hellenistic",
+    "dorothean_triplicity_three_rulers_v1": "hellenistic",
+    "ptolemy_triplicity_textual_corulership_v1": "hellenistic",
+    "lilly_triplicity_compact_1647_v1": "renaissance_early_modern",
+    "lilly_1647_p112_v1": "renaissance_early_modern",
+    # Aspects: the degree set, the orbs and the partile rule.
+    "ptolemaic_major_v1": "hellenistic",
+    "modern_common_minor_v1": "modern",
+    "modern_quintile_family_v1": "modern",
+    "modern_minor_combined_v1": "modern",
+    "abu_mashar_lineage_v1": "medieval_arabic",
+    "lilly_1647_experience_v1": "renaissance_early_modern",
+    "same_degree_number_v1": "renaissance_early_modern",
+    "within_one_degree_v1": "modern",
+    "lilly_1677_three_degrees_v1": "renaissance_early_modern",
+}
+
+
+def _require_closed_periods(periods: Iterable[str]) -> None:
+    """Refuse a period outside METHOD_PERIODS; any part of the set, the whole set included, is fine."""
+    if not set(periods) <= set(METHOD_PERIODS):
+        raise RuntimeError("profile periods come from the closed set")
+
+
+_require_closed_periods(PROFILE_PERIODS.values())
+
+
+def profile_period(profile_id: str) -> str:
+    return PROFILE_PERIODS[profile_id]
+
 
 # 列為研究用途的 profile；被選為主要 profile 時也要標出。
 RESEARCH_ONLY_PROFILES: frozenset[str] = frozenset({"lilly_triplicity_compact_1647_v1"})

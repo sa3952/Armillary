@@ -25,15 +25,15 @@
         <p class="note" id="mode-choice-note">三種都用同一套計算，只差算哪些項目、結果頁先給你看什麼；隨時可以換。本站不記住你選了哪一種：不用 cookie，也不用瀏覽器儲存。</p>
         <div class="choice mode-cards">
           <label>
-            <input type="radio" name="calc-mode" value="quick" checked autocomplete="off">
+            <input type="radio" name="calc-mode" value="quick" checked>
             <span><b>快速看盤</b><span>我想看我的星盤：上升星座、太陽與月亮在哪裡。星盤圖、行星位置、宮位與相位；結果分四章。</span></span>
           </label>
           <label>
-            <input type="radio" name="calc-mode" value="classical" autocomplete="off">
+            <input type="radio" name="calc-mode" value="classical">
             <span><b>古典完整</b><span>我照古典占星的作法讀盤：古典七顆行星、日盤夜盤、廟旺與陷弱、外來、命運點與精神點、十二分部，算完接著排時間主星。界、面、三分性各家並列。結果分六章。</span></span>
           </label>
           <label>
-            <input type="radio" name="calc-mode" value="custom" autocomplete="off">
+            <input type="radio" name="calc-mode" value="custom">
             <span><b>自訂</b><span>我要自己挑每個選項：從快速看盤的設定開始，全部選項攤開；匯出預設帶驗算資料，含出生地的精確經緯度與海拔。結果分六章。</span></span>
           </label>
         </div>
@@ -66,20 +66,16 @@
           <p class="consequence" id="precision-consequence" aria-live="polite"></p>
 
           <div class="grid four">
-            <!-- 年／月／日三欄而不是 type=date：後者的欄位順序跟著瀏覽器語系（mm/dd/yyyy）。三欄沒有 name，
-                 範圍寫在 data-min／data-max，由送出守衛讀；不自動跳欄，Tab 照常移動。 -->
-            <fieldset class="field date-field" id="field-date">
-              <legend id="date-legend">出生日期</legend>
-              <div class="date-parts" id="date-parts" data-min="1900-01-01" data-max="2399-12-31">
-                <span class="date-part"><input type="text" id="date-year" aria-labelledby="date-legend date-year-unit" aria-describedby="date-hint date-hint-more" inputmode="numeric" maxlength="4" size="4" autocomplete="off" spellcheck="false"><span class="date-unit" id="date-year-unit">年</span></span>
-                <span class="date-part"><input type="text" id="date-month" aria-labelledby="date-legend date-month-unit" aria-describedby="date-hint" inputmode="numeric" maxlength="2" size="2" autocomplete="off" spellcheck="false"><span class="date-unit" id="date-month-unit">月</span></span>
-                <span class="date-part"><input type="text" id="date-day" aria-labelledby="date-legend date-day-unit" aria-describedby="date-hint" inputmode="numeric" maxlength="2" size="2" autocomplete="off" spellcheck="false"><span class="date-unit" id="date-day-unit">日</span></span>
-              </div>
+            <!-- 一欄而不是 type=date：後者的欄位順序跟著瀏覽器語系（mm/dd/yyyy）。年月日可用 - / . 空白或
+                 「年」「月」隔開，也可連寫八位數字；沒有 name，範圍寫在 data-min／data-max，由送出守衛讀。 -->
+            <div class="field date-field" id="field-date">
+              <label for="birth-date" id="date-legend">出生日期</label>
+              <input type="text" id="birth-date" aria-describedby="date-hint date-hint-more" inputmode="numeric" maxlength="16" autocomplete="off" spellcheck="false" placeholder="2000-04-04" data-min="1900-01-01" data-max="2399-12-31">
               <!-- 說明的第一句常駐；其餘收在「?」裡（窄螢幕），寬螢幕攤成同一段。兩段都是日期欄的描述。 -->
               <div class="hint-group">
-                <span class="hint" id="date-hint">西元 1900–2399，以格里曆解讀；</span><details class="hint-more"><summary aria-label="出生日期的其餘說明">?</summary><span class="hint" id="date-hint-more">原始紀錄若是儒略曆，請先換算。民國年與日本年號可用下方的換算助手；農曆請先換算成西元國曆。</span></details>
+                <span class="hint" id="date-hint">西元 1900–2399，可連寫 20000404。</span><details class="hint-more"><summary aria-label="出生日期的其餘說明">?</summary><span class="hint" id="date-hint-more">以格里曆解讀；原始紀錄若是儒略曆，請先換算。民國年與日本年號可用下方的換算助手；農曆請先換算成西元國曆。</span></details>
               </div>
-            </fieldset>
+            </div>
             <div class="field" id="field-hour">
               <label for="hour">小時</label>
               <input type="number" id="hour" aria-describedby="hour-hint" min="0" max="23" step="1" inputmode="numeric" autocomplete="off">
@@ -151,7 +147,7 @@
             <div class="field grow">
               <label for="place-query">地名查詢</label>
               <div class="row">
-                <input type="search" id="place-query" aria-describedby="place-query-hint" enterkeyhint="search" autocomplete="off" placeholder="例如：臺南、Taipei、Zurich">
+                <input type="search" id="place-query" maxlength="100" aria-describedby="place-query-hint" enterkeyhint="search" autocomplete="off" spellcheck="false" placeholder="例如：臺南、Taipei、Zurich">
                 <button type="button" id="place-search-button">查詢</button>
               </div>
               <span class="hint" id="place-query-hint">讀取內建的唯讀離線目錄，不發出對外請求。中文行政區請用空格分開，例如「臺南 北區」。</span>
@@ -200,7 +196,7 @@
             <div class="grid">
               <div class="field">
                 <label for="timezone">IANA 時區名稱</label>
-                <input type="text" id="timezone" aria-describedby="timezone-hint timezone-offset" autocomplete="off" placeholder="Asia/Taipei" list="timezone-suggestions">
+                <input type="text" id="timezone" aria-describedby="timezone-hint timezone-offset" autocomplete="off" spellcheck="false" placeholder="Asia/Taipei" list="timezone-suggestions">
                 <datalist id="timezone-suggestions"></datalist>
                 <span class="hint" id="timezone-hint">依出生地當時實際適用的時區。1970 年前的偏移是 IANA 資料庫推定，未經歷史驗證</span>
                 <span class="hint" id="timezone-offset" hidden></span>
@@ -223,18 +219,18 @@
           <div class="plan-classical" id="plan-classical" hidden>
             <p class="note">已依古典作法勾好；不要的可以取消。</p>
             <div class="plan-checks">
-              <label><input type="checkbox" class="option-control" id="plan-body_selection_preset" data-plan-key="body_selection_preset" data-plan-on="classical_seven_v1" data-plan-off="custom" autocomplete="off">只算古典七顆行星（太陽、月亮、水星、金星、火星、木星、土星）</label>
-              <label><input type="checkbox" class="option-control" id="plan-include_lots" data-plan-key="include_lots" autocomplete="off">日盤／夜盤，以及命運點與精神點</label>
-              <label><input type="checkbox" class="option-control" id="plan-include_domicile_exaltation" data-plan-key="include_domicile_exaltation" autocomplete="off">廟、旺、陷、弱</label>
-              <label><input type="checkbox" class="option-control" id="plan-peregrine_profile" data-plan-key="peregrine_profile" data-plan-on="lilly_1647_p112_v1" autocomplete="off"><span>外來 <span class="en" lang="en">Peregrine</span>（依 Lilly 1647 判）</span></label>
-              <label><input type="checkbox" class="option-control" id="plan-include_dodecatemoria" data-plan-key="include_dodecatemoria" autocomplete="off"><span>十二分部 <span class="en" lang="en">Dodecatemoria</span></span></label>
+              <label><input type="checkbox" class="option-control" id="plan-body_selection_preset" data-plan-key="body_selection_preset" data-plan-on="classical_seven_v1" data-plan-off="custom">只算古典七顆行星（太陽、月亮、水星、金星、火星、木星、土星）</label>
+              <label><input type="checkbox" class="option-control" id="plan-include_lots" data-plan-key="include_lots">日盤／夜盤，以及命運點與精神點</label>
+              <label><input type="checkbox" class="option-control" id="plan-include_domicile_exaltation" data-plan-key="include_domicile_exaltation">廟、旺、陷、弱</label>
+              <label><input type="checkbox" class="option-control" id="plan-peregrine_profile" data-plan-key="peregrine_profile" data-plan-on="lilly_1647_p112_v1"><span>外來 <span class="en" lang="en">Peregrine</span>（依 Lilly 1647 判）</span></label>
+              <label><input type="checkbox" class="option-control" id="plan-include_dodecatemoria" data-plan-key="include_dodecatemoria"><span>十二分部 <span class="en" lang="en">Dodecatemoria</span></span></label>
             </div>
             <fieldset class="plan-profiles" id="plan-profiles" aria-describedby="plan-profiles-note">
               <legend>界、面、三分性：選一套，或全部並列</legend>
               <p class="note" id="plan-profiles-note">古書有好幾套，本站不替你選。「古典完整」模式預選全部並列；自訂模式與 API 無預設。全部並列是在同一份結果裡逐星對照各家，相同的收成一行，不同的才展開。也可以只選一套，或選「不計算」。</p>
               <div class="grid three" id="plan-profile-slots"></div>
             </fieldset>
-            <label class="plan-timelords"><input type="checkbox" class="option-control" id="plan-timelords" checked autocomplete="off" aria-describedby="plan-timelords-note">算完星盤後，接著排出時間主星</label>
+            <label class="plan-timelords"><input type="checkbox" class="option-control" id="plan-timelords" checked aria-describedby="plan-timelords-note">算完星盤後，接著排出時間主星</label>
             <p class="note" id="plan-timelords-note">會用同一份出生資料再請計算服務算一次年度小限、法達、黃道釋放與十年期，伺服器同樣不留副本。不勾也可以，之後在「時間主星」一章按一下就好。</p>
           </div>
         </fieldset>
@@ -306,6 +302,8 @@
           <button type="button" class="ghost small" id="example-button">載入合成範例（不是真實生辰）</button>
           <span class="status-line" id="status-line" role="status" aria-live="polite"></span>
         </div>
+        <!-- 條款寫明第一次送出計算就是接受條款的時點，告知要在送出前看得到，所以連結放在按鈕下方。 -->
+        <p class="note submit-terms" id="submit-terms">按「開始排盤」就是送出這次計算；資料怎麼處理見<a href="/zh-TW/legal/privacy">〈隱私政策〉</a>，使用規則見<a href="/zh-TW/legal/terms">〈使用條款〉</a>。</p>
       </form>
 
       <!-- 不標 role=alert：錯誤出現時控制器一律移焦點（標題或第一個無效欄位），
@@ -418,7 +416,7 @@
       <section class="chapter" id="chapter-positions" data-chapter="positions" aria-labelledby="chapter-positions-title" hidden>
         <div class="chapter-head">
           <h2 id="chapter-positions-title" tabindex="-1">位置</h2>
-          <p class="chapter-lead">每顆行星與每個點（例如<button type="button" class="term" data-term="node">月交點</button>、<button type="button" class="term" data-term="asc">上升星座</button>）在黃道上的位置、是否<button type="button" class="term" data-term="retrograde">逆行</button>，以及由位置直接推出來的點（例如<button type="button" class="term" data-term="dodecatemoria">十二分部</button>）。</p>
+          <p class="chapter-lead">每顆行星與每個點（例如<button type="button" class="term" data-term="node">月交點</button>、<button type="button" class="term" data-term="asc">上升星座</button>）在黃道上的位置、是否<button type="button" class="term" data-term="retrograde">逆行</button>，以及由位置直接推出來的點（例如<button type="button" class="term" data-term="dodecatemoria">十二分部</button>）。<span class="chapter-fixed">本章照原典列出的各區，不替你解盤，也不預測。</span></p>
         </div>
         <div class="chapter-sections" data-chapter-host="positions"></div>
       </section>
@@ -434,7 +432,7 @@
       <section class="chapter" id="chapter-classical" data-chapter="classical" aria-labelledby="chapter-classical-title" hidden>
         <div class="chapter-head">
           <h2 id="chapter-classical-title" tabindex="-1">古典判斷</h2>
-          <p class="chapter-lead">古典占星讀盤前先要確認的幾件事：<button type="button" class="term" data-term="sect">日盤還是夜盤</button>、行星的<button type="button" class="term" data-term="domicile_exaltation">廟與旺</button>和<button type="button" class="term" data-term="detriment">陷</button>、<button type="button" class="term" data-term="fall">弱</button>、<button type="button" class="term" data-term="peregrine">外來</button>、<button type="button" class="term" data-term="lots">命運點與精神點</button>、<button type="button" class="term" data-term="planetary_hours">行星時</button>。選了對應的選項時，這一章另列<button type="button" class="term" data-term="bounds_dignity">界</button>、<button type="button" class="term" data-term="face">面／旬</button>與<button type="button" class="term" data-term="triplicity">三分性</button>，<button type="button" class="term" data-term="lunar_mansions">月宿</button>，<button type="button" class="term" data-term="void_of_course">月空亡</button>，<button type="button" class="term" data-term="combust">焦傷</button>與<button type="button" class="term" data-term="under_beams">在光束下</button>（行星離太陽多近），以及行星與宮的古典分類（<button type="button" class="term" data-term="benefic_malefic">吉星與凶星</button>、<button type="button" class="term" data-term="joys">喜樂宮</button>、<button type="button" class="term" data-term="hayz">hayz 與 halb</button>、<button type="button" class="term" data-term="house_triad">始宮／續宮／果宮</button>）。照原典列出。不替你解盤，也不預測。</p>
+          <p class="chapter-lead">古典占星讀盤前先要確認的幾件事：<button type="button" class="term" data-term="sect">日盤還是夜盤</button>、行星的<button type="button" class="term" data-term="domicile_exaltation">廟與旺</button>和<button type="button" class="term" data-term="detriment">陷</button>、<button type="button" class="term" data-term="fall">弱</button>、<button type="button" class="term" data-term="peregrine">外來</button>、<button type="button" class="term" data-term="lots">命運點與精神點</button>、<button type="button" class="term" data-term="planetary_hours">行星時</button>。選了對應的選項時，這一章另列<button type="button" class="term" data-term="bounds_dignity">界</button>、<button type="button" class="term" data-term="face">面／旬</button>與<button type="button" class="term" data-term="triplicity">三分性</button>，<button type="button" class="term" data-term="lunar_mansions">月宿</button>，<button type="button" class="term" data-term="void_of_course">月空亡</button>，<button type="button" class="term" data-term="combust">焦傷</button>與<button type="button" class="term" data-term="under_beams">在光束下</button>（行星離太陽多近），以及行星與宮的古典分類（<button type="button" class="term" data-term="benefic_malefic">吉星與凶星</button>、<button type="button" class="term" data-term="joys">喜樂宮</button>、<button type="button" class="term" data-term="hayz">hayz 與 halb</button>、<button type="button" class="term" data-term="house_triad">始宮／續宮／果宮</button>）。照原典列出。不替你解盤，也不預測。<span class="chapter-fixed">本章照原典列出的各區，不替你解盤，也不預測。</span></p>
         </div>
         <div class="chapter-sections" data-chapter-host="classical"></div>
       </section>
@@ -642,7 +640,7 @@
       </details>
       <details>
         <summary>有英文版嗎？</summary>
-        <p>正在準備完整的英文版，預計和公開測試版（Public Beta）一起上線。</p>
+        <p>目前沒有。英文版會做，但還沒開始，排在繁體中文版有一定成果之後；進度見〈<a href="/zh-TW/roadmap">路線</a>〉。</p>
       </details>
       <details>
         <summary>可以自己架設或離線跑嗎？</summary>

@@ -15,20 +15,10 @@ legend{
 .field{display:flex; flex-direction:column; gap:.3rem}
 .field label{font-size:var(--fs-note); color:var(--ink-dim)}
 /* 出生日期是一組三欄：外框與 legend 照一般欄位的標籤，不照段落的 fieldset。 */
-fieldset.date-field{border:0; padding:0; margin:0; min-width:0}
-fieldset.date-field > legend{font-family:inherit; font-size:var(--fs-note); letter-spacing:0; color:var(--ink-dim); padding:0; float:left; width:100%; margin-bottom:.3rem}
-fieldset.date-field > legend + *{clear:both}
-/* 欄寬照位數（ch 是數字寬）：三欄加單位在寬螢幕四欄格的一格內排成一列。 */
-.date-parts{display:flex; flex-wrap:wrap; align-items:center; gap:.3rem .45rem}
-.date-part{display:inline-flex; align-items:center; gap:.2rem}
-.date-part > input{width:auto; text-align:center; padding-inline:.45rem}
-#date-year{inline-size:calc(4ch + .9rem + 2px)}
-#date-month,#date-day{inline-size:calc(2ch + .9rem + 2px)}
-.date-unit{font-size:var(--fs-aside); color:var(--ink-dim)}
 /* 說明是中文句子：用內文字型、不加字距，至少 0.8rem（12.8px）。數字範圍照常是表格數字。 */
 .field .hint{font-size:var(--fs-note); line-height:1.6; color:var(--ink-faint); font-variant-numeric:tabular-nums}
 /* 欄位用內文的黑體（地名、時區名、選單文字）；只有填數字的欄（時、分、秒、經緯度、高度、日期）用等寬，
-   數字上下對齊。日期是年／月／日三個文字欄（numeric 鍵盤），順序不隨瀏覽器語系改變。 */
+   數字上下對齊。日期是一個文字欄（numeric 鍵盤），年月日的順序不隨瀏覽器語系改變。 */
 input,select{
   font-family:var(--sans); font-size:var(--fs-aside); font-variant-numeric:tabular-nums;
   background:var(--paper-2); color:var(--ink);
@@ -207,6 +197,14 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
 }
 /* 首屏的兩塊緊接在章節列下面：章節列已經有一條線，這裡不再加線，上方也只留一小段距離。 */
 .result-lead > .chart-summary > section.result-section,.result-lead-wheel > section.chart-wheel{border-top:0; padding-top:var(--s2)}
+/* 速覽的區塊標頭只給輔助科技（calculate-sections.js）：區塊標頭的內距與底線比 .visually-hidden 具體，
+   不收回時隱藏的標頭仍有約 11px 高。上下排時速覽是這一章看得到的第一塊，表格直接接在章頂的間距之後，
+   不在看不見的標題上下各留一段空帶。並排時速覽的上緣對齊圖的區塊，間距不動。 */
+.result-lead > .chart-summary > section.result-section > .head.visually-hidden{padding:0; border:0}
+@media screen and (max-width:1099.98px){
+  .result-lead > .chart-summary > section.result-section{padding-top:0}
+  .result-lead > .chart-summary > section.result-section > .head.visually-hidden + *{margin-top:0}
+}
 .quick-toolbar{padding:var(--s2) 0 var(--s3)}
 /* 常用匯出：一欄、同寬，不折成參差的兩三行。 */
 .quick-toolbar .export-actions{display:grid; grid-template-columns:minmax(0,1fr); max-width:20rem; margin-top:.6rem}
@@ -551,7 +549,7 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
   display:block; width:100%; text-align:left; background:transparent; color:var(--ink);
   border:0; padding:.7rem .9rem; cursor:pointer; border-radius:0;
 }
-@media (hover:hover){ .place-option:hover{background:var(--paper-2)} }
+@media (hover:hover){ button.place-option:hover:not(:disabled){background:var(--paper-2); color:var(--ink)} }
 .place-option b{display:block; font-weight:600; font-size:var(--fs-aside); overflow-wrap:anywhere}
 .place-meta{display:block; font-size:var(--fs-note); color:var(--ink-faint); margin-top:.2rem; overflow-wrap:anywhere}
 .place-receipt{border:1px solid var(--hair); background:var(--paper-2); padding:var(--s2) var(--s3); margin-top:var(--s2)}
@@ -588,7 +586,6 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
 @media print{.calc-faq{display:none}}
 
 /* ═══ 選項：層 → 群組摺疊 → 相依子項 ═══════════════════ */
-/* 群組摺疊標題列與計數徽章的樣式待前端設計裁決後補上。 */
 /* ═══ section copy 與清除 ══════════════════════════════ */
 .section-copy{margin-left:auto}
 .clear-zone{border-top:1px solid var(--ink); margin-top:var(--s3); padding-top:var(--s3)}
@@ -812,6 +809,13 @@ input[type="checkbox"].option-control:disabled{
   scroll-margin-top:calc(var(--results-sticky-top, 0px) + var(--index-bar-h) + var(--s2));
 }
 .chapter > .annual{border-top:0; margin-top:0}
+/* 完整結果上萬個節點：離畫面遠的區塊先不排版（content-visibility:auto），算完與「全部章節」時
+   不必一次排完整頁；接近畫面才排。intrinsic size 記住排過的高度，捲動條不跳。只用在畫面上，列印照常全排。 */
+@media screen{
+  .results section.result-section{content-visibility:auto; contain-intrinsic-size:auto 30rem}
+  /* 跳到某一區時（calculate-render.js 的 unfoldTarget），那一章整章排版，捲動才落在對的位置。 */
+  .results section.chapter[data-laid-out] section.result-section{content-visibility:visible}
+}
 
 /* 第一次看星盤：預設收起，列印不印。 */
 .first-time{margin:var(--s2) 0 0; border:0; border-bottom:1px solid var(--hair); background:transparent; padding:0}
@@ -905,8 +909,6 @@ button.term{
   /* 出生日期自成一列：日期欄與它的一行說明不被擠成兩欄寬（時、分、秒照舊兩兩一列）。 */
   .grid.four > #field-date{grid-column:1 / -1}
   /* 手機上三欄有整列可用：放寬到至少 44px 的觸控寬度。 */
-  #date-year{inline-size:5rem}
-  #date-month,#date-day{inline-size:3.25rem}
   .skip-to-form{display:block; margin-top:var(--s1)}
   .skip-to-form a{display:inline-flex; align-items:center; min-height:44px; font-size:var(--fs-note)}
   /* 模式卡片：沒選的只留標題與一行說明；選中的那張照全文。全文仍在無障礙樹裡，選了就看得到。 */
@@ -1087,6 +1089,10 @@ th.num,td.num{text-align:right}
 td.num{font-family:var(--serif-num); font-variant-numeric:lining-nums tabular-nums}
 /* 時刻與度數範圍：靠左的文字格，字面與數字欄相同。 */
 td.num-text{font-family:var(--serif-num); font-variant-numeric:lining-nums tabular-nums}
+/* 同一天的日期只寫一次的時刻欄（calculate.js 標 .num-time）：格長短不一，靠右排，時分秒才上下對齊。 */
+th.num-time,td.num-time{text-align:right}
+/* 格裡的日期不在連字號處折行（calculate.js 包成 .date-whole）。 */
+.date-whole{white-space:nowrap}
 /* 「金牛 24°10′30.48″」這種星座度數格：星座名照黑體，度分秒與數字欄同一套襯線（calculate.js 的 fillCell 包成 .deg）。 */
 .deg{font-family:var(--serif-num); font-variant-numeric:lining-nums tabular-nums}
 

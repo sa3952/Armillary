@@ -4,8 +4,32 @@
   <link rel="self" type="application/atom+xml" href="https://projectarmillary.com/feed.xml"/>
   <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog"/>
   <id>https://projectarmillary.com/feed.xml</id>
-  <updated>2026-10-21T00:00:00+08:00</updated>
+  <updated>2026-10-26T00:00:00+08:00</updated>
   <author><name>渾儀 Armillary</name></author>
+  <entry>
+    <title>水星逆行，古書怎麼說？2026 年 10–11 月天蠍座水逆的時刻表與原典</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/mercury-retrograde-2026"/>
+    <id>https://projectarmillary.com/zh-TW/blog/mercury-retrograde-2026</id>
+    <published>2026-10-26T00:00:00+08:00</published>
+    <updated>2026-10-26T00:00:00+08:00</updated>
+    <summary>2026 年 10 月 24 日到 11 月 13 日的水星逆行：停滯、下合、焦傷與日輪內的逐分時刻表，三次水逆為何都在水象，並照 Lilly、Valens 希臘原文、Ptolemy、al-Bīrūnī 說明這些狀態原本指誰的水星。不解盤、不預測。</summary>
+  </entry>
+  <entry>
+    <title>三分性是什麼？古典西洋占星三分性主星的三套說法</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/triplicity-rulers"/>
+    <id>https://projectarmillary.com/zh-TW/blog/triplicity-rulers</id>
+    <published>2026-10-21T00:00:00+08:00</published>
+    <updated>2026-10-21T00:00:00+08:00</updated>
+    <summary>古典西洋占星的三分性把十二星座依火、土、風、水分成四組，各交給幾顆行星主管。照出處並列 Dorotheus 的三位主星、Ptolemy 原文的共同主宰與 Lilly 1647 的日夜簡表，說明日盤夜盤怎麼換主星、三套差在水象哪裡，以及本站怎麼讓你選。</summary>
+  </entry>
+  <entry>
+    <title>時間主星參考案例：年度小限、法達、黃道釋放與十年期的完整表格</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/time-lord-reference-cases"/>
+    <id>https://projectarmillary.com/zh-TW/blog/time-lord-reference-cases</id>
+    <published>2026-10-21T00:00:00+08:00</published>
+    <updated>2026-10-21T00:00:00+08:00</updated>
+    <summary>兩張合成盤（一張日盤、一張夜盤）的年度小限年界、法達（夜盤兩種交點排法）、從命運點與精神點起的黃道釋放第一、二層與每一次解鎖，以及十年期第一層。表格全部由本站計算服務產生，可以拿來核對任何排盤工具。</summary>
+  </entry>
   <entry>
     <title>行星時怎麼算？行星日從日出起算、晝夜各十二等分與迦勒底序</title>
     <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/planetary-hours"/>
@@ -31,6 +55,14 @@
     <summary>從出生地看的月亮（站心）和從地心看的，最多差 1 度，有時換星座。以 2026 年臺北逐時實算差多少、何時最大，並逐一對照 NASA JPL Horizons（差不到 0.2 角秒）。</summary>
   </entry>
   <entry>
+    <title>法達夜盤的交點排在哪裡？水星之後還是火星之後</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/firdaria-night-node-order"/>
+    <id>https://projectarmillary.com/zh-TW/blog/firdaria-night-node-order</id>
+    <published>2026-10-21T00:00:00+08:00</published>
+    <updated>2026-10-21T00:00:00+08:00</updated>
+    <summary>法達（firdaria）夜盤從月亮起，但北交點與南交點該排在七顆行星之後，還是插在火星與太陽之間，書上與現代讀法不一致。照 al-Bīrūnī、Bonatti 與 Abū Maʿshar 的出處說明兩種排法、差在哪幾年，以及本站預設哪一種、為什麼。</summary>
+  </entry>
+  <entry>
     <title>黑月莉莉絲的平均、真與自然差多少？「真 Lilith」其實是密切遠地點</title>
     <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/black-moon-lilith-mean-true-natural"/>
     <id>https://projectarmillary.com/zh-TW/blog/black-moon-lilith-mean-true-natural</id>
@@ -39,44 +71,20 @@
     <summary>平均黑月莉莉絲與「真」Lilith 最多差 30 度。本站內附星曆逐日實算 1950–2049 年：密切（真）Lilith 有 36.3% 的時間和平均 Lilith 不同星座，自然 Lilith 只有 9.9%；三種算法的定義與本站提供哪兩種。</summary>
   </entry>
   <entry>
+    <title>為什麼兩個網站算出的上升點差 2 角分？出生地座標差一點的影響</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/ascendant-coordinates"/>
+    <id>https://projectarmillary.com/zh-TW/blog/ascendant-coordinates</id>
+    <published>2026-10-21T00:00:00+08:00</published>
+    <updated>2026-10-21T00:00:00+08:00</updated>
+    <summary>同一個出生時刻、同樣選臺北，兩個排盤工具的上升點常差兩、三角分，原因多半是「臺北」的座標不同。用合成時刻列出從鐘面時間、UT1、恆星時到上升點的每一步，並算出經度差 0.01 度上升點移動多少。</summary>
+  </entry>
+  <entry>
     <title>反照點是什麼？反照點與反向反照點怎麼算，為什麼以至點為鏡</title>
     <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/antiscia"/>
     <id>https://projectarmillary.com/zh-TW/blog/antiscia</id>
     <published>2026-10-21T00:00:00+08:00</published>
     <updated>2026-10-21T00:00:00+08:00</updated>
     <summary>反照點（antiscia）是行星對 0° 巨蟹—0° 摩羯至點軸的鏡像，算法是 180° 減黃經；反向反照點對分點軸鏡射。照 Lilly 1647 與 Firmicus 原文說明由來、星座配對與查表法，實算示範盤，並說明恆星黃道為何不能直接用 180° 去減。</summary>
-  </entry>
-  <entry>
-    <title>三分性是什麼？古典西洋占星三分性主星的三套說法</title>
-    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/triplicity-rulers"/>
-    <id>https://projectarmillary.com/zh-TW/blog/triplicity-rulers</id>
-    <published>2026-10-20T00:00:00+08:00</published>
-    <updated>2026-10-20T00:00:00+08:00</updated>
-    <summary>古典西洋占星的三分性把十二星座依火、土、風、水分成四組，各交給幾顆行星主管。照出處並列 Dorotheus 的三位主星、Ptolemy 原文的共同主宰與 Lilly 1647 的日夜簡表，說明日盤夜盤怎麼換主星、三套差在水象哪裡，以及本站怎麼讓你選。</summary>
-  </entry>
-  <entry>
-    <title>時間主星參考案例：年度小限、法達、黃道釋放與十年期的完整表格</title>
-    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/time-lord-reference-cases"/>
-    <id>https://projectarmillary.com/zh-TW/blog/time-lord-reference-cases</id>
-    <published>2026-10-20T00:00:00+08:00</published>
-    <updated>2026-10-20T00:00:00+08:00</updated>
-    <summary>兩張合成盤（一張日盤、一張夜盤）的年度小限年界、法達（夜盤兩種交點排法）、從命運點與精神點起的黃道釋放第一、二層與每一次解鎖，以及十年期第一層。表格全部由本站計算服務產生，可以拿來核對任何排盤工具。</summary>
-  </entry>
-  <entry>
-    <title>法達夜盤的交點排在哪裡？水星之後還是火星之後</title>
-    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/firdaria-night-node-order"/>
-    <id>https://projectarmillary.com/zh-TW/blog/firdaria-night-node-order</id>
-    <published>2026-10-19T00:00:00+08:00</published>
-    <updated>2026-10-19T00:00:00+08:00</updated>
-    <summary>法達（firdaria）夜盤從月亮起，但北交點與南交點該排在七顆行星之後，還是插在火星與太陽之間，書上與現代讀法不一致。照 al-Bīrūnī、Bonatti 與 Abū Maʿshar 的出處說明兩種排法、差在哪幾年，以及本站預設哪一種、為什麼。</summary>
-  </entry>
-  <entry>
-    <title>為什麼兩個網站算出的上升點差 2 角分？出生地座標差一點的影響</title>
-    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/ascendant-coordinates"/>
-    <id>https://projectarmillary.com/zh-TW/blog/ascendant-coordinates</id>
-    <published>2026-10-19T00:00:00+08:00</published>
-    <updated>2026-10-19T00:00:00+08:00</updated>
-    <summary>同一個出生時刻、同樣選臺北，兩個排盤工具的上升點常差兩、三角分，原因多半是「臺北」的座標不同。用合成時刻列出從鐘面時間、UT1、恆星時到上升點的每一步，並算出經度差 0.01 度上升點移動多少。</summary>
   </entry>
   <entry>
     <title>回歸黃道與恆星黃道差在哪？歲差值（ayanamsa）是什麼、四種怎麼來</title>

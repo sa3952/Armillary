@@ -23,11 +23,11 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="渾儀 Armillary：可驗證的古典西洋占星計算器">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","publisher":{"@id":"https://projectarmillary.com/#organization"},"url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/features#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/features#breadcrumb"},"dateModified":"2026-10-21","description":"渾儀的計算功能：上升點與宮位、四套界表與三分性、恆星、時區資料庫版本，出生時間不確定時標出會變的結果，三套座標一起輸出、時間主星輪值表，以及計算卷宗與多格式匯出；只計算，不解盤。","inLanguage":"zh-TW","isAccessibleForFree":true,"isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"星盤計算功能：上升點、宮位、界與三分性、恆星與匯出｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/features"},{"@id":"https://projectarmillary.com/#organization","@type":"Organization","alternateName":["渾儀","Armillary","Project Armillary"],"disambiguatingDescription":"古典西洋占星的計算網站與開源程式；名稱取自天文儀器渾儀（armillary sphere），本身不是那件儀器。","logo":{"@type":"ImageObject","height":180,"url":"https://projectarmillary.com/apple-touch-icon.png","width":180},"name":"渾儀 Armillary","sameAs":["https://github.com/sa3952/Armillary"],"url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/features#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/features","name":"功能","position":2}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","publisher":{"@id":"https://projectarmillary.com/#organization"},"url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/features#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/features#breadcrumb"},"dateModified":"2026-10-26","description":"渾儀的計算功能：上升點與宮位、四套界表與三分性、恆星、時區資料庫版本，出生時間不確定時標出會變的結果，三套座標一起輸出、時間主星輪值表，以及計算卷宗與多格式匯出；只計算，不解盤。","inLanguage":"zh-TW","isAccessibleForFree":true,"isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"星盤計算功能：上升點、宮位、界與三分性、恆星與匯出｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/features"},{"@id":"https://projectarmillary.com/#organization","@type":"Organization","alternateName":["渾儀","Armillary","Project Armillary"],"disambiguatingDescription":"古典西洋占星的計算網站與開源程式；名稱取自天文儀器渾儀（armillary sphere），本身不是那件儀器。","logo":{"@type":"ImageObject","height":180,"url":"https://projectarmillary.com/apple-touch-icon.png","width":180},"name":"渾儀 Armillary","sameAs":["https://github.com/sa3952/Armillary"],"url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/features#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/features","name":"功能","position":2}]}]}</script>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" href="/zh-TW/favicon.svg?v=c95686a2f029d369" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="/zh-TW/style/features.css?v=7ed95cea806cb62c">
+<link rel="stylesheet" href="/zh-TW/style/features.css?v=256fa408172ee40f">
 </head>
 <body>
 
@@ -87,7 +87,7 @@
     <details class="more">
       <summary id="bounds-table-title">七顆星的完整對照</summary>
       <p class="scroll-hint" hidden>表格可左右捲動</p>
-      <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="bounds-table-title">
+      <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="bounds-table-title" data-scroll-frame>
         <table class="log spec-table">
           <thead><tr><th>天體</th><th>位置</th><th>埃及界</th><th>迦勒底界</th><th>Ptolemy 界</th><th>Lilly 1647</th><th>幾種答案</th></tr></thead>
           <tbody>
@@ -117,7 +117,7 @@
     <div class="versus three">
       <div><span class="vs-label">pyswisseph 套件</span><b class="vs-answer sm">2.10.3.2</b><span class="vs-src">pip 安裝的 Python 套件</span></div>
       <div><span class="vs-label">Swiss Ephemeris C 函式庫</span><b class="vs-answer sm">2.10.03</b><span class="vs-src">函式庫自報版本<br>內建星曆檔另見檔頭：based on JPL DE441（2026-05-26 建立）</span></div>
-      <div><span class="vs-label">IANA 時區資料庫</span><b class="vs-answer sm alt">2026c</b><span class="vs-src">由作業系統或 image 提供<br><b>不由本產品固定</b></span></div>
+      <div><span class="vs-label">IANA 時區資料庫</span><b class="vs-answer sm alt">隨執行環境</b><span class="vs-src">由作業系統或 image 提供，實際版本記在每份卷宗<br><b>不由本產品固定</b></span></div>
     </div>
 
     <p>前兩個數字格式相近，<b>但不是同一個值</b>——我們把這句話寫進每一份卷宗，因為搞混了會誤導。第三個更重要：時區資料庫更新後，同一組輸入可能換算出不同的 UTC。所以它的版本也印在你的卷宗裡。1970 年前、特別是標為地方平時（LMT）的時段，資料庫自承多為推定，我們不把它當成已驗證的歷史鐘面。</p>
@@ -224,7 +224,7 @@
 
     <p class="verdict">每次計算都能取得一份卷宗：<b>逐步軌跡、完整口徑、所有版本號，以及一組 SHA-256 收據。</b>完整卷宗在「技術細節與驗算資料」與「運算結果＋驗算資料」匯出裡；預設的結果頁只取它需要的部分。</p>
 
-    <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="dossier-title">
+    <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="dossier-title" data-scroll-frame>
       <table class="log spec-table stack-narrow" role="table">
         <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">步</th><th scope="col" role="columnheader">算什麼</th><th scope="col" role="columnheader">得到</th><th scope="col" role="columnheader">怎麼來的</th></tr></thead>
         <tbody role="rowgroup">
@@ -275,7 +275,7 @@
 
     <p class="verdict">瀏覽器收到的每一個安全標頭都是可以當場查的。<br><b>把開發者工具切到 Network，點任一個回應，就在 Headers 裡。</b></p>
 
-    <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="security-headers-title">
+    <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="security-headers-title" data-scroll-frame>
       <table class="log spec-table stack-narrow" role="table">
         <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">標頭</th><th scope="col" role="columnheader">設定值</th><th scope="col" role="columnheader">擋掉什麼</th></tr></thead>
         <tbody role="rowgroup">
@@ -289,7 +289,7 @@
           <tr role="row"><td role="cell" data-label="標頭">Referrer-Policy</td><td class="num" role="cell" data-label="設定值">no-referrer</td><td role="cell" data-label="擋掉什麼">你從本站點出去時，對方拿不到你來自哪一頁</td></tr>
           <tr role="row"><td role="cell" data-label="標頭">Cross-Origin-Opener-Policy</td><td class="num" role="cell" data-label="設定值">same-origin</td><td role="cell" data-label="擋掉什麼">切斷與其他分頁的視窗參照</td></tr>
           <tr role="row"><td role="cell" data-label="標頭">X-Content-Type-Options</td><td class="num" role="cell" data-label="設定值">nosniff</td><td role="cell" data-label="擋掉什麼">不讓瀏覽器自行猜測檔案型別</td></tr>
-          <tr role="row"><td role="cell" data-label="標頭">Strict-Transport-Security</td><td class="num" role="cell" data-label="設定值">max-age=31536000</td><td role="cell" data-label="擋掉什麼">一年內只准用 HTTPS 連本站</td></tr>
+          <tr role="row"><td role="cell" data-label="標頭">Strict-Transport-Security</td><td class="num" role="cell" data-label="設定值">max-age=31536000; includeSubDomains</td><td role="cell" data-label="擋掉什麼">一年內本站與子網域只走 HTTPS</td></tr>
         </tbody>
       </table>
     </div>
@@ -331,7 +331,7 @@
   <section class="feat">
     <p class="sig">11<span class="sig-k">規格</span></p>
     <h2 id="numbers-title">可查證的數字。</h2>
-    <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="numbers-title">
+    <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="numbers-title" data-scroll-frame>
       <table class="log spec-table stack-narrow" role="table">
         <tbody role="rowgroup">
           <tr role="row"><td role="cell">計算引擎</td><td role="cell">Swiss Ephemeris 2.10.03（套件與 C 函式庫版本分開輸出）</td></tr>
@@ -347,7 +347,7 @@
           <tr role="row"><td role="cell">出生時刻精度</td><td role="cell">3 種：精確到分鐘 · 只知道小時 · 只知道日期</td></tr>
           <tr role="row"><td role="cell">座標系</td><td role="cell">黃道、赤道、地平並列；真高度與視高度分欄</td></tr>
           <tr role="row"><td role="cell">匯出</td><td role="cell">JSON · Markdown · CSV · 純文字；星盤 SVG · PNG；時間主星 .ics 與時間主星表；另有列印版面</td></tr>
-          <tr role="row"><td role="cell">授權</td><td role="cell">開源（AGPL-3.0），原始碼公開</td></tr>
+          <tr role="row"><td role="cell">授權</td><td role="cell">開源（AGPL-3.0-only），原始碼公開</td></tr>
           <tr role="row"><td role="cell">費用</td><td role="cell"><b>目前全部免費，包含上面每一項</b></td></tr>
         </tbody>
       </table>
@@ -364,7 +364,7 @@
   </section>
 
 </div>
-<script src="/zh-TW/table-scroll.js?v=902f20a5b04bbed0" defer></script>
+<script src="/zh-TW/table-scroll.js?v=5319860fadf798cd" defer></script>
 </main>
 
 <footer>
@@ -391,6 +391,7 @@
       <a href="/zh-TW/legal/copyright">著作權與原始碼</a>
       <a href="/zh-TW/contact">聯絡方式</a>
       <a href="/zh-TW/about">關於</a>
+      <a href="/zh-TW/accessibility">無障礙</a>
     </div>
   </div>
 
@@ -398,9 +399,10 @@
   <div class="wrap">
     <span>渾儀 ARMILLARY</span>
     <span>只計算，不解盤，不預測</span>
-    <span>最後更新：<time datetime="2026-10-21">2026-10-21</time></span>
+    <span>最後更新：<time datetime="2026-10-26">2026-10-26</time></span>
   </div>
 </footer>
+<script src="/zh-TW/visit-count.js?v=a01917f51b18a502" defer></script>
 
 </body>
 </html>

@@ -17,6 +17,10 @@ Two kinds of table:
   scrolls sideways.  The build puts a hidden 「表格可左右捲動」 line before
   the wrapper; ``table-scroll.js`` shows it only while the table actually
   overflows its box.
+
+Every wrapper of either kind is marked ``data-scroll-frame``: ``table-scroll.js``
+keeps it a tab stop only while it scrolls (the page's ``tabindex="0"`` is the
+default without the script).
 """
 
 from __future__ import annotations
@@ -27,6 +31,7 @@ import re
 STACK_CLASS = "stack-narrow"
 HINT_TEXT = "表格可左右捲動"
 HINT = f'<p class="scroll-hint" hidden>{HINT_TEXT}</p>'
+FRAME_ATTRIBUTE = "data-scroll-frame"
 SCRIPT = '<script src="/zh-TW/table-scroll.js?v={{assets}}" defer></script>'
 
 _WRAPPERS = ("ar-scroll", "spec-scroll", "mansion-scroll", "validation-scroll")
@@ -38,7 +43,7 @@ _TAG = re.compile(r"<[^>]+>")
 _ROW = re.compile(r"<tr\b(?P<attrs>[^>]*)>(?P<inner>.*?)</tr>", re.S)
 _CELL = re.compile(r"<(?P<tag>td|th)\b(?P<attrs>[^>]*)>", re.S)
 _WRAPPER = re.compile(
-    r'(?P<indent>[ \t]*)<div class="(?P<cls>[^"]*)"[^>]*>\s*<table\b(?P<attrs>[^>]*)>'
+    r'(?P<indent>[ \t]*)<div class="(?P<cls>[^"]*)"(?P<rest>[^>]*)>(?P<gap>\s*)<table\b(?P<attrs>[^>]*)>'
 )
 
 
@@ -95,21 +100,28 @@ def _stack(match: re.Match) -> str:
     return f"<table{_with_attr(attrs, 'role', 'table')}>{inner}</table>"
 
 
-def _hint(match: re.Match) -> str:
+def _frame(match: re.Match) -> str:
     wrapper = set(match.group("cls").split())
-    if not wrapper.intersection(_WRAPPERS) or STACK_CLASS in _classes(match.group("attrs")):
+    if not wrapper.intersection(_WRAPPERS):
         return match.group(0)
-    return f'{match.group("indent")}{HINT}\n{match.group(0)}'
+    frame = (
+        f'{match.group("indent")}<div class="{match.group("cls")}"{match.group("rest")} {FRAME_ATTRIBUTE}>'
+        f'{match.group("gap")}<table{match.group("attrs")}>'
+    )
+    if STACK_CLASS in _classes(match.group("attrs")):
+        return frame
+    return f'{match.group("indent")}{HINT}\n{frame}'
 
 
 def fill(body: str) -> str:
     """Stack-marked tables labelled; a scroll hint before every other scrolling
-    table, and the script that shows it when the page has one."""
+    table; every table's scroll frame marked, and the script that keeps the
+    hints and the frames' tab stops when the page has a frame."""
 
-    if HINT_TEXT in body or "table-scroll.js" in body:
-        raise ValueError("a page writes the scroll hint or its script itself; the build adds them")
+    if HINT_TEXT in body or "table-scroll.js" in body or FRAME_ATTRIBUTE in body:
+        raise ValueError("a page writes the scroll hint, frame mark or script itself; the build adds them")
     body = _TABLE.sub(_stack, body)
-    body = _WRAPPER.sub(_hint, body)
-    if HINT in body:
+    body = _WRAPPER.sub(_frame, body)
+    if FRAME_ATTRIBUTE in body:
         body = body.rstrip("\n") + "\n" + SCRIPT
     return body

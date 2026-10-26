@@ -5,7 +5,8 @@
 trees, then re-denies sensitive names.  Every reopened path must be used by a
 Dockerfile COPY (or be the Dockerfile, the notices file or the ignore file
 itself), every COPY source must be reopened, deploy/image-app-tree.json must be
-exactly the `/app` tree those COPY lines build from the admitted context (so a
+exactly the `/app` tree those COPY lines build from the admitted context, plus
+the single files a COPY --from the builder stage writes into /app (so a
 file added to or removed from a copied tree fails here, not first in Gate D),
 and no secret or private-looking path may survive the final deny rules.
 """
@@ -106,9 +107,38 @@ def dockerfile_copies(dockerfile: str) -> list[tuple[str, str]]:
     return copies
 
 
-def app_tree(root: Path, rules: list[tuple[bool, str]], copies: list[tuple[str, str]]) -> set[str]:
+# The /app files the builder stage extracts from the vendored sdist (deploy/
+# Dockerfile, the licence step): destination -> archive member.  The context
+# check requires the Dockerfile's COPY --from destinations to be exactly these,
+# and Gate D compares each image file with the member's bytes.
+PYSWISSEPH_SDIST = "third_party/pyswisseph/pyswisseph-2.10.3.2.tar.gz"
+STAGE_APP_FILES_FROM_SDIST = {
+    "/app/third_party/pyswisseph/LICENSE.txt": "pyswisseph-2.10.3.2/LICENSE.txt",
+    "/app/third_party/pyswisseph/SWISS_EPHEMERIS_LICENSE": "pyswisseph-2.10.3.2/libswe/LICENSE",
+    "/app/third_party/pyswisseph/SWEPHELP_LICENSE": "pyswisseph-2.10.3.2/swephelp/LICENSE.txt",
+}
+
+
+def dockerfile_stage_app_files(dockerfile: str) -> set[str]:
+    """The /app files a COPY --from an earlier stage writes (one file each)."""
+
+    files = set()
+    for line in dockerfile_logical_lines(dockerfile):
+        words = shlex.split(line)
+        if words[0].upper() != "COPY" or not any(w.startswith("--from") for w in words):
+            continue
+        arguments = [word for word in words[1:] if not word.startswith("--")]
+        if arguments[-1].startswith("/app/"):
+            if len(arguments) != 2 or arguments[-1].endswith("/"):
+                raise DockerContextFailure(f"a COPY --from into /app must name one file: {line}")
+            files.add(arguments[-1])
+    return files
+
+
+def app_tree(root: Path, rules: list[tuple[bool, str]], copies: list[tuple[str, str]],
+             stage_files: frozenset[str] | set[str] = frozenset()) -> set[str]:
     """Every /app path (files and their directories) the COPY lines produce."""
-    paths = set(UNCOPIED_APP_FILES)
+    paths = set(UNCOPIED_APP_FILES) | set(stage_files)
     for source, destination in copies:
         if not destination.startswith("/app/"):
             continue
@@ -129,12 +159,37 @@ def app_tree(root: Path, rules: list[tuple[bool, str]], copies: list[tuple[str, 
     return paths
 
 
+def app_file_sources(root: Path) -> dict[str, Path]:
+    """Each /app regular file the build writes, mapped to the file in `root`
+    whose bytes it must hold (the COPY sources, and the notices the build
+    installs from the first of its two locations)."""
+    rules = ignore_rules((root / ".dockerignore").read_text(encoding="utf-8"))
+    copies = dockerfile_copies((root / "deploy/Dockerfile").read_text(encoding="utf-8"))
+    notices = root / "THIRD_PARTY_NOTICES.md"
+    sources = {"/app/THIRD_PARTY_NOTICES.md":
+               notices if notices.is_file() else root / "publication/public_overlay/THIRD_PARTY_NOTICES.md"}
+    for source, destination in copies:
+        if not destination.startswith("/app/"):
+            continue
+        tree = root / source
+        if tree.is_dir():
+            sources.update({
+                destination.rstrip("/") + "/" + path.relative_to(tree).as_posix(): path
+                for path in tree.rglob("*")
+                if path.is_file() and admitted(rules, (Path(source) / path.relative_to(tree)).as_posix())
+            })
+        elif tree.is_file():
+            sources[destination] = tree
+    return sources
+
+
 def verify(root: Path = PROJECT_ROOT) -> dict[str, int]:
     rules = ignore_rules((root / ".dockerignore").read_text(encoding="utf-8"))
     if not rules or rules[0] != (False, "**"):
         raise DockerContextFailure(".dockerignore must start by denying everything (**)")
     reopened = {pattern for reopen, pattern in rules if reopen}
-    copies = dockerfile_copies((root / "deploy/Dockerfile").read_text(encoding="utf-8"))
+    dockerfile = (root / "deploy/Dockerfile").read_text(encoding="utf-8")
+    copies = dockerfile_copies(dockerfile)
     # Nothing reopened, copied or listed would make every check below vacuous.
     if not reopened:
         raise DockerContextFailure(".dockerignore reopens nothing")
@@ -162,7 +217,11 @@ def verify(root: Path = PROJECT_ROOT) -> dict[str, int]:
     if not isinstance(paths, list) or not all(isinstance(path, str) for path in paths):
         raise DockerContextFailure("deploy/image-app-tree.json paths is not a list of paths")
     listed = set(paths)
-    built = app_tree(root, rules, copies)
+    stage_files = dockerfile_stage_app_files(dockerfile)
+    if stage_files != set(STAGE_APP_FILES_FROM_SDIST):
+        problems.append(f"COPY --from destinations in /app are not the sdist files Gate D can compare: "
+                        f"{sorted(stage_files ^ set(STAGE_APP_FILES_FROM_SDIST))}")
+    built = app_tree(root, rules, copies, stage_files)
     if not built - UNCOPIED_APP_FILES - {str(PurePosixPath(path).parent) for path in built}:
         problems.append("the Dockerfile copies no file into /app")
     if listed != built:

@@ -57,6 +57,7 @@ if str(_BACKEND_PACKAGE_ROOT) not in sys.path:
 from app.core.place_catalog import (
     MATCH_KEY_SEPARATOR,
     TAIWAN_COUNTY_RECORD_PREFIX,
+    TAIWAN_TOWN_RECORD_PREFIX,
     match_keys_text,
     normalize_search_text,
     place_name_match_key,
@@ -78,7 +79,7 @@ TAIWAN_SETTLEMENT_SOURCE_URL = (
     "4A5AB0C9-0395-4B04-AE50-02624075516F/resource/"
     "AE5B85B6-0895-4D32-8027-1713F018A649/download"
 )
-GENERATOR_VERSION = "place-catalog-builder-v8"
+GENERATOR_VERSION = "place-catalog-builder-v9"
 SCHEMA_VERSION = 5
 MAX_INPUT_BYTES = 512 * 1024 * 1024
 MAX_UNCOMPRESSED_BYTES = 2 * 1024 * 1024 * 1024
@@ -109,6 +110,30 @@ MISSING_GLYPH_MARK = "（原始資料缺字）"
 
 def _missing_glyph(*names: str | None) -> bool:
     return any(glyph in (name or "") for name in names for glyph in MISSING_GLYPHS)
+
+
+# The MOI files write a character with no Unicode code point as an <img> link to
+# the CNS 11643 glyph server, sometimes cut off before its '>', or as a
+# private-use code point only the publisher's font draws.
+_GLYPH_IMAGE = re.compile(r"<img\b[^>]*>?", re.IGNORECASE)
+
+
+def _moi_name(raw: object) -> str:
+    """The MOI name with each unencodable character replaced by ●."""
+
+    name = _GLYPH_IMAGE.sub(MISSING_GLYPHS[1], str(raw or ""))
+    name = "".join(MISSING_GLYPHS[1] if unicodedata.category(c) == "Co" else c for c in name)
+    return name.strip()
+
+
+def _reject_markup_and_private_use(connection: sqlite3.Connection) -> None:
+    """No shipped label may carry markup or a private-use character."""
+
+    rows = connection.execute("SELECT source_record_id, name, display_name, name_zh FROM places")
+    for record_id, *labels in rows:
+        for value in labels:
+            if value and (re.search(r"[<>]", value) or any(unicodedata.category(c) == "Co" for c in value)):
+                raise ValueError(f"row {record_id} carries markup or a private-use character: {value!r}")
 
 
 # Closed set of source-correction outcomes.
@@ -331,6 +356,28 @@ SOURCE_TIMEZONE_CORRECTIONS.update(
         for record_id, place in rows
     }
 )
+SOURCE_TIMEZONE_CORRECTIONS["13724417"] = {
+    "expected": "",
+    "corrected": "Asia/Shanghai",
+    "reason": "Chuanhui (33.62611, 114.64917) is in Zhoukou, Henan; the 2026-10-26 snapshot leaves its zone blank",
+}
+
+# Rows whose zone disagrees with the zone at their coordinate, found by
+# scripts/validation/audit_place_timezones.py (its docstring gives the rule).
+# A hand-written entry above wins over a generated one for the same row.
+TIMEZONE_AUDIT_PATH = Path(__file__).with_name("place_timezone_corrections.json")
+_TIMEZONE_AUDIT = json.loads(TIMEZONE_AUDIT_PATH.read_text(encoding="utf-8"))
+for _entry in _TIMEZONE_AUDIT["corrections"]:
+    SOURCE_TIMEZONE_CORRECTIONS.setdefault(_entry["source_record_id"], {
+        "expected": _entry["expected"],
+        "corrected": _entry["corrected"],
+        "reason": (f"{_entry['place']}: the zone at the coordinate is {_entry['corrected']} "
+                   f"({_TIMEZONE_AUDIT['engine']}), whose UTC offsets differ from {_entry['expected']}'s"),
+    })
+# Known disagreements the producer keeps as GeoNames has them, with the reason.
+TIMEZONE_LEFT_AS_SOURCE: dict[str, str] = {
+    entry["source_record_id"]: entry["reason"] for entry in _TIMEZONE_AUDIT["left_as_source"]
+}
 
 
 # Named admin1 errors in GeoNames rows: the row's code names a province the row
@@ -456,6 +503,9 @@ _OTHER_ADMIN1_CORRECTIONS: dict[str, dict[str, str]] = {
         ("8529147", "TO", "03", "02",
          "Pelehake (-21.21283, -175.14328) is on Tongatapu, in Tatakamotonga "
          "(Wikidata Q124791606 at -21.2160, -175.1399); Vava'u lies near 18.6 S"),
+        ("1818501", "HK", "KKC", "KYT",
+         "Tsim Sha Tsui (22.3, 114.16667) is one of the three areas Yau Tsim Mong District "
+         "is named after (Yau Ma Tei, Tsim Sha Tsui, Mong Kok); Kowloon City District is to its north"),
         ("8613348", "ID", "14", "42",
          "Sungai Nyamuk (4.14383, 117.91087) is a village of East Sebatik, Nunukan, "
          "North Kalimantan (Wikidata Q12517896 at 4.1289, 117.8828); North Kalimantan was separated "
@@ -478,6 +528,14 @@ SOURCE_ADMIN1_CORRECTIONS: dict[str, dict[str, str]] = {
 # is kept and reported.
 CORRECTION_EXCLUDED = "excluded"
 SOURCE_ROW_EXCLUSIONS: dict[str, dict[str, str | None]] = {
+    "6652945": {
+        "expected_name": "Akbarābād",
+        "kept": "144410",
+        "reason": (
+            "Akbarābād, Fars twice: 6652945 (29.24607, 52.78084) and 144410 (29.24609, "
+            "52.78081) are 3 m apart and both carry population 5817; 144410 is the older row"
+        ),
+    },
     "1679136": {
         "expected_name": "Chang-hua",
         "kept": "1993459",
@@ -513,6 +571,92 @@ def _table_sha256(table: dict) -> str:
 # left out: its script is unknown and mostly Simplified, which mixed scripts in
 # a Traditional-Chinese picker.
 ZH_LANGUAGE_PREFERENCE = ("zh-Hant", "zh-TW")
+
+# Traditional-Chinese names GeoNames tags for a city that are another entity's
+# name or not the city's name at all; each is skipped when the label is chosen,
+# so the next tagged name (or none) leads the label instead.  A row that no
+# longer offers the name is reported, not silently passed.
+CHINESE_NAME_EXCLUDED = "excluded"
+CHINESE_NAME_NOT_OFFERED = "not_offered"
+class _ChineseNameExclusion(TypedDict):
+    names: list[str]
+    reason: str
+
+
+SOURCE_CHINESE_NAME_EXCLUSIONS: dict[str, _ChineseNameExclusion] = {
+    "2240449": {
+        "names": ["盧安達"],
+        "reason": "Luanda, capital of Angola: 盧安達 is the Taiwanese name of the country Rwanda",
+    },
+    "1642911": {
+        "names": ["勿礁維", "勿礁维"],
+        "reason": "Jakarta: the zh-Hant 勿礁維 is no name of the city; the row's zh-TW name is 雅加達",
+    },
+    "1795940": {
+        "names": ["潮汕"],
+        "reason": "Shantou: 潮汕 names the Chaoshan region (Shantou, Chaozhou, Jieyang), not the city 汕頭",
+    },
+    "2028462": {
+        "names": ["库倫"],
+        "reason": "Ulaanbaatar: 库倫 is the historical name Urga written with the Simplified 库",
+    },
+    "4937230": {
+        "names": ["馬薩諸塞州"],
+        "reason": "Framingham, Massachusetts: 馬薩諸塞州 is the name of the state",
+    },
+    "5011908": {
+        "names": ["威廉姆·阿蘭·雷德"],
+        "reason": "Taylor, Michigan: 威廉姆·阿蘭·雷德 is a person's name, not the city's",
+    },
+}
+
+# A city outside Taiwan whose Chinese name GeoNames gives only untagged or
+# Simplified (上海, 重庆) has no Chinese name the match tier compares, so a
+# Taiwanese street that merely begins with it (上海街) ranked first.  Such a
+# name, read in Traditional characters, becomes a match key of the row only
+# when the city is large and the name is corroborated: at least
+# FOREIGN_CHINESE_KEY_MIN_ENTRIES of the row's current Chinese entries give it
+# (上海 and 上海市 both give 上海).  GeoNames also lists a district's or a
+# neighbouring town's name among a city's names (玉山 for Kunshan), and a
+# single such entry would make a foreign city outrank the Taiwanese place of
+# that name; a small town is left out for the same reason.
+FOREIGN_CHINESE_KEY_MIN_POPULATION = 100_000
+FOREIGN_CHINESE_KEY_MIN_ENTRIES = 2
+# Administrative suffixes a Chinese city name is written with or without.  鎮
+# and 區 are left out: 新安鎮 beside a city's 新安 names the town seat or a
+# district, not a second spelling of the city.
+_CHINESE_ADMIN_SUFFIX = re.compile(r"(?:特別行政區|市|縣|省)$")
+
+# Simplified-to-Traditional character table (ICU, one character at a time),
+# kept by scripts/validation/audit_han_variants.py.  The producer drops every
+# character that Taiwan's own place names use as written (后 of 后里, 庄, 斗 of
+# 斗六), so folding can never turn a Taiwanese name into another, and stores the
+# rest in the catalogue, where the runtime folds the query with it.
+HAN_FOLD_TABLE_PATH = Path(__file__).with_name("han_simplified_to_traditional.json")
+HAN_FOLD_TABLE_NAME = "han_simplified_to_traditional_v1"
+
+
+def load_han_fold_source() -> dict:
+    table = json.loads(HAN_FOLD_TABLE_PATH.read_text(encoding="utf-8"))
+    mapping = table.get("simplified_to_traditional")
+    if not isinstance(mapping, dict) or not mapping or not all(
+        isinstance(key, str) and isinstance(value, str) and len(key) == len(value) == 1 and key != value
+        for key, value in mapping.items()
+    ):
+        raise ValueError(f"{HAN_FOLD_TABLE_PATH.name} holds no single-character table")
+    return table
+
+
+def han_fold_table(source: dict, taiwan_characters: set[str]) -> dict[str, str]:
+    return {
+        simplified: traditional
+        for simplified, traditional in sorted(source["simplified_to_traditional"].items())
+        if simplified not in taiwan_characters
+    }
+
+
+def fold_han(value: str, table: dict[str, str]) -> str:
+    return "".join(table.get(character, character) for character in value)
 
 # Disambiguation levels, most human-meaningful first.  ``coordinate`` is the
 # last resort and is reported as such in the manifest.
@@ -594,6 +738,55 @@ def _han_alternate_names(alternate_names: str) -> list[str]:
     """The Chinese-script entries of a GeoNames alternate-name list."""
 
     return [item.strip() for item in alternate_names.split(",") if item.strip() and _has_han(item)]
+
+
+def _folded_han_aliases(alternate_names: str, fold_table: dict[str, str]) -> list[str]:
+    """Each Chinese-script alternate name read in Traditional characters, where that differs.
+
+    Indexed beside the names as written, so the query, folded the same way at
+    run time, finds 重慶 for 重庆 and 羅安達 for 罗安达.
+    """
+
+    folded = (fold_han(name, fold_table) for name in _han_alternate_names(alternate_names))
+    return sorted({name for name in folded if name} - set(_han_alternate_names(alternate_names)))
+
+
+_MOI_NAME_FIELDS = ("PlaceName", "AnotherName", "County", "Town", "Village")
+
+
+def taiwan_written_characters(sources: tuple[Path | BoundedInput, ...]) -> set[str]:
+    """Every character the MOI files write in a place, county, town or village name."""
+
+    characters: set[str] = set()
+    for source in sources:
+        bounded, owned = _as_bounded_input(source)
+        try:
+            for line_number, row in enumerate(_taiwan_reader(bounded), start=2):
+                if line_number > MAX_SOURCE_ROWS + 1:
+                    raise ValueError("Taiwan input exceeds bounded row limit")
+                for field in _MOI_NAME_FIELDS:
+                    characters.update(str(row.get(field) or ""))
+        finally:
+            if owned:
+                bounded.close()
+    return characters
+
+
+# A MOI phonetic name sometimes carries a second reading in brackets:
+# 「Kending (Kendingliao )」.
+_PHONETIC_PARTS = re.compile(r"[()（）]")
+
+
+def _moi_phonetic_names(row: dict) -> list[str]:
+    """The Latin phonetic names of a MOI row, each bracketed reading on its own."""
+
+    names: list[str] = []
+    for field in ("ChinesePhonetic", "CommonPhonetic"):
+        for part in _PHONETIC_PARTS.split(str(row.get(field) or "")):
+            part = " ".join(part.split())
+            if part and part.isascii() and any(character.isalpha() for character in part):
+                names.append(part)
+    return list(dict.fromkeys(names))
 
 
 def _is_upstream_test_row(row: dict) -> bool:
@@ -834,6 +1027,13 @@ TAIWAN_COUNTY_CODES: dict[str, str] = {
 }
 # Names in common use for a county that neither source gives as its name.
 TAIWAN_COUNTY_EXTRA_NAMES: dict[str, tuple[str, ...]] = {
+    # Counties merged or upgraded into special municipalities on 2010-12-25
+    # and 2014-12-25: a birth record from before then names the county.
+    "65000": ("臺北縣",),
+    "66000": ("臺中縣",),
+    "67000": ("臺南縣",),
+    "64000": ("高雄縣",),
+    "68000": ("桃園縣",),
     "10016": ("Pescadores",),
     "9020": ("Quemoy",),
     "9007": ("Matsu", "Matsu Islands", "馬祖"),
@@ -947,6 +1147,7 @@ def import_geonames(
     corrections: list[dict] | None = None,
     exclusions: list[dict] | None = None,
     admin1_corrections: list[dict] | None = None,
+    fold_table: dict[str, str] | None = None,
 ) -> int:
     """Import cities500; ``taiwan_counties`` maps a GeoNames admin1.admin2 code to its MOI county."""
 
@@ -1024,17 +1225,27 @@ def import_geonames(
             admin1_corrections.append(
                 _admin1_correction_record(geonameid, admin1_fix, observed_admin1, admin1_status, admin1_names)
             )
-        aliases = " ".join(item for item in (ascii_name, alternate_names.replace(",", " ")) if item)
+        aliases = " ".join(
+            item
+            for item in (
+                ascii_name, alternate_names.replace(",", " "),
+                " ".join(_folded_han_aliases(alternate_names, fold_table or {})),
+            )
+            if item
+        )
         admin1_name: str | None
         if country_code == "TW":
             admin1_name = _taiwan_county(geonameid, admin1, admin2, taiwan_counties)
         else:
             admin1_name = admin1_names.get(f"{country_code}.{admin1}") if admin1 else None
         # A Taiwan city GeoNames names only in an untagged alias (板橋 for
-        # Banqiao) must still be a name match for a Chinese query.  Other
+        # Banqiao, Ilan for Yilan) must still be a name match.  Other
         # countries are left out: their Chinese aliases include other cities'
         # names (台東 for Tokyo's Taito), which would make foreign rows exact.
-        match_names = _han_alternate_names(alternate_names) if country_code == "TW" else []
+        match_names = (
+            [item.strip() for item in alternate_names.split(",") if item.strip()]
+            if country_code == "TW" else []
+        )
         inserted = _insert(
             connection,
             {
@@ -1070,33 +1281,76 @@ def import_geonames(
     return count
 
 
-def apply_geonames_chinese_names(connection: sqlite3.Connection, source: Path | BoundedInput | None) -> int:
-    """Attach one Traditional-Chinese name per GeoNames row from alternateNamesV2.
+def _chinese_city_key(name: str, fold_table: dict[str, str]) -> str:
+    """A Chinese city name in Traditional characters without its administrative suffix (上海市 → 上海)."""
 
-    Preference: language in ``ZH_LANGUAGE_PREFERENCE`` order, then the row
+    folded = fold_han(name, fold_table)
+    return _CHINESE_ADMIN_SUFFIX.sub("", folded) or folded
+
+
+def apply_geonames_chinese_names(
+    connection: sqlite3.Connection,
+    source: Path | BoundedInput | None,
+    *,
+    fold_table: dict[str, str] | None = None,
+    exclusions: list[dict] | None = None,
+) -> dict[str, int]:
+    """Attach one Traditional-Chinese name per GeoNames row from alternateNamesV2,
+    and give a large city outside Taiwan its corroborated Chinese names as match keys.
+
+    Label preference: language in ``ZH_LANGUAGE_PREFERENCE`` order, then the row
     flagged ``isPreferredName``, then the lowest ``alternateNameId`` so a
-    rebuild from the same inputs picks the same name.
+    rebuild from the same inputs picks the same name; a name in
+    ``SOURCE_CHINESE_NAME_EXCLUSIONS`` for that row is never chosen.  Match
+    keys: see ``FOREIGN_CHINESE_KEY_MIN_POPULATION``; historic and colloquial
+    entries do not count.
     """
 
+    fold_table = fold_table or {}
+    exclusions = exclusions if exclusions is not None else []
     if source is None:
-        return 0
-    wanted = {
-        row[0]
-        for row in connection.execute(
-            "SELECT source_record_id FROM places WHERE source = 'geonames_cities500'"
+        for geonameid, entry in SOURCE_CHINESE_NAME_EXCLUSIONS.items():
+            exclusions.append({"source_record_id": geonameid, "names": entry["names"],
+                               "status": CHINESE_NAME_NOT_OFFERED, "reason": entry["reason"]})
+        return {"labels": 0, "foreign_rows_keyed": 0}
+    rows = {
+        record_id: (country_code, population)
+        for record_id, country_code, population in connection.execute(
+            "SELECT source_record_id, country_code, population FROM places WHERE source = 'geonames_cities500'"
         )
     }
+    keyed = {
+        record_id for record_id, (country_code, population) in rows.items()
+        if country_code != "TW" and population >= FOREIGN_CHINESE_KEY_MIN_POPULATION
+    }
+    excluded_names = {
+        geonameid: set(entry["names"]) for geonameid, entry in SOURCE_CHINESE_NAME_EXCLUSIONS.items()
+    }
+    offered_exclusions: set[str] = set()
     best: dict[str, tuple[int, int, int, str]] = {}
+    chinese_entries: dict[str, list[str]] = {}
     rank = {code: index for index, code in enumerate(ZH_LANGUAGE_PREFERENCE)}
     for line in _geonames_lines(source, member_name="alternateNamesV2.txt"):
         fields = line.rstrip("\n").split("\t")
         if len(fields) < 4:
             continue
         alternate_id, geonameid, language, value = fields[:4]
-        if geonameid not in wanted or language not in rank:
+        if geonameid not in rows:
             continue
         value = value.strip()
         if not value:
+            continue
+        # An excluded name is no name of the row: neither label nor match key.
+        if (geonameid in keyed and (language.startswith("zh") or language == "") and _has_han(value)
+                and value not in excluded_names.get(geonameid, ())):
+            historic = len(fields) > 7 and fields[7] == "1"
+            colloquial = len(fields) > 6 and fields[6] == "1"
+            if not historic and not colloquial:
+                chinese_entries.setdefault(geonameid, []).append(value)
+        if language not in rank:
+            continue
+        if value in excluded_names.get(geonameid, ()):
+            offered_exclusions.add(geonameid)
             continue
         preferred = 0 if (len(fields) > 4 and fields[4] == "1") else 1
         try:
@@ -1106,27 +1360,44 @@ def apply_geonames_chinese_names(connection: sqlite3.Connection, source: Path | 
         candidate = (rank[language], preferred, order, value)
         if geonameid not in best or candidate < best[geonameid]:
             best[geonameid] = candidate
-    updated = 0
-    for geonameid, (_rank, _preferred, _order, value) in best.items():
+    for geonameid, entry in SOURCE_CHINESE_NAME_EXCLUSIONS.items():
+        exclusions.append({
+            "source_record_id": geonameid,
+            "names": entry["names"],
+            "status": CHINESE_NAME_EXCLUDED if geonameid in offered_exclusions else CHINESE_NAME_NOT_OFFERED,
+            "reason": entry["reason"],
+        })
+    corroborated: dict[str, list[str]] = {}
+    for geonameid, values in chinese_entries.items():
+        counts = Counter(_chinese_city_key(value, fold_table) for value in values)
+        keys = {key for key, count in counts.items() if count >= FOREIGN_CHINESE_KEY_MIN_ENTRIES and len(key) >= 2}
+        if keys:
+            corroborated[geonameid] = sorted(
+                keys | {fold_han(value, fold_table) for value in values if _chinese_city_key(value, fold_table) in keys}
+            )
+    labels = 0
+    for geonameid in sorted(set(best) | set(corroborated)):
         row = connection.execute(
-            "SELECT rowid, name, admin1_name, country_code, match_keys FROM places "
+            "SELECT rowid, name, admin1_name, country_code, match_keys, name_zh FROM places "
             "WHERE source = 'geonames_cities500' AND source_record_id = ?",
             (geonameid,),
         ).fetchone()
         if row is None:
             continue
-        rowid, name, admin1_name, country_code, match_keys = row
+        rowid, name, admin1_name, country_code, match_keys, name_zh = row
+        if geonameid in best:
+            name_zh = best[geonameid][3]
+            labels += 1
         connection.execute(
             "UPDATE places SET name_zh = ?, display_name = ?, match_keys = ? WHERE rowid = ?",
             (
-                value,
-                _geonames_display_name(name, value, admin1_name, country_code),
-                match_keys_text((*match_keys.split(MATCH_KEY_SEPARATOR), value)),
+                name_zh,
+                _geonames_display_name(name, name_zh, admin1_name, country_code),
+                match_keys_text((*match_keys.split(MATCH_KEY_SEPARATOR), name_zh, *corroborated.get(geonameid, ()))),
                 rowid,
             ),
         )
-        updated += 1
-    return updated
+    return {"labels": labels, "foreign_rows_keyed": len(corroborated)}
 
 
 def _taiwan_record_id(kind: str, row: dict) -> str:
@@ -1169,7 +1440,7 @@ def import_taiwan(
                 continue
             # The record id hashes the row as published, so trimming the
             # labels below leaves every existing id unchanged.
-            name = str(row.get("PlaceName") or "").strip()
+            name = _moi_name(row.get("PlaceName"))
             rejection = _semantic_name_rejection(name)
             if rejection is not None:
                 rejected[rejection] += 1
@@ -1189,6 +1460,9 @@ def import_taiwan(
                     "name": name,
                     "display_name": ", ".join(item for item in display_parts if item),
                     "aliases": aliases,
+                    # 「Kending」 for 墾丁: a romanised query is a name match, and
+                    # the spelling fallback knows the name (Kenting is one edit away).
+                    "match_names": _moi_phonetic_names(row),
                     "country_code": "TW",
                     "admin1": county or None,
                     "admin1_name": county or None,
@@ -1206,6 +1480,116 @@ def import_taiwan(
     finally:
         if owned:
             bounded.close()
+    return count
+
+
+# The county-administered cities that became districts when their county was
+# upgraded to a special municipality (2010-12-25; 桃園縣 2014-12-25), by the
+# municipality's MOI county code: a birth record from before then names the
+# city, 「板橋市」, where the catalogue now has 「板橋區」.  The shipped
+# catalogue test holds each name to the district it finds.
+TAIWAN_TOWN_FORMER_CITIES: dict[str, tuple[str, ...]] = {
+    "65000": ("板橋", "三重", "中和", "永和", "新莊", "新店", "土城", "蘆洲", "樹林", "汐止"),
+    "68000": ("中壢", "平鎮", "八德", "楊梅"),
+    "66000": ("豐原", "大里", "太平"),
+    "67000": ("新營", "永康"),
+    "64000": ("鳳山",),
+}
+_TOWN_SUFFIXES = ("區", "鄉", "鎮", "市")
+
+
+_ENGLISH_TOWN_SUFFIX = re.compile(r"\s+(?:district|township|city|town)$", re.IGNORECASE)
+
+
+def _taiwan_town_search_names(town: str, county_code: str, phonetics: set[str]) -> tuple[str, ...]:
+    """Full name, the short form without its 區／鄉／鎮／市 when two characters
+    remain (北屯 for 北屯區; 東區 keeps its full name only), a former city name,
+    and the MOI phonetic names, each also without its English suffix under the
+    same two-character rule (Yonghe for Yonghe District; East District stays whole)."""
+
+    names = [town]
+    base = town[:-1] if town.endswith(_TOWN_SUFFIXES) else town
+    if len(base) >= 2:
+        names.append(base)
+    if town.endswith("區") and base in TAIWAN_TOWN_FORMER_CITIES.get(county_code, ()):
+        names.append(base + "市")
+    for name in sorted(name for name in phonetics if name):
+        names.append(name)
+        english_base = _ENGLISH_TOWN_SUFFIX.sub("", name).strip()
+        if len(base) >= 2 and english_base and english_base != name and name.isascii():
+            names.append(english_base)
+    return tuple(dict.fromkeys(names))
+
+
+def import_taiwan_town_representatives(
+    connection: sqlite3.Connection,
+    sources: tuple[Path | BoundedInput, ...],
+) -> int:
+    """Add one derived representative point for each township, district and
+    county-administered city, as import_taiwan_county_representatives does for
+    the counties: the MOI files name these areas without coordinates, and a
+    search for 「大安區」 or 「北屯」 would otherwise find only settlements
+    inside them, or a place abroad."""
+
+    groups: dict[tuple[str, str, str], dict] = {}
+    for source in sources:
+        bounded, owned = _as_bounded_input(source)
+        try:
+            for line_number, row in enumerate(_taiwan_reader(bounded), start=2):
+                if line_number > MAX_SOURCE_ROWS + 1:
+                    raise ValueError("Taiwan input exceeds bounded row limit")
+                county = str(row.get("County") or "").strip()
+                town = str(row.get("Town") or "").strip()
+                if not county or not town:
+                    continue
+                key = (str(row.get("CountyCode") or ""), county, town)
+                group = groups.setdefault(key, {"coordinates": [], "aliases": set()})
+                if row.get("Longitude") and row.get("Latitude") and not _is_upstream_test_row(row):
+                    group["coordinates"].append((float(row["Longitude"]), float(row["Latitude"])))
+                if row.get("PlaceName") == town:
+                    group["aliases"].update(
+                        str(row.get(field) or "").strip()
+                        for field in ("ChinesePhonetic", "CommonPhonetic", "AnotherName")
+                        if str(row.get(field) or "").strip()
+                    )
+        finally:
+            if owned:
+                bounded.close()
+
+    count = 0
+    for (county_code, county, town) in sorted(groups):
+        group = groups[(county_code, county, town)]
+        coordinates = group["coordinates"]
+        if not coordinates:
+            continue
+        names = _taiwan_town_search_names(town, county_code, group["aliases"])
+        longitude = sum(item[0] for item in coordinates) / len(coordinates)
+        latitude = sum(item[1] for item in coordinates) / len(coordinates)
+        stable = f"{county_code}\x1f{county}\x1f{town}".encode("utf-8")
+        count += int(
+            _insert(
+                connection,
+                {
+                    "source": "taiwan_moi_place_names",
+                    "source_record_id": f"{TAIWAN_TOWN_RECORD_PREFIX}{hashlib.sha256(stable).hexdigest()[:20]}",
+                    "name": town,
+                    "display_name": f"{town}, {county}",
+                    "aliases": " ".join(names[1:]),
+                    "match_names": names,
+                    "country_code": "TW",
+                    "admin1": county,
+                    "admin1_name": county,
+                    "admin2": town,
+                    "admin3": None,
+                    "latitude": round(latitude, 6),
+                    "longitude": round(longitude, 6),
+                    "timezone": "Asia/Taipei",
+                    "location_precision": "administrative_area_representative_point",
+                    "population": 0,
+                    "source_priority": -1,
+                },
+            )
+        )
     return count
 
 
@@ -1389,7 +1773,16 @@ def check_timezones_against_coordinates(connection: sqlite3.Connection) -> dict:
     try:
         import timezonefinder  # type: ignore[import-not-found]
     except ImportError:
-        return {"status": "not_run", "engine": None, "reason": "timezonefinder_not_installed"}
+        return {
+            "status": "not_run", "engine": None, "reason": "timezonefinder_not_installed",
+            # The same polygons were applied offline: the table this build read.
+            "offline_audit": {
+                "engine": _TIMEZONE_AUDIT["engine"],
+                "corrections": len(_TIMEZONE_AUDIT["corrections"]),
+                "left_as_source": len(_TIMEZONE_AUDIT["left_as_source"]),
+                "table_sha256": hashlib.sha256(TIMEZONE_AUDIT_PATH.read_bytes()).hexdigest(),
+            },
+        }
     finder = timezonefinder.TimezoneFinder(in_memory=True)
     mismatches: list[dict] = []
     checked = 0
@@ -1399,7 +1792,7 @@ def check_timezones_against_coordinates(connection: sqlite3.Connection) -> dict:
     ):
         checked += 1
         found = finder.timezone_at(lat=lat, lng=lon)
-        if found is None or found == zone:
+        if found is None or found == zone or record_id in TIMEZONE_LEFT_AS_SOURCE:
             continue
         mismatches.append(
             {"source_record_id": record_id, "catalog_timezone": zone, "coordinate_timezone": found}
@@ -1422,6 +1815,9 @@ def check_timezones_against_coordinates(connection: sqlite3.Connection) -> dict:
 
 _LICENSES = {
     "geonames_cities500": "CC-BY-4.0",
+    "geonames_admin1_codes": "CC-BY-4.0",
+    "geonames_admin2_codes": "CC-BY-4.0",
+    "geonames_alternate_names": "CC-BY-4.0",
     "taiwan_moi_place_names": ("Taiwan Government Data Open License 1.0"),
 }
 _SOURCES = {
@@ -1436,7 +1832,11 @@ _DERIVED_RECORD_POLICY = {
     "taiwan_moi_county_representative": (
         "arithmetic mean of all coordinate-bearing MOI child "
         "records in the named county/city except upstream test rows; picker anchor only"
-    )
+    ),
+    "taiwan_moi_town_representative": (
+        "arithmetic mean of all coordinate-bearing MOI records in the named township, "
+        "district or county-administered city except upstream test rows; picker anchor only"
+    ),
 }
 
 
@@ -1493,6 +1893,10 @@ def build_catalog(
         admin1_corrections: list[dict] = []
         moi_inputs = (inputs["taiwan_moi_administrative"], inputs["taiwan_moi_settlement"])
         taiwan_counties = _geonames_taiwan_counties(moi_inputs)
+        fold_source = load_han_fold_source()
+        taiwan_characters = taiwan_written_characters(moi_inputs)
+        fold_table = han_fold_table(fold_source, taiwan_characters)
+        chinese_name_exclusions: list[dict] = []
         counts = {
             "geonames_cities500": import_geonames(
                 connection,
@@ -1503,6 +1907,7 @@ def build_catalog(
                 corrections=corrections,
                 exclusions=exclusions,
                 admin1_corrections=admin1_corrections,
+                fold_table=fold_table,
             ),
             "taiwan_moi_administrative": import_taiwan(
                 connection,
@@ -1524,9 +1929,12 @@ def build_catalog(
         counts["taiwan_moi_county_representative"] = import_taiwan_county_representatives(
             connection, moi_inputs, admin2_names=admin2_names
         )
-        chinese_names_attached = apply_geonames_chinese_names(
-            connection, inputs.get("geonames_alternate_names")
+        counts["taiwan_moi_town_representative"] = import_taiwan_town_representatives(connection, moi_inputs)
+        chinese_names = apply_geonames_chinese_names(
+            connection, inputs.get("geonames_alternate_names"),
+            fold_table=fold_table, exclusions=chinese_name_exclusions,
         )
+        _reject_markup_and_private_use(connection)
         timezone_check = check_timezones_against_coordinates(connection)
         label_disambiguation = disambiguate_duplicate_labels(connection, admin2_names=admin2_names)
         (rows_marked,) = connection.execute(
@@ -1537,7 +1945,25 @@ def build_catalog(
             "generator_version": GENERATOR_VERSION,
             "source_snapshot_date": source_date,
             "row_counts": counts,
-            "geonames_chinese_names_attached": chinese_names_attached,
+            "geonames_chinese_names_attached": chinese_names["labels"],
+            "geonames_foreign_chinese_match_keys": {
+                "rows": chinese_names["foreign_rows_keyed"],
+                "min_population": FOREIGN_CHINESE_KEY_MIN_POPULATION,
+                "min_corroborating_entries": FOREIGN_CHINESE_KEY_MIN_ENTRIES,
+            },
+            "source_chinese_name_exclusions": chinese_name_exclusions,
+            "source_chinese_name_exclusions_table_sha256": _table_sha256(SOURCE_CHINESE_NAME_EXCLUSIONS),
+            "han_script_folding": {
+                "table": HAN_FOLD_TABLE_NAME,
+                "source": "scripts/validation/" + HAN_FOLD_TABLE_PATH.name,
+                "source_engine": fold_source.get("engine"),
+                "source_table_sha256": _table_sha256(fold_source["simplified_to_traditional"]),
+                "kept_as_written_because_taiwan_names_use_them": "".join(
+                    sorted(set(fold_source["simplified_to_traditional"]) - set(fold_table))
+                ),
+                "simplified_to_traditional": fold_table,
+            },
+            "han_script_folding_table_sha256": _table_sha256(fold_table),
             "rejected_rows": {source: dict(sorted(counter.items())) for source, counter in rejected.items()},
             "rejection_reasons": [
                 REJECT_EMPTY_NAME, REJECT_NONWORD_NAME, REJECT_MISSING_COORDINATES, REJECT_UPSTREAM_TEST_ROW,
@@ -1635,6 +2061,10 @@ def build_artifact_manifest(metadata: dict, *, catalog_path: Path) -> dict:
         "source_exclusions_table_sha256": metadata["source_exclusions_table_sha256"],
         "source_admin1_corrections": metadata["source_admin1_corrections"],
         "source_admin1_corrections_table_sha256": metadata["source_admin1_corrections_table_sha256"],
+        "source_chinese_name_exclusions": metadata["source_chinese_name_exclusions"],
+        "source_chinese_name_exclusions_table_sha256": metadata["source_chinese_name_exclusions_table_sha256"],
+        "han_script_folding": metadata["han_script_folding"],
+        "han_script_folding_table_sha256": metadata["han_script_folding_table_sha256"],
         "timezone_coordinate_check": metadata["timezone_coordinate_check"],
         "label_disambiguation": metadata["label_disambiguation"],
         "missing_glyph_policy": metadata["missing_glyph_policy"],

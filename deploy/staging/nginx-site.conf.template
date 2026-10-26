@@ -2,31 +2,42 @@
 # No real domain, address, credential, or TLS private key belongs in Git.
 # The line carrying the staging noindex marker is rendered only for a staging host.
 
-# Every zone below is keyed on $binary_remote_addr so a zone bounds one client
-# rather than the whole site. nginx is the edge here, so this is the real peer
-# and not a proxy hop. The address lives only in this shared-memory counter and
-# is never written anywhere: the privacy rule bans client IPs from application
-# logs, which is not the same thing as banning per-client rate limiting.
+# Every zone below is keyed on $armillary_client so a zone bounds one client
+# rather than the whole site: the peer's IPv4 address, or the /64 of its IPv6
+# address (the first 8 of the 16 bytes of $binary_remote_addr).  An IPv6
+# subscriber is handed at least a /64 and can send from any address in it, so
+# a per-address key would give one client 2^64 budgets; the per-source
+# connection cap in front of NGINX (armillary-ingress.nft) counts IPv6 per /64
+# for the same reason.  The two key lengths (4 and 8 bytes) cannot collide.
+# nginx is the edge here, so this is the real peer and not a proxy hop. The
+# address lives only in this shared-memory counter and is never written
+# anywhere: the privacy rule bans client IPs from application logs, which is
+# not the same thing as banning per-client rate limiting.
 #
 # A zone key cannot be changed by reload; applying a change to one requires a
 # full restart, and the operator procedure owns verifying that the restart took
 # effect.
+# (?s): a byte of the binary address may be a line feed, which `.` would not match.
+map $binary_remote_addr $armillary_client {
+    default $binary_remote_addr;
+    "~(?s)^(?<armillary_client_ipv6_prefix>.{8}).{8}$" $armillary_client_ipv6_prefix;
+}
 # Chart computation (the chart and, where enabled, the annual route).  A
-# default chart costs milliseconds; the slowest measured is every module at an
-# approximate hour (birth-time sensitivity probes), 68.5 N, 2150-12-21: 0.84
-# CPU-s on an idle 8-vCPU amd64 host (red-team performance review, 2026-10-21).  At
-# 30r/m one client sending only that chart sustains about 0.42 CPU, so two or
-# three clients can hold the container's one CPU (compose `cpus: 1.0`); the
-# compute pools and the Swiss queue budget then refuse with a retryable 503
-# rather than queueing without bound.  The burst (7 beyond the first) fits the
-# two workers' eight chart slots.
-limit_req_zone $binary_remote_addr zone=armillary_chart_client:10m rate=30r/m;
+# default chart costs milliseconds; the slowest legal chart measured 1.2-1.75
+# CPU-s under load (every module at an approximate hour).  At 30r/m one client
+# sending only that chart sustains most of a CPU, so one or two clients can hold
+# the container's one CPU (compose `cpus: 1.0`); the compute pools and the
+# Swiss queue budget then refuse with a retryable 503 rather than queueing
+# without bound.  The burst (7 beyond the first) fits the two workers' eight
+# chart slots, and armillary_chart_compute below keeps one address to two
+# charts in progress, so a burst cannot hold every slot.
+limit_req_zone $armillary_client zone=armillary_chart_client:10m rate=30r/m;
 # Place lookup and time conversion each have their own bucket: typing a few
 # place names or checking a time no longer spends the chart's budget, and
 # neither can raise what a client may spend on charts.  A lookup is one
 # catalogue query and a conversion is zone arithmetic, so both refill faster.
-limit_req_zone $binary_remote_addr zone=armillary_place_client:10m rate=120r/m;
-limit_req_zone $binary_remote_addr zone=armillary_convert_client:10m rate=60r/m;
+limit_req_zone $armillary_client zone=armillary_place_client:10m rate=120r/m;
+limit_req_zone $armillary_client zone=armillary_convert_client:10m rate=60r/m;
 # Static asset budget is sized for ordinary browsing rather than for a single
 # request: one page bootstrap issues about a dozen asset GETs, and the burst
 # below absorbs several concurrent bootstraps. Requests in progress are bounded
@@ -35,8 +46,20 @@ limit_req_zone $binary_remote_addr zone=armillary_convert_client:10m rate=60r/m;
 # not finished its TLS handshake or request header is not counted.  Those are
 # bounded by the client header timeout in nginx.conf and, per source, by the host
 # firewall.
-limit_req_zone $binary_remote_addr zone=armillary_static_client:10m rate=600r/m;
-limit_conn_zone $binary_remote_addr zone=armillary_connections:10m;
+limit_req_zone $armillary_client zone=armillary_static_client:10m rate=600r/m;
+limit_conn_zone $armillary_client zone=armillary_connections:10m;
+limit_conn_zone $armillary_client zone=armillary_chart_compute:10m;
+
+# The edge keeps one copy of each asset whose URL names its content version
+# (`?v=` and nothing else): those bytes never change, so the application is
+# asked once.  Pages, unversioned assets and every API answer bypass the cache;
+# API responses carry birth data and are no-store in any case.
+proxy_cache_path /var/cache/nginx/armillary levels=1:2 keys_zone=armillary_assets:4m
+                 max_size=256m inactive=30d use_temp_path=off;
+map $request_uri $armillary_not_versioned_asset {
+    ~^/zh-TW/[^?]+\?v=[0-9a-f]+$ 0;
+    default 1;
+}
 
 # Cache-Control.  The edge is the only emitter of the header (the
 # application's copy is hidden below), but the policy for site responses is
@@ -91,8 +114,15 @@ map $request_uri $armillary_redirect_path {
 # for a port answered every unknown Host/SNI, so the www vhost presented its
 # certificate and redirect to arbitrary names.  444 closes the connection;
 # ssl_reject_handshake refuses TLS before any certificate is sent.
+#
+# Every server listens on IPv6 exactly as on IPv4: each `listen PORT` has a
+# `listen [::]:PORT` twin with the same parameters (the configuration renderer
+# refuses a rendering where one is missing).  NGINX opens [::] sockets
+# ipv6only, so IPv4 keeps its own sockets and each family's default_server is
+# its own.
 server {
     listen 80 default_server;
+    listen [::]:80 default_server;
     server_name _;
     access_log off;
     error_log /var/log/nginx/error.log emerg;
@@ -101,14 +131,19 @@ server {
 
 server {
     listen 443 ssl http2 default_server;
+    listen [::]:443 ssl http2 default_server;
     server_name _;
     access_log off;
     error_log /var/log/nginx/error.log emerg;
     ssl_reject_handshake on;
+    # A known SNI with another Host lands here after the handshake; without a
+    # return nginx would serve its compiled-in welcome page.
+    return 421;
 }
 
 server {
     listen 80;
+    listen [::]:80;
     server_name __STAGING_SERVER_NAME__;
 
     access_log off;
@@ -145,6 +180,7 @@ server {
 
 server {
     listen 80;
+    listen [::]:80;
     server_name __STAGING_WWW_SERVER_NAME__;
     access_log off;
     error_log /var/log/nginx/error.log emerg;
@@ -171,6 +207,7 @@ server {
 
 server {
     listen 443 ssl http2;
+    listen [::]:443 ssl http2;
     server_name __STAGING_WWW_SERVER_NAME__;
     ssl_certificate __TLS_CERTIFICATE_PATH__;
     ssl_certificate_key __TLS_CERTIFICATE_KEY_PATH__;
@@ -186,7 +223,7 @@ server {
     access_log off;
     error_log /var/log/nginx/error.log emerg;
     server_tokens off;
-    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     add_header Content-Security-Policy "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'; require-trusted-types-for 'script'; trusted-types 'none'" always;
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
     add_header Cache-Control "no-store" always;
@@ -195,6 +232,7 @@ server {
 
 server {
     listen 443 ssl http2;
+    listen [::]:443 ssl http2;
     server_name __STAGING_SERVER_NAME__;
 
     ssl_certificate __TLS_CERTIFICATE_PATH__;
@@ -225,7 +263,7 @@ server {
     limit_req_status 429;
     limit_conn_status 503;
 
-    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     add_header Content-Security-Policy "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'; require-trusted-types-for 'script'; trusted-types 'none'" always;
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
     add_header X-Robots-Tag "noindex, nofollow, noarchive" always;  # staging_noindex
@@ -333,6 +371,8 @@ server {
         error_page 502 /_error/502.json;
         error_page 503 /_error/503.json;
         limit_req zone=armillary_chart_client burst=7 nodelay;
+        # Two charts in progress per address; a third is refused at once.
+        limit_conn armillary_chart_compute 2;
         # NGINX counts each concurrent HTTP/2 request here, and one cold page
         # load fans out to about a dozen assets over a single TLS connection.
         # This budget admits two complete page fanouts with headroom while the
@@ -440,6 +480,36 @@ server {
     location = /api/health/ready {
         default_type application/json;
         return 404 '{"detail":{"code":"unknown_api_path","message":"此服務沒有這個 API 路徑。"}}';
+    }
+
+    # Stylesheets, scripts, images and the JSON the pages read.  Buffering is
+    # what lets nginx store a response; only a versioned URL is stored (see
+    # armillary_assets above).  A cache in a location stops nginx forwarding
+    # the client's conditional headers, so pages stay in the location above,
+    # where the application answers their revalidation with 304.
+    location ~ ^/zh-TW/[^?]+\.(?:css|js|svg|png|json)$ {
+        limit_req zone=armillary_static_client burst=40 nodelay;
+        limit_conn armillary_connections 32;
+
+        proxy_buffering on;
+        proxy_cache armillary_assets;
+        proxy_cache_key $request_uri;
+        proxy_cache_methods GET HEAD;
+        proxy_cache_bypass $armillary_not_versioned_asset;
+        proxy_no_cache $armillary_not_versioned_asset;
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 10s;
+        proxy_read_timeout 30s;
+
+        proxy_http_version 1.1;
+        proxy_set_header Host $server_name;
+        proxy_set_header Connection "";
+        proxy_set_header Authorization "";
+        proxy_set_header Proxy-Authorization "";
+        proxy_set_header X-Forwarded-For "";
+        proxy_set_header X-Real-IP "";
+        proxy_set_header Forwarded "";
+        proxy_pass http://172.31.240.2:8000;
     }
 
     location / {

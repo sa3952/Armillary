@@ -103,6 +103,31 @@ SECRET_PATTERNS = {
         rb"[ \t]*[:=][ \t]*[\"']" + _CREDENTIAL_LITERAL + rb"[\"']"
     ),
 }
+# For the large approved binaries only: lower-case text every match of a
+# credential pattern contains.  A pattern runs on a read of the place catalog
+# only when one of its texts is there, which keeps a 90 MB stream cheap; the
+# keys are SECRET_PATTERNS' (tests/publication/test_publication_export.py).
+CREDENTIAL_PATTERN_TEXT = {
+    "private key": (b"private key",),
+    "npm auth": (b"_auth", b"_pass" b"word"),
+    "npm token": (b"npm_",),
+    "PyPI token": (b"pypi-age",),
+    "password in a URL": (b"://",),
+    "authorization header": (b"authorization",),
+    "htpasswd hash": (b"$apr1$", b"$2a$", b"$2b$", b"$2y$", b"{sha}", b"$1$", b"$5$", b"$6$", b"$y$"),
+    "GitHub token": (b"ghp_", b"gho_", b"ghs_", b"ghu_"),
+    "GitHub fine-grained token": (b"github_pat_",),
+    "AWS access key": (b"akia", b"asia"),
+    "Google API key": (b"aiza",),
+    "Slack token": (b"xox",),
+    "Stripe live key": (b"sk_live_",),
+    "generic API token": (b"sk-",),
+    "credential assignment": (
+        b"pass" b"word", b"passwd", b"sec" b"ret", b"tok" b"en",
+        *(prefix + separator + b"key" for prefix in (b"api", b"private", b"access")
+          for separator in (b"", b"_", b"-")),
+    ),
+}
 SOURCE_LOCK = "publication/third_party_source_lock.json"
 PYSWISSEPH_FILES = (
     "pyswisseph-2.10.3.2.tar.gz", "LICENSE.txt", "SWISS_EPHEMERIS_LICENSE",
@@ -119,8 +144,8 @@ DEPENDENCY_BUNDLE_PATHS = ("third_party/" "sources", "third_party/" "build_wheel
                            "docs/" "DEPENDENCY_LICENSES.md")
 RECONSTRUCTION_MODES = ("online-clean",)
 RECONSTRUCTION_BUILDER_IMAGE = (
-    "python:3.14.8-trixie@"
-    "sha256:d0ef532dea88a06a0f950a40f95c553086c1f282bf8e313d328f11d289f72582"
+    "python:3.14.9-trixie@"
+    "sha256:2c90493710bd462e097441e60b0218430d8f7e2b46779bfca3742b2efd386feb"
 )
 
 
@@ -136,10 +161,9 @@ BINARY_SNIFF_BYTES = 8192
 # other bytes, is refused rather than skipped.  Updating the place catalog, an
 # ephemeris file or an image means approving its new digest here.
 BINARY_APPROVALS = "publication/public_binary_files.json"
-# An approved binary up to this size is still searched for the secret patterns:
-# only the large data files (the place catalog) cost the scan its time, and
-# approving an image's new digest in the same commit must not let a token
-# appended to it through.
+# An approved binary up to this size is searched for every pattern; a larger
+# one (the place catalog) for the credential patterns only, streamed, so that
+# approving a new digest in the same commit never lets a token through.
 APPROVED_BINARY_PATTERN_SCAN_BYTES = 16 * 1024 * 1024
 # What a public .npmrc may set: the registry, the engine check and the release
 # cool-down, nothing that authenticates.
@@ -478,25 +502,67 @@ def load_binary_approvals(root: Path) -> dict[str, str]:
     return dict(files)
 
 
-# Deployment configuration the export carries (compose files, NGINX templates,
-# deploy JSON and scripts): a host's public address there is operating detail,
-# not source.  Loopback, private and documentation ranges pass; package
-# versions (a.b.c.d) live in the lock files and the Dockerfile, not here.
-HOST_CONFIG_SUFFIXES = (".json", ".yaml", ".yml", ".conf", ".template", ".sh", ".py", ".env")
+# A host's public address is operating detail, not source, wherever it is:
+# deployment configuration, a page's script, a document.  Loopback, private,
+# link-local and documentation ranges pass, and so do three dotted-quad shapes
+# that are not addresses: a version some lock of the tree pins
+# (pyswisseph 2.10.3.2), a section number (§6.2.6.1) and an IPv6 netmask.
+# The locks themselves are not read for it.
+ADDRESS_EXEMPT_NAMES = ("package-lock.json",)
+ADDRESS_EXEMPT_SUFFIXES = (".lock",)
 _IPV4 = re.compile(rb"(?<![0-9.])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9.])")
+# Hex groups joined by colons, with `::` or all eight groups; ipaddress decides.
+_IPV6 = re.compile(rb"(?<![0-9A-Za-z:.])(?:[0-9A-Fa-f]{0,4}:){2,7}[0-9A-Fa-f]{0,4}(?![0-9A-Za-z:])")
+_PINNED_VERSION = re.compile(rb'(?:==|"version":\s*")([0-9]+(?:\.[0-9]+){3})(?![0-9.])')
 
 
-def _verify_no_host_address(relative: str, data: bytes) -> None:
-    if not (relative.startswith("deploy/") and relative.endswith(HOST_CONFIG_SUFFIXES)):
+def locked_versions(root: Path) -> frozenset[bytes]:
+    """The four-part versions the tree's locks and source lock pin (they read as IPv4)."""
+    found: set[bytes] = set()
+    for path in root.rglob("*"):
+        if path.is_file() and ".git" not in path.relative_to(root).parts and (
+                path.name in (*ADDRESS_EXEMPT_NAMES, Path(SOURCE_LOCK).name)
+                or path.name.endswith(ADDRESS_EXEMPT_SUFFIXES)):
+            found |= set(_PINNED_VERSION.findall(path.read_bytes()))
+    return frozenset(found)
+
+
+def _netmask(address: ipaddress.IPv6Address) -> bool:
+    value = int(address)
+    inverted = ~value & (2**128 - 1)
+    return value != 0 and inverted & (inverted + 1) == 0
+
+
+def _verify_no_host_address(relative: str, data: bytes, versions: frozenset[bytes] = frozenset()) -> None:
+    name = relative.rsplit("/", 1)[-1]
+    if name in ADDRESS_EXEMPT_NAMES or name.endswith(ADDRESS_EXEMPT_SUFFIXES):
         return
-    for match in _IPV4.finditer(data):
-        try:
-            address = ipaddress.IPv4Address(match.group().decode("ascii"))
-        except ValueError:
-            continue
-        if address.is_global:
-            raise CandidateFailure(f"public IPv4 address {address} in {relative}: a host's address "
-                                   "is operating detail, not source")
+    for kind, pattern, parse in (("IPv4", _IPV4, ipaddress.IPv4Address), ("IPv6", _IPV6, ipaddress.IPv6Address)):
+        for match in pattern.finditer(data):
+            text = match.group()
+            if kind == "IPv4" and (text in versions or data[max(match.start() - 2, 0):match.start()] == "§".encode()):
+                continue
+            # A slice (`[::2]`) or a C++ scope reads as an IPv6 address of one
+            # or two groups; a host's address names at least three.
+            if kind == "IPv6" and len([group for group in text.split(b":") if group]) < 3:
+                continue
+            try:
+                address = parse(text.decode("ascii"))
+            except ValueError:
+                continue
+            if address.is_global and not (isinstance(address, ipaddress.IPv6Address) and _netmask(address)):
+                raise CandidateFailure(f"public {kind} address {address} in {relative}: a host's address "
+                                       "is operating detail, not source")
+
+
+# A source map (a separate file or a data URI) carries the original sources and
+# their paths, which the scan of the shipped file never reads.
+_SOURCE_MAP = re.compile(rb"[#@][ \t]*sourceMappingURL[ \t]*=")
+
+
+def _verify_no_source_map(relative: str, data: bytes) -> None:
+    if _SOURCE_MAP.search(data):
+        raise CandidateFailure(f"source map reference in {relative}: the export ships no source map")
 
 
 def _verify_npmrc(relative: str, data: bytes) -> None:
@@ -535,24 +601,37 @@ def scan_candidate_content(
     outside third_party/ that does not start (first 8 KiB) with a NUL byte.
 
     Every byte of every file is searched, case-insensitively, for the literal
-    markers.  Every byte of every file is searched for the patterns too, except
-    a binary over APPROVED_BINARY_PATTERN_SCAN_BYTES approved by path and
-    SHA-256 (BINARY_APPROVALS, or `binary_files`): regular expressions over the
-    80 MB place catalog took most of 25 s per export and cannot match what a
-    person wrote, so those exact bytes are approved once instead.  Any other binary (a NUL byte
+    markers, in UTF-8 and UTF-16.  Every byte of every file is searched for the
+    patterns too; a binary over APPROVED_BINARY_PATTERN_SCAN_BYTES approved by
+    path and SHA-256 (BINARY_APPROVALS, or `binary_files`) only for the
+    credential patterns (SECRET_PATTERNS), once per process for the same bytes.
+    Every text file is also refused for a public IPv4 or IPv6 address and a
+    source map reference.  Any other binary (a NUL byte
     anywhere, or bytes that are not UTF-8) is refused: what the scan cannot
     read as text it does not pass.
     """
 
     patterns = tuple((SECRET_PATTERNS if secret_patterns is None else secret_patterns).items())
     approvals = load_binary_approvals(root) if binary_files is None else binary_files
+    # Each marker also in UTF-16 (both byte orders): a font's name table and
+    # other binaries keep their text that way.
     literals = tuple(
-        (marker, marker.encode("utf-8").lower()) for marker in sorted(forbidden_markers)
+        (marker, spelled)
+        for marker in sorted(forbidden_markers)
+        for spelled in dict.fromkeys(
+            marker.encode(encoding).lower() for encoding in ("utf-8", "utf-16-be", "utf-16-le"))
     )
+    # A large approved binary (the place catalog) is streamed through the
+    # credential patterns only: the private record patterns would match the
+    # place names a catalogue naturally holds.
+    credential_patterns = tuple((label, pattern) for label, pattern in patterns if label in SECRET_PATTERNS)
     overlap = max([512, *(len(value) for _, value in literals)])
-    marker_key = hashlib.sha256(b"\0".join(value for _, value in literals)).hexdigest()
+    marker_key = hashlib.sha256(
+        b"\0".join(value for _, value in literals) + b"\1"
+        + b"\0".join(pattern.pattern for _, pattern in credential_patterns)).hexdigest()
     scanned = 0
     approved_seen: set[str] = set()
+    versions = locked_versions(root)
     for path in sorted(root.rglob("*")):
         relative = path.relative_to(root)
         if not path.is_file() or ".git" in relative.parts:
@@ -564,8 +643,10 @@ def scan_candidate_content(
             searched = approved is None or path.stat().st_size <= APPROVED_BINARY_PATTERN_SCAN_BYTES
         except OSError as error:
             raise CandidateFailure(f"cannot scan {rendered}: {error}") from None
+        file_patterns = patterns if searched else credential_patterns
         if not searched and (approved, marker_key) in _MARKER_CLEAN_BINARIES:
-            # These exact bytes already passed these exact markers: hash only.
+            # These exact bytes already passed these exact markers and
+            # credential patterns: hash only.
             try:
                 if _sha256_path(path) == approved:
                     approved_seen.add(rendered)
@@ -601,10 +682,12 @@ def scan_candidate_content(
                             binary = b"\0" in chunk
                         except UnicodeDecodeError:
                             binary = True
-                    if searched:
-                        for label, pattern in patterns:
-                            if pattern.search(window):
-                                raise CandidateFailure(f"possible {label} in {rendered}")
+                    for label, pattern in file_patterns:
+                        if not searched and not any(
+                                text in lowered for text in CREDENTIAL_PATTERN_TEXT[label]):
+                            continue
+                        if pattern.search(window):
+                            raise CandidateFailure(f"possible {label} in {rendered}")
                     tail = window[-overlap:]
             if approved is None and not binary:
                 try:
@@ -614,7 +697,9 @@ def scan_candidate_content(
             if path.name == ".npmrc":
                 _verify_npmrc(rendered, path.read_bytes())
             if approved is None and not binary:
-                _verify_no_host_address(rendered, path.read_bytes())
+                text = path.read_bytes()
+                _verify_no_host_address(rendered, text, versions)
+                _verify_no_source_map(rendered, text)
             if kept is not None and file_check is not None:
                 file_check(rendered, b"".join(kept))
         except OSError as error:

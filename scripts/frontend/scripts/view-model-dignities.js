@@ -295,7 +295,7 @@ function prenatalPointsSection(response) {
     notes.push(...parts.notes);
     tables.push(...parts.tables);
   }
-  notes.push("照原典列出。不替你解盤，也不預測。");
+  notes.push("照原典列出。");
   return makeSection("prenatal_points", PRENATAL_TITLE, RING.METHOD, { state: "present" }, {
     notes,
     tables,
@@ -394,10 +394,10 @@ function lotsSection(response) {
 // 寫法同方法出處登錄 void_of_course.boundary_simultaneity_policy。
 const VOC_VERDICT_ZH = Object.freeze({
   not_void: "月亮離開本星座之前（或在盤上時刻當下）有相位精確完成，故非空亡。",
-  simultaneous_boundary: "simultaneous_boundary：某個相位精確完成的時刻與月亮離開本星座的時刻，"
+  simultaneous_boundary: "分不出先後：某個相位精確完成的時刻與月亮離開本星座的時刻，"
     + "相差不超過求根容差 1e-06 日（約 0.086 秒），數值上分不出先後。此情形既不判為"
-    + "空亡、也不判為非空亡：is_void_of_course 為 null，verdict 為 "
-    + "simultaneous_boundary；該相位與兩個根的括號區間一併列出，供複算。",
+    + "空亡、也不判為非空亡（判定留空）；"
+    + "該相位與兩個根的括號區間一併列出，供複算。",
   void: "月亮離開本星座之前沒有任何相位精確完成，故為空亡。",
   not_evaluated: "換座時刻未能求得，本次未作空亡判定。",
 });
@@ -407,19 +407,19 @@ const VOC_VERDICT_ZH = Object.freeze({
 const VOC_VERDICT_BY_KIND_ZH = Object.freeze({
   moon_motion_30_degrees: Object.freeze({
     not_void: "月亮從盤上位置再走 30° 之內（或在盤上時刻當下）有相位精確完成，故非空亡。",
-    simultaneous_boundary: "simultaneous_boundary：某個相位精確完成的時刻與月亮走滿 30° 的時刻，"
+    simultaneous_boundary: "分不出先後：某個相位精確完成的時刻與月亮走滿 30° 的時刻，"
       + "相差不超過求根容差 1e-06 日（約 0.086 秒），數值上分不出先後。此情形既不判為"
-      + "空亡、也不判為非空亡：is_void_of_course 為 null，verdict 為 "
-      + "simultaneous_boundary；該相位與兩個根的括號區間一併列出，供複算。",
+      + "空亡、也不判為非空亡（判定留空）；"
+      + "該相位與兩個根的括號區間一併列出，供複算。",
     void: "月亮從盤上位置再走 30° 之內沒有任何相位精確完成，故為空亡。",
     not_evaluated: "月亮走滿 30° 的時刻未能求得，本次未作空亡判定。",
   }),
   sign_exit_moiety_entry: Object.freeze({
     not_void: "月亮離開本星座之前（或在盤上時刻當下）進入某個入相位的容許度，故非空亡。",
-    simultaneous_boundary: "simultaneous_boundary：月亮進入某個入相位容許度的時刻與月亮離開本星座的時刻，"
+    simultaneous_boundary: "分不出先後：月亮進入某個入相位容許度的時刻與月亮離開本星座的時刻，"
       + "相差不超過求根容差 1e-06 日（約 0.086 秒），數值上分不出先後。此情形既不判為"
-      + "空亡、也不判為非空亡：is_void_of_course 為 null，verdict 為 "
-      + "simultaneous_boundary；該相位與兩個根的括號區間一併列出，供複算。",
+      + "空亡、也不判為非空亡（判定留空）；"
+      + "該相位與兩個根的括號區間一併列出，供複算。",
     void: "月亮離開本星座之前沒有進入任何入相位的容許度，故為空亡。",
     not_evaluated: "換座時刻未能求得，本次未作空亡判定。",
   }),
@@ -476,7 +476,7 @@ function voidOfCourseSection(response) {
           horizonKind === null ? VOC_VERDICT_ZH
             : presentClosedVocabulary(horizonKind, VOC_VERDICT_BY_KIND_ZH, "月空亡定義"), "邊界判定")],
         ["離開本星座尚需（小時）", num(module("time_to_sign_exit_hours", "number?"), 4)],
-        ["下一個完成的相位", next ? next("body", "string") : DASH],
+        ["下一個將形成的相位（apply）", next ? next("body", "string") : DASH],
         ["該相位角度", next ? num(next("aspect_angle", "number"), 2) : DASH],
         ["尚需（日）", next ? num(next("time_days", "number"), 6) : DASH],
       ],
@@ -1029,7 +1029,7 @@ function dignityPeregrineSection(response) {
       + "所以只差三分性一項就決定外來與否的行星，寫「無法判定」，最後一欄列出日盤、夜盤各會怎麼判。"
     );
   }
-  notes.push("不給分數，也不加總。照原典列出。不替你解盤，也不預測。");
+  notes.push("不給分數，也不加總。照原典列出。");
   const list = (values, labels, label) => (values.length
     ? values.map((value) => presentClosedVocabulary(value, labels, label)).join("、") : DASH);
   return section.make({

@@ -1,0 +1,313 @@
+<!-- 文章：2026 年 10–11 月的水星逆行，照原典拆開來看。圖 1、表 1–表 4 與正文的時刻、度數、統計由
+     scripts/frontend/figures/mercury_retrograde.py 以 Swiss Ephemeris（backend/ephe 星曆檔）求根算出；界線取本站計算服務回應裡的界線表；
+     表 5 是本站計算服務對兩個合成時刻的實際回應，產生器另以 Swiss Ephemeris 直讀核對（python -m scripts.frontend.figures --check）。 -->
+<div class="wrap page-body article">
+  <!-- figure:fx-defs -->
+{{fx_defs}}
+  <!-- /figure:fx-defs -->
+
+  <div class="ar-head">
+    <p class="eyebrow"><a href="/zh-TW/blog">文章</a></p>
+    <h1>水星逆行，回到原典：<br>2026 年 10–11 月的這三週</h1>
+    <p class="ar-dek">這次水星逆行從 10 月 24 日到 11 月 13 日，全程在天蠍座。這篇不談「水逆該注意什麼」，而是把這三週拆開：天上實際發生什麼、每一個狀態古書怎麼寫、這些話原本說的是哪一張盤裡的水星。時刻與統計都是本站自己算的，原典的話照原文列出、附出處。</p>
+    {{article_byline:帶數據}}
+  </div>
+
+  <!-- figure:curve -->
+<figure class="fx ar-fig ar-hero" id="fig-mr-curve" data-fx data-fx-default-variant="lilly">
+<div class="fx-switch" role="group" aria-label="切換三套界線" data-fx-switch hidden><button type="button" data-fx-set="lilly" aria-pressed="true">Lilly 1647 p.113</button><button type="button" data-fx-set="hellenistic" aria-pressed="false">希臘化</button><button type="button" data-fx-set="biruni" aria-pressed="false">al-Bīrūnī</button></div>
+<div class="fx-art" role="group" aria-labelledby="fig-mr-curve-title fig-mr-curve-cap">
+<span class="fx-title" id="fig-mr-curve-title">2026 年 10 月到 11 月，水星與太陽的黃經差，以及三套界線的距離帶</span>
+<svg class="fx-wide" viewBox="0 0 880 516" role="group" aria-labelledby="fig-mr-curve-title"><rect x="1" y="1" width="878" height="514" class="fx-frame"/><rect x="6" y="6" width="868" height="504" class="fx-frame-in"/><text x="96" y="34" class="fx-t fx-small fx-rub">↑ 太陽東側（昏星）</text><clipPath id="fig-mr-curve-fx-wide-plot"><rect x="96" y="64" width="764" height="360"/></clipPath><g clip-path="url(#fig-mr-curve-fx-wide-plot)"><rect x="96" y="64" width="764" height="360" class="fx-track"/><g class="fx-v" data-fx-variant="lilly"><rect x="96" y="130.7" width="764" height="113.3" class="fx-fill-hatch"/><rect x="96" y="244" width="764" height="113.3" class="fx-fill-hatch"/><rect x="96" y="187.3" width="764" height="56.7" class="fx-fill-cross"/><rect x="96" y="244" width="764" height="56.7" class="fx-fill-cross"/><rect x="96" y="242.1" width="764" height="1.9" class="fx-fill-solid"/><rect x="96" y="244" width="764" height="1.9" class="fx-fill-solid"/></g><g class="fx-v fx-off" data-fx-variant="hellenistic"><rect x="96" y="144" width="764" height="100" class="fx-fill-hatch"/><rect x="96" y="244" width="764" height="100" class="fx-fill-hatch"/></g><g class="fx-v fx-off" data-fx-variant="biruni"><rect x="96" y="164" width="764" height="80" class="fx-fill-hatch"/><rect x="96" y="244" width="764" height="80" class="fx-fill-hatch"/><rect x="96" y="197.3" width="246.1" height="46.7" class="fx-fill-cross"/><rect x="342.1" y="204" width="297.5" height="40" class="fx-fill-cross"/><rect x="639.6" y="197.3" width="220.4" height="46.7" class="fx-fill-cross"/><rect x="96" y="244" width="246.1" height="46.7" class="fx-fill-cross"/><rect x="342.1" y="244" width="297.5" height="40" class="fx-fill-cross"/><rect x="639.6" y="244" width="220.4" height="46.7" class="fx-fill-cross"/><rect x="96" y="242.2" width="764" height="1.8" class="fx-fill-solid"/><rect x="96" y="244" width="764" height="1.8" class="fx-fill-solid"/></g><line x1="96" y1="244" x2="860" y2="244" class="fx-sunline"/><line x1="340.4" y1="64" x2="340.4" y2="424" class="fx-dash"/><line x1="639.6" y1="64" x2="639.6" y2="424" class="fx-dash"/><polyline points="96,80.1 99.7,79.8 103.3,79.5 107,79.3 110.7,79 114.4,78.8 118,78.6 121.7,78.4 125.4,78.2 129.1,78.1 132.7,77.9 136.4,77.8 140.1,77.7 143.8,77.6 147.4,77.5 151.1,77.4 154.8,77.4 158.4,77.3 162.1,77.3 165.8,77.3 169.5,77.3 173.1,77.4 176.8,77.4 180.5,77.5 184.2,77.6 187.8,77.7 191.5,77.9 195.2,78.1 198.8,78.3 202.5,78.5 206.2,78.7 209.9,79 213.5,79.3 217.2,79.6 220.9,79.9 224.6,80.3 228.2,80.7 231.9,81.1 235.6,81.5 239.2,82 242.9,82.5 246.6,83.1 250.3,83.7 253.9,84.3 257.6,84.9 261.3,85.6 265,86.3 268.6,87 272.3,87.8 276,88.6 279.7,89.5 283.3,90.4 287,91.3 290.7,92.3 294.3,93.3 298,94.4 301.7,95.5 305.4,96.7 309,97.9 312.7,99.1 316.4,100.4 320.1,101.7 323.7,103.1 327.4,104.6 331.1,106.1 334.8,107.6 338.4,109.2 342.1,110.9 345.8,112.6 349.4,114.4 353.1,116.2 356.8,118.1 360.5,120 364.1,122 367.8,124.1 371.5,126.2 375.2,128.4 378.8,130.7 382.5,133 386.2,135.4 389.8,137.8 393.5,140.3 397.2,142.9 400.9,145.5 404.5,148.2 408.2,151 411.9,153.8 415.6,156.7 419.2,159.7 422.9,162.7 426.6,165.8 430.2,168.9 433.9,172.1 437.6,175.4 441.3,178.7 444.9,182 448.6,185.5 452.3,188.9 456,192.5 459.6,196 463.3,199.6 467,203.3 470.7,207 474.3,210.7 478,214.4 481.7,218.2 485.3,222 489,225.8 492.7,229.6 496.4,233.5 500,237.3 503.7,241.2 507.4,245 511.1,248.9 514.7,252.7 518.4,256.5 522.1,260.3 525.8,264.1 529.4,267.8 533.1,271.6 536.8,275.2 540.4,278.9 544.1,282.5 547.8,286 551.5,289.5 555.1,293 558.8,296.4 562.5,299.7 566.2,302.9 569.8,306.1 573.5,309.3 577.2,312.3 580.8,315.3 584.5,318.2 588.2,321.1 591.9,323.8 595.5,326.5 599.2,329.1 602.9,331.6 606.6,334.1 610.2,336.4 613.9,338.7 617.6,340.9 621.2,343 624.9,345 628.6,347 632.3,348.9 635.9,350.6 639.6,352.4 643.3,354 647,355.6 650.6,357 654.3,358.5 658,359.8 661.7,361.1 665.3,362.3 669,363.4 672.7,364.5 676.3,365.4 680,366.4 683.7,367.2 687.4,368.1 691,368.8 694.7,369.5 698.4,370.1 702.1,370.7 705.7,371.2 709.4,371.7 713.1,372.1 716.8,372.5 720.4,372.8 724.1,373.1 727.8,373.3 731.4,373.5 735.1,373.7 738.8,373.8 742.5,373.9 746.1,373.9 749.8,373.9 753.5,373.9 757.2,373.8 760.8,373.7 764.5,373.5 768.2,373.4 771.8,373.2 775.5,373 779.2,372.7 782.9,372.4 786.5,372.1 790.2,371.8 793.9,371.5 797.6,371.1 801.2,370.7 804.9,370.3 808.6,369.8 812.2,369.4 815.9,368.9 819.6,368.4 823.3,367.9 826.9,367.4 830.6,366.9 834.3,366.3 838,365.8 841.6,365.2 845.3,364.6 849,364 852.7,363.4 856.3,362.7 860,362.1" class="fx-curve"/></g><rect x="96" y="64" width="764" height="360" class="fx-inset-frame"/><text x="852" y="414" class="fx-t fx-small fx-rub fx-key" text-anchor="end">↓ 太陽西側（晨星）</text><g class="fx-v" data-fx-variant="lilly"><text x="104" y="238" class="fx-t fx-small fx-key">日輪內（cazimi，細線）</text><text x="104" y="278.3" class="fx-t fx-small fx-key">焦傷（8°30′）</text><text x="104" y="334" class="fx-t fx-small fx-key">在光束下（under the beams，17°）</text></g><g class="fx-v fx-off" data-fx-variant="hellenistic"><text x="104" y="299" class="fx-t fx-small fx-key">在光束下（under the beams，15°）</text></g><g class="fx-v fx-off" data-fx-variant="biruni"><text x="104" y="238" class="fx-t fx-small fx-key">日輪內（cazimi，細線）</text><text x="104" y="273.2" class="fx-t fx-small fx-key">焦傷（7°）</text><text x="104" y="312.3" class="fx-t fx-small fx-key">在光束下（under the beams，12°）</text></g><line x1="91" y1="404" x2="96" y2="404" class="fx-axis"/><text x="88" y="409" class="fx-t fx-small fx-num" text-anchor="end">24°</text><line x1="91" y1="350.7" x2="96" y2="350.7" class="fx-axis"/><text x="88" y="355.7" class="fx-t fx-small fx-num" text-anchor="end">16°</text><line x1="91" y1="297.3" x2="96" y2="297.3" class="fx-axis"/><text x="88" y="302.3" class="fx-t fx-small fx-num" text-anchor="end">8°</text><line x1="91" y1="244" x2="96" y2="244" class="fx-axis"/><text x="88" y="249" class="fx-t fx-small fx-num" text-anchor="end">0°</text><line x1="91" y1="190.7" x2="96" y2="190.7" class="fx-axis"/><text x="88" y="195.7" class="fx-t fx-small fx-num" text-anchor="end">8°</text><line x1="91" y1="137.3" x2="96" y2="137.3" class="fx-axis"/><text x="88" y="142.3" class="fx-t fx-small fx-num" text-anchor="end">16°</text><line x1="91" y1="84" x2="96" y2="84" class="fx-axis"/><text x="88" y="89" class="fx-t fx-small fx-num" text-anchor="end">24°</text><rect x="340.4" y="434" width="299.2" height="6" class="fx-fill-solid"/><text x="490" y="458" class="fx-t fx-small" text-anchor="middle">逆行 20.4 天</text><line x1="96" y1="468" x2="860" y2="468" class="fx-axis"/><line x1="96" y1="468" x2="96" y2="473" class="fx-axis"/><text x="96" y="490" class="fx-t fx-small fx-num" text-anchor="start">10/8</text><line x1="198.8" y1="468" x2="198.8" y2="473" class="fx-axis"/><text x="198.8" y="490" class="fx-t fx-small fx-num" text-anchor="middle">10/15</text><line x1="301.7" y1="468" x2="301.7" y2="473" class="fx-axis"/><text x="301.7" y="490" class="fx-t fx-small fx-num" text-anchor="middle">10/21</text><line x1="404.5" y1="468" x2="404.5" y2="473" class="fx-axis"/><text x="404.5" y="490" class="fx-t fx-small fx-num" text-anchor="middle">10/28</text><line x1="507.4" y1="468" x2="507.4" y2="473" class="fx-axis"/><text x="507.4" y="490" class="fx-t fx-small fx-num" text-anchor="middle">11/4</text><line x1="610.2" y1="468" x2="610.2" y2="473" class="fx-axis"/><text x="610.2" y="490" class="fx-t fx-small fx-num" text-anchor="middle">11/11</text><line x1="713.1" y1="468" x2="713.1" y2="473" class="fx-axis"/><text x="713.1" y="490" class="fx-t fx-small fx-num" text-anchor="middle">11/18</text><line x1="815.9" y1="468" x2="815.9" y2="473" class="fx-axis"/><text x="815.9" y="490" class="fx-t fx-small fx-num" text-anchor="middle">11/25</text><g class="fx-row" data-fx-key="station-r" tabindex="0" aria-label="第一次停滯，10 月 24 日 15:12" role="img"><circle cx="340.4" cy="110.1" r="18" class="fx-hit"/><circle cx="340.4" cy="110.1" r="7" class="fx-mk"/><text x="340.4" y="54" class="fx-t fx-small" text-anchor="middle">第一次停滯</text></g><g class="fx-row" data-fx-key="conj" tabindex="0" aria-label="下合，11 月 4 日 22:24" role="img"><circle cx="506.4" cy="244" r="18" class="fx-hit"/><circle cx="506.4" cy="244" r="7" class="fx-mk"/><text x="506.4" y="54" class="fx-t fx-small" text-anchor="middle">下合</text></g><g class="fx-row" data-fx-key="station-d" tabindex="0" aria-label="第二次停滯，11 月 13 日 23:53" role="img"><circle cx="639.6" cy="352.3" r="18" class="fx-hit"/><circle cx="639.6" cy="352.3" r="7" class="fx-mk"/><text x="639.6" y="54" class="fx-t fx-small" text-anchor="middle">第二次停滯</text></g></svg>
+<svg class="fx-narrow" viewBox="0 0 340 468" role="group" aria-labelledby="fig-mr-curve-title"><rect x="1" y="1" width="338" height="466" class="fx-frame"/><rect x="6" y="6" width="328" height="456" class="fx-frame-in"/><text x="44" y="30" class="fx-t fx-small fx-rub">↑ 太陽東側（昏星）</text><clipPath id="fig-mr-curve-fx-narrow-plot"><rect x="44" y="60" width="286" height="320"/></clipPath><g clip-path="url(#fig-mr-curve-fx-narrow-plot)"><rect x="44" y="60" width="286" height="320" class="fx-track"/><g class="fx-v" data-fx-variant="lilly"><rect x="44" y="119.3" width="286" height="100.7" class="fx-fill-hatch"/><rect x="44" y="220" width="286" height="100.7" class="fx-fill-hatch"/><rect x="44" y="169.6" width="286" height="50.4" class="fx-fill-cross"/><rect x="44" y="220" width="286" height="50.4" class="fx-fill-cross"/><rect x="44" y="218.3" width="286" height="1.7" class="fx-fill-solid"/><rect x="44" y="220" width="286" height="1.7" class="fx-fill-solid"/></g><g class="fx-v fx-off" data-fx-variant="hellenistic"><rect x="44" y="131.1" width="286" height="88.9" class="fx-fill-hatch"/><rect x="44" y="220" width="286" height="88.9" class="fx-fill-hatch"/></g><g class="fx-v fx-off" data-fx-variant="biruni"><rect x="44" y="148.9" width="286" height="71.1" class="fx-fill-hatch"/><rect x="44" y="220" width="286" height="71.1" class="fx-fill-hatch"/><rect x="44" y="178.5" width="92.1" height="41.5" class="fx-fill-cross"/><rect x="136.1" y="184.4" width="111.4" height="35.6" class="fx-fill-cross"/><rect x="247.5" y="178.5" width="82.5" height="41.5" class="fx-fill-cross"/><rect x="44" y="220" width="92.1" height="41.5" class="fx-fill-cross"/><rect x="136.1" y="220" width="111.4" height="35.6" class="fx-fill-cross"/><rect x="247.5" y="220" width="82.5" height="41.5" class="fx-fill-cross"/><rect x="44" y="218.4" width="286" height="1.6" class="fx-fill-solid"/><rect x="44" y="220" width="286" height="1.6" class="fx-fill-solid"/></g><line x1="44" y1="220" x2="330" y2="220" class="fx-sunline"/><line x1="135.5" y1="60" x2="135.5" y2="380" class="fx-dash"/><line x1="247.5" y1="60" x2="247.5" y2="380" class="fx-dash"/><polyline points="44,74.3 45.4,74 46.8,73.8 48.1,73.6 49.5,73.4 50.9,73.2 52.2,73 53.6,72.8 55,72.6 56.4,72.5 57.8,72.4 59.1,72.2 60.5,72.1 61.9,72.1 63.2,72 64.6,71.9 66,71.9 67.4,71.8 68.8,71.8 70.1,71.8 71.5,71.8 72.9,71.9 74.2,71.9 75.6,72 77,72.1 78.4,72.2 79.8,72.3 81.1,72.5 82.5,72.7 83.9,72.9 85.2,73.1 86.6,73.3 88,73.6 89.4,73.8 90.8,74.1 92.1,74.5 93.5,74.8 94.9,75.2 96.2,75.6 97.6,76 99,76.5 100.4,77 101.8,77.5 103.1,78 104.5,78.6 105.9,79.2 107.2,79.8 108.6,80.5 110,81.2 111.4,81.9 112.8,82.7 114.1,83.5 115.5,84.3 116.9,85.2 118.2,86.1 119.6,87 121,88 122.4,89 123.8,90.1 125.1,91.2 126.5,92.4 127.9,93.5 129.2,94.8 130.6,96.1 132,97.4 133.4,98.8 134.8,100.2 136.1,101.7 137.5,103.2 138.9,104.8 140.2,106.4 141.6,108.1 143,109.8 144.4,111.6 145.8,113.4 147.1,115.3 148.5,117.3 149.9,119.3 151.2,121.3 152.6,123.4 154,125.6 155.4,127.8 156.8,130.1 158.1,132.5 159.5,134.9 160.9,137.3 162.2,139.8 163.6,142.4 165,145 166.4,147.7 167.8,150.5 169.1,153.3 170.5,156.1 171.9,159 173.2,161.9 174.6,164.9 176,168 177.4,171.1 178.8,174.2 180.1,177.3 181.5,180.6 182.9,183.8 184.2,187.1 185.6,190.4 187,193.7 188.4,197.1 189.8,200.4 191.1,203.8 192.5,207.2 193.9,210.6 195.2,214.1 196.6,217.5 198,220.9 199.4,224.3 200.8,227.7 202.1,231.1 203.5,234.5 204.9,237.9 206.2,241.2 207.6,244.5 209,247.8 210.4,251 211.8,254.2 213.1,257.4 214.5,260.5 215.9,263.5 217.2,266.5 218.6,269.5 220,272.4 221.4,275.2 222.8,278 224.1,280.7 225.5,283.4 226.9,286 228.2,288.5 229.6,290.9 231,293.3 232.4,295.6 233.8,297.9 235.1,300 236.5,302.1 237.9,304.2 239.2,306.1 240.6,308 242,309.8 243.4,311.5 244.7,313.2 246.1,314.8 247.5,316.3 248.9,317.8 250.2,319.2 251.6,320.5 253,321.7 254.4,322.9 255.8,324.1 257.1,325.1 258.5,326.1 259.9,327.1 261.2,328 262.6,328.8 264,329.6 265.4,330.3 266.8,330.9 268.1,331.5 269.5,332.1 270.9,332.6 272.2,333.1 273.6,333.5 275,333.9 276.4,334.2 277.8,334.5 279.1,334.8 280.5,335 281.9,335.1 283.2,335.3 284.6,335.4 286,335.4 287.4,335.5 288.8,335.5 290.1,335.4 291.5,335.4 292.9,335.3 294.2,335.1 295.6,335 297,334.8 298.4,334.6 299.8,334.4 301.1,334.2 302.5,333.9 303.9,333.6 305.2,333.3 306.6,333 308,332.6 309.4,332.2 310.8,331.9 312.1,331.5 313.5,331 314.9,330.6 316.2,330.2 317.6,329.7 319,329.2 320.4,328.7 321.8,328.2 323.1,327.7 324.5,327.2 325.9,326.6 327.2,326.1 328.6,325.5 330,325" class="fx-curve"/></g><rect x="44" y="60" width="286" height="320" class="fx-inset-frame"/><text x="322" y="370" class="fx-t fx-small fx-rub fx-key" text-anchor="end">↓ 太陽西側（晨星）</text><g class="fx-v" data-fx-variant="lilly"><text x="52" y="214" class="fx-t fx-small fx-key">日輪內（cazimi，細線）</text><text x="52" y="251" class="fx-t fx-small fx-key">焦傷（8°30′）</text><text x="52" y="300.6" class="fx-t fx-small fx-key">在光束下（under the beams，17°）</text></g><g class="fx-v fx-off" data-fx-variant="hellenistic"><text x="52" y="269.4" class="fx-t fx-small fx-key">在光束下（under the beams，15°）</text></g><g class="fx-v fx-off" data-fx-variant="biruni"><text x="52" y="214" class="fx-t fx-small fx-key">日輪內（cazimi，細線）</text><text x="52" y="246.5" class="fx-t fx-small fx-key">焦傷（7°）</text><text x="52" y="281.3" class="fx-t fx-small fx-key">在光束下（under the beams，12°）</text></g><line x1="39" y1="362.2" x2="44" y2="362.2" class="fx-axis"/><text x="36" y="367.2" class="fx-t fx-small fx-num" text-anchor="end">24°</text><line x1="39" y1="314.8" x2="44" y2="314.8" class="fx-axis"/><text x="36" y="319.8" class="fx-t fx-small fx-num" text-anchor="end">16°</text><line x1="39" y1="267.4" x2="44" y2="267.4" class="fx-axis"/><text x="36" y="272.4" class="fx-t fx-small fx-num" text-anchor="end">8°</text><line x1="39" y1="220" x2="44" y2="220" class="fx-axis"/><text x="36" y="225" class="fx-t fx-small fx-num" text-anchor="end">0°</text><line x1="39" y1="172.6" x2="44" y2="172.6" class="fx-axis"/><text x="36" y="177.6" class="fx-t fx-small fx-num" text-anchor="end">8°</text><line x1="39" y1="125.2" x2="44" y2="125.2" class="fx-axis"/><text x="36" y="130.2" class="fx-t fx-small fx-num" text-anchor="end">16°</text><line x1="39" y1="77.8" x2="44" y2="77.8" class="fx-axis"/><text x="36" y="82.8" class="fx-t fx-small fx-num" text-anchor="end">24°</text><rect x="135.5" y="390" width="112" height="6" class="fx-fill-solid"/><text x="191.5" y="414" class="fx-t fx-small" text-anchor="middle">逆行 20.4 天</text><line x1="44" y1="424" x2="330" y2="424" class="fx-axis"/><line x1="44" y1="424" x2="44" y2="429" class="fx-axis"/><text x="44" y="446" class="fx-t fx-small fx-num" text-anchor="start">10/8</text><line x1="121" y1="424" x2="121" y2="429" class="fx-axis"/><text x="121" y="446" class="fx-t fx-small fx-num" text-anchor="middle">10/21</text><line x1="198" y1="424" x2="198" y2="429" class="fx-axis"/><text x="198" y="446" class="fx-t fx-small fx-num" text-anchor="middle">11/4</text><line x1="275" y1="424" x2="275" y2="429" class="fx-axis"/><text x="275" y="446" class="fx-t fx-small fx-num" text-anchor="middle">11/18</text><g class="fx-row" data-fx-key="station-r" tabindex="0" aria-label="第一次停滯，10 月 24 日 15:12" role="img"><circle cx="135.5" cy="101" r="18" class="fx-hit"/><circle cx="135.5" cy="101" r="6" class="fx-mk"/><text x="135.5" y="50" class="fx-t fx-small" text-anchor="middle">停滯</text></g><g class="fx-row" data-fx-key="conj" tabindex="0" aria-label="下合，11 月 4 日 22:24" role="img"><circle cx="197.6" cy="220" r="18" class="fx-hit"/><circle cx="197.6" cy="220" r="6" class="fx-mk"/><text x="197.6" y="50" class="fx-t fx-small" text-anchor="middle">下合</text></g><g class="fx-row" data-fx-key="station-d" tabindex="0" aria-label="第二次停滯，11 月 13 日 23:53" role="img"><circle cx="247.5" cy="316.3" r="18" class="fx-hit"/><circle cx="247.5" cy="316.3" r="6" class="fx-mk"/><text x="247.5" y="50" class="fx-t fx-small" text-anchor="middle">停滯</text></g></svg>
+</div>
+<p class="fx-readout" data-fx-readout aria-live="polite" hidden>用 Tab 鍵移到圖上的圓點，或用滑鼠指著它，這裡會寫出那一刻的時間、位置與距離帶。</p>
+<ul data-fx-notes hidden><li data-fx-key="station-r" data-fx-variant="lilly">10 月 24 日 15:12，水星在天蠍 20°58′轉為逆行，在太陽東側 20°05′。照 Lilly 1647 p.113：離開光束。</li><li data-fx-key="conj" data-fx-variant="lilly">11 月 4 日 22:24，水星與太陽正合（下合），黃緯南 0°22′；此後由昏星轉為晨星。照 Lilly 1647 p.113：日輪內。</li><li data-fx-key="station-d" data-fx-variant="lilly">11 月 13 日 23:53，水星在天蠍 5°02′轉回順行，在太陽西側 16°15′。照 Lilly 1647 p.113：在光束下。</li><li data-fx-key="station-r" data-fx-variant="hellenistic">10 月 24 日 15:12，水星在天蠍 20°58′轉為逆行，在太陽東側 20°05′。照希臘化：離開光束。</li><li data-fx-key="conj" data-fx-variant="hellenistic">11 月 4 日 22:24，水星與太陽正合（下合），黃緯南 0°22′；此後由昏星轉為晨星。照希臘化：在光束下。</li><li data-fx-key="station-d" data-fx-variant="hellenistic">11 月 13 日 23:53，水星在天蠍 5°02′轉回順行，在太陽西側 16°15′。照希臘化：離開光束。</li><li data-fx-key="station-r" data-fx-variant="biruni">10 月 24 日 15:12，水星在天蠍 20°58′轉為逆行，在太陽東側 20°05′。照 al-Bīrūnī：離開光束。</li><li data-fx-key="conj" data-fx-variant="biruni">11 月 4 日 22:24，水星與太陽正合（下合），黃緯南 0°22′；此後由昏星轉為晨星。照 al-Bīrūnī：日輪內。</li><li data-fx-key="station-d" data-fx-variant="biruni">11 月 13 日 23:53，水星在天蠍 5°02′轉回順行，在太陽西側 16°15′。照 al-Bīrūnī：離開光束。</li></ul>
+<details class="fx-data"><summary id="fig-mr-curve-data">圖中的數字（表格）</summary><div class="ar-scroll" tabindex="0" role="region" aria-labelledby="fig-mr-curve-data"><table class="ar-table fx-table"><thead><tr><th scope="col">日期（臺北 0 時）</th><th scope="col">黃經差（水星減太陽）</th><th scope="col">順逆</th></tr></thead><tbody><tr><th scope="row">10 月 8 日</th><td class="n">+24°35′</td><td>順行</td></tr><tr><th scope="row">10 月 10 日</th><td class="n">+24°51′</td><td>順行</td></tr><tr><th scope="row">10 月 12 日</th><td class="n">+24°59′</td><td>順行</td></tr><tr><th scope="row">10 月 14 日</th><td class="n">+24°57′</td><td>順行</td></tr><tr><th scope="row">10 月 15 日</th><td class="n">+24°42′</td><td>順行</td></tr><tr><th scope="row">10 月 17 日</th><td class="n">+24°13′</td><td>順行</td></tr><tr><th scope="row">10 月 19 日</th><td class="n">+23°25′</td><td>順行</td></tr><tr><th scope="row">10 月 21 日</th><td class="n">+22°16′</td><td>順行</td></tr><tr><th scope="row">10 月 23 日</th><td class="n">+20°41′</td><td>順行</td></tr><tr><th scope="row">10 月 25 日</th><td class="n">+18°35′</td><td>逆行</td></tr><tr><th scope="row">10 月 27 日</th><td class="n">+15°55′</td><td>逆行</td></tr><tr><th scope="row">10 月 29 日</th><td class="n">+12°38′</td><td>逆行</td></tr><tr><th scope="row">10 月 31 日</th><td class="n">+8°46′</td><td>逆行</td></tr><tr><th scope="row">11 月 2 日</th><td class="n">+4°26′</td><td>逆行</td></tr><tr><th scope="row">11 月 4 日</th><td class="n">−0°09′</td><td>逆行</td></tr><tr><th scope="row">11 月 6 日</th><td class="n">−4°41′</td><td>逆行</td></tr><tr><th scope="row">11 月 8 日</th><td class="n">−8°50′</td><td>逆行</td></tr><tr><th scope="row">11 月 10 日</th><td class="n">−12°22′</td><td>逆行</td></tr><tr><th scope="row">11 月 12 日</th><td class="n">−15°09′</td><td>逆行</td></tr><tr><th scope="row">11 月 14 日</th><td class="n">−17°10′</td><td>順行</td></tr><tr><th scope="row">11 月 16 日</th><td class="n">−18°29′</td><td>順行</td></tr><tr><th scope="row">11 月 18 日</th><td class="n">−19°13′</td><td>順行</td></tr><tr><th scope="row">11 月 20 日</th><td class="n">−19°28′</td><td>順行</td></tr><tr><th scope="row">11 月 22 日</th><td class="n">−19°22′</td><td>順行</td></tr><tr><th scope="row">11 月 24 日</th><td class="n">−19°00′</td><td>順行</td></tr><tr><th scope="row">11 月 26 日</th><td class="n">−18°25′</td><td>順行</td></tr><tr><th scope="row">11 月 28 日</th><td class="n">−17°42′</td><td>順行</td></tr></tbody></table></div></details>
+<figcaption id="fig-mr-curve-cap"><b>圖 1</b>從 10 月 8 日到 11 月 28 日，水星減太陽的黃經差（曲線；上方是太陽東側、昏星，下方是西側、晨星）。底色是距離帶：實心是日輪內、交叉線是焦傷、單線是在光束下，界線依所選那一套，al-Bīrūnī 的焦傷界線還依水星順行或逆行而變；按鈕切換三套。兩條直虛線是兩次停滯，底下的黑條是逆行的那一段。曲線在逆行的正中間穿過零，那一刻就是下合。</figcaption>
+</figure>
+  <!-- /figure:curve -->
+
+  <div class="ar-body">
+    <p class="ar-lead">水星逆行（retrograde）是從地球看，水星在黃道上暫時往回走。它每次都包住一次「下合」：水星從地球與太陽之間經過、和太陽同一黃經。所以每一次水逆，水星都會進入古書所說的光束下、焦傷，甚至日輪內。這次的下合在 11 月 4 日 22:24（臺北時間）。古書對「離太陽多近」的評語，比對逆行本身重得多；而 Valens 談停滯與逆行的那幾句，原本說的是主管那段時間的行星<a class="ar-cite" href="#ref-2">[2]</a><a class="ar-cite" href="#ref-4">[4]</a>。</p>
+
+    <section class="ar-points" aria-labelledby="points">
+      <h2 id="points">重點</h2>
+      <ul>
+        <li>這次逆行 20.4 天，從天蠍 20°58′ 退到天蠍 5°02′，正中間是與太陽的下合，所以焦傷與日輪內一定跟著來；上合時水星也焦傷，但那時是順行<a class="ar-cite" href="#ref-10">[10]</a>。</li>
+        <li>三週裡疊了停滯、逆行、行速快慢、焦傷與日輪內、由昏星轉為晨星這幾件古書分開評價的事，而照 Lilly 的規則，逆行最快的那幾天反而算「行速快」<a class="ar-cite" href="#ref-2">[2]</a><a class="ar-cite" href="#ref-10">[10]</a>。</li>
+        <li>Valens《選集》IV.14 說第一次停滯而逆行使期待延遲；我讀了 Kroll 1908 年的希臘文，這幾句的主詞是交出或接手時間、主管這一年的行星<a class="ar-cite" href="#ref-4">[4]</a>。</li>
+        <li>2026 年三次水逆都在水象，是固定的幾何漂移，三角形每年往回退約 17.4°；在我們讀過的原典章節裡，也沒有看到把水星逆行當成人人都要防範的事件<a class="ar-cite" href="#ref-3">[3]</a><a class="ar-cite" href="#ref-10">[10]</a>。</li>
+      </ul>
+    </section>
+
+    <h2 id="sky"><span class="ar-sec">§01</span>天上發生什麼事</h2>
+    <p>水星在地球軌道的內側繞太陽，走得比地球快。從地球看，它在太陽兩側來回擺動，2026 年離太陽最遠約 28°。它從太陽遠的那一邊經過太陽叫<b>上合</b>（superior conjunction），從地球與太陽之間經過叫<b>下合</b>（inferior conjunction）。從一次下合到下一次下合，叫一個<b>會合週期</b>。我用 Swiss Ephemeris 把 1900–2099 年的每一次下合都求出來：平均 115.9 天，最短到最長是 105.7 天到 129.3 天<a class="ar-cite" href="#ref-10">[10]</a>。一年 365 天裝得下三個多會合週期，所以一年通常有三次水逆，偶爾四次；這兩百年裡有 30 年有四次。</p>
+    <p><b>逆行為什麼一定包住下合。</b>下合時水星離地球最近，在內側超車；從地球看，近處的東西橫向移動得快，於是它看起來在星空背景上往回走。這段往回走的期間，中點附近就是下合。同一批計算裡，每一次下合都落在一次逆行之內，沒有一次上合落在逆行之內<a class="ar-cite" href="#ref-10">[10]</a>。換句話說，一個會合週期裡水星兩次靠近太陽：一次在上合（順行、而且走得快），一次在下合（逆行）。古書說的焦傷與光束下，兩次都會遇到；逆行只伴隨其中一次。</p>
+
+    <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab1-cap">
+      <table class="ar-table">
+        <caption id="tab1-cap">表 1　同一個會合週期裡的兩次合：2026 年 8 月的上合與 11 月的下合（臺北時間；度數與時刻都寫它所在的那一分）。</caption>
+        <thead><tr><th scope="col">項目</th><th scope="col">上合</th><th scope="col">下合</th></tr></thead>
+        <tbody>
+          <!-- figure:conjunctions -->
+          <tr><th scope="row">時刻</th><td class="n">2026 年 8 月 28 日 01:03</td><td class="n">2026 年 11 月 4 日 22:24</td></tr>
+          <tr><th scope="row">水星在哪裡</th><td class="n">處女 4°26′</td><td class="n">天蠍 12°10′</td></tr>
+          <tr><th scope="row">順行或逆行</th><td class="n">順行</td><td class="n">逆行</td></tr>
+          <tr><th scope="row">一天走多少</th><td class="n">1°57′</td><td class="n">1°18′</td></tr>
+          <tr><th scope="row">離地球（天文單位）</th><td class="n">1.36</td><td class="n">0.67</td></tr>
+          <tr><th scope="row">黃緯</th><td class="n">北 1°44′</td><td class="n">南 0°22′</td></tr>
+          <tr><th scope="row">在 Lilly 的 17° 以內</th><td class="n">39.5 天</td><td class="n">18.5 天</td></tr>
+          <!-- /figure:conjunctions -->
+        </tbody>
+      </table>
+    </div>
+
+    <p>表 1 最後一列值得多看一眼：照 Lilly 的 17°，8 月 28 日上合前後水星在光束下 39.5 天，比 11 月下合前後的 18.5 天長一倍以上。上合時水星在太陽遠側，和太陽同向而行，相對太陽移動得慢；下合時兩者反向，很快就交錯過去。所以「水星在光束下」這件事，一年裡大部分發生在<b>順行</b>的時候。</p>
+    <p><b>這次逆行有多長。</b>2026 年的三次逆行列在表 2。這一次從 10 月 24 日 15:12 到 11 月 13 日 23:53，共 20.4 天，在黃道上退了 15°56′（天蠍 20°58′ 到天蠍 5°02′）。兩百年裡共 630 次逆行，長度從 19.8 天到 24.2 天、平均 22.2 天，這一次只有 134 次比它短；退行的弧從 8°32′ 到 16°18′、平均 13°25′，這一次只有 154 次比它長<a class="ar-cite" href="#ref-10">[10]</a>。每一次都不一樣，原因之一是水星的軌道很扁：2026 年它離太陽最近約 0.31、最遠約 0.47 天文單位。</p>
+
+    <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab2-cap">
+      <table class="ar-table">
+        <caption id="tab2-cap">表 2　2026 年的三次水星逆行（臺北時間）。下合的黃緯，是水星在太陽北方或南方多少。</caption>
+        <thead><tr><th scope="col">轉為逆行</th><th scope="col">位置</th><th scope="col">轉回順行</th><th scope="col">位置</th><th scope="col">天數</th><th scope="col">退了多少</th><th scope="col">下合</th><th scope="col">下合時的黃緯</th></tr></thead>
+        <tbody>
+          <!-- figure:year -->
+          <tr><td class="n">2 月 26 日 14:48</td><td>雙魚 22°33′</td><td class="n">3 月 21 日 03:32</td><td>雙魚 8°29′</td><td class="n">22.5 天</td><td class="n">14°04′</td><td class="n">3 月 7 日 19:01</td><td class="n">北 3°38′</td></tr>
+          <tr><td class="n">6 月 30 日 01:35</td><td>巨蟹 26°15′</td><td class="n">7 月 24 日 06:57</td><td>巨蟹 16°18′</td><td class="n">24.2 天</td><td class="n">9°56′</td><td class="n">7 月 13 日 09:25</td><td class="n">南 4°50′</td></tr>
+          <tr><td class="n">10 月 24 日 15:12</td><td>天蠍 20°58′</td><td class="n">11 月 13 日 23:53</td><td>天蠍 5°02′</td><td class="n">20.4 天</td><td class="n">15°56′</td><td class="n">11 月 4 日 22:24</td><td class="n">南 0°22′</td></tr>
+          <!-- /figure:year -->
+        </tbody>
+      </table>
+    </div>
+
+    <p><b>為什麼三次都在水象。</b>雙魚、巨蟹、天蠍都屬水象，看起來像巧合，其實是固定的幾何。相鄰兩次下合之間，太陽平均走了 114.2°，比三分相的 120° 少一點；三個會合週期平均 347.6 天，比一年短十幾天。所以一年裡的三次逆行大致排成一個三角形，落在同一象的三個星座，而這個三角形每過一年就沿黃道往回退約 17.4°（兩百年的平均）。表 3 是 2024 到 2028 年：2025 年從火象滑進水象，2026 年整年在水象，2027 年從水象滑進風象，2028 年整年在風象<a class="ar-cite" href="#ref-10">[10]</a>。</p>
+
+    <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab3-cap">
+      <table class="ar-table">
+        <caption id="tab3-cap">表 3　2024–2028 年每一次逆行的兩個停滯點落在哪一象（回歸黃道）。三角形逐年往回退，所以會一段時間在同一象，再慢慢滑進前一象。</caption>
+        <thead><tr><th scope="col">轉為逆行</th><th scope="col">位置</th><th scope="col">轉回順行</th><th scope="col">位置</th><th scope="col">兩個停滯點</th></tr></thead>
+        <tbody>
+          <!-- figure:drift -->
+          <tr><td class="n">2024 年 4 月 2 日</td><td>牡羊 27°13′（火象）</td><td class="n">4 月 25 日</td><td>牡羊 15°58′（火象）</td><td>同一象</td></tr>
+          <tr><td class="n">2024 年 8 月 5 日</td><td>處女 4°06′（土象）</td><td class="n">8 月 29 日</td><td>獅子 21°24′（火象）</td><td>跨兩象</td></tr>
+          <tr><td class="n">2024 年 11 月 26 日</td><td>射手 22°40′（火象）</td><td class="n">12 月 16 日</td><td>射手 6°23′（火象）</td><td>同一象</td></tr>
+          <tr><td class="n">2025 年 3 月 15 日</td><td>牡羊 9°35′（火象）</td><td class="n">4 月 7 日</td><td>雙魚 26°49′（水象）</td><td>跨兩象</td></tr>
+          <tr><td class="n">2025 年 7 月 18 日</td><td>獅子 15°34′（火象）</td><td class="n">8 月 11 日</td><td>獅子 4°14′（火象）</td><td>同一象</td></tr>
+          <tr><td class="n">2025 年 11 月 10 日</td><td>射手 6°51′（火象）</td><td class="n">11 月 30 日</td><td>天蠍 20°42′（水象）</td><td>跨兩象</td></tr>
+          <tr><td class="n">2026 年 2 月 26 日</td><td>雙魚 22°33′（水象）</td><td class="n">3 月 21 日</td><td>雙魚 8°29′（水象）</td><td>同一象</td></tr>
+          <tr><td class="n">2026 年 6 月 30 日</td><td>巨蟹 26°15′（水象）</td><td class="n">7 月 24 日</td><td>巨蟹 16°18′（水象）</td><td>同一象</td></tr>
+          <tr><td class="n">2026 年 10 月 24 日</td><td>天蠍 20°58′（水象）</td><td class="n">11 月 13 日</td><td>天蠍 5°02′（水象）</td><td>同一象</td></tr>
+          <tr><td class="n">2027 年 2 月 10 日</td><td>雙魚 5°58′（水象）</td><td class="n">3 月 3 日</td><td>水瓶 20°55′（風象）</td><td>跨兩象</td></tr>
+          <tr><td class="n">2027 年 6 月 11 日</td><td>巨蟹 6°21′（水象）</td><td class="n">7 月 5 日</td><td>雙子 27°28′（風象）</td><td>跨兩象</td></tr>
+          <tr><td class="n">2027 年 10 月 7 日</td><td>天蠍 4°55′（水象）</td><td class="n">10 月 28 日</td><td>天秤 19°18′（風象）</td><td>跨兩象</td></tr>
+          <tr><td class="n">2028 年 1 月 24 日</td><td>水瓶 19°41′（風象）</td><td class="n">2 月 14 日</td><td>水瓶 3°59′（風象）</td><td>同一象</td></tr>
+          <tr><td class="n">2028 年 5 月 21 日</td><td>雙子 16°18′（風象）</td><td class="n">6 月 14 日</td><td>雙子 7°45′（風象）</td><td>同一象</td></tr>
+          <tr><td class="n">2028 年 9 月 20 日</td><td>天秤 18°35′（風象）</td><td class="n">10 月 11 日</td><td>天秤 3°28′（風象）</td><td>同一象</td></tr>
+          <!-- /figure:drift -->
+        </tbody>
+      </table>
+    </div>
+
+    <p>以「這一年每一次逆行的兩個停滯點都在同一象」來數，1900–2099 年的 200 年裡有 45 年如此，上一次是 2021 年（風象），下一次是 2028 年。這是週期性的漂移，不是罕見天象<a class="ar-cite" href="#ref-10">[10]</a>。這裡用的是回歸黃道；換成恆星黃道，星座的分界整個平移二十幾度，同一次逆行可能落在另一象。</p>
+
+    <h2 id="timeline"><span class="ar-sec">§02</span>三週裡的時刻表</h2>
+    <p>圖 1 的曲線是水星減太陽的黃經差：正數在太陽東側，是傍晚在西方天空的昏星；負數在太陽西側，是清晨在東方天空的晨星。曲線從 10 月上旬的東側一路往下，在逆行的正中間穿過零（下合），再到西側。底色是三套「離太陽多近」的界線，按鈕可以切換；三套界線的來歷見〈<a href="/zh-TW/blog/combustion-under-beams-cazimi">焦傷、在光束下、日輪內</a>〉。</p>
+    <p>表 4 把這段期間每一個古書分開談的時刻排在一起。照 Lilly 1647 p.113 的界線：10 月 27 日 06:00 進入光束（17°），11 月 1 日 03:14 開始焦傷（8°30′），11 月 4 日 19:27 到 11 月 5 日 01:21 在日輪內（17′），共 5 小時 53 分，11 月 8 日 19:47 焦傷結束，11 月 14 日 19:10 離開光束<a class="ar-cite" href="#ref-2">[2]</a><a class="ar-cite" href="#ref-10">[10]</a>。逆行的 20.4 天裡，有 17.7 天水星同時在這條 17° 的界線以內。希臘化時期只有一條 15° 的線，照它是 10 月 28 日 14:33 到 11 月 12 日 20:55<a class="ar-cite" href="#ref-9">[9]</a>。</p>
+
+    <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab4-cap">
+      <table class="ar-table">
+        <caption id="tab4-cap">表 4　2026 年 10 月到 11 月，水星的轉向、行速變化與三套界線的進出，依時間排列（臺北時間，寫它所在的那一分）。</caption>
+        <thead><tr><th scope="col">時刻</th><th scope="col">發生什麼</th><th scope="col">誰的定義</th></tr></thead>
+        <tbody>
+          <!-- figure:events -->
+          <tr><td class="n">10 月 12 日 15:59</td><td>行速轉慢（每天走得比平均 59′08″ 少）</td><td>Lilly p.168</td></tr>
+          <tr><td class="n">10 月 23 日 15:12</td><td>進入 Lilly 的停滯（轉向前 1 天）</td><td>Lilly p.76</td></tr>
+          <tr><td class="n">10 月 24 日 15:12</td><td>第一次停滯，轉為逆行（天蠍 20°58′）</td><td>星曆</td></tr>
+          <tr><td class="n">10 月 27 日 06:00</td><td>進入光束（17°）</td><td>Lilly p.113</td></tr>
+          <tr><td class="n">10 月 28 日 14:33</td><td>進入 15° 線</td><td>希臘化 15°</td></tr>
+          <tr><td class="n">10 月 30 日 08:34</td><td>進入光束（12°）</td><td>al-Bīrūnī §481–484</td></tr>
+          <tr><td class="n">10 月 31 日 08:27</td><td>逆行而行速轉快（每天退得比 59′08″ 多）</td><td>Lilly p.168、p.178</td></tr>
+          <tr><td class="n">11 月 1 日 03:14</td><td>焦傷開始（8°30′）</td><td>Lilly p.113</td></tr>
+          <tr><td class="n">11 月 2 日 07:11</td><td>焦傷開始（6°）</td><td>al-Bīrūnī §481–484</td></tr>
+          <tr><td class="n">11 月 4 日 19:27</td><td>日輪內開始（17′）</td><td>Lilly p.113</td></tr>
+          <tr><td class="n">11 月 4 日 19:38</td><td>日輪內開始（16′）</td><td>al-Bīrūnī §481–484</td></tr>
+          <tr><td class="n">11 月 4 日 22:24</td><td>與太陽正合（下合）：由昏星（西入）轉為晨星（東出）</td><td>星曆；Lilly p.114</td></tr>
+          <tr><td class="n">11 月 5 日 01:10</td><td>日輪內結束（16′）</td><td>al-Bīrūnī §481–484</td></tr>
+          <tr><td class="n">11 月 5 日 01:21</td><td>日輪內結束（17′）</td><td>Lilly p.113</td></tr>
+          <tr><td class="n">11 月 7 日 14:33</td><td>焦傷結束（6°）</td><td>al-Bīrūnī §481–484</td></tr>
+          <tr><td class="n">11 月 8 日 15:59</td><td>行速轉慢（每天退得比 59′08″ 少）</td><td>Lilly p.168、p.178</td></tr>
+          <tr><td class="n">11 月 8 日 19:47</td><td>焦傷結束（8°30′）</td><td>Lilly p.113</td></tr>
+          <tr><td class="n">11 月 10 日 18:24</td><td>離開光束（12°）</td><td>al-Bīrūnī §481–484</td></tr>
+          <tr><td class="n">11 月 12 日 20:55</td><td>離開 15° 線</td><td>希臘化 15°</td></tr>
+          <tr><td class="n">11 月 12 日 23:53</td><td>進入 Lilly 的停滯（轉向前 1 天）</td><td>Lilly p.76</td></tr>
+          <tr><td class="n">11 月 13 日 23:53</td><td>第二次停滯，轉回順行（天蠍 5°02′）</td><td>星曆</td></tr>
+          <tr><td class="n">11 月 14 日 19:10</td><td>離開光束（17°）</td><td>Lilly p.113</td></tr>
+          <tr><td class="n">11 月 21 日 02:05</td><td>順行而行速轉快（每天走得比 59′08″ 多）</td><td>Lilly p.168</td></tr>
+          <!-- /figure:events -->
+        </tbody>
+      </table>
+    </div>
+
+    <p>時刻怎麼求：轉向是水星黃經速度變號的那一刻，合是黃經差變號的那一刻，進出是黃經差到達界線的那一刻，都用二分法求到毫秒級，再寫成它所在的那一分，和計算頁印轉向時刻的方式相同<a class="ar-cite" href="#ref-1">[1]</a>。轉向本身只定得到半分多鐘：用速度變號找的轉向，和直接看位置何時折返找的，可以差這麼多。</p>
+
+    <h2 id="doctrine"><span class="ar-sec">§03</span>古書怎麼描述這些狀態</h2>
+    <p>以下逐一照原文列出。這些是各書的分類與評語，本站照列、附出處，不給分數、不加總，不替你解盤，也不預測。</p>
+
+    <h3>停滯與逆行</h3>
+    <ul>
+      <li><b>Ptolemy</b>《占星四書》（Tetrabiblos）I.8 談行星相對太陽的各個階段時，說到「第一次停滯」（轉逆行之前）與「第二次停滯」（轉回順行之前）這兩個時點，沒有說停幾天<a class="ar-cite" href="#ref-3">[3]</a>。</li>
+      <li><b>Lilly</b>《Christian Astrology》1647 年版 p.76 說水星「停一天」；p.114 定義停滯與東出西入；p.115 的強弱表把順行、逆行，和行速快、行速慢分成不同的項目列出，順行列在力量一邊，逆行列在減損一邊<a class="ar-cite" href="#ref-2">[2]</a>。本站把水星轉向前 1 天列為停滯，所以這次的停滯是 10 月 23 日 15:12 起與 11 月 12 日 23:53 起各一天<a class="ar-cite" href="#ref-1">[1]</a>。</li>
+      <li><b>Valens</b>《選集》IV.14 與 V.11。這兩處我讀了 Kroll 1908 年校勘本（學者比對多份古抄本後整理出的版本）的希臘文頁影像，下一段細談<a class="ar-cite" href="#ref-4">[4]</a>。</li>
+    </ul>
+
+    <h3>Valens 原文：說的是主管時間的行星</h3>
+    <p>IV.14 的標題是〈論星的顯現（φάσις）與行經（ἐπέμβασις）〉（Kroll 1908 p.182）。這一章開頭先限定談的是哪些星：「一般而言，所有的星都要這樣看：它們交出或接手時間、主管這一年或整段時期的時候，若是東出（ἀνατολικοί），並且行經到有作為的位置、在那裡升起，就明顯地成事。」接著說：「若它們處在第一次停滯、而且是逆行的，就使所期待的事、事務、利益與著手的事延遲（ὑπέρθεσις）。」下一頁（p.183）：「若是第二次停滯，就解除延遲、使事情回到原來的軌道……若是走向西沒（ὑπὸ δύσιν，進入太陽光下），就帶來阻礙與憂愁。」以上是我的翻譯<a class="ar-cite" href="#ref-4">[4]</a>。</p>
+    <p><b>以下是我的讀法：</b>這幾句的主詞一路承接第一句，是「交出或接手時間、主管這一年」的行星，也就是時間主星（time lords）；「延遲」說的是時間主星在它主事的那段時間裡停滯、逆行。這不是說每一次天上有行星逆行，對所有人都延遲。</p>
+    <p>V.11 是〈論釋放〉（ἄφεσις，把一年交給某一顆星的推算），同樣在時間主星的脈絡裡。p.232：從上升、月亮或太陽推出的那一年落到本命某顆星上時，「若此外還有一顆行經中的星（κατὰ πάροδον）踏進那個位置，它就成為交出這段時間的星」。p.233：「星的西沒與逆行無力（ἄτονοι），東升與停滯有力（εὔτονοι）。」<a class="ar-cite" href="#ref-4">[4]</a> 注意停滯在這裡列在<b>有力</b>的一邊，和逆行分開。</p>
+
+    <h3>行速快慢：逆行最快的時候算「快」</h3>
+    <p>Lilly p.168 說，一天走的多於該星的平均行度就是行速快；水星的平均他給 59′08″，和太陽相同（p.76）。p.178 一顆逆行的土星，他比的是每天退了多少，所以逆行也有快慢<a class="ar-cite" href="#ref-2">[2]</a>。照這條規則，這次的水星：10 月 12 日 15:59 起就比平均慢（快要停下）；轉逆行後越退越快，10 月 31 日 08:27 起每天退得比 59′08″ 多，<b>算行速快</b>，一直到 11 月 8 日 15:59；之後又慢下來、停滯、轉回順行（表 4）。也就是說，「逆行」與「行速慢」在 Lilly 的表上是兩項，這三週裡兩者並不一直同時成立。</p>
+
+    <h3>焦傷、光束下、日輪內</h3>
+    <ul>
+      <li><b>Lilly</b> p.111：任何行星的焦傷，「是所能有的最大不幸」。p.113：太陽正在趕上行星時，行星受害比太陽離開時更重；又說「各家都認為行星在 Cazimi（日輪內）因而得力」。格言第 26 條說日輪內「非常強」<a class="ar-cite" href="#ref-2">[2]</a>。</li>
+      <li><b>al-Bīrūnī</b>《占星術入門》§481：行星在光束下「像被關住的囚犯」；正在太陽中心的叫 samīm（日輪內）。§486：行星的作用在焦傷時最小<a class="ar-cite" href="#ref-6">[6]</a>。</li>
+      <li><b>Abū Maʿshar</b>《大導論》VII.2：除了在 zamim（日輪內）的，太陽會灼燒與它會合的每一顆星，使它衰弱、敗壞<a class="ar-cite" href="#ref-7">[7]</a>。</li>
+      <li><b>Ptolemy</b> III.10：推算壽命時，在太陽光線下的行星，不採為破壞者，也不採為援助者<a class="ar-cite" href="#ref-3">[3]</a>。</li>
+    </ul>
+    <p>這次逆行把兩個極端放在一起：Lilly 界線的焦傷從 11 月 1 日到 11 月 8 日，正中間有 5 小時 53 分落進日輪內。Lilly p.113 說「太陽正在趕上行星」時受害較重；照字面，11 月 4 日下合以前，水星在太陽東側、太陽往它推進，是趕上的那一段，之後是太陽離開的那一段（這是我對字面的對照，不是 Lilly 針對水星逆行寫的話）。</p>
+    <p><b>這次的日輪內，換一種讀法就不成立。</b>下合那一刻水星在太陽南方 0°22′，而太陽的視半徑只有約 16′，所以水星中心沒有落在太陽圓面內，這次也不會凌日；下一次水星凌日是 2032 年 11 月 13 日<a class="ar-cite" href="#ref-10">[10]</a>。只看黃經，它是日輪內；al-Qabīṣī 要求黃緯也在 16 角分以內，照他的說法就不算<a class="ar-cite" href="#ref-8">[8]</a>。本站用黃經差判定，天空中的實際距離另外照列，理由寫在焦傷那一篇<a class="ar-cite" href="#ref-1">[1]</a>。</p>
+
+    <h3>東出與西入：下合那一刻換邊</h3>
+    <p>先把方向講清楚。Lilly p.114 的用法：<b>東出</b>（oriental）是比太陽早升起、清晨在東方天空的晨星，在黃道上位於太陽<b>西側</b>；<b>西入</b>（occidental）是太陽下山後還在西方天空的昏星，在黃道上位於太陽<b>東側</b><a class="ar-cite" href="#ref-2">[2]</a>。水星在 11 月 4 日 22:24 下合之前是昏星（西入），之後是晨星（東出）。各書對這兩邊的評價不一樣：</p>
+    <ul>
+      <li><b>一般的說法：東出有力。</b>Ptolemy I.24：東出而且增於行時最有力，西入而且減速時較弱<a class="ar-cite" href="#ref-3">[3]</a>。al-Bīrūnī §486：東出時作用最強，西入時弱<a class="ar-cite" href="#ref-6">[6]</a>。</li>
+      <li><b>對水星、金星的說法：西入較好。</b>al-Bīrūnī §498：上行星（土木火）喜東出，下行星（金水）喜西入<a class="ar-cite" href="#ref-6">[6]</a>。Lilly p.115 把金星、水星<b>西入</b>列為偶然強，東出列為偶然弱；土星、木星、火星則相反<a class="ar-cite" href="#ref-2">[2]</a>。</li>
+    </ul>
+    <p>兩種說法我照列，不替它們調和。要小心的是反向的用法：Bonatti 說 Ptolemy 在某一段講的「occidentalis a Sole」，是指在太陽西側、比太陽先落下，照 Lilly 的用詞反而叫東出<a class="ar-cite" href="#ref-1">[1]</a>。讀不同的書，先確認它的東西指的是哪一邊。</p>
+
+    <p class="ar-pull">三週之內，水星先停住、轉逆行、越退越快、進入光束、焦傷、落進日輪內、由昏星換成晨星，再慢下來、停住、轉回順行。古書把這些分成好幾項各自評價，沒有一項叫「水逆」。</p>
+
+    <h2 id="demo"><span class="ar-sec">§04</span>示範：一張在下合那一分鐘的合成出生盤</h2>
+    <p>拿兩個合成的時刻（不是任何人的出生資料）問本站的計算服務，地點都是臺北，勾選「焦傷與光束下」與「行速、停滯與東出西入」，其餘用預設。第一個是 2026 年 11 月 4 日 22:24，下合的那一分鐘；第二個是 11 月 13 日 12:00，第二次停滯前半天。表 5 是計算服務對水星的回應，原樣列出<a class="ar-cite" href="#ref-11">[11]</a>。</p>
+
+    <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab5-cap">
+      <table class="ar-table">
+        <caption id="tab5-cap">表 5　本站計算服務對兩個合成時刻（臺北）的回應：水星這一列。</caption>
+        <thead><tr><th scope="col">項目</th><th scope="col">11 月 4 日 22:24</th><th scope="col">11 月 13 日 12:00</th></tr></thead>
+        <tbody>
+          <!-- figure:demo -->
+          <tr><th scope="row">順行或逆行</th><td>逆行</td><td>逆行</td></tr>
+          <tr><th scope="row">一天走多少</th><td>1°18′25.38″（平均 59′08″）</td><td>0°05′36.26″（平均 59′08″）</td></tr>
+          <tr><th scope="row">行速（Lilly 1647）</th><td>行速快；比的是每天退的度數</td><td>行速慢；比的是每天退的度數</td></tr>
+          <tr><th scope="row">停滯（Lilly 的天數）</th><td>沒有停滯</td><td>停滯（第二次：快要轉回順行）（轉向在 11/13 23:53）</td></tr>
+          <tr><th scope="row">前後 15 天內的轉向</th><td>10/24 15:12、11/13 23:53</td><td>11/13 23:53</td></tr>
+          <tr><th scope="row">東出西入</th><td>昏星（西入）</td><td>晨星（東出）</td></tr>
+          <tr><th scope="row">Lilly p.115 把它列在哪一邊</th><td>行速：列為偶然強；東出西入：列為偶然強</td><td>行速：列為偶然弱；東出西入：列為偶然弱</td></tr>
+          <tr><th scope="row">與太陽的黃經差</th><td>+0°00′（0°00′01.79″）</td><td>−15°43′（15°43′41.71″）</td></tr>
+          <tr><th scope="row">黃緯</th><td>南 0°22′</td><td>北 1°58′</td></tr>
+          <tr><th scope="row">中心落在太陽圓面內</th><td>否</td><td>否</td></tr>
+          <tr><th scope="row">距離帶：Lilly 1647 p.113</th><td>日輪內</td><td>在光束下</td></tr>
+          <tr><th scope="row">距離帶：希臘化</th><td>在光束下</td><td>離開光束</td></tr>
+          <tr><th scope="row">距離帶：al-Bīrūnī</th><td>日輪內</td><td>離開光束</td></tr>
+          <tr><th scope="row">前後 7 天內跨過光束界線</th><td>Lilly 1647 p.113：沒有；希臘化：沒有；al-Bīrūnī：隱入光束，10/30 08:34；al-Bīrūnī：升出光束，11/10 18:24</td><td>Lilly 1647 p.113：升出光束，11/14 19:10；希臘化：升出光束，11/12 20:55；al-Bīrūnī：升出光束，11/10 18:24</td></tr>
+          <!-- /figure:demo -->
+        </tbody>
+      </table>
+    </div>
+
+    <p>逐項說它在原典裡的意思：</p>
+    <ul>
+      <li><b>順逆與行速。</b>兩個時刻都在逆行。第一個每天退 1°18′ 多，比平均 59′08″ 快，照 Lilly p.168、p.178 判行速快；第二個快要轉向，每天只退幾分，判行速慢。p.115 把行速快列在力量一邊、行速慢列在減損一邊，逆行本身另列減損<a class="ar-cite" href="#ref-2">[2]</a>。</li>
+      <li><b>停滯。</b>第二個時刻離轉向不到 1 天，在 Lilly 給水星的「停一天」之內，列為停滯（第二次）。計算服務印出的轉向時刻是它所在的那一分，和表 4 相同<a class="ar-cite" href="#ref-1">[1]</a>。</li>
+      <li><b>東出西入。</b>第一個時刻，水星在太陽東側 1.79″（角秒），還沒換邊，所以是昏星（西入），Lilly p.115 列為偶然強；19 秒之後才是下合。第二個時刻已是晨星（東出），列為偶然弱。出生時間差幾十秒就換一邊，這種盤要特別確認出生時間。</li>
+      <li><b>距離帶。</b>第一個時刻照 Lilly 與 al-Bīrūnī 是日輪內，照希臘化那一套只有一條 15° 的線、沒有日輪內，所以只是在光束下；水星的黃緯讓它的中心不在太陽圓面內。第二個時刻照 Lilly 仍在光束下，照另外兩套已經離開。</li>
+      <li><b>出生前後 7 天。</b>希臘化時期的作者看行星是否在出生前後 7 天內從太陽光芒裡出現或隱沒（依轉述）<a class="ar-cite" href="#ref-9">[9]</a>。第一個時刻，照 Lilly 與 15° 線，前後 7 天水星都沒有跨線；照 al-Bīrūnī 的 12°，出生前後各跨一次。第二個時刻三套都說它在 7 天內升出光束，只是有的在出生前、有的在出生後。</li>
+    </ul>
+    <p>這些是那一刻水星的狀態，記在出生盤上，跟著這張盤，不會在之後每一次水逆重演一次。表上不給分數、不加總，也不說這張盤「好」或「不好」。</p>
+
+    <h2 id="whose"><span class="ar-sec">§05</span>這些評語說的是誰的水星</h2>
+    <p>古書描述的，都是某一張盤裡的某一顆行星。在這篇用到的原典裡，天上的水星進到一個人的盤，有下面幾條路。把它們分成三層，是我的整理，不是原典的分類：</p>
+    <ol>
+      <li><b>出生盤本身。</b>在逆行期間出生的人，本命水星就是逆行，多半也在光束下，像表 5 那樣。這是出生那一刻的狀態。</li>
+      <li><b>時間技法推出的主星與位置。</b>Ptolemy《占星四書》IV.10 從上升、太陽、月亮、命運點（Lot of Fortune）與中天各自推進，每年一個星座、每 28 天一個星座，並看行星行經這些推出來的位置<a class="ar-cite" href="#ref-3">[3]</a>。Valens 卷四的時間主星（IV.4、IV.8、IV.9 一帶，後人稱為黃道釋放（zodiacal releasing）的規則）也是先從出生盤推出這段時間由哪顆星、哪個星座主事<a class="ar-cite" href="#ref-5">[5]</a>。</li>
+      <li><b>天上的行星對照到這些點。</b>V.11 那一句說得最直接：推出的那一年落到某個位置時，若有一顆「行經中的星」踏進那個位置，它就成為交出時間的星<a class="ar-cite" href="#ref-4">[4]</a>。IV.14 的停滯、逆行與延遲，談的也是主管時間的行星在行經中的狀態。</li>
+    </ol>
+    <p>照這個架構，這次水逆和一張出生盤發生關係，要先經過第二層：水星是不是這一年或這段時期的主星，或者這次逆行的停滯點（天蠍 20°58′ 與天蠍 5°02′）、逆行經過的這一段，是不是壓在推出來的位置或本命的要點上。這是讀法，不是預測；要用哪一種時間技法、推到哪裡，各書不同，本站在〈<a href="/zh-TW/blog/time-lords-introduction">年度時間主星入門</a>〉裡逐條寫出差異。</p>
+    <p><b>卜卦與擇日不同。</b>卜卦（就一個問題起盤）與擇日，是拿「此刻」另起一張盤，天上的水星就是那張盤的水星，它的逆行、焦傷就直接是那張盤的狀態。古書談卜卦盤裡焦傷的例子，Lilly p.113 就有一條：代表問卜者的行星焦傷，表示他非常害怕、被有權勢的人壓制<a class="ar-cite" href="#ref-2">[2]</a>。擇日書怎麼處理逆行的水星，我還沒有讀擇日的專章，所以不寫。</p>
+
+    <h2 id="mundane"><span class="ar-sec">§06</span>那麼「全民水逆」呢</h2>
+    <p>古典把「同一時間對所有人都一樣」的天象歸在普遍占星，談的是地區與國家。Ptolemy《占星四書》第二卷談普遍事件，II.4 說這類事件「第一個、也最有力的原因」是日月在食時的會合；II.8 說主事行星的性質決定事件的性質<a class="ar-cite" href="#ref-3">[3]</a>。</p>
+    <p><b>在我們讀過的原典章節裡，沒有看到把水星逆行當成人人都要防範的事件。</b>這句話的範圍要說清楚：我們讀過的是本文出處列出的那些章節，也就是 Ptolemy 卷一的 I.8、I.24、卷二的 II.4–II.8、卷三的 III.10、卷四的 IV.10；Valens 卷四、卷五的幾章；Lilly 1647 年版第一卷的相關頁與格言；al-Bīrūnī §481–498 一帶；Abū Maʿshar《大導論》VII.2。這些書的其他章節、中世紀的世運專書、擇日專書，我們沒有通讀。「全民水逆」這種說法從什麼時候、從誰開始流行，我們也還沒有查到可靠的出處，所以不下斷言。</p>
+
+    <aside class="ar-scope" aria-labelledby="scope-1">
+      <span class="ar-k" id="scope-1">本文的證據範圍</span>
+      <ul>
+        <li>圖 1、表 1 到表 4 與正文的時刻、度數、統計，是用 Swiss Ephemeris 2.10.03 與本站附帶的星曆檔求根算出（地心、回歸黃道、視位置），界線取自本站計算服務的界線表；不是抄自其他網站。</li>
+        <li>表 5 是本站計算服務對兩個合成時刻的實際回應；其中的黃經差、跨線時刻與轉向時刻，產生頁面時都另用 Swiss Ephemeris 直接求出、逐一比對。</li>
+        <li>時刻都是臺北時間（UTC+8），寫它所在的那一分；度數寫它所在的那一角分。轉向時刻本身只定得到半分多鐘。</li>
+        <li>Valens IV.14、V.11 讀的是 Kroll 1908 年希臘文校勘本的頁影像；Pingree 1986 年的校勘本沒有讀到。其他原典核到哪一層，寫在文末出處。</li>
+        <li>沒有算的：依出生地、季節與大氣估算水星<b>實際看不看得見</b>（偕日升落）。「11 月 14 日離開光束」是照 17° 這條固定界線說的，不等於那天清晨就看得到水星。</li>
+      </ul>
+    </aside>
+
+    <h2 id="unknown"><span class="ar-sec">§07</span>我們不知道的、還沒做的</h2>
+    <ul>
+      <li><b>可見性。</b>古書的「光束下」原本講看不看得見。實際什麼時候在清晨重新看到水星，要看地點、季節與大氣，本站還沒有做這個模型<a class="ar-cite" href="#ref-1">[1]</a>。</li>
+      <li><b>「全民水逆」的來歷。</b>這種說法的歷史來源，我們沒有核到。</li>
+      <li><b>擇日與世運的專書。</b>上一節列的範圍以外，我們沒有讀，所以不說它們「沒有」這樣的規則。</li>
+      <li><b>Valens 的其他版本。</b>Pingree 1986 年校勘本的這兩頁我們沒有讀到；章節編號 IV.14、V.11 在 Kroll 本與 Riley 英譯一致。</li>
+    </ul>
+
+    <h2 id="faq"><span class="ar-sec">§08</span>常見問題</h2>
+    <h3>這次水星逆行是哪幾天？</h3>
+    <p>從 2026 年 10 月 24 日 15:12 轉為逆行，到 11 月 13 日 23:53 轉回順行（臺北時間），共 20.4 天，全程在天蠍座，從 20°58′ 退到 5°02′。與太陽正合在 11 月 4 日 22:24。</p>
+    <h3>水星真的往回走嗎？</h3>
+    <p>沒有。水星一直繞著太陽往同一個方向走；它在地球與太陽之間超車時，從地球看，它在星空背景上像往回走。這段期間的中點附近就是下合。</p>
+    <h3>為什麼一年有三次水逆？</h3>
+    <p>水星從一次下合到下一次下合平均 115.9 天，一年裝得下三個多，所以通常三次，有些年份四次。</p>
+    <h3>2026 年三次水逆都在水象星座，代表什麼嗎？</h3>
+    <p>這是幾何上的固定漂移：一年裡的三次逆行大致排成一個三角形，落在同一象，每年往回退約 17.4°。1900–2099 年有 45 年三次（或四次）都在同一象。古書裡我們沒有讀到為此另立的規則。</p>
+    <h3>古書說水星逆行要避免簽約嗎？</h3>
+    <p>在我們讀過的章節裡沒有這樣的條文。Lilly 把逆行列為行星的一項減弱；Valens 說主管時間的行星第一次停滯而逆行，使期待延遲。擇日的專章我們還沒讀，所以不說它們沒有。</p>
+    <h3>在水逆期間出生，本命水星會怎樣？</h3>
+    <p>本命水星就是逆行，多半也在光束下，有時焦傷或日輪內，行速可能快也可能慢，可能是晨星也可能是昏星，要看出生在這三週的哪一刻。本站計算頁把這幾項照原典逐一列出、附出處，不給分數，也不替你解盤。</p>
+    <h3>這次有水星凌日嗎？</h3>
+    <p>沒有。下合時水星在太陽南方 0°22′，太陽的視半徑約 16′，水星從太陽圓面外經過。下一次水星凌日是 2032 年 11 月 13 日。</p>
+  </div>
+
+  <section class="ar-refs" aria-labelledby="refs">
+    <h2 id="refs">出處</h2>
+    {{source_legend|標已讀原文與已讀譯本的，寫明讀的是哪個版本、哪幾頁；Valens 的兩處我讀的是校勘本的頁影像。}}
+    <ol>
+      <li id="ref-1"><span>渾儀<a href="/zh-TW/methods#motion-states">方法頁</a> 07.20〈行速、停滯與東出西入〉與 07.17〈焦傷與光束下〉，以及<a href="/zh-TW/method-sources.json">方法出處清單</a>的條目 <code>motion_states</code>、<code>solar_phase</code>（停滯天數的讀法、轉向時刻只印到分、東出西入的四種意思與 Bonatti 對反向用法的說明、三套界線、還沒有做的可見性）。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-2"><span>William Lilly, <i>Christian Astrology</i> (London, 1647) Book I：p.&nbsp;76（水星停一天、平均行度）、p.&nbsp;114（東出西入與停滯的定義）、p.&nbsp;115（強弱表）、p.&nbsp;168（行速快的定義）、p.&nbsp;178（逆行的土星也比快慢）已核 1647 年版頁面影像（Wellcome 圖書館藏本），只引分類，不引分數；pp.&nbsp;111、113 依 1647 年版與 1659 年轉錄本的線上全文，頁面影像未核；格言第 26 條依 1659 年轉錄本。<span class="rs rs-checked">已讀原文</span></span></li>
+      <li id="ref-3"><span>Ptolemy《占星四書》I.8、I.24（pp.&nbsp;115–117）、II.4–II.8、III.10（p.&nbsp;285）、IV.10（p.&nbsp;453），trans. F. E. Robbins (Loeb Classical Library, 1940)：LacusCurtius 線上轉錄。<span class="rs rs-checked">已讀譯本</span></span></li>
+      <li id="ref-4"><span>Vettius Valens, <i>Anthologiarum libri</i>, ed. W. Kroll (Berlin, 1908)：IV.14（pp.&nbsp;182–183）、V.11（pp.&nbsp;232–233）的希臘文，讀校勘本的頁影像，並對照 Perseus 的數位轉錄；翻譯是我的。Pingree 1986 年校勘本未讀。<span class="rs rs-checked">已讀原文</span></span></li>
+      <li id="ref-5"><span>Valens《選集》IV.4、IV.6、IV.8、IV.9、IV.10（Riley 英譯，經公開的重排本；IV.9、IV.10 另對 Kroll 希臘文）：時間主星的起點與選擇規則、星座年數、解鎖（loosing of the bond）到對宮。<span class="rs rs-checked">已讀譯本</span></span></li>
+      <li id="ref-6"><span>al-Bīrūnī, <i>The Book of Instruction in the Elements of the Art of Astrology</i>（Kitāb al-Tafhīm），trans. R. Ramsay Wright (London, 1934) §481–486、§498：英譯的線上打字稿，1934 年版頁碼未核。<span class="rs rs-checked">已讀譯本</span></span></li>
+      <li id="ref-7"><span>Abū Maʿshar《大導論》VII.2，Hermann of Carinthia 的拉丁譯本（Würzburg Arabic-Latin Corpus 線上本）；阿拉伯原本未讀。<span class="rs rs-checked">已讀譯本</span></span></li>
+      <li id="ref-8"><span>al-Qabīṣī《導論》（al-Mudkhal）第三章，John of Seville 的拉丁譯本（線上全文）：日輪內要求黃緯也在 16 角分以內。<span class="rs rs-checked">已讀譯本</span></span></li>
+      <li id="ref-9"><span>希臘化時期的 15° 光束界線與出生前後 7 天的看法：Porphyry《占星四書導論》第 2、30 章與 Antiochus，經 Brennan, <i>Hellenistic Astrology</i> (2017) 轉引；原文未核。<span class="rs rs-relayed">轉引</span></span></li>
+      <li id="ref-10"><span>圖 1、表 1 到表 4 與正文的時刻、度數與 1900–2099 年的統計：以 Swiss Ephemeris 2.10.03 與本站附帶的星曆檔（地心、回歸黃道、視位置）逐一求根；界線取自本站計算服務的界線表，水星的平均行度取自它的 Lilly 1647 設定。2026 年 10 月自算，產生器是公開原始碼裡的 <code>scripts/frontend/figures/mercury_retrograde.py</code>。<span class="rs rs-computed">本站自算</span></span></li>
+      <li id="ref-11"><span>表 5：本站計算服務對 2026 年 11 月 4 日 22:24 與 11 月 13 日 12:00（Asia/Taipei，北緯 25.05306°、東經 121.52639°）的回應，勾選「焦傷與光束下」與「行速、停滯與東出西入」，其餘用預設；黃經差、跨線與轉向時刻另以 Swiss Ephemeris 直接求出核對。2026 年 10 月以本機的同版服務自算。<span class="rs rs-computed">本站自算</span></span></li>
+    </ol>
+  </section>
+
+  <section class="ar-next" aria-labelledby="next-cta">
+    <div>
+      <h2 id="next-cta">看你自己盤上的水星，<br>每一項都附出處。</h2>
+      <p>計算頁「進階選項」的「古典判斷」一組裡，勾「焦傷與光束下」與「行速、停滯與東出西入」：順逆、行速、停滯、東出西入、三套界線並列，以及出生前後 7 天的跨線時刻。</p>
+      <p><a class="btn-paper" href="/zh-TW/calculate">排一張盤 →</a></p>
+    </div>
+    <div>
+      <span class="ar-k">延伸閱讀</span>
+      <ul>
+        <li><a href="/zh-TW/blog/combustion-under-beams-cazimi">焦傷、在光束下、日輪內：離太陽多近才算</a></li>
+        <li><a href="/zh-TW/blog/time-lords-introduction">年度時間主星入門</a></li>
+        <li><a href="/zh-TW/methods#motion-states">方法頁：行速、停滯與東出西入</a></li>
+      </ul>
+    </div>
+  </section>
+
+</div>

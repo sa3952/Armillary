@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from ..chart_stages import TimeResolution
 
 
-DOSSIER_VERSION = "0.12.0"
+DOSSIER_VERSION = "0.13.0"
 
 # The six-field vocabulary lives in module_state; the Dossier copies what each
 # producer wrote.  Both names are re-exported for the response's readers.

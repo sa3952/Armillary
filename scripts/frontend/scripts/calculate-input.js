@@ -427,24 +427,20 @@ const SERVICE_AMBIGUITY = Object.freeze(
   { state: "ambiguous", source: "service", occurrences: [{ fold: 0 }, { fold: 1 }] }
 );
 
-// 出生日期是年、月、日三欄；讀取只有這一個出處：格式、日曆與範圍（三欄外框的 data-min／data-max）。
-// 表單帶 novalidate，鍵盤打進來的 1895 年或 2400 年不會被瀏覽器擋下。
-const DATE_PART_IDS = Object.freeze({ year: "date-year", month: "date-month", day: "date-day" });
-const datePartInputs = () => Object.values(DATE_PART_IDS).map(el);
-const isDatePart = (input) => Boolean(input && Object.values(DATE_PART_IDS).includes(input.id));
+// 出生日期是一欄（2000-04-04、2000/4/4、20000404…）；讀取只有這一個出處：格式、日曆與範圍（欄位的
+// data-min／data-max）。表單帶 novalidate，鍵盤打進來的 1895 年或 2400 年不會被瀏覽器擋下。
+const DATE_INPUT_ID = "birth-date";
+const datePartInputs = () => [el(DATE_INPUT_ID)];
+const isDatePart = (input) => Boolean(input && input.id === DATE_INPUT_ID);
 function dateBounds() {
-  const parts = el("date-parts");
-  return { min: parts.dataset.min, max: parts.dataset.max };
+  const input = el(DATE_INPUT_ID);
+  return { min: input.dataset.min, max: input.dataset.max };
 }
 function readDateField() {
-  const raw = {};
-  Object.entries(DATE_PART_IDS).forEach(([part, id]) => { raw[part] = String(el(id).value); });
-  return RI.readBirthDateParts(raw, dateBounds());
+  return RI.readBirthDateText(String(el(DATE_INPUT_ID).value), dateBounds());
 }
 function setDateFields({ year, month, day }) {
-  el(DATE_PART_IDS.year).value = String(year);
-  el(DATE_PART_IDS.month).value = String(month);
-  el(DATE_PART_IDS.day).value = String(day);
+  el(DATE_INPUT_ID).value = `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 function currentAmbiguity() {
@@ -968,9 +964,9 @@ function buildPayload() {
     messages.set(input, missingMessage(label));
   };
   const dateRead = readDateField();
-  // 三欄只標出有問題的那幾欄，共用一句訊息（#date-error，排在三欄之後）。
+  // 日期欄的訊息是 #date-error，排在欄位之後。
   if (dateRead.state !== RI.STATES.VALUE) {
-    const inputs = dateRead.fields.map((part) => el(DATE_PART_IDS[part]));
+    const inputs = datePartInputs();
     if (dateRead.state === RI.STATES.EMPTY) missing.push("出生日期");
     else invalid.push(`出生日期${dateRead.reason}`);
     const message = dateRead.state === RI.STATES.EMPTY ? missingMessage("出生日期") : `出生日期${dateRead.reason}。`;
@@ -1163,7 +1159,7 @@ function showFieldError(input, message) {
     node.id = id;
     node.className = "field-error";
     const anchor = input.type === "radio" ? input.closest(".choice") || input
-      : isDatePart(input) ? el("date-parts") : input;
+      : input;
     anchor.insertAdjacentElement("afterend", node);
   }
   node.textContent = message;
@@ -1200,9 +1196,7 @@ function clearFieldInvalid(input) {
     node.removeAttribute("aria-invalid");
     setDescribedBy(node, describedByTokens(node).filter((t) => !isErrorToken(t)));
     const message = document.getElementById(fieldErrorId(node));
-    // 日期三欄共用一句訊息：還有別欄標著錯時留著它。
-    const shared = isDatePart(node) && datePartInputs().some((other) => other.hasAttribute("aria-invalid"));
-    if (message && !shared) message.remove();
+    if (message) message.remove();
   });
 }
 

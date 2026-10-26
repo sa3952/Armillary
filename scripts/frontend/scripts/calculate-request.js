@@ -205,7 +205,7 @@ function handleApiError(response, body, payload) {
       : CIVIL_TIME_ACTION);
   }
   showError(message, actions);
-  setStatus("服務拒絕了這次計算。", "error");
+  setStatus(window.ClientContext.refusalStatus(statusCode), "error");
   // 伺服器點名的欄位標 aria-invalid、展開所在摺疊區並移焦點。
   // 對照表在 ClientContext；選項若由另一個控制項代為呈現（rendered_by），標在看得見的那個上。
   const invalid = window.ClientContext.fieldControlIds(detail)

@@ -12,7 +12,7 @@
     <h2 class="hdr"><span>00</span>重點</h2>
     <ol class="ds-key">
       <li data-fact="transport"><b>只走加密連線。</b>HTTPS 只接受 TLS 1.2 與 1.3，瀏覽器被要求一年內只用加密連線（HSTS）。<span class="gives"><b>保護：</b>同一個 Wi-Fi 或網路業者看不到、也改不了你送出的出生資料。</span></li>
-      <li data-fact="no-tracking"><b>不追蹤。</b>不設 cookie、不用瀏覽器儲存，沒有分析、廣告或錯誤追蹤程式，不向任何第三方發出請求。<span class="gives"><b>保護：</b>沒有分析或廣告公司知道你來過，本站也沒有任何識別碼能把你的兩次造訪連起來。</span></li>
+      <li data-fact="no-tracking"><b>不追蹤。</b>不設 cookie、不用瀏覽器儲存，沒有第三方分析、廣告或錯誤追蹤程式，不向任何第三方發出請求；本站自己只數頁面瀏覽數與今日訪客數兩個數字，不記錄任何一筆造訪。<span class="gives"><b>保護：</b>沒有分析或廣告公司知道你來過，本站也沒有任何識別碼能把你的兩次造訪連起來。</span></li>
       <li data-fact="csp"><b>瀏覽器只准執行本站自己的程式。</b>內容安全政策（Content-Security-Policy）擋掉其他來源的程式與連線。<span class="gives"><b>保護：</b>就算有人設法把程式碼混進頁面，瀏覽器也拒絕執行；頁面發出的連線只能回到本站。</span></li>
       <li data-fact="logs"><b>伺服器不記你的 IP，也不記出生資料。</b>存取日誌關閉；事件日誌只有 11 個固定欄位，約一週後自動刪除。<span class="gives"><b>保護：</b>主機上沒有一份「誰在什麼時候查了什麼」的名單可以外洩、被要求交出，或被拿去分析。</span></li>
       <li data-fact="container"><b>計算程式關在沒有對外網路的容器裡。</b>唯讀檔案系統、非 root 使用者、Linux 特權全部移除。<span class="gives"><b>保護：</b>即使程式有漏洞被利用，它也沒有路把資料送出去，也改不了自己的程式檔。</span></li>
@@ -31,7 +31,7 @@
       <h3>一、只走加密連線</h3>
       <dl class="pv">
         <dt>本站怎麼做</dt>
-        <dd>所有連線都走 HTTPS。輸入 <span class="mono">http://</span> 會被永久轉到 <span class="mono">https://</span>，轉址時丟掉網址 <span class="mono">?</span> 後面的參數。加密協定只接受 TLS 1.2 與 1.3。回應帶 <span class="mono">Strict-Transport-Security: max-age=31536000</span>（HTTP 嚴格傳輸安全，HSTS）：瀏覽器看過一次之後，一年內會自己把 http 改成 https。</dd>
+        <dd>所有連線都走 HTTPS。輸入 <span class="mono">http://</span> 會被永久轉到 <span class="mono">https://</span>，轉址時丟掉網址 <span class="mono">?</span> 後面的參數。加密協定只接受 TLS 1.2 與 1.3。回應帶 <span class="mono">Strict-Transport-Security: max-age=31536000; includeSubDomains</span>（HTTP 嚴格傳輸安全，HSTS）：瀏覽器看過一次之後，一年內會自己把本站及子網域的 http 改成 https。</dd>
         <dt>擋住什麼</dt>
         <dd>同一個 Wi-Fi 的其他人、網路業者或中間設備看得到你連上本站，<b>看不到、也改不了你送出的出生資料與收到的星盤</b>。TLS 1.2 只提供具前向保密（forward secrecy）的金鑰交換：就算日後有人拿到本站的私鑰，也解不開以前錄下的連線。舊版的 TLS 1.0／1.1 會被拒絕。</dd>
         <dt>你怎麼查</dt>
@@ -51,7 +51,7 @@ curl -sv -o /dev/null https://projectarmillary.com/zh-TW/ 2&gt;&amp;1 | grep -iE
       <h3>二、不追蹤</h3>
       <dl class="pv">
         <dt>本站怎麼做</dt>
-        <dd>不設任何 cookie。前端程式不使用 localStorage、sessionStorage、IndexedDB、Cache Storage 或 beacon。沒有分析、廣告、錯誤追蹤或社群外掛。字型、圖片、樣式與程式全部由本站自己送出，不經過任何內容傳遞網路（CDN）。</dd>
+        <dd>不設任何 cookie。前端程式不使用 localStorage、sessionStorage、IndexedDB、Cache Storage 或 beacon。沒有第三方分析、廣告、錯誤追蹤或社群外掛；本站自己只數頁面瀏覽數與今日訪客數（〈<a href="/zh-TW/legal/privacy">隱私政策</a>〉寫明怎麼數）。字型、圖片、樣式與程式全部由本站自己送出，不經過任何內容傳遞網路（CDN）。</dd>
         <dt>擋住什麼</dt>
         <dd><b>沒有分析、廣告或外部服務收到你的造訪紀錄</b>——沒有 Google Analytics、沒有廣告聯播網、沒有外部字型服務。本站自己也沒有一個識別碼能把你今天和下週的造訪連起來。關掉分頁之後，瀏覽器的儲存區裡沒有出生資料；只有你自己按下的複製或下載會留在你的電腦上。</dd>
         <dt>你怎麼查</dt>
@@ -183,7 +183,7 @@ curl -sv -o /dev/null https://projectarmillary.com/zh-TW/ 2&gt;&amp;1 | grep -iE
   <!-- ═══ 04 日誌 ═══ -->
   <section class="ds-sec">
     <h2 class="hdr" id="ds-04-title"><span>04</span>伺服器日誌的完整欄位</h2>
-    <p>每完成一個請求輸出一行事件。<b>欄位組合必須完全等於下表，多一個少一個都拒絕輸出。</b></p>
+    <p>每完成一個請求輸出一行事件。<b>欄位組合必須完全等於下表，多一個少一個都拒絕輸出。</b>例外是伺服器忙碌而拒絕的請求：它們不逐筆寫，每個有拒絕的整秒只寫一行該秒的總數（路由類別、拒絕代碼、次數），免得一波灌流把日誌寫滿、擠掉其他紀錄。</p>
     <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="ds-04-title">
       <table class="spec stack-narrow">
         <thead><tr><th>欄位</th><th>允許的值</th></tr></thead>
@@ -241,7 +241,7 @@ curl -sv -o /dev/null https://projectarmillary.com/zh-TW/ 2&gt;&amp;1 | grep -iE
     <p><span class="mono">geolocation=()</span> 是刻意的：<b>連瀏覽器都被告知這個頁面不得使用定位</b>，所以「本站不用定位」不只是承諾，是瀏覽器層級的封鎖。<span class="mono">frame-ancestors 'none'</span> 讓這個站不能被嵌進別人的 iframe。<span class="mono">no-referrer</span> 讓你從本站點出去的連結，不會告訴對方你從哪一頁來。</p>
     <p><span class="mono">no-store</span> 讓 API 回應與錯誤回應不進任何快取——<b>出生資料只出現在這些回應裡</b>。這一條由反向代理自己守住底線：<span class="mono">/api</span> 底下的所有回應、所有錯誤回應（4xx／5xx）、代理自己產生的回應（例如限流的 429），以及沒有帶快取指示的回應，一律送 <span class="mono">no-store</span>，即使應用程式出錯要求快取也一樣。</p>
     <p>頁面與樣式、程式檔可以被瀏覽器暫存。頁面每次使用前都會向伺服器確認是否變過；網址帶內容版本（<span class="mono">?v=</span>，由檔案內容的雜湊算出）的樣式、程式與圖示檔，內容一變網址就變，所以可以長期暫存；版本不符或網址帶其他參數時不快取。<span class="mono">/.well-known/security.txt</span> 由代理直接提供，同樣每次確認。<b>代價要說清楚：</b>共用同一台電腦的人，可以從瀏覽器快取看出這台電腦開過本站——瀏覽紀錄本來就看得出這件事；<b>快取裡沒有出生資料，也沒有計算結果</b>。</p>
-    <p>反向代理另外加上 <span class="mono">Strict-Transport-Security: max-age=31536000</span>，加密協定只接受 TLS 1.2 與 1.3（第 01 節第一項）。公開測試（Public Alpha）期間，回應<b>不帶 <span class="mono">X-Robots-Tag</span></b>：本站開放搜尋引擎收錄；個別頁面是否收錄，由頁內 robots 標記與 <span class="mono">robots.txt</span> 決定，兩者由同一份頁面清單產生。</p>
+    <p>反向代理另外加上 <span class="mono">Strict-Transport-Security: max-age=31536000; includeSubDomains</span>，加密協定只接受 TLS 1.2 與 1.3（第 01 節第一項）。公開測試（Public Alpha）期間，回應<b>不帶 <span class="mono">X-Robots-Tag</span></b>：本站開放搜尋引擎收錄；個別頁面是否收錄，由頁內 robots 標記與 <span class="mono">robots.txt</span> 決定，兩者由同一份頁面清單產生。</p>
     <p>前端不使用 localStorage、sessionStorage、IndexedDB、Cache Storage 或 beacon。敏感欄位標 <span class="mono">autocomplete="off"</span>——<b>那是給瀏覽器的請求，不是它必須遵守的保證。</b></p>
   </section>
 
@@ -265,7 +265,7 @@ curl -sv -o /dev/null https://projectarmillary.com/zh-TW/ 2&gt;&amp;1 | grep -iE
       </table>
     </div>
     <p>處理濫用期間，以上數值可能暫時調低（計算 6 r/min、地名查詢 24 r/min、換算助手 12 r/min、靜態資源 300 r/min、同時連線 16），濫用結束後恢復。</p>
-    <p><b>限流用的是你的 IP，這件事值得說清楚。</b>反向代理必須看得到你的位址，否則封包送不回去。它拿那個位址做限流計數，但不寫進日誌，也不轉送給應用程式——應用程式從頭到尾沒有機會知道你的 IP。</p>
+    <p><b>限流用的是你的 IP，這件事值得說清楚。</b>反向代理必須看得到你的位址，否則封包送不回去。它拿那個位址做限流計數，但不寫進日誌，也不轉送給應用程式——應用程式從頭到尾沒有機會知道你的 IP。上表的「／IP」：IPv4 以每個位址計，IPv6 以每個 /64 網段計（一般用戶分到的是整段 /64，換位址不會多出額度）。</p>
     <p>應用程式不會因<b>等待佇列預算到期</b>而主動取消已取得計算鎖、正在執行的同步星曆計算；worker、容器或主機故障仍可能中斷請求。</p>
   </section>
 

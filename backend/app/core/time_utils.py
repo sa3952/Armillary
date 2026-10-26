@@ -21,6 +21,7 @@ from zoneinfo import ZoneInfo
 import swisseph as swe
 
 from .invariants import InternalInvariantError
+from .request_memo import remembered
 from .trace import Trace
 
 if TYPE_CHECKING:
@@ -68,16 +69,15 @@ DELTA_T_STATUSES = (
 # orders come from the same NASA page's Table 2, i.e. Stephenson & Houlden 1986;
 # Morrison & Stephenson 2004 gives only σ < 1 s for 1900.
 # Measured era: Swiss interpolates yearly dt[] values, which cannot follow the
-# seasonal part of Earth rotation.  Its size is the conventional UT2−UT1 formula
-# every IERS Bulletin A prints (T in Besselian years; checked in Vol. XXXIX No.
-# 041, 2026-10-08): 0.022 sin 2πT − 0.012 cos 2πT − 0.006 sin 4πT + 0.007 cos 4πT
-# seconds, whose two amplitudes add to 0.034 s.  Against IERS EOP 20 C04 the
-# table misses by 0.021–0.034 s at four dates 1980–2015; the test that holds the
-# order to those measurements is in tests/backend/test_time_receipts.py.
-_UT2_MINUS_UT1_SEASONAL_SIN_COS_SECONDS = ((0.022, -0.012), (-0.006, 0.007))
-MEASURED_ERA_DELTA_T_ERROR_ORDER_SECONDS = round(
-    sum(math.hypot(*terms) for terms in _UT2_MINUS_UT1_SEASONAL_SIN_COS_SECONDS), 2
-)
+# seasonal part of Earth rotation (the conventional UT2−UT1 terms every IERS
+# Bulletin A prints, whose amplitudes add to 0.034 s).  The order stated is what
+# that costs measured day by day: against IERS EOP 20 C04 (UT1−UTC and TAI−UTC
+# at 0h UTC, every day 1972-01-01..2022-12-31, 18 628 days, the copy CelesTrak
+# redistributes, updated 2026-10-21) the table misses by rms 0.021 s, p95
+# 0.044 s, p99 0.058 s and at most 0.066 s (2020-06-05); the misses peak in
+# May and June.  The order is that maximum rounded up to the hundredth.  The
+# test holding it to the measured peak days is tests/backend/test_time_receipts.py.
+MEASURED_ERA_DELTA_T_ERROR_ORDER_SECONDS = 0.07
 _HUBER_CALIBRATION_YEAR = 2005.0
 _HUBER_Q = 0.058
 _HUBER_M = 2500.0
@@ -119,8 +119,7 @@ def delta_t_model_receipt(jd_ut: float, swiss_time_input_semantics: str) -> dict
     elif decimal_year < DELTA_T_SWISS_TABLE_LAST_MEASURED_YEAR:
         uncertainty = MEASURED_ERA_DELTA_T_ERROR_ORDER_SECONDS
         basis = (
-            "iers_bulletin_a_ut2_minus_ut1_seasonal_terms_"
-            "not_followed_by_the_yearly_swiss_table"
+            "iers_eop_20_c04_daily_1972_2022_maximum_miss_of_the_yearly_swiss_table"
         )
     elif decimal_year <= DELTA_T_SWISS_TABLE_END_YEAR:
         uncertainty = 1.0
@@ -179,9 +178,9 @@ def _measured_era_delta_t_note(delta_t_model: dict) -> str:
     cause = (
         f"{DELTA_T_MODERN_MEASUREMENT_START_YEAR}～{DELTA_T_SWISS_TABLE_LAST_MEASURED_YEAR} 年的 ΔT "
         "來自實測紀錄，但本站用的是逐年表格內插，"
-        f"抓不到地球自轉在一年之中的季節性快慢，誤差約 {order:.2f} 秒。"
+        f"抓不到地球自轉在一年之中的季節性快慢，誤差最多約 {order:.2f} 秒，九成五的日子在 0.05 秒以內。"
     )
-    basis = "依據是 IERS（國際地球自轉服務）公報的季節修正式，並已與 IERS 實測值核對。"
+    basis = "依據是逐日對照 IERS（國際地球自轉服務）1972～2022 年的實測值。"
     if rate is None:
         # Input taken as UT1: the error moves TT and the body positions.
         return cause + (
@@ -508,19 +507,33 @@ def civil_time_label(
 
 # A Julian day near 2.45e6 resolves 2^-31 day (about 40 µs), and Swiss's own
 # UTC round trip is off by at most half of that, so an instant made from a
-# whole millisecond can come back as 59.99998659 s.  The instant is moved
-# forward by one unit in the last place of its Julian day before Swiss splits
-# it: that covers the round trip and nothing more, so the label then truncates
-# like civil_time_label and never names a later millisecond, minute, day or
-# leap second than an instant at least one such unit short of it.  Swiss
-# carries minutes, days and leap seconds itself (an instant inside a leap
-# second comes back as second 60.x).
+# whole millisecond can come back as 59.99998659 s.  Only such a reading, within
+# half a Julian-day step below the next whole millisecond, is read from the
+# next representable Julian day instead; any other instant is read as it is, so
+# the label truncates like civil_time_label and never names a later
+# millisecond, minute, day or leap second than the instant itself (moving every
+# instant forward by a whole step turned 23:59:59.99996 into the leap second
+# 23:59:60.000).  Swiss carries minutes, days and leap seconds itself (an
+# instant inside a leap second comes back as second 60.x), except that the
+# exact start of some leap seconds (2015-06-30 23:59:60) reads as 00:00:00 of
+# the next day, later than the next Julian day reads; a reading later than its
+# successor's is replaced by the successor's.
+def _utc_reading(jd_ut: float) -> tuple[int, int, int, int, int, float]:
+    """Swiss's UTC fields of the instant, with the round-trip shortfall taken back."""
+
+    reading = swe.jdut1_to_utc(jd_ut, swe.GREG_CAL)
+    following = swe.jdut1_to_utc(math.nextafter(jd_ut, math.inf), swe.GREG_CAL)
+    second = reading[5]
+    short_of_next = (math.floor(second * 1000.0) + 1) / 1000.0 - second
+    if tuple(reading) > tuple(following) or short_of_next <= math.ulp(jd_ut) * SECONDS_PER_DAY / 2:
+        return following
+    return reading
+
+
 def _utc_fields_of_jd(jd_ut: float) -> tuple[int, int, int, int, int, int]:
     """(year, month, day, hour, minute, millisecond of the minute), truncated."""
 
-    year, month, day, hour, minute, second = swe.jdut1_to_utc(
-        jd_ut + math.ulp(jd_ut), swe.GREG_CAL
-    )
+    year, month, day, hour, minute, second = _utc_reading(jd_ut)
     return year, month, day, hour, minute, math.floor(second * 1000.0)
 
 
@@ -626,7 +639,7 @@ def solved_instant(
     unit = printed_unit_seconds(uncertainty_days)
     if unit == MILLISECOND_UNIT_SECONDS:
         return jd_ut, record
-    utc_seconds = swe.jdut1_to_utc(jd_ut + math.ulp(jd_ut), swe.GREG_CAL)[5]
+    utc_seconds = _utc_reading(jd_ut)[5]
     into_unit = utc_seconds if unit == WHOLE_MINUTE_UNIT_SECONDS else (
         utc_seconds - math.floor(utc_seconds)
     )
@@ -662,6 +675,20 @@ def local_wall_time(utc_value: dtmod.datetime, tz_input) -> tuple[dtmod.datetime
     return (utc_value + offset).replace(tzinfo=None), tz_input.utc_offset_hours
 
 
+def _local_microseconds(local: dtmod.datetime, millis: int, offset_hours: float) -> int:
+    """The seconds field of the local label, in microseconds.  `local` is the
+    wall time of the UTC label's second (59 inside a positive leap second).
+    Inside a leap second a whole-minute offset keeps second 60, as the UTC label
+    does; an offset with a seconds part (a manual fixed offset) puts the leap
+    second inside a local minute, which has no second 60, so the label runs on
+    into the next local second (it reads as the second after it)."""
+    if millis <= 59_999:
+        return local.second * 1_000_000 + local.microsecond
+    if round(offset_hours * 3600) % 60 == 0:
+        return millis * 1000
+    return (local.second + 1) * 1_000_000 + (millis - 60_000) * 1000
+
+
 def civil_instant(jd_ut: float, tz_input) -> dict:
     """An instant with its UTC label and the birth place's civil time."""
 
@@ -671,12 +698,9 @@ def civil_instant(jd_ut: float, tz_input) -> dict:
         "jd_ut": jd_ut,
         "utc_time": jd_ut_to_iso_utc(jd_ut),
         "time_scale": time_scale_for_jd_ut(jd_ut),
-        # Inside a positive leap second the label keeps second 60, as the UTC
-        # label does (leap seconds postdate every offset with a seconds part).
         "local_time": civil_time_label(
             local.year, local.month, local.day, local.hour, local.minute,
-            millis * 1000 if millis > 59_999
-            else local.second * 1_000_000 + local.microsecond,
+            _local_microseconds(local, millis, offset_hours),
         ),
         "utc_offset": utc_offset_text(offset_hours),
     }
@@ -717,6 +741,10 @@ OFFSET_RESOLUTION_STATUSES = (
 )
 OFFSET_HISTORICAL_VERIFICATION_STATUSES = (
     "pre_1970_database_inferred_not_verified",
+    # The database's offset matches a rule whose document we read ourselves
+    # (original or transcription), so "not verified" would contradict the
+    # rule receipt printed beside it.  A relayed source does not count.
+    "pre_1970_rule_checked_against_cited_document",
     "post_1970_database_rule",
     "not_applicable_fixed_offset",
 )
@@ -813,21 +841,93 @@ def hk_observatory_summer_time_period(
     return None
 
 
-def offset_status(timezone_mode: str, utc_dt: dtmod.datetime, ambiguous: bool) -> dict:
+# Kinmen, Wuqiu and Matsu share Asia/Taipei in the tz database, but before 1950
+# they were part of Fujian: the Taiwan documents behind that zone's early rules
+# (Japanese standard time, the 1946 summer time) did not govern them, and no
+# source for their own clocks is known to us.  Boxes in degrees, each holding
+# its islands and no Taiwan or Penghu place; the catalogue test checks both ways.
+OFFSHORE_ISLAND_AREAS: dict[str, tuple[tuple[float, float], tuple[float, float]]] = {
+    "kinmen": ((24.30, 24.60), (118.10, 118.60)),
+    "wuqiu": ((24.90, 25.10), (119.35, 119.60)),
+    "matsu": ((25.90, 26.45), (119.85, 120.55)),
+}
+OFFSHORE_ISLAND_ZONE = "Asia/Taipei"
+OFFSHORE_ISLAND_SOURCE_REF = "time/offshore_islands_before_1950"
+OFFSHORE_ISLAND_TAIWAN_RULE_FROM_LOCAL = dtmod.datetime(1950, 1, 1)
+
+
+def offshore_island_area(latitude: float, longitude: float) -> str | None:
+    for area, ((south, north), (west, east)) in OFFSHORE_ISLAND_AREAS.items():
+        if south <= latitude <= north and west <= longitude <= east:
+            return area
+    return None
+
+
+def offshore_island_before_taiwan_rule(
+    zone_name: str | None, precision: str, local: dtmod.datetime,
+    latitude: float, longitude: float,
+) -> str | None:
+    """The island area whose pre-1950 birth is read on Taiwan's rules, if any.
+
+    The stated time is an interval as in ``prc_1988_dst_start_disputed``.
+    """
+
+    if zone_name != OFFSHORE_ISLAND_ZONE:
+        return None
+    area = offshore_island_area(latitude, longitude)
+    if area is None or not _stated_time_meets(
+        precision, local, (dtmod.datetime.min, OFFSHORE_ISLAND_TAIWAN_RULE_FROM_LOCAL)
+    ):
+        return None
+    return area
+
+
+def _rule_read_at_first_hand(zone_name: str, utc_dt: dtmod.datetime) -> bool:
+    # Imported here: the source table reads this module's zone sets.
+    from .civil_time_sources import CIVIL_TIME_SOURCES, rule_zone
+
+    kept_under = rule_zone(zone_name)
+    if kept_under is None:
+        return False
+    local = utc_dt.astimezone(ZoneInfo(zone_name))
+    offset, abbreviation = local.utcoffset(), local.tzname()
+    if offset is None or abbreviation is None:
+        return False
+    receipt = CIVIL_TIME_SOURCES.rule_receipt(
+        kept_under, utc_dt, offset=offset, abbreviation=abbreviation, summer_time=bool(local.dst()),
+    )
+    # Local mean time is the database's own longitude estimate, not a decree.
+    return (
+        receipt["status"] == "cited"
+        and receipt["regime"] != "local_mean_time"
+        and receipt["source"]["verification_level"] in ("read_original", "read_transcription")
+    )
+
+
+def offset_status(
+    timezone_mode: str, utc_dt: dtmod.datetime, ambiguous: bool,
+    *, zone_name: str | None = None, rule_outside_its_territory: bool = False,
+) -> dict:
     if timezone_mode != "iana":
         return {
             "resolution_status": "fixed_offset_supplied",
             "historical_verification_status": "not_applicable_fixed_offset",
         }
+    if utc_dt >= TZDB_RELIABLE_FROM_UTC:
+        historical = "post_1970_database_rule"
+    elif (
+        zone_name is not None
+        and not rule_outside_its_territory
+        and _rule_read_at_first_hand(zone_name, utc_dt)
+    ):
+        historical = "pre_1970_rule_checked_against_cited_document"
+    else:
+        historical = "pre_1970_database_inferred_not_verified"
     return {
         "resolution_status": (
             "iana_resolved_by_fold_choice" if ambiguous else "iana_resolved"
         ),
-        "historical_verification_status": (
-            "pre_1970_database_inferred_not_verified"
-            if utc_dt < TZDB_RELIABLE_FROM_UTC
-            else "post_1970_database_rule"
-        ),
+        "historical_verification_status": historical,
     }
 
 
@@ -1072,7 +1172,11 @@ def compute_time_conversion(
     time_scale_era = {
         "ut1_future_leap_table_stale_swiss_rule": TIME_SCALE_ERAS[3],
         "utc": TIME_SCALE_ERAS[2],
-    }.get(swiss_time_input_semantics) or time_scale_for_jd_ut(jd_ut)
+    }.get(swiss_time_input_semantics) or time_scale_for_jd_ut(
+        # A 1971 input within a few microseconds of midnight can round onto
+        # 1972-01-01; it was still read by the pre-1972 rule.
+        min(jd_ut, _MODERN_UTC_START_JD_UT - 1e-9)
+    )
     _trace_civil_label(
         trace, time_scale_era, _input_local_label(dt_input), tz_label, offset_hours, utc_label,
     )
@@ -1110,7 +1214,15 @@ def compute_time_conversion(
             "input_semantics": input_semantics,
             "timezone_label": tz_label,
             "utc_offset_hours": offset_hours,
-            "offset_status": offset_status(tz_input.mode, utc_dt, dst_warning is not None),
+            "offset_status": offset_status(
+                tz_input.mode, utc_dt, dst_warning is not None,
+                zone_name=tz_input.iana_name if tz_input.mode == "iana" else None,
+                rule_outside_its_territory=location is not None and offshore_island_before_taiwan_rule(
+                    tz_input.iana_name if tz_input.mode == "iana" else None, "exact",
+                    dtmod.datetime(dt_input.year, dt_input.month, dt_input.day, dt_input.hour, dt_input.minute),
+                    location.latitude, location.longitude,
+                ) is not None,
+            ),
             "utc_time": utc_label,
             "swiss_time_input_semantics": swiss_time_input_semantics,
             "leap_second_input": leap_second,
@@ -1513,12 +1625,18 @@ def _offset_segments(tz_input, start_utc: dtmod.datetime, end_utc: dtmod.datetim
     if tz_input.mode != "iana":
         return [(start_utc, end_utc, dtmod.timedelta(hours=tz_input.utc_offset_hours))]
     zone = ZoneInfo(tz_input.iana_name)
-    edges = [start_utc, *utc_offset_changes(zone, start_utc, end_utc), end_utc]
-    return [
-        (left, right, left.astimezone(zone).utcoffset())
-        for left, right in zip(edges, edges[1:])
-        if left < right
-    ]
+
+    def scan() -> tuple:
+        edges = [start_utc, *utc_offset_changes(zone, start_utc, end_utc), end_utc]
+        return tuple(
+            (left, right, left.astimezone(zone).utcoffset())
+            for left, right in zip(edges, edges[1:])
+            if left < right
+        )
+
+    # The scan is a minute-by-minute walk over about two days, and every module
+    # that reads the stated hour or date asks for the same window.
+    return list(remembered("offset_segments", (tz_input.iana_name, start_utc, end_utc), scan))
 
 
 def civil_date_spans(tz_input, date: dtmod.date) -> list:
@@ -1823,6 +1941,28 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "IANA 時區資料庫定 1945 年 11 月 18 日 02:00 恢復 UTC+8、1946 年 4 月 21 日 00:00 才開始夏令時間。"
             "本服務依時區資料庫換算，不另算一張盤；出生時間落在 1945-11-18 02:00 至 12-31 結束，"
             "或 1946-04-20 整天（香港時間）時加一則警告，說明依天文台紀錄鐘面時間可能差 1 小時。"
+        ),
+    },
+    OFFSHORE_ISLAND_SOURCE_REF: {
+        "applies_to": (
+            "calculation_dossier.warnings[code=offshore_island_civil_time_not_taiwan_rule]; "
+            "calculation_dossier.time_conversion.offset_status; zone " + OFFSHORE_ISLAND_ZONE
+        ),
+        "areas_degrees": {
+            area: {"latitude": list(latitudes), "longitude": list(longitudes)}
+            for area, (latitudes, longitudes) in OFFSHORE_ISLAND_AREAS.items()
+        },
+        "before_local": OFFSHORE_ISLAND_TAIWAN_RULE_FROM_LOCAL.isoformat(timespec="minutes"),
+        "source": (
+            "IANA tz database, file asia, Taiwan section: one zone (Asia/Taipei) for Taiwan, "
+            "Penghu, Kinmen and Matsu. The documents behind its rules before 1950 "
+            "(civil-time source rows tw-*, backend/app/civil_time_sources.json) were issued "
+            "for Taiwan; no source for the clocks of Kinmen, Wuqiu or Matsu before 1950 is cited."
+        ),
+        "note": (
+            "金門、烏坵、馬祖在 1950 年以前不在臺灣的行政範圍內，時區資料庫仍把它們併在 Asia/Taipei。"
+            "本服務依時區資料庫換算，不另算一張盤；出生地在這三處、出生時間在 1950 年以前時加一則警告，"
+            "並且不把這段偏移標為「已對照出處」。"
         ),
     },
     "time/sidereal_time_model": {

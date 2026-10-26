@@ -72,7 +72,7 @@ RELEASE_VERSION_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 # source was read back.  The pages are the one producer of that fact; the
 # release producer and this verifier both read it from the release's own pages.
 LEGAL_EFFECTIVE_DATE_PAGES: Final = ("zh-TW/legal/terms.html", "zh-TW/legal/privacy.html")
-_LEGAL_EFFECTIVE_DATE = re.compile(r"<span>生效日</span><b>([0-9]{4}-[0-9]{2}-[0-9]{2})</b>")
+LEGAL_EFFECTIVE_DATE = re.compile(r"<span>生效日</span><b>([0-9]{4}-[0-9]{2}-[0-9]{2})</b>")
 FORMAL_LEGAL_FIELDS = frozenset(
     {"effective_date", "release_version", "public_revision", "source_archive_url", "source_archive_sha256"}
 )
@@ -99,7 +99,7 @@ def legal_effective_date(frontend_root: Path) -> str:
         page = frontend_root / name
         if not page.is_file() or page.is_symlink():
             raise ValueError(f"legal page missing from frontend: {name}")
-        found = _LEGAL_EFFECTIVE_DATE.findall(page.read_text(encoding="utf-8"))
+        found = LEGAL_EFFECTIVE_DATE.findall(page.read_text(encoding="utf-8"))
         if len(found) != 1:
             raise ValueError(f"legal page does not show exactly one effective date: {name}")
         try:

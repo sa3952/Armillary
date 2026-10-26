@@ -278,7 +278,8 @@ def test_every_post_api_route_is_declared_to_both_request_boundaries():
                     if middleware.cls.__name__ == "ApiMethodBoundary")
     require_closed_set(registered.keys(), declared.keys(), role="ApiMethodBoundary route universe")
     assert declared == registered
-    require_closed_set({path for path, methods in registered.items() if "POST" in methods},
+    # The page-view count is a POST that reads no body (visit_counts.py).
+    require_closed_set({path for path, methods in registered.items() if "POST" in methods} - {"/api/visit"},
                        _BOUNDED_JSON_PATHS, role="bounded JSON POST universe")
 
 

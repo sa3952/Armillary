@@ -129,7 +129,7 @@
 .ar-next p{color:var(--plate-dim); font-size:var(--fs-aside)}
 .page-body .ar-next .btn-paper{display:inline-block; background:var(--paper); color:var(--plate);
   padding:.75rem 1.5rem; border-bottom:0; margin-top:var(--s1)}
-@media (hover:hover){.page-body .ar-next .btn-paper:hover{background:var(--accent-rev); color:var(--paper)}}
+@media (hover:hover){.page-body .ar-next .btn-paper:hover{background:var(--accent-rev); color:var(--plate)}}
 .ar-next ul{list-style:none; padding:0; margin:0}
 .ar-next li{padding:.55rem 0; border-bottom:1px solid var(--hair-soft); font-size:var(--fs-aside)}
 .ar-next .ar-k{display:block; font-family:var(--sans); font-size:var(--fs-small); letter-spacing:0;

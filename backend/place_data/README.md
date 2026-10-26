@@ -2,12 +2,20 @@
 
 `places.sqlite3`is an immutable generated runtime catalog：GeoNames`cities500`provides the global
 base and Taiwan Ministry of the Interior data provides a higher-priority overlay. Deterministic
-ranking (v3) orders by match tier, then Taiwan county representative points, then population; the tier
-compares each row's stored `match_keys` (name, Traditional-Chinese name, a county's short name and the
-English names its MOI phonetics and GeoNames `admin2Codes` give, keyed by MOI CountyCode in the producer's
-`TAIWAN_COUNTY_CODES`, and a Taiwan GeoNames row's Chinese-script aliases), with 台 read as 臺. Both`臺／台`forms are indexed. For every top-level Taiwan county/city, the
-producer derives one picker-only administrative representative point from the
-coordinate-bearing MOI child records. It is explicitly not a city hall,
+ranking (v4) orders by match tier, then Taiwan county and township/district representative points, then
+population; the tier compares each row's stored `match_keys`: the name and Traditional-Chinese name; a county's
+short name and the English names its MOI phonetics and GeoNames `admin2Codes` give (keyed by MOI CountyCode in
+the producer's `TAIWAN_COUNTY_CODES`); a township's short name and phonetic names (Yonghe for 永和區); a MOI
+place's phonetic names (Kending); every alias of a Taiwan GeoNames row (板橋, Ilan); and, for a city outside
+Taiwan of at least 100 000 people, a Chinese name at least two of its GeoNames Chinese entries give, read in
+Traditional characters (上海, 重慶). 台 is read as 臺, and both forms are indexed. The query is read in
+Traditional characters with the table stored in the catalogue (`han_script_folding`, from
+`scripts/validation/han_simplified_to_traditional.json`, less every character a MOI name writes as is, such as
+后 of 后里), and GeoNames Chinese aliases are indexed in that form too, so 嘉义 finds 嘉義市 and 重庆 Chongqing.
+GeoNames Chinese labels named in the producer's `SOURCE_CHINESE_NAME_EXCLUSIONS` (盧安達 for Luanda) are not
+used. For every top-level Taiwan county/city and every township and district, the producer derives one
+picker-only administrative representative point from the coordinate-bearing MOI child records. It is
+explicitly not a city hall,
 geometric centroid, address, or asserted birth location.
 
 The application opens SQLite with`mode=ro&immutable=1`. `POST /api/places/search`is same-origin and
@@ -44,7 +52,7 @@ python -m scripts.validation.build_place_catalog \
 ```
 
 **Rebuilding the shipped catalogue exactly.** `input_archive.json` lists the six inputs of the current
-catalogue: upstream URL, retrieval date (2026-10-09), licence, SHA-256, and where a copy can be
+catalogue: upstream URL, retrieval date (2026-10-26), licence, SHA-256, and where a copy can be
 found. The files are not in this tree, and the upstream URLs no longer serve these bytes (see the list's
 `upstream_note`); a copy is usable only if its SHA-256 equals the list. With the six files in `inputs/`:
 
@@ -59,19 +67,19 @@ python -m scripts.validation.build_place_catalog \
   --taiwan-settlement-csv inputs/taiwan-settlement.csv \
   --output backend/place_data/places.sqlite3 \
   --manifest backend/place_data/catalog_manifest.json \
-  --source-date 2026-10-09
+  --source-date 2026-10-26
 python scripts/verification/verify_place_catalog.py --check
 ```
 
-Expected: `places.sqlite3` SHA-256 `a977c5774acb75d5f92ecc09db7bdd4241be3cd7c1af4c98cdc955b918da2f72` (90791936 bytes), and
+Expected: `places.sqlite3` SHA-256 `1f8f9b2da4f385fd53b598463bd0207d719bc30e100ede6443150446f5b13a8a` (92016640 bytes), and
 `catalog_manifest.json` unchanged (`git diff --exit-code backend/place_data/`). Input digests:
 
 | input | sha256 |
 |---|---|
-| `geonames_admin1_codes` | `1da92a6323a5fec3176f3f743bf4cf4040fd56a876da55e46fbca23c863aa60a` |
-| `geonames_admin2_codes` | `2fbfc577d4d3f7d2db4a5aef851631521c89d3cbbeb5c33bf658054ee05b5af0` |
-| `geonames_alternate_names` | `5e61abd63b30bff4f0b34cb562f850c15ecafbbf9f52c3d56a92e28fb8f47d1b` |
-| `geonames_cities500` | `4022ba76d34abbcd7c7b32597a6f968f51edfa4fb262bf04f15c109624ae3db2` |
+| `geonames_admin1_codes` | `2e4867f5397acb056ea26377601b57af37cb4c81399770225018e9e439e91ad3` |
+| `geonames_admin2_codes` | `9f49795da1fd460006a40e58a614dbc1a351c9277340a65fe8d73b5f97ec1852` |
+| `geonames_alternate_names` | `635560bb5c90b9b782d18edfaa3809d40b44284e9a8d73ef95279cd99e499d04` |
+| `geonames_cities500` | `2709e682708bc5a88bb7ce359ab478a71e38db180c5b1c58ce15cf77e3c7a077` |
 | `taiwan_moi_administrative` | `b9aaca5b04bd19c622a675354d2f5c1b67a5c7d7409263bc1e379191beffdb39` |
 | `taiwan_moi_settlement` | `e1e72eb17fb26852860f4d5dc5f0ca99200bdd8a65b37bc0bd523efbd0fa66a5` |
 

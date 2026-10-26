@@ -18,9 +18,11 @@ Load is not a fault.  A deep check answered with the application's busy
 refusal (HTTP 503 ``compute_capacity_exhausted``, immediate or after the
 bounded queue wait, or ``request_capacity_exhausted``) is *saturated*: it
 neither counts as a failure nor resets the count, the probe exits 0, and every
-following run is deep.  Only when the deep check has seen nothing but such
-refusals for ``SATURATION_LIMIT_SECONDS`` does the streak count as one failure,
-and the clock starts again.
+following run is deep.  When the deep check has seen nothing but such refusals
+for ``SATURATION_LIMIT_SECONDS``, the probe exits 1 while it lasts, so Docker
+marks the container unhealthy for the operator to see; it never counts toward
+a restart, because restarting under a flood only drops the requests in flight
+and the flood is still there when the container is back.
 """
 
 from __future__ import annotations
@@ -44,7 +46,11 @@ STATE = Path("/tmp/.container-health.json")
 DEEP_EVERY = 10  # every 5 minutes at the image's 30 s interval
 RESTART_THRESHOLD = 3
 SATURATION_LIMIT_SECONDS = 10 * 60
-SATURATION_CODES = frozenset({"compute_capacity_exhausted", "request_capacity_exhausted"})
+# Liveness and readiness answer in milliseconds; when the listen backlog
+# overflows under load a SYN is dropped and retried after 1 s, then 2 s, so
+# 3.5 s still answers after one lost SYN instead of reading a busy listener as dead.
+LIVENESS_TIMEOUT_SECONDS = 3.5
+SATURATION_CODES = frozenset({"compute_capacity_exhausted", "request_capacity_exhausted", "place_search_timeout"})
 # Longer than the application's 18 s queue-wait budget (request_limits.py), so a
 # chart queued behind real work returns its 503 instead of timing the probe out.
 CHART_TIMEOUT_SECONDS = 25.0
@@ -75,7 +81,7 @@ def _refusal_code(error: HTTPError) -> object:
         return None
 
 
-def _request(path: str, body: object | None = None, timeout: float = 2.0) -> object:
+def _request(path: str, body: object | None = None, timeout: float = LIVENESS_TIMEOUT_SECONDS) -> object:
     host = os.environ.get("CLASSICAL_ASTROLOGY_EXPECTED_HOST", "127.0.0.1").strip() or "127.0.0.1"
     headers = {"Accept": "application/json", "Host": host}
     data = None
@@ -125,13 +131,14 @@ def _read_state() -> dict[str, int]:
         return dict.fromkeys(_STATE_KEYS, 0)
 
 
-def _write_state(state: dict[str, int]) -> None:
+def _write_state(state: dict[str, int]) -> bool:
     staged = STATE.with_suffix(".tmp")
     try:
         staged.write_text(json.dumps(state), encoding="utf-8")
         os.replace(staged, STATE)
     except OSError:
-        pass  # without state every run is a first run: it probes deeply and never restarts
+        return False
+    return True
 
 
 def _pid1_is_container_init() -> bool:
@@ -166,14 +173,13 @@ def main() -> int:
     deep = (not state["deep_passed"] or state["failures"] > 0 or state["saturated_since"] > 0
             or state["runs"] % DEEP_EVERY == 0)
     outcome = check(deep)
+    saturated_too_long = False
     if outcome == SATURATED:
         now = _now()
         if not state["saturated_since"]:
             state["saturated_since"] = now
-        elif now - state["saturated_since"] >= SATURATION_LIMIT_SECONDS:
-            state["failures"] += 1          # ten minutes of nothing but busy refusals
-            state["saturated_since"] = now
-            outcome = FAILED
+        # Ten minutes of nothing but busy refusals: marked, never a failure.
+        saturated_too_long = now - state["saturated_since"] >= SATURATION_LIMIT_SECONDS
     elif outcome == HEALTHY:
         state["failures"] = 0
         state["deep_passed"] = 1
@@ -181,10 +187,15 @@ def main() -> int:
     else:
         state["failures"] += 1
         state["saturated_since"] = 0
-    _write_state(state)
+    if not _write_state(state) and state["deep_passed"]:
+        # The state lives on the /tmp tmpfs: when it cannot be written (a full
+        # /tmp) every later run would be a first run and never restart.  A
+        # restart empties the tmpfs.
+        restart(RESTART_THRESHOLD)
+        return 1
     if outcome == FAILED and state["deep_passed"]:
         restart(state["failures"])
-    return 1 if outcome == FAILED else 0
+    return 1 if outcome == FAILED or saturated_too_long else 0
 
 
 if __name__ == "__main__":

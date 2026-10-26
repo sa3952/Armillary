@@ -115,6 +115,9 @@ function resetFormState() {
   // 遲到的回應被世代號與 lifecycle token 擋下。
   invalidateAttempt();
   cancelButton.hidden = true;
+  submitButton.disabled = false;
+  // 狀態列是上一次計算的痕跡；bfcache 端回頁面時不能留著「計算完成。」或「計算中…」。
+  setStatus("", "info");
   placeSearchLifecycle.abortActiveRequest();
   form.reset();
   clearAllFieldInvalid();

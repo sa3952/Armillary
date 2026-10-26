@@ -35,14 +35,14 @@ _BLOCK = re.compile(
 
 def articles() -> tuple:
     from . import (accuracy, antiscia, approximate_hour, ascendant_coordinates, birth_time, bounds, combustion,
-                   dodecatemoria, era_time, firdaria_nodes, hk_time, house_sphere, houses, lilith, lots, mansions, nodes, planetary_hours,
+                   dodecatemoria, era_time, firdaria_nodes, hk_time, house_sphere, houses, lilith, lots, mansions, mercury_retrograde, nodes, planetary_hours,
                    receipt, reference_cases, rising_tables, sect, sidereal, solar_time, syzygy, taiwan_time, time_lords,
                    topocentric_moon, triplicity, unknown_time)
 
     return (birth_time, taiwan_time, hk_time, houses, bounds, nodes, unknown_time, rising_tables, solar_time,
             time_lords, dodecatemoria, combustion, mansions, syzygy, house_sphere, era_time, accuracy,
             approximate_hour, receipt, lots, sect, sidereal, firdaria_nodes, ascendant_coordinates,
-            reference_cases, triplicity, lilith, topocentric_moon, planetary_hours, antiscia)
+            reference_cases, triplicity, lilith, topocentric_moon, planetary_hours, antiscia, mercury_retrograde)
 
 
 def pages() -> tuple:

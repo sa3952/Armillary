@@ -47,7 +47,7 @@ from .module_state import (
     module_state,
     frame_table_refusal,
 )
-from .method_status import method_head
+from .method_status import method_head, profile_period
 from .dignity_tables import SIGNS
 from .formatting import degrees_number, normalize_longitude, zodiac_sign_index
 from .root_finding import SOLVER_NAME, find_crossings_detailed, wrap_to_signed_180
@@ -598,7 +598,8 @@ def _degree_based_receipt(
     return {
         **method_head(degree_method_name, "aspects"),
         "aspect_set_profile": aspect_set_profile_key,
-        "aspect_set_profile_detail": dict(aspect_set_profile),
+        "aspect_set_profile_detail": dict(aspect_set_profile)
+        | {"period": profile_period(aspect_set_profile_key)},
         # 識別碼不動，只說明名稱各段指什麼。
         "method_name_note": (
             "ptolemaic_ = conjunction plus four traditional aspects (conventional "
@@ -624,7 +625,10 @@ def _degree_based_receipt(
             for key, value in partile_profile.items()
             if key != "sources"
         }
-        | {"source_ref": f"aspects/partile/{partile_profile_key}"},
+        | {
+            "source_ref": f"aspects/partile/{partile_profile_key}",
+            "period": profile_period(partile_profile_key),
+        },
         "partile_source_verification": _verification_status(
             _PARTILE_SOURCE_VERIFICATION, "aspects/partile"
         ),
@@ -674,8 +678,9 @@ def _degree_based_receipt(
                 "source_verification": _verification_status(
                     profile["source_verification"], f"aspects/orb/{orb_profile_key}"
                 ),
+                "period": profile_period(orb_profile_key),
             }
-            if profile
+            if profile and orb_profile_key
             else None
         ),
         "orb_verdict_available": (

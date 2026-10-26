@@ -270,6 +270,13 @@ def releasing_periods(
     return periods
 
 
+def _published_days(model: str) -> int | float:
+    """A year model's length as the register prints it (360, 365.25), from YEAR_MODELS."""
+
+    days = YEAR_MODELS[model]["days_per_year"]
+    return int(days) if days.denominator == 1 else float(days)
+
+
 METHOD_SOURCE_ENTRIES: dict[str, dict] = {
     "zodiacal_releasing": {
         "applies_to": "annual_methods.zodiacal_releasing",
@@ -293,7 +300,7 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         ),
         "year_models": {
             DEFAULT_YEAR_MODEL: {
-                "days_per_year": 360,
+                "days_per_year": _published_days(DEFAULT_YEAR_MODEL),
                 "provenance": ATTESTED,
                 "basis": (
                     "Valens IV.9 'The Universal Year' (Kroll p.169): the universal year "
@@ -303,7 +310,7 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
                 ),
             },
             JULIAN_YEAR_MODEL: {
-                "days_per_year": 365.25,
+                "days_per_year": _published_days(JULIAN_YEAR_MODEL),
                 "provenance": MODERN_CONVENTION,
                 "basis": (
                     "the same periods measured in Julian years of 365 1/4 days: a "

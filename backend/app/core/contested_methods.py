@@ -292,7 +292,7 @@ def _applies(key: str, derived_methods: dict, modules: dict) -> bool:
 # to know which one produced this chart's verdict.
 VOC_APPLIED_DEFINITION_ZH: dict[str, str] = {
     "modern_sign_bounded_exact_perfection_v1": "離開本星座前沒有任何相位精確完成（產品預設）",
-    "hellenistic_30_degree_v1": "接下來 30° 內不與任何行星接合，不管是否換座（Porphyry 名下）",
+    "hellenistic_30_degree_v1": "接下來 30° 內不與任何行星形成主要相位（含合相），不管是否換座（Porphyry 名下）",
     "lilly_moiety_before_sign_exit_v1": "離開本星座前不再進入任何相位的容許度（Lilly 1647）",
 }
 

@@ -74,7 +74,7 @@ def read_eras() -> dict[str, dict[str, Any]]:
 
 
 def calculator_first_year() -> int:
-    match = re.search(r'id="date-parts"[^>]* data-min="(\d{4})-01-01"', CALCULATE.read_text(encoding="utf-8"))
+    match = re.search(r'id="birth-date"[^>]* data-min="(\d{4})-01-01"', CALCULATE.read_text(encoding="utf-8"))
     if match is None:
         raise RuntimeError("the calculate page's birth-date field names no first year")
     return int(match[1])

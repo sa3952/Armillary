@@ -16,9 +16,10 @@ production lock, and the image's Python inventory must equal the
 marker-evaluated lock.
 
 A High or Critical rating from either scanner gates (the higher rating wins).
-An advisory no scanner rates (Unknown) is listed in the receipt as unrated and
-does not gate: the triage judges rated findings, and an unrated advisory is a
-prompt to review, not a verdict.
+An advisory no scanner rates (Unknown) gates as High when a scanner reports a
+fix for it: the distribution has already shipped the fixed package, so the
+image is behind its own base and needs a rebuild or a triage entry.  An unrated
+advisory without a fix is listed in the receipt as unrated and does not gate.
 
 Exit codes: 0 no High/Critical finding; 3 every High/Critical is covered by a
 current reviewed triage entry (recorded acceptance) and the image's runtime base
@@ -94,7 +95,7 @@ def normalized(name: str) -> str:
 def locked_runtime_versions(lock: Path, architecture: str = "amd64") -> dict[str, str]:
     """Distributions the image installs from `lock`: name -> pinned version.
 
-    A line whose PEP 508 marker is false in the image (CPython 3.14.8 on
+    A line whose PEP 508 marker is false in the image (CPython 3.14.9 on
     Linux) is listed in the lock but never installed.
     """
 
@@ -102,7 +103,7 @@ def locked_runtime_versions(lock: Path, architecture: str = "amd64") -> dict[str
     environment.update({
         "os_name": "posix", "platform_system": "Linux", "sys_platform": "linux",
         "platform_machine": {"amd64": "x86_64", "arm64": "aarch64"}[architecture],
-        "python_full_version": "3.14.8", "python_version": "3.14",
+        "python_full_version": "3.14.9", "python_version": "3.14",
     })
     logical = re.sub(r"\\\n", " ", lock.read_text(encoding="utf-8"))
     versions: dict[str, str] = {}
@@ -451,15 +452,23 @@ def gating_findings(matches: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
         gating = [severity for severity in row["severities"] if severity in GATING_SEVERITIES]
         if gating:
             found[identifier] = {**row, "severity": max(gating, key=_SEVERITY_RANK.__getitem__)}
+        elif _unrated_with_fix(row):
+            found[identifier] = {**row, "severity": "High"}
     return found
 
 
+def _unrated_with_fix(row: dict[str, Any]) -> bool:
+    return not row["severities"] & set(RATED_SEVERITIES) and "fixed" in {
+        state.lower() for state in row["fix_states"]
+    }
+
+
 def unrated_findings(matches: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Advisories no scanner rates: reported, never gating."""
+    """Advisories no scanner rates and none reports a fix for: reported, never gating."""
 
     return [
         _public_row(row) for identifier, row in sorted(_findings_by_id(matches).items())
-        if not row["severities"] & set(RATED_SEVERITIES)
+        if not row["severities"] & set(RATED_SEVERITIES) and not _unrated_with_fix(row)
     ]
 
 

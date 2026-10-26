@@ -160,11 +160,19 @@ def test_the_annual_route_is_logged_under_its_own_label_with_or_without_its_flag
 def test_duration_bucket_rejects_non_finite_values():
     for duration, bucket in (
         (math.nan, "invalid"), (math.inf, "invalid"), (-math.inf, "invalid"),
-        (0.0, "lt_10ms"), (9.9, "lt_10ms"), (10.0, "10_to_49ms"), (49.9, "10_to_49ms"),
-        (50.0, "50_to_249ms"), (249.9, "50_to_249ms"), (250.0, "250_to_999ms"),
-        (999.9, "250_to_999ms"), (1_000.0, "gte_1000ms"),
+        (0.0, "lt_1s"), (999.9, "lt_1s"), (1_000.0, "1_to_9s"), (9_999.9, "1_to_9s"),
+        (10_000.0, "gte_10s"),
     ):
         assert _event(duration_ms=duration)["duration_bucket"] == bucket, duration
+
+
+def test_the_duration_bucket_does_not_tell_how_precise_the_birth_time_was():
+    """A chart with an exact time takes about 10-30 ms, an approximate hour or a
+    date only about 50 ms and more; finer buckets put the two on either side
+    of a bound, so a 7-day journal line said whether the person knew their
+    birth time.  Every ordinary chart duration now falls in one bucket."""
+    buckets = {_event(duration_ms=ms)["duration_bucket"] for ms in (8.0, 13.0, 26.0, 50.0, 120.0, 900.0)}
+    assert buckets == {"lt_1s"}
 
 
 def test_completion_event_failures_do_not_escape_the_asgi_boundary(monkeypatch):
@@ -198,7 +206,11 @@ def test_capacity_rejection_stays_inside_headers_and_telemetry_boundary():
             await release.wait()
             await _no_content_app(_scope, _receive, send)
 
-        boundary = PrivacyBoundaryMiddleware(RequestCapacityBoundary(held_app, max_concurrent=2), event_emitter=emitter)
+        totals_lines: list[dict] = []
+        totals = privacy_logging.RefusalTotals(emit=totals_lines.append)
+        boundary = PrivacyBoundaryMiddleware(
+            RequestCapacityBoundary(held_app, max_concurrent=2), event_emitter=emitter, refusal_totals=totals,
+        )
 
         async def call():
             messages = []
@@ -216,18 +228,50 @@ def test_capacity_rejection_stays_inside_headers_and_telemetry_boundary():
         rejected = await call()
         release.set()
         await asyncio.gather(*accepted)
-        return rejected, events
+        totals.flush()
+        return rejected, events, totals_lines
 
-    rejected, events = asyncio.run(exercise())
+    rejected, events, totals_lines = asyncio.run(exercise())
     start = rejected[0]
     assert start["status"] == 503
     headers = {name.decode().lower(): value.decode() for name, value in start["headers"]}
     assert "content-security-policy" in headers
     assert headers["x-content-type-options"] == "nosniff"
     assert headers["x-request-id"]
-    (rejected_event,) = [event for event in events if event["status_code"] == 503]
-    assert rejected_event["outcome"] == "rejected"
-    assert rejected_event["error_code"] == "request_capacity_exhausted"
+    # A busy refusal is not one event per request: a flood would write one line per refusal
+    # (about 350 B each, thousands a second).  It joins its second's totals instead.
+    assert [event for event in events if event["status_code"] == 503] == []
+    (line,) = totals_lines
+    assert tuple(line) == privacy_logging.REFUSAL_TOTALS_FIELDS
+    assert line["event"] == "admission_refusals"
+    assert line["totals"] == [{"route": "frontend_or_unmatched", "error_code": "request_capacity_exhausted", "count": 1}]
+
+
+def test_busy_refusals_are_written_once_per_second_with_their_counts():
+    clock = [1_700_000_000.2]
+    lines: list[dict] = []
+    totals = privacy_logging.RefusalTotals(emit=lines.append, clock=lambda: clock[0])
+    for _ in range(500):
+        totals.count("/api/chart", "compute_capacity_exhausted")
+    totals.count("/api/places/search", "request_capacity_exhausted")
+    totals.tick()
+    assert lines == []                                   # the second is not over
+    clock[0] += 1.0
+    totals.tick()                                        # any later request closes it
+    assert lines == [{
+        "event": "admission_refusals", "second_utc": "2023-11-14T22:13:20",
+        "totals": [
+            {"route": "/api/chart", "error_code": "compute_capacity_exhausted", "count": 500},
+            {"route": "/api/places/search", "error_code": "request_capacity_exhausted", "count": 1},
+        ],
+    }]
+    totals.flush()
+    assert len(lines) == 1, "a second without refusals writes nothing"
+    totals.count("/api/chart", "compute_capacity_exhausted")
+    totals.flush()                                       # the worker stopping writes the open second
+    assert lines[-1]["totals"] == [{"route": "/api/chart", "error_code": "compute_capacity_exhausted", "count": 1}]
+    with pytest.raises(ValueError):
+        totals.count("/api/chart", "internal_server_error")
 
 
 def test_boundary_reason_producer_and_privacy_consumer_are_closed():
@@ -841,3 +885,96 @@ def test_real_uvicorn_solar_return_place_reaches_no_log_on_any_path(monkeypatch)
     assert '"route":"/api/chart/annual"' in output
     for canary in (label, "47.12", "8.65", "91.12", "47.11", "Traceback"):
         assert canary not in output, canary
+
+
+def test_the_server_error_log_drops_records_below_warning_whatever_the_launch_flags():
+    """With --log-level trace uvicorn's error logger writes the client address
+    and the full request line below WARNING.  The app keeps only WARNING and
+    above there, so the silence does not depend on how the server was started."""
+    import logging
+
+    from app.main import create_app
+
+    create_app()
+    server_log = logging.getLogger("uvicorn.error")
+    server_log.setLevel(1)
+    seen: list[logging.LogRecord] = []
+
+    class Capture(logging.Handler):
+        def emit(self, record):
+            seen.append(record)
+
+    handler = Capture(level=1)
+    server_log.addHandler(handler)
+    try:
+        server_log.log(5, "%s - HTTP connection made", "203.0.113.7:51000")
+        server_log.info('%s - "GET /api/places/search?q=canary HTTP/1.1"', "203.0.113.7:51000")
+        server_log.warning("Invalid HTTP request received.")
+        asgi_log = logging.getLogger("uvicorn.asgi")
+        asgi_log.setLevel(1)
+        asgi_log.addHandler(handler)
+        asgi_log.log(5, "%s - ASGI [1] Started scope=%s", "203.0.113.7:51000", {"query_string": b"lat=24.9"})
+    finally:
+        server_log.removeHandler(handler)
+        logging.getLogger("uvicorn.asgi").removeHandler(handler)
+    assert [record.levelno for record in seen] == [logging.WARNING]
+
+
+def test_a_static_file_request_emits_no_event_unless_the_server_failed():
+    """After launch, requests for pages and assets are not logged.  An
+    API path, matched or not, still emits its event, and so does a server
+    failure on any path (the one thing an operator must see)."""
+    from fastapi.testclient import TestClient
+
+    from app.main import create_app
+    from app.settings import AppSettings
+
+    events: list[dict] = []
+    application = create_app(AppSettings(), event_emitter=events.append)
+    with TestClient(application, raise_server_exceptions=False) as client:
+        client.get("/zh-TW/")
+        client.get("/zh-TW/style/page.css")
+        client.get("/zh-TW/no-such-page")
+        client.get("/api/health")
+        client.get("/api/chartography")
+    assert [event["route"] for event in events] == ["/api/health", "frontend_or_unmatched"]
+
+
+def test_the_application_never_receives_a_client_address_or_identity_header():
+    """The edge strips the forwarding headers it knows by name, a denylist; a
+    proxy on the client's side can add others (X-Client-IP, True-Client-IP,
+    CF-Connecting-IP).  The innermost layer passes the routes only the request
+    headers they read, so no address or identity header reaches them; the
+    real application wires it in innermost."""
+    seen: list[set[bytes]] = []
+
+    async def inner(scope, receive, send):
+        seen.append({name for name, _value in scope["headers"]})
+        await _no_content_app(scope, receive, send)
+
+    from app.privacy_logging import ApplicationHeaderAllowlist
+
+    boundary = ApplicationHeaderAllowlist(inner)
+    sent = [(name.encode(), b"203.0.113.7") for name in (
+        "x-client-ip", "true-client-ip", "cf-connecting-ip", "x-forwarded-for", "x-real-ip", "forwarded",
+        "x-cluster-client-ip", "fastly-client-ip", "client-ip", "via")]
+    sent += [(b"cookie", b"a=b"), (b"user-agent", b"probe"), (b"referer", b"https://example.test/?lat=1"),
+             (b"host", b"armillary.test"), (b"content-type", b"application/json"), (b"accept-encoding", b"gzip"),
+             (b"range", b"bytes=0-1"), (b"if-none-match", b'"x"')]
+
+    async def run():
+        async def send(_message):
+            return None
+        scope = {"type": "http", "method": "GET", "path": "/api/health", "headers": sent}
+        await boundary(scope, _empty_request, send)
+
+    asyncio.run(run())
+    assert seen == [{b"host", b"content-type", b"accept-encoding", b"range", b"if-none-match"}]
+
+
+def test_the_real_application_puts_the_header_allowlist_innermost():
+    from app.main import create_app
+    from app.privacy_logging import ApplicationHeaderAllowlist, PrivacyBoundaryMiddleware
+
+    stack = [entry.cls for entry in create_app().user_middleware]
+    assert stack[0] is PrivacyBoundaryMiddleware and stack[-1] is ApplicationHeaderAllowlist

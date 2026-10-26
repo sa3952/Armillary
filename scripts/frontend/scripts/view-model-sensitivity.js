@@ -60,7 +60,8 @@ function requestedOptionsSection(response) {
     notes: [
       "這是後端回報的本次請求值，含你沒有明示送出、由後端帶入的預設；"
       + "某個模組是否實際計算，看該模組自己的狀態。",
-      "拿這份表就能重現同一次計算，不必記得自己勾了什麼。",
+      "拿這份表就能重現同一次計算，不必記得自己勾了什麼；程式要讀的選項代碼在 JSON 匯出的"
+        + " source_response.requested_options。",
     ],
     tables: [{
       title: "請求的選項",
@@ -702,7 +703,8 @@ function otherClassificationLabel(path, names) {
   const owner = /^[a-z_]+\.[a-z_]+/.exec(text);
   const ownerKey = owner ? owner[0] : "";
   const declared = PATH_OWNER_ZH[ownerKey] || (MODULE_COVERAGE[ownerKey] && MODULE_COVERAGE[ownerKey].zh);
-  const member = /\[([^\]:]+)(?::[^\]]*)?\]/.exec(text.slice(ownerKey.length));
+  // 方括號裡不再有「[」：沒有收尾的「[」不會讓後面每一個「[」都掃到字串尾。
+  const member = /\[([^[\]:]+)(?::[^[\]]*)?\]/.exec(text.slice(ownerKey.length));
   const who = member && !/^\d+$/.test(member[1]) ? `${memberName(member[1], names)}的` : "";
   return `${declared || "其他模組"}：${who}其他附帶項目`;
 }

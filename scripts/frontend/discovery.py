@@ -311,7 +311,8 @@ def llms_text(payload: dict, shell: str | None = None) -> str:
         url = origin + href if href.startswith("/") else href
         lines.append(f"- [{_markdown_text(_anchor_label(fragment, href))}]({url})")
     lines.append("")
-    return "\n".join(lines)
+    # A full-width ）right after a URL is read by GFM autolinking as part of it.
+    return re.sub(r"(https?://[^\s）]+)）", r"\1 ）", "\n".join(lines))
 LLMS_FULL_PAGE_KEYS = ("methods",)
 # Interface text with no meaning outside the page: the fold toggles' 展開／收合,
 # the fold-all buttons, the in-page section index and the numbered citation

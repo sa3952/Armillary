@@ -15,8 +15,10 @@ def on():
     from app.main import create_app
     from app.settings import AppSettings
 
+    # The loopback client address the in-container health check uses, so the
+    # readiness route answers here too.
     with TestClient(create_app(AppSettings(enable_annual_route=True)),
-                    raise_server_exceptions=False) as api:
+                    client=("127.0.0.1", 50000), raise_server_exceptions=False) as api:
         yield api
 
 

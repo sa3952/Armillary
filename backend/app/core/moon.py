@@ -237,7 +237,7 @@ VOC_ALTERNATIVE_SOURCES = {
                "product does not model the separation premise); "
                    "bounded by the sign; the page does not mention moieties"),
                   ORIGINAL_LANGUAGE_READ, LILLY_1647_READ_AT),
-            cited("Lilly, Christian Astrology 1647 p.107 (again p.110)",
+            cited("Lilly, Christian Astrology 1647 p.107 (orb table); p.110 (worked example, not reconciled)",
                   "the planets' orbs and the rule that a pair's orb is half their sum",
                   ORIGINAL_LANGUAGE_READ, LILLY_1647_READ_AT),
         ),
@@ -690,7 +690,7 @@ def find_voc_candidates(
     exit_low = horizon_days - _SIMULTANEITY_TOLERANCE_DAYS
     candidates = [event for event in future if event["time_days"] < exit_low]
     simultaneous = [
-        {**event, "sign_exit_bracket": horizon_bracket}
+        {**event, "horizon_bracket": horizon_bracket}
         for event in future
         if event["time_days"] >= exit_low
     ]
