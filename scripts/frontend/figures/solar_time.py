@@ -1,19 +1,11 @@
-"""〈西洋占星要不要換真太陽時？〉: figure 1 (the product's time pipeline,
-and the same clock time first turned into true solar time), figure 2 (the
-example's clock time, local mean time and true solar time on one axis),
-figure 3 (how far that double count moves the chart through 2025, Taipei and
-Jincheng, with a switch between the two) and the numbers the prose quotes.
+"""〈西洋占星要不要換真太陽時？〉: figures 1-3 of the article and the numbers the prose quotes.
 
-Figures 1 and 2 and the example are the product's own answers for the
-synthetic instant 1990-11-03 14:00 Taipei (GeoNames 1668341): the product
-reports the true solar time it computes for reference, and a second request
-enters that true solar time as if it were the clock reading.  Figure 2's local
-mean time is the product's UTC plus the longitude; it plus the product's
-equation of time must give the product's true solar time.  Figure 3 and the
-yearly share use Swiss Ephemeris (swe.time_equ, the function the product
-reports the equation of time from, and houses_ex) every 10 minutes of 2025.
-The one value checked against a second algorithm: the product's equation of
-time against NOAA's spreadsheet formula at the same instant.
+Figures 1 and 2 and the example are the product's own answers for the synthetic instant 1990-11-03 14:00 Taipei
+(GeoNames 1668341): the product reports the true solar time it computes, and a second request enters that as if it were
+the clock reading.  Figure 2's local mean time is the product's UTC plus the longitude; with the product's equation of
+time it must give the product's true solar time.  Figure 3 and the yearly share use Swiss Ephemeris (swe.time_equ, which
+the product reports the equation of time from, and houses_ex) every 10 minutes of 2025.  The one value checked against
+a second algorithm is the product's equation of time against NOAA's spreadsheet formula at the same instant.
 """
 from __future__ import annotations
 
@@ -23,13 +15,11 @@ from zoneinfo import ZoneInfo
 from . import _fx, _noaa
 from ._common import SIGNS, TAIPEI, product_charts, swiss
 
-
 FRAGMENT = "blog-true-solar-time"
 JINCHENG = (24.43415, 118.31712)
 ZONE_MERIDIAN = 120.0
 EXAMPLE = datetime(1990, 11, 3, 14, 0, 0)
 YEAR = 2025
-
 
 def _request(clock: datetime) -> dict:
     return {"birth_time_precision": "exact",
@@ -38,7 +28,6 @@ def _request(clock: datetime) -> dict:
             "location": {"latitude": TAIPEI[0], "longitude": TAIPEI[1]},
             "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"},
             "options": {"house_system": "W", "include_houses": True}}
-
 
 def _example() -> dict:
     with product_charts() as post:
@@ -58,7 +47,6 @@ def _example() -> dict:
                                                                  day=EXAMPLE.day, tzinfo=timezone.utc)
     e["noaa_eot"] = _noaa.sun(_noaa.julian_day(utc))["equation_of_time_minutes"]
     return e
-
 
 def _year() -> dict:
     out: dict = {"days": [], "share": {}}
@@ -83,32 +71,26 @@ def _year() -> dict:
     out["eot_range"] = (min(eot), max(eot))
     return out
 
-
 def _hm(hours: float) -> str:
     total = round(hours * 60) % 1440
     return f"{total // 60:02d}:{total % 60:02d}"
-
 
 def _asc(position: list) -> str:
     degrees, rest = position[1].split("°")
     return f"{SIGNS[position[0]]} {degrees}°{rest.split(chr(8242))[0]}′"
 
-
 def _signed(minutes: float) -> str:
     return f"{'+' if minutes >= 0 else '−'}{abs(minutes):.1f}"
 
-
 def _clock(minutes: float) -> str:
-    """「14:06:06」: a time of day from minutes after midnight, whole seconds."""
     total = round(minutes * 60) % 86400
     return f"{total // 3600:02d}:{total % 3600 // 60:02d}:{total % 60:02d}"
-
 
 # --- figure 1: the two pipelines ------------------------------------------------
 
 def _lanes(e: dict, bound: _fx.Bound) -> list[tuple[str, list[tuple[str, str, str]]]]:
-    """(lane title, [(step, value, tag)]): tag 「…經度」 marks a step that uses the
-    birthplace's longitude; 「final」 the ascendant."""
+    """(lane title, [(step, value, tag)]): tag 「…經度」 marks a step that uses the birthplace's longitude; 「final」 the
+    ascendant."""
     lon_minutes = (TAIPEI[1] - ZONE_MERIDIAN) * 4
     clock = bound.num(f"{EXAMPLE:%H:%M}")
     return [
@@ -128,7 +110,6 @@ def _lanes(e: dict, bound: _fx.Bound) -> list[tuple[str, list[tuple[str, str, st
         ]),
     ]
 
-
 def _box(x: float, y: float, w: float, h: float, step: str, value: str, tag: str, wide: bool) -> list[str]:
     out = [_fx.rect(x, y, w, h, "fx-track")]
     pad = 14
@@ -144,11 +125,8 @@ def _box(x: float, y: float, w: float, h: float, step: str, value: str, tag: str
         out.append(_fx.text(x + w - 12, y + h - (14 if wide else 12), tag, "fx-t fx-small", "end"))
     return out
 
-
 def _down(x: float, y0: float, y1: float) -> list[str]:
-    return [_fx.line(x, y0, x, y1 - 6, "fx-axis"),
-            _fx.path(f"M{_fx.f(x)} {_fx.f(y1)} l-5 -8 h10 z", "fx-arrow")]
-
+    return [_fx.line(x, y0, x, y1 - 6, "fx-axis"), _fx.path(f"M{_fx.f(x)} {_fx.f(y1)} l-5 -8 h10 z", "fx-arrow")]
 
 def _pipelines(layout: str, fid: str, e: dict, gained: str, moved: str, bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
@@ -169,8 +147,7 @@ def _pipelines(layout: str, fid: str, e: dict, gained: str, moved: str, bound: _
         out.append(_fx.rect(24, legend - 14, 12, 18, "fx-fill-hatch"))
         out.append(_fx.text(46, legend, "排線：用到出生地經度的一步", "fx-t fx-small"))
         out.append(_fx.text(24, legend + 26, "雙框：最後得到的上升點", "fx-t fx-small"))
-        out.append(_fx.text(24, H - 30, f"先換真太陽時，經度就算了兩次：地方恆星時多了約 {gained} 分鐘，上升點差了 {moved} 度",
-                            "fx-t"))
+        out.append(_fx.text(24, H - 30, f"先換真太陽時，經度就算了兩次：地方恆星時多了約 {gained} 分鐘，上升點差了 {moved} 度", "fx-t"))
     else:
         W, H = _fx.NARROW, 832
         out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)]
@@ -196,7 +173,6 @@ def _pipelines(layout: str, fid: str, e: dict, gained: str, moved: str, bound: _
     out.append("</svg>")
     return "".join(out)
 
-
 def _pipeline_table(e: dict, bound: _fx.Bound) -> str:
     rows = (("世界時", e["right"]["utc"], e["wrong"]["utc"]),
             ("地方恆星時", _hm(e["right"]["last"]), _hm(e["wrong"]["last"])),
@@ -205,11 +181,9 @@ def _pipeline_table(e: dict, bound: _fx.Bound) -> str:
                    for name, a, b in rows)
     return _fx.data_table(("項目", "本站的做法", "先換真太陽時"), body)
 
-
 # --- figure 2: three readings of one instant -----------------------------------
 
 def _three(layout: str, fid: str, times: dict, texts: dict, bound: _fx.Bound) -> str:
-    """The clock time, local mean time and true solar time of the example on one axis."""
     wide = layout == "fx-wide"
     clock, mean, solar = times["clock"], times["mean"], times["solar"]
     t0, t1 = clock - 3, solar + 4
@@ -223,8 +197,8 @@ def _three(layout: str, fid: str, times: dict, texts: dict, bound: _fx.Bound) ->
     out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)]
     rows = (("clock", clock, texts["clock"]), ("mean", mean, texts["mean"]), ("solar", solar, texts["solar"]))
     for i, (key, minute, (name, note)) in enumerate(rows):
-        # Each reading's words beside its own mark, on the side away from the
-        # earlier marks' leaders, so no leader crosses a later row's words.
+        # Each reading's words beside its own mark, on the side away from the earlier marks' leaders, so no leader
+        # crosses a later row's words.
         x = X(minute)
         y = (70 + i * 54) if wide else (46 + i * 64)
         dx, anchor = (14, None) if key != "solar" else (-14, "end")
@@ -253,18 +227,15 @@ def _three(layout: str, fid: str, times: dict, texts: dict, bound: _fx.Bound) ->
     out.append("</svg>")
     return "".join(out)
 
-
 # --- figure 3: a year at Taipei and Jincheng ------------------------------------
 
 PLACES = (("taipei", "臺北", TAIPEI), ("kinmen", "金門", JINCHENG))
 YEAR_SPAN = 25.0
 YEAR_IDLE = "用 Tab 鍵移到圖上的圓點，或用滑鼠指著它，這裡會寫出那一點的分鐘數與它怎麼來。"
 
-
 def _day(index: int) -> str:
     when = datetime(YEAR, 1, 1) + timedelta(days=index)
     return f"{when.month} 月 {when.day} 日"
-
 
 def _year_sentences(year: dict, bound: _fx.Bound) -> list[_fx.Note]:
     days = year["days"]
@@ -285,7 +256,6 @@ def _year_sentences(year: dict, bound: _fx.Bound) -> list[_fx.Note]:
             f"{name}在東經 {bound.num(f'{lon:.2f}')} 度，在時區子午線東經 {bound.label('120')} 度以{side}，"
             f"經度修正是 {bound.num(_signed(offset))} 分鐘，一年都不變；曲線在這條虛線上下多遠，就是那天的均時差。")))
     return notes
-
 
 def _year_art(layout: str, fid: str, year: dict, bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
@@ -355,7 +325,6 @@ def _year_art(layout: str, fid: str, year: dict, bound: _fx.Bound) -> str:
     out.append("</svg>")
     return "".join(out)
 
-
 def _year_table(year: dict, bound: _fx.Bound) -> str:
     lo, hi = year["eot_range"]
     rows = []
@@ -367,10 +336,8 @@ def _year_table(year: dict, bound: _fx.Bound) -> str:
                     f'<td class="n">{bound.num(f"{year["share"][name]:.0%}")}</td></tr>')
     return _fx.data_table(("地點", "東經", "經度修正（分鐘）", "一年內最少（分鐘）", "一年內最多（分鐘）", "上升星座被換掉的時刻"), rows)
 
-
 def _figures(e: dict, year: dict, gained: float, asc_moved: float) -> dict[str, str]:
     out = {}
-    # figure 1
     bound = _fx.Bound()
     when = bound.num(f"{EXAMPLE.year} 年 {EXAMPLE.month} 月 {EXAMPLE.day} 日")
     g, m = bound.num(f"{gained:.1f}"), bound.num(f"{asc_moved:.1f}")
@@ -385,7 +352,6 @@ def _figures(e: dict, year: dict, gained: float, asc_moved: float) -> dict[str, 
         table=_pipeline_table(e, bound),
         bound=bound,
     )
-    # figure 2
     bound = _fx.Bound()
     lon_minutes = (TAIPEI[1] - ZONE_MERIDIAN) * 4
     clock = EXAMPLE.hour * 60 + EXAMPLE.minute
@@ -422,7 +388,6 @@ def _figures(e: dict, year: dict, gained: float, asc_moved: float) -> dict[str, 
         ),
         bound=bound,
     )
-    # figure 3
     bound = _fx.Bound()
     out["year-shift"] = _fx.figure(
         fid="fig-solar-year",
@@ -446,7 +411,6 @@ def _figures(e: dict, year: dict, gained: float, asc_moved: float) -> dict[str, 
     )
     return out
 
-
 def build() -> tuple[dict[str, str], list[str]]:
     e = _example()
     year = _year()
@@ -463,19 +427,14 @@ def build() -> tuple[dict[str, str], list[str]]:
     if early is None:
         raise RuntimeError("Asia/Taipei has no offset in 1890")
     lmt = int(early.total_seconds())
-    quoted = [
-        f"經度修正是 {_signed(lon_minutes)} 分鐘",
-        f"均時差是 {_signed(e['eot'])} 分鐘",
+    quoted = [f"經度修正是 {_signed(lon_minutes)} 分鐘", f"均時差是 {_signed(e['eot'])} 分鐘",
         f"真太陽時是 {e['solar']:%H:%M:%S}",
         f"地方恆星時從 {_hm(e['right']['last'])} 變成 {_hm(e['wrong']['last'])}，多了約 {gained:.1f} 分鐘",
         f"上升點從{_asc(e['right']['asc'])}移到{_asc(e['wrong']['asc'])}，差了 {asc_moved:.1f} 度",
         f"均時差在 {_signed(lo)} 到 {_signed(hi)} 分鐘之間",
         f"臺北在 {_signed(lon_minutes + lo)} 到 {_signed(lon_minutes + hi)} 分鐘之間",
-        f"金門在 {_signed(jin + lo)} 到 {_signed(jin + hi)} 分鐘之間",
-        f"臺北有 {year['share']['臺北']:.0%} 的時刻",
+        f"金門在 {_signed(jin + lo)} 到 {_signed(jin + hi)} 分鐘之間", f"臺北有 {year['share']['臺北']:.0%} 的時刻",
         f"金門有 {year['share']['金門']:.0%}",
         f"NOAA 試算表的公式在同一刻給出 {e['noaa_eot']:.2f} 分鐘，本站是 {e['eot']:.2f} 分鐘，相差約 {eot_gap:.0f} 秒",
-        e["step_title"],
-        f"比世界時快 {lmt // 3600} 小時 {lmt % 3600 // 60} 分",
-    ]
+        e["step_title"], f"比世界時快 {lmt // 3600} 小時 {lmt % 3600 // 60} 分"]
     return {"fx-defs": _fx.defs(()), **_figures(e, year, gained, asc_moved)}, quoted

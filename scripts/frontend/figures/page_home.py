@@ -1,16 +1,11 @@
-"""The home page: the demonstration chart's numbers (the armillary plate's
-legend and caption, the two ascendants, the trace excerpt and the sampled
-hour) and the counts it states, from the product's own answers and tables.
-"""
+"""The home page: the demonstration chart's numbers and the counts it states, from the product's own answers."""
 from __future__ import annotations
 
 from . import _demo, _site
 from ._common import zh, zh_quantity
 
-
 FRAGMENT = "home"
-# The trace steps the page prints: the product's step title, the page's name for
-# it, the page's shorthand for the call, the result as the page prints it.
+# Trace steps the page prints: (product step title, page name, call shorthand, result).
 STEPS = (
     ("本地時間 -> UTC", "本地時間 → UTC", "UTC ＝ 本地時間 − 時區偏移", lambda r: r["UTC時間"]),
     ("UTC -> 儒略日 (swe.utc_to_jd)", "UTC → 儒略日", "<code>swe.utc_to_jd(年,月,日,時,分,秒, 格里曆)</code>",
@@ -26,7 +21,6 @@ POSITION = {"apparent": "視位置", "true": "真位置"}
 CENTER = {"geocentric": "地心", "topocentric": "站心"}
 HOUSES = {"W": "整宮制"}
 
-
 def _trace_rows(chart: dict) -> tuple[str, int, int]:
     rows, numbers = [], []
     for i, (title, label, formula, result) in enumerate(STEPS):
@@ -39,29 +33,23 @@ def _trace_rows(chart: dict) -> tuple[str, int, int]:
         raise RuntimeError(f"the excerpted trace steps are not consecutive: {numbers}")
     return "\n".join(rows), numbers[0], numbers[-1]
 
-
 def _half_minutes(minutes: float) -> str:
     """「四分半鐘」: to the nearest half minute."""
     halves = round(minutes * 2)
     return f"{zh(halves // 2)}分{'半' if halves % 2 else ''}鐘"
-
 
 def _teens(seconds: int) -> str:
     if not 10 <= seconds < 20:
         raise RuntimeError(f"the crossing window is {seconds} s, which 「十幾秒」 does not describe")
     return "十幾"
 
-
 def _plate_inputs(epsilon: float) -> None:
-    """The plate draws the ecliptic at this chart's true obliquity and the
-    horizon at its latitude (the caption says both are true values)."""
+    """The caption says both ecliptic obliquity and horizon latitude are true values."""
     from scripts.frontend import gen_armillary
-
     latitude = _demo.DEMO["location"]["latitude"]
     if abs(gen_armillary.EPS - epsilon) > 5e-8 or gen_armillary.PHI != round(latitude, 3):
         raise RuntimeError(f"the armillary plate draws ε={gen_armillary.EPS}, φ={gen_armillary.PHI}; "
                            f"the chart has ε={epsilon}, φ={latitude}")
-
 
 def build() -> tuple[dict[str, str], list[str]]:
     data = _demo.answers()
@@ -91,9 +79,7 @@ def build() -> tuple[dict[str, str], list[str]]:
     ]
     return {"trace-steps": trace}, quoted
 
-
 def elsewhere(fragment: str) -> dict[str, list[str]]:
-    """The about page lists the same catalogue."""
     return {"about": [
         f"<b>{zh(_site.count('bounds_profile'))}套具名界表、{zh_quantity(_site.count('decan_profile'))}套面／旬、"
         f"{zh(_site.count('triplicity_profile'))}套三分性</b>",

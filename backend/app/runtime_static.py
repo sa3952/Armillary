@@ -337,6 +337,9 @@ class RuntimeStaticFiles(StaticFiles):
             raise
 
     def lookup_path(self, path: str) -> tuple[str, os.stat_result | None]:
+        # Starlette's get_path joins the URL's segments with os.sep, a backslash
+        # on Windows; the allowlist and the receipts name "/" paths.
+        path = path.replace(os.sep, "/")
         normalized = path.strip("/")
         if normalized.startswith("./"):
             normalized = normalized[2:]

@@ -1,19 +1,12 @@
-"""〈行星時怎麼算〉: figure 1 (one planetary day in Taipei, sunrise to the next
-sunrise, its twelve day hours and twelve night hours drawn to length with each
-hour's ruler, under a switch between the days of the 2026 March equinox, June
-solstice and December solstice), figure 2 (the seven planets in the Chaldean
-order and the star the weekdays follow from it), table 1 (the ruler of every
-hour of every weekday) and the numbers the prose quotes.
+"""〈行星時怎麼算〉: figures 1-2 and table 1 of the article (one planetary day in Taipei drawn to length; the Chaldean
+order and the weekday star; the ruler of every hour of every weekday) and the numbers the prose quotes.
 
-Every hour drawn is the product's answer in process: for each day the module
-asks the chart route for the date and the next date with the date known and
-the time not (`birth_time_precision: date_only`), and reads the hours the
-product lists in `derived_methods.planetary_hours.birth_time_interval`.  The
-three days are the Taipei calendar dates of the Sun reaching 0°, 90° and 270°
-of tropical longitude in 2026, from Swiss Ephemeris.  The worked examples are
-exact instants the product answers.  Table 1 is the product's own rule
-(`CHALDEAN_ORDER`, `WEEKDAY_RULERS`), held by the build to the sequence Dio
-describes: from Saturn, the hours of day and night one after another.
+Every hour drawn is the product's answer in process: for each day the module asks the chart route for the date and the
+next date with the date known and the time not (`birth_time_precision: date_only`), and reads the hours in
+`derived_methods.planetary_hours.birth_time_interval`.  The three days are the Taipei dates of the Sun reaching 0°, 90°
+and 270° of tropical longitude in 2026, from Swiss Ephemeris.  Table 1 is the product's own rule (`CHALDEAN_ORDER`,
+`WEEKDAY_RULERS`), held by the build to the sequence Dio describes: from Saturn, the hours of day and night one after
+another.
 """
 from __future__ import annotations
 
@@ -22,7 +15,6 @@ import functools
 
 from . import _fx
 from ._common import PLANETS, TAIPEI, backend_on_path, product_charts, swiss
-
 
 FRAGMENT = "blog-planetary-hours"
 YEAR = 2026
@@ -40,7 +32,6 @@ POLAR_PLACE = {"latitude": 69.6492, "longitude": 18.9553}
 POLAR_ZONE = {"mode": "iana", "iana_name": "Europe/Oslo"}
 OPTIONS = {"house_system": "W", "include_houses": False}
 
-
 def _request(date: dt.date, clock: tuple[int, int] | None, place=TAIPEI_PLACE, zone=TAIPEI_ZONE) -> dict:
     hour, minute = clock or (0, 0)
     payload = {"datetime": {"year": date.year, "month": date.month, "day": date.day, "hour": hour,
@@ -50,7 +41,6 @@ def _request(date: dt.date, clock: tuple[int, int] | None, place=TAIPEI_PLACE, z
         payload["birth_time_precision"] = "date_only"
     return payload
 
-
 def _rules():
     with backend_on_path():
         from app.core.dignity_tables import CHALDEAN_ORDER
@@ -59,10 +49,8 @@ def _rules():
         raise RuntimeError(f"the Chaldean order is no longer {PLANET_KEYS}: {CHALDEAN_ORDER}")
     return tuple(CHALDEAN_ORDER), dict(zip(WEEKDAYS, WEEKDAY_RULERS, strict=True))
 
-
 @functools.lru_cache(maxsize=1)
 def season_dates() -> dict[str, dt.date]:
-    """The Taipei calendar date on which the Sun reaches each season's longitude in YEAR."""
     out = {}
     with swiss() as swe:
         start = swe.julday(YEAR, 1, 1, 0.0)
@@ -72,14 +60,11 @@ def season_dates() -> dict[str, dt.date]:
             out[key] = dt.date(year, month, day)
     return out
 
-
 def _clock(local_time: str) -> str:
-    """「05:04」 from the product's 「2026-06-21 05:04:46」: whole minutes, truncated as a clock shows them."""
+    """「05:04」 from 「2026-06-21 05:04:46」: whole minutes, truncated."""
     return local_time.split(" ")[1][:5]
 
-
 def _day(post, date: dt.date) -> dict:
-    """The planetary day that starts at sunrise on `date`: its 24 hours as the product lists them."""
     hours: dict[str, dict] = {}
     for civil in (date, date + dt.timedelta(days=1)):
         listed = post(_request(civil, None))["derived_methods"]["planetary_hours"]
@@ -106,7 +91,6 @@ def _day(post, date: dt.date) -> dict:
             "sunrise": noon["sunrise"]["local_time"], "sunset": noon["sunset"]["local_time"],
             "next_sunrise": noon["next_sunrise"]["local_time"]}
 
-
 @functools.lru_cache(maxsize=1)
 def answers() -> dict:
     dates = season_dates()
@@ -118,17 +102,14 @@ def answers() -> dict:
         polar = post(_request(summer, (12, 0), POLAR_PLACE, POLAR_ZONE))["derived_methods"]["planetary_hours"]
     return {"days": days, "morning": morning, "small_hours": small_hours, "polar": polar}
 
-
 def table_rows() -> dict[str, list[str]]:
-    """{weekday: the rulers of hours 1…24}, by the product's rule."""
     order, weekday_rulers = _rules()
     return {weekday: [order[(order.index(ruler) + i) % 7] for i in range(24)]
             for weekday, ruler in weekday_rulers.items()}
 
-
 def _check_table(rows: dict[str, list[str]]) -> None:
-    """Dio's account, counted out: from Saturn on Saturday, every hour of day
-    and night in turn; each weekday's first hour is where the count arrives."""
+    """Dio's account, counted out: from Saturn on Saturday, every hour of day and night in turn; each weekday's first
+    hour is where the count arrives."""
     order = list(PLANET_KEYS)
     week = ("saturday", "sunday", "monday", "tuesday", "wednesday", "thursday", "friday")
     for n, weekday in enumerate(week):
@@ -136,14 +117,12 @@ def _check_table(rows: dict[str, list[str]]) -> None:
         if rows[weekday] != expected:
             raise RuntimeError(f"{weekday}: the product's hour rulers {rows[weekday]} are not Dio's count {expected}")
 
-
 # --- figure 1: one planetary day, drawn to length --------------------------------
 
 def _label(key: str, day: dict, bound: _fx.Bound) -> str:
     season = next(label for k, _, label in SEASONS if k == key)
     date = day["date"]
     return (f"{bound.num(f'{date.month}/{date.day}')}（{season}，{WEEKDAY_ZH[day['weekday']]}）")
-
 
 def _band_wide(day: dict, bound: _fx.Bound, x0: float, width: float, y: float, h: float) -> list[str]:
     out = []
@@ -165,9 +144,7 @@ def _band_wide(day: dict, bound: _fx.Bound, x0: float, width: float, y: float, h
         out.append(_fx.text(x, y - 30, bound.num(text), "fx-t fx-small", anchor))
     return out
 
-
 def _band_narrow(day: dict, bound: _fx.Bound, x0: float, scale: float, y: float, h: float) -> list[str]:
-    """Two rows, day over night, each row as long as its twelve hours (one scale for all days)."""
     out = []
     for row, (period, label, minutes) in enumerate((("day", "晝", day["day_minutes"]),
                                                     ("night", "夜", day["night_minutes"]))):
@@ -186,7 +163,6 @@ def _band_narrow(day: dict, bound: _fx.Bound, x0: float, scale: float, y: float,
                             + f"・每時 {each} 分", "fx-t fx-small"))
     return out
 
-
 def _hours_drawing(layout: str, fid: str, days: dict, bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
     W = _fx.WIDE if wide else _fx.NARROW
@@ -201,15 +177,13 @@ def _hours_drawing(layout: str, fid: str, days: dict, bound: _fx.Bound) -> str:
                                  f"晝時每時 {bound.num(f'{day['day_minutes']:.1f}')} 分・夜時每時 "
                                  f"{bound.num(f'{day['night_minutes']:.1f}')} 分", "fx-t fx-small", "end"))
             body += _band_wide(day, bound, 36.0, W - 72.0, 112.0, 44.0)
-            body.append(_fx.text(36, 214, "白底：晝時（日出到日落十二等分）　點狀底：夜時（日落到次日日出十二等分）",
-                                 "fx-t fx-small fx-dim"))
+            body.append(_fx.text(36, 214, "白底：晝時（日出到日落十二等分）　點狀底：夜時（日落到次日日出十二等分）", "fx-t fx-small fx-dim"))
         else:
             body += _band_narrow(day, bound, 36.0, (W - 54.0) / (12 * longest), 62.0, 34.0)
             body.append(_fx.text(18, 250, "白底晝時、點狀底夜時", "fx-t fx-small fx-dim"))
         out.append(_fx.variant_group(key, SEASONS[0][0], "".join(body)))
     out.append("</svg>")
     return "".join(out)
-
 
 def _hours_table(days: dict, bound: _fx.Bound) -> str:
     columns = ["第幾時"] + [_label(key, days[key], bound) for key, _, _ in SEASONS]
@@ -221,7 +195,6 @@ def _hours_table(days: dict, bound: _fx.Bound) -> str:
             f"{PLANETS[days[key]['hours'][i]['ruler']]}</td>" for key, _, _ in SEASONS)
         rows.append(f'<tr><th scope="row">{bound.num(str(i + 1))}（{period} {bound.num(str(i % 12 + 1))}）</th>{cells}</tr>')
     return _fx.data_table(columns, rows, summary="二十四個行星時的開始時刻與主星（表格）")
-
 
 # --- figure 2: the Chaldean order and the weekdays ----------------------------------
 
@@ -268,14 +241,12 @@ def _star(layout: str, fid: str, bound: _fx.Bound) -> str:
     out.append("</svg>")
     return "".join(out)
 
-
 # --- table 1 -----------------------------------------------------------------------
 
 def _week_table(rows: dict[str, list[str]], bound: _fx.Bound) -> str:
     week = ("sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday")
-    head = ('<th scope="col">星期（日主）</th>'
-            + "".join(f'<th scope="col">晝 {bound.num(str(i))}</th>' for i in range(1, 13))
-            + "".join(f'<th scope="col">夜 {bound.num(str(i))}</th>' for i in range(1, 13)))
+    head = ('<th scope="col">星期（日主）</th>' + "".join(f'<th scope="col">晝 {bound.num(str(i))}</th>' for i in range(1,
+        13)) + "".join(f'<th scope="col">夜 {bound.num(str(i))}</th>' for i in range(1, 13)))
     body = []
     for weekday in week:
         cells = "".join(f"<td>{SHORT[p]}</td>" for p in rows[weekday])
@@ -285,7 +256,6 @@ def _week_table(rows: dict[str, list[str]], bound: _fx.Bound) -> str:
             f'      <caption id="tab1-cap">表 1　一週七天、每天二十四個行星時的主星。日＝太陽、月＝月亮、火＝火星、'
             f'水＝水星、木＝木星、金＝金星、土＝土星；晝時從日出數起，夜時從日落數起。</caption>\n'
             f"      <thead><tr>{head}</tr></thead>\n      <tbody>\n" + "\n".join(body) + "\n      </tbody>\n    </table>")
-
 
 def build() -> tuple[dict[str, str], list[str]]:
     data = answers()

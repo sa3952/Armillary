@@ -5,11 +5,10 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function buildHouseSphereCore() {
   "use strict";
 
-  // 〈宮位制〉文章的天球示意圖用的球面幾何。只收三個數：地理緯度、ARMC（赤經中天，
-  // 也就是地方恆星時換成度數）與黃赤交角；不收日期、時刻或地點，所以不可能是誰的命盤。
-  // 命盤的宮頭一律由計算服務算；這裡的數字只供示意，CI 逐格對照 Swiss Ephemeris 的
-  // houses_armc（tests/publication/test_house_sphere_oracle.py）。
-  // 座標：赤道直角座標，x 指向春分點，z 指向北天極；角度一律以「度」進出。
+  // 〈宮位制〉文章的天球示意圖用的球面幾何。只收三個數：地理緯度、ARMC（赤經中天，也就是地方恆星時換成度數）與黃赤交
+  // 角；不收日期、時刻或地點，所以不可能是誰的命盤。命盤的宮頭一律由計算服務算；這裡的數字只供示意，CI 逐格對照 Swiss
+  // Ephemeris 的 houses_armc（tests/publication/test_house_sphere_oracle.py）。座標：赤道直角座標，x 指向春分點，z 指向
+  // 北天極；角度一律以「度」進出。
 
   // 示意圖固定的黃赤交角。命盤用的是出生時刻的真黃赤交角，在 1900 到 2399 年間差不到
   // 0.06 度，對看懂構造沒有影響，少一個控制項。
@@ -23,12 +22,8 @@
   const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
   const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
   const neg = (a) => [-a[0], -a[1], -a[2]];
-  function norm(a) {
-    const length = Math.hypot(a[0], a[1], a[2]);
-    return [a[0] / length, a[1] / length, a[2] / length];
-  }
+  function norm(a) { const length = Math.hypot(a[0], a[1], a[2]); return [a[0] / length, a[1] / length, a[2] / length]; }
 
-  /** 觀測者的參考向量：天頂、地平正東、地平正北、天赤道在上子午圈的點、北黃極、北天極。 */
   function frame(lat, armc, eps) {
     const p = lat * D;
     const t = armc * D;
@@ -36,13 +31,8 @@
     const zenith = [Math.cos(p) * Math.cos(t), Math.cos(p) * Math.sin(t), Math.sin(p)];
     const east = [-Math.sin(t), Math.cos(t), 0];
     return {
-      lat, armc, eps,
-      Z: zenith,
-      E: east,
-      N: cross(zenith, east),
-      Meq: [Math.cos(t), Math.sin(t), 0],
-      K: [0, -Math.sin(e), Math.cos(e)],
-      P: [0, 0, 1],
+      lat, armc, eps, Z: zenith, E: east, N: cross(zenith, east), Meq: [Math.cos(t), Math.sin(t), 0],
+      K: [0, -Math.sin(e), Math.cos(e)], P: [0, 0, 1],
     };
   }
 
@@ -56,13 +46,9 @@
     const d = dec * D;
     return [Math.cos(d) * Math.cos(a), Math.cos(d) * Math.sin(a), Math.sin(d)];
   }
-  /** 黃道上赤經為 ra 的那一點的黃經。 */
   const lonFromRA = (ra, eps) => mod360(Math.atan2(Math.sin(ra * D), Math.cos(ra * D) * Math.cos(eps * D)) / D);
   const decOfLon = (lon, eps) => Math.asin(Math.sin(lon * D) * Math.sin(eps * D)) / D;
-  function lonOfVec(v, eps) {
-    const e = eps * D;
-    return mod360(Math.atan2(v[1] * Math.cos(e) + v[2] * Math.sin(e), v[0]) / D);
-  }
+  function lonOfVec(v, eps) { const e = eps * D; return mod360(Math.atan2(v[1] * Math.cos(e) + v[2] * Math.sin(e), v[0]) / D); }
 
   /** 半日弧（度）：這個赤緯從地平升到上中天轉過的角度。整天不升或不落時回 null。 */
   function semiArc(dec, lat) {
@@ -123,16 +109,13 @@
   const SYSTEMS = Object.freeze(["W", "E", "O", "B", "C", "R", "P"]);
   const QUADRANT = Object.freeze(["O", "B", "C", "R", "P"]);
 
-  function mcBelowHorizon(F) {
-    return dot(eclVec(mcOf(F), F.eps), F.Z) < 0;
-  }
+  function mcBelowHorizon(F) { return dot(eclVec(mcOf(F), F.eps), F.Z) < 0; }
 
   /**
-   * 本站計算服務對同一組緯度與宮位制會給的狀態（四態之一與原因代碼）。
-   * 規則照 backend/app/core/houses.py：Placidus 整個極區帶拒收；中天沉到地平線下時
-   * Porphyry 與 Alcabitius 拒收，Regiomontanus 與 Campanus 因宮頭不再依序排列也拒收；
-   * 四分宮制在緯度 60 度以上標「不穩定」；整宮、等分宮在極區帶標「屬極區幾何」。
-   * 服務用的是出生時刻的真黃赤交角，極區帶的邊界因此差不到 0.1 度。
+   * 本站計算服務對同一組緯度與宮位制會給的狀態（四態之一與原因代碼）。規則照 backend/app/core/houses.py：Placidus 整個
+   * 極區帶拒收；中天沉到地平線下時 Porphyry 與 Alcabitius 拒收，Regiomontanus 與 Campanus 因宮頭不再依序排列也拒收；四
+   * 分宮制在緯度 60 度以上標「不穩定」；整宮、等分宮在極區帶標「屬極區幾何」。服務用的是出生時刻的真黃赤交角，極區帶的
+   * 邊界因此差不到 0.1 度。
    */
   function siteStatus(sys, lat, armc, eps) {
     const F = frame(lat, armc, eps);
@@ -140,8 +123,7 @@
     const quadrant = QUADRANT.includes(sys);
     if (sys === "P" && band === "polar") return { state: "unavailable", reason: "placidus_no_semiarc" };
     if (quadrant && sys !== "P" && mcBelowHorizon(F)) {
-      return { state: "unavailable",
-        reason: sys === "O" || sys === "B" ? "mc_below_horizon_rejected" : "degenerate_cusp_cycle_rejected" };
+      return { state: "unavailable", reason: sys === "O" || sys === "B" ? "mc_below_horizon_rejected" : "degenerate_cusp_cycle_rejected" };
     }
     if (quadrant && band !== "ordinary") return { state: "unstable", reason: "quadrant_high_latitude_sensitivity" };
     if (band === "polar") return { state: "available_polar_geometry", reason: "polar_band_geometry" };
@@ -157,17 +139,12 @@
     const asc = ascOf(F);
     const mc = mcOf(F);
     const out = new Array(12).fill(null);
-    const set = (house, lon) => {
-      out[house - 1] = mod360(lon);
-      out[(house + 5) % 12] = mod360(lon + 180);
-    };
+    const set = (house, lon) => { out[house - 1] = mod360(lon); out[(house + 5) % 12] = mod360(lon + 180); };
     let geometry = true;
     if (sys === "W") {
       const start = Math.floor(asc / 30) * 30;
       for (let i = 0; i < 12; i += 1) out[i] = mod360(start + 30 * i);
-    } else if (sys === "E") {
-      for (let i = 0; i < 12; i += 1) out[i] = mod360(asc + 30 * i);
-    } else if (sys === "O") {
+    } else if (sys === "E") { for (let i = 0; i < 12; i += 1) out[i] = mod360(asc + 30 * i); } else if (sys === "O") {
       const lower = mod360(mc + 180 - asc) / 3;
       const upper = mod360(asc + 180 - (mc + 180)) / 3;
       set(1, asc); set(2, asc + lower); set(3, asc + 2 * lower);
@@ -201,16 +178,12 @@
           set(house, lon);
         }
       }
-    } else {
-      throw new Error(`unknown house system ${sys}`);
-    }
+    } else { throw new Error(`unknown house system ${sys}`); }
     return { geometry, cusps: geometry ? out : null, asc, mc, mcBelowHorizon: mcBelowHorizon(F), frame: F };
   }
 
   return Object.freeze({
-    OBLIQUITY, D, SYSTEMS, QUADRANT, ALPHA, EASTERN_CUSPS,
-    mod360, dot, cross, scale, add, sub, neg, norm,
-    frame, eclVec, raDecVec, decOfLon, semiArc,
-    placidusHourAngle, cusps, siteStatus,
+    OBLIQUITY, D, SYSTEMS, QUADRANT, ALPHA, EASTERN_CUSPS, mod360, dot, cross, scale, add, sub, neg, norm,
+    frame, eclVec, raDecVec, decOfLon, semiArc, placidusHourAngle, cusps, siteStatus,
   });
 });

@@ -6,13 +6,14 @@ Importing it imports the pipeline, which binds the bundled ephemeris.
 """
 
 import asyncio
-from contextlib import asynccontextmanager
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
+from dataclasses import dataclass
 from datetime import datetime, timezone
 import os
 from pathlib import Path
-from collections.abc import AsyncIterator, Callable, Coroutine
+from collections.abc import AsyncIterator, Awaitable, Callable, Coroutine, Mapping
 from contextvars import ContextVar
-from typing import Any, cast
+from typing import NamedTuple, cast
 
 import swisseph as swe
 from fastapi import FastAPI, Request
@@ -117,6 +118,7 @@ from .visit_counts import DAILY_VISITOR, PAGE_VIEW, VisitCounter, seconds_until_
 # Imported last: importing the pipeline binds the bundled ephemeris path and
 # reads the bundled file set once, after every other module has loaded.
 from .chart_pipeline import SCHEMA_VERSION, compute_chart_response
+from .chart_stages import JsonObject
 from .annual_pipeline import (
     SolarReturnOutsideSupportedYearRangeError,
     compute_annual_response,
@@ -173,14 +175,21 @@ async def readiness_route(request: Request) -> Response:
     return await readiness_check()
 
 
-def _refuse(request: Request, code: str, **kwargs: Any) -> JSONResponse:
+def _refuse(
+    request: Request,
+    code: str,
+    *,
+    issues: list[dict] | None = None,
+    extra: Mapping[str, object] | None = None,
+    headers: Mapping[str, str] | None = None,
+) -> JSONResponse:
     """Every refusal written here: record the closed code, then serialize once."""
 
     request.scope.setdefault("state", {})[DOMAIN_ERROR_STATE_KEY] = code
-    return refusal_response(code, **kwargs)
+    return refusal_response(code, issues=issues, extra=extra, headers=headers)
 
 
-async def _handle_domain_error(request: Request, exc: Exception):
+async def _handle_domain_error(request: Request, exc: Exception) -> JSONResponse:
     """Map closed domain failures without giving each class a parallel owner."""
 
     code = (
@@ -212,7 +221,7 @@ _FRAMEWORK_REFUSAL_CODES = {
 _STATIC_MOUNT_METHODS = "GET, HEAD"
 
 
-async def _handle_http_exception(request: Request, exc: Exception):
+async def _handle_http_exception(request: Request, exc: Exception) -> JSONResponse:
     """Give the framework's own refusals the same object-shaped `detail`."""
 
     status_code = getattr(exc, "status_code", 500)
@@ -234,7 +243,7 @@ def _declared_request_names(request: Request) -> frozenset[str]:
 async def _handle_request_validation(
     request: Request,
     exc: RequestValidationError,
-):
+) -> JSONResponse:
     issues = validation_issues(
         exc.errors(), declared_names=_declared_request_names(request)
     )
@@ -246,7 +255,7 @@ async def _handle_request_validation(
 
 async def _handle_annual_year_out_of_range(
     request: Request, exc: SolarReturnOutsideSupportedYearRangeError
-):
+) -> JSONResponse:
     # Known only once the N-th return is found, but a fact about the requested
     # year: the same closed refusal as the other annual rules, at its field.
     return _refuse(
@@ -256,7 +265,7 @@ async def _handle_annual_year_out_of_range(
     )
 
 
-async def _handle_strict_json_body(request: Request, exc: StrictJsonBodyError):
+async def _handle_strict_json_body(request: Request, exc: StrictJsonBodyError) -> JSONResponse:
     return _refuse(request, exc.code, issues=exc.issues)
 
 
@@ -269,7 +278,7 @@ class _StrictJsonRoute(APIRoute):
     could read differently, then lets FastAPI parse the same buffered body.
     """
 
-    def get_route_handler(self) -> Callable[[Request], Coroutine[Any, Any, Response]]:
+    def get_route_handler(self) -> Callable[[Request], Coroutine[object, object, Response]]:
         handler = super().get_route_handler()
         has_body = self.body_field is not None
         if not has_body and not is_api_path(self.path):
@@ -313,7 +322,7 @@ _COMPUTE_QUEUE = FifoComputeQueue()
 # budget is derived from the edge read timeout and the p99 compute estimate in
 # request_limits, so wait plus compute stays inside what the edge waits for.
 _COMPUTE_LOCK_WAIT_TIMEOUT_SECONDS = COMPUTE_QUEUE_WAIT_BUDGET_SECONDS
-_BUILD_IDENTITY_CONTEXT: ContextVar[dict | None] = ContextVar(
+_BUILD_IDENTITY_CONTEXT: ContextVar[JsonObject | None] = ContextVar(
     "classical_astrology_build_identity",
     default=None,
 )
@@ -325,7 +334,7 @@ class ComputeCapacityExhaustedError(Exception):
     code = "compute_capacity_exhausted"
 
 
-def _in_worker(work: Callable[[Any], Any], req: Any):
+def _in_worker[RequestT](work: Callable[[RequestT], JsonObject], req: RequestT) -> JsonObject:
     try:
         with earth_rotation_memo(), request_memo(), frame_turn_memo():
             return work(req)
@@ -333,15 +342,17 @@ def _in_worker(work: Callable[[Any], Any], req: Any):
         release_ephemeris_for_thread()
 
 
-async def compute_chart_for_request(req: ChartRequest, request: Request):
+async def compute_chart_for_request(req: ChartRequest, request: Request) -> JsonObject:
     return await _compute_in_line(_compute_chart_locked, req, request)
 
 
-async def compute_annual_for_request(req: AnnualRequest, request: Request):
+async def compute_annual_for_request(req: AnnualRequest, request: Request) -> JsonObject:
     return await _compute_in_line(_compute_annual_locked, req, request)
 
 
-async def _compute_in_line(work: Callable[[Any], Any], req: Any, request: Request):
+async def _compute_in_line[RequestT](
+    work: Callable[[RequestT], JsonObject], req: RequestT, request: Request
+) -> JsonObject:
     """Wait in line for Swiss, then compute; cancel only queued work.
 
     A request whose client has gone never enters Swiss: the check and the
@@ -377,7 +388,7 @@ async def _compute_in_line(work: Callable[[Any], Any], req: Any, request: Reques
         raise
 
 
-def _build_identity() -> dict:
+def _build_identity() -> JsonObject:
     return _BUILD_IDENTITY_CONTEXT.get() or {
         "status": "unavailable",
         "source_revision": None,
@@ -387,15 +398,15 @@ def _build_identity() -> dict:
 
 # The compute seams tests replace by name: _compute_in_line looks them up when
 # a request arrives, so a patched one is the one that runs.
-def _compute_chart_locked(req: ChartRequest):
+def _compute_chart_locked(req: ChartRequest) -> JsonObject:
     return compute_chart_response(req, build_identity=_build_identity())
 
 
-def _compute_annual_locked(req: AnnualRequest):
+def _compute_annual_locked(req: AnnualRequest) -> JsonObject:
     return compute_annual_response(req, build_identity=_build_identity())
 
 
-def _declared_refusals(route: str) -> dict[int | str, dict[str, Any]]:
+def _declared_refusals(route: str) -> dict[int | str, dict[str, object]]:
     # Every status a route can refuse with, and the closed codes
     # that arrive under it, read from the one refusal table.
     return {
@@ -407,7 +418,15 @@ def _declared_refusals(route: str) -> dict[int | str, dict[str, Any]]:
     }
 
 
-async def _identified(req, request: Request, compute, project, projection, place_catalog, identity):
+async def _identified[RequestT: (ChartRequest, AnnualRequest)](
+    req: RequestT,
+    request: Request,
+    compute: Callable[[RequestT, Request], Awaitable[JsonObject]],
+    project: Callable[[JsonObject, str], JsonObject],
+    projection: ChartProjection,
+    place_catalog: PlaceCatalog,
+    identity: JsonObject,
+) -> JsonObject:
     # Before the compute line: a refusal here costs no Swiss slot.
     await run_in_threadpool(check_request_places, req, place_catalog.record)
     token = _BUILD_IDENTITY_CONTEXT.set(identity)
@@ -418,19 +437,37 @@ async def _identified(req, request: Request, compute, project, projection, place
         _BUILD_IDENTITY_CONTEXT.reset(token)
 
 
-def _add_api_routes(
-    application: FastAPI,
+class _ApiRoute(NamedTuple):
+    """One JSON API operation: path, endpoint, method, name, model, description."""
+
+    path: str
+    endpoint: Callable[..., object]
+    method: str
+    name: str
+    response_model: object
+    description: str
+
+
+def _version_answer(runtime_build_identity: JsonObject) -> dict[str, object]:
+    # The build a user is talking to, and its source, without a chart first:
+    # the same identity the chart routes stamp into their receipts.
+    revision = runtime_build_identity.get("source_revision")
+    return {
+        "build_identity": runtime_build_identity,
+        "source_url": f"{SOURCE_URL_PREFIX}{revision}" if revision else None,
+        "public_repository": PUBLIC_REPOSITORY_URL,
+        "license": "AGPL-3.0-only",
+        "contracts": {"api_schema_version": SCHEMA_VERSION, "dossier_version": DOSSIER_VERSION},
+    }
+
+
+def _json_api_routes(
     *,
     place_catalog: PlaceCatalog,
-    runtime_build_identity: dict,
-    visit_counter: VisitCounter,
-    enable_annual_route: bool = False,
-) -> dict[str, frozenset[str]]:
-    """The API routes; returns the methods each one serves.
-
-    The annual route is a candidate: without its flag it is not registered,
-    so it is an unknown API path and absent from the OpenAPI document.
-    """
+    runtime_build_identity: JsonObject,
+    enable_annual_route: bool,
+) -> list[_ApiRoute]:
+    """The JSON API operations, in registration order."""
 
     async def identified_compute_chart(
         req: ChartRequest,
@@ -465,38 +502,43 @@ def _add_api_routes(
     async def convert_time(request: TimeConversionRequest):
         return convert_civil_time(request)
 
-    # The build a user is talking to, and its source, without a chart first:
-    # the same identity the chart routes stamp into their receipts.
-    revision = runtime_build_identity.get("source_revision")
-    version_answer = {
-        "build_identity": runtime_build_identity,
-        "source_url": f"{SOURCE_URL_PREFIX}{revision}" if revision else None,
-        "public_repository": PUBLIC_REPOSITORY_URL,
-        "license": "AGPL-3.0-only",
-        "contracts": {"api_schema_version": SCHEMA_VERSION, "dossier_version": DOSSIER_VERSION},
-    }
+    version_answer = _version_answer(runtime_build_identity)
 
     async def running_version():
         return version_answer
 
     # GET and HEAD of the health route are separate routes so each has its own
     # OpenAPI operation ID; one route carrying both methods published a duplicate ID.
-    routes: list[tuple[str, Callable[..., Any], str, str, Any, str]] = [
-        (HEALTH_ROUTE, health_check, "GET", "health_check", dict[str, object],
-         "Process-liveness response; this is not end-to-end calculation readiness."),
-        (HEALTH_ROUTE, health_check, "HEAD", "health_check_head", dict[str, object],
-         "Process-liveness response; this is not end-to-end calculation readiness."),
-        (READY_ROUTE, readiness_route, "GET", "readiness_check", dict[str, object],
-         "200 when the bundled ephemeris files are present and match their pinned digests; 503 otherwise."),
-        (CHART_ROUTE, identified_compute_chart, "POST", "compute_chart", dict[str, Any],
-         "Versioned chart response; see output_contract and deploy/frontend-contract.json."),
-        (PLACE_SEARCH_ROUTE, search_places, "POST", "search_places", dict[str, Any],
-         "Bundled-catalog search response with query and execution receipts."),
-        (TIME_CONVERT_ROUTE, convert_time, "POST", "convert_time", dict[str, Any],
-         "Every reading of one wall-clock time, with its rule's source row and the tz database."),
-        (VERSION_ROUTE, running_version, "GET", "running_version", dict[str, Any],
-         "The running build's identity, its public source URL and licence, and the contract versions."),
+    routes = [
+        _ApiRoute(HEALTH_ROUTE, health_check, "GET", "health_check", dict[str, object],
+                  "Process-liveness response; this is not end-to-end calculation readiness."),
+        _ApiRoute(HEALTH_ROUTE, health_check, "HEAD", "health_check_head", dict[str, object],
+                  "Process-liveness response; this is not end-to-end calculation readiness."),
+        _ApiRoute(READY_ROUTE, readiness_route, "GET", "readiness_check", dict[str, object],
+                  "200 when the bundled ephemeris files are present and match their pinned digests; 503 otherwise."),
+        _ApiRoute(CHART_ROUTE, identified_compute_chart, "POST", "compute_chart", dict[str, object],
+                  "Versioned chart response; see output_contract and deploy/frontend-contract.json."),
+        _ApiRoute(PLACE_SEARCH_ROUTE, search_places, "POST", "search_places", dict[str, object],
+                  "Bundled-catalog search response with query and execution receipts."),
+        _ApiRoute(TIME_CONVERT_ROUTE, convert_time, "POST", "convert_time", dict[str, object],
+                  "Every reading of one wall-clock time, with its rule's source row and the tz database."),
+        _ApiRoute(VERSION_ROUTE, running_version, "GET", "running_version", dict[str, object],
+                  "The running build's identity, its public source URL and licence, and the contract versions."),
     ]
+    if enable_annual_route:
+        routes.append(_ApiRoute(
+            ANNUAL_ROUTE, identified_compute_annual, "POST", "compute_annual", dict[str, object],
+            "Annual-techniques response (year boundary, profection, "
+            "firdaria, extended lots, zodiacal releasing); see output_contract.",
+        ))
+    return routes
+
+
+def _visit_count_routes(
+    visit_counter: VisitCounter,
+) -> tuple[tuple[str, Callable[[], Awaitable[Response]], str, str, str], ...]:
+    """The two no-content counting operations: path, endpoint, method, name, description."""
+
     async def count_page_view() -> Response:
         visit_counter.count(PAGE_VIEW)
         return Response(status_code=204)
@@ -509,25 +551,40 @@ def _add_api_routes(
             "Cache-Control": f"private, max-age={seconds_until_next_count_day(datetime.now(timezone.utc))}",
         })
 
-    if enable_annual_route:
-        routes.append((
-            ANNUAL_ROUTE, identified_compute_annual, "POST", "compute_annual", dict[str, Any],
-            "Annual-techniques response (year boundary, profection, "
-            "firdaria, extended lots, zodiacal releasing); see output_contract.",
-        ))
+    return (
+        (VISIT_ROUTE, count_page_view, "POST", "count_page_view",
+         "No content; adds one to the worker's page-view count and keeps nothing else."),
+        (DAILY_VISIT_ROUTE, count_daily_visitor, "GET", "count_daily_visitor",
+         "No content; adds one to the daily-visitor count, cacheable until midnight in Taiwan."),
+    )
+
+
+def _add_api_routes(
+    application: FastAPI,
+    *,
+    place_catalog: PlaceCatalog,
+    runtime_build_identity: JsonObject,
+    visit_counter: VisitCounter,
+    enable_annual_route: bool = False,
+) -> dict[str, frozenset[str]]:
+    """The API routes; returns the methods each one serves.
+
+    The annual route is a candidate: without its flag it is not registered,
+    so it is an unknown API path and absent from the OpenAPI document.
+    """
+
     api_method_routes: dict[str, frozenset[str]] = {}
-    for path, endpoint, method, name, model, description in routes:
+    for path, endpoint, method, name, model, description in _json_api_routes(
+        place_catalog=place_catalog,
+        runtime_build_identity=runtime_build_identity,
+        enable_annual_route=enable_annual_route,
+    ):
         application.add_api_route(
             path, endpoint, methods=[method], name=name, response_model=model,
             response_description=description, responses=_declared_refusals(path),
         )
         api_method_routes[path] = api_method_routes.get(path, frozenset()) | {method}
-    for path, endpoint, method, name, description in (
-        (VISIT_ROUTE, count_page_view, "POST", "count_page_view",
-         "No content; adds one to the worker's page-view count and keeps nothing else."),
-        (DAILY_VISIT_ROUTE, count_daily_visitor, "GET", "count_daily_visitor",
-         "No content; adds one to the daily-visitor count, cacheable until midnight in Taiwan."),
-    ):
+    for path, endpoint, method, name, description in _visit_count_routes(visit_counter):
         application.add_api_route(
             path, endpoint, methods=[method], name=name, status_code=204,
             response_class=Response, response_description=description,
@@ -561,7 +618,7 @@ def _add_refusal_handlers(application: FastAPI) -> None:
 def _mount_frontend(
     application: FastAPI,
     frontend_dir: str,
-    release_assets: Any,
+    release_assets: Mapping[str, str] | None,
 ) -> Callable[[str], str | None] | None:
     """Mount the frontend when it exists; returns its content-version source."""
 
@@ -594,10 +651,19 @@ def _add_boundary_middleware(
     *,
     api_method_routes: dict[str, frozenset[str]],
     compute_paths: frozenset[str],
-    expected_host: Any,
+    expected_host: str | None,
     event_emitter: Callable[[dict], bool] | None,
     static_asset_version: Callable[[str], str | None] | None,
     refusal_totals: RefusalTotals,
+) -> None:
+    # Middleware order is inside-out: the last one added runs first.
+    _add_response_boundaries(application, api_method_routes)
+    _add_request_boundaries(application, compute_paths, expected_host)
+    _add_privacy_boundary(application, event_emitter, static_asset_version, refusal_totals)
+
+
+def _add_response_boundaries(
+    application: FastAPI, api_method_routes: dict[str, frozenset[str]]
 ) -> None:
     # Innermost: it sees only what the routes and their refusal handlers send,
     # and the privacy boundary adds Cache-Control and the security headers to
@@ -605,14 +671,14 @@ def _add_boundary_middleware(
     # Added first, so it is innermost: every boundary below sees the client's headers.
     application.add_middleware(ApplicationHeaderAllowlist)
     application.add_middleware(ChartResultCompression)
-    application.add_middleware(
-        ApiMethodBoundary,
-        route_methods=api_method_routes,
-    )
+    application.add_middleware(ApiMethodBoundary, route_methods=api_method_routes)
 
-    # Middleware order is inside-out: the last one added runs first.  The host
-    # check, header-decidable refusals and the bounded body (size and total
-    # deadline) come before admission, so a body still arriving holds no
+
+def _add_request_boundaries(
+    application: FastAPI, compute_paths: frozenset[str], expected_host: str | None
+) -> None:
+    # The host check, header-decidable refusals and the bounded body (size and
+    # total deadline) come before admission, so a body still arriving holds no
     # compute or lookup slot.
     application.add_middleware(RequestCapacityBoundary, compute_paths=compute_paths)
     application.add_middleware(
@@ -621,6 +687,13 @@ def _add_boundary_middleware(
         bounded_json_paths=_BOUNDED_JSON_PATHS | compute_paths,
     )
 
+
+def _add_privacy_boundary(
+    application: FastAPI,
+    event_emitter: Callable[[dict], bool] | None,
+    static_asset_version: Callable[[str], str | None] | None,
+    refusal_totals: RefusalTotals,
+) -> None:
     # Privacy remains the outer user middleware so it can contain downstream
     # response-lifecycle failures and apply headers to request-boundary errors.
     # The lambda preserves existing tests that replace the module-level sink.
@@ -634,6 +707,47 @@ def _add_boundary_middleware(
     )
 
 
+@dataclass(frozen=True)
+class _RuntimeRelease:
+    """What the deployment's release record (or the source tree) provides."""
+
+    frontend_dir: str
+    build_identity: JsonObject
+    assets: Mapping[str, str] | None
+
+
+def _runtime_release(settings: AppSettings) -> _RuntimeRelease:
+    authority_root = Path(os.path.abspath(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
+    ))
+    frontend_root, release_identity, assets = load_runtime_release(
+        environment=os.environ,
+        authority_root=authority_root,
+        backend_public_source_revision=settings.source_revision,
+        api_schema_version=SCHEMA_VERSION,
+        dossier_version=DOSSIER_VERSION,
+    )
+    build_identity = dict(settings.build_identity)
+    if release_identity is not None:
+        build_identity["release_identity"] = release_identity
+    frontend_dir = str(frontend_root if frontend_root is not None else authority_root / "frontend")
+    return _RuntimeRelease(frontend_dir, build_identity, assets)
+
+
+def _lifespan(
+    place_catalog: PlaceCatalog, counter: VisitCounter, refusal_totals: RefusalTotals
+) -> Callable[[FastAPI], AbstractAsyncContextManager[None]]:
+    @asynccontextmanager
+    async def write_counts_on_stop(_application: FastAPI) -> AsyncIterator[None]:
+        # Before the first request, so no search pays for the catalogue's shared tables.
+        await run_in_threadpool(place_catalog.warm)
+        yield
+        counter.flush()
+        refusal_totals.flush()
+
+    return write_counts_on_stop
+
+
 def create_app(
     settings: AppSettings | None = None,
     *,
@@ -643,55 +757,27 @@ def create_app(
     resolved_settings = settings or load_settings()
     silence_server_access_log()
     quiet_server_error_log()
-    authority_root = os.path.abspath(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
-    )
-    release_frontend_root, release_identity, release_assets = load_runtime_release(
-        environment=os.environ,
-        authority_root=Path(authority_root),
-        backend_public_source_revision=resolved_settings.source_revision,
-        api_schema_version=SCHEMA_VERSION,
-        dossier_version=DOSSIER_VERSION,
-    )
-    runtime_build_identity = dict(resolved_settings.build_identity)
-    if release_identity is not None:
-        runtime_build_identity["release_identity"] = release_identity
+    release = _runtime_release(resolved_settings)
     place_catalog = PlaceCatalog(resolved_settings.place_catalog_path)
     counter = visit_counter or VisitCounter()
     refusal_totals = RefusalTotals()
-
-    @asynccontextmanager
-    async def write_counts_on_stop(_application: FastAPI) -> AsyncIterator[None]:
-        # Before the first request, so no search pays for the catalogue's shared tables.
-        await run_in_threadpool(place_catalog.warm)
-        yield
-        counter.flush()
-        refusal_totals.flush()
-
     application = FastAPI(
         title="古典西洋占星天文計算 API",
         docs_url=None,
         redoc_url=None,
         openapi_url=None,
-        lifespan=write_counts_on_stop,
+        lifespan=_lifespan(place_catalog, counter, refusal_totals),
     )
     application.router.route_class = _StrictJsonRoute
     api_method_routes = _add_api_routes(
         application,
         place_catalog=place_catalog,
-        runtime_build_identity=runtime_build_identity,
+        runtime_build_identity=release.build_identity,
         visit_counter=counter,
         enable_annual_route=resolved_settings.enable_annual_route,
     )
     _add_refusal_handlers(application)
-    frontend_dir = str(
-        release_frontend_root
-        if release_frontend_root is not None
-        else Path(authority_root) / "frontend"
-    )
-    static_asset_version = _mount_frontend(
-        application, frontend_dir, release_assets
-    )
+    static_asset_version = _mount_frontend(application, release.frontend_dir, release.assets)
     _add_boundary_middleware(
         application,
         api_method_routes=api_method_routes,

@@ -1,15 +1,12 @@
-"""〈回歸黃道和恆星黃道差在哪〉: table 1 (one chart in the tropical zodiac and
-in the product's four sidereal ones: the ayanamsa subtracted, the Sun, the Moon,
-the Ascendant and the first whole-sign house), table 2 (the Fagan–Bradley
+"""〈回歸黃道和恆星黃道差在哪〉: table 1 (one chart in the tropical zodiac and in the product's four sidereal ones: the
+ayanamsa subtracted, the Sun, the Moon, the Ascendant and the first whole-sign house), table 2 (the Fagan–Bradley
 ayanamsa on four dates) and the numbers the prose quotes.
 
-Synthetic instants only: the demonstration chart (1990-05-15 14:30 Taipei,
-whole signs) and noon in Taipei on 1 January of four years.  Every value is
-the product's answer in process: `astronomical_data.time.ayanamsa` is the
-offset the product reports as applied.  The module also asks the product for
-the refusals the prose names (the dignities and the lunar mansions in a
-sidereal zodiac, the sidereal zodiac with the J2000 frame) and checks that the
-degree-based aspects do not change with the zodiac.
+Synthetic instants only: the demonstration chart (1990-05-15 14:30 Taipei, whole signs) and noon in Taipei on 1 January
+of four years.  Every value is the product's answer in process: `astronomical_data.time.ayanamsa` is the offset the
+product reports as applied.  The module also asks the product for the refusals the prose names (the dignities and the
+lunar mansions in a sidereal zodiac, the sidereal zodiac with the J2000 frame) and checks that the degree-based aspects
+do not change with the zodiac.
 """
 from __future__ import annotations
 
@@ -19,23 +16,15 @@ from typing import Any
 from ._common import SIGNS, degree_minute, product_charts
 from ._demo import DEMO, zodiacal_minutes
 
-
 FRAGMENT = "blog-tropical-vs-sidereal-zodiac"
-# The product's four, in the order the calculator lists them.
-AYANAMSAS = (
-    ("fagan_bradley", "Fagan–Bradley"),
-    ("hipparchos", "Hipparchos"),
-    ("sassanian", "Sassanian"),
-    ("aldebaran_15_tau", "Aldebaran 15° 金牛"),
-)
+AYANAMSAS = (("fagan_bradley", "Fagan–Bradley"), ("hipparchos", "Hipparchos"), ("sassanian", "Sassanian"),
+    ("aldebaran_15_tau", "Aldebaran 15° 金牛"))
 YEARS = (1900, 1950, 2000, 2026)
 OPTIONS = {"house_system": "W", "include_houses": True, "include_domicile_exaltation": True,
            "include_lunar_mansions": True}
 
-
 def _sidereal(ayanamsa: str) -> dict:
     return {"zodiac": "sidereal", "ayanamsa": ayanamsa}
-
 
 def _read(answer: dict) -> dict:
     bodies = {item["key"]: item["longitude"] for item in answer["astronomical_data"]["bodies"]}
@@ -59,7 +48,6 @@ def _read(answer: dict) -> dict:
         "mansions": answer["derived_methods"]["lunar_mansions"]["reason_code"],
     }
 
-
 @functools.lru_cache(maxsize=1)
 def answers() -> dict:
     chart = {**DEMO, "options": {**DEMO["options"], **OPTIONS}}
@@ -76,7 +64,6 @@ def answers() -> dict:
                        expected=422)
         out["j2000"] = [issue["type"] for issue in refused["detail"]["issues"]]
     return out
-
 
 def _check(data: dict) -> None:
     tropical = data["tropical"]
@@ -105,10 +92,8 @@ def _check(data: dict) -> None:
     if years != sorted(years):
         raise RuntimeError("the Fagan–Bradley ayanamsa no longer grows from date to date")
 
-
 def _sign(longitude: float) -> str:
     return SIGNS[int(longitude // 30) % 12]
-
 
 def _rows(data: dict) -> str:
     out = []
@@ -122,11 +107,9 @@ def _rows(data: dict) -> str:
             f'<td class="n">{zodiacal_minutes(chart["asc"])}</td><td>{first}</td></tr>')
     return "\n".join(out)
 
-
 def _years(data: dict) -> str:
     return "\n".join(f'          <tr><th scope="row">{year} 年 1 月 1 日</th><td class="n">{degree_minute(data["years"][year])}</td></tr>'
                      for year in YEARS)
-
 
 def build() -> tuple[dict[str, str], list[str]]:
     data = answers()
@@ -142,15 +125,10 @@ def build() -> tuple[dict[str, str], list[str]]:
     stayed = [key for key, lon in tropical["bodies"].items() if int(lon // 30) == int(fb["bodies"][key] // 30)]
     if stayed != ["saturn"] or changed != {pair for pair in fb["whole_sign"] if "saturn" in pair}:
         raise RuntimeError(f"the example no longer keeps only Saturn in its sign, changing every pair with it: {stayed}")
-    quoted = [
-        f"扣掉 {degree_minute(fb['ayanamsa'])}",
+    quoted = [f"扣掉 {degree_minute(fb['ayanamsa'])}",
         f"太陽從{zodiacal_minutes(tropical['sun'])}變成{zodiacal_minutes(fb['sun'])}",
         f"上升點從{zodiacal_minutes(tropical['asc'])}變成{zodiacal_minutes(fb['asc'])}",
-        f"四種之間最多相差約 {spread:.1f}°",
-        f"1900 到 2000 年增加了約 {century:.2f}°",
-        f"{tropical['evaluated']} 組配對",
-        f"其中 {in_orb} 組在容許度內",
-        f"有 {len(changed)} 組的整宮相位變了",
-        f"土星從{zodiacal_minutes(tropical['bodies']['saturn'])}變成{zodiacal_minutes(fb['bodies']['saturn'])}",
-    ]
+        f"四種之間最多相差約 {spread:.1f}°", f"1900 到 2000 年增加了約 {century:.2f}°",
+        f"{tropical['evaluated']} 組配對", f"其中 {in_orb} 組在容許度內", f"有 {len(changed)} 組的整宮相位變了",
+        f"土星從{zodiacal_minutes(tropical['bodies']['saturn'])}變成{zodiacal_minutes(fb['bodies']['saturn'])}"]
     return {"zodiacs": _rows(data), "years": _years(data)}, quoted

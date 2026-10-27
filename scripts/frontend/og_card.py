@@ -1,25 +1,17 @@
 #!/usr/bin/env python3
 """The link-preview card (og:image), from its one source.
 
-The card: the armillary mark
-large on the black plate, the ecliptic as a gold sine behind it, the name and
-the home page's second heading beside it.  This module is the card's source:
-`card_html()` builds the 1200x630 page as inline SVG with no external request
-and no web font (system fonts, as the site itself uses), and `--render` has a
-local headless Chromium photograph it into frontend/zh-TW/og-card.png, the one
-static file every page names in its og:image.
+The card: the armillary mark large on the black plate, the ecliptic as a gold sine behind it, the name and the home
+page's second heading beside it.  `card_html()` builds the 1200x630 page as inline SVG with no external request and no
+web font, and `--render` has a local headless Chromium photograph it into frontend/zh-TW/og-card.png, the one static
+file every page names in its og:image.
 
-The rendering depends on the machine's fonts and Chromium build, so the PNG is
-committed rather than rebuilt in CI.  What keeps it from drifting from this
-source is the render record beside this file: it names the digest of the HTML
-that was photographed and of the PNG that came out, and
-`python -m scripts.frontend.build_pages --check` fails when either no longer
-matches (`render_record_errors`).
+The rendering depends on the machine's fonts and Chromium build, so the PNG is committed rather than rebuilt in CI.
+The render record beside this file names the digest of the HTML photographed and of the PNG that came out, and
+`python -m scripts.frontend.build_pages --check` fails when either no longer matches (`render_record_errors`).
 
-Every word on the card is already on a public page: 渾儀 and ARMILLARY are the
-header's brand, the two lines are the home page's second heading, and the
-domain is the site's.  Colours are scripts/frontend/styles/tokens.css plus the gold
-ecliptic, used as decoration.
+Every word on the card is already on a public page.  Colours are scripts/frontend/styles/tokens.css plus the gold
+ecliptic.
 """
 
 from __future__ import annotations
@@ -35,7 +27,6 @@ import tempfile
 
 from scripts.frontend.figures._common import node_json
 
-
 ROOT = Path(__file__).resolve().parents[2]
 CARD_ASSET = "zh-TW/og-card.png"
 CARD_PATH = ROOT / "frontend" / CARD_ASSET
@@ -43,9 +34,8 @@ RENDER_RECORD = ROOT / "scripts" / "frontend" / "og_card_render.json"
 RENDERER = ROOT / "scripts" / "frontend" / "render_og_card.cjs"
 WIDTH, HEIGHT = 1200, 630
 
-# The card's text, each piece verbatim from a served page (a test reads the
-# pages for them): the brand in the shared header and the home page's second
-# heading, which the page breaks after the comma as the card does.
+# The card's text, each piece verbatim from a served page (a test reads the pages for them): the brand in the shared
+# header and the home page's second heading, which the page breaks after the comma as the card does.
 BRAND = "渾儀"
 BRAND_LATIN = "ARMILLARY"
 HEADLINE = ("每一部分都有名字，", "每一步都有出處。")
@@ -67,13 +57,9 @@ _MARK = """<svg viewBox="0 0 40 40" width="400" height="400" fill="none" stroke=
   <line x1="20" y1="4" x2="20" y2="36" transform="rotate(-18 20 20)"/>
 </svg>"""
 
-
 def _declination(longitude: float) -> float:
     """Declination of an ecliptic point at latitude 0: asin(sin λ · sin ε)."""
-    return math.degrees(math.asin(
-        math.sin(math.radians(longitude)) * math.sin(math.radians(OBLIQUITY_DEGREES))
-    ))
-
+    return math.degrees(math.asin(math.sin(math.radians(longitude)) * math.sin(math.radians(OBLIQUITY_DEGREES))))
 
 def _ecliptic_path(ymid: float, scale: float, lon_start: float) -> str:
     points = []
@@ -81,7 +67,6 @@ def _ecliptic_path(ymid: float, scale: float, lon_start: float) -> str:
         x = WIDTH * step / 360
         points.append(f"{x:.1f},{ymid - _declination(lon_start + step) * scale:.1f}")
     return "M" + " L".join(points)
-
 
 def _graticule(ymid: float, scale: float) -> str:
     lines = []
@@ -93,7 +78,6 @@ def _graticule(ymid: float, scale: float) -> str:
         x = WIDTH * ra / 360
         lines.append(f'<line x1="{x:.1f}" y1="{ymid - 30 * scale:.1f}" x2="{x:.1f}" y2="{ymid + 30 * scale:.1f}" stroke="{GRID}" stroke-width=".7"/>')
     return "\n".join(lines)
-
 
 def card_html() -> str:
     ymid, scale = 330, 6.0
@@ -113,9 +97,7 @@ def card_html() -> str:
 </head><body>{svg}</body></html>
 """
 
-
 def render_record_errors(record_path: Path | None = None, card_path: Path | None = None) -> list[str]:
-    """Why the committed card is not the photograph of the current source."""
     record_path = RENDER_RECORD if record_path is None else record_path
     card_path = CARD_PATH if card_path is None else card_path
     if not record_path.is_file():
@@ -127,10 +109,9 @@ def render_record_errors(record_path: Path | None = None, card_path: Path | None
     except (OSError, ValueError):
         return ["og card render record is not JSON"]
     errors = []
-    if not isinstance(record, dict) or set(record) != {
-        "schema_version", "asset", "source_html_sha256", "renderer_script_sha256", "png_sha256",
-        "width", "height", "renderer",
-    } or record.get("schema_version") != 1 or record.get("asset") != CARD_ASSET:
+    if not isinstance(record, dict) or set(record) != {"schema_version", "asset", "source_html_sha256",
+        "renderer_script_sha256", "png_sha256", "width", "height",
+        "renderer"} or record.get("schema_version") != 1 or record.get("asset") != CARD_ASSET:
         return ["og card render record is invalid"]
     if record["source_html_sha256"] != hashlib.sha256(card_html().encode("utf-8")).hexdigest():
         errors.append("og card source changed since the card was rendered; "
@@ -144,15 +125,12 @@ def render_record_errors(record_path: Path | None = None, card_path: Path | None
         errors.append("og card render record names the wrong size")
     return errors
 
-
 def run_renderer(script: Path, *args: object, timeout: int, what: str) -> dict:
-    """Run a local headless-Chromium script; its last output line is its report,
-    which must count no external request."""
+    """Run a local headless-Chromium script; its last output line is its report, which must count no external request."""
     report = node_json(script, *args, timeout=timeout, what=what, cwd=ROOT / "frontend")
     if report.get("external_requests") != 0:
         raise RuntimeError(f"an external request was attempted to {what}")
     return report
-
 
 def render() -> dict:
     """Photograph card_html() in local headless Chromium; write the PNG and its record."""
@@ -164,19 +142,13 @@ def render() -> dict:
         report = run_renderer(RENDERER, source, output, WIDTH, HEIGHT, timeout=120, what="render the og card")
         png = output.read_bytes()
     CARD_PATH.write_bytes(png)
-    record = {
-        "schema_version": 1,
-        "asset": CARD_ASSET,
+    record = {"schema_version": 1, "asset": CARD_ASSET,
         "source_html_sha256": hashlib.sha256(html.encode("utf-8")).hexdigest(),
         "renderer_script_sha256": hashlib.sha256(RENDERER.read_bytes()).hexdigest(),
-        "png_sha256": hashlib.sha256(png).hexdigest(),
-        "width": WIDTH,
-        "height": HEIGHT,
-        "renderer": report["renderer"],
-    }
+        "png_sha256": hashlib.sha256(png).hexdigest(), "width": WIDTH, "height": HEIGHT,
+        "renderer": report["renderer"]}
     RENDER_RECORD.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return record
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n", 1)[0])
@@ -194,7 +166,6 @@ def main() -> int:
     if not errors:
         print(f"OG CARD CURRENT: {CARD_ASSET}")
     return 1 if errors else 0
-
 
 if __name__ == "__main__":
     os.umask(0o022)

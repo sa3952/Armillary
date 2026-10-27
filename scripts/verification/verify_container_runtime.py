@@ -129,7 +129,7 @@ FORBIDDEN_EXECUTABLES = frozenset({
 })
 EXPECTED_IMAGE_ENVIRONMENT = {
     "LANG": "C.UTF-8",
-    "PYTHON_VERSION": "3.14.9",
+    "PYTHON_VERSION": "3.14.10",
     "CLASSICAL_ASTROLOGY_REQUIRE_FRONTEND_RELEASE": "1",
     "PYTHONFAULTHANDLER": "1",
     "PYTHONUNBUFFERED": "1",
@@ -414,7 +414,7 @@ def _inventory_image(image: str, platform: str | None) -> dict[str, Any]:
             f"of which forbidden={sorted(FORBIDDEN_PACKAGES & unexpected)}"
         )
     if (
-        runtime["python"] != "3.14.9"
+        runtime["python"] != "3.14.10"
         or runtime["pyswisseph"] != "2.10.3.2"
         or runtime.get("machine") != MACHINE_BY_DOCKER_ARCHITECTURE.get(architecture)
     ):

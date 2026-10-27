@@ -675,18 +675,26 @@ def local_wall_time(utc_value: dtmod.datetime, tz_input) -> tuple[dtmod.datetime
     return (utc_value + offset).replace(tzinfo=None), tz_input.utc_offset_hours
 
 
-def _local_microseconds(local: dtmod.datetime, millis: int, offset_hours: float) -> int:
-    """The seconds field of the local label, in microseconds.  `local` is the
-    wall time of the UTC label's second (59 inside a positive leap second).
-    Inside a leap second a whole-minute offset keeps second 60, as the UTC label
-    does; an offset with a seconds part (a manual fixed offset) puts the leap
-    second inside a local minute, which has no second 60, so the label runs on
-    into the next local second (it reads as the second after it)."""
+def _local_label_fields(utc_value: dtmod.datetime, millis: int, local: dtmod.datetime
+                        ) -> tuple[dtmod.datetime, int]:
+    """The local label's minute and its seconds field in microseconds.
+
+    `utc_value` and `local` are the UTC and wall times of the UTC label's
+    second (both held at :59.999 inside a positive leap second), so their
+    difference is the offset to the microsecond.  Inside a leap second a
+    whole-minute offset keeps second 60, as the UTC label does; any other
+    offset (a manual fixed offset with a seconds part, fractional or not) puts
+    the leap second inside a local minute, which has no second 60, so the label
+    is the minute's start plus the offset plus the 60.xxx seconds elapsed,
+    carried in whole microseconds across the second, minute and day."""
     if millis <= 59_999:
-        return local.second * 1_000_000 + local.microsecond
-    if round(offset_hours * 3600) % 60 == 0:
-        return millis * 1000
-    return (local.second + 1) * 1_000_000 + (millis - 60_000) * 1000
+        return local.replace(second=0, microsecond=0), local.second * 1_000_000 + local.microsecond
+    minute_start = utc_value.replace(tzinfo=None, second=0, microsecond=0)
+    offset = local - utc_value.replace(tzinfo=None)
+    if offset % dtmod.timedelta(minutes=1) == dtmod.timedelta(0):
+        return minute_start + offset, millis * 1000
+    label = minute_start + offset + dtmod.timedelta(milliseconds=millis)
+    return label.replace(second=0, microsecond=0), label.second * 1_000_000 + label.microsecond
 
 
 def civil_instant(jd_ut: float, tz_input) -> dict:
@@ -694,14 +702,12 @@ def civil_instant(jd_ut: float, tz_input) -> dict:
 
     utc_value, millis = utc_parts_of_jd(jd_ut)
     local, offset_hours = local_wall_time(utc_value, tz_input)
+    minute, seconds = _local_label_fields(utc_value, millis, local)
     return {
         "jd_ut": jd_ut,
         "utc_time": jd_ut_to_iso_utc(jd_ut),
         "time_scale": time_scale_for_jd_ut(jd_ut),
-        "local_time": civil_time_label(
-            local.year, local.month, local.day, local.hour, local.minute,
-            _local_microseconds(local, millis, offset_hours),
-        ),
+        "local_time": civil_time_label(minute.year, minute.month, minute.day, minute.hour, minute.minute, seconds),
         "utc_offset": utc_offset_text(offset_hours),
     }
 

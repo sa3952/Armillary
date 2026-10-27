@@ -48,14 +48,11 @@ TIMEOUT_SECONDS = 30
 _SITEMAP_NS = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
 # What the IndexNow documentation says each answer means.
 _STATUS_MEANING = {
-    0: "no answer (network failure)",
-    200: "OK: the URLs were submitted",
-    202: "Accepted: the URLs were received; key validation pending",
-    400: "Bad request: invalid format",
+    0: "no answer (network failure)", 200: "OK: the URLs were submitted",
+    202: "Accepted: the URLs were received; key validation pending", 400: "Bad request: invalid format",
     403: "Forbidden: the key is not valid (key file not found or not matching)",
     422: "Unprocessable: a URL is not on the host, or the key does not match the schema",
-    429: "Too many requests: possible spam",
-}
+    429: "Too many requests: possible spam"}
 
 # method, URL, body, headers -> status (0 when nothing answered), body
 Transport = Callable[[str, str, bytes | None, dict[str, str] | None], tuple[int, bytes]]
@@ -92,11 +89,9 @@ def sitemap_urls(data: bytes) -> list[str]:
         root = ET.fromstring(data)
     except ET.ParseError as error:
         raise Refused(f"the sitemap is not XML: {error}") from None
-    if root.tag != f"{_SITEMAP_NS}urlset":
-        raise Refused("the sitemap is not a sitemaps.org <urlset>")
+    if root.tag != f"{_SITEMAP_NS}urlset": raise Refused("the sitemap is not a sitemaps.org <urlset>")
     urls = [(entry.findtext(f"{_SITEMAP_NS}loc") or "").strip() for entry in root.findall(f"{_SITEMAP_NS}url")]
-    if not urls:
-        raise Refused("the sitemap lists no URL")
+    if not urls: raise Refused("the sitemap lists no URL")
     if len(urls) > MAX_URLS:
         raise Refused(f"the sitemap lists {len(urls)} URLs; one submission takes at most {MAX_URLS}")
     for url in urls:
@@ -114,10 +109,8 @@ def run(argv: Sequence[str] | None = None, *, transport: Transport = http_transp
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n", 1)[0])
     parser.add_argument("--sitemap", type=Path, default=DEFAULT_SITEMAP,
                         help="the released revision's sitemap (default: frontend/sitemap.xml)")
-    parser.add_argument("--submit", action="store_true",
-                        help="send the submission; without it nothing is sent")
+    parser.add_argument("--submit", action="store_true", help="send the submission; without it nothing is sent")
     args = parser.parse_args(argv)
-
     try:
         urls = sitemap_urls(args.sitemap.read_bytes())
     except (OSError, Refused) as error:
@@ -128,7 +121,6 @@ def run(argv: Sequence[str] | None = None, *, transport: Transport = http_transp
     if not args.submit:
         print(f"DRY RUN: nothing sent ({len(urls)} URLs); --submit sends this to {ENDPOINT}")
         return 0
-
     status, served = transport("GET", KEY_URL, None, None)
     if status != 200 or served != INDEXNOW_KEY.encode("ascii"):
         print(f"INDEXNOW KEY MISMATCH: {KEY_URL} answered HTTP {status} with {len(served)} bytes "
@@ -142,5 +134,4 @@ def run(argv: Sequence[str] | None = None, *, transport: Transport = http_transp
     return 0 if status in SUCCESS_STATUSES else 1
 
 
-if __name__ == "__main__":
-    raise SystemExit(run())
+if __name__ == "__main__": raise SystemExit(run())

@@ -11,6 +11,7 @@ Contra-antiscia：以牡羊/天秤 0 度軸為鏡射軸 -> (360 - 黃經 - 2×ay
 
 from .formatting import normalize_longitude
 from .module_state import (
+    Applicability,
     PRODUCT_FORMULA_SOURCE,
     computed_receipt,
     frame_table_refusal,
@@ -53,7 +54,7 @@ def compute_antiscia(bodies: list, trace: Trace, ayanamsa: float = 0.0) -> dict:
     }
 
 
-def antiscia_not_applicable(state: dict, trace: Trace) -> dict:
+def antiscia_not_applicable(state: Applicability, trace: Trace) -> dict:
     """Refuse instead of mirroring in another frame.
 
     The mirror axis is the solstitial axis of date (method research notes, not

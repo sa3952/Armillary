@@ -5,6 +5,7 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
+import os
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -130,6 +131,25 @@ def test_static_aliases_redirect_to_one_canonical_url_shape():
     assert runtime._canonical_redirect({
         "method": "GET", "path": "//zh-TW//features", "query_string": b"",
     }) == "/zh-TW/features"
+
+
+def test_a_page_and_a_script_resolve_when_the_os_joins_url_segments_with_backslashes(monkeypatch):
+    """Windows: Starlette hands lookup_path the URL joined with os.sep; a declared page,
+    its extensionless name and a shipped script still resolve, an undeclared file does not."""
+    runtime = RuntimeStaticFiles(
+        directory=_FRONTEND_ROOT, html=True,
+        allowed_assets=discover_source_assets(_FRONTEND_ROOT),
+    )
+    script = next(name for name in sorted(runtime._allowed_paths)
+                  if name.startswith("zh-TW/") and name.endswith(".js"))
+    expected = {name: runtime.lookup_path(name.replace("/", os.sep))[0]
+                for name in ("zh-TW/calculate", "zh-TW/calculate.html", script)}
+    assert all(expected.values()), expected
+    monkeypatch.setattr(os, "sep", "\\")
+    for name, full_path in expected.items():
+        assert runtime.lookup_path(name.replace("/", "\\"))[0] == full_path, name
+    assert runtime.lookup_path("zh-TW\\not-allowed.js") == ("", None)
+    assert runtime.lookup_path("zh-TW\\..\\..\\backend\\app\\main.py") == ("", None)
 
 
 def test_public_discovery_assets_are_exact_runtime_files_not_source_metadata():

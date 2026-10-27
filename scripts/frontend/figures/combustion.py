@@ -1,16 +1,9 @@
-"""〈焦傷、在光束下、日輪內：離太陽多近才算〉: figure 1 (the bands along the
-distance from the Sun, as four bars), table 1 (the three traditions' limits in
-brief), table 2 (every limit per body and side, the rows the methods
-page prints), table 3 (one instant under the three traditions) and table 4
-(Mercury's crossings of each tradition's beam limit within 7 days), with the
-numbers the prose quotes.
+"""〈焦傷、在光束下、日輪內：離太陽多近才算〉: figure 1 and tables 1-4 of the article, with the numbers the prose quotes.
 
-The limits are the backend's profile table (app.core.solar_phase).  The
-instant is synthetic, 2017-03-25 18:00 Taipei (10:00 UT, Venus at inferior
-conjunction far north of the ecliptic, Mercury just past superior
-conjunction), and the bands and crossings are the product's own answer to it.
-Its longitude differences, Venus's latitude and the Mercury crossing instants
-are checked against Swiss Ephemeris read directly, without the product's code.
+The limits are the backend's profile table (app.core.solar_phase).  The instant is synthetic, 2017-03-25 18:00 Taipei
+(10:00 UT, Venus at inferior conjunction far north of the ecliptic, Mercury just past superior conjunction), and the
+bands and crossings are the product's own answer to it.  Its longitude differences, Venus's latitude and the Mercury
+crossing instants are checked against Swiss Ephemeris read directly, without the product's code.
 """
 from __future__ import annotations
 
@@ -20,58 +13,38 @@ from . import _fx
 from ._common import PLANETS, TAIPEI, calc_ut, degree_minute, product_charts, swiss
 from .page_methods import solar_limit_text, solar_phase_limit_rows
 
-
 FRAGMENT = "blog-combustion-under-beams-cazimi"
 MOMENT = {"year": 2017, "month": 3, "day": 25, "hour": 18, "minute": 0, "second": 0}
-REQUEST = {
-    "datetime": MOMENT,
-    "location": {"latitude": TAIPEI[0], "longitude": TAIPEI[1]},
-    "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"},
-    "options": {"include_solar_phase": True},
-}
+REQUEST = {"datetime": MOMENT, "location": {"latitude": TAIPEI[0], "longitude": TAIPEI[1]},
+    "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"}, "options": {"include_solar_phase": True}}
 # (figure variant, the product's solar-phase profile, label)
-VARIANTS = (
-    ("lilly", "lilly_1647_p113_v1", "Lilly 1647 p.113"),
-    ("hellenistic", "hellenistic_15_v1", "希臘化"),
-    ("biruni", "biruni_wright_v1", "al-Bīrūnī"),
-)
+VARIANTS = (("lilly", "lilly_1647_p113_v1", "Lilly 1647 p.113"), ("hellenistic", "hellenistic_15_v1", "希臘化"),
+    ("biruni", "biruni_wright_v1", "al-Bīrūnī"))
 NAMES = {key: name for key, name in PLANETS.items() if key != "sun"}
-BAND_NAMES = {
-    "cazimi": "日輪內",
-    "combust": "焦傷",
-    "under_beams": "在光束下",
-    "clear": "離開光束",
-    "accompanying_high_latitude": "伴隨太陽",
-}
+BAND_NAMES = {"cazimi": "日輪內", "combust": "焦傷", "under_beams": "在光束下", "clear": "離開光束",
+    "accompanying_high_latitude": "伴隨太陽"}
 DIRECTIONS = {"emerging": "升出光束", "sinking": "隱入光束"}
 LIMITED = (("cazimi", "日輪內"), ("combust", "焦傷"), ("under_beams", "在光束下"))
-# The original each band name carries where it first appears on the page, as
-# the lead writes it (「焦傷（combust）」); figure 1 sits above the lead, so its
-# labels, its first sentences and its caption carry them.
+# The original each band name carries where it first appears (「焦傷（combust）」); figure 1 sits above the lead, so its
+# labels, first sentences and caption carry them.
 ORIGINAL = {"cazimi": "cazimi", "combust": "combust", "under_beams": "under the beams"}
-# Direct Swiss and the product agree to about a thousandth of an arcsecond; a
-# crossing instant is a root found to 1e-6 day, a few hundredths of an
-# arcsecond of Mercury's motion against the Sun.
+# Direct Swiss and the product agree to about a thousandth of an arcsecond; a crossing instant is a root found to 1e-6
+# day, a few hundredths of an arcsecond of Mercury's motion against the Sun.
 SAME_ARCSEC = 0.05
 CROSSING_ARCSEC = 0.5
-
 
 def _dm(degrees: float, signed: bool = False) -> str:
     """「8°18′」, rounded to the whole arcminute; signed: 「+16°34′」「−35°00′」."""
     text = degree_minute(abs(degrees))
     return (("−" if degrees < 0 else "+") + text) if signed else text
 
-
 def _offset(days: float) -> str:
-    """「之後 17.5 小時」「之前 2.3 天」, as the result page words a crossing."""
     side = "之前" if days < 0 else "之後"
     span = f"{abs(days) * 24:.1f} 小時" if abs(days) < 1 else f"{abs(days):.1f} 天"
     return f"{side} {span}"
 
-
 def _summary_cell(table: dict, band: str) -> str:
-    """One tradition's limit for one band over every body and side: the limit,
-    or the range it spans when it differs by body, side or motion."""
+    """One tradition's limit for one band over every body and side: the limit, or the range it spans."""
     leaves = []
     for sides in table.values():
         for per_band in sides.values():
@@ -87,7 +60,6 @@ def _summary_cell(table: dict, band: str) -> str:
     low, high = min(limit["degrees"] for limit in leaves), max(limit["degrees"] for limit in leaves)
     return f"{low:g}°–{high:g}°（依天體而不同）"
 
-
 def _summary_rows(tables: dict) -> str:
     rows = []
     for _, profile, name in VARIANTS:
@@ -95,18 +67,14 @@ def _summary_rows(tables: dict) -> str:
         rows.append(f'          <tr><th scope="row">{escape(name)}</th>{cells}</tr>')
     return "\n".join(rows)
 
-
-# The two figures draw the instant of tables 3 and 4 under the three
-# traditions; the buttons switch which tradition's bands are shown.  Every edge
-# is the backend's limit for that body, side and the planet's own motion, and
-# every verdict printed is the backend's band; `_drawn_band` re-reads the
-# verdict from the drawn edges and must agree with it.
+# The two figures draw the instant of tables 3 and 4 under the three traditions; the buttons switch the tradition.
+# Every edge and printed verdict is the backend's; `_drawn_band` re-reads the verdict from the drawn edges and must
+# agree.
 VARIANT_LABELS = tuple((variant, label) for variant, _, label in VARIANTS)
 SIDE_SHORT = {"morning": "西側（晨星）", "evening": "東側（昏星）"}
 # The result page's wording (view-model.js SOLAR_PHASE_SIDE_ZH and SOLAR_PHASE_MOTION_ZH).
 SIDE_LONG = {"morning": "西側，比太陽早升起（晨星）", "evening": "東側，比太陽晚落下（昏星）"}
-MOTION_ZH = {"approaching_sun": "正在靠近太陽", "separating_from_sun": "正在離開太陽",
-             "no_relative_motion": "與太陽沒有相對移動"}
+MOTION_ZH = {"approaching_sun": "正在靠近太陽", "separating_from_sun": "正在離開太陽", "no_relative_motion": "與太陽沒有相對移動"}
 BAND_CLASS = {"cazimi": "fx-b-caz", "combust": "fx-b-com", "under_beams": "fx-b-beam"}
 RULER_RANGE = 24.0
 RAY_RANGE = 30.0
@@ -116,28 +84,22 @@ RAY_SOFTNESS = 1.0
 SWITCH_LABEL = "切換三套界線"
 IDLE = "用 Tab 鍵移到一顆星上，或用滑鼠指著它，這裡會寫出它的黃經差與判定。"
 
-
 def _tick_anchor(t: float, end: float) -> str:
-    """The outermost tick labels sit inside the axis, not past the plate."""
     return "start" if t == -end else "end" if t == end else "middle"
-
 
 def _resolved(limit: dict | None, motion: str) -> float | None:
     if limit is None:
         return None
     return (limit[motion] if "direct" in limit else limit)["degrees"]
 
-
 def _edges(tables: dict, profile: str, key: str, side: str, motion: str) -> dict[str, float | None]:
     per_band = tables[profile][key][side]
     return {band: _resolved(per_band[band], motion) for band, _ in LIMITED}
 
-
 def _drawn_band(edges: dict[str, float | None], difference: float, latitude: float,
                 exception: float | None, key: str) -> str:
-    """The band a reader sees: the innermost drawn strip the mark sits in.  The
-    strips are drawn up to the edge; whether the edge itself belongs to the
-    band never decides at this instant (checked: no mark within 1″ of an edge)."""
+    """The band a reader sees: the innermost drawn strip the mark sits in.  Whether an edge belongs to the band never
+    decides at this instant (checked: no mark within 1″ of an edge)."""
     distance = abs(difference)
     band = "clear"
     for name in ("under_beams", "combust", "cazimi"):
@@ -148,9 +110,7 @@ def _drawn_band(edges: dict[str, float | None], difference: float, latitude: flo
         band = "accompanying_high_latitude"
     return band
 
-
 def _strips(edges_by_side: dict[str, dict], x, top: float, height: float, xmin: float, xmax: float) -> str:
-    """The three bands, outermost first, each side to its own edge; a solid edge line where a band ends."""
     out = []
     for band in ("under_beams", "combust", "cazimi"):
         for side, sign in (("morning", -1), ("evening", 1)):
@@ -164,10 +124,8 @@ def _strips(edges_by_side: dict[str, dict], x, top: float, height: float, xmin: 
                 out.append(_fx.line(x(sign * edge), top, x(sign * edge), top + height, "fx-b-edge"))
     return "".join(out)
 
-
 def _mark(key: str, cx: float, cy: float, r: float, off_scale: int = 0) -> str:
-    """A planet: a paper disc with its glyph; off the scale, dashed, with a chevron
-    pointing out of the figure."""
+    """A planet: a paper disc with its glyph; off the scale, dashed, with a chevron pointing out of the figure."""
     out = _fx.circle(cx, cy, r, "fx-mk") + _fx.glyph(key, cx, cy, r * 1.25, "fx-mk-gl")
     if off_scale:
         edge = cx + off_scale * (r + 9)
@@ -175,7 +133,6 @@ def _mark(key: str, cx: float, cy: float, r: float, off_scale: int = 0) -> str:
                + _fx.path(f"M{_fx.f(edge - off_scale * 6)} {_fx.f(cy - 6)} L{_fx.f(edge)} {_fx.f(cy)} "
                           f"L{_fx.f(edge - off_scale * 6)} {_fx.f(cy + 6)}", "fx-out-arrow") + "</g>")
     return out
-
 
 def _sentence(row: dict, profile_label: str, band: str, bound: _fx.Bound, latitude: bool = False) -> str:
     text = (f"{row['name']}：{SIDE_LONG[row['side']]}，黃經差 {bound.num(_dm(row['longitude_difference_degrees']))}，"
@@ -187,15 +144,12 @@ def _sentence(row: dict, profile_label: str, band: str, bound: _fx.Bound, latitu
     # 「照 Lilly 1647 p.113」but 「照希臘化」: a space only before a Latin name.
     text += f"照{' ' if profile_label[0].isascii() else ''}{profile_label}：{BAND_NAMES[band]}。"
     if band == "accompanying_high_latitude":
-        text += (f"al-Bīrūnī §{bound.num('483')} 說金星在會合時北黃緯超過 {bound.num('7')}°，"
-                 "不稱日輪內，也不稱焦傷，只稱「伴隨太陽」（muqārina）。")
+        text += (f"al-Bīrūnī §{bound.num('483')} 說金星在會合時北黃緯超過 {bound.num('7')}°，" "不稱日輪內，也不稱焦傷，只稱「伴隨太陽」（muqārina）。")
     return text
 
-
 def _band_labels(evening: dict[str, float | None], x, cx: float, limit: float, top: float, wide: bool) -> str:
-    """The band names over figure 1, each with its original on the line below:
-    日輪內 to the left of the Sun's line (its strip is a hairline), the others
-    from their band's inner edge, pushed right so no two overlap."""
+    """The band names over figure 1, each with its original on the line below: 日輪內 left of the Sun's line (its strip
+    is a hairline), the others from their band's inner edge, pushed right so none overlap."""
     size, pad = (15.0, 6.0) if wide else (12.0, 3.0)
     zh_y, en_y = top - (34 if wide else 28), top - (12 if wide else 10)
     cls = "fx-t fx-small fx-key"
@@ -217,9 +171,7 @@ def _band_labels(evening: dict[str, float | None], x, cx: float, limit: float, t
         inner = edge
     return "".join(out)
 
-
 def _ruler(layout: str, fid: str, rows: list[dict], verdicts: dict, edges: dict, bound: _fx.Bound) -> str:
-    """Figure 1, one layout: a row per body, its bands on both sides of the Sun, its mark."""
     wide = layout == "fx-wide"
     W = _fx.WIDE if wide else _fx.NARROW
     x0, x1 = (200.0, 740.0) if wide else (14.0, 326.0)
@@ -266,8 +218,7 @@ def _ruler(layout: str, fid: str, rows: list[dict], verdicts: dict, edges: dict,
             out.append(_fx.text(x0 - 14, my + 6, value, "fx-t fx-num", "end"))
         else:
             out.append(_fx.text(x0, y + 16, row["name"], "fx-t fx-name"))
-            out.append(_fx.text(x0 + 40, y + 16, value + ("（圖外）" if abs(diff) > RULER_RANGE else ""),
-                                "fx-t fx-num"))
+            out.append(_fx.text(x0 + 40, y + 16, value + ("（圖外）" if abs(diff) > RULER_RANGE else ""), "fx-t fx-num"))
         out.append("</g>")
     axis = bottom + 6
     out.append(_fx.line(x0, axis, x1, axis, "fx-axis"))
@@ -281,19 +232,15 @@ def _ruler(layout: str, fid: str, rows: list[dict], verdicts: dict, edges: dict,
         raise RuntimeError("figure 1 outgrew its drawing")
     return "".join(out)
 
-
 def _ray_x(cx: float, half: float):
     import math
-
     full = math.asinh(RAY_RANGE / RAY_SOFTNESS)
     return lambda d: cx + math.copysign(math.asinh(abs(d) / RAY_SOFTNESS) / full * half, d)
 
-
 def _rays(layout: str, fid: str, rows: list[dict], verdicts: dict, edges: dict, exceptions: dict,
           semidiameter: float, bound: _fx.Bound) -> str:
-    """Figure 2, one layout: the Sun at the centre, ecliptic longitude difference
-    across (asinh), latitude up, the bands as upright strips; and the Sun ±1° at
-    true scale, the disc and the cazimi strip."""
+    """Figure 2, one layout: the Sun at the centre, ecliptic longitude difference across (asinh), latitude up, the
+    bands as upright strips; and the Sun ±1° at true scale, the disc and the cazimi strip."""
     wide = layout == "fx-wide"
     W = _fx.WIDE if wide else _fx.NARROW
     if wide:
@@ -354,8 +301,7 @@ def _rays(layout: str, fid: str, rows: list[dict], verdicts: dict, edges: dict, 
     for t in (0,) + ticks + tuple(-t for t in ticks):
         out.append(_fx.line(x(t), bottom, x(t), bottom + 5, "fx-axis"))
         out.append(_fx.text(x(t), bottom + 22, bound.scale(f"{abs(t)}°"), "fx-t fx-small fx-num", _tick_anchor(t, RAY_RANGE)))
-    out.append(_fx.text(cx, bottom + (46 if wide else 44), "與太陽的黃經差（越靠近太陽，刻度放得越大）",
-                        "fx-t fx-small", "middle"))
+    out.append(_fx.text(cx, bottom + (46 if wide else 44), "與太陽的黃經差（越靠近太陽，刻度放得越大）", "fx-t fx-small", "middle"))
     for row in rows:
         diff, lat = row["longitude_difference_degrees"], row["ecliptic_latitude_degrees"]
         if abs(diff) > RAY_RANGE or abs(lat) > RAY_LATITUDE:
@@ -388,11 +334,9 @@ def _rays(layout: str, fid: str, rows: list[dict], verdicts: dict, edges: dict, 
     inset.append(_fx.line(ix, icy, ix + iw, icy, "fx-hair"))
     inset.append(_fx.circle(icx, icy, semidiameter * scale, "fx-disc"))
     vx = icx + venus["longitude_difference_degrees"] * scale
-    inset.append(f'<g class="fx-row-echo" data-fx-key="venus">'
-                 + _fx.path(f"M{_fx.f(vx)} {_fx.f(iy + 6)} l-6 10 h12 z", "fx-arrow")
-                 + _fx.text(vx, iy + 34, f"金星在北 {bound.num(_dm(venus['ecliptic_latitude_degrees']))}",
-                            "fx-t fx-small fx-inset-t", "middle")
-                 + "</g>")
+    inset.append(f'<g class="fx-row-echo" data-fx-key="venus">' + _fx.path(f"M{_fx.f(vx)} {_fx.f(iy + 6)} l-6 10 h12 z",
+        "fx-arrow") + _fx.text(vx, iy + 34, f"金星在北 {bound.num(_dm(venus['ecliptic_latitude_degrees']))}",
+        "fx-t fx-small fx-inset-t", "middle") + "</g>")
     inset.append("</g>")
     out += inset
     out.append(_fx.rect(ix, iy, iw, ih, "fx-inset-frame"))
@@ -412,10 +356,7 @@ def _rays(layout: str, fid: str, rows: list[dict], verdicts: dict, edges: dict, 
         raise RuntimeError("figure 2 outgrew its drawing")
     return "".join(out)
 
-
 def _first_glossed(notes: list[_fx.Note]) -> list[_fx.Note]:
-    """The figure's sentences in page order, the first that names each band
-    carrying its original after it."""
     out = list(notes)
     for band, name in LIMITED:
         for i, note in enumerate(out):
@@ -424,7 +365,6 @@ def _first_glossed(notes: list[_fx.Note]) -> list[_fx.Note]:
                 out[i] = _fx.Note(note.key, note.variant, glossed, note.step)
                 break
     return out
-
 
 def _ruler_table(rows: list[dict], verdicts: dict, bound: _fx.Bound) -> str:
     body = []
@@ -435,9 +375,7 @@ def _ruler_table(rows: list[dict], verdicts: dict, bound: _fx.Bound) -> str:
                     f'<td>{SIDE_SHORT[row["side"]]}</td>{cells}</tr>')
     return _fx.data_table(("天體", "黃經差", "太陽哪一側", *(label for *_, label in VARIANTS)), body)
 
-
 def _figures(answer: dict) -> tuple[dict[str, str], list[str]]:
-    """The page's sprite and its two figures, each checked by `_fx.problems`."""
     module = answer["derived_methods"]["solar_phase"]
     results = module["profile_results"]
     rows = module["rows"]
@@ -463,7 +401,6 @@ def _figures(answer: dict) -> tuple[dict[str, str], list[str]]:
     labels = dict(VARIANT_LABELS)
     semidiameter = module["sun"]["semidiameter_degrees"]
     venus = next(row for row in rows if row["key"] == "venus")
-
     ruler_bound, ray_bound = _fx.Bound(), _fx.Bound()
     for bound in (ruler_bound, ray_bound):
         for _, label in VARIANT_LABELS:
@@ -521,20 +458,16 @@ def _figures(answer: dict) -> tuple[dict[str, str], list[str]]:
     sprite = _fx.defs(("sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn"))
     return {"fx-defs": sprite, "beams": ruler, "rays": rays}, []
 
-
 def _check_against_swiss(answer: dict) -> None:
-    """The product's longitude differences, Venus's latitude and the Mercury
-    crossings, against Swiss read directly at the same instants."""
+    """The product's longitude differences, Venus's latitude and Mercury crossings against Swiss read directly."""
     module = answer["derived_methods"]["solar_phase"]
     jd = answer["astronomical_data"]["time"]["jd_ut"]
     with swiss() as swe:
         ids = {"moon": swe.MOON, "mercury": swe.MERCURY, "venus": swe.VENUS, "mars": swe.MARS,
                "jupiter": swe.JUPITER, "saturn": swe.SATURN}
-
         def difference(body: int, at: float) -> tuple[float, float]:
             planet, sun = calc_ut(swe, at, body), calc_ut(swe, at, swe.SUN)
             return (planet[0] - sun[0] + 180.0) % 360.0 - 180.0, planet[1]
-
         for row in module["rows"]:
             delta, latitude = difference(ids[row["key"]], jd)
             if abs(delta - row["longitude_difference_degrees"]) * 3600 > SAME_ARCSEC:
@@ -546,7 +479,6 @@ def _check_against_swiss(answer: dict) -> None:
                 delta, _ = difference(swe.MERCURY, crossing["instant"]["jd_ut"])
                 if abs(abs(delta) - crossing["threshold_degrees"]) * 3600 > CROSSING_ARCSEC:
                     raise RuntimeError(f"{profile}: Mercury at its crossing is {delta}°, not the limit")
-
 
 def build() -> tuple[dict[str, str], list[str]]:
     with product_charts() as post:
@@ -560,17 +492,14 @@ def build() -> tuple[dict[str, str], list[str]]:
                 "biruni_wright_v1": "accompanying_high_latitude"}
     if any(results[profile]["bands"]["venus"] != band for profile, band in expected.items()):
         raise RuntimeError("the instant no longer gives Venus three answers")
-
     tables = {profile: results[profile]["limits"] for _, profile, _ in VARIANTS}
     example = []
     for key, name in NAMES.items():
         row = rows[key]
         bands = "".join(f"<td>{BAND_NAMES[results[profile]['bands'][key]]}</td>" for _, profile, _ in VARIANTS)
-        example.append(
-            f'          <tr><th scope="row">{name}</th><td class="n">{_dm(row["longitude_difference_degrees"], True)}</td>'
-            f'<td class="n">{_dm(row["ecliptic_latitude_degrees"], True)}</td>'
-            f'<td class="n">{_dm(row["angular_separation_degrees"])}</td>{bands}</tr>'
-        )
+        example.append(f'          <tr><th scope="row">{name}</th><td class="n">{_dm(row["longitude_difference_degrees"],
+            True)}</td>' f'<td class="n">{_dm(row["ecliptic_latitude_degrees"],
+            True)}</td>' f'<td class="n">{_dm(row["angular_separation_degrees"])}</td>{bands}</tr>')
     crossings, quoted_offsets = [], []
     for _, profile, name in VARIANTS:
         found = results[profile]["beam_crossings_within_7_days"]["mercury"]
@@ -584,21 +513,11 @@ def build() -> tuple[dict[str, str], list[str]]:
             f'<td>{DIRECTIONS[item["direction"]]}</td><td>{when}</td>'
             f'<td>{BAND_NAMES[results[profile]["bands"]["mercury"]]}</td></tr>'
         )
-
     semidiameter = module["sun"]["semidiameter_degrees"] * 60
-    quoted = [
-        f"黃經只差 {round(abs(venus['longitude_difference_degrees']) * 60)}′",
+    quoted = [f"黃經只差 {round(abs(venus['longitude_difference_degrees']) * 60)}′",
         f"北黃緯 {_dm(venus['ecliptic_latitude_degrees'])}",
         f"天空中離太陽 {_dm(venus['angular_separation_degrees'])}",
-        f"水星在太陽東邊 {_dm(mercury['longitude_difference_degrees'])}",
-        f"約 {semidiameter:.0f}′",
-        *quoted_offsets,
-    ]
+        f"水星在太陽東邊 {_dm(mercury['longitude_difference_degrees'])}", f"約 {semidiameter:.0f}′", *quoted_offsets]
     figures, _ = _figures(answer)
-    return {
-        **figures,
-        "summary": _summary_rows(tables),
-        "limits": solar_phase_limit_rows(),
-        "example": "\n".join(example),
-        "crossings": "\n".join(crossings),
-    }, quoted
+    return {**figures, "summary": _summary_rows(tables), "limits": solar_phase_limit_rows(), "example": "\n".join(example),
+        "crossings": "\n".join(crossings)}, quoted

@@ -19,7 +19,7 @@ from __future__ import annotations
 from .dignity_tables import SEVEN_PLANETS, SIGNS
 from .formatting import normalize_longitude, zodiac_sign_index
 from .method_status import method_head
-from .module_state import PRODUCT_FORMULA_SOURCE, computed_receipt, frame_table_refusal
+from .module_state import Applicability, PRODUCT_FORMULA_SOURCE, computed_receipt, frame_table_refusal
 from .source_reading import (
     BIBLIOGRAPHIC_ONLY, DOROTHEUS_BOOK_I_ONLINE, ORIGINAL_LANGUAGE_READ, SECONDARY_ONLY, TRANSLATION_READ,
     cited,
@@ -306,7 +306,7 @@ def compute_classical_classifications(
     }
 
 
-def classical_classifications_not_applicable(state: dict, trace: Trace) -> dict:
+def classical_classifications_not_applicable(state: Applicability, trace: Trace) -> dict:
     refusal = frame_table_refusal(
         state, trace, "行星與宮的古典分類",
         note="參考框架相容表判定不適用：沒有地平或不是當日的星座。",

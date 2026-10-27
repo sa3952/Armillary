@@ -972,6 +972,27 @@ def test_the_application_never_receives_a_client_address_or_identity_header():
     assert seen == [{b"host", b"content-type", b"accept-encoding", b"range", b"if-none-match"}]
 
 
+def test_the_real_application_stacks_every_boundary_in_one_order():
+    """Outermost first: privacy contains every failure below it; the host,
+    header and body boundary refuses before admission charges a pool; the
+    method boundary answers before a route; compression and the header
+    allowlist sit next to the routes.  Moving any one fails this."""
+
+    from app.main import create_app
+    from app.privacy_logging import ApplicationHeaderAllowlist, PrivacyBoundaryMiddleware
+    from app.request_limits import ApiMethodBoundary, ChartRequestBoundary, RequestCapacityBoundary
+    from app.runtime_static import ChartResultCompression
+
+    assert [entry.cls for entry in create_app().user_middleware] == [
+        PrivacyBoundaryMiddleware,
+        ChartRequestBoundary,
+        RequestCapacityBoundary,
+        ApiMethodBoundary,
+        ChartResultCompression,
+        ApplicationHeaderAllowlist,
+    ]
+
+
 def test_the_real_application_puts_the_header_allowlist_innermost():
     from app.main import create_app
     from app.privacy_logging import ApplicationHeaderAllowlist, PrivacyBoundaryMiddleware

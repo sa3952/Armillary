@@ -1,13 +1,9 @@
-"""〈時間主星參考案例〉: the reference tables for two synthetic charts (the
-site's demonstration date 1990-05-15 Taipei at 14:30, a day chart, and at
-22:30, a night chart): the profection years, the firdaria periods (the night
-chart under both nocturnal node orders), zodiacal releasing levels 1 and 2 from
-Fortune and Spirit with every loosing of the bond, and the decennials' first
-level.
+"""〈時間主星參考案例〉: the reference tables for two synthetic charts (1990-05-15 Taipei at 14:30, a day chart, and at
+22:30, a night chart): profection years, firdaria periods (the night chart under both nocturnal node orders), zodiacal
+releasing levels 1 and 2 from Fortune and Spirit with every loosing of the bond, and the decennials' first level.
 
-Every date and lord is the product's own answer: the annual route, in process,
-asked for the hundred-year lifetime window, and once more for a year inside
-each releasing level-1 period (the route lists level 2 only for the periods
+Every date and lord is the product's own answer: the annual route, in process, asked for the hundred-year lifetime
+window, and once more for a year inside each releasing level-1 period (the route lists level 2 only for the periods
 that meet the asked year).  Nothing here is typed by hand.
 """
 from __future__ import annotations
@@ -18,25 +14,21 @@ from . import page_methods_time_lords
 from ._common import SIGNS, product_client
 from ._demo import DEMO
 
-
 FRAGMENT = "blog-time-lord-reference-cases"
 BODY = page_methods_time_lords.BODY
 SIGN_KEYS = ("aries", "taurus", "gemini", "cancer", "leo", "virgo",
              "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces")
 SIGN = dict(zip(SIGN_KEYS, SIGNS))
 LOT = {"fortune": "命運點", "spirit": "精神點"}
-NODE_ORDERS = (("abu_mashar_nodes_after_mercury_v1", "交點在水星後（預設）"),
-               ("bonatti_reading_nodes_after_mars_v1", "交點在火星後"))
+NODE_ORDERS = (("abu_mashar_nodes_after_mercury_v1", "交點在水星後（預設）"), ("bonatti_reading_nodes_after_mars_v1", "交點在火星後"))
 CHARTS = (("day", "例盤 A（日盤）", (14, 30)), ("night", "例盤 B（夜盤）", (22, 30)))
 PROFECTION_YEARS = 25
-
 
 def _request(clock: tuple[int, int], annual: dict) -> dict:
     payload = {key: DEMO[key] for key in ("datetime", "location", "timezone")}
     payload["datetime"] = {**payload["datetime"], "hour": clock[0], "minute": clock[1]}
     payload["annual"] = {"include_profection": True, **annual}
     return payload
-
 
 @functools.lru_cache(maxsize=1)
 def answers() -> dict:
@@ -51,7 +43,6 @@ def answers() -> dict:
             firdaria = {profile: ask(clock, {**life, "include_firdaria": True, "firdaria_scope": "lifetime_window",
                                              "firdaria_nocturnal_node_profile": profile})["annual_methods"]["firdaria"]
                         for profile, _ in NODE_ORDERS}
-            # Level 2 as the route lists it for each return year, gathered over the window.
             level_2: dict = {}
             for year in lifetime["year_boundaries"]["years"]:
                 inner = ask(clock, {"target_kind": "completed_years", "target_value": year["completed_years"],
@@ -75,21 +66,17 @@ def answers() -> dict:
             out[key] = {"lifetime": lifetime, "firdaria": firdaria, "level_2": level_2}
     return out
 
-
 def _date(instant: dict) -> str:
     return instant["local_date"]
 
-
 def _local(instant: dict) -> str:
     return instant["local_time"][:16] + f"（{instant['utc_offset']}）"
-
 
 def _table(tid: str, caption: str, head: tuple[str, ...], rows: list[str]) -> str:
     cols = "".join(f'<th scope="col">{label}</th>' for label in head)
     return (f'<div class="ar-scroll" tabindex="0" role="region" aria-labelledby="{tid}">'
             f'<table class="ar-table"><caption id="{tid}">{caption}</caption>'
             f'<thead><tr>{cols}</tr></thead><tbody>{"".join(rows)}</tbody></table></div>')
-
 
 def _profections(key: str, title: str, data: dict) -> str:
     rows = []
@@ -99,7 +86,6 @@ def _profections(key: str, title: str, data: dict) -> str:
                     f'<td>{BODY[year["year_lord"]]}</td></tr>')
     return _table(f"rc-{key}-profection", f"{title}：年度小限，滿 0 到 {PROFECTION_YEARS - 1} 歲",
                   ("滿幾歲", "這一年從何時起", "小限星座", "年主星"), rows)
-
 
 def _firdaria(key: str, title: str, data: dict) -> str:
     profiles = NODE_ORDERS if key == "night" else NODE_ORDERS[:1]
@@ -117,7 +103,6 @@ def _firdaria(key: str, title: str, data: dict) -> str:
         blocks.append(_table(f"rc-{key}-firdaria-{profile.split('_')[0]}", f"{title}：法達，{name}",
                              ("主期", "滿幾歲到滿幾歲", "起", "止", "子期（起日）"), rows))
     return "\n".join(blocks)
-
 
 def _releasing(key: str, title: str, data: dict) -> str:
     blocks = []
@@ -141,7 +126,6 @@ def _releasing(key: str, title: str, data: dict) -> str:
                              ("期間", "長度", "起", "止"), rows))
     return "\n".join(blocks)
 
-
 def _decennials(key: str, title: str, data: dict) -> str:
     dec = data["lifetime"]["annual_methods"]["decennials"]
     rows = [f'<tr><td>{BODY[p["lord"]]}</td><td class="n">{p["months"]} 月</td>'
@@ -149,9 +133,7 @@ def _decennials(key: str, title: str, data: dict) -> str:
     return _table(f"rc-{key}-decennials", f"{title}：十年期第一層（從{BODY[dec['start_planet']]}起）",
                   ("主星", "長度", "起", "止"), rows)
 
-
 def loosings(data: dict) -> list[tuple[str, str, str, str]]:
-    """(lot, level-1 sign, the sign loosed to, its start date) for every level-2 loosing."""
     found = []
     for release in data["lifetime"]["annual_methods"]["zodiacal_releasing"]["releases"]:
         lot = release["releasing_from"]
@@ -160,7 +142,6 @@ def loosings(data: dict) -> list[tuple[str, str, str, str]]:
                 if sub["entry_kind"] == "loosing_of_the_bond":
                     found.append((lot, period["sign"], sub["sign"], _date(sub["start"])))
     return found
-
 
 def build() -> tuple[dict[str, str], list[str]]:
     data = answers()

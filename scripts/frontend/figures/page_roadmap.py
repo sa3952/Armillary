@@ -1,18 +1,15 @@
-"""The roadmap's status tables: the counts they state, from the request
-schema, the star catalogue, the options catalogue and the surface list; and
-the validation run's size and station probes, from the run's configuration."""
+"""The roadmap's status tables: the counts they state, from the request schema, the star catalogue, the options
+catalogue and the surface list; and the validation run's size and station probes, from the run's configuration."""
 from __future__ import annotations
 
 from . import _site, page_validation
 from ._common import zh, zh_quantity
 
-
 FRAGMENT = "roadmap"
-# The station check: each of the 448 station zero crossings the validation
-# report found was probed at these offsets (the report, §10).
+# The station check: each of the 448 station zero crossings the validation report found was probed at these offsets
+# (the report, §10).
 STATION_ZEROS = 448
 STATION_PROBES = ("-6h", "-1h", "+1h", "+6h")
-
 
 def build() -> tuple[dict[str, str], list[str]]:
     site = _site.product()

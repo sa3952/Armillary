@@ -1,30 +1,24 @@
 """The NOAA solar calculator's formulas, as an oracle independent of Swiss.
 
-Transcribed from the cell formulas of NOAA Global Monitoring Laboratory's
-spreadsheet NOAA_Solar_Calculations_day (linked from
-https://gml.noaa.gov/grad/solcalc/calcdetails.html; the page says the
-equations come from Meeus, Astronomical Algorithms, and are accurate to about a
-minute between ±72° latitude).  Nothing here calls Swiss Ephemeris or the
-product, so an article can check one of its numbers against a second
-algorithm.  Time argument: Julian Day of UT (the spreadsheet's input is local
-clock time minus its time zone; the difference between UTC and UT1 is below a
-second and far below the formulas' accuracy).
+Transcribed from the cell formulas of NOAA Global Monitoring Laboratory's spreadsheet NOAA_Solar_Calculations_day
+(linked from https://gml.noaa.gov/grad/solcalc/calcdetails.html; the page says the equations come from Meeus,
+Astronomical Algorithms, and are accurate to about a minute between ±72° latitude).  Nothing here calls Swiss Ephemeris
+or the product, so an article can check one of its numbers against a second algorithm.  Time argument: Julian Day of UT
+(the spreadsheet's input is local clock time minus its time zone; the difference between UTC and UT1 is below a second
+and far below the formulas' accuracy).
 """
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
 import math
 
-
 def julian_day(utc: datetime) -> float:
     if utc.tzinfo is None:
         raise ValueError("an aware UTC datetime is required")
     return utc.timestamp() / 86400.0 + 2440587.5
 
-
 def sun(jd: float) -> dict[str, float]:
-    """Columns G–V of the spreadsheet: apparent longitude, declination and the
-    equation of time (minutes) at one instant."""
+    """Columns G–V of the spreadsheet: apparent longitude, declination and equation of time (minutes) at one instant."""
     rad, deg = math.radians, math.degrees
     t = (jd - 2451545) / 36525
     l0 = (280.46646 + t * (36000.76983 + t * 0.0003032)) % 360
@@ -43,13 +37,10 @@ def sun(jd: float) -> dict[str, float]:
                   - 0.5 * y * y * math.sin(4 * rad(l0)) - 1.25 * e * e * math.sin(2 * rad(m)))
     return {"apparent_longitude": app_long % 360, "declination": decl, "equation_of_time_minutes": eot}
 
-
 def sunrise_utc(noon_date: date, latitude: float, longitude: float, zenith: float = 90.833) -> datetime:
-    """Sunrise (UTC) before the local solar noon that falls on the UT date
-    `noon_date`, from the spreadsheet's hour-angle formula (column W, with the
-    zenith as a parameter: 90.833 is NOAA's refracted upper limb, 90 the
-    geometric centre) and solar noon (column X with time zone 0), re-evaluated
-    at its own result until it settles."""
+    """Sunrise (UTC) before the local solar noon on the UT date `noon_date`, from the spreadsheet's hour-angle formula
+    (column W; zenith 90.833 is NOAA's refracted upper limb, 90 the geometric centre) and solar noon (column X, time zone
+    0), re-evaluated at its own result until it settles."""
     rad, deg = math.radians, math.degrees
     base = datetime(noon_date.year, noon_date.month, noon_date.day, tzinfo=timezone.utc)
     t = base + timedelta(minutes=720 - 4 * longitude)

@@ -1,15 +1,11 @@
-"""What the security page's self-check sub-page lists: the requests one
-calculation makes and the headers each response carries.
+"""What the security page's self-check sub-page lists: the requests one calculation makes and the headers each response
+carries.
 
-Nothing here is a second list of the calculator's files.  The page assets are
-read from the calculator page exactly as build_pages renders it (every
-same-origin stylesheet, icon, script and lazily imported module it names, with
-the content version stamped into its address); the API calls are the
-calculator script's, written once below, and a browser test drives a real
-calculation and fails when the requests it observes differ from the rows
-printed here (frontend/tests/e2e/privacy-check.spec.cjs).  The cache directive
-of each row and the security headers come from the application's own
-definitions in backend/app/privacy_logging.py.
+Nothing here is a second list of the calculator's files.  The page assets are read from the calculator page exactly as
+build_pages renders it; the API calls are the calculator script's, written once below, and a browser test drives a real
+calculation and fails when the requests it observes differ from the rows printed here
+(frontend/tests/e2e/privacy-check.spec.cjs).  Cache directives and security headers come from
+backend/app/privacy_logging.py.
 
 The fragment writes, each on a line of its own:
 
@@ -17,8 +13,7 @@ The fragment writes, each on a line of its own:
 - ``{{network_panel_figure}}``: a schematic network panel drawn from the required rows;
 - ``{{security_header_rows}}``: one table row per security header;
 
-and, inline, ``{{calculation_request_count}}`` (the required rows) and
-``{{public_repository_url}}``.
+and, inline, ``{{calculation_request_count}}`` (the required rows) and ``{{public_repository_url}}``.
 """
 
 from __future__ import annotations
@@ -32,12 +27,9 @@ import re
 import textwrap
 from urllib.parse import urlsplit
 
-
 CALCULATE_KEY = "calculate"
 
-# What each script the calculator page loads does, in the reader's words.  A
-# script the page loads without a line here fails the build, so a new file
-# cannot appear in the list undescribed.
+# What each script the calculator page loads does, in the reader's words.  A script without a line fails the build.
 SCRIPT_ROLES = {
     "labels.js": "代碼的中文名稱，結果與匯出共用",
     "client-context.js": "把錯誤代碼換成看得懂的說明與下一步",
@@ -63,22 +55,15 @@ SCRIPT_ROLES = {
     "visit-count.js": "網站的瀏覽數與每日訪客數計數：送出兩個沒有內容的請求，伺服器只把計數器加一",
 }
 
-# When the browser fetches each script calculate.js imports later instead of at
-# open.  A deferred script without a line here fails the build.
-MODULE_WHEN = {
-    "chart-glyphs.js": "第一次操作表單時預先載入",
-    "chart-wheel-aspects.js": "第一次操作表單時預先載入",
-    "chart-wheel-model.js": "第一次操作表單時預先載入",
-    "chart-square.js": "第一次操作表單時預先載入",
-    "chart-wheel.js": "第一次操作表單時預先載入",
-    "view-model.js": "第一次操作表單時預先載入",
-    "timelords-model.js": "第一份結果畫出時",
-    "timelords.js": "第一份結果畫出時",
-}
+# When the browser fetches each script calculate.js imports later.  A deferred script without a line here fails the
+# build.
+MODULE_WHEN = {"chart-glyphs.js": "第一次操作表單時預先載入", "chart-wheel-aspects.js": "第一次操作表單時預先載入",
+    "chart-wheel-model.js": "第一次操作表單時預先載入", "chart-square.js": "第一次操作表單時預先載入",
+    "chart-wheel.js": "第一次操作表單時預先載入", "view-model.js": "第一次操作表單時預先載入",
+    "timelords-model.js": "第一份結果畫出時", "timelords.js": "第一份結果畫出時"}
 
-# The calculator's own API calls (frontend/zh-TW/calculate.js `postJson`): the
-# method, the address, whether one calculation always makes it, when it is
-# sent and what it carries.
+# The calculator's own API calls (frontend/zh-TW/calculate.js `postJson`): method, address, whether every calculation
+# makes it, when it is sent and what it carries.
 @dataclass(frozen=True)
 class ApiCall:
     method: str
@@ -88,7 +73,6 @@ class ApiCall:
     carries: str
     # The Cache-Control to print when it is not one fixed value.
     cache: str | None = None
-
 
 API_CALLS = (
     ApiCall(
@@ -110,10 +94,9 @@ API_CALLS = (
     ),
 )
 
-# A request the page lists only once a script the calculator loads sends it.
-# The annual route is registered behind a deployment flag; its row appears the
-# build the calculator's own code calls it (timelords.js), so the list never
-# names a request no button sends, nor misses one a button does.
+# A request listed only once a script the calculator loads sends it.  The annual route is registered behind a
+# deployment flag; its row appears the build the calculator's code calls it (timelords.js), so the list never names a
+# request no button sends.
 GATED_API_CALLS = (
     ApiCall(
         "POST", "/api/chart/annual?projection=page", False,
@@ -126,9 +109,8 @@ GATED_API_CALLS = (
     ),
 )
 
-# Every page's visit-count.js sends these two on open, unless the browser
-# signals Global Privacy Control.  They carry nothing; the service adds one to a
-# counter and keeps no record of the request (backend/app/visit_counts.py).
+# Every page's visit-count.js sends these two on open, unless the browser signals Global Privacy Control.  They carry
+# nothing; the service adds one to a counter and keeps no record of the request (backend/app/visit_counts.py).
 COUNT_CALLS = (
     ApiCall(
         "POST", "/api/visit", True, "打開任何一頁（瀏覽器開了 Global Privacy Control 則不送）",
@@ -142,19 +124,13 @@ COUNT_CALLS = (
     ),
 )
 
-# How the calculator's code sends a request (frontend/zh-TW/calculate.js
-# `postJson`): the address is always a string literal at the call.
+# The address is always a string literal at the call (calculate.js `postJson`).
 _POST_JSON_CALL = re.compile(r"""\bpostJson\(\s*["']([^"']+)["']""")
 
-
 def sent_api_urls(sources: dict[str, str]) -> set[str]:
-    """Every address a loaded script passes to `postJson`, by its literal."""
-
     return {url for text in sources.values() for url in _POST_JSON_CALL.findall(text)}
 
-
-# What each header the application adds to every response means for the
-# reader.  A header without a line here fails the build.
+# What each header the application adds to every response means.  A header without a line here fails the build.
 HEADER_MEANINGS = {
     "Content-Security-Policy": (
         "瀏覽器只准這個頁面從本站載入程式、樣式、圖片與連線（<span class=\"mono\">'self'</span>），"
@@ -170,15 +146,7 @@ HEADER_MEANINGS = {
     "Cross-Origin-Resource-Policy": "本站的檔案不給其他網站的頁面載入",
 }
 
-_KIND_LABELS = {
-    "document": "頁面",
-    "stylesheet": "樣式",
-    "script": "程式",
-    "module": "程式",
-    "icon": "圖示",
-    "fetch": "計算／查詢",
-}
-
+_KIND_LABELS = {"document": "頁面", "stylesheet": "樣式", "script": "程式", "module": "程式", "icon": "圖示", "fetch": "計算／查詢"}
 
 @dataclass(frozen=True)
 class Request:
@@ -192,15 +160,11 @@ class Request:
 
     @property
     def name(self) -> str:
-        """The last path segment with its query, as a network panel names it."""
-
         path, _, query = self.url.partition("?")
         segment = PurePosixPath(path).name or path
         return segment + (f"?{query}" if query else "")
 
-
 class _References(HTMLParser):
-    """Every address the calculator page makes the browser fetch, in order."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -216,12 +180,8 @@ class _References(HTMLParser):
         elif tag == "script" and values.get("src"):
             self.found.append(("script", values["src"]))
         if tag == "script":
-            # calculate.js imports the scripts named in its data-* attributes later
-            # (the chart scripts and view-model.js on the first submission, the time-lords pair once the
-            # first result is drawn).
-            self.found.extend(("module", value) for name, value in attrs
-                              if name.startswith("data-") and value)
-
+            # calculate.js imports the scripts named in its data-* attributes later.
+            self.found.extend(("module", value) for name, value in attrs if name.startswith("data-") and value)
 
 def page_references(calculate_page: str) -> list[tuple[str, str]]:
     parser = _References()
@@ -231,10 +191,8 @@ def page_references(calculate_page: str) -> list[tuple[str, str]]:
             raise ValueError(f"the calculator page names an address off this site: {address}")
     return parser.found
 
-
 def _script_name(url: str) -> str:
     return PurePosixPath(url.partition("?")[0]).name
-
 
 def _what(kind: str, url: str) -> str:
     if kind == "stylesheet":
@@ -246,25 +204,15 @@ def _what(kind: str, url: str) -> str:
         raise ValueError(f"the calculator loads a script with no description: {name}")
     return SCRIPT_ROLES[name]
 
+def calculation_requests(calculate_page: str, calculate_surface: str, cache_control: Callable[[str], str],
+    script_source: Callable[[str], str]) -> list[Request]:
+    """The rows: the page, its assets in the order the page names them, then the API calls; grouped into what every
+    calculation makes (`required`), what the browser may fetch for its tab icon (`icons`) and what only an action of
+    yours sends (`optional`).
 
-def calculation_requests(
-    calculate_page: str,
-    calculate_surface: str,
-    cache_control: Callable[[str], str],
-    script_source: Callable[[str], str],
-) -> list[Request]:
-    """The rows: the page, its assets in the order the page names them, then
-    the API calls; grouped into what every calculation makes (`required`),
-    what the browser may fetch for its tab icon (`icons`) and what only an
-    action of yours sends (`optional`).
-
-    `script_source` gives the text of a script the page loads, by its name;
-    the API rows are checked against the addresses that code sends."""
-
-    rows = [Request(
-        "GET", calculate_surface, "document", "計算頁本身", "打開計算頁",
-        cache_control(calculate_surface), "required",
-    )]
+    `script_source` gives the text of a script the page loads, by its name; the API rows are checked against it."""
+    rows = [Request("GET", calculate_surface, "document", "計算頁本身", "打開計算頁", cache_control(calculate_surface),
+        "required")]
     for kind, url in page_references(calculate_page):
         when = "打開計算頁"
         if kind == "module":
@@ -287,20 +235,15 @@ def calculation_requests(
     if stale:
         raise ValueError(f"the list describes a request the calculator no longer sends: {sorted(stale)}")
     for call in (*COUNT_CALLS, *API_CALLS, *(call for call in GATED_API_CALLS if call.url in sent)):
-        rows.append(Request(
-            call.method, call.url, "fetch", call.carries, call.when,
-            call.cache or cache_control(call.url), "required" if call.required else "optional",
-        ))
+        rows.append(Request(call.method, call.url, "fetch", call.carries, call.when, call.cache or cache_control(call.url),
+            "required" if call.required else "optional"))
     if len({(row.method, row.url) for row in rows}) != len(rows):
         raise ValueError("the calculator's request list names one request twice")
     return rows
 
-
 def _cell_url(url: str) -> str:
-    # Break opportunities after the path's slashes and before the version, so a
-    # long address wraps inside its cell on a phone instead of widening the table.
+    # Break opportunities after the path's slashes and before the version, so a long address wraps inside its cell.
     return html.escape(url).replace("/", "/<wbr>").replace("?", "<wbr>?")
-
 
 def request_rows(rows: list[Request], group: str, indent: str) -> str:
     selected = [row for row in rows if row.group == group]
@@ -317,7 +260,6 @@ def request_rows(rows: list[Request], group: str, indent: str) -> str:
         for row in selected
     )
 
-
 def header_rows(headers: dict[str, str], indent: str) -> str:
     missing = sorted(set(headers) - set(HEADER_MEANINGS))
     unused = sorted(set(HEADER_MEANINGS) - set(headers))
@@ -330,36 +272,25 @@ def header_rows(headers: dict[str, str], indent: str) -> str:
         for name, value in headers.items()
     )
 
-
 # --- the schematic network panel ---------------------------------------------
 
 _ROW_HEIGHT = 24
 _PANEL_TOP = 198
 
-
 def _text(x: float, y: float, value: str, cls: str, anchor: str | None = None) -> str:
     anchor_attr = f' text-anchor="{anchor}"' if anchor else ""
     return f'<text class="{cls}" x="{x:g}" y="{y:g}"{anchor_attr}>{html.escape(value)}</text>'
 
-
 def _callout(x: float, y: float, number: int) -> str:
-    return (
-        f'<circle class="vf-callout" cx="{x:g}" cy="{y:g}" r="11"/>'
-        + _text(x, y + 4.5, str(number), "vf-callout-n", "middle")
-    )
-
+    return (f'<circle class="vf-callout" cx="{x:g}" cy="{y:g}" r="11"/>' + _text(x, y + 4.5, str(number), "vf-callout-n",
+        "middle"))
 
 def _short(name: str) -> str:
-    """A versioned name with its version cut to six digits, as narrow panels show."""
-
     return re.sub(r"\?v=([0-9a-f]{6})[0-9a-f]+", r"?v=\1…", name)
 
-
 def network_panel_figure(rows: list[Request], host: str) -> str:
-    """A drawn network panel, with numbered callouts for the steps the page
-    lists: (1) the Network tab, (2) Preserve log, (3) the Domain column and
-    (4) the calculation request.  Its rows are the required requests."""
-
+    """A drawn network panel with numbered callouts for the steps the page lists: (1) the Network tab, (2) Preserve
+    log, (3) the Domain column and (4) the calculation request.  Rows are the required requests."""
     shown = [row for row in rows if row.group == "required"]
     width = 720
     height = _PANEL_TOP + 52 + _ROW_HEIGHT * len(shown) + 20
@@ -418,7 +349,6 @@ def network_panel_figure(rows: list[Request], host: str) -> str:
     parts.append("</svg>")
     return "\n".join(parts)
 
-
 # --- filling the fragment ------------------------------------------------------
 
 _ROWS = re.compile(r"^(?P<indent>[ \t]*)\{\{calculation_requests:(?P<group>[a-z]+)\}\}$", re.MULTILINE)
@@ -429,25 +359,14 @@ PLACEHOLDER = re.compile(
     r"security_header_rows|public_repository_url)\}\}"
 )
 
-
-def fill(
-    body: str,
-    *,
-    rows: Callable[[], list[Request]],
-    host: str,
-    headers: Callable[[], dict[str, str]],
-    repository_url: Callable[[], str],
-) -> str:
+def fill(body: str, *, rows: Callable[[], list[Request]], host: str, headers: Callable[[], dict[str, str]],
+    repository_url: Callable[[], str]) -> str:
     if not PLACEHOLDER.search(body):
         return body
     listed = rows()
     body = _ROWS.sub(lambda match: request_rows(listed, match.group("group"), match.group("indent")), body)
-    body, figures = _FIGURE.subn(
-        lambda match: textwrap.indent(
-            network_panel_figure(listed, host), match.group("indent")
-        ),
-        body,
-    )
+    body, figures = _FIGURE.subn(lambda match: textwrap.indent(network_panel_figure(listed, host), match.group("indent")),
+        body)
     if figures > 1:
         raise ValueError("{{network_panel_figure}} may appear once")
     body = _HEADERS.sub(lambda match: header_rows(headers(), match.group("indent")), body)
@@ -459,25 +378,19 @@ def fill(
         raise ValueError("a request-list placeholder must stand on a line of its own: " + leftover.group(0))
     return body
 
-
 def host_of(origin: str) -> str:
     host = urlsplit(origin).hostname
     if not host:
         raise ValueError(f"origin has no host: {origin}")
     return host
 
-
 def frontend_cache_control(privacy_logging, frontend_assets, frontend: Path) -> Callable[[str], str]:
-    """The Cache-Control the application sends for an address of this tree,
-    from its own decision function and content versions."""
-
+    """The Cache-Control the application sends for an address of this tree."""
     def version(path: str) -> str | None:
         file = frontend / path.lstrip("/")
         return frontend_assets.asset_content_version(file.read_bytes()) if file.is_file() else None
-
     def decide(url: str) -> str:
         path, _, query = url.partition("?")
         scope = {"type": "http", "path": path, "query_string": query.encode("ascii")}
         return privacy_logging._cache_control(scope, 200, "public_split", version)
-
     return decide

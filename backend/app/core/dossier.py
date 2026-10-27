@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, TypedDict
 
 import hashlib
 
@@ -27,10 +27,12 @@ from .frame_compatibility import frame_policy_receipt
 from .dossier_warnings import structured_warnings
 from .module_state import (
     EVENT_SEARCH_REASON_CODES,
+    EventModuleState,
     MODULE_COMPUTED,
     MODULE_NOT_APPLICABLE,
     MODULE_NOT_REQUESTED,
     MODULE_STATUSES,
+    ModuleState,
     module_state,
     module_status_word,
     not_requested_state,
@@ -38,7 +40,10 @@ from .module_state import (
 )
 
 if TYPE_CHECKING:
-    from ..chart_stages import TimeResolution
+    from ..chart_stages import ChartSections, JsonObject, TimeResolution
+    from .frame_compatibility import FrameState
+    from ..schema_chart import ChartRequest, OptionsInput
+    from .computation_mode import ComputationContext
 
 
 DOSSIER_VERSION = "0.13.0"
@@ -84,17 +89,47 @@ _FLAG_NAMES = (
 )
 
 
+class RetflagReceipt(TypedDict):
+    value: int | None
+    names: list[str]
+
+
+class Retflags(TypedDict):
+    ecliptic: int | None
+    equatorial: int | None
+    horizontal_source: int | None
+
+
+class ObjectProvenance(TypedDict):
+    """One computed object's source receipt, as provenance lists it."""
+
+    key: str
+    result_status: str
+    calculation_source: str | None
+    derived_from: str | None
+    used_full_ephemeris: bool | None
+    retflags: Retflags
+
+
+class OptionReceipt(ModuleState):
+    """One option's execution receipt: the module's six fields for this option."""
+
+    input_presence: str
+    requested_value: object
+    response_paths: list[str]
+
+
 def _retflag_names(value: int) -> list[str]:
     return [name for name, bit in _FLAG_NAMES if value & bit]
 
 
-def _retflag_receipt(value: int | None) -> dict:
+def _retflag_receipt(value: int | None) -> RetflagReceipt:
     if value is None:
-        return {"value": None, "names": []}
-    return {"value": value, "names": _retflag_names(value)}
+        return RetflagReceipt(value=None, names=[])
+    return RetflagReceipt(value=value, names=_retflag_names(value))
 
 
-def _object_provenance(item: dict) -> dict:
+def _object_provenance(item: JsonObject) -> ObjectProvenance:
     if item.get("error"):
         result_status = "failed"
     elif item.get("longitude") is None:
@@ -105,21 +140,21 @@ def _object_provenance(item: dict) -> dict:
     # Response size is binding: the name is on the record this describes,
     # and a flag value decodes the same way every time, so the decode is written
     # once per value in provenance.retflag_names_by_value.
-    return {
-        "key": item["key"],
-        "result_status": result_status,
-        "calculation_source": item.get("calculation_source"),
-        "derived_from": item.get("derived_from"),
-        "used_full_ephemeris": item.get("used_full_ephemeris"),
-        "retflags": {
-            "ecliptic": item.get("retflag_ecliptic"),
-            "equatorial": item.get("retflag_equatorial"),
-            "horizontal_source": item.get("retflag_horizontal_source"),
-        },
-    }
+    return ObjectProvenance(
+        key=item["key"],
+        result_status=result_status,
+        calculation_source=item.get("calculation_source"),
+        derived_from=item.get("derived_from"),
+        used_full_ephemeris=item.get("used_full_ephemeris"),
+        retflags=Retflags(
+            ecliptic=item.get("retflag_ecliptic"),
+            equatorial=item.get("retflag_equatorial"),
+            horizontal_source=item.get("retflag_horizontal_source"),
+        ),
+    )
 
 
-def _member_group_state(requested: bool, records: list[dict]) -> dict:
+def _member_group_state(requested: bool, records: list[JsonObject]) -> ModuleState:
     """State of an option whose result is a set of records (no container).
 
     A record gated before any Swiss call has coverage_state != covered (not
@@ -146,7 +181,7 @@ def _member_group_state(requested: bool, records: list[dict]) -> dict:
     )
 
 
-def _frame_label(label: str, *module_states: dict) -> str:
+def _frame_label(label: str, *module_states: ModuleState) -> str:
     """Name a module's fixed frame only when the module produced a result."""
 
     if any(state["available"] for state in module_states):
@@ -190,12 +225,12 @@ _PARENT_NOT_REQUESTED_STATE = not_requested_state(
 
 
 def _module_states(
-    options,
-    astronomical_data: dict,
-    derived_methods: dict,
-    derived_geometry: dict,
-    event_module_availability: dict,
-) -> dict:
+    options: OptionsInput,
+    astronomical_data: JsonObject,
+    derived_methods: JsonObject,
+    derived_geometry: JsonObject,
+    event_module_availability: dict[str, EventModuleState],
+) -> dict[str, ModuleState]:
     """Every optional module's state, read from where its producer wrote it."""
 
     bodies = astronomical_data["bodies"]
@@ -242,7 +277,7 @@ def _module_states(
     return states
 
 
-def _methodology_receipt(derived_methods: dict, modules: dict) -> dict:
+def _methodology_receipt(derived_methods: JsonObject, modules: dict[str, str]) -> JsonObject:
     items = {}
     for name in _DERIVED_METHOD_MODULES:
         value = derived_methods[name]
@@ -312,7 +347,7 @@ _DEPENDENT_OPTIONS = {
 }
 
 
-def _configuration_options(options) -> dict:
+def _configuration_options(options: OptionsInput) -> dict[str, tuple[bool, str, str]]:
     """Each configuration option: (selected, owning module, response path)."""
 
     return {
@@ -334,23 +369,22 @@ def _configuration_options(options) -> dict:
     }
 
 
-def _option_state_receipts(request, states: dict, response_parts: dict) -> dict:
-    """Closed execution receipts for the exact OptionsInput set.
+@dataclass
+class _OptionReceipts:
+    """The option receipts written so far, and what each one reads."""
 
-    Each receipt copies requested/executed/applicable/available/reason_code from
-    the state its module's producer recorded.  ``source`` is the response path
-    of a usable result and null without one.
-    """
-
-    options = request.options
-    explicit = set(options.model_fields_set)
-    receipts: dict[str, dict] = {}
+    options: OptionsInput
+    states: dict[str, ModuleState]
+    response_parts: dict[str, JsonObject]
+    explicit: set[str]
+    receipts: dict[str, OptionReceipt] = field(default_factory=dict)
 
     def add(
+        self,
         name: str,
         *,
         requested: bool,
-        state: dict,
+        state: ModuleState,
         path: str,
         source_path: str | None = None,
         not_requested_reason: str = "option_not_requested",
@@ -363,9 +397,9 @@ def _option_state_receipts(request, states: dict, response_parts: dict) -> dict:
         if requested and not state["requested"] and state is not _PARENT_NOT_REQUESTED_STATE:
             raise ValueError(f"option {name} was requested but its module recorded no request")
         available = requested and bool(state["available"])
-        receipts[name] = {
-            "input_presence": "explicit" if name in explicit else "defaulted",
-            "requested_value": getattr(options, name),
+        self.receipts[name] = {
+            "input_presence": "explicit" if name in self.explicit else "defaulted",
+            "requested_value": getattr(self.options, name),
             **module_state(
                 requested=requested,
                 executed=requested and bool(state["executed"]),
@@ -379,18 +413,21 @@ def _option_state_receipts(request, states: dict, response_parts: dict) -> dict:
             "response_paths": [path, *also_writes],
         }
 
-    def recorded_state(module: str, path: str) -> dict:
+    def recorded_state(self, module: str, path: str) -> ModuleState:
         """The sub-receipt at path when its producer records state there."""
 
-        value: object = response_parts
+        value: object = self.response_parts
         for part in path.split("."):
             value = value.get(part) if isinstance(value, dict) else None
         if isinstance(value, dict) and "executed" in value:
             return _state_of(value)
-        return states[module]
+        return self.states[module]
 
+
+def _add_module_toggle_receipts(writer: _OptionReceipts) -> None:
+    options, states = writer.options, writer.states
     for option_name, (module, path) in _OPTION_TOGGLES.items():
-        add(
+        writer.add(
             option_name,
             requested=getattr(options, option_name),
             state=states[module],
@@ -398,7 +435,7 @@ def _option_state_receipts(request, states: dict, response_parts: dict) -> dict:
             also_writes=_ALSO_WRITTEN.get(option_name, ()),
         )
 
-    add(
+    writer.add(
         "include_domicile_exaltation",
         requested=options.include_domicile_exaltation,
         state=states["essential_dignities"],
@@ -407,7 +444,7 @@ def _option_state_receipts(request, states: dict, response_parts: dict) -> dict:
     )
 
     moon_is_global = options.moon_position_profile == "global_computation_mode"
-    add(
+    writer.add(
         "moon_position_profile",
         requested=True,
         state=_CORE_POSITIONS_STATE if moon_is_global else states["parallax_moon"],
@@ -418,15 +455,18 @@ def _option_state_receipts(request, states: dict, response_parts: dict) -> dict:
         ),
     )
 
+
+def _add_configuration_receipts(writer: _OptionReceipts) -> None:
+    options = writer.options
     for name, (selected, module, path) in _configuration_options(options).items():
-        add(
+        writer.add(
             name,
             requested=selected,
-            state=recorded_state(module, path),
+            state=writer.recorded_state(module, path),
             path=path,
             not_requested_reason="configuration_not_selected",
         )
-    add(
+    writer.add(
         "body_selection_preset",
         requested=options.body_selection_preset != "custom",
         state=_VALIDATION_CONSTRAINT_STATE,
@@ -434,39 +474,67 @@ def _option_state_receipts(request, states: dict, response_parts: dict) -> dict:
         not_requested_reason="configuration_not_selected",
     )
 
+
+def _add_dependent_option_receipts(writer: _OptionReceipts) -> None:
     for name, (parent, path) in _DEPENDENT_OPTIONS.items():
-        add(
+        writer.add(
             name,
-            requested=getattr(options, name),
+            requested=getattr(writer.options, name),
             state=(
-                recorded_state(parent, path)
-                if states[parent]["requested"]
+                writer.recorded_state(parent, path)
+                if writer.states[parent]["requested"]
                 else _PARENT_NOT_REQUESTED_STATE
             ),
             path=path,
         )
 
+
+def _option_state_receipts(
+    request: ChartRequest, states: dict[str, ModuleState], response_parts: dict[str, JsonObject]
+) -> dict[str, OptionReceipt]:
+    """Closed execution receipts for the exact OptionsInput set.
+
+    Each receipt copies requested/executed/applicable/available/reason_code from
+    the state its module's producer recorded.  ``source`` is the response path
+    of a usable result and null without one.  The receipts keep the order they
+    are written in here.
+    """
+
+    options = request.options
+    writer = _OptionReceipts(
+        options=options,
+        states=states,
+        response_parts=response_parts,
+        explicit=set(options.model_fields_set),
+    )
+    _add_module_toggle_receipts(writer)
+    _add_configuration_receipts(writer)
+    _add_dependent_option_receipts(writer)
+
     # 容許度表從哪裡來由 derived_methods.aspects.degree_based.orb_receipt
     # 的 profile_selection 承載（單一產生器）；option_states 維持共同欄位形狀，不重抄。
-    receipts["aspect_include_nodes"] = _aspect_include_nodes_receipt(
-        options, explicit, states, response_parts
+    writer.receipts["aspect_include_nodes"] = _aspect_include_nodes_receipt(
+        options, writer.explicit, states, response_parts
     )
-    return receipts
+    return writer.receipts
 
 
-def _aspect_include_nodes_receipt(
-    options, explicit: set, states: dict, response_parts: dict
-) -> dict:
-    # aspect_include_nodes 有兩個消費者（黃道相位、赤緯相位），兩者經
-    # bodies.effective_participants 共用同一條交點規則。executed 只在任一消費者
-    # 實際納入交點時為真；每個消費者是否納入交點由其自身輸出承載。
-    node_consumer_paths = {
-        "derived_methods.aspects": "derived_methods.aspects.participants",
-        "derived_methods.declination_aspects": (
-            "derived_methods.declination_aspects.participant_keys"
-        ),
-    }
-    derived_methods = response_parts["derived_methods"]
+# aspect_include_nodes 有兩個消費者（黃道相位、赤緯相位），兩者經
+# bodies.effective_participants 共用同一條交點規則。executed 只在任一消費者
+# 實際納入交點時為真；每個消費者是否納入交點由其自身輸出承載。
+_NODE_CONSUMER_PATHS = {
+    "derived_methods.aspects": "derived_methods.aspects.participants",
+    "derived_methods.declination_aspects": (
+        "derived_methods.declination_aspects.participant_keys"
+    ),
+}
+
+
+def _node_consumers(
+    states: dict[str, ModuleState], derived_methods: JsonObject
+) -> dict[str, tuple[ModuleState, list[str]]]:
+    """Each node consumer's module state and the node keys it took in."""
+
     aspect_node_keys = [
         item["key"]
         for item in (derived_methods.get("aspects") or {}).get("participants") or []
@@ -476,13 +544,52 @@ def _aspect_include_nodes_receipt(
         (derived_methods.get("declination_aspects") or {}).get("participant_policy")
         or {}
     )
-    node_consumers = {
+    return {
         "derived_methods.aspects": (states["aspects"], aspect_node_keys),
         "derived_methods.declination_aspects": (
             states["declination_aspects"],
             list(declination_policy.get("node_keys_participating") or []),
         ),
     }
+
+
+def _node_unavailable_reason(
+    node_consumers: dict[str, tuple[ModuleState, list[str]]],
+    any_applicable_consumer: bool,
+    nodes: list[JsonObject],
+) -> str | None:
+    refusal_reason = next(
+        (
+            state["reason_code"]
+            for state, _keys in node_consumers.values()
+            if state["requested"] and not state["applicable"]
+        ),
+        None,
+    )
+    node_record_reason = next(
+        (
+            node.get("availability_reason_code")
+            for node in nodes
+            if node.get("longitude") is None
+        ),
+        None,
+    )
+    # No usable consumer: the refusal's own reason.  A usable consumer that
+    # still took no node in: the node records' own reason.
+    return (
+        node_record_reason or refusal_reason
+        if any_applicable_consumer
+        else refusal_reason or node_record_reason
+    )
+
+
+def _aspect_include_nodes_receipt(
+    options: OptionsInput,
+    explicit: set[str],
+    states: dict[str, ModuleState],
+    response_parts: dict[str, JsonObject],
+) -> OptionReceipt:
+    node_consumers = _node_consumers(states, response_parts["derived_methods"])
     node_requested = bool(options.aspect_include_nodes)
     consumer_states = {
         consumer: (
@@ -505,28 +612,10 @@ def _aspect_include_nodes_receipt(
         for consumer, (state, _keys) in node_consumers.items()
         if state["requested"] and state["applicable"]
     ]
-    refusal_reason = next(
-        (
-            state["reason_code"]
-            for state, _keys in node_consumers.values()
-            if state["requested"] and not state["applicable"]
-        ),
-        None,
-    )
-    node_record_reason = next(
-        (
-            node.get("availability_reason_code")
-            for node in response_parts["astronomical_data"]["nodes"]
-            if node.get("longitude") is None
-        ),
-        None,
-    )
-    # No usable consumer: the refusal's own reason.  A usable consumer that
-    # still took no node in: the node records' own reason.
-    unavailable_reason = (
-        node_record_reason or refusal_reason
-        if applicable_consumers
-        else refusal_reason or node_record_reason
+    unavailable_reason = _node_unavailable_reason(
+        node_consumers,
+        bool(applicable_consumers),
+        response_parts["astronomical_data"]["nodes"],
     )
     node_executed = "executed" in consumer_states.values()
     return {
@@ -540,7 +629,7 @@ def _aspect_include_nodes_receipt(
         "available": node_executed,
         "source": next(
             (
-                node_consumer_paths[consumer]
+                _NODE_CONSUMER_PATHS[consumer]
                 for consumer, state in consumer_states.items()
                 if state == "executed"
             ),
@@ -555,12 +644,12 @@ def _aspect_include_nodes_receipt(
         ),
         # 只列實際被請求的消費者路徑；available 時每一條都必須解析得到。
         "response_paths": [
-            node_consumer_paths[consumer] for consumer in requested_consumers
-        ] or list(node_consumer_paths.values()),
+            _NODE_CONSUMER_PATHS[consumer] for consumer in requested_consumers
+        ] or list(_NODE_CONSUMER_PATHS.values()),
     }
 
 
-def _trace_receipt(trace_steps: list[dict]) -> dict:
+def _trace_receipt(trace_steps: list[JsonObject]) -> JsonObject:
     serialized = canonical_json_bytes(trace_steps)
     return {
         "response_path": "calculation_trace",
@@ -580,7 +669,7 @@ def _trace_receipt(trace_steps: list[dict]) -> dict:
     }
 
 
-def _available_files_receipt(options) -> list[dict]:
+def _available_files_receipt(options: OptionsInput) -> list[JsonObject]:
     # The bundled input set as hashed when this chart started; listing a file
     # does not claim Swiss opened it.
     available_files = []
@@ -600,7 +689,7 @@ def _available_files_receipt(options) -> list[dict]:
     return available_files
 
 
-def _body_selection_receipt(options) -> dict:
+def _body_selection_receipt(options: OptionsInput) -> JsonObject:
     # The preset is a request constraint; each body group's state is on its
     # records and option receipt.
     return {
@@ -617,7 +706,7 @@ def _body_selection_receipt(options) -> dict:
     }
 
 
-def _aspect_configuration(options, derived_methods: dict) -> dict:
+def _aspect_configuration(options: OptionsInput, derived_methods: JsonObject) -> JsonObject:
     orb_receipt = (
         ((derived_methods.get("aspects") or {}).get("degree_based") or {})
         .get("orb_receipt")
@@ -636,11 +725,11 @@ def _aspect_configuration(options, derived_methods: dict) -> dict:
 
 
 def _birth_time_section(
-    request,
-    time_conversion: dict,
+    request: ChartRequest,
+    time_conversion: JsonObject,
     representative_policy: str,
-    sensitivity_coverage: dict | None,
-) -> dict:
+    sensitivity_coverage: JsonObject | None,
+) -> JsonObject:
     return {
         "precision": request.birth_time_precision,
         "input_birth_date": (
@@ -667,7 +756,7 @@ def _birth_time_section(
     }
 
 
-def _location_section(request) -> dict:
+def _location_section(request: ChartRequest) -> JsonObject:
     return {
         "place_label": request.location.place_label,
         "location_source": request.location.location_source,
@@ -683,7 +772,7 @@ def _location_section(request) -> dict:
     }
 
 
-def _time_conversion_section(request, time_conversion: dict) -> dict:
+def _time_conversion_section(request: ChartRequest, time_conversion: JsonObject) -> JsonObject:
     return {
         "calendar": {
             "system": "gregorian",
@@ -719,7 +808,7 @@ def _time_conversion_section(request, time_conversion: dict) -> dict:
     }
 
 
-def _flag_policy(context) -> dict:
+def _flag_policy(context: ComputationContext) -> JsonObject:
     return {
         "base_position_flags": _retflag_receipt(context.base_flags),
         "equatorial_source_flags": _retflag_receipt(
@@ -737,7 +826,7 @@ def _flag_policy(context) -> dict:
     }
 
 
-def _moon_position_policy(request) -> dict:
+def _moon_position_policy(request: ChartRequest) -> JsonObject:
     return {
         "requested_profile": request.options.moon_position_profile,
         "global_center": request.computation_mode.center,
@@ -755,7 +844,7 @@ def _moon_position_policy(request) -> dict:
     }
 
 
-def _essential_dignity_profiles(request) -> dict:
+def _essential_dignity_profiles(request: ChartRequest) -> JsonObject:
     return {
         "domicile_exaltation": (
             essential_dignities.DOMICILE_EXALTATION_PROFILE_ID
@@ -784,7 +873,7 @@ def _essential_dignity_profiles(request) -> dict:
     }
 
 
-def _coordinate_conventions() -> dict:
+def _coordinate_conventions() -> JsonObject:
     return {
         "angles": "degrees",
         "right_ascension_numeric": "degrees",
@@ -804,7 +893,7 @@ def _coordinate_conventions() -> dict:
     }
 
 
-def _fixed_module_frames(context, states: dict) -> dict:
+def _fixed_module_frames(context: ComputationContext, states: dict[str, ModuleState]) -> dict[str, str]:
     return {
         "horizontal_coordinates": (
             "physical_tropical_of_date"
@@ -835,22 +924,22 @@ def _fixed_module_frames(context, states: dict) -> dict:
 class _ModuleReceipts:
     """The module receipts the calculation policy repeats, read once."""
 
-    modules: dict
-    option_states: dict
-    frame_states: dict
-    states: dict
+    modules: dict[str, str]
+    option_states: dict[str, OptionReceipt]
+    frame_states: dict[str, FrameState]
+    states: dict[str, ModuleState]
 
 
 def _calculation_policy_section(
     *,
-    request,
-    effective_request,
-    context,
+    request: ChartRequest,
+    effective_request: ChartRequest,
+    context: ComputationContext,
     receipts: _ModuleReceipts,
-    derived_methods: dict,
-    atmosphere: dict,
-    latitude_regime: dict | None,
-) -> dict:
+    derived_methods: JsonObject,
+    atmosphere: JsonObject,
+    latitude_regime: JsonObject | None,
+) -> JsonObject:
     return {
         "computation_mode": request.computation_mode.model_dump(mode="json"),
         # The options as sent are input_receipt.options.
@@ -881,7 +970,7 @@ def _calculation_policy_section(
     }
 
 
-def _engine_section(library_info: dict, options) -> dict:
+def _engine_section(library_info: JsonObject, options: OptionsInput) -> JsonObject:
     return {
         "pyswisseph_distribution_version": library_info[
             "pyswisseph_distribution_version"
@@ -906,7 +995,9 @@ def _engine_section(library_info: dict, options) -> dict:
 _SWISS_FILES_REQUIRED = "Swiss files required; fail closed on Moshier fallback"
 
 
-def _event_module_provenance(event_module_availability: dict) -> dict:
+def _event_module_provenance(
+    event_module_availability: dict[str, EventModuleState],
+) -> dict[str, JsonObject]:
     return {
         # An event search has no module object of its own to carry state
         # (one lunar_events container holds two searches), so the entry
@@ -958,11 +1049,11 @@ def _event_module_provenance(event_module_availability: dict) -> dict:
 
 
 def _provenance_section(
-    core_records: list[dict],
-    fixed_star_records: list[dict],
-    event_module_availability: dict,
+    core_records: list[ObjectProvenance],
+    fixed_star_records: list[ObjectProvenance],
+    event_module_availability: dict[str, EventModuleState],
     input_files_unchanged_during_chart: bool,
-) -> dict:
+) -> JsonObject:
     return {
         "core_objects": core_records,
         # False when an input file was renamed, replaced or rewritten while the
@@ -974,7 +1065,11 @@ def _provenance_section(
             for value in sorted({
                 value
                 for record in core_records + fixed_star_records
-                for value in record["retflags"].values()
+                for value in (
+                    record["retflags"]["ecliptic"],
+                    record["retflags"]["equatorial"],
+                    record["retflags"]["horizontal_source"],
+                )
                 if value is not None
             })
         },
@@ -1003,25 +1098,10 @@ def _provenance_section(
     }
 
 
-def build_calculation_dossier(
-    time: TimeResolution,
-    *,
-    astronomical_data: dict,
-    derived_methods: dict,
-    derived_geometry: dict,
-    birth_time_sensitivity: dict,
-    library_info: dict,
-    full_ephemeris_files_available: bool,
-    input_files_unchanged_during_chart: bool,
-    build_identity: dict,
-    trace_steps: list[dict],
-    event_module_availability: dict,
-    latitude_regime: dict | None,
-) -> dict:
-    """Build the authoritative receipt after all requested calculations finish."""
-
-    request, effective_request = time.input_request, time.request
-    time_conversion = time.time_conversion
+def _provenance_records(
+    astronomical_data: JsonObject,
+) -> tuple[list[ObjectProvenance], list[ObjectProvenance]]:
+    """Per-object provenance: the ephemeris point groups, then the fixed stars."""
 
     # Every requested ephemeris point group, lunar apsides included.
     core_records = [
@@ -1037,7 +1117,20 @@ def build_calculation_dossier(
         # An unrequested module container is null (option_states owns state).
         for item in astronomical_data["fixed_stars"] or ()
     ]
-    # One reading of the producers' states; every receipt below projects it.
+    return core_records, fixed_star_records
+
+
+def _module_receipts(
+    time: TimeResolution,
+    *,
+    astronomical_data: JsonObject,
+    derived_methods: JsonObject,
+    derived_geometry: JsonObject,
+    event_module_availability: dict[str, EventModuleState],
+) -> _ModuleReceipts:
+    """One reading of the producers' states, and the receipts that project it."""
+
+    request = time.input_request
     states = _module_states(
         request.options,
         astronomical_data,
@@ -1058,27 +1151,37 @@ def build_calculation_dossier(
             "derived_geometry": derived_geometry,
         },
     )
-    methodology = _methodology_receipt(derived_methods, modules)
-    # Joins what the sampling pass compared with the module and option
-    # receipts (the one generator of requested/applicable).  None when unsampled.
-    sensitivity_coverage = _sensitivity_coverage_ledger(
-        birth_time_sensitivity,
-        modules=modules,
-        option_states=option_states,
-    )
-    warnings = structured_warnings(
-        request=request,
-        effective_request=effective_request,
-        time_conversion=time_conversion,
+    return _ModuleReceipts(modules, option_states, time.frame_states, states)
+
+
+def _warnings_section(
+    time: TimeResolution,
+    *,
+    astronomical_data: JsonObject,
+    derived_methods: JsonObject,
+    event_module_availability: dict[str, EventModuleState],
+    full_ephemeris_files_available: bool,
+    input_files_unchanged_during_chart: bool,
+    core_records: list[ObjectProvenance],
+    fixed_star_records: list[ObjectProvenance],
+    receipts: _ModuleReceipts,
+    methodology: JsonObject,
+    sensitivity_coverage: JsonObject | None,
+    latitude_regime: JsonObject | None,
+) -> list[JsonObject]:
+    return structured_warnings(
+        request=time.input_request,
+        effective_request=time.request,
+        time_conversion=time.time_conversion,
         full_ephemeris_files_available=full_ephemeris_files_available,
         input_files_unchanged_during_chart=input_files_unchanged_during_chart,
         core_records=core_records,
         fixed_star_records=fixed_star_records,
         fixed_stars=astronomical_data["fixed_stars"] or [],
-        modules=modules,
+        modules=receipts.modules,
         methodology=methodology,
         states={
-            **states,
+            **receipts.states,
             "birth_time_sensitivity": _state_of(
                 event_module_availability.get("birth_time_sensitivity")
             ),
@@ -1099,6 +1202,57 @@ def build_calculation_dossier(
         ),
     )
 
+
+def build_calculation_dossier(
+    time: TimeResolution,
+    sections: ChartSections,
+    *,
+    library_info: JsonObject,
+    full_ephemeris_files_available: bool,
+    input_files_unchanged_during_chart: bool,
+    build_identity: JsonObject,
+    trace_steps: list[JsonObject],
+    latitude_regime: JsonObject | None,
+) -> JsonObject:
+    """Build the authoritative receipt after all requested calculations finish."""
+
+    astronomical_data = sections.astronomical_data
+    derived_methods = sections.derived_methods
+    event_module_availability = sections.event_module_availability
+    request, effective_request = time.input_request, time.request
+    time_conversion = time.time_conversion
+
+    core_records, fixed_star_records = _provenance_records(astronomical_data)
+    receipts = _module_receipts(
+        time,
+        astronomical_data=astronomical_data,
+        derived_methods=derived_methods,
+        derived_geometry=sections.derived_geometry,
+        event_module_availability=event_module_availability,
+    )
+    methodology = _methodology_receipt(derived_methods, receipts.modules)
+    # Joins what the sampling pass compared with the module and option
+    # receipts (the one generator of requested/applicable).  None when unsampled.
+    sensitivity_coverage = _sensitivity_coverage_ledger(
+        sections.birth_time_sensitivity,
+        modules=receipts.modules,
+        option_states=receipts.option_states,
+    )
+    warnings = _warnings_section(
+        time,
+        astronomical_data=astronomical_data,
+        derived_methods=derived_methods,
+        event_module_availability=event_module_availability,
+        full_ephemeris_files_available=full_ephemeris_files_available,
+        input_files_unchanged_during_chart=input_files_unchanged_during_chart,
+        core_records=core_records,
+        fixed_star_records=fixed_star_records,
+        receipts=receipts,
+        methodology=methodology,
+        sensitivity_coverage=sensitivity_coverage,
+        latitude_regime=latitude_regime,
+    )
+
     return {
         "dossier_version": DOSSIER_VERSION,
         "status": "provisional",
@@ -1114,9 +1268,7 @@ def build_calculation_dossier(
             request=request,
             effective_request=effective_request,
             context=time.context,
-            receipts=_ModuleReceipts(
-                modules, option_states, time.frame_states, states
-            ),
+            receipts=receipts,
             derived_methods=derived_methods,
             atmosphere=astronomical_data["atmosphere"],
             latitude_regime=latitude_regime,

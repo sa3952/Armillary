@@ -1,17 +1,15 @@
 // 方法頁與信任頁的段落收合（只在這兩頁載入）。
 //
-// 收合本身是原生 <details data-fold>：不跑這支檔案也能開合，鍵盤（Tab、Enter、空白鍵）與報讀器
-// 照瀏覽器的原生行為；Chromium 的頁內搜尋與錨點導覽也會自己打開被收起的段落。這裡只加五件事：
-//   1. 「全部展開／全部收合」兩顆按鈕（[data-fold-tools]，沒有這支檔案時保持 hidden）。
-//   2. 讀過的段落自動收起：一個打開的段落整個捲到視窗上緣以上，就把它收起，並把捲動位置補回去，
-//      讓視窗裡正在讀的那一行不動。按過「全部展開」之後不自動收，直到有人收起任何一段。
-//   3. 錨點：網址的 #id 或頁內連結指到收起的段落裡時，先打開它的每一層段落，再捲到目標；
-//      指到段落標題本身時，也打開那一段。
-//   4. 段落標題、編號與「重點」一行也可以點來開合（滑鼠的便利；鍵盤用 summary）。
-//   5. 列印時全部展開，印完還原（樣式表另有同一件事的 @media print 後備）。
+// 收合本身是原生 <details data-fold>：不跑這支檔案也能開合，鍵盤（Tab、Enter、空白鍵）與報讀器照瀏覽器的原生行為；
+// Chromium 的頁內搜尋與錨點導覽也會自己打開被收起的段落。這裡只加五件事：  1. 「全部展開／全部收合」兩顆按鈕
+// （[data-fold-tools]，沒有這支檔案時保持 hidden）。  2. 讀過的段落自動收起：一個打開的段落整個捲到視窗上緣以上，就把它
+// 收起，並把捲動位置補回去，     讓視窗裡正在讀的那一行不動。按過「全部展開」之後不自動收，直到有人收起任何一段。  3.
+// 錨點：網址的 #id 或頁內連結指到收起的段落裡時，先打開它的每一層段落，再捲到目標；     指到段落標題本身時，也打開那一
+// 段。  4. 段落標題、編號與「重點」一行也可以點來開合（滑鼠的便利；鍵盤用 summary）。  5. 列印時全部展開，印完還原（樣
+// 式表另有同一件事的 @media print 後備）。
 //
-// served CSP 是 script-src 'self'、require-trusted-types-for 'script'、trusted-types 'none'：
-// 只用 open、hidden、classList 與 scroll API，不用 innerHTML、行內事件或 style 屬性。
+// served CSP 是 script-src 'self'、require-trusted-types-for 'script'、trusted-types 'none'：只用 open、hidden、
+// classList 與 scroll API，不用 innerHTML、行內事件或 style 屬性。
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
@@ -21,26 +19,19 @@
 
   const FOLD = "details[data-fold]";
   const HOST = "[data-fold-host]";
-  // 段頭：段落容器的直屬子元素裡，編號、標題與「重點」一行（收合體之外、永遠看得見的部分）。
   const HEAD = ".sig, h2, h3, .fold-gist, [data-fold-head]";
   const isHead = (node) => Boolean(node && node.parentElement && node.parentElement.matches(HOST) && node.matches(HEAD));
 
-  // 一個段落容器自己的那一個收合體。
   function ownFold(host) {
     if (!host) return null;
-    for (const child of host.children) {
-      if (child.matches(FOLD)) return child;
-    }
+    for (const child of host.children) { if (child.matches(FOLD)) return child; }
     return null;
   }
 
-  // 要看見 target，必須打開的收合體，由外而內：它所在的每一層，加上 target 是段頭
-  // （或段落容器本身）時那一段自己的。
+  // 要看見 target，必須打開的收合體，由外而內：它所在的每一層，加上 target 是段頭（或段落容器本身）時那一段自己的。
   function foldsToOpen(target) {
     const chain = [];
-    for (let node = target.parentElement; node; node = node.parentElement) {
-      if (node.matches(FOLD)) chain.unshift(node);
-    }
+    for (let node = target.parentElement; node; node = node.parentElement) { if (node.matches(FOLD)) chain.unshift(node); }
     const host = target.matches(HOST) ? target : isHead(target) ? target.parentElement : null;
     const own = ownFold(host);
     if (own && !chain.includes(own)) chain.push(own);
@@ -52,13 +43,11 @@
     return Boolean(summary && summary.contains(node));
   };
 
-  // 讀過的段落：已打開、整個在視窗上緣以上（bottom ≤ 0），而且它的段落（含段頭）不含 keep，
-  // 正文裡也沒有焦點（焦點在 summary 上不算：收起後 summary 仍看得見，焦點不會掉）。
-  // rectOf 由呼叫端提供，單元測試可以餵假的幾何。
+  // 讀過的段落：已打開、整個在視窗上緣以上（bottom ≤ 0），而且它的段落（含段頭）不含 keep，正文裡也沒有焦點（焦點在
+  // summary 上不算：收起後 summary 仍看得見，焦點不會掉）。rectOf 由呼叫端提供，單元測試可以餵假的幾何。
   function passedFolds(folds, rectOf, keep, focused) {
     return folds.filter((fold) => fold.open
-      && rectOf(fold).bottom <= 0
-      && !(keep && (fold.parentElement || fold).contains(keep))
+      && rectOf(fold).bottom <= 0 && !(keep && (fold.parentElement || fold).contains(keep))
       && !(focused && fold.contains(focused) && !inSummary(fold, focused)));
   }
 
@@ -87,22 +76,15 @@
     const folds = () => Array.from(doc.querySelectorAll(FOLD));
     if (!folds().length) return null;
     doc.documentElement.classList.add("fold-js");
-
     // 這支檔案自己開合的段落：它們的 toggle 事件不當成讀者的動作。
     const ours = new WeakSet();
-    const setOpen = (fold, open) => {
-      if (fold.open === open) return;
-      ours.add(fold);
-      fold.open = open;
-    };
+    const setOpen = (fold, open) => { if (fold.open === open) return; ours.add(fold); fold.open = open; };
     let expandedAll = false;
-
     function anchorAtTop() {
       const width = win.innerWidth || doc.documentElement.clientWidth || 0;
       const hit = typeof doc.elementFromPoint === "function" ? doc.elementFromPoint(width / 2, 1) : null;
       return hit && hit !== doc.documentElement && hit !== doc.body ? hit : null;
     }
-
     function collapsePassed(keep) {
       if (expandedAll) return;
       const passed = passedFolds(folds(), (fold) => fold.getBoundingClientRect(), keep, doc.activeElement);
@@ -111,7 +93,6 @@
       if (!outermost.length) return;
       keepPosition(win, keep || anchorAtTop(), () => outermost.forEach((fold) => setOpen(fold, false)));
     }
-
     function reveal(target, smooth) {
       const chain = foldsToOpen(target);
       chain.forEach((fold) => setOpen(fold, true));
@@ -121,15 +102,12 @@
         target.scrollIntoView({ block: "start", behavior: smooth && !reduce ? "smooth" : "auto" });
       }
     }
-
     function targetOf(hash) {
       if (!hash || hash.length < 2) return null;
       let id;
       try { id = decodeURIComponent(hash.slice(1)); } catch (_error) { return null; }
       return doc.getElementById(id);
     }
-
-    // 1. 全部展開／全部收合。
     const tools = doc.querySelector("[data-fold-tools]");
     if (tools) {
       tools.hidden = false;
@@ -141,7 +119,6 @@
         keepPosition(win, anchorAtTop(), () => folds().forEach((fold) => setOpen(fold, open)));
       });
     }
-
     // 2. 讀者打開一段時，收起已經讀過的；讀者收起任何一段，就離開「全部展開」。
     doc.addEventListener("toggle", (event) => {
       const fold = event.target;
@@ -150,23 +127,15 @@
       if (!fold.open) { expandedAll = false; return; }
       collapsePassed(fold);
     }, true);
-
     let settle = null;
     const onScrollSettled = () => { settle = null; collapsePassed(null); };
-    if ("onscrollend" in win) {
-      win.addEventListener("scrollend", onScrollSettled, { passive: true });
-    } else {
+    if ("onscrollend" in win) { win.addEventListener("scrollend", onScrollSettled, { passive: true }); } else {
       win.addEventListener("scroll", () => {
         if (settle !== null) win.clearTimeout(settle);
         settle = win.setTimeout(onScrollSettled, 200);
       }, { passive: true });
     }
-
-    // 3. 錨點。
-    const fromHash = () => {
-      const target = targetOf(win.location.hash);
-      if (target) reveal(target, false);
-    };
+    const fromHash = () => { const target = targetOf(win.location.hash); if (target) reveal(target, false); };
     win.addEventListener("hashchange", fromHash);
     doc.addEventListener("click", (event) => {
       if (event.defaultPrevented || event.button !== 0) return;
@@ -188,8 +157,6 @@
       if (fold) fold.open = !fold.open;
     });
     if (win.location.hash) fromHash();
-
-    // 5. 列印。
     let beforePrint = null;
     win.addEventListener("beforeprint", () => {
       beforePrint = folds().map((fold) => [fold, fold.open]);
@@ -200,7 +167,6 @@
       beforePrint.forEach(([fold, open]) => setOpen(fold, open));
       beforePrint = null;
     });
-
     return { reveal, collapsePassed };
   }
 

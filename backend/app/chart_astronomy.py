@@ -51,6 +51,7 @@ from .core.horizon_events import (
 )
 from .core.root_finding import wrap_to_signed_180
 from .core.module_state import (
+    EventModuleState,
     computed_receipt,
     module_state,
     unavailable_state as _unavailable_state,
@@ -196,7 +197,7 @@ def _search_events(
     horizon: bool,
     probe_cache: HorizonProbeCache | None,
     sample_role: str | None = None,
-) -> tuple[JsonObject | None, dict]:
+) -> tuple[JsonObject | None, dict[str, EventModuleState]]:
     """The requested lunar and horizon searches at one instant: the chart's own
     (``sample_role`` None, with the birth relations) or an interval-end sample's.
     Lunar results go into ``lunar``; returns the horizon result (None when not
@@ -204,7 +205,7 @@ def _search_events(
 
     prefix = "" if sample_role is None else f"代表性取樣（{sample_role}）："
     at_birth = sample_role is None
-    refusals: dict = {}
+    refusals: dict[str, EventModuleState] = {}
 
     def attempt(module: str, label: str, search, *undo: str):
         try:
@@ -661,7 +662,7 @@ def _unavailable_houses(
     time: TimeResolution,
     bodies: list[JsonObject],
     *,
-    unavailable_reason: str,
+    unavailable_reason: str | None,
     houses_requested: bool,
 ) -> HouseFacts:
     req, ctx, trace = time.request, time.context, time.trace

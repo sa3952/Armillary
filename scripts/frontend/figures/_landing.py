@@ -1,10 +1,8 @@
-"""The time-lord landing pages (/zh-TW/calculate/<technique>): each page's
-合成範例 table, the periods the product's annual route gives the demonstration
-chart (_demo.DEMO, synthetic), and the numbers the page's prose quotes.
+"""The time-lord landing pages (/zh-TW/calculate/<technique>): each page's 合成範例 table, the periods the product's
+annual route gives the demonstration chart (_demo.DEMO, synthetic), and the numbers the page's prose quotes.
 
-The lifetime answer is the one the time-lords article draws its life figure
-from (time_lords._lifetime: the hundred return years of the demonstration
-birth time).  The tables only list periods; nothing here interprets them.
+The lifetime answer is the one the time-lords article draws its life figure from (time_lords._lifetime).  The tables
+only list periods; nothing here interprets them.
 """
 from __future__ import annotations
 
@@ -17,10 +15,8 @@ SIGN = time_lords.SIGN
 PROFECTION_YEARS = 13  # years 1-13: one full round of the twelve signs and the return to the first
 FIRDARIA_ROWS = 9      # one 75-year cycle
 
-
 def _age(value: float) -> str:
     return f"{value:g}"
-
 
 def _firdaria(answer: dict) -> tuple[str, list[str]]:
     method = answer["annual_methods"]["firdaria"]
@@ -39,7 +35,6 @@ def _firdaria(answer: dict) -> tuple[str, list[str]]:
     quoted = [f"第一段是{BODY[first['level_1_lord']]}主期，從 0 到 {_age(first['end_year'])} 足歲"]
     return rows, quoted
 
-
 def _releasing(answer: dict) -> tuple[str, list[str]]:
     releases = {r["releasing_from"]: r for r in answer["annual_methods"]["zodiacal_releasing"]["releases"]}
     fortune = releases["fortune"]
@@ -51,7 +46,6 @@ def _releasing(answer: dict) -> tuple[str, list[str]]:
     )
     quoted = [f"命運點在{SIGN[fortune['start_sign']]}", f"精神點在{SIGN[releases['spirit']['start_sign']]}"]
     return rows, quoted
-
 
 def _profections(lifetime: dict) -> tuple[str, list[str]]:
     years = time_lords._years(lifetime)[:PROFECTION_YEARS]
@@ -65,7 +59,6 @@ def _profections(lifetime: dict) -> tuple[str, list[str]]:
     )
     quoted = [f"上升星座是{SIGN[years[0]['profection_sign']]}"]
     return rows, quoted
-
 
 def _decennials(answer: dict) -> tuple[str, list[str]]:
     method = answer["annual_methods"]["decennials"]
@@ -81,7 +74,6 @@ def _decennials(answer: dict) -> tuple[str, list[str]]:
     quoted = [f"每段 {months} 個月", f"從{BODY[method['start_planet']]}起"]
     return rows, quoted
 
-
 def build_for(technique: str) -> tuple[dict[str, str], list[str]]:
     lifetime = time_lords._lifetime()
     if technique == "profections":
@@ -90,11 +82,10 @@ def build_for(technique: str) -> tuple[dict[str, str], list[str]]:
         rows, quoted = {"firdaria": _firdaria, "releasing": _releasing, "decennials": _decennials}[technique](lifetime)
     return {f"lp-{technique}": rows}, quoted
 
-
 @dataclass(frozen=True)
 class Landing:
-    """One landing page as `figures` builds it: `FRAGMENT` names the page,
-    `__name__` finds the page again in a worker process (`page`)."""
+    """One landing page as `figures` builds it: `FRAGMENT` names the page, `__name__` finds the page again in a worker
+    process (`page`)."""
 
     FRAGMENT: str
     technique: str
@@ -106,10 +97,8 @@ class Landing:
     def build(self) -> tuple[dict[str, str], list[str]]:
         return build_for(self.technique)
 
-
 PAGES = (Landing("calculate-firdaria", "firdaria"), Landing("calculate-zodiacal-releasing", "releasing"),
          Landing("calculate-profections", "profections"), Landing("calculate-decennials", "decennials"))
-
 
 def page(fragment: str) -> Landing:
     return next(landing for landing in PAGES if landing.FRAGMENT == fragment)

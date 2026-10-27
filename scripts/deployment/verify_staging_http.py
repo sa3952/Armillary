@@ -62,8 +62,7 @@ from urllib.robotparser import RobotFileParser
 
 from scripts.tools.staging_secure_io import (
     deployment_hostnames, emit_json_receipt, read_owner_only, require_privileged_checkout,
-    safe_absolute_path as safe_path, validate_server_name, write_owner_only_new,
-)
+    safe_absolute_path as safe_path, validate_server_name, write_owner_only_new)
 
 ROOT = Path(__file__).resolve().parents[2]
 try:
@@ -79,18 +78,13 @@ HSTS_MIN_AGE_SECONDS = 365 * 24 * 60 * 60
 # Must match the `logging.driver` in deploy/compose.yaml; change both together.
 EXPECTED_LOG_DRIVER = "journald"
 REQUEST_CASE_EXPECTATIONS = {"success": 200, "422": 422, "malformed": 400, "413": 413, "415": 415, "429": 429}
-# Cases this verifier cannot produce with ordinary requests, and where each is
-# held instead (no drill runs on a production host).  The edge
-# bounds are the real-NGINX tests plus the byte-identical host config readback;
-# the application bounds are Gate D's drills on the exact image
-# (scripts/deployment/image_drills.py).  The receipt names them so a reader
-# sees they were not exercised here.
+# Cases this verifier cannot produce with ordinary requests, and where each is held instead (no drill runs on a
+# production host).  The edge bounds are the real-NGINX tests plus the byte-identical host config readback; the
+# application bounds are Gate D's drills on the exact image (scripts/deployment/image_drills.py).  The receipt names
+# them so a reader sees they were not exercised here.
 DEFERRED_REQUEST_CASES = {
-    "503": "real_nginx_tests_and_host_config_readback",
-    "slow_body": "real_nginx_tests_and_host_config_readback",
-    "timeout": "gate_d_image_drill", "unexpected_error": "gate_d_image_drill",
-    "worker_restart": "gate_d_image_drill",
-}
+    "503": "real_nginx_tests_and_host_config_readback", "slow_body": "real_nginx_tests_and_host_config_readback",
+    "timeout": "gate_d_image_drill", "unexpected_error": "gate_d_image_drill", "worker_restart": "gate_d_image_drill"}
 
 
 def hsts_is_sufficient(value: str) -> bool:
@@ -99,23 +93,17 @@ def hsts_is_sufficient(value: str) -> bool:
                 and "includesubdomains" in {part.strip().casefold() for part in value.split(";")})
 
 
-# --- public cache policy, as a browser or shared cache would read it -------------
-# The edge emits the application's split policy beneath its own no-store
-# floor (nginx-site.conf.template).  These predicates read the
-# directives a cache acts on, not the producer's exact spelling, so the
-# verifier is an independent reading of the observed header and not a copy of
-# the string the application writes.
+# The edge emits the application's split policy beneath its own no-store floor (nginx-site.conf.template).  These
+# predicates read the directives a cache acts on, not the producer's exact spelling, so the verifier is an independent
+# reading of the observed header and not a copy of the string the application writes.
 IMMUTABLE_MIN_AGE_SECONDS = 365 * 24 * 60 * 60
-# Every static reference the page generator stamps: `/zh-TW/<asset>?v=<16 hex>`
-# (scripts/frontend/build_pages.py).
+# Every static reference the page generator stamps: `/zh-TW/<asset>?v=<16 hex>` (scripts/frontend/build_pages.py).
 _VERSIONED_ASSET_REFERENCE = re.compile(rb'(?:src|href)="(/zh-TW/[^"?#]+)\?v=([0-9a-f]{16})"')
-# The IndexNow key file an engine fetches to verify a submission
-# (scripts/deployment/submit_indexnow.py).
+# The IndexNow key file an engine fetches to verify a submission (scripts/deployment/submit_indexnow.py).
 _INDEXNOW_KEY_PATH = "/" + INDEXNOW_KEY_FILE
 _PUBLIC_DISCOVERY_FILES = (
     "/robots.txt", "/sitemap.xml", "/feed.xml", "/llms.txt", "/llms-full.txt", "/.well-known/security.txt",
-    _INDEXNOW_KEY_PATH,
-)
+    _INDEXNOW_KEY_PATH)
 
 
 def _header(headers: dict[str, str], name: str) -> str | None:
@@ -127,8 +115,7 @@ def cache_directives(headers: dict[str, str]) -> dict[str, str | None]:
     directives: dict[str, str | None] = {}
     for item in (_header(headers, "cache-control") or "").split(","):
         name, separator, value = item.strip().partition("=")
-        if name:
-            directives[name.casefold()] = value.strip().strip('"') if separator else None
+        if name: directives[name.casefold()] = value.strip().strip('"') if separator else None
     return directives
 
 
@@ -144,18 +131,15 @@ def is_immutable_for_a_year(headers: dict[str, str]) -> bool:
 
 
 def revalidates(headers: dict[str, str]) -> bool:
-    """May be stored, must be revalidated before every reuse, and can be: it
-    carries a validator for a conditional request."""
+    """May be stored, must be revalidated before every reuse, and can be: it carries a validator for a conditional
+    request."""
     directives = cache_directives(headers)
-    must_revalidate = "no-cache" in directives or (
-        directives.get("max-age") == "0" and "must-revalidate" in directives)
+    must_revalidate = "no-cache" in directives or (directives.get("max-age") == "0" and "must-revalidate" in directives)
     validator = _header(headers, "etag") is not None or _header(headers, "last-modified") is not None
-    return (must_revalidate and validator
-            and not {"no-store", "immutable"} & set(directives))
+    return (must_revalidate and validator and not {"no-store", "immutable"} & set(directives))
 
 
 def _public_cache_cases(base_url: str, page: bytes, page_headers: dict[str, str]) -> dict[str, bool]:
-    """Observe the public cache policy at the edge, one property per case."""
     cases = {"page_revalidated": revalidates(page_headers)}
     etag = _header(page_headers, "etag")
     cases["page_conditional_304"] = etag is not None and _request(
@@ -182,10 +166,8 @@ def _public_cache_cases(base_url: str, page: bytes, page_headers: dict[str, str]
     return cases
 
 
-# --- public indexability, as a crawler would read it --------------------------
-# The public site is meant to be crawled and indexed; the API is not.  These
-# read what a crawler acts on (robots.txt rules, the page's robots meta, the
-# status of a page that does not exist), not the generator's exact spelling.
+# The public site is meant to be crawled and indexed; the API is not.  These read what a crawler acts on (robots.txt
+# rules, the page's robots meta, the status of a page that does not exist), not the generator's exact spelling.
 _META_ROBOTS = re.compile(rb'<meta\s+name="robots"\s+content="([^"]*)"', re.IGNORECASE)
 _CRAWLABLE_PROBE_PATHS = ("/zh-TW/", "/zh-TW/calculate", "/zh-TW/methods")
 _API_PROBE_PATH = "/api/chart"
@@ -223,21 +205,15 @@ _DISCOVERY_MEDIA_TYPES = {
     "/feed.xml": ("application/atom+xml",),
     _INDEXNOW_KEY_PATH: ("text/plain",),
 }
-# Every other spelling of a page is a permanent redirect to its one address,
-# in one hop, so no page is reachable at two URLs.
-# Where the application's root redirects (backend/app/main.py).
+# Every other spelling of a page is a permanent redirect to its one address, in one hop, so no page is reachable at two
+# URLs. Where the application's root redirects (backend/app/main.py).
 ENTRY_PATH = "/zh-TW/"
 _NONCANONICAL_SPELLINGS = (
-    ("/zh-TW", "/zh-TW/"),
-    ("/zh-TW/index", "/zh-TW/"),
-    ("/zh-TW/index.html", "/zh-TW/"),
-    ("/zh-TW/calculate/", "/zh-TW/calculate"),
-    ("/zh-TW/calculate.html", "/zh-TW/calculate"),
-)
+    ("/zh-TW", "/zh-TW/"), ("/zh-TW/index", "/zh-TW/"), ("/zh-TW/index.html", "/zh-TW/"),
+    ("/zh-TW/calculate/", "/zh-TW/calculate"), ("/zh-TW/calculate.html", "/zh-TW/calculate"))
 
 
 def media_type(headers: dict[str, str]) -> tuple[str, dict[str, str]]:
-    """The Content-Type's type and its parameters, both lower-cased."""
     kind, *parameters = (_header(headers, "content-type") or "").split(";")
     values = {}
     for parameter in parameters:
@@ -247,18 +223,16 @@ def media_type(headers: dict[str, str]) -> tuple[str, dict[str, str]]:
 
 
 def is_branded_not_found(status: int, body: bytes, headers: dict[str, str]) -> bool:
-    """A real 404 that a person can use and a crawler will not index: an HTML
-    page that says noindex and links back to the entry page."""
+    """A real 404 that a person can use and a crawler will not index: an HTML page that says noindex and links back to
+    the entry page."""
     meta = [match.group(1).lower() for match in _META_ROBOTS.finditer(body)]
     return (status == 404 and media_type(headers)[0] == "text/html"
-            and bool(meta) and all(b"noindex" in value for value in meta)
-            and b'href="/zh-TW/"' in body)
+            and bool(meta) and all(b"noindex" in value for value in meta) and b'href="/zh-TW/"' in body)
 
 
 def _same_origin_location(base_url: str, headers: dict[str, str]) -> str | None:
     location = _header(headers, "location")
-    if location is not None and location.startswith(base_url + "/"):
-        return location[len(base_url):]
+    if location is not None and location.startswith(base_url + "/"): return location[len(base_url):]
     return location
 
 
@@ -267,8 +241,7 @@ def _public_discovery_cases(base_url: str, page: bytes) -> dict[str, bool]:
     cases = {
         "robots_txt_admits_pages_not_api": status == 200 and robots_admit_pages_not_api(base_url, robots),
         "entrypoint_meta_indexable": page_meta_indexable(page),
-        "unknown_page_404": _request(base_url + _UNKNOWN_PAGE_PROBE_PATH)[0] == 404,
-    }
+        "unknown_page_404": _request(base_url + _UNKNOWN_PAGE_PROBE_PATH)[0] == 404}
     cases["unknown_page_branded_noindex_404"] = all(
         is_branded_not_found(*_request(base_url + path)) for path in _ERROR_PAGE_PROBE_PATHS)
     status, _, headers = _request(base_url + _UNKNOWN_API_PROBE_PATH)
@@ -298,17 +271,15 @@ def _public_discovery_cases(base_url: str, page: bytes) -> dict[str, bool]:
 
 
 def origin_redirect_is_bare(status: int, headers: dict[str, str], expected: str) -> bool:
-    """A permanent redirect to `expected`, the path without the query the
-    request carried (an outside link may put birth data there), that no cache
-    keeps."""
+    """A permanent redirect to `expected`, the path without the query the request carried (an outside link may put birth
+    data there), that no cache keeps."""
     return status == 308 and _header(headers, "location") == expected \
         and "no-store" in cache_directives(headers)
 
 
 def _canonical_host_cases(base_url: str) -> dict[str, bool]:
-    """www and plain HTTP each reach the apex over HTTPS in one permanent hop,
-    keeping the path only, so the site has one origin; the plain-HTTP root
-    reaches the entry page in that one hop, not the HTTPS root."""
+    """www and plain HTTP each reach the apex over HTTPS in one permanent hop, keeping the path only, so the site has
+    one origin; the plain-HTTP root reaches the entry page in that one hop, not the HTTPS root."""
     apex, www = deployment_hostnames(urlparse(base_url).hostname or "")
     path = "/zh-TW/calculate"
     observed = [_request(origin + path + "?armillary-verifier=1") for origin in (f"https://{www}", f"http://{www}")]
@@ -324,20 +295,16 @@ class _NoRedirect(HTTPRedirectHandler):
         return None
 
 
-# --- the transport: which address family carries the requests ----------------------
 ADDRESS_FAMILIES = {"any": socket.AF_UNSPEC, "4": socket.AF_INET, "6": socket.AF_INET6}
 
 
 def _connect_in_family(host: str, port: int, family: int, timeout, source_address) -> socket.socket:
-    """socket.create_connection, restricted to one address family."""
     error: OSError | None = None
     for af, kind, protocol, _name, address in socket.getaddrinfo(host, port, family, socket.SOCK_STREAM):
         connection = socket.socket(af, kind, protocol)
         try:
-            if isinstance(timeout, (int, float)):
-                connection.settimeout(timeout)
-            if source_address:
-                connection.bind(source_address)
+            if isinstance(timeout, (int, float)): connection.settimeout(timeout)
+            if source_address: connection.bind(source_address)
             connection.connect(address)
             return connection
         except OSError as failure:
@@ -347,13 +314,11 @@ def _connect_in_family(host: str, port: int, family: int, timeout, source_addres
 
 
 class ConnectionRoute:
-    """Where this verifier's connections go: the resolver's choice (`any`), only
-    one family's addresses of the host name, or one literal address.  It counts
-    the family each connection actually used; the receipt carries the counts."""
-
+    """Where this verifier's connections go: the resolver's choice (`any`), only one family's addresses of the host
+    name, or one literal address.  It counts the family each connection actually used; the receipt carries the counts.
+    """
     def __init__(self, family: str = "any", address: str | None = None) -> None:
-        if family not in ADDRESS_FAMILIES:
-            raise ValueError(f"address family must be one of {sorted(ADDRESS_FAMILIES)}")
+        if family not in ADDRESS_FAMILIES: raise ValueError(f"address family must be one of {sorted(ADDRESS_FAMILIES)}")
         if address is not None:
             literal = ipaddress.ip_address(address)   # a name is refused here
             if getattr(literal, "scope_id", None):
@@ -367,8 +332,7 @@ class ConnectionRoute:
     def connect(self, host_port, timeout=None, source_address=None) -> socket.socket:
         host, port = host_port
         if self.address is not None:
-            connection = _connect_in_family(self.address, port, ADDRESS_FAMILIES[self.family],
-                                            timeout, source_address)
+            connection = _connect_in_family(self.address, port, ADDRESS_FAMILIES[self.family], timeout, source_address)
         else:
             connection = _connect_in_family(host, port, ADDRESS_FAMILIES[self.family], timeout, source_address)
         self.connections["6" if connection.family == socket.AF_INET6 else "4"] += 1
@@ -386,10 +350,8 @@ class ConnectionRoute:
                 "connections": dict(self.connections)}
 
     def as_requested(self) -> bool:
-        """`any` takes what the resolver gives; a named family must have carried
-        every connection, and at least one."""
-        if self.family == "any":
-            return True
+        """`any` takes what the resolver gives; a named family must have carried every connection, and at least one."""
+        if self.family == "any": return True
         other = "4" if self.family == "6" else "6"
         return self.connections[self.family] > 0 and self.connections[other] == 0
 
@@ -399,7 +361,6 @@ _ROUTE = ConnectionRoute()
 
 @contextlib.contextmanager
 def connection_route(route: ConnectionRoute):
-    """Every request (and TLS probe) inside the block takes `route`."""
     global _ROUTE
     previous, _ROUTE = _ROUTE, route
     try:
@@ -416,7 +377,6 @@ class _RoutedHTTPConnection(http.client.HTTPConnection):
 
 class _RoutedHTTPSConnection(http.client.HTTPSConnection):
     """Connects by the route; SNI, the certificate check and Host still use the host name."""
-
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._create_connection = _ROUTE.connect
@@ -447,8 +407,7 @@ def _bounded_response_body(response, maximum_bytes: int = MAX_RESPONSE_BYTES) ->
     if length is not None and int(length) > maximum_bytes:
         raise ValueError("staging response exceeds bounded byte limit")
     body = response.read(maximum_bytes + 1)
-    if len(body) > maximum_bytes:
-        raise ValueError("staging response exceeds bounded byte limit")
+    if len(body) > maximum_bytes: raise ValueError("staging response exceeds bounded byte limit")
     return body
 
 
@@ -456,8 +415,7 @@ def _request(url: str, *, body: bytes | None = None,
              content_type: str | None = None, extra_headers: dict[str, str] | None = None,
              timeout: float = 35, maximum_bytes: int = MAX_RESPONSE_BYTES) -> tuple[int, bytes, dict[str, str]]:
     headers = dict(extra_headers or {})
-    if content_type:
-        headers["Content-Type"] = content_type
+    if content_type: headers["Content-Type"] = content_type
     try:
         with _DIRECT_OPENER.open(Request(url, data=body, headers=headers), timeout=timeout) as response:
             return response.status, _bounded_response_body(response, maximum_bytes), dict(response.headers)
@@ -476,8 +434,7 @@ def validate_base_url(base_url: str, *, approved_hostname: str | None = None) ->
         raise ValueError("base URL must be a bare origin without credentials")
     if parsed.netloc != parsed.hostname + (f":{parsed.port}" if parsed.port is not None else ""):
         raise ValueError("base URL authority is malformed")
-    if approved_hostname is None:
-        raise ValueError("real staging verification requires approved hostname")
+    if approved_hostname is None: raise ValueError("real staging verification requires approved hostname")
     if parsed.hostname != validate_server_name(approved_hostname):
         raise ValueError("base URL does not match approved staging hostname")
     return base_url.rstrip("/")
@@ -492,8 +449,7 @@ def _entrypoint(base_url: str) -> tuple[int, bytes, dict[str, str]]:
 
 
 def _robots_noindex(headers: dict[str, str]) -> bool:
-    return "noindex" in {key.casefold(): value for key, value in headers.items()}.get(
-        "x-robots-tag", "").casefold()
+    return "noindex" in {key.casefold(): value for key, value in headers.items()}.get("x-robots-tag", "").casefold()
 
 
 def _tls_handshake_signed(address: str, server_name: str, *arguments: str) -> bool | None:
@@ -506,23 +462,19 @@ def _tls_handshake_signed(address: str, server_name: str, *arguments: str) -> bo
     return done.returncode == 0 and "Peer signature type" in done.stdout
 
 
-# Python's ssl module cannot narrow the signature algorithms a client offers,
-# so the case asks the OpenSSL client.  Its own security level is lowered so
-# that only the edge can refuse.
+# Python's ssl module cannot narrow the signature algorithms a client offers, so the case asks the OpenSSL client.  Its
+# own security level is lowered so that only the edge can refuse.
 _WEAK_SIGNATURES = ("ECDSA+SHA224:RSA+SHA224", "ECDSA+SHA1:RSA+SHA1")
 
 
 def tls12_signature_case(hostname: str, *, address: str | None = None) -> bool:
-    """An ordinary TLS 1.2 client completes its handshake, and one that offers
-    only SHA-224 or only SHA-1 signatures is refused (the edge's
-    ssl_conf_command SignatureAlgorithms).  A client that cannot run proves nothing."""
+    """An ordinary TLS 1.2 client completes its handshake, and one that offers only SHA-224 or only SHA-1 signatures is
+    refused (the edge's ssl_conf_command SignatureAlgorithms).  A client that cannot run proves nothing."""
     family: tuple[str, ...] = ()
-    if address is None:
-        address, family = _ROUTE.openssl_target(hostname)
+    if address is None: address, family = _ROUTE.openssl_target(hostname)
     ordinary = _tls_handshake_signed(address, hostname, *family, "-tls1_2")
     weak = [_tls_handshake_signed(address, hostname, *family, "-tls1_2", "-sigalgs", offered,
-                                  "-cipher", "DEFAULT:@SECLEVEL=0")
-            for offered in _WEAK_SIGNATURES]
+                                  "-cipher", "DEFAULT:@SECLEVEL=0") for offered in _WEAK_SIGNATURES]
     return ordinary is True and all(result is False for result in weak)
 
 
@@ -553,31 +505,21 @@ def verify(base_url: str, *, approved_hostname: str | None = None, noindex: bool
     for path in ("/openapi.json", "/api/runtime-health", "/api/health/ready"):
         cases[path] = _request(base_url + path)[0] == 404
     return {"schema_version": 7, "edge_noindex": noindex,
-            "result": "pass" if all(cases.values()) else "fail", "cases": cases,
-            "base_url_recorded": False}
+            "result": "pass" if all(cases.values()) else "fail", "cases": cases, "base_url_recorded": False}
 
 
-# --- edge configuration: NGINX parser and the closed log sink model -------------
-# The edge's log sinks, closed, with this module as their one producer; the
-# configuration generator's --verify applies it to `nginx -T`.  Every directive that can write request data to a file, a socket or
-# syslog is listed with the only arguments the deployment approves; any other
-# value anywhere in the configuration is a refusal.  Absence is not silence:
-# NGINX's compiled-in defaults log every request (`access_log logs/access.log
-# combined`) and errors at level `error`, so every server, the http block and
-# the main context must each declare the approved value.  The privacy canary
-# reads the same model to decide which edge sinks exist (EDGE_FILE_SINKS) and
-# why each is quiet; no caller names them.
+# The edge's log sinks, closed, with this module as their one producer; the configuration generator's --verify applies
+# it to `nginx -T`.  Every directive that can write request data to a file, a socket or syslog is listed with the only
+# arguments the deployment approves; any other value anywhere in the configuration is a refusal.  Absence is not
+# silence: NGINX's compiled-in defaults log every request (`access_log logs/access.log combined`) and errors at level
+# `error`, so every server, the http block and the main context must each declare the approved value.  The privacy
+# canary reads the same model to decide which edge sinks exist (EDGE_FILE_SINKS) and why each is quiet; no caller names
+# them.
 APPROVED_ACCESS_LOG = ("off",)
 APPROVED_ERROR_LOG = ("/var/log/nginx/error.log", "emerg")
 LOG_SINK_DIRECTIVES = {
-    "access_log": (APPROVED_ACCESS_LOG,),
-    "error_log": (APPROVED_ERROR_LOG,),
-    "client_body_in_file_only": (("off",),),
-    "proxy_store": (("off",),),
-    "fastcgi_store": (("off",),),
-    "uwsgi_store": (("off",),),
-    "scgi_store": (("off",),),
-}
+    "access_log": (APPROVED_ACCESS_LOG,), "error_log": (APPROVED_ERROR_LOG,), "client_body_in_file_only": (("off",),),
+    "proxy_store": (("off",),), "fastcgi_store": (("off",),), "uwsgi_store": (("off",),), "scgi_store": (("off",),)}
 EDGE_FILE_SINKS = (Path(APPROVED_ERROR_LOG[0]),)
 NGINX_DUMP_TIMEOUT_SECONDS = 30
 
@@ -589,7 +531,6 @@ class _Block(NamedTuple):
 
 
 def _nginx_tokens(text: str):
-    """Yield NGINX configuration tokens: words, quoted strings and `{ } ;`."""
     index, length = 0, len(text)
     while index < length:
         character = text[index]
@@ -604,12 +545,10 @@ def _nginx_tokens(text: str):
         elif character in "'\"":
             end, value = index + 1, []
             while end < length and text[end] != character:
-                if text[end] == "\\" and end + 1 < length:
-                    end += 1
+                if text[end] == "\\" and end + 1 < length: end += 1
                 value.append(text[end])
                 end += 1
-            if end >= length:
-                raise ValueError("unterminated quoted string in NGINX configuration")
+            if end >= length: raise ValueError("unterminated quoted string in NGINX configuration")
             yield "".join(value), True
             index = end + 1
         else:
@@ -624,7 +563,6 @@ def _nginx_tokens(text: str):
 
 
 def parse_nginx(text: str) -> tuple[_Block, ...]:
-    """Parse NGINX configuration (one file or an `nginx -T` dump) into blocks."""
     stack: list[list[_Block]] = [[]]
     heads: list[tuple[str, tuple[str, ...]]] = []
     words: list[str] = []
@@ -632,32 +570,27 @@ def parse_nginx(text: str) -> tuple[_Block, ...]:
         if quoted or token not in "{};":
             words.append(token)
         elif token == ";":
-            if not words:
-                raise ValueError("empty NGINX directive")
+            if not words: raise ValueError("empty NGINX directive")
             stack[-1].append(_Block(words[0], tuple(words[1:]), None))
             words = []
         elif token == "{":
-            if not words:
-                raise ValueError("NGINX block without a name")
+            if not words: raise ValueError("NGINX block without a name")
             heads.append((words[0], tuple(words[1:])))
             stack.append([])
             words = []
         else:
-            if words or not heads:
-                raise ValueError("unbalanced NGINX block")
+            if words or not heads: raise ValueError("unbalanced NGINX block")
             name, args = heads.pop()
             children = tuple(stack.pop())
             stack[-1].append(_Block(name, args, children))
-    if words or heads:
-        raise ValueError("NGINX configuration ends inside a directive or block")
+    if words or heads: raise ValueError("NGINX configuration ends inside a directive or block")
     return tuple(stack[0])
 
 
 def _walk(blocks, *, stop_at: str | None = None):
     for block in blocks:
         yield block
-        if block.children is not None and block.name != stop_at:
-            yield from _walk(block.children, stop_at=stop_at)
+        if block.children is not None and block.name != stop_at: yield from _walk(block.children, stop_at=stop_at)
 
 
 def _directives(block: _Block, name: str) -> list[tuple[str, ...]]:
@@ -667,10 +600,8 @@ def _directives(block: _Block, name: str) -> list[tuple[str, ...]]:
 def log_sink_model_errors(text: str, *, require_main_context: bool = True) -> list[str]:
     """Name every way `text` could write request data outside the approved sinks.
 
-    `require_main_context` (the default) demands an `nginx -T` dump: without
-    the main context and the http block, the defaults that apply when nothing
-    is declared cannot be ruled out.  The renderer passes False for a site file.
-    """
+    `require_main_context` (the default) demands an `nginx -T` dump: without the main context and the http block, the
+    defaults that apply when nothing is declared cannot be ruled out.  The renderer passes False for a site file."""
     try:
         tree = parse_nginx(text)
     except ValueError as error:
@@ -682,15 +613,13 @@ def log_sink_model_errors(text: str, *, require_main_context: bool = True) -> li
             errors.append(f"{block.name} {' '.join(block.args)}: not an approved log sink")
     expected = (("access_log", APPROVED_ACCESS_LOG), ("error_log", APPROVED_ERROR_LOG))
     servers = [block for block in _walk(tree) if block.name == "server" and block.children is not None]
-    if not servers:
-        errors.append("no server block: nothing to hold to the log sink model")
+    if not servers: errors.append("no server block: nothing to hold to the log sink model")
     for server in servers:
         label = "server " + " ".join(
             next((child.args for child in server.children if child.name == "server_name"), ("?",)))
         for name, value in expected:
             found = _directives(server, name)
-            if found != [value]:
-                errors.append(f"{label}: {name} {found} is not exactly {[value]}")
+            if found != [value]: errors.append(f"{label}: {name} {found} is not exactly {[value]}")
     if require_main_context:
         main_error_logs = [block.args for block in tree if block.name == "error_log"]
         if main_error_logs != [APPROVED_ERROR_LOG]:
@@ -706,15 +635,11 @@ def log_sink_model_errors(text: str, *, require_main_context: bool = True) -> li
 def nginx_effective_configuration() -> str:
     """Return `nginx -T`: every file NGINX reads, includes resolved, as it parses them.
 
-    This is the on-disk configuration as NGINX resolves it, not a dump of a
-    running master: a configuration written but not yet reloaded is what is
-    checked here.  Failure to obtain it is an error, never an empty pass.
-    """
+    This is the on-disk configuration as NGINX resolves it, not a dump of a running master: a configuration written but
+    not yet reloaded is what is checked here.  Failure to obtain it is an error, never an empty pass."""
     try:
         completed = subprocess.run(
-            ["nginx", "-T"], capture_output=True, text=True, check=False,
-            timeout=NGINX_DUMP_TIMEOUT_SECONDS,
-        )
+            ["nginx", "-T"], capture_output=True, text=True, check=False, timeout=NGINX_DUMP_TIMEOUT_SECONDS)
     except (OSError, subprocess.SubprocessError) as error:
         raise ValueError(f"nginx -T could not run: {error}") from None
     if completed.returncode != 0 or "# configuration file " not in completed.stdout:
@@ -722,11 +647,8 @@ def nginx_effective_configuration() -> str:
     return completed.stdout
 
 
-
-# --- privacy canary --------------------------------------------------------------
 class SinkDisposition(str, Enum):
     """Why a sink in the closed universe counts as covered, or that it does not."""
-
     OBSERVED_ACTIVITY = "observed_activity"
     QUIET_BY_VERIFIED_CONFIGURATION = "quiet_by_verified_configuration"
     # Every file of the sink was searched and none changed after the canary
@@ -736,13 +658,10 @@ class SinkDisposition(str, Enum):
 
 
 COVERED_DISPOSITIONS = frozenset({
-    SinkDisposition.OBSERVED_ACTIVITY.value,
-    SinkDisposition.QUIET_BY_VERIFIED_CONFIGURATION.value,
-    SinkDisposition.UNCHANGED_SINCE_CANARY_START.value,
-})
-# The host sinks every receipt must carry, beside the edge and the exact
-# application container.  Read-only: the scans run journalctl, read files and
-# run `docker inspect`/`docker logs`; nothing is written or rotated.
+    SinkDisposition.OBSERVED_ACTIVITY.value, SinkDisposition.QUIET_BY_VERIFIED_CONFIGURATION.value,
+    SinkDisposition.UNCHANGED_SINCE_CANARY_START.value})
+# The host sinks every receipt must carry, beside the edge and the exact application container.  Read-only: the scans
+# run journalctl, read files and run `docker inspect`/`docker logs`; nothing is written or rotated.
 HOST_SINK_ROLES = ("host_journal_since_canary_start", "host_var_log_tree", "host_container_log_streams")
 HOST_LOG_ROOT = Path("/var/log")
 HOST_SCAN_TIMEOUT_SECONDS = 120
@@ -764,18 +683,15 @@ def generate_canary() -> Canary:
     payload = {
         "datetime": {"year": year, "month": 2, "day": 3, "hour": 4, "minute": minute, "second": 17},
         "timezone": {"mode": "iana", "iana_name": "Etc/UTC"},
-        "location": {"latitude": latitude, "longitude": longitude, "altitude_m": 37},
-    }
+        "location": {"latitude": latitude, "longitude": longitude, "altitude_m": 37}}
     return _canary(marker, payload)
 
 
 def derive_canary(canary: Canary, payload: dict[str, Any]) -> Canary:
     """The same marker carried by another synthetic payload (a drill's variant).
 
-    The fragments are those of the new payload together with the original
-    ones, from the one fragment producer below, so a scan for the derived
-    canary also finds every rendering of the payload it was derived from.
-    """
+    The fragments are those of the new payload together with the original ones, from the one fragment producer below, so
+    a scan for the derived canary also finds every rendering of the payload it was derived from."""
     derived = _canary(canary.marker, payload)
     return derived._replace(sensitive_fragments=tuple(dict.fromkeys(
         derived.sensitive_fragments + canary.sensitive_fragments)))
@@ -808,8 +724,7 @@ def scanner_self_test(canary: Canary) -> bool:
     controls = (canary.payload_bytes.decode("utf-8"), json.dumps(payload, indent=2),
                 repr({"year": year, "latitude": location["latitude"]}),
                 f"chart computed for {location['latitude']},{location['longitude']}")
-    if not all(_matches(canary, control) > 0 for control in controls):
-        return False
+    if not all(_matches(canary, control) > 0 for control in controls): return False
     with tempfile.TemporaryDirectory(prefix="armillary-canary-control-") as directory:
         control_path = Path(directory) / "positive-control.log"
         write_owner_only_new(control_path, (canary.marker + "\n").encode("utf-8"))
@@ -832,49 +747,34 @@ def scan_sinks(canary: Canary, sinks: list[Path], *,
         except OSError:
             content, present, readable = "", True, False
         results.append({
-            "sink_name_sha256": hashlib.sha256(sink.name.encode("utf-8")).hexdigest(),
-            "sink_role": "edge_file_sink",
-            "present": present,
-            "match_count": _matches(canary, content),
-            "byte_length": len(content.encode("utf-8")),
-            "line_count": len(content.splitlines()),
-            "disposition": (SinkDisposition(disposition) if readable
-                            else SinkDisposition.NOT_OBSERVED).value,
-        })
+            "sink_name_sha256": hashlib.sha256(sink.name.encode("utf-8")).hexdigest(), "sink_role": "edge_file_sink",
+            "present": present, "match_count": _matches(canary, content), "byte_length": len(content.encode("utf-8")),
+            "line_count": len(content.splitlines()), "disposition": (SinkDisposition(disposition) if readable
+                            else SinkDisposition.NOT_OBSERVED).value})
     observed = [item["disposition"] in COVERED_DISPOSITIONS for item in results]
     return {
-        "schema_version": 1,
-        "marker_sha256": hashlib.sha256(canary.marker.encode("ascii")).hexdigest(),
-        "sinks": results,
-        "total_match_count": sum(item["match_count"] for item in results),
-        "all_sinks_covered": bool(results) and all(observed),
-        "scanner_self_test_passed": scanner_self_test(canary),
-        "provider_invisible_sinks": "not_inspectable",
-        "credential_material_recorded": False,
-        "request_or_response_recorded": False,
-    }
+        "schema_version": 1, "marker_sha256": hashlib.sha256(canary.marker.encode("ascii")).hexdigest(),
+        "sinks": results, "total_match_count": sum(item["match_count"] for item in results),
+        "all_sinks_covered": bool(results) and all(observed), "scanner_self_test_passed": scanner_self_test(canary),
+        "provider_invisible_sinks": "not_inspectable", "credential_material_recorded": False,
+        "request_or_response_recorded": False}
 
 
 def host_fragments(canary: Canary) -> tuple[str, ...]:
     """The fragments searched for in host sinks, which hold everyone's logs.
 
-    The application and edge sinks are searched for every fragment.  The host
-    journal and /var/log also carry text this deployment does not write, where
-    the low-entropy renderings (the fixed time zone name, a year, a minute)
-    would match by chance and fail a clean host.  There the marker and every
-    rendering that carries a random coordinate or the whole payload are kept;
-    a logged request body always carries those.
-    """
+    The application and edge sinks are searched for every fragment.  The host journal and /var/log also carry text this
+    deployment does not write, where the low-entropy renderings (the fixed time zone name, a year, a minute) would match
+    by chance and fail a clean host.  There the marker and every rendering that carries a random coordinate or the whole
+    payload are kept; a logged request body always carries those."""
     payload = json.loads(canary.payload_bytes)
     generic = (payload["timezone"]["iana_name"], "year", "minute")
     return tuple(fragment for fragment in canary.sensitive_fragments
-                 if canary.marker in fragment or not any(word in fragment for word in generic)
-                 or len(fragment) > 64)
+                 if canary.marker in fragment or not any(word in fragment for word in generic) or len(fragment) > 64)
 
 
 class _StreamMatches:
     """The canary's host fragments found in a byte stream read in chunks."""
-
     def __init__(self, canary: Canary) -> None:
         self.fragments = host_fragments(canary)
         self.found: set[str] = set()
@@ -883,8 +783,7 @@ class _StreamMatches:
         self.byte_length = 0
 
     def feed(self, chunk: bytes | str) -> None:
-        if isinstance(chunk, str):
-            chunk = chunk.encode("utf-8", errors="replace")
+        if isinstance(chunk, str): chunk = chunk.encode("utf-8", errors="replace")
         self.byte_length += len(chunk)
         text = self.tail + chunk.decode("utf-8", errors="replace")
         self.found.update(fragment for fragment in self.fragments if fragment in text)
@@ -902,8 +801,7 @@ def _host_sink(role: str, matches: int, disposition: SinkDisposition, **counts: 
 
 def scan_host_journal(canary: Canary, *, since: float, run=subprocess.run) -> dict[str, Any]:
     """The whole journal since the canary started: every unit and the kernel."""
-    command = ["journalctl", "--since", f"@{max(int(since) - 1, 0)}", "--output", "export",
-               "--no-pager", "--quiet"]
+    command = ["journalctl", "--since", f"@{max(int(since) - 1, 0)}", "--output", "export", "--no-pager", "--quiet"]
     try:
         completed = run(command, capture_output=True, check=False, timeout=HOST_SCAN_TIMEOUT_SECONDS)
     except (OSError, subprocess.SubprocessError):
@@ -923,11 +821,9 @@ def scan_host_journal(canary: Canary, *, since: float, run=subprocess.run) -> di
 def scan_host_log_tree(canary: Canary, *, since: float, root: Path | None = None) -> dict[str, Any]:
     """Every regular file under /var/log changed since the canary started.
 
-    A file not modified since then cannot hold the canary.  The binary journal
-    directory is read through journalctl instead; gzip is decompressed; any
-    other compression, an unreadable file or one past the size bound leaves the
-    sink not observed.
-    """
+    A file not modified since then cannot hold the canary.  The binary journal directory is read through journalctl
+    instead; gzip is decompressed; any other compression, an unreadable file or one past the size bound leaves the sink
+    not observed."""
     root = HOST_LOG_ROOT if root is None else root
     threshold = max(int(since) - 1, 0)
     files = changed = 0
@@ -937,8 +833,7 @@ def scan_host_log_tree(canary: Canary, *, since: float, root: Path | None = None
     unlisted: list[OSError] = []
     unreadable = 0
     for directory, subdirectories, names in os.walk(root, followlinks=False, onerror=unlisted.append):
-        if Path(directory) == root:
-            subdirectories[:] = [name for name in subdirectories if name != "journal"]
+        if Path(directory) == root: subdirectories[:] = [name for name in subdirectories if name != "journal"]
         for name in names:
             path = Path(directory, name)
             try:
@@ -946,11 +841,9 @@ def scan_host_log_tree(canary: Canary, *, since: float, root: Path | None = None
             except OSError:
                 unreadable += 1
                 continue
-            if not stat.S_ISREG(metadata.st_mode):
-                continue
+            if not stat.S_ISREG(metadata.st_mode): continue
             files += 1
-            if metadata.st_mtime < threshold:
-                continue
+            if metadata.st_mtime < threshold: continue
             changed += 1
             if name.endswith(UNSCANNABLE_SUFFIXES) or metadata.st_size > MAX_HOST_FILE_BYTES:
                 unreadable += 1
@@ -960,8 +853,7 @@ def scan_host_log_tree(canary: Canary, *, since: float, root: Path | None = None
                 with (gzip.open(path, "rb") if name.endswith(".gz") else path.open("rb")) as handle:
                     while chunk := handle.read(1024 * 1024):
                         matches.feed(chunk)
-                        if matches.byte_length > MAX_HOST_FILE_BYTES:
-                            raise OSError("file grew past the scan bound")
+                        if matches.byte_length > MAX_HOST_FILE_BYTES: raise OSError("file grew past the scan bound")
             except (OSError, EOFError, gzip.BadGzipFile):
                 unreadable += 1
                 continue
@@ -982,11 +874,9 @@ def scan_host_containers(canary: Canary, *, since: float, run=subprocess.run) ->
     """The log stream of every container on the host, running or not."""
     def docker(*arguments: str):
         try:
-            return run(["docker", *arguments], capture_output=True, check=False,
-                       timeout=HOST_SCAN_TIMEOUT_SECONDS)
+            return run(["docker", *arguments], capture_output=True, check=False, timeout=HOST_SCAN_TIMEOUT_SECONDS)
         except (OSError, subprocess.SubprocessError):
             return None
-
     listed = docker("ps", "--all", "--quiet", "--no-trunc")
     if listed is None or listed.returncode != 0:
         return _host_sink(HOST_SINK_ROLES[2], 0, SinkDisposition.NOT_OBSERVED, container_count=0,
@@ -1009,14 +899,12 @@ def scan_host_containers(canary: Canary, *, since: float, run=subprocess.run) ->
         matches.feed(_as_bytes(logs.stdout) + _as_bytes(logs.stderr))
         found |= matches.found
         total += matches.byte_length
-    disposition = (SinkDisposition.NOT_OBSERVED if unreadable or not containers
-                   else SinkDisposition.OBSERVED_ACTIVITY)
+    disposition = (SinkDisposition.NOT_OBSERVED if unreadable or not containers else SinkDisposition.OBSERVED_ACTIVITY)
     return _host_sink(HOST_SINK_ROLES[2], len(found), disposition, container_count=len(containers),
                       unreadable_container_count=unreadable, byte_length=total)
 
 
 def scan_host_sinks(canary: Canary, since: float) -> list[dict[str, Any]]:
-    """The journal window, /var/log and every container, as root on the host."""
     if os.geteuid() != 0:
         # Without root the journal and /var/log are partial: nothing is observed.
         return [_host_sink(role, 0, SinkDisposition.NOT_OBSERVED) for role in HOST_SINK_ROLES]
@@ -1035,15 +923,12 @@ def _compose_command(*arguments: str) -> list[str]:
 def compose_runtime_declaration() -> dict[str, dict]:
     """The application's tmpfs mounts and networks as `docker compose config` renders the compose files.
 
-    ``tmpfs`` maps a container path to its options (what `docker inspect`
-    reports as HostConfig.Tmpfs); ``networks`` maps each network's full name
-    to whether it is declared internal.
-    """
+    ``tmpfs`` maps a container path to its options (what `docker inspect` reports as HostConfig.Tmpfs); ``networks``
+    maps each network's full name to whether it is declared internal."""
     completed = subprocess.run(_compose_command("config", "--format", "json"), capture_output=True, text=True,
                                check=False)
     try:
-        if completed.returncode != 0:
-            raise ValueError(completed.returncode)
+        if completed.returncode != 0: raise ValueError(completed.returncode)
         config = json.loads(completed.stdout)
         service = config["services"][APPLICATION_SERVICE]
         tmpfs = dict(entry.split(":", 1) if ":" in entry else (entry, "") for entry in service.get("tmpfs") or ())
@@ -1105,13 +990,10 @@ def scan_application_logs(canary: Canary, container: str, *, since: float,
                           run_request_ids: tuple[str, ...] | None = None) -> dict[str, object]:
     """The exact container's log stream since ``since``.
 
-    On the live host it is observed only when it shows one of
-    ``run_request_ids``, the IDs the application answered this run's requests
-    with: any other line (a health check, another visitor) proves the stream is
-    written, not that this run's requests reached it.  The IDs are counted,
-    never recorded.  ``None`` is a disposable container (Gate D's drills),
-    which only the run that started it writes to.
-    """
+    On the live host it is observed only when it shows one of ``run_request_ids``, the IDs the application answered this
+    run's requests with: any other line (a health check, another visitor) proves the stream is written, not that this
+    run's requests reached it.  The IDs are counted, never recorded.  ``None`` is a disposable container (Gate D's
+    drills), which only the run that started it writes to."""
     completed = subprocess.run(["docker", "logs", "--since", f"{since:.9f}", container], check=True,
                                capture_output=True, text=True)
     content = completed.stdout + completed.stderr
@@ -1120,16 +1002,11 @@ def scan_application_logs(canary: Canary, container: str, *, since: float,
     observed = bool(content) if run_request_ids is None else read > 0
     return {
         "sink_name_sha256": hashlib.sha256(container.encode("utf-8")).hexdigest(),
-        "sink_role": "exact_container_docker_log_stream",
-        "match_count": _matches(canary, content),
-        "byte_length": len(content.encode("utf-8")),
-        "line_count": len(content.splitlines()),
-        "changed_since_request_start": bool(content),
-        "run_request_id_count": len(identifiers),
-        "run_request_ids_read": read,
-        "disposition": (SinkDisposition.OBSERVED_ACTIVITY if observed
-                        else SinkDisposition.NOT_OBSERVED).value,
-    }
+        "sink_role": "exact_container_docker_log_stream", "match_count": _matches(canary, content),
+        "byte_length": len(content.encode("utf-8")), "line_count": len(content.splitlines()),
+        "changed_since_request_start": bool(content), "run_request_id_count": len(identifiers),
+        "run_request_ids_read": read, "disposition": (SinkDisposition.OBSERVED_ACTIVITY if observed
+                        else SinkDisposition.NOT_OBSERVED).value}
 
 
 def exercise_requests(base_url: str, canary: Canary) -> dict[str, object]:
@@ -1140,10 +1017,8 @@ def exercise_requests(base_url: str, canary: Canary) -> dict[str, object]:
         status, _body, headers = _request(base_url + "/api/chart", body=body, content_type=content_type,
                                           extra_headers=header)
         value = {key.casefold(): item for key, item in headers.items()}.get("x-request-id", "")
-        if REQUEST_ID_PATTERN.fullmatch(value):
-            request_ids.append(value)
+        if REQUEST_ID_PATTERN.fullmatch(value): request_ids.append(value)
         return status
-
     # A canary derived from the annual smoke body carries its `annual` member, which the
     # chart route refuses; the chart cases send the chart body it was derived from.
     chart_payload = json.loads(canary.payload_bytes)
@@ -1153,26 +1028,20 @@ def exercise_requests(base_url: str, canary: Canary) -> dict[str, object]:
     invalid["datetime"]["month"] = 13
     invalid[canary.marker] = canary.marker
     cases: dict[str, object] = {
-        "success": chart(chart_body),
-        "422": chart(json.dumps(invalid).encode()),
+        "success": chart(chart_body), "422": chart(json.dumps(invalid).encode()),
         "malformed": chart(b'{"canary":"' + canary.marker.encode()),
-        "413": chart(canary.marker.encode() + b"x" * (17 * 1024)),
-        "415": chart(canary.marker.encode(), "text/plain"),
-    }
+        "413": chart(canary.marker.encode() + b"x" * (17 * 1024)), "415": chart(canary.marker.encode(), "text/plain")}
     burst: list[int] = []
     for _ in range(45):
         burst.append(chart(b'{"canary":"' + canary.marker.encode()))
-        if burst[-1] == 429:
-            break
+        if burst[-1] == 429: break
     cases["429"] = 429 if 429 in burst else "not_observed"
     return {**cases, **DEFERRED_REQUEST_CASES, "run_request_ids": tuple(dict.fromkeys(request_ids))}
 
 
-# The flagged annual route (backend/app/refusals.py ANNUAL_ROUTE; the host
-# cannot import that module).  Whether the live container registers it is read
-# from that container's environment with the application's own reading of the
-# flag, never inferred from an answer: a container meant to serve it that
-# answers 404 is a failure, not an "off".
+# The flagged annual route (backend/app/refusals.py ANNUAL_ROUTE; the host cannot import that module).  Whether the live
+# container registers it is read from that container's environment with the application's own reading of the flag, never
+# inferred from an answer: a container meant to serve it that answers 404 is a failure, not an "off".
 ANNUAL_ROUTE_PATH = "/api/chart/annual"
 ANNUAL_SMOKE_SELECTION = {"target_kind": "completed_years", "target_value": 1}
 # The smoke asks for the page view by name, the request the calculator sends,
@@ -1182,14 +1051,12 @@ ANNUAL_SMOKE_EXPECTATIONS = {"success": 200, "gzip_json": True, "no_store": True
 
 
 def annual_route_flag(container: str | None) -> str:
-    """`on`, `off`, `invalid` (a value the application refuses to start with) or
-    `not_observed` (no container to read)."""
-    if container is None:
-        return "not_observed"
+    """`on`, `off`, `invalid` (a value the application refuses to start with) or `not_observed` (no container to read).
+    """
+    if container is None: return "not_observed"
     completed = subprocess.run(["docker", "inspect", container], check=False, capture_output=True, text=True)
     try:
-        if completed.returncode != 0:
-            raise ValueError(completed.returncode)
+        if completed.returncode != 0: raise ValueError(completed.returncode)
         [observed] = json.loads(completed.stdout)
         variables = (observed.get("Config") or {}).get("Env") or []
         environment = dict(item.split("=", 1) for item in variables if isinstance(item, str) and "=" in item)
@@ -1203,16 +1070,16 @@ def annual_route_flag(container: str | None) -> str:
 
 
 def annual_smoke_payload(canary: Canary) -> dict[str, Any]:
-    """The canary's synthetic birth with one annual selection: the same marker
-    and fragments, so the sink search also covers what the annual path logs."""
+    """The canary's synthetic birth with one annual selection: the same marker and fragments, so the sink search also
+    covers what the annual path logs."""
     payload = json.loads(canary.payload_bytes)
     payload["annual"] = dict(ANNUAL_SMOKE_SELECTION)
     return payload
 
 
 def exercise_annual_route(base_url: str, canary: Canary, flag: str) -> dict[str, Any]:
-    """With the flag on, one synthetic annual request through the real path;
-    otherwise nothing is sent and the smoke is named `not_run` with its reason."""
+    """With the flag on, one synthetic annual request through the real path; otherwise nothing is sent and the smoke is
+    named `not_run` with its reason."""
     if flag != "on":
         reason = {"off": "flag_off", "not_observed": "application_container_not_observed",
                   "invalid": "flag_value_invalid"}[flag]
@@ -1237,8 +1104,8 @@ def exercise_annual_route(base_url: str, canary: Canary, flag: str) -> dict[str,
 
 
 def annual_route_passes(annual: dict[str, Any]) -> bool:
-    """An off flag passes with the smoke not run; on must pass its smoke; a
-    flag the application would refuse, or one never read, does not pass."""
+    """An off flag passes with the smoke not run; on must pass its smoke; a flag the application would refuse, or one
+    never read, does not pass."""
     return (annual.get("flag") == "off" and annual.get("smoke") == "not_run") or (
         annual.get("flag") == "on" and annual.get("smoke") == "pass")
 
@@ -1248,15 +1115,12 @@ def evaluate_request_cases(cases: dict[str, Any]) -> dict[str, bool]:
 
 
 def evidence_passes(receipt: dict[str, Any], request_checks: dict[str, bool]) -> bool:
-    """Pass needs zero matches, every sink in the closed universe covered, an
-    actually observed application sink, a verified edge sink model and a
-    working scanner.  A sink that was neither observed nor proven quiet fails."""
+    """Pass needs zero matches, every sink in the closed universe covered, an actually observed application sink, a
+    verified edge sink model and a working scanner.  A sink that was neither observed nor proven quiet fails."""
     sinks = receipt.get("sinks")
     return (receipt.get("total_match_count") == 0 and receipt.get("application_sink_observed") is True
-            and receipt.get("edge_log_sink_model") == "verified"
-            and isinstance(sinks, list) and bool(sinks)
-            and all(isinstance(sink, dict) and sink.get("disposition") in COVERED_DISPOSITIONS
-                    for sink in sinks)
+            and receipt.get("edge_log_sink_model") == "verified" and isinstance(sinks, list) and bool(sinks)
+            and all(isinstance(sink, dict) and sink.get("disposition") in COVERED_DISPOSITIONS for sink in sinks)
             and set(HOST_SINK_ROLES) <= {sink.get("sink_role") for sink in sinks}
             and receipt.get("scanner_self_test_passed") is True and bool(request_checks)
             and all(request_checks.values()))
@@ -1265,29 +1129,22 @@ def evidence_passes(receipt: dict[str, Any], request_checks: dict[str, bool]) ->
 def edge_sink_universe(edge_configuration: str | None) -> tuple[str, list[str]]:
     """Return (model verdict, departures) for the edge from its `nginx -T` dump.
 
-    The verdict is ``verified``, ``refused`` (the dump names a sink outside the
-    model) or ``not_observed`` (no dump).  The sinks themselves are the model's
-    EDGE_FILE_SINKS; the caller never adds or removes one.
-    """
-    if edge_configuration is None:
-        return "not_observed", []
+    The verdict is ``verified``, ``refused`` (the dump names a sink outside the model) or ``not_observed`` (no dump).
+    The sinks themselves are the model's EDGE_FILE_SINKS; the caller never adds or removes one."""
+    if edge_configuration is None: return "not_observed", []
     errors = log_sink_model_errors(edge_configuration)
     return ("refused" if errors else "verified"), errors
 
 
 def privacy_canary(base_url: str, *, application_container: str | None,
-                   expected_image_id: str | None, edge_configuration: str | None,
-                   host_sinks=None) -> dict[str, object]:
+                   expected_image_id: str | None, edge_configuration: str | None, host_sinks=None) -> dict[str, object]:
     """Send one-time sensitive input, then look for it in every sink of the closed universe.
 
-    The universe is the exact application container's log stream, the edge
-    file sinks of the log sink model and the host sinks (``host_sinks``: the
-    journal since the canary started, /var/log, every container).  ``application_sink_observed`` is true
-    only when the container log stream shows a request ID this run's requests were answered with; the edge
-    sinks are quiet by verified configuration only when ``edge_configuration``
-    (the `nginx -T` dump) is inside the model.  Without either the result
-    cannot be a pass.
-    """
+    The universe is the exact application container's log stream, the edge file sinks of the log sink model and the host
+    sinks (``host_sinks``: the journal since the canary started, /var/log, every container).
+    ``application_sink_observed`` is true only when the container log stream shows a request ID this run's requests were
+    answered with; the edge sinks are quiet by verified configuration only when ``edge_configuration`` (the `nginx -T`
+    dump) is inside the model.  Without either the result cannot be a pass."""
     canary = generate_canary()
     container = None
     if application_container:
@@ -1297,18 +1154,15 @@ def privacy_canary(base_url: str, *, application_container: str | None,
         receipt_image = None
     edge_model, edge_errors = edge_sink_universe(edge_configuration)
     flag = annual_route_flag(container)
-    if flag == "on":
-        canary = derive_canary(canary, annual_smoke_payload(canary))
+    if flag == "on": canary = derive_canary(canary, annual_smoke_payload(canary))
     started = time.time()
-    # Before the chart cases: the 429 burst there empties the bucket the edge
-    # serves the annual route from.
+    # Before the chart cases: the 429 burst there empties the bucket the edge serves the annual route from.
     annual = exercise_annual_route(base_url, canary, flag)
     cases = exercise_requests(base_url, canary)
     run_request_ids = cast(tuple[str, ...], cases.pop("run_request_ids", ()))
     run_request_ids = tuple(dict.fromkeys(run_request_ids + tuple(annual.pop("run_request_ids", ()))))
     receipt = scan_sinks(canary, list(EDGE_FILE_SINKS), disposition=(
-        SinkDisposition.QUIET_BY_VERIFIED_CONFIGURATION if edge_model == "verified"
-        else SinkDisposition.NOT_OBSERVED))
+        SinkDisposition.QUIET_BY_VERIFIED_CONFIGURATION if edge_model == "verified" else SinkDisposition.NOT_OBSERVED))
     receipt["edge_log_sink_model"] = edge_model
     # The image inspect_application_container bound the application sink to.
     receipt["application_image_id"] = receipt_image
@@ -1324,15 +1178,13 @@ def privacy_canary(base_url: str, *, application_container: str | None,
     for host_sink in (host_sinks or scan_host_sinks)(canary, started):
         receipt["sinks"].append(host_sink)
         receipt["total_match_count"] += host_sink["match_count"]
-    receipt["all_sinks_covered"] = all(
-        sink.get("disposition") in COVERED_DISPOSITIONS for sink in receipt["sinks"])
+    receipt["all_sinks_covered"] = all(sink.get("disposition") in COVERED_DISPOSITIONS for sink in receipt["sinks"])
     checks = evaluate_request_cases(cases)
     receipt.update({
         "request_cases": cases, "request_case_checks": checks, "deferred_request_cases": DEFERRED_REQUEST_CASES,
         "annual_route": annual,
         "result": "pass" if evidence_passes(receipt, checks) and annual_route_passes(annual) else (
-            "not_observed" if container is None or edge_model == "not_observed" else "fail"),
-    })
+            "not_observed" if container is None or edge_model == "not_observed" else "fail")})
     return receipt
 
 
@@ -1366,8 +1218,7 @@ def main() -> None:
     except ValueError as error:
         parser.error(str(error))
     if os.geteuid() == 0:
-        # As root (Gate E) it hands this checkout's compose files to Docker, so
-        # the checkout must be one root can trust.
+        # As root (Gate E) it hands this checkout's compose files to Docker, so the checkout must be one root can trust.
         try:
             require_privileged_checkout(ROOT)
         except (OSError, ValueError) as error:
@@ -1385,22 +1236,18 @@ def main() -> None:
         canary = privacy_canary(
             validate_base_url(args.base_url, approved_hostname=approved),
             application_container=args.application_container or _compose_app_container(),
-            expected_image_id=args.expected_image_id,
-            edge_configuration=_effective_edge_configuration())
+            expected_image_id=args.expected_image_id, edge_configuration=_effective_edge_configuration())
     receipt["privacy_canary"] = canary
     receipt["transport"] = {**route.receipt(), "as_requested": route.as_requested()}
-    if canary["result"] != "pass" or not route.as_requested():
-        receipt["result"] = "fail"
+    if canary["result"] != "pass" or not route.as_requested(): receipt["result"] = "fail"
     emit_json_receipt(receipt, args.output)
 
 
 def _effective_edge_configuration() -> str | None:
-    """`nginx -T` on this host, or None when it cannot be read (then not_observed)."""
     try:
         return nginx_effective_configuration()
     except ValueError:
         return None
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == "__main__": main()

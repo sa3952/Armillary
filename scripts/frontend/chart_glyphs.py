@@ -1,26 +1,18 @@
 #!/usr/bin/env python3
 """The chart wheel's astrological glyphs, as SVG path strings.
 
-`scripts/frontend/scripts/chart-glyphs.js` (shipped minified as
-`frontend/zh-TW/chart-glyphs.js`, its `/*!` licence header kept) holds one path per symbol the wheel draws
-(the planets, Chiron, Black Moon Lilith, the lunar nodes, the twelve signs and the retrograde
-mark).  The same string feeds an SVG `<path d>` on the page and in the SVG
-download, and a Canvas `Path2D` in the PNG download, so no system font or
-emoji presentation decides what a symbol looks like.
+`scripts/frontend/scripts/chart-glyphs.js` (shipped minified as `frontend/zh-TW/chart-glyphs.js`, its `/*!` licence header
+kept) holds one path per symbol the wheel draws.  The same string feeds an SVG `<path d>`, the SVG download and a Canvas
+`Path2D` in the PNG download, so no system font or emoji presentation decides what a symbol looks like.
 
-The paths are the outlines of three SIL Open Font License 1.1 fonts from the
-Google Fonts repository (provenance, versions and checksums in
-`third_party/noto-fonts/README.md`).  The fonts themselves stay outside the
-repository: run this module with `--fonts DIR`, where DIR holds the three files
-named in `FONTS`; each file's SHA-256 is checked before it is read.  TrueType
-quadratic contours become `M`/`L`/`Q`/`Z` commands unchanged (implied on-curve
-midpoints made explicit), y is flipped to point down, and the unit is the
-fonts' own 1/1000 em, rounded to 0.1.
+The paths are outlines of three SIL Open Font License 1.1 fonts (provenance, versions and checksums in
+`third_party/noto-fonts/README.md`).  The fonts stay outside the repository: run this module with `--fonts DIR`, where
+DIR holds the three files named in `FONTS`; each file's SHA-256 is checked before it is read.  TrueType quadratic
+contours become `M`/`L`/`Q`/`Z` commands unchanged, y is flipped to point down, and the unit is the fonts' 1/1000 em,
+rounded to 0.1.
 
-A path taken from a font outline is a Modified Version of the Font Software in
-the OFL's sense, so the generated file carries the copyright lines and the full
-licence text (from the `third_party/noto-fonts/OFL-*.txt` copies), and uses no
-font name as its own.
+A path taken from a font outline is a Modified Version of the Font Software in the OFL's sense, so the generated file
+carries the copyright lines and the full licence text and uses no font name as its own.
 
     python -m scripts.frontend.chart_glyphs --fonts DIR          # write
     python -m scripts.frontend.chart_glyphs --fonts DIR --check  # compare
@@ -35,62 +27,35 @@ from pathlib import Path
 import struct
 import sys
 
-
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / "scripts" / "frontend" / "scripts" / "chart-glyphs.js"
-LICENCES = (
-    ROOT / "third_party" / "noto-fonts" / "OFL-noto-sans-symbols.txt",
-    ROOT / "third_party" / "noto-fonts" / "OFL-noto-sans.txt",
-)
+LICENCES = (ROOT / "third_party" / "noto-fonts" / "OFL-noto-sans-symbols.txt",
+    ROOT / "third_party" / "noto-fonts" / "OFL-noto-sans.txt")
 
 # file name -> SHA-256 of the exact bytes downloaded from google/fonts.
-FONTS = {
-    "NotoSansSymbols[wght].ttf": "f7e7e04b4a24b6c78893d50cbfd2b2f6cae49617ab047bfef668d252adb128f7",
+FONTS = {"NotoSansSymbols[wght].ttf": "f7e7e04b4a24b6c78893d50cbfd2b2f6cae49617ab047bfef668d252adb128f7",
     "NotoSansSymbols2-Regular.ttf": "7d5fb73b7ca67a6798101741f5d280a3d016a56a197afcd4199dbb57b4b82a21",
-    "NotoSans[wdth,wght].ttf": "bfb7bb691513f12e734dc346c03a03f784912432d7e3fa8e56efcf906fe86b3d",
-}
+    "NotoSans[wdth,wght].ttf": "bfb7bb691513f12e734dc346c03a03f784912432d7e3fa8e56efcf906fe86b3d"}
 
 SYMBOLS = "NotoSansSymbols[wght].ttf"
 SYMBOLS_2 = "NotoSansSymbols2-Regular.ttf"
 SANS = "NotoSans[wdth,wght].ttf"
 
-# Wheel key -> (code point, font).  Noto Sans Symbols has no U+2609 and no
-# U+211E; those two come from Symbols 2 and from Noto Sans.
-GLYPHS: dict[str, tuple[int, str]] = {
-    "sun": (0x2609, SYMBOLS_2),
-    "moon": (0x263D, SYMBOLS),
-    "mercury": (0x263F, SYMBOLS),
-    "venus": (0x2640, SYMBOLS),
-    "mars": (0x2642, SYMBOLS),
-    "jupiter": (0x2643, SYMBOLS),
-    "saturn": (0x2644, SYMBOLS),
-    "uranus": (0x2645, SYMBOLS),
-    "neptune": (0x2646, SYMBOLS),
-    "pluto": (0x2647, SYMBOLS),
-    "chiron": (0x26B7, SYMBOLS),
-    "lilith": (0x26B8, SYMBOLS),
-    "north_node": (0x260A, SYMBOLS),
-    "south_node": (0x260B, SYMBOLS),
-    "retrograde": (0x211E, SANS),
-    "aries": (0x2648, SYMBOLS),
-    "taurus": (0x2649, SYMBOLS),
-    "gemini": (0x264A, SYMBOLS),
-    "cancer": (0x264B, SYMBOLS),
-    "leo": (0x264C, SYMBOLS),
-    "virgo": (0x264D, SYMBOLS),
-    "libra": (0x264E, SYMBOLS),
-    "scorpio": (0x264F, SYMBOLS),
-    "sagittarius": (0x2650, SYMBOLS),
-    "capricorn": (0x2651, SYMBOLS),
-    "aquarius": (0x2652, SYMBOLS),
-    "pisces": (0x2653, SYMBOLS),
-}
+# Wheel key -> (code point, font).  Noto Sans Symbols has no U+2609 and no U+211E; those two come from Symbols 2 and
+# from Noto Sans.
+GLYPHS: dict[str, tuple[int, str]] = {"sun": (0x2609, SYMBOLS_2), "moon": (0x263D, SYMBOLS),
+    "mercury": (0x263F, SYMBOLS), "venus": (0x2640, SYMBOLS), "mars": (0x2642, SYMBOLS), "jupiter": (0x2643, SYMBOLS),
+    "saturn": (0x2644, SYMBOLS), "uranus": (0x2645, SYMBOLS), "neptune": (0x2646, SYMBOLS), "pluto": (0x2647, SYMBOLS),
+    "chiron": (0x26B7, SYMBOLS), "lilith": (0x26B8, SYMBOLS), "north_node": (0x260A, SYMBOLS),
+    "south_node": (0x260B, SYMBOLS), "retrograde": (0x211E, SANS), "aries": (0x2648, SYMBOLS),
+    "taurus": (0x2649, SYMBOLS), "gemini": (0x264A, SYMBOLS), "cancer": (0x264B, SYMBOLS), "leo": (0x264C, SYMBOLS),
+    "virgo": (0x264D, SYMBOLS), "libra": (0x264E, SYMBOLS), "scorpio": (0x264F, SYMBOLS),
+    "sagittarius": (0x2650, SYMBOLS), "capricorn": (0x2651, SYMBOLS), "aquarius": (0x2652, SYMBOLS),
+    "pisces": (0x2653, SYMBOLS)}
 
 Point = tuple[float, float, bool]
 
-
 class Font:
-    """The few TrueType tables a glyph outline needs: cmap, head, maxp, loca, glyf."""
 
     def __init__(self, data: bytes) -> None:
         self.data = data
@@ -218,14 +183,11 @@ class Font:
             if not flags & 0x20:
                 return contours
 
-
 def _number(value: float) -> str:
     rounded = round(value, 1)
     return str(int(rounded)) if rounded == int(rounded) else str(rounded)
 
-
 def path_data(contours: list[list[Point]]) -> str:
-    """Quadratic TrueType contours as SVG commands, y pointing down."""
     commands: list[str] = []
     for contour in contours:
         points = [(x, -y, on) for x, y, on in contour]
@@ -255,7 +217,6 @@ def path_data(contours: list[list[Point]]) -> str:
         commands.append("Z")
     return "".join(commands)
 
-
 def load_fonts(directory: Path) -> dict[str, Font]:
     fonts = {}
     for name, digest in FONTS.items():
@@ -265,7 +226,6 @@ def load_fonts(directory: Path) -> dict[str, Font]:
             raise SystemExit(f"{name}: SHA-256 {actual} is not the pinned {digest}")
         fonts[name] = Font(data)
     return fonts
-
 
 def extract(fonts: dict[str, Font]) -> dict[str, dict[str, object]]:
     glyphs: dict[str, dict[str, object]] = {}
@@ -279,14 +239,9 @@ def extract(fonts: dict[str, Font]) -> dict[str, dict[str, object]]:
         contours = font.contours(glyph)
         xs = [x for contour in contours for x, _, _ in contour]
         ys = [-y for contour in contours for _, y, _ in contour]
-        glyphs[key] = {
-            "codepoint": f"U+{code:04X}",
-            "font": name,
-            "bbox": [_number(min(xs)), _number(min(ys)), _number(max(xs)), _number(max(ys))],
-            "d": path_data(contours),
-        }
+        glyphs[key] = {"codepoint": f"U+{code:04X}", "font": name,
+            "bbox": [_number(min(xs)), _number(min(ys)), _number(max(xs)), _number(max(ys))], "d": path_data(contours)}
     return glyphs
-
 
 def licence_comment() -> str:
     texts = [path.read_text(encoding="utf-8") for path in LICENCES]
@@ -297,7 +252,6 @@ def licence_comment() -> str:
     body = bodies.pop()
     lines = copyrights + body.splitlines()
     return "\n".join((" * " + line).rstrip() for line in lines)
-
 
 def render(glyphs: dict[str, dict[str, object]]) -> str:
     entries = []
@@ -337,7 +291,6 @@ def render(glyphs: dict[str, dict[str, object]]) -> str:
 }});
 """
 
-
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--fonts", type=Path, required=True, help="directory holding the files named in FONTS")
@@ -354,7 +307,6 @@ def main(argv: list[str] | None = None) -> int:
     OUTPUT.write_text(text, encoding="utf-8")
     print(f"wrote {OUTPUT.relative_to(ROOT)} ({len(GLYPHS)} glyphs)")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

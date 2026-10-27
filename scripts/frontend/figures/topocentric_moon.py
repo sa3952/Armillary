@@ -1,17 +1,12 @@
-"""〈站心月亮與地心月亮差多少〉: figure 1 (one day in Taipei, 2026-12-24, the
-Moon near perigee: its altitude and the topocentric minus geocentric ecliptic
-longitude every 10 minutes, with a slider over the whole hours), figure 2 (a
-schematic of the diurnal parallax: general geometry, no numbers), table 1
-(the product's two Moons at four instants of that day against JPL Horizons)
-and the numbers the prose quotes.
+"""〈站心月亮與地心月亮差多少〉: figures 1-2, table 1 and the numbers the prose quotes (figure 1: one day in Taipei,
+2026-12-24, the Moon near perigee; figure 2: a schematic of the diurnal parallax; table 1: the product's two Moons at
+four instants of that day against JPL Horizons).
 
-The curve, the hourly steps and the 2026 statistics are Swiss Ephemeris with
-the repository's ephemeris files and the product's flags (apparent, tropical,
-of date; FLG_TOPOCTR with the observer at the synthetic Taipei point, sea
-level).  The four instants of table 1 are the product's own answers with the
-Moon-only topocentric profile, and the hourly steps are checked against them.
-The Horizons values are pinned in `horizons_moon_taipei_2026.json` with the
-queries that produced them; the generator does not go online.
+The curve, the hourly steps and the 2026 statistics are Swiss Ephemeris with the repository's ephemeris files and the
+product's flags (apparent, tropical, of date; FLG_TOPOCTR with the observer at the synthetic Taipei point, sea level).
+The four instants of table 1 are the product's own answers with the Moon-only topocentric profile, and the hourly steps
+are checked against them.  The Horizons values are pinned in `horizons_moon_taipei_2026.json` with the queries that
+produced them; the generator does not go online.
 """
 from __future__ import annotations
 
@@ -24,7 +19,6 @@ from . import _fx
 from ._common import TAIPEI, calc_ut, product_charts, swiss
 from ._demo import zodiacal_minutes
 
-
 FRAGMENT = "blog-geocentric-vs-topocentric-moon"
 PIN = Path(__file__).with_name("horizons_moon_taipei_2026.json")
 DAY = (2026, 12, 24)
@@ -32,27 +26,21 @@ UTC_OFFSET = 8
 DEFAULT_STEP = 18
 STEP_MINUTES = 10
 
-
 def _wrap(value: float) -> float:
     return ((value + 180) % 360) - 180
 
-
 def _request(hour: int) -> dict:
     return {"datetime": {"year": DAY[0], "month": DAY[1], "day": DAY[2], "hour": hour, "minute": 0, "second": 0},
-            "location": {"latitude": TAIPEI[0], "longitude": TAIPEI[1]},
-            "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"},
-            "options": {"house_system": "W", "include_houses": True,
-                        "moon_position_profile": "moon_only_topocentric_v1"}}
-
+        "location": {"latitude": TAIPEI[0], "longitude": TAIPEI[1]},
+        "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"},
+        "options": {"house_system": "W", "include_houses": True, "moon_position_profile": "moon_only_topocentric_v1"}}
 
 def _moon(swe, jd: float) -> tuple[float, float, float]:
-    """(geocentric longitude, topocentric longitude, topocentric altitude) at UT `jd`."""
     flags = swe.FLG_SWIEPH
     geo = calc_ut(swe, jd, swe.MOON, flags)
     topo = calc_ut(swe, jd, swe.MOON, flags | swe.FLG_TOPOCTR)
     altitude = swe.azalt(jd, swe.ECL2HOR, (TAIPEI[1], TAIPEI[0], 0.0), 0.0, 0.0, topo[:3])[1]
     return geo[0], topo[0], altitude
-
 
 @functools.lru_cache(maxsize=1)
 def answers() -> dict:
@@ -62,13 +50,10 @@ def answers() -> dict:
         for epoch in pin["epochs"]:
             parallax = post(_request(epoch["local_hour"]))["astronomical_data"]
             moon = parallax["parallax_moon"]
-            product.append({"hour": epoch["local_hour"], "jd_et": parallax["time"]["jd_et"],
-                            "jd_ut": parallax["time"]["jd_ut"],
-                            "geo": moon["geocentric_reference"]["longitude"],
-                            "topo": moon["topocentric_effective"]["longitude"],
-                            "altitude": moon["topocentric_effective"]["altitude_true"],
-                            "delta": moon["longitude_delta_degrees"], "claim": moon["claim"],
-                            "paths": moon["effective_downstream_paths"]})
+            product.append({"hour": epoch["local_hour"], "jd_et": parallax["time"]["jd_et"], "jd_ut": parallax["time"]["jd_ut"],
+                "geo": moon["geocentric_reference"]["longitude"], "topo": moon["topocentric_effective"]["longitude"],
+                "altitude": moon["topocentric_effective"]["altitude_true"], "delta": moon["longitude_delta_degrees"],
+                "claim": moon["claim"], "paths": moon["effective_downstream_paths"]})
     with swiss() as swe:
         swe.set_topo(TAIPEI[1], TAIPEI[0], 0.0)
         start = swe.julday(DAY[0], DAY[1], DAY[2], 0) - UTC_OFFSET / 24
@@ -85,9 +70,7 @@ def answers() -> dict:
         speed = calc_ut(swe, start + 0.5, swe.MOON, swe.FLG_SWIEPH | swe.FLG_SPEED)[3]
         check = [_moon(swe, p["jd_ut"]) for p in product]
     return {"pin": pin, "product": product, "curve": curve, "check": check, "speed": speed,
-            "year": {"hours": len(shifts), "max": max(shifts), "median": statistics.median(shifts),
-                     "other": other}}
-
+        "year": {"hours": len(shifts), "max": max(shifts), "median": statistics.median(shifts), "other": other}}
 
 def _check(data: dict) -> None:
     for epoch, answer, (geo, topo, alt) in zip(data["pin"]["epochs"], data["product"], data["check"], strict=True):
@@ -103,17 +86,13 @@ def _check(data: dict) -> None:
     if not 50 < peak < 64:
         raise RuntimeError(f"the day's largest shift {peak:.1f}′ no longer fits figure 1's scale")
 
-
 def _arcsec(value_degrees: float) -> str:
-    """The size of a difference, in arcseconds."""
     return f"{abs(value_degrees) * 3600:.2f}″"
-
 
 # --- figure 1: one day --------------------------------------------------------------
 
 def _hour(h: float) -> str:
     return f"{int(h):02d}:00"
-
 
 def _day_art(layout: str, fid: str, data: dict, steps: list, bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
@@ -154,15 +133,12 @@ def _day_art(layout: str, fid: str, data: dict, steps: list, bound: _fx.Bound) -
         out.append(_fx.text(X(h), low_box[1] + 24, bound.scale(f"{h:02d}:00"), "fx-t fx-small fx-num", anchor))
     for i, step in enumerate(steps):
         x = X(step["hour"])
-        body = (_fx.line(x, top_box[0] - 4, x, low_box[1], "fx-cursor")
-                + _fx.circle(x, Ya(step["altitude"]), 6 if wide else 5, "fx-cursor")
-                + _fx.circle(x, Yd(step["shift"]), 6 if wide else 5, "fx-cursor"))
+        body = (_fx.line(x, top_box[0] - 4, x, low_box[1], "fx-cursor") + _fx.circle(x, Ya(step["altitude"]), 6 if wide else 5,
+            "fx-cursor") + _fx.circle(x, Yd(step["shift"]), 6 if wide else 5, "fx-cursor"))
         out.append(_fx.step_group(i, DEFAULT_STEP, body))
-    out.append(_fx.text(L if wide else 14, H - 18, "直線：拖拉條選的整點" if wide else "直線：拖拉條選的整點",
-                        small + " fx-dim"))
+    out.append(_fx.text(L if wide else 14, H - 18, "直線：拖拉條選的整點" if wide else "直線：拖拉條選的整點", small + " fx-dim"))
     out.append("</svg>")
     return "".join(out)
-
 
 def _step_sentence(step: dict, bound: _fx.Bound) -> str:
     where = "地平線上" if step["altitude"] >= 0 else "地平線下"
@@ -171,9 +147,7 @@ def _step_sentence(step: dict, bound: _fx.Bound) -> str:
         change = "兩者幾乎相同"
     else:
         change = f"站心月亮比地心月亮{'多' if shift > 0 else '少'} {bound.num(f'{abs(shift):.0f}')} 角分"
-    return (f"{bound.num(_hour(step['hour']))}：月亮在{where} {bound.num(f'{abs(step['altitude']):.0f}')}°，"
-            f"{change}。")
-
+    return (f"{bound.num(_hour(step['hour']))}：月亮在{where} {bound.num(f'{abs(step['altitude']):.0f}')}°，" f"{change}。")
 
 def _figure_day(data: dict) -> str:
     bound = _fx.Bound()
@@ -200,7 +174,6 @@ def _figure_day(data: dict) -> str:
         bound=bound,
     )
 
-
 # --- figure 2: the schematic ---------------------------------------------------------
 
 def _parallax_art(layout: str, fid: str) -> str:
@@ -223,7 +196,6 @@ def _parallax_art(layout: str, fid: str) -> str:
     out.append(_fx.text(ex, ey + 22, "地心", small, "middle"))
     out.append(_fx.circle(ox, oy, 5, "fx-disc"))
     out.append(_fx.text(ox - 10, oy - 12, "出生地", small, "end"))
-    # the two lines of sight through the Moon to the far background
     def extend(x0, y0):
         t = (far - x0) / (mx - x0)
         return x0 + (mx - x0) * t, y0 + (my - y0) * t
@@ -246,7 +218,6 @@ def _parallax_art(layout: str, fid: str) -> str:
     out.append("</svg>")
     return "".join(out)
 
-
 def _figure_parallax() -> str:
     bound = _fx.Bound()
     return _fx.figure(
@@ -259,7 +230,6 @@ def _figure_parallax() -> str:
         art=_fx.FigureArt.drawn(_parallax_art, "fig-moon-parallax"),
         bound=bound,
     )
-
 
 # --- table 1: the product against JPL Horizons ---------------------------------------
 
@@ -276,7 +246,6 @@ def _horizons_rows(data: dict) -> str:
             f'<td class="n">{_arcsec(_wrap(p["topo"] - epoch["topocentric_longitude"]))}</td></tr>')
     return "\n".join(out)
 
-
 def build() -> tuple[dict[str, str], list[str]]:
     data = answers()
     _check(data)
@@ -284,17 +253,13 @@ def build() -> tuple[dict[str, str], list[str]]:
     worst = max(max(abs(_wrap(p["geo"] - e["geocentric_longitude"])), abs(_wrap(p["topo"] - e["topocentric_longitude"])))
                 for e, p in zip(data["pin"]["epochs"], data["product"], strict=True))
     biggest = max(data["product"], key=lambda p: abs(p["delta"]))
-    quoted = [
-        f"<b>{year['max']:.2f}°</b><span>2026 年在臺北，站心與地心月亮黃經的最大差",
+    quoted = [f"<b>{year['max']:.2f}°</b><span>2026 年在臺北，站心與地心月亮黃經的最大差",
         f"<b>{year['median'] * 60:.0f}′</b><span>差的中位數",
         f"<b>{year['other'] / year['hours'] * 100:.1f}%</b><span>的時間",
         f"<b>{worst * 3600:.1f}″</b><span>本站兩種月亮與 JPL Horizons 的最大差",
-        f"約 {year['other'] / year['hours'] * 365:.1f} 天",
-        f"月亮一小時約走 {data['speed'] / 24 * 60:.0f} 角分",
-        f"最大差 {year['max']:.2f} 度",
-        f"中位數約 {year['median'] * 60:.0f} 角分",
+        f"約 {year['other'] / year['hours'] * 365:.1f} 天", f"月亮一小時約走 {data['speed'] / 24 * 60:.0f} 角分",
+        f"最大差 {year['max']:.2f} 度", f"中位數約 {year['median'] * 60:.0f} 角分",
         f"站心月亮比地心月亮{'多' if biggest['delta'] > 0 else '少'} {abs(biggest['delta']) * 60:.0f} 角分",
-        f"{len(data['product'][0]['paths'])} 個地方",
-    ]
+        f"{len(data['product'][0]['paths'])} 個地方"]
     return {"fx-defs": _fx.defs(()), "moon-day": _figure_day(data), "moon-parallax": _figure_parallax(),
             "horizons": _horizons_rows(data)}, quoted

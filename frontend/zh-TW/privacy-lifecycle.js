@@ -26,6 +26,6 @@ return receipt;}
 function inspect(){return{has_canonical_document:canonicalDocument!==null,active_object_url_count:objectUrls.size,registered_section_count:sectionNodes.size,request_active:activeRequest!==null,};}
 return Object.freeze({setCanonicalDocument,requireCanonicalDocument,registerSectionNode,registerObjectUrl,releaseObjectUrl,deliverDownload,beginRequest,isCurrentRequest,finishRequest,scheduleAbort,beginTimedRequest,abortActiveRequest,clear,inspect,});}
 function isJsonResponse(response){const mediaType=(response.headers.get("Content-Type")||"").split(";",1)[0].trim().toLowerCase();return mediaType==="application/json"||mediaType.endsWith("+json");}
-function postJson(win,url,payload,signal){return win.fetch(url,{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify(payload),signal,}).then((response)=>{if(response.ok&&!isJsonResponse(response)){return{response,body:null,invalidJsonMedia:true};}
+function postJson(win,url,payload,signal){return win.fetch(url,{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify(payload),signal}).then((response)=>{if(response.ok&&!isJsonResponse(response)){return{response,body:null,invalidJsonMedia:true};}
 return response.json().catch(()=>null).then((body)=>({response,body,invalidJsonMedia:false}));});}
 return Object.freeze({createSensitiveDataLifecycle,postJson});});

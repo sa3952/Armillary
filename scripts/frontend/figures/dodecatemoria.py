@@ -1,17 +1,10 @@
-"""〈十二分部是什麼〉: figure 1 (a point walking through one sign and its
-twelfth-part sign under both rules), figure 2 (a point moved through Taurus a
-degree at a time, both rules' twelfth-parts on the wheel), figure 3 (the
-ascendant and its twelfth-part at 14:30 and 14:34), table 1 (the five examples
-the books give), table 2 (one synthetic hour as the result page marks it) and
-the numbers the prose quotes.
+"""〈十二分部是什麼〉: figures 1-3 and tables 1-2 of the article, and the numbers the prose quotes.
 
-The twelfth-parts are the product's own: `twelfth_part_longitude` from
-backend/app/core/dodecatemoria.py for figures 1 and 2 and table 1, and the real
-application in process for the synthetic chart (1990-05-15, Taipei, the
-home page's demonstration date) in figure 3 and table 2.  Two oracles stand
-apart from the product: each book's answer in table 1 is written here from the
-source, and every twelfth-part figures 1 and 2 draw, and the share of a sign on
-which the two rules agree, are worked exactly with Fractions.
+The twelfth-parts are the product's own: `twelfth_part_longitude` from backend/app/core/dodecatemoria.py for figures 1
+and 2 and table 1, and the real application in process for the synthetic chart (1990-05-15, Taipei, the home page's
+demonstration date) in figure 3 and table 2.  Two oracles stand apart from the product: each book's answer in table 1
+is written here from the source, and every twelfth-part figures 1 and 2 draw, and the share of a sign on which the two
+rules agree, are worked exactly with Fractions.
 """
 from __future__ import annotations
 
@@ -21,17 +14,15 @@ from typing import Any
 from . import _fx
 from ._common import PLANETS, SIGNS, TAIPEI, backend_on_path, product_charts
 
-
 FRAGMENT = "blog-dodecatemoria"
 TWELVE = "twelvefold_from_sign_start_v1"
 THIRTEEN = "thirteenfold_from_sign_start_v1"
 RULES = (TWELVE, THIRTEEN)
 CATEGORY = {"classical_planet": "行星", "angle": "軸點", "lot": "阿拉伯點"}
 
-# The books' examples: (who, where, the point, its longitude, the rule the book
-# uses or None when it gives only the sign, and the book's answer).  The answer
-# is the source's, not the product's; build() refuses a row the product's rule
-# no longer reproduces.
+# The books' examples: (who, where, the point, its longitude, the rule the book uses or None when it gives only the
+# sign, the book's answer).  The answer is the source's, not the product's; build() refuses a row the product's rule no
+# longer reproduces.
 EXAMPLES = (
     ("Firmicus", "《Mathesis》II.13", "太陽", Fraction(5) + Fraction(5, 60), TWELVE, (2, Fraction(1)),
      "雙子第 1 度"),
@@ -46,51 +37,38 @@ LOCATION = {"latitude": TAIPEI[0], "longitude": TAIPEI[1]}
 OPTIONS = {"house_system": "W", "include_houses": True, "include_lots": True, "include_dodecatemoria": True}
 HOUR = 14
 
-
 def _exact(longitude: Fraction, multiplier: int) -> Fraction:
     start = longitude // 30 * 30
     return (start + multiplier * (longitude - start)) % 360
 
-
 def _minutes(longitude: float) -> str:
-    """「天秤 24°00′」: whole arcminutes."""
     sign, rest = divmod(round((longitude % 360) * 60), 30 * 60)
     return f"{SIGNS[sign % 12]} {rest // 60}°{rest % 60:02d}′"
 
-
 def _zodiac_order(indices: list[int]) -> list[int]:
-    """The result page's order for a set of signs: from the sign that opens the run."""
     present = set(indices)
     start = next((index for index in indices if (index + 11) % 12 not in present), None)
     if start is None:
         return sorted(indices)
     return [(start + step) % 12 for step in range(12) if (start + step) % 12 in present]
 
-
 def _agreement() -> tuple[Fraction, Fraction, Fraction]:
-    """(degrees of a sign on which the two rules give the same sign, the first
-    and the last 2°30′ part's agreeing length), summed exactly: on the part
-    [5k/2, 5(k+1)/2) the times-12 sign is k, and times 13 is k until 13d
-    reaches 30(k+1)."""
+    """(degrees of a sign on which the two rules agree, the first and last 2°30′ part's agreeing length), summed
+    exactly: on the part [5k/2, 5(k+1)/2) the times-12 sign is k, and times 13 is k until 13d reaches 30(k+1)."""
     lengths = []
     for k in range(12):
         low, high = Fraction(5 * k, 2), Fraction(5 * (k + 1), 2)
         lengths.append(max(Fraction(0), min(high, Fraction(30 * (k + 1), 13)) - low))
     return sum(lengths, Fraction(0)), lengths[0], lengths[-1]
 
-
 # --- figures --------------------------------------------------------------------
 #
-# Figure 1 (the page's hero: a point walking through one sign) and figure 3
-# (14:30 against 14:34) are static; figure 2 moves a point through Taurus one
-# degree a step with a slider.  Every twelfth-part drawn or written is the
-# product's twelfth_part_longitude, and each is checked against the rule worked
-# exactly in Fractions (`_exact`) before it is drawn; the lords are the
-# product's own table.
+# Figures 1 and 3 are static; figure 2 moves a point through Taurus a degree a step with a slider.  Every twelfth-part
+# drawn or written is the product's, checked against the exact rule (`_exact`) before it is drawn.
 
 RULE_LABELS = ((TWELVE, 12, "乘以 12", "Firmicus"), (THIRTEEN, 13, "乘以 13", "Paulus"))
-# Figure 2 walks a point through Taurus, the sign of the worked example's Sun,
-# and without script shows it at 24°, next to that Sun's 24°10′30″.
+# Figure 2 walks a point through Taurus, the sign of the worked example's Sun, and without script shows it at 24°, next
+# to that Sun's 24°10′30″.
 WALK_SIGN = 1
 WALK_STEPS = 30
 WALK_DEFAULT = 24
@@ -98,30 +76,26 @@ WALK_DEFAULT = 24
 RULER_START = 180.0
 RULER_SPAN = 40.0
 
-
 def _cite(bound: _fx.Bound, number: int) -> str:
     return f'<a class="ar-cite" href="#ref-{number}">{bound.label(f"[{number}]")}</a>'
-
 
 def _arc_text(value: Fraction) -> str:
     """「2°30′」, or 「2°18′」 for a length that is not a whole minute (then 「約」 is the caller's)."""
     minutes = int(value * 60)
     return f"{minutes // 60}°{minutes % 60:02d}′"
 
-
 def _checked(twelfth_part, longitude: Fraction, rule: str, multiplier: int) -> float:
-    """The product's twelfth-part, refused unless it lands in the exact rule's sign
-    within a hundredth of an arcsecond of the exact rule's longitude."""
+    """The product's twelfth-part, refused unless it lands in the exact rule's sign within 0.01 arcsecond of its
+    longitude."""
     value = twelfth_part(float(longitude), rule)
     exact = _exact(longitude, multiplier)
     if int(value // 30) != int(exact // 30) or abs(value - float(exact)) * 3600 > 0.01:
         raise RuntimeError(f"{rule} at {float(longitude)}: product {value}, exact rule {float(exact)}")
     return value
 
-
 def _walk_cells(twelfth_part) -> tuple[dict[str, list[tuple[Fraction, Fraction, int]]], list[tuple[Fraction, Fraction]]]:
-    """Figure 1's cells: per rule, the stretches of Aries whose twelfth-part
-    stays in one sign; and the stretches where the two rules' signs differ."""
+    """Figure 1's cells: per rule, the stretches of Aries whose twelfth-part stays in one sign, and where the rules
+    differ."""
     cells = {}
     for rule, multiplier, _, _ in RULE_LABELS:
         edges = sorted({Fraction(0), Fraction(30), *(Fraction(30 * k, multiplier) for k in range(1, multiplier))})
@@ -143,10 +117,8 @@ def _walk_cells(twelfth_part) -> tuple[dict[str, list[tuple[Fraction, Fraction, 
         raise RuntimeError("figure 1's drawn disagreement is not the exact sum")
     return cells, differ
 
-
 def _walk(layout: str, fid: str, cells: dict, differ: list, bound: _fx.Bound) -> str:
-    """Figure 1, one layout: wide, the degrees run across and the two rules are
-    rows; narrow, the degrees run down and the rules are columns."""
+    """Figure 1, one layout (wide: degrees across, rules as rows; narrow: degrees down, rules as columns)."""
     wide = layout == "fx-wide"
     W = _fx.WIDE if wide else _fx.NARROW
     H = 300 if wide else 552
@@ -154,10 +126,8 @@ def _walk(layout: str, fid: str, cells: dict, differ: list, bound: _fx.Bound) ->
     if wide:
         x0, x1 = 184.0, 850.0
         k = (x1 - x0) / 30
-
         def at(d) -> float:
             return x0 + float(d) * k
-
         for (rule, _, label, author), top in zip(RULE_LABELS, (38.0, 108.0)):
             out.append(_fx.text(24, top + 24, bound.label(label), "fx-t"))
             out.append(_fx.text(24, top + 46, author, "fx-t fx-small fx-dim"))
@@ -178,10 +148,8 @@ def _walk(layout: str, fid: str, cells: dict, differ: list, bound: _fx.Bound) ->
         out.append(_fx.text((x0 + x1) / 2, axis + 58, "這個點在牡羊座裡走到第幾度", "fx-t fx-small", "middle"))
     else:
         y0, k = 62.0, 15.0
-
         def at(d) -> float:
             return y0 + float(d) * k
-
         columns = ((64.0, 174.0), (182.0, 292.0))
         for (rule, _, label, author), (left, right) in zip(RULE_LABELS, columns):
             middle = (left + right) / 2
@@ -203,17 +171,12 @@ def _walk(layout: str, fid: str, cells: dict, differ: list, bound: _fx.Bound) ->
     out.append("</svg>")
     return "".join(out)
 
-
 def _polar(cx: float, cy: float):
-    """Screen position of an ecliptic longitude on a wheel with Aries 0° on the
-    left and the signs following counterclockwise, as the result page's wheel."""
+    """Screen position of an ecliptic longitude on a wheel with Aries 0° on the left, signs counterclockwise."""
     return lambda longitude, r: _fx.wheel_point(cx, cy, r, 180 + longitude)
 
-
 def _walk_steps(twelfth_part, lords: dict[str, str]) -> list[dict]:
-    """Figure 2's precomputed steps: the point at Taurus d° for d = 0 … 29."""
     from app.core.dignity_tables import SIGNS as SIGN_KEYS
-
     steps = []
     for d in range(WALK_STEPS):
         point = Fraction(30 * WALK_SIGN + d)
@@ -227,11 +190,9 @@ def _walk_steps(twelfth_part, lords: dict[str, str]) -> list[dict]:
         steps.append(step)
     return steps
 
-
 def _wheel(layout: str, fid: str, steps: list[dict], bound: _fx.Bound) -> str:
-    """Figure 2, one layout: the zodiac wheel with the point and its two
-    twelfth-parts, one step group per degree; the readings beside (wide) or
-    below (narrow) the wheel."""
+    """Figure 2, one layout: the wheel with the point and its two twelfth-parts, one step group per degree; readings
+    beside (wide) or below (narrow)."""
     wide = layout == "fx-wide"
     W = _fx.WIDE if wide else _fx.NARROW
     if wide:
@@ -242,7 +203,6 @@ def _wheel(layout: str, fid: str, steps: list[dict], bound: _fx.Bound) -> str:
         marks = ((TWELVE, r_in - 22, 11.0), (THIRTEEN, r_in - 50, 11.0))
     at = _polar(cx, cy)
     out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)]
-    # The sign the point walks through, hatched; then the ring and the names.
     (ax, ay), (bx, by) = at(30.0 * WALK_SIGN, r_out), at(30.0 * WALK_SIGN + 30, r_out)
     (cx2, cy2), (dx, dy) = at(30.0 * WALK_SIGN + 30, r_in), at(30.0 * WALK_SIGN, r_in)
     f = _fx.f
@@ -301,14 +261,12 @@ def _wheel(layout: str, fid: str, steps: list[dict], bound: _fx.Bound) -> str:
     out.append("</svg>")
     return "".join(out)
 
-
 def _wheel_sentence(step: dict, bound: _fx.Bound) -> str:
     d = step["d"]
     verdict = "落在同一個星座" if step["same"] else "落在不同星座"
     return (f"點在{bound.num(f'{SIGNS[WALK_SIGN]} {d}°')}：乘以 12 落在{bound.num(_minutes(step[TWELVE]['longitude']))}"
             f"（守護行星{step[TWELVE]['lord']}），乘以 13 落在{bound.num(_minutes(step[THIRTEEN]['longitude']))}"
             f"（守護行星{step[THIRTEEN]['lord']}）；乘以 13 多走了 {bound.num(f'{d}°')}，{verdict}。")
-
 
 def _wheel_table(steps: list[dict], bound: _fx.Bound) -> str:
     rows = []
@@ -319,21 +277,17 @@ def _wheel_table(steps: list[dict], bound: _fx.Bound) -> str:
                     f'<td>{"同一個" if step["same"] else "不同"}</td></tr>')
     return _fx.data_table(("點", f"{bound.label('乘以 12')}（守護行星）", f"{bound.label('乘以 13')}（守護行星）", "星座"), rows)
 
-
 def _ruler(layout: str, fid: str, pair: dict, bound: _fx.Bound) -> str:
-    """Figure 3, one layout: the ascendant at 14:30 and 14:34 and its twelfth-part,
-    on one ruler from Libra 0° to Scorpio 10°."""
+    """Figure 3, one layout: the ascendant at 14:30 and 14:34 and its twelfth-part, on one ruler."""
     wide = layout == "fx-wide"
     W = _fx.WIDE if wide else _fx.NARROW
     x0, x1 = (232.0, 850.0) if wide else (14.0, 326.0)
     k = (x1 - x0) / RULER_SPAN
-
     def at(longitude: float) -> float:
         offset = longitude - RULER_START
         if not 0 <= offset <= RULER_SPAN:
             raise RuntimeError(f"figure 3: {longitude} is off the ruler")
         return x0 + offset * k
-
     before, after = pair[30]["asc"], pair[34]["asc"]
     moved = bound.num(f"{round((after['point_longitude'] - before['point_longitude']) * 60)}′")
     jumped = bound.num(f"約 {round((after['longitude'] - before['longitude']) % 360)}°")
@@ -399,7 +353,6 @@ def _ruler(layout: str, fid: str, pair: dict, bound: _fx.Bound) -> str:
         raise RuntimeError("figure 3 outgrew its drawing")
     return "".join(out)
 
-
 def _ruler_table(pair: dict, bound: _fx.Bound) -> str:
     rows = []
     for minute in (30, 34):
@@ -409,9 +362,7 @@ def _ruler_table(pair: dict, bound: _fx.Bound) -> str:
                     f'<td class="n">{bound.num(_minutes(asc["longitude"]))}</td><td>{PLANETS[asc["domicile_lord"]]}</td></tr>')
     return _fx.data_table(("出生時間", "上升點", f"十二分部（{bound.label('乘以 12')}）", "守護行星"), rows)
 
-
 def _figures(twelfth_part, lords: dict[str, str], pair: dict) -> dict[str, str]:
-    """The page's sprite and its three figures, each checked by `_fx.problems`."""
     cells, differ = _walk_cells(twelfth_part)
     walk_bound = _fx.Bound()
     agree, _, _ = _agreement()
@@ -429,7 +380,6 @@ def _figures(twelfth_part, lords: dict[str, str], pair: dict) -> dict[str, str]:
         art=_fx.FigureArt.drawn(_walk, "fig-sign-walk", cells, differ, walk_bound),
         bound=walk_bound,
     )
-
     steps = _walk_steps(twelfth_part, lords)
     wheel_bound = _fx.Bound()
     sun = pair[30]["sun"]
@@ -455,7 +405,6 @@ def _figures(twelfth_part, lords: dict[str, str], pair: dict) -> dict[str, str]:
         table=_wheel_table(steps, wheel_bound),
         bound=wheel_bound,
     )
-
     ruler_bound = _fx.Bound()
     before, after = pair[30]["asc"], pair[34]["asc"]
     ruler = _fx.figure(
@@ -472,7 +421,6 @@ def _figures(twelfth_part, lords: dict[str, str], pair: dict) -> dict[str, str]:
         bound=ruler_bound,
     )
     return {"fx-defs": _fx.defs(()), "sign-walk": walk, "two-rules": wheel, "four-minutes": ruler}
-
 
 def _example_rows(twelfth_part) -> str:
     rows = []
@@ -501,7 +449,6 @@ def _example_rows(twelfth_part) -> str:
         )
     return "\n".join(rows)
 
-
 def _hour(post) -> tuple[str, dict]:
     request = {"birth_time_precision": "approximate_hour",
                "datetime": {**DEMO_DAY, "hour": HOUR, "minute": 0, "second": 0},
@@ -526,37 +473,29 @@ def _hour(post) -> tuple[str, dict]:
                     f"<td>{original}</td><td>{position}</td><td>{PLANETS[point['domicile_lord']]}</td></tr>")
     return "\n".join(rows), {"many": many, "samples": sampled}
 
-
 def _day(post) -> dict:
     """Date only, both rules: the signs each planet's twelfth-part was sampled in."""
     out = {}
     for rule in RULES:
-        answer = post({"birth_time_precision": "date_only",
-                       "datetime": {**DEMO_DAY, "hour": 0, "minute": 0, "second": 0},
-                       "location": LOCATION, "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"},
-                       "options": {**OPTIONS, "dodecatemoria_profile": rule}})
+        answer = post({"birth_time_precision": "date_only", "datetime": {**DEMO_DAY, "hour": 0, "minute": 0, "second": 0},
+            "location": LOCATION, "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"},
+            "options": {**OPTIONS, "dodecatemoria_profile": rule}})
         out[rule] = {item["key"]: len(item["sampled_sign_indices"])
                      for item in answer["birth_time_sensitivity"]["dodecatemoria_signs"]}
     return out
 
-
 def _exact_pair(post) -> dict:
-    """14:30 and 14:34 on the demonstration day: the ascendant and its twelfth-part."""
     found = {}
     for minute in (30, 34):
-        answer = post({"birth_time_precision": "exact",
-                       "datetime": {**DEMO_DAY, "hour": HOUR, "minute": minute, "second": 0},
-                       "location": LOCATION, "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"},
-                       "options": OPTIONS})
+        answer = post({"birth_time_precision": "exact", "datetime": {**DEMO_DAY, "hour": HOUR, "minute": minute, "second": 0},
+            "location": LOCATION, "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"}, "options": OPTIONS})
         points = {point["key"]: point for point in answer["derived_methods"]["dodecatemoria"]["points"]}
         found[minute] = points
     return found
 
-
 def build() -> tuple[dict[str, str], list[str]]:
     with backend_on_path():
         from app.core.dodecatemoria import twelfth_part_longitude
-
         examples = _example_rows(twelfth_part_longitude)
         # Times 12 skips a sign when the point enters the next one; times 13 runs on.
         just_before = 30 - 1e-9
@@ -569,25 +508,20 @@ def build() -> tuple[dict[str, str], list[str]]:
         hour_rows, hour = _hour(post)
         day = _day(post)
         pair = _exact_pair(post)
-
     agree, first, last = _agreement()
     if agree != 15:
         raise RuntimeError(f"the two rules agree on {agree} degrees of a sign, not 15")
-
     def arc(value: Fraction) -> str:
         seconds = round(value * 3600)
         return f"{seconds // 3600}°{seconds % 3600 // 60:02d}′{seconds % 60:02d}″"
-
     sun = pair[30]["sun"]
     asc_before, asc_after = pair[30]["asc"], pair[34]["asc"]
     moved = asc_after["point_longitude"] - asc_before["point_longitude"]
     twelfth_moved = (asc_after["longitude"] - asc_before["longitude"]) % 360
     with backend_on_path():
         from app.core.dodecatemoria import twelfth_part_longitude
-
         sun_13 = twelfth_part_longitude(sun["point_longitude"], THIRTEEN)
         from app.core.dodecatemoria import DOMICILE_LORD_BY_SIGN
-
         figures = _figures(twelfth_part_longitude, DOMICILE_LORD_BY_SIGN, pair)
     many_names = {"asc": "上升點", "fortune": "命運點", "spirit": "精神點"}
     if hour["many"] != list(many_names):

@@ -56,15 +56,10 @@ def fetch(url: str) -> tuple[int, bytes]:
 
 
 def served_path(name: str) -> str:
-    """The URL path a file under frontend/ is served at."""
-
     relative = name.removeprefix("frontend")
-    if relative.endswith("/index.html"):
-        return relative[: -len("index.html")]
-    if relative.endswith("/404.html"):
-        return MISSING_PAGE_PROBE
-    if relative.endswith(".html"):
-        return relative[: -len(".html")]
+    if relative.endswith("/index.html"): return relative[: -len("index.html")]
+    if relative.endswith("/404.html"): return MISSING_PAGE_PROBE
+    if relative.endswith(".html"): return relative[: -len(".html")]
     return relative
 
 
@@ -76,15 +71,12 @@ LIVE_REQUEST_PAUSE_SECONDS = 0.15
 def integrity_problems(revision: str, *, get: Fetch = fetch, base_url: str = f"https://{CANONICAL_HOST}",
                        pause: float = LIVE_REQUEST_PAUSE_SECONDS) -> list[str]:
     status, body = get(f"https://api.github.com/repos/{PUBLIC_REPOSITORY}/git/trees/{revision}?recursive=1")
-    if status != 200:
-        return [f"integrity: cannot read the public tree at {revision} (HTTP {status})"]
+    if status != 200: return [f"integrity: cannot read the public tree at {revision} (HTTP {status})"]
     tree = json.loads(body)
-    if tree.get("truncated"):
-        return [f"integrity: the public tree at {revision} is truncated"]
+    if tree.get("truncated"): return [f"integrity: the public tree at {revision} is truncated"]
     names = sorted(entry["path"] for entry in tree["tree"]
                    if entry["type"] == "blob" and entry["path"].startswith(SERVED_PREFIX))
-    if not names:
-        return [f"integrity: no file under {SERVED_PREFIX} at {revision}"]
+    if not names: return [f"integrity: no file under {SERVED_PREFIX} at {revision}"]
     problems = []
     for name in names:
         source_status, source = get(f"https://raw.githubusercontent.com/{PUBLIC_REPOSITORY}/{revision}/{quote(name)}")
@@ -108,16 +100,14 @@ def certificate_days_left(host: str, *, now: datetime) -> float:
         with context.wrap_socket(raw, server_hostname=host) as tls:
             certificate = tls.getpeercert()
     not_after = certificate.get("notAfter") if certificate else None
-    if not isinstance(not_after, str):
-        raise ssl.SSLError(f"{host} presented no certificate expiry")
+    if not isinstance(not_after, str): raise ssl.SSLError(f"{host} presented no certificate expiry")
     expires = datetime.fromtimestamp(ssl.cert_time_to_seconds(not_after), tz=timezone.utc)
     return (expires - now).total_seconds() / 86400
 
 
 def domain_expiration(domain: str, *, get: Fetch = fetch) -> datetime | None:
     status, body = get(f"https://rdap.org/domain/{domain}")
-    if status != 200:
-        return None
+    if status != 200: return None
     for event in json.loads(body).get("events", []):
         if event.get("eventAction") == "expiration":
             return datetime.fromisoformat(event["eventDate"].replace("Z", "+00:00"))
@@ -126,14 +116,11 @@ def domain_expiration(domain: str, *, get: Fetch = fetch) -> datetime | None:
 
 def security_txt_problems(*, now: datetime, days: float, get: Fetch = fetch) -> list[str]:
     status, body = get(f"https://{CANONICAL_HOST}/.well-known/security.txt")
-    if status != 200:
-        return [f"security.txt: HTTP {status}"]
+    if status != 200: return [f"security.txt: HTTP {status}"]
     values = [line.split(":", 1)[1].strip() for line in body.decode("utf-8", "replace").splitlines()
               if line.split(":", 1)[0].strip().casefold() == "expires" and ":" in line]
-    if not values:
-        return ["security.txt: no Expires field"]
-    if len(values) > 1:
-        return [f"security.txt: Expires appears {len(values)} times (RFC 9116 allows one)"]
+    if not values: return ["security.txt: no Expires field"]
+    if len(values) > 1: return [f"security.txt: Expires appears {len(values)} times (RFC 9116 allows one)"]
     try:
         expires = datetime.fromisoformat(values[0].replace("Z", "+00:00"))
     except ValueError:
@@ -141,10 +128,8 @@ def security_txt_problems(*, now: datetime, days: float, get: Fetch = fetch) -> 
     if expires is None or expires.tzinfo is None or "T" not in values[0]:
         return [f"security.txt: Expires {values[0]!r} is not an RFC 3339 date-time"]
     left = (expires - now).total_seconds() / 86400
-    if left <= 0:
-        return [f"security.txt: Expires {expires.date()} has passed"]
-    if left < days:
-        return [f"security.txt: Expires {expires.date()} is {left:.0f} days away"]
+    if left <= 0: return [f"security.txt: Expires {expires.date()} has passed"]
+    if left < days: return [f"security.txt: Expires {expires.date()} is {left:.0f} days away"]
     return []
 
 
@@ -165,22 +150,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         except (OSError, ssl.SSLError) as error:
             problems.append(f"certificate: {host}: {error}")
             continue
-        if days < arguments.certificate_days:
-            problems.append(f"certificate: {host} expires in {days:.1f} days")
+        if days < arguments.certificate_days: problems.append(f"certificate: {host} expires in {days:.1f} days")
     expiration = domain_expiration(CANONICAL_HOST)
     if expiration is None:
         problems.append(f"domain: no RDAP expiration date for {CANONICAL_HOST}")
     elif (expiration - now).total_seconds() / 86400 < arguments.domain_days:
         problems.append(f"domain: {CANONICAL_HOST} registration expires {expiration.date()}")
     problems += security_txt_problems(now=now, days=arguments.security_txt_days)
-    if not arguments.skip_integrity:
-        problems += integrity_problems(arguments.revision)
+    if not arguments.skip_integrity: problems += integrity_problems(arguments.revision)
     for problem in problems:
         print(problem)
-    if not problems:
-        print("PUBLIC SITE OK")
+    if not problems: print("PUBLIC SITE OK")
     return 1 if problems else 0
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
+if __name__ == "__main__": raise SystemExit(main())

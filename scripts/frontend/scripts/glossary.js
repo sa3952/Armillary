@@ -68,8 +68,7 @@
     { key: "cazimi", term: "日輪內", en: "Cazimi", chapter: "古典判斷",
       text: "行星幾乎落在太陽正中（阿拉伯文「在太陽之心」）。Lilly《Christian Astrology》1647 年版 p.113 定在離太陽 17 角分以內，"
         + "al-Bīrūnī《占星術入門》§481–484 定在不到 16 角分（1 角分是 1 度的 60 分之 1）。"
-        + "Lilly 說各家都認為行星在日輪內因而得力。" },
-    { key: "combust", term: "焦傷", en: "Combust", chapter: "古典判斷",
+        + "Lilly 說各家都認為行星在日輪內因而得力。" }, { key: "combust", term: "焦傷", en: "Combust", chapter: "古典判斷",
       text: "行星離太陽很近，被太陽的光燒到（阿拉伯文 muḥtariq、拉丁文 combustus，字面是「被燒」）。"
         + "界線各家不同：Lilly《Christian Astrology》1647 年版 p.113 是 8°30′ 以內，al-Bīrūnī《占星術入門》§481–484 大多是 6° 以內。"
         + "Lilly 說任何行星的焦傷「是所能有的最大不幸」（p.111）；al-Bīrūnī 說行星的作用在焦傷時最小（§486）。" },
@@ -122,17 +121,11 @@
 
   const BY_KEY = new Map(ENTRIES.map((entry) => [entry.key, entry]));
 
-  const TEXT = Object.freeze({
-    title: "名詞解釋",
-    close: "關閉名詞解釋",
-    lead: "只解釋名詞；不替這張盤做個人解讀。",
-    where: "在：",
-  });
+  const TEXT = Object.freeze({ title: "名詞解釋", close: "關閉名詞解釋", lead: "只解釋名詞；不替這張盤做個人解讀。", where: "在：" });
 
   /**
-   * 頁面上的抽屜：第一次呼叫時建出並接線。openers 是「名詞解釋」鈕的選擇器；頁面上帶
-   * data-term 的詞（.term）點了就打開抽屜並捲到那一條。焦點：打開時交給抽屜的標題（或那一條
-   * 詞），Esc 或「關閉」收起並把焦點還給打開它的元素。
+   * 頁面上的抽屜：第一次呼叫時建出並接線。openers 是「名詞解釋」鈕的選擇器；頁面上帶 data-term 的詞（.term）點了就打開
+   * 抽屜並捲到那一條。焦點：打開時交給抽屜的標題（或那一條詞），Esc 或「關閉」收起並把焦點還給打開它的元素。
    */
   function mount(doc, { host, openers = "[data-glossary-open]" } = {}) {
     const win = doc.defaultView;
@@ -162,24 +155,18 @@
       const term = node("dt", null, entry.term);
       term.id = `glossary-${entry.key}`;
       term.tabIndex = -1;
-      if (entry.en) {
-        const en = node("span", "en", entry.en);
-        en.lang = "en";
-        term.append(" ", en);
-      }
+      if (entry.en) { const en = node("span", "en", entry.en); en.lang = "en"; term.append(" ", en); }
       const text = node("dd", null, entry.text);
       text.appendChild(node("span", "glossary-where", `${TEXT.where}${entry.chapter}`));
       list.append(term, text);
     });
     drawer.append(head, lead, list);
     (host || doc.body).appendChild(drawer);
-
     // 窄螢幕（與 calculate.css 的底部抽屜同一個斷點）上，抽屜蓋住大半個畫面，實際上是模態：
     // 打開時標成 dialog／aria-modal，並把抽屜以外的頁面設為 inert，Tab 不會跑到被蓋住的連結；
     // 關閉時還原成側欄（complementary）。寬螢幕是側欄，維持非模態。
     let inerted = [];
-    const narrow = () => Boolean(win && typeof win.matchMedia === "function"
-      && win.matchMedia(NARROW_SHEET_QUERY).matches);
+    const narrow = () => Boolean(win && typeof win.matchMedia === "function" && win.matchMedia(NARROW_SHEET_QUERY).matches);
     function makeModal() {
       drawer.setAttribute("role", "dialog");
       drawer.setAttribute("aria-modal", "true");
@@ -197,7 +184,6 @@
       drawer.setAttribute("role", "complementary");
       drawer.removeAttribute("aria-modal");
     }
-
     let opener = null;
     function open(key, from) {
       opener = from || null;
@@ -210,10 +196,7 @@
         hit.classList.add("is-hit");
         if (typeof hit.scrollIntoView === "function") hit.scrollIntoView({ block: "start" });
         hit.focus({ preventScroll: true });
-      } else {
-        list.scrollTop = 0;
-        title.focus({ preventScroll: true });
-      }
+      } else { list.scrollTop = 0; title.focus({ preventScroll: true }); }
       doc.querySelectorAll(openers).forEach((button) => button.setAttribute("aria-expanded", "true"));
     }
     function shut() {
@@ -232,16 +215,9 @@
       const target = event.target && event.target.closest ? event.target : null;
       if (!target) return;
       const term = target.closest(".term[data-term]");
-      if (term) {
-        event.preventDefault();
-        open(term.dataset.term, term);
-        return;
-      }
+      if (term) { event.preventDefault(); open(term.dataset.term, term); return; }
       const button = target.closest(openers);
-      if (button) {
-        if (drawer.hidden) open(null, button);
-        else shut();
-      }
+      if (button) { if (drawer.hidden) open(null, button); else shut(); }
     });
     close.addEventListener("click", shut);
     // Esc 只關最上層：抽屜開著時先關抽屜，並標記 defaultPrevented，星盤的點選標示不跟著清除。

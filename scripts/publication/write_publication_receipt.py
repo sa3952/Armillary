@@ -441,12 +441,9 @@ def compare_commit(*, candidate: Path, checkout: Path) -> str:
             ).stdout.split("\0")
     except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
         raise ReceiptRefusal(f"cannot read the commit to be published: {error}") from None
-    if added == [""]:
-        added = []
-    elif not added or added[-1] != "" or (len(added) - 1) % 4:
+    if added[-1:] != [""] or (len(added) - 1) % 4:
         raise ReceiptRefusal("cannot parse publication commit metadata")
-    else:
-        added.pop()
+    added.pop()
     for offset in range(0, len(added), 4):
         commit, author, committer, message = added[offset:offset + 4]
         if not REVISION_RE.fullmatch(commit):

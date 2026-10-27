@@ -1,7 +1,6 @@
 (function attachTimelords(root, factory) {
   const commonJs = typeof module === "object" && module.exports;
-  // 畫面模型在 timelords-model.js，符號在 chart-glyphs.js，清除與中止在 privacy-lifecycle.js；
-  // 頁面在本檔之前載入三者。
+  // 畫面模型在 timelords-model.js，符號在 chart-glyphs.js，清除與中止在 privacy-lifecycle.js；頁面在本檔之前載入三者。
   const api = factory(
     commonJs ? require("./timelords-model.js") : root.ArmillaryTimelordsModel,
     commonJs ? require("./chart-glyphs.js") : root.ArmillaryChartGlyphs,
@@ -14,10 +13,9 @@
 
   // 計算頁「年度時間主星」一區的畫面與接線。
   //
-  // 出生資料只有一個來源：畫面上那張本命盤送出的請求（calculate.js 交給 show()）。本區不另收
-  // 任何資料、不寫網址（沒有 #hash、沒有 query）、不用任何瀏覽器儲存；結果清除、過期或離開
-  // 頁面時，calculate.js 呼叫 drop()／setStale()，本區跟著丟棄或停用。所有日期都是伺服器給的
-  // 出生地日期，本檔不換算日期。元素一律逐個建立，不經過 HTML 字串（Trusted Types）。
+  // 出生資料只有一個來源：畫面上那張本命盤送出的請求（calculate.js 交給 show()）。本區不另收任何資料、不寫網址（沒有
+  // #hash、沒有 query）、不用任何瀏覽器儲存；結果清除、過期或離開頁面時，calculate.js 呼叫 drop()／setStale()，本區跟著
+  // 丟棄或停用。所有日期都是伺服器給的出生地日期，本檔不換算日期。元素一律逐個建立，不經過 HTML 字串（Trusted Types）。
 
   const SVG_NS = "http://www.w3.org/2000/svg";
   const REQUEST_TIMEOUT_MS = 30000;
@@ -25,15 +23,8 @@
   // 與 timelords.css 的抽屜斷點相同。
   const NARROW_QUERY = "(max-width: 1100px)";
   const MOBILE_QUERY = "(max-width: 640px)";
-  const ZOOMS = Object.freeze([
-    ["life", "一生"],
-    ["decade", "前後十年"],
-    ["year", "本年度"],
-  ]);
-  const VIEWS = Object.freeze([
-    ["timeline", "時間軸"],
-    ["yearbook", "逐年年表"],
-  ]);
+  const ZOOMS = Object.freeze([["life", "一生"], ["decade", "前後十年"], ["year", "本年度"]]);
+  const VIEWS = Object.freeze([["timeline", "時間軸"], ["yearbook", "逐年年表"]]);
   const DAYS_PER_DECADE_VIEW = 3653;
   // 換了年度之後等一下才取：連按「下一年」時只取最後停下的那一年。
   const YEAR_FETCH_DELAY_MS = 300;
@@ -61,14 +52,9 @@
     // 站內連結指定的技法（計算頁從網址讀一次，見 result-chapters.js 的 techniqueFromQuery）：只決定
     // 先選哪一段，不改請求，也不記住到下次載入。
     let preferredTechnique = null;
-    const lifecycle = Lifecycle.createSensitiveDataLifecycle({
-      revokeObjectUrl: (url) => win.URL.revokeObjectURL(url),
-    });
+    const lifecycle = Lifecycle.createSensitiveDataLifecycle({ revokeObjectUrl: (url) => win.URL.revokeObjectURL(url) });
     // 按需的第二層另用一個請求槽：同一個槽裡新請求會中止舊請求，共用時第二層會中止使用者按下的重排。
-    const level2Lifecycle = Lifecycle.createSensitiveDataLifecycle({
-      revokeObjectUrl: (url) => win.URL.revokeObjectURL(url),
-    });
-
+    const level2Lifecycle = Lifecycle.createSensitiveDataLifecycle({ revokeObjectUrl: (url) => win.URL.revokeObjectURL(url) });
     const el = (id) => doc.getElementById(id);
     const startButton = el("annual-load");
     const startNote = el("annual-start");
@@ -80,31 +66,14 @@
     const zrYear = el("annual-zr-year");
     const statusLine = el("annual-status");
     const body = el("annual-body");
-
     const state = {
-      payload: null,
-      stale: false,
-      loading: false,
-      data: null,
-      model: null,
-      sources: [],
-      view: null,
-      zoom: "decade",
-      yearIndex: -1,
-      selected: null,
-      generation: 0,
-      level2Generation: 0,
-      level2Busy: false,
-      ...freshLevel2(),
-      returnFocus: null,
-      decennials: null,
-      firdariaNode: null,
-      zrYear: null,
+      payload: null, stale: false, loading: false, data: null, model: null, sources: [], view: null, zoom: "decade",
+      yearIndex: -1, selected: null, generation: 0, level2Generation: 0, level2Busy: false, ...freshLevel2(),
+      returnFocus: null, decennials: null, firdariaNode: null, zrYear: null,
       // 年表各段十年使用者自己打開或收起的狀態（以該段第一個年度的索引為鍵）；重畫時照舊。
       openDecades: new Map(),
       // 手機年表裡使用者自己展開或收起的年度（以年度索引為鍵）；預設只展開選定的那一年。
-      openYears: new Map(),
-      solar: freshSolar(),
+      openYears: new Map(), solar: freshSolar(),
     };
     const solarReturn = createSolarReturn({ doc, win, state, el, node, titledSection, post, failureMessage, codeNote });
     const life = createLifeOverview({ doc, win, state, node, titledSection, onOpen: (id, trigger) => select(id, trigger) });
@@ -115,15 +84,12 @@
     // 換年度後的延遲取用，與暫時失敗後的再試（期間 id → 計時器）。
     let yearTimer = null;
     const retryTimers = new Map();
-
-    // 小工具
     function node(tag, className, text) {
       const element = doc.createElement(tag);
       if (className) element.className = className;
       if (text !== undefined && text !== null) element.textContent = text;
       return element;
     }
-
     /** 回應原值的代碼：標明是代碼、標英文，報讀器不把它當中文念；畫面上照字可查。 */
     function codeNote(code) {
       const wrap = node("span", "tl-code", "代碼 ");
@@ -132,7 +98,6 @@
       wrap.appendChild(value);
       return wrap;
     }
-
     function glyph(key) {
       const entry = key && Glyphs.GLYPHS[key];
       if (!entry) return null;
@@ -147,8 +112,6 @@
       svg.appendChild(path);
       return svg;
     }
-
-    /** 帶標題的區塊：<section> 以 aria-labelledby 指向它自己的 <h3>。 */
     function titledSection(className, id, title) {
       const section = node("section", className);
       section.setAttribute("aria-labelledby", id);
@@ -156,8 +119,6 @@
       heading.id = id;
       return [section, heading];
     }
-
-    /** 把文字片段（字串、{glyph}、{strong}、{mono}、{small}）接到 parent 底下。 */
     function runs(parent, list) {
       (list || []).forEach((run) => {
         if (run === null || run === undefined || run === "") return;
@@ -169,23 +130,11 @@
       });
       return parent;
     }
-
-    function matches(query) {
-      return typeof win.matchMedia === "function" && win.matchMedia(query).matches;
-    }
-
-    function reducedMotion() {
-      return matches("(prefers-reduced-motion: reduce)");
-    }
-
-    function setStatus(message, tone) {
-      statusLine.textContent = message;
-      statusLine.dataset.tone = tone || "info";
-    }
-
-    // 請求
-    // 每個槽一次只有一個請求（重排在 state.loading 時不再送，第二層一次一個），所以槽裡的請求只會被
-    // drop()、setStale() 或重排開始時中止；那三處都會遞增對應的 generation，回呼只看 generation。
+    function matches(query) { return typeof win.matchMedia === "function" && win.matchMedia(query).matches; }
+    function reducedMotion() { return matches("(prefers-reduced-motion: reduce)"); }
+    function setStatus(message, tone) { statusLine.textContent = message; statusLine.dataset.tone = tone || "info"; }
+    // 請求每個槽一次只有一個請求（重排在 state.loading 時不再送，第二層一次一個），所以槽裡的請求只會被 drop()、
+    // setStale() 或重排開始時中止；那三處都會遞增對應的 generation，回呼只看 generation。
     function post(channel, requestBody) {
       const { controller, token: ticket, timeout: timer } = channel.beginTimedRequest(
         REQUEST_TIMEOUT_MS, win.setTimeout.bind(win), win.AbortController
@@ -193,19 +142,10 @@
       // 網址照字寫在這裡：自我檢查頁依這一行列出本頁會送的請求。
       return postJson("/api/chart/annual?projection=page", requestBody, controller.signal)
         .catch((error) => ({ error, timedOut: timer.didTimeout() }))
-        .finally(() => {
-          win.clearTimeout(timer.handle);
-          channel.finishRequest(ticket);
-        });
+        .finally(() => { win.clearTimeout(timer.handle); channel.finishRequest(ticket); });
     }
-
     /** 使用者看得懂的失敗訊息；其他例外（程式錯誤）只顯示通用的一句，不把例外原文放上畫面。 */
-    function plainFailure(message) {
-      const error = new Error(message);
-      error.plain = true;
-      return error;
-    }
-
+    function plainFailure(message) { const error = new Error(message); error.plain = true; return error; }
     /** 停掉所有按需的第二層：排隊的丟掉、路上的中止，之後回來的回應因 generation 不符而忽略。 */
     function stopLevel2() {
       state.level2Generation += 1;
@@ -214,29 +154,24 @@
       state.level2Busy = false;
       clearLevel2Timers();
     }
-
     function clearLevel2Timers() {
       if (yearTimer !== null) { win.clearTimeout(yearTimer); yearTimer = null; }
       retryTimers.forEach((handle) => win.clearTimeout(handle));
       retryTimers.clear();
     }
-
     function failureMessage(result) {
       if (result.error) {
-        return result.timedOut
-          ? `等待超過 ${REQUEST_TIMEOUT_MS / 1000} 秒，已停止等待。`
+        return result.timedOut ? `等待超過 ${REQUEST_TIMEOUT_MS / 1000} 秒，已停止等待。`
           : "沒有送達本站的計算功能。請確認網路連線後再試一次。";
       }
       const status = result.response ? result.response.status : 0;
       return describeError(result.body, status);
     }
-
     function decennialsChoice() {
       const profile = decennialsProfile ? decennialsProfile.value : Model.DECENNIALS_START_PROFILES[0];
       const planet = decennialsPlanet ? decennialsPlanet.value : null;
       return { profile, planet: profile === Model.DECENNIALS_START_PROFILES[2] ? planet : null };
     }
-
     function refreshDecennialsControls() {
       if (!decennialsPlanet) return;
       const wanted = Boolean(decennialsProfile) && decennialsProfile.value === Model.DECENNIALS_START_PROFILES[2];
@@ -244,7 +179,6 @@
       const wrap = decennialsPlanet.closest(".annual-dec-planet");
       if (wrap) wrap.hidden = !wanted;
     }
-
     // 法達夜盤交點的排法與黃道釋放的一年：選單上的值（預設是閉集的第一個）。
     function methodChoices() {
       return {
@@ -252,20 +186,16 @@
         zrYear: zrYear ? zrYear.value : Model.ZR_YEAR_MODELS[0],
       };
     }
-
     // 手機上選單只有約 300 px 寬，長的選項字被截掉：窄螢幕改用短字（option 的 label），完整的字
     // 照舊在 option 裡，選定那一項的完整字另由 aria-describedby 交給輔助科技。寬螢幕時拿掉短字。
     const shortLabelled = [
-      [decennialsProfile, Model.DECENNIALS_START_SHORT],
-      [firdariaNode, Model.METHOD_CHOICE_SHORT],
-      [zrYear, Model.METHOD_CHOICE_SHORT],
+      [decennialsProfile, Model.DECENNIALS_START_SHORT], [firdariaNode, Model.METHOD_CHOICE_SHORT], [zrYear, Model.METHOD_CHOICE_SHORT],
     ].filter(([control]) => control).map(([control, shorts]) => {
       const full = node("span", "visually-hidden");
       full.id = `${control.id}-full`;
       control.insertAdjacentElement("afterend", full);
       return { control, shorts, full };
     });
-
     function syncOptionLabels() {
       const narrow = matches(MOBILE_QUERY);
       shortLabelled.forEach(({ control, shorts, full }) => {
@@ -280,7 +210,6 @@
         else control.removeAttribute("aria-describedby");
       });
     }
-
     function onChoiceChange() {
       syncOptionLabels();
       refreshDecennialsControls();
@@ -296,7 +225,6 @@
       startNote.hidden = !changed.length;
       setStatus(changed.length ? `${changed.join("、")}改了；按「排出時間主星」重新排出。` : "", "info");
     }
-
     function load() {
       if (!state.payload || state.stale || state.loading) return;
       // 舊起點的第二層與這次重排無關，先停掉；重排進行中也不送新的第二層（pumpLevel2）。
@@ -334,11 +262,7 @@
         state.loading = false;
         try {
           if (outcome.failure) throw outcome.failure;
-          if (outcome.unavailable) {
-            routeUnavailable = true;
-            showUnavailable();
-            return;
-          }
+          if (outcome.unavailable) { routeUnavailable = true; showUnavailable(); return; }
           showLoaded(outcome.data, decennials, methods, todayDate, outcome.body);
         } catch (error) {
           // 畫到一半失敗的區塊不留在畫面上；程式例外的原文不上畫面。
@@ -358,16 +282,12 @@
             // 按鈕在結果出來後收起（隱藏）時 focus() 不生效，改交給這一章的標題。
             if (document.activeElement !== startButton) {
               const heading = el("annual-heading");
-              if (heading) {
-                heading.tabIndex = -1;
-                heading.focus();
-              }
+              if (heading) { heading.tabIndex = -1; heading.focus(); }
             }
           }
         }
       });
     }
-
     function showLoaded(data, decennials, methods, todayDate, sourceBody) {
       const model = Model.buildModel(data, todayDate);
       // 一生視窗裡沒有任何算得出的年界（例如出生在可計算範圍的最後一年）：沒有年度可以畫。
@@ -396,7 +316,6 @@
       startNote.hidden = true;
       queueLevel2ForYear();
     }
-
     // 第二層（小期）按需取：只取選定年度與時間軸可見範圍裡、尚未載入的大期；一次一個請求。
     // 月小限只取選定的那一年，排在最前面：同一個請求也帶回那一年所在大期的第二層。
     function enqueueMissing(list) {
@@ -406,13 +325,11 @@
         state.level2Queue.push(missing);
       });
     }
-
     function queueLevel2(startDay, endDay) {
       if (!state.model || state.stale) return;
       enqueueMissing(Model.missingLevel2(state.model, startDay, endDay));
       pumpLevel2();
     }
-
     function queueLevel2ForYear() {
       const year = state.model && state.model.years[state.yearIndex];
       if (!year || state.stale) return;
@@ -425,7 +342,6 @@
       state.level2Queue = [...months, ...state.level2Queue.filter((queued) => !isMonths(queued.id))];
       queueLevel2(year.startDay, year.endDay);
     }
-
     /** 換年度之後：先丟掉排隊中其他年度的月小限，等 YEAR_FETCH_DELAY_MS 沒有再換，才排這一年的請求。 */
     function queueLevel2ForYearSoon() {
       state.level2Queue = state.level2Queue.filter((queued) => !isMonths(queued.id));
@@ -436,7 +352,6 @@
         if (generation === state.level2Generation) queueLevel2ForYear();
       }, YEAR_FETCH_DELAY_MS);
     }
-
     /** 暫時的失敗：過一陣子把這一段排回最前面；月小限只在仍是選定的那一年時才排回。 */
     function retryLater(item, delay) {
       const generation = state.level2Generation;
@@ -450,7 +365,6 @@
       }, delay);
       retryTimers.set(item.id, handle);
     }
-
     /** 選定那一年的月小限：ready（已有或不必有）、pending（還在取）、failed（沒有取到）。 */
     function monthsState() {
       if (!state.model || state.yearIndex < 0) return "ready";
@@ -458,7 +372,6 @@
       if (!missing.length) return "ready";
       return state.level2Failed.has(missing[0].id) ? "failed" : "pending";
     }
-
     function pumpLevel2() {
       // 換年度的延遲還沒過：先不送，等選定的那一年排到最前面。
       if (yearTimer !== null) return;
@@ -505,12 +418,7 @@
         pumpLevel2();
       });
     }
-
-    // 選取
-    function defaultSelection() {
-      return Model.preferredSelection(state.model, state.yearIndex, preferredTechnique);
-    }
-
+    function defaultSelection() { return Model.preferredSelection(state.model, state.yearIndex, preferredTechnique); }
     function select(id, trigger) {
       if (!state.model.byId.has(id)) return;
       state.selected = id;
@@ -519,7 +427,6 @@
       renderDetail();
       openDrawer(Boolean(trigger));
     }
-
     function markSelection() {
       // 只改真的變了的那幾個：年表一打開就有上百個按鈕，同值重寫也會讓樣式重算。
       body.querySelectorAll("[data-item]").forEach((button) => {
@@ -527,8 +434,6 @@
         if (button.getAttribute("aria-pressed") !== pressed) button.setAttribute("aria-pressed", pressed);
       });
     }
-
-    // 畫面
     /** 焦點元素的身分：同一段期間（data-item 加類別）或同一個具名控制項，重畫後用它找回。 */
     function focusIdentity(element) {
       if (!element || !body.contains(element)) return null;
@@ -541,7 +446,6 @@
       if (decade && element.tagName === "SUMMARY") return { decade: decade.dataset.start };
       return null;
     }
-
     function findByIdentity(identity) {
       if (!identity) return null;
       if (identity.id) return el(identity.id);
@@ -550,9 +454,7 @@
         .find((candidate) => candidate.dataset.item === identity.item && candidate.classList[0] === identity.kind
           && candidate.dataset.year === identity.year) || null;
     }
-
-    // 第二層回來：只換掉摘要卡與主欄（時間軸或年表），細節欄（手機的抽屜）不動；焦點、捲動位置與
-    // 使用者打開的十年照舊。
+    // 第二層回來：只換掉摘要卡與主欄（時間軸或年表），細節欄（手機的抽屜）不動；焦點、捲動位置與使用者打開的十年照舊。
     function refreshAfterLevel2() {
       const main = body.querySelector(".tl-main");
       const oldSummary = body.querySelector(".tl-summary");
@@ -582,26 +484,16 @@
       }
       refreshControls();
     }
-
     function renderAll(opts = {}) {
       const scroller = body.querySelector(".tl-scroll");
       const keepLeft = opts.keepScroll && scroller ? scroller.scrollLeft : null;
       body.replaceChildren();
       body.hidden = false;
       const model = state.model;
-      if (!model.lanes.length) {
-        life.stop();
-        renderUnavailableOnly();
-        return;
-      }
+      if (!model.lanes.length) { life.stop(); renderUnavailableOnly(); return; }
       const lifeBox = life.section();
       if (lifeBox) body.appendChild(lifeBox);
-      body.append(
-        viewSwitch(),
-        yearNav(),
-        summary(),
-        node("p", "tl-reference note", Model.referenceNote(model, state.yearIndex)),
-      );
+      body.append(viewSwitch(), yearNav(), summary(), node("p", "tl-reference note", Model.referenceNote(model, state.yearIndex)));
       warnings().forEach((notice) => body.appendChild(notice));
       const samples = sampleBox();
       if (samples) body.appendChild(samples);
@@ -619,17 +511,13 @@
       if (lifeBox) life.draw();
       if (state.view === "timeline") positionTimeline(keepLeft);
     }
-
     // 換年：只換掉跟著年度變的部分（年度列、摘要卡、參考說明、主欄、細節欄、行事曆檔與回歸盤兩格），
     // 呈現方式、注意事項、取樣說明、時間主星表、慣例與延伸點不動。
     function refreshForYear(opts) {
       const parts = [".tl-year-nav", ".tl-summary", ".tl-reference", ".tl-main", "#annual-detail", ".tl-export:not(.tl-table-export)"]
         .map((selector) => body.querySelector(selector));
       const solar = body.querySelector(".tl-box.tl-sr");
-      if (parts.some((part) => !part) || (!solar && Model.supportsSolarReturn(state.sources[0]))) {
-        renderAll(opts);
-        return;
-      }
+      if (parts.some((part) => !part) || (!solar && Model.supportsSolarReturn(state.sources[0]))) { renderAll(opts); return; }
       const [nav, oldSummary, reference, main, oldDetail, ics] = parts;
       const scroller = body.querySelector(".tl-scroll");
       const keepLeft = opts.keepScroll && scroller ? scroller.scrollLeft : null;
@@ -647,7 +535,6 @@
       refreshControls();
       if (state.view === "timeline") positionTimeline(keepLeft);
     }
-
     function renderUnavailableOnly() {
       const [box, heading] = titledSection("tl-box tl-unavailable", "annual-unavailable-title", "這張盤沒有畫出時間軸");
       box.appendChild(heading);
@@ -660,7 +547,6 @@
       });
       body.append(box, conventionsBox());
     }
-
     function segmented(label, entries, current, onPick, className) {
       const group = node("div", `tl-seg ${className || ""}`.trim());
       group.setAttribute("role", "group");
@@ -675,7 +561,6 @@
       });
       return group;
     }
-
     function viewSwitch() {
       const wrap = node("div", "tl-view-switch");
       wrap.appendChild(node("span", "tl-dim", "呈現方式"));
@@ -688,7 +573,6 @@
       }));
       return wrap;
     }
-
     function yearNav() {
       const model = state.model;
       const nav = node("div", "tl-year-nav");
@@ -717,7 +601,6 @@
       nav.append(prev, title, next, back, range);
       return nav;
     }
-
     /** 上一年／下一年：箭頭加一段字；窄螢幕只藏字的外觀，名稱仍是「‹ 上一年」。 */
     function navButton(arrow, word, before) {
       const button = node("button", "tl-nav-step");
@@ -726,7 +609,6 @@
       else button.append(text, doc.createTextNode(` ${arrow}`));
       return button;
     }
-
     function moveYear(delta, focusId) {
       const target = state.yearIndex + delta;
       if (target < 0 || target >= state.model.years.length || delta === 0) return;
@@ -741,7 +623,6 @@
       else { const title = el("annual-year-title"); if (title) { title.tabIndex = -1; title.focus(); } }
       queueLevel2ForYearSoon();
     }
-
     function summary() {
       const grid = node("div", "tl-summary");
       grid.setAttribute("role", "group");
@@ -755,8 +636,7 @@
           card.addEventListener("click", () => select(tile.select, card));
         }
         const parts = [
-          node("span", "tl-tile-key", tile.title),
-          runs(node("span", "tl-tile-value"), tile.value),
+          node("span", "tl-tile-key", tile.title), runs(node("span", "tl-tile-value"), tile.value),
           runs(node("span", "tl-tile-sub"), tile.sub),
         ];
         if (tile.gloss) parts.push(node("span", "tl-tile-gloss", tile.gloss));
@@ -771,7 +651,6 @@
       });
       return grid;
     }
-
     function warnings() {
       return Model.warningNotices(state.model).map((warning) => {
         const notice = node("p", "tl-notice");
@@ -780,7 +659,6 @@
         return notice;
       });
     }
-
     function sampleBox() {
       const summaryData = Model.sampleSummary(state.model);
       if (!summaryData) return null;
@@ -798,8 +676,6 @@
       }
       return box;
     }
-
-    // 方案 A：橫向時間軸
     function timeline() {
       const model = state.model;
       const [section, heading] = titledSection("tl-timeline", "annual-timeline-title", "一生的時間軸");
@@ -815,7 +691,6 @@
         if (pressed) pressed.focus();
       }));
       section.appendChild(toolbar);
-
       const frame = node("div", "tl-frame");
       const labels = node("div", "tl-labels");
       labels.setAttribute("aria-hidden", "true");
@@ -849,14 +724,10 @@
       section.appendChild(frame);
       scroll.addEventListener("scroll", onTimelineScroll, { passive: true });
       canvas.addEventListener("keydown", onTimelineKey);
-
       const legend = node("div", "tl-legend");
       [
-        ["tl-lg-today", "今天"],
-        ["tl-lg-year", "年界（每年太陽回到出生位置的時刻）"],
-        ["tl-lg-loose", "解鎖（輪完一圈跳到對宮）"],
-        ["tl-lg-trunc", "被上一層截斷"],
-        ["tl-lg-node", "交點期不分子期"],
+        ["tl-lg-today", "今天"], ["tl-lg-year", "年界（每年太陽回到出生位置的時刻）"],
+        ["tl-lg-loose", "解鎖（輪完一圈跳到對宮）"], ["tl-lg-trunc", "被上一層截斷"], ["tl-lg-node", "交點期不分子期"],
       ].forEach(([className, text]) => {
         const entry = node("span");
         entry.append(node("i", className), doc.createTextNode(text));
@@ -866,7 +737,6 @@
       section.appendChild(node("p", "note", `底色只用兩種紙色交替，分辨相鄰兩段；顏色不代表任何好壞。期間起訖只到「日」：原典只給年數，分秒是假精度。日期是${Model.DATE_NOTE}。`));
       return section;
     }
-
     function segmentButton(lane, item, index) {
       const button = node("button", `tl-seg-item${index % 2 ? " alt" : ""}${item.kind === "node" ? " node" : ""}${item.truncated ? " trunc" : ""}${item.kind === "loosing" ? " loose" : ""}`);
       button.type = "button";
@@ -892,7 +762,6 @@
       button.addEventListener("click", () => select(item.id, button));
       return button;
     }
-
     function pixelsPerDay(width) {
       const model = state.model;
       if (state.zoom === "life") return width / Math.max(1, model.domain.endDay - model.domain.startDay);
@@ -900,7 +769,6 @@
       const year = model.years[state.yearIndex];
       return width / Math.max(1, (year.endDay - year.startDay) * 1.16);
     }
-
     /** 量出捲動區寬度後才排位置；排版只用日序，不換算任何日期。 */
     function positionTimeline(keepLeft) {
       const model = state.model;
@@ -959,17 +827,13 @@
       vline("selected", year.endDay, null);
       if (model.todayDay >= domain.startDay && model.todayDay <= domain.endDay) vline("today", model.todayDay, `今天 ${model.today}`);
       refreshRovingStops();
-      if (keepLeft !== null && keepLeft !== undefined) {
-        scroll.scrollLeft = keepLeft;
-      } else if (state.zoom === "life") {
+      if (keepLeft !== null && keepLeft !== undefined) { scroll.scrollLeft = keepLeft; } else if (state.zoom === "life") {
         scroll.scrollLeft = 0;
       } else {
-        const centre = state.yearIndex === model.currentIndex && state.zoom !== "year"
-          ? model.todayDay : (year.startDay + year.endDay) / 2;
+        const centre = state.yearIndex === model.currentIndex && state.zoom !== "year" ? model.todayDay : (year.startDay + year.endDay) / 2;
         scroll.scrollLeft = Math.max(0, x(centre) - width / 2);
       }
     }
-
     // 每條泳道只有一個 Tab 停點：選取中的那段，否則是參考日那一段，否則第一段。
     function refreshRovingStops() {
       const model = state.model;
@@ -978,12 +842,10 @@
         const buttons = [...row.querySelectorAll(".tl-seg-item:not([hidden])")];
         buttons.forEach((button) => { button.tabIndex = -1; });
         const stop = buttons.find((button) => button.dataset.item === state.selected)
-          || buttons.find((button) => Number(button.dataset.start) <= reference && reference < Number(button.dataset.end))
-          || buttons[0];
+          || buttons.find((button) => Number(button.dataset.start) <= reference && reference < Number(button.dataset.end)) || buttons[0];
         if (stop) stop.tabIndex = 0;
       });
     }
-
     function onTimelineKey(event) {
       const button = event.target.closest && event.target.closest(".tl-seg-item");
       if (!button) return;
@@ -1004,9 +866,7 @@
           target = candidates.find((candidate) => Number(candidate.dataset.start) <= day && day < Number(candidate.dataset.end))
             || candidates.find((candidate) => Number(candidate.dataset.start) >= day) || candidates[candidates.length - 1];
         }
-      } else {
-        return;
-      }
+      } else { return; }
       event.preventDefault();
       if (!target) return;
       row.querySelectorAll(".tl-seg-item").forEach((candidate) => { candidate.tabIndex = -1; });
@@ -1018,7 +878,6 @@
         target.scrollIntoView({ block: "nearest", inline: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
       }
     }
-
     function onTimelineScroll() {
       if (scrollTimer !== null) win.clearTimeout(scrollTimer);
       scrollTimer = win.setTimeout(() => {
@@ -1032,8 +891,6 @@
         queueLevel2(Math.floor(from), Math.ceil(from + width / ppd));
       }, SCROLL_SETTLE_MS);
     }
-
-    // 方案 B：直向年表
     function yearbook() {
       const model = state.model;
       const [section, heading] = titledSection("tl-yearbook", "annual-yearbook-title", "逐年年表");
@@ -1108,7 +965,6 @@
       section.appendChild(node("p", "note tl-print-note", "列印只印畫面上已展開的十年；收著的十年與還沒取到的第二層，列印時不會另外向伺服器取。"));
       return section;
     }
-
     /** 手機年表的年度列：整列標題是一個展開／收起的按鈕（aria-expanded），收起時藏起那一年的格子。 */
     function yearToggle(row, index) {
       const open = state.openYears.has(index) ? state.openYears.get(index) : index === state.yearIndex;
@@ -1125,7 +981,6 @@
       });
       return button;
     }
-
     function groupTitle(group) {
       const lane = group.lanes[0];
       if (lane.technique === "annual_profection") {
@@ -1137,7 +992,6 @@
       if (lane.technique === "decennials") return "十年期 第一層／第二層";
       return lane.title;
     }
-
     function bookLine(lane, index) {
       const line = node("div", "tl-book-line");
       const items = Model.itemsInYear(state.model, lane.id, index);
@@ -1179,8 +1033,6 @@
       });
       return line;
     }
-
-    // 細節
     function renderDetail() {
       const panel = el("annual-detail");
       if (!panel) return;
@@ -1205,9 +1057,7 @@
       head.append(titleBox, close);
       const content = node("div", "tl-detail-body");
       const list = node("dl");
-      detail.rows.forEach(([term, value]) => {
-        list.append(node("dt", null, term), runs(node("dd"), value));
-      });
+      detail.rows.forEach(([term, value]) => { list.append(node("dt", null, term), runs(node("dd"), value)); });
       content.appendChild(list);
       if (detail.explanation.length) content.appendChild(runs(node("p", "tl-explain"), detail.explanation));
       content.appendChild(node("p", "note", detail.dateNote));
@@ -1231,17 +1081,12 @@
       content.appendChild(receipt);
       panel.append(head, content);
     }
-
     function openDrawer(fromUser) {
       const panel = el("annual-detail");
       if (!panel || !matches(NARROW_QUERY)) return;
       panel.classList.add("is-open");
-      if (fromUser) {
-        const title = el("annual-detail-title");
-        if (title) title.focus({ preventScroll: true });
-      }
+      if (fromUser) { const title = el("annual-detail-title"); if (title) title.focus({ preventScroll: true }); }
     }
-
     function closeDrawer() {
       const panel = el("annual-detail");
       if (!panel) return;
@@ -1250,8 +1095,6 @@
       state.returnFocus = null;
       if (back && back.isConnected) back.focus({ preventScroll: true });
     }
-
-    // 匯出 .ics
     function exportBox() {
       const [box, heading] = titledSection("tl-box tl-export", "annual-export-title", "存成行事曆檔");
       const year = state.model.years[state.yearIndex];
@@ -1277,26 +1120,20 @@
       box.append(heading, use, steps, months, button, note);
       return box;
     }
-
     function downloadIcs() {
       if (state.stale || !state.model || monthsState() === "pending") return;
       let artifact;
-      try {
-        artifact = Model.buildIcs(state.model, state.yearIndex, { now: now(), token: token() });
-      } catch (error) {
+      try { artifact = Model.buildIcs(state.model, state.yearIndex, { now: now(), token: token() }); } catch (error) {
         setStatus(`沒有產生行事曆檔：${error.message}`, "error");
         return;
       }
       deliver(artifact);
       setStatus(`已產生行事曆檔（${artifact.count} 段期間，${Model.ICS_LABEL}）。${monthsState() === "failed" ? ICS_MONTHS_FAILED : ""}`, "info");
     }
-
     /** 檔案交給瀏覽器下載：Blob 網址登記在本區的生命週期，清除或離開頁面時一併收回。 */
     function deliver(artifact) {
       lifecycle.deliverDownload(doc, new win.Blob([artifact.content], { type: artifact.mime_type }), artifact.filename);
     }
-
-    // 匯出時間主星表
     function tableExportBox() {
       const [box, heading] = titledSection("tl-box tl-export tl-table-export", "annual-table-title", "存成時間主星表");
       const use = node("p", "note", "時間主星表把這一區的期間整理成一份資料檔：每一段的技法、層級、起訖日期、輪值的星座或行星與守護行星，加上算法代碼、注意事項與本工具採用的約定，可以留存、核對，或拿去自己整理。行事曆檔只放選定的這一年，給行事曆用；這份表放畫面目前取到的每一段。");
@@ -1324,21 +1161,16 @@
       box.append(heading, use, formats, coverage, actions, note);
       return box;
     }
-
     function downloadTable(format) {
       if (state.stale || !state.model) return;
       let artifact;
-      try {
-        artifact = Model.buildTimeLordTableArtifact(state.model, state.sources, format);
-      } catch (error) {
+      try { artifact = Model.buildTimeLordTableArtifact(state.model, state.sources, format); } catch (error) {
         setStatus(`沒有產生時間主星表：${error.message}`, "error");
         return;
       }
       deliver(artifact);
       setStatus(`已產生時間主星表（${artifact.format_name}，${artifact.count} 段期間，${Model.ICS_LABEL}）。`, "info");
     }
-
-    // 約定、擴充點
     function conventionsBox() {
       const [box, heading] = titledSection("tl-box tl-conventions", "annual-conventions-title", "本工具採用的約定");
       box.append(heading, node("p", "note", "同一套技法，各家軟體的預設不同。這裡列出本頁用了哪一種。"));
@@ -1351,15 +1183,12 @@
       box.appendChild(list);
       return box;
     }
-
-    // 狀態與控制項
     const START_LABEL = startButton.textContent;
     function showUnavailable() {
       startButton.textContent = "年度時間主星尚未開放";
       setStatus("這個伺服器還沒有開放年度時間主星；本命盤的結果不受影響。", "info");
       refreshControls();
     }
-
     function refreshControls() {
       startButton.disabled = routeUnavailable || !state.payload || state.stale || state.loading;
       if (!routeUnavailable) startButton.textContent = START_LABEL;
@@ -1374,7 +1203,6 @@
         note.textContent = months === "failed" ? ICS_MONTHS_FAILED : months === "pending" ? ICS_MONTHS_PENDING : "";
       }
     }
-
     function show(payload) {
       drop();
       syncOptionLabels();
@@ -1385,7 +1213,6 @@
       refreshControls();
       if (routeUnavailable) showUnavailable();
     }
-
     function drop() {
       state.generation += 1;
       state.level2Generation += 1;
@@ -1408,7 +1235,6 @@
       setStatus("", "info");
       refreshControls();
     }
-
     function setStale(stale) {
       state.stale = Boolean(stale);
       host.dataset.stale = state.stale ? "true" : "false";
@@ -1426,7 +1252,6 @@
       }
       refreshControls();
     }
-
     startButton.addEventListener("click", load);
     [decennialsProfile, decennialsPlanet, firdariaNode, zrYear].forEach((control) => {
       if (control) control.addEventListener("change", onChoiceChange);
@@ -1441,8 +1266,7 @@
         if (state.model && state.view === "yearbook" && body.querySelector(".tl-main")) refreshAfterLevel2();
       });
     }
-    // Esc 只關最上層的東西：抽屜開著時只關抽屜（捕獲階段先處理並標記 defaultPrevented，星盤的
-    // 點選標示就不跟著清除）。
+    // Esc 只關最上層的東西：抽屜開著時只關抽屜（捕獲階段先處理並標記 defaultPrevented，星盤的點選標示就不跟著清除）。
     doc.addEventListener("keydown", (event) => {
       if (event.key !== "Escape" || event.defaultPrevented) return;
       const panel = el("annual-detail");
@@ -1450,17 +1274,12 @@
       event.preventDefault();
       closeDrawer();
     }, true);
-
     return Object.freeze({
-      show,
-      drop,
-      setStale,
+      show, drop, setStale,
       // 與按「排出時間主星」同一個動作（計算頁在古典完整算完星盤後呼叫）。
-      load,
-      prefer: (technique) => { preferredTechnique = technique || null; },
+      load, prefer: (technique) => { preferredTechnique = technique || null; },
       // 一頁摘要的一行（選定的那一年由誰輪值）；還沒排出或表單已改動時是 null。
       briefLine: () => (state.model && !state.stale ? Model.briefLine(state.model, state.yearIndex) : null),
-      // 測試用：目前狀態的唯讀快照。
       snapshot: () => ({
         view: state.view, zoom: state.zoom, yearIndex: state.yearIndex, selected: state.selected,
         stale: state.stale, hasModel: Boolean(state.model), loaded: state.data ? [...state.data.level2LoadedFor] : [],
@@ -1468,10 +1287,9 @@
     });
   }
 
-  // 太陽回歸盤
-  // 選定年度的年界那一刻起的星盤：按了才請求（同一條年度路由，只要這一張盤），預設在出生地。
-  // 結果只對那一年；換到別的年度時這一格回到按鈕。清除、過期或離開頁面時跟著丟棄。
-  // 人生時間軸：寬的畫成橫向（時間往右），窄於這個寬度（px）時改畫直向（時間往下、每種技法一欄）。
+  // 太陽回歸盤選定年度的年界那一刻起的星盤：按了才請求（同一條年度路由，只要這一張盤），預設在出生地。結果只對那一年；
+  // 換到別的年度時這一格回到按鈕。清除、過期或離開頁面時跟著丟棄。人生時間軸：寬的畫成橫向（時間往右），窄於這個寬度
+  // （px）時改畫直向（時間往下、每種技法一欄）。
   const LIFE_VERTICAL_BELOW = 560;
   const LIFE_FALLBACK_WIDTH = 960;
   const LIFE_PROMPT = "點任一段（或按 Tab 再用方向鍵）看它的起訖日期與主星。";
@@ -1490,22 +1308,18 @@
     let overview = null;
     let drawnWidth = 0;
     let picked = null;
-
     function svg(tag, attributes, className) {
       const element = doc.createElementNS(SVG_NS, tag);
       if (className) element.setAttribute("class", className);
       Object.entries(attributes || {}).forEach(([key, value]) => element.setAttribute(key, String(value)));
       return element;
     }
-
     function text(x, y, content, className, anchor) {
       const element = svg("text", { x: round(x), y: round(y), "text-anchor": anchor || "start" }, className);
       element.textContent = content;
       return element;
     }
-
     const round = (value) => Math.round(value * 10) / 10;
-
     function glyphAt(key, x, y, size) {
       const entry = key && Glyphs.GLYPHS[key];
       if (!entry) return null;
@@ -1517,7 +1331,6 @@
       box.appendChild(svg("path", { d: entry.d }));
       return box;
     }
-
     function findItem(id) {
       if (!overview) return null;
       for (const lane of overview.lanes) {
@@ -1526,15 +1339,11 @@
       }
       return null;
     }
-
     function showReadout(id) {
       if (!readout) return;
       const found = id ? findItem(id) : null;
       readout.replaceChildren();
-      if (!found) {
-        readout.appendChild(node("span", "tl-life-prompt", LIFE_PROMPT));
-        return;
-      }
+      if (!found) { readout.appendChild(node("span", "tl-life-prompt", LIFE_PROMPT)); return; }
       const { lane, item } = found;
       const head = node("span", "tl-life-read-lane", lane.title);
       const ruler = node("span", "tl-life-read-ruler");
@@ -1560,7 +1369,6 @@
         readout.appendChild(open);
       }
     }
-
     function glyphFor(key) {
       const entry = key && Glyphs.GLYPHS[key];
       if (!entry) return null;
@@ -1569,7 +1377,6 @@
       box.appendChild(svg("path", { d: entry.d }));
       return box;
     }
-
     function markPicked() {
       if (!figure) return;
       figure.querySelectorAll(".tl-life-band").forEach((band) => {
@@ -1578,13 +1385,7 @@
         band.setAttribute("aria-pressed", String(on));
       });
     }
-
-    function pick(id) {
-      picked = id;
-      markPicked();
-      showReadout(id);
-    }
-
+    function pick(id) { picked = id; markPicked(); showReadout(id); }
     function table() {
       const wrap = node("details", "tl-life-table");
       wrap.appendChild(node("summary", null, "以表格列出全部期間"));
@@ -1611,8 +1412,7 @@
           if (!index) { name.scope = "rowgroup"; name.rowSpan = lane.items.length; row.appendChild(name); }
           row.append(
             node("td", null, item.lord ? `${item.label}（年主星 ${item.lord}）` : item.label),
-            node("td", "tl-num", item.start),
-            node("td", "tl-num", item.end),
+            node("td", "tl-num", item.start), node("td", "tl-num", item.end),
             node("td", "tl-num", lane.technique === "annual_profection" ? `${item.startAge}` : `${item.startAge}–${item.endAge}`),
           );
           group.appendChild(row);
@@ -1623,7 +1423,6 @@
       wrap.appendChild(scroller);
       return wrap;
     }
-
     function section() {
       stop();
       overview = Model.lifeOverview(state.model);
@@ -1657,11 +1456,7 @@
         observer = new win.ResizeObserver(() => {
           if (pending) return;
           pending = true;
-          const redraw = () => {
-            pending = false;
-            const width = measure();
-            if (Math.abs(width - drawnWidth) >= 1) draw();
-          };
+          const redraw = () => { pending = false; const width = measure(); if (Math.abs(width - drawnWidth) >= 1) draw(); };
           if (typeof win.requestAnimationFrame === "function") win.requestAnimationFrame(redraw);
           else redraw();
         });
@@ -1669,11 +1464,7 @@
       }
       return box;
     }
-
-    function measure() {
-      return figure && figure.clientWidth > 0 ? figure.clientWidth : LIFE_FALLBACK_WIDTH;
-    }
-
+    function measure() { return figure && figure.clientWidth > 0 ? figure.clientWidth : LIFE_FALLBACK_WIDTH; }
     function draw() {
       if (!figure || !overview) return;
       const width = measure();
@@ -1690,10 +1481,8 @@
         if (again) again.focus({ preventScroll: true });
       }
     }
-
     // 期間 id 只含英數、斜線、點、連字號與 @（回應的閉集）；選擇器裡照樣跳脫引號以外的字元不必要。
     const CSS_ESCAPE = (value) => String(value).replace(/["\\]/g, "\\$&");
-
     function frame(width, height, vertical) {
       const root = svg("svg", { viewBox: `0 0 ${Math.round(width)} ${Math.round(height)}`, role: "group",
         "aria-label": `人生時間軸，${overview.startAge} 至 ${overview.endAge} 足歲，${overview.lanes.length} 條並列`,
@@ -1714,18 +1503,13 @@
       });
       return root;
     }
-
-    function bandOf(target) {
-      return target && typeof target.closest === "function" ? target.closest(".tl-life-band") : null;
-    }
-
+    function bandOf(target) { return target && typeof target.closest === "function" ? target.closest(".tl-life-band") : null; }
     function onBandEvent(event) {
       const band = bandOf(event.target);
       if (!band) return;
       pick(band.dataset.lifeItem === picked ? null : band.dataset.lifeItem);
       if (picked) showReadout(picked);
     }
-
     function bandElement(lane, item, rect, vertical) {
       const group = svg("g", { role: "button", tabindex: -1, "aria-pressed": "false",
         "aria-label": Model.lifeItemText(lane, item) }, `tl-life-band${item.index % 2 ? " alt" : ""}${item.current ? " is-now" : ""}`);
@@ -1739,20 +1523,14 @@
           : svg("rect", { x: round(rect.x), y: round(rect.y + rect.h - 2.5), width: round(Math.max(1, rect.w)), height: 2.5 }, "tl-life-nowmark"));
       }
       const labelLength = [...(item.label || "")].length;
-      const size = vertical
-        ? (rect.h >= 17 ? Model.segmentSize(rect.w, labelLength) : "none")
-        : Model.segmentSize(rect.w, labelLength);
+      const size = vertical ? (rect.h >= 17 ? Model.segmentSize(rect.w, labelLength) : "none") : Model.segmentSize(rect.w, labelLength);
       if (size !== "none") {
         const showGlyph = size === "full" || size === "glyph";
         const showName = size === "full" || size === "name";
         const content = (showGlyph ? 13 : 0) + (showGlyph && showName ? 3 : 0) + (showName ? 13 * labelLength : 0);
         let x = rect.x + (rect.w - content) / 2;
         const middle = rect.y + rect.h / 2;
-        if (showGlyph) {
-          const mark = glyphAt(item.glyph, x, middle - 6.5, 13);
-          if (mark) group.appendChild(mark);
-          x += 16;
-        }
+        if (showGlyph) { const mark = glyphAt(item.glyph, x, middle - 6.5, 13); if (mark) group.appendChild(mark); x += 16; }
         if (showName) group.appendChild(text(x, middle + 4.5, item.label, "tl-life-text"));
       }
       if (item.loosing) {
@@ -1762,7 +1540,6 @@
       }
       return group;
     }
-
     function drawHorizontal(width) {
       const labelW = width >= 900 ? 168 : 140;
       const right = 16;
@@ -1826,7 +1603,6 @@
       }
       return root;
     }
-
     function drawVertical(width) {
       const axisW = 50;
       const right = 4;
@@ -1877,7 +1653,6 @@
       }
       return root;
     }
-
     // 每條一個 Tab 停點：讀出列正在看的那段，否則今天所在的那段，否則第一段。
     function setStops(preferred) {
       figure.querySelectorAll(".tl-life-lane-row").forEach((row) => {
@@ -1889,7 +1664,6 @@
         if (tabStop) tabStop.setAttribute("tabindex", "0");
       });
     }
-
     function onKey(event) {
       const current = bandOf(event.target);
       if (!current) return;
@@ -1919,9 +1693,7 @@
           target = candidates.find((entry) => Number(entry.dataset.start) <= day && day < Number(entry.dataset.end))
             || candidates.find((entry) => Number(entry.dataset.start) >= day) || candidates[candidates.length - 1];
         }
-      } else {
-        return;
-      }
+      } else { return; }
       event.preventDefault();
       if (!target) return;
       const targetRow = target.closest(".tl-life-lane-row");
@@ -1931,7 +1703,6 @@
       target.setAttribute("tabindex", "0");
       target.focus({ preventScroll: true });
     }
-
     function stop() {
       if (observer) observer.disconnect();
       observer = null;
@@ -1939,13 +1710,7 @@
       readout = null;
       drawnWidth = 0;
     }
-
-    function clear() {
-      stop();
-      overview = null;
-      picked = null;
-    }
-
+    function clear() { stop(); overview = null; picked = null; }
     return { section, draw, stop, clear };
   }
 
@@ -1967,16 +1732,8 @@
    */
   function createSolarReturn(context) {
     const { doc, win, state, el, node, titledSection, post, failureMessage, codeNote } = context;
-    const solarLifecycle = Lifecycle.createSensitiveDataLifecycle({
-      revokeObjectUrl: (url) => win.URL.revokeObjectURL(url),
-    });
-
-
-    function selectedYear() {
-      return state.model && state.yearIndex >= 0 ? state.model.years[state.yearIndex] : null;
-    }
-
-    /** 這一年不能請求的原因（白話）；可以請求時是 null。 */
+    const solarLifecycle = Lifecycle.createSensitiveDataLifecycle({ revokeObjectUrl: (url) => win.URL.revokeObjectURL(url) });
+    function selectedYear() { return state.model && state.yearIndex >= 0 ? state.model.years[state.yearIndex] : null; }
     function solarBlocked(year) {
       if (!year) return "";
       if (year.n < 1) return Model.SOLAR_RETURN_REASONS.first_year_has_no_solar_return;
@@ -1985,7 +1742,6 @@
       }
       return null;
     }
-
     function solarReturnBox() {
       const year = selectedYear();
       const solar = state.solar;
@@ -1997,11 +1753,7 @@
       // 「不替你解盤，也不預測」在章首說過一次；這裡只說這張盤是什麼（匯出與面板仍帶完整的一句）。
       box.append(heading, node("p", "note tl-sr-lead", Model.SOLAR_RETURN_LEAD));
       const blocked = solarBlocked(year);
-      if (blocked) {
-        box.appendChild(node("p", "note tl-sr-blocked", blocked));
-      } else {
-        box.appendChild(solarControls(year));
-      }
+      if (blocked) { box.appendChild(node("p", "note tl-sr-blocked", blocked)); } else { box.appendChild(solarControls(year)); }
       const status = node("p", "status-line tl-sr-status");
       status.id = SOLAR_IDS.status;
       status.setAttribute("role", "status");
@@ -2010,7 +1762,6 @@
       if (shown) box.appendChild(solarPanel(shown.panel));
       return box;
     }
-
     function solarControls(year) {
       const solar = state.solar;
       const wrap = node("div", "tl-sr-controls");
@@ -2025,8 +1776,6 @@
       wrap.appendChild(button);
       return wrap;
     }
-
-    /** 「太陽回歸時不在出生地」那一格（只在開放另選地點時畫）。 */
     function solarPlaceControl() {
       const solar = state.solar;
       const place = node("details", "tl-sr-place");
@@ -2058,8 +1807,6 @@
       place.append(fields, privacy);
       return place;
     }
-
-    /** 宮位制：預設與本命盤相同（選單第一項），可以另選一種。 */
     function solarHouseControl() {
       const names = Model.HOUSE_SYSTEM_NAMES;
       const natal = Model.solarReturnHouseSystem(state.payload);
@@ -2086,14 +1833,12 @@
       field.append(label, houseSelect, note);
       return field;
     }
-
     function setSolarStatus(message, tone) {
       const line = el(SOLAR_IDS.status);
       if (!line) return;
       line.textContent = message;
       line.dataset.tone = tone || "info";
     }
-
     /** 只換掉回歸盤這一格（不重畫時間軸，捲動與焦點留在原處）。 */
     function refreshSolarBox(message, tone, focusId) {
       const old = el(SOLAR_IDS.box);
@@ -2104,7 +1849,6 @@
       const target = focusId ? el(focusId) : null;
       if (target && !target.disabled) target.focus();
     }
-
     function stopSolarReturn() {
       state.solar.generation += 1;
       solarLifecycle.abortActiveRequest();
@@ -2112,28 +1856,18 @@
       state.solar.loading = false;
       refreshSolarBox("表單已改動，這次的太陽回歸盤計算已停止。", "info");
     }
-
     function loadSolarReturn() {
       const year = selectedYear();
       if (!year || state.stale || state.solar.loading || solarBlocked(year)) return;
       const parsed = Model.SOLAR_RETURN_RELOCATION_OFFERED
-        ? Model.parseSolarReturnLocation(state.solar.latitude, state.solar.longitude)
-        : { location: null };
-      if (parsed.error) {
-        setSolarStatus(parsed.error, "error");
-        const input = el(SOLAR_IDS.latitude);
-        if (input) input.focus();
-        return;
-      }
+        ? Model.parseSolarReturnLocation(state.solar.latitude, state.solar.longitude) : { location: null };
+      if (parsed.error) { setSolarStatus(parsed.error, "error"); const input = el(SOLAR_IDS.latitude); if (input) input.focus(); return; }
       let requestBody;
       try {
         requestBody = Model.solarReturnRequestBody(state.payload, year.n, {
           location: parsed.location, houseSystem: state.solar.houseSystem,
         });
-      } catch (error) {
-        setSolarStatus(error.message, "error");
-        return;
-      }
+      } catch (error) { setSolarStatus(error.message, "error"); return; }
       state.solar.generation += 1;
       const generation = state.solar.generation;
       state.solar.loading = true;
@@ -2147,9 +1881,7 @@
         let focusId = SOLAR_IDS.load;
         if (!result.error && (result.response.status === 404 || result.response.status === 405)) {
           message = "這個伺服器還沒有開放太陽回歸盤；本命盤與時間主星的結果不受影響。";
-        } else if (result.error || !result.response.ok || !result.body) {
-          message = failureMessage(result);
-        } else {
+        } else if (result.error || !result.response.ok || !result.body) { message = failureMessage(result); } else {
           try {
             const panel = Model.solarReturnPanel(result.body, win.ChartViewModel, state.data && state.data.identity);
             // 回來的那一年必須是請求的那一年；對不上就當形狀不符，不把別一年的盤掛在這一年下。
@@ -2167,7 +1899,6 @@
         refreshSolarBox(message, tone, focusId);
       });
     }
-
     function solarPanel(panel) {
       const wrap = node("div", "tl-sr-panel");
       if (panel.state !== "computed") {
@@ -2188,7 +1919,6 @@
       if (panel.comparison) wrap.appendChild(solarComparison(panel.comparison));
       return wrap;
     }
-
     /** 「與本命盤對照」：三個上升、年之上升落在本命第幾宮、回歸盤行星落在本命哪一宮；只列位置。 */
     function solarComparison(comparison) {
       const section = node("section", "tl-sr-compare");
@@ -2206,7 +1936,6 @@
       section.appendChild(note);
       return section;
     }
-
     /**
      * 星盤圖：與本命盤同一個區塊元件（ChartWheel.createSection），所以也有「放大檢視」與下載。
      * id 用 annual-sr-wheel-*（不與本命盤重複），標題在「太陽回歸盤」那一格的 h3 底下降成 h4；
@@ -2217,13 +1946,8 @@
       let section;
       try {
         section = Wheel.createSection(doc, Wheel.buildModel(panel.chart), {
-          idPrefix: SOLAR_WHEEL_ID,
-          title: `${panel.heading}的星盤圖`,
-          dialogTitle: `${panel.heading}的星盤圖（放大）`,
-          headingLevel: 4,
-          ariaLabel: (model) => `${panel.heading}：${model.ariaLabel}`,
-          includeInput: false,
-          describedBy: tableIds,
+          idPrefix: SOLAR_WHEEL_ID, title: `${panel.heading}的星盤圖`, dialogTitle: `${panel.heading}的星盤圖（放大）`,
+          headingLevel: 4, ariaLabel: (model) => `${panel.heading}：${model.ariaLabel}`, includeInput: false, describedBy: tableIds,
           onDownload: (format, _includeInput, _button, showAspects) => downloadSolarWheel(panel, format, showAspects),
         });
       } catch (_error) {
@@ -2234,16 +1958,13 @@
       section.classList.add("tl-sr-wheel");
       return section;
     }
-
     /** 回歸盤圖的下載：與本命盤同一套畫法；結果已過期或已換掉時不交出。 */
     function downloadSolarWheel(panel, format, showAspects) {
       const shown = state.solar.result;
       if (state.stale || !shown || shown.panel !== panel) return;
       const Wheel = win.ChartWheel;
       let model;
-      try {
-        model = Wheel.buildModel(panel.chart, { aspects: showAspects !== false });
-      } catch (_error) {
+      try { model = Wheel.buildModel(panel.chart, { aspects: showAspects !== false }); } catch (_error) {
         setSolarStatus("下載失敗：這張回歸盤的星盤圖無法繪製。", "error");
         return;
       }
@@ -2251,7 +1972,6 @@
       Wheel.downloadImage(doc, solarLifecycle, model, format, SOLAR_WHEEL_FILES,
         () => !state.stale && state.solar.result === shown, setSolarStatus);
     }
-
     function solarTable(table, id) {
       const wrap = node("div", "table-wrap tl-sr-table");
       const label = `${state.solar.result ? state.solar.result.panel.heading : "太陽回歸盤"}：${table.title}`;
@@ -2281,7 +2001,6 @@
       wrap.appendChild(element);
       return wrap;
     }
-
     function syncButton() {
       const button = el(SOLAR_IDS.load);
       if (button) button.disabled = state.stale || state.solar.loading || !state.payload;
@@ -2289,7 +2008,6 @@
       const wheel = el(SOLAR_WHEEL_ID);
       if (wheel) wheel.querySelectorAll(".chart-wheel-download").forEach((download) => { download.disabled = state.stale; });
     }
-
     return Object.freeze({ box: solarReturnBox, syncButton, stop: stopSolarReturn, clear: () => solarLifecycle.clear() });
   }
 
@@ -2306,7 +2024,6 @@
 
   const panels = new WeakMap();
 
-  /** 頁面上的那一個面板（第一次呼叫時接線）；頁面沒有這一區時回 null。 */
   function forPage(doc) {
     const host = doc.getElementById("annual");
     if (!host) return null;
@@ -2314,16 +2031,9 @@
       const win = doc.defaultView;
       const context = win.ClientContext;
       panels.set(host, createPanel({
-        document: doc,
-        window: win,
-        host,
-        postJson: (url, payload, signal) => Lifecycle.postJson(win, url, payload, signal),
-        today: () => deviceToday(win),
-        now: () => new win.Date(),
-        token: () => randomToken(win),
-        describeError: (detail, status) => context.formatApiError(
-          detail && detail.detail !== undefined ? detail.detail : detail, status,
-        ),
+        document: doc, window: win, host, postJson: (url, payload, signal) => Lifecycle.postJson(win, url, payload, signal),
+        today: () => deviceToday(win), now: () => new win.Date(), token: () => randomToken(win),
+        describeError: (detail, status) => context.formatApiError(detail && detail.detail !== undefined ? detail.detail : detail, status),
       }));
     }
     return panels.get(host);

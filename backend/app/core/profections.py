@@ -18,7 +18,7 @@ place 11，與本公式一致；若把 35 讀成「已滿 35 歲」會得獅子�
 from __future__ import annotations
 
 from .dignity_tables import DOMICILE_SIGNS, SIGNS
-from .frame_compatibility import method_frame_state
+from .frame_compatibility import FrameState, method_frame_state
 from .source_reading import BIBLIOGRAPHIC_ONLY, ORIGINAL_LANGUAGE_READ, SECONDARY_ONLY, TRANSLATION_READ, cited
 
 PROFECTION_PROFILE = "annual_profection_ascendant_sign_v1"
@@ -48,7 +48,7 @@ def profect(natal_ascendant_sign: str, *, completed_years: int) -> dict:
     }
 
 
-def lord_frame_state(mode) -> dict:
+def lord_frame_state(mode) -> FrameState:
     """Whether a domicile lord may be named in this frame (the dignity row)."""
 
     return method_frame_state("essential_dignities", mode)

@@ -249,7 +249,7 @@ def _receipt_head() -> dict:
 
 
 def planetary_hours_not_applicable(
-    reason_code: str,
+    reason_code: str | None,
     *,
     executed: bool,
     applicable: bool = False,

@@ -1,9 +1,4 @@
-"""The site's default locale, read from frontend/surfaces.json.
-
-The manifest owns which locales the site declares and which is the default;
-the builders take the default from here instead of writing `zh-TW` beside each
-path, so the shipped directory and every page link follow the one declaration.
-"""
+"""The site's default locale, read from frontend/surfaces.json so the builders do not hard-code `zh-TW` per path."""
 
 from __future__ import annotations
 

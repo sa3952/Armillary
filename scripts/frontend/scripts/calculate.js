@@ -1,25 +1,16 @@
 // 計算頁的開機步驟；出貨的 calculate.js 由 calculate-*.js 與本檔合併而成（javascript.py）。
 
-// 年度時間主星的接點：
-// 年度一區（timelords.js）只讀畫面上這份結果的請求，不另收出生資料；結果換掉或清除時
-// 跟著丟棄，表單改動時跟著停用。它的 script 第一份結果畫出時才載入：載入前沒有面板，停用與
-// 丟棄都無事可做；載入失敗時這一區照樣出現，只寫連不上本站、排出鈕停用，下一份結果再試。
-function annualPanel() {
-  return window.ArmillaryTimelords ? window.ArmillaryTimelords.forPage(document) : null;
-}
+// 年度時間主星的接點：年度一區（timelords.js）只讀畫面上這份結果的請求，不另收出生資料；結果換掉或清除時跟著丟棄，表單
+// 改動時跟著停用。它的 script 第一份結果畫出時才載入：載入前沒有面板，停用與丟棄都無事可做；載入失敗時這一區照樣出現，
+// 只寫連不上本站、排出鈕停用，下一份結果再試。
+function annualPanel() { return window.ArmillaryTimelords ? window.ArmillaryTimelords.forPage(document) : null; }
 function whenAnnualPanel(use) {
-  if (window.ArmillaryTimelords) {
-    const panel = annualPanel();
-    if (panel) use(panel);
-    return;
-  }
+  if (window.ArmillaryTimelords) { const panel = annualPanel(); if (panel) use(panel); return; }
   const payload = pageState.annualPayload;
   loadTimelords().then(() => {
     const panel = pageState.annualPayload === payload ? annualPanel() : null;
     if (panel) use(panel);
-  }, () => {
-    if (pageState.annualPayload === payload) showAnnualLoadFailure();
-  });
+  }, () => { if (pageState.annualPayload === payload) showAnnualLoadFailure(); });
 }
 function showAnnualLoadFailure() {
   const host = document.getElementById("annual");
@@ -39,29 +30,16 @@ function showAnnualPanel(payload) {
     if (results.dataset.stale === "true") panel.setStale(true);
   });
 }
-/** 時間主星：與按「排出時間主星」同一個請求（古典完整算完星盤後自動接著排）。 */
-function loadAnnualPanel() {
-  whenAnnualPanel((panel) => panel.load());
-}
-function staleAnnualPanel(stale) {
-  const panel = annualPanel();
-  if (panel) panel.setStale(stale);
-}
+function loadAnnualPanel() { whenAnnualPanel((panel) => panel.load()); }
+function staleAnnualPanel(stale) { const panel = annualPanel(); if (panel) panel.setStale(stale); }
 function dropAnnualPanel() {
   pageState.annualPayload = null;
   const panel = annualPanel();
-  if (panel) {
-    panel.drop();
-    return;
-  }
+  if (panel) { panel.drop(); return; }
   const host = document.getElementById("annual");
-  if (host) {
-    host.hidden = true;
-    el("annual-status").textContent = "";
-  }
+  if (host) { host.hidden = true; el("annual-status").textContent = ""; }
 }
 
-// 兩種清除（匯出契約驗收 16）。
 function dropResultsForNewAttempt() {
   // 先放掉綁定、停用全部匯出控制項，再把結果移出 DOM：移走的按鈕若仍被舊的參照按到，
   // 它已是 disabled，處理函式也因 lifecycle 已清空而拒絕。
@@ -105,14 +83,12 @@ function clearPlaceReceipt() {
 }
 
 /**
- * 把表單、選項、地點狀態、錯誤、結果、進行中的請求全部回到初始狀態。
- * 「清除敏感資料」、範例載入、pagehide、pageshow(persisted) 都走這一個
- * 函式；分開寫就會各漏一塊。
+ * 把表單、選項、地點狀態、錯誤、結果、進行中的請求全部回到初始狀態。「清除敏感資料」、範例載入、pagehide、
+ * pageshow(persisted) 都走這一個函式；分開寫就會各漏一塊。
  */
 function resetFormState() {
   dropResults();
-  // 進行中的送出與地點查詢一起作廢；
-  // 遲到的回應被世代號與 lifecycle token 擋下。
+  // 進行中的送出與地點查詢一起作廢；遲到的回應被世代號與 lifecycle token 擋下。
   invalidateAttempt();
   cancelButton.hidden = true;
   submitButton.disabled = false;
@@ -121,7 +97,6 @@ function resetFormState() {
   placeSearchLifecycle.abortActiveRequest();
   form.reset();
   clearAllFieldInvalid();
-  // 選項回到目前這個模式預先勾好的那一組（載入合成範例時模式不變）；「時間主星」那一格同理。
   pageState.optionValues = Chapters.modeOptions(pageState.currentModeId, Catalogue.defaults());
   el("plan-timelords").checked = Chapters.mode(pageState.currentModeId).timelordsAfterChart;
   pageState.selectedPlace = null;
@@ -134,9 +109,8 @@ function resetFormState() {
   applyPrecisionConsequences();
   applyZodiacConsequences();
   refreshOptionUi();
-  // 模糊時刻的選擇區是從已清空的輸入推導出來的，必須跟著重算——否則表單
-  // 空了，畫面卻還留著「這個時間出現了兩次」，等於洩漏上一筆輸入的性質。
-  // 服務回報過的那個時刻同樣是上一筆輸入的痕跡，一起清掉。
+  // 模糊時刻的選擇區是從已清空的輸入推導出來的，必須跟著重算——否則表單空了，畫面卻還留著「這個時間出現了兩次」，等於洩
+  // 漏上一筆輸入的性質。服務回報過的那個時刻同樣是上一筆輸入的痕跡，一起清掉。
   pageState.serviceRepeatedTime = null;
   refreshFoldChoice();
   refreshTimezoneOffset();
@@ -146,18 +120,15 @@ function resetFormState() {
 
 function clearSensitiveState() {
   resetFormState();
-  // 回到剛載入的樣子：模式回到快速看盤、圖回到圓盤。
   pageState.chartStyle = "wheel";
   pageState.lastRenderedMode = null;
   applyMode("quick");
   clearAddressInput();
 }
 
-// 送出中唯一可達的中止入口。只停止等待這一次，不動已算出的結果——
-// 那是「清除」的語意，不是「中止」的。
+// 送出中唯一可達的中止入口。只停止等待這一次，不動已算出的結果——那是「清除」的語意，不是「中止」的。
 cancelButton.addEventListener("click", () => {
   const aborted = lifecycle.abortActiveRequest();
-  // 世代號前進，遲到的回應與 finally 一律放棄。
   const active = pageState.attemptState !== ATTEMPT.IDLE;
   invalidateAttempt();
   cancelButton.hidden = true;
@@ -166,9 +137,8 @@ cancelButton.addEventListener("click", () => {
   submitButton.focus();
 });
 
-// 兩顆清除鈕都在 #results 裡，清除會把 #results 隱藏；焦點留在原地會掉到
-// body，下一個 Tab 從頁尾開始、跳過整張表單。移到送出鈕：狀態列就在它
-// 旁邊，與中止鈕的落點一致。
+// 兩顆清除鈕都在 #results 裡，清除會把 #results 隱藏；焦點留在原地會掉到 body，下一個 Tab 從頁尾開始、跳過整張表單。移
+// 到送出鈕：狀態列就在它旁邊，與中止鈕的落點一致。
 el("clear-results").addEventListener("click", () => {
   dropResults();
   setStatus("已清除計算結果。表單保留，可以直接改一個欄位再算一次。", "info");
@@ -181,34 +151,25 @@ el("clear-sensitive").addEventListener("click", () => {
   submitButton.focus();
 });
 
-// 離開頁面時走與「清除敏感資料」相同的清除；這不是記憶體安全抹除，也不
-// 控制瀏覽器當機還原。bfcache 可能把整個 DOM 原樣端回來，所以 pageshow
-// 帶 persisted 時再清一次。
+// 離開頁面時走與「清除敏感資料」相同的清除；這不是記憶體安全抹除，也不控制瀏覽器當機還原。bfcache 可能把整個 DOM 原樣端
+// 回來，所以 pageshow 帶 persisted 時再清一次。
 window.addEventListener("pagehide", () => { try { clearSensitiveState(); } catch (_) {} });
-window.addEventListener("pageshow", (event) => {
-  if (!event.persisted) return;
-  try { clearSensitiveState(); } catch (_) {}
-});
+window.addEventListener("pageshow", (event) => { if (!event.persisted) return; try { clearSensitiveState(); } catch (_) {} });
 
-// 起始狀態。
 buildPlanProfiles();
 buildOptionUi();
-// 名詞解釋的抽屜：表單上方與結果標題旁各一顆「名詞解釋」，頁面上帶虛線底的詞點了也打開它。
 window.ArmillaryGlossary.mount(document, { host: document.querySelector(".calc-body") });
-// 站內連結帶了模式就用它，否則快速看盤（就是產品預設）。
-// 只帶技法的連結：時間主星在古典完整（算完星盤接著排）。
+// 站內連結帶了模式就用它，否則快速看盤（就是產品預設）。只帶技法的連結：時間主星在古典完整（算完星盤接著排）。
 applyMode(linkedMode || (linkedTechnique ? "classical" : "quick"));
 applyPrecisionConsequences();
 applyZodiacConsequences();
 // 還沒有結果：匯出控制項從一開始就停用，與清除之後同一個狀態。
 applyExportAvailability();
-// HTML 先以不依賴 JavaScript 的方式顯示「介面正在載入」。只有全部必要
-// dependencies、選項 UI、表單守衛與事件接線都完成，才在最後把它隱藏。
-// 任一前置 script 失敗或本檔初始化中途丟錯時，訊息會自然留下，而不是
-// 端出一個看似正常、選項為空且永遠不能送出的表單。
+// HTML 先以不依賴 JavaScript 的方式顯示「介面正在載入」。只有全部必要 dependencies、選項 UI、表單守衛與事件接線都完成，
+// 才在最後把它隱藏。任一前置 script 失敗或本檔初始化中途丟錯時，訊息會自然留下，而不是端出一個看似正常、選項為空且永遠
+// 不能送出的表單。
 bootstrapStatus.hidden = true;
-// 表單沒有 action 也沒有 method，原生送出會把出生資料放進query string。
-// HTML先disabled，且必須等submit守衛、選項UI及兩個結果約束全部成功後才
-// 解除；任何半初始化狀態都同時保留警告與disabled submit。
+// 表單沒有 action 也沒有 method，原生送出會把出生資料放進query string。HTML先disabled，且必須等submit守衛、選項UI及兩個
+// 結果約束全部成功後才解除；任何半初始化狀態都同時保留警告與disabled submit。
 submitButton.disabled = false;
 submitButton.removeAttribute("title");

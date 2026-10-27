@@ -1,21 +1,16 @@
-"""〈出生時間不確定怎麼排盤〉: figure 1 (one hour's five samples and the
-bisection that closes each change down to its band, one variant per change),
-figure 2 (the result page's birth-time summary for each hour from 12 to 18 of
-one day, a switch of buttons) and the rows of the clock-change table.
+"""〈出生時間不確定怎麼排盤〉: figure 1 (one hour's five samples and the bisection that closes each change down to its
+band), figure 2 (the result page's birth-time summary for each hour from 12 to 18 of one day) and the clock-change
+table rows.
 
-Synthetic instants only: 2001-06-04, Taipei 25.05306N 121.52639E (UTC+8, no
-daylight saving that year), sent the way the calculator sends a default form
-(`options` empty, tropical) and read in the projection it reads (`page`); the
-bisection midpoints are in the `detailed` projection only.  The clock-change
-cases are St. John's 2005-10-29 23h and Lord Howe 2024-10-06 02h.
+Synthetic instants only: 2001-06-04, Taipei 25.05306N 121.52639E (UTC+8, no daylight saving that year), sent the way
+the calculator sends a default form (`options` empty, tropical) and read in the projection it reads (`page`); the
+bisection midpoints are in the `detailed` projection only.  The clock-change cases are St. John's 2005-10-29 23h and
+Lord Howe 2024-10-06 02h.
 
-Every number is the product's: the samples, the midpoints and the bands come
-from the sensitivity block, each midpoint's sign from the product's own chart
-at that second, and the summary text from `birthTimeSummary` in the
-calculator's view-model, run by Node on the response.  The bisection is
-replayed from the signs alone and must land on the product's band through the
-product's midpoints, and Swiss Ephemeris read directly must put each band's
-two ends on the two sides of the sign boundary (or the station).
+Every number is the product's: samples, midpoints and bands come from the sensitivity block, each midpoint's sign from
+the product's own chart at that second, and the summary text from `birthTimeSummary` in the calculator's view-model,
+run by Node on the response.  The bisection is replayed from the signs alone and must land on the product's band, and
+Swiss Ephemeris must put each band's two ends on the two sides of the sign boundary (or the station).
 """
 from __future__ import annotations
 
@@ -23,7 +18,6 @@ from typing import Any
 
 from . import _fx
 from ._common import ROOT, SIGNS, TAIPEI as PLACE, backend_on_path, calc_ut, node_json, product_client, swiss
-
 
 FRAGMENT = "blog-approximate-birth-hour"
 LAT, LON = PLACE
@@ -35,18 +29,17 @@ ST_JOHNS: dict[str, Any] = {"date": (2005, 10, 29), "hour": 23, "lat": 47.5615, 
 LORD_HOWE: dict[str, Any] = {"date": (2024, 10, 6), "hour": 2, "lat": -31.5553, "lon": 159.0821, "tz": "Australia/Lord_Howe"}
 # A clock hour that never happened at all (the clock went from 02:00 to 03:00).
 NEW_YORK: dict[str, Any] = {"date": (2005, 4, 3), "hour": 2, "lat": 40.7128, "lon": -74.006, "tz": "America/New_York"}
-# The product's bisection bound (TRANSITION_RESOLUTION_SECONDS), read, not typed.
-# Runs view-model.js from its readable sources, as the page tests do.
+# The product's bisection bound (TRANSITION_RESOLUTION_SECONDS), read, not typed.  Runs view-model.js from its readable
+# sources, as the page tests do.
 SCRIPT_BUNDLES = ROOT / "frontend" / "tests" / "script-bundles.cjs"
 CALCULATE = ROOT / "scripts" / "frontend" / "scripts" / "calculate-sections.js"
-# The headings the result page prints around the summary's lists (calculate-sections.js
-# renderBirthTimeSummary); held to that file so a renamed heading stops here.
+# The headings the result page prints around the summary's lists (calculate-sections.js renderBirthTimeSummary); held
+# to that file so a renamed heading stops here.
 HEADINGS = (("same", "不變的"), ("partial", "只比較了一部分"), ("unchecked", "沒有比較，只算了上面那一刻"))
 CHANGED = "會變的"
 ANGLE_NAMES = {"asc": "上升", "mc": "中天"}
 VARIANTS_1 = (("asc", "上升換星座那一次"), ("mc", "中天換星座那一次"))
 SAME_ARCSEC = 3.0
-
 
 # --- the product ---------------------------------------------------------------
 
@@ -62,9 +55,7 @@ def _request(place: dict | None, date: tuple, hour: int, minute: int = 0, second
             "location": {"latitude": lat, "longitude": lon},
             "timezone": zone, "computation_mode": {"zodiac": "tropical"}, "options": {}}
 
-
 def _summaries(responses: list[dict]) -> list[dict]:
-    """The result page's summary of each response, built by the calculator's own view-model."""
     script = ("const VM=require(process.argv[1]).load('view-model.js');let s='';process.stdin.on('data',d=>s+=d)"
               ".on('end',()=>process.stdout.write(JSON.stringify(JSON.parse(s).map(r=>VM.birthTimeSummary(r)))));")
     out = node_json(script, SCRIPT_BUNDLES, stdin=responses, timeout=60, what="build the result page's summary")
@@ -72,15 +63,11 @@ def _summaries(responses: list[dict]) -> list[dict]:
         raise RuntimeError("the view-model returned no summary for an approximate hour")
     return out
 
-
 def _clock(local: str) -> str:
-    """'2001-06-04T15:15:56' or '2001-06-04 15:15:56.000' -> '15:15:56'."""
     return local.replace("T", " ").split(" ")[1].split(".")[0]
-
 
 def _hms(offset: int, hour: int) -> str:
     return f"{hour:02d}:{offset // 60:02d}:{offset % 60:02d}"
-
 
 def _offset(clock: str, hour: int) -> int:
     h, m, s = (int(v) for v in clock.split(":"))
@@ -88,24 +75,19 @@ def _offset(clock: str, hour: int) -> int:
         raise RuntimeError(f"{clock} is not in hour {hour}")
     return m * 60 + s
 
-
 def _angle(chart: dict, key: str) -> tuple[int, str]:
     sign, dms, _ = chart["astronomical_data"]["angles"]["sign_positions"][key]
     return sign, dms
 
-
 def _chains(post, sensitivity: dict, hour: int) -> dict[str, dict]:
-    """Each angle's change replayed from the product's signs at the samples and midpoints."""
     resolution = _resolution()
     samples = [_offset(_clock(p["input_local_time"]), hour) for p in sensitivity["probes"]]
     midpoints = set(sensitivity["probe_coverage"]["refinement_offsets_seconds"])
     charts: dict[int, dict] = {}
-
     def chart(offset: int) -> dict:
         if offset not in charts:
             charts[offset] = post(_request(None, DAY, hour, offset // 60, offset % 60, "exact"))
         return charts[offset]
-
     out = {}
     for key, _ in VARIANTS_1:
         path = f"astronomical_data.angles.sign_positions.{key}"
@@ -134,19 +116,16 @@ def _chains(post, sensitivity: dict, hour: int) -> dict[str, dict]:
                     "after": _angle(chart(upper), key), "width": band["resolution_seconds"]}
     return out
 
-
 def _resolution() -> int:
     with backend_on_path():
         from app.core.birth_time_sensitivity import TRANSITION_RESOLUTION_SECONDS
     return TRANSITION_RESOLUTION_SECONDS
-
 
 def _check_against_swiss(chains: dict, hour: int, mercury: dict) -> None:
     """Each band's two ends on the two sides of the boundary, read from Swiss directly (UT = Taipei − 8 h)."""
     with swiss() as swe:
         def jd(offset: int, at_hour: int = hour) -> float:
             return swe.julday(*DAY, at_hour - 8 + offset / 3600)
-
         for key, chain in chains.items():
             index = 0 if key == "asc" else 1
             for end, (sign, dms) in (("lower", chain["before"]), ("upper", chain["after"])):
@@ -161,17 +140,13 @@ def _check_against_swiss(chains: dict, hour: int, mercury: dict) -> None:
         if not (speeds[0] > 0 > speeds[1]):
             raise RuntimeError(f"Mercury's speed at the band's ends is {speeds}, not a station to retrograde")
 
-
 def _degrees(dms: str) -> float:
     d, rest = dms.split("°")
     m, rest = rest.split("′")
     return int(d) + int(m) / 60 + float(rest.rstrip("″")) / 3600
 
-
 def _dm(dms: str) -> str:
-    """'29°57′33.19″' -> '29°57′' (whole arcminutes, truncated: the sign is what matters)."""
     return dms.split("′")[0] + "′"
-
 
 # --- figure 1: the bisection ladder ----------------------------------------------
 
@@ -190,14 +165,10 @@ def _ladder(layout: str, fid: str, chains: dict, hour: int, bound: _fx.Bound) ->
     if not wide:
         out.append(_fx.text(18, 54, "每一列放大上一列留下的那一半", "fx-t fx-small fx-dim"))
     span = 3600
-
     def hx(offset: float) -> float:
         return x0 + (x1 - x0) * offset / span
-
     out.append(_fx.line(x0, axis_y, x1, axis_y, "fx-axis"))
-
     def rung(y: float, k: int, step: dict) -> str:
-        """One halving step of the current chain, at row `y`."""
         cx = (x0 + x1) / 2
         bar = y + (8 if wide else 22)
         lo, mid, hi = (bound.num(_hms(step[v], hour)) for v in ("lo", "mid", "hi"))
@@ -226,7 +197,6 @@ def _ladder(layout: str, fid: str, chains: dict, hour: int, bound: _fx.Bound) ->
         out.append(_fx.line(kept[1], bar + 6, x1, nxt - 6, "fx-leader"))
         out.append("</g>")
         return "".join(out)
-
     for key, _ in VARIANTS_1:
         chain = chains[key]
         body = []
@@ -235,12 +205,10 @@ def _ladder(layout: str, fid: str, chains: dict, hour: int, bound: _fx.Bound) ->
             body.append(_fx.text(24, axis_y - 26, name, "fx-t"))
         else:
             body.append(_fx.text(18, axis_y - 50, f"{name}的星座，在取樣點：", "fx-t fx-small"))
-        # the segment whose two ends differ
         body.append(_fx.line(hx(chain["left"]), axis_y, hx(chain["right"]), axis_y, "fx-step"))
         for i, s in enumerate(chain["samples"]):
             body.append(_fx.text(hx(s), axis_y - (16 if wide else 14), SIGNS[chain["signs"][s]],
                                  "fx-t fx-small", _anchor(i, len(chain["samples"]))))
-        # funnel from the segment to the first row
         top = row0 - (24 if wide else 30)
         body.append(_fx.line(hx(chain["left"]), axis_y + 6, x0, top, "fx-leader"))
         body.append(_fx.line(hx(chain["right"]), axis_y + 6, x1, top, "fx-leader"))
@@ -256,34 +224,28 @@ def _ladder(layout: str, fid: str, chains: dict, hour: int, bound: _fx.Bound) ->
     if wide:
         out.append(_fx.text(24, axis_y + 24, "取樣點", "fx-t fx-small fx-dim"))
         out.append(_fx.text(x1, 36, "空心點是代表性時刻", "fx-t fx-small fx-dim", "end"))
-        out.append(_fx.text(24, H - 22, "每一列把上一列留下的那一半放大到全寬，各列的比例尺不同。",
-                            "fx-t fx-small fx-dim"))
+        out.append(_fx.text(24, H - 22, "每一列把上一列留下的那一半放大到全寬，各列的比例尺不同。", "fx-t fx-small fx-dim"))
     else:
         out.append(_fx.text(18, H - 38, "空心點是代表性時刻。", "fx-t fx-small fx-dim"))
         out.append(_fx.text(18, H - 18, "各列的比例尺不同。", "fx-t fx-small fx-dim"))
     out.append("</svg>")
     return "".join(out)
 
-
 def _anchor(i: int, n: int) -> str:
     return "start" if i == 0 else "end" if i == n - 1 else "middle"
-
 
 def _pair(span: tuple[float, float], y: float) -> tuple[float, float, float, float]:
     return span[0], y, span[1], y
 
-
-def _band_row(wide: bool, x0: float, x1: float, y: float, chain: dict, key: str, hour: int,
-              bound: _fx.Bound) -> str:
+def _band_row(wide: bool, x0: float, x1: float, y: float, chain: dict, key: str, hour: int, bound: _fx.Bound) -> str:
     bar = y + (8 if wide else 22)
     lo, hi = bound.num(_hms(chain["lower"], hour)), bound.num(_hms(chain["upper"], hour))
     width = bound.num(f"{chain['width']} 秒")
     before, after = SIGNS[chain["before"][0]], SIGNS[chain["after"][0]]
     aria = f"找到的那一段：{lo} 到 {hi}，寬 {width}，{ANGLE_NAMES[key]}從{before}換到{after}"
     out = [f'<g class="fx-row" data-fx-key="band" tabindex="0" aria-label="{aria}">',
-           _fx.rect(8, y - (14 if wide else 2), (x1 + 52 if wide else 324) - 8, 64 if wide else 72, "fx-hit"),
-           _fx.rect(x0, bar - 7, x1 - x0, 14, "fx-fill-cross"),
-           _fx.rect(x0, bar - 7, x1 - x0, 14, "fx-inset-frame")]
+        _fx.rect(8, y - (14 if wide else 2), (x1 + 52 if wide else 324) - 8, 64 if wide else 72, "fx-hit"),
+        _fx.rect(x0, bar - 7, x1 - x0, 14, "fx-fill-cross"), _fx.rect(x0, bar - 7, x1 - x0, 14, "fx-inset-frame")]
     if wide:
         out.append(_fx.text(24, bar + 6, "找到", "fx-t fx-small"))
         out.append(_fx.text((x0 + x1) / 2, bar - 14, f"這 {width}之內，{ANGLE_NAMES[key]}從{before}換到{after}",
@@ -294,7 +256,6 @@ def _band_row(wide: bool, x0: float, x1: float, y: float, chain: dict, key: str,
     out.append(_fx.text(x1, bar + 26, hi, "fx-t fx-small fx-num", "end"))
     out.append("</g>")
     return "".join(out)
-
 
 def _ladder_notes(chains: dict, hour: int, bound: _fx.Bound) -> list[_fx.Note]:
     notes = []
@@ -317,7 +278,6 @@ def _ladder_notes(chains: dict, hour: int, bound: _fx.Bound) -> list[_fx.Note]:
                               "至少換了一次。"))
     return notes
 
-
 def _ladder_table(chains: dict, hour: int, bound: _fx.Bound) -> str:
     rows = []
     for key, label in VARIANTS_1:
@@ -334,13 +294,11 @@ def _ladder_table(chains: dict, hour: int, bound: _fx.Bound) -> str:
                     f'<td>{SIGNS[chain["before"][0]]}→{SIGNS[chain["after"][0]]}</td></tr>')
     return _fx.data_table(("哪一個", "第幾次", "區間", "中點", "中點的星座"), rows)
 
-
 # --- figure 2: the summary for each hour -----------------------------------------
 
 def _when_label(transition: dict) -> str:
     lower, upper = _clock(transition["lower_bound_local"])[:5], _clock(transition["upper_bound_local"])[:5]
     return lower if lower == upper else f"{lower}–{upper}"
-
 
 def _hour_axis(layout: str, fid: str, hours: dict, bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
@@ -349,15 +307,12 @@ def _hour_axis(layout: str, fid: str, hours: dict, bound: _fx.Bound) -> str:
     axis_y = 128.0 if wide else 128.0
     H = 192.0 if wide else 192.0
     out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)]
-
     def hx(offset: float) -> float:
         return x0 + (x1 - x0) * offset / 3600
-
     for step, (hour, item) in enumerate(hours.items()):
         sens = item["page"]["birth_time_sensitivity"]
         body = [_fx.text(x0, 36 if wide else 32,
-                         f"{bound.num(f'{hour} 點')}：{bound.num(f'{hour:02d}:00')} 到 {bound.num(f'{hour:02d}:59:59')}",
-                         "fx-t")]
+            f"{bound.num(f'{hour} 點')}：{bound.num(f'{hour:02d}:00')} 到 {bound.num(f'{hour:02d}:59:59')}", "fx-t")]
         body.append(_fx.line(x0, axis_y, x1, axis_y, "fx-axis"))
         probes = [_offset(_clock(p["input_local_time"]), hour) for p in sens["probes"]]
         representative = _offset(_clock(sens["representative_local_time"]), hour)
@@ -379,21 +334,16 @@ def _hour_axis(layout: str, fid: str, hours: dict, bound: _fx.Bound) -> str:
             if wide or i in (0, len(probes) - 1, probes.index(representative)):
                 body.append(_fx.text(hx(s), axis_y + 26, bound.num(_hms(s, hour) if s % 60 else _hms(s, hour)[:5]),
                                      "fx-t fx-small fx-num", _anchor(i, len(probes))))
-        body.append(_fx.text(x1, H - 18, "空心點是代表性時刻；黑色短條是本站夾出的改變區段",
-                             "fx-t fx-small fx-dim", "end") if wide
-                    else _fx.text(x0, H - 18, "空心點：代表性時刻；黑條：改變區段", "fx-t fx-small fx-dim"))
+        body.append(_fx.text(x1, H - 18, "空心點是代表性時刻；黑色短條是本站夾出的改變區段", "fx-t fx-small fx-dim",
+            "end") if wide else _fx.text(x0, H - 18, "空心點：代表性時刻；黑條：改變區段", "fx-t fx-small fx-dim"))
         out.append(_fx.step_group(step, HOURS.index(FEATURED), "".join(body)))
     out.append("</svg>")
     return "".join(out)
 
-
 def _callout(step: int, hour: int, summary: dict, bound: _fx.Bound) -> str:
-    """The result page's summary block, the same sentences in the same order."""
     from html import escape
-
     def p(text: str, cls: str = "") -> str:
         return f'<p{f" class={chr(34)}{cls}{chr(34)}" if cls else ""}>{escape(bound.num(text))}</p>'
-
     parts = [f'<div class="ar-key fx-callout{"" if hour == FEATURED else " fx-off"}" data-fx-step="{step}">',
              f'<span class="ar-k">結果頁上的摘要（{escape(bound.num(f"{hour} 點"))}，原文）</span>',
              f"<p><b>{escape(summary['title'])}</b></p>", p(summary["lead"]), p(summary["intro"])]
@@ -408,10 +358,8 @@ def _callout(step: int, hour: int, summary: dict, bound: _fx.Bound) -> str:
     parts.append("</div>")
     return "".join(parts)
 
-
 def _hours_table(hours: dict, bound: _fx.Bound) -> str:
     from html import escape
-
     rows = []
     for hour, item in hours.items():
         summary = item["summary"]
@@ -419,7 +367,6 @@ def _hours_table(hours: dict, bound: _fx.Bound) -> str:
         rows.append(f'<tr><th scope="row">{bound.num(f"{hour} 點")}</th><td>{escape(bound.num(summary["lead"]))}</td>'
                     f"<td>{escape(bound.num(changes))}</td></tr>")
     return _fx.data_table(("鐘點", "第一句", "會變的與約幾點"), rows, summary="七個鐘點的摘要（表格）")
-
 
 # --- the clock-change table --------------------------------------------------------
 
@@ -440,18 +387,15 @@ def _clock_rows(cases: list[dict]) -> str:
                     f'<td>{probes}</td><td>{what}</td></tr>')
     return "\n".join(rows)
 
-
 # --- build ----------------------------------------------------------------------
 
 def _data() -> dict:
     with product_client() as client:
         def post(payload: dict, projection: str = "page", expected: int = 200) -> dict:
             return client(f"/api/chart?projection={projection}", payload, expected)
-
         hours = {h: {"page": post(_request(None, DAY, h))} for h in HOURS}
         detailed = post(_request(None, DAY, FEATURED), "detailed")["birth_time_sensitivity"]
         chains = _chains(post, detailed, FEATURED)
-        # the hours without folds and the clock-change cases
         sj = ST_JOHNS
         refused = post(_request(sj, sj["date"], sj["hour"]), expected=422)
         if refused["detail"]["code"] != "ambiguous_local_time_choice_required":
@@ -487,18 +431,15 @@ def _data() -> dict:
         from app.core.time_utils import repeated_wall_clock_stretches
         from app.schema_inputs import TimezoneInput
         import datetime as dtmod
-
         year, month, day = sj["date"]
         (repeat,) = repeated_wall_clock_stretches(TimezoneInput(mode="iana", iana_name=sj["tz"]),
                                                   dtmod.datetime(year, month, day, sj["hour"]))
     return {"hours": hours, "chains": chains, "cases": cases, "station": station, "repeat": repeat,
             "refused": refused["detail"]["message"], "gone": gone["detail"]["message"]}
 
-
 def build() -> tuple[dict[str, str], list[str]]:
     d = _data()
     chains, hours = d["chains"], d["hours"]
-
     b1 = _fx.Bound()
     for _, label in VARIANTS_1:
         b1.label(label)
@@ -550,7 +491,6 @@ def build() -> tuple[dict[str, str], list[str]]:
     stray = {t for t in re.findall(r"\d+(?:\.\d+)?", re.sub(r"<[^>]+>", "", callouts))} - b2.tokens()
     if stray:
         raise RuntimeError(f"figure 2: unbound numbers in the summary text: {sorted(stray)}")
-
     station, repeat = d["station"], d["repeat"]
     mc = chains["mc"]
     sj0, sj1, lh = d["cases"]
@@ -574,9 +514,5 @@ def build() -> tuple[dict[str, str], list[str]]:
         f"取 {len(lh['page']['birth_time_sensitivity']['probes'])} 個時刻",
         d["gone"],
     ]
-    return {
-        "fx-defs": _fx.defs(()),
-        "bisect": ladder,
-        "summary": summary_figure,
-        "clock-rows": _clock_rows(d["cases"]),
-    }, quoted
+    return {"fx-defs": _fx.defs(()), "bisect": ladder, "summary": summary_figure,
+        "clock-rows": _clock_rows(d["cases"])}, quoted

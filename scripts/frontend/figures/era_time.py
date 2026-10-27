@@ -1,18 +1,12 @@
-"""〈民國年、昭和年怎麼換算西元〉: figure 1 (the Japanese eras, the Republic's
-years and Taiwan's clock from 1895 to 1950, each era pointable), figure 2 (a
-slider over the years the calculator accepts up to 1950: what each calendar
-calls that year and which offsets Taiwan's clock kept within it, month by
-month), and table 1 (four record readings, as the calculator's era helper and
-the time-conversion service answer them).
+"""〈民國年、昭和年怎麼換算西元〉: figure 1 (the Japanese eras, the Republic's years and Taiwan's clock from 1895 to 1950),
+figure 2 (a slider over the years the calculator accepts up to 1950: what each calendar calls that year and which
+offsets Taiwan's clock kept within it) and table 1 (four record readings, as the era helper and the time-conversion
+service answer them).
 
-Three sources, each read where the product reads it:
-- the eras (offset, first and last day) from the era helper itself,
-  `ERAS` in request-input.js, so the figure cannot disagree with the helper;
-- the clock from the pinned tz transitions of the time-zone article
-  (`taiwan_time.load_pin`, checked against the host's zoneinfo there), with
-  each period's regime and its name as the service's receipt gives them
-  (backend civil_time_sources.json, labels.js);
-- table 1 from the time-conversion service itself, called in process.
+Each source is read where the product reads it: the eras from `ERAS` in request-input.js, so the figure cannot disagree
+with the helper; the clock from the pinned tz transitions of the time-zone article (`taiwan_time.load_pin`), each
+period's regime and name as the service's receipt gives them (backend civil_time_sources.json, labels.js); table 1 from
+the service itself, called in process.
 """
 from __future__ import annotations
 
@@ -23,7 +17,6 @@ from typing import Any
 
 from . import _fx, taiwan_time
 from ._common import ROOT, product_client
-
 
 FRAGMENT = "blog-taiwan-era-years-birth-time"
 REQUEST_INPUT = ROOT / "scripts" / "frontend" / "scripts" / "request-input.js"
@@ -36,24 +29,17 @@ LAST_YEAR = 1950             # figure 2's last year
 DEFAULT_YEAR = 1937
 JAPANESE = ("meiji", "taisho", "showa")
 
-# The four readings table 1 sends to the service: (era, era year, month, day, hour, minute).
-EXAMPLES = (
-    ("showa", 12, 6, 1, 10, 0),
-    ("showa", 13, 6, 1, 10, 0),
-    ("showa", 12, 10, 1, 0, 30),
-    ("showa", 20, 9, 21, 0, 30),
-)
+EXAMPLES = (("showa", 12, 6, 1, 10, 0), ("showa", 13, 6, 1, 10, 0), ("showa", 12, 10, 1, 0, 30),
+    ("showa", 20, 9, 21, 0, 30))
 
 _ERA = re.compile(
     r'(?P<key>\w+): Object\.freeze\(\{ label: "(?P<label>[^"]+)", offset: (?P<offset>\d+), '
     r'first: (?P<first>\[[\d, ]+\]|null), last: (?P<last>\[[\d, ]+\]|null),'
 )
 
-
 # --- the sources ---------------------------------------------------------------
 
 def read_eras() -> dict[str, dict[str, Any]]:
-    """The era helper's table, as request-input.js ships it."""
     source = REQUEST_INPUT.read_text(encoding="utf-8")
     block = source[source.index("const ERAS = Object.freeze({"):]
     block = block[: block.index("});") + 3]
@@ -72,16 +58,13 @@ def read_eras() -> dict[str, dict[str, Any]]:
             raise RuntimeError(f"{before} does not end the day before {after} begins")
     return found
 
-
 def calculator_first_year() -> int:
     match = re.search(r'id="birth-date"[^>]* data-min="(\d{4})-01-01"', CALCULATE.read_text(encoding="utf-8"))
     if match is None:
         raise RuntimeError("the calculate page's birth-date field names no first year")
     return int(match[1])
 
-
 def regime_names() -> dict[str, str]:
-    """labels.js civil_time_regime: what the receipt calls each regime."""
     source = LABELS.read_text(encoding="utf-8")
     block = source[source.index("civil_time_regime: Object.freeze({"):]
     block = block[: block.index("})")]
@@ -90,11 +73,9 @@ def regime_names() -> dict[str, str]:
         raise RuntimeError("labels.js no longer names the four Taiwan regimes")
     return names
 
-
 def clock_periods(pin: dict) -> list[dict]:
-    """Taiwan's clock as periods of local clock time: start, end (exclusive),
-    offset and regime.  The regime comes from the service's source table,
-    matched on the transition instant; the table must hold every pinned one."""
+    """Taiwan's clock as periods: start, end (exclusive), offset and regime.  The regime comes from the service's
+    source table, matched on the transition instant; the table must hold every pinned one."""
     sources = json.loads(SOURCES.read_text(encoding="utf-8"))
     regimes = {p["from_utc"]: p["regime"] for p in sources["periods"] if p["zone"] == ZONE}
     tr = pin["transitions"]
@@ -108,35 +89,28 @@ def clock_periods(pin: dict) -> list[dict]:
     periods[-1]["end"] = datetime(2100, 1, 1)
     return periods
 
-
 def convert(examples: tuple, eras: dict) -> list[dict]:
-    """Each example sent to the time-conversion service in process."""
     with product_client() as post:
         out = []
         for key, n, month, day, hour, minute in examples:
             year = n + eras[key]["offset"]
-            body = post("/api/time/convert", {
-                "datetime": {"year": year, "month": month, "day": day, "hour": hour, "minute": minute, "second": 0},
-                "timezone": {"mode": "iana", "iana_name": ZONE},
-            })
+            body = post("/api/time/convert",
+                {"datetime": {"year": year, "month": month, "day": day, "hour": hour, "minute": minute, "second": 0},
+                "timezone": {"mode": "iana", "iana_name": ZONE}})
             out.append({"era": key, "n": n, "year": year, "month": month, "day": day, "hour": hour,
                         "minute": minute, "body": body})
         return out
-
 
 # --- words ---------------------------------------------------------------------
 
 def era_year(label: str, n: int, b) -> str:
     return f"{label}元年" if n == 1 else f"{label} {b(n)} 年"
 
-
 def roc_year(year: int, eras: dict, b) -> str:
     n = year - eras["roc"]["offset"]
     return era_year("民國", n, b) if n >= 1 else f"民國前 {b(1 - n)} 年"
 
-
 def japanese_years(year: int, eras: dict) -> list[tuple[str, int, date, date]]:
-    """(era key, era year, first day, last day) of each Japanese era within `year`."""
     out = []
     for key in JAPANESE:
         era = eras[key]
@@ -146,18 +120,14 @@ def japanese_years(year: int, eras: dict) -> list[tuple[str, int, date, date]]:
             out.append((key, year - era["offset"], first, last))
     return out
 
-
 def utc_text(seconds: int, b) -> str:
     hours, rest = divmod(seconds, 3600)
     return f"UTC+{b(hours)}" if not rest else f"UTC+{b(hours)}:{b(f'{rest // 60:02d}')}"
 
-
 def md(t: date | datetime, b) -> str:
     return f"{b(t.month)} 月 {b(t.day)} 日"
 
-
 def year_clock(year: int, periods: list[dict]) -> list[tuple[date, date, dict]]:
-    """(first day, last day, period) of each clock period within `year`, by clock dates."""
     start, end = datetime(year, 1, 1), datetime(year + 1, 1, 1)
     out = []
     for p in periods:
@@ -166,10 +136,9 @@ def year_clock(year: int, periods: list[dict]) -> list[tuple[date, date, dict]]:
             out.append((s.date(), (e - timedelta(microseconds=1)).date(), p))
     return out
 
-
 def clock_sentence(year: int, periods: list[dict], names: dict, b) -> str:
-    """The clock within one year, with the hour of a change that is not at midnight
-    (1945: 「9 月 21 日凌晨 1 點撥回 0 點之後」)."""
+    """The clock within one year, with the hour of a change that is not at midnight (1945: 「9 月 21 日凌晨 1 點撥回 0
+    點之後」)."""
     start, end = datetime(year, 1, 1), datetime(year + 1, 1, 1)
     spans = [(max(start, p["start"]), min(end, p["end"]), p) for p in periods if max(start, p["start"]) < min(end, p["end"])]
     what = lambda p: f"{names[p['regime']]}，{utc_text(p['offset'], b)}"  # noqa: E731
@@ -191,7 +160,6 @@ def clock_sentence(year: int, periods: list[dict], names: dict, b) -> str:
         parts.append(f"{when}是{what(p)}")
     return "；".join(parts)
 
-
 def year_sentence(year: int, eras: dict, periods: list[dict], names: dict, b) -> str:
     japan = japanese_years(year, eras)
     jp = "，".join(
@@ -200,9 +168,7 @@ def year_sentence(year: int, eras: dict, periods: list[dict], names: dict, b) ->
         for key, n, first, last in japan)
     roc = roc_year(year, eras, b)
     note = "；換算助手不收民國前的年份，請直接填西元" if year < eras["roc"]["first"].year else ""
-    return (f"西元 {b(year)} 年＝{roc}＝{jp}{note}。這一年臺灣的鐘面："
-            f"{clock_sentence(year, periods, names, b)}。")
-
+    return (f"西元 {b(year)} 年＝{roc}＝{jp}{note}。這一年臺灣的鐘面：" f"{clock_sentence(year, periods, names, b)}。")
 
 # --- figure 1: eras and clocks, 1895–1950 --------------------------------------
 
@@ -211,10 +177,9 @@ def _frac(t: date | datetime) -> float:
     start = date(d.year, 1, 1)
     return d.year + (d - start).days / (date(d.year + 1, 1, 1) - start).days
 
-
 def _bands(eras: dict, periods: list[dict], b) -> list[dict]:
-    """The seven things figure 1 lets a reader point at, plus the 民國前 and
-    local-mean-time stretches it draws without a key."""
+    """The seven things figure 1 lets a reader point at, plus the 民國前 and local-mean-time stretches drawn without a
+    key."""
     a0, a1 = date(AXIS[0], 1, 1), date(AXIS[1], 1, 1)
     out = []
     for key in JAPANESE:
@@ -263,9 +228,8 @@ def _bands(eras: dict, periods: list[dict], b) -> list[dict]:
         index = seen.get(regime, 0)
         seen[regime] = index + 1
         key = keys[regime][index]
-        band = {"key": key, "row": 2, "start": s.date(), "end": e.date(), "end_at": e, "offset": p["offset"],
-                "regime": regime,
-                "fill": "fx-fill-cross" if regime == "japan_standard_time" else "fx-cell", "summers": []}
+        band = {"key": key, "row": 2, "start": s.date(), "end": e.date(), "end_at": e, "offset": p["offset"], "regime": regime,
+            "fill": "fx-fill-cross" if regime == "japan_standard_time" else "fx-cell", "summers": []}
         out.append(band)
         post = band
     names = regime_names()
@@ -291,7 +255,6 @@ def _bands(eras: dict, periods: list[dict], b) -> list[dict]:
             x["spoken"] = f"{name}，{since}起，鐘面 {utc}"
     return out
 
-
 def _timeline(layout: str, fid: str, bands: list[dict], lmt: int, bound: _fx.Bound) -> str:
     b = lambda v: bound.num(str(v))  # noqa: E731
     wide = layout == "fx-wide"
@@ -307,12 +270,10 @@ def _timeline(layout: str, fid: str, bands: list[dict], lmt: int, bound: _fx.Bou
         axis = 60.0
         H = a1 + 54
     T = lambda t: a0 + (_frac(t) - AXIS[0]) / (AXIS[1] - AXIS[0]) * (a1 - a0)  # noqa: E731
-
     def box(band: dict) -> tuple[float, float, float, float]:
         top, size = rows[band["row"]]
         t0, t1 = T(band["start"]), T(band["end"])
         return (t0, top, t1 - t0, size) if wide else (top, t0, size, t1 - t0)
-
     out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)]
     heads = ("日本年號", "民國", "臺灣的鐘面")
     for (top, size), head in zip(rows, heads):
@@ -331,7 +292,6 @@ def _timeline(layout: str, fid: str, bands: list[dict], lmt: int, bound: _fx.Bou
             out.append(_fx.line(axis - 6, x, axis, x, "fx-axis"))
             out.append(_fx.text(axis - 10, x + 4, tick, "fx-t fx-small fx-num", "end"))
     out.append(_fx.line(*((a0, axis, a1, axis) if wide else (axis, a0, axis, a1)), "fx-axis"))
-    # Where an era or a clock changes: a hairline across all rows.
     for band in bands:
         if band["start"] > date(AXIS[0], 1, 1):
             t = T(band["start"])
@@ -359,7 +319,6 @@ def _timeline(layout: str, fid: str, bands: list[dict], lmt: int, bound: _fx.Bou
     out.append("</svg>")
     return "".join(out)
 
-
 def _band_label(band: dict, rect: tuple[float, float, float, float], wide: bool) -> str:
     if not band["label"]:
         return ""
@@ -376,13 +335,10 @@ def _band_label(band: dict, rect: tuple[float, float, float, float], wide: bool)
     cx, top = x + w / 2, y + min(h / 2, 40) - 8 * (len(lines) - 1)
     return "".join(_fx.text(cx, top + 18 * i + 4, line, cls, "middle") for i, line in enumerate(lines))
 
-
 def _band_table(bands: list[dict]) -> str:
-    rows = "".join(
-        f'<tr data-fx-key="{x["key"]}"><th scope="row">{x["name"]}</th><td>{x["label"].replace("　", " ")}</td>'
-        f'<td>{x["sentence"]}</td></tr>' for x in bands if x["key"])
+    rows = "".join(f'<tr data-fx-key="{x["key"]}"><th scope="row">{x["name"]}</th><td>{x["label"].replace("　",
+        " ")}</td>' f'<td>{x["sentence"]}</td></tr>' for x in bands if x["key"])
     return _fx.data_table(("紀年或時制", "圖上寫的", "說明"), rows)
-
 
 # --- figure 2: one year at a time ----------------------------------------------
 
@@ -430,7 +386,6 @@ def _year_layout(layout: str, fid: str, years: list[int], eras: dict, periods: l
             body += [_fx.text(x, 74, text, "fx-t fx-num") for x, text in zip((40, 300, 560), heads)]
         else:
             body += [_fx.text(x0, 34 + 26 * j, text, "fx-t fx-num") for j, text in enumerate(heads)]
-        # The era row.
         for k, n, first, last in japan:
             a, z = X(first, year), X(last + timedelta(days=1), year)
             body.append(_fx.rect(a, era_row, z - a, rh, "fx-cell"))
@@ -439,7 +394,6 @@ def _year_layout(layout: str, fid: str, years: list[int], eras: dict, periods: l
                 body.append(_fx.text(a + 8, era_row + rh / 2 + 5, label, "fx-t fx-small"))
             else:  # 昭和元年 is seven days long: named above its sliver, at the strip's end
                 body.append(_fx.text(x1, era_row - 8, f"{label}（{md(first, b)}起）", "fx-t fx-small", "end"))
-        # The clock row.
         for first, last, p in year_clock(year, periods):
             a, z = X(first, year), X(last + timedelta(days=1), year)
             fill = {"japan_standard_time": "fx-fill-cross", "summer_time": "fx-fill-hatch"}.get(p["regime"], "fx-cell")
@@ -448,7 +402,6 @@ def _year_layout(layout: str, fid: str, years: list[int], eras: dict, periods: l
             if z - a >= 54:
                 body.append(_fx.text(a + 8, clock_row + rh / 2 + 5, text,
                                      "fx-t fx-small fx-num" + (" fx-key" if fill != "fx-cell" else "")))
-        # Where the year changes era or clock: a red hairline (the slider's cursor colour).
         cuts = sorted({X(first, year) for _, _, first, _ in japan[1:]}
                       | {X(first, year) for first, _, _ in year_clock(year, periods)[1:]})
         for x in cuts:
@@ -456,7 +409,6 @@ def _year_layout(layout: str, fid: str, years: list[int], eras: dict, periods: l
         out.append(_fx.step_group(i, default, "".join(body)))
     out.append("</svg>")
     return "".join(out)
-
 
 def _year_table(years: list[int], eras: dict, periods: list[dict], names: dict, bound: _fx.Bound) -> str:
     b = lambda v: bound.num(str(v))  # noqa: E731
@@ -470,12 +422,10 @@ def _year_table(years: list[int], eras: dict, periods: list[dict], names: dict, 
                     f'<td>{clock}</td></tr>')
     return _fx.data_table(("西元", "民國", "日本年號", "臺灣的鐘面"), rows, summary="逐年對照（表格）")
 
-
 # --- table 1: what the service answers -----------------------------------------
 
 def _clock(iso: str) -> str:
     return f"{iso[:10]} {iso[11:16]}"
-
 
 def _example_rows(answers: list[dict], eras: dict, names: dict) -> tuple[str, list[str]]:
     rows, quoted = [], []
@@ -504,9 +454,7 @@ def _example_rows(answers: list[dict], eras: dict, names: dict) -> tuple[str, li
         quoted.append(utc if utc != "—" else answer)
     return "\n".join(rows), quoted
 
-
 def _era_rows(eras: dict, first_year: int) -> str:
-    """Table 1: the era helper's table, in the methods page's order."""
     full = lambda d: f"{d.year} 年 {d.month} 月 {d.day} 日"  # noqa: E731
     rows = []
     for key in ("roc", *JAPANESE):
@@ -521,7 +469,6 @@ def _era_rows(eras: dict, first_year: int) -> str:
                     f"<td>{last}</td></tr>")
     return "\n".join(rows)
 
-
 # --- the page ------------------------------------------------------------------
 
 def build() -> tuple[dict[str, str], list[str]]:
@@ -534,7 +481,6 @@ def build() -> tuple[dict[str, str], list[str]]:
     years = list(range(first_year, LAST_YEAR + 1))
     if DEFAULT_YEAR not in years:
         raise RuntimeError(f"the default year {DEFAULT_YEAR} is outside {first_year}–{LAST_YEAR}")
-
     b1 = _fx.Bound()
     n1 = lambda v: b1.num(str(v))  # noqa: E731
     bands = _bands(eras, periods, n1)
@@ -559,7 +505,6 @@ def build() -> tuple[dict[str, str], list[str]]:
         table=_band_table(bands),
         bound=b1,
     )
-
     b2 = _fx.Bound()
     nb2 = lambda v: b2.num(str(v))  # noqa: E731
     notes = [_fx.Note(None, None, year_sentence(year, eras, periods, names, nb2), step=i) for i, year in enumerate(years)]
@@ -583,7 +528,6 @@ def build() -> tuple[dict[str, str], list[str]]:
         table=_year_table(years, eras, periods, names, b2),
         bound=b2,
     )
-
     answers = convert(EXAMPLES, eras)
     rows, quoted = _example_rows(answers, eras, names)
     a, c = answers[0]["body"]["readings"][0], answers[1]["body"]["readings"][0]

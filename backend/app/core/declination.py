@@ -16,10 +16,11 @@
 
 from .bodies import DEFINITIONAL_EXCLUDED_PAIRS
 from .module_state import (
+    Applicability,
     PRODUCT_FORMULA_SOURCE,
     computed_receipt,
-    module_state,
     frame_table_refusal,
+    module_state,
 )
 from .method_status import method_head
 from .source_reading import cited, reference_only
@@ -156,7 +157,7 @@ def compute_declination_aspects(
     }
 
 
-def declination_aspects_not_applicable(state: dict, trace: Trace) -> dict:
+def declination_aspects_not_applicable(state: Applicability, trace: Trace) -> dict:
     refusal = frame_table_refusal(
         state, trace, f"赤緯相位判斷方法 (method={DECLINATION_ASPECT_METHOD_NAME})",
         note=(

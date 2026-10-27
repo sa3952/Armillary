@@ -1,19 +1,12 @@
-"""〈反照點是什麼〉: figure 1 (the demonstration chart's seven planets on the
-zodiac wheel and their mirror points, under a switch between antiscia — the
-mirror in the solstitial axis — and contra-antiscia — the mirror in the
-equinoctial axis; each planet can be pointed at), figure 2 (the length of
-daylight in Taipei against the Sun's longitude through 2026, with Lilly's
-pair 10° Taurus and 20° Leo) and the numbers the prose quotes.
+"""〈反照點是什麼〉: figures 1-2 of the article (the demonstration chart's seven planets and their mirror points on the
+zodiac wheel, under a switch between antiscia and contra-antiscia; the length of daylight in Taipei against the Sun's
+longitude through 2026) and the numbers the prose quotes.
 
-Every mirror point is the product's answer in process
-(`derived_geometry.antiscia` of the demonstration chart, 1990-05-15 14:30
-Taipei, with antiscia requested; the same chart in the sidereal zodiac with
-the Fagan–Bradley ayanamsa), and the build stops unless each is the planet's
-longitude mirrored as the article states.  Lilly's worked example is the
-product's own function applied to his Saturn.  Each day length is the
-product's sunrise and sunset for that Taipei date (the planetary-hours
-module's), the dates those on which Swiss Ephemeris puts the Sun at each
-longitude.
+Every mirror point is the product's answer in process (`derived_geometry.antiscia` of the demonstration chart,
+1990-05-15 14:30 Taipei, antiscia requested; the same chart sidereal with the Fagan–Bradley ayanamsa), and the build
+stops unless each is the planet's longitude mirrored as the article states.  Lilly's worked example is the product's
+own function applied to his Saturn.  Each day length is the product's sunrise and sunset for that Taipei date (the
+planetary-hours module's), the dates those on which Swiss Ephemeris puts the Sun at each longitude.
 """
 from __future__ import annotations
 
@@ -23,7 +16,6 @@ import functools
 from . import _fx
 from ._common import PLANETS, backend_on_path, product_charts, swiss
 from ._demo import DEMO, zodiacal_minutes
-
 
 FRAGMENT = "blog-antiscia"
 PLANET_KEYS = ("sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn")
@@ -37,31 +29,24 @@ LILLY_SATURN = 120 + 20 + 35 / 60
 LILLY_PAIR = (40.0, 140.0)
 YEAR = 2026
 TAIPEI_OFFSET_HOURS = 8
-# One second of arc.
 TOLERANCE = 1 / 3600
 VARIANTS = (("antiscia", "反照點 antiscia（至點軸）"), ("contra", "反向反照點 contra-antiscia（分點軸）"))
 
-
 def _close(a: float, b: float) -> bool:
     return abs((a - b + 180) % 360 - 180) < TOLERANCE
-
 
 def _read(answer: dict) -> dict:
     bodies = {item["key"]: item["longitude"] for item in answer["astronomical_data"]["bodies"]}
     geometry = answer["derived_geometry"]["antiscia"]
     if geometry["scope"]["included_keys"] != list(PLANET_KEYS):
         raise RuntimeError(f"the antiscia now cover {geometry['scope']['included_keys']}")
-    return {
-        "bodies": {key: bodies[key] for key in PLANET_KEYS},
+    return {"bodies": {key: bodies[key] for key in PLANET_KEYS},
         "antiscia": {item["key"]: item["longitude"] for item in geometry["antiscia"]},
-        "contra": {item["key"]: item["longitude"] for item in geometry["contra_antiscia"]},
-    }
-
+        "contra": {item["key"]: item["longitude"] for item in geometry["contra_antiscia"]}}
 
 def _taipei_date(jd: float, swe) -> dt.date:
     year, month, day, _hour = swe.revjul(jd + TAIPEI_OFFSET_HOURS / 24)
     return dt.date(year, month, day)
-
 
 @functools.lru_cache(maxsize=1)
 def answers() -> dict:
@@ -88,7 +73,6 @@ def answers() -> dict:
     return {"tropical": tropical, "sidereal": sidereal, "daylight": daylight,
             "lilly": (lilly["antiscia"][0]["longitude"], lilly["contra_antiscia"][0]["longitude"])}
 
-
 def _check(data: dict) -> float:
     """The product's points are the mirrors the article states; returns the ayanamsa they imply."""
     for name in ("tropical", "sidereal"):
@@ -112,16 +96,12 @@ def _check(data: dict) -> float:
         raise RuntimeError(f"Lilly's Saturn now mirrors to {zodiacal_minutes(antiscion)} / {zodiacal_minutes(contra)}")
     return ayanamsa
 
-
 # --- figure 1: the wheel -------------------------------------------------------------
 
 def _polar(cx: float, cy: float):
-    """Aries 0° on the left, the signs counterclockwise, as the result page's wheel."""
     return lambda longitude, r: _fx.wheel_point(cx, cy, r, 180 + longitude)
 
-
 def _spread(longitudes: dict[str, float], gap: float) -> dict[str, float]:
-    """Display angles for marks so that none sits closer than `gap` degrees to another."""
     order = sorted(longitudes, key=lambda key: longitudes[key] % 360)
     shown = {key: longitudes[key] % 360 for key in order}
     for _ in range(40):
@@ -136,7 +116,6 @@ def _spread(longitudes: dict[str, float], gap: float) -> dict[str, float]:
         if not moved:
             break
     return shown
-
 
 def _wheel(layout: str, fid: str, chart: dict, bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
@@ -174,9 +153,8 @@ def _wheel(layout: str, fid: str, chart: dict, bound: _fx.Bound) -> str:
         shown = _spread(mirrors, 11 if wide else 13)
         for planet in PLANET_KEYS:
             (px, py), (qx, qy) = at(planets[planet], r_planet), at(shown[planet], r_mirror)
-            body.append(f'<g class="fx-row" data-fx-key="{planet}">' + _fx.line(px, py, qx, qy, "fx-leader")
-                        + _fx.circle(qx, qy, mark * 0.8, "fx-mk") + _fx.glyph(planet, qx, qy, mark, "fx-mk-gl")
-                        + "</g>")
+            body.append(f'<g class="fx-row" data-fx-key="{planet}">' + _fx.line(px, py, qx, qy, "fx-leader") + _fx.circle(qx, qy,
+                mark * 0.8, "fx-mk") + _fx.glyph(planet, qx, qy, mark, "fx-mk-gl") + "</g>")
         if wide:
             body.append(_fx.text(570, 64, label, "fx-t fx-key"))
         out.append(_fx.variant_group(key, VARIANTS[0][0], "".join(body)))
@@ -197,20 +175,17 @@ def _wheel(layout: str, fid: str, chart: dict, bound: _fx.Bound) -> str:
     out.append("</svg>")
     return "".join(out)
 
-
 def _wheel_notes(chart: dict, bound: _fx.Bound) -> list[_fx.Note]:
     notes = []
     for planet in PLANET_KEYS:
         lon = bound.num(zodiacal_minutes(chart["bodies"][planet]))
         anti = bound.num(zodiacal_minutes(chart["antiscia"][planet]))
         contra = bound.num(zodiacal_minutes(chart["contra"][planet]))
-        notes.append(_fx.Note(planet, "antiscia",
-                              f"{PLANETS[planet]}在{lon}，對 0° 巨蟹—0° 摩羯這條軸鏡射，反照點在{anti}。"))
+        notes.append(_fx.Note(planet, "antiscia", f"{PLANETS[planet]}在{lon}，對 0° 巨蟹—0° 摩羯這條軸鏡射，反照點在{anti}。"))
         notes.append(_fx.Note(planet, "contra",
                               f"{PLANETS[planet]}在{lon}，對 0° 牡羊—0° 天秤這條軸鏡射，反向反照點在{contra}，"
                               f"正好是反照點{anti}的對面。"))
     return notes
-
 
 def _wheel_table(chart: dict, bound: _fx.Bound) -> str:
     rows = [f'<tr data-fx-key="{p}"><th scope="row">{PLANETS[p]}</th>'
@@ -219,13 +194,11 @@ def _wheel_table(chart: dict, bound: _fx.Bound) -> str:
             f'<td class="n">{bound.num(zodiacal_minutes(chart["contra"][p]))}</td></tr>' for p in PLANET_KEYS]
     return _fx.data_table(("行星", "出生時的位置", "反照點", "反向反照點"), rows)
 
-
 # --- figure 2: daylight ---------------------------------------------------------------
 
 def _hours_minutes(minutes: float) -> str:
     total = round(minutes)
     return f"{total // 60} 小時 {total % 60:02d} 分"
-
 
 def _daylight(layout: str, fid: str, daylight: dict, bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
@@ -251,7 +224,6 @@ def _daylight(layout: str, fid: str, daylight: dict, bound: _fx.Bound) -> str:
         out.append(_fx.line(x(30 * sign), y1, x(30 * sign), y1 + 6, "fx-axis"))
         if wide or sign % 1 == 0:
             out.append(_fx.glyph(SIGN_KEYS[sign], gx, y1 + 22, 16 if wide else 12, "fx-mk-gl"))
-    # the mirror axis: 0° Cancer
     out.append(_fx.line(x(90), y0 - 10, x(90), y1, "fx-dash"))
     out.append(_fx.text(x(90), y0 - 16, bound.num("0° 巨蟹（鏡射軸）") if wide else bound.num("0° 巨蟹"),
                         "fx-t fx-small", "middle"))
@@ -275,7 +247,6 @@ def _daylight(layout: str, fid: str, daylight: dict, bound: _fx.Bound) -> str:
     out.append("</svg>")
     return "".join(out)
 
-
 def _daylight_table(daylight: dict, bound: _fx.Bound) -> str:
     rows = []
     for lon in sorted(lon for lon in daylight if lon % 30 == 10 or lon in LILLY_PAIR):
@@ -287,7 +258,6 @@ def _daylight_table(daylight: dict, bound: _fx.Bound) -> str:
                     f'<td class="n">{bound.num(value["sunset"].split(" ")[1][:5])}</td>'
                     f'<td class="n">{bound.num(_hours_minutes(value["minutes"]))}</td></tr>')
     return _fx.data_table((f"太陽位置", f"{bound.num(str(YEAR))} 年臺北日期", "日出", "日落", "白天長度"), rows)
-
 
 def build() -> tuple[dict[str, str], list[str]]:
     data = answers()
@@ -325,17 +295,12 @@ def build() -> tuple[dict[str, str], list[str]]:
     sun = chart["bodies"]["sun"]
     naive = (180 - sidereal["bodies"]["sun"]) % 360
     difference = abs(round(a["minutes"]) - round(b["minutes"]))
-    quoted = [
-        f"太陽在{zodiacal_minutes(sun)}",
-        f"反照點在{zodiacal_minutes(chart['antiscia']['sun'])}",
+    quoted = [f"太陽在{zodiacal_minutes(sun)}", f"反照點在{zodiacal_minutes(chart['antiscia']['sun'])}",
         f"反向反照點在{zodiacal_minutes(chart['contra']['sun'])}",
         f"金牛 10° 那天（{a['date'].month} 月 {a['date'].day} 日）白天 {_hours_minutes(a['minutes'])}",
         f"獅子 20° 那天（{b['date'].month} 月 {b['date'].day} 日）白天 {_hours_minutes(b['minutes'])}",
-        f"相差 {difference} 分鐘" if difference else "到分鐘都相同",
-        f"約 {ayanamsa:.1f}°",
+        f"相差 {difference} 分鐘" if difference else "到分鐘都相同", f"約 {ayanamsa:.1f}°",
         f"恆星黃道下太陽在{zodiacal_minutes(sidereal['bodies']['sun'])}",
         f"反照點是{zodiacal_minutes(sidereal['antiscia']['sun'])}",
-        f"直接拿 180° 去減，會得到{zodiacal_minutes(naive)}",
-        f"差了約 {2 * ayanamsa:.0f}°",
-    ]
+        f"直接拿 180° 去減，會得到{zodiacal_minutes(naive)}", f"差了約 {2 * ayanamsa:.0f}°"]
     return {"fx-defs": _fx.defs(PLANET_KEYS + SIGN_KEYS), "antiscia-wheel": wheel, "antiscia-daylight": curve}, quoted

@@ -59,7 +59,7 @@ MAX_GRYPE_DB_AGE_HOURS = 72
 MAX_TRIVY_DB_AGE_HOURS = MAX_GRYPE_DB_AGE_HOURS
 # The Trivy release this gate was verified against, and the database schema
 # generation that release reads.
-TRIVY_VERSION = "0.76.0"
+TRIVY_VERSION = "0.76.1"
 TRIVY_DB_SCHEMA = 2
 # Every Trivy run reads only the database already downloaded and checked;
 # nothing else is fetched during a scan.
@@ -95,7 +95,7 @@ def normalized(name: str) -> str:
 def locked_runtime_versions(lock: Path, architecture: str = "amd64") -> dict[str, str]:
     """Distributions the image installs from `lock`: name -> pinned version.
 
-    A line whose PEP 508 marker is false in the image (CPython 3.14.9 on
+    A line whose PEP 508 marker is false in the image (CPython 3.14.10 on
     Linux) is listed in the lock but never installed.
     """
 
@@ -103,7 +103,7 @@ def locked_runtime_versions(lock: Path, architecture: str = "amd64") -> dict[str
     environment.update({
         "os_name": "posix", "platform_system": "Linux", "sys_platform": "linux",
         "platform_machine": {"amd64": "x86_64", "arm64": "aarch64"}[architecture],
-        "python_full_version": "3.14.9", "python_version": "3.14",
+        "python_full_version": "3.14.10", "python_version": "3.14",
     })
     logical = re.sub(r"\\\n", " ", lock.read_text(encoding="utf-8"))
     versions: dict[str, str] = {}
@@ -294,16 +294,14 @@ def with_embedded_components(sbom: dict[str, Any], sdist: Path, sqlite_linkage: 
     if sqlite_linkage == "bundled":
         components.append(("sqlite", sqlite, [{"cpe": f"cpe:2.3:a:sqlite:sqlite:{sqlite}:*:*:*:*:*:*:*",
                                                 "source": "nvd-cpe-dictionary"}]))
-    added = []
-    for name, version, cpes in components:
-        added.append({
-            "id": hashlib.sha256(f"pyswisseph-embedded/{name}@{version}".encode()).hexdigest()[:16],
-            "name": name, "version": version, "type": "binary",
-            "foundBy": "armillary-vendored-pyswisseph-sdist", "locations": owner.get("locations", [])[:1],
-            "licenses": _concluded_license(EMBEDDED_LICENSES[name]) if name in EMBEDDED_LICENSES else [],
-            "language": "", "cpes": cpes,
-            "purl": f"pkg:generic/{name}@{version}",
-        })
+    added = [{
+        "id": hashlib.sha256(f"pyswisseph-embedded/{name}@{version}".encode()).hexdigest()[:16],
+        "name": name, "version": version, "type": "binary",
+        "foundBy": "armillary-vendored-pyswisseph-sdist", "locations": owner.get("locations", [])[:1],
+        "licenses": _concluded_license(EMBEDDED_LICENSES[name]) if name in EMBEDDED_LICENSES else [],
+        "language": "", "cpes": cpes,
+        "purl": f"pkg:generic/{name}@{version}",
+    } for name, version, cpes in components]
     return {
         **sbom,
         "artifacts": [*(owner if artifact is owners[0] else artifact for artifact in sbom["artifacts"]), *added],

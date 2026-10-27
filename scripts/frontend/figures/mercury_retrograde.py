@@ -1,22 +1,12 @@
-"""〈水星逆行，回到原典〉: figure 1 (Mercury's longitude difference from the
-Sun from early October to late November 2026, with the bands of the three
-traditions under a switch and the two stations and the inferior conjunction
-pointable), table 1 (the superior and the inferior conjunction side by side),
-table 2 (the year's three retrogrades), table 3 (the stations' signs
-2024–2028), table 4 (every turn, change of course and crossing of the
-October–November retrograde in time order), table 5 (the product's answer
-for two synthetic instants) and the numbers the prose quotes.
+"""〈水星逆行，回到原典〉: figure 1 (Mercury's longitude difference from the Sun, October-November 2026, with the bands of
+the three traditions), tables 1-5 and the numbers the prose quotes.
 
-The stations, conjunctions and crossings are roots found here with Swiss
-Ephemeris and the bundled ephemeris files: a station is where the geocentric
-speed in longitude changes sign, a conjunction where the longitude difference
-from the Sun does, a crossing where that difference reaches a tradition's
-limit.  The limits are the product's own table (the solar-phase module's
-`limits`, read from its answer) and Mercury's mean daily motion the product's
-Lilly profile.  Every instant is printed as the whole minute it lies in, as
-the calculator prints its turns.  The two synthetic instants are posted to
-the product in process; the build stops unless its longitude differences,
-crossings and turns agree with the roots found here.
+Stations, conjunctions and crossings are roots found here with Swiss Ephemeris: a station is where the geocentric speed
+in longitude changes sign, a conjunction where the longitude difference from the Sun does, a crossing where that
+difference reaches a tradition's limit.  The limits are the product's own table (the solar-phase module's `limits`) and
+Lilly's mean daily motion.  Every instant is printed as the whole minute it lies in, as the calculator prints its turns.
+The two synthetic instants are posted to the product in process; the build stops unless its answers agree with the
+roots found here.
 """
 from __future__ import annotations
 
@@ -28,112 +18,77 @@ import statistics
 from . import _fx
 from ._common import SIGNS, TAIPEI, calc_ut, product_charts, swiss
 
-
 FRAGMENT = "blog-mercury-retrograde-2026"
 TAIPEI_OFFSET_HOURS = 8
 YEAR = 2026
-# The statistics run over two whole centuries of inferior conjunctions.
 SPAN = (1900, 2100)
-# The two synthetic instants (Taipei): the inferior conjunction's minute, and
-# half a day before the second station.
-MOMENTS = (
-    {"year": 2026, "month": 11, "day": 4, "hour": 22, "minute": 24, "second": 0},
-    {"year": 2026, "month": 11, "day": 13, "hour": 12, "minute": 0, "second": 0},
-)
-PROFILES = (
-    ("lilly", "lilly_1647_p113_v1", "Lilly 1647 p.113"),
-    ("hellenistic", "hellenistic_15_v1", "希臘化"),
-    ("biruni", "biruni_wright_v1", "al-Bīrūnī"),
-)
+MOMENTS = ({"year": 2026, "month": 11, "day": 4, "hour": 22, "minute": 24, "second": 0},
+    {"year": 2026, "month": 11, "day": 13, "hour": 12, "minute": 0, "second": 0})
+PROFILES = (("lilly", "lilly_1647_p113_v1", "Lilly 1647 p.113"), ("hellenistic", "hellenistic_15_v1", "希臘化"),
+    ("biruni", "biruni_wright_v1", "al-Bīrūnī"))
 BANDS = (("cazimi", "日輪內"), ("combust", "焦傷"), ("under_beams", "在光束下"))
 BAND_NAMES = {"cazimi": "日輪內", "combust": "焦傷", "under_beams": "在光束下", "clear": "離開光束",
               "accompanying_high_latitude": "伴隨太陽"}
 BAND_CLASS = {"cazimi": "fx-fill-solid", "combust": "fx-fill-cross", "under_beams": "fx-fill-hatch"}
 ELEMENTS = ("火", "土", "風", "水")
-# The results page's words (view-model-events.js).
 COURSE_ZH = {"swift": "行速快", "slow": "行速慢", "equal_to_mean_at_source_precision": "等於平均"}
 DIRECTION_ZH = {"direct": "順行", "retrograde": "逆行"}
-STATION_ZH = {
-    "stationary_before_retrograde": "停滯（第一次：快要轉為逆行）",
+STATION_ZH = {"stationary_before_retrograde": "停滯（第一次：快要轉為逆行）",
     "stationary_before_direct": "停滯（第二次：快要轉回順行）",
     "stationary_after_turning_retrograde": "停滯（第一次：剛轉為逆行）",
-    "stationary_after_turning_direct": "停滯（第二次：剛轉回順行）",
-    "not_stationary": "沒有停滯",
-}
+    "stationary_after_turning_direct": "停滯（第二次：剛轉回順行）", "not_stationary": "沒有停滯"}
 SIDE_ZH = {"oriental": "晨星（東出）", "occidental": "昏星（西入）", "on_the_sun": "與太陽同一黃經"}
-P115_ZH = {"listed_as_accidental_fortitude": "列為偶然強", "listed_as_accidental_debility": "列為偶然弱",
-           "not_listed": "不列"}
+P115_ZH = {"listed_as_accidental_fortitude": "列為偶然強", "listed_as_accidental_debility": "列為偶然弱", "not_listed": "不列"}
 CROSSING_ZH = {"emerging": "升出光束", "sinking": "隱入光束"}
-# Roots: a bisection to about a millisecond; the coarse scans step half a day
-# (a crossing of a limit) or a whole day (the two-century statistics).
+# Roots: a bisection to about a millisecond; coarse scans step half a day (crossings) or a day (statistics).
 TOLERANCE_DAYS = 1e-8
-# Direct Swiss and the product agree to about a thousandth of an arcsecond;
-# their crossing roots to a fraction of a second of time.
+# Swiss and the product agree to about a thousandth of an arcsecond, crossing roots to a fraction of a second.
 SAME_ARCSEC = 0.05
 SAME_SECONDS = 1.0
-
 
 # --- time and angle labels -------------------------------------------------------
 
 def _utc(swe, jd: float) -> tuple[int, int, int, int, int, float]:
-    """The UTC reading of a UT1 Julian day (Swiss's own conversion)."""
     y, m, d, h, mi, s = swe.jdut1_to_utc(jd, swe.GREG_CAL)
     return int(y), int(m), int(d), int(h), int(mi), float(s)
 
-
-# A whole-minute instant made from a clock reading comes back a few
-# microseconds early through the floating-point day; a nudge far below the
-# roots' millisecond keeps it in its own minute.
+# A whole-minute instant made from a clock reading comes back a few microseconds early through the floating-point day;
+# a nudge far below the roots' millisecond keeps it in its own minute.
 NUDGE_DAYS = 2e-8
 
-
 def _local(swe, jd: float) -> tuple[int, int, int, int, int]:
-    """Taipei's clock (UTC+8 throughout these years), cut to the whole minute."""
     y, m, d, h, mi, _s = _utc(swe, jd + TAIPEI_OFFSET_HOURS / 24 + NUDGE_DAYS)
     return y, m, d, h, mi
 
-
 def _when(swe, jd: float, year: bool = False) -> str:
-    """「10 月 24 日 15:12」: the minute the instant lies in, Taipei."""
     y, m, d, h, mi = _local(swe, jd)
     return (f"{y} 年 " if year else "") + f"{m} 月 {d} 日 {h:02d}:{mi:02d}"
-
 
 def _date(swe, jd: float, year: bool = False) -> str:
     y, m, d, _h, _mi = _local(swe, jd)
     return (f"{y} 年 " if year else "") + f"{m} 月 {d} 日"
 
-
 def _slash(swe, jd: float) -> str:
     _y, m, d, _h, _mi = _local(swe, jd)
     return f"{m}/{d}"
 
-
 def _dm(degrees: float) -> str:
-    """「15°56′」: the whole arcminute the angle lies in, as the instants are
-    printed by the minute they lie in."""
     units = math.floor(degrees * 60 + 1e-9)
     return f"{units // 60}°{units % 60:02d}′"
 
-
 def _sign_dm(lon: float) -> str:
-    """「天蠍 20°58′」: the whole arcminute the longitude lies in."""
     units = math.floor(lon * 60 + 1e-9) % (360 * 60)
     sign, rest = divmod(units, 30 * 60)
     return f"{SIGNS[sign]} {rest // 60}°{rest % 60:02d}′"
 
-
 def _element(lon: float) -> str:
     return ELEMENTS[int(lon // 30) % 4]
-
 
 def _signed(degrees: float) -> str:
     return ("−" if degrees < 0 else "+") + _dm(abs(degrees))
 
-
 def _arcmin(degrees: float) -> str:
     return f"{round(abs(degrees) * 60)}′"
-
 
 # --- roots -----------------------------------------------------------------------
 
@@ -148,7 +103,6 @@ def _bisect(fn, a: float, b: float) -> float:
             b = m
     return (a + b) / 2
 
-
 def _roots(fn, start: float, end: float, step: float) -> list[float]:
     out, t, ft = [], start, fn(start)
     while t < end:
@@ -159,9 +113,7 @@ def _roots(fn, start: float, end: float, step: float) -> list[float]:
         t, ft = u, fu
     return out
 
-
 class Sky:
-    """Mercury against the Sun, read from Swiss with the bundled files."""
 
     def __init__(self, swe) -> None:
         self.swe = swe
@@ -173,12 +125,10 @@ class Sky:
         return self.mercury(jd)[3]
 
     def difference(self, jd: float) -> float:
-        """Mercury minus the Sun in longitude, −180…180: east of the Sun positive."""
         sun = calc_ut(self.swe, jd, self.swe.SUN)[0]
         return (self.mercury(jd)[0] - sun + 180.0) % 360.0 - 180.0
 
     def separation(self, jd: float) -> float:
-        """The angle on the sky between the two centres."""
         m, s = self.mercury(jd), calc_ut(self.swe, jd, self.swe.SUN)
         la, lb, ba, bb = map(math.radians, (m[0], s[0], m[1], s[1]))
         c = math.sin(ba) * math.sin(bb) + math.cos(ba) * math.cos(bb) * math.cos(la - lb)
@@ -198,7 +148,6 @@ class Sky:
                 out.append(("inferior" if self.speed(jd) < 0 else "superior", jd))
         return out
 
-
 # --- the product's limits ----------------------------------------------------------
 
 def _limit(per_band: dict, band: str, motion: str) -> float | None:
@@ -207,15 +156,12 @@ def _limit(per_band: dict, band: str, motion: str) -> float | None:
         return None
     return (value[motion] if "direct" in value else value)["degrees"]
 
-
 def _edges(limits: dict, side: str, motion: str) -> dict[str, float | None]:
     per_band = limits["mercury"][side]
     return {band: _limit(per_band, band, motion) for band, _ in BANDS}
 
-
 def _band(limits: dict, difference: float, speed: float) -> str:
-    """The band Mercury is in: the innermost limit it is within, edges
-    included (the instants figure 1 names lie degrees or minutes of arc away
+    """The band Mercury is in: the innermost limit it is within, edges included (the instants figure 1 names are far
     from every edge, so inclusiveness never decides them)."""
     edges = _edges(limits, "evening" if difference > 0 else "morning", "retrograde" if speed < 0 else "direct")
     band = "clear"
@@ -225,16 +171,13 @@ def _band(limits: dict, difference: float, speed: float) -> str:
             band = name
     return band
 
-
 def _crossings(sky: Sky, limits: dict, band: str, start: float, end: float) -> list[float]:
-    """When Mercury reaches the limit of `band`, which may depend on its side
-    and motion: roots of |difference| − limit, kept only where the limit holds
-    on both sides of the root (a jump of the limit itself is not a crossing)."""
+    """When Mercury reaches the limit of `band` (which may depend on side and motion): roots of |difference| - limit,
+    kept only where the limit holds on both sides (a jump of the limit itself is not a crossing)."""
     def gap(jd: float) -> float:
         d, v = sky.difference(jd), sky.speed(jd)
         edge = _edges(limits, "evening" if d > 0 else "morning", "retrograde" if v < 0 else "direct")[band]
         return abs(d) - (edge if edge is not None else -1.0)
-
     out = []
     for jd in _roots(gap, start, end, 0.25):
         if abs(gap(jd)) * 3600 > 0.01:
@@ -242,18 +185,13 @@ def _crossings(sky: Sky, limits: dict, band: str, start: float, end: float) -> l
         out.append(jd)
     return out
 
-
 # --- the computation ---------------------------------------------------------------
 
 def _answers() -> list[dict]:
     with product_charts() as post:
-        return [post({
-            "datetime": moment,
-            "location": {"latitude": TAIPEI[0], "longitude": TAIPEI[1]},
+        return [post({"datetime": moment, "location": {"latitude": TAIPEI[0], "longitude": TAIPEI[1]},
             "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"},
-            "options": {"include_solar_phase": True, "include_motion_states": True},
-        }) for moment in MOMENTS]
-
+            "options": {"include_solar_phase": True, "include_motion_states": True}}) for moment in MOMENTS]
 
 def compute() -> dict:
     answers = _answers()
@@ -263,7 +201,6 @@ def compute() -> dict:
     with swiss() as swe:
         sky = Sky(swe)
         def jd(y: int, m: int, d: int) -> float:
-            """Taipei midnight of a date, as a UT1 Julian day."""
             utc = dt.datetime(y, m, d) - dt.timedelta(hours=TAIPEI_OFFSET_HOURS)
             return swe.utc_to_jd(utc.year, utc.month, utc.day, utc.hour, 0, 0.0, swe.GREG_CAL)[1]
         year_start, year_end = jd(YEAR, 1, 1), jd(YEAR + 1, 1, 1)
@@ -282,26 +219,18 @@ def compute() -> dict:
         r, d, c = this["start"], this["end"], this["conjunction"]
         superior_before = max(x for kind, x in conj if kind == "superior" and x < r)
         superior_after = min(x for kind, x in conj if kind == "superior" and x > d)
-
-        # Every crossing of every tradition's limit, from well before the first
-        # station to well after the second.
+        # Every crossing of every tradition's limit, from well before the first station to well after the second.
         window = (r - 20, d + 20)
         crossings = {key: {band: _crossings(sky, limits[key], band, *window) for band, _ in BANDS}
                      for key, _, _ in PROFILES}
-        # Swift or slow: |speed| against the Lilly mean.
         swift = _roots(lambda t: abs(sky.speed(t)) - mean["degrees_per_day"], *window, 0.25)
-        # Lilly's beams around the superior conjunction before.
         lilly_beams_sup = _crossings(sky, limits["lilly"], "under_beams", superior_before - 30, superior_before + 30)
-
-        # The curve of figure 1, every quarter day.
         t0, t1 = jd(YEAR, 10, 8), jd(YEAR, 11, 29)
         curve = []
         steps = round((t1 - t0) * 4)
         for i in range(steps + 1):
             t = t0 + i / 4
             curve.append((t, sky.difference(t), sky.speed(t)))
-
-        # Two centuries.
         s0, s1 = swe.julday(SPAN[0], 1, 1, 0), swe.julday(SPAN[1], 1, 1, 0)
         long_turns = sky.stations(s0, s1, 1.0)
         long_conj = sky.conjunctions(s0, s1, 1.0)
@@ -327,9 +256,7 @@ def compute() -> dict:
         one_element = sorted(y for y in whole_years
                              if len({_element(sky.mercury(t)[0]) for pair in by_year[y] for t in pair}) == 1)
         four = sorted(y for y in whole_years if len(by_year[y]) == 4)
-
-        # Transits: the next inferior conjunction whose least separation is
-        # within the Sun's apparent radius.
+        # Transits: the next inferior conjunction whose least separation is within the Sun's apparent radius.
         def least(c: float) -> float:
             lo, hi = c - 0.5, c + 0.5
             for _ in range(60):
@@ -349,18 +276,14 @@ def compute() -> dict:
         if next_transit is None:
             raise RuntimeError("no transit of Mercury before the end of the span")
         closest = least(c)
-        # Mercury's distance from the Sun over the year.
         helio = [calc_ut(swe, year_start + i, swe.MERCURY, swe.FLG_SWIEPH | swe.FLG_HELCTR)[2] for i in range(366)]
-        # The greatest elongation of the year, read every hour.
         widest = max(abs(sky.difference(year_start + i / 24)) for i in range(366 * 24))
         before_year = max(y for y in one_element if y < YEAR)
         before_element = _element(sky.mercury(by_year[before_year][0][0])[0])
-
         drift_rows = []
         for y in range(YEAR - 2, YEAR + 3):
             for a, b in by_year[y]:
                 drift_rows.append({"start": a, "end": b, "lon_start": sky.mercury(a)[0], "lon_end": sky.mercury(b)[0]})
-
         out = {
             "answers": answers,
             "limits": limits,
@@ -394,11 +317,9 @@ def compute() -> dict:
         out["labels"] = _labels(swe, out)
     return out
 
-
 def _check_product(sky: Sky, data: dict) -> None:
-    """The product's answers against the roots found here: the longitude
-    difference at each instant, each crossing it lists, each turn it lists
-    (the minute it prints is the minute the root lies in)."""
+    """The product's answers against the roots found here: the longitude difference at each instant, each crossing and
+    each turn it lists."""
     swe = sky.swe
     crossings = {key: sorted(x for band in data["crossings"][key].values() for x in band) for key, _, _ in PROFILES}
     turns = [data["this"]["start"], data["this"]["end"]]
@@ -418,15 +339,11 @@ def _check_product(sky: Sky, data: dict) -> None:
             if not any(f"{_local(swe, x)[3]:02d}:{_local(swe, x)[4]:02d}" == printed for x in turns):
                 raise RuntimeError(f"the product's turn {item['instant']} is not a minute found here")
 
-
 def _labels(swe, data: dict) -> dict:
-    """Every time label the page prints, made while Swiss is open."""
     marks = {}
-
     def add(jd: float) -> None:
         marks[jd] = {"when": _when(swe, jd), "date": _date(swe, jd), "slash": _slash(swe, jd),
                      "year_when": _when(swe, jd, True), "year_date": _date(swe, jd, True)}
-
     for x in data["retrogrades"]:
         for k in ("start", "end", "conjunction"):
             add(x[k])
@@ -448,7 +365,6 @@ def _labels(swe, data: dict) -> dict:
         add(row["end"])
     return marks
 
-
 # --- tables ------------------------------------------------------------------------
 
 def _year_rows(data: dict) -> str:
@@ -464,19 +380,15 @@ def _year_rows(data: dict) -> str:
             f'<td class="n">{"北" if x["lat_conj"] >= 0 else "南"} {_dm(abs(x["lat_conj"]))}</td></tr>')
     return "\n".join(rows)
 
-
 def _events(data: dict) -> list[tuple[float, str, str]]:
-    """(instant, what happens, whose definition), in time order."""
     this, cr, L = data["this"], data["crossings"], data["labels"]
     r, d, c = this["start"], this["end"], this["conjunction"]
     lo, hi = r - 14, d + 9
-    out = [
-        (r - 1, "進入 Lilly 的停滯（轉向前 1 天）", "Lilly p.76"),
+    out = [(r - 1, "進入 Lilly 的停滯（轉向前 1 天）", "Lilly p.76"),
         (r, f"第一次停滯，轉為逆行（{_sign_dm(this['lon_start'])}）", "星曆"),
         (c, "與太陽正合（下合）：由昏星（西入）轉為晨星（東出）", "星曆；Lilly p.114"),
         (d - 1, "進入 Lilly 的停滯（轉向前 1 天）", "Lilly p.76"),
-        (d, f"第二次停滯，轉回順行（{_sign_dm(this['lon_end'])}）", "星曆"),
-    ]
+        (d, f"第二次停滯，轉回順行（{_sign_dm(this['lon_end'])}）", "星曆")]
     words = {
         "lilly": {"under_beams": ("進入光束（17°）", "離開光束（17°）"), "combust": ("焦傷開始（8°30′）", "焦傷結束（8°30′）"),
                   "cazimi": ("日輪內開始（17′）", "日輪內結束（17′）")},
@@ -501,14 +413,12 @@ def _events(data: dict) -> list[tuple[float, str, str]]:
             (swift[3], f"順行而行速轉快（每天走得比 {mean_text} 多）", "Lilly p.168")]
     return sorted(out)
 
-
 def _event_rows(data: dict) -> str:
     L = data["labels"]
     rows = []
     for jd, what, whose in _events(data):
         rows.append(f'          <tr><td class="n">{L[jd]["when"]}</td><td>{escape(what)}</td><td>{escape(whose)}</td></tr>')
     return "\n".join(rows)
-
 
 def _conjunction_rows(data: dict) -> str:
     L, this, sup = data["labels"], data["this"], data["superior_before"]
@@ -527,7 +437,6 @@ def _conjunction_rows(data: dict) -> str:
     return "\n".join(f'          <tr><th scope="row">{a}</th><td class="n">{b}</td><td class="n">{c}</td></tr>'
                      for a, b, c in cells)
 
-
 def _drift_rows(data: dict) -> str:
     L = data["labels"]
     rows = []
@@ -540,9 +449,7 @@ def _drift_rows(data: dict) -> str:
             f'<td>{"同一象" if same else "跨兩象"}</td></tr>')
     return "\n".join(rows)
 
-
 def _demo_rows(data: dict) -> str:
-    """Table 5: the product's own answer for the two instants, Mercury's row."""
     cols = []
     for answer in data["answers"]:
         motion = next(x for x in answer["derived_methods"]["motion_states"]["rows"] if x["key"] == "mercury")
@@ -582,7 +489,6 @@ def _demo_rows(data: dict) -> str:
     return "\n".join(f'          <tr><th scope="row">{label}</th><td>{escape(cols[0][key])}</td><td>{escape(cols[1][key])}</td></tr>'
                      for key, label in names)
 
-
 # --- figure 1 --------------------------------------------------------------------
 
 Y_RANGE = 27.0
@@ -590,11 +496,8 @@ SWITCH_LABEL = "切換三套界線"
 IDLE = "用 Tab 鍵移到圖上的圓點，或用滑鼠指著它，這裡會寫出那一刻的時間、位置與距離帶。"
 KEYS = (("station-r", "第一次停滯"), ("conj", "下合"), ("station-d", "第二次停滯"))
 
-
 def _segments(data: dict, key: str, band: str, sign: int) -> list[tuple[float, float, float]]:
-    """(start, end, limit) runs over the curve's samples on one side of the
-    Sun, the limit for each sample's motion; a run ends where the limit
-    changes."""
+    """(start, end, limit) runs over the curve's samples on one side of the Sun; a run ends where the limit changes."""
     side = "evening" if sign > 0 else "morning"
     out: list[list[float]] = []
     curve = data["curve"]
@@ -608,7 +511,6 @@ def _segments(data: dict, key: str, band: str, sign: int) -> list[tuple[float, f
         else:
             out.append([t, end, edge])
     return [(start, end, edge) for start, end, edge in out]
-
 
 def _plot(layout: str, fid: str, data: dict, bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
@@ -643,7 +545,6 @@ def _plot(layout: str, fid: str, data: dict, bound: _fx.Bound) -> str:
     out += plot
     out.append(_fx.rect(x0, top, x1 - x0, bottom - top, "fx-inset-frame"))
     out.append(_fx.text(x1 - 8, bottom - 10, "↓ 太陽西側（晨星）", "fx-t fx-small fx-rub fx-key", "end"))
-    # band names, inside the morning half early in October, where the curve is far
     for key, _, _ in PROFILES:
         labels = []
         early = data["curve"][0]
@@ -662,11 +563,9 @@ def _plot(layout: str, fid: str, data: dict, bound: _fx.Bound) -> str:
                 labels.append(_fx.text(lx, y(-mid) + 5, f"{name}（{gloss}{bound.num(_limit_text(band_edge))}）", "fx-t fx-small fx-key"))
             prev = band_edge
         out.append(_fx.variant_group(key, PROFILES[0][0], "".join(labels)))
-    # y axis
     for v in (-24, -16, -8, 0, 8, 16, 24):
         out.append(_fx.line(x0 - 5, y(v), x0, y(v), "fx-axis"))
         out.append(_fx.text(x0 - 8, y(v) + 5, bound.scale(f"{abs(v)}°"), "fx-t fx-small fx-num", "end"))
-    # the retrograde bar and the date axis
     bar = bottom + 10
     out.append(_fx.rect(x(this["start"]), bar, x(this["end"]) - x(this["start"]), 6, "fx-fill-solid"))
     out.append(_fx.text((x(this["start"]) + x(this["end"])) / 2, bar + 24,
@@ -680,14 +579,11 @@ def _plot(layout: str, fid: str, data: dict, bound: _fx.Bound) -> str:
         out.append(_fx.line(x(t), axis, x(t), axis + 5, "fx-axis"))
         anchor = "start" if i == 0 else "middle"
         out.append(_fx.text(x(t), axis + 22, bound.scale(L[t]["slash"]), "fx-t fx-small fx-num", anchor))
-    # the three pointable moments
-    points = {"station-r": (this["start"], data["curve_at"](this["start"])),
-              "conj": (this["conjunction"], 0.0),
-              "station-d": (this["end"], data["curve_at"](this["end"]))}
+    points = {"station-r": (this["start"], data["curve_at"](this["start"])), "conj": (this["conjunction"], 0.0),
+        "station-d": (this["end"], data["curve_at"](this["end"]))}
     for key, name in KEYS:
         t, d = points[key]
-        out.append(f'<g class="fx-row" data-fx-key="{key}" tabindex="0" '
-                   f'aria-label="{name}，{L[t]["when"]}">')
+        out.append(f'<g class="fx-row" data-fx-key="{key}" tabindex="0" ' f'aria-label="{name}，{L[t]["when"]}">')
         out.append(_fx.circle(x(t), y(d), 18, "fx-hit"))
         out.append(_fx.circle(x(t), y(d), 7 if wide else 6, "fx-mk"))
         out.append(_fx.text(x(t), top - 10, name if wide or key == "conj" else name[-2:], "fx-t fx-small", "middle"))
@@ -697,13 +593,11 @@ def _plot(layout: str, fid: str, data: dict, bound: _fx.Bound) -> str:
         raise RuntimeError("figure 1 outgrew its drawing")
     return "".join(out)
 
-
 def _limit_text(edge: float) -> str:
     minutes = round(edge * 60)
     if minutes < 60:
         return f"{minutes}′"
     return f"{minutes // 60}°" + (f"{minutes % 60:02d}′" if minutes % 60 else "")
-
 
 def _note(data: dict, key: str, variant: str, label: str, bound: _fx.Bound) -> str:
     L, this = data["labels"], data["this"]
@@ -712,15 +606,13 @@ def _note(data: dict, key: str, variant: str, label: str, bound: _fx.Bound) -> s
     v = data["speed_at"](t)
     band = _band(data["limits"][variant], d, v)
     if key == "conj":
-        head = (f"{bound.num(L[t]['when'])}，水星與太陽正合（下合），黃緯南 {bound.num(_dm(abs(this['lat_conj'])))}；"
-                "此後由昏星轉為晨星。")
+        head = (f"{bound.num(L[t]['when'])}，水星與太陽正合（下合），黃緯南 {bound.num(_dm(abs(this['lat_conj'])))}；" "此後由昏星轉為晨星。")
     else:
         turn = "轉為逆行" if key == "station-r" else "轉回順行"
         lon = this["lon_start"] if key == "station-r" else this["lon_end"]
         head = (f"{bound.num(L[t]['when'])}，水星在{bound.num(_sign_dm(lon))}{turn}，"
                 f"在太陽{'東' if d > 0 else '西'}側 {bound.num(_dm(abs(d)))}。")
     return head + f"照{' ' if label[0].isascii() else ''}{label}：{BAND_NAMES[band]}。"
-
 
 def _figure(data: dict) -> str:
     bound = _fx.Bound()
@@ -739,17 +631,11 @@ def _figure(data: dict) -> str:
                "水星減太陽的黃經差（曲線；上方是太陽東側、昏星，下方是西側、晨星）。底色是距離帶：實心是日輪內、"
                "交叉線是焦傷、單線是在光束下，界線依所選那一套，al-Bīrūnī 的焦傷界線還依水星順行或逆行而變；按鈕切換三套。"
                "兩條直虛線是兩次停滯，底下的黑條是逆行的那一段。曲線在逆行的正中間穿過零，那一刻就是下合。")
-    return _fx.figure(
-        fid="fig-mr-curve",
-        hero=True,
-        title="2026 年 10 月到 11 月，水星與太陽的黃經差，以及三套界線的距離帶",
-        caption=caption,
+    return _fx.figure(fid="fig-mr-curve", hero=True,
+        title="2026 年 10 月到 11 月，水星與太陽的黃經差，以及三套界線的距離帶", caption=caption,
         art=_fx.FigureArt.drawn(_plot, "fig-mr-curve", data, bound, notes=notes, idle=IDLE),
         controls=_fx.FigureControls(variants=tuple((k, label) for k, _, label in PROFILES), switch_label=SWITCH_LABEL),
-        table=table,
-        bound=bound,
-    )
-
+        table=table, bound=bound)
 
 # --- build -----------------------------------------------------------------------
 
@@ -843,16 +729,8 @@ def build() -> tuple[dict[str, str], list[str]]:
         f"{span_label} 年",
     ]
     quoted = list(dict.fromkeys(quoted))
-    return {
-        "fx-defs": _fx.defs(()),
-        "curve": figure,
-        "year": _year_rows(data),
-        "events": _event_rows(data),
-        "conjunctions": _conjunction_rows(data),
-        "drift": _drift_rows(data),
-        "demo": _demo_rows(data),
-    }, quoted
-
+    return {"fx-defs": _fx.defs(()), "curve": figure, "year": _year_rows(data), "events": _event_rows(data),
+        "conjunctions": _conjunction_rows(data), "drift": _drift_rows(data), "demo": _demo_rows(data)}, quoted
 
 def _arcsec_text(degrees: float) -> str:
     return f"{abs(degrees) * 3600:.2f}″"

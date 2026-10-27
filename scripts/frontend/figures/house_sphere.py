@@ -1,23 +1,16 @@
-"""〈宮位制有哪些〉: the static celestial-sphere figure of each house system, the
-two polar figures, the cusp table of one generic sky, and the oracle numbers
-the article quotes.
+"""〈宮位制有哪些〉: the static celestial-sphere figure of each house system, the two polar figures, the cusp table of one
+generic sky, and the oracle numbers the article quotes.
 
-Each static figure is an article figure plate (`_fx`, direction 甲): a wide
-drawing (the sphere with a side panel: what this system cuts, a key to the
-lines, each house's size) and a phone drawing recomposed in one column.  The
-sphere inside both is the script's own scene (`HouseSphere.plate`), placed by
-the frames below.
+Each static figure is an article figure plate (`_fx`, direction 甲): a wide drawing (the sphere with a side panel) and a
+phone drawing in one column.  The sphere inside both is the script's own scene (`HouseSphere.plate`).
 
-The figures are drawn by the article's own browser script
-(`scripts/frontend/scripts/house-sphere.js`, through Node), so the static figure a reader sees
-without JavaScript or on paper is the interactive figure's first frame.  The
-numbers are not taken from that script: the cusp table comes from Swiss
-Ephemeris `houses_armc`, and every figure's cusps are compared with it here;
-the grid comparison the article reports is `oracle_grid()`, which
+The figures are drawn by the article's own browser script (`scripts/frontend/scripts/house-sphere.js`, through Node),
+so the static figure a reader sees without JavaScript is the interactive figure's first frame.  The numbers are not
+taken from that script: the cusp table comes from Swiss Ephemeris `houses_armc`, and every figure's cusps are compared
+with it here; the grid comparison the article reports is `oracle_grid()`, which
 tests/publication/test_house_sphere_oracle.py also runs.
 
-Generic geometry only: a latitude, a local sidereal time (ARMC) and the fixed
-obliquity the script uses.  No date, time or place of birth.
+Generic geometry only: a latitude, a local sidereal time (ARMC) and the script's fixed obliquity.  No birth data.
 """
 from __future__ import annotations
 
@@ -28,7 +21,6 @@ from html import escape
 from . import _fx
 from ._common import ROOT, SIGNS, node_json, swiss
 
-
 FRAGMENT = "blog-house-systems-explained"
 SCRIPTS = ROOT / "scripts" / "frontend" / "scripts"
 SYSTEMS = "WEOBCRP"
@@ -37,11 +29,9 @@ NAMES = {"W": "整宮", "E": "等分宮", "O": "Porphyry", "B": "Alcabitius", "C
 POLAR_LAT = 69.65  # Tromsø
 MC_BELOW_ARMC = 270.0  # at Tromsø the MC then culminates about 3° below the horizon
 
-
 def figures(start: dict) -> dict[str, tuple[str, float, float]]:
-    """One figure per system on the article's sky (the interactive figure's
-    first frame, `HouseSphere.START`), Placidus in the polar band, and
-    Regiomontanus when the MC culminates below the horizon."""
+    """One figure per system on the article's sky (`HouseSphere.START`), Placidus in the polar band, and Regiomontanus
+    when the MC culminates below the horizon."""
     lat, armc = start["lat"], start["armc"]
     out = {f"sphere-{s.lower()}": (s, lat, armc) for s in SYSTEMS}
     out["sphere-polar-p"] = ("P", POLAR_LAT, armc)
@@ -49,8 +39,8 @@ def figures(start: dict) -> dict[str, tuple[str, float, float]]:
     return out
 # The script's answers may differ from Swiss Ephemeris by this much (arcseconds).
 TOLERANCE_ARCSEC = 0.01
-# The oracle grid: every 3° of latitude to ±87° plus the edge of the polar band,
-# local sidereal time every 15° (offset 7.5° off the quadrant boundaries).
+# The oracle grid: every 3° of latitude to ±87° plus the edge of the polar band, local sidereal time every 15° (offset
+# 7.5° off the quadrant boundaries).
 GRID_LATITUDES = tuple(3.0 * k for k in range(-29, 30)) + (66.5, -66.5, 66.55, -66.55)
 GRID_ARMCS = tuple(7.5 + 15.0 * k for k in range(24))
 
@@ -85,37 +75,29 @@ process.stdin.on("data", (chunk) => { input += chunk; }).on("end", () => {
 });
 """
 
-
 def run_script(cusps: list, scenes: list, describes: list | None = None) -> dict:
-    """The article script's own answers: cusps and site statuses for (system,
-    latitude, ARMC) triples, the static markup of scene states, and the screen
-    reader summary for (system, latitude, ARMC) triples."""
+    """The article script's own answers: cusps and site statuses, static markup of scene states, and screen reader
+    summaries."""
     return sphere_node(_NODE_SCRIPT, {"cusps": cusps, "scenes": scenes, "describes": describes or []})
 
-
 def sphere_node(script: str, job: object = None) -> dict:
-    """A Node program run with house-sphere-core.js and house-sphere.js as its
-    first two arguments (and `job` as JSON on stdin)."""
+    """A Node program run with house-sphere-core.js and house-sphere.js as its first two arguments (`job` as JSON
+    on stdin)."""
     return node_json(script, SCRIPTS / "house-sphere-core.js", SCRIPTS / "house-sphere.js", stdin=job,
                      timeout=120, what="run the house-sphere script")
 
-
 def swiss_cusps(swe, sys: str, lat: float, armc: float, obliquity: float) -> list[float] | None:
-    """Swiss Ephemeris houses_armc, or None where it refuses (Placidus in the polar band)."""
     try:
         cusps, _ = swe.houses_armc(armc, lat, obliquity, sys.encode())
     except swe.Error:
         return None
     return list(cusps)
 
-
 def arcsec(a: float, b: float) -> float:
     return abs((a - b + 540.0) % 360.0 - 180.0) * 3600.0
 
-
 def grid_cells() -> list[tuple[str, float, float]]:
     return [(s, lat, armc) for lat in GRID_LATITUDES for armc in GRID_ARMCS for s in SYSTEMS]
-
 
 def compare(cells, script: list[dict], swiss_answers: list) -> dict:
     """Cusp by cusp, the script against Swiss.  Both must refuse the same cells."""
@@ -135,9 +117,7 @@ def compare(cells, script: list[dict], swiss_answers: list) -> dict:
                 disagreements.append((cell, difference))
     return {"compared": compared, "worst": worst, "disagreements": disagreements}
 
-
 def oracle_grid() -> dict:
-    """The script on the whole grid against Swiss Ephemeris."""
     cells = grid_cells()
     script = run_script([list(c) for c in cells], [])
     with swiss() as swe:
@@ -149,12 +129,10 @@ def oracle_grid() -> dict:
     result["obliquity"] = script["obliquity"]
     return result
 
-
 def _cell(lon: float) -> str:
     total = round(lon * 60) % (360 * 60)
     sign, rest = divmod(total, 30 * 60)
     return f"{SIGNS[sign]} {rest // 60}°{rest % 60:02d}′"
-
 
 def _table(cusps: dict[str, list[float]]) -> str:
     rows = []
@@ -163,39 +141,28 @@ def _table(cusps: dict[str, list[float]]) -> str:
         rows.append(f'          <tr><td class="n">{i + 1}</td>{cells}</tr>')
     return "\n".join(rows)
 
-
 def _spread(cusps: dict[str, list[float]], house: int, systems: str) -> tuple[str, str, float]:
-    """The earliest and latest cusp of one house among some systems, and the
-    arc between them (degrees)."""
     values = [cusps[s][house - 1] for s in systems]
     base = values[0]
     offsets = sorted(((v - base + 180.0) % 360.0 - 180.0, v) for v in values)
     return _cell(offsets[0][1]), _cell(offsets[-1][1]), offsets[-1][0] - offsets[0][0]
 
-
-# Where the script places the sphere in each drawing (viewBox units).
 WIDE_H = 600.0
-FRAMES = {
-    "fx-wide": {"cx": 290.0, "cy": 304.0, "radius": 222.0, "lift": 6.0, "signs": True},
-    "fx-narrow": {"cx": 170.0, "cy": 256.0, "radius": 122.0, "lift": 5.0, "signs": False},
-}
-# The key to the lines: (class of the sample line, words).  Every plate has the
-# circles and the ecliptic; each system adds its own construction.
+FRAMES = {"fx-wide": {"cx": 290.0, "cy": 304.0, "radius": 222.0, "lift": 6.0, "signs": True},
+    "fx-narrow": {"cx": 170.0, "cy": 256.0, "radius": 122.0, "lift": 5.0, "signs": False}}
+# The key to the lines: (class of the sample line, words).  Every plate has the circles and the ecliptic; each system
+# adds its own construction.
 KEY_COMMON = (("hs-hor", "地平（下半球打點）"), ("hs-mer", "子午圈"), ("hs-equ", "天赤道"), ("hs-pv", "卯酉圈"),
               ("hs-ecl hs-ecl-a", "黃道：每宮一段"), ("hs-mer hs-back", "背面：淡虛線"))
-KEY_SYSTEM = {
-    "W": (("hs-cut hs-cut-faint", "細線：經過北黃極的宮界"),),
+KEY_SYSTEM = {"W": (("hs-cut hs-cut-faint", "細線：經過北黃極的宮界"),),
     "E": (("hs-cut hs-cut-faint", "細線：經過北黃極的宮界"),),
     "O": (("hs-cut hs-cut-faint", "細線：經過北黃極的宮界"),),
     "C": (("hs-pv hs-strong", "粗：被切的卯酉圈"), ("hs-cut", "細線：過地平南北兩點的大圓")),
     "R": (("hs-equ hs-strong", "粗：被切的天赤道"), ("hs-cut", "細線：過地平南北兩點的大圓")),
-    "B": (("hs-day", "上升點的周日圈"), ("hs-arc", "粗虛線：被三等分的半日弧"),
-          ("hs-cut", "細線：通過北天極的時圈")),
-    "P": (("hs-arc hs-arc-thin", "粗虛線：各宮頭被三分的半弧"), ("hs-cut", "細線：三分點連成的曲線")),
-}
+    "B": (("hs-day", "上升點的周日圈"), ("hs-arc", "粗虛線：被三等分的半日弧"), ("hs-cut", "細線：通過北天極的時圈")),
+    "P": (("hs-arc hs-arc-thin", "粗虛線：各宮頭被三分的半弧"), ("hs-cut", "細線：三分點連成的曲線")),}
 KEY_POLAR = (("hs-none", "排線：整天不升或不落的黃道段"),)
-# The captions: the article's own sentences (colour words replaced by the line
-# each names in direction 甲).
+# The captions: the article's own sentences (colour words replaced by the line each names in direction 甲).
 CAPTIONS = {
     "sphere-w": "整宮。黃道上深淺交替的每一段是一宮，段旁的數字是宮號，黑點是宮頭；這裡每一個宮頭都在星座的 0 度。",
     "sphere-e": "等分宮。和圖 2 一樣是 30 度一宮，只是整組往前移到上升點的度數。",
@@ -211,17 +178,14 @@ CAPTIONS = {
 }
 FIGURE_NUMBERS = {name: n for n, name in enumerate(CAPTIONS, start=2)}
 
-
 def _bind(text: str, bound: _fx.Bound) -> str:
-    """A ratified sentence of the script or the article, its numbers registered
-    as labels: they name the sky drawn (inputs), a figure, or a fixed step."""
+    """A ratified sentence of the script or the article, its numbers registered as labels: they name the sky drawn
+    (inputs), a figure, or a fixed step."""
     bound.label(text)
     return text
 
-
 def _wrap(text: str, limit: float) -> list[str]:
-    """Split at 「，」 or 「：」 so each line stays under `limit` em (a Latin
-    letter counts half)."""
+    """Split at 「，」 or 「：」 so each line stays under `limit` em (a Latin letter counts half)."""
     def width(part: str) -> float:
         return sum(0.55 if ch.isascii() else 1.0 for ch in part)
     lines, line = [], ""
@@ -243,7 +207,6 @@ def _wrap(text: str, limit: float) -> list[str]:
     if line:
         lines.append(line)
     return lines
-
 
 def _plate(layout: str, name: str, sys: str, scene: str, status: dict, sizes: list[float] | None,
            bound: _fx.Bound, script: dict) -> str:
@@ -325,7 +288,6 @@ def _plate(layout: str, name: str, sys: str, scene: str, status: dict, sizes: li
     return (_fx.svg_open(layout, W, H, fid) + _fx.plate(W, H)
             + re.sub(r">\s+<", "><", scene) + "".join(out) + "</svg>")
 
-
 def _static_figure(name: str, sys: str, scenes: dict, status: dict,
                    swiss_cusps_: list[float] | None, script: dict) -> str:
     bound = _fx.Bound()
@@ -349,7 +311,6 @@ def _static_figure(name: str, sys: str, scenes: dict, status: dict,
         ),
         bound=bound,
     )
-
 
 def build() -> tuple[dict[str, str], list[str]]:
     first = run_script([], [])
@@ -387,26 +348,18 @@ def build() -> tuple[dict[str, str], list[str]]:
         blocks[name] = _static_figure(name, s, scenes, statuses[name], theirs, meta)
     blocks["fx-defs"] = _fx.defs(())
     blocks["cusps"] = _table(reference)
-
     grid = oracle_grid()
     if grid["disagreements"]:
         raise RuntimeError(f"the figure script disagrees with Swiss Ephemeris: {grid['disagreements'][:5]}")
-
     asc, mc = reference["O"][0], reference["O"][9]
     eleven_low, eleven_high, eleven_arc = _spread(reference, 11, "OBCRP")
     with swiss() as swe:
         version = swe.version
     minutes = round(start["armc"] * 4) % 1440
     sky = f"緯度 {start['lat']}°、地方恆星時 {minutes // 60} 時 {minutes % 60:02d} 分"
-    quoted = [
-        sky,
-        f"緯度 {start['lat']}°（臺北的緯度），地方恆星時 {minutes // 60} 時 {minutes % 60:02d} 分",
-        f"ARMC {start['armc']:g}°",
-        f"上升點在{_cell(asc)}，中天在{_cell(mc)}",
+    quoted = [sky, f"緯度 {start['lat']}°（臺北的緯度），地方恆星時 {minutes // 60} 時 {minutes % 60:02d} 分",
+        f"ARMC {start['armc']:g}°", f"上升點在{_cell(asc)}，中天在{_cell(mc)}",
         f"第十宮頭在{_cell(reference['E'][9])}，中天卻在{_cell(mc)}",
-        f"從{eleven_low}到{eleven_high}，相差 {eleven_arc:.1f} 度",
-        f"Swiss Ephemeris {version} 的 houses_armc",
-        f"共 {grid['compared']:,} 個宮頭",
-        f"黃赤交角固定為 {script['obliquity']}°",
-    ]
+        f"從{eleven_low}到{eleven_high}，相差 {eleven_arc:.1f} 度", f"Swiss Ephemeris {version} 的 houses_armc",
+        f"共 {grid['compared']:,} 個宮頭", f"黃赤交角固定為 {script['obliquity']}°",]
     return blocks, quoted

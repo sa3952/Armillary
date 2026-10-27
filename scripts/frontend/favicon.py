@@ -1,32 +1,18 @@
 #!/usr/bin/env python3
 """The site icons, drawn from the header's armillary mark.
 
-The mark is the inline `<svg class="mark">` in the page shell
-(scripts/frontend/pages/_shell.html): a sphere, the equator, the ecliptic
-tilted 32° and drawn in the accent, a meridian and the axis.  This module reads
-that geometry from the shell and the plate, ring and accent colours from
-scripts/frontend/styles/tokens.css, and writes three files:
+Reads the inline `<svg class="mark">` geometry from the page shell and the plate, ring and accent colours from
+styles/tokens.css, and writes `frontend/zh-TW/favicon.svg`, `frontend/favicon.ico` (16, 32 and 48 px; search engines
+read ICO and PNG, not SVG) and `frontend/apple-touch-icon.png` (180 px, opaque, the mark inset so the iOS mask never
+cuts it).
 
-- `frontend/zh-TW/favicon.svg`, the icon modern browsers draw in the tab;
-- `frontend/favicon.ico` (16, 32 and 48 px), the address browsers and
-  crawlers ask for when a page names none, and a raster for search engines
-  (Google Search reads ICO and PNG favicons, not SVG);
-- `frontend/apple-touch-icon.png` (180 px, opaque, the mark inset so the
-  home-screen mask never cuts it), at the address iOS asks for by default.
+The mark always sits on the black plate, so one icon reads on a light and a dark browser bar.  Rings use the plate's
+foreground colour, not the header's dim one, which blurs into the plate at 16 px.  Stroke widths are set per size in
+device pixels so the rings stay about one pixel wide at 16 px.
 
-The mark always sits on the black plate, as it does in the header, the share
-card and the repository's mark, so one icon reads on a light and on a dark
-browser bar alike.  The rings are drawn in the plate's foreground colour
-rather than the header's dim one, as on the share card: at 16 px the dim
-colour's thin strokes blur into the plate.  Stroke widths are set per size in
-device pixels, so the rings stay about one pixel wide at 16 px.
-
-The rasters are rendered here, not photographed in a browser: each pixel's
-coverage comes from its exact distance to each ring (only + − × ÷ and √,
-which IEEE 754 rounds the same way on every machine), and the PNGs are
-compressed by the small deflate encoder below rather than by the host's zlib,
-whose output differs between versions.  The same source therefore gives the
-same bytes everywhere, and `--check` compares them byte for byte.
+The rasters are rendered here, not photographed: coverage comes from exact distances (only + - x / and sqrt, which
+IEEE 754 rounds identically everywhere) and the PNGs use the small deflate encoder below instead of the host's zlib,
+whose output varies by version.  The same source gives the same bytes everywhere, and `--check` compares them.
 """
 
 from __future__ import annotations
@@ -44,7 +30,6 @@ import zlib
 
 from scripts.frontend.site_locale import DEFAULT_LOCALE
 
-
 ROOT = Path(__file__).resolve().parents[2]
 FRONTEND = ROOT / "frontend"
 SHELL = ROOT / "scripts" / "frontend" / "pages" / "_shell.html"
@@ -56,26 +41,20 @@ TOUCH_ASSET = "apple-touch-icon.png"
 ICO_SIZES = (16, 32, 48)
 TOUCH_SIZE = 180
 
-# The plate's corner radius as a share of its side: the repository mark's
-# (armillary-mark.svg at the public repository root, 12 on 120).  The touch icon
-# stays square: iOS applies its own mask.
+# The plate's corner radius as a share of its side: the repository mark's (12 on 120).  The touch icon stays square:
+# iOS applies its own mask.
 CORNER = 0.1
 # The touch icon's ring is 70 % of the side, inside the area every iOS mask keeps.
 TOUCH_RING_SHARE = 0.7
 
-# Ring and accent stroke widths in device pixels, per raster size: about one
-# pixel at the sizes a tab shows (16 CSS px at one or two device pixels per
-# CSS pixel), thinner relative to the side at 48 px and up.
+# Ring and accent stroke widths in device pixels per raster size: about one pixel at tab sizes, thinner relative to
+# the side from 48 px up.
 STROKES_PX = {16: (1.0, 1.3), 32: (1.75, 2.25), 48: (1.4, 1.8), TOUCH_SIZE: (3.6, 4.4)}
-# The SVG is drawn by the browser at 16 CSS px; its widths are in the mark's
-# 40-unit space (2.2 units is 0.88 CSS px).
+# The SVG is drawn at 16 CSS px; its widths are in the mark's 40-unit space (2.2 units is 0.88 CSS px).
 SVG_STROKES = (2.2, 2.8)
-# At tab size the meridian and the axis meet in a blur at the centre, so the
-# tab icons (the SVG and the ICO's 16 and 32 px entries) leave the meridian
-# out; the sphere, equator, ecliptic and axis remain.  The 48 px entry, which
-# search engines show, and the touch icon carry the whole mark.
+# At tab size the meridian and axis blur together, so the tab icons (the SVG, the ICO's 16 and 32 px) omit the
+# meridian; the 48 px entry and the touch icon carry the whole mark.
 FULL_MARK_FROM_PX = 48
-
 
 # --- the mark, read from the shell -----------------------------------------
 
@@ -86,12 +65,10 @@ class Shape:
     rotate: tuple[float, float, float] | None  # degrees, about (x, y)
     accent: bool
 
-
 @dataclass(frozen=True)
 class Mark:
     view: float
     shapes: tuple[Shape, ...]
-
 
 class _MarkParser(HTMLParser):
     def __init__(self) -> None:
@@ -121,14 +98,10 @@ class _MarkParser(HTMLParser):
         if tag == "svg" and self._depth:
             self._depth = 0
 
-
 _ROTATE = re.compile(r"rotate\(\s*(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s*\)")
 _FIELDS = {"circle": ("cx", "cy", "r"), "ellipse": ("cx", "cy", "rx", "ry"), "line": ("x1", "y1", "x2", "y2")}
 
-
 def read_mark(shell: str | None = None) -> Mark:
-    """The header mark's shapes, in order, from the page shell."""
-
     parser = _MarkParser()
     parser.feed(SHELL.read_text(encoding="utf-8") if shell is None else shell)
     if parser.marks != 1 or parser.view is None:
@@ -146,20 +119,13 @@ def read_mark(shell: str | None = None) -> Mark:
                 raise ValueError(f"unsupported transform in the header mark: {transform}")
             angle, ox, oy = (float(value) for value in match.groups())
             rotate = (angle, ox, oy)
-        shapes.append(Shape(
-            kind=tag,
-            values=tuple(float(attributes[name]) for name in _FIELDS[tag]),
-            rotate=rotate,
-            accent="mark-ecliptic" in attributes.get("class", "").split(),
-        ))
+        shapes.append(Shape(kind=tag, values=tuple(float(attributes[name]) for name in _FIELDS[tag]), rotate=rotate,
+            accent="mark-ecliptic" in attributes.get("class", "").split()))
     if not shapes or sum(shape.accent for shape in shapes) != 1:
         raise ValueError("the header mark must have shapes and exactly one accent ring")
     return Mark(view=float(view[2]), shapes=tuple(shapes))
 
-
 def tab_mark(mark: Mark) -> Mark:
-    """The mark without its meridian: the one upright, unrotated ellipse."""
-
     meridians = [
         shape for shape in mark.shapes
         if shape.kind == "ellipse" and shape.rotate is None and shape.values[2] < shape.values[3]
@@ -168,13 +134,9 @@ def tab_mark(mark: Mark) -> Mark:
         raise ValueError("the header mark must have exactly one meridian ellipse")
     return Mark(view=mark.view, shapes=tuple(shape for shape in mark.shapes if shape is not meridians[0]))
 
-
 _TOKEN = r"--{name}:\s*(#[0-9A-Fa-f]{{6}})\s*;"
 
-
 def read_palette(tokens: str | None = None) -> dict[str, str]:
-    """Plate, ring and accent colours from the design tokens (upper-case hex)."""
-
     text = TOKENS.read_text(encoding="utf-8") if tokens is None else tokens
     palette = {}
     for role, name in (("plate", "plate"), ("ring", "plate-fg"), ("accent", "accent-rev")):
@@ -184,28 +146,20 @@ def read_palette(tokens: str | None = None) -> dict[str, str]:
         palette[role] = found[0].upper()
     return palette
 
-
 # --- SVG ---------------------------------------------------------------------
 
 def _number(value: float) -> str:
     return f"{value:.4f}".rstrip("0").rstrip(".")
 
-
 def svg_text(mark: Mark, palette: dict[str, str]) -> str:
-    """The tab icon: the mark at tab size (`tab_mark`) on the plate."""
-
     mark = tab_mark(mark)
     ring, accent = SVG_STROKES
     side = _number(mark.view)
-    lines = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {side} {side}">',
+    lines = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {side} {side}">',
         f'<rect width="{side}" height="{side}" rx="{_number(mark.view * CORNER)}" fill="{palette["plate"]}"/>',
-        f'<g fill="none" stroke="{palette["ring"]}" stroke-width="{_number(ring)}">',
-    ]
+        f'<g fill="none" stroke="{palette["ring"]}" stroke-width="{_number(ring)}">']
     for shape in mark.shapes:
-        attributes = " ".join(
-            f'{name}="{_number(value)}"' for name, value in zip(_FIELDS[shape.kind], shape.values)
-        )
+        attributes = " ".join(f'{name}="{_number(value)}"' for name, value in zip(_FIELDS[shape.kind], shape.values))
         if shape.rotate is not None:
             attributes += ' transform="rotate({})"'.format(" ".join(_number(v) for v in shape.rotate))
         if shape.accent:
@@ -214,11 +168,9 @@ def svg_text(mark: Mark, palette: dict[str, str]) -> str:
     lines += ["</g>", "</svg>"]
     return "\n".join(lines) + "\n"
 
-
 # --- raster ------------------------------------------------------------------
-# Distances are in the mark's units.  Each rotation's sine and cosine are
-# rounded to twelve places so that a last-bit difference between two hosts'
-# libm cannot reach the pixels.
+# Distances are in the mark's units.  Rotation sines and cosines are rounded to twelve places so a last-bit libm
+# difference between hosts cannot reach the pixels.
 
 def _rotation(rotate: tuple[float, float, float] | None) -> tuple[float, float, float, float]:
     if rotate is None:
@@ -227,14 +179,11 @@ def _rotation(rotate: tuple[float, float, float] | None) -> tuple[float, float, 
     radians = math.radians(angle)
     return round(math.cos(radians), 12), round(math.sin(radians), 12), cx, cy
 
-
 def _ellipse_distance(e0: float, e1: float, y0: float, y1: float) -> float:
     """Distance from (y0, y1) to the ellipse with semi-axes e0 >= e1 > 0.
 
-    Eberly, "Distance from a Point to an Ellipse, an Ellipsoid, or a
-    Hyperellipsoid" (Geometric Tools, 2013): bisection on the root of the
-    tangency condition, using arithmetic and square roots only."""
-
+    Eberly, "Distance from a Point to an Ellipse, an Ellipsoid, or a Hyperellipsoid" (Geometric Tools, 2013):
+    bisection on the root of the tangency condition."""
     y0, y1 = abs(y0), abs(y1)
     if y1 > 0:
         if y0 > 0:
@@ -269,7 +218,6 @@ def _ellipse_distance(e0: float, e1: float, y0: float, y1: float) -> float:
         return math.sqrt((x0 - y0) * (x0 - y0) + x1 * x1)
     return abs(y0 - e0)
 
-
 def _segment_distance(x1: float, y1: float, x2: float, y2: float, px: float, py: float) -> float:
     dx, dy = x2 - x1, y2 - y1
     t = ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)
@@ -277,20 +225,16 @@ def _segment_distance(x1: float, y1: float, x2: float, y2: float, px: float, py:
     ex, ey = x1 + t * dx - px, y1 + t * dy - py
     return math.sqrt(ex * ex + ey * ey)
 
-
 def _shape_distance(shape: Shape, rotation, px: float, py: float, reach: float) -> float | None:
     """Distance from a point to a ring, or None when it is surely beyond `reach`."""
-
     cos, sin, ox, oy = rotation
     if shape.kind == "line":
         x1, y1, x2, y2 = shape.values
-        # Rotate the segment's ends about the transform's centre.
         ax = ox + (x1 - ox) * cos - (y1 - oy) * sin
         ay = oy + (x1 - ox) * sin + (y1 - oy) * cos
         bx = ox + (x2 - ox) * cos - (y2 - oy) * sin
         by = oy + (x2 - ox) * sin + (y2 - oy) * cos
         return _segment_distance(ax, ay, bx, by, px, py)
-    # Rotate the point the other way, into the ring's own frame.
     qx = ox + (px - ox) * cos + (py - oy) * sin
     qy = oy - (px - ox) * sin + (py - oy) * cos
     if shape.kind == "circle":
@@ -307,23 +251,16 @@ def _shape_distance(shape: Shape, rotation, px: float, py: float, reach: float) 
         return _ellipse_distance(rx, ry, dx, dy)
     return _ellipse_distance(ry, rx, dy, dx)
 
-
 def _rounded_square_coverage(side: float, radius: float, px: float, py: float) -> float:
-    """Coverage of the pixel centred at (px, py) by a rounded square, in pixels."""
-
     half = side / 2
     qx, qy = abs(px - half) - (half - radius), abs(py - half) - (half - radius)
     outside = math.sqrt(max(qx, 0.0) ** 2 + max(qy, 0.0) ** 2) + min(max(qx, qy), 0.0) - radius
     return min(max(0.5 - outside, 0.0), 1.0)
 
-
 def _rgb(hex_colour: str) -> tuple[int, int, int]:
     return int(hex_colour[1:3], 16), int(hex_colour[3:5], 16), int(hex_colour[5:7], 16)
 
-
 def render(mark: Mark, palette: dict[str, str], size: int, *, opaque: bool) -> bytes:
-    """RGBA rows (or RGB rows when opaque) of the icon at `size` pixels."""
-
     ring_px, accent_px = STROKES_PX[size]
     if size < FULL_MARK_FROM_PX:
         mark = tab_mark(mark)
@@ -341,7 +278,6 @@ def render(mark: Mark, palette: dict[str, str], size: int, *, opaque: bool) -> b
         rows.append(0)  # PNG filter type None
         for i in range(size):
             colour = [float(channel) for channel in plate]
-            # The pixel's centre in the mark's units.
             px = centre + (i + 0.5 - size / 2) / scale
             py = centre + (j + 0.5 - size / 2) / scale
             for shape, rotation in shapes:
@@ -361,20 +297,16 @@ def render(mark: Mark, palette: dict[str, str], size: int, *, opaque: bool) -> b
                 rows.extend(pixel + [round(cover * 255)])
     return bytes(rows)
 
-
 # --- PNG and ICO -------------------------------------------------------------
-# A fixed-Huffman deflate stream (RFC 1951 §3.2.6) whose only matches repeat
-# the pixel to the left or the row above.  zlib would compress better, but its
-# bytes depend on the zlib version the host has; these depend on nothing.
+# A fixed-Huffman deflate stream (RFC 1951 3.2.6) whose only matches repeat the pixel to the left or the row above.
+# Its bytes do not depend on the host's zlib version.
 
 _LENGTH_BASE = (3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59,
                 67, 83, 99, 115, 131, 163, 195, 227, 258)
 _LENGTH_EXTRA = (0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0)
 _DIST_BASE = (1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769,
               1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577)
-_DIST_EXTRA = (0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10,
-               11, 11, 12, 12, 13, 13)
-
+_DIST_EXTRA = (0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13)
 
 class _Bits:
     def __init__(self) -> None:
@@ -383,7 +315,6 @@ class _Bits:
         self.count = 0
 
     def put(self, value: int, count: int) -> None:
-        """Append `count` bits, least significant first."""
         self.value |= value << self.count
         self.count += count
         while self.count >= 8:
@@ -392,14 +323,12 @@ class _Bits:
             self.count -= 8
 
     def huffman(self, code: int, length: int) -> None:
-        """Append a Huffman code, most significant bit first."""
         self.put(int(f"{code:0{length}b}"[::-1], 2), length)
 
     def finish(self) -> bytes:
         if self.count:
             self.out.append(self.value & 0xFF)
         return bytes(self.out)
-
 
 def _literal(bits: _Bits, symbol: int) -> None:
     if symbol < 144:
@@ -411,17 +340,14 @@ def _literal(bits: _Bits, symbol: int) -> None:
     else:
         bits.huffman(0xC0 + symbol - 280, 8)
 
-
 def _bucket(value: int, bases: tuple[int, ...]) -> int:
     index = 0
     while index + 1 < len(bases) and bases[index + 1] <= value:
         index += 1
     return index
 
-
 def deflate(data: bytes, distances: tuple[int, ...]) -> bytes:
     """A zlib stream of `data`, matching only at the given back distances."""
-
     bits = _Bits()
     bits.put(0b011, 3)  # final block, fixed Huffman codes
     position = 0
@@ -451,10 +377,8 @@ def deflate(data: bytes, distances: tuple[int, ...]) -> bytes:
     # zlib header: deflate, 32 KiB window, no dictionary, check bits.
     return b"\x78\x01" + bits.finish() + struct.pack(">I", zlib.adler32(data))
 
-
 def _chunk(kind: bytes, payload: bytes) -> bytes:
     return struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", zlib.crc32(kind + payload))
-
 
 def png(size: int, rows: bytes, *, opaque: bool) -> bytes:
     channels = 3 if opaque else 4
@@ -462,10 +386,7 @@ def png(size: int, rows: bytes, *, opaque: bool) -> bytes:
     stream = deflate(rows, (channels, size * channels + 1))
     return b"\x89PNG\r\n\x1a\n" + _chunk(b"IHDR", header) + _chunk(b"IDAT", stream) + _chunk(b"IEND", b"")
 
-
 def ico(images: list[tuple[int, bytes]]) -> bytes:
-    """An ICO file whose entries are PNG images (Windows Vista onward, all current browsers)."""
-
     directory = struct.pack("<HHH", 0, 1, len(images))
     offset = 6 + 16 * len(images)
     body = b""
@@ -475,28 +396,19 @@ def ico(images: list[tuple[int, bytes]]) -> bytes:
         body += data
     return directory + body
 
-
 # --- producer ----------------------------------------------------------------
 
 def outputs() -> dict[Path, bytes]:
     mark, palette = read_mark(), read_palette()
     icons = [(size, png(size, render(mark, palette, size, opaque=False), opaque=False)) for size in ICO_SIZES]
     touch = png(TOUCH_SIZE, render(mark, palette, TOUCH_SIZE, opaque=True), opaque=True)
-    return {
-        FRONTEND / SVG_ASSET: svg_text(mark, palette).encode("utf-8"),
-        FRONTEND / ICO_ASSET: ico(icons),
-        FRONTEND / TOUCH_ASSET: touch,
-    }
-
+    return {FRONTEND / SVG_ASSET: svg_text(mark, palette).encode("utf-8"), FRONTEND / ICO_ASSET: ico(icons),
+        FRONTEND / TOUCH_ASSET: touch}
 
 def drift(produced: dict[Path, bytes] | None = None) -> list[str]:
     produced = outputs() if produced is None else produced
-    return [
-        path.relative_to(ROOT).as_posix()
-        for path, data in produced.items()
-        if not path.is_file() or path.read_bytes() != data
-    ]
-
+    return [path.relative_to(ROOT).as_posix() for path,
+        data in produced.items() if not path.is_file() or path.read_bytes() != data]
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n", 1)[0])
@@ -515,7 +427,6 @@ def main(argv: list[str] | None = None) -> int:
         path.write_bytes(data)
     print("ICONS WRITTEN: " + ", ".join(path.relative_to(FRONTEND).as_posix() for path in produced))
     return 0
-
 
 if __name__ == "__main__":
     os.umask(0o022)

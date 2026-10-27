@@ -6,44 +6,36 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function buildChartSquare(WheelModel) {
   "use strict";
 
-  // 方盤：中世紀到文藝復興時期的方形星盤。純函式，不碰 DOM；輸出與圓盤（chart-wheel-model.js）同一種
-  // 場景格式，所以頁面 SVG、下載 SVG 與 PNG 都由 chart-wheel.js 的同一套繪製端畫出。
+  // 方盤：中世紀到文藝復興時期的方形星盤。純函式，不碰 DOM；輸出與圓盤（chart-wheel-model.js）同一種場景格式，所以頁面
+  // SVG、下載 SVG 與 PNG 都由 chart-wheel.js 的同一套繪製端畫出。
   //
-  // 版面是傳統的畫法：正方形外框；連起四邊中點成一個斜放的方形；中央另一個正方形，四角正好落在
-  // 斜方形的邊上；四個外角各有一條線連到中央方形最近的角。十二宮就是中央方形四周的十二個三角形：
-  // 四邊正中的四個（頂點在外框邊的中點、底邊是中央方形的一邊）是角宮，第 1 宮在左（東方），
-  // 依逆時針排。每格面積相同。
+  // 版面是傳統的畫法：正方形外框；連起四邊中點成一個斜放的方形；中央另一個正方形，四角正好落在斜方形的邊上；四個外角各
+  // 有一條線連到中央方形最近的角。十二宮就是中央方形四周的十二個三角形：四邊正中的四個（頂點在外框邊的中點、底邊是中央
+  // 方形的一邊）是角宮，第 1 宮在左（東方），依逆時針排。每格面積相同。
   //
-  // 方盤是依宮位分格的圖，不是黃經的比例圖：
-  //   - 天體落在哪一格，只讀後端的落宮：行星讀 planet_in_house.placements，月交點與 Lilith 讀
-  //     planet_in_house.point_placements（後端只在整宮制給）；後端沒給落宮的點不放進格子，寫進頁尾，
-  //     不在前端重算宮位，所以方盤、落宮表與一頁摘要說的是同一件事；
-  //   - 宮頭、天體與四軸的星座與度分，與圓盤一樣只切 sign_position 字串，不捨入、不換算。
-  // 回應的讀法、點鍵與「圖上未畫」規則全部沿用圓盤模型（WheelModel.shared），不另寫一份。
+  // 方盤是依宮位分格的圖，不是黃經的比例圖：  - 天體落在哪一格，只讀後端的落宮：行星讀 planet_in_house.placements，月交
+  // 點與 Lilith 讀     planet_in_house.point_placements（後端只在整宮制給）；後端沒給落宮的點不放進格子，寫進頁尾，
+  // 不在前端重算宮位，所以方盤、落宮表與一頁摘要說的是同一件事；  - 宮頭、天體與四軸的星座與度分，與圓盤一樣只切
+  // sign_position 字串，不捨入、不換算。回應的讀法、點鍵與「圖上未畫」規則全部沿用圓盤模型（WheelModel.shared），不另寫
+  // 一份。
 
   const R = WheelModel.shared;
   const { SIGN_KEYS, SIGN_NAMES, round3, mod360, isRecord, linePrim, textPrim, glyphPrim, roundBox } = R;
 
   const TEXT = Object.freeze({
     lead: "方盤把十二宮畫成方格：第 1 宮在左（東方），依逆時針排；每格寫宮頭與落在這一宮的天體。"
-      + "數值與圓盤、表格同源。",
-    orientation: "方盤：第 1 宮在左（東方），依逆時針排；每格第一行是宮號與宮頭",
-    unplaced: "沒有落宮資料，方盤沒有放進格子",
-    styleLegend: "畫法",
-    wheel: "圓盤",
-    square: "方盤",
+      + "數值與圓盤、表格同源。", orientation: "方盤：第 1 宮在左（東方），依逆時針排；每格第一行是宮號與宮頭",
+    unplaced: "沒有落宮資料，方盤沒有放進格子", styleLegend: "畫法", wheel: "圓盤", square: "方盤",
     legend: Object.freeze({
       what: "方盤是中世紀到文藝復興時期歐洲星盤常見的畫法：正方形外框，十二宮是圍著中央方格的十二個三角形格子。",
       read: "第 1 宮在左邊（東方），依逆時針排：左邊往下是第 2、3 宮，底邊正中是第 4 宮，右邊正中是第 7 宮，"
         + "頂邊正中是第 10 宮。四邊正中的四個三角形是角宮（第 1、4、7、10 宮）。",
       cell: "每格第一行是宮號與宮頭（這一宮起點）的星座與度數，下面是落在這一宮的天體：符號、度、星座、分；"
-        + "℞ 表示逆行。",
-      wholeSign: "整宮制的每一宮正好是一個星座，宮頭都在星座的 0°，所以每格第一行只寫宮號與星座。",
+        + "℞ 表示逆行。", wholeSign: "整宮制的每一宮正好是一個星座，宮頭都在星座的 0°，所以每格第一行只寫宮號與星座。",
       quadrant: "這個宮位制的宮頭不一定在星座起點，同一宮可能跨兩個星座，所以每個天體都另標星座。",
       centre: "中央方格寫宮位制與四軸。舊時的方盤在這裡寫出生日期、時間與地點；這裡預設不印。",
       same: "方盤與圓盤是同一份計算結果的兩種畫法，數值相同，也與表格同源；方盤只按宮位分格，"
-        + "不按黃經比例排位置，也不畫相位線。",
-      nodes: "密、平：密切交點與平均交點；表格兩者分列，方盤也兩者都列。",
+        + "不按黃經比例排位置，也不畫相位線。", nodes: "密、平：密切交點與平均交點；表格兩者分列，方盤也兩者都列。",
       lilith: "⚸ 平、自然：兩種算法的黑月 Lilith（月球軌道離地球最遠的那一點）。平均：把月球軌道的短期變動平均掉，位置等速前進；自然：依月亮實際經過最遠點的位置推算，會在平均位置前後擺動。表格兩者分列，方盤也兩者都列。",
     }),
   });
@@ -51,72 +43,48 @@
   // 下載檔名：與圓盤分開，兩種圖下載到同一個資料夾不會互相覆蓋。
   const FILES = Object.freeze({ svg: "classical-astrology-square-chart.svg", png: "classical-astrology-square-chart.png" });
 
-  // 幾何（viewBox 寬 600；方框 10–590；頁尾在方框下方，由圓盤模型的 footerLayout 排，高度隨行數）
   const G = Object.freeze({ width: 600, x0: 10, y0: 10, side: 580, inset: 3 });
   // 字級：與圓盤一樣依圖在畫面上的寬度選（WheelModel.presetForWidth）；下載檔一律 standard。
   const PRESETS = Object.freeze({
-    compact: Object.freeze({ text: 1.35 }),
-    standard: Object.freeze({ text: 1 }),
-    wide: Object.freeze({ text: 0.9 }),
+    compact: Object.freeze({ text: 1.35 }), standard: Object.freeze({ text: 1 }), wide: Object.freeze({ text: 0.9 }),
   });
-  // 與圓盤同一套標籤語言：符號依墨框光學正規化、度星座分是一行拉丁襯線數字，全圖兩種字級——
-  // 符號一級（glyph），其餘的字（度分、星座符號、宮號、中央的宮位制與四軸）一級（text）；
-  // ℞ 與交點的下標是掛在符號上的記號，不算一級字。
+  // 與圓盤同一套標籤語言：符號依墨框光學正規化、度星座分是一行拉丁襯線數字，全圖兩種字級——符號一級（glyph），其餘的字
+  // （度分、星座符號、宮號、中央的宮位制與四軸）一級（text）；℞ 與交點的下標是掛在符號上的記號，不算一級字。
   const SIZE = Object.freeze({
-    glyph: 24, text: 14, sign: 14, mark: 10, suffix: 10, number: 14, row: 18,
-    angleName: 14, centre: 14, centreRow: 24,
+    glyph: 24, text: 14, sign: 14, mark: 10, suffix: 10, number: 14, row: 18, angleName: 14, centre: 14, centreRow: 24,
   });
   // 格子太擠時，整張圖的標籤一起等比縮小（與圓盤相同的作法），直到每一格都放得下。
   const LABEL_SCALES = Object.freeze([1, 0.92, 0.85, 0.78, 0.72, 0.66, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35]);
   const SCAN_STEP = 0.5;
 
-  // 十二格的頂點（以方框左上為原點、邊長 1 的比例；y 向下）。外框四角 TL TR BR BL、四邊中點 L B R T、
-  // 中央方形四角 iTL iTR iBR iBL。align：每格第一行（宮號與宮頭）靠哪一側——左邊三格靠左、右邊三格靠右，
-  // 都貼著外框；上下六格置中。
+  // 十二格的頂點（以方框左上為原點、邊長 1 的比例；y 向下）。外框四角 TL TR BR BL、四邊中點 L B R T、中央方形四角 iTL
+  // iTR iBR iBL。align：每格第一行（宮號與宮頭）靠哪一側——左邊三格靠左、右邊三格靠右，都貼著外框；上下六格置中。
   const P = Object.freeze({
-    TL: [0, 0], TR: [1, 0], BR: [1, 1], BL: [0, 1],
-    L: [0, 0.5], B: [0.5, 1], R: [1, 0.5], T: [0.5, 0],
+    TL: [0, 0], TR: [1, 0], BR: [1, 1], BL: [0, 1], L: [0, 0.5], B: [0.5, 1], R: [1, 0.5], T: [0.5, 0],
     iTL: [0.25, 0.25], iTR: [0.75, 0.25], iBR: [0.75, 0.75], iBL: [0.25, 0.75],
   });
   const CELLS = Object.freeze([
-    { house: 1, at: ["L", "iTL", "iBL"], align: "left" },
-    { house: 2, at: ["L", "iBL", "BL"], align: "left" },
-    { house: 3, at: ["BL", "iBL", "B"], align: "centre" },
-    { house: 4, at: ["B", "iBL", "iBR"], align: "centre" },
-    { house: 5, at: ["B", "iBR", "BR"], align: "centre" },
-    { house: 6, at: ["BR", "iBR", "R"], align: "right" },
-    { house: 7, at: ["R", "iBR", "iTR"], align: "right" },
-    { house: 8, at: ["R", "iTR", "TR"], align: "right" },
-    { house: 9, at: ["TR", "iTR", "T"], align: "centre" },
-    { house: 10, at: ["T", "iTR", "iTL"], align: "centre" },
-    { house: 11, at: ["T", "iTL", "TL"], align: "centre" },
-    { house: 12, at: ["TL", "iTL", "L"], align: "left" },
+    { house: 1, at: ["L", "iTL", "iBL"], align: "left" }, { house: 2, at: ["L", "iBL", "BL"], align: "left" },
+    { house: 3, at: ["BL", "iBL", "B"], align: "centre" }, { house: 4, at: ["B", "iBL", "iBR"], align: "centre" },
+    { house: 5, at: ["B", "iBR", "BR"], align: "centre" }, { house: 6, at: ["BR", "iBR", "R"], align: "right" },
+    { house: 7, at: ["R", "iBR", "iTR"], align: "right" }, { house: 8, at: ["R", "iTR", "TR"], align: "right" },
+    { house: 9, at: ["TR", "iTR", "T"], align: "centre" }, { house: 10, at: ["T", "iTR", "iTL"], align: "centre" },
+    { house: 11, at: ["T", "iTL", "TL"], align: "centre" }, { house: 12, at: ["TL", "iTL", "L"], align: "left" },
   ]);
-  // 格線：外框、斜方形、中央方形、四條角線。
   const LINES = Object.freeze([
-    ["TL", "TR"], ["TR", "BR"], ["BR", "BL"], ["BL", "TL"],
-    ["L", "T"], ["T", "R"], ["R", "B"], ["B", "L"],
-    ["iTL", "iTR"], ["iTR", "iBR"], ["iBR", "iBL"], ["iBL", "iTL"],
-    ["TL", "iTL"], ["TR", "iTR"], ["BR", "iBR"], ["BL", "iBL"],
+    ["TL", "TR"], ["TR", "BR"], ["BR", "BL"], ["BL", "TL"], ["L", "T"], ["T", "R"], ["R", "B"], ["B", "L"],
+    ["iTL", "iTR"], ["iTR", "iBR"], ["iBR", "iBL"], ["iBL", "iTL"], ["TL", "iTL"], ["TR", "iTR"], ["BR", "iBR"], ["BL", "iBL"],
   ]);
   const toView = ([u, v]) => ({ x: G.x0 + u * G.side, y: G.y0 + v * G.side });
   const corner = (name) => toView(P[name]);
 
-  /** 第 n 宮那一格（圖面座標，三角形頂點）。 */
-  function cellPolygon(house) {
-    return CELLS[house - 1].at.map(corner);
-  }
+  function cellPolygon(house) { return CELLS[house - 1].at.map(corner); }
 
-  // 凸多邊形的小工具（格子都是三角形）
   /** 往內縮 d：每條邊沿內側法線平移，相鄰兩條的交點是新頂點。 */
   function insetPolygon(points, d) {
     const n = points.length;
     let area = 0;
-    for (let i = 0; i < n; i += 1) {
-      const p = points[i];
-      const q = points[(i + 1) % n];
-      area += p.x * q.y - q.x * p.y;
-    }
+    for (let i = 0; i < n; i += 1) { const p = points[i]; const q = points[(i + 1) % n]; area += p.x * q.y - q.x * p.y; }
     const sign = area > 0 ? 1 : -1;
     const lines = points.map((p, i) => {
       const q = points[(i + 1) % n];
@@ -135,18 +103,13 @@
       return { x: previous.x + previous.dx * t, y: previous.y + previous.dy * t };
     });
   }
-  /** 水平線 y 與凸多邊形的交集 [左, 右]；不相交回 null。 */
   function spanAt(points, y) {
     let low = Infinity;
     let high = -Infinity;
     points.forEach((p, i) => {
       const q = points[(i + 1) % points.length];
       if (y < Math.min(p.y, q.y) - 1e-9 || y > Math.max(p.y, q.y) + 1e-9) return;
-      if (Math.abs(q.y - p.y) < 1e-12) {
-        low = Math.min(low, p.x, q.x);
-        high = Math.max(high, p.x, q.x);
-        return;
-      }
+      if (Math.abs(q.y - p.y) < 1e-12) { low = Math.min(low, p.x, q.x); high = Math.max(high, p.x, q.x); return; }
       const x = p.x + ((y - p.y) * (q.x - p.x)) / (q.y - p.y);
       low = Math.min(low, x);
       high = Math.max(high, x);
@@ -164,7 +127,6 @@
   }
 
   // 標籤：一列，由左到右是符號（℞ 在右上、交點與 Lilith 的下標在右下）、度、星座、分。
-  // 每一段記下相對於標籤左緣的中心 x 與相對於列中線的 y 位移。
   function glyphPart(part, glyph, x, size, fill, dy = 0) {
     const box = R.glyphBox(glyph, size);
     return { piece: { kind: "glyph", part, glyph, cx: x + box.w / 2, dy, size, fill }, w: box.w, h: box.h };
@@ -229,15 +191,11 @@
     return { w: x, h, pieces };
   }
 
-  // 每一格的排版
-  // 由上往下一列一列排：第一行只放宮號與宮頭（左邊三格靠左、右邊三格靠右，上下六格置中），之後每列
-  // 由左往右放天體、放得下就放，列內置中。這一格排不下就整格換小一號的字重排（只縮這一格，其他格的
-  // 字不跟著變小）。全部決定性：同一份回應永遠同一張圖。
-  function gaps(fs) {
-    return { x: Math.max(2, 4 * fs), y: Math.max(1.5, 2 * fs) };
-  }
+  // 每一格的排版由上往下一列一列排：第一行只放宮號與宮頭（左邊三格靠左、右邊三格靠右，上下六格置中），之後每列由左往右
+  // 放天體、放得下就放，列內置中。這一格排不下就整格換小一號的字重排（只縮這一格，其他格的字不跟著變小）。全部決定性：
+  // 同一份回應永遠同一張圖。
+  function gaps(fs) { return { x: Math.max(2, 4 * fs), y: Math.max(1.5, 2 * fs) }; }
 
-  /** 一格的排列：labels[0] 是第一行（宮號與宮頭），其餘是天體。回傳每個標籤的框；排不下的沒有框。 */
   function placeFlow(polygon, labels, align, gap) {
     const ys = polygon.map((p) => p.y);
     const bottom = Math.max(...ys);
@@ -247,10 +205,7 @@
     while (k < labels.length && y + labels[k].h <= bottom + 1e-9) {
       const h = labels[k].h;
       const span = bandSpan(polygon, y, y + h);
-      if (!span || span[1] - span[0] < labels[k].w - 1e-9) {
-        y += SCAN_STEP;
-        continue;
-      }
+      if (!span || span[1] - span[0] < labels[k].w - 1e-9) { y += SCAN_STEP; continue; }
       if (k === 0) {
         const w = labels[0].w;
         const x0 = align === "left" ? span[0] : align === "right" ? span[1] - w : (span[0] + span[1] - w) / 2;
@@ -261,12 +216,7 @@
       }
       const row = [];
       let x = span[0];
-      while (k < labels.length && x + labels[k].w <= span[1] + 1e-9) {
-        row.push({ index: k, x });
-        x += labels[k].w + gap.x;
-        k += 1;
-      }
-      // 列內置中：這一列剩下的空間兩側平分。
+      while (k < labels.length && x + labels[k].w <= span[1] + 1e-9) { row.push({ index: k, x }); x += labels[k].w + gap.x; k += 1; }
       const shift = (span[1] - span[0] - (x - gap.x - span[0])) / 2;
       for (const entry of row) {
         boxes[entry.index] = { x0: entry.x + shift, y0: y, x1: entry.x + shift + labels[entry.index].w, y1: y + h };
@@ -292,7 +242,6 @@
     return last;
   }
 
-  // 讀回應
   /** 每一點在哪一宮：只讀後端的落宮（行星與整宮制下的月交點、Lilith）；沒有就回 null（不放進格子）。 */
   function houseOf(point, placements) {
     if (!placements.has(point.key)) return null;
@@ -300,8 +249,6 @@
     return house >= 1 && house <= 12 ? house : null;
   }
 
-  // 場景圖元：圓盤模型的那一套（paint 是角色名，由各繪製端決定顏色）
-  /** 一個標籤（左上角在 box）的圖元。 */
   function labelPrims(label, box) {
     const midY = (box.y0 + box.y1) / 2;
     return label.pieces.map((piece) => (piece.kind === "glyph"
@@ -314,7 +261,6 @@
     const centre = [corner("iTL"), corner("iTR"), corner("iBR"), corner("iBL")];
     return [
       { type: "polygon", part: "sq-centre", fill: "band", points: centre.map((p) => [round3(p.x), round3(p.y)]) },
-      // 外框粗一點，其餘格線一樣粗。
       ...LINES.map(([from, to], index) => linePrim(index < 4 ? "sq-frame" : "sq-line", corner(from), corner(to), "dim",
         index < 4 ? 1.2 : 0.9)),
     ];
@@ -327,18 +273,12 @@
     const room = G.side / 2 - 16;
     const titleSize = SIZE.centre * fs;
     const titleLines = R.wrap(`宮位制：${division.text}`, titleSize, room);
-    const rows = [
-      ...titleLines.map((line) => ({ kind: "title", line })),
-      ...angles.map((angle) => ({ kind: "angle", angle })),
-    ];
+    const rows = [...titleLines.map((line) => ({ kind: "title", line })), ...angles.map((angle) => ({ kind: "angle", angle }))];
     const prims = [];
     const angleRows = [];
     rows.forEach((row, index) => {
       const y = centre.y + (index - (rows.length - 1) / 2) * rowHeight;
-      if (row.kind === "title") {
-        prims.push(textPrim("sq-centre-title", centre.x, y, row.line, titleSize, "book", "dim"));
-        return;
-      }
+      if (row.kind === "title") { prims.push(textPrim("sq-centre-title", centre.x, y, row.line, titleSize, "book", "dim")); return; }
       // 兩欄：名稱靠右對齊到中線左側，星座與度分從中線右側開始；字寬只是估計，這樣排不會擠到。
       const { angle } = row;
       const nameSize = SIZE.angleName * fs;
@@ -376,7 +316,6 @@
     const placements = R.readHouses(response);
     const angles = R.readAngles(response);
     const positions = R.readPositionSources(response, angles.length > 0, true);
-
     const cells = division.cusps.map((cusp) => ({ house: cusp.house, cusp, items: [] }));
     const unplaced = [];
     for (const point of points) {
@@ -385,26 +324,18 @@
       else cells[house - 1].items.push({ ...point, house });
     }
     // 格內依「離宮頭的黃經距離」排（宮頭之後的先列），與表格依黃經讀的順序一致。
-    for (const cell of cells) {
-      cell.items.sort((a, b) => mod360(a.lon - cell.cusp.lon) - mod360(b.lon - cell.cusp.lon));
-    }
+    for (const cell of cells) { cell.items.sort((a, b) => mod360(a.lon - cell.cusp.lon) - mod360(b.lon - cell.cusp.lon)); }
     const wholeSign = division.code === "W";
     const packed = cells.map((cell) => packCell(cell, preset.text, wholeSign));
     const overflow = [];
-    cells.forEach((cell, index) => {
-      cell.items.forEach((item, k) => { if (!packed[index].boxes[k + 1]) overflow.push(item); });
-    });
-
-    const notDrawn = [...omitted, ...positions.omitted.filter((name) => !omitted.includes(name)),
-      ...overflow.map((item) => item.name)];
+    cells.forEach((cell, index) => { cell.items.forEach((item, k) => { if (!packed[index].boxes[k + 1]) overflow.push(item); }); });
+    const notDrawn = [...omitted, ...positions.omitted.filter((name) => !omitted.includes(name)), ...overflow.map((item) => item.name)];
     const notes = [
-      TEXT.orientation,
-      ...(angles.length ? [WheelModel.TEXT.accent] : []),
+      TEXT.orientation, ...(angles.length ? [WheelModel.TEXT.accent] : []),
       ...(unplaced.length ? [`${TEXT.unplaced}：${unplaced.map((point) => point.name).join("、")}（見表格）`] : []),
       ...(notDrawn.length ? [`圖上未畫：${notDrawn.join("、")}（見表格）`] : []),
     ];
     const foot = R.footerLayout([...notes, ...R.summaryLines(options)], preset.text);
-
     // 標籤群組：先依宮位放天體，再放中央的四軸；順序就是 labels 的順序（圖表連動依序對上）。
     const cuspPrims = [];
     const labelGroups = [];
@@ -433,64 +364,39 @@
         boxes: [roundBox(row.box)],
       });
     }
-
     const scene = [
-      { group: "square-frame", items: framePrims() },
-      { group: "square-cusps", items: cuspPrims },
-      { group: "square-centre", items: centre.prims },
-      { group: "labels", children: labelGroups },
-      { group: "footer", items: foot.items },
+      { group: "square-frame", items: framePrims() }, { group: "square-cusps", items: cuspPrims },
+      { group: "square-centre", items: centre.prims }, { group: "labels", children: labelGroups }, { group: "footer", items: foot.items },
     ];
-
     const asc = angles.find((angle) => angle.key === "asc");
     const L = TEXT.legend;
     const placedKeys = new Set(labels.map((label) => label.key));
     const legend = [
-      L.what, L.read, L.cell,
-      division.code === "W" ? L.wholeSign : L.quadrant,
-      L.centre, L.same,
+      L.what, L.read, L.cell, division.code === "W" ? L.wholeSign : L.quadrant, L.centre, L.same,
       ...([...placedKeys].some((key) => /node$/.test(key)) ? [L.nodes] : []),
       ...([...placedKeys].some((key) => /lilith$/.test(key)) ? [L.lilith] : []),
       ...notes.filter((note) => note !== TEXT.orientation && note !== WheelModel.TEXT.accent),
     ];
-
     return {
-      kind: "square",
-      width: G.width,
-      height: foot.height,
-      preset: presetName,
-      ariaLabel: asc
+      kind: "square", width: G.width, height: foot.height, preset: presetName, ariaLabel: asc
         ? `方盤：第 1 宮在左；上升 ${SIGN_NAMES[asc.sign]} ${asc.deg}${asc.min}；各天體位置見下方表格`
-        : "方盤：第 1 宮在左；各天體位置見下方表格",
-      notes,
-      legend,
-      houseSystem: division.code,
+        : "方盤：第 1 宮在左；各天體位置見下方表格", notes, legend, houseSystem: division.code,
       // 相位線不屬於方盤：沒有相位圖層（chart-wheel.js 依此不列相位的讀圖說明）。
-      aspects: null,
-      aspectLegend: [],
-      compaction: { signs: false, shared: false },
-      positionSources: positions.sources,
-      unplaced: unplaced.map((point) => point.key),
-      overflow: overflow.map((item) => item.key),
+      aspects: null, aspectLegend: [], compaction: { signs: false, shared: false }, positionSources: positions.sources,
+      unplaced: unplaced.map((point) => point.key), overflow: overflow.map((item) => item.key),
       cells: cells.map((cell, index) => ({
-        house: cell.house,
-        polygon: cellPolygon(cell.house).map((p) => ({ x: round3(p.x), y: round3(p.y) })),
+        house: cell.house, polygon: cellPolygon(cell.house).map((p) => ({ x: round3(p.x), y: round3(p.y) })),
         cusp: { sign: cell.cusp.sign, deg: cell.cusp.deg, min: cell.cusp.min,
           box: packed[index].boxes[0] ? roundBox(packed[index].boxes[0]) : null },
-        keys: cell.items.map((item) => item.key),
-        scale: packed[index].scale,
+        keys: cell.items.map((item) => item.key), scale: packed[index].scale,
       })),
-      scene,
-      labels,
+      scene, labels,
     };
   }
 
   /** 與 ChartWheel.buildModel 相同：模型帶 forPreset(preset)，每種字級只算一次。 */
   const buildModel = (response, options = {}) => R.withPresets(build, response, options);
 
-  /**
-   * 圖的工具列上「圓盤／方盤」兩個選項（一組單選鈕，預設圓盤）。onChange("wheel" | "square")。
-   */
   function styleControl(doc, onChange) {
     // 一組單選鈕：方向鍵在兩者間切換（瀏覽器原生行為），Tab 只停一次。
     const group = doc.createElement("div");
@@ -517,24 +423,16 @@
   }
 
   /**
-   * 給星盤圖區塊（ChartWheel.createSection 的 alternate）的方盤：模型、方盤的引言與切換鈕。
-   * 這份回應畫不出方盤（沒有 12 個宮頭）時回 null：區塊上就不出現切換鈕。模型在第一次切到方盤
-   * （chart-wheel.js 讀 model）時才算，之後沿用同一份。
+   * 給星盤圖區塊（ChartWheel.createSection 的 alternate）的方盤：模型、方盤的引言與切換鈕。這份回應畫不出方盤（沒有 12
+   * 個宮頭）時回 null：區塊上就不出現切換鈕。模型在第一次切到方盤（chart-wheel.js 讀 model）時才算，之後沿用同一份。
    */
   function sectionOption(response) {
     if (!isRecord(response) || !R.readCusps(response)) return null;
     let model = null;
     return Object.freeze({
-      get model() {
-        if (!model) model = buildModel(response);
-        return model;
-      },
-      lead: TEXT.lead,
-      control: styleControl,
+      get model() { if (!model) model = buildModel(response); return model; }, lead: TEXT.lead, control: styleControl,
     });
   }
 
-  return Object.freeze({
-    build, buildModel, sectionOption, styleControl, TEXT, FILES, PRESETS: Object.keys(PRESETS),
-  });
+  return Object.freeze({ build, buildModel, sectionOption, styleControl, TEXT, FILES, PRESETS: Object.keys(PRESETS) });
 });

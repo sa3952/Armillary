@@ -32,6 +32,7 @@ from .aspect_profiles import LILLY_1647_READ_AT, ORB_PROFILES, PTOLEMAIC_ASPECTS
 from .aspects import EXACT_NOW_EPSILON_DEGREES
 from .bodies import memoized_longitudes
 from .module_state import (
+    Applicability,
     PRODUCT_FORMULA_SOURCE,
     computed_receipt,
     not_applicable_receipt,
@@ -863,7 +864,7 @@ def evaluate_void_of_course(
 
 
 def void_of_course_not_applicable(
-    state: dict, trace: Trace, method: str = DEFAULT_VOC_METHOD
+    state: Applicability, trace: Trace, method: str = DEFAULT_VOC_METHOD
 ) -> dict:
     """VOC refused by the central frame table.
 

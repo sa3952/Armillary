@@ -1,9 +1,8 @@
-"""The page build's validators: the surface manifest, the links that reach
-every page, inline styles the served CSP would drop, an article's reference
-anchors and the page lastmod record's binding to history.
+"""The page build's validators: the surface manifest, the links that reach every page, inline styles the served CSP
+would drop, an article's reference anchors and the page lastmod record's binding to history.
 
-Each check takes what it inspects as arguments and never imports the
-producer (build_pages); build_pages calls them on what it reads and writes.
+Each check takes what it inspects as arguments and never imports the producer (build_pages); build_pages calls them on
+what it reads and writes.
 """
 
 from __future__ import annotations
@@ -17,22 +16,13 @@ from scripts.frontend.site_locale import DEFAULT_LOCALE
 
 _ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
-# The served CSP carries no `style-src 'unsafe-inline'`, so an inline
-# `style=` attribute is silently dropped by the browser while source/output
-# parity stays green.  Match the attribute position
-# (a tag, then whitespace, then the attribute) rather than the bare word, so
-# prose that mentions `style=` is not an offence.
-_INLINE_STYLE_ATTRIBUTE = re.compile(
-    r"<[A-Za-z][^<>]*?\s(style\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s>]+))",
-    re.IGNORECASE | re.DOTALL,
-)
-
+# The served CSP carries no `style-src 'unsafe-inline'`, so an inline `style=` attribute is silently dropped by the
+# browser.  Match the attribute position (a tag, whitespace, the attribute) so prose mentioning `style=` is no offence.
+_INLINE_STYLE_ATTRIBUTE = re.compile(r"<[A-Za-z][^<>]*?\s(style\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s>]+))",
+    re.IGNORECASE | re.DOTALL)
 
 def inline_style_attributes(markup: str) -> list[str]:
-    """Every inline `style=` attribute in the markup, verbatim."""
-
     return [match.group(1) for match in _INLINE_STYLE_ATTRIBUTE.finditer(markup)]
-
 
 def reject_inline_style(markup: str, key: str) -> None:
     offenders = inline_style_attributes(markup)
@@ -42,52 +32,30 @@ def reject_inline_style(markup: str, key: str) -> None:
             f"served CSP: {', '.join(offenders)}"
         )
 
-
 _FRAGMENT_NAME = re.compile(r"[a-z0-9_-]+")
-# A declared locale: a language subtag, optionally a script and a region.
 _LOCALE_CODE = re.compile(r"[a-z]{2,3}(?:-[A-Z][a-z]{3})?(?:-[A-Z]{2})?")
 
-
 def _common_row_fields_valid(item: dict, locales: list[str]) -> bool:
-    # Surface and error page rows alike: the fragment names a file under pages/, never a path,
-    # and a bad one is refused under its own name.
+    # Surface and error page rows alike: the fragment names a file under pages/, never a path.
     if not (isinstance(item["fragment"], str) and _FRAGMENT_NAME.fullmatch(item["fragment"])):
         raise ValueError(f"frontend page fragment is invalid: {item.get('key')}")
-    return (
-        item["locale"] in locales
-        and isinstance(item["layers"], list)
-        and bool(item["layers"])
-        and set(item["layers"]) <= {"L1", "L2", "L3"}
-        and isinstance(item["title"], str)
-        and bool(item["title"].strip())
-    )
+    return (item["locale"] in locales and isinstance(item["layers"],
+        list) and bool(item["layers"]) and set(item["layers"]) <= {"L1", "L2", "L3"} and isinstance(item["title"],
+        str) and bool(item["title"].strip()))
 
-
-# A surface row's optional fields and their defaults: the fragment is named
-# like the key, the locale is the manifest's default, and a page is indexed.
 SURFACE_DEFAULTS: dict[str, object] = {"fragment": None, "locale": None, "indexable": True}
 
-
 def check_surface_manifest(payload: dict, error_outputs: Mapping[int, str]) -> dict:
-    """The manifest, each row's left-out fields given their defaults, or a
-    ValueError naming what is invalid."""
-
-    if set(payload) != {
-        "schema_version", "origin", "default_locale", "locales", "surfaces", "error_pages",
-    } or payload["schema_version"] != 1:
+    if set(payload) != {"schema_version", "origin", "default_locale", "locales", "surfaces",
+        "error_pages"} or payload["schema_version"] != 1:
         raise ValueError("frontend surface manifest root is invalid")
     if payload["origin"] != "https://projectarmillary.com":
         raise ValueError("frontend canonical origin is invalid")
-    # The declared locales are data: a row's locale must be one of them and its
-    # address and output must sit under that locale's directory.
+    # A row's locale must be a declared one and its address and output must sit under that locale's directory.
     locales = payload["locales"]
-    if (
-        not isinstance(locales, list)
-        or not locales
-        or len(set(locales)) != len(locales)
-        or not all(isinstance(code, str) and _LOCALE_CODE.fullmatch(code) for code in locales)
-        or payload["default_locale"] not in locales
-    ):
+    if (not isinstance(locales,
+        list) or not locales or len(set(locales)) != len(locales) or not all(isinstance(code,
+        str) and _LOCALE_CODE.fullmatch(code) for code in locales) or payload["default_locale"] not in locales):
         raise ValueError("frontend locale is invalid")
     default = payload["default_locale"]
     expected_fields = {"key", "output", "surface", "layers", "title", "description"}
@@ -95,7 +63,6 @@ def check_surface_manifest(payload: dict, error_outputs: Mapping[int, str]) -> d
     for item in payload["surfaces"]:
         if not isinstance(item, dict) or set(item) - {"article", *SURFACE_DEFAULTS} != expected_fields:
             raise ValueError("frontend surface row field set is invalid")
-        # A field a row leaves out takes its default.
         for field, value in SURFACE_DEFAULTS.items():
             item.setdefault(field, item["key"] if field == "fragment" else default if field == "locale" else value)
         if (
@@ -123,18 +90,13 @@ def check_surface_manifest(payload: dict, error_outputs: Mapping[int, str]) -> d
     _validate_error_pages(payload, seen, locales, error_outputs)
     return payload
 
-
-# A blog article is a surface like any other page, whose row carries an
-# `article` block with the day it was published and the day it was last
-# revised.  It lives under the blog's address, is linked from the blog page
-# instead of the shared footer, and is described as a BlogPosting.
+# A blog article is a surface whose row carries an `article` block (published and last-revised days).  It lives under
+# the blog's address, is linked from the blog page instead of the shared footer, and is described as a BlogPosting.
 BLOG_SURFACE = f"/{DEFAULT_LOCALE}/blog"
 ARTICLE_FIELDS = frozenset({"published", "modified"})
 
-
 def is_article(item: Mapping) -> bool:
     return "article" in item
-
 
 def _validate_article(item: dict) -> None:
     under_blog = item["surface"].startswith(BLOG_SURFACE + "/")
@@ -158,19 +120,14 @@ def _validate_article(item: dict) -> None:
     if modified < published:
         raise ValueError(f"article is modified before it was published: {item['key']}")
 
-
-# A sub-page is a page whose address is another page's address plus one more
-# segment (/zh-TW/security/verify under /zh-TW/security).  Like an article
-# under the blog, it is linked from its parent page instead of the shared
-# footer, and its trail runs home › parent › its own h1.  An article is the
-# blog's kind of child and keeps its own rules; a page whose address prefix is
-# no surface (/zh-TW/legal/privacy) is an ordinary footer page.
+# A sub-page's address is another page's address plus one segment (/zh-TW/security/verify under /zh-TW/security).
+# It is linked from its parent instead of the shared footer, and its trail runs home › parent › its own h1.  An article
+# keeps its own rules; a page whose address prefix is no surface (/zh-TW/legal/privacy) is an ordinary footer page.
 def parent_surface(item: Mapping, surfaces: list[dict]) -> str | None:
     if is_article(item):
         return None
     parent = item["surface"].rsplit("/", 1)[0]
     return parent if any(other["surface"] == parent for other in surfaces) else None
-
 
 def _validate_sub_page(item: dict, surfaces: list[dict]) -> None:
     parent = parent_surface(item, surfaces)
@@ -185,7 +142,6 @@ def _validate_sub_page(item: dict, surfaces: list[dict]) -> None:
         or parent_surface(owner, surfaces) is not None
     ):
         raise ValueError(f"frontend sub-page row is invalid: {item.get('key')}")
-
 
 def _validate_error_pages(payload: dict, seen: dict[str, set[str]], locales: list[str],
                           outputs: Mapping[int, str]) -> None:
@@ -212,21 +168,14 @@ def _validate_error_pages(payload: dict, seen: dict[str, set[str]], locales: lis
     if statuses != set(outputs):
         raise ValueError("frontend error page set is incomplete")
 
-
 def unclassified_page_paths(payload: dict, frontend: Path, excluded: Iterable[str]) -> list[str]:
     """HTML pages under ``frontend`` that no surface row classifies.
 
-    Every user-visible surface carries an L1／L2／L3 assignment and
-    an unclassified surface is itself a violation.  frontend/surfaces.json is
-    the only place that assignment lives; this is its consumer in the
-    other direction, so a page added beside the manifest cannot ship
-    unclassified.  The excluded top-level directories are the ones the served
-    asset universe excludes (backend/app/frontend_assets.py).
+    Every user-visible surface carries an L1／L2／L3 assignment in frontend/surfaces.json, so a page added beside the
+    manifest cannot ship unclassified.  The excluded top-level directories are those the served asset universe excludes
+    (backend/app/frontend_assets.py).
     """
-
-    registered = {
-        item["output"] for item in [*payload["surfaces"], *payload["error_pages"]]
-    }
+    registered = {item["output"] for item in [*payload["surfaces"], *payload["error_pages"]]}
     pages: set[str] = set()
     for entry in frontend.iterdir():
         if entry.name in excluded or entry.is_symlink():
@@ -237,21 +186,13 @@ def unclassified_page_paths(payload: dict, frontend: Path, excluded: Iterable[st
                 pages.add(path.relative_to(frontend).as_posix())
     return sorted(pages - registered)
 
-
 def check_footer_links(payload: dict, labels: Mapping[str, str], pages: Path) -> None:
-    """Every surface is reachable through a plain link: a page through the
-    footer on every page, an article through the blog page."""
-
+    """Every surface is reachable through a plain link: a page via the footer, an article via the blog page."""
     surfaces = payload["surfaces"]
-    unlinked = [
-        item["surface"] for item in surfaces
-        if not is_article(item) and parent_surface(item, surfaces) is None
-        and item["surface"] not in labels
-    ]
+    unlinked = [item["surface"] for item in surfaces if not is_article(item) and parent_surface(item,
+        surfaces) is None and item["surface"] not in labels]
     if unlinked:
-        raise ValueError(
-            "surface is not linked from the shared footer: " + ", ".join(unlinked)
-        )
+        raise ValueError("surface is not linked from the shared footer: " + ", ".join(unlinked))
     unlinked = []
     for item in surfaces:
         parent = parent_surface(item, surfaces)
@@ -274,11 +215,9 @@ def check_footer_links(payload: dict, labels: Mapping[str, str], pages: Path) ->
 _REFERENCE_LINK = re.compile(r'href="#(ref-\d+)"')
 _REFERENCE_TARGET = re.compile(r'\bid="(ref-\d+)"')
 
-
 def check_article_references(body: str, key: str) -> None:
-    """Every numbered citation (href="#ref-N") lands on a listed source
-    (id="ref-N"), and every listed source is cited."""
-
+    """Every numbered citation (href="#ref-N") lands on a listed source (id="ref-N"), and every listed source is cited.
+    """
     links = set(_REFERENCE_LINK.findall(body))
     targets = _REFERENCE_TARGET.findall(body)
     if len(set(targets)) != len(targets) or links != set(targets):
@@ -287,14 +226,10 @@ def check_article_references(body: str, key: str) -> None:
             f"unlisted {sorted(links - set(targets))}, uncited {sorted(set(targets) - links)}"
         )
 
-
 def lastmod_binding_errors(record: dict, history: list[tuple[str, dict]], today: str) -> list[str]:
-    """A page's date stays what it was committed with while its content digest
-    is unchanged, is no later than the commit that introduced that digest
-    (today, if none has yet) and no earlier than the page's previous date.
-    History stops at the first record of another digest scheme, whose digests
-    say nothing about these."""
-
+    """A page's date stays what it was committed with while its content digest is unchanged, is no later than the
+    commit that introduced that digest (today, if none has yet) and no earlier than the page's previous date.
+    History stops at the first record of another digest scheme, whose digests say nothing about these."""
     errors = []
     for key, entry in sorted(record["pages"].items()):
         introduced, previous = today, None

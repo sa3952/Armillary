@@ -1,16 +1,11 @@
-"""〈整宮制與 Placidus〉: figure 1 (the house divisions on one wheel, with a
-switch among the overlay of whole-sign and Placidus and each of the four
-systems alone), the placement and cusp tables, figure 2 (the two divisions
-on the celestial sphere, drawn by the house-system article's own sphere
-script), figure 3 (the polar band) and the polar status table's states.
+"""〈整宮制與 Placidus〉: figure 1 (the house divisions on one wheel, overlay and each of four systems alone), the
+placement and cusp tables, figure 2 (the two divisions on the celestial sphere, drawn by the article's own sphere
+script), figure 3 (the polar band) and the polar status table.
 
-Every chart number is the product's own answer: the requests go to the real
-application in process, as the chart fixtures do.  Synthetic instants only:
-1990-05-15 11:00 Taipei, and the same date 12:00 at Tromsø for the polar case.
-The drawn house of each body is re-read from the drawn cusps and must agree
-with the product's placement.  Figure 2 is generic geometry (a latitude and a
-local sidereal time, no date or place of birth); its cusps are compared with
-Swiss Ephemeris here.
+Every chart number is the product's own answer, requested from the real application in process.  Synthetic instants
+only: 1990-05-15 11:00 Taipei, and the same date 12:00 at Tromsø for the polar case.  The drawn house of each body is
+re-read from the drawn cusps and must agree with the product's placement.  Figure 2 is generic geometry (a latitude and
+a local sidereal time); its cusps are compared with Swiss Ephemeris here.
 """
 from __future__ import annotations
 
@@ -20,35 +15,28 @@ import re
 from . import _fx, house_sphere
 from ._common import PLANETS, SIGNS, TAIPEI, product_client, spoken_longitude as _spoken, swiss
 
-
 FRAGMENT = "blog-whole-sign-vs-placidus"
 SYSTEMS = "WPRB"
 ORDER = ("sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn")
 COUNT = "零一二三四五六七"
-# The polar status table (表 4) as the article states it.
 POLAR_STATES = {"W": "available_polar_geometry", "P": "placidus_no_semiarc", "R": "unstable", "B": "unstable"}
 SYSTEM_NAMES = {"W": "整宮制", "P": "Placidus", "R": "Regiomontanus", "B": "Alcabitius"}
 SHORT = {"W": "整宮", "P": "Placidus", "R": "Regiomontanus", "B": "Alcabitius"}
-# Figure 1's switch: the overlay the article is about first, then each system alone.
 VARIANTS = (("both", "整宮＋Placidus"), ("whole", "整宮制"), ("placidus", "Placidus"),
             ("regio", "Regiomontanus"), ("alcab", "Alcabitius"))
 QUADRANT = {"both": "P", "whole": None, "placidus": "P", "regio": "R", "alcab": "B"}
 SWITCH_LABEL = "切換宮位制"
 IDLE = "用 Tab 鍵移到一顆行星上，或用滑鼠指著它，這裡會寫出它的位置與落在第幾宮。"
 
-
 def _request(system: str, *, polar: bool = False, houses: bool = True) -> dict:
-    lat, lon, hour, zone = (69.6496, 18.9560, 12, "Europe/Oslo") if polar else (*TAIPEI, 11,
-                                                                                "Asia/Taipei")
+    lat, lon, hour, zone = (69.6496, 18.9560, 12, "Europe/Oslo") if polar else (*TAIPEI, 11, "Asia/Taipei")
     options: dict[str, object] = {"house_system": system}
     if houses:
         options["include_houses"] = True
     return {"birth_time_precision": "exact",
-            "datetime": {"year": 1990, "month": 5, "day": 15, "hour": hour, "minute": 0, "second": 0},
-            "location": {"latitude": lat, "longitude": lon, "altitude_m": 10},
-            "timezone": {"mode": "iana", "iana_name": zone},
-            "options": options}
-
+        "datetime": {"year": 1990, "month": 5, "day": 15, "hour": hour, "minute": 0, "second": 0},
+        "location": {"latitude": lat, "longitude": lon, "altitude_m": 10},
+        "timezone": {"mode": "iana", "iana_name": zone}, "options": options}
 
 def _data() -> dict:
     with product_client() as post:
@@ -78,12 +66,10 @@ def _data() -> dict:
             raise RuntimeError(f"polar house states changed: {polar}")
     return d
 
-
 def _written(lon: float) -> str:
     total = round(lon * 60)
     sign, rest = divmod(total, 30 * 60)
     return f"{SIGNS[sign]}座 {rest // 60}°{rest % 60:02d}′"
-
 
 def _cell(lon: float) -> str:
     k = int(lon // 30)
@@ -94,18 +80,13 @@ def _cell(lon: float) -> str:
         dd, mm = dd + 1, 0
     return f"{SIGNS[k]} {dd}°{mm:02d}′"
 
-
 def _position(d: dict, key: str) -> str:
-    """A body's place as table 2 prints it (whole minutes, not rounded), with 座."""
     sign, dms, _ = d["bodies"][key]
     return f"{SIGNS[sign]}座 {dms[:dms.index('′') + 1]}"
 
-
 def _cusp_text(lon: float) -> str:
-    """A cusp as table 3 prints it, with 座."""
     sign, rest = _cell(lon).split(" ")
     return f"{sign}座 {rest}"
-
 
 # --- figure 1: the wheel ------------------------------------------------------
 
@@ -117,9 +98,7 @@ def _house_of(cusps: list[float], lon: float) -> int:
             return i + 1
     raise RuntimeError(f"no house holds {lon}")
 
-
 def _check_drawn_houses(d: dict) -> None:
-    """Each body's house, read from the cusps the wheel draws, is the product's placement."""
     for system in SYSTEMS:
         placements = dict(d[system]["placements"])
         cusps = d[system]["cusps"]
@@ -128,9 +107,7 @@ def _check_drawn_houses(d: dict) -> None:
             if drawn != placements[key]:
                 raise RuntimeError(f"{system} {key}: drawn in house {drawn}, the product says {placements[key]}")
 
-
 _TEXT = re.compile(r'<text x="([-0-9.]+)" y="([-0-9.]+)" class="([^"]+)"(?: text-anchor="(\w+)")?>([^<]*)</text>')
-
 
 def _inside_plate(markup: str, layout: str, width: float, height: float) -> None:
     """Every label of a drawing lies inside its plate (a label past the edge is cut off at 375 px)."""
@@ -142,7 +119,6 @@ def _inside_plate(markup: str, layout: str, width: float, height: float) -> None
         if left < 6 or left + w > width - 6 or float(y) - size < 6 or float(y) > height - 6:
             raise RuntimeError(f"{layout}: the label {value!r} runs past the plate")
 
-
 def _geometry(layout: str) -> dict:
     if layout == "fx-wide":
         return {"W": _fx.WIDE, "H": 600.0, "cx": 306.0, "cy": 304.0, "R0": 250.0, "R1": 214.0, "R2": 184.0,
@@ -150,10 +126,8 @@ def _geometry(layout: str) -> dict:
     return {"W": _fx.NARROW, "H": 616.0, "cx": 170.0, "cy": 172.0, "R0": 130.0, "R1": 110.0, "R2": 92.0,
             "hub": 25.0, "qnum": 37.0, "orbits": (78.0, 56.0), "mark": 9.0, "glyph": 11.5, "pad": 7.0}
 
-
 def _placed(d: dict, g: dict, pt) -> dict[str, tuple[float, float]]:
-    """Each body's mark: at its longitude on the outer orbit, or the inner one
-    when that would touch a mark already placed."""
+    """Each body's mark: at its longitude on the outer orbit, or the inner one when that would touch a placed mark."""
     placed: dict[str, tuple[float, float]] = {}
     for key, (_, _, lon) in sorted(d["bodies"].items(), key=lambda kv: kv[1][2]):
         if key not in ORDER:
@@ -167,11 +141,9 @@ def _placed(d: dict, g: dict, pt) -> dict[str, tuple[float, float]]:
         placed[key] = (x, y)
     return placed
 
-
 def _mark(key: str, x: float, y: float, g: dict, solid: bool) -> str:
     disc, gl = ("fx-mk-on", "fx-mk-gl-on") if solid else ("fx-mk", "fx-mk-gl")
     return _fx.circle(x, y, g["mark"], disc) + _fx.glyph(key, x, y, g["glyph"], gl)
-
 
 def _houses_text(variant: str, w: int, q: int | None, bound: _fx.Bound) -> str:
     system = QUADRANT[variant]
@@ -181,7 +153,6 @@ def _houses_text(variant: str, w: int, q: int | None, bound: _fx.Bound) -> str:
     quadrant = f"{SHORT[system]} {bound.num(str(q))}"
     return f"{whole}・{quadrant}" if variant == "both" else f"{quadrant}・{whole}"
 
-
 def _wheel(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
     g = _geometry(layout)
     wide = layout == "fx-wide"
@@ -189,20 +160,16 @@ def _wheel(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
     R0, R1, R2, hub = g["R0"], g["R1"], g["R2"], g["hub"]
     asc = float(d["W"]["angles"]["asc"][2])
     mc = float(d["W"]["angles"]["mc"][2])
-
     def pt(lon: float, r: float) -> tuple[float, float]:
         a = math.radians(180 + (lon - asc))
         return cx + r * math.cos(a), cy - r * math.sin(a)
-
     def ray(lon: float, r0: float, r1: float, cls: str) -> str:
         (x0, y0), (x1, y1) = pt(lon, r0), pt(lon, r1)
         return _fx.line(x0, y0, x1, y1, cls)
-
     houses = {s: dict(d[s]["placements"]) for s in SYSTEMS}
     small = "fx-t fx-small"
     out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)]
     out.append(_fx.circle(cx, cy, R0, "fx-wh-ring"))
-    # the signs: names in the outer ring, their boundaries across it
     for k in range(12):
         x, y = pt(30 * k + 15, (R0 + R1) / 2)
         out.append(_fx.text(x, y + (5 if wide else 4), SIGNS[k], small + " fx-dim", "middle"))
@@ -215,7 +182,6 @@ def _wheel(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
         body = []
         system = QUADRANT[variant]
         if variant in ("both", "whole"):
-            # whole-sign houses: the sign boundaries are the house boundaries
             for k in range(12):
                 x, y = pt(30 * k + 15, (R1 + R2) / 2)
                 body.append(_fx.text(x, y + (5 if wide else 4), bound.label(str((k - first_sign) % 12 + 1)),
@@ -233,7 +199,6 @@ def _wheel(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
                 body.append(_fx.text(x, y + (5 if wide else 4), bound.label(str(i + 1)), small + " fx-num", "middle"))
         variants.append(_fx.variant_group(variant, VARIANTS[0][0], "".join(body)))
     out += variants
-    # the axes: the quadrant systems' cusps 1, 4, 7 and 10; whole-sign houses do not start there
     for lon in (asc, mc):
         out.append(ray(lon, hub, R2, "fx-wh-axis") + ray(lon + 180, hub, R2, "fx-wh-axis"))
     out.append(_fx.circle(cx, cy, hub, "fx-wh-hub"))
@@ -253,8 +218,6 @@ def _wheel(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
     mx, my = pt(mc, R0 + (30 if wide else 22))
     out.append(_fx.text(mx, my, "中天", "fx-t", "middle"))
     out.append(ray(mc, R0, R0 + tick, "fx-wh-axis"))
-
-    # the bodies: on the wheel, and listed with their houses
     marks = _placed(d, g, pt)
     if wide:
         lx, ly, row = 590.0, 74.0, 50.0
@@ -275,7 +238,6 @@ def _wheel(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
         tx, ty = pt(lon, R2 - (8 if wide else 6))
         out.append(_fx.line(tx, ty, mx, my, "fx-hair"))
         rx, ry = lx + g["mark"] + 2, top + row / 2 - (8 if wide else 2)
-        # the open mark under every system; a solid one drawn over it where this system moves the planet
         body = [_mark(key, mx, my, g, False) + _mark(key, rx, ry, g, False)]
         for variant, _ in VARIANTS:
             system = QUADRANT[variant]
@@ -293,7 +255,6 @@ def _wheel(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
         out.append(_fx.text(name_x, ry + (6 if wide else 5), PLANETS[key], "fx-t fx-name"))
         out.append(_fx.text(name_x + (44 if wide else 32), ry + (6 if wide else 5), position, small + " fx-num"))
         out.append("</g>")
-    # how to read the lines, next to the list
     ky = ly + len(ORDER) * row + (22 if wide else 18)
     sample = 34 if wide else 26
     out.append(_fx.line(lx, ky - 5, lx + sample, ky - 5, "fx-wh-whole")
@@ -302,10 +263,9 @@ def _wheel(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
         system = QUADRANT[variant]
         lines = ""
         if system:
-            lines = (_fx.line(lx, ky + 19, lx + sample, ky + 19, "fx-wh-cusp")
-                     + _fx.text(lx + sample + 8, ky + 24, f"虛線：{SYSTEM_NAMES[system]} 的宮頭", small)
-                     + _fx.circle(lx + sample / 2, ky + 44, g["mark"] - 3, "fx-mk-on")
-                     + _fx.text(lx + sample + 8, ky + 49, "實心：與整宮制落在不同的宮", small))
+            lines = (_fx.line(lx, ky + 19, lx + sample, ky + 19, "fx-wh-cusp") + _fx.text(lx + sample + 8, ky + 24,
+                f"虛線：{SYSTEM_NAMES[system]} 的宮頭", small) + _fx.circle(lx + sample / 2, ky + 44, g["mark"] - 3,
+                "fx-mk-on") + _fx.text(lx + sample + 8, ky + 49, "實心：與整宮制落在不同的宮", small))
         out.append(_fx.variant_group(variant, VARIANTS[0][0], lines))
     out.append("</svg>")
     markup = "".join(out)
@@ -313,7 +273,6 @@ def _wheel(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
         raise RuntimeError(f"figure 1 {layout} outgrew its drawing")
     _inside_plate(markup, layout, W, H)
     return markup
-
 
 def _wheel_sentence(d: dict, variant: str, key: str, bound: _fx.Bound) -> str:
     name = PLANETS[key]
@@ -332,15 +291,13 @@ def _wheel_sentence(d: dict, variant: str, key: str, bound: _fx.Bound) -> str:
     text += "兩者相同。" if q == w else "兩者不同。"
     return text
 
-
 def _wheel_figure(d: dict) -> str:
     bound = _fx.Bound()
     asc = float(d["W"]["angles"]["asc"][2])
     mc = float(d["W"]["angles"]["mc"][2])
     whole, placidus = dict(d["W"]["placements"]), dict(d["P"]["placements"])
     moved = [key for key in ORDER if whole[key] != placidus[key]]
-    differences = "；".join(f"{PLANETS[key]}在整宮制落第 {whole[key]} 宮、在 Placidus 落第 {placidus[key]} 宮"
-                           for key in moved)
+    differences = "；".join(f"{PLANETS[key]}在整宮制落第 {whole[key]} 宮、在 Placidus 落第 {placidus[key]} 宮" for key in moved)
     moment = _request("W")["datetime"]
     when = bound.num(f"{moment['year']} 年 {moment['month']} 月 {moment['day']} 日上午 {moment['hour']} 點")
     notes = [_fx.Note(key, variant, _wheel_sentence(d, variant, key, bound)) for variant, _ in VARIANTS for key in ORDER]
@@ -363,7 +320,6 @@ def _wheel_figure(d: dict) -> str:
         bound=bound,
     )
 
-
 # --- figure 2: the sphere -----------------------------------------------------
 
 _SPHERE_SCRIPT = r"""
@@ -379,15 +335,12 @@ process.stdout.write(JSON.stringify(out));
 # The scene's own 640-unit drawing, cropped to the sphere and its labels.
 SPHERE_CROP = (20.0, 95.0, 620.0, 605.0)
 # The sphere script's roles, drawn in the engraved-plate style.
-SPHERE_ROLES = (
-    ("hs-ball", "fx-sph-ball"), ("hs-ground", "fx-sph-ground"), ("hs-hor", "fx-sph-hor"),
-    ("hs-mer", "fx-sph-faint"), ("hs-equ", "fx-sph-faint"),
-    ("hs-pv", "fx-sph-faint"), ("hs-cut-faint", "fx-sph-cut fx-sph-dim"), ("hs-cut", "fx-sph-cut"),
-    ("hs-arc", "fx-sph-arc"), ("hs-day", "fx-sph-faint"), ("hs-ecl-a", "fx-sph-ecl"), ("hs-ecl-b", "fx-sph-ecl-b"),
-    ("hs-tick", "fx-axis"), ("hs-pt-hor", "fx-sph-pt-open"), ("hs-pt-equ", "fx-sph-pt-open"),
-    ("hs-pt-pv", "fx-sph-pt-open"), ("hs-pt-dim", "fx-sph-pt-dim"), ("hs-pt", "fx-sph-pt"),
-)
-
+SPHERE_ROLES = (("hs-ball", "fx-sph-ball"), ("hs-ground", "fx-sph-ground"), ("hs-hor", "fx-sph-hor"),
+    ("hs-mer", "fx-sph-faint"), ("hs-equ", "fx-sph-faint"), ("hs-pv", "fx-sph-faint"),
+    ("hs-cut-faint", "fx-sph-cut fx-sph-dim"), ("hs-cut", "fx-sph-cut"), ("hs-arc", "fx-sph-arc"),
+    ("hs-day", "fx-sph-faint"), ("hs-ecl-a", "fx-sph-ecl"), ("hs-ecl-b", "fx-sph-ecl-b"), ("hs-tick", "fx-axis"),
+    ("hs-pt-hor", "fx-sph-pt-open"), ("hs-pt-equ", "fx-sph-pt-open"), ("hs-pt-pv", "fx-sph-pt-open"),
+    ("hs-pt-dim", "fx-sph-pt-dim"), ("hs-pt", "fx-sph-pt"))
 
 def _role(classes: str) -> str:
     names = classes.split()
@@ -395,7 +348,6 @@ def _role(classes: str) -> str:
         if source in names:
             return role + (" fx-sph-back" if "hs-back" in names else "")
     raise RuntimeError(f"no plate role for the sphere's {classes!r}")
-
 
 def _label_class(classes: str) -> tuple[str, str]:
     names = classes.split()
@@ -406,7 +358,6 @@ def _label_class(classes: str) -> tuple[str, str]:
         cls += " fx-dim"
     return cls, "end" if "hs-t-end" in names else "middle"
 
-
 def _sphere_panel(scene: dict, layout: str, ox: float, oy: float, s: float, bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
     size_of = _fx.text_sizes()
@@ -414,7 +365,6 @@ def _sphere_panel(scene: dict, layout: str, ox: float, oy: float, s: float, boun
     X = lambda x: ox + (float(x) - x0) * s  # noqa: E731
     Y = lambda y: oy + (float(y) - y0) * s  # noqa: E731
     out: list[str] = []
-
     def walk(node: dict) -> None:
         tag, a = node["tag"], node["attrs"]
         if tag == "g" and "hs-title" in a.get("class", ""):
@@ -432,12 +382,10 @@ def _sphere_panel(scene: dict, layout: str, ox: float, oy: float, s: float, boun
             labels.append((_rank(a["class"]), a, node["text"]))
         for child in node["children"]:
             walk(child)
-
     labels: list[tuple[int, dict, str]] = []
     walk(scene)
-    # The script's labels can touch where the sphere is crowded (the zenith and
-    # the ecliptic pole, a house number and a compass point): a label that would
-    # overlap one ranked higher moves a line aside, or is left out where no place is free.
+    # Labels can touch where the sphere is crowded: one that would overlap a higher-ranked label moves a line aside, or
+    # is left out where no place is free.
     placed: list[tuple[float, float, float, float]] = []
     for _, a, value in sorted(labels, key=lambda item: item[0]):
         cls, anchor = _label_class(a["class"])
@@ -459,11 +407,9 @@ def _sphere_panel(scene: dict, layout: str, ox: float, oy: float, s: float, boun
         out.append(_fx.text(x, y, value, cls, anchor))
     return "".join(out)
 
-
 def _simplified(points: list[tuple[float, float]], tolerance: float = 0.3) -> list[tuple[float, float]]:
-    """The points a line needs at this scale (Ramer–Douglas–Peucker): the
-    script samples its circles every few degrees, more than a 420-unit panel
-    can show; a point within `tolerance` units of the chord is dropped."""
+    """The points a line needs at this scale (Ramer-Douglas-Peucker): the script samples circles every few degrees,
+    more than a 420-unit panel can show; points within `tolerance` units of the chord are dropped."""
     if len(points) < 3:
         return points
     (x0, y0), (x1, y1) = points[0], points[-1]
@@ -477,11 +423,9 @@ def _simplified(points: list[tuple[float, float]], tolerance: float = 0.3) -> li
         return [points[0], points[-1]]
     return _simplified(points[: far + 1], tolerance)[:-1] + _simplified(points[far:], tolerance)
 
-
 def _rank(classes: str) -> int:
-    """Which sphere label keeps its place (others move a line aside, or are left
-    out): the axes first, then house numbers, the compass and the zenith, the
-    dim ones, the sign names, the far side last."""
+    """Which sphere label keeps its place, in rank order: axes, house numbers, compass and zenith, dim ones, sign names,
+    far side last."""
     names = set(classes.split())
     if "hs-t-axis" in names:
         return 0
@@ -492,7 +436,6 @@ def _rank(classes: str) -> int:
     if names & {"hs-t-hor", "hs-t-end"}:
         return 2
     return 4 if "hs-t-sign" in names else 3
-
 
 def _sphere(layout: str, fid: str, script: dict, bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
@@ -523,7 +466,6 @@ def _sphere(layout: str, fid: str, script: dict, bound: _fx.Bound) -> str:
     _inside_plate(markup, layout, W, H)
     return markup
 
-
 def _sphere_figure() -> str:
     script = house_sphere.sphere_node(_SPHERE_SCRIPT)
     start = script["start"]
@@ -533,7 +475,6 @@ def _sphere_figure() -> str:
             if theirs is None or max(map(house_sphere.arcsec, item["cusps"], theirs)) >= house_sphere.TOLERANCE_ARCSEC:
                 raise RuntimeError(f"the sphere script's {item['sys']} cusps differ from Swiss Ephemeris")
             if item["sys"] == "P":
-                # Placidus cusps 1 and 10 are the ascendant and the MC of this sky.
                 angles = theirs[0], theirs[9]
     bound = _fx.Bound()
     minutes = round(start["armc"] * 4) % 1440
@@ -552,7 +493,6 @@ def _sphere_figure() -> str:
         bound=bound,
     )
 
-
 # --- figure 3: the polar band -------------------------------------------------
 
 def _polar(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
@@ -567,13 +507,10 @@ def _polar(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
     right = bound.scale("90°")
     places = (("臺北", _request("W")["location"]["latitude"], "四種宮位制都可以算"),
               ("特羅姆瑟", _request("W", polar=True)["location"]["latitude"], "在極區帶內"))
-
     def lat_y(phi: float) -> float:
         return gy - gr * math.sin(math.radians(phi))
-
     def half(phi: float) -> float:
         return gr * math.cos(math.radians(phi))
-
     out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)]
     out.append(_fx.circle(gx, gy, gr, "fx-track"))
     for sign in (1, -1):
@@ -608,7 +545,6 @@ def _polar(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
     _inside_plate(markup, layout, W, H)
     return markup
 
-
 def _polar_figure(d: dict) -> str:
     bound = _fx.Bound()
     limit = bound.num(f"{90.0 - d['polar_obliquity']:.2f}")
@@ -624,7 +560,6 @@ def _polar_figure(d: dict) -> str:
         bound=bound,
     )
 
-
 # --- tables -------------------------------------------------------------------
 
 def _cusps(d: dict) -> str:
@@ -633,7 +568,6 @@ def _cusps(d: dict) -> str:
         cells = "".join(f'<td class="n">{_cell(d[hs]["cusps"][i])}</td>' for hs in SYSTEMS)
         rows.append(f'          <tr><td class="n">{i+1}</td>{cells}</tr>')
     return "\n".join(rows)
-
 
 def _places(d: dict) -> str:
     rows = []
@@ -647,27 +581,20 @@ def _places(d: dict) -> str:
                     f'{dms[:dms.index("′")+1]}</td>{cells}</tr>')
     return "\n".join(rows)
 
-
 def _figures(d: dict) -> dict[str, str]:
     """The page's sprite and its three figures, each checked by `_fx.problems`."""
     _check_drawn_houses(d)
     return {"wheel": _wheel_figure(d), "sphere": _sphere_figure(), "polar-band": _polar_figure(d),
             "fx-defs": _fx.defs(ORDER)}
 
-
 def build() -> tuple[dict[str, str], list[str]]:
     d = _data()
     asc = float(d["W"]["angles"]["asc"][2])
     mc = float(d["W"]["angles"]["mc"][2])
     reason = d["polar_reason"]
-    quoted = [
-        f"上升點在{_written(asc)}，中天在{_written(mc)}",
-        f"Placidus 的第十二宮頭在{_written(d['P']['cusps'][11])}",
-        f"Alcabitius 的在{_written(d['B']['cusps'][8])}",
-        "原因代碼 <code>placidus_no_semiarc</code>",
-        "1900 到 2399 年間它落在 66.54 到 66.62 度之間",
-    ]
-    # The article restates the refusal message's band.
+    quoted = [f"上升點在{_written(asc)}，中天在{_written(mc)}", f"Placidus 的第十二宮頭在{_written(d['P']['cusps'][11])}",
+        f"Alcabitius 的在{_written(d['B']['cusps'][8])}", "原因代碼 <code>placidus_no_semiarc</code>",
+        "1900 到 2399 年間它落在 66.54 到 66.62 度之間"]
     if "1900–2399 年間在 66.54°–66.62° 之間" not in reason:
         raise RuntimeError(f"the Placidus refusal states a different polar band: {reason}")
     return {**_figures(d), "placements": _places(d), "cusps": _cusps(d)}, quoted

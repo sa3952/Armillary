@@ -1,15 +1,11 @@
-"""〈臺灣的時區與夏令時間〉: figure 1 (clock offset from UT, 1890–1985, each
-era and run of summers can be pointed at), figure 2 (the clock hour skipped
-and the one repeated in 1974), figure 3 (what the two documented revisions of
-the database touched), table 1 (the daylight-saving summers) and the
-synthetic 1975 example.
+"""〈臺灣的時區與夏令時間〉: figure 1 (clock offset from UT, 1890–1985), figure 2 (the clock hour skipped and the one
+repeated in 1974), figure 3 (what the two documented revisions of the database touched), table 1 (the daylight-saving
+summers) and the synthetic 1975 example.
 
-The offsets are pinned in taiwan_tz_2026d.json (IANA tz 2026d, Asia/Taipei,
-1890–1990), so the figure does not change with the host's tz database.  The
-check re-derives the same transitions from the host's zoneinfo and fails if
-they differ: then either the host's tz data is older than 2014f or a newer
-release rewrote Taiwan's history, and the article must be revisited before
-the pin is replaced.
+The offsets are pinned in taiwan_tz_2026d.json (IANA tz 2026d, Asia/Taipei, 1890–1990) so the figure does not change with
+the host's tz database.  The check re-derives the same transitions from the host's zoneinfo and fails if they differ:
+either the host's tz data is older than 2014f or a newer release rewrote Taiwan's history, and the article must be
+revisited before the pin is replaced.
 """
 from __future__ import annotations
 
@@ -22,27 +18,22 @@ from zoneinfo import ZoneInfo
 from . import _fx
 from ._common import SIGNS, TAIPEI, swiss, zh
 
-
 FRAGMENT = "blog-taiwan-time-zone-history"
 PIN = Path(__file__).with_name("taiwan_tz_2026d.json")
 LAT, LON = TAIPEI
 EXAMPLE_LOCAL = datetime(1975, 7, 15, 15, 0)
 
-
 def derive_transitions(zone: str, first_year: int, end_year: int) -> list[dict]:
-    """Every UTC-offset change of `zone` in [first_year, end_year), to the second.
-
-    Scans day by day, then bisects on whole POSIX seconds; a day holding two
-    changes (which would hide one) is refused rather than missed.
-    """
+    """Every UTC-offset change of `zone` in [first_year, end_year), to the second.  Scans day by day, then bisects; a
+    day holding two changes (which would hide one) is refused rather than missed."""
     z = ZoneInfo(zone)
-
+    # The epoch plus the seconds, not fromtimestamp, which Windows refuses for a negative (pre-1970) second.
+    epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
     def offset(second: int) -> timedelta:
-        value = datetime.fromtimestamp(second, timezone.utc).astimezone(z).utcoffset()
+        value = (epoch + timedelta(seconds=second)).astimezone(z).utcoffset()
         if value is None:
             raise RuntimeError(f"{zone} has no UTC offset at {second}")
         return value
-
     day = 86400
     t = int(datetime(first_year, 1, 1, tzinfo=timezone.utc).timestamp())
     stop = int(datetime(end_year, 1, 1, tzinfo=timezone.utc).timestamp())
@@ -61,24 +52,18 @@ def derive_transitions(zone: str, first_year: int, end_year: int) -> list[dict]:
                     hi = mid
             if offset(hi) != current:
                 raise RuntimeError(f"more than one offset change within a day after {lo}")
-            instant = datetime.fromtimestamp(hi, timezone.utc)
-            found.append({
-                "utc": instant.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "from": int(previous.total_seconds()),
-                "to": int(current.total_seconds()),
-                "abbr": instant.astimezone(z).tzname(),
-            })
+            instant = epoch + timedelta(seconds=hi)
+            found.append({"utc": instant.strftime("%Y-%m-%dT%H:%M:%SZ"), "from": int(previous.total_seconds()),
+                "to": int(current.total_seconds()), "abbr": instant.astimezone(z).tzname()})
             previous = current
         t = n
     return found
-
 
 def load_pin() -> dict:
     pin = json.loads(PIN.read_text(encoding="utf-8"))
     if not pin.get("transitions"):
         raise RuntimeError(f"{PIN.name} holds no transitions")
     return pin
-
 
 def check_host_agrees(pin: dict) -> None:
     observed = derive_transitions(pin["zone"], *pin["years"])
@@ -88,18 +73,14 @@ def check_host_agrees(pin: dict) -> None:
             f"{pin['zone']} {pin['years']}: {len(observed)} observed, {len(pin['transitions'])} pinned"
         )
 
-
 def _utc(record: dict) -> datetime:
     return datetime.strptime(record["utc"], "%Y-%m-%dT%H:%M:%SZ")
-
 
 def _local_before(record: dict) -> datetime:
     return _utc(record) + timedelta(seconds=record["from"])
 
-
 def _local_after(record: dict) -> datetime:
     return _utc(record) + timedelta(seconds=record["to"])
-
 
 def _offset_at(transitions: list[dict], utc: datetime) -> int:
     current = transitions[0]["from"]
@@ -108,41 +89,29 @@ def _offset_at(transitions: list[dict], utc: datetime) -> int:
             current = record["to"]
     return current
 
-
-# The three figures: the offset over 1890–1985 (each era and each run of
-# summers can be pointed at), the hour skipped and the hour repeated in 1974,
-# and the two documented revisions of the database.  Every date, offset and
-# clock reading is read from the pinned transitions; the only numbers that are
-# not are the citations' own (the decree, the meridian, the release names, and
-# the year the 2010 mail says the database then held).
+# Every date, offset and clock reading is read from the pinned transitions; the only numbers that are not are the
+# citations' own (the decree, the meridian, the release names, and the year the 2010 mail says the database then held).
 AXIS = (1890, 1985)
 IDLE = "用 Tab 鍵移到一段時期上，或用滑鼠指著它，這裡會寫出那段時期的制度與起訖。"
 SUMMER = ("CDT", "CST")
-
 
 def _year(t: datetime) -> float:
     start, nxt = datetime(t.year, 1, 1), datetime(t.year + 1, 1, 1)
     return t.year + (t - start) / (nxt - start)
 
-
 def _hm(seconds: int) -> tuple[int, int]:
     return seconds // 3600, seconds % 3600 // 60
-
 
 def _date(t: datetime) -> str:
     return f"{t.year} 年 {t.month} 月 {t.day} 日"
 
-
 def _summers(tr: list[dict]) -> list[tuple[datetime, datetime]]:
-    """Every daylight-saving summer: (clock start, clock end), as the clock read them."""
     pairs = tr[3:]
     if len(pairs) % 2 or any((a["abbr"], b["abbr"]) != SUMMER for a, b in zip(pairs[::2], pairs[1::2])):
         raise RuntimeError("after the third change the pinned transitions are no longer summer pairs")
     return [(_local_before(a), _local_before(b)) for a, b in zip(pairs[::2], pairs[1::2])]
 
-
 def _runs(summers: list[tuple[datetime, datetime]]) -> list[list[tuple[datetime, datetime]]]:
-    """The summers in runs, split where more than five years pass without one."""
     runs: list[list] = []
     for summer in summers:
         if runs and summer[0].year - runs[-1][-1][0].year <= 5:
@@ -153,9 +122,7 @@ def _runs(summers: list[tuple[datetime, datetime]]) -> list[list[tuple[datetime,
         raise RuntimeError(f"the figure names two runs of summers, the pin has {len(runs)}")
     return runs
 
-
 def _eras(pin: dict, bound: _fx.Bound) -> list[dict]:
-    """The six things figure 1 lets a reader point at, each with its sentence."""
     tr = pin["transitions"]
     if [r["abbr"] for r in tr[:3]] != ["CST", "JST", "CST"] or tr[0]["to"] != tr[2]["to"]:
         raise RuntimeError("the first three pinned changes are no longer LMT→UTC+8→UTC+9→UTC+8")
@@ -164,7 +131,6 @@ def _eras(pin: dict, bound: _fx.Bound) -> list[dict]:
     b = lambda v: bound.num(str(v))  # noqa: E731
     utc8, utc9 = f"UTC+{b(standard // 3600)}", f"UTC+{b(japan // 3600)}"
     t1896, t1937, t1945 = (_local_before(r) for r in tr[:3])
-    # The clock readings at each change: before and after.
     jump = (bound.num(f"{t1937:%H:%M}"), bound.num(f"{_local_after(tr[1]):%H:%M}"))
     back = (_local_before(tr[2]), _local_after(tr[2]))
     runs = _runs(_summers(tr))
@@ -213,10 +179,9 @@ def _eras(pin: dict, bound: _fx.Bound) -> list[dict]:
     ]
     return eras
 
-
 def _gap(years: list[int], bound: _fx.Bound) -> str:
-    """「（1976–1978 年沒有實施）」: the years inside a run of summers without one,
-    so a table row from 1974 to 1979 is not read as six summers."""
+    """「（1976–1978 年沒有實施）」: the years inside a run of summers without one, so a row from 1974 to 1979 is not read as
+    six summers."""
     missing = [y for y in range(years[0], years[-1] + 1) if y not in years]
     if not missing:
         return ""
@@ -226,16 +191,13 @@ def _gap(years: list[int], bound: _fx.Bound) -> str:
         f"{bound.num(str(missing[0]))}–{bound.num(str(missing[-1]))}"
     return f"（{span} 年沒有實施）"
 
-
 def _date_b(t: datetime, bound: _fx.Bound) -> str:
     return bound.num(_date(t))
-
 
 def _span(era: dict) -> tuple[float, float]:
     if "run" in era:
         return _year(era["run"][0][0]), _year(era["run"][-1][1])
     return _year(era["start"]), _year(era["end"])
-
 
 def _row(era: dict, body: str, hit: tuple[float, float, float, float]) -> str:
     x, y, w, h = hit
@@ -243,14 +205,10 @@ def _row(era: dict, body: str, hit: tuple[float, float, float, float]) -> str:
     return (f'<g class="fx-row" data-fx-key="{era["key"]}" tabindex="0" aria-label="{label}">'
             + _fx.rect(x, y, w, h, "fx-hit") + body + "</g>")
 
-
 def _offsets(layout: str, fid: str, eras: list[dict], bound: _fx.Bound) -> str:
-    """Figure 1, one layout.  Wide: years across, the offset up.  Narrow: years
-    down, the offset across."""
     wide = layout == "fx-wide"
     W = _fx.WIDE if wide else _fx.NARROW
     standard = eras[1]["offset"]
-
     if wide:
         a0, a1 = 110.0, 846.0           # the year axis
         l8, l9, base = 236.0, 120.0, 268.0  # the offset axis: +8, +9, the floor of the areas
@@ -261,13 +219,10 @@ def _offsets(layout: str, fid: str, eras: list[dict], bound: _fx.Bound) -> str:
         H = a1 + 26
     T = lambda year: a0 + (year - AXIS[0]) / (AXIS[1] - AXIS[0]) * (a1 - a0)  # noqa: E731
     L = lambda seconds: l8 + (seconds - standard) / 3600 * (l9 - l8)  # noqa: E731
-
     def box(t0: float, t1: float, v0: float, v1: float) -> tuple[float, float, float, float]:
-        """(x, y, w, h) of the area between two years and two offset positions."""
         if wide:
             return T(t0), min(v0, v1), T(t1) - T(t0), abs(v1 - v0)
         return min(v0, v1), T(t0), abs(v1 - v0), T(t1) - T(t0)
-
     out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)]
     out.append(_fx.text(24 if wide else 18, 40 if wide else 32, "鐘面比世界時快", "fx-t fx-small fx-dim"))
     for seconds in (standard, eras[2]["offset"]):
@@ -278,7 +233,6 @@ def _offsets(layout: str, fid: str, eras: list[dict], bound: _fx.Bound) -> str:
         else:
             out.append(_fx.line(L(seconds), a0 - 4, L(seconds), a1, "fx-hair"))
             out.append(_fx.text(L(seconds), a0 - 14, name, "fx-t fx-small fx-num", "middle"))
-    # The years.
     for year in range(AXIS[0], AXIS[1] + 1, 10):
         tick = bound.scale(str(year))
         if wide:
@@ -288,8 +242,6 @@ def _offsets(layout: str, fid: str, eras: list[dict], bound: _fx.Bound) -> str:
             out.append(_fx.line(base - 6, T(year), base, T(year), "fx-axis"))
             out.append(_fx.text(base - 10, T(year) + 4, tick, "fx-t fx-small fx-num", "end"))
     out.append(_fx.line(*((a0, base, a1, base) if wide else (base, a0, base, a1)), "fx-axis"))
-
-    # The standard-time eras: an area up to the offset, then the stepped line over them.
     step = []
     for era in eras[:4]:
         t0, t1 = _span(era)
@@ -309,8 +261,6 @@ def _offsets(layout: str, fid: str, eras: list[dict], bound: _fx.Bound) -> str:
         d = " ".join(f"{'M' if i == 0 else 'L'}{_fx.f(y)} {_fx.f(x0)} L{_fx.f(y)} {_fx.f(x1)}"
                      for i, (x0, y, x1) in enumerate(step))
     out.append(_fx.path(d, "fx-step"))
-
-    # The summers: a solid bar from +8 to +9 for each, the run's years beside it.
     for era in eras[4:]:
         bars = "".join(_fx.rect(*_min_bar(box(_year(s), _year(e), L(standard), L(eras[2]["offset"])), wide), "fx-fill-solid")
                        for s, e in era["run"])
@@ -321,9 +271,8 @@ def _offsets(layout: str, fid: str, eras: list[dict], bound: _fx.Bound) -> str:
         else:
             hit = (l8 - 4, T(t0) - 3, W - 14 - (l8 - 4), T(t1) - T(t0) + 6)
             if era["key"] == "dst1":
-                text = (_fx.text(l9 + 8, T(t0) + 12, "日光節約", "fx-t fx-small")
-                        + _fx.text(l9 + 8, T(t0) + 28, "（夏季）", "fx-t fx-small")
-                        + _fx.text(l9 + 8, T(t0) + 46, era["label"], "fx-t fx-small fx-num"))
+                text = (_fx.text(l9 + 8, T(t0) + 12, "日光節約", "fx-t fx-small") + _fx.text(l9 + 8, T(t0) + 28, "（夏季）",
+                    "fx-t fx-small") + _fx.text(l9 + 8, T(t0) + 46, era["label"], "fx-t fx-small fx-num"))
             else:
                 # consecutive years share a line: 「1974、75」, then 「1979」
                 lines: list[list[int]] = []
@@ -332,10 +281,9 @@ def _offsets(layout: str, fid: str, eras: list[dict], bound: _fx.Bound) -> str:
                         lines[-1].append(s.year)
                     else:
                         lines.append([s.year])
-                text = "".join(
-                    _fx.text(l9 + 8, T(line[0] + len(line) / 2) + 4,
-                             "、".join([bound.num(str(line[0]))] + [bound.num(f"{y % 100:02d}") for y in line[1:]]),
-                             "fx-t fx-small fx-num") for line in lines)
+                text = "".join(_fx.text(l9 + 8, T(line[0] + len(line) / 2) + 4,
+                    "、".join([bound.num(str(line[0]))] + [bound.num(f"{y % 100:02d}") for y in line[1:]]),
+                    "fx-t fx-small fx-num") for line in lines)
         out.append(_row(era, bars + text, hit))
     if wide:
         t0, t1 = _span(eras[4])[0], _span(eras[5])[1]
@@ -344,7 +292,6 @@ def _offsets(layout: str, fid: str, eras: list[dict], bound: _fx.Bound) -> str:
     out.append("</svg>")
     return "".join(out)
 
-
 def _min_bar(box: tuple[float, float, float, float], wide: bool) -> tuple[float, float, float, float]:
     """A summer is a few pixels thick at most; never thinner than 1.6 units."""
     x, y, w, h = box
@@ -352,9 +299,7 @@ def _min_bar(box: tuple[float, float, float, float], wide: bool) -> tuple[float,
         return x, y, max(w, 1.6), h
     return x, y, w, max(h, 1.6)
 
-
 def _label(era: dict, wide: bool, T, L, base: float, l8: float, l9: float) -> str:
-    """An era's name: inside its area where it fits, otherwise beside it."""
     t0, t1 = _span(era)
     key = era["key"]
     if wide:
@@ -364,7 +309,6 @@ def _label(era: dict, wide: bool, T, L, base: float, l8: float, l9: float) -> st
             return _fx.text((T(t0) + T(t1)) / 2, (l9 + base) / 2 + 6, era["label"], "fx-t fx-num fx-key", "middle")
         if key == "cst1":
             return _fx.text(T(t0) + 14, (l8 + base) / 2 + 6, era["label"], "fx-t")
-        # cst2: between the two runs of summers
         return _fx.text(T(1962.5), (l8 + base) / 2 + 6, era["label"], "fx-t fx-num")
     if key == "jst":
         return _fx.text((base + L(era["offset"])) / 2, (T(t0) + T(t1)) / 2 + 5, era["label"],
@@ -373,22 +317,18 @@ def _label(era: dict, wide: bool, T, L, base: float, l8: float, l9: float) -> st
     x = L(era["offset"]) + 10
     return _fx.text(x, y, era["label"], "fx-t fx-small fx-key" if key == "lmt" else "fx-t fx-key")
 
-
 def _offset_table(eras: list[dict]) -> str:
     rows = "".join(
         f'<tr data-fx-key="{e["key"]}"><th scope="row">{e["name"]}</th><td>{e["offset_text"]}</td>'
         f'<td>{e["from"]}</td><td>{e["to"]}</td></tr>' for e in eras)
     return _fx.data_table(("時期", "鐘面比世界時快", "起", "迄"), rows)
 
-
 def _clock(t: datetime) -> str:
     return f"{t:%H:%M}"
 
-
 def _mapping(x0: float, top: float, k: float, record: dict, bound: _fx.Bound, wide: bool) -> str:
-    """One panel of figure 2: universal time above, the clock below, a line
-    from each quarter hour to what the clock read then.  A skipped hour is left
-    without lines; a repeated hour receives them twice."""
+    """One panel of figure 2: universal time above, the clock below, a line from each quarter hour to what the clock
+    read then.  A skipped hour has no lines; a repeated hour receives them twice."""
     utc = _utc(record)
     before, after = record["from"], record["to"]
     skipped = after > before
@@ -401,17 +341,14 @@ def _mapping(x0: float, top: float, k: float, record: dict, bound: _fx.Bound, wi
     yu, yc = top + 70, top + 170
     small = "fx-t fx-small"
     date = _local_after(record) if skipped else _local_before(record) - timedelta(seconds=1)
-    title = (f"{bound.num(_date(date))}凌晨：跳過一小時" if skipped
-             else f"{bound.num(_date(date))}深夜：重複一小時")
+    title = (f"{bound.num(_date(date))}凌晨：跳過一小時" if skipped else f"{bound.num(_date(date))}深夜：重複一小時")
     out = [_fx.text(x0, top + 20, title, "fx-t")]
     out.append(_fx.text(x0, yu - 34, "世界時", small + " fx-dim"))
     out.append(_fx.text(x0, yc + 42, "臺灣的鐘面時間", small + " fx-dim"))
-    # The hour without a counterpart, or with two.
     hour_start = _local_before(record) if skipped else _local_after(record)
     hour_end = hour_start + timedelta(hours=1)
     band = "fx-fill-hatch" if skipped else "fx-fill-cross"
     out.append(_fx.rect(C(hour_start), yc - 22, C(hour_end) - C(hour_start), 22, band))
-    # The mapping lines, every quarter hour; at the change itself both readings.
     t = u0
     while t <= utc + span:
         offsets = [before, after] if t == utc else [before if t < utc else after]
@@ -427,7 +364,6 @@ def _mapping(x0: float, top: float, k: float, record: dict, bound: _fx.Bound, wi
     for t in _hours(c0, c_end):
         out.append(_fx.line(C(t), yc, C(t), yc + 5, "fx-axis"))
         out.append(_fx.text(C(t), yc + 20, bound.scale(_clock(t)), small + " fx-num", "middle"))
-    # The reading the article names: the middle of that hour.
     middle = hour_start + timedelta(minutes=30)
     reading = bound.num(_clock(middle))
     out.append(_fx.path(f"M{_fx.f(C(middle))} {_fx.f(yc - 26)} l-5 -9 h10 z", "fx-arrow"))
@@ -441,7 +377,6 @@ def _mapping(x0: float, top: float, k: float, record: dict, bound: _fx.Bound, wi
             out.append(_fx.text(U(when), yu - 34, n, small, "middle"))
     return "".join(out)
 
-
 def _hours(start: datetime, end: datetime) -> list[datetime]:
     first = start.replace(minute=0, second=0) + (timedelta(hours=1) if (start.minute, start.second) != (0, 0) else timedelta())
     out = []
@@ -449,7 +384,6 @@ def _hours(start: datetime, end: datetime) -> list[datetime]:
         out.append(first)
         first += timedelta(hours=1)
     return out
-
 
 def _gap_and_fold(layout: str, fid: str, pair: tuple[dict, dict], bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
@@ -468,11 +402,8 @@ def _gap_and_fold(layout: str, fid: str, pair: tuple[dict, dict], bound: _fx.Bou
     out.append("</svg>")
     return "".join(out)
 
-
 def _revisions(layout: str, fid: str, pin: dict, bound: _fx.Bound) -> str:
-    """Figure 3: what the two documented revisions touched.  Above: the summer
-    the 2010 mail moved (the database then held it in 1980); below: the span
-    2014f rewrote, with the changes the current release holds there."""
+    """Figure 3: what the two documented revisions touched (the summer the 2010 mail moved; the span 2014f rewrote)."""
     wide = layout == "fx-wide"
     W = _fx.WIDE if wide else _fx.NARROW
     tr = pin["transitions"]
@@ -489,7 +420,6 @@ def _revisions(layout: str, fid: str, pin: dict, bound: _fx.Bound) -> str:
         rows = (30.0, 186.0)
     small = "fx-t fx-small"
     out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)]
-
     def axis(y: float, a: int, b: int, every: int, X) -> list[str]:
         parts = [_fx.line(x0, y, x1, y, "fx-axis")]
         for year in range(a, b + 1, every):
@@ -497,8 +427,6 @@ def _revisions(layout: str, fid: str, pin: dict, bound: _fx.Bound) -> str:
             anchor = "start" if year == a else "end" if year + every > b else "middle"
             parts.append(_fx.text(X(year), y + 22, bound.scale(str(year)), small + " fx-num", anchor))
         return parts
-
-    # Row 1: 1974–1984.
     top = rows[0]
     a, b = last[0].year - 5, last[0].year + 5
     X = lambda year: x0 + (year - a) / (b - a) * (x1 - x0)  # noqa: E731
@@ -522,9 +450,7 @@ def _revisions(layout: str, fid: str, pin: dict, bound: _fx.Bound) -> str:
                         small, "middle"))
     out += axis(bar_y + 34, a, b, 2 if not wide else 1, X)
     out.append(_fx.text(x1 if wide else x0, bar_y + 78 if wide else bar_y + 80,
-                        f"實心：現行 {bound.num(pin['tzdata'])} 版；虛線：當時的位置",
-                        small, "end" if wide else "start"))
-    # Row 2: 1890–1950.
+        f"實心：現行 {bound.num(pin['tzdata'])} 版；虛線：當時的位置", small, "end" if wide else "start"))
     top = rows[1]
     a, b = AXIS[0], 1950
     X = lambda year: x0 + (year - a) / (b - a) * (x1 - x0)  # noqa: E731
@@ -548,7 +474,6 @@ def _revisions(layout: str, fid: str, pin: dict, bound: _fx.Bound) -> str:
                         f"直線：{bound.num(pin['tzdata'])} 版在這段的每一次改撥", small, "end" if wide else "start"))
     out.append("</svg>")
     return "".join(out)
-
 
 def _figures(pin: dict) -> dict[str, str]:
     tr = pin["transitions"]
@@ -602,7 +527,6 @@ def _figures(pin: dict) -> dict[str, str]:
     )
     return {"fx-defs": _fx.defs(()), "clock-offset": offsets, "gap-fold": gap, "tz-revisions": revisions}
 
-
 def _rows(pin: dict) -> str:
     tr = pin["transitions"]
     md = lambda t: f"{t.month} 月 {t.day} 日"  # noqa: E731
@@ -623,12 +547,10 @@ def _rows(pin: dict) -> str:
         )
     return "\n".join(rows)
 
-
 def _deg_min(lon: float) -> str:
     total = round(lon * 60)
     sign, rest = divmod(total, 30 * 60)
     return f"{SIGNS[sign]} {rest // 60}°{rest % 60:02d}′"
-
 
 def build() -> tuple[dict[str, str], list[str]]:
     pin = load_pin()
@@ -636,9 +558,7 @@ def build() -> tuple[dict[str, str], list[str]]:
     tr = pin["transitions"]
     gaps = sum(1 for record in tr if record["to"] > record["from"])
     hour_folds = sum(1 for record in tr if record["from"] - record["to"] == 3600)
-    summers = sum(1 for record in tr if (record["from"], record["to"]) == (28800, 32400)
-                  and _utc(record).year >= 1946)
-    # The example: the clock reading with the offset in force, and as if UTC+8.
+    summers = sum(1 for record in tr if (record["from"], record["to"]) == (28800, 32400) and _utc(record).year >= 1946)
     candidates = [EXAMPLE_LOCAL - timedelta(seconds=o) for o in sorted({r["to"] for r in tr})]
     right = [utc for utc in candidates if EXAMPLE_LOCAL - utc == timedelta(seconds=_offset_at(tr, utc))]
     if len(right) != 1:
@@ -648,22 +568,15 @@ def build() -> tuple[dict[str, str], list[str]]:
         def asc(utc: datetime) -> float:
             j = swe.julday(utc.year, utc.month, utc.day, utc.hour + utc.minute / 60)
             return swe.houses_ex(j, LAT, LON, b"W")[1][0]
-
         asc_right, asc_wrong = asc(right[0]), asc(wrong)
-    quoted = [
-        f"<b>{summers}</b><span>個實施日光節約時間的夏季",
-        f"{zh(summers)}個撥快一小時的夏天",
-        f"<b>{gaps}</b><span>個不存在的鐘點",
-        f"<b>{hour_folds}</b><span>個出現兩次的鐘點",
+    quoted = [f"<b>{summers}</b><span>個實施日光節約時間的夏季", f"{zh(summers)}個撥快一小時的夏天",
+        f"<b>{gaps}</b><span>個不存在的鐘點", f"<b>{hour_folds}</b><span>個出現兩次的鐘點",
         f'<td class="n">{right[0]:%H:%M}</td><td>{_deg_min(asc_right)}</td>',
         f'<td class="n">{wrong:%H:%M}</td><td class="diff">{_deg_min(asc_wrong)}</td>',
-        f"上升點差了 {(asc_wrong - asc_right) % 360:.0f} 度",
-    ]
+        f"上升點差了 {(asc_wrong - asc_right) % 360:.0f} 度"]
     return {**_figures(pin), "dst-summers": _rows(pin)}, quoted
 
-
 def elsewhere(fragment: str) -> dict[str, list[str]]:
-    """The blog index repeats the article's §02 heading."""
     summers = re.search(r"<b>(\d+)</b><span>個實施日光節約時間的夏季", fragment)
     if summers is None:
         raise RuntimeError(f"{FRAGMENT}: the stat block no longer prints the number of summers")

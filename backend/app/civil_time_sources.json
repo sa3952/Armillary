@@ -1,6 +1,6 @@
 {
  "schema": "civil-time-sources-v1",
- "tzdb_version_checked": "2026d",
+ "tzdb_version_checked": "2026e",
  "verification_levels": {
   "read_original": "已讀原件",
   "read_transcription": "已讀轉錄本",

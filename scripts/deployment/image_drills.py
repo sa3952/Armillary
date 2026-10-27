@@ -43,20 +43,16 @@ import subprocess
 import sys
 from typing import Any, Iterator, Protocol
 
-from scripts.deployment.verify_staging_http import (
-    Canary, derive_canary, generate_canary, scan_application_logs,
-)
+from scripts.deployment.verify_staging_http import (Canary, derive_canary, generate_canary, scan_application_logs)
 from scripts.tools.staging_secure_io import emit_json_receipt
 # One source for the sandbox: Gate D's compose reader and translator, which
 # refuses a model that keeps capabilities or privilege escalation.
 from scripts.verification.verify_container_runtime import (
-    _compose_run_arguments, _compose_service_model, _wait_healthy,
-)
+    _compose_run_arguments, _compose_service_model, _wait_healthy)
 
 RECEIPT_SCHEMA_VERSION = 4
-# The disposable fault runtime holds the compute lock this long.  It must
-# exceed the application's queue wait, which the drill observes rather than
-# restates: the queued chart has to be refused before the holder returns.
+# The disposable fault runtime holds the compute lock this long.  It must exceed the application's queue wait, which the
+# drill observes rather than restates: the queued chart has to be refused before the holder returns.
 HOLD_SECONDS = 30
 WORKER_REPLACEMENT_WAIT_SECONDS = 30
 DRILL_LABEL = "org.classical-astrology.drill=gate-d"
@@ -66,9 +62,7 @@ DRILL_COMPOSE_FILES = ("deploy/compose.yaml",)
 # These follow (and so override) whatever environment compose declares.
 DRILL_EXPECTED_HOST = "image-drill.invalid"
 DRILL_ENVIRONMENT = (
-    f"CLASSICAL_ASTROLOGY_EXPECTED_HOST={DRILL_EXPECTED_HOST}",
-    "CLASSICAL_ASTROLOGY_REQUIRE_FRONTEND_RELEASE=",
-)
+    f"CLASSICAL_ASTROLOGY_EXPECTED_HOST={DRILL_EXPECTED_HOST}", "CLASSICAL_ASTROLOGY_REQUIRE_FRONTEND_RELEASE=")
 ROOT = Path(__file__).resolve().parents[2]
 CONTAINER_PYTHON = "/opt/venv/bin/python"
 CONTAINER_APP_DIR = "/app/backend"
@@ -76,9 +70,8 @@ CONTAINER_PORT = 8000
 
 
 class DrillResult(str, Enum):
-    """A drill either observed the bounded behaviour, observed a violation, or
-    could not reach the case; only ``passed`` counts toward Gate D."""
-
+    """A drill either observed the bounded behaviour, observed a violation, or could not reach the case; only ``passed``
+    counts toward Gate D."""
     PASSED = "passed"
     FAILED = "failed"
     NOT_OBSERVED = "not_observed"
@@ -90,10 +83,8 @@ class Where(str, Enum):
 
 
 DRILL_LOCATIONS = {
-    "worker_restart": Where.DISPOSABLE_TWIN,
-    "timeout": Where.DISPOSABLE_FAULT_RUNTIME,
-    "unexpected_error": Where.DISPOSABLE_FAULT_RUNTIME,
-}
+    "worker_restart": Where.DISPOSABLE_TWIN, "timeout": Where.DISPOSABLE_FAULT_RUNTIME,
+    "unexpected_error": Where.DISPOSABLE_FAULT_RUNTIME}
 DRILLS = tuple(DRILL_LOCATIONS)
 
 
@@ -101,11 +92,9 @@ def _drill(result: DrillResult, **observation: Any) -> dict[str, Any]:
     return {"result": DrillResult(result).value, "observation": observation}
 
 
-# --- drill payloads ---------------------------------------------------------------
-# Synthetic, built on the canary's random year and longitude.  The capacity
-# payload asks for rise／set searches on a date-only chart at 66°N, which costs
-# about a second of Swiss work per chart (2026-10-05, Apple Silicon): long
-# enough that a worker is busy when the worker drill kills it.
+# Synthetic, built on the canary's random year and longitude.  The capacity payload asks for rise／set searches on a
+# date-only chart at 66°N, which costs about a second of Swiss work per chart (2026-10-05, Apple Silicon): long enough
+# that a worker is busy when the worker drill kills it.
 FAULT_SECOND_RAISE = 58
 FAULT_SECOND_HOLD = 59
 
@@ -124,13 +113,11 @@ def drill_payloads(canary: Canary) -> dict[str, dict[str, Any]]:
 
 
 def scan_canary(canary: Canary) -> Canary:
-    """One canary whose fragments cover every drill payload."""
     return reduce(derive_canary, drill_payloads(canary).values(), canary)
 
 
-# Every program below runs with the image's Python (or, in tests, the local
-# one) and reads one JSON object on stdin.  None takes a value on argv except
-# the fault harness, whose two arguments are the hold time and the marker.
+# Every program below runs with the image's Python (or, in tests, the local one) and reads one JSON object on stdin.
+# None takes a value on argv except the fault harness, whose two arguments are the hold time and the marker.
 _PROBE_PRELUDE = r'''
 import json, os, signal, subprocess, sys, threading, time
 from urllib.error import HTTPError, URLError
@@ -224,9 +211,8 @@ print(json.dumps({"supervisor_found": True, "workers_before": len(before), "work
                   "inflight_echo": any(item["echo"] for item in inflight), "health": health, "after": chart}))
 '''
 
-# Every regular file under the roots, read up to 4 MiB each; the fragments
-# are counted, never printed.  Runs as the container's own user after the
-# drills, so it reads what the application could have left there.
+# Every regular file under the roots, read up to 4 MiB each; the fragments are counted, never printed.  Runs as the
+# container's own user after the drills, so it reads what the application could have left there.
 TMPFS_SCAN = r'''
 import json, os, sys
 d = json.load(sys.stdin)
@@ -250,16 +236,14 @@ print(json.dumps({"files_read": files, "unreadable": unreadable, "match_count": 
 def tmpfs_sink(observed: dict[str, Any]) -> dict[str, Any]:
     """The receipt entry of one container's tmpfs scan; a file it could not read counts as a match."""
     unreadable = int(observed.get("unreadable", 1))
-    return {"sink_role": "disposable_container_tmpfs",
-            "match_count": int(observed.get("match_count", 1)) + unreadable,
+    return {"sink_role": "disposable_container_tmpfs", "match_count": int(observed.get("match_count", 1)) + unreadable,
             "files_read": int(observed.get("files_read", 0)), "unreadable": unreadable,
             "disposition": "observed_activity"}
 
 
-# The fault runtime: the exact image's application, one worker, with one
-# function replaced.  The replacement is selected by the chart's `second`
-# (58 raises with the marker and the request in the message, 59 holds the
-# compute lock); every other chart runs the real computation.
+# The fault runtime: the exact image's application, one worker, with one function replaced.  The replacement is selected
+# by the chart's `second` (58 raises with the marker and the request in the message, 59 holds the compute lock); every
+# other chart runs the real computation.
 FAULT_HARNESS = r'''
 import sys, time
 hold_seconds, marker, port, app_dir = float(sys.argv[1]), sys.argv[2], int(sys.argv[3]), sys.argv[4]
@@ -281,26 +265,22 @@ uvicorn.run(main.create_app, factory=True, host="127.0.0.1", port=port, http="h1
 
 
 def evaluate_worker_restart(observed: dict[str, Any]) -> dict:
-    if not observed.get("supervisor_found"):
-        return _drill(DrillResult.NOT_OBSERVED, reason="supervisor_not_found")
+    if not observed.get("supervisor_found"): return _drill(DrillResult.NOT_OBSERVED, reason="supervisor_not_found")
     health, after = observed.get("health") or {}, observed.get("after") or {}
     passed = (observed.get("workers_before", 0) >= 2 and observed.get("replaced") is True
               and observed.get("workers_after") == observed.get("workers_before")
-              and health.get("status") == 200 and after.get("status") == 200
-              and not observed.get("inflight_echo"))
+              and health.get("status") == 200 and after.get("status") == 200 and not observed.get("inflight_echo"))
     return _drill(DrillResult.PASSED if passed else DrillResult.FAILED, **{
         key: observed.get(key) for key in (
             "workers_before", "workers_after", "victim_was_busy", "replaced", "replacement_seconds",
-            "inflight_statuses")},
-        health_status=health.get("status"), chart_after_status=after.get("status"))
+            "inflight_statuses")}, health_status=health.get("status"), chart_after_status=after.get("status"))
 
 
 def evaluate_timeout(observed: dict[str, Any]) -> dict:
     holder, queued = observed.get("holder") or {}, observed.get("queued") or {}
     refused = (queued.get("status") == 503 and queued.get("code") == "compute_capacity_exhausted"
                and bool(queued.get("retry_after")) and not queued.get("echo"))
-    # Refused after it had queued (not at admission) and before the holder
-    # returned: the wait itself was bounded.
+    # Refused after it had queued (not at admission) and before the holder returned: the wait itself was bounded.
     bounded = (refused and holder.get("status") == 200
                and 2.0 <= queued.get("seconds", 0) < holder.get("seconds", 0) - 2.0)
     return _drill(DrillResult.PASSED if bounded else DrillResult.FAILED,
@@ -322,20 +302,17 @@ def evaluate_unexpected_error(observed: dict[str, Any]) -> dict:
 
 class Runtime(Protocol):
     """How a disposable container of the image starts."""
-
     def disposable(self, kind: Where, canary: Canary) -> Any:
-        """A context manager yielding a handle with `probe(program, payload)`, `log_sink(canary)`
-        and `tmpfs_sink(canary)`."""
+        """A context manager yielding a handle with `probe(program, payload)`, `log_sink(canary)` and
+        `tmpfs_sink(canary)`."""
         ...
 
 
 def _probe_input(canary: Canary, *, host: str, port: int, **extra: Any) -> dict[str, Any]:
     payloads = drill_payloads(canary)
-    return {"host": host, "port": port, "marker": canary.marker,
-            "fragments": list(canary.sensitive_fragments),
+    return {"host": host, "port": port, "marker": canary.marker, "fragments": list(canary.sensitive_fragments),
             **{name: json.dumps(payload, separators=(",", ":")) for name, payload in payloads.items()},
-            "hold_seconds": HOLD_SECONDS, "replacement_wait_seconds": WORKER_REPLACEMENT_WAIT_SECONDS,
-            **extra}
+            "hold_seconds": HOLD_SECONDS, "replacement_wait_seconds": WORKER_REPLACEMENT_WAIT_SECONDS, **extra}
 
 
 def run_disposable_drills(runtime: Runtime, canary: Canary) -> tuple[dict[str, dict], list[dict]]:
@@ -357,8 +334,7 @@ def run_disposable_drills(runtime: Runtime, canary: Canary) -> tuple[dict[str, d
             sinks.append(faulty.tmpfs_sink(canary))
     except (OSError, RuntimeError, ValueError, subprocess.SubprocessError, json.JSONDecodeError) as error:
         for name in ("timeout", "unexpected_error"):
-            drills.setdefault(name, _drill(DrillResult.NOT_OBSERVED,
-                                           reason=f"fault runtime: {type(error).__name__}"))
+            drills.setdefault(name, _drill(DrillResult.NOT_OBSERVED, reason=f"fault runtime: {type(error).__name__}"))
     for sink in sinks:
         sink.setdefault("sink_role", "disposable_container_docker_log_stream")
         if sink["sink_role"] == "exact_container_docker_log_stream":
@@ -366,7 +342,6 @@ def run_disposable_drills(runtime: Runtime, canary: Canary) -> tuple[dict[str, d
     return drills, sinks
 
 
-# --- docker runtime: disposable containers of one image --------------------------------
 def _docker(*arguments: str, stdin: str | None = None, timeout: float = 120) -> subprocess.CompletedProcess:
     return subprocess.run(["docker", *arguments], input=stdin, capture_output=True, text=True,
                           check=False, timeout=timeout)
@@ -379,8 +354,7 @@ class _DockerDisposable:
     def probe(self, program: str, payload: dict[str, Any]) -> dict[str, Any]:
         completed = _docker("exec", "--interactive", self.container, CONTAINER_PYTHON, "-c", program,
                             stdin=json.dumps({**self.probe_input, **payload}), timeout=HOLD_SECONDS + 180)
-        if completed.returncode != 0:
-            raise RuntimeError(f"drill probe exited {completed.returncode}")
+        if completed.returncode != 0: raise RuntimeError(f"drill probe exited {completed.returncode}")
         return json.loads(completed.stdout)
 
     def log_sink(self, canary: Canary) -> dict[str, Any]:
@@ -391,12 +365,10 @@ class _DockerDisposable:
 
 
 class ImageRuntime:
-    """Disposable containers of one exact image, with the run settings of
-    `source_root`'s compose (Gate D's: the image's revision) and no network.
+    """Disposable containers of one exact image, with the run settings of `source_root`'s compose (Gate D's: the image's
+    revision) and no network.
 
-    The reference is resolved to an image ID once; every container runs that
-    ID and must report it."""
-
+    The reference is resolved to an image ID once; every container runs that ID and must report it."""
     def __init__(self, image: str, platform: str | None = None, *, source_root: Path = ROOT) -> None:
         resolved = _docker("image", "inspect", "--format", "{{.Id}}", image)
         image_id = resolved.stdout.strip()
@@ -412,8 +384,7 @@ class ImageRuntime:
         arguments = [
             "run", "--detach", *(("--platform", self.platform) if self.platform else ()),
             *_compose_run_arguments(_compose_service_model({}, DRILL_COMPOSE_FILES, self.source_root)),
-            "--network", "none", "--label", DRILL_LABEL,
-        ]
+            "--network", "none", "--label", DRILL_LABEL]
         for item in DRILL_ENVIRONMENT:
             arguments += ["--env", item]
         if kind is Where.DISPOSABLE_FAULT_RUNTIME:
@@ -423,8 +394,7 @@ class ImageRuntime:
             arguments.append(self.image)   # the image's own entrypoint and command
         started = _docker(*arguments)
         container = started.stdout.strip()
-        if started.returncode != 0 or not container:
-            raise RuntimeError("disposable container did not start")
+        if started.returncode != 0 or not container: raise RuntimeError("disposable container did not start")
         try:
             _wait_healthy(container)
             inspection = json.loads(_docker("inspect", container).stdout)[0]
@@ -432,16 +402,14 @@ class ImageRuntime:
             if (host_config.get("NetworkMode") != "none" or host_config.get("PortBindings")
                     or inspection.get("Image") != self.image):
                 raise RuntimeError("disposable container is not an unexposed container of the image")
-            yield _DockerDisposable(
-                container, _probe_input(canary, host=DRILL_EXPECTED_HOST, port=CONTAINER_PORT))
+            yield _DockerDisposable(container, _probe_input(canary, host=DRILL_EXPECTED_HOST, port=CONTAINER_PORT))
         finally:
             _docker("rm", "--force", container)
 
 
-# --- the receipt ---------------------------------------------------------------------------
 def run_image_drills(runtime: Runtime, image: dict[str, str] | None = None) -> dict[str, Any]:
-    """Run the three drills and search every disposable log stream for the canary;
-    `image` is the reference and the ID the containers ran."""
+    """Run the three drills and search every disposable log stream for the canary; `image` is the reference and the ID
+    the containers ran."""
     canary = scan_canary(generate_canary())
     drills, sinks = run_disposable_drills(runtime, canary)
     for name, drill in drills.items():
@@ -451,12 +419,9 @@ def run_image_drills(runtime: Runtime, image: dict[str, str] | None = None) -> d
     privacy = "pass" if matches == 0 and len(sinks) == 4 else "fail"
     passed = all(drills[name]["result"] == DrillResult.PASSED.value for name in DRILLS)
     return {
-        "schema_version": RECEIPT_SCHEMA_VERSION,
-        "image": image,
-        "drills": {name: drills[name] for name in DRILLS},
+        "schema_version": RECEIPT_SCHEMA_VERSION, "image": image, "drills": {name: drills[name] for name in DRILLS},
         "privacy_canary": {"result": privacy, "total_match_count": matches, "sinks": sinks},
-        "result": "pass" if passed and privacy == "pass" else "fail",
-    }
+        "result": "pass" if passed and privacy == "pass" else "fail"}
 
 
 def main() -> None:
@@ -481,5 +446,4 @@ def main() -> None:
     emit_json_receipt(receipt, args.output)
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == "__main__": main()

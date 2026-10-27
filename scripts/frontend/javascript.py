@@ -1,25 +1,18 @@
 """The page scripts, shipped without the comments and layout of their sources.
 
-The readable scripts are in `scripts/` beside this module; `build_pages` writes
-each one minified to `frontend/zh-TW/<name>` (and `--check` compares), so the
-release still copies committed files and the readable form stays the one to
-edit.  The minifier is a tokenizer for the JavaScript these scripts are written
-in (classic scripts, ES2022): it reads strings, template literals (with the
-code in `${}`), regular expression literals and comments as such, drops the
-comments, and joins the tokens with the least whitespace that keeps both the
-same tokens and the same program:
+The readable scripts are in `scripts/` beside this module; `build_pages` writes each one minified to
+`frontend/zh-TW/<name>` (and `--check` compares).  The minifier is a tokenizer for classic ES2022 scripts: it reads
+strings, template literals, regular expression literals and comments as such, drops the comments, and joins the tokens
+with the least whitespace that keeps the same tokens and program:
 
-- one space between two tokens only where they would otherwise fuse (`a in`,
-  `+ +`, `/ /re/`, `1 .x`);
-- a line break kept wherever it can decide where a statement ends: after a
-  token that cannot end an expression (`(`, `,`, `=`, `+`, ...) and before one
-  that continues it (`)`, `.`, `+`, ...) it goes; after `return`, `throw`,
-  `break`, `continue`, `yield`, `async` and similar, around `++`/`--`, and
-  between any other pair (`}` then `const`, `1` then `const`) it stays.
+- one space between two tokens only where they would otherwise fuse (`a in`, `+ +`, `/ /re/`, `1 .x`);
+- a line break kept wherever it can decide where a statement ends: dropped after a token that cannot end an expression
+  and before one that continues it; kept after `return`, `throw`, `break`, `continue`, `yield`, `async` and similar,
+  around `++`/`--`, and between any other pair (`}` then `const`).
 
 A `/*! ... */` comment at the head of a file (a licence notice) is kept.
-frontend/tests/shipped_scripts.test.cjs proves the result: each shipped file
-has its source's token stream and syntax tree under ESLint's parser.
+frontend/tests/shipped_scripts.test.cjs proves the result: each shipped file has its source's token stream and syntax
+tree under ESLint's parser.
 """
 
 from __future__ import annotations
@@ -31,9 +24,7 @@ import re
 
 from scripts.frontend.site_locale import DEFAULT_LOCALE
 
-
 SOURCES = Path(__file__).resolve().parent / "scripts"
-# Where the shipped scripts live, relative to frontend/ and as served.
 SHIPPED_DIRECTORY = DEFAULT_LOCALE
 
 _LINE_TERMINATORS = "\n\r\u2028\u2029"
@@ -44,28 +35,21 @@ _PUNCTUATORS = sorted(
     """.split(),
     key=len, reverse=True,
 )
-# Character runs that would read as something else if two tokens met: a longer
-# punctuator, a comment, or an HTML-like comment (a script's legacy syntax).
+# Character runs that would read as something else if two tokens met: a longer punctuator or a comment.
 _FUSING = (*_PUNCTUATORS, "//", "/*", "<!--", "-->")
 _NUMBER = re.compile(
     r"0[xX][0-9a-fA-F_]+n?|0[oO][0-7_]+n?|0[bB][01_]+n?"
     r"|(?:\d[\d_]*(?:\.[\d_]*)?|\.\d[\d_]*)(?:[eE][+-]?\d[\d_]*)?n?"
 )
-# After one of these words a `/` starts a regular expression, not a division.
 _EXPRESSION_KEYWORDS = frozenset(
     "return typeof instanceof in of new delete void throw case do else yield await".split()
 )
-# [no LineTerminator here] follows these words in some production, or a line
-# break after them can end the statement (`let`, `get`, `set`, `static` as names).
-_RESTRICTED_WORDS = frozenset(
-    "return throw break continue yield async await let get set static".split()
-)
-# Tokens that cannot end an expression or statement: a line break after them
-# never decides anything.
+# [no LineTerminator here] follows these words in some production, or a line break after them can end the statement
+# (`let`, `get`, `set`, `static` as names).
+_RESTRICTED_WORDS = frozenset("return throw break continue yield async await let get set static".split())
 _OPEN_AFTER = frozenset(set(_PUNCTUATORS) - {")", "]", "}", "++", "--"})
-# Tokens that can only continue what precedes them: a line break before them
-# never ends a statement (no automatic semicolon is inserted before a token the
-# grammar allows there, and these are allowed wherever the line before ended).
+# Tokens that can only continue what precedes them: a line break before them never ends a statement (no automatic
+# semicolon is inserted before a token the grammar allows there, and these are allowed wherever the line before ended).
 _CONTINUING = frozenset(
     """
     ) ] } , ; : ? ?. . ( [ = += -= *= /= %= **= <<= >>= >>>= &= |= ^= &&= ||= ??= == != === !==
@@ -74,32 +58,21 @@ _CONTINUING = frozenset(
 )
 _BRACKETS = {")": "(", "]": "[", "}": "{"}
 
-
 @dataclass(frozen=True)
 class Token:
-    # "name" (identifier, keyword or #private), "number", "string", "regex",
-    # "template" (a whole literal or the part up to / between / after a
-    # `${...}`), "punct" or "comment".
+    # "name" (identifier, keyword or #private), "number", "string", "regex", "template" (a whole literal or the part up
+    # to / between / after a `${...}`), "punct" or "comment".
     kind: str
     text: str
-    # A line terminator (or a comment holding one) came before this token.
     newline: bool
-
 
 def _is_identifier_start(char: str) -> bool:
     return char in "$_\\" or char.isalpha() or (ord(char) > 127 and char.isidentifier())
 
-
 def _is_identifier_part(char: str) -> bool:
-    return (
-        char in "$_\\\u200c\u200d" or char.isalnum()
-        or (ord(char) > 127 and ("a" + char).isidentifier())
-    )
-
+    return (char in "$_\\\u200c\u200d" or char.isalnum() or (ord(char) > 127 and ("a" + char).isidentifier()))
 
 def _regex_allowed(previous: Token | None) -> bool:
-    """Whether a `/` after `previous` starts a regular expression."""
-
     if previous is None:
         return True
     if previous.kind == "punct":
@@ -109,7 +82,6 @@ def _regex_allowed(previous: Token | None) -> bool:
     if previous.kind == "template":
         return previous.text.endswith("${")
     return False
-
 
 class _Reader:
     def __init__(self, source: str) -> None:
@@ -139,9 +111,7 @@ class _Reader:
         raise self.fail("unterminated string")
 
     def template_part(self) -> str:
-        """From a backtick or the `}` that closes a substitution, up to and
-        including the closing backtick or the next `${`."""
-
+        """From a backtick or the `}` that closes a substitution, up to the closing backtick or the next `${`."""
         start = self.index
         index = start + 1
         while index < len(self.source):
@@ -193,13 +163,9 @@ class _Reader:
         self.index = index
         return self.source[start:index]
 
-
 def _scan(source: str) -> list[Token]:
-    """Every token of `source`, each comment included as a "comment" token."""
-
     reader = _Reader(source)
     tokens: list[Token] = []
-    # Open brackets, and "${" for each template substitution being read.
     brackets: list[str] = []
     previous: Token | None = None
     newline = False
@@ -267,17 +233,12 @@ def _scan(source: str) -> list[Token]:
         raise reader.fail(f"unclosed {brackets[-1]!r}")
     return tokens
 
-
 def comments(source: str) -> list[str]:
-    """Every comment of `source`, as written."""
-
     return [token.text for token in _scan(source) if token.kind == "comment"]
 
-
 def tokenize(source: str) -> list[Token]:
-    """The tokens of `source` without its comments, except a `/*! ... */`
-    comment at its head; a dropped comment holding a line break counts as one."""
-
+    """The tokens of `source` without its comments, except a `/*! ... */` head comment; a dropped comment with a
+    line break counts as one."""
     tokens: list[Token] = []
     pending = False
     for token in _scan(source):
@@ -295,15 +256,11 @@ def tokenize(source: str) -> list[Token]:
         pending = False
     return tokens
 
-
-
 def frozen_string_table(source: str, name: str) -> dict[str, str]:
-    """The table `const <name> = Object.freeze({ key: "text", ... });` of a
-    readable script, so a generator reads the page's own names instead of a copy.
+    """The table `const <name> = Object.freeze({ key: "text", ... });` of a readable script.
 
-    Only that shape is read (identifier or double-quoted keys, double-quoted
-    values); a missing, repeated or reshaped table raises."""
-
+    Only that shape is read (identifier or double-quoted keys, double-quoted values); a missing, repeated or reshaped
+    table raises."""
     tokens = tokenize(source)
     head = ["const", name, "=", "Object", ".", "freeze", "(", "{"]
     starts = [index for index in range(len(tokens)) if [t.text for t in tokens[index:index + len(head)]] == head]
@@ -326,8 +283,6 @@ def frozen_string_table(source: str, name: str) -> dict[str, str]:
     return table
 
 def _separator(before: Token, after: Token) -> str:
-    """The least whitespace between two tokens that keeps both and their meaning."""
-
     if after.newline and not _line_break_droppable(before, after):
         return "\n"
     if _is_identifier_part(before.text[-1]) and _is_identifier_part(after.text[0]):
@@ -342,7 +297,6 @@ def _separator(before: Token, after: Token) -> str:
             return " "
     return ""
 
-
 def _line_break_droppable(before: Token, after: Token) -> bool:
     if before.kind == "name" and before.text in _RESTRICTED_WORDS:
         return False
@@ -356,11 +310,9 @@ def _line_break_droppable(before: Token, after: Token) -> bool:
         return True
     return after.kind == "punct" and after.text in _CONTINUING
 
-
 def minify(source: str) -> str:
-    """`source` without comments (a leading `/*! ... */` kept) and without the
-    whitespace its tokens and statements do not need; ends with a line break."""
-
+    """`source` without comments (a leading `/*! ... */` kept) and the whitespace its tokens do not need; ends with a
+    line break."""
     tokens = tokenize(source)
     out: list[str] = []
     previous: Token | None = None
@@ -374,26 +326,18 @@ def minify(source: str) -> str:
         previous = token
     return "".join(out) + "\n"
 
-
 def shipped_path(name: str) -> str:
     return f"{SHIPPED_DIRECTORY}/{name}"
 
-
-# Scripts shipped as one file made of several readable sources, in order (the
-# last one names the shipped file).  The sources stay split for editing; the
-# page pays one request per bundle, as before the split.  A bundle is one
-# function scope: its sources are joined inside `(function () { ... })();`, so
-# they name each other's top-level declarations directly and none of them
-# becomes a global.  While loading, a source uses only names an earlier source
-# defined; a later source's functions are used only when called.  The first
-# source carries the bundle's "use strict".  frontend/tests/script-bundles.cjs
-# reads them the same way.
+# Scripts shipped as one file made of several readable sources, in order (the last one names the shipped file).  A
+# bundle is one function scope: its sources are joined inside `(function () { ... })();`, so they name each other's
+# top-level declarations directly and none becomes a global.  While loading, a source uses only names an earlier source
+# defined; a later source's functions are used only when called.  The first source carries the bundle's "use strict".
+# frontend/tests/script-bundles.cjs reads them the same way.
 BUNDLES_PATH = Path(__file__).resolve().parent / "script_bundles.json"
-
 
 BUNDLE_OPEN = "(function () {\n"
 BUNDLE_CLOSE = "})();\n"
-
 
 def bundles(path: Path = BUNDLES_PATH) -> dict[str, list[str]]:
     declared = json.loads(path.read_text(encoding="utf-8"))
@@ -402,28 +346,19 @@ def bundles(path: Path = BUNDLES_PATH) -> dict[str, list[str]]:
             raise ValueError(f"bundle {name} must end with its own source")
     return declared
 
-
 def readable(name: str, sources: Path = SOURCES) -> str:
-    """The readable text behind shipped script `name`: its source, or a
-    bundle's sources joined in order."""
-
     members = bundles().get(name)
     if members is None:
         return (sources / name).read_text(encoding="utf-8")
     return BUNDLE_OPEN + "\n".join((sources / member).read_text(encoding="utf-8") for member in members) + BUNDLE_CLOSE
 
-
 def build_scripts(sources: Path = SOURCES) -> dict[str, str]:
-    """Every shipped script, minified from its readable source (a bundle from
-    its sources in order), keyed by its path under frontend/."""
-
+    """Every shipped script, minified from its readable source (a bundle from its sources), keyed by its path under
+    frontend/."""
     declared = bundles()
     folded = {member for name, members in declared.items() for member in members if member != name}
-    built = {
-        shipped_path(path.name): minify(readable(path.name, sources))
-        for path in sorted(sources.glob("*.js"))
-        if path.name not in folded
-    }
+    built = {shipped_path(path.name): minify(readable(path.name,
+        sources)) for path in sorted(sources.glob("*.js")) if path.name not in folded}
     if not built:
         raise ValueError(f"no readable script in {sources}")
     return built

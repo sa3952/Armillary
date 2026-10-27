@@ -348,7 +348,7 @@ def test_image_environment_holds_the_application_contract(monkeypatch):
     revision = "a" * 40
     environment = [
         "PATH=/opt/venv/bin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "LANG=C.UTF-8",
-        "PYTHON_VERSION=3.14.9", "CLASSICAL_ASTROLOGY_REQUIRE_FRONTEND_RELEASE=1",
+        "PYTHON_VERSION=3.14.10", "CLASSICAL_ASTROLOGY_REQUIRE_FRONTEND_RELEASE=1",
         f"CLASSICAL_ASTROLOGY_SOURCE_REVISION={revision}", "PYTHONFAULTHANDLER=1",
         "PYTHONUNBUFFERED=1", "PYTHONDONTWRITEBYTECODE=1", "PYTHON_SHA256=" + "d" * 64,
         "PYTHONPYCACHEPREFIX=/opt/pycache",

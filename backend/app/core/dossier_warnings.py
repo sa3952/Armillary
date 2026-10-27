@@ -7,7 +7,7 @@ calculation.  The rules run in a fixed order and the list keeps that order.
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import Any
+from typing import TYPE_CHECKING
 
 from .invariants import InternalInvariantError
 from ..domain_catalog import PRODUCT_YEAR_RANGE
@@ -30,6 +30,10 @@ from .time_utils import (
     offshore_island_before_taiwan_rule,
     prc_1988_dst_start_disputed,
 )
+
+if TYPE_CHECKING:
+    from ..schema_chart import ChartRequest
+    from .dossier import ObjectProvenance
 
 # Reader-facing module names for page and export sentences; programs read the
 # keys.  A test holds this table to the dossier's module set plus the two
@@ -799,8 +803,8 @@ def _mixed_origin_moon_warnings(request) -> Iterator[dict]:
 def _ephemeris_source_warnings(
     full_ephemeris_files_available: bool,
     input_files_unchanged_during_chart: bool,
-    core_records: list[dict],
-    fixed_star_records: list[dict],
+    core_records: list[ObjectProvenance],
+    fixed_star_records: list[ObjectProvenance],
     fixed_stars: list[dict],
 ) -> Iterator[dict]:
     if not input_files_unchanged_during_chart:
@@ -1138,12 +1142,12 @@ def _classical_sect_within_hour_warnings(classical: dict | None) -> Iterator[dic
 
 def structured_warnings(
     *,
-    request: Any,
+    request: ChartRequest,
     time_conversion: dict,
     full_ephemeris_files_available: bool,
     input_files_unchanged_during_chart: bool,
-    core_records: list[dict],
-    fixed_star_records: list[dict],
+    core_records: list[ObjectProvenance],
+    fixed_star_records: list[ObjectProvenance],
     fixed_stars: list[dict],
     modules: dict,
     methodology: dict,
@@ -1158,7 +1162,7 @@ def structured_warnings(
     essential_dignities: dict | None,
     lunar_mansions: dict | None,
     classical_classifications: dict | None,
-    effective_request: Any,
+    effective_request: ChartRequest,
 ) -> list[dict]:
     # The time conversion ran on the effective request (an approximate hour's
     # representative minute), so its repeated-time readings are read there.

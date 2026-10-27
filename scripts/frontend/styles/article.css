@@ -1,11 +1,9 @@
 /* 文章頁（/zh-TW/blog/…）。只由文章頁載入，token 一律來自 tokens.css。
- *
- * 形制取研究筆記：一欄正文、左側窄欄放節號、圖版可以比正文寬。
- * 圖都是頁內 SVG，顏色由這裡的 class 給，不寫在 SVG 屬性裡，
- * 這樣圖跟著 token 走，也不需要行內 style（served CSP 沒有 'unsafe-inline'）。
- * SVG 裡的字以 viewBox 單位設定，手機寬度下會等比縮小，所以每張圖的
- * viewBox 寬度壓在 720 以內、字級不小於 20 單位：390px 寬的螢幕上約 10–11px，
- * 只用於圖上標註；要讀的數字另外寫在圖說或表格裡。 */
+
+   形制取研究筆記：一欄正文、左側窄欄放節號、圖版可以比正文寬。圖都是頁內 SVG，顏色由這裡的 class 給，不寫在 SVG 屬性
+   裡，這樣圖跟著 token 走，也不需要行內 style（served CSP 沒有 'unsafe-inline'）。SVG 裡的字以 viewBox 單位設定，手機寬
+   度下會等比縮小，所以每張圖的 viewBox 寬度壓在 720 以內、字級不小於 20 單位：390px 寬的螢幕上約 10–11px，只用於圖上標
+   註；要讀的數字另外寫在圖說或表格裡。 */
 
 .article section{border-top:0; padding:0}
 
@@ -156,17 +154,8 @@
  * 方向甲（銅版星圖）：只用墨色，圓與線靠粗細、虛實與排線分辨，不靠顏色；朱紅不出現在圖上（這張圖沒有「指著」的標記）。
  * 圖上的顏色、線寬與字級都只經這組 --hs-* 自訂屬性，指向 tokens.css 的 --fx-*。地平下的半球與極區的黃道段用
  * figures.css 的排線（頁面的 fx-defs 圖樣）。靜態圖是文章圖版（.fx-wide／.fx-narrow），字級由 .fx-t／.fx-small 決定。 */
-.hs-svg{
-  --hs-ball: var(--paper);
-  --hs-ink: var(--fx-ink);
-  --hs-dim: var(--fx-dim);
-  --hs-w-hair: .8px;
-  --hs-w-line: 1.2px;
-  --hs-w-strong: 2.8px;
-  --hs-w-ecliptic: 5px;
-  --hs-back-opacity: .4;
-  --hs-font: 20px;
-}
+.hs-svg{--hs-ball: var(--paper); --hs-ink: var(--fx-ink); --hs-dim: var(--fx-dim); --hs-w-hair: .8px; --hs-w-line: 1.2px;
+  --hs-w-strong: 2.8px; --hs-w-ecliptic: 5px; --hs-back-opacity: .4; --hs-font: 20px}
 /* 觸控：上下滑留給頁面捲動（也保留雙指縮放），左右滑才轉天球；上下視角另有按鈕與方向鍵。 */
 .ar-fig svg.hs-svg{max-width:40rem; margin:0 auto; touch-action:pan-y pinch-zoom}
 .hs-svg polyline, .hs-plate line{fill:none; stroke-linecap:round; stroke-linejoin:round}

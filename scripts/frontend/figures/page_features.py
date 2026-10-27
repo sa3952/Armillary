@@ -1,13 +1,11 @@
-"""The features page: the demonstration chart's bounds, versions, obliquity,
-sampled hour, ascendants, the Sun's three coordinate sets and the dossier
-excerpt, from the product's own answers; and the counts, limits and headers it
+"""The features page: the demonstration chart's bounds, versions, obliquity, sampled hour, ascendants, the Sun's three
+coordinate sets and the dossier excerpt, from the product's own answers; and the counts, limits and headers it
 states, from the code that decides them.
 """
 from __future__ import annotations
 
 from . import _demo, _site
 from ._common import zh, zh_quantity
-
 
 FRAGMENT = "features"
 # The page's names for the four bounds tables, in _demo.BOUNDS order.
@@ -19,18 +17,14 @@ DOSSIER = (
     ("平均／視恆星時 (Sidereal Time)", "地方真恆星時 LAST", lambda r: f"{r['LAST(小時)']:.7f} h",
      lambda r: "GAST ＋ 東經 ÷ 15"),
 )
-# Whole sign and equal first, then the quadrant systems in the order they appeared,
-# as on the calculate page's menu.
-HOUSE_NAMES = {
-    "W": "整宮", "E": "等分宮", "O": "Porphyry", "B": "Alcabitius", "C": "Campanus",
-    "R": "Regiomontanus", "P": "Placidus",
-}
+# Whole sign and equal first, then the quadrant systems in the order they appeared, as on the calculate page's menu.
+HOUSE_NAMES = {"W": "整宮", "E": "等分宮", "O": "Porphyry", "B": "Alcabitius", "C": "Campanus", "R": "Regiomontanus",
+    "P": "Placidus"}
 ASPECT_SET_DEFAULT = {"ptolemaic_major_v1": "合相＋四種傳統相位"}
 ORB_DEFAULT = {"lilly_1647_experience_v1": "Lilly 1647"}
 # The headers the page's table shows, each with the directives it shows.
 CSP_SHOWN = ("frame-ancestors", "object-src", "base-uri", "form-action")
 PLAIN_SHOWN = ("Referrer-Policy", "Cross-Origin-Opener-Policy", "X-Content-Type-Options")
-
 
 def _bounds_rows(data: dict) -> tuple[str, int, int]:
     chart, bounds = data["chart"], data["bounds"]
@@ -45,7 +39,6 @@ def _bounds_rows(data: dict) -> tuple[str, int, int]:
         rows.append(f'            <tr><td>{names[key]}</td><td>{position}</td>{cells}<td class="count">{answers}</td></tr>')
     return "\n".join(rows), len(rows), differing
 
-
 def _dossier_rows(chart: dict) -> str:
     rows = []
     for title, label, value, how in DOSSIER:
@@ -54,27 +47,22 @@ def _dossier_rows(chart: dict) -> str:
                     f'<td class="num">{value(result)}</td><td>{how(result)}</td></tr>')
     return "\n".join(rows)
 
-
 def _moon_versus(data: dict) -> list[str]:
     names = {item["key"]: item["name"] for item in data["chart"]["astronomical_data"]["bodies"]}
     rulers = [data["bounds"][profile]["moon"] for profile in _demo.BOUNDS]
     return [f'<span class="vs-label">{label}</span><b class="vs-answer{"" if ruler == rulers[0] else " alt"}">'
             f"{names[ruler]}</b>" for label, ruler in zip(BOUND_LABELS, rulers)]
 
-
 def _headers() -> list[str]:
     headers = _site.product()["headers"]
     csp = {part.split(" ", 1)[0]: part for part in headers["Content-Security-Policy"].split("; ")}
     permissions = {part.split("=", 1)[0]: part for part in headers["Permissions-Policy"].split(", ")}
-    return [
-        f'<tr><td>Content-Security-Policy</td><td class="num">{csp["script-src"]}</td>',
+    return [f'<tr><td>Content-Security-Policy</td><td class="num">{csp["script-src"]}</td>',
         *(f'<td class="num">{csp[name]}</td>' for name in CSP_SHOWN),
         f'<tr><td>Permissions-Policy</td><td class="num">{permissions["geolocation"]}</td>',
         f'<td class="num">{permissions["camera"]}, {permissions["microphone"]}</td>',
         *(f'<tr><td>{name}</td><td class="num">{headers[name]}</td>' for name in PLAIN_SHOWN),
-        f'<tr><td>Strict-Transport-Security</td><td class="num">{_site.edge_hsts()}</td>',
-    ]
-
+        f'<tr><td>Strict-Transport-Security</td><td class="num">{_site.edge_hsts()}</td>']
 
 def build() -> tuple[dict[str, str], list[str]]:
     data = _demo.answers()

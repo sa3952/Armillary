@@ -1,8 +1,7 @@
 (function attachChartWheelModel(root, factory) {
   const commonJs = typeof module === "object" && module.exports;
   const api = factory(
-    commonJs ? require("./chart-glyphs.js") : root.ArmillaryChartGlyphs,
-    commonJs ? require("./labels.js") : root.ArmillaryLabels,
+    commonJs ? require("./chart-glyphs.js") : root.ArmillaryChartGlyphs, commonJs ? require("./labels.js") : root.ArmillaryLabels,
     commonJs ? require("./chart-wheel-aspects.js") : root.ChartWheelAspects,
   );
   if (commonJs) module.exports = api;
@@ -12,15 +11,12 @@
 
   // 星盤圖的幾何模型：純函式，不碰 DOM。頁面 SVG、下載 SVG、PNG（Canvas）與測試都讀同一份輸出。
   //
-  // 圖是表格的可讀投影，與表格同源：
-  //   - 位置只讀回應的 sign_position[2]（後端的十進位黃經字串）；
-  //   - 度數標籤只切 sign_position[1] 字串（「24°10′30.48″」→「24°」「10′」），不捨入、不重新格式化，
-  //     所以每個標籤都是表格「星座度數」儲存格的子字串；星座取 sign_position[0]；
-  //   - 宮頭與四軸同樣只讀回應的 sign_position。
-  // 這裡不做任何天文或方法計算；唯一的換算是把黃經放到圓上：
-  //   圖面角 θ = 180° + (λ − λ上升)，上升在 9 點鐘、黃道逆時針；沒有上升點時以牡羊 0° 置左。
-  // 回應缺鍵或字串不合格式的點不畫，不猜；12 個宮頭不齊就整個宮位環不畫。回應裡其他帶黃經、
-  // 圖上不畫的點，一律寫進頁尾「圖上未畫」（POSITION_SOURCES）。
+  // 圖是表格的可讀投影，與表格同源：  - 位置只讀回應的 sign_position[2]（後端的十進位黃經字串）；  - 度數標籤只切
+  // sign_position[1] 字串（「24°10′30.48″」→「24°」「10′」），不捨入、不重新格式化，    所以每個標籤都是表格「星座度
+  // 數」儲存格的子字串；星座取 sign_position[0]；  - 宮頭與四軸同樣只讀回應的 sign_position。這裡不做任何天文或方法計
+  // 算；唯一的換算是把黃經放到圓上：  圖面角 θ = 180° + (λ − λ上升)，上升在 9 點鐘、黃道逆時針；沒有上升點時以牡羊 0°
+  // 置左。回應缺鍵或字串不合格式的點不畫，不猜；12 個宮頭不齊就整個宮位環不畫。回應裡其他帶黃經、圖上不畫的點，一律寫進
+  // 頁尾「圖上未畫」（POSITION_SOURCES）。
 
   const SIGN_KEYS = Object.freeze(Object.keys(Labels.VOCABULARIES.zodiac_sign));
   const SIGN_NAMES = Object.freeze(Object.values(Labels.VOCABULARIES.zodiac_sign));
@@ -32,8 +28,7 @@
     mercury: { glyph: "mercury", list: "bodies" }, venus: { glyph: "venus", list: "bodies" },
     mars: { glyph: "mars", list: "bodies" }, jupiter: { glyph: "jupiter", list: "bodies" },
     saturn: { glyph: "saturn", list: "bodies" }, uranus: { glyph: "uranus", list: "bodies" },
-    neptune: { glyph: "neptune", list: "bodies" }, pluto: { glyph: "pluto", list: "bodies" },
-    chiron: { glyph: "chiron", list: "bodies" },
+    neptune: { glyph: "neptune", list: "bodies" }, pluto: { glyph: "pluto", list: "bodies" }, chiron: { glyph: "chiron", list: "bodies" },
     true_node: { glyph: "north_node", suffix: "密", node: true, list: "nodes" },
     mean_node: { glyph: "north_node", suffix: "平", node: true, list: "nodes" },
     true_south_node: { glyph: "south_node", suffix: "密", node: true, list: "nodes" },
@@ -43,31 +38,23 @@
   });
   // 三組點，每一點以回應的 key 認出是哪一顆；沒有 key 或不在 POINTS 的點寫進「圖上未畫」，不由名稱猜。
   const POINT_LISTS = Object.freeze([
-    ["bodies", (astro) => astro.bodies],
-    ["nodes", (astro) => astro.nodes],
+    ["bodies", (astro) => astro.bodies], ["nodes", (astro) => astro.nodes],
     ["lunar_apsides", (astro) => (isRecord(astro.lunar_apsides) ? astro.lunar_apsides.points : null)],
   ]);
   const ANGLES = Object.freeze([["asc", "ASC"], ["mc", "MC"], ["desc", "DSC"], ["ic", "IC"]]);
 
-  // 回應裡每一處帶黃經的鍵（名稱以 sign_position／sign_positions 結尾）圖怎麼處理：
-  //   "drawn"：圖上畫（三組點、四軸、宮頭；其中畫不出來的另寫進「圖上未畫」）；
-  //   字串：圖上不畫，頁尾「圖上未畫」用這個名稱（與表格區段同名，讀者照名稱找得到）；
-  //   null：不是另外的點。
-  // 不在這張表裡的位置也一律寫進「圖上未畫」（用它的名稱，沒有名稱寫「其他位置」）：後端新增帶黃經
-  // 的點，圖不會無聲地漏掉它。
+  // 回應裡每一處帶黃經的鍵（名稱以 sign_position／sign_positions 結尾）圖怎麼處理：  "drawn"：圖上畫（三組點、四軸、宮
+  // 頭；其中畫不出來的另寫進「圖上未畫」）；  字串：圖上不畫，頁尾「圖上未畫」用這個名稱（與表格區段同名，讀者照名稱找
+  // 得到）；  null：不是另外的點。不在這張表裡的位置也一律寫進「圖上未畫」（用它的名稱，沒有名稱寫「其他位置」）：後端
+  // 新增帶黃經的點，圖不會無聲地漏掉它。
   const POSITION_SOURCES = Object.freeze([
-    ["astronomical_data.bodies[].sign_position", "drawn"],
-    ["astronomical_data.nodes[].sign_position", "drawn"],
-    ["astronomical_data.lunar_apsides.points[].sign_position", "drawn"],
-    ["astronomical_data.angles.sign_positions", "drawn"],
-    ["derived_methods.house_division.cusp_sign_positions", "drawn"],
-    ["astronomical_data.extra_angles.angles.*.sign_position", "額外角點"],
-    ["astronomical_data.parallax_moon.*.sign_position", "站心月亮"],
-    ["astronomical_data.fixed_stars[].sign_position", "恆星"],
+    ["astronomical_data.bodies[].sign_position", "drawn"], ["astronomical_data.nodes[].sign_position", "drawn"],
+    ["astronomical_data.lunar_apsides.points[].sign_position", "drawn"], ["astronomical_data.angles.sign_positions", "drawn"],
+    ["derived_methods.house_division.cusp_sign_positions", "drawn"], ["astronomical_data.extra_angles.angles.*.sign_position", "額外角點"],
+    ["astronomical_data.parallax_moon.*.sign_position", "站心月亮"], ["astronomical_data.fixed_stars[].sign_position", "恆星"],
     ["derived_geometry.antiscia.antiscia[].sign_position", "反照點與反向反照點"],
     ["derived_geometry.antiscia.contra_antiscia[].sign_position", "反照點與反向反照點"],
-    ["derived_methods.lots.sign_positions", "阿拉伯點"],
-    ["derived_methods.lots.by_sect.*.sign_positions", "阿拉伯點"],
+    ["derived_methods.lots.sign_positions", "阿拉伯點"], ["derived_methods.lots.by_sect.*.sign_positions", "阿拉伯點"],
     ["derived_methods.lots.extended_lots.lots[].sign_position", "阿拉伯點"],
     ["derived_methods.lots.extended_lots.lots[].by_sect.*.sign_position", "阿拉伯點"],
     ["derived_methods.dodecatemoria.points[].sign_position", "十二分部"],
@@ -84,33 +71,23 @@
   const UNLISTED_POSITION = "其他位置";
 
   const TEXT = Object.freeze({
-    noAngles: "本次沒有軸點，圖以牡羊 0° 置於左方",
-    dateOnly: "月亮刻線為虛線：正午錨點，非出生時刻",
-    accent: "紅色只標四軸，不表示吉凶",
-    noHouses: "本次沒有宮位",
-    brand: "渾儀 Armillary",
-    angles: "四軸",
-    cusps: "宮頭",
+    noAngles: "本次沒有軸點，圖以牡羊 0° 置於左方", dateOnly: "月亮刻線為虛線：正午錨點，非出生時刻",
+    accent: "紅色只標四軸，不表示吉凶", noHouses: "本次沒有宮位", brand: "渾儀 Armillary", angles: "四軸", cusps: "宮頭",
   });
 
-  // 幾何（viewBox 寬 600；圓心 300,300；頁尾在圓下方，高度隨行數）
   const G = Object.freeze({
-    width: 600, c: 300,
-    rOut: 288, rSignIn: 255, rSignText: 271.5,
+    width: 600, c: 300, rOut: 288, rSignIn: 255, rSignText: 271.5,
     rTickIn: 246,          // 天體刻線：星座環內緣 255 → 246，在真實黃經，不移動
     rElbow: 243.5,         // 引線先沿刻線方向走到這裡，再斜向標籤
     rLabelTop: 238,        // 標籤堆疊的外緣；引線的終點
     footerTop: 600, margin: 8,
   });
-  // 三種字級：圖在畫面上越小，字相對於圖越大，才讀得到；越大則相對越小，群聚才不必攤得那麼開。
-  // 依圖在畫面上的寬度選（presetForWidth）；下載檔一律 standard（寬 600）。手機版的字較大，
-  // 宮位環往內收，讓標籤帶夠長。
+  // 三種字級：圖在畫面上越小，字相對於圖越大，才讀得到；越大則相對越小，群聚才不必攤得那麼開。依圖在畫面上的寬度選
+  // （presetForWidth）；下載檔一律 standard（寬 600）。手機版的字較大，宮位環往內收，讓標籤帶夠長。
   const PRESETS = Object.freeze({
-    compact: Object.freeze({ text: 1.2, rHouseOut: 102, rHouseIn: 78 }),
-    standard: Object.freeze({ text: 1, rHouseOut: 112, rHouseIn: 86 }),
+    compact: Object.freeze({ text: 1.2, rHouseOut: 102, rHouseIn: 78 }), standard: Object.freeze({ text: 1, rHouseOut: 112, rHouseIn: 86 }),
     wide: Object.freeze({ text: 0.86, rHouseOut: 112, rHouseIn: 86 }),
   });
-  /** 圖在畫面上的寬度（CSS px）→ 字級。 */
   function presetForWidth(px) {
     if (!Number.isFinite(px) || px <= 0) return "standard";
     return px < 480 ? "compact" : px < 680 ? "standard" : "wide";
@@ -122,8 +99,7 @@
   // folio：符號一層、度星座分合成一行（line）一層。
   const FOLIO_PARTS = Object.freeze(["glyph", "line"]);
   const SIZE = Object.freeze({
-    glyph: 24, deg: 16, sign: 14, min: 14, angle: 13, mark: 13, suffix: 11,
-    folioGlyph: 26, folioAngle: 14, line: 14.6, lineSign: 14.6,
+    glyph: 24, deg: 16, sign: 14, min: 14, angle: 13, mark: 13, suffix: 11, folioGlyph: 26, folioAngle: 14, line: 14.6, lineSign: 14.6,
     ringGlyph: 15, ringName: 12, house: 14, footer: 12, footerLine: 17,
   });
   // 小字（星座環上的星座名、圖下的頁尾）在手機的小圖上再大一級：圖寬約 345px 時原本只有 8.3px。
@@ -145,8 +121,7 @@
   // 不確定的位置畫成範圍（只知日期的月亮、約略小時的上升）。
   const FOLIO_PRESETS = Object.freeze({
     compact: Object.freeze({ text: 1.2, rHouseOut: 104, rHouseIn: 86 }),
-    standard: Object.freeze({ text: 1, rHouseOut: 126, rHouseIn: 104 }),
-    wide: Object.freeze({ text: 0.86, rHouseOut: 136, rHouseIn: 114 }),
+    standard: Object.freeze({ text: 1, rHouseOut: 126, rHouseIn: 104 }), wide: Object.freeze({ text: 0.86, rHouseOut: 136, rHouseIn: 114 }),
   });
   const NUM_FONT = "serif";
 
@@ -186,11 +161,7 @@
 
   // 座標捨入與角度正規化與相位線圖層同一份：兩層的座標必須一致。
   const { round3, mod360, isRecord } = Aspects;
-  /** 由 a 到 b 的有號最短角差（−180, 180]。 */
-  const signedGap = (a, b) => {
-    const d = mod360(b - a);
-    return d > 180 ? d - 360 : d;
-  };
+  const signedGap = (a, b) => { const d = mod360(b - a); return d > 180 ? d - 360 : d; };
   const degrees = (radians) => (radians * 180) / Math.PI;
 
   /** 合法的 sign_position，並把度分切出來；任一不合就回 null（該點不畫）。 */
@@ -205,11 +176,9 @@
     return { sign, deg: match[1], min: match[2], lon };
   }
 
-  /** 圖面角（相對參考點、逆時針，度）→ 座標，以圖的中心為圓心。 */
   const CENTER = Object.freeze({ cx: G.c, cy: G.c });
   const polar = (angle, r) => Aspects.polar(CENTER, angle, r);
 
-  /** 符號 path 以框中心放在 (x, y)、高為 size 的 em：回傳 [s, 0, 0, s, e, f]。 */
   function glyphMatrix(key, x, y, size) {
     const [x0, y0, x1, y1] = Glyphs.GLYPHS[key].bbox;
     const s = glyphScale(key, size);
@@ -232,25 +201,15 @@
     const lines = [];
     let line = "";
     for (const segment of text.match(/[^；、\s]+[；、\s]*|[；、\s]+/g) || []) {
-      if (line && textWidth(line + segment, size) > maxWidth) {
-        lines.push(line.trimEnd());
-        line = "";
-      }
-      for (const char of segment) {
-        if (line && textWidth(line + char, size) > maxWidth) {
-          lines.push(line);
-          line = "";
-        }
-        line += char;
-      }
+      if (line && textWidth(line + segment, size) > maxWidth) { lines.push(line.trimEnd()); line = ""; }
+      for (const char of segment) { if (line && textWidth(line + char, size) > maxWidth) { lines.push(line); line = ""; } line += char; }
     }
     if (line.trim()) lines.push(line.trimEnd());
     return lines;
   }
 
-  // 標籤
-  // 一個「標籤單位」是一個點，或角距不到 1° 的兩個相鄰天體共用的一條標籤（兩點由外往內接著排，
-  // 各自一條引線連回自己的刻線）。標籤擠在一起時，同一星座只在第一個標籤印星座符號。
+  // 標籤一個「標籤單位」是一個點，或角距不到 1° 的兩個相鄰天體共用的一條標籤（兩點由外往內接著排，各自一條引線連回自己
+  // 的刻線）。標籤擠在一起時，同一星座只在第一個標籤印星座符號。
   function partSize(item, part, fs, radial = false) {
     const folio = !radial;
     if (part === "glyph") {
@@ -260,7 +219,6 @@
     if (part === "deg" || part === "min") return SIZE.line * fs;
     return SIZE[part] * fs;
   }
-  /** folio 的一行：度、（星座）、分，各自的寬與在行內的中心（相對行中心）。 */
   function lineLayout(item, fs) {
     const size = SIZE.line * fs;
     const gap = 0.7 * fs;
@@ -276,15 +234,11 @@
   }
   function partBox(item, part, fs, radial = false) {
     const size = partSize(item, part, fs, radial);
-    if (part === "line") {
-      const line = lineLayout(item, fs);
-      return { w: line.w, h: line.h, line };
-    }
+    if (part === "line") { const line = lineLayout(item, fs); return { w: line.w, h: line.h, line }; }
     if (part === "glyph") {
       if (item.kind === "angle") return numBox(item.label, size);
       const glyph = glyphBox(item.glyph, size);
-      const mark = item.retro ? glyphBox("retrograde", SIZE.mark * fs).w
-        : item.suffix ? textWidth(item.suffix, SIZE.suffix * fs) : 0;
+      const mark = item.retro ? glyphBox("retrograde", SIZE.mark * fs).w : item.suffix ? textWidth(item.suffix, SIZE.suffix * fs) : 0;
       return { w: glyph.w + (mark ? 1.5 * fs + mark : 0), h: glyph.h, glyph, mark };
     }
     if (part === "sign") return glyphBox(SIGN_KEYS[item.sign], size);
@@ -301,7 +255,6 @@
     const dy = Math.sin(t);
     return (Math.abs(dy) >= Math.abs(dx) ? dy > 0 : dx > 0) ? PARTS : PARTS_REVERSED;
   }
-  /** 單位在圖面角 a 上的徑向堆疊：每個元素的中心半徑與切向寬度；inner 是堆疊內緣的半徑。 */
   function unitStack(unit, a, fs) {
     const t = ((180 + a) * Math.PI) / 180;
     const c = Math.abs(Math.cos(t));
@@ -315,8 +268,7 @@
         const box = partBox(item, part, fs, unit.radial);
         const radial = box.w * c + box.h * s;
         if (parts.length) r -= (row && part === "glyph" ? ROW_GAP : PART_GAP) * fs;
-        parts.push({ item, part, size: partSize(item, part, fs, unit.radial), box, r: r - radial / 2,
-          tangential: box.w * s + box.h * c });
+        parts.push({ item, part, size: partSize(item, part, fs, unit.radial), box, r: r - radial / 2, tangential: box.w * s + box.h * c });
         r -= radial;
       }
     });
@@ -327,24 +279,19 @@
     }
     return { parts, inner: r };
   }
-  /** 單位在圖面角 a 上的切向半寬（度）：每一層「半寬＋留白」除以該層半徑，取最大值。 */
   function halfWidth(unit, a, fs) {
     let worst = 0;
-    for (const part of unitStack(unit, a, fs).parts) {
-      worst = Math.max(worst, degrees((part.tangential / 2 + PAD * fs) / part.r));
-    }
+    for (const part of unitStack(unit, a, fs).parts) { worst = Math.max(worst, degrees((part.tangential / 2 + PAD * fs) / part.r)); }
     return worst;
   }
   const fits = (unit, a, fs, floor) => unitStack(unit, a, fs).inner >= floor;
 
   /**
-   * 決定性的循環區間打包（每個標籤的切向寬度可以不同）：
-   *  1. 依期望角排序；在最大的「空隙減去兩側半寬」處切開圓周（359°／0° 回繞的兩點因此相鄰）。
-   *  2. 線性掃描：每個標籤自成一群；與前一群相撞就合併。群內標籤緊鄰排列，整群的位置讓
-   *     往前與往後移得最多的兩個標籤移得一樣多；合併後再往前檢查，直到不相撞。順序永遠不變。
-   *  3. 切點兩端若仍相撞，全部併成一群。
-   * angles：期望角（度）；halfWidths：各標籤的切向半寬（度）。回傳 placed（圖面角）、groups（依
-   * 圓周順序的標籤索引）與 sequence（展開後、不回繞的期望角）。
+   * 決定性的循環區間打包（每個標籤的切向寬度可以不同）： 1. 依期望角排序；在最大的「空隙減去兩側半寬」處切開圓周（359°
+   * ／0° 回繞的兩點因此相鄰）。 2. 線性掃描：每個標籤自成一群；與前一群相撞就合併。群內標籤緊鄰排列，整群的位置讓
+   * 往前與往後移得最多的兩個標籤移得一樣多；合併後再往前檢查，直到不相撞。順序永遠不變。 3. 切點兩端若仍相撞，全部併成
+   * 一群。angles：期望角（度）；halfWidths：各標籤的切向半寬（度）。回傳 placed（圖面角）、groups（依圓周順序的標籤索
+   * 引）與 sequence（展開後、不回繞的期望角）。
    */
   function layoutLabels(angles, halfWidths) {
     const n = angles.length;
@@ -356,10 +303,7 @@
     for (let k = 0; k < n; k += 1) {
       const next = k + 1 < n ? order[k + 1] : { ...order[0], a: order[0].a + 360 };
       const free = next.a - order[k].a - hw[order[k].index] - hw[next.index];
-      if (free > best) {
-        best = free;
-        cut = (k + 1) % n;
-      }
+      if (free > best) { best = free; cut = (k + 1) % n; }
     }
     const sequence = [];
     for (let k = 0; k < n; k += 1) {
@@ -403,15 +347,11 @@
     const placed = new Array(n);
     const unwrapped = new Array(n);
     for (const group of groups) {
-      group.members.forEach((entry, k) => {
-        unwrapped[entry.index] = entry.u;
-        placed[entry.index] = group.start + group.offsets[k];
-      });
+      group.members.forEach((entry, k) => { unwrapped[entry.index] = entry.u; placed[entry.index] = group.start + group.offsets[k]; });
     }
     return { placed, unwrapped, groups: groups.map((group) => group.members.map((entry) => entry.index)) };
   }
 
-  /** 單位所屬星座的範圍（以期望角 u 展開、不回繞）：第一個成員的星座起點到最後一個成員的星座終點。 */
   function signRange(unit, u) {
     const within = (item) => Math.min(30, Math.max(0, item.lon - item.sign * 30));
     const head = unit.members[0];
@@ -439,8 +379,7 @@
       const nextStart = position[after[0]] + (g === count - 1 ? 360 : 0);
       const roomBefore = count === 1 ? 360 - (position[tail] - position[head]) - hw[head] - hw[tail]
         : position[head] - previousEnd - hw[before[before.length - 1]] - hw[head];
-      const roomAfter = count === 1 ? roomBefore
-        : nextStart - position[tail] - hw[tail] - hw[after[0]];
+      const roomAfter = count === 1 ? roomBefore : nextStart - position[tail] - hw[tail] - hw[after[0]];
       const low = -Math.min(MAX_SIGN_SHIFT, Math.max(0, roomBefore));
       const high = Math.min(MAX_SIGN_SHIFT, Math.max(0, roomAfter));
       const cost = (shift) => members.reduce((total, index) => total
@@ -451,10 +390,7 @@
         for (const shift of [-step * SHIFT_STEP, step * SHIFT_STEP]) {
           if (shift < low - 1e-9 || shift > high + 1e-9) continue;
           const value = cost(shift);
-          if (value < bestCost - 0.01) {
-            bestCost = value;
-            bestShift = shift;
-          }
+          if (value < bestCost - 0.01) { bestCost = value; bestShift = shift; }
         }
       }
       if (bestShift) for (const index of members) position[index] += bestShift;
@@ -483,7 +419,6 @@
     return units;
   }
 
-  /** 一輪排版：共用標籤、切向打包、星座省略、留在星座內。回傳單位、位置與每個點的框。 */
   // folio 的扇形展開：一群標籤裡相鄰的兩個交錯放在內外兩層（各自一條引線），切向只需要約一半的寬度，
   // 群聚因此不必縮字。只在兩層都放得下（標籤的徑向深度小，也就是一行字橫躺的上下兩側）時交錯。
   const TIER_SHARE = 0.55;
@@ -496,8 +431,7 @@
     return depth;
   }
   function tierable(unit, a, fs, floor) {
-    return !unit.radial && unit.members.length === 1
-      && G.rLabelTop - 2 * stackDepth(unit, a, fs) - TIER_GAP * fs >= floor;
+    return !unit.radial && unit.members.length === 1 && G.rLabelTop - 2 * stackDepth(unit, a, fs) - TIER_GAP * fs >= floor;
   }
   const tierFactor = (unit, a, fs, floor) => (tierable(unit, a, fs, floor) ? TIER_SHARE : 1);
   /** 每一群裡連續可交錯的標籤，依圓周順序一外一內；內層的外緣在這一段外層最深處再往內 TIER_GAP。 */
@@ -512,10 +446,7 @@
         }
         run = [];
       };
-      for (const index of group) {
-        if (tierable(units[index], placed[index], fs, floor)) run.push(index);
-        else flush();
-      }
+      for (const index of group) { if (tierable(units[index], placed[index], fs, floor)) run.push(index); else flush(); }
       flush();
     }
   }
@@ -614,8 +545,7 @@
   function packLabels(items, text, floor, presetName) {
     let fallback = null;
     const cap = FAN_CAP[presetName];
-    // 一行字優先：每個字級先讓各群攤到 cap 仍用一行字；不行才讓攤超過 RADIAL_FAN 的群改徑向堆疊；
-    // 兩者都不行才縮字。
+    // 一行字優先：每個字級先讓各群攤到 cap 仍用一行字；不行才讓攤超過 RADIAL_FAN 的群改徑向堆疊；兩者都不行才縮字。
     const limits = cap > RADIAL_FAN ? [cap, RADIAL_FAN] : [RADIAL_FAN];
     for (const scale of LABEL_SCALES) {
       for (const limit of limits) {
@@ -637,7 +567,6 @@
     return fallback;
   }
 
-  // 讀回應
   /**
    * 落宮：點鍵 → 宮號。行星讀後端 planet_in_house.placements；月交點與 Lilith 讀 point_placements
    * （後端只在整宮制給）。沒有落宮時是空表。符號對照與方盤用。
@@ -666,12 +595,8 @@
         const position = readPosition(body.sign_position);
         if (!position) continue;
         const key = typeof body.key === "string" ? body.key : null;
-        const spec = key && Object.hasOwn(POINTS, key) && POINTS[key].list === list
-          ? POINTS[key] : null;
-        if (!spec) {
-          omitted.push(typeof body.name === "string" && body.name ? body.name : String(body.key));
-          continue;
-        }
+        const spec = key && Object.hasOwn(POINTS, key) && POINTS[key].list === list ? POINTS[key] : null;
+        if (!spec) { omitted.push(typeof body.name === "string" && body.name ? body.name : String(body.key)); continue; }
         points.push({
           kind: "body", key, glyph: spec.glyph, suffix: spec.suffix || "", ...position,
           // 回應的名稱，與表格第一欄同字（符號對照用）。
@@ -712,12 +637,8 @@
     };
   }
 
-  /** 回應裡每一處帶黃經的鍵：{ path（陣列索引寫成 []）, value, record }。 */
   function* positionPaths(value, path) {
-    if (Array.isArray(value)) {
-      for (const entry of value) yield* positionPaths(entry, `${path}[]`);
-      return;
-    }
+    if (Array.isArray(value)) { for (const entry of value) yield* positionPaths(entry, `${path}[]`); return; }
     if (!isRecord(value)) return;
     for (const [key, child] of Object.entries(value)) {
       const childPath = path ? `${path}.${key}` : key;
@@ -725,7 +646,6 @@
       else yield* positionPaths(child, childPath);
     }
   }
-  /** 一處的值裡有幾個合法的位置（單一位置、位置陣列或以名稱為鍵的位置表）。 */
   function positionCount(value) {
     if (readPosition(value)) return 1;
     const entries = Array.isArray(value) ? value : isRecord(value) ? Object.values(value) : [];
@@ -754,15 +674,10 @@
       if (treatment === "drawn") {
         if (path === "astronomical_data.angles.sign_positions" && !drawnAngles) name = TEXT.angles;
         if (path === "derived_methods.house_division.cusp_sign_positions" && !drawnCusps) name = TEXT.cusps;
-      } else if (typeof treatment === "string") {
-        name = treatment;
-        treatment = "omitted";
-      } else if (treatment === undefined) {
+      } else if (typeof treatment === "string") { name = treatment; treatment = "omitted"; } else if (treatment === undefined) {
         name = typeof record.name === "string" && record.name ? record.name : UNLISTED_POSITION;
         treatment = "unlisted";
-      } else {
-        treatment = "same_points";
-      }
+      } else { treatment = "same_points"; }
       if (name) add(name);
       sources.push({ path, count, treatment, name });
     }
@@ -779,8 +694,7 @@
     return { type: "polyline", part, points: points.map((p) => [round3(p.x), round3(p.y)]), stroke, width };
   }
   function textPrim(part, x, y, content, size, font, fill, extra = {}) {
-    return { type: "text", part, x: round3(x), y: round3(y), text: content, size: round3(size), font, fill,
-      anchor: "middle", ...extra };
+    return { type: "text", part, x: round3(x), y: round3(y), text: content, size: round3(size), font, fill, anchor: "middle", ...extra };
   }
   function glyphPrim(part, key, x, y, size, fill, extra = {}) {
     return { type: "glyph", part, glyph: key, matrix: glyphMatrix(key, x, y, size), fill, ...extra };
@@ -805,7 +719,6 @@
     const glyphSize = SIZE.ringGlyph * text;
     const nameSize = SIZE.ringName * minorText(text);
     for (let sign = 0; sign < 12; sign += 1) {
-      // 符號與中文名並排置中；中文名寬約兩個字。
       const p = at(sign * 30 + 15, G.rSignText);
       const glyphWidth = glyphBox(SIGN_KEYS[sign], glyphSize).w;
       const total = glyphWidth + 3 * text + 2 * nameSize;
@@ -861,7 +774,6 @@
     return items;
   }
 
-  /** 一個標籤單位的圖元，依成員分開（每個點一組）。 */
   function unitScene(unit, angle, fs) {
     const halo = 4 * fs;
     const byItem = new Map(unit.members.map((item) => [item, []]));
@@ -926,25 +838,19 @@
       G.width - 2 * G.margin - (index === 0 ? textWidth(TEXT.brand, size) + 12 : 0)));
     const items = wrapped.map((content, index) => textPrim("footer", G.margin, G.footerTop + 22 * text + index * line,
       content, size, "sans", "dim", { anchor: "start" }));
-    items.push(textPrim("footer", G.width - G.margin, G.footerTop + 22 * text, TEXT.brand, size, "sans", "dim",
-      { anchor: "end" }));
+    items.push(textPrim("footer", G.width - G.margin, G.footerTop + 22 * text, TEXT.brand, size, "sans", "dim", { anchor: "end" }));
     return { items, height: Math.ceil(G.footerTop + 22 * text + (wrapped.length - 1) * line + 16 * text) };
   }
 
-  /** 使用者勾選「加印輸入摘要」時的文字行（預設沒有）。 */
   const summaryLines = (options) => (Array.isArray(options.inputSummary)
     ? options.inputSummary.filter((line) => typeof line === "string" && line) : []);
   const roundBox = (box) => ({ x0: round3(box.x0), y0: round3(box.y0), x1: round3(box.x1), y1: round3(box.y1) });
 
-  /** 模型帶 forPreset(preset)：每種字級只算一次（圓盤與方盤共用）。 */
   function withPresets(buildModel, response, options = {}) {
     const model = buildModel(response, options);
     const cache = { [model.preset]: model };
     Object.defineProperty(model, "forPreset", {
-      value: (preset) => {
-        if (!cache[preset]) cache[preset] = buildModel(response, { ...options, preset });
-        return cache[preset];
-      },
+      value: (preset) => { if (!cache[preset]) cache[preset] = buildModel(response, { ...options, preset }); return cache[preset]; },
     });
     return model;
   }
@@ -965,14 +871,12 @@
           fill: null, stroke: "hair", width: 0.8 }]),
         ...result.group.items,
         // 中心留一個空圓：對沖線經過圓心時不在中央打結。
-        { type: "circle", part: "aspect-clear", cx: G.c, cy: G.c, r: round3(geometry.r * 0.2),
-          fill: "bg", stroke: "hair", width: 0.8 },
+        { type: "circle", part: "aspect-clear", cx: G.c, cy: G.c, r: round3(geometry.r * 0.2), fill: "bg", stroke: "hair", width: 0.8 },
       ] }
       : null;
     const names = isRecord(aspects) && isRecord(aspects.degree_based) ? aspects.degree_based.aspect_names_zh : null;
     return {
-      group,
-      summary: { status: result.status, lines: result.lines, omitted: result.omitted, missingPoints: result.missingPoints },
+      group, summary: { status: result.status, lines: result.lines, omitted: result.omitted, missingPoints: result.missingPoints },
       legend: Aspects.legendLines(result, names),
     };
   }
@@ -980,9 +884,7 @@
   // 不確定的位置畫成範圍（folio）：只讀回應的出生時刻敏感度，不另算。
   //   只知日期：月亮在當天取樣到的黃經範圍（position_ranges[moon].sampled_longitude_envelope）；
   //   約略小時：上升在這一小時取樣到的範圍（angles.asc）。範圍是取樣點的包絡，不是連續解。
-  const RANGE_TEXT = Object.freeze({
-    moon: "斜線弧：月亮當天取樣到的位置範圍", asc: "斜線扇形：上升在這一小時內取樣到的範圍",
-  });
+  const RANGE_TEXT = Object.freeze({ moon: "斜線弧：月亮當天取樣到的位置範圍", asc: "斜線扇形：上升在這一小時內取樣到的範圍" });
   const CENTRE_NOTE = Object.freeze(["只知日期", "沒有宮位"]);
   // 內緣停在標籤堆疊外緣（G.rLabelTop）之外一點：字框是正放的矩形，斜放時角會略超出那一圈，
   // 範圍帶從那裡往外畫，就不會壓到任何天體的符號與度數。
@@ -1028,7 +930,6 @@
     const q = polar(from + span, r);
     return `M ${round3(p.x)} ${round3(p.y)} A ${r} ${r} 0 ${span > 180 ? 1 : 0} 0 ${round3(q.x)} ${round3(q.y)}`;
   }
-  /** 一段弧帶：外框（兩條弧、兩條徑向邊）加斜線排線，排線只留在帶內。weight：排線與外框的粗細倍數。 */
   function hatchedBand(part, from, span, rIn, rOut, linked, weight = 1) {
     const items = [];
     const step = 1.4 / weight;
@@ -1050,14 +951,12 @@
       const range = ranges[key];
       if (!range) continue;
       const from = range.start - reference;
-      // 只知日期時月亮的範圍是這張圖的主要訊息：由星座環內緣一路畫到行星標籤的外緣（刻線帶加大半條
-      // 引線帶）、線也加粗，讓它成為圖上第二顯眼的東西；天體刻線畫在它上面，標籤在它內側、不被壓住。
-      // 上升的扇形留在刻線帶。
+      // 只知日期時月亮的範圍是這張圖的主要訊息：由星座環內緣一路畫到行星標籤的外緣（刻線帶加大半條引線帶）、線也加粗，
+      // 讓它成為圖上第二顯眼的東西；天體刻線畫在它上面，標籤在它內側、不被壓住。上升的扇形留在刻線帶。
       items.push(...(key === "moon"
         ? hatchedBand("range-moon", from, range.span, MOON_RANGE.rIn, MOON_RANGE.rOut, [key], MOON_RANGE.weight)
         : hatchedBand("range-asc", from, range.span, G.rTickIn, G.rSignIn, [key])));
       if (key === "asc") {
-        // 扇形的兩條邊：由宮位環外緣到星座環內緣的虛細線。
         for (const angle of [from, from + range.span]) {
           items.push(linePrim("range-asc-side", polar(angle, preset.rHouseOut), polar(angle, G.rTickIn), "dim", 0.7,
             { dash: "1.5 2", linked: ["asc"] }));
@@ -1101,10 +1000,7 @@
   function fadedSigns(range) {
     if (!range) return () => false;
     const margin = 5;
-    return (sign) => {
-      const gap = mod360(sign * 30 + 15 - range.start);
-      return gap <= range.span + margin || gap >= 360 - margin;
-    };
+    return (sign) => { const gap = mod360(sign * 30 + 15 - range.start); return gap <= range.span + margin || gap >= 360 - margin; };
   }
   // 沒有宮位時中心是這張圖的主要訊息（只知日期、沒有宮位）：不畫空著的宮位環，中心圓與字都放大。
   function centreNote(preset) {
@@ -1117,9 +1013,8 @@
   }
 
   /**
-   * 回應 → 星盤圖模型。options.inputSummary：使用者勾選「加印輸入摘要」時的文字行（預設沒有）；
-   * options.preset：字級（compact／standard／wide，預設 standard）；options.aspects：false 時不畫相位線
-   * （預設畫）。
+   * 回應 → 星盤圖模型。options.inputSummary：使用者勾選「加印輸入摘要」時的文字行（預設沒有）；options.preset：字級
+   * （compact／standard／wide，預設 standard）；options.aspects：false 時不畫相位線（預設畫）。
    */
   function build(response, options = {}) {
     if (!isRecord(response)) throw new Error("星盤圖需要一份回應。");
@@ -1133,18 +1028,14 @@
     const reference = hasAngles ? angles[0].lon : 0;
     const positions = readPositionSources(response, hasAngles, Boolean(cusps));
     const notDrawn = [...omitted, ...positions.omitted.filter((name) => !omitted.includes(name))];
-
     const ranges = readRanges(response);
     const range = rangeLayer(ranges, reference, preset, Boolean(cusps));
     const notes = [
-      cusps ? `宮位制：${cusps.text}` : TEXT.noHouses,
-      ...(hasAngles ? [TEXT.accent] : [TEXT.noAngles]),
-      ...(points.some((point) => point.anchorOnly) ? [TEXT.dateOnly] : []),
-      ...range.notes,
+      cusps ? `宮位制：${cusps.text}` : TEXT.noHouses, ...(hasAngles ? [TEXT.accent] : [TEXT.noAngles]),
+      ...(points.some((point) => point.anchorOnly) ? [TEXT.dateOnly] : []), ...range.notes,
       ...(notDrawn.length ? [`圖上未畫：${notDrawn.join("、")}（見表格）`] : []),
     ];
     const foot = footerLayout([...notes, ...summaryLines(options)], preset.text);
-
     const items = [...points, ...angles].map((item) => ({ ...item, a: mod360(item.lon - reference) }));
     const packed = items.length ? packLabels(items, preset.text, preset.rHouseOut + 3, presetName)
       : { units: [], placed: [], boxes: [], fs: preset.text, omitted: { signs: false, shared: false } };
@@ -1152,7 +1043,6 @@
     packed.units.forEach((unit, index) => unit.members.forEach((item) => anchorOf.set(item, packed.placed[index])));
     const topOf = new Map();
     packed.units.forEach((unit) => unit.members.forEach((item) => topOf.set(item, unit.top)));
-
     const ticks = points.map((point) => linePrim("body-tick", polar(point.lon - reference, G.rSignIn),
       polar(point.lon - reference, G.rTickIn), "fg", 1.8, { ...(point.anchorOnly ? { dash: "2 1.6" } : {}), linked: [point.key] }));
     const leaders = items.map((item) => leaderPrim(item, anchorOf.get(item), topOf.get(item)));
@@ -1160,7 +1050,6 @@
     packed.units.forEach((unit, index) => {
       for (const [item, prims] of unitScene(unit, packed.placed[index], packed.fs)) sceneOf.set(item, prims);
     });
-
     const partnerOf = new Map();
     for (const unit of packed.units) {
       if (unit.members.length === 2) {
@@ -1175,8 +1064,7 @@
       { group: "zodiac", items: zodiacRing(reference, preset.text, fadedSigns(ranges.asc)) },
       ...(cusps ? [{ group: "houses", items: houseRing(cusps.cusps.map((cusp) => cusp.lon), reference, preset) }] : []),
       // 相位線在宮位之上、四軸之下：紅色四軸壓在線上。
-      ...(showAspects ? [aspects.group] : []),
-      ...(hasAngles ? [{ group: "angles", items: angleAxes(angles, reference, preset) }] : []),
+      ...(showAspects ? [aspects.group] : []), ...(hasAngles ? [{ group: "angles", items: angleAxes(angles, reference, preset) }] : []),
       ...(range.items.length ? [{ group: "ranges", items: clearLabels(range.items, packed.boxes.flat()) }] : []),
       ...(ranges.moon && !cusps ? [{ group: "centre", items: centreNote(preset) }] : []),
       { group: "markers", items: [...ticks, ...leaders] },
@@ -1188,38 +1076,26 @@
       { group: "footer", items: foot.items },
     ];
     return {
-      width: G.width,
-      height: foot.height,
-      preset: presetName,
-      center: { x: G.c, y: G.c },
-      frame: hasAngles ? "ascendant" : "aries",
-      ariaLabel: asc
+      width: G.width, height: foot.height, preset: presetName, center: { x: G.c, y: G.c },
+      frame: hasAngles ? "ascendant" : "aries", ariaLabel: asc
         ? `星盤圖：上升 ${SIGN_NAMES[asc.sign]} ${asc.deg}${asc.min}；各天體位置見下方表格`
-        : "星盤圖：本次沒有軸點，牡羊 0° 置於左方；各天體位置見下方表格",
-      notes,
-      dateOnly,
+        : "星盤圖：本次沒有軸點，牡羊 0° 置於左方；各天體位置見下方表格", notes, dateOnly,
       // 相位線：status（閉集，見 chart-wheel-aspects.js）、畫了與未畫的線；shown 是這一份場景有沒有畫。
-      aspects: { ...aspects.summary, shown: showAspects },
-      aspectLegend: aspects.legend,
-      compaction: packed.omitted,
-      positionSources: positions.sources,
-      scene,
+      aspects: { ...aspects.summary, shown: showAspects }, aspectLegend: aspects.legend, compaction: packed.omitted,
+      positionSources: positions.sources, scene,
       labels: items.map((item, index) => ({
         key: item.key, kind: item.kind, sign: item.sign,
         // 符號對照：名稱（與表格第一欄同字）、符號、度與分（與標籤同一個切段）、位置文字、逆行、宮號（沒有落宮時 null）。
         name: item.name, glyph: item.glyph, suffix: item.suffix, deg: item.deg, min: item.min, retro: item.retro,
-        position: `${SIGN_NAMES[item.sign]} ${item.deg}${item.min}`,
-        house: houses.has(item.key) ? houses.get(item.key) : null,
+        position: `${SIGN_NAMES[item.sign]} ${item.deg}${item.min}`, house: houses.has(item.key) ? houses.get(item.key) : null,
         anchor: round3(anchorOf.get(item)), tick: round3(item.a),
                 // sharedWith：共用同一條標籤的另一點在 labels 裡的索引。
-        signShown: !item.omitSign, sharedWith: partnerOf.has(item) ? partnerOf.get(item) : null,
-        boxes: packed.boxes[index].map(roundBox),
+        signShown: !item.omitSign, sharedWith: partnerOf.has(item) ? partnerOf.get(item) : null, boxes: packed.boxes[index].map(roundBox),
       })),
     };
   }
 
-  // 方盤（chart-square.js）沿用的讀回應、量字、圖元與頁尾：同一套點鍵、同一條「圖上未畫」規則、同一種場景，
-  // 不另寫一份。
+  // 方盤（chart-square.js）沿用的讀回應、量字、圖元與頁尾：同一套點鍵、同一條「圖上未畫」規則、同一種場景，不另寫一份。
   const shared = Object.freeze({
     readPosition, readPoints, readAngles, readHouses, readCusps, readPositionSources, glyphBox, numBox,
     textWidth, wrap, round3, mod360, isRecord, SIGN_KEYS, SIGN_NAMES,

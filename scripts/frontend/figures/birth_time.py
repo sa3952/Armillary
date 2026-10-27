@@ -1,15 +1,11 @@
-"""〈出生時間差五分鐘〉: figure 1 (the ascendant across one hour, a slider over
-the product's answers every five minutes), figure 2 (five minutes of motion of
-the Sun, the Moon and the ascendant on one scale) and figure 3 (how long each
-sign takes to rise at Taipei's and London's latitude), with the numbers the
-prose quotes.
+"""〈出生時間差五分鐘〉: figure 1 (the ascendant across one hour, a slider over the product's answers every five
+minutes), figure 2 (five minutes of motion of the Sun, the Moon and the ascendant on one scale) and figure 3 (how long
+each sign takes to rise at Taipei's and London's latitude), with the numbers the prose quotes.
 
-Synthetic instant only: 1990-05-15, Taipei 25.05306N 121.52639E, UTC+8 (no
-daylight saving that year), the same instant as the home page demonstration.
-The slider's instants, the five sampled instants and the crossing window are
-the product's own answers; the curve, the five-minute motion and the rising
-times are Swiss Ephemeris read directly, and the product's ascendant at every
-slider instant must lie on that curve.
+Synthetic instant only: 1990-05-15, Taipei 25.05306N 121.52639E, UTC+8 (no daylight saving that year), the same instant
+as the home page demonstration.  The slider's instants, the five sampled instants and the crossing window are the
+product's own answers; the curve, the five-minute motion and the rising times are Swiss Ephemeris read directly, and
+the product's ascendant at every slider instant must lie on that curve.
 """
 from __future__ import annotations
 
@@ -19,57 +15,42 @@ from typing import Any
 from . import _fx
 from ._common import SIGNS, TAIPEI, calc_ut, hms as _hms, product_charts, sign_degree_minute, swiss
 
-
 FRAGMENT = "blog-birth-time-sensitivity"
 LAT, LON = TAIPEI
-# The article's second latitude (London); a sign's rising time depends on the
-# latitude and the obliquity, not on the longitude.
+# The article's second latitude (London); a sign's rising time depends on the latitude and the obliquity.
 LONDON = (51.5, -0.1275)
-DEMO: dict[str, Any] = {
-    "datetime": {"year": 1990, "month": 5, "day": 15, "hour": 14, "minute": 0, "second": 0},
-    "location": {"latitude": LAT, "longitude": LON},
-    "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"},
-    "options": {"house_system": "W", "include_houses": True},
-}
-# The slider: every five minutes from 14:00, and the hour's last second, the
-# product's own last sample.
+DEMO: dict[str, Any] = {"datetime": {"year": 1990, "month": 5, "day": 15, "hour": 14, "minute": 0, "second": 0},
+    "location": {"latitude": LAT, "longitude": LON}, "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"},
+    "options": {"house_system": "W", "include_houses": True}}
+# The slider: every five minutes from 14:00, and the hour's last second, the product's own last sample.
 STEPS = [(14, m, 0) for m in range(0, 60, 5)] + [(14, 59, 59)]
 DEFAULT_STEP = 6  # 14:30
-# This module reads the clock as UT1 = UTC, while the product converts UTC
-# with swe_utc_to_jd (UT1 = TT − Swiss ΔT, 0.079 s later here), so the
-# product's ascendant is about 1.1″ ahead of the curve: invisible, and checked.
+# This module reads the clock as UT1 = UTC, while the product converts UTC with swe_utc_to_jd (UT1 = TT − Swiss ΔT,
+# 0.079 s later here), so the product's ascendant is about 1.1″ ahead of the curve: invisible, and checked.
 ON_CURVE_ARCSEC = 3.0
 CLASSICAL = ("sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn")
 GLYPHS = ("sun", "moon", "aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio",
           "sagittarius", "capricorn", "aquarius", "pisces")
 SIGN_KEYS = GLYPHS[2:]
 
-
 def _clock(local: str) -> tuple[int, int, int]:
-    """'1990-05-15T14:22:58' or '1990-05-15 14:22:58.000' -> (14, 22, 58)."""
     date, _, time = local.replace("T", " ").partition(" ")
     if date != "1990-05-15":
         raise RuntimeError(f"a sample left the day: {local}")
     h, m, s = time.split(".")[0].split(":")
     return int(h), int(m), int(s)
 
-
 def _hm(clock: tuple[int, int, int]) -> str:
     return _hms(clock) if clock[2] else f"{clock[0]:02d}:{clock[1]:02d}"
-
 
 def _minutes(clock: tuple[int, int, int]) -> float:
     return (clock[0] - 14) * 60 + clock[1] + clock[2] / 60
 
-
 def _dm(longitude: float) -> tuple[str, str]:
-    """(sign, 「0°49′」) rounded to the whole arcminute."""
     sign, degree, minute = sign_degree_minute(longitude)
     return sign, f"{degree}°{minute:02d}′"
 
-
 def _product() -> dict:
-    """The product's sampling of the hour, and its chart at every slider instant."""
     with product_charts() as post:
         hour = post({**DEMO, "birth_time_precision": "approximate_hour"})["birth_time_sensitivity"]
         (transition,) = hour["transitions"]
@@ -87,12 +68,9 @@ def _product() -> dict:
             "crossing": (_clock(transition["lower_bound_local"]), _clock(transition["upper_bound_local"])),
             "width": transition["resolution_seconds"]}
 
-
 def _rising(swe, lat: float, lon: float) -> dict[int, float]:
-    """Minutes each sign takes to rise: scan 24 h from local 0:00 in 10 s steps."""
     def asc(j):
         return swe.houses_ex(j, lat, lon, b"W")[1][0]
-
     start = swe.julday(1990, 5, 14, 16.0)
     cross = {}
     prev = asc(start)
@@ -120,19 +98,15 @@ def _rising(swe, lat: float, lon: float) -> dict[int, float]:
         raise RuntimeError(f"rising times found for signs {sorted(rising)}, not all twelve")
     return rising
 
-
 def _data(swe) -> dict:
     def jd(h, m, s=0):  # local clock, UTC+8
         return swe.julday(1990, 5, 15, (h - 8) + m / 60 + s / 3600)
-
     def asc(j):
         return swe.houses_ex(j, LAT, LON, b"W")[1][0]
-
     out: dict = {"asc_at": lambda clock: asc(jd(*clock))}
     out["asc_per_minute"] = [[m, asc(jd(14, 0) + m / 1440)] for m in range(0, 61)]
     out["rising_minutes"] = _rising(swe, LAT, LON)
     out["london_minutes"] = _rising(swe, *LONDON)
-    # Sidereal day: the time for sidereal time to come round again.
     j0 = jd(14, 0)
     st0 = swe.sidtime(j0)
     lo, hi = j0 + 0.99, j0 + 1.0
@@ -143,7 +117,6 @@ def _data(swe) -> dict:
         else:
             hi = mid
     out["sidereal_day_seconds"] = (hi - j0) * 86400
-    # Motion in five minutes from 14:30.
     j = jd(14, 30)
     j5 = j + 5 / 1440
     for name, body in (("sun", swe.SUN), ("moon", swe.MOON)):
@@ -151,15 +124,13 @@ def _data(swe) -> dict:
         b = calc_ut(swe, j5, body)[0]
         out[f"move5_{name}_arcmin"] = ((b - a) % 360) * 60
     out["move5_asc_deg"] = (asc(j5) - asc(j)) % 360
-    # The Moon's daily speed over 1990.
     speeds = [calc_ut(swe, swe.julday(1990, 1, 1, 0) + d, swe.MOON, swe.FLG_SPEED)[3] for d in range(0, 365)]
     out["moon_speed_range"] = [min(speeds), max(speeds)]
     return out
 
-
 def _check(d: dict, p: dict) -> None:
-    """The product's slider instants lie on the curve, and its crossing window
-    holds the ephemeris' crossing of Libra 0°."""
+    """The product's slider instants lie on the curve, and its crossing window holds the ephemeris' crossing of Libra
+    0°."""
     for step in p["steps"]:
         own = d["asc_at"](step["clock"])
         gap = ((step["asc"] - own + 180) % 360 - 180) * 3600
@@ -170,21 +141,17 @@ def _check(d: dict, p: dict) -> None:
     if not before < 180 <= after:
         raise RuntimeError(f"the ascendant does not cross 180° between {p['crossing']}: {before}, {after}")
 
-
 # --- figure 1: the hour, with a slider -----------------------------------------
 
 YMIN, YMAX = 174.0, 189.0
-
 
 def _step_sentence(step: dict, probe: bool, bound: _fx.Bound) -> str:
     sign, dm = _dm(step["asc"])
     clock = bound.num(_hm(step["clock"]))
     sun = bound.num(str(step["houses"]["sun"]))
     moon = bound.num(str(step["houses"]["moon"]))
-    text = (f"{clock}：上升點在{sign}座 {bound.num(dm)}。整宮制下{sign}座是第一宮，"
-            f"太陽在第 {sun} 宮、月亮在第 {moon} 宮。")
+    text = (f"{clock}：上升點在{sign}座 {bound.num(dm)}。整宮制下{sign}座是第一宮，" f"太陽在第 {sun} 宮、月亮在第 {moon} 宮。")
     return text + ("這是本站實際取樣的五個時刻之一。" if probe else "")
-
 
 def _hour(layout: str, fid: str, d: dict, p: dict, bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
@@ -239,7 +206,6 @@ def _hour(layout: str, fid: str, d: dict, p: dict, bound: _fx.Bound) -> str:
     out.append("</svg>")
     return "".join(out)
 
-
 def _hour_table(p: dict, bound: _fx.Bound) -> str:
     rows = []
     for step in p["steps"]:
@@ -249,7 +215,6 @@ def _hour_table(p: dict, bound: _fx.Bound) -> str:
         rows.append(f'<tr><th scope="row">{bound.num(_hm(step["clock"]))}{mark}</th>'
                     f'<td>{sign}座 {bound.num(dm)}</td>{houses}</tr>')
     return _fx.data_table(("時刻", "上升點", "太陽落宮", "月亮落宮"), rows)
-
 
 def _hour_figure(d: dict, p: dict) -> str:
     bound = _fx.Bound()
@@ -283,16 +248,13 @@ def _hour_figure(d: dict, p: dict) -> str:
         bound=bound,
     )
 
-
 # --- figure 2: five minutes on one scale ---------------------------------------
 
 RULER = 75.0  # arcminutes
 LENS = 3.0    # arcminutes shown in the enlargement
 
-
 def _arcmin_label(t: int) -> str:
     return f"{t // 60}°" + (f"{t % 60}′" if t % 60 else "") if t >= 60 else f"{t}′"
-
 
 def _five(layout: str, fid: str, rows: list[tuple[str, str, float, str]], bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
@@ -330,7 +292,6 @@ def _five(layout: str, fid: str, rows: list[tuple[str, str, float, str]], bound:
         out.append(_fx.line(x0 + t * k, axis, x0 + t * k, axis + 5, "fx-axis"))
         anchor = "start" if t == 0 else "end" if t == RULER else "middle"
         out.append(_fx.text(x0 + t * k, axis + 22, bound.scale(_arcmin_label(t)), "fx-t fx-small fx-num", anchor))
-    # The enlargement: the first 3′ of the same scale, the Sun and the Moon.
     lens_top = top + 4 if wide else top + 26 - 4
     out.append(_fx.rect(x0 - 3, lens_top, LENS * k + 6, bottom - lens_top - 8, "fx-lens"))
     iy = axis + (64 if wide else 72)
@@ -362,7 +323,6 @@ def _five(layout: str, fid: str, rows: list[tuple[str, str, float, str]], bound:
     out.append("</svg>")
     return "".join(out)
 
-
 def _five_figure(d: dict) -> str:
     bound = _fx.Bound()
     sun, moon, asc = d["move5_sun_arcmin"], d["move5_moon_arcmin"], d["move5_asc_deg"]
@@ -375,14 +335,8 @@ def _five_figure(d: dict) -> str:
         f"畫在同一把尺上（單位是角分，{bound.scale('60 角分是 1 度')}）。太陽那一段短到幾乎看不見，下方把前 "
         f"{bound.scale(f'{LENS:g}')} 角分放大，才看得出太陽與月亮。由本站以 Swiss Ephemeris 自算。"
     )
-    return _fx.figure(
-        fid="fig-five-minutes",
-        title="五分鐘裡太陽、月亮與上升點各走了多遠",
-        caption=caption,
-        art=_fx.FigureArt.drawn(_five, "fig-five-minutes", rows, bound),
-        bound=bound,
-    )
-
+    return _fx.figure(fid="fig-five-minutes", title="五分鐘裡太陽、月亮與上升點各走了多遠", caption=caption,
+        art=_fx.FigureArt.drawn(_five, "fig-five-minutes", rows, bound), bound=bound)
 
 # --- figure 3: rising times, Taipei or London -----------------------------------
 
@@ -391,10 +345,8 @@ EMPHASIS = (5, 6)  # the signs figure 1's hour passes through
 VARIANTS = (("taipei", "臺北　北緯 25.05°"), ("london", "倫敦　北緯 51.5°"))
 SCALE_MAX = 180
 
-
 def _pair_key(pair: tuple[int, int]) -> str:
     return f"{SIGN_KEYS[pair[0]]}-{SIGN_KEYS[pair[1]]}"
-
 
 def _rise(layout: str, fid: str, minutes: dict, bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
@@ -442,7 +394,6 @@ def _rise(layout: str, fid: str, minutes: dict, bound: _fx.Bound) -> str:
     out.append("</svg>")
     return "".join(out)
 
-
 def _rise_table(minutes: dict, bound: _fx.Bound) -> str:
     rows = []
     for s in range(12):
@@ -451,7 +402,6 @@ def _rise_table(minutes: dict, bound: _fx.Bound) -> str:
         rows.append(f'<tr data-fx-key="{key}"><th scope="row">{SIGNS[s]}</th>{cells}</tr>')
     return _fx.data_table(("星座", f"臺北（北緯 {bound.label('25.05')}°）", f"倫敦（北緯 {bound.label('51.5')}°）"),
                           rows, summary="圖中的數字（表格，單位：分鐘）")
-
 
 def _rise_figure(d: dict) -> str:
     bound = _fx.Bound()
@@ -499,7 +449,6 @@ def _rise_figure(d: dict) -> str:
         bound=bound,
     )
 
-
 def build() -> tuple[dict[str, str], list[str]]:
     p = _product()
     with swiss() as swe:
@@ -510,20 +459,13 @@ def build() -> tuple[dict[str, str], list[str]]:
     if not math.isclose(sum(rising.values()) * 60, d["sidereal_day_seconds"], abs_tol=1.0):
         raise RuntimeError("the twelve rising times do not add up to a sidereal day")
     (lower, upper) = p["crossing"]
-    quoted = [
-        f"<b>{d['move5_sun_arcmin']:.1f}′</b><span>太陽",
-        f"<b>{d['move5_moon_arcmin']:.1f}′</b><span>月亮",
+    quoted = [f"<b>{d['move5_sun_arcmin']:.1f}′</b><span>太陽", f"<b>{d['move5_moon_arcmin']:.1f}′</b><span>月亮",
         f"<b>{d['move5_asc_deg']:.2f}°</b><span>上升點",
         f"介於 {d['moon_speed_range'][0]:.1f} 與 {d['moon_speed_range'][1]:.1f} 度之間",
         f"恆星日長度（{d['sidereal_day_seconds']:.2f} 秒）",
         f"本站以二分法夾在 {_hms(lower)} 與 {_hms(upper)} 之間，寬 {p['width']} 秒",
         f"約 {rising[0]:.0f} 分鐘升起，巨蟹到射手約 {min(slow):.0f} 到 {max(slow):.0f} 分鐘",
         f"約 {rising[0] / 30:.0f} 分鐘一度，走過處女、天秤座時約 {rising[5] / 30:.1f} 分鐘一度",
-        f"牡羊約 {london[0]:.0f} 分鐘、處女約 {london[5]:.0f} 分鐘",
-    ]
-    return {
-        "fx-defs": _fx.defs(GLYPHS),
-        "ascendant-hour": _hour_figure(d, p),
-        "five-minutes": _five_figure(d),
-        "rising-times": _rise_figure(d),
-    }, quoted
+        f"牡羊約 {london[0]:.0f} 分鐘、處女約 {london[5]:.0f} 分鐘"]
+    return {"fx-defs": _fx.defs(GLYPHS), "ascendant-hour": _hour_figure(d, p), "five-minutes": _five_figure(d),
+        "rising-times": _rise_figure(d)}, quoted

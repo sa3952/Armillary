@@ -24,7 +24,7 @@ from .dignity_tables import DOMICILE_SIGNS, SIGNS
 from .essential_dignities import ALL_PROFILES
 from .formatting import normalize_longitude, zodiac_sign_index
 from .method_status import method_head
-from .module_state import PRODUCT_FORMULA_SOURCE, computed_receipt, frame_table_refusal
+from .module_state import Applicability, PRODUCT_FORMULA_SOURCE, computed_receipt, frame_table_refusal
 from .source_reading import BIBLIOGRAPHIC_ONLY, ORIGINAL_LANGUAGE_READ, SECONDARY_ONLY, TRANSLATION_READ, cited
 from .trace import Trace
 
@@ -242,7 +242,7 @@ def compute_dodecatemoria(
     }
 
 
-def dodecatemoria_not_applicable(state: dict, trace: Trace, requested: str) -> dict:
+def dodecatemoria_not_applicable(state: Applicability, trace: Trace, requested: str) -> dict:
     refusal = frame_table_refusal(
         state, trace, "十二分部",
         note="參考框架相容表判定不適用：不換框架重算。",

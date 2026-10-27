@@ -1,18 +1,12 @@
-"""〈月宿是什麼〉: figure 1 (the zodiac cut into 28 equal mansions under the
-twelve signs; pointing at a mansion names it), figure 2 (the same Moon counted
-from the vernal point and from sidereal 0° Aries, a switch between the two),
-figure 3 (the stretch the Moon covers in the minute, the hour and the civil day
-of table 2), table 2 (one Moon under three birth-time precisions) and the
-numbers the prose quotes.
+"""〈月宿是什麼〉: figures 1-3 (the zodiac cut into 28 equal mansions; the same Moon counted from the vernal point and from
+sidereal 0° Aries; the stretch the Moon covers in the minute, hour and civil day of table 2), table 2 (one Moon under
+three birth-time precisions) and the numbers the prose quotes.
 
-The mansion table, width and boundaries are the product's own
-(backend/app/core/lunar_mansions.py); the example answers come from the real
-application in process.  Synthetic instant only: 1990-11-03 Taipei, 14:00 for
-the exact time, the 14:00 hour, and the civil day.  The sidereal row of
-figure 2 is not a product output (the product refuses mansions in a sidereal
-zodiac): it is the product's own sidereal Moon for the same instant, divided
-the same way, so the article can show how far the starting point moves the
-count.  The figures are the article figure component (`_fx`), direction 甲.
+The mansion table, width and boundaries are the product's own (backend/app/core/lunar_mansions.py); the example answers
+come from the real application in process.  Synthetic instant only: 1990-11-03 Taipei, 14:00 for the exact time, the
+14:00 hour, and the civil day.  The sidereal row of figure 2 is not a product output (the product refuses mansions in a
+sidereal zodiac): it is the product's own sidereal Moon for the same instant, divided the same way, to show how far the
+starting point moves the count.  The figures are the article figure component (`_fx`), direction 甲.
 """
 from __future__ import annotations
 
@@ -22,19 +16,16 @@ import math
 from . import _fx
 from ._common import SIGNS, TAIPEI, backend_on_path, calc_ut, product_charts, swiss
 
-
 FRAGMENT = "blog-lunar-mansions"
 DAY = (1990, 11, 3)
 HOUR = 14
 LAT, LON = TAIPEI
 SIDEREAL = {"zodiac": "sidereal", "ayanamsa": "fagan_bradley"}
 
-
 def _table() -> dict:
     with backend_on_path():
         from app.core import lunar_mansions
         from app.core.formatting import dms_text, sign_position
-
         return {
             "names": [transliteration for _, transliteration in lunar_mansions.MANSIONS],
             "starts": [lunar_mansions.mansion_start_degrees(i) for i in range(lunar_mansions.MANSION_COUNT)],
@@ -44,18 +35,15 @@ def _table() -> dict:
                           for i in range(lunar_mansions.MANSION_COUNT)],
         }
 
-
 def _request(precision: str, *, sidereal: bool = False) -> dict:
     hour = HOUR if precision != "date_only" else 0
     payload = {"birth_time_precision": precision,
-               "datetime": {"year": DAY[0], "month": DAY[1], "day": DAY[2], "hour": hour, "minute": 0, "second": 0},
-               "location": {"latitude": LAT, "longitude": LON},
-               "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"},
-               "options": {"include_lunar_mansions": True}}
+        "datetime": {"year": DAY[0], "month": DAY[1], "day": DAY[2], "hour": hour, "minute": 0, "second": 0},
+        "location": {"latitude": LAT, "longitude": LON}, "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"},
+        "options": {"include_lunar_mansions": True}}
     if sidereal:
         payload["computation_mode"] = dict(SIDEREAL)
     return payload
-
 
 def _data() -> dict:
     d: dict = {}
@@ -75,16 +63,12 @@ def _data() -> dict:
         d["ayanamsa"] = sidereal["astronomical_data"]["time"]["ayanamsa"]
     return d
 
-
 def civil_day_counts(width: float) -> dict[int, int]:
-    """1950–2049, Taipei civil days (local midnight to the next, the end
-    excluded): how many days the Moon is in 1, 2 or 3 mansions.  Local
-    midnights come from the host's Asia/Taipei rules, daylight-saving years
-    included; the Moon is Swiss Ephemeris's apparent geocentric Moon, as the
-    product's date-only interval uses by default."""
+    """1950-2049, Taipei civil days (local midnight to the next, end excluded): how many days the Moon is in 1, 2 or 3
+    mansions.  Local midnights come from the host's Asia/Taipei rules, daylight-saving years included; the Moon is
+    Swiss Ephemeris's apparent geocentric Moon, as the product's date-only interval uses by default."""
     from datetime import date, datetime, timedelta, timezone
     from zoneinfo import ZoneInfo
-
     zone = ZoneInfo("Asia/Taipei")
     counts: dict[int, int] = {}
     with swiss() as swe:
@@ -92,7 +76,6 @@ def civil_day_counts(width: float) -> dict[int, int]:
             utc = datetime(day.year, day.month, day.day, tzinfo=zone).astimezone(timezone.utc)
             hours = utc.hour + utc.minute / 60 + utc.second / 3600
             return calc_ut(swe, swe.julday(utc.year, utc.month, utc.day, hours), swe.MOON)[0]
-
         day, end = date(1950, 1, 1), date(2050, 1, 1)
         start = moon_at(day)
         while day < end:
@@ -107,58 +90,44 @@ def civil_day_counts(width: float) -> dict[int, int]:
             start = stop
     return counts
 
-
 def _mansion_of(longitude: float, width: float) -> int:
     return int((longitude % 360.0) // width) + 1
 
-
 def _sign_text(position: list) -> str:
-    """[1, '15°23′17.41″', …] -> 「金牛 15°23′」."""
     dms = position[1]
     return f"{SIGNS[position[0]]} {dms[:dms.index('′') + 1]}"
 
-
 # --- the figures -------------------------------------------------------------
-# Direction 甲 (_fx): two drawings per figure, a hatch for the Moon's mansion,
-# red only for the mansion pointed at.  Every verdict drawn (which mansion holds
-# the Moon) is read back from the drawn boundaries and must equal the product's.
+# Direction 甲 (_fx): two drawings per figure, a hatch for the Moon's mansion, red only for the mansion pointed at.
+# Every verdict drawn is read back from the drawn boundaries and must equal the product's.
 
 WHEEL_IDLE = "用 Tab 鍵移到一宿上，或用滑鼠指著它，這裡會寫出它的宿名與起點。"
 COUNT_IDLE = "用 Tab 鍵移到月亮上，或用滑鼠指著它，這裡會寫出它在這一種起點下落在第幾宿。"
 COUNTS = (("tropical", "從春分點起（本站）"), ("sidereal", "從恆星牡羊 0° 起（示意）"))
 COUNT_SWITCH = "切換兩種起點"
-# The strip of figure 2: the vernal point, sidereal 0° Aries and the Moon.
 COUNT_RANGE = (0.0, 72.0)
-# A drawn boundary this close to the Moon (degrees, one arcsecond) would leave
-# the verdict to whether the boundary belongs to the mansion.
+# A drawn boundary this close to the Moon (degrees, one arcsecond) would leave the verdict to whether the boundary
+# belongs to the mansion.
 EDGE = 1 / 3600
-
 
 def _position(p: list) -> str:
     """[1, '8°34′17.14″', …] -> 「金牛 8°34′17.14″」, as the result page prints a boundary."""
     return f"{SIGNS[p[0]]} {p[1]}"
 
-
 def _polar(cx: float, cy: float):
-    """Longitude 0 (the vernal point) at the left, counting counter-clockwise, as a chart wheel."""
     return lambda lon, r: _fx.wheel_point(cx, cy, r, 180 + lon)
 
-
 def _ring(pt, lon0: float, lon1: float, outer: float, inner: float) -> str:
-    """The path of one ring segment from lon0 to lon1."""
     f = _fx.f
     (ax, ay), (bx, by) = pt(lon0, outer), pt(lon1, outer)
     (cx, cy), (dx, dy) = pt(lon1, inner), pt(lon0, inner)
     return (f"M{f(ax)} {f(ay)} A{f(outer)} {f(outer)} 0 0 0 {f(bx)} {f(by)} "
             f"L{f(cx)} {f(cy)} A{f(inner)} {f(inner)} 0 0 1 {f(dx)} {f(dy)} Z")
 
-
 def _cardinal(start: float) -> bool:
     return abs(start - round(start / 90) * 90) < 1e-9
 
-
 def _wheel(layout: str, fid: str, t: dict, bound: _fx.Bound) -> str:
-    """Figure 1, one layout: the twelve signs outside, the 28 mansions inside."""
     wide = layout == "fx-wide"
     if wide:
         W, H, cx, cy = _fx.WIDE, 600.0, 300.0, 300.0
@@ -227,15 +196,13 @@ def _wheel(layout: str, fid: str, t: dict, bound: _fx.Bound) -> str:
         ly = cy + r_sign + 40
         out.append(_fx.line(14, ly - 5, 44, ly - 5, "fx-frame"))
         out.append(_fx.text(54, ly, "粗線：宿界正落在星座起點", "fx-t fx-small"))
-        out.append(_fx.text(54, ly + 20, f"（第 {'、'.join(bound.scale(str(n)) for n in quarters)} 宿）",
-                            "fx-t fx-small"))
+        out.append(_fx.text(54, ly + 20, f"（第 {'、'.join(bound.scale(str(n)) for n in quarters)} 宿）", "fx-t fx-small"))
         out.append(_fx.line(14, ly + 39, 44, ly + 39, "fx-axis"))
         out.append(_fx.text(54, ly + 44, "細線：其他宿界，在星座中間", "fx-t fx-small"))
         if ly + 60 > H:
             raise RuntimeError("figure 1 outgrew its drawing")
     out.append("</svg>")
     return "".join(out)
-
 
 def _wheel_table(t: dict, bound: _fx.Bound) -> str:
     rows = "".join(
@@ -244,20 +211,16 @@ def _wheel_table(t: dict, bound: _fx.Bound) -> str:
         for i, name in enumerate(t["names"]))
     return _fx.data_table(("宿", "宿名（轉寫）", "起點"), rows)
 
-
 def _drawn_mansion(shift: float, width: float, longitude: float) -> int:
-    """The mansion a reader sees the Moon in: the drawn strip from `shift + k·width`
-    that holds it, numbered from the strip that starts at `shift`."""
+    """The mansion a reader sees the Moon in: the drawn strip from `shift + k·width` that holds it."""
     k = math.floor((longitude - shift) / width)
     start = shift + k * width
     if min(longitude - start, start + width - longitude) < EDGE:
         raise RuntimeError("the Moon sits on a drawn boundary: inclusiveness would decide")
     return k % 28 + 1
 
-
 def _counts(layout: str, fid: str, t: dict, d: dict, bound: _fx.Bound) -> str:
-    """Figure 2, one layout: the same stretch of tropical longitude cut from the
-    vernal point (the product) and from sidereal 0° Aries (an illustration)."""
+    """Figure 2, one layout: the same stretch cut from the vernal point (the product) and from sidereal 0° Aries."""
     wide = layout == "fx-wide"
     lo, hi = COUNT_RANGE
     W = _fx.WIDE if wide else _fx.NARROW
@@ -275,9 +238,7 @@ def _counts(layout: str, fid: str, t: dict, d: dict, bound: _fx.Bound) -> str:
     bottom = rows["sidereal"] + h
     for sign in range(3):
         out.append(_fx.line(x(30 * sign), rows["tropical"] - 6, x(30 * sign), bottom + 6, "fx-hair"))
-    labels = {"tropical": "從春分點起數（本站）",
-              "sidereal": f"從恆星牡羊 {bound.scale('0')}° 起數（示意，本站不輸出）"}
-
+    labels = {"tropical": "從春分點起數（本站）", "sidereal": f"從恆星牡羊 {bound.scale('0')}° 起數（示意，本站不輸出）"}
     def count_row(y: float, shift: float, hit: int, active: bool) -> str:
         """One count drawn along the strip: its boundaries, its numbers, the Moon's mansion hatched."""
         width = t["width"]
@@ -302,7 +263,6 @@ def _counts(layout: str, fid: str, t: dict, d: dict, bound: _fx.Bound) -> str:
                 cls = "fx-frame" if k % 28 == 0 else "fx-axis" if active else "fx-hair"
                 lines.append(_fx.line(x(start), y, x(start), y + h, cls))
         return "".join(out + lines)
-
     for variant, _ in COUNTS:
         body = []
         for row, shift in (("tropical", 0.0), ("sidereal", ayan)):
@@ -311,7 +271,6 @@ def _counts(layout: str, fid: str, t: dict, d: dict, bound: _fx.Bound) -> str:
             body.append(_fx.text(x0, y - 10, labels[row], "fx-t fx-key" if active else "fx-t fx-dim fx-key"))
             body.append(count_row(y, shift, hits[row], active))
         out.append(_fx.variant_group(variant, COUNTS[0][0], "".join(body)))
-    # the two starting points and the arc between them
     by = bottom + (26 if wide else 22)
     out.append(_fx.line(x(0), by, x(ayan), by, "fx-axis"))
     for edge in (0.0, ayan):
@@ -327,7 +286,6 @@ def _counts(layout: str, fid: str, t: dict, d: dict, bound: _fx.Bound) -> str:
         anchor = "start" if sign == 0 else "middle"
         out.append(_fx.text(x(30 * sign), sy, f"{names[sign]} {bound.scale('0')}°", "fx-t fx-small fx-num", anchor))
     out.append(_fx.text(x1, sy + (24 if wide else 20), "回歸黃道的黃經", "fx-t fx-small fx-dim", "end"))
-    # the Moon: one line through both counts, its mark on top
     position = bound.num(_sign_text(d["exact"]["moon"]["sign_position"]))
     out.append(_fx.line(xm, moon_y + 12, xm, bottom + 4, "fx-axis"))
     out.append(f'<g class="fx-row" data-fx-key="moon" tabindex="0" aria-label="月亮，{position}">'
@@ -338,7 +296,6 @@ def _counts(layout: str, fid: str, t: dict, d: dict, bound: _fx.Bound) -> str:
     if sy + 24 > H:
         raise RuntimeError("figure 2 outgrew its drawing")
     return "".join(out)
-
 
 def _count_notes(t: dict, d: dict, bound: _fx.Bound) -> list:
     moon = d["exact"]["moon"]
@@ -354,23 +311,18 @@ def _count_notes(t: dict, d: dict, bound: _fx.Bound) -> list:
                  "本站不輸出這一種，只是示意。"),
     ]
 
-
 def _count_table(t: dict, d: dict, bound: _fx.Bound) -> str:
     tropical = d["exact"]["module"]["placements"][0]["mansion"]["number"]
     sidereal = _mansion_of(d["sidereal_moon"]["longitude"], t["width"])
-    rows = (
-        ("tropical", "春分點（本站）", d["exact"]["moon"], tropical),
-        ("sidereal", f"恆星牡羊 {bound.scale('0')}°（示意）", d["sidereal_moon"], sidereal),
-    )
+    rows = (("tropical", "春分點（本站）", d["exact"]["moon"], tropical),
+        ("sidereal", f"恆星牡羊 {bound.scale('0')}°（示意）", d["sidereal_moon"], sidereal))
     body = "".join(
         f'<tr><th scope="row">{label}</th><td class="n">{bound.num(_sign_text(moon["sign_position"]))}</td>'
         f'<td>第 {bound.num(str(n))} 宿 {escape(t["names"][n - 1])}</td></tr>'
         for _, label, moon, n in rows)
     return _fx.data_table(("從哪裡起數", "月亮的黃經（各自的黃道）", "落在"), body)
 
-
 def _span_mansions(start: float, end: float, width: float) -> list[int]:
-    """The mansions a drawn bar from `start` to `end` (the Moon only moves forward) touches."""
     first = math.floor(start / width)
     reach = start + (end - start) % 360.0
     out = [first % 28 + 1]
@@ -380,24 +332,18 @@ def _span_mansions(start: float, end: float, width: float) -> list[int]:
         k += 1
     return out
 
-
 DAY_IDLE = "用 Tab 鍵移到一列上，或用滑鼠指著它，這裡會寫出月亮在那段時間從哪裡走到哪裡。"
-# Table 2's three precisions, in the order the figure draws them.
 PRECISIONS = (("day", "date_only"), ("hour", "approximate_hour"), ("exact", "exact"))
 
-
 def _day_rows(t: dict, d: dict, bound: _fx.Bound) -> list[dict]:
-    """What figure 3 draws per precision: the stretch, its label, the mansions
-    it touches, its short note and its sentence."""
+    """What figure 3 draws per precision: stretch, label, mansions touched, short note and sentence."""
     with backend_on_path():
         from app.core.formatting import sign_position
-
     def where(lon: float) -> str:
         position = sign_position(lon)
         if position is None:
             raise RuntimeError("no sign position for a Moon longitude")
         return bound.num(_sign_text(position))
-
     hour = bound.num(str(HOUR))
     rows = []
     for key, precision in PRECISIONS:
@@ -429,10 +375,8 @@ def _day_rows(t: dict, d: dict, bound: _fx.Bound) -> list[dict]:
                      "sentence": sentence})
     return rows
 
-
 def _day(layout: str, fid: str, t: dict, rows: list[dict], bound: _fx.Bound) -> str:
-    """Figure 3, one layout: the stretch the Moon covers in the minute, the hour
-    and the civil day of table 2, on the mansions the day crosses."""
+    """Figure 3, one layout: the Moon's stretch in the minute, hour and civil day of table 2, on the mansions crossed."""
     wide = layout == "fx-wide"
     shown = rows[0]["numbers"]
     lo, hi = t["starts"][shown[0] - 1], t["starts"][shown[-1] - 1] + t["width"]
@@ -491,9 +435,7 @@ def _day(layout: str, fid: str, t: dict, rows: list[dict], bound: _fx.Bound) -> 
         raise RuntimeError("figure 3 outgrew its drawing")
     return "".join(out)
 
-
 def _figures(t: dict, d: dict) -> dict[str, str]:
-    """The page's sprite and its three figures, each checked by `_fx.problems`."""
     exact = d["exact"]["module"]["placements"][0]["mansion"]["number"]
     sidereal = _mansion_of(d["sidereal_moon"]["longitude"], t["width"])
     moon = d["exact"]["moon"]["longitude"]
@@ -503,7 +445,6 @@ def _figures(t: dict, d: dict) -> dict[str, str]:
     if _drawn_mansion(d["ayanamsa"], t["width"], moon) != sidereal:
         raise RuntimeError(f"figure 2 draws the sidereal Moon in mansion {_drawn_mansion(d['ayanamsa'], t['width'], moon)}, "
                            f"the sidereal Moon divided the same way is in {sidereal}")
-
     wheel_bound, count_bound, day_bound = _fx.Bound(), _fx.Bound(), _fx.Bound()
     for bound, labels in ((wheel_bound, ("圖 1", "[6]")), (count_bound, ("圖 2", "[6]", "[7]")),
                           (day_bound, ("圖 3", "表 2"))):
@@ -567,21 +508,16 @@ def _figures(t: dict, d: dict) -> dict[str, str]:
     )
     return {"fx-defs": _fx.defs(("moon",)), "wheel": wheel, "counts": counts, "day": days}
 
-
 def _row(label: str, module: dict) -> str:
     interval = module["birth_time_interval"]
     names = interval["mansions"] if interval else [module["placements"][0]["mansion"]]
     cell = "<br>".join(f"第 {item['number']} 宿 {item['transliteration']}" for item in names)
     return f"          <tr><td>{label}</td><td>{cell}</td></tr>"
 
-
 def _times(d: dict) -> str:
-    return "\n".join((
-        _row(f"精確到分鐘（{HOUR}:00）", d["exact"]["module"]),
+    return "\n".join((_row(f"精確到分鐘（{HOUR}:00）", d["exact"]["module"]),
         _row(f"只知道約略小時（{HOUR} 點）", d["approximate_hour"]["module"]),
-        _row("只知道日期（民用日）", d["date_only"]["module"]),
-    ))
-
+        _row("只知道日期（民用日）", d["date_only"]["module"])))
 
 def build() -> tuple[dict[str, str], list[str]]:
     t = _table()

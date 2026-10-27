@@ -8,9 +8,11 @@ from typing import Any
 from .schema_chart import ChartRequest
 from .core.trace import Trace
 from .core.computation_mode import ComputationContext
+from .core.frame_compatibility import FrameState
+from .core.module_state import EventModuleState
 
 
-def _module_container(value: Any, *owner_options_requested: bool) -> Any:
+def _module_container[T](value: T, *owner_options_requested: bool) -> T | None:
     """The one place an unrequested module's container is written.
 
     ``calculation_dossier.calculation_policy.option_states`` is the single
@@ -54,7 +56,7 @@ class TimeResolution:
     jd_ut: float
     context: ComputationContext
     # The method x frame compatibility table, evaluated once per chart.
-    frame_states: dict[str, JsonObject]
+    frame_states: dict[str, FrameState]
     trace: Trace
     # The input files' identity before Swiss opened any of them for this chart.
     ephemeris_input_watch: tuple | None
@@ -101,7 +103,7 @@ class EventFacts:
 
     lunar_events: JsonObject
     horizon_events: JsonObject
-    availability: dict[str, JsonObject]
+    availability: dict[str, EventModuleState]
 
 
 @dataclass(frozen=True)
@@ -117,16 +119,33 @@ class AstronomicalFacts:
 
 @dataclass(frozen=True)
 class DerivedChart:
-    antiscia: Any
-    aspects: Any
-    declination_aspects: Any
-    dodecatemoria: Any
-    essential_dignities: Any
-    lots: Any
-    planetary_hours: Any
-    sect: Any
-    void_of_course: Any
-    lunar_mansions: Any
-    solar_phase: Any
-    motion_states: Any
-    classical_classifications: Any
+    """Stage 3: derived geometry and methods, each as its producer wrote it."""
+
+    antiscia: JsonObject
+    aspects: JsonObject
+    declination_aspects: JsonObject
+    dodecatemoria: JsonObject
+    essential_dignities: JsonObject | None
+    lots: JsonObject
+    planetary_hours: JsonObject
+    sect: JsonObject | None
+    void_of_course: JsonObject
+    lunar_mansions: JsonObject
+    solar_phase: JsonObject
+    motion_states: JsonObject
+    classical_classifications: JsonObject
+
+
+@dataclass(frozen=True)
+class ChartSections:
+    """Stage 5's response sections, as the calculation dossier reads them.
+
+    The same objects the response carries, not copies: the dossier is a
+    projection of them.
+    """
+
+    astronomical_data: JsonObject
+    derived_geometry: JsonObject
+    derived_methods: JsonObject
+    birth_time_sensitivity: JsonObject
+    event_module_availability: dict[str, EventModuleState]

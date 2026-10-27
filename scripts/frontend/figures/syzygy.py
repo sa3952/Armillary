@@ -1,10 +1,7 @@
-"""〈產前朔望與產前日月食〉: figure 1 (the timeline of the readings birth),
-figure 2 (the luminaries' altitudes at the full Moon and at the birth),
-figure 3 (the Earth's shadow, a schematic), the readings table and the eclipse
-table, and the numbers the prose quotes, as the product answers three Taipei
-births in process, plus the share of births whose last lunar eclipse is only
-penumbral, counted with Swiss Ephemeris over the product's year range (the same
-search the product runs, about half a second).
+"""〈產前朔望與產前日月食〉: figures 1-3 (timeline, luminaries' altitudes at the full Moon and at the birth, the Earth's
+shadow), the readings table, the eclipse table and the numbers the prose quotes, as the product answers three Taipei
+births in process, plus the share of births whose last lunar eclipse is only penumbral, counted with Swiss Ephemeris
+over the product's year range.
 """
 from __future__ import annotations
 
@@ -16,42 +13,30 @@ from . import _fx
 from ._common import product_charts, swiss
 from ._demo import DEMO, zodiacal
 
-
 FRAGMENT = "blog-prenatal-syzygy"
-# The three births the article works through: the full Moon whose degree the
-# readings disagree on, a birth during the 1999-08-11 solar eclipse, and one
-# whose last lunar eclipse is only penumbral.
+# The three births the article works through: the full Moon whose degree the readings disagree on, a birth during the
+# 1999-08-11 solar eclipse, and one whose last lunar eclipse is only penumbral.
 READINGS = {"year": 2000, "month": 1, "day": 1, "hour": 12, "minute": 0, "second": 0}
 UNDER_WAY = {"year": 1999, "month": 8, "day": 11, "hour": 18, "minute": 30, "second": 0}
 PENUMBRAL = {"year": 1999, "month": 3, "day": 1, "hour": 12, "minute": 0, "second": 0}
-OPTIONS = {"house_system": "W", "include_houses": True,
-           "include_lunar_phases": True, "include_eclipses": True}
-ECLIPSE_TYPE_ZH = {"total": "全食", "partial": "偏食", "annular": "環食", "hybrid": "複合日食",
-                   "penumbral": "半影食"}
-
+OPTIONS = {"house_system": "W", "include_houses": True, "include_lunar_phases": True, "include_eclipses": True}
+ECLIPSE_TYPE_ZH = {"total": "全食", "partial": "偏食", "annular": "環食", "hybrid": "複合日食", "penumbral": "半影食"}
 
 def _request(moment: dict) -> dict:
-    return {"datetime": moment, "location": DEMO["location"], "timezone": DEMO["timezone"],
-            "options": OPTIONS}
-
+    return {"datetime": moment, "location": DEMO["location"], "timezone": DEMO["timezone"], "options": OPTIONS}
 
 @functools.lru_cache(maxsize=1)
 def answers() -> dict:
     with product_charts() as post:
-        return {name: post(_request(moment))["astronomical_data"]["lunar_events"]
-                for name, moment in (("readings", READINGS), ("under_way", UNDER_WAY),
-                                     ("penumbral", PENUMBRAL))}
-
+        return {name: post(_request(moment))["astronomical_data"]["lunar_events"] for name,
+            moment in (("readings", READINGS), ("under_way", UNDER_WAY), ("penumbral", PENUMBRAL))}
 
 def _minute(local_time: str) -> str:
-    """「1999-12-23 01:31」: the product's birthplace clock, cut to the minute."""
     return local_time[:16]
-
 
 def _altitude(reading: dict) -> str:
     value = reading["altitude_true_degrees"]
     return ("+" if value >= 0 else "−") + f"{abs(value):.1f}°"
-
 
 def _readings(events: dict) -> dict:
     syzygy = events["prenatal_syzygy"]
@@ -69,29 +54,16 @@ def _readings(events: dict) -> dict:
     if not (luminaries["sun"]["above_horizon"] and luminaries["moon"]["above_horizon"]):
         raise RuntimeError("the readings birth no longer has both luminaries above the horizon at birth")
     new = other["event"]
-    return {
-        "full_local": _minute(syzygy["local_time"]),
-        "full_days": at_birth["hours_before_birth"] / 24,
-        "full_sun": zodiacal(syzygy["sun_longitude"]),
-        "full_moon": zodiacal(syzygy["moon_longitude"]),
-        "moon_alt": _altitude(horizon["moon"]),
-        "sun_alt": _altitude(horizon["sun"]),
-        "new_local": _minute(new["local_time"]),
-        "new_days": other["hours_before_birth"] / 24,
-        "new_degree": zodiacal(new["sun_longitude"]),
-        "birth_sun_alt": _altitude(luminaries["sun"]),
-        "birth_moon_alt": _altitude(luminaries["moon"]),
-    }
-
+    return {"full_local": _minute(syzygy["local_time"]), "full_days": at_birth["hours_before_birth"] / 24,
+        "full_sun": zodiacal(syzygy["sun_longitude"]), "full_moon": zodiacal(syzygy["moon_longitude"]),
+        "moon_alt": _altitude(horizon["moon"]), "sun_alt": _altitude(horizon["sun"]),
+        "new_local": _minute(new["local_time"]), "new_days": other["hours_before_birth"] / 24,
+        "new_degree": zodiacal(new["sun_longitude"]), "birth_sun_alt": _altitude(luminaries["sun"]),
+        "birth_moon_alt": _altitude(luminaries["moon"])}
 
 # --- figures --------------------------------------------------------------------
-#
-# Figure 1 (the page's hero: the readings birth's new Moon, full Moon and birth
-# on one line of days) and figure 3 (the shadow, a schematic) are static;
-# figure 2 draws the luminaries' altitudes at the full Moon and at the birth,
-# switched by two buttons.  Every date, altitude and degree is the product's
-# answer; the verdict printed is re-read from the drawn altitudes (`_drawn_pick`)
-# and must agree with the product's.
+# Figures 1 and 3 are static; figure 2 is switched by two buttons.  The verdict printed is re-read from the drawn
+# altitudes (`_drawn_pick`) and must agree with the product's.
 
 TIMELINE_START = datetime(1999, 12, 4)
 TIMELINE_DAYS = 31
@@ -102,15 +74,12 @@ HORIZON_VARIANTS = (("syzygy", "朔望那一刻（本站預設）"), ("birth", "
 HORIZON_SWITCH = "切換看哪一刻的地平線"
 HORIZON_IDLE = "用 Tab 鍵移到太陽或月亮上，或用滑鼠指著它，這裡會寫出它的高度與這個讀法取不取它。"
 
-
 def _day(local: str) -> float:
-    """Days from the timeline's start to a birthplace clock reading."""
     moment = datetime.strptime(local[:16], "%Y-%m-%d %H:%M")
     days = (moment - TIMELINE_START).total_seconds() / 86400
     if not 0 <= days <= TIMELINE_DAYS:
         raise RuntimeError(f"figure 1: {local} is off the timeline")
     return days
-
 
 def _timeline(layout: str, fid: str, r: dict, bound: _fx.Bound) -> str:
     """Figure 1, one layout: wide, the days run across; narrow, they run down."""
@@ -172,7 +141,6 @@ def _timeline(layout: str, fid: str, r: dict, bound: _fx.Bound) -> str:
         out.append(_fx.line(x - 16, yb, x + 16, yb, "fx-frame"))
         out.append(_fx.text(x + 20, yb - 2, "出生", "fx-t"))
         out.append(_fx.text(x + 20, yb + 16, birth, "fx-t fx-small fx-num"))
-        # Brackets back from the birth: the nearest syzygy, then the day chart's pick.
         bx1, bx2 = 252.0, 226.0
         out.append(_fx.path(f"M{bx1 - 8} {_fx.f(at['full'])} H{bx1} V{_fx.f(yb)} H{bx1 - 8}", "fx-axis"))
         out.append(_fx.text(bx1 + 8, (at["full"] + yb) / 2 - 8, "最近一次：", "fx-t fx-small"))
@@ -187,19 +155,14 @@ def _timeline(layout: str, fid: str, r: dict, bound: _fx.Bound) -> str:
     out.append("</svg>")
     return "".join(out)
 
-
 def _pick(horizon: dict) -> str | None:
-    """The luminary a reading takes from the altitudes: the one above when the
-    other is below, else none (both above, both below)."""
+    """The luminary a reading takes from the altitudes: the one above when the other is below, else none."""
     above = [key for key in ("sun", "moon") if horizon[key]["above_horizon"]]
     return above[0] if len(above) == 1 else None
 
-
 def _drawn_pick(ys: dict[str, float], horizon_y: float) -> str | None:
-    """The same read from the drawing: a mark above the horizon line is up."""
     above = [key for key in ("sun", "moon") if ys[key] < horizon_y]
     return above[0] if len(above) == 1 else None
-
 
 def _horizon_data(events: dict) -> dict:
     syzygy = events["prenatal_syzygy"]
@@ -218,7 +181,6 @@ def _horizon_data(events: dict) -> dict:
         "degrees": degrees,
     }
 
-
 def _horizon_sentence(key: str, variant: str, data: dict, bound: _fx.Bound) -> str:
     item = data[variant]
     alt = bound.num(_altitude(item["horizon"][key]))
@@ -235,17 +197,12 @@ def _horizon_sentence(key: str, variant: str, data: dict, bound: _fx.Bound) -> s
         text += f"{LUMINARY_ZH[other]}也在{both}方，{reading}選不出來。"
     return text
 
-
 def _horizon_mark(key: str, cx: float, cy: float, r: float, label: str) -> str:
-    return (f'<g class="fx-row" data-fx-key="{key}" tabindex="0" aria-label="{label}">'
-            + _fx.circle(cx, cy, r + 8, "fx-hit") + _fx.circle(cx, cy, r, "fx-mk")
-            + _fx.glyph(key, cx, cy, r * 1.25, "fx-mk-gl"))
-
+    return (f'<g class="fx-row" data-fx-key="{key}" tabindex="0" aria-label="{label}">' + _fx.circle(cx, cy, r + 8,
+        "fx-hit") + _fx.circle(cx, cy, r, "fx-mk") + _fx.glyph(key, cx, cy, r * 1.25, "fx-mk-gl"))
 
 def _horizon(layout: str, fid: str, data: dict, bound: _fx.Bound) -> str:
-    """Figure 2, one layout: an altitude scale, the horizon, the region below it
-    hatched; the Sun and the Moon at their altitudes; and the reading's verdict,
-    one group per moment."""
+    """Figure 2, one layout: altitude scale, horizon, the Sun and the Moon at their altitudes, and the verdict."""
     wide = layout == "fx-wide"
     W = _fx.WIDE if wide else _fx.NARROW
     if wide:
@@ -313,13 +270,9 @@ def _horizon(layout: str, fid: str, data: dict, bound: _fx.Bound) -> str:
     out.append("</svg>")
     return "".join(out)
 
-
 def _shadow(layout: str, fid: str, bound: _fx.Bound) -> str:
-    """Figure 3, a schematic, one layout: the Sun, the Earth and its two shadows
-    from the side; and the shadow's cross-section where the Moon passes, with
-    three paths of the Moon.  Not to scale: the shadow is drawn with the umbra
-    half the penumbra's width and the Moon a little under half the umbra's, near
-    their apparent sizes at the Moon's distance."""
+    """Figure 3, a schematic, one layout.  Not to scale: umbra half the penumbra's width, the Moon a little under half
+    the umbra's, near their apparent sizes at the Moon's distance."""
     wide = layout == "fx-wide"
     W = _fx.WIDE if wide else _fx.NARROW
     if wide:
@@ -330,9 +283,7 @@ def _shadow(layout: str, fid: str, bound: _fx.Bound) -> str:
         H, cy, xs, s, xe, e, xm, end = 392, 76.0, 40.0, 24.0, 240.0, 14.4, 290.0, 326.0
         sx, sy, umb, pen, moon = 222.0, 272.0, 45.0, 90.0, 18.0
         tracks = (("penumbral", -72.0), ("total", 0.0), ("partial", 47.0))
-    names = {"penumbral": ("只經過半影：", "半影月食"), "total": ("整個進入本影：", "全食"),
-             "partial": ("一部分進入本影：", "偏食")}
-    # The drawn paths must be what their labels say.
+    names = {"penumbral": ("只經過半影：", "半影月食"), "total": ("整個進入本影：", "全食"), "partial": ("一部分進入本影：", "偏食")}
     for kind, offset in tracks:
         near, far = abs(offset) - moon, abs(offset) + moon
         drawn = ("total" if far <= umb else "partial" if near < umb else "penumbral" if near < pen else "none")
@@ -371,7 +322,6 @@ def _shadow(layout: str, fid: str, bound: _fx.Bound) -> str:
         out.append(_fx.text(14, 160, "截面：月亮那一處的影子（從地球看過去）", "fx-t fx-small"))
         out.append(_fx.text(14, H - 16, "示意，不按比例", "fx-t fx-small fx-dim"))
         out.append(_fx.text(14, 26, "側面", "fx-t fx-small"))
-    # The cross-section: the penumbra, the umbra inside it, and three paths of the Moon.
     out.append(_fx.circle(sx, sy, pen, "fx-track") + _fx.circle(sx, sy, pen, "fx-fill-hatch"))
     out.append(_fx.circle(sx, sy, umb, "fx-track") + _fx.circle(sx, sy, umb, "fx-fill-cross"))
     out.append(_fx.text(sx, sy - umb + 18, "本影", "fx-t fx-small fx-key", "middle"))
@@ -393,9 +343,7 @@ def _shadow(layout: str, fid: str, bound: _fx.Bound) -> str:
     out.append("</svg>")
     return "".join(out)
 
-
 def _figures(events: dict) -> dict[str, str]:
-    """The page's sprite and its three figures, each checked by `_fx.problems`."""
     r = _readings(events)
     timeline_bound = _fx.Bound()
     timeline = _fx.figure(
@@ -447,7 +395,6 @@ def _figures(events: dict) -> dict[str, str]:
     )
     return {"fx-defs": _fx.defs(("sun", "moon")), "timeline": timeline, "horizon": horizon, "shadow": shadow}
 
-
 def _readings_table(r: dict) -> str:
     rows = (
         ("最近一次朔望，朔望那一刻在地平線上方的發光體", "《占星四書》卷三第 2 章，Robbins 採用的讀法（本站的預設）",
@@ -467,7 +414,6 @@ def _readings_table(r: dict) -> str:
         lines.append(f"          <tr><td>{name}</td><td>{source}</td><td>{result}</td></tr>")
     lines += ["        </tbody>", "      </table>"]
     return "\n".join(lines)
-
 
 def _eclipse_table(events: dict) -> str:
     eclipses, days = events["eclipses"], events["eclipses_at_birth"]["days_before_birth"]
@@ -491,13 +437,10 @@ def _eclipse_table(events: dict) -> str:
         "        <tbody>", *rows, "        </tbody>", "      </table>",
     ])
 
-
 @functools.lru_cache(maxsize=1)
 def penumbral_share() -> dict:
-    """Births every 7 days from 1900-01-01 to 2399-11-30 (0h UT), as the
-    product's year range allows: how many have a last lunar eclipse that is
-    only penumbral, so that the umbral row names an earlier eclipse; and the
-    longest wait between two umbral lunar eclipses."""
+    """Births every 7 days from 1900-01-01 to 2399-11-30 (0h UT), as the product's year range allows: how many have a
+    last lunar eclipse that is only penumbral, and the longest wait between two umbral lunar eclipses."""
     with swiss() as swe:
         start, end = swe.julday(1899, 1, 1, 0.0), swe.julday(2399, 11, 30, 0.0)
         found, jd = [], start
@@ -518,7 +461,6 @@ def penumbral_share() -> dict:
         first_ymd, last_ymd = swe.revjul(first)[:2], swe.revjul(last)[:2]
     return {"births": births, "differ": differ, "gap_days": gap, "gap_from": first_ymd, "gap_to": last_ymd}
 
-
 def build() -> tuple[dict[str, str], list[str]]:
     data = answers()
     r = _readings(data["readings"])
@@ -534,35 +476,25 @@ def build() -> tuple[dict[str, str], list[str]]:
     penumbral = data["penumbral"]
     share = penumbral_share()
     quoted = [
-        # The readings birth.
         f"月亮高度 {r['moon_alt']}、太陽 {r['sun_alt']}",
         f"取月亮的度數：{r['full_moon']}",
         f"太陽在對面的{r['full_sun']}",
         f"新月，度數是{r['new_degree']}",
         f"出生那一刻，太陽高度 {r['birth_sun_alt']}、月亮 {r['birth_moon_alt']}",
         f"出生前 {r['full_days']:.1f} 天",
-        # The birth during the solar eclipse.
         f"食甚在出生之後 {solar['maximum_minus_birth_minutes']:.0f} 分鐘",
         f"臺北時間 {_minute(solar['eclipse']['maximum_local_time'])}",
         f"{previous_solar['maximum_local_time'][:10]} 那一次{ECLIPSE_TYPE_ZH[previous_solar['type']]}",
         f"出生時太陽的高度是 {_altitude(sun_at_birth)}",
-        # The penumbral birth.
         f"出生前 {penumbral['eclipses_at_birth']['days_before_birth']['previous_umbral_lunar']:.0f} 天",
-        # The share over the product's years.
         f"{share['births']:,} 個出生時刻裡有 {share['differ']:,} 個",
         f"（{100 * share['differ'] / share['births']:.1f}%）",
         f"{share['gap_from'][0]} 年 {share['gap_from'][1]} 月到 {share['gap_to'][0]} 年 {share['gap_to'][1]} 月"
         f"之間隔了 {share['gap_days']:.0f} 天",
     ]
-    blocks = {
-        **_figures(data["readings"]),
-        "readings": _readings_table(r),
-        "eclipses": _eclipse_table(penumbral),
-    }
+    blocks = {**_figures(data["readings"]), "readings": _readings_table(r), "eclipses": _eclipse_table(penumbral)}
     return blocks, quoted
 
-
 def elsewhere(fragment: str) -> dict[str, list[str]]:
-    """The methods page rounds the same share."""
     share = penumbral_share()
     return {"methods": [f"約 {round(100 * share['differ'] / share['births'])}% 的出生兩種算法得到的「前一次月食」不同"]}

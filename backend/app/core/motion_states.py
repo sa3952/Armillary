@@ -23,10 +23,12 @@ from .formatting import dms_text
 from .invariants import InternalInvariantError
 from .method_status import method_head
 from .module_state import (
+    Applicability,
+    ModuleState,
     PRODUCT_FORMULA_SOURCE,
-    STATE_FIELDS,
     computed_receipt,
     frame_table_refusal,
+    state_fields,
 )
 from .root_finding import (
     SOLVER_NAME, find_crossings_around, find_crossings_detailed, wrap_to_signed_180,
@@ -500,7 +502,7 @@ def compute_motion_states(
     }
 
 
-def motion_states_not_applicable(state: dict, trace: Trace) -> dict:
+def motion_states_not_applicable(state: Applicability, trace: Trace) -> dict:
     refusal = frame_table_refusal(
         state, trace, "行速、停滯與東出西入",
         note=(
@@ -511,12 +513,12 @@ def motion_states_not_applicable(state: dict, trace: Trace) -> dict:
     return motion_states_unavailable(refusal)
 
 
-def motion_states_unavailable(receipt: dict) -> dict:
+def motion_states_unavailable(receipt: ModuleState) -> dict:
     """The module with no result, under the six state fields given."""
 
     return {
         **method_head(METHOD, "motion_states", source_ref=SOURCE_REF),
-        **{field: receipt[field] for field in STATE_FIELDS},
+        **state_fields(receipt),
         "speed_basis": SPEED_BASIS,
         "mean_motion_profile": None,
         "station_profile": None,

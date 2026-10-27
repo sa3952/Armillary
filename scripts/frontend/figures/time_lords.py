@@ -1,23 +1,17 @@
-"""〈年度時間主星入門〉: figure 1 (the annual profection wheel), figure 2 (the
-firdaria periods in the day and the two night orders), figure 3 (the
-releasing sign periods and one decennial period shared out by the minor
-years), figure 4 (years 25–49 of the demonstration chart, every technique a
-row, a slider over the years), table 1 (year 37's periods with their own start
-and end), table 2 (that year's twelve monthly-profection months and their
-lengths), and the numbers the article quotes.
+"""〈年度時間主星入門〉: figures 1-4 (the annual profection wheel, the firdaria periods, the releasing sign periods with
+one decennial period, years 25-49 of the demonstration chart with a slider), tables 1-2 and the numbers the article
+quotes.
 
-The periods are the product's own answer: the annual route, in process and
-switched on only here, for the demonstration birth time the home and features
-pages print (_demo.DEMO), year of life 37 and its hundred-year window.  The
-cycle totals, sequences and sign periods are the backend's tables; the
-firdaria notation gap is the methods page's own computation.
+The periods are the product's own answer: the annual route, in process and switched on only here, for the demonstration
+birth time the home and features pages print (_demo.DEMO), year of life 37 and its hundred-year window.  The cycle
+totals, sequences and sign periods are the backend's tables; the firdaria notation gap is the methods page's own
+computation.
 """
 from __future__ import annotations
 
 from . import _fx, page_methods_time_lords
 from ._common import SIGNS, backend_on_path, product_client, swiss
 from ._demo import DEMO
-
 
 FRAGMENT = "blog-time-lords-introduction"
 YEAR_OF_LIFE = 37
@@ -30,44 +24,31 @@ ANGULARITY = {"angular": "角宮", "succedent": "續宮", "cadent": "果宮"}
 def _answer() -> dict:
     with product_client(annual=True) as post:
         payload = {key: DEMO[key] for key in ("datetime", "location", "timezone")}
-        payload["annual"] = {
-            "target_kind": "year_of_life", "target_value": YEAR_OF_LIFE,
-            "include_profection": True, "include_monthly_profection": True,
-            "include_firdaria": True, "include_zodiacal_releasing": True,
-            "include_decennials": True,
-        }
+        payload["annual"] = {"target_kind": "year_of_life", "target_value": YEAR_OF_LIFE, "include_profection": True,
+            "include_monthly_profection": True, "include_firdaria": True, "include_zodiacal_releasing": True,
+            "include_decennials": True}
         return post("/api/chart/annual?projection=detailed", payload)
-
 
 def _end(period: dict) -> dict:
     return period.get("end") or period["effective_end"]
 
-
 def _overlaps(period: dict, start: float, end: float) -> bool:
     return period["start"]["jd_ut"] < end and _end(period)["jd_ut"] > start
 
-
 def _rows(answer: dict) -> list[dict]:
-    """Each drawn row: its label and the periods it shows inside the year, in
-    order, every one with the name it is drawn with and the table's words."""
+    """Each drawn row: its label and the periods it shows inside the year, in order, with the table's words."""
     methods = answer["annual_methods"]
     year = answer["year_boundary"]
     start, end = year["start"]["jd_ut"], year["end"]["jd_ut"]
     inside = lambda periods: [p for p in periods if _overlaps(p, start, end)]  # noqa: E731
-
     profection = methods["annual_profection"]
-    rows = [{
-        "label": "年度小限", "technique": "年度小限", "level": "—",
+    rows = [{"label": "年度小限", "technique": "年度小限", "level": "—",
         "periods": [{"name": f"{SIGN[profection['profected_sign']]}（{BODY[profection['lord']['body_key']]}）",
-                     "who": f"{SIGN[profection['profected_sign']]}；年主星{BODY[profection['lord']['body_key']]}",
-                     "start": year["start"], "end": year["end"], "from_fortune": "—"}],
-    }]
+        "who": f"{SIGN[profection['profected_sign']]}；年主星{BODY[profection['lord']['body_key']]}",
+        "start": year["start"], "end": year["end"], "from_fortune": "—"}]}]
     months = methods["monthly_profection"]["periods"]
-    rows.append({
-        "label": "月小限", "technique": "月小限", "level": "第 1–12 個月",
-        "periods": [{"name": str(m["month_of_year"]), "start": m["start"], "end": m["end"]} for m in months],
-    })
-
+    rows.append({"label": "月小限", "technique": "月小限", "level": "第 1–12 個月",
+        "periods": [{"name": str(m["month_of_year"]), "start": m["start"], "end": m["end"]} for m in months]})
     firdaria = methods["firdaria"]
     (major,) = inside(firdaria["periods"])
     rows.append({"label": "法達・主期", "technique": "法達", "level": "主期", "periods": [{
@@ -76,7 +57,6 @@ def _rows(answer: dict) -> list[dict]:
     rows.append({"label": "法達・子期", "technique": "法達", "level": "子期", "periods": [{
         "name": BODY[sub["level_2_partner"]], "who": BODY[sub["level_2_partner"]],
         "start": sub["start"], "end": sub["end"], "from_fortune": "—"} for sub in inside(major["level_2"])]})
-
     for release in methods["zodiacal_releasing"]["releases"]:
         lot = {"fortune": "命運點", "spirit": "精神點"}[release["releasing_from"]]
         (period,) = inside(release["periods"])
@@ -91,7 +71,6 @@ def _rows(answer: dict) -> list[dict]:
                     "from_fortune": f"第 {p['position_from_fortune']} 個，{ANGULARITY[p['angularity_from_fortune']]}",
                 } for p in periods],
             })
-
     decennials = methods["decennials"]
     (major,) = inside(decennials["periods"])
     rows.append({"label": "十年期・第一層", "technique": "十年期", "level": "第一層", "periods": [{
@@ -102,54 +81,34 @@ def _rows(answer: dict) -> list[dict]:
         "start": sub["start"], "end": sub["end"], "from_fortune": "—"} for sub in inside(major["level_2"])]})
     return rows
 
-
 # --- the four figures ----------------------------------------------------------
-#
-# Figure 1, the annual profection wheel, and figure 4, a stretch of the same
-# chart's life with a slider, read the product's lifetime answer (the annual
-# route asked for its hundred-year window).  Figure 2 draws the firdaria
-# sequences and figure 3 the releasing sign periods from the backend's own
-# tables; figure 3's 129 months are the product's Saturn decennial of the same
-# chart.  The profection of every year is checked against the Ascendant read
-# from Swiss directly and a domicile table written out here.
+# Figures 1 and 4 read the product's lifetime answer (the annual route's hundred-year window); figures 2 and 3 draw the
+# backend's tables, figure 3's 129 months being the product's Saturn decennial of the same chart.  Every year's
+# profection is checked against the Ascendant read from Swiss directly and a domicile table written out here.
 
 SHORT = {"sun": "日", "moon": "月", "mercury": "水", "venus": "金", "mars": "火", "jupiter": "木", "saturn": "土"}
-# The domiciles, written out as the independent answer the product's profection
-# lords are checked against.
-DOMICILES = {
-    "aries": "mars", "taurus": "venus", "gemini": "mercury", "cancer": "moon", "leo": "sun", "virgo": "mercury",
-    "libra": "venus", "scorpio": "mars", "sagittarius": "jupiter", "capricorn": "saturn", "aquarius": "saturn",
-    "pisces": "jupiter",
-}
+# The domiciles, written out as the independent answer the product's profection lords are checked against.
+DOMICILES = {"aries": "mars", "taurus": "venus", "gemini": "mercury", "cancer": "moon", "leo": "sun",
+    "virgo": "mercury", "libra": "venus", "scorpio": "mars", "sagittarius": "jupiter", "capricorn": "saturn",
+    "aquarius": "saturn", "pisces": "jupiter"}
 WINDOW = (25, 49)  # figure 4: years of life drawn; the slider starts at YEAR_OF_LIFE
 WHEEL_YEARS = 3  # figure 1 writes each sign's first three years
-# The methods page's names of the two nocturnal orders (methods-time-lords, the firdaria table).
-FIRDARIA_VARIANTS = (
-    ("day", None, "日盤"),
+FIRDARIA_VARIANTS = (("day", None, "日盤"),
     ("night", "abu_mashar_nodes_after_mercury_v1", "夜盤（預設：交點在水星後）"),
-    ("night-mars", "bonatti_reading_nodes_after_mars_v1", "夜盤（另一種讀法：交點在火星後）"),
-)
-
+    ("night-mars", "bonatti_reading_nodes_after_mars_v1", "夜盤（另一種讀法：交點在火星後）"))
 
 def _lifetime() -> dict:
-    """The demonstration chart's hundred return years, as the annual route answers them."""
     with product_client(annual=True) as post:
         payload = {key: DEMO[key] for key in ("datetime", "location", "timezone")}
-        payload["annual"] = {
-            "target_kind": "year_of_life", "target_value": YEAR_OF_LIFE,
-            "include_profection": True, "include_year_boundaries": True,
-            "include_firdaria": True, "firdaria_scope": "lifetime_window",
-            "include_zodiacal_releasing": True, "zr_scope": "lifetime_window",
-            "include_decennials": True, "decennials_scope": "lifetime_window",
-        }
+        payload["annual"] = {"target_kind": "year_of_life", "target_value": YEAR_OF_LIFE, "include_profection": True,
+            "include_year_boundaries": True, "include_firdaria": True, "firdaria_scope": "lifetime_window",
+            "include_zodiacal_releasing": True, "zr_scope": "lifetime_window", "include_decennials": True,
+            "decennials_scope": "lifetime_window"}
         return post("/api/chart/annual?projection=detailed", payload)
 
-
 def _swiss_ascendant_sign() -> int:
-    """The demonstration chart's Ascendant sign, read from Swiss without the product."""
     from datetime import datetime, timezone
     from zoneinfo import ZoneInfo
-
     when = datetime(**{k: DEMO["datetime"][k] for k in ("year", "month", "day", "hour", "minute", "second")},
                     tzinfo=ZoneInfo(DEMO["timezone"]["iana_name"]))
     utc = when.astimezone(timezone.utc)
@@ -158,9 +117,7 @@ def _swiss_ascendant_sign() -> int:
         asc = swe.houses_ex(jd, DEMO["location"]["latitude"], DEMO["location"]["longitude"], b"W")[1][0]
     return int(asc // 30)
 
-
 def _years(lifetime: dict) -> list[dict]:
-    """The product's return years, each checked against the independent profection."""
     years = lifetime["year_boundaries"]["years"]
     asc = _swiss_ascendant_sign()
     for item in years:
@@ -170,22 +127,16 @@ def _years(lifetime: dict) -> list[dict]:
                                f"Swiss and the domicile table say {expected}")
     return years
 
-
 def _wedge(cx: float, cy: float, r0: float, r1: float, a0: float, a1: float) -> str:
-    """An annular sector from angle a0 to a1 (degrees, counter-clockwise from 3 o'clock)."""
     def at(r: float, a: float) -> str:
         return " ".join(map(_fx.f, _fx.wheel_point(cx, cy, r, a)))
     large = 1 if a1 - a0 > 180 else 0
     return (f"M{at(r1, a0)} A{_fx.f(r1)} {_fx.f(r1)} 0 {large} 0 {at(r1, a1)} L{at(r0, a1)} "
             f"A{_fx.f(r0)} {_fx.f(r0)} 0 {large} 1 {at(r0, a0)} Z")
 
-
 def _profection_wheel(layout: str, fid: str, signs: list[dict], bound: _fx.Bound) -> str:
-    """Figure 1: twelve sectors from the Ascendant's sign at 9 o'clock, counter-clockwise
-    in zodiacal order, each with its lord and the years of life it holds."""
+    """Figure 1: twelve sectors from the Ascendant's sign at 9 o'clock, counter-clockwise, each with its lord and years."""
     wide = layout == "fx-wide"
-    # Each sector: its glyph in the outer ring, then a block of three lines (sign,
-    # lord, its first years) set upright around one point of the sector.
     if wide:
         W, H, cx, cy = _fx.WIDE, 560.0, 440.0, 282.0
         r_out, r_ring, r_block, r_in, gl = 252.0, 216.0, 150.0, 70.0, 18.0
@@ -215,17 +166,14 @@ def _profection_wheel(layout: str, fid: str, signs: list[dict], bound: _fx.Bound
         out += body
     out.append(_fx.text(cx, cy - (4 if wide else 2), "上升", "fx-t fx-small", "middle"))
     out.append(_fx.text(cx, cy + (18 if wide else 13), "星座", "fx-t fx-small", "middle"))
-    # the Ascendant: a short rule outside the wheel at 9 o'clock
     out.append(_fx.line(cx - r_out - (24 if wide else 6), cy, cx - r_out, cy, "fx-axis"))
     if wide:
         out.append(_fx.text(cx - r_out - 20, cy - 10, "上升點", "fx-t fx-small", "end"))
     out.append("</svg>")
     return "".join(out)
 
-
 def _firdaria_band(layout: str, fid: str, firdaria, bound: _fx.Bound) -> str:
-    """Figure 2: the 75 years from birth as one band, a segment per lord, each
-    planet's split into its seven sub-periods; one group per order."""
+    """Figure 2: the 75 years from birth as one band, a segment per lord split into its seven sub-periods."""
     wide = layout == "fx-wide"
     total = firdaria.CYCLE_YEARS
     if wide:
@@ -257,7 +205,6 @@ def _firdaria_band(layout: str, fid: str, firdaria, bound: _fx.Bound) -> str:
             mid = (p0 + p1) / 2
             if wide:
                 body.append(_fx.glyph(lord, mid, b0 - 18, 15, "fx-mk-gl"))
-                # names below the band; where a neighbour is too close, one row lower
                 level = 0 if not levels or mid - last_label > 54 or levels[-1] == 1 else 1
                 levels.append(level)
                 y = b1 + 26 + level * 44
@@ -277,7 +224,6 @@ def _firdaria_band(layout: str, fid: str, firdaria, bound: _fx.Bound) -> str:
         if start != total:
             raise RuntimeError("the firdaria periods no longer add up to the cycle")
         out.append(_fx.variant_group(key, FIRDARIA_VARIANTS[0][0], "".join(body)))
-    # the years from birth
     for year in range(0, total + 1, 5):
         tick = P(year)
         if wide:
@@ -303,12 +249,8 @@ def _firdaria_band(layout: str, fid: str, firdaria, bound: _fx.Bound) -> str:
     out.append("</svg>")
     return "".join(out)
 
-
-def _minor_years(layout: str, fid: str, releasing, lords: dict, minor: dict, decennial: dict,
-                 bound: _fx.Bound) -> str:
-    """Figure 3: the releasing sign periods as a ring in proportion to their
-    years; beside it one decennial period's 129 months shared out by the
-    planets' minor years."""
+def _minor_years(layout: str, fid: str, releasing, lords: dict, minor: dict, decennial: dict, bound: _fx.Bound) -> str:
+    """Figure 3: the releasing sign periods as a ring; beside it one decennial period's 129 months by minor years."""
     wide = layout == "fx-wide"
     total = sum(releasing.SIGN_PERIOD_YEARS.values())
     if wide:
@@ -339,7 +281,6 @@ def _minor_years(layout: str, fid: str, releasing, lords: dict, minor: dict, dec
     out.append(_fx.text(cx, cy + 18, "（比例畫）", small, "middle"))
     note_y = cy + r_out + (30 if wide else 26)
     out.append(_fx.text(cx - r_out if wide else 18, note_y, "排線：年數不等於守護行星小年的星座", small))
-    # the decennial bar
     months = decennial["level_2"]
     whole = sum(item["months"] for item in months)
     head_x = bx - (16 if wide else 52)
@@ -362,11 +303,8 @@ def _minor_years(layout: str, fid: str, releasing, lords: dict, minor: dict, dec
     out.append("</svg>")
     return "".join(out)
 
-
 def _coordinate(years: list[dict]):
-    """JD(UT) → completed years as a real number, linear within each return year."""
     starts = [item["start"]["jd_ut"] for item in years] + [years[-1]["end"]["jd_ut"]]
-
     def at(jd: float) -> float:
         if jd <= starts[0]:
             return 0.0
@@ -376,13 +314,10 @@ def _coordinate(years: list[dict]):
         return float(years[-1]["completed_years"] + 1)
     return at
 
-
 def _life_rows(lifetime: dict, years: list[dict]) -> list[dict]:
-    """Figure 4's rows: each a label and segments (from, to in completed years, name, short name)."""
     at = _coordinate(years)
     methods = lifetime["annual_methods"]
     first, last = WINDOW[0] - 1, WINDOW[1]
-
     def clip(periods, name, short, end_key="end"):
         segments = []
         for p in periods:
@@ -390,7 +325,6 @@ def _life_rows(lifetime: dict, years: list[dict]) -> list[dict]:
             if b > first and a < last:
                 segments.append({"from": max(a, first), "to": min(b, last), "name": name(p), "short": short(p)})
         return segments
-
     firdaria = methods["firdaria"]["periods"]
     subs = [s for p in firdaria for s in (p.get("level_2") or [])]
     rows = [
@@ -410,20 +344,16 @@ def _life_rows(lifetime: dict, years: list[dict]) -> list[dict]:
                      "segments": clip(release["periods"], lambda p: SIGN[p["sign"]], lambda p: SIGN[p["sign"]],
                                       "effective_end")})
     rows.append({"key": "decennials", "label": "十年期・第一層", "head": ("", "十年期"),
-                 "segments": clip(methods["decennials"]["periods"], lambda p: BODY[p["lord"]],
-                                  lambda p: SHORT[p["lord"]])})
+        "segments": clip(methods["decennials"]["periods"], lambda p: BODY[p["lord"]], lambda p: SHORT[p["lord"]])})
     for row in rows:
         if not row["segments"] or row["segments"][0]["from"] > first + 1e-9 or row["segments"][-1]["to"] < last - 1e-9:
             raise RuntimeError(f"{row['label']}: the product's periods do not cover years {WINDOW}")
     return rows
 
-
 def _year_sentence(item: dict, rows: list[dict], bound: _fx.Bound) -> str:
     c0, c1 = item["completed_years"], item["completed_years"] + 1
-
     def names(row: dict) -> str:
         return "→".join(s["name"] for s in row["segments"] if s["to"] > c0 + 1e-9 and s["from"] < c1 - 1e-9)
-
     by = {row["key"]: row for row in rows}
     return (f"第 {bound.num(str(item['year_of_life']))} 年（{bound.num(item['start']['local_date'])} 至 "
             f"{bound.num(item['end']['local_date'])}）：年度小限{SIGN[item['profection_sign']]}，年主星"
@@ -431,10 +361,8 @@ def _year_sentence(item: dict, rows: list[dict], bound: _fx.Bound) -> str:
             f"黃道釋放從命運點起在{names(by['zr-fortune'])}，從精神點起在{names(by['zr-spirit'])}；"
             f"十年期{names(by['decennials'])}。")
 
-
 def _lifespan(layout: str, fid: str, years: list[dict], rows: list[dict], bound: _fx.Bound) -> str:
-    """Figure 4: the window's years across (wide) or down (narrow), a row per technique,
-    a cursor per year for the slider."""
+    """Figure 4: the window's years across or down, a row per technique, a cursor per year for the slider."""
     wide = layout == "fx-wide"
     first, last = WINDOW[0] - 1, WINDOW[1]
     if wide:
@@ -448,7 +376,6 @@ def _lifespan(layout: str, fid: str, years: list[dict], rows: list[dict], bound:
         columns = [(46.0, 50.0), (100.0, 44.0), (148.0, 30.0), (182.0, 48.0), (234.0, 48.0), (286.0, 42.0)]
     P = lambda c: a0 + (c - first) / (last - first) * (a1 - a0)  # noqa: E731
     out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)]
-    # The labels inside the bars go on top of the cursor, each with a paper halo.
     labels: list[str] = []
     shown = [item for item in years if WINDOW[0] <= item["year_of_life"] <= WINDOW[1]]
     for index, row in enumerate(rows):
@@ -482,7 +409,6 @@ def _lifespan(layout: str, fid: str, years: list[dict], rows: list[dict], bound:
                 continue
             if not wide and text != segment["short"] and w < 13 * len(text) + 4:
                 text = segment["short"]
-            # a long bar's name sits near its start, out of the way of most cursor positions
             if wide and extent > 90:
                 labels.append(_fx.text(p0 + 12, mid[1] + 5, text, "fx-t fx-small fx-key"))
             elif not wide and p1 - p0 > 90:
@@ -494,7 +420,6 @@ def _lifespan(layout: str, fid: str, years: list[dict], rows: list[dict], bound:
                             "fx-t fx-small", "middle"))
         out.append(_fx.text(columns[3][0] + (columns[4][0] + columns[4][1] - columns[3][0]) / 2, a0 - 32, "黃道釋放",
                             "fx-t fx-small", "middle"))
-    # the years
     for item in shown:
         c = item["completed_years"]
         n = item["year_of_life"]
@@ -512,14 +437,12 @@ def _lifespan(layout: str, fid: str, years: list[dict], rows: list[dict], bound:
         out.append(_fx.text(a0 - 12, base + 22, "第幾年", "fx-t fx-small", "end"))
     else:
         out.append(_fx.text(18, 30, "第幾年（往下）", "fx-t fx-small fx-dim"))
-    # the cursor: one group per year
     default = YEAR_OF_LIFE - WINDOW[0]
     for step, item in enumerate(shown):
         c = item["completed_years"]
         if wide:
-            body = (_fx.rect(P(c), top - 8, P(c + 1) - P(c), rh * len(rows) - 2, "fx-cursor")
-                    + _fx.text((P(c) + P(c + 1)) / 2, top - 16, f"第 {bound.num(str(item['year_of_life']))} 年",
-                               "fx-t fx-small", "middle"))
+            body = (_fx.rect(P(c), top - 8, P(c + 1) - P(c), rh * len(rows) - 2, "fx-cursor") + _fx.text((P(c) + P(c + 1)) / 2,
+                top - 16, f"第 {bound.num(str(item['year_of_life']))} 年", "fx-t fx-small", "middle"))
         else:
             body = _fx.rect(columns[0][0] - 4, P(c), columns[-1][0] + columns[-1][1] - columns[0][0] + 8,
                             P(c + 1) - P(c), "fx-cursor")
@@ -528,14 +451,11 @@ def _lifespan(layout: str, fid: str, years: list[dict], rows: list[dict], bound:
     out.append("</svg>")
     return "".join(out)
 
-
 def _life_table(shown: list[dict], rows: list[dict], bound: _fx.Bound) -> str:
     by = {row["key"]: row for row in rows}
-
     def names(key: str, item: dict) -> str:
         c0, c1 = item["completed_years"], item["completed_years"] + 1
         return "→".join(s["name"] for s in by[key]["segments"] if s["to"] > c0 + 1e-9 and s["from"] < c1 - 1e-9)
-
     body = "".join(
         f'<tr><th scope="row">第 {bound.num(str(item["year_of_life"]))} 年</th>'
         f'<td class="n">{bound.num(item["start"]["local_date"])}</td>'
@@ -545,17 +465,13 @@ def _life_table(shown: list[dict], rows: list[dict], bound: _fx.Bound) -> str:
         for item in shown)
     return _fx.data_table(("年", "起", "年度小限（年主星）", "法達主期", "法達子期", "黃道釋放（命運點）", "黃道釋放（精神點）", "十年期"), body)
 
-
 def _figures(lifetime: dict) -> dict[str, str]:
     years = _years(lifetime)
     data = page_methods_time_lords._backend()
     firdaria, releasing = data["firdaria"], data["releasing"]
     with backend_on_path():
         from app.core import planetary_years
-
         minor = dict(planetary_years.MINOR_YEARS)
-
-    # Figure 1.
     b1 = _fx.Bound()
     start = SIGN_KEYS.index(years[0]["profection_sign"])
     signs: list[dict] = []
@@ -587,7 +503,6 @@ def _figures(lifetime: dict) -> dict[str, str]:
         table=_fx.data_table(("星座", "年主星", f"第幾年（前 {b1.num(str(len(years)))} 年）"), table1),
         bound=b1,
     )
-
     # Figure 2: the product's day chart follows the diurnal order it draws.
     b2 = _fx.Bound()
     drawn = [p["level_1_lord"] for p in lifetime["annual_methods"]["firdaria"]["periods"]][:len(firdaria.DIURNAL_SEQUENCE)]
@@ -611,7 +526,6 @@ def _figures(lifetime: dict) -> dict[str, str]:
         ),
         bound=b2,
     )
-
     # Figure 3: the Saturn decennial of the same chart, its months the minor years.
     b3 = _fx.Bound()
     (decennial,) = [p for p in lifetime["annual_methods"]["decennials"]["periods"] if p.get("level_2")]
@@ -631,8 +545,6 @@ def _figures(lifetime: dict) -> dict[str, str]:
         art=_fx.FigureArt.drawn(_minor_years, "fig-minor-years", releasing, data["lords"], minor, decennial, b3),
         bound=b3,
     )
-
-    # Figure 4.
     b4 = _fx.Bound()
     rows = _life_rows(lifetime, years)
     shown = [item for item in years if WINDOW[0] <= item["year_of_life"] <= WINDOW[1]]
@@ -661,7 +573,6 @@ def _figures(lifetime: dict) -> dict[str, str]:
     return {"fx-defs": _fx.defs(planets + SIGN_KEYS), "profection-wheel": wheel, "firdaria-band": band,
             "minor-years": rings, "lifespan": life}
 
-
 def _table(rows: list[dict]) -> str:
     lines = []
     for row in rows:
@@ -674,7 +585,6 @@ def _table(rows: list[dict]) -> str:
                 f'<td class="n">{period["start"]["local_date"]}</td><td class="n">{period["end"]["local_date"]}</td></tr>'
             )
     return "\n".join(lines)
-
 
 def _months(answer: dict) -> tuple[str, float, float]:
     periods = answer["annual_methods"]["monthly_profection"]["periods"]
@@ -689,19 +599,16 @@ def _months(answer: dict) -> tuple[str, float, float]:
         )
     return "\n".join(lines), min(lengths), max(lengths)
 
-
 def _spoken(local_date: str) -> str:
     year, month, day = (int(part) for part in local_date.split("-"))
     return f"{year} 年 {month} 月 {day} 日"
-
 
 def build() -> tuple[dict[str, str], list[str]]:
     answer = _answer()
     methods = answer["annual_methods"]
     if not methods["firdaria"]["sect"]["is_day"]:
         raise RuntimeError("the article describes the demonstration chart as a day chart")
-    # The evidence-scope note: both the Ascendant and Fortune lie within 2° of
-    # the start of their sign.
+    # The evidence-scope note: both the Ascendant and Fortune lie within 2° of the start of their sign.
     ascendant = answer["natal_anchor"]["ascendant"]["longitude_deg"]
     releases = {r["releasing_from"]: r for r in methods["zodiacal_releasing"]["releases"]}
     fortune, spirit = releases["fortune"], releases["spirit"]
@@ -715,7 +622,6 @@ def build() -> tuple[dict[str, str], list[str]]:
     gap, _, _ = page_methods_time_lords._notation_gap(firdaria)
     with backend_on_path():
         from app.core import planetary_years
-
         minor_total = sum(planetary_years.MINOR_YEARS.values())
     decennial = methods["decennials"]
     months_per_period = decennial["year_model"]["months_per_level_1"]
@@ -724,25 +630,14 @@ def build() -> tuple[dict[str, str], list[str]]:
     period_days = int(decennial["periods"][0]["duration_days"])
     year = answer["year_boundary"]
     profection = methods["annual_profection"]
-    (spirit_major,) = [p for p in spirit["periods"]
-                       if _overlaps(p, year["start"]["jd_ut"], year["end"]["jd_ut"])]
-    quoted = [
-        f"九段合計 {firdaria.CYCLE_YEARS} 年",
-        f"十二個星座一圈合計 {sum(releasing.SIGN_PERIOD_YEARS.values())} 年",
-        f"每段 {months_per_period} 個月",
-        f"一段是 {period_days:,} 日",
-        f"兩種讀法最多相差約 {gap:.1f} 日",
-        f"第 {YEAR_OF_LIFE} 年",
-        f"從 {_spoken(year['start']['local_date'])}到 {_spoken(year['end']['local_date'])}",
+    (spirit_major,) = [p for p in spirit["periods"] if _overlaps(p, year["start"]["jd_ut"], year["end"]["jd_ut"])]
+    quoted = [f"九段合計 {firdaria.CYCLE_YEARS} 年", f"十二個星座一圈合計 {sum(releasing.SIGN_PERIOD_YEARS.values())} 年",
+        f"每段 {months_per_period} 個月", f"一段是 {period_days:,} 日", f"兩種讀法最多相差約 {gap:.1f} 日",
+        f"第 {YEAR_OF_LIFE} 年", f"從 {_spoken(year['start']['local_date'])}到 {_spoken(year['end']['local_date'])}",
         f"年度小限是{SIGN[profection['profected_sign']]}，年主星是{BODY[profection['lord']['body_key']]}",
         f"命運點在{SIGN[fortune['start_sign']]}、精神點在{SIGN[spirit['start_sign']]}",
         f"從命運點數第 {spirit_major['position_from_fortune']} 個星座",
         f"最短 {shortest:.1f} 日、最長 {longest:.1f} 日",
-        f"圖 4 畫的是第 {WINDOW[0]} 到第 {WINDOW[1]} 年，框線預設在第 {YEAR_OF_LIFE} 年",
-    ]
-    blocks = {
-        **_figures(_lifetime()),
-        "year-periods": _table(rows),
-        "year-months": months,
-    }
+        f"圖 4 畫的是第 {WINDOW[0]} 到第 {WINDOW[1]} 年，框線預設在第 {YEAR_OF_LIFE} 年",]
+    blocks = {**_figures(_lifetime()), "year-periods": _table(rows), "year-months": months}
     return blocks, quoted

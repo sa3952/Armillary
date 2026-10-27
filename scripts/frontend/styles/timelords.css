@@ -1,6 +1,5 @@
-/* ── 年度時間主星（計算頁結果裡的一區）────────────────────
- * 只用 tokens.css 的紙色、墨色與三環色。底色兩種紙色交替只為分辨相鄰兩段，不帶好壞；
- * 今天用站上唯一的強調紅，年界用 RING I 的綠色細線。版面由 timelords.js 以日序排位置。 */
+/* ── 年度時間主星（計算頁結果裡的一區）──────────────────── 只用 tokens.css 的紙色、墨色與三環色。底色兩種紙色交替只為
+   分辨相鄰兩段，不帶好壞；今天用站上唯一的強調紅，年界用 RING I 的綠色細線。版面由 timelords.js 以日序排位置。 */
 .annual{border-top:1px solid var(--ink); margin-top:var(--s3); padding:var(--s3) 0}
 /* page.css 給每個 section 的上下留白與分隔線，不用在這一區裡的小區塊。 */
 .annual section{padding:0; border-top:0}

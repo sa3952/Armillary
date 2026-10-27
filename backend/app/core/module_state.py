@@ -10,9 +10,11 @@ flags.  A module status word is a projection of the six fields.
 
 from __future__ import annotations
 
-STATE_FIELDS = (
-    "requested", "executed", "applicable", "available", "source", "reason_code",
-)
+from typing import TYPE_CHECKING, TypedDict, cast
+
+if TYPE_CHECKING:
+    from .trace import Trace
+
 MODULE_STATUSES = ("not_requested", "computed", "not_applicable")
 MODULE_NOT_REQUESTED, MODULE_COMPUTED, MODULE_NOT_APPLICABLE = MODULE_STATUSES
 # Why an attempted event search produced nothing (contained, not a failed
@@ -31,6 +33,32 @@ SEARCH_EPHEMERIS_REFUSALS = {
     "segment_file_missing": (EVENT_SEARCH_REASON_CODES[1], True),
 }
 
+
+
+class Applicability(TypedDict):
+    """Whether the request configuration permits a module, and why not."""
+
+    applicable: bool
+    reason_code: str | None
+
+
+class ModuleState(TypedDict):
+    """The six fields, in their one order (the order JSON writes them in)."""
+
+    requested: bool
+    executed: bool
+    applicable: bool
+    available: bool
+    source: str | None
+    reason_code: str | None
+
+
+class EventModuleState(ModuleState):
+    """An event search's six fields, with the status word consumers read."""
+
+    status: str
+
+
 # A result the product computes itself from emitted positions, as opposed to
 # one read from Swiss Ephemeris or from a named text table.
 PRODUCT_FORMULA_SOURCE = "product_formula"
@@ -44,27 +72,23 @@ def module_state(
     available: bool,
     source: str | None = None,
     reason_code: str | None = None,
-) -> dict:
+) -> ModuleState:
     """The six fields, in their one order."""
 
-    return {
-        "requested": requested,
-        "executed": executed,
-        "applicable": applicable,
-        "available": available,
-        "source": source,
-        "reason_code": reason_code,
-    }
+    return ModuleState(
+        requested=requested, executed=executed, applicable=applicable,
+        available=available, source=source, reason_code=reason_code,
+    )
 
 
-def not_requested_state(reason_code: str | None = None) -> dict:
+def not_requested_state(reason_code: str | None = None) -> ModuleState:
     return module_state(
         requested=False, executed=False, applicable=False, available=False,
         reason_code=reason_code,
     )
 
 
-def unavailable_state(reason_code: str, *, requested: bool) -> dict:
+def unavailable_state(reason_code: str | None, *, requested: bool) -> ModuleState:
     """Nothing ran and nothing is available, for the stated reason."""
 
     return module_state(
@@ -73,7 +97,7 @@ def unavailable_state(reason_code: str, *, requested: bool) -> dict:
     )
 
 
-def not_applicable_receipt(state: dict) -> dict:
+def not_applicable_receipt(state: Applicability) -> ModuleState:
     """A requested module the frame table (or a mode) refused before running."""
 
     if state["applicable"]:
@@ -87,7 +111,7 @@ def computed_receipt(
     applicable: bool = True,
     available: bool = True,
     reason_code: str | None = None,
-) -> dict:
+) -> ModuleState:
     """A requested module whose calculation ran."""
 
     return module_state(
@@ -96,7 +120,7 @@ def computed_receipt(
     )
 
 
-def state_of(owner) -> dict:
+def state_of(owner: object) -> ModuleState:
     """The six state fields exactly as the module's producer wrote them.
 
     A module that was not produced (None, or an empty container) was not
@@ -108,10 +132,20 @@ def state_of(owner) -> dict:
 
     if not isinstance(owner, dict) or not owner.get("requested"):
         return not_requested_state()
-    return {field: owner[field] for field in STATE_FIELDS}
+    return state_fields(cast(ModuleState, owner))
 
 
-def module_status_word(state: dict) -> str:
+def state_fields(receipt: ModuleState) -> ModuleState:
+    """Exactly the six fields of a receipt that may carry more keys."""
+
+    return ModuleState(
+        requested=receipt["requested"], executed=receipt["executed"],
+        applicable=receipt["applicable"], available=receipt["available"],
+        source=receipt["source"], reason_code=receipt["reason_code"],
+    )
+
+
+def module_status_word(state: ModuleState) -> str:
     """Project one recorded state onto the closed module-status vocabulary."""
 
     if not state["requested"]:
@@ -119,13 +153,15 @@ def module_status_word(state: dict) -> str:
     return MODULE_COMPUTED if state["available"] else MODULE_NOT_APPLICABLE
 
 
-def frame_table_refusal(state: dict, trace, title: str, note: str, **trace_fields) -> dict:
+def frame_table_refusal(
+    state: Applicability, trace: Trace, title: str, note: str, *, inputs: dict | None = None
+) -> ModuleState:
     """Trace the frame table's refusal of a module and return its receipt."""
 
     trace.add(
         title,
         result={"execution_status": "not_applicable", "reason_code": state["reason_code"]},
         note=note,
-        **trace_fields,
+        inputs=inputs,
     )
     return not_applicable_receipt(state)

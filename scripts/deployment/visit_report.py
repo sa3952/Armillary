@@ -48,8 +48,7 @@ def _entries(stream: TextIO) -> Iterable[tuple[str, int | None]]:
     seen: set[str] = set()
     for raw in stream:
         line = raw.rstrip("\n")
-        if not line.strip():
-            continue
+        if not line.strip(): continue
         entry = None
         if line.lstrip().startswith("{"):
             try:
@@ -61,8 +60,7 @@ def _entries(stream: TextIO) -> Iterable[tuple[str, int | None]]:
             continue
         cursor = entry.get("__CURSOR")
         if cursor is not None:
-            if cursor in seen:
-                continue
+            if cursor in seen: continue
             seen.add(cursor)
         message = entry["MESSAGE"]
         if isinstance(message, list):   # journald writes a non-UTF-8 message as a byte array
@@ -73,14 +71,12 @@ def _entries(stream: TextIO) -> Iterable[tuple[str, int | None]]:
 
 def _payload(message: str, marker: str) -> dict | None:
     index = message.find(marker)
-    if index < 0:
-        return None
+    if index < 0: return None
     try:
         payload = json.loads(message[index + len(marker):])
     except ValueError:
         raise ReportError(f"unreadable {marker.strip()} line: {message[:120]!r}") from None
-    if not isinstance(payload, dict):
-        raise ReportError(f"unreadable {marker.strip()} line: {message[:120]!r}")
+    if not isinstance(payload, dict): raise ReportError(f"unreadable {marker.strip()} line: {message[:120]!r}")
     return payload
 
 
@@ -90,8 +86,7 @@ def daily_visits(stream: TextIO) -> dict[str, tuple[int, int]]:
     lines = 0
     for message, _stamp in _entries(stream):
         line = _payload(message, VISIT_MARKER)
-        if line is None:
-            continue
+        if line is None: continue
         hour, views, visitors = line.get("hour_utc"), line.get("page_views"), line.get("daily_visitors")
         if (line.get("event") != "visit_counts" or not isinstance(hour, str) or not HOUR.fullmatch(hour)
                 or not isinstance(views, int) or not isinstance(visitors, int)
@@ -102,8 +97,7 @@ def daily_visits(stream: TextIO) -> dict[str, tuple[int, int]]:
         day[0] += views
         day[1] += visitors
         lines += 1
-    if not lines:
-        raise ReportError("no VISIT_COUNTS line in the input (wrong container, or --since too short)")
+    if not lines: raise ReportError("no VISIT_COUNTS line in the input (wrong container, or --since too short)")
     return {day: (counts[0], counts[1]) for day, counts in sorted(days.items())}
 
 
@@ -112,17 +106,14 @@ def chart_load(stream: TextIO) -> dict[str, dict[str, int]]:
     hours: dict[str, dict[str, int]] = {}
     for message, stamp in _entries(stream):
         event = _payload(message, EVENT_MARKER)
-        if event is None or event.get("route") not in CHART_ROUTES:
-            continue
-        if stamp is None:
-            raise ReportError("--chart-load needs `journalctl -o json`: a request event carries no time")
+        if event is None or event.get("route") not in CHART_ROUTES: continue
+        if stamp is None: raise ReportError("--chart-load needs `journalctl -o json`: a request event carries no time")
         hour = datetime.fromtimestamp(stamp / 1_000_000, timezone.utc).strftime("%Y-%m-%dT%H")
         counts = hours.setdefault(hour, {"charts": 0, "refused_503": 0, "slow_1s_or_more": 0})
         counts["charts"] += 1
         counts["refused_503"] += event.get("status_code") == 503
         counts["slow_1s_or_more"] += event.get("duration_bucket") in SLOW_BUCKETS
-    if not hours:
-        raise ReportError("no chart request event in the input")
+    if not hours: raise ReportError("no chart request event in the input")
     return dict(sorted(hours.items()))
 
 
@@ -155,5 +146,4 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
+if __name__ == "__main__": raise SystemExit(main())

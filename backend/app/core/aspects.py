@@ -41,11 +41,12 @@ from .invariants import InternalInvariantError
 from ..ephemeris import FullEphemerisRequiredError
 from .bodies import DEFINITIONAL_EXCLUDED_PAIRS, memoized_longitudes
 from .module_state import (
+    Applicability,
     PRODUCT_FORMULA_SOURCE,
     SEARCH_EPHEMERIS_REFUSALS,
     computed_receipt,
-    module_state,
     frame_table_refusal,
+    module_state,
 )
 from .method_status import method_head, profile_period
 from .dignity_tables import SIGNS
@@ -521,7 +522,7 @@ def _orb_receipt(participants: list[dict], policy: OrbPolicy) -> dict:
     }
 
 
-def aspects_not_applicable(state: dict, trace: Trace) -> dict:
+def aspects_not_applicable(state: Applicability, trace: Trace) -> dict:
     # Lots and angles do not join a refused aspects module either.
     refusal = frame_table_refusal(
         state, trace, f"相位 (method={WHOLE_SIGN_METHOD_NAME})",

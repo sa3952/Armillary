@@ -1,17 +1,12 @@
-"""〈三分性是什麼〉: figure 1 (the zodiac wheel grouped by element, four
-triangles 120° apart, with each element's rulers under a switch between the
-three schemes, day and night) and figure 2 (the four elements against the
-three schemes, the water row marked where they disagree).
+"""〈三分性是什麼〉: figure 1 (the zodiac wheel grouped by element, with each element's rulers under a switch between
+the three schemes) and figure 2 (four elements against the three schemes, the water row marked where they disagree).
 
-Every ruler drawn is read from the product's tables in
-backend/app/core/dignity_tables.py (DOROTHEAN, PTOLEMY_TEXTUAL,
-LILLY_COMPACT); the build refuses tables whose shape it does not know.
+Every ruler drawn is read from backend/app/core/dignity_tables.py; the build refuses tables whose shape it does not know.
 """
 from __future__ import annotations
 
 from . import _fx
 from ._common import PLANETS, SIGNS, backend_on_path
-
 
 FRAGMENT = "blog-triplicity-rulers"
 SIGN_KEYS = ("aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius",
@@ -25,7 +20,6 @@ SECTS = (("day", "日盤"), ("night", "夜盤"))
 VARIANTS = tuple((f"{scheme}-{sect}", f"{label}・{sect_label}") for scheme, label in SCHEMES for sect, sect_label in SECTS)
 PLANET_KEYS = ("sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn")
 
-
 def _tables():
     with backend_on_path():
         from app.core.dignity_tables import DOROTHEAN, ELEMENTS, LILLY_COMPACT, PTOLEMY_TEXTUAL
@@ -33,9 +27,7 @@ def _tables():
         raise RuntimeError(f"the elements are no longer {tuple(ELEMENT_NAMES)}: {ELEMENTS}")
     return DOROTHEAN, PTOLEMY_TEXTUAL, LILLY_COMPACT
 
-
 def rulers(scheme: str, sect: str, element: str) -> list[tuple[str, str, bool]]:
-    """(planet, role, rules now) for one element in one scheme and sect."""
     dorothean, ptolemy, lilly = _tables()
     if scheme == "dorotheus":
         first, second, third = dorothean[element]
@@ -53,15 +45,11 @@ def rulers(scheme: str, sect: str, element: str) -> list[tuple[str, str, bool]]:
     (lead,) = lilly[element][sect]
     return [(lead, "當令", True)]
 
-
 def _signs(element_index: int) -> list[int]:
     return [element_index + 4 * k for k in range(3)]
 
-
 def _polar(cx: float, cy: float):
-    """Aries 0° on the left, the signs counterclockwise, as the result page's wheel."""
     return lambda longitude, r: _fx.wheel_point(cx, cy, r, 180 + longitude)
-
 
 def _wheel(out: list[str], cx: float, cy: float, r_out: float, r_in: float, wide: bool) -> None:
     at = _polar(cx, cy)
@@ -79,7 +67,6 @@ def _wheel(out: list[str], cx: float, cy: float, r_out: float, r_in: float, wide
         d = "M" + " L".join(f"{f(x)} {f(y)}" for x, y in points) + " Z"
         out.append(_fx.path(d, TRIANGLE[element]))
 
-
 def _ruler_row(out: list[str], items, x: float, y: float, step: float, r: float, wide: bool) -> None:
     for i, (planet, role, on) in enumerate(items):
         mx = x + i * step
@@ -87,7 +74,6 @@ def _ruler_row(out: list[str], items, x: float, y: float, step: float, r: float,
                    + _fx.glyph(planet, mx, y, r * 1.25, "fx-mk-gl-on" if on else "fx-mk-gl"))
         out.append(_fx.text(mx, y + r + (20 if wide else 16), PLANETS[planet], "fx-t fx-small", "middle"))
         out.append(_fx.text(mx, y + r + (38 if wide else 31), role, "fx-t fx-small fx-dim", "middle"))
-
 
 def _drawing(layout: str, fid: str) -> str:
     wide = layout == "fx-wide"
@@ -115,10 +101,8 @@ def _drawing(layout: str, fid: str) -> str:
     out.append("</svg>")
     return "".join(out)
 
-
 def _grid(layout: str, fid: str) -> str:
-    """Figure 2: four elements down, three schemes across; each cell the day
-    and the night rulers, the water row on a dotted ground."""
+    """Figure 2: four elements down, three schemes across; the water row on a dotted ground."""
     wide = layout == "fx-wide"
     W = _fx.WIDE if wide else _fx.NARROW
     if wide:
@@ -148,14 +132,12 @@ def _grid(layout: str, fid: str) -> str:
     out.append("</svg>")
     return "".join(out)
 
-
 def _figure_table(bound: _fx.Bound) -> str:
     rows = []
     for index, element in enumerate(ELEMENT_NAMES):
         signs = "、".join(f"{SIGNS[s]} {bound.num(f'{30 * s}°')}" for s in _signs(index))
         rows.append(f'<tr><th scope="row">{ELEMENT_NAMES[element]}</th><td>{signs}</td></tr>')
     return _fx.data_table(("元素", "三個星座與各自的起點黃經（相隔 120°）"), rows)
-
 
 def build() -> tuple[dict[str, str], list[str]]:
     bound = _fx.Bound()
@@ -184,9 +166,7 @@ def build() -> tuple[dict[str, str], list[str]]:
     _check_water()
     return {"fx-defs": _fx.defs(PLANET_KEYS + SIGN_KEYS), "triplicity-wheel": wheel, "triplicity-grid": grid}, ["相隔 120 度"]
 
-
 def _check_water() -> None:
-    """Figure 2's dotted row is the one element whose ruling planets differ between schemes."""
     differ = []
     for element in ELEMENT_NAMES:
         seen = {tuple(tuple(p for p, _, on in rulers(s, sect, element) if on) for sect, _ in SECTS) for s, _ in SCHEMES}

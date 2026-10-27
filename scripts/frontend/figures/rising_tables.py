@@ -1,27 +1,15 @@
-"""〈上升星座查詢表為什麼常常不準〉: figure 1 (how often two model lookup
-tables give a different rising sign than the exact computation), figure 2 (the
-minutes each sign takes to rise at Taipei against table A's two hours, a
-switch between the two), figure 3 (a table made for 25°N used at other
-latitudes; pointing at a city writes its share), table 1 (clock time against
-local mean time, abroad and in Taiwan), table 2 (the product's Ascendant for
-one clock time at four Taiwanese places) and the numbers the prose quotes.
-The figures are article figures (`_fx`).
+"""〈上升星座查詢表為什麼常常不準〉: figures 1-3, tables 1-2 and the numbers the prose quotes (article figures, `_fx`).
 
 The tables are models the article defines, not anyone's published table:
-  A  sun sign plus two-hour blocks: during the two hours that start at clock
-     time C the rising sign is the Sun's own sign, then one sign later every
-     two hours; C is the start that suits Taipei best over the year, and the
-     table is given the Sun's exact sign, so A is the best case of its kind.
-  B  exact for Taipei (GeoNames 1668341) at the clock time read as UTC+8 all
-     year: exact at Taipei by construction, used at another place or in a
-     daylight-saving summer.
-"Exact" is Swiss Ephemeris houses_ex at the instant the IANA zone gives for
-the clock time (UT1 = UTC here; under a second, irrelevant at 10-minute
-steps).  Places are the product's catalogue rows (GeoNames cities500); the
-generator reads them back through the product's place search.  The one value
-checked against a second algorithm: at NOAA's geometric sunrise the product's
-Ascendant must equal NOAA's apparent longitude of the Sun (the rising Sun is
-on the ecliptic and on the horizon).
+  A  sun sign plus two-hour blocks: during the two hours that start at clock time C the rising sign is the Sun's own
+     sign, then one sign later every two hours; C is the start that suits Taipei best over the year, and the table is
+     given the Sun's exact sign, so A is the best case of its kind.
+  B  exact for Taipei (GeoNames 1668341) at the clock time read as UTC+8 all year: exact at Taipei by construction,
+     used at another place or in a daylight-saving summer.
+"Exact" is Swiss Ephemeris houses_ex at the instant the IANA zone gives for the clock time (UT1 = UTC here; under a
+second, irrelevant at 10-minute steps).  Places are the product's catalogue rows (GeoNames cities500), read back
+through the product's place search.  The one value checked against a second algorithm: at NOAA's geometric sunrise the
+product's Ascendant must equal NOAA's apparent longitude of the Sun (the rising Sun is on the ecliptic and horizon).
 """
 from __future__ import annotations
 
@@ -32,24 +20,18 @@ from zoneinfo import ZoneInfo
 from . import _fx, _noaa
 from ._common import SIGNS, TAIPEI, calc_ut, product_charts, product_client, swiss
 
-
 FRAGMENT = "blog-rising-sign-tables"
 YEAR = 2025
 STEP_MINUTES = 10
 # name: (GeoNames id, latitude, longitude, IANA zone)
-PLACES = {
-    "臺北": ("1668341", *TAIPEI, "Asia/Taipei"),
-    "金門": ("1678008", 24.43415, 118.31712, "Asia/Taipei"),
-    "花蓮": ("1674504", 23.97694, 121.60444, "Asia/Taipei"),
-    "恆春": ("1676242", 22.00417, 120.74389, "Asia/Taipei"),
-    "東京": ("1850147", 35.6895, 139.69171, "Asia/Tokyo"),
-    "首爾": ("1835848", 37.566, 126.9784, "Asia/Seoul"),
+PLACES = {"臺北": ("1668341", *TAIPEI, "Asia/Taipei"), "金門": ("1678008", 24.43415, 118.31712, "Asia/Taipei"),
+    "花蓮": ("1674504", 23.97694, 121.60444, "Asia/Taipei"), "恆春": ("1676242", 22.00417, 120.74389, "Asia/Taipei"),
+    "東京": ("1850147", 35.6895, 139.69171, "Asia/Tokyo"), "首爾": ("1835848", 37.566, 126.9784, "Asia/Seoul"),
     "新加坡": ("1880252", 1.28967, 103.85007, "Asia/Singapore"),
     "倫敦": ("2643743", 51.50853, -0.12574, "Europe/London"),
     "馬德里": ("3117735", 40.4165, -3.70256, "Europe/Madrid"),
     "紐約": ("5128581", 40.71427, -74.00597, "America/New_York"),
-    "雪梨": ("2147714", -33.86785, 151.20732, "Australia/Sydney"),
-}
+    "雪梨": ("2147714", -33.86785, 151.20732, "Australia/Sydney")}
 SEARCH = {"臺北": "Taipei", "金門": "Jincheng", "花蓮": "Hualien City", "恆春": "Hengchun", "東京": "Tokyo",
           "首爾": "Seoul", "新加坡": "Singapore", "倫敦": "London", "馬德里": "Madrid", "紐約": "New York City",
           "雪梨": "Sydney"}
@@ -58,18 +40,14 @@ ABROAD = ("東京", "首爾", "新加坡", "倫敦", "馬德里", "紐約")
 FIG2_MARKS = ("雪梨", "新加坡", "臺北", "東京", "倫敦")
 DST_YEAR = 1975
 TABLE_LATITUDE = 25.0
-# Table A's block: one sign every two hours.
 BLOCK_MINUTES = 120
-# The sidereal-time sweeps step the ARMC by this many degrees.
 ARMC_STEP = 0.25
 SWEEP = round(360 / ARMC_STEP)
 SIGN_KEYS = ("aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius",
              "capricorn", "aquarius", "pisces")
 CITY_KEYS = {"雪梨": "sydney", "新加坡": "singapore", "臺北": "taipei", "東京": "tokyo", "倫敦": "london"}
-# Table 2: one synthetic clock time, the same at four places.
 EXAMPLE = datetime(YEAR, 3, 21, 6, 0)
 SUNRISE_DAY = date(YEAR, 3, 21)
-
 
 def _check_catalogue() -> None:
     with product_client() as post:
@@ -79,9 +57,7 @@ def _check_catalogue() -> None:
             if not rows or (rows[0]["latitude"], rows[0]["longitude"], rows[0]["timezone"]) != (lat, lon, zone):
                 raise RuntimeError(f"the catalogue no longer has {name} as {record} {lat} {lon} {zone}")
 
-
 def _year_instants(year: int, zone: str):
-    """Every STEP_MINUTES of local clock time in the year: (clock minute of day, aware local time)."""
     z = ZoneInfo(zone)
     clock = datetime(year, 1, 1)
     while clock.year == year:
@@ -91,16 +67,13 @@ def _year_instants(year: int, zone: str):
             yield clock.hour * 60 + clock.minute, local
         clock += timedelta(minutes=STEP_MINUTES)
 
-
 def _data() -> dict:
     d: dict = {}
     with swiss() as swe:
         def jd(utc: datetime) -> float:
             return swe.julday(utc.year, utc.month, utc.day, utc.hour + utc.minute / 60 + utc.second / 3600)
-
         def sign(j: float, lat: float, lon: float) -> int:
             return int(swe.houses_ex(j, lat, lon, b"W")[1][0] // 30)
-
         tp = PLACES["臺北"]
         rows = []
         for minute, local in _year_instants(YEAR, tp[3]):
@@ -128,19 +101,14 @@ def _data() -> dict:
                 summer += 1
                 summer_wrong += truth != table
         d["dst"] = (summer_wrong / summer, wrong / total)
-        # Sidereal-time sweeps: one sidereal day in ARMC_STEP degrees of ARMC, the year's mean obliquity.
         eps = sum(swe.calc_ut(swe.julday(YEAR, month, 1, 0.0), swe.ECL_NUT)[0][0] for month in range(1, 13)) / 12
-
         def armc_signs(lat: float, shift: float = 0.0) -> list[int]:
             return [int(swe.houses_armc((k * ARMC_STEP + shift) % 360, lat, eps, b"W")[1][0] // 30) for k in range(SWEEP)]
-
         base = armc_signs(TABLE_LATITUDE)
         lats = sorted(set(range(-40, 61, 5)) | {PLACES[name][1] for name in FIG2_MARKS})
         d["latitude"] = {lat: sum(a != b for a, b in zip(base, armc_signs(lat))) / SWEEP for lat in lats}
-        # Rising time of each sign at Taipei, from the same sweep (minutes of a sidereal day).
         def asc_at(armc: float) -> float:
             return swe.houses_armc(armc % 360, tp[1], eps, b"W")[1][0]
-
         crossings = []
         for k in range(12):  # the ARMC at which each sign begins to rise, by bisection
             lo = next(step * ARMC_STEP for step in range(SWEEP)
@@ -156,7 +124,6 @@ def _data() -> dict:
             crossings.append(hi)
         sidereal_day = 1436.0682  # minutes of mean solar time
         d["rising"] = [((crossings[(k + 1) % 12] - crossings[k]) % 360) / 360 * sidereal_day for k in range(12)]
-        # Clock against local mean time, mid-January and mid-July.
         offsets = []
         for name in ("臺北", "金門") + ABROAD:
             _, lat, lon, zone = PLACES[name]
@@ -177,9 +144,7 @@ def _data() -> dict:
         d["offsets"] = offsets
     return d
 
-
 def _product(d: dict) -> None:
-    """Table 2 and the sunrise check, from the product's own answers."""
     rows = []
     with product_charts() as post:
         def chart(name: str, local: datetime) -> dict:
@@ -190,7 +155,6 @@ def _product(d: dict) -> None:
                          "location": {"latitude": lat, "longitude": lon},
                          "timezone": {"mode": "iana", "iana_name": zone},
                          "options": {"house_system": "W", "include_houses": True}})
-
         for name in ("臺北",) + ELSEWHERE_IN_TAIWAN:
             asc = chart(name, EXAMPLE)["astronomical_data"]["angles"]
             rows.append((name, asc["sign_positions"]["asc"], asc["asc"]))
@@ -211,19 +175,15 @@ def _product(d: dict) -> None:
         day += timedelta(days=1)
     d["sunrise_range"] = (min(rises), max(rises))
 
-
 def _pct(x: float) -> str:
     return f"{x * 100:.0f}%"
-
 
 def _hm(minutes: float) -> str:
     sign = "+" if minutes >= 0 else "−"
     m = round(abs(minutes))
     return f"{sign}{m // 60} 小時 {m % 60:02d} 分" if m >= 60 else f"{sign}{m} 分"
 
-
 def _bars(d: dict) -> list[tuple[str, str, str, float]]:
-    """Figure 1's rows: (table, where it is used, its engraving, share of clock times it gets wrong)."""
     _, share = d["table_a"]
     out = [("太陽星座＋兩小時時段表", "用在臺北（最有利的切法）", "fx-fill-cross", share)]
     for name in ELSEWHERE_IN_TAIWAN:
@@ -231,10 +191,8 @@ def _bars(d: dict) -> list[tuple[str, str, str, float]]:
     out.append(("臺北精算表", f"{DST_YEAR} 年臺北的夏令時間期間", "fx-fill-hatch", d["dst"][0]))
     return out
 
-
 def _share_drawing(layout: str, fid: str, bars: list, bound: _fx.Bound) -> str:
-    """Figure 1, one layout: a row per table and place, the share of clock times
-    the table gets wrong as a bar on a 0–100% scale."""
+    """Figure 1, one layout: a row per table and place, the share of clock times wrong as a bar on a 0–100% scale."""
     wide = layout == "fx-wide"
     W = _fx.WIDE if wide else _fx.NARROW
     x0, x1 = (24.0, 760.0) if wide else (14.0, 326.0)
@@ -274,7 +232,6 @@ def _share_drawing(layout: str, fid: str, bars: list, bound: _fx.Bound) -> str:
         H = axis + 76
     return "".join([_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)] + out + ["</svg>"])
 
-
 def _share_figure(d: dict) -> str:
     bound = _fx.Bound()
     bars = _bars(d)
@@ -294,14 +251,11 @@ def _share_figure(d: dict) -> str:
     )
     return markup
 
-
 def _lat_text(lat: float) -> str:
     return f"{'南' if lat < 0 else '北'}緯 {abs(lat):.1f}°"
 
-
 def _latitude_drawing(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
-    """Figure 3, one layout: the share of a sidereal day a table made for 25°N
-    gets wrong at each latitude, the five cities as marks."""
+    """Figure 3, one layout: the share of a sidereal day a table made for 25°N gets wrong per latitude."""
     wide = layout == "fx-wide"
     W = _fx.WIDE if wide else _fx.NARROW
     L, R, T, B = (96.0, 846.0, 40.0, 316.0) if wide else (52.0, 322.0, 36.0, 286.0)
@@ -350,7 +304,6 @@ def _latitude_drawing(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
         raise RuntimeError("the latitude curve outgrew figure 3's scale")
     return "".join(out)
 
-
 def _latitude_figure(d: dict) -> str:
     bound = _fx.Bound()
     for label in ("圖 3", "表 1"):
@@ -390,13 +343,10 @@ def _latitude_figure(d: dict) -> str:
     )
     return markup
 
-
 RISING_VARIANTS = (("actual", f"實際：{YEAR} 年臺北"), ("model", "模型：每個星座兩小時"))
 
-
 def _rising_drawing(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
-    """Figure 2, one layout: the minutes each sign takes to rise, the model's
-    two hours each against Taipei's own; the buttons switch between them."""
+    """Figure 2, one layout: minutes each sign takes to rise, the model's two hours each against Taipei's own."""
     wide = layout == "fx-wide"
     W = _fx.WIDE if wide else _fx.NARROW
     top_minutes = 150
@@ -458,7 +408,6 @@ def _rising_drawing(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
         raise RuntimeError("a sign takes longer than figure 2's scale")
     return "".join([_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)] + out + ["</svg>"])
 
-
 def _rising_figure(d: dict) -> str:
     bound = _fx.Bound()
     for _, label in RISING_VARIANTS:
@@ -485,7 +434,6 @@ def _rising_figure(d: dict) -> str:
     )
     return markup
 
-
 def _offset_rows(d: dict) -> str:
     rows = []
     for name, seen in d["offsets"]:
@@ -497,7 +445,6 @@ def _offset_rows(d: dict) -> str:
                         f'<td class="n">{_hm(lead)}</td><td class="n">{_pct(share)}</td></tr>')
     return "\n".join(rows)
 
-
 def _example_rows(d: dict) -> str:
     rows = []
     for name, (sign, dms, _), _lon in d["example"]:
@@ -505,7 +452,6 @@ def _example_rows(d: dict) -> str:
         rows.append(f'          <tr{hl}><td>{name}</td><td class="n">{PLACES[name][1]:.2f}°N、{PLACES[name][2]:.2f}°E</td>'
                     f'<td>{SIGNS[sign]} {dms.split(chr(8242))[0]}′</td></tr>')
     return "\n".join(rows)
-
 
 def build() -> tuple[dict[str, str], list[str]]:
     _check_catalogue()

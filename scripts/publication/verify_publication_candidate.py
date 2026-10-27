@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import codecs
+import functools
 import hashlib
 import io
 import ipaddress
@@ -144,8 +145,8 @@ DEPENDENCY_BUNDLE_PATHS = ("third_party/" "sources", "third_party/" "build_wheel
                            "docs/" "DEPENDENCY_LICENSES.md")
 RECONSTRUCTION_MODES = ("online-clean",)
 RECONSTRUCTION_BUILDER_IMAGE = (
-    "python:3.14.9-trixie@"
-    "sha256:2c90493710bd462e097441e60b0218430d8f7e2b46779bfca3742b2efd386feb"
+    "python:3.14.10-trixie@"
+    "sha256:d6eb5bd79dd4cc88445ad56d0bd6a6b91610358b1249796a2cb1e6634f960ad1"
 )
 
 
@@ -306,19 +307,21 @@ def scan_comment_codes(
 ) -> None:
     """Fail on a ticket or ruling id where `parts` looks (by default a comment,
     a Python string or JSON) in any file outside third_party/."""
-    scanned = 0
-    for path in sorted(root.rglob("*")):
-        relative = path.relative_to(root)
-        if not path.is_file() or relative.parts[0] in {".git", "third_party"}:
-            continue
-        scanned += 1
-        codes = matches_in_parts(parts(relative.as_posix(), path.read_bytes()) or [], pattern)
+    for path, rendered in _own_files(root):
+        codes = matches_in_parts(parts(rendered, path.read_bytes()) or [], pattern)
         if codes:
             raise CandidateFailure(
-                f"internal ticket or ruling id {codes[0][1]!r} in {relative.as_posix()}"
+                f"internal ticket or ruling id {codes[0][1]!r} in {rendered}"
             )
-    if not scanned:
+
+
+def _own_files(root: Path) -> list[tuple[Path, str]]:
+    """(path, public path) of every file outside .git/ and third_party/, in order; fails on none."""
+    files = [(path, path.relative_to(root).as_posix()) for path in sorted(root.rglob("*"))
+             if path.is_file() and path.relative_to(root).parts[0] not in {".git", "third_party"}]
+    if not files:
         raise CandidateFailure(f"no file to scan under {root}")
+    return files
 
 
 # A repository path a public file names must be one the tree carries: a reader
@@ -439,13 +442,7 @@ def path_references(
     """Repository paths one public file names that the tree does not carry.
     `published` gives the tree's paths for a pattern (read once per scan)."""
     if published is None:
-        cache: list[frozenset[str]] = []
-
-        def read_once() -> frozenset[str]:
-            if not cache:
-                cache.append(_published_paths(root))
-            return cache[0]
-        published = read_once
+        published = functools.cache(lambda: _published_paths(root))
     if b"\0" in data[:BINARY_SNIFF_BYTES]:
         return []
     try:
@@ -467,23 +464,12 @@ def path_references(
 def scan_path_references(root: Path) -> None:
     """Fail on a public file outside third_party/ that names an unpublished path."""
     paths = _published_paths(root)
-
-    def published() -> frozenset[str]:
-        return paths
-
-    scanned = 0
-    for path in sorted(root.rglob("*")):
-        relative = path.relative_to(root)
-        if not path.is_file() or relative.parts[0] in {".git", "third_party"}:
-            continue
-        scanned += 1
-        missing = path_references(root, relative.as_posix(), path.read_bytes(), published)
+    for path, rendered in _own_files(root):
+        missing = path_references(root, rendered, path.read_bytes(), lambda: paths)
         if missing:
             raise CandidateFailure(
-                f"{relative.as_posix()} names unpublished path(s): {', '.join(missing)}"
+                f"{rendered} names unpublished path(s): {', '.join(missing)}"
             )
-    if not scanned:
-        raise CandidateFailure(f"no file to scan under {root}")
 
 
 def load_binary_approvals(root: Path) -> dict[str, str]:
@@ -639,20 +625,6 @@ def scan_candidate_content(
         scanned += 1
         rendered = relative.as_posix()
         approved = approvals.get(rendered)
-        try:
-            searched = approved is None or path.stat().st_size <= APPROVED_BINARY_PATTERN_SCAN_BYTES
-        except OSError as error:
-            raise CandidateFailure(f"cannot scan {rendered}: {error}") from None
-        file_patterns = patterns if searched else credential_patterns
-        if not searched and (approved, marker_key) in _MARKER_CLEAN_BINARIES:
-            # These exact bytes already passed these exact markers and
-            # credential patterns: hash only.
-            try:
-                if _sha256_path(path) == approved:
-                    approved_seen.add(rendered)
-                    continue
-            except OSError as error:
-                raise CandidateFailure(f"cannot scan {rendered}: {error}") from None
         digest = hashlib.sha256()
         kept: list[bytes] | None = (
             [] if file_check is not None and relative.parts[0] != "third_party" else None
@@ -661,6 +633,13 @@ def scan_candidate_content(
         binary = False
         tail = b""
         try:
+            searched = approved is None or path.stat().st_size <= APPROVED_BINARY_PATTERN_SCAN_BYTES
+            file_patterns = patterns if searched else credential_patterns
+            # These exact bytes already passed these exact markers and
+            # credential patterns: hash only.
+            if not searched and (approved, marker_key) in _MARKER_CLEAN_BINARIES and _sha256_path(path) == approved:
+                approved_seen.add(rendered)
+                continue
             with path.open("rb") as handle:
                 for chunk in iter(lambda: handle.read(1024 * 1024), b""):
                     window = tail + chunk
@@ -732,9 +711,7 @@ def refused_public_path(rendered: str) -> str | None:
     if any((part in parts) if "/" not in part else rendered == part or rendered.startswith(part + "/")
            for part in FORBIDDEN_PATH_PARTS):
         return "private path"
-    if any(REFUSED_NAME.search(part) for part in parts):
-        return "secret-looking name"
-    return None
+    return "secret-looking name" if any(REFUSED_NAME.search(part) for part in parts) else None
 
 
 def _verify_paths(root: Path) -> None:

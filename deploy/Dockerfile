@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 
-FROM python:3.14.9-slim-trixie@sha256:b347e2dcbc7f0b6f9fb7182e9da6a187fb10ae715e0692518c1aed0eec94a700 AS builder
+FROM python:3.14.10-slim-trixie@sha256:b6c548779edc1457339ef930a3914a788a74ee592993dbc19dfcecc08d2c5e26 AS builder
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -76,7 +76,7 @@ RUN --network=none python -c 'import re,sys; from pathlib import Path; blocks=re
         --no-deps \
         {} + \
     && /opt/venv/bin/python -c \
-        'import platform,sys,swisseph; ok=platform.python_version()=="3.14.9" and swisseph.version=="2.10.03"; sys.exit(0 if ok else "Python or Swiss Ephemeris version mismatch")' \
+        'import platform,sys,swisseph; ok=platform.python_version()=="3.14.10" and swisseph.version=="2.10.03"; sys.exit(0 if ok else "Python or Swiss Ephemeris version mismatch")' \
     && ldd /opt/venv/lib/python3.14/site-packages/swisseph.*.so | grep -q 'libsqlite3\.so\.0 => /' \
     && /opt/venv/bin/python -m pip uninstall --yes pip \
     && find /opt/venv -depth -type d -name __pycache__ -exec rm --recursive {} +
@@ -94,7 +94,7 @@ RUN --network=none mkdir --parents /licenses \
     && grep -q 'This file is part of Swiss Ephemeris' /licenses/SWISS_EPHEMERIS_LICENSE \
     && grep -q 'GNU GENERAL PUBLIC LICENSE' /licenses/SWEPHELP_LICENSE
 
-FROM python:3.14.9-slim-trixie@sha256:b347e2dcbc7f0b6f9fb7182e9da6a187fb10ae715e0692518c1aed0eec94a700
+FROM python:3.14.10-slim-trixie@sha256:b6c548779edc1457339ef930a3914a788a74ee592993dbc19dfcecc08d2c5e26
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 

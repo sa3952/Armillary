@@ -35,7 +35,7 @@ Schaefer & Liller 1990, PASP 102:796），16′ 與 34′ 相加得到的是視�
 
 from .formatting import normalize_longitude
 from .frame_compatibility import NON_EARTH_OBSERVER_CENTER
-from .module_state import computed_receipt, frame_table_refusal
+from .module_state import Applicability, computed_receipt, frame_table_refusal
 from .source_reading import (
     DOROTHEUS_BOOK_I_ONLINE, ORIGINAL_LANGUAGE_READ, SECONDARY_ONLY, TRANSLATION_READ, cited,
     reference_only,
@@ -373,7 +373,7 @@ def _lot_house_placement(
     return placement
 
 
-def lots_not_applicable(state: dict, sect: dict, trace: Trace) -> dict:
+def lots_not_applicable(state: Applicability, sect: dict, trace: Trace) -> dict:
     # Refused Lots do not join aspects either.
     refusal = frame_table_refusal(
         state, trace, "阿拉伯點：Fortune / Spirit",

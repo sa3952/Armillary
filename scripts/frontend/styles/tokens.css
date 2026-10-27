@@ -34,17 +34,15 @@
   --ring-3:     #A0632B;   /* 方法判斷 */
   --ring-v:     #6E6A5F;   /* 驗證 */
 
-  /* ── 收據狀態 ──
-   * 「產品明確拒絕」與「使用者未請求」由邊框形狀區分，不靠顏色深淺；每個值在 --paper 與
-   * --paper-2 上都達 AA 4.5（absent 5.18／4.73，unavailable 5.60／5.11）。 */
+  /* ── 收據狀態 ──「產品明確拒絕」與「使用者未請求」由邊框形狀區分，不靠顏色深淺；每個值在 --paper 與 --paper-2 上都達
+     AA 4.5（absent 5.18／4.73，unavailable 5.60／5.11）。 */
   --state-refused:     #A03A22;
   --state-absent:      #68604F;
   --state-unavailable: #7E5227;
 
   /* ── 字體 ───────────────────────────────────────────── */
-  /* 繁中字型依平台列：macOS／iOS、網頁字型名、Linux 套件的字族名（Noto … CJK TC）、
-     Windows。不列日文字型：同一碼位的日文字形與台灣標準字形不同。等寬字型只供拉丁
-     字母與數字，其中夾的中文落到同一組繁中字型，不交給瀏覽器任選。 */
+  /* 繁中字型依平台列：macOS／iOS、網頁字型名、Linux 套件的字族名（Noto … CJK TC）、Windows。不列日文字型：同一碼位的日
+     文字形與台灣標準字形不同。等寬字型只供拉丁字母與數字，其中夾的中文落到同一組繁中字型，不交給瀏覽器任選。 */
   --serif: "Songti TC", "Noto Serif TC", "Noto Serif CJK TC", "Source Han Serif TC",
            "PMingLiU", "MingLiU", "Times New Roman", serif;
   --sans:  "PingFang TC", "Noto Sans TC", "Noto Sans CJK TC", "Microsoft JhengHei",
@@ -69,29 +67,21 @@
   --stratum-3: #5C5648;   /* 中：主機，只能在真實主機上驗 */
   --stratum-4: #D2C9B1;   /* 淺：瀏覽器，在你的裝置上 */
 
-  /* ── 反白文字與斑馬紋 ───────────────────────────────────
-   * --on-accent 是壓在 --accent 上的字色。斑馬紋要淡到不搶字、又要看得出來：
-   * 長表跨列時靠它對行。現值疊在 --paper 上約等於 --paper-2 的深度，
-   * 其上的 --ink-dim 仍有 6.2:1、--ink-faint 4.6:1。
-   * --scroll-shadow 是可橫捲表格邊緣「還有欄位」的陰影。 */
+  /* ── 反白文字與斑馬紋 ─────────────────────────────────── --on-accent 是壓在 --accent 上的字色。斑馬紋要淡到不搶字、
+     又要看得出來：長表跨列時靠它對行。現值疊在 --paper 上約等於 --paper-2 的深度，其上的 --ink-dim 仍有 6.2:1、
+     --ink-faint 4.6:1。--scroll-shadow 是可橫捲表格邊緣「還有欄位」的陰影。 */
   --on-accent: #FFFFFF;
   --zebra:     rgba(0, 0, 0, .04);
   --scroll-shadow: rgba(28, 25, 19, .22);
 
-  /* ── 中文排印階梯 ──
-   * 每行字數寫成 em：中文每字約 1em，38em 就是一行約 38 字，不論字級。
-   * 內文級字級只有下面六階，其餘 CSS 引用它們（標題、SVG 與列印的字級不在此列）：
-   *   --fs-subhead  小標、粗體引句              20px（窄螢幕 19px）
-   *   --fs-lead     導言、比內文稍重的段落        19px（18px）
-   *   --fs-body     內文                        18px（17px）
-   *   --fs-aside    次要內文、表單、按鈕、文字表格 17px（16px）
-   *   --fs-note     說明、圖說、數值表格          15.2px（15px）
-   *   --fs-small    小型標籤、欄標頭、等寬註記     14px
-   * 行距三階：內文（17–19px 的段落、清單、導言）--lh-body 1.8，小字說明（--fs-note 以下）--lh-note 1.7，
-   * 標題 h2 --lh-head 1.4（h1 另有 1.3）。各頁不另寫行距數字。
-   * 行長：內容頁的段落一律 --measure（36 字）；計算頁的說明與圖說用 --measure-cjk（38 字）。
-   * --gap-related 必須比 --gap-group 小，否則看不出哪幾行是一組。
-   * 只用在畫面；紙本有自己的字級與間距預算。 */
+  /* ── 中文排印階梯 ── 每行字數寫成 em：中文每字約 1em，38em 就是一行約 38 字，不論字級。內文級字級只有下面六階，其餘
+     CSS 引用它們（標題、SVG 與列印的字級不在此列）：  --fs-subhead  小標、粗體引句              20px（窄螢幕 19px）
+     --fs-lead     導言、比內文稍重的段落        19px（18px）  --fs-body     內文                        18px（17px）
+     --fs-aside    次要內文、表單、按鈕、文字表格 17px（16px）  --fs-note     說明、圖說、數值表格          15.2px
+     （15px）  --fs-small    小型標籤、欄標頭、等寬註記     14px 行距三階：內文（17–19px 的段落、清單、導言）--lh-body
+     1.8，小字說明（--fs-note 以下）--lh-note 1.7，標題 h2 --lh-head 1.4（h1 另有 1.3）。各頁不另寫行距數字。行長：內容
+     頁的段落一律 --measure（36 字）；計算頁的說明與圖說用 --measure-cjk（38 字）。--gap-related 必須比 --gap-group 小，
+     否則看不出哪幾行是一組。只用在畫面；紙本有自己的字級與間距預算。 */
   --fs-subhead:   1.25rem;
   --fs-lead:      1.1875rem;
   --fs-body:      1.125rem;
@@ -108,9 +98,8 @@
   --pad-card:     1.1rem 1.25rem 1.2rem;
   --pad-panel:    1rem 1.25rem 1.25rem;
 
-  /* ── 文章圖版（甲・銅版星圖，figures.css）─────────────────────
-   * 圖上只用墨色，分層靠線的粗細與排線；--fx-hi（朱紅）只給目前指著的那一個。
-   * 圖上的字先用拉丁襯線：宋體把 ° ′ 排成全形，16°34′ 會被拆開；中文落到同一組宋體。 */
+  /* ── 文章圖版（甲・銅版星圖，figures.css）───────────────────── 圖上只用墨色，分層靠線的粗細與排線；--fx-hi（朱紅）只
+     給目前指著的那一個。圖上的字先用拉丁襯線：宋體把 ° ′ 排成全形，16°34′ 會被拆開；中文落到同一組宋體。 */
   --serif-latin: "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman",
                  "Liberation Serif", "DejaVu Serif", "Songti TC", "Noto Serif TC",
                  "Noto Serif CJK TC", "Source Han Serif TC", serif;
@@ -125,9 +114,8 @@
   --serif-num: Palatino, "Palatino Linotype", "Book Antiqua", "Times New Roman", "Liberation Serif",
                "DejaVu Serif", serif;
 
-  /* ── 已選取（一種樣子）───────────────────────────────────
-   * 模式卡、章節欄與分頁列、分段切換、匯出方式：選中的那一個都是紙色加深一階、墨色框，
-   * 加一條 3px 的重點色線（直排在左、橫排在下）。只靠顏色分不出時還有那條線與框。 */
+  /* ── 已選取（一種樣子）─────────────────────────────────── 模式卡、章節欄與分頁列、分段切換、匯出方式：選中的那一個都
+     是紙色加深一階、墨色框，加一條 3px 的重點色線（直排在左、橫排在下）。只靠顏色分不出時還有那條線與框。 */
   --selected-bg:    var(--paper-2);
   --selected-frame: var(--ink);
   --selected-mark:  var(--accent);
@@ -150,11 +138,5 @@
 
 /* 窄螢幕：內文 17px、說明 15px，與 --bp-mobile 同一斷點。 */
 @media (max-width:640px){
-  :root{
-    --fs-subhead: 1.1875rem;
-    --fs-lead:    1.125rem;
-    --fs-body:    1.0625rem;
-    --fs-aside:   1rem;
-    --fs-note:    .9375rem;
-  }
+  :root{--fs-subhead: 1.1875rem; --fs-lead:    1.125rem; --fs-body:    1.0625rem; --fs-aside:   1rem; --fs-note:    .9375rem}
 }

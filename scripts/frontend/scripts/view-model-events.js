@@ -1,8 +1,7 @@
 // view-model：取樣、朔望與日月食、升降、落宮、日夜盤、行星時、月宿、焦傷與行速。
 /**
- * 事件模組的三個代表性取樣。精確時刻時沒有取樣（回 null）；不精確時三個取樣恰好是
- * SAMPLE_ROLES、依序排列，缺一個、多一個或取樣說不出結果放在哪裡都拒絕。
- * module 是 needAt 包好的模組容器。
+ * 事件模組的三個代表性取樣。精確時刻時沒有取樣（回 null）；不精確時三個取樣恰好是 SAMPLE_ROLES、依序排列，缺一個、多一
+ * 個或取樣說不出結果放在哪裡都拒絕。module 是 needAt 包好的模組容器。
  */
 function representativeSamples(module) {
   const status = module.in("representative_sampling")("status", "string");
@@ -11,8 +10,7 @@ function representativeSamples(module) {
     throw exportPipeline.incompleteResponse(`${module.path}.representative_sampling.status 不是已知的值：${status}`);
   }
   const rows = module.rows("representative_samples");
-  needExactly(rows.map((row) => row("sample_role", "string")), SAMPLE_ROLES.map(([role]) => role),
-    `${module.path}.representative_samples`);
+  needExactly(rows.map((row) => row("sample_role", "string")), SAMPLE_ROLES.map(([role]) => role), `${module.path}.representative_samples`);
   const localTimes = rows.map((row) => row("reference_local_time", "string"));
   const sameDate = localTimes.every((value) => value.slice(0, 10) === localTimes[0].slice(0, 10));
   return SAMPLE_ROLES.map(([role, label], index) => {
@@ -24,34 +22,26 @@ function representativeSamples(module) {
     const top = location === "module_top_level";
     const local = sameDate ? localTimes[index].slice(11) : localTimes[index].replace("T", " ");
     return {
-      role,
-      heading: `${label}（當地 ${local}）`,
-      sample,
-      top,
+      role, heading: `${label}（當地 ${local}）`, sample, top,
       // 取樣自己算的那兩個才有拒絕清單；代表性時刻的拒絕就是模組自己的狀態。
       refusals: top ? {} : sample.in("module_refusals").record,
     };
   });
 }
 
-/** 這個取樣的某個模組被拒絕時的儲存格文字；沒被拒絕回 null。 */
 function sampleRefusal(entry, moduleKey) {
   if (entry.top || !Object.hasOwn(entry.refusals, moduleKey)) return null;
-  const reason = need(entry.refusals[moduleKey], `${entry.sample.path}.module_refusals.${moduleKey}`,
-    "reason_code", "string");
+  const reason = need(entry.refusals[moduleKey], `${entry.sample.path}.module_refusals.${moduleKey}`, "reason_code", "string");
   return `未計算：${moduleReason(reason)}`;
 }
 
 function samplingNote(module, samples, tableName) {
-  const interval = presentClosedVocabulary(
-    module.in("representative_sampling")("interval", "string"), SAMPLING_INTERVAL_ZH, "取樣區間"
-  );
+  const interval = presentClosedVocabulary(module.in("representative_sampling")("interval", "string"), SAMPLING_INTERVAL_ZH, "取樣區間");
   return `出生時間不精確：上方各表是「${samples[1].heading}」的結果，不是出生時刻的事件。`
     + `依本站方法，另在${interval}的兩端各算一次；三個取樣並列於「${tableName}」表，不合併成一個答案。`
     + "同一次事件從不同的取樣時刻起算，數值求解停下的位置可能相差幾毫秒；這種差距是計算容差，不代表事件不同。";
 }
 
-// 取樣裡的月相／朔望／日月食結果，與各自的模組鍵（取樣的拒絕清單以模組鍵記）。
 const LUNAR_SAMPLE_KEYS = Object.freeze([
   ["primary_phases", "lunar_phases"], ["prenatal_syzygy", "prenatal_syzygy"], ["eclipses", "eclipses"],
 ]);
@@ -68,18 +58,13 @@ function lunarSampleView(entry, module) {
     if (Object.hasOwn(entry.sample.record, key)) view[key] = entry.sample.record[key];
     else if (omitted.includes(key)) view[key] = module(key);
     else if (Object.hasOwn(module.record, key) && !Object.hasOwn(entry.refusals, moduleKey)) {
-      throw exportPipeline.incompleteResponse(
-        `${entry.sample.path}.${key} 缺少，也沒有列為與代表性時刻相同或被拒絕`
-      );
+      throw exportPipeline.incompleteResponse(`${entry.sample.path}.${key} 缺少，也沒有列為與代表性時刻相同或被拒絕`);
     }
   });
   return view;
 }
 
-/** 一個帶時間尺度的時刻（needAt）：[時刻, 尺度]。 */
-function needInstant(instant) {
-  return [instant("utc_time", "string"), instant("time_scale", "string")];
-}
+function needInstant(instant) { return [instant("utc_time", "string"), instant("time_scale", "string")]; }
 
 function lunarSamplesTable(module, samples) {
   const views = samples.map((entry) => lunarSampleView(entry, module));
@@ -91,8 +76,7 @@ function lunarSamplesTable(module, samples) {
     Object.keys(module.in("primary_phases").record).forEach((key) => {
       [["previous", "前一次"], ["next", "下一次"]].forEach(([side, sideLabel]) => {
         rows.push([
-          `${presentClosedVocabulary(key, LUNAR_PHASE_ZH, "事件")}（${sideLabel}）`,
-          "lunar_phases",
+          `${presentClosedVocabulary(key, LUNAR_PHASE_ZH, "事件")}（${sideLabel}）`, "lunar_phases",
           views.map((view, index) => (view.primary_phases === undefined ? null : timedCell(needInstant(
             needAt(view.primary_phases, at(index, "primary_phases")).in(key).in(side)
           )))),
@@ -102,8 +86,7 @@ function lunarSamplesTable(module, samples) {
   }
   if (Object.hasOwn(module.record, "prenatal_syzygy")) {
     rows.push(["產前朔望", "prenatal_syzygy", views.map((view, index) => (
-      view.prenatal_syzygy === undefined
-        ? null : timedCell(needInstant(needAt(view.prenatal_syzygy, at(index, "prenatal_syzygy"))))
+      view.prenatal_syzygy === undefined ? null : timedCell(needInstant(needAt(view.prenatal_syzygy, at(index, "prenatal_syzygy"))))
     ))]);
   }
   if (Object.hasOwn(module.record, "eclipses")) {
@@ -120,14 +103,11 @@ function lunarSamplesTable(module, samples) {
   }
   const timed = timedTable("三個代表性取樣", eras);
   return {
-    title: timed.title,
-    columns: ["事件"].concat(samples.map((entry) => entry.heading)),
+    title: timed.title, columns: ["事件"].concat(samples.map((entry) => entry.heading)),
     rows: rows.map(([label, moduleKey, cells]) => [label].concat(cells.map((cell, index) => {
       const refusal = sampleRefusal(samples[index], moduleKey);
       if (refusal) return refusal;
-      if (!cell) {
-        throw exportPipeline.incompleteResponse(`${at(index, moduleKey)} 沒有結果，也沒有被拒絕`);
-      }
+      if (!cell) { throw exportPipeline.incompleteResponse(`${at(index, moduleKey)} 沒有結果，也沒有被拒絕`); }
       const time = timed.cell(cell[0], cell[1]);
       return cell[2] ? `${cell[2]}，食甚 ${time}` : time;
     }))),
@@ -143,8 +123,7 @@ const HORIZON_EVENT_KEYS = () => HORIZON_EVENTS.map(([key]) => key);
 function horizonSampleBodies(entry, module, anchorBodies) {
   if (entry.top) return anchorBodies;
   const bodies = entry.sample.rows("bodies");
-  needExactly(bodies.map((body) => body("key", "string")), anchorBodies.map((body) => body("key")),
-    `${entry.sample.path}.bodies`);
+  needExactly(bodies.map((body) => body("key", "string")), anchorBodies.map((body) => body("key")), `${entry.sample.path}.bodies`);
   return bodies.map((body, index) => {
     const own = body.in("events");
     const omitted = body("events_same_as_anchor", "array");
@@ -176,26 +155,15 @@ function horizonSamplesTable(module, samples, anchorBodies) {
     [["previous", "前一次"], ["next", "下一次"]].forEach(([side, sideLabel]) => {
       const cells = samples.map((_entry, index) => refusals[index]
         || horizonSideCell(perSample[index][body("key")].in("events").in(key), side, timed));
-      if (new Set(cells).size > 1) {
-        rows.push([body("name", "string"), `${label}（${sideLabel}）`].concat(cells));
-      }
-    });
+      if (new Set(cells).size > 1) { rows.push([body("name", "string"), `${label}（${sideLabel}）`].concat(cells)); } });
   }));
-  return {
-    title: timed.title,
-    columns: ["天體", "事件"].concat(samples.map((entry) => entry.heading)),
-    rows,
-  };
+  return { title: timed.title, columns: ["天體", "事件"].concat(samples.map((entry) => entry.heading)), rows };
 }
 
 function lunarEventsSection(response) {
   const container = response.astronomical_data.lunar_events;
-  const phasesState = moduleState(
-    response, { option: "include_lunar_phases", module: "lunar_phases" }, container, true
-  );
-  const eclipsesState = moduleState(
-    response, { option: "include_eclipses", module: "eclipses" }, container, true
-  );
+  const phasesState = moduleState(response, { option: "include_lunar_phases", module: "lunar_phases" }, container, true);
+  const eclipsesState = moduleState(response, { option: "include_eclipses", module: "eclipses" }, container, true);
   if (phasesState.state !== "present" && eclipsesState.state !== "present") {
     return absentSectionFor("lunar_events", "朔望與日月食", RING.ASTRONOMICAL,
       "本次未請求朔望或日月食。",
@@ -217,10 +185,7 @@ function lunarEventsSection(response) {
   // 產前朔望只要它自己那一次事件，月相搜尋被拒絕時仍可能有結果；有沒有由它自己的狀態說。
   if (moduleState(response, { module: "prenatal_syzygy" }, null, true).state === "present") {
     const syzygy = module.in("prenatal_syzygy");
-    stamped.push([
-      `產前朔望：出生前最近一次地心朔或望（本次為${phaseName(syzygy("phase", "string"))}）`,
-      needInstant(syzygy),
-    ]);
+    stamped.push([`產前朔望：出生前最近一次地心朔或望（本次為${phaseName(syzygy("phase", "string"))}）`, needInstant(syzygy)]);
   }
   const phaseTable = timedTable("朔望時刻", stamped.map(([, instant]) => instant[1]));
   const rows = stamped.map(([label, instant]) => [label, phaseTable.cell(instant[0], instant[1])]);
@@ -228,54 +193,34 @@ function lunarEventsSection(response) {
   // 讀起來是「沒有東西發生」，正好把後端說的話反過來說。
   const eclipseEntries = eclipsesState.state === "present"
     ? ECLIPSE_SLOTS.map(([key, label]) => [label, module.in("eclipses").in(key)]) : [];
-  const eclipseTable = timedTable(
-    "出生前最近一次日食與月食",
-    eclipseEntries.map(([, entry]) => entry("time_scale", "string")),
-    "全球搜尋"
-  );
+  const eclipseTable = timedTable("出生前最近一次日食與月食", eclipseEntries.map(([, entry]) => entry("time_scale", "string")), "全球搜尋");
   const eclipseRows = eclipseEntries.map(([label, entry]) => [
-    label,
-    presentClosedVocabulary(entry("type", "string"), ECLIPSE_TYPE_ZH, "日月食類型"),
-    presentClosedVocabulary(entry.in("classification_borderline")("state", "string"),
-      ECLIPSE_BORDERLINE_ZH, "類型判定"),
+    label, presentClosedVocabulary(entry("type", "string"), ECLIPSE_TYPE_ZH, "日月食類型"),
+    presentClosedVocabulary(entry.in("classification_borderline")("state", "string"), ECLIPSE_BORDERLINE_ZH, "類型判定"),
     eclipseTable.cell(entry("utc_time_maximum", "string"), entry("time_scale", "string")),
   ]);
-  // 每一列的類型判定都附上後端的白話說明：近邊界是什麼、為什麼、讀者該怎麼用。
   const borderlineNotes = eclipseEntries.map(([label, entry]) => (
     `${label}的類型判定：${entry.in("classification_borderline")("explanation_zh", "string")}`
   ));
   const tables = [];
-  if (rows.length) {
-    tables.push({ title: phaseTable.title, columns: ["事件", "時刻"], rows });
-  }
+  if (rows.length) { tables.push({ title: phaseTable.title, columns: ["事件", "時刻"], rows }); }
   if (eclipseRows.length) {
-    tables.push({
-      title: eclipseTable.title,
-      columns: ["事件", "類型", "類型判定", "食甚時刻"],
-      rows: eclipseRows,
-    });
+    tables.push({ title: eclipseTable.title, columns: ["事件", "類型", "類型判定", "食甚時刻"], rows: eclipseRows });
   }
   const samples = representativeSamples(module);
   const samplesTable = samples ? lunarSamplesTable(module, samples) : null;
   // 與地平事件同一個規則：三個取樣的結果全部相同時不另列表，只說明。
-  const samplesDiffer = Boolean(samplesTable)
-    && samplesTable.rows.some((row) => new Set(row.slice(1)).size > 1);
+  const samplesDiffer = Boolean(samplesTable) && samplesTable.rows.some((row) => new Set(row.slice(1)).size > 1);
   if (samplesDiffer) tables.push(samplesTable);
   return makeSection("lunar_events", "朔望與日月食", RING.ASTRONOMICAL, { state: "present" }, {
     // 契約由月相與朔望的搜尋寫入；只勾日月食時沒有這個鍵。
     notes: (stamped.length
-      ? [presentClosedVocabulary(module("contract", "string"), LUNAR_CONTRACT_ZH, "契約")]
-      : []).concat(
-      rows.length
-        ? [PRENATAL_SYZYGY_NOTE]
-        : [],
-      eclipseRows.length
+      ? [presentClosedVocabulary(module("contract", "string"), LUNAR_CONTRACT_ZH, "契約")] : []).concat(rows.length
+        ? [PRENATAL_SYZYGY_NOTE] : [], eclipseRows.length
         ? ["日月食是全球搜尋的結果，沒有看出生地是否看得見。古典占星用日月食，主要是看它對地區與時局的作用"
           + "（《占星四書》II.4 說這是「第一個、也最有力的原因」）；把出生前最近一次日月食當作本命盤的要點，"
           + "是二十世紀才有的做法，我們讀過的古書裡沒有。"]
-        : [],
-      borderlineNotes,
-      samplesTable && samplesTable.rows.length
+        : [], borderlineNotes, samplesTable && samplesTable.rows.length
         ? [samplingNote(module, samples, "三個代表性取樣")].concat(samplesDiffer
           ? []
           : ["三個代表性取樣的朔望與日月食結果全部相同，因此不另列表。"])
@@ -285,40 +230,28 @@ function lunarEventsSection(response) {
   });
 }
 
-// 升降狀態的顯示名稱。鍵是後端 core/horizon_events.py 的 VISIBILITY_STATES 與
-// EVENT_STATUSES 閉集；tests/integration/test_frontend_contract.py 對照
-// 後端常數檢查兩邊恰好相同，這裡不得自創鍵。
+// 升降狀態的顯示名稱。鍵是後端 core/horizon_events.py 的 VISIBILITY_STATES 與 EVENT_STATUSES 閉集；
+// tests/integration/test_frontend_contract.py 對照後端常數檢查兩邊恰好相同，這裡不得自創鍵。
 const HORIZON_VISIBILITY_ZH = Object.freeze({
-  rises_and_sets: "有升有降",
-  above_horizon_between_bracketing_events: "在地平線上，介於前後兩次穿越之間",
+  rises_and_sets: "有升有降", above_horizon_between_bracketing_events: "在地平線上，介於前後兩次穿越之間",
   below_horizon_between_bracketing_events: "在地平線下，介於前後兩次穿越之間",
   continuously_above_during_search_interval: "搜尋區間內始終在地平線上",
-  continuously_below_during_search_interval: "搜尋區間內始終在地平線下",
-  grazing_contact: "擦過地平線，未穿越",
-  indeterminate_evidence_conflict: "證據互相矛盾，無法判定",
-  numerically_unavailable: "星曆或求解失敗",
+  continuously_below_during_search_interval: "搜尋區間內始終在地平線下", grazing_contact: "擦過地平線，未穿越",
+  indeterminate_evidence_conflict: "證據互相矛盾，無法判定", numerically_unavailable: "星曆或求解失敗",
   method_not_applicable: "此天體不適用",
 });
 const HORIZON_EVENT_STATUS_ZH = Object.freeze({
-  event_found: "前後皆找到",
-  grazing_contact: "擦過地平線，未穿越",
-  always_above_threshold: "搜尋區間內始終在地平線上，無此事件",
+  event_found: "前後皆找到", grazing_contact: "擦過地平線，未穿越", always_above_threshold: "搜尋區間內始終在地平線上，無此事件",
   always_below_threshold: "搜尋區間內始終在地平線下，無此事件",
-  no_event_within_search_interval: "搜尋區間內未找到此事件",
-  numerically_unavailable: "星曆或求解失敗",
+  no_event_within_search_interval: "搜尋區間內未找到此事件", numerically_unavailable: "星曆或求解失敗",
   method_not_applicable: "此天體不適用",
 });
 
 
-// 後端事件鍵是 rise／set／upper_transit／lower_transit（horizon_events.py）。
-const HORIZON_EVENTS = Object.freeze([
-  ["rise", "上升"], ["set", "下降"], ["upper_transit", "上中天"], ["lower_transit", "下中天"],
-]);
+const HORIZON_EVENTS = Object.freeze([["rise", "上升"], ["set", "下降"], ["upper_transit", "上中天"], ["lower_transit", "下中天"]]);
 // 每一側的搜尋狀態（horizon_events.py SIDE_STATUSES）。「未搜尋」與「搜尋區間內沒有」是不同值。
 const HORIZON_SIDE_STATUS_ZH = Object.freeze({
-  event_found: "已找到",
-  no_event_within_search_interval: "搜尋區間內未找到",
-  numerically_unavailable: "星曆或求解失敗",
+  event_found: "已找到", no_event_within_search_interval: "搜尋區間內未找到", numerically_unavailable: "星曆或求解失敗",
   not_searched: "未搜尋",
 });
 
@@ -329,25 +262,21 @@ function horizonSideCell(entry, side, table) {
     const [utc, scale] = needInstant(needAt(instant, `${entry.path}.${side}`));
     return table.cell(utc, scale);
   }
-  return presentClosedVocabulary(
-    entry.in("search").in(side)("status", "string"), HORIZON_SIDE_STATUS_ZH, "搜尋狀態"
-  );
+  return presentClosedVocabulary(entry.in("search").in(side)("status", "string"), HORIZON_SIDE_STATUS_ZH, "搜尋狀態");
 }
 
 function horizonEventsSection(response) {
   const container = response.astronomical_data.horizon_events;
   const section = moduleSection(response, {
     id: "horizon_events", title: "升降與中天", ring: RING.ASTRONOMICAL,
-    keys: { option: "include_rise_set_transits", module: "rise_set_transits" }, container,
-    note: "本次未請求升降與中天。",
+    keys: { option: "include_rise_set_transits", module: "rise_set_transits" }, container, note: "本次未請求升降與中天。",
   });
   if (section.absent) return section.absent;
   const module = needAt(container, "horizon_events");
   // 每個天體都搜尋升降：應有的天體與天體位置表同一組，事件恰好是四種。
   const bodies = module.rows("bodies");
   needExactly(bodies.map((body) => body("key", "string")), expectedBodyKeys(response), "horizon_events.bodies");
-  bodies.forEach((body) => needExactly(Object.keys(body.in("events").record).sort(), HORIZON_EVENT_KEYS().sort(),
-    `${body.path}.events`));
+  bodies.forEach((body) => needExactly(Object.keys(body.in("events").record).sort(), HORIZON_EVENT_KEYS().sort(), `${body.path}.events`));
   const eras = [];
   bodies.forEach((body) => {
     const events = body.in("events");
@@ -363,27 +292,22 @@ function horizonEventsSection(response) {
   const samplesTable = samples ? horizonSamplesTable(module, samples, bodies) : null;
   const samplingNotes = samples
     ? [samplingNote(module, samples, "三個代表性取樣"),
-      samplesTable.rows.length
-        ? "「三個代表性取樣」表只列三個取樣之間不同的事件；沒列出的事件，三個取樣的結果相同。"
+      samplesTable.rows.length ? "「三個代表性取樣」表只列三個取樣之間不同的事件；沒列出的事件，三個取樣的結果相同。"
         : "三個代表性取樣的地平事件結果全部相同，因此不另列表。"]
     : [];
   return section.make({
     notes: horizonContractNotes(module.in("contract")).concat(samplingNotes),
     tables: [{
-      title: timed.title,
-      columns: ["天體", "可見性", "事件", "狀態", "前一次", "下一次"],
+      title: timed.title, columns: ["天體", "可見性", "事件", "狀態", "前一次", "下一次"],
       rows: bodies.flatMap((body) => {
         const events = body.in("events");
         const visibility = presentClosedVocabulary(body("visibility", "string"), HORIZON_VISIBILITY_ZH, "可見性");
         return HORIZON_EVENTS.map(([key, label]) => {
           const entry = events.in(key);
           return [
-            body("name", "string"),
-            visibility,
-            label,
+            body("name", "string"), visibility, label,
             presentClosedVocabulary(entry("status", "string"), HORIZON_EVENT_STATUS_ZH, "事件狀態"),
-            horizonSideCell(entry, "previous", timed),
-            horizonSideCell(entry, "next", timed),
+            horizonSideCell(entry, "previous", timed), horizonSideCell(entry, "next", timed),
           ];
         });
       }),
@@ -395,8 +319,7 @@ function planetInHouseSection(response) {
   const container = response.derived_methods.planet_in_house;
   const section = moduleSection(response, {
     id: "planet_in_house", title: "行星落宮", ring: RING.METHOD,
-    keys: { option: "include_houses", module: "planet_in_house" }, container,
-    note: "本次未請求宮位，因此沒有落宮。",
+    keys: { option: "include_houses", module: "planet_in_house" }, container, note: "本次未請求宮位，因此沒有落宮。",
   });
   if (section.absent) return section.absent;
   const module = needAt(container, "planet_in_house");
@@ -408,28 +331,21 @@ function planetInHouseSection(response) {
   // 黃經文字依鍵讀那一列的 sign_position，不在這裡另寫一份。
   const positioned = response.astronomical_data.bodies.filter((body) => body.sign_position !== null);
   const placements = module.rows("placements");
-  needExactly(placements.map((place) => place("key", "string")), positioned.map((body) => body.key),
-    "planet_in_house.placements");
+  needExactly(placements.map((place) => place("key", "string")), positioned.map((body) => body.key), "planet_in_house.placements");
   const bodies = positioned;
   const points = pointPlacementTable(response, module);
   return section.make({
     notes: [
       `宮位制：${houseSystemText(module("house_system_code", "string"), module("house_system_name", "string"))}。`,
-      "距最近宮頭的黃經差一律列出（沿黃道量，不計黃緯），讓你自己判斷這個落宮對出生時刻有多敏感。",
-      ...points.notes,
+      "距最近宮頭的黃經差一律列出（沿黃道量，不計黃緯），讓你自己判斷這個落宮對出生時刻有多敏感。", ...points.notes,
     ],
     tables: [{
-      title: "落宮",
-      columns: ["天體", LONGITUDE_COLUMN, "宮", "距最近宮頭（黃經差，度）", "在宮頭上"],
-      collapse: ["在宮頭上"],
+      title: "落宮", columns: ["天體", LONGITUDE_COLUMN, "宮", "距最近宮頭（黃經差，度）", "在宮頭上"], collapse: ["在宮頭上"],
       rows: placements.map((place, index) => {
         const house = place("house", "number?");
         return [
-          place("name", "string"),
-          longitudeText(bodies[index].sign_position),
-          house === null ? DASH : String(house),
-          num(place("distance_to_nearest_cusp_degrees", "number?"), 4),
-          place("on_cusp", "boolean?") === true ? "是" : "否",
+          place("name", "string"), longitudeText(bodies[index].sign_position), house === null ? DASH : String(house),
+          num(place("distance_to_nearest_cusp_degrees", "number?"), 4), place("on_cusp", "boolean?") === true ? "是" : "否",
         ];
       }),
     }, ...points.tables],
@@ -446,15 +362,12 @@ function pointPlacementTable(response, module) {
   if (points("execution_status", "string") !== "computed") {
     return {
       notes: points("reason_code", "string?") === "not_whole_sign_house_system"
-        ? ["月交點、Lilith 與 Priapus 不是行星，只在整宮制列出落宮（整宮制的宮就是星座）；本次的宮位制不列。"]
-        : [],
-      tables: [],
+        ? ["月交點、Lilith 與 Priapus 不是行星，只在整宮制列出落宮（整宮制的宮就是星座）；本次的宮位制不列。"] : [], tables: [],
     };
   }
   // 應有的點：本盤有黃經的每一個月交點與月球拱點（後端以同一份清單計算），依同一順序。
   const astro = response.astronomical_data;
-  const apsides = isRecord(astro.lunar_apsides) && Array.isArray(astro.lunar_apsides.points)
-    ? astro.lunar_apsides.points : [];
+  const apsides = isRecord(astro.lunar_apsides) && Array.isArray(astro.lunar_apsides.points) ? astro.lunar_apsides.points : [];
   const sources = [...astro.nodes, ...apsides].filter((record) => record.sign_position !== null);
   const placements = points.rows("placements");
   needExactly(placements.map((place) => place("key", "string")), sources.map((record) => record.key),
@@ -463,9 +376,7 @@ function pointPlacementTable(response, module) {
   // 讀分類覆蓋裡改變的路徑（後端以鍵命名每一點），在這張表說出來。
   const sensitivity = isRecord(response.birth_time_sensitivity) ? response.birth_time_sensitivity : {};
   const moving = new Set(differingClassificationPaths(sensitivity)
-    .map((item) => /^derived_methods\.planet_in_house\.point_placements\.placements\[([^\]]+)\]\.house$/
-      .exec(String(item)))
-    .filter(Boolean)
+    .map((item) => /^derived_methods\.planet_in_house\.point_placements\.placements\[([^\]]+)\]\.house$/.exec(String(item))).filter(Boolean)
     .map((match) => match[1]));
   const movingNames = placements.filter((place) => moving.has(place("key"))).map((place) => place("name", "string"));
   return {
@@ -473,36 +384,24 @@ function pointPlacementTable(response, module) {
       "月交點、Lilith 與 Priapus 不是行星，另列一張；整宮制的宮就是星座，所以只在整宮制列出它們的落宮。",
       ...(movingNames.length
         ? [`只知道約略時辰：這一小時內${movingNames.join("、")}的落宮會變；表中的宮位依代表性時刻判定。`]
-        : []),
-    ],
-    tables: [{
-      title: POINT_PLACEMENT_TITLE,
-      columns: ["點", LONGITUDE_COLUMN, "宮"],
+        : [])], tables: [{ title: POINT_PLACEMENT_TITLE, columns: ["點", LONGITUDE_COLUMN, "宮"],
       rows: placements.map((place, index) => [
-        place("name", "string"),
-        longitudeText(sources[index].sign_position),
-        String(place("house", "number")),
+        place("name", "string"), longitudeText(sources[index].sign_position), String(place("house", "number")),
       ]),
     }],
   };
 }
 
-// −50′ < 太陽真高度 ≤ 0° 時，後端 named_boundary_disagreement
-// 為 true。日夜盤與阿拉伯點兩區共用這一句，不各寫一份。
-const NAMED_BOUNDARY_DISAGREEMENT_NOTE =
-  "這張盤的太陽中心在地平線下 50 角分以內：本產品的規則判為夜盤，"
+// −50′ < 太陽真高度 ≤ 0° 時，後端 named_boundary_disagreement 為 true。日夜盤與阿拉伯點兩區共用這一句，不各寫一份。
+const NAMED_BOUNDARY_DISAGREEMENT_NOTE = "這張盤的太陽中心在地平線下 50 角分以內：本產品的規則判為夜盤，"
   + "但依天文年鑑的標準日出日落定義，這時太陽還算在地平線上，兩種定義判法不同。";
 
-function yesNo(value) {
-  return value === true ? "是" : value === false ? "否" : DASH;
-}
+function yesNo(value) { return value === true ? "是" : value === false ? "否" : DASH; }
 
 function sectSection(response) {
   const module = response.derived_methods.sect;
   const section = moduleSection(response, {
-    id: "sect", title: "日夜盤", ring: RING.METHOD,
-    keys: { module: "sect" }, container: module,
-    note: "本次未計算日夜盤。",
+    id: "sect", title: "日夜盤", ring: RING.METHOD, keys: { module: "sect" }, container: module, note: "本次未計算日夜盤。",
   });
   if (section.absent) return section.absent;
   // 算出了日夜盤，判定、狀態、所用高度與兩個旗標就都在；缺一項不補成「夜生盤」或「否」。
@@ -518,18 +417,14 @@ function sectSection(response) {
         ? [`此盤太陽真高度在近地平敏感帶（±${bandArcmin}′）內。`
            + "判定本身仍依太陽真高度 > 0° 的規則確定；若改用標準視日出（太陽上緣初現）等其他具名邊界，"
            + `太陽高度在 −${bandArcmin}′ 到 0° 之間時日夜盤會相反，因此阿拉伯點兩套公式並列。`]
-        : []
-    ).concat(
-      module.named_boundary_disagreement === true ? [NAMED_BOUNDARY_DISAGREEMENT_NOTE] : []
+        : []).concat(module.named_boundary_disagreement === true ? [NAMED_BOUNDARY_DISAGREEMENT_NOTE] : []
     ),
     tables: [{
-      title: "判定",
-      columns: ["項目", "數值"],
+      title: "判定", columns: ["項目", "數值"],
       rows: [
         ["判定", module.is_day === true ? "日生盤" : "夜生盤"],
         ["狀態", presentClosedVocabulary(module.sect_status, SECT_STATUS_ZH, "日夜盤狀態")],
-        ["判定規則", "太陽中心在真地平線上方時為日盤；恰好 0° 或在下方時為夜盤"],
-        ["所用太陽高度", num(module.sun_altitude_used, 6)],
+        ["判定規則", "太陽中心在真地平線上方時為日盤；恰好 0° 或在下方時為夜盤"], ["所用太陽高度", num(module.sun_altitude_used, 6)],
         ["近地平敏感帶內", module.in_near_horizon_band === true ? "是" : "否"],
         ["兩種日出日落定義判法不同", yesNo(module.named_boundary_disagreement)],
       ],
@@ -539,16 +434,11 @@ function sectSection(response) {
 
 // core/planetary_hours.py WEEKDAYS 與 PERIODS 的閉集。
 const WEEKDAY_ZH = Object.freeze({
-  monday: "星期一", tuesday: "星期二", wednesday: "星期三", thursday: "星期四",
-  friday: "星期五", saturday: "星期六", sunday: "星期日",
+  monday: "星期一", tuesday: "星期二", wednesday: "星期三", thursday: "星期四", friday: "星期五", saturday: "星期六", sunday: "星期日",
 });
 const PLANETARY_PERIOD_ZH = Object.freeze({ day: "晝", night: "夜" });
-const PLANETARY_INTERVAL_ZH = Object.freeze({
-  stated_civil_hour: "你填的那一個鐘點",
-  civil_day: "出生那一天（民用日）",
-});
+const PLANETARY_INTERVAL_ZH = Object.freeze({ stated_civil_hour: "你填的那一個鐘點", civil_day: "出生那一天（民用日）" });
 
-/** 第 n 時（晝或夜第 k 時）；hour 是 needAt。 */
 function planetaryHourText(hour) {
   const period = presentClosedVocabulary(hour("period", "string"), PLANETARY_PERIOD_ZH, "晝夜");
   return `第 ${hour("index", "number")} 時（${period}第 ${hour("index_in_period", "number")} 時）`;
@@ -571,25 +461,18 @@ function planetaryCandidates(interval, hour, sensitivity) {
   const path = `${interval.path}.candidates`;
   const start = (item) => item.in("start")("local_time", "string");
   const end = (item) => item.in("end")("local_time", "string");
-  // 區間的兩端只有取樣完成時才在（checkSensitivity 已核過）；取樣被拒絕時只核首尾相連。
-  // 兩端是鐘面時刻：這段時間裡時鐘撥動過（候選的 UTC 偏移不只一種）時，鐘面先後不等於真正的先後
-  // （撥回的那一小時走兩次），也只核首尾相連。
-  const offsets = new Set(candidates.flatMap((item) => [
-    item.in("start")("utc_offset", "string"), item.in("end")("utc_offset", "string"),
-  ]));
+  // 區間的兩端只有取樣完成時才在（checkSensitivity 已核過）；取樣被拒絕時只核首尾相連。兩端是鐘面時刻：這段時間裡時鐘撥
+  // 動過（候選的 UTC 偏移不只一種）時，鐘面先後不等於真正的先後（撥回的那一小時走兩次），也只核首尾相連。
+  const offsets = new Set(candidates.flatMap((item) => [item.in("start")("utc_offset", "string"), item.in("end")("utc_offset", "string")]));
   const bounds = sensitivity.status === "computed" && offsets.size === 1
-    ? [localSortKey(sensitivity.interval_start_local), localSortKey(sensitivity.interval_end_exclusive_local)]
-    : null;
+    ? [localSortKey(sensitivity.interval_start_local), localSortKey(sensitivity.interval_end_exclusive_local)] : null;
   const broken = !candidates.length
-    || (bounds && (localSortKey(start(candidates[0])) > bounds[0]
-      || localSortKey(end(candidates.at(-1))) < bounds[1]))
+    || (bounds && (localSortKey(start(candidates[0])) > bounds[0] || localSortKey(end(candidates.at(-1))) < bounds[1]))
     || candidates.some((item, index) => index > 0 && start(item) !== end(candidates[index - 1]));
   if (broken) throw exportPipeline.incompleteResponse(`${path} 沒有首尾相連地蓋住出生時間的區間`);
   const same = (item) => item("index", "number") === hour("index", "number")
     && item("period", "string") === hour("period", "string") && start(item) === hour.in("start")("local_time", "string");
-  if (!candidates.some(same)) {
-    throw exportPipeline.incompleteResponse(`${path} 不含代表性時刻所在的那一時`);
-  }
+  if (!candidates.some(same)) { throw exportPipeline.incompleteResponse(`${path} 不含代表性時刻所在的那一時`); }
   const days = new Set(candidates.map((item) => item("planetary_day_ruler_name", "string")));
   if (interval("crosses_hour_boundary", "boolean") !== (candidates.length > 1)
     || interval("crosses_planetary_day_boundary", "boolean") !== (days.size > 1)) {
@@ -601,8 +484,7 @@ function planetaryCandidates(interval, hour, sensitivity) {
 function planetaryHoursSection(response) {
   const container = response.derived_methods.planetary_hours;
   const section = moduleSection(response, {
-    id: "planetary_hours", title: "行星日與行星時", ring: RING.METHOD,
-    keys: { module: "planetary_hours" }, container,
+    id: "planetary_hours", title: "行星日與行星時", ring: RING.METHOD, keys: { module: "planetary_hours" }, container,
     note: "本次未計算行星日與行星時。",
   });
   if (section.absent) return section.absent;
@@ -625,64 +507,46 @@ function planetaryHoursSection(response) {
     notes.push(
       "出生時刻不精確：「代表性時刻所在的行星日與行星時」表用的是代表性時刻，也就是計算時拿來代表這段時間的一個時刻，不是出生時刻；"
       + `「可能的行星時」表列出${presentClosedVocabulary(interval("interval", "string"), PLANETARY_INTERVAL_ZH, "區間")}`
-      + "內每一個可能的行星時。"
-      + (interval("crosses_hour_boundary", "boolean") ? "這段時間跨過行星時的交界，行星時無法只定一個。" : "")
+      + "內每一個可能的行星時。" + (interval("crosses_hour_boundary", "boolean") ? "這段時間跨過行星時的交界，行星時無法只定一個。" : "")
       + (interval("crosses_planetary_day_boundary", "boolean") ? "這段時間也跨過日出，行星日之主有兩個可能。" : "")
     );
   }
   const instants = [
-    ["日出（行星日開始）", day.in("sunrise")],
-    ["日落（晝時結束、夜時開始）", day.in("sunset")],
-    ["下一次日出（行星日結束）", day.in("next_sunrise")],
-    ["本行星時開始", hour.in("start")],
-    ["本行星時結束", hour.in("end")],
+    ["日出（行星日開始）", day.in("sunrise")], ["日落（晝時結束、夜時開始）", day.in("sunset")],
+    ["下一次日出（行星日結束）", day.in("next_sunrise")], ["本行星時開始", hour.in("start")], ["本行星時結束", hour.in("end")],
   ];
   const timed = timedTable("時刻", instants.map(([, item]) => needInstant(item)[1]));
   const weekday = presentClosedVocabulary(day("weekday", "string"), WEEKDAY_ZH, "星期");
   const tables = [
     {
-      title: anchored ? "代表性時刻所在的行星日與行星時" : "出生時刻所在的行星日與行星時",
-      columns: ["項目", "數值"],
+      title: anchored ? "代表性時刻所在的行星日與行星時" : "出生時刻所在的行星日與行星時", columns: ["項目", "數值"],
       rows: [
         ["行星日之主", `${day("ruler_name", "string")}（日出在 ${day("sunrise_local_date", "string")}，${weekday}）`],
-        ["行星時", planetaryHourText(hour)],
-        ["行星時之主", hour("ruler_name", "string")],
+        ["行星時", planetaryHourText(hour)], ["行星時之主", hour("ruler_name", "string")],
         ["一個晝時的長度（分鐘）", num(day("day_hour_minutes", "number"), 1)],
         ["一個夜時的長度（分鐘）", num(day("night_hour_minutes", "number"), 1)],
       ],
-    },
-    {
+    }, {
       // 時間尺度標在世界時欄（timed.heading），不標在表題：當地時間欄不是 UTC。
-      title: "行星日與行星時的起訖時刻",
-      columns: ["事件", "當地時間", timed.heading("世界時")],
-      rows: instants.map(([label, item]) => [
-        label, localInstantText(item), timed.cell(...needInstant(item)),
-      ]),
+      title: "行星日與行星時的起訖時刻", columns: ["事件", "當地時間", timed.heading("世界時")],
+      rows: instants.map(([label, item]) => [label, localInstantText(item), timed.cell(...needInstant(item))]),
     },
   ];
   if (anchored) {
     tables.push({
-      title: "可能的行星時",
-      columns: ["行星日之主", "行星時", "行星時之主", "開始（當地時間）", "結束（當地時間）"],
+      title: "可能的行星時", columns: ["行星日之主", "行星時", "行星時之主", "開始（當地時間）", "結束（當地時間）"],
       rows: candidates.map((item) => [
-        item("planetary_day_ruler_name", "string"),
-        planetaryHourText(item),
-        item("ruler_name", "string"),
-        localInstantText(item.in("start")),
-        localInstantText(item.in("end")),
+        item("planetary_day_ruler_name", "string"), planetaryHourText(item), item("ruler_name", "string"),
+        localInstantText(item.in("start")), localInstantText(item.in("end")),
       ]),
     });
   }
-  return section.make({
-    notes,
-    tables,
-  });
+  return section.make({ notes, tables });
 }
 
 // core/lunar_mansions.py INTERVALS 的閉集。
 const MANSION_INTERVAL_ZH = Object.freeze({
-  stated_civil_hour: "你填的那一個鐘點",
-  civil_day: "出生那一天（民用日：出生地日曆上的那一天，從午夜到午夜）",
+  stated_civil_hour: "你填的那一個鐘點", civil_day: "出生那一天（民用日：出生地日曆上的那一天，從午夜到午夜）",
 });
 
 /** 「第 23 宿 Saʿd Bulaʿ」：宿名只寫原名的轉寫，不譯成中文；mansion 是 needAt。 */
@@ -700,8 +564,7 @@ function lunarMansionsSection(response) {
   const container = response.derived_methods.lunar_mansions;
   const section = moduleSection(response, {
     id: "lunar_mansions", title: LUNAR_MANSIONS_TITLE, ring: RING.METHOD,
-    keys: { option: "include_lunar_mansions", module: "lunar_mansions" }, container,
-    note: "本次未請求月宿。",
+    keys: { option: "include_lunar_mansions", module: "lunar_mansions" }, container, note: "本次未請求月宿。",
   });
   if (section.absent) return section.absent;
   const module = needAt(container, "lunar_mansions");
@@ -711,28 +574,21 @@ function lunarMansionsSection(response) {
   // 出生時間不精確時才有區間；精確時刻這個鍵在、值是 null（精度由出生時間敏感度說）。
   const exact = response.birth_time_sensitivity.precision === "exact";
   const interval = module.in("birth_time_interval", exact);
-  if (exact && interval !== null) {
-    throw exportPipeline.incompleteResponse("lunar_mansions.birth_time_interval 在精確時刻應為 null");
-  }
+  if (exact && interval !== null) { throw exportPipeline.incompleteResponse("lunar_mansions.birth_time_interval 在精確時刻應為 null"); }
   const bodies = response.astronomical_data.bodies;
   const notes = [
     `月宿是把黃道從牡羊 0°（春分點）起分成 28 等分，每宿 ${width}，看月亮落在哪一宿。`
     + "這是中世紀阿拉伯與歐洲占星書的分法；宿名是阿拉伯星名，照原名的拉丁字母轉寫，不譯成中文。",
     "這不是古中國的二十八宿：二十八宿沿天球赤道、以各宿的距星（每宿起點的那顆星）劃分，寬窄不一，"
-    + "名稱與範圍都不同，這裡不換算成二十八宿。",
-    "只列月亮落在哪一宿。",
+    + "名稱與範圍都不同，這裡不換算成二十八宿。", "只列月亮落在哪一宿。",
   ];
   const near = placements.filter((item) => item("near_boundary", "boolean"));
-  if (!interval && near.length) {
-    notes.push("月亮離月宿的交界不到 1′：出生時刻差幾分鐘就可能落在相鄰的另一宿。");
-  }
-  // 區間內月亮待過的宿：一宿接一宿（第 28 宿之後是第 1 宿），代表性時刻那一宿在裡面，
-  // 「跨過交界」與宿數相符。
+  if (!interval && near.length) { notes.push("月亮離月宿的交界不到 1′：出生時刻差幾分鐘就可能落在相鄰的另一宿。"); }
+  // 區間內月亮待過的宿：一宿接一宿（第 28 宿之後是第 1 宿），代表性時刻那一宿在裡面，「跨過交界」與宿數相符。
   const mansions = interval ? interval.rows("mansions") : [];
   if (interval) {
     const numbers = mansions.map((item) => item("number", "number"));
-    const consecutive = numbers.every((value, index) => index === 0
-      || value === (numbers[index - 1] % MANSION_COUNT) + 1);
+    const consecutive = numbers.every((value, index) => index === 0 || value === (numbers[index - 1] % MANSION_COUNT) + 1);
     const anchors = placements.map((item) => item.in("mansion")("number", "number"));
     if (!numbers.length || !consecutive || !anchors.every((value) => numbers.includes(value))
       || interval("crosses_mansion_boundary", "boolean") !== (numbers.length > 1)) {
@@ -740,8 +596,7 @@ function lunarMansionsSection(response) {
     }
     notes.push(
       "出生時刻不精確：上面那張表用的是代表性時刻，也就是計算時拿來代表這段時間的一個時刻，不是出生時刻；"
-      + `下面那張表列出${presentClosedVocabulary(interval("interval", "string"), MANSION_INTERVAL_ZH, "區間")}`
-      + "裡月亮待過的每一宿。"
+      + `下面那張表列出${presentClosedVocabulary(interval("interval", "string"), MANSION_INTERVAL_ZH, "區間")}` + "裡月亮待過的每一宿。"
       + (interval("crosses_mansion_boundary", "boolean") ? "這段時間跨過月宿交界，月宿無法只定一個。" : "")
     );
   }
@@ -751,11 +606,9 @@ function lunarMansionsSection(response) {
     const name = item("name", "string");
     const body = bodies.find((record) => record.key === item("key"));
     return {
-      title: interval ? `代表性時刻${name}所在的月宿` : `${name}所在的月宿`,
-      columns: ["項目", "數值"],
+      title: interval ? `代表性時刻${name}所在的月宿` : `${name}所在的月宿`, columns: ["項目", "數值"],
       rows: [
-        [`${name}的位置`, signPosition(body.sign_position)],
-        ["月宿", mansionText(mansion)],
+        [`${name}的位置`, signPosition(body.sign_position)], ["月宿", mansionText(mansion)],
         ["本宿範圍", `${signPosition(bounds.position("start"))} 至 ${signPosition(bounds.position("end"))}（不含終點）`],
         ["在宿內走了多遠", item("degrees_into_mansion_text", "string")],
         // 與上一列同寫度分秒；不到 1′ 時區塊說明與注意事項各說一次，不另列是／否。
@@ -765,23 +618,15 @@ function lunarMansionsSection(response) {
   });
   if (interval) {
     tables.push({
-      title: "這段時間內月亮待過的月宿",
-      columns: ["月宿", "阿拉伯名稱"],
+      title: "這段時間內月亮待過的月宿", columns: ["月宿", "阿拉伯名稱"],
       rows: mansions.map((item) => [`第 ${item("number")} 宿`, item("transliteration", "string")]),
     });
   }
-  return section.make({
-    notes,
-    tables,
-    blocks: LUNAR_MANSION_SOURCES.slice(),
-  });
+  return section.make({ notes, tables, blocks: LUNAR_MANSION_SOURCES.slice() });
 }
 
-// 出處的一行由 labels.js 的 sourceLine 組成（登錄以鍵列出處時第一欄用鍵）；整合測試
-// 逐行核對層級與登錄裡那條引文相同。
-function sourceBlocks(lines) {
-  return Object.freeze(lines.map(Labels.sourceLine));
-}
+// 出處的一行由 labels.js 的 sourceLine 組成（登錄以鍵列出處時第一欄用鍵）；整合測試逐行核對層級與登錄裡那條引文相同。
+function sourceBlocks(lines) { return Object.freeze(lines.map(Labels.sourceLine)); }
 
 // 月宿的出處：章節加一句白話，與方法出處登錄 lunar_mansions 同一組來源；
 // 和十二分部一樣是區塊，畫面收進「出處」摺疊（SOURCE_FOLDED_SECTIONS），匯出逐條印出。
@@ -789,43 +634,30 @@ const LUNAR_MANSION_SOURCE_LINES = Object.freeze([
   ["Agrippa, De occulta philosophia II.33",
     "出處：Agrippa《De occulta philosophia》卷二第 33 章（1651 年英譯本）："
     + "28 個月宿等分黃道，每宿 12°51′ 又將近 26″；第 1、8、15、22 宿從牡羊、巨蟹、天秤、摩羯的起點開始。",
-    "translation_read", "（英譯，掃描本）"],
-  ["al-Biruni, Chronology of Ancient Nations ch. XXI",
+    "translation_read", "（英譯，掃描本）"], ["al-Biruni, Chronology of Ancient Nations ch. XXI",
     "出處：al-Bīrūnī《古代民族年代學》（al-Āthār al-bāqiya）第 21 章（Sachau 1879 英譯，pp. 335–366）："
     + "阿拉伯人把天球分成 28 份、每個星座兩又三分之一份，從 al-Sharaṭān 起算，因為當時它的星在牡羊之初；"
     + "之後星已移動。宿名也依這一章。",
-    "translation_read", "（英譯，掃描本）"],
-  [null, "出處：本站方法頁〈月宿〉一節：從回歸黃道的春分點（當日）起算，是本站對這套等分的做法；"
+    "translation_read", "（英譯，掃描本）"], [null, "出處：本站方法頁〈月宿〉一節：從回歸黃道的春分點（當日）起算，是本站對這套等分的做法；"
     + "上面兩本書說的是當時恆星天的牡羊之初。"],
 ]);
 const LUNAR_MANSION_SOURCES = sourceBlocks(LUNAR_MANSION_SOURCE_LINES);
 
-// 焦傷與光束下（core/solar_phase.py）。
-// 自成一塊：建區段的函式、它用的閉集標籤與出處都在這裡；buildSections 只呼叫一次。
-// 距離帶的名稱只有這一張表。兩套寫法並列：traditional 用原典名稱當主標籤，distance 是
-// 以距離描述當主標籤的另一案；換用時只改 SOLAR_PHASE_BAND_ZH 那一行。
+// 距離帶的名稱只有這一張表。兩套寫法並列：traditional 用原典名稱當主標籤，distance 是以距離描述當主標籤的另一案；換用時
+// 只改 SOLAR_PHASE_BAND_ZH 那一行。
 const SOLAR_PHASE_TITLE = "焦傷與光束下（離太陽多近）";
 const SOLAR_PHASE_BAND_LABELS = Object.freeze({
   traditional: Object.freeze({
-    cazimi: "日輪內（cazimi）",
-    combust: "焦傷（combust）",
-    under_beams: "在光束下（under the beams）",
-    clear: "離開光束",
-    accompanying_high_latitude: "伴隨太陽（muqārina）",
-  }),
-  distance: Object.freeze({
-    cazimi: "日輪內（cazimi）",
-    combust: "緊貼太陽（焦傷，combust）",
-    under_beams: "在太陽光芒下（在光束下，under the beams）",
-    clear: "離開光芒",
-    accompanying_high_latitude: "伴隨太陽（muqārina）",
+    cazimi: "日輪內（cazimi）", combust: "焦傷（combust）", under_beams: "在光束下（under the beams）",
+    clear: "離開光束", accompanying_high_latitude: "伴隨太陽（muqārina）" }), distance: Object.freeze({
+    cazimi: "日輪內（cazimi）", combust: "緊貼太陽（焦傷，combust）",
+    under_beams: "在太陽光芒下（在光束下，under the beams）", clear: "離開光芒", accompanying_high_latitude: "伴隨太陽（muqārina）",
   }),
 });
 const SOLAR_PHASE_BAND_ZH = SOLAR_PHASE_BAND_LABELS.traditional;
 // core/solar_phase.py PROFILE_IDS，順序即對照表的欄序。
 const SOLAR_PHASE_PROFILE_ZH = Object.freeze({
-  lilly_1647_p113_v1: "Lilly 1647（17′、8°30′、17°）",
-  hellenistic_15_v1: "希臘化（一條 15° 的線）",
+  lilly_1647_p113_v1: "Lilly 1647（17′、8°30′、17°）", hellenistic_15_v1: "希臘化（一條 15° 的線）",
   biruni_wright_v1: "al-Bīrūnī（16′、6°、依行星 12°–18°）",
 });
 const SOLAR_PHASE_PROFILE_NOTE_ZH = Object.freeze({
@@ -836,26 +668,17 @@ const SOLAR_PHASE_PROFILE_NOTE_ZH = Object.freeze({
     + "6° 以內為焦傷（水星、金星順行時到 7°；月亮不到 7°），在光束下的界線依行星與在太陽哪一側而不同，從 12° 到 18°。",
 });
 const SOLAR_PHASE_SIDE_ZH = Object.freeze({
-  morning: "西側，比太陽早升起（晨星）",
-  evening: "東側，比太陽晚落下（昏星）",
-  on_the_sun: "與太陽同一黃經",
+  morning: "西側，比太陽早升起（晨星）", evening: "東側，比太陽晚落下（昏星）", on_the_sun: "與太陽同一黃經",
 });
 const SOLAR_PHASE_MOTION_ZH = Object.freeze({
-  approaching_sun: "正在靠近太陽",
-  separating_from_sun: "正在離開太陽",
-  no_relative_motion: "與太陽沒有相對移動",
+  approaching_sun: "正在靠近太陽", separating_from_sun: "正在離開太陽", no_relative_motion: "與太陽沒有相對移動",
 });
-const SOLAR_PHASE_CROSSING_ZH = Object.freeze({
-  emerging: "升出光束",
-  sinking: "隱入光束",
-});
+const SOLAR_PHASE_CROSSING_ZH = Object.freeze({ emerging: "升出光束", sinking: "隱入光束" });
 const SOLAR_PHASE_LIMIT_SIDE_ZH = Object.freeze({ morning: "西側（晨星）", evening: "東側（昏星）" });
 const SOLAR_PHASE_INTERVAL_ZH = Object.freeze({
-  stated_civil_hour: "你填的那一個鐘點",
-  civil_day: "出生那一天（民用日：出生地日曆上的那一天，從午夜到午夜）",
+  stated_civil_hour: "你填的那一個鐘點", civil_day: "出生那一天（民用日：出生地日曆上的那一天，從午夜到午夜）",
 });
 const SOLAR_PHASE_FIXED_SENTENCE = "照原典列出各分法怎麼說；不替這張盤做個人解讀，也不預測。";
-// 和月宿、十二分部一樣經 sourceBlocks：有引文的一行附方法出處登錄 solar_phase 那條引文的開頭與核到層級。
 const SOLAR_PHASE_SOURCE_LINES = Object.freeze([
   ["William Lilly, Christian Astrology (London 1647)",
     "出處：Lilly《Christian Astrology》1647 年版 pp.113–114：離太陽 17 角分以內為 Cazimi，8°30′ 以內為焦傷，"
@@ -866,27 +689,22 @@ const SOLAR_PHASE_SOURCE_LINES = Object.freeze([
   ["William Lilly, Christian Astrology, aphorism 26",
     "出處：同書格言第 26 條（Houlding 標為 p.300）：在太陽 12° 以內就在光束下，「不論在哪一個星座」都沒有力量；"
     + "16 角分以內為 Cazimi，「非常強」。數字與 p.113 不一致，本站預設採 p.113。",
-    "original_language_read", "（1659 年轉錄本，頁碼依 Houlding）"],
-  ["al-Biruni, The Book of Instruction",
+    "original_language_read", "（1659 年轉錄本，頁碼依 Houlding）"], ["al-Biruni, The Book of Instruction",
     "出處：al-Bīrūnī《占星術入門》（Kitāb al-Tafhīm，Wright 1934 英譯）§481–484：不到 16′ 稱 samīm（即 Cazimi）；"
     + "到 6° 稱 muḥtariq（焦傷，字面是「被燒」），水星、金星順行時到 7°；之後在光束下，行星「像被關住的囚犯」，"
     + "在東方升出的界線是金星、水星 12°，土星、木星 15°，火星 16°，在西方隱入的界線是土星、木星 16°，火星 18°；"
     + "月亮不到 7° 為焦傷，到 12° 為止在光束下。",
     "translation_read", "（英譯，線上打字稿，1934 年版的頁碼未核）"],
   [null, "出處：al-Bīrūnī 同書 §483：金星在會合時北黃緯超過 7°，不稱 samīm 也不稱焦傷，只稱「伴隨太陽」（muqārina）；"
-    + "§486：行星的作用在焦傷時最小。"],
-  ["Abu Ma'shar, Great Introduction VII.2",
+    + "§486：行星的作用在焦傷時最小。"], ["Abu Ma'shar, Great Introduction VII.2",
     "出處：Abū Maʿshar《大導論》（Kitāb al-mudkhal al-kabīr）VII.2，Hermann of Carinthia 的拉丁譯本：除了 zamim（Cazimi），"
-    + "太陽會灼燒與它會合的每一顆星，使它衰弱、敗壞；金星因為黃緯，與太陽在同一度時仍看得見，"
-    + "這時不能稱為焦傷，而稱「顯現」。",
+    + "太陽會灼燒與它會合的每一顆星，使它衰弱、敗壞；金星因為黃緯，與太陽在同一度時仍看得見，" + "這時不能稱為焦傷，而稱「顯現」。",
     "translation_read", "（Hermann 的拉丁文譯本，線上讀；阿拉伯原本未讀，Dykes 英譯 p.418 只見轉引）"],
   [null, "出處（本站的推論，不是原典的話）：為什麼判定用黃經差。上面兩位作者都替「北黃緯很高的金星」另立例外。"
     + "這樣的金星在天空中離太陽已有 7°–8°，若他們量的是天空中的實際距離，它本來就在 16′ 與 6° 之外，"
-    + "根本不需要例外；正因為他們量的是黃道上的度數，金星與太陽「在同一度」，才需要另外說明它看得見、不算焦傷。"],
-  ["Ptolemy, ",
+    + "根本不需要例外；正因為他們量的是黃道上的度數，金星與太陽「在同一度」，才需要另外說明它看得見、不算焦傷。"], ["Ptolemy, ",
     "出處：Ptolemy《占星四書》III.10（Robbins 1940 英譯 p.285）：在太陽光線下的行星，不採為破壞者，也不採為援助者。",
-    "translation_read", "（英譯，LacusCurtius 轉錄）"],
-  ["Porphyry, Introduction ch.2 and ch.30",
+    "translation_read", "（英譯，LacusCurtius 轉錄）"], ["Porphyry, Introduction ch.2 and ch.30",
     "出處：希臘化時期一條 15° 的線，以及出生前後 7 天內升出或隱入光束：Porphyry 名下的《占星四書導論》（Eisagōgē）第 2、30 章、Antiochus、"
     + "Rhetorius（Brennan 2017；Holden 2009 pp.24、134 經網頁轉引），原文未核。",
     "secondary_only"],
@@ -900,7 +718,6 @@ function solarPhaseDifferenceText(row) {
   return `${value < 0 ? "−" : "+"}${row("longitude_difference_text", "string")}`;
 }
 
-/** 一條界線：「≤ 17′」「< 16′」「≤ 8°30′」；依順行／逆行而不同時兩者並列。 */
 function solarPhaseLimitText(limit, path) {
   if (limit === null) return "（這套分法沒有這一帶）";
   const at = needAt(limit, path);
@@ -916,7 +733,6 @@ function solarPhaseLimitText(limit, path) {
   return `${at("inclusive", "boolean") ? "≤" : "<"} ${text}`;
 }
 
-/** 出生前後幾小時或幾天。 */
 function solarPhaseOffsetText(days, anchored) {
   if (typeof days !== "number") return DASH;
   const before = days < 0;
@@ -925,7 +741,6 @@ function solarPhaseOffsetText(days, anchored) {
   return `${base}${before ? "前" : "後"} ${span}`;
 }
 
-/** 焦傷區的說明：原典怎麼說、所選分法、量法、例外與這次的時間基準。 */
 function solarPhaseNotes(response, module, { selected, sun, disc, interval }) {
   const notes = [
     "古典占星看行星離太陽多近：太近時，行星被太陽的光芒蓋住，肉眼看不到。這一區列出月亮與五顆行星在黃道上離太陽幾度，"
@@ -945,8 +760,7 @@ function solarPhaseNotes(response, module, { selected, sun, disc, interval }) {
   const venusException = selected("venus_latitude_exception_degrees", "number?");
   if (venusException !== null) {
     notes.push(
-      `al-Bīrūnī 另有一條：金星北黃緯超過 ${venusException}° 時，落在日輪內或焦傷的距離也不這樣稱呼，`
-      + "改稱「伴隨太陽」（muqārina）。"
+      `al-Bīrūnī 另有一條：金星北黃緯超過 ${venusException}° 時，落在日輪內或焦傷的距離也不這樣稱呼，` + "改稱「伴隨太陽」（muqārina）。"
     );
   }
   notes.push(
@@ -965,8 +779,7 @@ function solarPhaseNotes(response, module, { selected, sun, disc, interval }) {
   }
   if (interval) {
     notes.push(
-      "出生時刻不精確：上方各表用的是代表性時刻，也就是計算時拿來代表這段時間的一個時刻，不是出生時刻；"
-      + "「出生時間範圍內的距離帶」列出"
+      "出生時刻不精確：上方各表用的是代表性時刻，也就是計算時拿來代表這段時間的一個時刻，不是出生時刻；" + "「出生時間範圍內的距離帶」列出"
       + `${presentClosedVocabulary(interval("interval", "string"), SOLAR_PHASE_INTERVAL_ZH, "區間")}內每一種分法出現過的每一個距離帶。`
       + "只知時辰時月亮約移動半度，只知日期時約 12°，距離帶可能因此改變。"
     );
@@ -981,10 +794,8 @@ function solarPhaseLimitTable(rows, results, profiles) {
   const limitText = (profile, key, side) => {
     const perSide = results.in(profile).in("limits").in(key).in(side);
     return [["cazimi", "日輪內"], ["combust", "焦傷"], ["under_beams", "在光束下"]]
-      .map(([name, label]) => [label, perSide(name, "record?"), `${perSide.path}.${name}`])
-      .filter(([, limit]) => limit !== null)
-      .map(([label, limit, path]) => `${label} ${solarPhaseLimitText(limit, path)}`)
-      .join("；");
+      .map(([name, label]) => [label, perSide(name, "record?"), `${perSide.path}.${name}`]).filter(([, limit]) => limit !== null)
+      .map(([label, limit, path]) => `${label} ${solarPhaseLimitText(limit, path)}`).join("；");
   };
   const limitRows = [];
   rows.forEach((row) => {
@@ -992,17 +803,14 @@ function solarPhaseLimitTable(rows, results, profiles) {
     const name = row("name", "string");
     const morning = profiles.map((profile) => limitText(profile, key, "morning"));
     const evening = profiles.map((profile) => limitText(profile, key, "evening"));
-    if (morning.join("|") === evening.join("|")) {
-      limitRows.push([name, "兩側相同"].concat(morning));
-    } else {
+    if (morning.join("|") === evening.join("|")) { limitRows.push([name, "兩側相同"].concat(morning)); } else {
       limitRows.push([name, SOLAR_PHASE_LIMIT_SIDE_ZH.morning].concat(morning));
       limitRows.push([name, SOLAR_PHASE_LIMIT_SIDE_ZH.evening].concat(evening));
     }
   });
   return {
     title: "三種分法的界線（黃經差）",
-    columns: ["天體", "太陽哪一側"].concat(profiles.map((profile) => SOLAR_PHASE_PROFILE_ZH[profile])),
-    rows: limitRows,
+    columns: ["天體", "太陽哪一側"].concat(profiles.map((profile) => SOLAR_PHASE_PROFILE_ZH[profile])), rows: limitRows,
   };
 }
 
@@ -1015,30 +823,22 @@ function solarPhaseCrossingTable(rows, module, selected, anchored) {
     const key = row("key");
     const name = row("name", "string");
     if (key === "moon") {
-      if (crossings(key) !== null) {
-        throw exportPipeline.incompleteResponse(`${crossings.path}.moon 月亮不搜尋，應為 null`);
-      }
+      if (crossings(key) !== null) { throw exportPipeline.incompleteResponse(`${crossings.path}.moon 月亮不搜尋，應為 null`); }
       return;
     }
     const found = crossings.rows(key);
-    if (!found.length) {
-      crossingRows.push([name, "這段時間內沒有跨過", DASH, DASH, DASH]);
-      return;
-    }
+    if (!found.length) { crossingRows.push([name, "這段時間內沒有跨過", DASH, DASH, DASH]); return; }
     found.forEach((item) => {
       crossingRows.push([
-        name,
-        presentClosedVocabulary(item("direction", "string"), SOLAR_PHASE_CROSSING_ZH, "方向"),
-        `${item("threshold_degrees", "number")}°`,
-        solarPhaseOffsetText(item("day_offset", "number"), anchored),
+        name, presentClosedVocabulary(item("direction", "string"), SOLAR_PHASE_CROSSING_ZH, "方向"),
+        `${item("threshold_degrees", "number")}°`, solarPhaseOffsetText(item("day_offset", "number"), anchored),
         localInstantText(item.in("instant")),
       ]);
     });
   });
   return {
     title: `${anchored ? "代表性時刻" : "出生"}前後 ${num(windowDays, 0)} 天內跨過光束界線的時刻（五顆行星）`,
-    columns: ["行星", "方向", "界線", "什麼時候", "當地時間"],
-    rows: crossingRows,
+    columns: ["行星", "方向", "界線", "什麼時候", "當地時間"], rows: crossingRows,
   };
 }
 
@@ -1072,25 +872,18 @@ function solarPhaseSection(response) {
   const anchored = module("time_basis", "string") !== "birth_instant";
   // 出生時間不精確（代表性時刻）才有區間；精確時刻時這個鍵在、值是 null。
   const interval = module.in("birth_time_interval", !anchored);
-  if (!anchored && interval !== null) {
-    throw exportPipeline.incompleteResponse("solar_phase.birth_time_interval 在精確時刻應為 null");
-  }
+  if (!anchored && interval !== null) { throw exportPipeline.incompleteResponse("solar_phase.birth_time_interval 在精確時刻應為 null"); }
   const notes = solarPhaseNotes(response, module, { selected, sun, disc, interval });
-
   const tables = [{
     title: anchored ? "代表性時刻各行星離太陽多遠" : "各行星離太陽多遠",
     columns: ["天體", "距離帶", "黃經差（行星減太陽）", "在太陽哪一側", "靠近或離開", "天空中的實際夾角", "黃緯",
       "落在太陽圓面內", "與太陽同星座"],
     rows: rows.map((row) => [
-      row("name", "string"),
-      band(row("band", "string")),
-      solarPhaseDifferenceText(row),
+      row("name", "string"), band(row("band", "string")), solarPhaseDifferenceText(row),
       presentClosedVocabulary(row("side", "string"), SOLAR_PHASE_SIDE_ZH, "側"),
       presentClosedVocabulary(row("relative_motion", "string"), SOLAR_PHASE_MOTION_ZH, "移動"),
-      dms(row("angular_separation_degrees", "number")),
-      dms(row("ecliptic_latitude_degrees", "number")),
-      yesNo(row("within_solar_disc", "boolean")),
-      yesNo(row("same_sign_as_sun", "boolean")),
+      dms(row("angular_separation_degrees", "number")), dms(row("ecliptic_latitude_degrees", "number")),
+      yesNo(row("within_solar_disc", "boolean")), yesNo(row("same_sign_as_sun", "boolean")),
     ]),
   }];
   tables.push({
@@ -1125,14 +918,11 @@ function solarPhaseSection(response) {
       return seen;
     };
     tables.push({
-      title: "出生時間範圍內的距離帶",
-      columns: ["天體", "黃經差最小", "黃經差最大", "所選分法只有一種距離帶"]
+      title: "出生時間範圍內的距離帶", columns: ["天體", "黃經差最小", "黃經差最大", "所選分法只有一種距離帶"]
         .concat(profiles.map((profile) => SOLAR_PHASE_PROFILE_ZH[profile])),
       rows: intervalRows.map((row) => [
-        row("name", "string"),
-        `${num(row("longitude_difference_min_degrees", "number"), 2)}°`,
-        `${num(row("longitude_difference_max_degrees", "number"), 2)}°`,
-        yesNo(row("stable", "boolean")),
+        row("name", "string"), `${num(row("longitude_difference_min_degrees", "number"), 2)}°`,
+        `${num(row("longitude_difference_max_degrees", "number"), 2)}°`, yesNo(row("stable", "boolean")),
       ].concat(profiles.map((profile) => {
         const seen = seenOf(profile)(row("key"), "array");
         if (!seen.length) {
@@ -1142,69 +932,44 @@ function solarPhaseSection(response) {
       }))),
     });
   }
-  return section.make({
-    notes,
-    tables,
-    blocks: SOLAR_PHASE_SOURCES.slice(),
-  });
+  return section.make({ notes, tables, blocks: SOLAR_PHASE_SOURCES.slice() });
 }
 
-// 行速、停滯與東出西入（core/motion_states.py）。
-// 自成一塊：建區段的函式、它用的閉集標籤與出處都在這裡；buildSections 只呼叫一次。
 // 後端算好每一格的狀態，這裡只照閉集翻成白話，不重算。
 const MOTION_TITLE = "行速、停滯與東出西入";
 const MOTION_COURSE_ZH = Object.freeze({
-  swift: "行速快（swift）",
-  slow: "行速慢（slow）",
-  equal_to_mean_at_source_precision: "等於平均（到原典印出的那一位）",
+  swift: "行速快（swift）", slow: "行速慢（slow）", equal_to_mean_at_source_precision: "等於平均（到原典印出的那一位）",
 });
 const MOTION_DIRECTION_ZH = Object.freeze({ direct: "順行", retrograde: "逆行" });
 const MOTION_STATION_ZH = Object.freeze({
-  stationary_before_retrograde: "停滯（第一次：快要轉為逆行）",
-  stationary_before_direct: "停滯（第二次：快要轉回順行）",
+  stationary_before_retrograde: "停滯（第一次：快要轉為逆行）", stationary_before_direct: "停滯（第二次：快要轉回順行）",
   stationary_after_turning_retrograde: "停滯（第一次：剛轉為逆行）",
-  stationary_after_turning_direct: "停滯（第二次：剛轉回順行）",
-  not_stationary: "沒有停滯",
-  not_applicable_luminary: "日月不停滯",
+  stationary_after_turning_direct: "停滯（第二次：剛轉回順行）", not_stationary: "沒有停滯", not_applicable_luminary: "日月不停滯",
 });
 const MOTION_TURN_ZH = Object.freeze({
-  first_station_to_retrograde: "第一次停滯，轉為逆行",
-  second_station_to_direct: "第二次停滯，轉回順行",
+  first_station_to_retrograde: "第一次停滯，轉為逆行", second_station_to_direct: "第二次停滯，轉回順行",
 });
 const MOTION_SIDE_ZH = Object.freeze({
-  oriental: "晨星（東出）",
-  occidental: "昏星（西入）",
-  on_the_sun: "與太陽同一黃經",
-  not_applicable_sun: "太陽本身不分東出西入",
+  oriental: "晨星（東出）", occidental: "昏星（西入）", on_the_sun: "與太陽同一黃經", not_applicable_sun: "太陽本身不分東出西入",
 });
 const MOTION_P115_ZH = Object.freeze({
-  listed_as_accidental_fortitude: "Lilly 列為偶然強",
-  listed_as_accidental_debility: "Lilly 列為偶然弱",
-  not_listed: DASH,
+  listed_as_accidental_fortitude: "Lilly 列為偶然強", listed_as_accidental_debility: "Lilly 列為偶然弱", not_listed: DASH,
 });
 // core/motion_states.py MEAN_MOTION_PROFILES，順序即對照表的欄序。
-const MOTION_PROFILE_ZH = Object.freeze({
-  lilly_1647_v1: "Lilly 1647",
-  bonatti_1550_v1: "Bonatti 1550",
-});
+const MOTION_PROFILE_ZH = Object.freeze({ lilly_1647_v1: "Lilly 1647", bonatti_1550_v1: "Bonatti 1550" });
 const MOTION_FIXED_SENTENCE = "照原典列出。";
 const MOTION_SOURCE_LINES = Object.freeze([
   ["William Lilly, Christian Astrology (London 1647)",
     "出處：Lilly《Christian Astrology》1647 年版：各行星章的平均每日行度與停滯天數（pp.57–58、61–62、65、69、72–73、76、80）；"
     + "p.114 東出西入與停滯的定義；p.115 偶然強弱表；p.168 行速快的定義（一天走的多於平均）；p.178 七顆星的算例。",
-    "original_language_read", "（1647 年版頁影像）"],
-  ["Guido Bonatti, De astronomia tractatus X",
+    "original_language_read", "（1647 年版頁影像）"], ["Guido Bonatti, De astronomia tractatus X",
     "出處：Bonatti《De astronomia》（1550 年 Basel 版）第三論 cols.129–130：同一組平均每日行度，土星寫到比秒再小一位"
     + "（‴，1″ 的 60 分之 1：2′00″35‴）；剛好等於平均叫 aequalis。",
-    "original_language_read", "（1550 年版頁影像）"],
-  ["Ptolemy, Tetrabiblos I.6",
+    "original_language_read", "（1550 年版頁影像）"], ["Ptolemy, Tetrabiblos I.6",
     "出處：Ptolemy《占星四書》I.24（Robbins 1940 英譯 pp.115–117）：東出而且增於行最有力，西入而且減速較弱；"
-    + "I.6、I.8 講晨星、昏星與兩次停滯。",
-    "translation_read", "（英譯，LacusCurtius 轉錄）"],
-  ["al-Biruni, Book of Instruction",
+    + "I.6、I.8 講晨星、昏星與兩次停滯。", "translation_read", "（英譯，LacusCurtius 轉錄）"], ["al-Biruni, Book of Instruction",
     "出處：al-Bīrūnī《占星術入門》（Kitāb al-Tafhīm）§481–486、§498、§512：東出、西入與停滯的名稱；東出時作用最強，西入時弱。",
-    "translation_read", "（英譯，線上打字稿，1934 年版的頁碼未核）"],
-  ["Vettius Valens, Anthologies",
+    "translation_read", "（英譯，線上打字稿，1934 年版的頁碼未核）"], ["Vettius Valens, Anthologies",
     "出處：Valens《選集》（Anthologies）IV.14：過了第一次停滯而逆行，使期待延遲；到第二次停滯，延遲取消。",
     "translation_read", "（Riley 英譯）"],
   [null, "出處：完整書目、兩套平均行度與每一條核到哪一層，見方法頁〈行速、停滯與東出西入〉一節。"],
@@ -1217,7 +982,6 @@ function motionCourseText(course, direction) {
   return direction === "retrograde" ? `${text}；比的是每天退的度數` : text;
 }
 
-/** 停滯一格：停滯時補上離轉向多久與 Lilly 給的天數（轉向前的，或轉向後的）。 */
 function motionStationText(station, anchored, path) {
   const text = presentClosedVocabulary(need(station, path, "state", "string"), MOTION_STATION_ZH, "停滯");
   const days = need(station, path, "lilly_days", "number?");
@@ -1225,8 +989,7 @@ function motionStationText(station, anchored, path) {
   if (!turn || days === null) return text;
   const offset = need(turn, `${path}.turn`, "day_offset", "number");
   const after = String(station.state).startsWith("stationary_after_");
-  return `${text}；${solarPhaseOffsetText(offset, anchored)}轉向，Lilly 給`
-    + `${after ? "轉向後" : ""} ${days} 天`;
+  return `${text}；${solarPhaseOffsetText(offset, anchored)}轉向，Lilly 給` + `${after ? "轉向後" : ""} ${days} 天`;
 }
 
 function motionNotes(response, module, { interval }) {
@@ -1291,39 +1054,31 @@ function motionStatesSection(response) {
   const anchored = m("time_basis", "string") !== "birth_instant";
   // 出生時間不精確（代表性時刻）才有區間；精確時刻時這個鍵在、值是 null。
   const interval = m("birth_time_interval", anchored ? "record" : "any");
-  if (!anchored && interval !== null) {
-    throw exportPipeline.incompleteResponse(`${path}.birth_time_interval 在精確時刻應為 null`);
-  }
+  if (!anchored && interval !== null) { throw exportPipeline.incompleteResponse(`${path}.birth_time_interval 在精確時刻應為 null`); }
   const course = (value) => presentClosedVocabulary(value, MOTION_COURSE_ZH, "行速");
   const side = (value) => presentClosedVocabulary(value, MOTION_SIDE_ZH, "東出西入");
   const station = (value) => presentClosedVocabulary(value, MOTION_STATION_ZH, "停滯");
   const p115 = (value) => presentClosedVocabulary(value, MOTION_P115_ZH, "Lilly 強弱表");
-
   const tables = [{
     title: anchored ? "代表性時刻的行速、停滯與東出西入" : "行速、停滯與東出西入",
     columns: ["天體", "這一刻每天走", "順行或逆行", "Lilly 的平均每日行度", "行速", "停滯", "東出或西入"],
     rows: rows.map((r) => {
       const direction = r("direction", "string");
       return [
-        r("name", "string"),
-        r("daily_motion_text", "string"),
-        presentClosedVocabulary(direction, MOTION_DIRECTION_ZH, "方向"),
-        r("mean_motion_text", "string"),
+        r("name", "string"), r("daily_motion_text", "string"),
+        presentClosedVocabulary(direction, MOTION_DIRECTION_ZH, "方向"), r("mean_motion_text", "string"),
         motionCourseText(r("course", "string"), direction),
-        motionStationText(r("station", "record"), anchored, `${r.path}.station`),
-        side(r("relative_to_sun", "string")),
+        motionStationText(r("station", "record"), anchored, `${r.path}.station`), side(r("relative_to_sun", "string")),
       ];
     }),
   }];
   tables.push({
-    title: "Lilly 的強弱表（p.115）把它列在哪一邊",
-    columns: ["天體", "行速", "東出或西入"],
+    title: "Lilly 的強弱表（p.115）把它列在哪一邊", columns: ["天體", "行速", "東出或西入"],
     rows: rows.map((r) => {
       const listed = r.in("lilly_p115");
       const sideText = p115(listed("relative_to_sun", "string"));
       return [
-        r.record.name,
-        p115(listed("course", "string")),
+        r.record.name, p115(listed("course", "string")),
         r.record.key === "moon" && r.record.relative_to_sun === "oriental" && sideText !== DASH
           ? `${sideText}（他寫的是「漸虧」）` : sideText,
       ];
@@ -1332,9 +1087,7 @@ function motionStatesSection(response) {
   const profiles = Object.keys(MOTION_PROFILE_ZH);
   tables.push({
     title: "兩本書的平均每日行度對照",
-    columns: ["天體"].concat(...profiles.map((profile) => [
-      `${MOTION_PROFILE_ZH[profile]} 的平均`, `照 ${MOTION_PROFILE_ZH[profile]}`,
-    ])),
+    columns: ["天體"].concat(...profiles.map((profile) => [`${MOTION_PROFILE_ZH[profile]} 的平均`, `照 ${MOTION_PROFILE_ZH[profile]}`])),
     rows: rows.map((r) => [r.record.name].concat(...profiles.map((profile) => {
       const result = results.in(profile);
       const mean = result.in("means").in(r.record.key);
@@ -1354,16 +1107,12 @@ function motionStatesSection(response) {
       return;
     }
     const found = listed(row.key, "records");
-    if (!found.length) {
-      stationRows.push([row.name, "這段時間內沒有轉向", DASH, DASH]);
-      return;
-    }
+    if (!found.length) { stationRows.push([row.name, "這段時間內沒有轉向", DASH, DASH]); return; }
     found.forEach((value, index) => {
       const item = needAt(value, `${listed.path}.${row.key}[${index}]`);
       const instant = item.in("instant");
       stationRows.push([
-        row.name,
-        presentClosedVocabulary(item("kind", "string"), MOTION_TURN_ZH, "轉向"),
+        row.name, presentClosedVocabulary(item("kind", "string"), MOTION_TURN_ZH, "轉向"),
         solarPhaseOffsetText(item("day_offset", "number"), anchored),
         `${instant("local_time", "string")} ${instant("utc_offset", "string")}`,
       ]);
@@ -1371,8 +1120,7 @@ function motionStatesSection(response) {
   });
   tables.push({
     title: `${anchored ? "代表性時刻" : "出生"}前後 ${num(search("window_days", "number"), 0)} 天內的轉向時刻（五顆行星）`,
-    columns: ["行星", "哪一次", "什麼時候", "當地時間"],
-    rows: stationRows,
+    columns: ["行星", "哪一次", "什麼時候", "當地時間"], rows: stationRows,
   });
   if (interval) {
     const at = needAt(interval, `${path}.birth_time_interval`);
@@ -1387,33 +1135,22 @@ function motionStatesSection(response) {
       return values.map(label).join("、");
     };
     tables.push({
-      title: "出生時間範圍內出現過的狀態",
-      columns: ["天體", "行速", "停滯", "東出或西入", "三項都只有一種"],
+      title: "出生時間範圍內出現過的狀態", columns: ["天體", "行速", "停滯", "東出或西入", "三項都只有一種"],
       rows: intervalRows.map((r) => [
-        r.record.name,
-        list(r, "courses_seen", course),
-        list(r, "station_states_seen", station),
-        list(r, "relative_to_sun_seen", side),
-        yesNo(r("stable", "boolean")),
+        r.record.name, list(r, "courses_seen", course), list(r, "station_states_seen", station),
+        list(r, "relative_to_sun_seen", side), yesNo(r("stable", "boolean")),
       ]),
     });
   }
-  return section.make({
-    notes: motionNotes(response, module, { interval }),
-    tables,
-    blocks: MOTION_SOURCES.slice(),
-  });
+  return section.make({ notes: motionNotes(response, module, { interval }), tables, blocks: MOTION_SOURCES.slice() });
 }
 
-/** 出生地時間：當地時間加 UTC 偏移（record 是 needAt）。 */
 function localInstantText(record, timeKey = "local_time", offsetKey = "utc_offset") {
   return `${record(timeKey, "string")} ${record(offsetKey, "string")}`;
 }
 
-/** 每一個在取樣點之間不同的分類，用與 transitions.changed_paths 相同的路徑寫法。 */
 function differingClassificationPaths(sensitivity) {
   const coverage = isRecord(sensitivity.classification_coverage) ? sensitivity.classification_coverage : {};
-  return Object.values(coverage)
-    .filter(isRecord)
+  return Object.values(coverage).filter(isRecord)
     .flatMap((item) => (Array.isArray(item.differing_classifications) ? item.differing_classifications : []));
 }

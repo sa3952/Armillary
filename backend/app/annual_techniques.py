@@ -31,10 +31,12 @@ from .core.dignity_tables import SIGNS
 from .core.extended_lots import compute_extended_lots
 from .core.firdaria import FIRDARIA_PROFILE, firdaria_periods, period_instant
 from .core.formatting import zodiac_sign_index
-from .core.frame_compatibility import method_frame_state
+from .core.frame_compatibility import FrameState, method_frame_state
 from .core.invariants import InternalInvariantError
 from .core.method_status import method_receipt
 from .core.module_state import (
+    Applicability,
+    ModuleState,
     PRODUCT_FORMULA_SOURCE,
     computed_receipt,
     module_status_word,
@@ -71,7 +73,7 @@ from .method_sources import resolve
 from .schemas import AnnualInput, AnnualRequest
 
 
-def _state_fields(state: dict) -> dict:
+def _state_fields(state: ModuleState) -> dict:
     return {**state, "status": module_status_word(state)}
 
 
@@ -81,11 +83,11 @@ def _state_fields(state: dict) -> dict:
 
 def _withheld(
     head: JsonObject, fields: tuple[str, ...], reason_code: str | None = None,
-    *, state: dict | None = None,
+    *, state: Applicability | None = None,
 ) -> JsonObject:
     """A technique that is not applicable: every result field withheld."""
 
-    receipt = not_applicable_receipt(state or {"applicable": False, "reason_code": reason_code})
+    receipt = not_applicable_receipt(state or Applicability(applicable=False, reason_code=reason_code))
     return {
         **_state_fields(receipt),
         **head,
@@ -119,7 +121,7 @@ def _lots_reason(req: AnnualRequest, samples: list[Sample]) -> str | None:
         return REASON_LOTS_NOT_DERIVABLE_FOR_DATE_ONLY
     return None
 
-def _lords_receipt(lord_state: dict) -> dict:
+def _lords_receipt(lord_state: FrameState) -> dict:
     """The domicile-lord table a technique names its lords from, and whether
     the frame lets it name them."""
     if lord_state["applicable"]:

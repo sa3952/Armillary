@@ -29,6 +29,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from .module_state import Applicability
+
 FRAME_TABLE_VERSION = "method_frame_compatibility_v1"
 AUTHORIZED_METHOD_FRAME = "ecliptic_and_equinox_of_date_nutation_on"
 # Kept short: the response budget is shared.  The long form is the module
@@ -196,6 +198,12 @@ def solar_return_frame_refusal(mode) -> str | None:
     return None
 
 
+class FrameState(Applicability):
+    """One method's answer from the frame table; every failing reason, in order."""
+
+    reason_codes: list[str]
+
+
 def _requirement_met(requirement, mode) -> bool:
     alternatives = (
         requirement if isinstance(requirement[0], tuple) else (requirement,)
@@ -203,7 +211,7 @@ def _requirement_met(requirement, mode) -> bool:
     return any(getattr(mode, axis) in accepted for axis, accepted in alternatives)
 
 
-def method_frame_state(method: str, mode) -> dict:
+def method_frame_state(method: str, mode) -> FrameState:
     """Return ``{applicable, reason_code, reason_codes}`` for one method.
 
     Only the axes the method's row names are read, so a caller holding a partial
@@ -217,14 +225,12 @@ def method_frame_state(method: str, mode) -> dict:
             failing.append(code)
     if row.get("report", REPORT_FIRST) == REPORT_FIRST:
         failing = failing[:1]
-    return {
-        "applicable": not failing,
-        "reason_code": failing[0] if failing else None,
-        "reason_codes": failing,
-    }
+    return FrameState(
+        applicable=not failing, reason_code=failing[0] if failing else None, reason_codes=failing,
+    )
 
 
-def method_frame_states(mode) -> dict[str, dict]:
+def method_frame_states(mode) -> dict[str, FrameState]:
     return {method: method_frame_state(method, mode) for method in METHOD_FRAME_TABLE}
 
 
@@ -241,7 +247,7 @@ def body_longitude_frame_label(mode) -> str:
     return f"{mode.zodiac}_ecliptic_of_date_{equinox}_equinox"
 
 
-def frame_policy_receipt(mode, states: dict[str, dict]) -> dict:
+def frame_policy_receipt(mode, states: dict[str, FrameState]) -> dict:
     """Dossier receipt: which frame the methods require and what was refused."""
 
     return {

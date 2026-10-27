@@ -1,17 +1,9 @@
-"""〈黑月 Lilith 的平均、密切與自然〉: figure 1 (the osculating and the natural
-apogee minus the mean apogee over 2026, every 6 hours, one variant each),
-figure 2 (how often each puts Lilith in a different sign from the mean one,
-1950–2050, one sample a day), table 1 (the demonstration chart's three points
-as the product answers them, with the osculating apogee Swiss gives for the
-same instant) and the numbers the prose quotes.
+"""〈黑月 Lilith 的平均、密切與自然〉: figure 1 (osculating and natural apogee minus the mean apogee over 2026), figure 2
+(how often each puts Lilith in a different sign from the mean one, 1950–2050), table 1 and the numbers the prose quotes.
 
-The product computes the mean apogee, the natural (interpolated) apogee and
-the natural perigee (Swiss MEAN_APOG, INTP_APOG, INTP_PERG); it does not offer
-the osculating apogee (OSCU_APOG), the point most software labels "true
-Lilith".  The comparison computes that one directly with Swiss and the
-repository's ephemeris files, with the product's own flags (apparent,
-geocentric, tropical), and checks that Swiss's mean and natural points equal
-the product's answer for the demonstration chart.
+The product does not offer the osculating apogee (OSCU_APOG), the point most software labels "true Lilith".  It is
+computed directly with Swiss and the repository's ephemeris files, with the product's own flags, and Swiss's mean and
+natural points are checked against the product's answer for the demonstration chart.
 """
 from __future__ import annotations
 
@@ -22,22 +14,17 @@ from . import _fx
 from ._common import calc_ut, product_charts, swiss
 from ._demo import DEMO, zodiacal_minutes
 
-
 FRAGMENT = "blog-black-moon-lilith-mean-true-natural"
 MONTH_STARTS = (0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365)
-# Figure 1's vertical range per variant, degrees either side of zero, and its gridlines.
 SCALES = {"osculating": (32.0, (-30, -15, 0, 15, 30)), "natural": (8.0, (-6, -3, 0, 3, 6))}
 VARIANTS = (("osculating", "密切（常稱真 Lilith）減平均"), ("natural", "自然減平均"))
 LONG_RANGE = (1950, 2050)
 
-
 def _wrap(value: float) -> float:
     return ((value + 180) % 360) - 180
 
-
 def _sign(lon: float) -> int:
     return int(lon // 30) % 12
-
 
 def _year_2026(swe) -> dict:
     flags = swe.FLG_SWIEPH | swe.FLG_SPEED
@@ -53,9 +40,7 @@ def _year_2026(swe) -> dict:
     return {"osculating": osc, "natural": nat, "priapus_max": max(priapus),
             "mean_speed": calc_ut(swe, j0, swe.MEAN_APOG, flags)[3]}
 
-
 def _long_range(swe) -> dict:
-    """At 0h UT of every day 1950-01-01 … 2049-12-31."""
     flags = swe.FLG_SWIEPH
     j0, end = swe.julday(LONG_RANGE[0], 1, 1, 0), swe.julday(LONG_RANGE[1], 1, 1, 0)
     osc, nat = [], []
@@ -73,7 +58,6 @@ def _long_range(swe) -> dict:
     return {"count": days,
             "osculating": {"max": max(osc), "median": statistics.median(osc), "other_sign": other["osculating"] / days},
             "natural": {"max": max(nat), "median": statistics.median(nat), "other_sign": other["natural"] / days}}
-
 
 @functools.lru_cache(maxsize=1)
 def answers() -> dict:
@@ -93,7 +77,6 @@ def answers() -> dict:
     return {"points": points, "swiss": demo_swiss, "source": apsides["source"],
             "scope": apsides["scope"], "year": year, "long": long_range}
 
-
 def _check(data: dict) -> None:
     if set(data["points"]) != {"mean_lilith", "natural_lilith", "natural_priapus"}:
         raise RuntimeError(f"the product's lunar apsides are now {sorted(data['points'])}")
@@ -107,12 +90,10 @@ def _check(data: dict) -> None:
         if not max(values) < span:
             raise RuntimeError(f"the 2026 {key} differences no longer fit figure 1's scale")
 
-
 # --- figure 1: 2026 ----------------------------------------------------------------
 
 def _deg(v: float) -> str:
     return "0°" if v == 0 else f"{'+' if v > 0 else '−'}{abs(v):g}°"
-
 
 def _panel(series: list, span: float, grid: tuple, d0: float, d1: float, box: tuple, wide: bool,
            bound: _fx.Bound) -> list[str]:
@@ -134,7 +115,6 @@ def _panel(series: list, span: float, grid: tuple, d0: float, d1: float, box: tu
     points = [(t, v) for t, v in series if d0 <= t <= d1]
     out.append(_fx.path("M" + " L".join(f"{_fx.f(X(t))} {_fx.f(Y(v))}" for t, v in points), "fx-curve"))
     return out
-
 
 def _year_art(layout: str, fid: str, year: dict, bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
@@ -160,7 +140,6 @@ def _year_art(layout: str, fid: str, year: dict, bound: _fx.Bound) -> str:
     out.append("</svg>")
     return "".join(out)
 
-
 def _figure_year(data: dict) -> str:
     bound = _fx.Bound()
     year = data["year"]
@@ -180,26 +159,17 @@ def _figure_year(data: dict) -> str:
                f"密切的這一年最多差 {osc_text} 度，大約每個月來回擺一次；自然的最多差 {nat_text} 度。"
                "兩個選項的縱軸刻度不同；沒有開啟腳本時顯示密切的那一張"
                f"<a class=\"ar-cite\" href=\"#ref-4\">{bound.label('[4]')}</a>。")
-    return _fx.figure(
-        fid="fig-lilith-2026",
-        hero=True,
-        title="2026 年全年，密切 Lilith 與自然 Lilith 各自減去平均 Lilith 的差",
-        caption=caption,
+    return _fx.figure(fid="fig-lilith-2026", hero=True,
+        title="2026 年全年，密切 Lilith 與自然 Lilith 各自減去平均 Lilith 的差", caption=caption,
         art=_fx.FigureArt.drawn(_year_art, "fig-lilith-2026", year, bound),
-        controls=_fx.FigureControls(variants=VARIANTS, switch_label="比較哪一種"),
-        table=table,
-        bound=bound,
-    )
-
+        controls=_fx.FigureControls(variants=VARIANTS, switch_label="比較哪一種"), table=table, bound=bound)
 
 # --- figure 2: how often the sign differs ---------------------------------------
 
 ROWS = (("osculating", "密切 Lilith", "常稱真 Lilith；本站不提供"), ("natural", "自然 Lilith", "本站提供"))
 
-
 def _pct(share: float) -> str:
     return f"{share * 100:.1f}%"
-
 
 def _bars_art(layout: str, fid: str, long: dict, bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
@@ -236,7 +206,6 @@ def _bars_art(layout: str, fid: str, long: dict, bound: _fx.Bound) -> str:
     out.append("</svg>")
     return "".join(out)
 
-
 def _figure_bars(data: dict) -> str:
     bound = _fx.Bound()
     long = data["long"]
@@ -253,15 +222,8 @@ def _figure_bars(data: dict) -> str:
                f"密切的有 {bound.num(_pct(long['osculating']['other_sign']))} 的時間落在別的星座，"
                f"自然的是 {bound.num(_pct(long['natural']['other_sign']))}。表格另列差的中位數與最大差"
                f"<a class=\"ar-cite\" href=\"#ref-4\">{bound.label('[4]')}</a>。")
-    return _fx.figure(
-        fid="fig-lilith-sign",
-        title="1950–2049 年，密切與自然 Lilith 跟平均 Lilith 落在不同星座的時間比例",
-        caption=caption,
-        art=_fx.FigureArt.drawn(_bars_art, "fig-lilith-sign", long, bound),
-        table=table,
-        bound=bound,
-    )
-
+    return _fx.figure(fid="fig-lilith-sign", title="1950–2049 年，密切與自然 Lilith 跟平均 Lilith 落在不同星座的時間比例",
+        caption=caption, art=_fx.FigureArt.drawn(_bars_art, "fig-lilith-sign", long, bound), table=table, bound=bound)
 
 # --- table 1: the demonstration chart --------------------------------------------
 
@@ -269,21 +231,16 @@ def _signed(value: float) -> str:
     text = f"{abs(value):.1f}°"
     return text if text == "0.0°" else ("+" if value > 0 else "−") + text
 
-
 def _demo_rows(data: dict) -> str:
     p, s = data["points"], data["swiss"]
-    rows = (
-        ("平均黑月 Lilith", p["mean_lilith"], "本站提供"),
-        ("自然黑月 Lilith", p["natural_lilith"], "本站提供"),
+    rows = (("平均黑月 Lilith", p["mean_lilith"], "本站提供"), ("自然黑月 Lilith", p["natural_lilith"], "本站提供"),
         ("密切 Lilith（常稱真 Lilith）", s["osculating"], "本站不提供；以同一星曆另算"),
-        ("自然月球近地點 Priapus", p["natural_priapus"], "本站提供"),
-    )
+        ("自然月球近地點 Priapus", p["natural_priapus"], "本站提供"))
     return "\n".join(
         f'          <tr><th scope="row">{name}</th><td class="n">{zodiacal_minutes(lon)}</td>'
         f'<td class="n">{_signed(_wrap(lon - p["mean_lilith"] if "Priapus" not in name else lon - p["natural_lilith"] - 180))}</td>'
         f'<td>{note}</td></tr>'
         for name, lon, note in rows)
-
 
 def build() -> tuple[dict[str, str], list[str]]:
     data = answers()

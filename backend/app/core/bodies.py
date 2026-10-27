@@ -41,7 +41,7 @@ from .formatting import (
     swiss_azimuth_to_standard,
 )
 from .computation_mode import heliocentric_apparent_calc_ut, uses_sun_centre_light_time
-from .frame_compatibility import NON_EARTH_OBSERVER_CENTER, method_frame_state
+from .frame_compatibility import NON_EARTH_OBSERVER_CENTER, FrameState, method_frame_state
 from .source_reading import ORIGINAL_LANGUAGE_READ, cited
 from .time_utils import earth_rotation_jd_ut
 from .trace import Trace
@@ -206,7 +206,7 @@ def _null_body_record(
     name: str,
     *,
     reason_code: str,
-    phenomena_reason_code: str,
+    phenomena_reason_code: str | None,
     retflag_ecliptic: int | None,
     retflag_equatorial: int | None,
     used_full_ephemeris: bool,
@@ -292,7 +292,7 @@ def _speed_semantics(ctx, key: str, physical: bool) -> tuple[str, str]:
     return speed_position_derivative_status, speed_distance_semantics
 
 
-def _phenomena(jd_ut: float, body_id: int, key: str, flags: int, physical: bool, phenomena_state: dict) -> tuple:
+def _phenomena(jd_ut: float, body_id: int, key: str, flags: int, physical: bool, phenomena_state: FrameState) -> tuple:
     """Swiss pheno_ut's Earth-observer quantities, or null with the reason."""
 
     phase_angle = illum_fraction = elongation = app_diameter = app_mag = None

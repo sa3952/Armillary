@@ -30,6 +30,7 @@ from .core.birth_time_sensitivity import (
 from .core.prenatal_points import PrenatalPlace
 from .core.dossier import EVENT_SEARCH_REASON_CODES
 from .core.module_state import (
+    EventModuleState,
     MODULE_NOT_APPLICABLE,
     SEARCH_EPHEMERIS_REFUSALS,
     computed_receipt,
@@ -61,7 +62,7 @@ def _prenatal_place(input_request: ChartRequest, context: ComputationContext) ->
     )
 
 
-def _event_availability_entry(requested: bool) -> dict:
+def _event_availability_entry(requested: bool) -> EventModuleState:
     """Six-field state of an event search, written where the search runs.
 
     A refusal from the search replaces it with ``_event_search_refusal``.
@@ -73,10 +74,10 @@ def _event_availability_entry(requested: bool) -> dict:
         else not_requested_state()
     )
     # The closed status word consumers read, projected once from the six fields.
-    return {**state, "status": module_status_word(state)}
+    return EventModuleState(**state, status=module_status_word(state))
 
 
-def _event_search_refusal(module_label: str, error: Exception, trace: Trace) -> dict:
+def _event_search_refusal(module_label: str, error: Exception, trace: Trace) -> EventModuleState:
     if isinstance(error, FullEphemerisRequiredError):
         if error.reason not in SEARCH_EPHEMERIS_REFUSALS:
             raise error
@@ -97,13 +98,13 @@ def _event_search_refusal(module_label: str, error: Exception, trace: Trace) -> 
     trace.add(module_label, result={"reason_code": reason_code}, note=note)
     # The search was attempted (executed) and produced nothing.  Only leaving
     # the coverage makes it inapplicable to the request; a server fault does not.
-    return {
+    return EventModuleState(
         **module_state(
             requested=True, executed=True, applicable=applicable, available=False,
             reason_code=reason_code,
         ),
-        "status": MODULE_NOT_APPLICABLE,
-    }
+        status=MODULE_NOT_APPLICABLE,
+    )
 
 
 def _effective_request(

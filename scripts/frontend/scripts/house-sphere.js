@@ -7,20 +7,15 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function buildHouseSphere(Core) {
   "use strict";
 
-  // 〈宮位制〉文章的天球示意圖。兩個繪製端讀同一份場景（scene）：
-  //   - 文章裡每一種宮位制的靜態 SVG，由 scripts/frontend/figures/house_sphere.py 在建置時
-  //     經 Node 呼叫 toMarkup(scene(...)) 產生，沒有 JavaScript 或列印時看的就是它；
-  //   - 頁面上可以轉的那一張，由 mount() 以 createElementNS＋setAttribute＋textContent 建立。
-  // 顏色、線寬與字級只用 class（article.css 的 --hs-* 自訂屬性）；沒有 innerHTML、沒有 style
-  // 屬性（CSP 的 style-src 'self' 與 trusted-types 'none'）。輸入只有緯度與地方恆星時，
-  // 不收任何出生資料。
+  // 〈宮位制〉文章的天球示意圖。兩個繪製端讀同一份場景（scene）：  - 文章裡每一種宮位制的靜態 SVG，由
+  // scripts/frontend/figures/house_sphere.py 在建置時     經 Node 呼叫 toMarkup(scene(...)) 產生，沒有 JavaScript 或列
+  // 印時看的就是它；  - 頁面上可以轉的那一張，由 mount() 以 createElementNS＋setAttribute＋textContent 建立。顏色、線寬
+  // 與字級只用 class（article.css 的 --hs-* 自訂屬性）；沒有 innerHTML、沒有 style 屬性（CSP 的 style-src 'self' 與
+  // trusted-types 'none'）。輸入只有緯度與地方恆星時，不收任何出生資料。
 
   const SVG_NS = "http://www.w3.org/2000/svg";
   const SIGNS = ["牡羊", "金牛", "雙子", "巨蟹", "獅子", "處女", "天秤", "天蠍", "射手", "摩羯", "水瓶", "雙魚"];
-  const NAMES = Object.freeze({
-    W: "整宮", E: "等分宮", O: "Porphyry", B: "Alcabitius", C: "Campanus", R: "Regiomontanus", P: "Placidus",
-  });
-  // 每種宮位制一段白話：切哪一個圓、怎麼切、怎麼帶回黃道。
+  const NAMES = Object.freeze({ W: "整宮", E: "等分宮", O: "Porphyry", B: "Alcabitius", C: "Campanus", R: "Regiomontanus", P: "Placidus" });
   const CAPTIONS = Object.freeze({
     W: ["不切天空，只數星座",
       "上升點（此刻東方地平線上的那一點黃道）落在哪個星座，那整個星座就是第一宮，之後一個星座一宮。圖上的分隔線就是星座交界；把它們畫成經過北黃極（黃道的「北極」）的半圓，只是為了在球上看得見。"],
@@ -44,10 +39,8 @@
       "中天此刻沉到地平線下（只會在極圈內發生）。這種宮位制先用上升點與中天把天空分成四段；中天沉下去之後，這四段就不再是這個方法設想的樣子。宮頭在數學上仍算得出，圖上照畫，但本站在這種情形不提供這種宮位制，可以改用整宮或等分宮。",
     degenerate_cusp_cycle_rejected:
       "中天此刻沉到地平線下（只會在極圈內發生）。照 Swiss Ephemeris 的定義，第十宮頭改用地平線上方子午圈的那一點，十二個宮頭於是反向排列（圖上照畫）。本站拒收這種排列，可以改用整宮或等分宮；這是本站的選擇，不是數學上算不出來。",
-    quadrant_high_latitude_sensitivity:
-      "緯度 60 度以上：四分宮制的宮頭對時刻與緯度的微小變動非常敏感，本站的結果會標「不穩定」。",
-    polar_band_geometry:
-      "在極區帶內：本站照常計算，但標為「可用，但屬極區幾何」。",
+    quadrant_high_latitude_sensitivity: "緯度 60 度以上：四分宮制的宮頭對時刻與緯度的微小變動非常敏感，本站的結果會標「不穩定」。",
+    polar_band_geometry: "在極區帶內：本站照常計算，但標為「可用，但屬極區幾何」。",
   });
   const FLAG = "教學示意・不是你的命盤";
   const DEFAULT_VIEW = Object.freeze({ yaw: 165, pitch: 22 });
@@ -67,7 +60,6 @@
     return `${Math.floor(minutes / 60)} 時 ${String(minutes % 60).padStart(2, "0")} 分`;
   };
 
-  /** 一次繪製的全部結果：宮頭、本站狀態、是否該畫成「本站不算」。 */
   function evaluate(state) {
     const eps = Core.OBLIQUITY;
     const result = Core.cusps(state.sys, state.lat, state.armc, eps);
@@ -76,15 +68,13 @@
     return { result, status, sizes, refused: status.state === "unavailable" };
   }
 
-  /** 給螢幕閱讀器與靜態圖 aria-label 的一段話。 */
   function describe(state, evaluated) {
     const head = `${NAMES[state.sys]}，${fmtLat(state.lat)}，地方恆星時 ${fmtLst(state.armc)}`;
     const { result, sizes, refused, status } = evaluated;
     if (!result.cusps) return `${head}：這種構造在這裡沒有解，本站不算。`;
     const list = result.cusps.map((c, i) => `第 ${i + 1} 宮 ${fmtLon(c)}`).join("、");
     const verdict = refused
-      ? `本站在這種情形不算這種宮位制（${status.reason === "mc_below_horizon_rejected" ? "中天沉到地平線下" : "宮頭反向排列"}）。`
-      : "";
+      ? `本站在這種情形不算這種宮位制（${status.reason === "mc_below_horizon_rejected" ? "中天沉到地平線下" : "宮頭反向排列"}）。` : "";
     return `${head}。十二個宮頭依序是：${list}。${sizeSentence(sizes)}${verdict}`;
   }
 
@@ -98,7 +88,6 @@
     return low === high ? `每一宮都是 ${low} 度。` : `宮的大小從 ${low} 度到 ${high} 度。`;
   }
 
-  // 場景
   const SIZE = 640;
   // 球在圖上的位置與大小。頁面上可以轉的那一張用 LIVE；文章圖版（寬版與手機直版）的靜態圖由
   // house_sphere.py 傳入自己的 frame（plate: true），字改用圖版元件的字級 class。
@@ -152,18 +141,13 @@
         }
       }
       if (!best) best = { x: item.x, y: item.y, box: boxAt(item, item.x, item.y) };
-      if (best.x !== item.x || best.y !== item.y) {
-        item.node.attrs.x = fmt(best.x);
-        item.node.attrs.y = fmt(best.y);
-      }
+      if (best.x !== item.x || best.y !== item.y) { item.node.attrs.x = fmt(best.x); item.node.attrs.y = fmt(best.y); }
       placed.push(best.box);
     }
   }
 
   const node = (tag, attrs, content) => ({
-    tag, attrs: attrs || {},
-    children: Array.isArray(content) ? content : [],
-    text: typeof content === "string" ? content : null,
+    tag, attrs: attrs || {}, children: Array.isArray(content) ? content : [], text: typeof content === "string" ? content : null,
   });
   const f1 = (x) => (Math.round(x * 10) / 10).toFixed(1);
 
@@ -172,18 +156,15 @@
     const y = state.yaw * Core.D;
     const p = state.pitch * Core.D;
     const d = Core.add(
-      Core.scale(Core.add(Core.scale(F.N, Math.cos(y)), Core.scale(F.E, Math.sin(y))), Math.cos(p)),
-      Core.scale(F.Z, Math.sin(p)),
+      Core.scale(Core.add(Core.scale(F.N, Math.cos(y)), Core.scale(F.E, Math.sin(y))), Math.cos(p)), Core.scale(F.Z, Math.sin(p)),
     );
     const forward = Core.neg(d);
     const right = Core.norm(Core.cross(forward, F.Z));
     const up = Core.cross(right, forward);
     const mirror = state.inside ? -1 : 1;
-    return (v) => [frame.cx + mirror * frame.radius * Core.dot(v, right), frame.cy - frame.radius * Core.dot(v, up),
-      Core.dot(v, d)];
+    return (v) => [frame.cx + mirror * frame.radius * Core.dot(v, right), frame.cy - frame.radius * Core.dot(v, up), Core.dot(v, d)];
   }
 
-  /** 圖版用的字：hs-t 的角色換成圖版元件的字級（fx-t／fx-small）與淡墨（fx-dim）。 */
   function plateText(cls) {
     const parts = cls.split(" ").filter((name) => name !== "hs-t");
     const dim = parts.some((name) => name === "hs-t-dim" || name === "hs-t-back" || name === "hs-t-sign");
@@ -191,7 +172,6 @@
     return ["hs-tx", "fx-t", dim ? "fx-small fx-dim" : null, ...roles].filter(Boolean).join(" ");
   }
 
-  /** 球本身的五個圖層（不含標題）。frame 決定球心、半徑與字的 class；幾何與 frame 無關。 */
   function sphere(state, frame) {
     const eps = Core.OBLIQUITY;
     const evaluated = evaluate(state);
@@ -210,7 +190,6 @@
     const layers = { base: [], back: [], front: [], top: [], labels: [] };
     // 每個字的位置與「往外」的方向，給頁面上那張避開重疊用（declutter）；圖版不用。
     const tagged = [];
-
     function poly(points, cls) {
       let run = [];
       let front = null;
@@ -264,19 +243,14 @@
       const unit = Math.hypot(dx, dy) || 1;
       tagged.push({ node: labelText, x, y, ux: dx / unit, uy: dy / unit, anchor: "middle", rank: RANK[text] ?? 4 });
     }
-
     const sys = state.sys;
     layers.base.push(node("circle", { class: "hs-ball", cx: CX, cy: CY, r: frame.radius }));
     const horizon = greatCircle(F.N, F.E, 0, 360, 4).map(proj);
-    layers.base.push(node("polygon", {
-      class: "hs-ground", points: horizon.map((q) => `${fmt(q[0])},${fmt(q[1])}`).join(" "),
-    }));
+    layers.base.push(node("polygon", { class: "hs-ground", points: horizon.map((q) => `${fmt(q[0])},${fmt(q[1])}`).join(" ") }));
     poly(full(F.N, F.E), "hs-hor");
     poly(full(F.N, F.Z), "hs-mer");
     poly(full(F.Meq, F.E), sys === "R" ? "hs-equ hs-strong" : "hs-equ");
     poly(full(F.Z, F.E), sys === "C" ? "hs-pv hs-strong" : "hs-pv");
-
-    // 這種宮位制自己的構造線
     if (result.cusps && (sys === "W" || sys === "E" || sys === "O")) {
       result.cusps.forEach((c) => poly(halfThrough(F.K, Core.eclVec(c, eps)), "hs-cut hs-cut-faint"));
       dot3(F.K, "hs-pt hs-pt-dim");
@@ -321,11 +295,9 @@
             if (sampleArc !== null) curve.push(Core.raDecVec(state.armc - Core.placidusHourAngle(house, sampleArc), sampleDec));
           }
           both(curve, "hs-cut");
-          // 這個宮頭自己的周日圈：亮出被三等分的那段半弧
           const dec = Core.decOfLon(result.cusps[house - 1], eps);
           const arc = Core.semiArc(dec, state.lat);
-          const marks = house === 11 || house === 12
-            ? [0, -arc / 3, (-2 * arc) / 3, -arc]
+          const marks = house === 11 || house === 12 ? [0, -arc / 3, (-2 * arc) / 3, -arc]
             : [180, 180 + (180 - arc) / 3, 180 + (2 * (180 - arc)) / 3, 360 - arc];
           const piece = [];
           for (let k = 0; k <= 30; k += 1) piece.push(Core.raDecVec(state.armc - (marks[0] + ((marks[3] - marks[0]) * k) / 30), dec));
@@ -344,8 +316,6 @@
       dot3(F.P, "hs-pt hs-pt-dim");
       label(F.P, "北天極", "hs-t hs-t-dim", 18);
     }
-
-    // 黃道：每宮一段，兩色交替；段旁是宮號，黑點是宮頭
     if (result.cusps) {
       for (let i = 0; i < 12; i += 1) {
         const start = result.cusps[i];
@@ -357,9 +327,7 @@
         label(Core.eclVec(start + span / 2, eps), String(i + 1), "hs-t hs-t-num", 20);
       }
       result.cusps.forEach((c, i) => dot3(Core.eclVec(c, eps), i % 3 === 0 ? "hs-pt hs-pt-ink hs-pt-big" : "hs-pt hs-pt-ink"));
-    } else {
-      poly(full(Core.eclVec(0, eps), Core.eclVec(90, eps)), "hs-ecl hs-ecl-plain");
-    }
+    } else { poly(full(Core.eclVec(0, eps), Core.eclVec(90, eps)), "hs-ecl hs-ecl-plain"); }
     for (let s = 0; s < 12; s += 1) {
       const v = Core.eclVec(s * 30, eps);
       const q = proj(v);
@@ -379,7 +347,6 @@
         tagged.push({ node: sign, x, y, ux: dx / length, uy: dy / length, anchor: "middle", rank: 6, size: SIGN_FONT });
       }
     }
-    // 軸點、方位與天頂
     const ascVector = Core.eclVec(result.asc, eps);
     const mcVector = Core.eclVec(result.mc, eps);
     label(ascVector, "上升", "hs-t hs-t-axis", 40);
@@ -403,18 +370,16 @@
   }
 
   /**
-   * 頁面上可以轉的那一張。view 是頁面量到的字級（article.css 的 --hs-font，以 viewBox 單位計）：
-   *   · 沒給 view 時就是桌機的 20，標題兩行在原位；
-   *   · 窄螢幕字放大（compact）：不畫星座名（窄螢幕本來就藏起來）、副標太長就拆兩行，
-   *     標題區放不下時把 viewBox 往上延伸，而不是把球縮小。
-   * 頁面上那張（有 view）會把互相壓到的字沿各自「往外」的方向推開（declutter）。
+   * 頁面上可以轉的那一張。view 是頁面量到的字級（article.css 的 --hs-font，以 viewBox 單位計）：  · 沒給 view 時就是桌
+   * 機的 20，標題兩行在原位；  · 窄螢幕字放大（compact）：不畫星座名（窄螢幕本來就藏起來）、副標太長就拆兩行，    標題
+   * 區放不下時把 viewBox 往上延伸，而不是把球縮小。頁面上那張（有 view）會把互相壓到的字沿各自「往外」的方向推開
+   * （declutter）。
    */
   function scene(state, view) {
     const font = (view && view.font) || BASE_FONT;
     const compact = Boolean(view && view.compact);
     const { evaluated, layers, tagged, fmt } = sphere(state, compact ? { ...LIVE, signs: false } : LIVE);
     const sys = state.sys;
-
     const dim = "hs-t hs-t-dim";
     const flag = "hs-t hs-t-flag";
     const inside = state.inside ? "｜從裡面看" : "";
@@ -424,7 +389,6 @@
       lines.push([`${NAMES[sys]}｜${fmtLat(state.lat)}`, dim], [`恆星時 ${fmtLst(state.armc)}${inside}`, dim]);
     } else lines.push([subtitle, dim]);
     if (evaluated.refused) lines.push(["本站在這種情形不算這種宮位制", flag]);
-    // 基線：20 的字是 30、58、86（原本的位置）；字放大時等比放寬。
     const baselines = lines.map((_line, i) => Math.round(font * (1.5 + 1.4 * i)));
     const extra = Math.max(0, Math.ceil(baselines[baselines.length - 1] + 0.3 * font - TITLE_ROOM));
     const title = lines.map(([text, cls], i) => node("text", { class: cls, x: 12, y: baselines[i] - extra }, text));
@@ -436,13 +400,11 @@
     }, [...layers, node("g", { class: "hs-title" }, title)]);
   }
 
-  /** 文章圖版裡的球：同一個場景，放進圖版的寬版或手機直版（標題與圖例由 house_sphere.py 畫）。 */
   function plate(state, frame) {
     const { layers } = sphere(state, { ...LIVE, ...frame, plate: true });
     return node("g", { class: "hs-svg hs-plate" }, layers);
   }
 
-  /** 宮的大小：沿黃道的寬度條，寬度與度數成正比。 */
   function stripScene(sizes, compact) {
     // 窄螢幕的字較大（article.css），窄的宮就不寫字，免得字超出色條。
     const numberRoom = compact ? 38 : 30;
@@ -462,7 +424,6 @@
   const escapeText = (text) => String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const escapeAttr = (text) => escapeText(text).replace(/"/g, "&quot;");
 
-  /** 靜態 SVG：每個元素一行，屬性依場景的順序。 */
   function toMarkup(tree, depth) {
     const pad = "  ".repeat(depth || 0);
     const attrs = Object.entries(tree.attrs).map(([key, value]) => ` ${key}="${escapeAttr(value)}"`).join("");
@@ -480,7 +441,6 @@
     return element;
   }
 
-  // 頁面上可以轉的那一張
   function mount(container) {
     const document = container.ownerDocument;
     const window = document.defaultView;
@@ -494,14 +454,12 @@
     let announceTimer = null;
     let timer = null;
     let last = 0;
-
     function announce(text) {
       // 只在停下來之後念一次，拖動滑桿或轉動時不連續報讀。
       window.clearTimeout(announceTimer);
       if (state.playing) return;
       announceTimer = window.setTimeout(() => { $("summary").textContent = text; }, 700);
     }
-
     // 圖上的字級跟著 article.css 的 --hs-font（窄螢幕較大）；量到不同就照新的字級重畫一次。
     // 字級只隨視窗寬度變：第一次畫好與視窗改變大小時才量，轉動或播放的每一幀不讀 computed style。
     const view = { font: BASE_FONT, compact: false, measured: false };
@@ -512,7 +470,6 @@
       view.compact = font > BASE_FONT;
       schedule();
     }
-
     function render() {
       const tree = scene(state, view);
       const svg = toElement(document, tree);
@@ -527,17 +484,9 @@
       else stage.prepend(svg);
       bindSvg(svg);
       side();
-      if (!view.measured) {
-        view.measured = true;
-        measureFont(svg);
-      }
+      if (!view.measured) { view.measured = true; measureFont(svg); }
     }
-    function schedule() {
-      if (pending) return;
-      pending = true;
-      window.requestAnimationFrame(() => { pending = false; render(); });
-    }
-
+    function schedule() { if (pending) return; pending = true; window.requestAnimationFrame(() => { pending = false; render(); }); }
     function side() {
       const evaluated = evaluate(state);
       const caption = CAPTIONS[state.sys];
@@ -577,7 +526,6 @@
       $("lst").setAttribute("aria-valuetext", `地方恆星時 ${fmtLst(state.armc)}`);
       announce(warning ? `${describe(state, evaluated)}${warning}` : describe(state, evaluated));
     }
-
     const rotate = (dYaw, dPitch) => {
       state.yaw = Core.mod360(state.yaw + dYaw);
       state.pitch = Math.max(-85, Math.min(85, state.pitch + dPitch));
@@ -608,12 +556,7 @@
       svg.addEventListener("pointerup", stop);
       svg.addEventListener("pointercancel", stop);
     }
-    function resetView() {
-      state.yaw = DEFAULT_VIEW.yaw;
-      state.pitch = DEFAULT_VIEW.pitch;
-      schedule();
-    }
-
+    function resetView() { state.yaw = DEFAULT_VIEW.yaw; state.pitch = DEFAULT_VIEW.pitch; schedule(); }
     container.querySelectorAll('input[name="hs-system"]').forEach((input) => {
       input.checked = input.value === state.sys;
       input.addEventListener("change", () => { state.sys = input.value; schedule(); });
@@ -658,14 +601,9 @@
           $("lst").value = String(state.armc);
           render();
         }, 1200);
-      } else {
-        last = 0;
-        window.requestAnimationFrame(step);
-      }
+      } else { last = 0; window.requestAnimationFrame(step); }
     });
-
     window.addEventListener("resize", () => { const svg = $("svg"); if (svg) measureFont(svg); });
-
     live.hidden = false;
     const fallback = $("nojs");
     if (fallback) fallback.hidden = true;
@@ -680,7 +618,6 @@
   }
 
   return Object.freeze({
-    NAMES, CAPTIONS, WARNINGS, FLAG, DEFAULT_VIEW, START, fmtLat, fmtLst,
-    evaluate, describe, scene, plate, toMarkup, mount, mountAll,
+    NAMES, CAPTIONS, WARNINGS, FLAG, DEFAULT_VIEW, START, fmtLat, fmtLst, evaluate, describe, scene, plate, toMarkup, mount, mountAll,
   });
 });

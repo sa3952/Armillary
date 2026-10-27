@@ -24,10 +24,12 @@ from typing import Final
 from .formatting import dms_text, sign_position
 from .method_status import method_head
 from .module_state import (
+    Applicability,
+    ModuleState,
     PRODUCT_FORMULA_SOURCE,
-    STATE_FIELDS,
     computed_receipt,
     frame_table_refusal,
+    state_fields,
 )
 from .source_reading import TRANSLATION_READ, cited
 from .trace import Trace
@@ -279,7 +281,7 @@ def compute_lunar_mansions(
     }
 
 
-def lunar_mansions_not_applicable(state: dict, trace: Trace) -> dict:
+def lunar_mansions_not_applicable(state: Applicability, trace: Trace) -> dict:
     refusal = frame_table_refusal(
         state, trace, "月宿",
         note=(
@@ -290,7 +292,7 @@ def lunar_mansions_not_applicable(state: dict, trace: Trace) -> dict:
     return lunar_mansions_unavailable(refusal)
 
 
-def lunar_mansions_unavailable(receipt: dict) -> dict:
+def lunar_mansions_unavailable(receipt: ModuleState) -> dict:
     """The module with no result, under the six state fields given.
 
     The frame table's refusal (not executed) and a Moon position the ephemeris
@@ -299,7 +301,7 @@ def lunar_mansions_unavailable(receipt: dict) -> dict:
 
     return {
         **method_head(METHOD, "lunar_mansions", source_ref=SOURCE_REF),
-        **{field: receipt[field] for field in STATE_FIELDS},
+        **state_fields(receipt),
         "division": None,
         "boundary_flag_degrees": None,
         "time_basis": None,

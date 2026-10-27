@@ -218,7 +218,6 @@ CITATION_VERIFICATION_STATES = (
     # Read in an online transcription of the cited edition, not its printed page.
     "checked_against_online_transcription_not_printed_page",
 )
-_RESEARCH_CITED = CITATION_VERIFICATION_STATES[0]
 _EDITION_PAGES_CHECKED = CITATION_VERIFICATION_STATES[1]
 _ONLINE_TRANSCRIPTION_CHECKED = CITATION_VERIFICATION_STATES[2]
 # The copies read are the 1964 reprint; its imprint lists reprints of the 1940

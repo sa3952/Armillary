@@ -22,7 +22,6 @@ every other view from the response.
 
 from dataclasses import dataclass
 import importlib.metadata
-from typing import Any
 
 import swisseph as swe
 
@@ -40,9 +39,10 @@ from .core.birth_time_sensitivity import (
 )
 from .core.fixed_stars import fixed_star_receipt
 from .core.dossier import build_calculation_dossier
-from .core.module_state import module_status_word
+from .core.module_state import EventModuleState, module_status_word
 from .chart_stages import (
     AstronomicalFacts,
+    ChartSections,
     DerivedChart,
     EventFacts,
     HouseFacts,
@@ -154,54 +154,63 @@ def _derived_methods(facts: AstronomicalFacts, methods: DerivedChart) -> JsonObj
     }
 
 
+def _sample_birth_time_interval(
+    facts: AstronomicalFacts, methods: DerivedChart
+) -> JsonObject | None:
+    """The sampling pass for the request's precision; None for an exact time."""
+
+    time, positions = facts.time, facts.positions
+    input_request = time.input_request
+    if input_request.birth_time_precision == "approximate_hour":
+        return build_approximate_hour_sensitivity(
+            request=input_request,
+            body_defs=positions.body_defs,
+            chart=RepresentativeChart(
+                bodies=positions.bodies,
+                houses=facts.houses.houses,
+                placements=facts.houses.planet_in_house,
+                sect=methods.sect,
+                lots=methods.lots,
+                void_of_course=methods.void_of_course,
+                offset_seconds=time.representative_offset_seconds,
+                semantics=time.time_conversion["input_semantics"],
+                dodecatemoria=methods.dodecatemoria,
+                essential_dignities=methods.essential_dignities,
+            ),
+        )
+    if input_request.birth_time_precision == "date_only":
+        if time.civil_day is None:  # resolved for every date_only chart
+            raise InternalInvariantError("time.civil_day is not None")
+        return build_date_only_sensitivity(
+            request=input_request,
+            body_defs=positions.body_defs,
+            node_defs=positions.node_defs,
+            civil_day=time.civil_day,
+            chart=RepresentativeChart(
+                bodies=positions.bodies,
+                nodes=positions.nodes,
+                local_time=time.time_conversion["date_only_anchor"]["anchor_local_time"],
+                semantics=time.representative_policy,
+                dodecatemoria=methods.dodecatemoria,
+            ),
+        )
+    return None
+
+
 def _birth_time_sensitivity(
     facts: AstronomicalFacts, methods: DerivedChart
-) -> tuple[JsonObject, JsonObject]:
+) -> tuple[JsonObject, EventModuleState]:
     """Stage 4: the sampling pass across a non-exact birth-time interval.
 
     Returns the result and the pass's own event-module state: the one the
     event stage wrote, or the refusal this pass hit.
     """
 
-    time, positions = facts.time, facts.positions
+    time = facts.time
     input_request = time.input_request
     state = facts.events.availability["birth_time_sensitivity"]
     try:
-        if input_request.birth_time_precision == "approximate_hour":
-            birth_time_sensitivity = build_approximate_hour_sensitivity(
-                request=input_request,
-                body_defs=positions.body_defs,
-                chart=RepresentativeChart(
-                    bodies=positions.bodies,
-                    houses=facts.houses.houses,
-                    placements=facts.houses.planet_in_house,
-                    sect=methods.sect,
-                    lots=methods.lots,
-                    void_of_course=methods.void_of_course,
-                    offset_seconds=time.representative_offset_seconds,
-                    semantics=time.time_conversion["input_semantics"],
-                    dodecatemoria=methods.dodecatemoria,
-                    essential_dignities=methods.essential_dignities,
-                ),
-            )
-        elif input_request.birth_time_precision == "date_only":
-            if time.civil_day is None:  # resolved for every date_only chart
-                raise InternalInvariantError("time.civil_day is not None")
-            birth_time_sensitivity = build_date_only_sensitivity(
-                request=input_request,
-                body_defs=positions.body_defs,
-                node_defs=positions.node_defs,
-                civil_day=time.civil_day,
-                chart=RepresentativeChart(
-                    bodies=positions.bodies,
-                    nodes=positions.nodes,
-                    local_time=time.time_conversion["date_only_anchor"]["anchor_local_time"],
-                    semantics=time.representative_policy,
-                    dodecatemoria=methods.dodecatemoria,
-                ),
-            )
-        else:
-            birth_time_sensitivity = None
+        birth_time_sensitivity = _sample_birth_time_interval(facts, methods)
     except (FullEphemerisRequiredError, swe.Error) as error:
         refusal = _event_search_refusal("出生時間敏感度取樣", error, time.trace)
         return {
@@ -219,7 +228,7 @@ def _birth_time_sensitivity(
     return birth_time_sensitivity, state
 
 
-def _withdraw_full_ephemeris_claims(node: Any) -> None:
+def _withdraw_full_ephemeris_claims(node: object) -> None:
     if isinstance(node, dict):
         for key, value in node.items():
             if key == "used_full_ephemeris" and value is True:
@@ -246,20 +255,13 @@ def _leave_star_provenance_to_the_dossier(astronomical_data: JsonObject) -> None
             del star[key]
 
 
-def _assemble_chart_response(
-    facts: AstronomicalFacts,
-    methods: DerivedChart,
-    *,
-    build_identity: JsonObject,
-) -> JsonObject:
-    """Stage 5: the one detailed response; the dossier is a projection of it."""
+def _chart_sections(facts: AstronomicalFacts, methods: DerivedChart) -> ChartSections:
+    """The response sections, with the sign text the page prints attached."""
 
-    time = facts.time
-    library_info = _library_info()
     astronomical_data = _astronomical_data(facts)
     derived_geometry = {
         "antiscia": _module_container(
-            methods.antiscia, time.input_request.options.include_antiscia
+            methods.antiscia, facts.time.input_request.options.include_antiscia
         )
     }
     derived_methods = _derived_methods(facts, methods)
@@ -275,49 +277,69 @@ def _assemble_chart_response(
         derived_methods=derived_methods,
         birth_time_sensitivity=birth_time_sensitivity,
     )
+    return ChartSections(
+        astronomical_data=astronomical_data,
+        derived_geometry=derived_geometry,
+        derived_methods=derived_methods,
+        birth_time_sensitivity=birth_time_sensitivity,
+        event_module_availability=event_module_availability,
+    )
+
+
+def _output_contract() -> JsonObject:
+    return {
+        "status": "provisional",
+        "compatibility": "additive_during_0.x_unless_a_documented_correctness_fix_requires_change",
+        "layers": {
+            "astronomical_data": "直接天文計算與座標／時間轉換",
+            "derived_geometry": "只需明示公式的幾何轉換",
+            "derived_methods": _DERIVED_METHODS_LAYER_TEXT,
+        },
+    }
+
+
+def _assemble_chart_response(
+    facts: AstronomicalFacts,
+    methods: DerivedChart,
+    *,
+    build_identity: JsonObject,
+) -> JsonObject:
+    """Stage 5: the one detailed response; the dossier is a projection of it."""
+
+    time = facts.time
+    library_info = _library_info()
+    sections = _chart_sections(facts, methods)
     # Every Swiss call of the chart is behind this point.  If an input file
     # changed since the chart's manifest was read, which bytes Swiss read
     # cannot be attributed, so no object keeps the full-ephemeris claim.
     input_files_unchanged = input_files_unchanged_since(time.ephemeris_input_watch)
     if not input_files_unchanged:
-        _withdraw_full_ephemeris_claims(astronomical_data)
+        _withdraw_full_ephemeris_claims(sections.astronomical_data)
     trace_steps = time.trace.as_list()
     calculation_dossier = build_calculation_dossier(
         time,
-        astronomical_data=astronomical_data,
-        derived_methods=derived_methods,
-        derived_geometry=derived_geometry,
-        birth_time_sensitivity=birth_time_sensitivity,
+        sections,
         library_info=library_info,
         full_ephemeris_files_available=_HAS_FULL_EPHEMERIS,
         input_files_unchanged_during_chart=input_files_unchanged,
         build_identity=build_identity,
         trace_steps=trace_steps,
-        event_module_availability=event_module_availability,
         latitude_regime=facts.houses.latitude_regime,
     )
-    _leave_star_provenance_to_the_dossier(astronomical_data)
+    _leave_star_provenance_to_the_dossier(sections.astronomical_data)
 
     return {
         "schema_version": SCHEMA_VERSION,
-        "output_contract": {
-            "status": "provisional",
-            "compatibility": "additive_during_0.x_unless_a_documented_correctness_fix_requires_change",
-            "layers": {
-                "astronomical_data": "直接天文計算與座標／時間轉換",
-                "derived_geometry": "只需明示公式的幾何轉換",
-                "derived_methods": _DERIVED_METHODS_LAYER_TEXT,
-            },
-        },
+        "output_contract": _output_contract(),
         # The options as sent; what they did is each module's state.
         "requested_options": time.input_request.options.model_dump(),
         "library_info": library_info,
         "computation_mode": time.request.computation_mode.model_dump(),
         "calculation_dossier": calculation_dossier,
-        "astronomical_data": astronomical_data,
-        "derived_geometry": derived_geometry,
-        "derived_methods": derived_methods,
-        "birth_time_sensitivity": birth_time_sensitivity,
+        "astronomical_data": sections.astronomical_data,
+        "derived_geometry": sections.derived_geometry,
+        "derived_methods": sections.derived_methods,
+        "birth_time_sensitivity": sections.birth_time_sensitivity,
         "calculation_trace": trace_steps,
     }
 

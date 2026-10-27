@@ -1,14 +1,7 @@
-"""〈四套界表，四個答案〉: the Aries, Leo and Libra bounds figures (figures 1, 3
-and 4) and the degree-by-degree agreement figure (figure 2) with the counts the
-prose quotes, read from the tables the product computes with
-(backend/app/core/dignity_tables.py and essential_dignities.py).  The Leo row
-Lilly's bounds had before the transcription was corrected is the one the
-product's source details keep (`previous_recorded_row`).
-
-The bounds figures are article figures (`_fx`): a row per table, each bound a
-strip as wide as its degrees, filled by its ruler, with the ruler's glyph and
-Chinese name and its length written on it.  Pointing at a row writes every
-bound of that row with its degree range.
+"""〈四套界表，四個答案〉: the Aries, Leo and Libra bounds figures (figures 1, 3 and 4) and the degree-by-degree agreement
+figure (figure 2), read from the tables the product computes with (backend/app/core/dignity_tables.py).  The Leo row
+Lilly's bounds had before the transcription was corrected is the one the product's source details keep
+(`previous_recorded_row`).
 """
 from __future__ import annotations
 
@@ -19,12 +12,10 @@ from typing import Any
 from . import _fx
 from ._common import backend_on_path
 
-
 FRAGMENT = "blog-four-bounds-tables"
 NAMES = {"saturn": "土星", "jupiter": "木星", "mars": "火星", "venus": "金星", "mercury": "水星"}
 SHORT = {key: name[0] for key, name in NAMES.items()}
-# Five rulers, five engravings, so a ruler is found again in the next row
-# without colour: solid, cross hatch, single hatch, dots, bare paper.
+# Five rulers, five engravings, so a ruler is found again in the next row without colour.
 FILLS = {"saturn": "fx-fill-solid", "mars": "fx-fill-cross", "jupiter": "fx-fill-hatch", "venus": "fx-fill-dot",
          "mercury": "fx-fill-blank"}
 SIGN_KEYS = ("aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius",
@@ -32,7 +23,6 @@ SIGN_KEYS = ("aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "sc
 EGYPTIAN, CHALDAEAN = "egyptian_bounds_robbins_1940_v1", "chaldaean_bounds_ptolemy_i_21_v1"
 PTOLEMY, LILLY = "ptolemy_bounds_robbins_1940_v1", "lilly_received_bounds_1647_v1"
 IDLE = "用 Tab 鍵移到一列上，或用滑鼠指著它，這裡會寫出那一套表每一段的界主與度數範圍。"
-
 
 def _ranges(segments) -> list[tuple[str, int, int]]:
     out, start = [], 0
@@ -43,7 +33,6 @@ def _ranges(segments) -> list[tuple[str, int, int]]:
         raise RuntimeError(f"a bounds row sums to {start}°, not 30°")
     return out
 
-
 def _sentence(row: dict, bound: _fx.Bound) -> str:
     parts = "，".join(f"{NAMES[r]} {bound.num(f'{a}°–{b}°')}" for r, a, b in _ranges(row["segments"]))
     text = f"{row['name']}（{row['source']}）：{parts}。"
@@ -51,9 +40,7 @@ def _sentence(row: dict, bound: _fx.Bound) -> str:
         text += "框起來的最後一段，就是印本與線上轉錄讀法不同的那一格。"
     return text
 
-
 def _bands(layout: str, fid: str, rows: list[dict], bound: _fx.Bound) -> str:
-    """One bounds figure, one layout: a row per table, 0° to 30° across."""
     wide = layout == "fx-wide"
     W = _fx.WIDE if wide else _fx.NARROW
     x0, x1 = (250.0, 852.0) if wide else (14.0, 326.0)
@@ -104,7 +91,6 @@ def _bands(layout: str, fid: str, rows: list[dict], bound: _fx.Bound) -> str:
         raise RuntimeError(f"{fid} outgrew its drawing")
     return "".join(out)
 
-
 def _bands_table(rows: list[dict], bound: _fx.Bound) -> str:
     body = []
     for row in rows:
@@ -113,7 +99,6 @@ def _bands_table(rows: list[dict], bound: _fx.Bound) -> str:
         body.append(f'<tr data-fx-key="{row["key"]}"><th scope="row">{escape(row["name"])}<br>'
                     f'<small>{escape(row["source"])}</small></th>{cells}</tr>')
     return _fx.data_table(("界表", *(f"第 {bound.scale(str(i))} 段" for i in range(1, 6))), body)
-
 
 def _bands_figure(fid: str, title: str, caption: str, rows: list[dict], bound: _fx.Bound, hero: bool = False) -> str:
     for row in rows:
@@ -133,14 +118,11 @@ def _bands_figure(fid: str, title: str, caption: str, rows: list[dict], bound: _
         bound=bound,
     )
 
-
 _ROW = re.compile(r'<g class="fx-row" data-fx-key="(?P<key>[a-z-]+)"(?P<body>.*?)</g>', re.S)
 _RECT = re.compile(r'<rect x="(?P<x>[-0-9.]+)" y="[-0-9.]+" width="(?P<w>[0-9.]+)" height="[0-9.]+" class="(?P<cls>[a-z0-9-]+)"/>')
 
-
 def drawn_rulers(markup: str) -> dict[str, list[tuple[str, float, float]]]:
-    """The bounds as the wide drawing shows them, read back from its strips:
-    {row key: [(ruler, first degree, end degree)]}."""
+    """The bounds as the wide drawing shows them, read back from its strips: {row: [(ruler, first degree, end)]}."""
     wide = markup[markup.index('<svg class="fx-wide"'):markup.index('<svg class="fx-narrow"')]
     by_fill = {cls: ruler for ruler, cls in FILLS.items()}
     out = {}
@@ -152,12 +134,10 @@ def drawn_rulers(markup: str) -> dict[str, list[tuple[str, float, float]]]:
         out[row["key"]] = [(ruler, (x - start) / k, (x + w - start) / k) for ruler, x, w in strips]
     return out
 
-
 def check_drawn(markup: str, rows: list[dict], sign: int, product_ruler) -> None:
-    """Every row drawn from one of the product's profiles must give, read back
-    from the drawing, the ruler the product answers for each degree of the
-    sign: at the degree itself (a bound's first degree belongs to it) and half
-    a degree in."""
+    """Every row drawn from one of the product's profiles must give, read back from the drawing, the ruler the product
+    answers for each degree of the sign: at the degree itself (a bound's first degree belongs to it) and half a
+    degree in."""
     drawn = drawn_rulers(markup)
     for row in rows:
         if "profile" not in row:
@@ -170,28 +150,18 @@ def check_drawn(markup: str, rows: list[dict], sign: int, product_ruler) -> None
                 if seen != answer:
                     raise RuntimeError(f"{row['key']} at {SIGN_KEYS[sign]} {at}°: drawn {seen}, the product says {answer}")
 
-
 def product_ruler(profile: str, sect: bool | None, longitude: float) -> str:
-    """The ruler the product's dignity module gives a body at `longitude`."""
     with backend_on_path():
         from app.core.essential_dignities import _bounds_profile
-
     item = _bounds_profile(profile, [{"key": "sun", "name": "sun", "longitude": longitude}], sect)["objects"][0]
     return item["ruler"]
 
-
 # --- figure 2: where the tables agree ------------------------------------------
 
-COMPARISONS = (
-    ("pl", "Ptolemy 界與 Lilly 1647"),
-    ("ep", "埃及界與 Ptolemy 界"),
-    ("epl", "埃及、Ptolemy、Lilly 三套"),
-    ("all5", "再加迦勒底界日盤、夜盤"),
-)
-
+COMPARISONS = (("pl", "Ptolemy 界與 Lilly 1647"), ("ep", "埃及界與 Ptolemy 界"), ("epl", "埃及、Ptolemy、Lilly 三套"),
+    ("all5", "再加迦勒底界日盤、夜盤"))
 
 def _runs(flags: list[bool]) -> list[tuple[int, int]]:
-    """Consecutive agreeing degrees inside one sign, as (first, end)."""
     out, start = [], None
     for degree, agree in enumerate(flags + [False]):
         if agree and start is None:
@@ -201,11 +171,9 @@ def _runs(flags: list[bool]) -> list[tuple[int, int]]:
             start = None
     return out
 
-
 def _agreement(layout: str, fid: str, agree: dict[str, list[bool]], counts: dict[str, int],
                signs: list[str], bound: _fx.Bound) -> str:
-    """Figure 2, one layout: a row per comparison, the zodiac across, each
-    degree where the tables give the same ruler filled."""
+    """Figure 2, one layout: a row per comparison, each degree where the tables give the same ruler filled."""
     wide = layout == "fx-wide"
     W = _fx.WIDE if wide else _fx.NARROW
     x0, x1 = (270.0, 858.0) if wide else (14.0, 326.0)
@@ -244,10 +212,8 @@ def _agreement(layout: str, fid: str, agree: dict[str, list[bool]], counts: dict
     out.append("</svg>")
     return "".join(out)
 
-
 def _agreement_figure(agree: dict[str, list[bool]], counts: dict[str, int]) -> str:
     from ._common import SIGNS
-
     bound = _fx.Bound()
     for _, name in COMPARISONS:
         bound.label(name)
@@ -266,22 +232,14 @@ def _agreement_figure(agree: dict[str, list[bool]], counts: dict[str, int]) -> s
     caption = (f"<b>{bound.label('圖 2')}</b>黃道上 {bound.num('360')} 個一度區間，從牡羊座 {bound.scale('0°')} 排到雙魚座 "
                f"{bound.scale('30°')}，每一格是一個星座。塗黑的度數，表示那一列比較的幾套表在這一度給同一個界主；"
                "留白的度數，就是換一套表、界主跟著換的地方。")
-    return _fx.figure(
-        fid="fig-agree",
-        title="四套界表在黃道上哪些度數給同一個界主",
-        caption=caption,
-        art=_fx.FigureArt.drawn(_agreement, "fig-agree", agree, counts, SIGNS, bound),
-        table=table,
-        bound=bound,
-    )
-
+    return _fx.figure(fid="fig-agree", title="四套界表在黃道上哪些度數給同一個界主", caption=caption,
+        art=_fx.FigureArt.drawn(_agreement, "fig-agree", agree, counts, SIGNS, bound), table=table, bound=bound)
 
 def build() -> tuple[dict[str, str], list[str]]:
     with backend_on_path():
         from app.core.dignity_tables import BOUNDS_SOURCE_DETAILS, EGYPTIAN_BOUNDS as E, \
             LILLY_RECEIVED_BOUNDS as L, PTOLEMY_ROBBINS_BOUNDS as P, SIGNS as SIGN_IDS
         from app.core.essential_dignities import CHALDAEAN_SEGMENTS_BY_SECT as C
-
     if tuple(SIGN_IDS) != SIGN_KEYS:
         raise RuntimeError("the product's sign order is not the figure's")
     leo = SIGN_KEYS.index("leo")
@@ -291,7 +249,6 @@ def build() -> tuple[dict[str, str], list[str]]:
     if len(previous) != 1:
         raise RuntimeError("the product no longer keeps one earlier record of Lilly's Leo row")
     superseded = tuple((ruler, width) for ruler, width in previous[0])
-
     aries_rows: list[dict[str, Any]] = [
         dict(key="egyptian", name="埃及界", source="Ptolemy I.20 轉述", segments=E[0], profile=EGYPTIAN),
         dict(key="chaldaean-day", name="迦勒底界・日盤", source="依 I.21 的規則生成", segments=C[True][0],
@@ -307,8 +264,7 @@ def build() -> tuple[dict[str, str], list[str]]:
         dict(key="lilly", name="Lilly 1647・現行", source="依初版頁面影像", segments=L[leo], profile=LILLY),
         dict(key="lilly-old", name="Lilly 1647・舊紀錄", source="已撤換，保留供對照", segments=superseded),
     ]
-    # LacusCurtius gives Saturn, where Robbins's print gives Mars, for the last
-    # bound of Libra.
+    # LacusCurtius gives Saturn, where Robbins's print gives Mars, for the last bound of Libra.
     online = list(P[libra])
     if online[-1][0] != "mars":
         raise RuntimeError("the printed Ptolemy Libra row no longer ends with Mars")
@@ -320,7 +276,6 @@ def build() -> tuple[dict[str, str], list[str]]:
              mark=4),
         dict(key="lilly", name="Lilly 1647", source="p.104", segments=L[libra], profile=LILLY),
     ]
-
     def ruler(table, sign, degree):
         start = 0
         for name, width in table[sign]:
@@ -328,7 +283,6 @@ def build() -> tuple[dict[str, str], list[str]]:
                 return name
             start += width
         raise RuntimeError(f"no bound covers sign {sign} degree {degree}")
-
     agree: dict[str, list[bool]] = {key: [] for key, _ in COMPARISONS}
     for sign in range(12):
         for degree in range(30):
@@ -338,13 +292,10 @@ def build() -> tuple[dict[str, str], list[str]]:
             agree["epl"].append(e == p == l)
             agree["all5"].append(e == p == l == cd == cn)
     counts = {key: sum(flags) for key, flags in agree.items()}
-    quoted = [
-        f"<b>{counts['pl']}</b><span>度：Ptolemy 界與 Lilly 1647 給同一個界主",
+    quoted = [f"<b>{counts['pl']}</b><span>度：Ptolemy 界與 Lilly 1647 給同一個界主",
         f"<b>{counts['ep']}</b><span>度：埃及界與 Ptolemy 界一致",
         f"<b>{counts['epl']}</b><span>度：埃及、Ptolemy、Lilly 三套都一致",
-        f"<b>{counts['all5']}</b><span>度：連迦勒底界的日盤與夜盤也算進去，全部一致",
-    ]
-
+        f"<b>{counts['all5']}</b><span>度：連迦勒底界的日盤與夜盤也算進去，全部一致"]
     b1, b3, b4 = _fx.Bound(), _fx.Bound(), _fx.Bound()
     aries = _bands_figure(
         "fig-aries", "牡羊座在四套界表裡的切法", (
@@ -357,17 +308,10 @@ def build() -> tuple[dict[str, str], list[str]]:
             f"<b>{b3.label('圖 3')}</b>獅子座的界。Lilly 1647 的現行讀法與本站先前的紀錄並列；"
             "後者已撤換，留在這裡讓你看見改了什麼。"),
         leo_rows, b3)
-    libra_figure = _bands_figure(
-        "fig-libra", "天秤座的界：Ptolemy 界的印本、線上轉錄與 Lilly 1647", (
-            f"<b>{b4.label('圖 4')}</b>天秤座的界。框起來的一段就是印本與線上轉錄讀法不同的那一格。"),
-        libra_rows, b4)
+    libra_figure = _bands_figure("fig-libra", "天秤座的界：Ptolemy 界的印本、線上轉錄與 Lilly 1647",
+        (f"<b>{b4.label('圖 4')}</b>天秤座的界。框起來的一段就是印本與線上轉錄讀法不同的那一格。"), libra_rows, b4)
     for markup, rows, sign in ((aries, aries_rows, 0), (leo_figure, leo_rows, leo), (libra_figure, libra_rows, libra)):
         check_drawn(markup, rows, sign, product_ruler)
     planets = ("saturn", "jupiter", "mars", "venus", "mercury")
-    return {
-        "fx-defs": _fx.defs(planets + SIGN_KEYS),
-        "aries": aries,
-        "agreement": _agreement_figure(agree, counts),
-        "leo": leo_figure,
-        "libra": libra_figure,
-    }, quoted
+    return {"fx-defs": _fx.defs(planets + SIGN_KEYS), "aries": aries, "agreement": _agreement_figure(agree, counts),
+        "leo": leo_figure, "libra": libra_figure}, quoted

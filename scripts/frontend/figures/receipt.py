@@ -1,23 +1,16 @@
-"""〈怎麼自己驗算一張星盤〉: figure 1 (the calculation receipt of one synthetic
-chart, annotated) and figure 2 (the same request with one input changed: which
-receipt lines and results change), with the numbers the prose quotes.
+"""〈怎麼自己驗算一張星盤〉: figure 1 (the calculation receipt of one synthetic chart, annotated) and figure 2 (the same
+request with one input changed), with the numbers the prose quotes.
 
-Figure 1 reads the committed test fixture `frontend/tests/fixtures/chart-exact.json`,
-a real `projection=detailed` answer to the synthetic request filed under that name
-in `chart-requests.json` (1990-05-15 14:30, 22.9908N 120.2133E, Asia/Taipei, not a
-person's birth data).  Its rows are the result page's own: the fixture goes through
-`view-model.js` (`buildSections`) in Node, and the figure prints the cells that
-function returns.  The ephemeris file rows are the Dossier's `engine` record,
-which the screen table does not print and the JSON export does.
+Figure 1 reads the committed fixture `frontend/tests/fixtures/chart-exact.json`, a real `projection=detailed` answer to
+the synthetic request filed under that name in `chart-requests.json` (1990-05-15 14:30, 22.9908N 120.2133E,
+Asia/Taipei, not a person's birth data).  Its rows are the result page's own: the fixture goes through `view-model.js`
+(`buildSections`) in Node.  The ephemeris file rows are the Dossier's `engine` record, which the screen table does not
+print and the JSON export does.
 
-Figure 2 sends that request, and three variants of it, to the application in
-process.  The trace digest is the SHA-256 of the Python text of every float in
-the trace, so it differs between the macOS and the Linux builds of Swiss
-Ephemeris in the last bits (the chart fixtures' cross-platform float bound); a figure that
-printed a digest computed here would differ between hosts.  So the only digest
-it prints is the fixture's, and for each variant it prints whether the digest is
-the same as the unchanged request's, computed on the same host, which holds on
-every host.
+Figure 2 sends that request, and three variants of it, to the application in process.  The trace digest hashes the
+Python text of every float in the trace, so it differs between the macOS and the Linux builds of Swiss Ephemeris in the
+last bits; a digest computed here would differ between hosts.  So the only digest printed is the fixture's, and for
+each variant whether its digest equals the unchanged request's, computed on the same host, which holds everywhere.
 """
 from __future__ import annotations
 
@@ -27,7 +20,6 @@ import json
 
 from . import _fx
 from ._common import ROOT, SIGNS, node_json, product_charts
-
 
 FRAGMENT = "blog-verify-chart-calculation"
 FIXTURES = ROOT / "frontend" / "tests" / "fixtures"
@@ -52,22 +44,17 @@ process.stdin.on("end", () => {
 });
 """
 
-
 def rendered(responses: list[dict]) -> list[dict[str, dict[str, str]]]:
-    """For each response, the result page's receipt and time tables:
-    {"receipt/版本與來源": {label: cell}, …}, as view-model.js prints them."""
+    """For each response, the result page's receipt and time tables: {"receipt/版本與來源": {label: cell}, …}."""
     found = node_json(_NODE_SCRIPT, SCRIPT_BUNDLES, stdin=responses, timeout=120,
                       what="read the receipt as the result page prints it")
     return [{name: {row[0]: row[1] for row in rows} for name, rows in tables.items()} for tables in found]
 
-
 def request() -> dict:
     return json.loads((FIXTURES / "chart-requests.json").read_text(encoding="utf-8"))["chart-exact.json"]
 
-
 def fixture() -> dict:
     return json.loads(FIXTURE.read_text(encoding="utf-8"))
-
 
 # --- text width, for laying a row out on one line or two ------------------------
 
@@ -82,9 +69,7 @@ GROUPS = (
     ("privacy", "⑤", "隱私聲明", ("提醒你：這份收據", "含有出生資料")),
 )
 
-
 def receipt_data() -> dict:
-    """Figure 1's rows, read from the fixture as the result page prints it."""
     response = fixture()
     (tables,) = rendered([response])
     versions = tables["receipt/版本與來源"]
@@ -114,20 +99,15 @@ def receipt_data() -> dict:
         "trace_titles": [step["title"] for step in response["calculation_trace"]],
     }
 
-
 def _group_rows(key: str, d: dict, bound: _fx.Bound) -> list[tuple[str, str]]:
-    """(label, value) rows of one group; a digest is split over two rows."""
     if key == "files":
         return [(bound.num(name), bound.num(sha[:16]) + "…　" + "符合釘選值") for name, sha in d["files"]]
     if key == "trace":
         digest = bound.num(d["digest"])
-        # Each printed half is its own number: a run of digits the split cuts in two
-        # is two numbers on the page, neither of them the run the full digest holds.
+        # Each printed half is its own number (a digit run the split cuts is two numbers on the page).
         return [("逐步軌跡步數", bound.num(d["steps"])), (bound.label("SHA-256"), bound.num(digest[:32])),
-                ("", bound.num(digest[32:])),
-                ("跨語言可攜", d["portable"])]
+            ("", bound.num(digest[32:])), ("跨語言可攜", d["portable"])]
     return [(label, bound.num(value)) for label, value in d[key]]
-
 
 def _group_label(key: str, d: dict) -> str:
     heading = next(g[2] for g in GROUPS if g[0] == key)
@@ -136,7 +116,6 @@ def _group_label(key: str, d: dict) -> str:
         pairs = [(label, d["digest"] if label == "SHA-256" else value) for label, value in pairs]
     rows = "；".join(f"{label} {value}" for label, value in pairs if label)
     return f"{heading}：{rows}"
-
 
 def _receipt(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
@@ -147,8 +126,7 @@ def _receipt(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
     for key, number, heading, note in GROUPS:
         rows = _group_rows(key, d, bound)
         top = y - (26 if wide else 22)
-        part = [_fx.text(24 if wide else 16, y, number, "fx-t"),
-                _fx.text(52 if wide else 40, y, heading, "fx-t")]
+        part = [_fx.text(24 if wide else 16, y, number, "fx-t"), _fx.text(52 if wide else 40, y, heading, "fx-t")]
         if wide:
             part += [_fx.text(612, y, note[0], "fx-t fx-small fx-dim"),
                      _fx.text(612, y + 22, note[1], "fx-t fx-small fx-dim")]
@@ -185,10 +163,9 @@ def _receipt(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
         out.append(_fx.line(600, 20, 600, H - 20, "fx-hair"))
     out += body
     out.append("</svg>")
-    # One group per line: the ephemeris rows and the trace digest never share a
-    # line, so no reader pairs a file name with the trace's hash.
+    # One group per line: the ephemeris rows and the trace digest never share a line, so no reader pairs a file name
+    # with the trace's hash.
     return "\n".join(out)
-
 
 def _receipt_table(d: dict, bound: _fx.Bound) -> str:
     rows = []
@@ -204,12 +181,10 @@ def _receipt_table(d: dict, bound: _fx.Bound) -> str:
                         f'<td class="fx-num">{escape(value)}</td></tr>')
     return _fx.data_table(("項目", "數值"), "\n" + "\n".join(rows) + "\n", summary="收據上的值（表格，軌跡雜湊不截短）")
 
-
 def _receipt_notes(d: dict, bound: _fx.Bound) -> list[_fx.Note]:
     first = bound.num(d["files"][0][0])
     titles = d["trace_titles"]
-    # The time note names trace steps 2 to 4: local time to UTC, UTC to Julian
-    # day, ΔT.
+    # The time note names trace steps 2 to 4: local time to UTC, UTC to Julian day, ΔT.
     if not (titles[1].startswith("本地時間") and "儒略日" in titles[2] and "ΔT" in titles[3]):
         raise RuntimeError(f"trace steps 2-4 are not the time conversion: {titles[1:4]}")
     return [
@@ -230,7 +205,6 @@ def _receipt_notes(d: dict, bound: _fx.Bound) -> list[_fx.Note]:
                  "含敏感出生資料：是。收據與匯出的卷宗裡有出生日期、時刻與座標；伺服器不保存它，"
                  "但你下載或傳給別人之後，那一份就在你或對方手上。"),
     ]
-
 
 def _receipt_figure(d: dict) -> str:
     bound = _fx.Bound()
@@ -258,28 +232,14 @@ def _receipt_figure(d: dict) -> str:
         bound=bound,
     )
 
-
 # --- figure 2: change one input -------------------------------------------------
 
-VARIANTS = (
-    ("again", "原樣再算一次"),
-    ("second", "出生時刻多一秒"),
-    ("houses", "宮位制改成 Placidus"),
-    ("option", "改一個沒用到的選項"),
-)
-ROWS = (
-    ("local", "本地時間"),
-    ("utc", "UTC"),
-    ("jd", "儒略日 JD(UT)"),
-    ("asc", "上升點"),
-    ("cusp2", "第 2 宮起點"),
-    ("steps", "軌跡步數"),
-    ("digest", "軌跡雜湊"),
-)
-# The option figure 2 changes: the orb of declination aspects, which this
-# request does not compute, so nothing but the trace's first step reads it.
+VARIANTS = (("again", "原樣再算一次"), ("second", "出生時刻多一秒"), ("houses", "宮位制改成 Placidus"), ("option", "改一個沒用到的選項"))
+ROWS = (("local", "本地時間"), ("utc", "UTC"), ("jd", "儒略日 JD(UT)"), ("asc", "上升點"), ("cusp2", "第 2 宮起點"),
+    ("steps", "軌跡步數"), ("digest", "軌跡雜湊"))
+# The option figure 2 changes: the orb of declination aspects, which this request does not compute, so nothing but the
+# trace's first step reads it.
 UNUSED_OPTION = ("declination_aspect_orb_degrees", 2.0)
-
 
 def _variant_request(variant: str) -> dict:
     req = copy.deepcopy(request())
@@ -291,43 +251,34 @@ def _variant_request(variant: str) -> dict:
         req["options"][UNUSED_OPTION[0]] = UNUSED_OPTION[1]
     return req
 
-
 def _sign_text(position: list) -> str:
     return f"{SIGNS[position[0]]}座 {position[1]}"
 
-
 def diff_data() -> dict:
-    """The unchanged request and each variant, answered by the product."""
     with product_charts() as post:
         base = post(request())
         answers = {variant: post(_variant_request(variant)) for variant, _ in VARIANTS}
     order = [base] + [answers[v] for v, _ in VARIANTS]
     tables = rendered(order)
-
     def row_values(response: dict, table: dict) -> dict:
         given = table["receipt/已驗證的輸入（input receipt）"]
         trace = table["receipt/軌跡收據"]
         division = response["derived_methods"]["house_division"]
-        return {
-            "local": given["本地時間"], "utc": given["UTC"], "jd": given["儒略日 JD(UT)"],
+        return {"local": given["本地時間"], "utc": given["UTC"], "jd": given["儒略日 JD(UT)"],
             "asc": _sign_text(response["astronomical_data"]["angles"]["sign_positions"]["asc"]),
-            "cusp2": _sign_text(division["cusp_sign_positions"][1]),
-            "steps": trace["逐步軌跡步數"],
-            "digest": trace["序列化雜湊 SHA-256"],
-            "system": division["system_name"],
+            "cusp2": _sign_text(division["cusp_sign_positions"][1]), "steps": trace["逐步軌跡步數"],
+            "digest": trace["序列化雜湊 SHA-256"], "system": division["system_name"],
             "asc_degrees": response["astronomical_data"]["angles"]["asc"],
             "asc_sign": response["astronomical_data"]["angles"]["sign_positions"]["asc"][0],
             "cusp2_sign": division["cusp_sign_positions"][1][0],
-            "titles": [step["title"] for step in response["calculation_trace"]],
-        }
-
+            "titles": [step["title"] for step in response["calculation_trace"]]}
     values = [row_values(r, t) for r, t in zip(order, tables, strict=True)]
     base_values = values[0]
     fixed = fixture()
     (fixed_table,) = rendered([fixed])
     fixed_values = row_values(fixed, fixed_table)
-    # The fixture is the same request: every printed line but the digest (host
-    # dependent, see the module docstring) must match what the product says now.
+    # The fixture is the same request: every printed line but the digest (host dependent, see the module docstring)
+    # must match what the product says now.
     for key, _ in ROWS:
         if key != "digest" and fixed_values[key] != base_values[key]:
             raise RuntimeError(f"the fixture's {key} {fixed_values[key]!r} != the product's {base_values[key]!r}")
@@ -340,8 +291,8 @@ def diff_data() -> dict:
                                     "asc_moved": f"{moved:.1f}"}
         del out["variants"][variant]["digest"]
     houses = out["variants"]["houses"]
-    # The sentences on the house variant: its second cusp is still in the
-    # ascendant's sign, and the whole-sign trace has one step the Placidus one lacks.
+    # The sentences on the house variant: its second cusp is still in the ascendant's sign, and the whole-sign trace
+    # has one step the Placidus one lacks.
     if houses["cusp2_sign"] != houses["asc_sign"]:
         raise RuntimeError("the Placidus second cusp left the ascendant's sign")
     dropped = [t for t in base_values["titles"] if t not in houses["titles"]]
@@ -355,17 +306,13 @@ def diff_data() -> dict:
             raise RuntimeError(f"variant {variant!r} changes {sorted(changed)}, the prose says {sorted(expected[variant])}")
     return out
 
-
 def _same(base: dict, variant: dict, key: str) -> bool:
     return variant["same_digest"] if key == "digest" else base[key] == variant[key]
 
-
 def _shown(base: dict, variant: dict, key: str, bound: _fx.Bound) -> tuple[str, str]:
-    """(原本, 這一次) cells of one row."""
     if key == "digest":
         return bound.num(base["digest"][:16]) + "…", "同一串" if variant["same_digest"] else "另一串"
     return bound.num(base[key]), bound.num(variant[key])
-
 
 def _diff_sentence(variant: str, key: str, base: dict, v: dict, bound: _fx.Bound) -> str:
     label = dict(ROWS)[key]
@@ -382,12 +329,9 @@ def _diff_sentence(variant: str, key: str, base: dict, v: dict, bound: _fx.Bound
         }[variant]
         return f"軌跡雜湊：{what}。{why}"
     if same:
-        tail = {
-            "again": "沒有改任何輸入。",
-            "second": "這一列和出生時刻無關。" if key == "cusp2" else "",
+        tail = {"again": "沒有改任何輸入。", "second": "這一列和出生時刻無關。" if key == "cusp2" else "",
             "houses": "宮位制不影響時間換算與上升點。" if key in ("local", "utc", "jd", "asc") else "",
-            "option": "這個選項沒有用到，結果不變。",
-        }[variant]
+            "option": "這個選項沒有用到，結果不變。"}[variant]
         if variant == "second" and key == "cusp2":
             tail = "整宮制的宮從星座的起點起算，上升點這一秒沒有離開原本的星座，所以不變。"
         if variant == "second" and key == "steps":
@@ -404,7 +348,6 @@ def _diff_sentence(variant: str, key: str, base: dict, v: dict, bound: _fx.Bound
         ("houses", "steps"): "整宮制多一步「月交點與月球拱點的整宮落宮」，換成 Placidus 就沒有這一步。",
     }[(variant, key)]
     return change + why
-
 
 def _diff(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
@@ -430,11 +373,9 @@ def _diff(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
                     + _fx.rect(cols[3] - 44, y - 21, 88, 30, "fx-fill-blank" if same else "fx-fill-cross")
                     + _fx.text(cols[3], y, "相同" if same else "不同", "fx-t fx-small fx-key", "middle"))))
             old, _ = _shown(base, d["variants"]["again"], key, bound)
-            out_rows.append(
-                f'<g class="fx-row" data-fx-key="{key}" tabindex="0" aria-label="{escape(label)}">'
-                + _fx.rect(16, y - 30, W - 32, rh - 2, "fx-hit")
-                + _fx.text(cols[0], y, bound.label(label), "fx-t fx-small")
-                + _fx.text(cols[1], y, old, "fx-t fx-small fx-num") + "".join(cells) + "</g>")
+            out_rows.append(f'<g class="fx-row" data-fx-key="{key}" tabindex="0" aria-label="{escape(label)}">' + _fx.rect(16,
+                y - 30, W - 32, rh - 2, "fx-hit") + _fx.text(cols[0], y, bound.label(label),
+                "fx-t fx-small") + _fx.text(cols[1], y, old, "fx-t fx-small fx-num") + "".join(cells) + "</g>")
             out_rows.append(_fx.line(24, y + 14, W - 24, y + 14, "fx-hair"))
         H = y0 + len(ROWS) * rh + 6
     else:
@@ -452,19 +393,14 @@ def _diff(layout: str, fid: str, d: dict, bound: _fx.Bound) -> str:
                     + _fx.rect(W - 74, y - 17, 58, 24, "fx-fill-blank" if same else "fx-fill-cross")
                     + _fx.text(W - 45, y, "相同" if same else "不同", "fx-t fx-small fx-key", "middle"))))
             old, _ = _shown(base, d["variants"]["again"], key, bound)
-            out_rows.append(
-                f'<g class="fx-row" data-fx-key="{key}" tabindex="0" aria-label="{escape(label)}">'
-                + _fx.rect(8, y - 22, W - 16, rh - 4, "fx-hit")
-                + _fx.text(16, y, bound.label(label), "fx-t")
-                + _fx.text(16, y + 22, "原本", "fx-t fx-small fx-dim")
-                + _fx.text(70, y + 22, old, "fx-t fx-small fx-num")
-                + _fx.text(16, y + 44, "改了", "fx-t fx-small fx-dim")
-                + "".join(cells) + "</g>")
+            out_rows.append(f'<g class="fx-row" data-fx-key="{key}" tabindex="0" aria-label="{escape(label)}">' + _fx.rect(8,
+                y - 22, W - 16, rh - 4, "fx-hit") + _fx.text(16, y, bound.label(label), "fx-t") + _fx.text(16, y + 22,
+                "原本", "fx-t fx-small fx-dim") + _fx.text(70, y + 22, old, "fx-t fx-small fx-num") + _fx.text(16,
+                y + 44, "改了", "fx-t fx-small fx-dim") + "".join(cells) + "</g>")
             out_rows.append(_fx.line(12, y + 56, W - 12, y + 56, "fx-hair"))
         H = y0 + len(ROWS) * rh - 6
     out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H), *header, *out_rows, "</svg>"]
     return "".join(out)
-
 
 def _diff_table(d: dict, bound: _fx.Bound) -> str:
     base = d["base"]
@@ -479,9 +415,7 @@ def _diff_table(d: dict, bound: _fx.Bound) -> str:
         old, _ = _shown(base, d["variants"]["again"], key, bound)
         rows.append(f'<tr data-fx-key="{key}"><th scope="row">{escape(label)}</th>'
                     f'<td class="fx-num">{escape(old)}</td>{"".join(cells)}</tr>')
-    return _fx.data_table(("項目", "原本", *(escape(name) for _, name in VARIANTS)), rows,
-                          summary="四種改法的每一列（表格）")
-
+    return _fx.data_table(("項目", "原本", *(escape(name) for _, name in VARIANTS)), rows, summary="四種改法的每一列（表格）")
 
 def _diff_figure(d: dict) -> str:
     bound = _fx.Bound()
@@ -510,7 +444,6 @@ def _diff_figure(d: dict) -> str:
         bound=bound,
     )
 
-
 def _zh_arcsec(value: str) -> str:
     """「十幾」: how the prose says the ascendant's one-second move."""
     whole = int(float(value))
@@ -518,27 +451,14 @@ def _zh_arcsec(value: str) -> str:
         raise RuntimeError(f"the prose says the ascendant moved 「十幾」 arcseconds, the product says {value}")
     return "十幾"
 
-
 def build() -> tuple[dict[str, str], list[str]]:
     d = receipt_data()
     diff = diff_data()
     time = dict(d["time"])
     loc = request()["location"]
-    quoted = [
-        f"軌跡共 {d['steps']} 步",
-        f"Swiss Ephemeris {dict(d['versions'])['Swiss Ephemeris']}",
-        f"JPL {d['lineage']}",
-        f"{d['files'][0][0]}、{d['files'][1][0]}",
-        f"「{d['trace_titles'][0]}」",
-        escape(f"「{d['trace_titles'][1]}」"),
-        f"（這張是 {time['UTC 偏移']}）",
-        f"這張是 {time['儒略日 JD(UT)']}",
-        f"這張是 {time['ΔT（秒）']} 秒",
-        f"北緯 {loc['latitude']} 度、東經 {loc['longitude']} 度",
-        f"走了{_zh_arcsec(diff['variants']['second']['asc_moved'])}角秒",
-    ]
-    return {
-        "fx-defs": _fx.defs(()),
-        "receipt": _receipt_figure(d),
-        "receipt-diff": _diff_figure(diff),
-    }, quoted
+    quoted = [f"軌跡共 {d['steps']} 步", f"Swiss Ephemeris {dict(d['versions'])['Swiss Ephemeris']}",
+        f"JPL {d['lineage']}", f"{d['files'][0][0]}、{d['files'][1][0]}", f"「{d['trace_titles'][0]}」",
+        escape(f"「{d['trace_titles'][1]}」"), f"（這張是 {time['UTC 偏移']}）", f"這張是 {time['儒略日 JD(UT)']}",
+        f"這張是 {time['ΔT（秒）']} 秒", f"北緯 {loc['latitude']} 度、東經 {loc['longitude']} 度",
+        f"走了{_zh_arcsec(diff['variants']['second']['asc_moved'])}角秒"]
+    return {"fx-defs": _fx.defs(()), "receipt": _receipt_figure(d), "receipt-diff": _diff_figure(diff)}, quoted

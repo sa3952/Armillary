@@ -1,14 +1,11 @@
-"""〈日盤還是夜盤怎麼判斷〉: table 1 (the minutes around one sunrise, each as
-the product answers it: the Sun's true altitude, the sect, whether the two
-named sunrise definitions disagree, and the two Lots of Fortune) and the
-numbers the prose quotes.
+"""〈日盤還是夜盤怎麼判斷〉: table 1 (the minutes around one sunrise as the product answers them: the Sun's true
+altitude, the sect, whether the two named sunrise definitions disagree, and the two Lots of Fortune) and the numbers
+the prose quotes.
 
-Synthetic instants only: 1990-05-15 Taipei, whole minutes from 05:00 to 05:30
-local clock time, whole signs, tropical, Lots requested (the product judges the
-sect when the Lots are asked for).  Each row is one request to the real
-application in process; the module reads the product's `derived_methods.sect`
-and `derived_methods.lots` and stops if the morning no longer runs night,
-inside the band, day.
+Synthetic instants only: 1990-05-15 Taipei, whole minutes from 05:00 to 05:30 local clock time, whole signs, tropical,
+Lots requested (the product judges the sect when the Lots are asked for).  Each row is one request to the real
+application in process; the module reads the product's `derived_methods.sect` and `derived_methods.lots` and stops if
+the morning no longer runs night, inside the band, day.
 """
 from __future__ import annotations
 
@@ -17,14 +14,12 @@ import functools
 from ._common import product_charts
 from ._demo import DEMO, zodiacal_minutes
 
-
 FRAGMENT = "blog-day-or-night-chart"
 HOUR = 5
 MINUTES = range(0, 31)
 OPTIONS = {"house_system": "W", "include_houses": True, "include_lots": True}
 def _request(minute: int) -> dict:
     return {**DEMO, "datetime": {**DEMO["datetime"], "hour": HOUR, "minute": minute}, "options": OPTIONS}
-
 
 @functools.lru_cache(maxsize=1)
 def answers() -> list[dict]:
@@ -33,32 +28,21 @@ def answers() -> list[dict]:
         for minute in MINUTES:
             answer = post(_request(minute))
             sect, lots = answer["derived_methods"]["sect"], answer["derived_methods"]["lots"]
-            rows.append({
-                "minute": minute,
-                "altitude": sect["sun_altitude_used"],
-                "is_day": sect["is_day"],
-                "status": sect["sect_status"],
-                "band": sect["in_near_horizon_band"],
+            rows.append({"minute": minute, "altitude": sect["sun_altitude_used"], "is_day": sect["is_day"],
+                "status": sect["sect_status"], "band": sect["in_near_horizon_band"],
                 "disagree": sect["named_boundary_disagreement"],
-                "band_degrees": sect["near_horizon_band_half_width_degrees"],
-                "basis": lots["formula_basis"],
-                "applied": lots["sect_applied"],
-                "primary": lots["fortune"],
-                "other": lots["by_sect"]["night" if lots["sect_applied"] == "day" else "day"]["fortune"],
-            })
+                "band_degrees": sect["near_horizon_band_half_width_degrees"], "basis": lots["formula_basis"],
+                "applied": lots["sect_applied"], "primary": lots["fortune"],
+                "other": lots["by_sect"]["night" if lots["sect_applied"] == "day" else "day"]["fortune"]})
     return rows
 
-
 def _arcmin(altitude: float) -> str:
-    """「−12.3′」: the true altitude in arcminutes, one decimal, signed."""
     value = round(altitude * 60, 1)
     return ("+" if value > 0 else "−" if value < 0 else "") + f"{abs(value):.1f}′"
 
-
 def _shape(rows: list[dict]) -> dict:
-    """The morning as the article tells it: night, then the band (first its
-    night half, where the named definitions disagree, then its day half), then
-    day; the Lots listed both ways exactly inside the band."""
+    """The morning as the article tells it: night, the band (its night half where the named definitions disagree, then
+    its day half), then day; the Lots listed both ways exactly inside the band."""
     statuses = [row["status"] for row in rows]
     first_band = statuses.index("boundary_both_shown")
     last_band = len(statuses) - 1 - statuses[::-1].index("boundary_both_shown")
@@ -79,10 +63,8 @@ def _shape(rows: list[dict]) -> dict:
             raise RuntimeError(f"05:{row['minute']:02d}: the band flag and the status disagree")
     return {"first_band": first_band, "last_band": last_band, "first_day": first_day}
 
-
 def _clock(row: dict) -> str:
     return f"{HOUR:02d}:{row['minute']:02d}"
-
 
 def _table(rows: list[dict], shape: dict) -> str:
     out = []
@@ -97,7 +79,6 @@ def _table(rows: list[dict], shape: dict) -> str:
             f'<td class="n">{zodiacal_minutes(row["primary"])}</td><td class="n">{other}</td></tr>')
     return "\n".join(out)
 
-
 def build() -> tuple[dict[str, str], list[str]]:
     rows = answers()
     shape = _shape(rows)
@@ -106,11 +87,7 @@ def build() -> tuple[dict[str, str], list[str]]:
     band_minutes = shape["last_band"] - shape["first_band"] + 1
     rate = (rows[shape["last_band"] + 1]["altitude"] - rows[shape["first_band"] - 1]["altitude"]) / (
         shape["last_band"] - shape["first_band"] + 2)
-    quoted = [
-        f"從 {_clock(first)} 到 {_clock(last)} 共 {band_minutes} 個整分鐘",
-        f"{_clock(day)} 起判為日盤",
+    quoted = [f"從 {_clock(first)} 到 {_clock(last)} 共 {band_minutes} 個整分鐘", f"{_clock(day)} 起判為日盤",
         f"{_clock(disagree[0])} 到 {_clock(disagree[-1])} 這 {len(disagree)} 分鐘",
-        f"每分鐘約升高 {rate * 60:.0f} 角分",
-        f"上下 {round(first['band_degrees'] * 60)} 角分",
-    ]
+        f"每分鐘約升高 {rate * 60:.0f} 角分", f"上下 {round(first['band_degrees'] * 60)} 角分"]
     return {"morning": _table(rows, shape)}, quoted

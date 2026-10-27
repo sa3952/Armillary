@@ -6,10 +6,7 @@ body{line-height:1.8}
 /* ── 表單 ───────────────────────────────────────── */
 form{margin-top:var(--s4); border-top:1px solid var(--ink)}
 fieldset{border:0; border-bottom:1px solid var(--hair-soft); padding:var(--s3) 0}
-legend{
-  font-family:var(--serif); font-size:var(--fs-lead); letter-spacing:.02em;
-  color:var(--ink); padding:0 0 .2rem;
-}
+legend{font-family:var(--serif); font-size:var(--fs-lead); letter-spacing:.02em; color:var(--ink); padding:0 0 .2rem}
 .grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--s2) var(--s3); margin-top:var(--s2)}
 .grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
 .field{display:flex; flex-direction:column; gap:.3rem}
@@ -19,12 +16,8 @@ legend{
 .field .hint{font-size:var(--fs-note); line-height:1.6; color:var(--ink-faint); font-variant-numeric:tabular-nums}
 /* 欄位用內文的黑體（地名、時區名、選單文字）；只有填數字的欄（時、分、秒、經緯度、高度、日期）用等寬，
    數字上下對齊。日期是一個文字欄（numeric 鍵盤），年月日的順序不隨瀏覽器語系改變。 */
-input,select{
-  font-family:var(--sans); font-size:var(--fs-aside); font-variant-numeric:tabular-nums;
-  background:var(--paper-2); color:var(--ink);
-  border:1px solid var(--ink-faint); border-radius:var(--radius);
-  padding:.6rem .7rem; width:100%;
-}
+input,select{font-family:var(--sans); font-size:var(--fs-aside); font-variant-numeric:tabular-nums; background:var(--paper-2);
+  color:var(--ink); border:1px solid var(--ink-faint); border-radius:var(--radius); padding:.6rem .7rem; width:100%}
 input:is([type="number"],[type="date"],[type="time"],[inputmode="numeric"],[inputmode="decimal"]){font-family:var(--serif-num); font-variant-numeric:lining-nums tabular-nums}
 input::placeholder{color:var(--ink-faint); opacity:1}
 /* 有錯的欄位：左側一條重點色粗線＋重點色框，與欄位下方的錯誤字同色；不只靠顏色（線的粗細也變）。
@@ -34,38 +27,25 @@ input::placeholder{color:var(--ink-faint); opacity:1}
 .choice:has(input[aria-invalid="true"]){box-shadow:-3px 0 0 var(--accent)}
 input,select,button{min-width:0; max-width:100%}
 /* a、summary、button 的焦點框已在 page.css 的共用部分。 */
-input:focus-visible,select:focus-visible,.table-wrap:focus-visible{
-  outline:2px solid var(--accent); outline-offset:2px;
-}
+input:focus-visible,select:focus-visible,.table-wrap:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 input:disabled{background:var(--paper); color:var(--ink-faint); cursor:not-allowed}
 .choice{display:flex; flex-wrap:wrap; gap:var(--s2); margin-top:var(--s2)}
-.choice label{
-  display:flex; gap:.5rem; align-items:flex-start; font-size:var(--fs-note);
-  border:1px solid var(--hair); padding:.6rem .8rem; flex:1 1 14rem; cursor:pointer;
-}
+.choice label{display:flex; gap:.5rem; align-items:flex-start; font-size:var(--fs-note); border:1px solid var(--hair); padding:.6rem .8rem;
+  flex:1 1 14rem; cursor:pointer}
 /* 單選鈕與勾選框同一套刻記語彙；實心圓點而非打勾，維持單選與複選的形狀差異。 */
 .choice input{width:auto; margin-top:.35rem}
-.choice input[type="radio"]{
-  appearance:none; -webkit-appearance:none;
-  width:1.05rem; height:1.05rem; flex:0 0 auto;
-  border:1px solid var(--ink-faint); border-radius:50%;
-  background:var(--paper); cursor:pointer; position:relative;
-  transition:border-color .12s ease;
-}
+.choice input[type="radio"]{appearance:none; -webkit-appearance:none; width:1.05rem; height:1.05rem; flex:0 0 auto;
+  border:1px solid var(--ink-faint); border-radius:50%; background:var(--paper); cursor:pointer; position:relative;
+  transition:border-color .12s ease}
 .choice input[type="radio"]:hover{border-color:var(--ink)}
 .choice input[type="radio"]:checked{border-color:var(--ink)}
-.choice input[type="radio"]:checked::after{
-  content:""; position:absolute; inset:.24rem;
-  border-radius:50%; background:var(--ink);
-}
+.choice input[type="radio"]:checked::after{content:""; position:absolute; inset:.24rem; border-radius:50%; background:var(--ink)}
 .choice b{display:block; font-weight:600}
 .choice span{display:block; font-size:var(--fs-note); color:var(--ink-faint); line-height:1.6; margin-top:.15rem}
 .choice label:has(input:checked){border-color:var(--selected-frame); background:var(--selected-bg); box-shadow:inset var(--selected-mark-w) 0 0 var(--selected-mark)}
 
-.consequence{
-  margin-top:var(--s2); border-left:2px solid var(--accent);
-  padding:.5rem 0 .5rem .9rem; font-size:var(--fs-note); color:var(--ink-dim);
-}
+.consequence{margin-top:var(--s2); border-left:2px solid var(--accent); padding:.5rem 0 .5rem .9rem; font-size:var(--fs-note);
+  color:var(--ink-dim)}
 /* 後果說明是常駐的宣告區：沒有話要說時留在無障礙樹裡但不佔版面，
    內容一出現報讀器才念得到（hidden 會把區域本身一起拿掉）。 */
 .consequence:empty{margin:0; padding:0; border:0}
@@ -76,11 +56,8 @@ input:disabled{background:var(--paper); color:var(--ink-faint); cursor:not-allow
 #cancel-button[hidden] + .cancel-hint{display:none}
 
 .actions{display:flex; flex-wrap:wrap; gap:var(--s2); align-items:center; padding:var(--s3) 0; position:relative}
-button{
-  font-family:var(--sans); font-size:var(--fs-aside); line-height:1.5; border-radius:var(--radius);
-  border:1px solid var(--ink); background:var(--ink); color:var(--paper);
-  padding:.8rem 1.8rem; cursor:pointer;
-}
+button{font-family:var(--sans); font-size:var(--fs-aside); line-height:1.5; border-radius:var(--radius); border:1px solid var(--ink);
+  background:var(--ink); color:var(--paper); padding:.8rem 1.8rem; cursor:pointer}
 /* 同一列的按鈕同高（約 42px）：主按鈕與次要（small）按鈕排在一起時，次要的那顆不矮一截、主按鈕也不高出一截。
    字不折行（「下載 PNG」不拆成兩行）；放不下時由列換行。粗指標另有 44px 的下限（本檔「觸控」一節）。 */
 :is(.actions,.export-actions,.chart-wheel-actions) > button{min-height:2.625rem; padding-top:.4rem; padding-bottom:.4rem; white-space:nowrap}
@@ -94,11 +71,9 @@ button.ghost{background:transparent; color:var(--ink)}
 button.small{font-size:var(--fs-note); padding:.45rem 1rem}
 
 /* 計算中：後端不回報進度，只畫一條來回走的不定進度線；送出鈕停用但不淡掉（淡掉看起來像壞了）。 */
-.actions:has(> #cancel-button:not([hidden]))::before{
-  content:""; position:absolute; top:0; left:0; right:0; height:2px;
+.actions:has(> #cancel-button:not([hidden]))::before{content:""; position:absolute; top:0; left:0; right:0; height:2px;
   background:linear-gradient(to right, transparent, var(--ink) 35%, var(--ink) 65%, transparent) 0 0 / 30% 100% no-repeat var(--hair-soft);
-  animation:calc-busy 1.6s ease-in-out infinite alternate;
-}
+  animation:calc-busy 1.6s ease-in-out infinite alternate}
 @keyframes calc-busy{from{background-position:0 0}to{background-position:100% 0}}
 @media (prefers-reduced-motion: reduce){
   .actions:has(> #cancel-button:not([hidden]))::before{animation:none; background:var(--hair)}
@@ -123,10 +98,8 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
 @media (scripting: none){#bootstrap-status{display:none}}
 
 /* ── 錯誤 ───────────────────────────────────────── */
-.error-panel{
-  border:1px solid var(--accent); border-left-width:3px;
-  background:var(--paper-2); padding:var(--s2) var(--s3); margin-top:var(--s3);
-}
+.error-panel{border:1px solid var(--accent); border-left-width:3px; background:var(--paper-2); padding:var(--s2) var(--s3);
+  margin-top:var(--s3)}
 .error-panel h2{font-size:var(--fs-body); margin-bottom:.4rem}
 .error-panel p{color:var(--ink-dim); font-size:var(--fs-aside); overflow-wrap:anywhere}
 .error-panel ul{margin:.6rem 0 0 1.1rem; font-size:var(--fs-note); color:var(--ink-dim)}
@@ -137,12 +110,8 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
 
 .warnings{border:1px solid var(--hair); padding:var(--s2) var(--s3); margin-bottom:var(--s3)}
 /* 注意事項的摺疊：全是提醒時任何寬度都先是一行摘要（calculate.js 決定開合）。 */
-.warnings-fold > summary{
-  display:block; list-style:none; cursor:pointer; margin-bottom:var(--s3);
-  border:1px solid var(--hair); padding:.6rem var(--s2);
-  font-size:var(--fs-note); color:var(--ink-dim);
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
+.warnings-fold > summary{display:block; list-style:none; cursor:pointer; margin-bottom:var(--s3); border:1px solid var(--hair);
+  padding:.6rem var(--s2); font-size:var(--fs-note); color:var(--ink-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .warnings-fold[open] > summary{margin-bottom:0; border-bottom:0}
 /* 有一則影響時間、時區或方法時（calculate.js 標 data-fold="attention"），整張打開、沒有摘要行。 */
 .warnings-fold[data-fold="attention"] > summary{display:none}
@@ -212,11 +181,8 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
 /* 常用匯出因等驗算資料而停用時的那一行說明（與下方匯出工具列同一句）。 */
 .quick-toolbar .detail-status{margin:.6rem 0 0}
 @media screen and (min-width:1100px){
-  .result-lead{
-    display:grid; grid-template-columns:minmax(0,var(--chart-wheel-max)) minmax(13rem,1fr);
-    grid-template-rows:auto 1fr; grid-template-areas:"wheel summary" "wheel tools";
-    column-gap:var(--s3); align-items:start;
-  }
+  .result-lead{display:grid; grid-template-columns:minmax(0,var(--chart-wheel-max)) minmax(13rem,1fr); grid-template-rows:auto 1fr;
+    grid-template-areas:"wheel summary" "wheel tools"; column-gap:var(--s3); align-items:start}
   .result-lead > .chart-summary{grid-area:summary; min-width:0}
   .result-lead > .quick-toolbar{grid-area:tools; border-bottom:0}
   .result-lead > .result-lead-wheel{grid-area:wheel; min-width:0}
@@ -225,10 +191,8 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
   .result-lead > .chart-summary .table-wrap{overflow:visible}
   .result-lead > .chart-summary table{display:block; border-top:1px solid var(--ink); border-bottom:1px solid var(--ink)}
   .result-lead > .chart-summary caption{display:block; text-align:left}
-  .result-lead > .chart-summary thead{
-    position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
-    overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap;
-  }
+  .result-lead > .chart-summary thead{position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0; overflow:hidden;
+    clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap}
   .result-lead > .chart-summary tbody{display:grid; grid-template-columns:minmax(0,1fr)}
   .result-lead > .chart-summary tbody tr{display:flex; flex-direction:column; gap:.2rem; padding:var(--s2) 0}
   .result-lead > .chart-summary tbody tr + tr{border-top:1px solid var(--hair)}
@@ -252,26 +216,20 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
   .result-head h2:focus{outline:none}
   .time-brief-link{display:none}
 }
-.ring-tag{
-  font-family:var(--sans); font-size:var(--fs-small); letter-spacing:0;
-  border-left:3px solid var(--ring-v); padding-left:.6rem; color:var(--ink-faint);
-}
+.ring-tag{font-family:var(--sans); font-size:var(--fs-small); letter-spacing:0; border-left:3px solid var(--ring-v); padding-left:.6rem;
+  color:var(--ink-faint)}
 .ring-tag[data-ring="ring-1"]{border-left-color:var(--ring-1)}
 .ring-tag[data-ring="ring-2"]{border-left-color:var(--ring-2)}
 .ring-tag[data-ring="ring-3"]{border-left-color:var(--ring-3)}
 .ring-tag[data-ring="ring-v"]{border-left-color:var(--ring-v)}
 
 /* 收據狀態：形狀與顏色都不同，不只是文字不同 */
-.state{
-  font-family:var(--sans); font-size:var(--fs-small); letter-spacing:0;
-  padding:.15rem .6rem; border:1px solid currentColor; border-radius:999px;
-}
+.state{font-family:var(--sans); font-size:var(--fs-small); letter-spacing:0; padding:.15rem .6rem; border:1px solid currentColor;
+  border-radius:999px}
 .state[data-state="present"]{display:none}
 .state[data-state="not_requested"]{color:var(--state-absent); border-style:dashed}
 .state[data-state="executed_unavailable"]{color:var(--state-unavailable)}
-.state[data-state="refused"]{
-  color:var(--paper); background:var(--state-refused); border-color:var(--state-refused);
-}
+.state[data-state="refused"]{color:var(--paper); background:var(--state-refused); border-color:var(--state-refused)}
 
 .section-note{max-width:var(--measure); font-size:var(--fs-note); color:var(--ink-dim); margin-top:var(--s1); overflow-wrap:anywhere}
 .section-block{font-family:var(--sans); font-size:var(--fs-small); color:var(--ink-dim); margin-top:var(--s2); overflow-wrap:anywhere}
@@ -280,10 +238,8 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
 
 /* ═══ 出生時刻敏感度：取樣摘要。點與點之間是點線（那裡沒有計算）；意義不只靠顏色，位置只由 class 與 data 屬性決定（CSP）。 ═══ */
 /* 出生時間不確定時的白話摘要：左側是驗證環的線，它是限定條件，不是警告。 */
-.sampling-callout{
-  border:1px solid var(--hair); border-left:3px solid var(--ring-v);
-  padding:.9rem var(--s2); margin:var(--s2) 0; max-width:100%; overflow-wrap:anywhere;
-}
+.sampling-callout{border:1px solid var(--hair); border-left:3px solid var(--ring-v); padding:.9rem var(--s2); margin:var(--s2) 0;
+  max-width:100%; overflow-wrap:anywhere}
 .sampling-callout-title{margin:0; font-family:var(--sans); font-size:var(--fs-subhead); font-weight:600; line-height:1.4; color:var(--ink)}
 .sampling-callout-lead{margin:.35rem 0 0; font-family:var(--serif); font-size:var(--fs-lead); color:var(--ink); line-height:1.6}
 .sampling-callout-intro{margin:.35rem 0 0; font-size:var(--fs-aside); line-height:1.7; color:var(--ink-dim); max-width:var(--measure)}
@@ -297,64 +253,38 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
 .sampling-callout-caveat{margin:.6rem 0 0; font-size:var(--fs-note)}
 .sampling-callout-link{display:inline-block; margin-top:.4rem; font-size:var(--fs-note)}
 /* 結果最上方的一行：與摘要同一條驗證環左線，只有一個連結。 */
-.birth-time-notice{
-  border:1px solid var(--hair); border-left:3px solid var(--ring-v);
-  padding:.6rem var(--s2); margin-bottom:var(--s2); font-size:var(--fs-aside); line-height:1.6;
-}
+.birth-time-notice{border:1px solid var(--hair); border-left:3px solid var(--ring-v); padding:.6rem var(--s2); margin-bottom:var(--s2);
+  font-size:var(--fs-aside); line-height:1.6}
 /* 只給輔助科技的文字（例如標籤與結論之間的「：」）。不用 display:none，那會讓它也不被朗讀。 */
-.visually-hidden,.chapter-nav > .eyebrow{
-  position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
-  overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap;
-}
+.visually-hidden,.chapter-nav > .eyebrow{position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0; overflow:hidden;
+  clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap}
 
 /* 結論行用墨色而不是重點紅：「有改變」是資訊，不是錯誤；紅色只留給帶。 */
-.sampling{
-  margin-top:var(--s2); max-width:46rem;
-  padding-bottom:var(--s2); border-bottom:1px solid var(--hair-soft); margin-bottom:var(--s1);
-}
+.sampling{margin-top:var(--s2); max-width:46rem; padding-bottom:var(--s2); border-bottom:1px solid var(--hair-soft);
+  margin-bottom:var(--s1)}
 .sampling-lead{font-family:var(--serif); font-size:var(--fs-subhead); line-height:1.6; color:var(--ink)}
-.sampling-marks{
-  display:flex; align-items:center; max-width:34rem;
-  margin:var(--s2) 0 0; padding:1.25rem .2rem 1.5rem;
-}
+.sampling-marks{display:flex; align-items:center; max-width:34rem; margin:var(--s2) 0 0; padding:1.25rem .2rem 1.5rem}
 .sampling-mark{position:relative; flex:none; display:flex; justify-content:center}
-.sampling-dot{
-  display:block; width:12px; height:12px; border-radius:50%;
-  background:var(--ink); border:2px solid var(--ink);
-}
+.sampling-dot{display:block; width:12px; height:12px; border-radius:50%; background:var(--ink); border:2px solid var(--ink)}
 .sampling-mark[data-representative] .sampling-dot{background:var(--paper)}
-.sampling-time{
-  position:absolute; top:calc(100% + .3rem); left:50%; transform:translateX(-50%);
-  font-family:var(--serif-num); font-size:var(--fs-small); line-height:1.2; letter-spacing:0;
-  color:var(--ink-dim); white-space:nowrap; font-variant-numeric:lining-nums tabular-nums;
-}
+.sampling-time{position:absolute; top:calc(100% + .3rem); left:50%; transform:translateX(-50%); font-family:var(--serif-num);
+  font-size:var(--fs-small); line-height:1.2; letter-spacing:0; color:var(--ink-dim); white-space:nowrap;
+  font-variant-numeric:lining-nums tabular-nums}
 .sampling-mark[data-edge="first"] .sampling-time{left:0; transform:none}
 .sampling-mark[data-edge="last"] .sampling-time{left:auto; right:0; transform:none}
 .sampling-mark[data-representative] .sampling-time{color:var(--ink)}
 .sampling-marks[data-density="dense"] .sampling-dot{width:8px; height:8px; border-width:1.5px}
 .sampling-marks[data-density="dense"] .sampling-mark:not([data-edge]):not([data-representative]) .sampling-time{display:none}
-.sampling-gap{
-  position:relative; flex:1 1 0; min-width:3px; align-self:stretch;
-  display:flex; align-items:center; justify-content:center;
-}
-.sampling-gap::before{
-  content:""; position:absolute; left:3px; right:3px; top:50%;
-  border-top:1px dotted var(--ink-faint);
-}
+.sampling-gap{position:relative; flex:1 1 0; min-width:3px; align-self:stretch; display:flex; align-items:center; justify-content:center}
+.sampling-gap::before{content:""; position:absolute; left:3px; right:3px; top:50%; border-top:1px dotted var(--ink-faint)}
 .sampling-gap-band,
-.sampling-band{
-  display:block; position:relative; background-color:var(--paper);
-  background-image:repeating-linear-gradient(135deg, var(--accent) 0 1.5px, transparent 1.5px 4px);
-  border:1px solid var(--accent);
-}
+.sampling-band{display:block; position:relative; background-color:var(--paper);
+  background-image:repeating-linear-gradient(135deg, var(--accent) 0 1.5px, transparent 1.5px 4px); border:1px solid var(--accent)}
 .sampling-gap-band{width:16px; height:9px}
-/* 點很密時空隙只有幾個像素，固定寬度的帶會壓到相鄰的點；改成填滿那一格空隙，
-   意思不變：改變落在這兩個點之間的某處。 */
+/* 點很密時空隙只有幾個像素，固定寬度的帶會壓到相鄰的點；改成填滿那一格空隙，意思不變：改變落在這兩個點之間的某處。 */
 .sampling-marks[data-density="dense"] .sampling-gap-band{width:auto; left:1px; right:1px; position:absolute; height:7px}
-.sampling-gap-count{
-  position:absolute; bottom:calc(100% + .15rem); left:50%; transform:translateX(-50%);
-  font-family:var(--serif-num); font-variant-numeric:lining-nums tabular-nums; font-size:var(--fs-small); line-height:1.2; color:var(--accent); white-space:nowrap;
-}
+.sampling-gap-count{position:absolute; bottom:calc(100% + .15rem); left:50%; transform:translateX(-50%); font-family:var(--serif-num);
+  font-variant-numeric:lining-nums tabular-nums; font-size:var(--fs-small); line-height:1.2; color:var(--accent); white-space:nowrap}
 .sampling-note{margin-top:.2rem; font-size:var(--fs-note); color:var(--ink-faint); max-width:var(--measure)}
 
 .sampling-group{margin-top:var(--s2); padding-left:.9rem; border-left:3px solid var(--hair)}
@@ -366,19 +296,14 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
 .sampling-group-note{font-size:var(--fs-note); line-height:1.7; color:var(--ink-dim); max-width:var(--measure)}
 .sampling-items{margin-top:.25rem; font-size:var(--fs-note); line-height:1.75; color:var(--ink-dim); overflow-wrap:anywhere}
 .sampling-bands{list-style:none; margin-top:.45rem}
-.sampling-bands li{
-  display:grid; grid-template-columns:1.5rem max-content max-content minmax(0,1fr);
-  gap:.15rem .7rem; align-items:center;
-  padding:.35rem 0; border-bottom:1px solid var(--hair-soft); font-size:var(--fs-note);
-}
+.sampling-bands li{display:grid; grid-template-columns:1.5rem max-content max-content minmax(0,1fr); gap:.15rem .7rem; align-items:center;
+  padding:.35rem 0; border-bottom:1px solid var(--hair-soft); font-size:var(--fs-note)}
 .sampling-bands li:last-child{border-bottom:0}
 .sampling-band{width:1.5rem; height:.6rem}
 .sampling-band-range{font-family:var(--serif-num); font-variant-numeric:lining-nums tabular-nums; color:var(--ink); white-space:nowrap}
-.sampling-band-resolution{
-  font-family:var(--serif-num); font-variant-numeric:lining-nums tabular-nums; font-size:var(--fs-small); letter-spacing:0; color:var(--ink-dim);
-  border:1px solid var(--hair); border-radius:999px; padding:0 .45rem; white-space:nowrap;
-  justify-self:start;
-}
+.sampling-band-resolution{font-family:var(--serif-num); font-variant-numeric:lining-nums tabular-nums; font-size:var(--fs-small);
+  letter-spacing:0; color:var(--ink-dim); border:1px solid var(--hair); border-radius:999px; padding:0 .45rem; white-space:nowrap;
+  justify-self:start}
 .sampling-band-what{color:var(--ink-dim); line-height:1.6; overflow-wrap:anywhere}
 @media (max-width:640px){
   .sampling-lead{font-size:var(--fs-lead)}
@@ -402,14 +327,12 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
   :root{--pad:1.4rem; --s4:2.2rem; --s5:3rem; --s6:4rem}
   .grid,.grid.three{grid-template-columns:1fr}
 }
-/* 640px 以下頁首完全交給 page.css，與其他頁同一個樣子；
-   本頁只在 641–900px 之間加上下內距。 */
+/* 640px 以下頁首完全交給 page.css，與其他頁同一個樣子；本頁只在 641–900px 之間加上下內距。 */
 @media (min-width:641px) and (max-width:900px){
   header .wrap{padding-top:.8rem; padding-bottom:.8rem}
 }
 
-/* 列印用的輸入摘要：表單在紙上被藏起，摘要只在列印時出現（calculate.js 在 beforeprint 填入、
-   afterprint 清空）。 */
+/* 列印用的輸入摘要：表單在紙上被藏起，摘要只在列印時出現（calculate.js 在 beforeprint 填入、afterprint 清空）。 */
 .print-input-summary{display:none}
 
 @media print{
@@ -476,12 +399,9 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
   .results[data-print-mode="brief"] .birth-time-notice{display:none}
   .results[data-print-mode="brief"] .warnings li{font-size:inherit}
 
-  /* 首屏：左邊是圖；右邊上速覽、下位置表。圖的標題、說明、圖說、讀圖說明、下載與隱私句
-     （摘要有自己的一句）都不印。 */
-  .results[data-print-mode="brief"] .result-lead{
-    display:grid; grid-template-columns:96mm minmax(0,1fr); grid-template-rows:auto 1fr;
-    grid-template-areas:"wheel summary" "wheel positions"; column-gap:4mm; align-items:start; break-inside:avoid;
-  }
+  /* 首屏：左邊是圖；右邊上速覽、下位置表。圖的標題、說明、圖說、讀圖說明、下載與隱私句（摘要有自己的一句）都不印。 */
+  .results[data-print-mode="brief"] .result-lead{display:grid; grid-template-columns:96mm minmax(0,1fr); grid-template-rows:auto 1fr;
+    grid-template-areas:"wheel summary" "wheel positions"; column-gap:4mm; align-items:start; break-inside:avoid}
   .results[data-print-mode="brief"] .result-lead > .chart-summary{grid-area:summary; min-width:0}
   .results[data-print-mode="brief"] .result-lead > .result-lead-wheel{grid-area:wheel; min-width:0}
   .results[data-print-mode="brief"] .result-lead > .print-brief-tables{grid-area:positions; min-width:0; margin-top:2mm}
@@ -528,15 +448,9 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
 @media print{ .note{max-width:var(--measure)} }
 
 /* 重複的民用小時：它會改變上升星座，用與 .error-panel 同一套「需要你回答」的語彙，但用 accent——它是未決，不是錯誤。 */
-.fold-choice{
-  margin-top:var(--s3); padding:var(--s2) var(--s3);
-  border:1px solid var(--accent); border-left-width:3px;
-  background:var(--paper-2);
-}
-.fold-choice-title{
-  font-family:var(--serif); font-size:var(--fs-lead); color:var(--ink);
-  max-width:var(--measure);
-}
+.fold-choice{margin-top:var(--s3); padding:var(--s2) var(--s3); border:1px solid var(--accent); border-left-width:3px;
+  background:var(--paper-2)}
+.fold-choice-title{font-family:var(--serif); font-size:var(--fs-lead); color:var(--ink); max-width:var(--measure)}
 .fold-choice .choice{margin-top:var(--s2)}
 .fold-choice .note{margin-top:var(--s2)}
 
@@ -545,10 +459,8 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
 .place-search .row input{flex:1}
 .place-results{list-style:none; margin-top:var(--s2); border:1px solid var(--hair); max-height:22rem; overflow-y:auto}
 .place-results li + li{border-top:1px solid var(--hair-soft)}
-.place-option{
-  display:block; width:100%; text-align:left; background:transparent; color:var(--ink);
-  border:0; padding:.7rem .9rem; cursor:pointer; border-radius:0;
-}
+.place-option{display:block; width:100%; text-align:left; background:transparent; color:var(--ink); border:0; padding:.7rem .9rem;
+  cursor:pointer; border-radius:0}
 @media (hover:hover){ button.place-option:hover:not(:disabled){background:var(--paper-2); color:var(--ink)} }
 .place-option b{display:block; font-weight:600; font-size:var(--fs-aside); overflow-wrap:anywhere}
 .place-meta{display:block; font-size:var(--fs-note); color:var(--ink-faint); margin-top:.2rem; overflow-wrap:anywhere}
@@ -595,27 +507,20 @@ button.danger{background:var(--accent); border-color:var(--accent); color:var(--
 
 /* ═══ 進階選項：單層摺疊，內部全部攤平 ═══════════════════ */
 .advanced{border:1px solid var(--hair); background:var(--paper)}
-.advanced summary{
-  padding:.8rem 1rem; cursor:pointer; list-style:none;
-  font-family:var(--sans); font-size:var(--fs-note); letter-spacing:0; color:var(--ink-dim);
-}
+.advanced summary{padding:.8rem 1rem; cursor:pointer; list-style:none; font-family:var(--sans); font-size:var(--fs-note); letter-spacing:0;
+  color:var(--ink-dim)}
 .advanced[open] summary{border-bottom:1px solid var(--hair); background:var(--paper-2)}
 #advanced-summary[data-state="changed"]{color:var(--accent)}
 /* 計算口徑沿用進階選項的收合外觀，但語氣不同：它的摘要不是「改了幾項」，
    而是「現在生效的是哪一套」。使用者不必打開就知道自己拿到什麼。 */
 .mode{margin-top:.2rem}
 #mode-summary{color:var(--ink)}
-/* 選項群組的引導句。把握程度併進日期時間之後，那三個選項需要一個標題，
-   否則它們會看起來像在描述下面的日期欄位。 */
-.choice-lead{
-  font-size:var(--fs-note); color:var(--ink-dim); margin-bottom:.5rem;
-}
+/* 選項群組的引導句。把握程度併進日期時間之後，那三個選項需要一個標題，否則它們會看起來像在描述下面的日期欄位。 */
+.choice-lead{font-size:var(--fs-note); color:var(--ink-dim); margin-bottom:.5rem}
 /* 單選群組是巢狀 fieldset；legend 以 float 回到一般區塊排版，不壓在框線上。 */
 fieldset.choice-group,fieldset.export-mode{border:0; padding:0; min-width:0}
 fieldset.fold-choice{min-width:0}
-legend.choice-lead,legend.fold-choice-title,legend.export-mode-title{
-  float:left; width:100%; padding:0; letter-spacing:normal;
-}
+legend.choice-lead,legend.fold-choice-title,legend.export-mode-title{float:left; width:100%; padding:0; letter-spacing:normal}
 legend.choice-lead{font-family:inherit}
 legend.choice-lead + *,legend.fold-choice-title + *,legend.export-mode-title + *{clear:both}
 .advanced-body{padding:var(--s2) 1rem var(--s3)}
@@ -624,10 +529,8 @@ legend.choice-lead + *,legend.fold-choice-title + *,legend.export-mode-title + *
 /* 分組只是視覺分隔線，不是容器 */
 .option-block{margin-top:var(--s3)}
 .option-block:first-child{margin-top:0}
-.option-heading{
-  font-family:var(--serif); font-weight:400; font-size:var(--fs-body); letter-spacing:.02em;
-  border-bottom:1px solid var(--hair); padding-bottom:.35rem; margin-bottom:.2rem;
-}
+.option-heading{font-family:var(--serif); font-weight:400; font-size:var(--fs-body); letter-spacing:.02em;
+  border-bottom:1px solid var(--hair); padding-bottom:.35rem; margin-bottom:.2rem}
 
 /* 主表單裡的宮位控制項 */
 .inline-control{display:flex; align-items:center; min-height:2.6rem}
@@ -637,27 +540,16 @@ legend.choice-lead + *,legend.fold-choice-title + *,legend.export-mode-title + *
 @media (max-width:900px){ .grid.four{grid-template-columns:1fr 1fr} }
 
 /* ═══ 選項列：呼吸空間與可按的目標 ═══════════════════════ */
-.option-row{
-  display:grid; grid-template-columns:1fr minmax(0,20rem);
-  gap:.35rem var(--s3); align-items:center;
-  padding:1rem 0; border-top:1px solid var(--hair-soft);
-}
+.option-row{display:grid; grid-template-columns:1fr minmax(0,20rem); gap:.35rem var(--s3); align-items:center; padding:1rem 0;
+  border-top:1px solid var(--hair-soft)}
 .option-heading + .option-row{border-top:0}
 .option-row.is-changed{box-shadow:inset 3px 0 0 var(--accent); padding-left:.9rem}
-.option-label{
-  font-size:var(--fs-aside); color:var(--ink); line-height:1.6;
-  display:flex; align-items:baseline; flex-wrap:wrap; gap:.1rem .5rem;
-  cursor:pointer; padding:.35rem 0;
-}
+.option-label{font-size:var(--fs-aside); color:var(--ink); line-height:1.6; display:flex; align-items:baseline; flex-wrap:wrap;
+  gap:.1rem .5rem; cursor:pointer; padding:.35rem 0}
 .option-label .en{margin-left:0}
-.option-help{
-  grid-column:1 / 2; font-size:var(--fs-note); color:var(--ink-faint);
-  line-height:var(--lh-note); max-width:var(--measure-cjk); margin-top:-.1rem;
-}
-.option-children{
-  grid-column:1 / -1; margin-top:.6rem; margin-left:var(--s2);
-  border-left:2px solid var(--hair); padding-left:var(--s3);
-}
+.option-help{grid-column:1 / 2; font-size:var(--fs-note); color:var(--ink-faint); line-height:var(--lh-note); max-width:var(--measure-cjk);
+  margin-top:-.1rem}
+.option-children{grid-column:1 / -1; margin-top:.6rem; margin-left:var(--s2); border-left:2px solid var(--hair); padding-left:var(--s3)}
 .option-children .option-row{padding-top:.75rem; padding-bottom:.75rem}
 
 /* 下拉：與輸入框同一套，不用系統預設外觀 */
@@ -665,8 +557,7 @@ legend.choice-lead + *,legend.fold-choice-title + *,legend.export-mode-title + *
 select.option-control{
   appearance:none; width:100%;
   background-color:var(--paper-2);
-  /* 45deg 的色帶垂直於漸層方向，畫出來是「＼」；135deg 是「／」。
-     左段在前、右段在後，合起來才是向下的 v。 */
+  /* 45deg 的色帶垂直於漸層方向，畫出來是「＼」；135deg 是「／」。左段在前、右段在後，合起來才是向下的 v。 */
   background-image:
     linear-gradient(45deg, transparent calc(50% - .7px), var(--ink-faint) calc(50% - .7px),
                     var(--ink-faint) calc(50% + .7px), transparent calc(50% + .7px)),
@@ -683,25 +574,14 @@ input[type="number"].option-control{width:100%}
 #opt-house_system-detail{color:var(--ink-dim)}
 
 /* ═══ 勾選框：畫成儀器上的刻記，關閉是空框，開啟填墨並打勾。 ═══ */
-input[type="checkbox"].option-control{
-  appearance:none; -webkit-appearance:none;
-  width:1.35rem; height:1.35rem; flex:0 0 auto;
-  border:1px solid var(--ink-faint); border-radius:1px;
-  background:var(--paper); cursor:pointer; position:relative;
-  justify-self:end; transition:background .12s ease, border-color .12s ease;
-}
+input[type="checkbox"].option-control{appearance:none; -webkit-appearance:none; width:1.35rem; height:1.35rem; flex:0 0 auto;
+  border:1px solid var(--ink-faint); border-radius:1px; background:var(--paper); cursor:pointer; position:relative; justify-self:end;
+  transition:background .12s ease, border-color .12s ease}
 input[type="checkbox"].option-control:hover{border-color:var(--ink)}
-input[type="checkbox"].option-control:checked{
-  background:var(--ink); border-color:var(--ink);
-}
-input[type="checkbox"].option-control:checked::after{
-  content:""; position:absolute; left:.42rem; top:.16rem;
-  width:.32rem; height:.66rem; border:solid var(--paper);
-  border-width:0 1.5px 1.5px 0; transform:rotate(42deg);
-}
-input[type="checkbox"].option-control:disabled{
-  border-color:var(--hair); background:var(--paper-2); cursor:not-allowed;
-}
+input[type="checkbox"].option-control:checked{background:var(--ink); border-color:var(--ink)}
+input[type="checkbox"].option-control:checked::after{content:""; position:absolute; left:.42rem; top:.16rem; width:.32rem; height:.66rem;
+  border:solid var(--paper); border-width:0 1.5px 1.5px 0; transform:rotate(42deg)}
+input[type="checkbox"].option-control:disabled{border-color:var(--hair); background:var(--paper-2); cursor:not-allowed}
 
 @media (prefers-reduced-motion: reduce){
   .choice input[type="radio"],
@@ -717,11 +597,8 @@ input[type="checkbox"].option-control:disabled{
 
 /* 互斥被停用的列：看得見、但按不下去，且就地說明是誰停用它 */
 .option-row.is-blocked .option-label{color:var(--ink-faint)}
-.conflict-note{
-  grid-column:1 / -1; font-size:var(--fs-note); color:var(--accent);
-  border-left:2px solid var(--accent); padding-left:.7rem; margin-top:.3rem; line-height:var(--lh-note);
-  max-width:var(--measure-cjk);
-}
+.conflict-note{grid-column:1 / -1; font-size:var(--fs-note); color:var(--accent); border-left:2px solid var(--accent); padding-left:.7rem;
+  margin-top:.3rem; line-height:var(--lh-note); max-width:var(--measure-cjk)}
 
 /* ═══ 結果的章：一次看一章。黏在頂端的一列橫捲分頁；目前那一章以粗體與重點色線標出，不只靠顏色。 ═══ */
 .results{--index-bar-h:2.75rem}
@@ -735,35 +612,27 @@ input[type="checkbox"].option-control:disabled{
 /* position:relative：狀態前只給輔助科技的「：」是絕對定位，包含塊必須是這個捲動容器。 */
 /* 橫捲的是章名這一列本身；「全部章節」鈕在列外、固定在右端，不會被捲出畫面。還有章節在視窗外的那一邊
    邊緣淡出（calculate.js 依捲動位置標 data-more）。 */
-.chapter-index{
-  list-style:none; display:flex; align-items:stretch; margin:0; padding:0; position:relative; white-space:nowrap;
-  flex:1 1 auto; min-width:0; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:thin;
-}
+.chapter-index{list-style:none; display:flex; align-items:stretch; margin:0; padding:0; position:relative; white-space:nowrap;
+  flex:1 1 auto; min-width:0; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:thin}
 .chapter-index[data-more="end"]{mask-image:linear-gradient(to left, transparent, #000 2rem)}
 .chapter-index[data-more="start"]{mask-image:linear-gradient(to right, transparent, #000 2rem)}
 .chapter-index[data-more="start end"]{mask-image:linear-gradient(to right, transparent, #000 2rem, #000 calc(100% - 2rem), transparent)}
 .chapter-item{flex:0 0 auto; display:flex}
-.chapter-link{
-  display:flex; align-items:center; gap:.45rem; min-height:var(--index-bar-h);
-  padding:0 .7rem; text-decoration:none; color:var(--ink); font-size:var(--fs-aside);
-  border-bottom:3px solid transparent; border-top:3px solid transparent;
-}
+.chapter-link{display:flex; align-items:center; gap:.45rem; min-height:var(--index-bar-h); padding:0 .7rem; text-decoration:none;
+  color:var(--ink); font-size:var(--fs-aside); border-bottom:3px solid transparent; border-top:3px solid transparent}
 .chapter-number,.cmp-degree{font-family:var(--serif-num); font-variant-numeric:lining-nums tabular-nums; font-size:var(--fs-small); color:var(--ink-faint)}
 .chapter-link:hover{color:var(--accent)}
 .chapter-link:focus-visible,.index-link:focus-visible{outline-offset:-3px}
 .chapter-link[aria-current]{font-weight:700; border-bottom-color:var(--selected-mark); background:var(--selected-bg)}
 .chapters-all{flex:0 0 auto; align-self:center; margin:0; white-space:nowrap}
-/* 窄於 1440px 時分頁列的按鈕只寫「全部章節」：寫全名時 1024px 的第 6 章被它蓋住。
-   1440px 以上放得下，寫全名。 */
+/* 窄於 1440px 時分頁列的按鈕只寫「全部章節」：寫全名時 1024px 的第 6 章被它蓋住。1440px 以上放得下，寫全名。 */
 @media (max-width:1439px){ .chapters-all-more{display:none} }
 /* 很窄的螢幕：章名之間收窄，有短名的章只顯示短名（完整章名仍是連結的名稱，只給輔助科技）。 */
 .chapter-name-short{display:none}
 @media (max-width:400px){
   .chapter-link{padding:0 .5rem; gap:.3rem}
-  .chapter-link:has(> .chapter-name-short) > .chapter-name{
-    position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
-    overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap;
-  }
+  .chapter-link:has(> .chapter-name-short) > .chapter-name{position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
+    overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap}
   .chapter-name-short{display:inline}
 }
 .chapter-mode-note{max-width:none; margin:var(--s2) 0 0; font-size:var(--fs-note)}
@@ -775,23 +644,17 @@ input[type="checkbox"].option-control:disabled{
 .chapter-contents{display:flex; flex-wrap:wrap; align-items:baseline; gap:.2rem .8rem; margin-top:var(--s2); font-size:var(--fs-note)}
 .chapter-contents-title{color:var(--ink-faint); white-space:nowrap}
 .chapter-contents-list{list-style:none; display:flex; flex-wrap:wrap; gap:0 .9rem; margin:0; padding:0; flex:1 1 20rem; min-width:0}
-.index-link{
-  display:inline-flex; align-items:baseline; flex-wrap:wrap; gap:0 .4rem; min-height:1.75rem; padding:.15rem 0;
-  color:var(--ink-dim); line-height:1.5; text-decoration:underline; text-decoration-color:var(--hair);
-  text-underline-offset:.22em;
-}
+.index-link{display:inline-flex; align-items:baseline; flex-wrap:wrap; gap:0 .4rem; min-height:1.75rem; padding:.15rem 0;
+  color:var(--ink-dim); line-height:1.5; text-decoration:underline; text-decoration-color:var(--hair); text-underline-offset:.22em}
 .index-link:hover{color:var(--accent); text-decoration-color:currentColor}
 @media (pointer:coarse){ .index-link{min-height:2.25rem; align-items:center} }
 @media print{ .chapter-contents{display:none} }
 
-/* 回到頂端：捲進結果之後才出現（calculate.js 依捲動位置開合）。寬螢幕在內容欄右側的留白裡；
-   窄螢幕只在往回捲時出現，平常不蓋住表格。觸控 44px 高。不加陰影：全站是紙面與髮線，
-   浮在內容上的陰影讓它比它蓋住的核取方塊更搶眼。 */
-.back-to-top{
-  position:fixed; z-index:6; right:max(var(--s2), env(safe-area-inset-right));
-  bottom:max(var(--s2), env(safe-area-inset-bottom)); min-height:44px; padding:.4rem 1rem;
-  font-size:var(--fs-note); background:var(--paper); color:var(--ink); border:1px solid var(--ink);
-}
+/* 回到頂端：捲進結果之後才出現（calculate.js 依捲動位置開合）。寬螢幕在內容欄右側的留白裡；窄螢幕只在往回捲時出現，平常
+   不蓋住表格。觸控 44px 高。不加陰影：全站是紙面與髮線，浮在內容上的陰影讓它比它蓋住的核取方塊更搶眼。 */
+.back-to-top{position:fixed; z-index:6; right:max(var(--s2), env(safe-area-inset-right));
+  bottom:max(var(--s2), env(safe-area-inset-bottom)); min-height:44px; padding:.4rem 1rem; font-size:var(--fs-note);
+  background:var(--paper); color:var(--ink); border:1px solid var(--ink)}
 .back-to-top::before{content:"↑" / ""; margin-right:.35em}
 @media (hover:hover){ .back-to-top:hover:not(:disabled){background:var(--ink); border-color:var(--ink); color:var(--paper)} }
 .index-state{font-family:var(--sans); font-size:var(--fs-small); letter-spacing:0; color:var(--state-absent)}
@@ -806,8 +669,7 @@ input[type="checkbox"].option-control:disabled{
 .chapter-head h2:focus-visible{outline:2px solid var(--accent); outline-offset:4px}
 .chapter-lead{margin-top:.4rem; font-size:var(--fs-aside); color:var(--ink-dim); max-width:var(--measure-cjk); line-height:1.75}
 .results section.chapter,.results section.result-section,.results .technical-results,.results #export-toolbar{
-  scroll-margin-top:calc(var(--results-sticky-top, 0px) + var(--index-bar-h) + var(--s2));
-}
+  scroll-margin-top:calc(var(--results-sticky-top, 0px) + var(--index-bar-h) + var(--s2))}
 .chapter > .annual{border-top:0; margin-top:0}
 /* 完整結果上萬個節點：離畫面遠的區塊先不排版（content-visibility:auto），算完與「全部章節」時
    不必一次排完整頁；接近畫面才排。intrinsic size 記住排過的高度，捲動條不跳。只用在畫面上，列印照常全排。 */
@@ -842,17 +704,13 @@ table:not(.is-compact) [data-compact-only]{display:none}
 button.term{
   display:inline; padding:0; margin:0; border:0; border-radius:0; background:none;
   font:inherit; color:inherit; line-height:inherit; cursor:help;
-  /* 淡墨點線，不用重點色：連結是重點色，可點的詞只打開名詞解釋、不換頁，兩者看得出不同；
-     紅色點線也像拼字檢查的標記。 */
+  /* 淡墨點線，不用重點色：連結是重點色，可點的詞只打開名詞解釋、不換頁，兩者看得出不同；紅色點線也像拼字檢查的標記。 */
   text-decoration:underline dotted var(--ink-faint); text-decoration-thickness:1px; text-underline-offset:.22em;
   white-space:normal;
 }
 @media (hover:hover){ button.term:hover:not(:disabled){background:none; color:var(--ink); text-decoration-color:var(--ink)} }
-.glossary{
-  position:fixed; z-index:30; top:0; right:0; bottom:0; width:min(26rem, 100%);
-  display:flex; flex-direction:column; background:var(--paper);
-  border-left:1px solid var(--ink); box-shadow:-6px 0 18px rgba(0,0,0,.08);
-}
+.glossary{position:fixed; z-index:30; top:0; right:0; bottom:0; width:min(26rem, 100%); display:flex; flex-direction:column;
+  background:var(--paper); border-left:1px solid var(--ink); box-shadow:-6px 0 18px rgba(0,0,0,.08)}
 .glossary-head{display:flex; align-items:center; justify-content:space-between; gap:var(--s2); padding:var(--s2) var(--s3); border-bottom:1px solid var(--hair)}
 .glossary-head h2{font-family:var(--serif); font-weight:400; font-size:1.35rem}
 .glossary-head h2:focus{outline:none}
@@ -886,11 +744,9 @@ button.term{
 /* 說明拆成兩段後仍是同一段字：外框用說明的字級與行距，行高不被內文撐高。 */
 .hint-group{font-size:var(--fs-note); line-height:1.6}
 .hint-more{display:inline}
-.hint-more > summary{
-  display:inline-flex; align-items:center; justify-content:center; vertical-align:middle;
-  width:1.6rem; height:1.6rem; margin-left:.2rem; list-style:none; cursor:pointer;
-  border:1px solid var(--ink-faint); border-radius:50%; font-family:var(--serif-num); font-size:var(--fs-note); color:var(--ink-dim);
-}
+.hint-more > summary{display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; width:1.6rem; height:1.6rem;
+  margin-left:.2rem; list-style:none; cursor:pointer; border:1px solid var(--ink-faint); border-radius:50%; font-family:var(--serif-num);
+  font-size:var(--fs-note); color:var(--ink-dim)}
 .hint-more > summary::before{content:none}
 .hint-more[open] > summary{border-color:var(--ink); color:var(--ink)}
 @supports selector(::details-content){
@@ -912,19 +768,16 @@ button.term{
   .skip-to-form{display:block; margin-top:var(--s1)}
   .skip-to-form a{display:inline-flex; align-items:center; min-height:44px; font-size:var(--fs-note)}
   /* 模式卡片：沒選的只留標題與一行說明；選中的那張照全文。全文仍在無障礙樹裡，選了就看得到。 */
-  .mode-cards label:not(:has(input:checked)) > span > span{
-    display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:1; line-clamp:1; overflow:hidden;
-  }
+  .mode-cards label:not(:has(input:checked)) > span > span{display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:1;
+    line-clamp:1; overflow:hidden}
 }
 .mode-choice-timelords{margin-top:var(--s2)}
 /* 這次會算什麼：快速看盤只有一行；古典完整多一層勾選與三個流派選單。 */
 .plan-summary{max-width:var(--measure-cjk); color:var(--ink-dim)}
 .plan-classical{margin-top:var(--s2)}
 .plan-checks{display:flex; flex-wrap:wrap; gap:.5rem; margin:.6rem 0 var(--s2)}
-.plan-checks label,.plan-timelords{
-  display:inline-flex; align-items:center; gap:.5rem; font-size:var(--fs-note);
-  border:1px solid var(--hair); padding:.45rem .75rem; cursor:pointer;
-}
+.plan-checks label,.plan-timelords{display:inline-flex; align-items:center; gap:.5rem; font-size:var(--fs-note);
+  border:1px solid var(--hair); padding:.45rem .75rem; cursor:pointer}
 .plan-checks label:has(input:checked),.plan-timelords:has(input:checked){border-color:var(--selected-frame); background:var(--selected-bg); box-shadow:inset var(--selected-mark-w) 0 0 var(--selected-mark)}
 .plan-checks input,.plan-timelords input{width:auto; margin:0}
 /* 第一層勾選裡的英文名與中文同一種字，不用欄位標籤的等寬寬字距。 */
@@ -963,12 +816,9 @@ section.result-section h3,section.chart-wheel h3{font-family:var(--serif); font-
 
 /* ═══ 長區塊摺疊 ═══════════════════════════════════════ */
 .long-section{margin-top:var(--s2)}
-.long-section > summary,.aspect-pairs-fold > summary{
-  cursor:pointer; list-style:none; display:inline-block;
-  font-family:var(--sans); font-size:var(--fs-note); letter-spacing:0;
-  color:var(--ink-dim); border:1px solid var(--hair);
-  background:var(--paper-2); padding:.45rem 1rem;
-}
+.long-section > summary,.aspect-pairs-fold > summary{cursor:pointer; list-style:none; display:inline-block; font-family:var(--sans);
+  font-size:var(--fs-note); letter-spacing:0; color:var(--ink-dim); border:1px solid var(--hair); background:var(--paper-2);
+  padding:.45rem 1rem}
 .long-section > summary:hover,.aspect-pairs-fold > summary:hover{border-color:var(--ink); color:var(--ink)}
 .long-section[open] > summary,.aspect-pairs-fold[open] > summary{margin-bottom:var(--s2)}
 .aspect-pairs-fold{margin-top:var(--s2)}
@@ -979,10 +829,8 @@ section.result-section h3,section.chart-wheel h3{font-family:var(--serif); font-
 /* ═══ 區段內的「出處」摺疊：先讀白話，要查書再展開（古書出處，一條一行） ═══ */
 .section-sources{margin-top:var(--s2)}
 /* 展開記號（▸）是 page.css 全站共用的那一個；上下留白讓點擊範圍至少 24px 高。 */
-.section-sources > summary,.section-explain > summary{
-  cursor:pointer; display:block; width:max-content; padding:.3rem 0;
-  font-family:var(--sans); font-size:var(--fs-note); letter-spacing:0; color:var(--ink-dim);
-}
+.section-sources > summary,.section-explain > summary{cursor:pointer; display:block; width:max-content; padding:.3rem 0;
+  font-family:var(--sans); font-size:var(--fs-note); letter-spacing:0; color:var(--ink-dim)}
 .section-sources > summary:hover,.section-explain > summary:hover{color:var(--ink)}
 .section-sources[open] > summary,.section-explain[open] > summary{margin-bottom:var(--s2)}
 /* 列印時每個 details 由 beforeprint 展開，內容照印；「▸ 出處」標題在紙上沒有東西可按，和
@@ -994,10 +842,8 @@ section.result-section h3,section.chart-wheel h3{font-family:var(--serif); font-
 @media print{.section-explain > summary{display:none}}
 /* 「詳細數值」：一覽之後的逐格表（行速一區），預設收起；外觀同「說明與原典」，字色深一階，因為裡面是結果本身。 */
 .section-tables{margin-top:var(--s2)}
-.section-tables > summary{
-  cursor:pointer; display:block; width:max-content; padding:.3rem 0;
-  font-family:var(--sans); font-size:var(--fs-note); letter-spacing:0; color:var(--ink);
-}
+.section-tables > summary{cursor:pointer; display:block; width:max-content; padding:.3rem 0; font-family:var(--sans);
+  font-size:var(--fs-note); letter-spacing:0; color:var(--ink)}
 .section-tables[open] > summary{margin-bottom:var(--s1)}
 @media print{.section-tables > summary{display:none}}
 .section-source{font-size:var(--fs-note); color:var(--ink-dim); margin-top:var(--s1); overflow-wrap:anywhere}
@@ -1042,14 +888,11 @@ table.aspect-grid .asp-glyph{width:1.4em; height:1.4em; fill:none; stroke:var(--
 table.aspect-grid td:not(.asp-cell){font-size:var(--fs-small); color:var(--ink-faint)}
 /* 整宮成相位、逐度不在容許度內：同一個記號，淡墨細虛線、小一號；不合意的格留白。 */
 table.aspect-grid td.asp-whole .asp-glyph{width:1.1em; height:1.1em; stroke:var(--ink-faint); stroke-width:1.1; stroke-dasharray:2 1.6}
-table.aspect-grid .asp-mark[data-orb]::after{
-  content:attr(data-orb); font-family:var(--serif-latin); font-variant-numeric:lining-nums tabular-nums;
-  font-size:var(--fs-small); line-height:1; color:var(--ink-faint);
-}
+table.aspect-grid .asp-mark[data-orb]::after{content:attr(data-orb); font-family:var(--serif-latin);
+  font-variant-numeric:lining-nums tabular-nums; font-size:var(--fs-small); line-height:1; color:var(--ink-faint)}
 table.aspect-grid .asp-mark-name::before{content:attr(data-name); font-size:var(--fs-small); color:var(--ink-dim)}
 @media print{
   table.aspect-grid{width:100%}
-  table.aspect-grid tbody th[scope="row"]{position:static}
 }
 
 /* 生效選項也是長文字，同樣不該橫向捲 */
@@ -1099,8 +942,7 @@ th.num-time,td.num-time{text-align:right}
 /* 名稱欄固定：橫捲時第一欄不動；固定格必須不透明，否則捲過去的數值會透出來。 */
 .table-wrap tbody th[scope="row"]{position:sticky; left:0; z-index:1}
 .table-wrap thead th:first-child{position:sticky; left:0; z-index:2}
-/* 窄螢幕上固定欄若比框還寬，會蓋住其他欄與右緣的捲動提示：長的列名在標點與空白處換行，
-   最寬不超過框寬一半左右。 */
+/* 窄螢幕上固定欄若比框還寬，會蓋住其他欄與右緣的捲動提示：長的列名在標點與空白處換行，最寬不超過框寬一半左右。 */
 @media (max-width:900px){
   .table-wrap tbody th[scope="row"]{white-space:normal; word-break:keep-all; overflow-wrap:normal; min-width:4.5em}
 }
@@ -1142,9 +984,9 @@ tbody tr:hover th[scope="row"]{background:var(--paper-2)}
 }
 
 @media print{
-  /* 紙上沒有捲動：不印陰影、固定欄不黏；斑馬紋多半不印，列與列之間改靠較深的分隔線。 */
+  /* 紙上沒有捲動：不印陰影（固定欄不黏寫在檔末的 print-final 層）；斑馬紋多半不印，列與列之間改靠較深的分隔線。 */
   .table-wrap{background:none}
-  .table-wrap tbody th[scope="row"],.table-wrap thead th:first-child{position:static; box-shadow:none}
+  .table-wrap tbody th[scope="row"],.table-wrap thead th:first-child{box-shadow:none}
   .table-wrap tbody th[scope="row"]::after,.table-wrap thead th:first-child::after{display:none}
   td,tbody th[scope="row"]{border-bottom:.5pt solid var(--ink-faint)}
   /* 紙是白底：列標頭不鋪紙色；帶符號的名稱不從符號與字之間折斷。 */
@@ -1377,10 +1219,8 @@ button.chart-wheel-symbols-jump{
   .plan-checks label,.plan-timelords,.print-brief-input,.chart-wheel-input,.chart-wheel-aspects-toggle,
   .chart-wheel-style label{min-height:44px}
   /* 「?」：圈的大小不變，可點的範圍是圈外的整個 44px 方塊。 */
-  .hint-more > summary{
-    width:44px; height:44px; margin:0; border:0; border-radius:0;
-    background:radial-gradient(circle, transparent calc(.8rem - 1px), var(--ink-faint) calc(.8rem - 1px) .8rem, transparent .8rem);
-  }
+  .hint-more > summary{width:44px; height:44px; margin:0; border:0; border-radius:0;
+    background:radial-gradient(circle, transparent calc(.8rem - 1px), var(--ink-faint) calc(.8rem - 1px) .8rem, transparent .8rem)}
   .hint-more[open] > summary{background:radial-gradient(circle, transparent calc(.8rem - 1px), var(--ink) calc(.8rem - 1px) .8rem, transparent .8rem)}
   .advanced summary,.long-section > summary,.section-sources > summary,.section-explain > summary,.section-tables > summary,
   .manual-place summary,.time-helper summary,.receipt-codes summary,.calc-lede-more > summary,
@@ -1389,11 +1229,8 @@ button.chart-wheel-symbols-jump{
 }
 
 /* ═══ 古典判斷三區：照 Lilly 1647 p.115 分邊——實線框＝強，虛線框＝弱，淡底＝不在表上；不用顏色分好壞。 ═══ */
-.state-mark{
-  display:inline-block; font-family:var(--sans); font-size:var(--fs-small); line-height:1.4;
-  letter-spacing:.02em; color:var(--ink); white-space:nowrap;
-  padding:.08rem .45rem; border:1px solid transparent; border-radius:var(--radius);
-}
+.state-mark{display:inline-block; font-family:var(--sans); font-size:var(--fs-small); line-height:1.4; letter-spacing:.02em;
+  color:var(--ink); white-space:nowrap; padding:.08rem .45rem; border:1px solid transparent; border-radius:var(--radius)}
 .state-mark[data-side="fortitude"]{border-color:var(--ink)}
 .state-mark[data-side="debility"]{border-style:dashed; border-color:var(--ink)}
 .state-mark[data-side="neutral"]{background:var(--paper-2); border-color:var(--hair)}
@@ -1406,10 +1243,7 @@ td.has-marks{white-space:nowrap}
 td .sign-hit{color:var(--ink); font-weight:600; text-decoration:underline 1px; text-underline-offset:.3em}
 td.is-quiet{color:var(--ink-faint)}
 
-.glance{
-  margin:var(--s2) 0 var(--s1); padding:var(--s1) 0 var(--s2);
-  border-top:1px solid var(--ink); border-bottom:1px solid var(--hair);
-}
+.glance{margin:var(--s2) 0 var(--s1); padding:var(--s1) 0 var(--s2); border-top:1px solid var(--ink); border-bottom:1px solid var(--hair)}
 .glance-title{margin:0 0 .6rem; font-family:var(--serif); font-weight:400; font-size:var(--fs-lead); color:var(--ink)}
 .glance-subtitle{margin:var(--s2) 0 .2rem; font-size:var(--fs-note); color:var(--ink-dim)}
 .glance-key{margin:.8rem 0 0; max-width:var(--measure-cjk); font-size:var(--fs-small); line-height:var(--lh-note); color:var(--ink-faint)}
@@ -1476,10 +1310,7 @@ td.is-quiet{color:var(--ink-faint)}
 .cmp-tally{margin:-.25rem 0 .8rem; font-size:var(--fs-note); color:var(--ink-dim)}
 /* 固定網格，同一列的卡頂端對齊（不用多欄瀑布流：那會讓左右欄底部參差、留下空洞）；每張卡同一種框。 */
 .cmp-cards{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(min(22rem, 100%), 1fr)); gap:.6rem 1.2rem; align-items:start}
-.cmp-card{
-  box-sizing:border-box; min-width:0; margin:0;
-  padding:.55rem .75rem .65rem; border:1px solid var(--hair); background:var(--paper);
-}
+.cmp-card{box-sizing:border-box; min-width:0; margin:0; padding:.55rem .75rem .65rem; border:1px solid var(--hair); background:var(--paper)}
 .cmp-head{display:flex; flex-wrap:wrap; align-items:baseline; gap:.15rem .6rem}
 .cmp-head .glance-body{font-size:var(--fs-subhead)}
 .cmp-head .state-mark{margin-left:auto}
@@ -1573,9 +1404,8 @@ td.is-quiet{color:var(--ink-faint)}
   .cmp-card{border-color:CanvasText}
 }
 
-/* ═══ 紙上一定成立的兩件事 ═══
-   自成一個 cascade layer：分層的 !important 勝過所有未分層的宣告，本檔其他規則寫得再具體也蓋不過
-   （e2e print-layout 逐章逐表量）。
+/* ═══ 紙上一定成立的兩件事 ═══ 自成一個 cascade layer：分層的 !important 勝過所有未分層的宣告，本檔其他規則寫得再具體也
+   蓋不過（e2e print-layout 逐章逐表量）。
    1. 結果已不對應目前輸入時（data-print-withheld），紙上只留 stale 說明。
    2. 表格格只在字與字之間換行，數值不從中間斷開；最寬的表因此靠小字與窄格距放進 A4 與 Letter。 */
 @layer print-final {

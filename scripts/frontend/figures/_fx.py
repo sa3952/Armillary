@@ -1,33 +1,19 @@
 """The article figure component: markup helpers and the checks every figure passes.
 
-A figure made here is one `<figure data-fx>` with two drawings of the same
-content, a wide one (`svg.fx-wide`, viewBox 880 or 600 wide) and one recomposed
-for a phone (`svg.fx-narrow`, viewBox 340 wide).  `figures.css` shows one or
-the other by the figure's own width, never by scaling one drawing down, and
-print always takes the wide one.  Text sizes come from the classes `fx-t` and
-`fx-small` alone; the sizes per layout are in `figures.css` and read from there
-(`text_sizes`), so the minimum font size below is checked against the sheet
-the browser receives.
+A figure is one `<figure data-fx>` with two drawings of the same content, a wide one (`svg.fx-wide`, viewBox 880 or 600
+wide) and one recomposed for a phone (`svg.fx-narrow`, 340 wide).  `figures.css` shows one by the figure's own width,
+never by scaling; print takes the wide one.  Text sizes come from the classes `fx-t` and `fx-small` alone, read from
+`figures.css` (`text_sizes`) so the minimum font size is checked against the sheet the browser receives.
 
-Interaction only chooses among drawings already in the page: groups marked
-`data-fx-variant` (a switch of buttons), `data-fx-step` (a slider), and
-elements marked `data-fx-key` (focus or hover lights every element with the
-same key and copies that key's sentence from the hidden `[data-fx-notes]`
-list).  `article-figures.js` computes nothing.  Without it the default
-variant, the caption and the table are the figure.
+Interaction only chooses among drawings already in the page (`data-fx-variant`, `data-fx-step`, `data-fx-key`);
+`article-figures.js` computes nothing.  Without it the default variant, the caption and the table are the figure.
 
-Every number written in a drawing, a sentence or a table must come through
-`Bound.num` (a value the generator read from the product) or `Bound.scale` (an
-axis label); `problems()` refuses any other digit, so a number typed into a
-label by hand fails `figures --check`.
+Every number in a drawing, sentence or table must come through `Bound.num` or `Bound.scale`; `problems()` refuses any
+other digit, so a number typed by hand fails `figures --check`.
 
-The planet glyphs are the outlines shipped in chart-glyphs.js (Noto, SIL Open
-Font License 1.1).  A figure draws a glyph as a `<use>` of a `<symbol>` in one
-shared, cacheable file, `GLYPH_FILE` (`glyph_file()`, written by build_pages
-with the glyphs the articles name in their `defs()`), which carries the
-copyright lines and the licence text in its `<metadata>`, the place the
-licence allows inside a text file, as chart-glyphs.js carries them in its
-header.  The page's own sprite holds the hatch patterns only.
+Glyphs are the Noto outlines in chart-glyphs.js (SIL OFL 1.1), drawn as `<use>` of a `<symbol>` in the shared
+`GLYPH_FILE`, which carries the copyright and licence text in its `<metadata>`.  The page's own sprite holds hatch
+patterns only.
 """
 from __future__ import annotations
 
@@ -42,24 +28,19 @@ from typing import Any
 
 from ._common import ROOT
 
-
 WIDE = 880
 WIDE_SQUARE = 600
 NARROW = 340
 WIDTHS = {"fx-wide": (WIDE, WIDE_SQUARE), "fx-narrow": (NARROW,)}
 TEXT_CLASSES = ("fx-t", "fx-small")
-# The narrowest a drawing is shown at the viewports the rule names: the wide
-# one in the article column at 1440 px (824 px; a hero figure gets 878), the
-# narrow one at 375 and 320 px (the hero figure's, 2 px inside its border).
-# frontend/tests/e2e/article-figures.spec.cjs measures the rendered sizes.
+# The narrowest a drawing is shown at the named viewports (wide: 824 px article column at 1440, hero 878; narrow: 375
+# and 320 px).  frontend/tests/e2e/article-figures.spec.cjs measures the rendered sizes.
 RENDERED = {"fx-wide": {"1440": 824.0}, "fx-narrow": {"375": 341.0, "320": 286.0}}
-# Minimum rendered text size in CSS px per layout and viewport; 320 px phones
-# accept the smaller size.
+# Minimum rendered text size in CSS px per layout and viewport; 320 px phones accept the smaller size.
 MIN_PX = {("fx-wide", "1440"): 13.0, ("fx-narrow", "375"): 12.0, ("fx-narrow", "320"): 10.0}
 
 STYLESHEET = ROOT / "scripts" / "frontend" / "styles" / "figures.css"
 GLYPH_SOURCE = ROOT / "scripts" / "frontend" / "scripts" / "chart-glyphs.js"
-# The shared glyph file, under frontend/; figures name it with a content version.
 GLYPH_FILE = "zh-TW/fx-glyphs.svg"
 _GLYPH = re.compile(
     r'^    (?P<key>[a-z_]+): Object\.freeze\(\{ codepoint: "U\+[0-9A-F]+", '
@@ -68,30 +49,22 @@ _GLYPH = re.compile(
 )
 _NUMBER = re.compile(r"\d+(?:\.\d+)?")
 
-
 def f(value: float) -> str:
-    """A coordinate: one decimal, no trailing zero."""
     text = f"{value:.1f}".rstrip("0").rstrip(".")
     return "0" if text == "-0" else text
 
-
 def text_width(text: str, size: float = 1.0, latin: float = 0.55) -> float:
-    """A generous estimate of a label's drawn width: a CJK character is one em,
-    anything else `latin` em."""
+    """A generous estimate of a label's drawn width: a CJK character is one em, anything else `latin` em."""
     return sum(size if ord(ch) > 0x2E7F else latin * size for ch in text)
 
-
 def wheel_point(cx: float, cy: float, r: float, degrees: float) -> tuple[float, float]:
-    """The point at `degrees` counter-clockwise from 3 o'clock, `r` from the centre."""
     return cx + r * math.cos(math.radians(degrees)), cy - r * math.sin(math.radians(degrees))
-
 
 # --- numbers -------------------------------------------------------------------
 
 @dataclass
 class Bound:
-    """The numbers a figure may print: values read from the product, and the
-    axis labels of its scale."""
+    """The numbers a figure may print: values read from the product, and the axis labels of its scale."""
 
     values: set[str] = field(default_factory=set)
 
@@ -111,7 +84,6 @@ class Bound:
     def tokens(self) -> set[str]:
         return {token for text in self.values for token in _NUMBER.findall(text)}
 
-
 # --- SVG primitives ------------------------------------------------------------
 
 def text(x: float, y: float, value: str, cls: str = "fx-t", anchor: str | None = None) -> str:
@@ -120,31 +92,23 @@ def text(x: float, y: float, value: str, cls: str = "fx-t", anchor: str | None =
     a = f' text-anchor="{anchor}"' if anchor else ""
     return f'<text x="{f(x)}" y="{f(y)}" class="{cls}"{a}>{escape(value)}</text>'
 
-
 def line(x1: float, y1: float, x2: float, y2: float, cls: str) -> str:
     return f'<line x1="{f(x1)}" y1="{f(y1)}" x2="{f(x2)}" y2="{f(y2)}" class="{cls}"/>'
-
 
 def rect(x: float, y: float, w: float, h: float, cls: str = "") -> str:
     attr = f' class="{cls}"' if cls else ""
     return f'<rect x="{f(x)}" y="{f(y)}" width="{f(max(w, 0))}" height="{f(max(h, 0))}"{attr}/>'
 
-
 def circle(cx: float, cy: float, r: float, cls: str) -> str:
     return f'<circle cx="{f(cx)}" cy="{f(cy)}" r="{f(r)}" class="{cls}"/>'
-
 
 def path(d: str, cls: str) -> str:
     return f'<path d="{d}" class="{cls}"/>'
 
-
 def plate(width: float, height: float) -> str:
-    """The engraved plate mark: a heavy outer rule and a hairline inner rule."""
     return rect(1, 1, width - 2, height - 2, "fx-frame") + rect(6, 6, width - 12, height - 12, "fx-frame-in")
 
-
 def glyphs() -> dict[str, tuple[tuple[float, float, float, float], str]]:
-    """The chart wheel's glyph outlines, read from chart-glyphs.js."""
     source = GLYPH_SOURCE.read_text(encoding="utf-8")
     found = {}
     for match in _GLYPH.finditer(source):
@@ -154,35 +118,26 @@ def glyphs() -> dict[str, tuple[tuple[float, float, float, float], str]]:
         raise RuntimeError(f"no glyph outlines read from {GLYPH_SOURCE.name}")
     return found
 
-
 def glyph(key: str, cx: float, cy: float, size: float, cls: str = "fx-gl") -> str:
-    """A glyph of `size` units (the larger side of its outline) centred on (cx, cy)."""
     (x0, y0, x1, y1), _ = glyphs()[key]
     w, h = x1 - x0, y1 - y0
     scale = size / max(w, h)
     return (f'<use href="/{GLYPH_FILE}?v={{{{assets}}}}#fx-gl-{key}" x="{f(cx - w * scale / 2)}" y="{f(cy - h * scale / 2)}" '
             f'width="{f(w * scale)}" height="{f(h * scale)}" class="{cls}"/>')
 
-
 def _licence_text() -> str:
     from scripts.frontend import chart_glyphs
-
     texts = [p.read_text(encoding="utf-8") for p in chart_glyphs.LICENCES]
     bodies = {"\n".join(t.splitlines()[1:]) for t in texts}
     if len(bodies) != 1:
         raise RuntimeError("the OFL copies differ beyond their copyright line")
     return "\n".join([t.splitlines()[0] for t in texts] + bodies.pop().splitlines())
 
-
 def defs(keys: tuple[str, ...]) -> str:
-    """The page's sprite as the fragment holds it: the placeholder that
-    `build_pages` replaces with `sprite()`; the glyphs it names go into the
-    shared `glyph_file`."""
+    """The page's sprite placeholder that `build_pages` replaces with `sprite()`; glyphs go into `glyph_file`."""
     return "{{fx_defs" + (":" + " ".join(keys) if keys else "") + "}}"
 
-
 def sprite() -> str:
-    """The page's one sprite: the engraving patterns its figures fill with."""
     patterns = (
         # single hatch: in the beams; cross hatch: combust; dots: background of an enlargement
         '<pattern id="fx-h1" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'
@@ -194,10 +149,8 @@ def sprite() -> str:
     )
     return f'<svg class="fx-sprite" aria-hidden="true" focusable="false"><defs>{patterns}</defs></svg>'
 
-
 def glyph_file(keys: Iterable[str]) -> str:
-    """The shared glyph file: a `<symbol>` for each of `keys`, in the order
-    chart-glyphs.js lists them, with the glyphs' copyright and licence."""
+    """The shared glyph file: a `<symbol>` per key in chart-glyphs.js order, with the glyphs' copyright and licence."""
     outlines = glyphs()
     wanted = set(keys)
     unknown = sorted(wanted - set(outlines))
@@ -215,23 +168,19 @@ def glyph_file(keys: Iterable[str]) -> str:
     return (f'<svg xmlns="http://www.w3.org/2000/svg"><metadata>{licence}</metadata>'
             f'<defs>{"".join(symbols)}</defs></svg>\n')
 
-
 # --- the figure ----------------------------------------------------------------
 
 @dataclass(frozen=True)
 class Note:
-    """One sentence the readout shows: for a key (a mark pointed at) or a
-    step (a slider position), in one variant or in all (`variant=None`)."""
+    """One sentence the readout shows, for a key or a step, in one variant or all (`variant=None`)."""
 
     key: str | None
     variant: str | None
     text: str
     step: int | None = None
 
-
 @dataclass(frozen=True)
 class FigureArt:
-    """The drawing at both widths, its pointable notes and the idle readout."""
 
     wide: str
     narrow: str
@@ -239,15 +188,11 @@ class FigureArt:
     idle: str
 
     @classmethod
-    def drawn(cls, draw: Callable[..., str], *args: Any, notes: list[Note] | None = None,
-              idle: str = "") -> FigureArt:
-        """`draw(layout, *args)` at the wide and then the narrow layout."""
+    def drawn(cls, draw: Callable[..., str], *args: Any, notes: list[Note] | None = None, idle: str = "") -> FigureArt:
         return cls(draw("fx-wide", *args), draw("fx-narrow", *args), notes or [], idle)
-
 
 @dataclass(frozen=True)
 class FigureControls:
-    """The variant switch and the step slider a figure may carry."""
 
     variants: tuple[tuple[str, str], ...] = ()
     switch_label: str = ""
@@ -255,25 +200,13 @@ class FigureControls:
     default_step: int = 0
     scrub_label: str = ""
 
+def figure(*, fid: str, title: str, caption: str, art: FigureArt, controls: FigureControls = FigureControls(),
+    table: str = "", hero: bool = False, bound: Bound | None = None) -> str:
+    """One `<figure data-fx>`.  `caption` is trusted markup (a `<b>` number then text); everything else is escaped.
 
-def figure(
-    *,
-    fid: str,
-    title: str,
-    caption: str,
-    art: FigureArt,
-    controls: FigureControls = FigureControls(),
-    table: str = "",
-    hero: bool = False,
-    bound: Bound | None = None,
-) -> str:
-    """One `<figure data-fx>`.  `caption` is trusted markup (a `<b>` number
-    then text); everything else is escaped here or built by the helpers.
-
-    `variants` are (id, button label), the first the default.  `steps` is the
-    number of precomputed steps a slider moves among (groups and notes carry
-    `data-fx-step="0"` … `"steps - 1"`), `default_step` the one drawn without
-    script.  With `bound`, the figure must pass `require_clean` against it."""
+    `variants` are (id, button label), the first the default.  `steps` is the number of precomputed slider steps (groups
+    and notes carry `data-fx-step="0"` … `"steps - 1"`), `default_step` the one drawn without script.  With `bound`,
+    the figure must pass `require_clean`."""
     wide, narrow, notes, idle = art.wide, art.narrow, art.notes, art.idle
     variants, switch_label = controls.variants, controls.switch_label
     steps, default_step, scrub_label = controls.steps, controls.default_step, controls.scrub_label
@@ -296,9 +229,7 @@ def figure(
     out.append(f'<div class="fx-art" role="group" aria-labelledby="{fid}-title {fid}-cap">')
     out.append(f'<span class="fx-title" id="{fid}-title">{escape(title)}</span>')
     out += [_marks_as_images(wide), _marks_as_images(narrow), "</div>"]
-    # A figure with nothing to point at and no slider has no readout and no
-    # sentence list: article-figures.js reveals every readout on its page, so
-    # a static figure next to an interactive one would show an empty box.
+    # No notes and no slider: no readout (article-figures.js reveals every readout, so it would show an empty box).
     if notes or steps:
         out.append(f'<p class="fx-readout" data-fx-readout aria-live="polite" hidden>{escape(idle)}</p>')
         items = "".join(
@@ -306,8 +237,7 @@ def figure(
             + (f' data-fx-variant="{n.variant}"' if n.variant else "")
             + f">{escape(n.text)}</li>" for n in notes)
         out.append(f"<ul data-fx-notes hidden>{items}</ul>")
-    # The caption closes the figure: HTML lets nothing follow a figcaption
-    # that is not the figure's first child, so the table comes before it.
+    # HTML lets nothing follow a figcaption that is not the first child, so the table comes before it.
     if table:
         out.append(_data_table(fid, table))
     out.append(f'<figcaption id="{fid}-cap">{caption}</figcaption>')
@@ -317,59 +247,44 @@ def figure(
         require_clean(markup, bound)
     return markup
 
-
 _EMPTY_HEADER = re.compile(r"<th\b[^>]*>\s*</th>")
 
-
 def data_table(columns: str | Iterable[str], rows: str | Iterable[str], summary: str = "圖中的數字（表格）") -> str:
-    """A figure's numbers as an fx-data fold: `columns` are the header labels
-    (or, as one string, the header row's cells), `rows` the body's rows."""
+    """A figure's numbers as an fx-data fold; `columns` may be one string (the header row's cells)."""
     head = columns if isinstance(columns, str) else "".join(f'<th scope="col">{label}</th>' for label in columns)
     body = rows if isinstance(rows, str) else "".join(rows)
     return (f'<details class="fx-data"><summary>{summary}</summary><div class="ar-scroll">'
             f'<table class="ar-table fx-table"><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>'
             '</div></details>')
 
-
 def _data_table(fid: str, table: str) -> str:
-    """The figure's numbers as a table, folded under a summary.  Its scroll frame is a named,
-    focusable region (named by the summary), so a keyboard can scroll a table wider than a
-    phone; a header cell is never empty (a screen reader would announce a blank heading)."""
+    """The figure's numbers as a table under a summary.  Its scroll frame is a named, focusable region so a keyboard can
+    scroll it; no header cell is empty (a screen reader would announce a blank heading)."""
     if _EMPTY_HEADER.search(table):
         raise ValueError(f"{fid}: a table header cell is empty")
     if table.count('<details class="fx-data"><summary>') != 1 or table.count('<div class="ar-scroll">') != 1:
         raise ValueError(f"{fid}: the figure's table is one fx-data fold with one ar-scroll frame")
-    return (table
-            .replace('<details class="fx-data"><summary>', f'<details class="fx-data"><summary id="{fid}-data">')
-            .replace('<div class="ar-scroll">',
-                     f'<div class="ar-scroll" tabindex="0" role="region" aria-labelledby="{fid}-data">'))
-
+    return (table .replace('<details class="fx-data"><summary>',
+        f'<details class="fx-data"><summary id="{fid}-data">') .replace('<div class="ar-scroll">',
+        f'<div class="ar-scroll" tabindex="0" role="region" aria-labelledby="{fid}-data">'))
 
 _FOCUSABLE_MARK = re.compile(r'<g (?![^>]*\brole=)([^>]*\btabindex="0"[^>]*)>')
 
-
 def _marks_as_images(drawing: str) -> str:
-    """Each focusable mark is an image named by its aria-label: an SVG `<g>`
-    has no role of its own, and ARIA prohibits a label on such an element.
-    `img` rather than `graphics-symbol`: screen readers map both to an image,
-    and `img` is the one every one of them has long supported."""
+    """Each focusable mark is an `img` named by aria-label: an SVG `<g>` has no role and ARIA prohibits a label on it."""
     return _FOCUSABLE_MARK.sub(r'<g \1 role="img">', drawing)
-
 
 def svg_open(layout: str, width: float, height: float, fid: str) -> str:
     # role=group, not img: an img would hide the focusable marks inside it.
     return f'<svg class="{layout}" viewBox="0 0 {f(width)} {f(height)}" role="group" aria-labelledby="{fid}-title">'
 
-
 def variant_group(variant: str, default: str, body: str) -> str:
     off = "" if variant == default else " fx-off"
     return f'<g class="fx-v{off}" data-fx-variant="{variant}">{body}</g>'
 
-
 def step_group(step: int, default: int, body: str) -> str:
     off = "" if step == default else " fx-off"
     return f'<g class="fx-s{off}" data-fx-step="{step}">{body}</g>'
-
 
 # --- checks --------------------------------------------------------------------
 
@@ -456,9 +371,7 @@ class _Reader(HTMLParser):
         elif "data-fx-readout" in (self._inside("p") or {}):
             self.readout += data
 
-
 def text_sizes(stylesheet: Path = STYLESHEET) -> dict[tuple[str, str], float]:
-    """{(layout, text class): size in viewBox units}, as figures.css sets them."""
     css = stylesheet.read_text(encoding="utf-8")
     sizes = {}
     for layout in WIDTHS:
@@ -468,9 +381,7 @@ def text_sizes(stylesheet: Path = STYLESHEET) -> dict[tuple[str, str], float]:
                 sizes[(layout, cls)] = float(match[1])
     return sizes
 
-
 def problems(markup: str, bound: Bound, stylesheet: Path = STYLESHEET) -> list[str]:
-    """Everything wrong with one generated figure; empty when it may ship."""
     r = _Reader()
     r.feed(markup)
     out: list[str] = []
@@ -489,7 +400,6 @@ def problems(markup: str, bound: Bound, stylesheet: Path = STYLESHEET) -> list[s
         width = float(s.get("viewbox", "0 0 0 0").split()[2])
         if layout in WIDTHS and width not in WIDTHS[layout]:
             out.append(f"{fid}: {layout} viewBox width {width:g} is not one of {WIDTHS[layout]}")
-    # Alternative text: the drawing is named by a title and the caption.
     if not r.caption.strip():
         out.append(f"{fid}: no caption")
     if f'id="{fid}-title"' not in markup or 'class="fx-art" role="group"' not in markup:
@@ -508,10 +418,8 @@ def problems(markup: str, bound: Bound, stylesheet: Path = STYLESHEET) -> list[s
             px = size * min(rendered, width) / width
             if px < MIN_PX[(layout, viewport)]:
                 out.append(f"{fid}: {value!r} renders at {px:.1f} px in {layout} at {viewport} px")
-    # Each key has one focusable, labelled mark; other elements with its key (a
-    # table row, an echo in an enlargement) only light up with it.
-    focusable = {item["data-fx-key"] for item in r.keyed
-                 if item.get("tabindex") == "0" and item.get("aria-label")}
+    # Each key has one focusable, labelled mark; other elements with its key only light up with it.
+    focusable = {item["data-fx-key"] for item in r.keyed if item.get("tabindex") == "0" and item.get("aria-label")}
     for key in sorted({item["data-fx-key"] for item in r.keyed} - focusable):
         out.append(f"{fid}: key {key!r} has no focusable mark with a label")
     for item in r.keyed:
@@ -519,7 +427,6 @@ def problems(markup: str, bound: Bound, stylesheet: Path = STYLESHEET) -> list[s
             out.append(f"{fid}: the focusable mark {item['data-fx-key']!r} has no role (its label needs role=img)")
     keys = sorted({k["data-fx-key"] for k in r.keyed})
     variants = [key for key, _ in r.buttons]
-    # A figure without a switch has one unnamed variant.
     choices: list[str | None] = [*variants] or [None]
     pressed = [key for key, value in r.buttons if value == "true"]
     default = r.figure.get("data-fx-default-variant")
@@ -562,9 +469,7 @@ def problems(markup: str, bound: Bound, stylesheet: Path = STYLESHEET) -> list[s
                 out.append(f"{fid}: {token!r} in {value!r} is not a number the generator read")
     return out
 
-
 def require_clean(markup: str, bound: Bound) -> None:
-    """Refuse a generated figure that `problems` finds anything wrong with."""
     found = problems(markup, bound)
     if found:
         raise RuntimeError("figure check: " + "; ".join(found))

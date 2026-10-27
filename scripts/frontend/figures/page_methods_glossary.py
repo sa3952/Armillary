@@ -1,17 +1,14 @@
-"""The public glossary: every entry of the calculator's glossary drawer
-(scripts/frontend/scripts/glossary.js), in the drawer's order and words, so the
-page and the drawer cannot say two different things; and the entry count its
-prose quotes."""
+"""The public glossary: every entry of the calculator's glossary drawer (scripts/frontend/scripts/glossary.js), in the
+drawer's order and words, so the page and the drawer cannot say two different things; and the entry count its prose
+quotes."""
 from __future__ import annotations
 
 import html
 
 from ._common import ROOT, node_json, zh
 
-
 FRAGMENT = "methods-glossary"
 GLOSSARY_SCRIPT = ROOT / "scripts/frontend/scripts/glossary.js"
-
 
 def entries() -> list[dict]:
     found = node_json("const G=require(process.argv[1]);process.stdout.write(JSON.stringify(G.ENTRIES));",
@@ -19,7 +16,6 @@ def entries() -> list[dict]:
     if not found or len({entry["key"] for entry in found}) != len(found):
         raise RuntimeError("the glossary has no entries or repeats a key")
     return found
-
 
 def _entry(entry: dict) -> str:
     term = html.escape(entry["term"])
@@ -32,7 +28,6 @@ def _entry(entry: dict) -> str:
         f'<p class="gl-where">在結果頁：{html.escape(entry["chapter"])}</p></dd>',
         "        </div>",
     ])
-
 
 def build() -> tuple[dict[str, str], list[str]]:
     found = entries()

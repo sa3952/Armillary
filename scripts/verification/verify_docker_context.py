@@ -152,10 +152,10 @@ def app_tree(root: Path, rules: list[tuple[bool, str]], copies: list[tuple[str, 
         elif tree.is_file():
             paths.add(destination)
     for path in list(paths):
-        parent = PurePosixPath(path).parent
-        while parent != PurePosixPath("/app"):
-            paths.add(str(parent))
-            parent = parent.parent
+        lineage = PurePosixPath(path).parents
+        if PurePosixPath("/app") not in lineage:
+            raise DockerContextFailure(f"an /app tree entry lies outside /app: {path}")
+        paths.update(str(parent) for parent in lineage if PurePosixPath("/app") in parent.parents)
     return paths
 
 

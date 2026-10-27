@@ -1,18 +1,13 @@
-"""〈線上排盤準不準〉: figure 1 (an error budget: how far each kind of error
-moves a position in the chart, on one logarithmic scale) and figure 2 (a
-slider over a birth time given late by one second to one hour: how far the
-ascendant and the midheaven move), with the numbers the prose quotes.
+"""〈線上排盤準不準〉: figure 1 (an error budget: how far each kind of error moves a position in the chart, on one
+logarithmic scale) and figure 2 (a slider over a birth time given late by one second to one hour), with the numbers the
+prose quotes.
 
-Synthetic instant only: 1990-05-15 14:00, Taipei 25.05306N 121.52639E, the
-same instant as the birth-time article and the home page demonstration.
-Every ascendant and midheaven is the product's own answer; each is checked
-against the closed form (ARMC from Swiss sidereal time at the product's
-JD(UT), true obliquity of date).  The ΔT values and their uncertainty are the
-product's receipt; the Moon "with ΔT ignored" is Swiss Ephemeris at the
-product's JD(UT) read as TT.  The ephemeris row is the product against the
-JPL Horizons fixture the standing test uses, measured here; the tolerances,
-the eclipse comparison and the house closed-form bounds are read from the
-test fixtures and the test module, never typed.
+Synthetic instant only: 1990-05-15 14:00, Taipei 25.05306N 121.52639E, the same instant as the birth-time article and
+the home page demonstration.  Every ascendant and midheaven is the product's own answer, checked against the closed
+form (ARMC from Swiss sidereal time at the product's JD(UT), true obliquity of date).  The ΔT values and uncertainty
+are the product's receipt; the Moon "with ΔT ignored" is Swiss Ephemeris at the product's JD(UT) read as TT.  The
+ephemeris row is the product against the JPL Horizons fixture the standing test uses, measured here; tolerances, the
+eclipse comparison and the house closed-form bounds are read from the test fixtures and module, never typed.
 """
 from __future__ import annotations
 
@@ -27,31 +22,21 @@ from . import _fx, page_validation
 from ._common import ROOT, SIGNS, TAIPEI, backend_on_path, product_charts, sign_degree_minute, swiss
 from . import _site
 
-
 FRAGMENT = "blog-chart-calculation-accuracy"
 LAT, LON = TAIPEI
-BASE: dict[str, Any] = {
-    "datetime": {"year": 1990, "month": 5, "day": 15, "hour": 14, "minute": 0, "second": 0},
-    "location": {"latitude": LAT, "longitude": LON},
-    "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"},
-    "birth_time_precision": "exact",
-    "options": {"house_system": "W", "include_houses": True},
-}
-# The coordinates a whole-degree atlas would give for the same place.
+BASE: dict[str, Any] = {"datetime": {"year": 1990, "month": 5, "day": 15, "hour": 14, "minute": 0, "second": 0},
+    "location": {"latitude": LAT, "longitude": LON}, "timezone": {"mode": "iana", "iana_name": "Asia/Taipei"},
+    "birth_time_precision": "exact", "options": {"house_system": "W", "include_houses": True}}
 ROUNDED = (25.0, 122.0)
-# The slider: the birth time given this many seconds late.
 LATE = (1, 5, 15, 30, 60, 120, 300, 600, 900, 1800, 3600)
 DEFAULT_STEP = LATE.index(60)
 FIXTURES = ROOT / "tests" / "backend" / "fixtures"
 HOUSE_TEST = ROOT / "tests" / "backend" / "test_house_product_path.py"
 CLASSICAL = ("sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn")
-# The product's angle against the closed form at the product's own JD(UT).
 CLOSED_FORM_ARCSEC = 0.05
-
 
 def _wrap(delta: float) -> float:
     return (delta + 180.0) % 360.0 - 180.0
-
 
 def _payload(**changes) -> dict:
     payload = json.loads(json.dumps(BASE))
@@ -66,11 +51,9 @@ def _payload(**changes) -> dict:
             raise KeyError(key)
     return payload
 
-
 def _late(seconds: int) -> dict:
     total = 14 * 3600 + seconds
     return _payload(hour=total // 3600, minute=total % 3600 // 60, second=total % 60)
-
 
 def _angles(chart: dict) -> dict:
     data = chart["astronomical_data"]
@@ -79,9 +62,7 @@ def _angles(chart: dict) -> dict:
             "jd_et": data["time"]["jd_et"], "delta_t": data["time"]["delta_t_seconds"],
             "delta_t_model": data["time"]["delta_t_model"], "moon": moon["longitude"]}
 
-
 def _horizons_residuals(post) -> list[dict]:
-    """Product minus Horizons per epoch (arcseconds), as the standing test reads them."""
     fixture = json.loads((FIXTURES / "jpl_horizons_positions.json").read_text(encoding="utf-8"))
     out = []
     for epoch in fixture["epochs"]:
@@ -100,26 +81,17 @@ def _horizons_residuals(post) -> list[dict]:
                     "relative": max(abs(v - lon["sun"]) for v in lon.values())})
     return out
 
-
 def _product() -> dict:
     with product_charts() as post:
         base = post(BASE)
         late = [_angles(post(_late(s))) for s in LATE]
-        p = {
-            "base": _angles(base),
-            "engine": base["calculation_dossier"]["engine"],
-            "late": late,
+        p = {"base": _angles(base), "engine": base["calculation_dossier"]["engine"], "late": late,
             "dst": _angles(post(_payload(timezone={"mode": "fixed_offset", "utc_offset_hours": 9.0}))),
-            "rounded": _angles(post(_payload(location=ROUNDED))),
-            "y1900": _angles(post(_payload(year=1900))),
-            "y2399": _angles(post(_payload(year=2399))),
-            "horizons": _horizons_residuals(post),
-        }
+            "rounded": _angles(post(_payload(location=ROUNDED))), "y1900": _angles(post(_payload(year=1900))),
+            "y2399": _angles(post(_payload(year=2399))), "horizons": _horizons_residuals(post)}
     return p
 
-
 def _closed_form(swe, jd_ut: float, lat: float, lon: float) -> tuple[float, float]:
-    """(ASC, MC) from ARMC and the true obliquity (Meeus ch. 13), not Swiss's house code."""
     eps = swe.calc_ut(jd_ut, swe.ECL_NUT)[0][0]
     armc = (swe.sidtime(jd_ut) * 15.0 + lon) % 360.0
     r, e, p = math.radians(armc), math.radians(eps), math.radians(lat)
@@ -127,9 +99,7 @@ def _closed_form(swe, jd_ut: float, lat: float, lon: float) -> tuple[float, floa
     asc = math.degrees(math.atan2(math.cos(r), -(math.sin(r) * math.cos(e) + math.tan(p) * math.sin(e)))) % 360.0
     return asc, mc
 
-
 def _swiss(swe, p: dict) -> dict:
-    """The closed-form check of every drawn angle, and the Moon with ΔT ignored."""
     cases = [(p["base"], (LAT, LON)), (p["dst"], (LAT, LON)), (p["rounded"], ROUNDED)] + [(a, (LAT, LON)) for a in p["late"]]
     for angles, (lat, lon) in cases:
         asc, mc = _closed_form(swe, angles["jd_ut"], lat, lon)
@@ -143,14 +113,11 @@ def _swiss(swe, p: dict) -> dict:
         own = swe.calc(angles["jd_et"], swe.MOON)[0][0]
         if abs(_wrap(own - angles["moon"])) * 3600 > 0.01:
             raise RuntimeError(f"{key}: Swiss's Moon at the product's TT is not the product's Moon")
-        # The clock's UT read as TT: what a program that ignores ΔT computes.
         ignored = swe.calc(angles["jd_ut"], swe.MOON)[0][0]
         out[key] = abs(_wrap(ignored - angles["moon"])) * 3600
     return out
 
-
 def _test_constants() -> dict:
-    """The house closed-form bounds and case counts, read from the test module's source."""
     tree = ast.parse(HOUSE_TEST.read_text(encoding="utf-8"))
     found = {}
     for node in tree.body:
@@ -161,7 +128,6 @@ def _test_constants() -> dict:
     if len(found) != 4:
         raise RuntimeError(f"house test constants not found: {sorted(found)}")
     return found
-
 
 def _eclipses() -> dict:
     fixture = json.loads((FIXTURES / "nasa_eclipse_canon_selection.json").read_text(encoding="utf-8"))
@@ -174,11 +140,9 @@ def _eclipses() -> dict:
     return {"count": int(full[1]), "measured": measured[1], "tolerance": fixture["tolerance_td_seconds"],
             "differ": int(differ[1])}
 
-
 # --- formatting ------------------------------------------------------------------
 
 def _arc(arcsec: float) -> str:
-    """An amount of arc as the figure prints it."""
     if arcsec < 1:
         return f"{arcsec:.2f}″"
     if arcsec < 60:
@@ -188,16 +152,13 @@ def _arc(arcsec: float) -> str:
         return f"{whole // 60}′{whole % 60:02d}″"
     return f"{arcsec / 3600:.1f}°"
 
-
 def _dms(arcsec: float) -> str:
     whole = round(arcsec)
     return f"{whole // 3600}°{whole % 3600 // 60:02d}′{whole % 60:02d}″"
 
-
 def _place(longitude: float) -> tuple[str, str]:
     sign, degree, minute = sign_degree_minute(longitude)
     return sign + "座", f"{degree}°{minute:02d}′"
-
 
 def _late_label(seconds: int) -> str:
     if seconds < 60:
@@ -206,13 +167,11 @@ def _late_label(seconds: int) -> str:
         return f"{seconds // 60} 分鐘"
     return f"{seconds // 3600} 小時"
 
-
 # --- figure 1: the error budget -----------------------------------------------------
 
 LOG_LO, LOG_HI = -1.0, math.log10(30 * 3600)  # 0.1″ … 30°
 TICKS: tuple[tuple[float, str], ...] = ((0.1, "0.1″"), (1, "1″"), (10, "10″"), (60, "1′"), (600, "10′"), (3600, "1°"), (36000, "10°"))
 DISPLAY_ROUNDING = 30.0  # arcseconds: half of the arcminute a chart prints
-
 
 def _rows(p: dict, moon: dict) -> list[dict]:
     base = p["base"]
@@ -238,12 +197,10 @@ def _rows(p: dict, moon: dict) -> list[dict]:
          "how": "把鐘面當成 UTC+9（世界時早了 1 小時）"},
     ]
 
-
 def _bind_how(row: dict, bound: _fx.Bound) -> str:
     for token in re.findall(r"\d+(?:\.\d+)?", row["how"]):
         bound.num(token)
     return row["how"]
-
 
 def _budget(layout: str, fid: str, rows: list[dict], bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
@@ -289,7 +246,6 @@ def _budget(layout: str, fid: str, rows: list[dict], bound: _fx.Bound) -> str:
             else:
                 out.append(_fx.text(xv - 8, cy + 6, value, "fx-t fx-small fx-num fx-key", "end"))
         else:
-            # The scale's rules cross the rows on a phone: the words get the paper halo.
             out.append(_fx.text(14, y + 18, label, "fx-t fx-key"))
             out.append(_fx.text(W - 14, y + 18, value, "fx-t fx-num fx-key", "end"))
             out.append(_fx.rect(x0, y + 27, xv - x0, 15, "fx-track"))
@@ -311,14 +267,12 @@ def _budget(layout: str, fid: str, rows: list[dict], bound: _fx.Bound) -> str:
     out.append("</svg>")
     return "".join(out)
 
-
 def _budget_table(rows: list[dict], bound: _fx.Bound) -> str:
     body = []
     for row in rows:
         body.append(f'<tr data-fx-key="{row["key"]}"><th scope="row">{row["label"]}</th><td>{row["moves"]}</td>'
                     f'<td class="n">{bound.num(_arc(row["value"]))}</td><td>{_bind_how(row, bound)}</td></tr>')
     return _fx.data_table(("誤差來源", "移動的是", "移動多少", "怎麼算的"), body)
-
 
 def _budget_figure(p: dict, rows: list[dict]) -> str:
     bound = _fx.Bound()
@@ -347,11 +301,9 @@ def _budget_figure(p: dict, rows: list[dict]) -> str:
         bound=bound,
     )
 
-
 # --- figure 2: a late birth time, with a slider ---------------------------------------
 
 BEFORE, AFTER = 4.0, 16.0  # degrees shown before and after the 14:00 position
-
 
 def _strip(layout: str, fid: str, p: dict, bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
@@ -411,18 +363,15 @@ def _strip(layout: str, fid: str, p: dict, bound: _fx.Bound) -> str:
     out.append("</svg>")
     return "".join(out)
 
-
 def _strip_sentence(seconds: int, angles: dict, base: dict, bound: _fx.Bound) -> str:
     parts = []
     for key, name in (("asc", "上升點"), ("mc", "中天")):
         sign, deg = _place(angles[key])
         moved = bound.num(_dms(abs(_wrap(angles[key] - base[key])) * 3600))
         parts.append(f"{name}移動 {moved}，到{sign} {bound.num(deg)}")
-    changed = [name for key, name in (("asc", "上升"), ("mc", "中天"))
-               if int(angles[key] // 30) != int(base[key] // 30)]
+    changed = [name for key, name in (("asc", "上升"), ("mc", "中天")) if int(angles[key] // 30) != int(base[key] // 30)]
     tail = f"；{'與'.join(changed)}已經換了星座。" if changed else "；兩者都還在原來的星座。"
     return f"出生時間晚了 {bound.num(_late_label(seconds))}：" + "；".join(parts) + tail
-
 
 def _strip_table(p: dict, bound: _fx.Bound) -> str:
     rows = []
@@ -435,7 +384,6 @@ def _strip_table(p: dict, bound: _fx.Bound) -> str:
                          f'<td class="n">{bound.num(_dms(abs(_wrap(angles[key] - base[key])) * 3600))}</td>')
         rows.append(f'<tr><th scope="row">{bound.num(_late_label(seconds))}</th>{"".join(cells)}</tr>')
     return _fx.data_table(("晚了", "上升點", "移動", "中天", "移動"), rows)
-
 
 def _strip_figure(p: dict) -> str:
     bound = _fx.Bound()
@@ -468,7 +416,6 @@ def _strip_figure(p: dict) -> str:
         bound=bound,
     )
 
-
 # --- the article ----------------------------------------------------------------------
 
 def build() -> tuple[dict[str, str], list[str]]:
@@ -477,7 +424,6 @@ def build() -> tuple[dict[str, str], list[str]]:
         moon = _swiss(swe, p)
         with backend_on_path():
             from app import domain_catalog, ephemeris
-
             coverage = {name: tuple(swe.revjul(jd)[0] for jd in ephemeris.SEGMENT_MANIFEST[name]["jd_ut_coverage"])
                         for name in ephemeris.CORE_SEGMENTS}
             years = domain_catalog.PRODUCT_YEAR_RANGE
@@ -502,12 +448,10 @@ def build() -> tuple[dict[str, str], list[str]]:
     per_second = shifts[0]
     by = {row["key"]: row for row in rows}
     quoted = [
-        # the lead and the stats
         f"行星位置與 JPL 的星曆相差不到 {tol['geocentric_longitude_absolute_1900_2100']:g} 角秒",
         f"<b>{_arc(by['eph']['value'])}</b><span>",
         f"<b>{_arc(by['minute']['value'])}</b><span>",
         f"<b>{_arc(by['hour']['value'])}</b><span>",
-        # the chain
         f"Swiss Ephemeris {swiss_version}",
         f"based on JPL {jpl}",
         f"涵蓋 {plan_lo} 到 {plan_hi} 年初",
@@ -516,7 +460,6 @@ def build() -> tuple[dict[str, str], list[str]]:
         f"1990 年約 {p['base']['delta_t']:.1f} 秒",
         f"1900 年約 {p['y1900']['delta_t']:.1f} 秒".replace("-", "−"),
         f"2399 年約 {p['y2399']['delta_t'] / 60:.1f} 分鐘",
-        # the budget prose
         f"上升點每秒約走 {per_second:.1f} 角秒",
         f"差 1 分鐘，上升點移動 {_arc(by['minute']['value'])}",
         f"座標取到整數度（北緯 {ROUNDED[0]:g} 度、東經 {ROUNDED[1]:g} 度），上升點移動 {_arc(by['coords']['value'])}",
@@ -524,7 +467,6 @@ def build() -> tuple[dict[str, str], list[str]]:
         f"1900 年的盤只差 {_arc(moon['y1900'])}，1990 年的盤差 {_arc(moon['base'])}",
         f"約 {by['dt-sigma']['sigma']:g} 秒，折合上升點約 {_arc(by['dt-sigma']['value'])}",
         f"晚 {_late_label(LATE[-2])}，上升點已經換到{_place(p['late'][-2]['asc'])[0]}",
-        # the checks
         f"黃經差不超過 {tol['geocentric_longitude_absolute_1900_2100']:g} 角秒（2100 年以後 {tol['geocentric_longitude_absolute_after_2100']:g} 角秒）",
         f"黃緯不超過 {tol['geocentric_latitude_absolute']:g} 角秒",
         f"扣掉太陽的差之後不超過 {tol['geocentric_longitude_relative_to_sun']:g} 角秒",
@@ -539,17 +481,11 @@ def build() -> tuple[dict[str, str], list[str]]:
         f"容許 {house['USNO_TOLERANCE_ARCSEC']:g} 角秒",
         f"世界時換成地球時差不超過 {tol['time_scale_tt_seconds_utc_era'] * 1000:g} 毫秒",
     ]
-    return {
-        "fx-defs": _fx.defs(()),
-        "error-budget": _budget_figure(p, rows),
-        "time-error": _strip_figure(p),
-    }, quoted
-
+    return {"fx-defs": _fx.defs(()), "error-budget": _budget_figure(p, rows), "time-error": _strip_figure(p)}, quoted
 
 def elsewhere(fragment: str) -> dict[str, list[str]]:
-    """The validation run's observations the article repeats, and the largest Horizons residuals the
-    article measures, which the validation page repeats (the fixture's own note places them at 1900
-    and 2399): the validation page must still say them."""
+    """The validation run's observations the article repeats, and the largest Horizons residuals (the fixture's own
+    note places them at 1900 and 2399): the validation page must still say them."""
     measured = re.search(r"實測最大 ([0-9.]+) 角秒；2100 年以後最大 ([0-9.]+) 角秒", fragment)
     if measured is None:
         raise RuntimeError("the article no longer states its largest Horizons residuals")

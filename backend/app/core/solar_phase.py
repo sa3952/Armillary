@@ -27,11 +27,13 @@ from ..ephemeris import guarded_calc
 from .formatting import dms_text, zodiac_sign_index
 from .method_status import method_head
 from .module_state import (
+    Applicability,
+    ModuleState,
     PRODUCT_FORMULA_SOURCE,
-    STATE_FIELDS,
     computed_receipt,
-    module_state,
     frame_table_refusal,
+    module_state,
+    state_fields,
 )
 from .root_finding import (
     SOLVER_NAME, find_crossings_around, find_crossings_detailed, wrap_to_signed_180,
@@ -529,7 +531,7 @@ def _band(profile: str, body: dict, dl: float, separation: float,
     )
 
 
-def _disc_receipt(requested: bool, profile: str) -> dict:
+def _disc_receipt(requested: bool, profile: str) -> ModuleState:
     if not requested:
         return module_state(
             requested=False, executed=False, applicable=False, available=False,
@@ -711,7 +713,7 @@ def compute_solar_phase(
     }
 
 
-def solar_phase_not_applicable(state: dict, trace: Trace) -> dict:
+def solar_phase_not_applicable(state: Applicability, trace: Trace) -> dict:
     refusal = frame_table_refusal(
         state, trace, "各行星離太陽多遠（焦傷與光束下）",
         note="參考框架相容表判定不適用：日心、質心沒有從地球看到的太陽，不換框架重算。",
@@ -719,12 +721,12 @@ def solar_phase_not_applicable(state: dict, trace: Trace) -> dict:
     return solar_phase_unavailable(refusal)
 
 
-def solar_phase_unavailable(receipt: dict) -> dict:
+def solar_phase_unavailable(receipt: ModuleState) -> dict:
     """The module with no result, under the six state fields given."""
 
     return {
         **method_head(METHOD, "solar_phase", source_ref=SOURCE_REF),
-        **{field: receipt[field] for field in STATE_FIELDS},
+        **state_fields(receipt),
         "profile": None,
         "decision_basis": DECISION_BASIS,
         "same_sign_rule": SAME_SIGN_RULE,
