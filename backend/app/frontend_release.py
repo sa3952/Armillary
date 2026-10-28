@@ -34,6 +34,11 @@ CONTRACT_PATH = Path("deploy/frontend-contract.json")
 #: The public repository every new release is published to.
 PUBLIC_REPOSITORY_URL: Final = "https://github.com/sa3952/Armillary"
 SOURCE_URL_PREFIX = f"{PUBLIC_REPOSITORY_URL}/tree/"
+#: The public site's product version, major.minor.patch (0.x during the public
+#: alpha): a new feature raises the minor, a fix or copy change the patch.  It is
+#: not a contract version.  The page footers and /api/version both read it, and
+#: the changelog page must carry an entry for it.
+SITE_VERSION: Final = "0.13.0"
 REQUIRE_ENV = "CLASSICAL_ASTROLOGY_REQUIRE_FRONTEND_RELEASE"
 ROOT_ENV = "CLASSICAL_ASTROLOGY_FRONTEND_ROOT"
 DIGEST_ENV = "CLASSICAL_ASTROLOGY_FRONTEND_RELEASE_DIGEST"

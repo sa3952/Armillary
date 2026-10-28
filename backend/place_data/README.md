@@ -71,7 +71,7 @@ python -m scripts.validation.build_place_catalog \
 python scripts/verification/verify_place_catalog.py --check
 ```
 
-Expected: `places.sqlite3` SHA-256 `1f8f9b2da4f385fd53b598463bd0207d719bc30e100ede6443150446f5b13a8a` (92016640 bytes), and
+Expected: `places.sqlite3` SHA-256 `512173a41e0d8db90530a20cd0fb45293af8c672fdd6b190e51ab64d48ff1268` (92016640 bytes), and
 `catalog_manifest.json` unchanged (`git diff --exit-code backend/place_data/`). Input digests:
 
 | input | sha256 |

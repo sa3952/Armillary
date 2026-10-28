@@ -264,4 +264,9 @@ HEALTHCHECK --interval=30s --timeout=45s --start-period=60s --start-interval=2s 
     CMD ["/opt/venv/bin/python", "/app/deploy/container_healthcheck.py"]
 
 ENTRYPOINT ["/app/deploy/entrypoint.sh"]
-CMD ["/opt/venv/bin/python", "-m", "uvicorn", "app.main:create_app", "--factory", "--app-dir", "/app/backend", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--loop", "asyncio", "--http", "h11", "--ws", "none", "--no-access-log", "--timeout-worker-healthcheck", "20", "--timeout-graceful-shutdown", "25", "--backlog", "32", "--limit-max-requests", "1000", "--limit-max-requests-jitter", "200", "--no-proxy-headers"]
+# Worker health-check timeout 5 s: while uvicorn's supervisor
+# waits on a recycled worker the other one carries the site, so a shorter wait
+# shortens the window in which both are out (a fresh worker is ready in ~2.5 s).
+# No header-read timeout exists in uvicorn/h11; slow headers are bounded by the
+# edge (client_header_timeout 5s), and the app port is never published.
+CMD ["/opt/venv/bin/python", "-m", "uvicorn", "app.main:create_app", "--factory", "--app-dir", "/app/backend", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--loop", "asyncio", "--http", "h11", "--ws", "none", "--no-access-log", "--no-server-header", "--timeout-worker-healthcheck", "5", "--timeout-graceful-shutdown", "25", "--backlog", "32", "--limit-max-requests", "1000", "--limit-max-requests-jitter", "200", "--no-proxy-headers"]

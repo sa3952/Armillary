@@ -11,6 +11,9 @@
 
 方法狀態只是內部收據欄位：一般畫面不顯示。
 
+時期閉集刻意粗分：Firmicus、Manilius 這類羅馬時期的拉丁作者也歸 `hellenistic`；一個
+profile 有多個出處時，標它所依主要出處的時期。
+
 每張方法收據也帶時期標籤：
 
 - `period`：產品預設所依循的出處屬於哪個時期（閉集 `METHOD_PERIODS`）。天文計算本身
@@ -74,7 +77,9 @@ METHOD_PERIOD_LABELS: dict[str, tuple[str, str]] = {
     "declination_aspects": ("renaissance_early_modern", "modern_label"),
     "lunar_apsides": ("modern", "modern_label"),
     "parallax_moon": ("modern", "modern_label"),
-    "essential_dignities": ("medieval_arabic", "source_term"),
+    # Every dignity profile is opt-in; the one always computed (domicile and
+    # exaltation) is hellenistic, and each profile result carries its own period.
+    "essential_dignities": ("hellenistic", "source_term"),
     "dodecatemoria": ("hellenistic", "source_term"),
     "lunar_mansions": ("medieval_arabic", "source_term"),
     "solar_phase": ("renaissance_early_modern", "source_term"),
@@ -85,9 +90,12 @@ METHOD_PERIOD_LABELS: dict[str, tuple[str, str]] = {
     # (moon.VOC_METHOD_PROVENANCE).  The two alternatives carry their own period
     # through moon.VOC_METHOD_PERIODS.
     "void_of_course": ("modern", "source_term"),
-    "aspects": ("hellenistic", "source_term"),
-    # Unequal hours counted from sunrise are cited only to Lilly 1647; Dio gives
-    # no more than the weekday order.
+    # The default degree set is Ptolemaic, but the default orbs and partile rule
+    # (which decide what the output lists) are Lilly's; each profile carries its own.
+    "aspects": ("renaissance_early_modern", "source_term"),
+    # Dio XXXVII.19 gives the hour-by-hour Chaldean order that names the weekdays
+    # (and Valens I.10 the weekday rulers), but neither defines unequal hours nor a
+    # day from sunrise; for those the default cites Lilly 1647, hence the label.
     "planetary_hours": ("renaissance_early_modern", "source_term"),
     "annual_profection": ("hellenistic", "source_term"),
     "firdaria": ("medieval_arabic", "source_term"),
@@ -127,6 +135,16 @@ PROFILE_PERIODS: dict[str, str] = {
     "same_degree_number_v1": "renaissance_early_modern",
     "within_one_degree_v1": "modern",
     "lilly_1677_three_degrees_v1": "renaissance_early_modern",
+    # Solar phase: Porphyry and Antiochus (via Brennan 2017); Biruni, Book of Instruction §481-484.
+    "lilly_1647_p113_v1": "renaissance_early_modern",
+    "hellenistic_15_v1": "hellenistic",
+    "biruni_wright_v1": "medieval_arabic",
+    # Motion states: Bonatti 1550, tractatus III.
+    "lilly_1647_v1": "renaissance_early_modern",
+    "bonatti_1550_v1": "medieval_latin",
+    # Dodecatemoria: Firmicus II.13; Paulus and Olympiodorus (via Greenbaum and Jones 2017).
+    "twelvefold_from_sign_start_v1": "hellenistic",
+    "thirteenfold_from_sign_start_v1": "hellenistic",
 }
 
 

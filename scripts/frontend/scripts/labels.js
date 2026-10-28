@@ -75,7 +75,7 @@
     house_system_backend_name: Object.freeze({
       W: "Whole Sign", P: "Placidus", R: "Regiomontanus", B: "Alcabitius", O: "Porphyry", E: "Equal", C: "Campanus",
     }),
-    // 後端天體的名稱（app.config 的 CLASSICAL_BODIES、OUTER_BODIES、MODERN_MINOR_BODIES，一對一）。
+    // 後端天體的名稱（app.domain_catalog 的 CLASSICAL_BODIES、OUTER_BODIES、MODERN_MINOR_BODIES，一對一）。
     // 結果表格只帶名稱；名稱前的符號由這一組找回是哪一顆星。兩邊一致由整合測試對照。
     body_backend_name: Object.freeze({
       sun: "太陽", moon: "月亮", mercury: "水星", venus: "金星", mars: "火星",

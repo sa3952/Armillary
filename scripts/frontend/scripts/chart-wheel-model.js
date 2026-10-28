@@ -935,11 +935,11 @@
     const step = 1.4 / weight;
     for (let t = 0; t + 1 <= span + 1e-9; t += step) {
       items.push(linePrim(`${part}-hatch`, polar(from + t, rIn), polar(from + Math.min(span, t + 1), rOut),
-        weight > 1 ? "fg" : "dim", round3(0.6 * weight), { linked }));
+        "dim", round3(0.6 * weight), { linked }));
     }
     const a = polar(from, rIn);
     const b = polar(from + span, rIn);
-    items.push({ type: "path", part: `${part}-edge`, stroke: "fg", width: round3(0.9 * weight), linked,
+    items.push({ type: "path", part: `${part}-edge`, stroke: "dim", width: 0.8, linked,
       d: `${arcPath(from, span, rOut)} L ${round3(b.x)} ${round3(b.y)} `
         + `A ${rIn} ${rIn} 0 ${span > 180 ? 1 : 0} 1 ${round3(a.x)} ${round3(a.y)} Z` });
     return items;

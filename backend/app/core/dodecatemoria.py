@@ -23,7 +23,7 @@ from typing import Literal, get_args
 from .dignity_tables import DOMICILE_SIGNS, SIGNS
 from .essential_dignities import ALL_PROFILES
 from .formatting import normalize_longitude, zodiac_sign_index
-from .method_status import method_head
+from .method_status import method_head, profile_period
 from .module_state import Applicability, PRODUCT_FORMULA_SOURCE, computed_receipt, frame_table_refusal
 from .source_reading import BIBLIOGRAPHIC_ONLY, ORIGINAL_LANGUAGE_READ, SECONDARY_ONLY, TRANSLATION_READ, cited
 from .trace import Trace
@@ -216,6 +216,7 @@ def compute_dodecatemoria(
         )
         profile_results[profile_id] = {
             "profile": profile_id,
+            "period": profile_period(profile_id),
             "formula": FORMULAS[profile_id],
             "points": rows,
         }

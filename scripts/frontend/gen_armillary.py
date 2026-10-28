@@ -259,5 +259,8 @@ if __name__ == "__main__":
             print(f"    {a}×{b}: {got:.4f}°   應為 {want:.4f}°   差 {abs(got-want):.2e}")
         tilt = D(math.atan2(dot(P, u), dot(P, w)))
         print(f"  極軸偏離鉛垂 {tilt:.2f}°（臺北天極僅 {PHI:.1f}° 仰角，本來就該大幅傾斜）")
+        worst = max(abs(D(math.acos(min(1.0, abs(dot(ns[a], ns[b]))))) - want) for a, b, want in pairs)
+        if worst > 1e-6:
+            sys.exit(f"二面角偏差 {worst:.2e}° 超過 1e-6°")
     else:
         print(svg)

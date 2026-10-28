@@ -34,11 +34,22 @@
   // 排隊的按需請求以期間 id 為鍵：月小限掛在年度小限的期間下，其他是黃道釋放與十年期的大期。
   const isMonths = (id) => id.startsWith(MONTHS_PREFIX);
   /** 一份結果的按需狀態從空的開始：排隊、失敗、要收下月小限的年度、暫時失敗的再試次數。 */
-  const freshLevel2 = () => ({ level2Queue: [], level2Failed: new Set(), monthsWanted: new Set(), level2Retries: new Map() });
+  const freshLevel2 = () => ({ level2Queue: [], level2Failed: new Set(), monthsWanted: new Set(), level2Retries: new Map(), monthsStopped: false });
   /** 太陽回歸盤一格的狀態：另一個地點的兩格字、請求中、取到的那一年（n）與畫面模型。 */
   const freshSolar = () => ({ latitude: "", longitude: "", houseSystem: "", loading: false, generation: 0, result: null });
   const ICS_MONTHS_PENDING = "這一年的月小限還在取；取到之後才能存檔，檔案裡才會有月小限。";
   const ICS_MONTHS_FAILED = "這一年的月小限沒有取到，存下的檔案裡不會有月小限。";
+  const ICS_MONTHS_STOPPED = "改動表單時，這一年的月小限停止取了；按「再取這一年的月小限」，取到之後才能存檔。";
+
+  function scrollStop(details, box) {
+    const update = () => {
+      if (box.scrollWidth - box.clientWidth > 1) box.tabIndex = 0;
+      else box.removeAttribute("tabindex");
+    };
+    details.addEventListener("toggle", update);
+    const view = box.ownerDocument && box.ownerDocument.defaultView;
+    if (view) view.addEventListener("resize", update);
+  }
 
   function createPanel(options) {
     const doc = options.document;
@@ -90,6 +101,7 @@
       if (text !== undefined && text !== null) element.textContent = text;
       return element;
     }
+    /** 捲動框只在表格比框寬時才是 Tab 停留點（與 table-scroll.js 同一規則）：收合段落打開、視窗改寬時重量。 */
     /** 回應原值的代碼：標明是代碼、標英文，報讀器不把它當中文念；畫面上照字可查。 */
     function codeNote(code) {
       const wrap = node("span", "tl-code", "代碼 ");
@@ -294,19 +306,12 @@
       if (!model.years.length) {
         throw plainFailure("這張盤的年界超出本站可以計算的範圍（到西元 2399 年），排不出年度時間主星；本命盤的結果不受影響。");
       }
-      state.decennials = decennials;
-      state.firdariaNode = methods.firdariaNode;
-      state.zrYear = methods.zrYear;
       // 排在舊結果上的按需請求（例如重排進行中換了年度）屬於舊的那一份，不帶到新結果；
       // 選過的年度（只有這幾年的月小限會從按需回應收下）也從頭記。
-      Object.assign(state, freshLevel2());
-      clearLevel2Timers();
-      state.openDecades = new Map();
-      state.openYears = new Map();
-      state.data = data;
-      state.model = model;
       // 時間主星表的 JSON 原樣附上頁面收到的每一份年度回應：這一份，加上之後按需取的那些。
-      state.sources = [sourceBody];
+      Object.assign(state, { decennials, firdariaNode: methods.firdariaNode, zrYear: methods.zrYear }, freshLevel2(),
+        { openDecades: new Map(), openYears: new Map(), data, model, sources: [sourceBody] });
+      clearLevel2Timers();
       const requested = model.years.findIndex((year) => year.n === data.requestedYears);
       state.yearIndex = model.currentIndex >= 0 ? model.currentIndex : Math.max(0, requested);
       state.selected = defaultSelection();
@@ -333,6 +338,7 @@
     function queueLevel2ForYear() {
       const year = state.model && state.model.years[state.yearIndex];
       if (!year || state.stale) return;
+      state.monthsStopped = false;
       const parent = Model.monthsParentId(state.model, state.yearIndex);
       if (parent) state.monthsWanted.add(parent);
       // 排隊中其他年度的月小限不要了（路上的那一個照常回來）；選定年度的月小限排在最前面，
@@ -365,12 +371,13 @@
       }, delay);
       retryTimers.set(item.id, handle);
     }
-    /** 選定那一年的月小限：ready（已有或不必有）、pending（還在取）、failed（沒有取到）。 */
+    /** 選定那一年的月小限：ready（已有或不必有）、pending（還在取）、failed（沒有取到）、stopped（表單改動時停了，要使用者再取）。 */
     function monthsState() {
       if (!state.model || state.yearIndex < 0) return "ready";
       const missing = Model.missingMonths(state.model, state.yearIndex);
       if (!missing.length) return "ready";
-      return state.level2Failed.has(missing[0].id) ? "failed" : "pending";
+      if (state.level2Failed.has(missing[0].id)) return "failed";
+      return state.monthsStopped ? "stopped" : "pending";
     }
     function pumpLevel2() {
       // 換年度的延遲還沒過：先不送，等選定的那一年排到最前面。
@@ -958,6 +965,7 @@
         wrap.tabIndex = 0;
         wrap.appendChild(table);
         details.appendChild(wrap);
+        scrollStop(details, wrap);
         section.appendChild(details);
       }
       section.appendChild(node("p", "note", `日期是${Model.DATE_NOTE}。`));
@@ -1117,11 +1125,22 @@
       note.id = "annual-ics-note";
       note.append(node("strong", null, `${Model.ICS_LABEL}。`),
         doc.createTextNode("任何一段期間的起點都能推回出生時刻與日夜盤。檔案在你的瀏覽器裡、只由畫面上這一年的期間產生，不經過伺服器；本站不提供訂閱網址，也不加提醒。檔名不含出生資料，但內容含有；請自行決定存放位置。匯入雲端行事曆之後，這些日期就由那個行事曆服務保存。"));
-      box.append(heading, use, steps, months, button, note);
+      // 表單改動時停掉的月小限不自己重送，只在這裡讓使用者明確地再取一次。
+      const retry = node("button", "ghost small", "再取這一年的月小限");
+      retry.type = "button";
+      retry.id = "annual-ics-months-retry";
+      retry.hidden = true;
+      retry.addEventListener("click", () => {
+        if (state.stale || !state.model || monthsState() !== "stopped") return;
+        queueLevel2ForYear();
+        refreshControls();
+      });
+      box.append(heading, use, steps, months, retry, button, note);
       return box;
     }
     function downloadIcs() {
-      if (state.stale || !state.model || monthsState() === "pending") return;
+      const months = monthsState();
+      if (state.stale || !state.model || months === "pending" || months === "stopped") return;
       let artifact;
       try { artifact = Model.buildIcs(state.model, state.yearIndex, { now: now(), token: token() }); } catch (error) {
         setStatus(`沒有產生行事曆檔：${error.message}`, "error");
@@ -1194,13 +1213,18 @@
       if (!routeUnavailable) startButton.textContent = START_LABEL;
       const months = monthsState();
       const ics = el("annual-ics");
-      if (ics) ics.disabled = state.stale || !state.model || months === "pending";
+      if (ics) ics.disabled = state.stale || !state.model || months === "pending" || months === "stopped";
+      const retry = el("annual-ics-months-retry");
+      if (retry) {
+        retry.hidden = months !== "stopped";
+        retry.disabled = state.stale;
+      }
       body.querySelectorAll("[data-annual-table]").forEach((button) => { button.disabled = state.stale || !state.model; });
       solarReturn.syncButton();
       const note = el("annual-ics-months");
       if (note) {
         note.hidden = months === "ready";
-        note.textContent = months === "failed" ? ICS_MONTHS_FAILED : months === "pending" ? ICS_MONTHS_PENDING : "";
+        note.textContent = { failed: ICS_MONTHS_FAILED, pending: ICS_MONTHS_PENDING, stopped: ICS_MONTHS_STOPPED }[months] || "";
       }
     }
     function show(payload) {
@@ -1247,6 +1271,8 @@
         }
         lifecycle.abortActiveRequest();
         stopLevel2();
+        // 排隊、路上與等著再試的都丟了：選定年度還缺的月小限不會再來，不能再算「還在取」。
+        if (state.model) state.monthsStopped = true;
         solarReturn.stop();
         if (busy) setStatus("表單已改動，這次的年度計算已停止。", "info");
       }
@@ -1292,7 +1318,7 @@
   // （px）時改畫直向（時間往下、每種技法一欄）。
   const LIFE_VERTICAL_BELOW = 560;
   const LIFE_FALLBACK_WIDTH = 960;
-  const LIFE_PROMPT = "點任一段（或按 Tab 再用方向鍵）看它的起訖日期與主星。";
+  const LIFE_PROMPT = "點任一段看它的起訖日期與主星；用鍵盤時，Tab 選到時間軸後再按方向鍵。";
 
   /**
    * 人生時間軸一格：每種技法的第一層各一條，排在同一條足歲軸上並列（資料見 Model.lifeOverview）。
@@ -1421,6 +1447,7 @@
       });
       scroller.appendChild(grid);
       wrap.appendChild(scroller);
+      scrollStop(wrap, scroller);
       return wrap;
     }
     function section() {
@@ -1448,7 +1475,7 @@
           legend.appendChild(entry);
         });
       box.appendChild(legend);
-      box.appendChild(node("p", "note tl-life-note", `底色兩種紙色交替只為分辨相鄰兩段，不代表好壞。各技法的年長不同（法達與小限以太陽回歸為年界，黃道釋放與十年期一年 360 日），所以同一個年數的分界不一定對齊。日期是${Model.DATE_NOTE}。`));
+      box.appendChild(node("p", "note tl-life-note", overview.yearNote));
       box.appendChild(table());
       if (typeof win.ResizeObserver === "function") {
         // 重畫放到下一個畫格：在回呼裡直接換掉被觀察的內容，Safari 會報「ResizeObserver loop」錯誤。

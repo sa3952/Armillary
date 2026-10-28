@@ -95,7 +95,7 @@ METHOD_SOURCE_ENTRIES: Final = {
             "giving the planets, from Saturn on, to the successive hours of day and "
             "night. Dio defines neither unequal hours nor a day starting at sunrise; "
             "for those two the primary text cited is Lilly, Christian Astrology "
-            "(1647) ch. XCVII, pp. 482-483"
+            "(1647) ch. XCVII, pp. 482-484"
         ),
         "primary_text_checked": (
             "dio_xxxvii_19_in_english_translation_only; lilly_1647_ch_xcvii_in_the_first_edition"

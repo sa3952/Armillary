@@ -66,4 +66,34 @@
     <p><a class="cta lp-start" href="/zh-TW/calculate?mode=classical&amp;technique=decennials">開始排十年期 →</a></p>
   </section>
 
+  <!-- 常見問題：問句用讀者搜尋的說法，答案只取本頁與方法頁已寫的事實。只做可見問答，不出 FAQPage 結構化資料，
+       所以 class 不用計算頁的 calc-faq（那個 class 會被 structured_data.py 讀成 FAQPage）。 -->
+  <section class="ds-sec lp-faq" id="faq" aria-labelledby="lp-faq-heading">
+    <h2 class="hdr" id="lp-faq-heading"><span>05</span>常見問題：十年期怎麼算、從哪顆行星起算</h2>
+    <details class="lp-faq-q">
+      <summary>十年期怎麼算？</summary>
+      <p>從一顆起點行星開始，依出生時七顆行星在黃道上的實際順序輪下去，每顆行星管 129 個分配月（一個月 30 日），一段約 10 年 7 個月的日曆時間。每段再依七顆行星的小年分成七小段。規則見〈<a href="/zh-TW/methods/decennials">十年期的規則、出處與驗算</a>〉。</p>
+    </details>
+    <details class="lp-faq-q">
+      <summary>十年期從哪顆行星起算？</summary>
+      <p>預設照 Firmicus：日盤從太陽起，夜盤從月亮起。也可以改用 Valens 的上升點之後第一顆行星，或自己指定一顆。結果寫明這次用的是哪一種。</p>
+    </details>
+    <details class="lp-faq-q">
+      <summary>排十年期要準備什麼資料？</summary>
+      <p>出生日期、出生時間與出生地點。預設起點要先知道日盤或夜盤，只知道日期時排不出來；只知道約略幾點時，本站取那段時間的開頭、中間、結尾各排一次，三者不同就並列。</p>
+    </details>
+    <details class="lp-faq-q">
+      <summary>十年期為什麼不是剛好十年？</summary>
+      <p>一段是 129 個分配月，分配年一年 360 日，所以一段是 3,870 日，約 10 年 7 個月的日曆時間。</p>
+    </details>
+    <details class="lp-faq-q">
+      <summary>十年期的小年是多少？</summary>
+      <p>土星 30、木星 12、火星 15、太陽 19、金星 8、水星 20、月亮 25，合計 129，當作每一段裡七小段的月數。</p>
+    </details>
+    <details class="lp-faq-q">
+      <summary>出生時間差一點，十年期會變嗎？</summary>
+      <p>段落的邊界只會跟著出生時刻移動幾分鐘；但月亮靠近另一顆行星時，出生時間差一兩個小時就可能改變兩者的先後，整條順序跟著變。</p>
+    </details>
+  </section>
+
 </div>

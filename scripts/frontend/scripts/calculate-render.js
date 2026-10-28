@@ -111,7 +111,35 @@ function technicalDetailsBlock(technicalSections) {
   return details;
 }
 
+// 結果分段畫：每段之間若已連續佔用主執行緒超過 RENDER_SLICE_MS，就把執行緒讓給瀏覽器（scheduler.yield），使用者的點按與
+// 捲動不必等整份結果畫完。沒有 scheduler.yield 的環境照舊一口氣畫完。讓出之後若這次嘗試已被新的送出、中止或清除取代，
+// 剩下的段落不畫。結果區在最後一段才打開，畫到一半的狀態看不到。
+const RENDER_SLICE_MS = 40;
+function runInSlices(steps, stillCurrent, sliceStart) {
+  const scheduler = window.scheduler;
+  const yieldToMain = scheduler && typeof scheduler.yield === "function" ? () => scheduler.yield() : null;
+  const now = () => window.performance.now();
+  let index = 0;
+  const next = () => {
+    while (index < steps.length) {
+      if (yieldToMain && now() - sliceStart > RENDER_SLICE_MS) {
+        return yieldToMain().then(() => {
+          if (!stillCurrent()) return undefined;
+          sliceStart = now();
+          return next();
+        });
+      }
+      steps[index++]();
+    }
+    return undefined;
+  };
+  return next();
+}
+
 function renderResponse(response, signature, payload) {
+  const generation = pageState.attemptGeneration;
+  const stillCurrent = () => pageState.attemptGeneration === generation;
+  const started = window.performance.now();
   let canonical;
   try { canonical = window.ChartExport.createDocument(response, window.ChartViewModel.buildSections(response)); } catch (error) {
     // 狀態權威缺席或殘缺：回應本身不完整，不是版本問題（exporters 的 assertRenderableResponse）。
@@ -125,8 +153,16 @@ function renderResponse(response, signature, payload) {
   lifecycle.setCanonicalDocument(canonical);
   sectionSnapshots.clear();
   canonical.sections.forEach((section) => sectionSnapshots.set(section.id, section));
-  const tree = window.ChartViewModel.buildViewTree(canonical);
-  pageState.currentViewTree = tree;
+  let tree = null;
+  const steps = [() => {
+    tree = window.ChartViewModel.buildViewTree(canonical);
+    pageState.currentViewTree = tree;
+  }, () => { steps.push(...resultViewSteps(canonical, tree, signature, payload)); }];
+  return runInSlices(steps, stillCurrent, started);
+}
+
+/** 畫結果的各段，依序執行（runInSlices）：表頭、每一個區塊一段、星盤圖、最後組目錄並打開結果區。 */
+function resultViewSteps(canonical, tree, signature, payload) {
   renderBirthTimeSummary(tree.header.birth_time_summary);
   renderWarnings(tree.header.warnings);
   // 結果頁有三十個區塊、三百多列，所以分章，一次看一章。章節欄同時顯示每一區的收據狀態，
@@ -153,14 +189,20 @@ function renderResponse(response, signature, payload) {
   const entries = new Map();
   const addEntry = (chapter, entry) => { if (!entries.has(chapter)) entries.set(chapter, []); entries.get(chapter).push(entry); };
   const hiddenTitles = [];
-  resultSections.forEach((section) => {
+  const sectionSteps = resultSections.map((section) => () => {
     const node = materializeSection(section);
     const chapter = chapterFor.get(section.id);
     hostFor(section).appendChild(section === timeSection ? timeReceipt(node) : node);
     addEntry(chapter, { node, title: section.title, status: section.status });
     if (!pageState.resultMode.chapters.includes(chapter)) hiddenTitles.push(section.title);
   });
-  mountChartWheel(canonical);
+  // 星盤圖在區塊之後一段：它的圖說要指向已經畫好的位置表與相位表。
+  return [...sectionSteps, () => mountChartWheel(canonical), () => finishResultView(canonical, tree, signature, payload,
+    { entries, addEntry, hiddenTitles, chapterFor, technicalIds, technicalSections })];
+}
+
+function finishResultView(canonical, tree, signature, payload, built) {
+  const { entries, addEntry, hiddenTitles, chapterFor, technicalIds, technicalSections } = built;
   // 星盤圖不是 view-model 的區段：畫出來了才列在總覽的第一項；畫不出來（只留一句說明）就不列。
   const wheel = el("chart-wheel");
   if (wheel && wheel.querySelector(".chart-wheel-figure svg")) {
@@ -189,6 +231,7 @@ function renderResponse(response, signature, payload) {
   renderModeNote(hiddenTitles);
   el("chapter-timelords-entry").hidden = pageState.resultMode.chapters.includes("timelords");
   showAnnualPanel(payload);
+  resultPending.hidden = true;
   results.hidden = false;
   // 結果區打開之後分頁列才量得到寬度。
   paintChapterFade();

@@ -247,7 +247,7 @@
      "citation": "William Lilly, Christian Astrology (1647) Book I ch. XIX p.106",
      "read_at": "reading level as recorded; the record does not say which copy of the 1647 English text was read",
      "reading": "original_language_read",
-     "says": "partile definition and examples; Lilly writes 'exactly so many degrees ... as make a perfect aspect', not 'same degree': the same-degree reading is Houlding's"
+     "says": "partile definition and examples; Lilly writes 'exactly so many degrees ... as make a perfect aspect', and his own examples there put both planets in the same degree number (as an external review of 2026-10-28 reports; not yet checked here); Houlding records that reading as the commonest usage"
     },
     {
      "citation": "Deborah Houlding, Skyscript glossary 'Partile / Platick'",
@@ -1101,6 +1101,7 @@
      "ptolemy_triplicity_textual_corulership_v1"
     ],
     "note": "Fire, earth and air coincide with the first two Dorothean rulers, but water does not: by day Dorotheus gives Venus and Lilly gives Mars. Lilly keeps Mars for water by day and night without Ptolemy's Venus/Moon co-rulers.",
+    "read_at": "the scanned first edition, Wellcome copy, archive.org/details/b30338724 (leaves n137-n138)",
     "water_rule": "mars_alone_by_day_and_night"
    },
    "sources": [
@@ -1616,6 +1617,7 @@
      "work": "Vettius Valens, Anthologies"
     },
     {
+     "degree_text_note": "on p.44 the Saturn and Jupiter exaltation degrees are the editors' emendations, not the manuscripts' readings (see the Kroll-Skutsch apparatus); Mars XXVIII was not checked against the apparatus. The profile uses the signs only, so no degree here enters the output (the emendation is reported by an external review of 2026-10-28, not yet checked here)",
      "location": "II.2 (pp.42-43) and II.3.5-6 (p.44) (Kroll–Skutsch 1897, vol. I)",
      "role": "also_attested_domiciles_and_exaltation_signs_source_also_supplies_exact_degrees_not_evaluated_by_this_profile",
      "work": "Firmicus Maternus, Mathesis"
@@ -2053,7 +2055,7 @@
     "abu_mashar_nodes_after_mercury_v1": "persian_arabic_tradition_explicit_profile_abu_mashar_v1",
     "bonatti_reading_nodes_after_mars_v1": "latin_transmission_interpretive_reading_of_bonatti_v1"
    },
-   "naming_note": "Neither nocturnal profile is marked the only correct one; the provenance says 'tradition, explicit profile per Abu Ma'shar', not that Abu Ma'shar invented the technique.",
+   "naming_note": "Neither nocturnal profile is marked the only correct one; the provenance says 'tradition, explicit profile per Abu Ma'shar', not that Abu Ma'shar invented the technique. The id keeps his name as the secondary literature attributes it, but his book was not consulted and al-Qabisi is not verified: the source actually read for the nodes-after-Mercury order is al-Biruni §438-439 in Wright's translation.",
    "nocturnal_sequences": {
     "abu_mashar_nodes_after_mercury_v1": [
      "moon",
@@ -2933,7 +2935,7 @@
    "reason_vocabulary": [
     "no_sunrise_sunset_cycle_around_instant"
    ],
-   "source_note": "Cassius Dio, Roman History XXXVII.19: the weekday names follow from giving the planets, from Saturn on, to the successive hours of day and night. Dio defines neither unequal hours nor a day starting at sunrise; for those two the primary text cited is Lilly, Christian Astrology (1647) ch. XCVII, pp. 482-483",
+   "source_note": "Cassius Dio, Roman History XXXVII.19: the weekday names follow from giving the planets, from Saturn on, to the successive hours of day and night. Dio defines neither unequal hours nor a day starting at sunrise; for those two the primary text cited is Lilly, Christian Astrology (1647) ch. XCVII, pp. 482-484",
    "source_status": "standard_tradition",
    "sources": [
     {
@@ -3332,7 +3334,7 @@
    "product_conventions": [
     "whole sign as the default house system: no pre-modern source read casts a return chart with whole-sign houses; the sources read use quadrant cusps",
     "a sidereal return when the natal chart is sidereal: no pre-modern source read gives a rule for it",
-    "the birth place only: casting for the place where the native is at the return (Morin) is not offered"
+    "the birth place by default; another place is cast only when the request names one (solar_return_location), which is Morin's practice: the earlier return tradition read uses the birth place"
    ],
    "sources": [
     {
@@ -3408,7 +3410,7 @@
      "says": "the year begins when the Sun enters the minute it occupied at birth; the recension passed through Persian and Arabic hands"
     }
    ],
-   "statement": "The chart cast at SR_N, the instant the Sun returns to its natal ecliptic longitude (year_boundary), for the birth place, in the house system the natal chart uses, with the natal chart's zodiac. Positions only; no reading."
+   "statement": "The chart cast at SR_N, the instant the Sun returns to its natal ecliptic longitude (year_boundary), with the natal chart's zodiac, for the birth place unless the request names another place (solar_return_location), in the house system the request names (solar_return_house_system; the calculate page sends the one its natal chart uses). Positions only; no reading."
   },
   "time/delta_t_model": {
    "applies_to": "astronomical_data.time.delta_t_model and calculation_dossier.time_conversion.delta_t_model",
@@ -3528,7 +3530,7 @@
     },
     "lilly_moiety_before_sign_exit_v1": {
      "method_provenance": "named_author_components_combination_by_product",
-     "not_modelled": "p.112 bounds the void course by the sign but does not itself mention moieties; reading 'apply' there through the moiety rule of p.107 is the product's combination of two passages of the same book; p.107 prints two columns of orbs and the moieties are taken from the first only (the orb profile lilly_1647_experience_v1), not reconciled with the worked example on p.110",
+     "not_modelled": "p.112 bounds the void course by the sign but does not itself mention moieties; reading 'apply' there through the moiety rule of p.107 is the product's combination of two passages of the same book; p.107 prints two columns of orbs and the moieties are taken from the first only (the orb profile lilly_1647_experience_v1); Lilly's own separation example on p.110 uses the second column, so a Sun-Moon moiety there is 13.5 degrees where the product's first column gives 14.75",
      "rule": "void when, before the Moon leaves its sign, it does not come within the joint moiety of an applying aspect: the Moon is not void if at the chart moment it already applies within the pair's orb, or it enters that orb while applying before the sign exit; the pair's orb is half the sum of the two planets' orbs in Lilly's table",
      "sources": [
       {
@@ -3538,7 +3540,7 @@
        "says": "'Voyd of course': a planet separated from a planet that does not forthwith, while in that sign, apply to any other (any planet, not only the Moon; the product does not model the separation premise); bounded by the sign; the page does not mention moieties"
       },
       {
-       "citation": "Lilly, Christian Astrology 1647 p.107 (orb table); p.110 (worked example, not reconciled)",
+       "citation": "Lilly, Christian Astrology 1647 p.107 (orb table); p.110 (worked example uses the second column)",
        "read_at": "reading level as recorded; the record does not say which copy of the 1647 English text was read",
        "reading": "original_language_read",
        "says": "the planets' orbs and the rule that a pair's orb is half their sum"

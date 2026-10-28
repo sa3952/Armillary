@@ -60,6 +60,7 @@ def _local(swe, jd: float) -> tuple[int, int, int, int, int]:
     y, m, d, h, mi, _s = _utc(swe, jd + TAIPEI_OFFSET_HOURS / 24 + NUDGE_DAYS)
     return y, m, d, h, mi
 
+# Clock labels truncate to the minute (the rule, not rounding): a root at 19:10:59.6 prints 19:10.
 def _when(swe, jd: float, year: bool = False) -> str:
     y, m, d, h, mi = _local(swe, jd)
     return (f"{y} 年 " if year else "") + f"{m} 月 {d} 日 {h:02d}:{mi:02d}"
@@ -200,8 +201,10 @@ def compute() -> dict:
     mean = answers[0]["derived_methods"]["motion_states"]["profile_results"]["lilly_1647_v1"]["means"]["mercury"]
     with swiss() as swe:
         sky = Sky(swe)
-        def jd(y: int, m: int, d: int) -> float:
-            utc = dt.datetime(y, m, d) - dt.timedelta(hours=TAIPEI_OFFSET_HOURS)
+        def jd(y: int, m: int, d: int, quarter: int = 0) -> float:
+            # Each instant is anchored to the UTC clock on its own; stepping whole days in UT1 drifts off the civil
+            # midnight by UT1-UTC's change and the date labels then fall on the day before.
+            utc = dt.datetime(y, m, d) + dt.timedelta(hours=6 * quarter - TAIPEI_OFFSET_HOURS)
             return swe.utc_to_jd(utc.year, utc.month, utc.day, utc.hour, 0, 0.0, swe.GREG_CAL)[1]
         year_start, year_end = jd(YEAR, 1, 1), jd(YEAR + 1, 1, 1)
         turns = sky.stations(year_start - 40, year_end + 40)
@@ -229,7 +232,7 @@ def compute() -> dict:
         curve = []
         steps = round((t1 - t0) * 4)
         for i in range(steps + 1):
-            t = t0 + i / 4
+            t = jd(YEAR, 10, 8, i)
             curve.append((t, sky.difference(t), sky.speed(t)))
         s0, s1 = swe.julday(SPAN[0], 1, 1, 0), swe.julday(SPAN[1], 1, 1, 0)
         long_turns = sky.stations(s0, s1, 1.0)
@@ -243,6 +246,11 @@ def compute() -> dict:
             raise RuntimeError("a superior conjunction inside a retrograde")
         synodic = [b - a for a, b in zip(inferiors, inferiors[1:])]
         durations = [b - a for a, b in pairs]
+        # This retrograde's own entry in the long scan, so the rank counts below leave it out by index, not by luck of
+        # two separately found roots comparing equal.
+        this_index = min(range(len(pairs)), key=lambda i: abs(pairs[i][0] - r))
+        if abs(pairs[this_index][0] - r) > 0.01:
+            raise RuntimeError("this retrograde is missing from the long scan")
         arcs = [(sky.mercury(a)[0] - sky.mercury(b)[0]) % 360 for a, b in pairs]
         sun_lon = lambda t: calc_ut(swe, t, swe.SUN)[0]  # noqa: E731
         steps3 = [(sun_lon(inferiors[i + 3]) - sun_lon(inferiors[i]) + 180) % 360 - 180
@@ -304,7 +312,7 @@ def compute() -> dict:
             "stats": {
                 "synodic": synodic, "durations": durations, "arcs": arcs, "steps3": steps3, "apart": apart,
                 "days3": days3, "years": whole_years, "one_element": one_element, "four": four,
-                "this_duration": d - r, "this_arc": (sky.mercury(r)[0] - sky.mercury(d)[0]) % 360,
+                "this_index": this_index, "this_duration": d - r, "this_arc": (sky.mercury(r)[0] - sky.mercury(d)[0]) % 360,
             },
             "transit": {"next": next_transit, "closest": sky.separation(closest),
                         "radius": sky.sun_semidiameter(closest)},
@@ -358,8 +366,12 @@ def _labels(swe, data: dict) -> dict:
     add(data["transit"]["next"])
     add(data["this"]["start"] - 1)
     add(data["this"]["end"] - 1)
-    for t, _, _ in data["curve"]:
+    for i, (t, _, _) in enumerate(data["curve"]):
         marks.setdefault(t, {"slash": _slash(swe, t), "date": _date(swe, t)})
+        # The grid index is an oracle independent of the floating-point clock: point i is Taipei 0h of Oct 8 + i/4 day.
+        day = dt.date(YEAR, 10, 8) + dt.timedelta(days=i // 4)
+        if marks[t]["slash"] != f"{day.month}/{day.day}":
+            raise RuntimeError(f"curve point {i} labels {marks[t]['slash']}, its grid date is {day}")
     for row in data["drift"]:
         add(row["start"])
         add(row["end"])
@@ -565,17 +577,16 @@ def _plot(layout: str, fid: str, data: dict, bound: _fx.Bound) -> str:
         out.append(_fx.variant_group(key, PROFILES[0][0], "".join(labels)))
     for v in (-24, -16, -8, 0, 8, 16, 24):
         out.append(_fx.line(x0 - 5, y(v), x0, y(v), "fx-axis"))
-        out.append(_fx.text(x0 - 8, y(v) + 5, bound.scale(f"{abs(v)}°"), "fx-t fx-small fx-num", "end"))
+        out.append(_fx.text(x0 - 8, y(v) + 5, bound.scale(f"{'−' if v < 0 else ''}{abs(v)}°"), "fx-t fx-small fx-num", "end"))
     bar = bottom + 10
     out.append(_fx.rect(x(this["start"]), bar, x(this["end"]) - x(this["start"]), 6, "fx-fill-solid"))
     out.append(_fx.text((x(this["start"]) + x(this["end"])) / 2, bar + 24,
-                        f"逆行 {bound.num(f'{this['end'] - this['start']:.1f}')} 天", "fx-t fx-small", "middle"))
+                        f"逆行 {bound.num(f'{this['end'] - this['start']:.1f}')} 天", "fx-t fx-small fx-key", "middle"))
     axis = bar + 34
     out.append(_fx.line(x0, axis, x1, axis, "fx-axis"))
     every = 7 if wide else 14
-    first = curve[0][0]
     for i in range(0, round(t1 - t0) + 1, every):
-        t = first + i
+        t = curve[4 * i][0]
         out.append(_fx.line(x(t), axis, x(t), axis + 5, "fx-axis"))
         anchor = "start" if i == 0 else "middle"
         out.append(_fx.text(x(t), axis + 22, bound.scale(L[t]["slash"]), "fx-t fx-small fx-num", anchor))
@@ -671,8 +682,9 @@ def build() -> tuple[dict[str, str], list[str]]:
     after = min(y for y in same if y > YEAR)
     years = len(st["years"])
     span_label = f"{SPAN[0]}–{SPAN[1] - 1}"
-    wider = sum(1 for x in arcs if x > st["this_arc"])
-    rank_short = sum(1 for x in dur if x < st["this_duration"])
+    others = [i for i in range(len(dur)) if i != st["this_index"]]
+    wider = sum(1 for i in others if arcs[i] > st["this_arc"])
+    rank_short = sum(1 for i in others if dur[i] < st["this_duration"])
     radius_text = _arcmin(data["transit"]["radius"])
     closest_text = _arcmin(data["transit"]["closest"])
     quoted = [

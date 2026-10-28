@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime as dtmod
 import hashlib
 import json
 from pathlib import Path
@@ -21,6 +22,7 @@ from .hong_kong_place_aliases import (
     HONG_KONG_ALIASES,
     alias_key,
 )
+from . import place_zone_policy
 from .civil_time_basis import (
     CIVIL_TIME_BASIS_ZONES,
     check_civil_time_basis,
@@ -124,6 +126,17 @@ SPELLING_FALLBACK_APPLIED = "applied"
 # How often the name scan, which runs in Python and not under the progress
 # handler, looks at the clock.
 _SPELLING_SCAN_CLOCK_INTERVAL = 4096
+# The scan's own CPU time is bounded as well as the wall clock: scans waiting
+# on one another's GIL stretch wall time, and a scan that spends this much CPU
+# is refused however long it has waited.
+SPELLING_SCAN_CPU_BUDGET_SECONDS = 1.0
+# The fallback query keeps at most this many names, the closest first (by the
+# fallback order, then the name), so its MATCH expression has a bound.  It sits
+# above every name count a real query reaches: a five-letter query of common
+# letters lies within two edits of up to about 630 names (「arana」), and
+# 「paris」 restricted to one country falls back to 315.  Fewer would change
+# answers, because the country filter applies after the names are chosen.
+SPELLING_FALLBACK_MAX_NAMES = 1000
 # A fallback answer is ordered by how far its name lies from the query before
 # the ranking: Kending (one letter) before Kunming (two) for 「Kenting」.  The
 # order counts a swap of two neighbouring letters as one edit (Taipie, Kaohsuing);
@@ -485,7 +498,9 @@ _METADATA_CACHE: dict[tuple[str, int, int], dict[str, str]] = {}
 # rows are in the published catalogue manifest, which the catalogue verifier
 # (scripts/verification/verify_place_catalog.py) requires to equal the
 # database's own copy.
-SEARCH_RECEIPT_OMITTED_METADATA = ("han_script_folding", "source_admin1_corrections", "source_corrections")
+SEARCH_RECEIPT_OMITTED_METADATA = (
+    "han_script_folding", "source_admin1_corrections", "source_corrections", "zone_policies",
+)
 SEARCH_RECEIPT_ROW_LISTS_SOURCE = "backend/place_data/catalog_manifest.json"
 
 
@@ -651,7 +666,16 @@ def _optimal_string_alignment_distance(left: str, right: str) -> int:
     return rows[-1][-1]
 
 
-def _names_within_edit_distance(vocabulary: dict[int, str], key: str, *, deadline: float) -> list[str]:
+def _closest_spelling_names(key: str, names: Sequence[str]) -> list[tuple[str, int]]:
+    """The SPELLING_FALLBACK_MAX_NAMES names closest to key, each with its fallback distance."""
+
+    ranked = sorted((_optimal_string_alignment_distance(key, name), name) for name in names)
+    return [(name, distance) for distance, name in ranked[:SPELLING_FALLBACK_MAX_NAMES]]
+
+
+def _names_within_edit_distance(
+    vocabulary: dict[int, str], key: str, *, deadline: float, cpu_deadline: float | None = None
+) -> list[str]:
     """Every vocabulary key within SPELLING_FALLBACK_MAX_DISTANCE of key, sorted.
 
     Each deletion or substitution loses at most one query character. Counting
@@ -668,7 +692,9 @@ def _names_within_edit_distance(vocabulary: dict[int, str], key: str, *, deadlin
         packed = vocabulary.get(length, "")
         for start in range(0, len(packed), length):
             seen += 1
-            if seen % _SPELLING_SCAN_CLOCK_INTERVAL == 0 and time.monotonic() > deadline:
+            if seen % _SPELLING_SCAN_CLOCK_INTERVAL == 0 and (
+                time.monotonic() > deadline or (cpu_deadline is not None and time.thread_time() > cpu_deadline)
+            ):
                 raise PlaceSearchBudgetExceededError("place search exceeded its statement budget")
             name = packed[start:start + length]
             missing = 0
@@ -686,20 +712,31 @@ def _names_within_edit_distance(vocabulary: dict[int, str], key: str, *, deadlin
     return sorted(found)
 
 
+_FALLBACK_DISTANCE_FUNCTION = "spelling_fallback_distance"
+
+
+def _fallback_distance_function(closest: Sequence[tuple[str, int]]):
+    """The smallest fallback distance among a row's match keys, or None."""
+
+    distances = dict(closest)
+
+    def distance(match_keys: str | None) -> int | None:
+        found = [distances[key] for key in (match_keys or "").split(MATCH_KEY_SEPARATOR) if key in distances]
+        return min(found) if found else None
+
+    return distance
+
+
 def _search_sql(*, spelling_fallback: bool) -> str:
     """The search statement; the fallback differs only in which rows it keeps and their tier."""
 
     if spelling_fallback:
         keep = "AND fallback_distance IS NOT NULL"
         tier = f"'{SPELLING_FALLBACK_TIER}'"
-        names = (
-            "fallback_names(name, distance) AS MATERIALIZED (SELECT json_extract(value, '$[0]'), "
-            "json_extract(value, '$[1]') FROM json_each(:fallback_names)),\n                "
-        )
-        distance = (
-            "(SELECT MIN(f.distance) FROM fallback_names AS f "
-            "WHERE instr(p.match_keys, :separator || f.name || :separator) > 0)"
-        )
+        names = ""
+        # One dictionary lookup per key of the row.  A correlated subquery over
+        # the names cost rows times names: 「aiana」, near 423 names, took 0.4 s.
+        distance = f"{_FALLBACK_DISTANCE_FUNCTION}(p.match_keys)"
         order = f"{SPELLING_FALLBACK_ORDER_SQL},\n                    {_ORDER_BY_SQL}"
     else:
         keep = ""
@@ -949,6 +986,12 @@ class PlaceCatalog:
                 _FOLD_TABLE_CACHE[key] = cached
         return cached
 
+    def _zone_policies(self, connection: sqlite3.Connection) -> dict[str, dict]:
+        """The places whose zone is disputed for some dates (core.place_zone_policy)."""
+
+        stored = self._metadata_json(connection).get("zone_policies")
+        return json.loads(stored) if stored else {}
+
     def _served_metadata(self, connection: sqlite3.Connection) -> dict:
         """The metadata a search receipt carries, the per-row correction lists left out."""
 
@@ -1019,13 +1062,16 @@ class PlaceCatalog:
                 "country_code FROM places WHERE source = ? AND source_record_id = ?",
                 (source, source_record_id),
             ).fetchone()
+            policy = self._zone_policies(connection).get(
+                place_zone_policy.policy_key(source, source_record_id)
+            )
         except sqlite3.Error as exc:
             raise PlaceCatalogUnavailableError(
                 "bundled place catalog query failed"
             ) from exc
         finally:
             connection.close()
-        return None if row is None else dict(row)
+        return None if row is None else {**dict(row), "zone_policy": policy}
 
     def _remainder_rows(self, connection, remainder: str, country_code: str | None, limit: int) -> list:
         """The ranked rows for the query's rest, Hong Kong rows first (order kept within each)."""
@@ -1076,7 +1122,10 @@ class PlaceCatalog:
         )
         try:
             metadata = self._served_metadata(connection)
+            zone_policies = self._zone_policies(connection)
             fold_name, fold_table = self._fold_table(connection)
+            # 「Hong_Kong」：IANA 時區名的寫法；底線讀作空白，與 FTS5 的斷詞一致，前綴「hong kong」才認得出。
+            query = query.replace("_", " ")
             typed = query
             query = "".join(fold_table.get(character, character) for character in typed)
             match_query, query_receipt = _fts_query(
@@ -1126,22 +1175,26 @@ class PlaceCatalog:
                 if not _SPELLING_SCAN_LOCK.acquire(timeout=max(0.0, deadline - time.monotonic())):
                     raise PlaceSearchBudgetExceededError("place search exceeded its statement budget")
                 try:
-                    names = _names_within_edit_distance(vocabulary, tier_query, deadline=deadline)
+                    names = _names_within_edit_distance(
+                        vocabulary,
+                        tier_query,
+                        deadline=deadline,
+                        cpu_deadline=time.thread_time() + SPELLING_SCAN_CPU_BUDGET_SECONDS,
+                    )
                 finally:
                     _SPELLING_SCAN_LOCK.release()
-                if names:
+                closest = _closest_spelling_names(tier_query, names)
+                if closest:
+                    connection.create_function(
+                        _FALLBACK_DISTANCE_FUNCTION, 1, _fallback_distance_function(closest), deterministic=True
+                    )
                     rows = connection.execute(
                         _SPELLING_FALLBACK_SQL,
                         {
                             # Each name as an exact FTS5 phrase; a Latin match
                             # key holds only letters and single spaces.
-                            "match": " OR ".join(f'"{name}"' for name in names),
+                            "match": " OR ".join(f'"{name}"' for name, _distance in closest),
                             "country": country_code,
-                            "fallback_names": json.dumps(
-                                [[name, _optimal_string_alignment_distance(tier_query, name)] for name in names],
-                                ensure_ascii=False,
-                            ),
-                            "separator": MATCH_KEY_SEPARATOR,
                             "limit": limit,
                         },
                     ).fetchall()
@@ -1205,6 +1258,11 @@ class PlaceCatalog:
                         timezone=row["timezone"],
                     )
                     else None
+                ),
+                # A place whose zone is disputed for some dates carries its policy
+                # (core.place_zone_policy); every other place carries None.
+                "zone_policy": zone_policies.get(
+                    place_zone_policy.policy_key(row["source"], row["source_record_id"])
                 ),
             }
             for row in rows
@@ -1291,6 +1349,7 @@ def check_request_places(
         for location, zone in request_locations(request)
         if location.location_source != "manual"
     ]
+    local = request_local_time(request)
     for location, _zone in locations:
         if row_of(location.location_source, location.source_record_id) is None:
             raise CatalogRecordUnknownError(
@@ -1301,12 +1360,44 @@ def check_request_places(
         row = row_of(location.location_source, location.source_record_id)
         if row is None:  # read above; the loop before refused a missing row
             raise CatalogRecordUnknownError("the catalogue holds no record with this source and id")
-        reason = _first_difference(location, zone, row)
+        reason = _first_difference(location, zone, row, local)
         if reason is not None:
             raise CatalogLocationMismatchError(reason)
 
 
-def _first_difference(location: Any, zone: Any, row: dict) -> str | None:
+def request_local_time(request: Any):
+    """The request's local birth time as a naive datetime, the second dropped."""
+
+    moment = request.datetime
+    return dtmod.datetime(moment.year, moment.month, moment.day, moment.hour, moment.minute)
+
+
+def apply_place_zone_policy(
+    request: Any, catalogue_record: Callable[[str, str], dict | None]
+) -> tuple[Any, dict | None]:
+    """The request with the zone its place's policy applies, and the receipt.
+
+    Runs after check_request_places, which refused a zone the policy does not
+    offer.  A request whose place has no policy, or that names manual
+    coordinates, is returned as it came with no receipt."""
+
+    location = request.location
+    if location.location_source == "manual" or request.timezone.mode != "iana":
+        return request, None
+    row = catalogue_record(location.location_source, location.source_record_id)
+    policy = None if row is None else row.get("zone_policy")
+    if policy is None:
+        return request, None
+    receipt = place_zone_policy.resolve(
+        policy, requested_zone=request.timezone.iana_name, local=request_local_time(request)
+    )
+    if receipt["applied_zone"] != request.timezone.iana_name:
+        timezone = request.timezone.model_copy(update={"iana_name": receipt["applied_zone"]})
+        request = request.model_copy(update={"timezone": timezone})
+    return request, receipt
+
+
+def _first_difference(location: Any, zone: Any, row: dict, local: Any = None) -> str | None:
     # The request schema strips surrounding whitespace from every string, and
     # one Taiwan row's stored label begins with a space; the row is read the
     # same way, so the search result sent back verbatim still matches
@@ -1326,6 +1417,12 @@ def _first_difference(location: Any, zone: Any, row: dict) -> str | None:
     # and the schema has tied it to its zone.
     if zone.civil_time_basis is not None:
         expected = CIVIL_TIME_BASIS_ZONES[zone.civil_time_basis]
+    policy = row.get("zone_policy")
+    if (
+        zone.mode == "iana" and zone.civil_time_basis is None and policy is not None
+        and local is not None and place_zone_policy.offers(policy, zone.iana_name, local)
+    ):
+        return None
     if zone.mode != "iana" or zone.iana_name != expected:
         return "timezone_differs"
     return None

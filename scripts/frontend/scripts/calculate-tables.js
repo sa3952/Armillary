@@ -142,33 +142,25 @@ function tableGlyph(key) {
  */
 function fillCell(node, rawText, withBodies, cellKeys = null) {
   const text = Labels.displayNumber(rawText);
+  const glyphs = tableGlyphs();
+  const appendParts = (parts, glyphOf) => parts.forEach((part, index) => {
+    if (index > 0) node.append(PAIR_SEPARATOR);
+    const glyph = glyphOf(part, index);
+    if (glyph) node.append(tableGlyph(glyph));
+    node.append(part);
+  });
   if (withBodies && Array.isArray(cellKeys)) {
     const parts = cellKeys.length > 1 ? text.split(PAIR_SEPARATOR) : [text];
-    if (parts.length === cellKeys.length) {
-      parts.forEach((part, index) => {
-        if (index > 0) node.append(PAIR_SEPARATOR);
-        const glyph = tableGlyphs().keys.get(cellKeys[index]);
-        if (glyph) node.append(tableGlyph(glyph));
-        node.append(part);
-      });
-      return;
-    }
+    if (parts.length === cellKeys.length) { appendParts(parts, (_, index) => glyphs.keys.get(cellKeys[index])); return; }
   }
   if (withBodies) {
     const parts = text.split(PAIR_SEPARATOR);
-    if (parts.some((part) => tableGlyphs().bodies.has(part))) {
-      parts.forEach((part, index) => {
-        if (index > 0) node.append(PAIR_SEPARATOR);
-        if (tableGlyphs().bodies.has(part)) node.append(tableGlyph(tableGlyphs().bodies.get(part)));
-        node.append(part);
-      });
-      return;
-    }
+    if (parts.some((part) => glyphs.bodies.has(part))) { appendParts(parts, (part) => glyphs.bodies.get(part)); return; }
   }
-  const sign = tableGlyphs().signAtStart.exec(text);
+  const sign = glyphs.signAtStart.exec(text);
   if (!sign) { node.append(text); return; }
   // 星座度數：星座名照表格的黑體，度分秒包成 .deg，與數字欄同一套襯線（calculate.css）。
-  node.append(tableGlyph(tableGlyphs().signs.get(sign[1])), sign[0], make("span", "deg", text.slice(sign[0].length)));
+  node.append(tableGlyph(glyphs.signs.get(sign[1])), sign[0], make("span", "deg", text.slice(sign[0].length)));
 }
 
 // 相位方格的格內記號：幾何線條畫的相位符號（☌ ☍ △ □ ⚹），不靠字型；其他相位只寫名稱。
@@ -307,8 +299,10 @@ function materializeTable(model, sectionId, sectionTitle) {
         host.append(make("span", "visually-hidden", String(cell)), aspectMark({ aspect: WHOLE_SIGN_ASPECTS[wholeSign[1]] }));
         node.classList.add("asp-cell", "asp-whole");
       } else if (isGrid && index > 0 && String(cell) === AVERSION_CELL) {
-        // 星座不合意：畫面留白，字只給報讀與複製（說明在相位一區的備註）。
-        host.append(make("span", "visually-hidden", String(cell)));
+        // 星座不合意：畫一個淡墨的「×」（CSS 畫，不進複製），與沒算的空格分開；字只給報讀與複製（說明在相位一區的備註）。
+        const mark = make("span", "asp-aversion-mark", "");
+        mark.setAttribute("aria-hidden", "true");
+        host.append(make("span", "visually-hidden", String(cell)), mark);
         node.classList.add("asp-cell", "asp-aversion");
       } else {
         fillCell(host, String(cell == null ? "" : cell), index === 0, index === 0 && Array.isArray(rowKeys) ? rowKeys : null);

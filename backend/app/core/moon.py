@@ -228,8 +228,9 @@ VOC_ALTERNATIVE_SOURCES = {
             "moieties; reading 'apply' there through the moiety rule of p.107 is the "
             "product's combination of two passages of the same book; p.107 prints two "
             "columns of orbs and the moieties are taken from the first only (the orb "
-            "profile lilly_1647_experience_v1), not reconciled with the worked example "
-            "on p.110"
+            "profile lilly_1647_experience_v1); Lilly's own separation example on p.110 "
+            "uses the second column, so a Sun-Moon moiety there is 13.5 degrees where "
+            "the product's first column gives 14.75"
         ),
         "sources": (
             cited("Lilly, Christian Astrology 1647 p.112",
@@ -238,7 +239,7 @@ VOC_ALTERNATIVE_SOURCES = {
                "product does not model the separation premise); "
                    "bounded by the sign; the page does not mention moieties"),
                   ORIGINAL_LANGUAGE_READ, LILLY_1647_READ_AT),
-            cited("Lilly, Christian Astrology 1647 p.107 (orb table); p.110 (worked example, not reconciled)",
+            cited("Lilly, Christian Astrology 1647 p.107 (orb table); p.110 (worked example uses the second column)",
                   "the planets' orbs and the rule that a pair's orb is half their sum",
                   ORIGINAL_LANGUAGE_READ, LILLY_1647_READ_AT),
         ),

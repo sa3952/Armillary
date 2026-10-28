@@ -103,7 +103,7 @@ function buildPlaceRow(place) {
   button.className = "place-option";
   // 目錄只在標籤與他筆相同時給 disambiguator（二級行政區或座標），附在標籤後。
   const name = document.createElement("b");
-  const label = place.display_name || place.name;
+  const label = placeShownName(place);
   name.textContent = place.disambiguator ? `${label}（${place.disambiguator}）` : label;
   button.appendChild(name);
   // 同名地點必須靠這一行分辨，因此經緯度、時區、來源與人口都要出現。
@@ -124,6 +124,13 @@ function buildPlaceRow(place) {
 // 鐘點。手動輸入座標沒有目錄列可問，服務也不以座標判定（沒有省界多邊形）：使用者親手把時區填成新疆時間（Asia/Urumqi 或
 // 其 tz 連結 Asia/Kashgar）時，問同一個問題、給同樣兩個選項；服務對這種請求同樣要求指明鐘點。選項之後由程式改寫時區欄，
 // 不會再觸發這個判定。
+// 畫面上的地名：中文地名後的半形「, 」改成全形「，」（「金門縣, TW」→「金門縣，TW」）。只改顯示；
+// 送給後端的 place_label 仍是目錄原字（location-receipt.js），後端會逐字核對。
+function placeShownName(place) {
+  const label = String(place.display_name || place.name || "");
+  return label.replace(/([\u3400-\u9fff\uf900-\ufaff）])\s*,\s*/gu, "$1，");
+}
+
 const XINJIANG_TIME_ZONES = Object.freeze(["Asia/Urumqi", "Asia/Kashgar"]);
 const MANUAL_CIVIL_TIME_CHOICES = Object.freeze([
   Object.freeze({ civil_time_basis: "beijing_time", iana_name: "Asia/Shanghai" }),
@@ -140,8 +147,51 @@ function chosenCivilTime() {
   return choices.find((choice) => choice.civil_time_basis === pageState.civilTimeBasis) || null;
 }
 
+// 時區有爭議的地點：依出生日期列出可切換的時區（RI.placeZoneChoice）。日期或地點改變時重畫；
+// 所選時區不在新的選項裡就回到目錄時區。
+function currentPlaceZoneChoice(place) {
+  const date = readDateField();
+  return place && date.state === RI.STATES.VALUE ? RI.placeZoneChoice(place.zone_policy, date.value) : null;
+}
+
+function renderPlaceZoneChoice(place) {
+  const choice = currentPlaceZoneChoice(place);
+  const options = el("place-zone-choice-options");
+  options.replaceChildren();
+  el("place-zone-choice").hidden = !choice;
+  el("place-zone-choice-note").textContent = choice
+    ? `${choice.overrideZone ? `這個日期服務推定使用 ${choice.overrideZone}。` : ""}${choice.note}` : "";
+  const zones = choice ? choice.options.map((option) => option.zone) : [];
+  if (!zones.includes(pageState.placeZone)) pageState.placeZone = null;
+  if (choice) {
+    choice.options.forEach((option, index) => {
+      const label = document.createElement("label");
+      const input = document.createElement("input");
+      input.type = "radio";
+      input.name = "place_zone";
+      input.value = option.zone;
+      input.checked = pageState.placeZone ? option.zone === pageState.placeZone : index === 0;
+      input.addEventListener("change", () => {
+        pageState.placeZone = index === 0 ? null : option.zone;
+        el("timezone").value = option.zone;
+      });
+      const caption = document.createElement("span");
+      const bold = document.createElement("b");
+      bold.textContent = option.label;
+      const zone = make("span", "mono");
+      zone.lang = "en";
+      zone.textContent = option.zone;
+      caption.append(bold, zone);
+      label.append(input, caption);
+      options.appendChild(label);
+    });
+  }
+  if (place && !civilTimeChoices(place)) el("timezone").value = expectedPlaceTimezone(place);
+}
+
 // 目錄收據仍成立時，時區欄應有的值；不同就是使用者手動改過。
 function expectedPlaceTimezone(place) {
+  if (place.zone_policy && pageState.placeZone) return pageState.placeZone;
   if (!civilTimeChoices(place)) return String(place.timezone || "");
   const chosen = chosenCivilTime();
   return chosen ? chosen.iana_name : "";
@@ -186,8 +236,10 @@ function selectPlace(place) {
   el("longitude").value = String(place.longitude);
   if (!el("altitude").value.trim()) el("altitude").value = "0";
   renderCivilTimeChoice(place);
+  pageState.placeZone = null;
   const dualClock = Boolean(civilTimeChoices(place));
   el("timezone").value = expectedPlaceTimezone(place);
+  renderPlaceZoneChoice(place);
   // 收據念的是中文標籤；目錄的原始代碼與記錄 id 收在「技術細節」摺疊裡，
   // 回報問題或對照目錄時仍拿得到，平常讀收據時不會聽到一串底線英文。
   const describe = (list, rows, lang) => {
@@ -205,7 +257,7 @@ function selectPlace(place) {
   // 臺灣以外的地點寫出國家或地區：同名或近名的外國地點（例：東京的台東區）一眼可辨。
   const abroad = place.country_code && place.country_code !== "TW" ? [["國家或地區", null, Labels.regionName(place.country_code)]] : [];
   describe(el("place-receipt-body"), [
-    ["地點", null, place.display_name || place.name], ...abroad, ["緯度", null, Number(place.latitude).toFixed(6)],
+    ["地點", null, placeShownName(place)], ...abroad, ["緯度", null, Number(place.latitude).toFixed(6)],
     ["經度", null, Number(place.longitude).toFixed(6)],
     ["時區", null, dualClock ? `${place.timezone}（目錄的時區；出生紀錄可能用北京時間或新疆時間，請在下方選擇）` : place.timezone || "—"],
     ["目錄來源", null, Labels.label("place_source", place.source)],
@@ -486,6 +538,7 @@ form.addEventListener("change", (event) => {
   if (event.target.name === "precision") applyPrecisionConsequences();
   if (event.target.id === "zodiac") applyZodiacConsequences();
   if (event.target.id === "ayanamsa") refreshModeSummary();
+  if (event.target.id === DATE_INPUT_ID && pageState.selectedPlace) renderPlaceZoneChoice(pageState.selectedPlace);
   noteFormChanged(event.target);
 });
 form.addEventListener("input", (event) => { noteFormChanged(event.target); });
@@ -669,7 +722,13 @@ function renderTimeCheck(body, approximate) {
       `${local} 在${where}是 ${reading.utc_offset_label}（${readingKind(reading)}），即世界時 ${reading.utc_iso_8601}。`);
     rules = [reading.rule];
   } else { throw new Error("換算助手的回應無法解讀；這不影響計算，請再試一次或直接計算。"); }
-  (body.warnings || []).forEach((warning) => appendText(host, "p", warning.message, "caveat"));
+  // 兩次讀法時，只屬於其中一次的警告要標明是哪一次（後端 warnings[].folds：0 較早、1 較晚）。
+  (body.warnings || []).forEach((warning) => {
+    const folds = Array.isArray(warning.folds) ? warning.folds : [];
+    const which = readings.length > 1 && folds.length === 1
+      ? (folds[0] === 0 ? "第一次（較早）：" : "第二次（較晚）：") : "";
+    appendText(host, "p", `${which}${warning.message}`, "caveat");
+  });
   const checkedVersion = body.source_table && body.source_table.tzdb_version_checked;
   const seen = new Set();
   rules.forEach((rule) => {
@@ -730,10 +789,7 @@ el("example-button").addEventListener("click", () => {
   setDateFields({ year: 1990, month: 5, day: 15 });
   hourInput.value = "14";
   minuteInput.value = "30";
-  el("latitude").value = "22.9908";
-  el("longitude").value = "120.2133";
-  el("altitude").value = "80";
-  el("timezone").value = "Asia/Taipei";
+  Object.entries({ latitude: "22.9908", longitude: "120.2133", altitude: "80", timezone: "Asia/Taipei" }).forEach(([id, value]) => { el(id).value = value; });
   el("manual-place").open = true;
   noteFormChanged();
   setStatus("已載入合成範例。這不是任何真實人物的出生資料。", "info");
@@ -743,19 +799,21 @@ el("example-button").addEventListener("click", () => {
 // 欄位自己的錯誤訊息：聚焦時念的是這一欄錯在哪，不是整張表的總表。
 function missingMessage(label) { return `${label}：尚未填寫。`; }
 
+function flagProblem(problems, kind, text, inputs, message = kind === "missing" ? missingMessage(text) : `${text}。`) {
+  problems[kind].push(text);
+  inputs.forEach((input) => { problems.fields.push(input); problems.messages.set(input, message); });
+}
+
 function collect(reader, input, label, required, problems) {
-  const { missing, invalid, fields, messages } = problems;
   const read = reader(String(input.value));
   if (read.state === RI.STATES.EMPTY) {
-    if (required) { missing.push(label); fields.push(input); messages.set(input, missingMessage(label)); }
+    if (required) flagProblem(problems, "missing", label, [input]);
     return null;
   }
   // 主欄位的上下界只有一個出處：HTML 的 min/max。表單帶 novalidate，那些屬性不會自己守門，所以在這裡讀同一份值來守。
   const reason = read.state === RI.STATES.INVALID ? read.reason : RI.boundsProblem(htmlBounds(input), read.value);
   if (reason) {
-    invalid.push(`${label}${reason}`);
-    fields.push(input);
-    messages.set(input, `${label}${reason}。`);
+    flagProblem(problems, "invalid", `${label}${reason}`, [input]);
     return null;
   }
   return read.value;
@@ -774,35 +832,25 @@ function documentOrder(a, b) { if (a === b) return 0; return a.compareDocumentPo
  * 與移焦點；這個函式本身不動 DOM，所以結果綁定可以拿它來比對而沒有副作用。
  */
 function buildPayload() {
-  const missing = [];
-  const invalid = [];
-  const fields = [];
-  const messages = new Map();
-  const problems = { missing, invalid, fields, messages };
-  const requireField = (input, label) => { missing.push(label); fields.push(input); messages.set(input, missingMessage(label)); };
+  const problems = { missing: [], invalid: [], fields: [], messages: new Map() };
+  const { missing, invalid, fields, messages } = problems;
   const dateRead = readDateField();
   if (dateRead.state !== RI.STATES.VALUE) {
-    const inputs = datePartInputs();
-    if (dateRead.state === RI.STATES.EMPTY) missing.push("出生日期");
-    else invalid.push(`出生日期${dateRead.reason}`);
-    const message = dateRead.state === RI.STATES.EMPTY ? missingMessage("出生日期") : `出生日期${dateRead.reason}。`;
-    inputs.forEach((input) => { fields.push(input); messages.set(input, message); });
+    if (dateRead.state === RI.STATES.EMPTY) flagProblem(problems, "missing", "出生日期", datePartInputs());
+    else flagProblem(problems, "invalid", `出生日期${dateRead.reason}`, datePartInputs());
   }
   const timezone = String(el("timezone").value).trim();
   // 新疆的地點在選定鐘點前時區欄是空的：指向那一組選項，不叫人去填時區欄。
   const civilTime = chosenCivilTime();
   if (civilTimeChoices(pageState.selectedPlace) && !civilTime) {
-    invalid.push("請先選擇出生紀錄用的是北京時間還是新疆時間");
     const firstChoice = form.querySelector('#civil-time-choice input[name="civil_time_basis"]');
-    if (firstChoice) { fields.push(firstChoice); messages.set(firstChoice, "請選擇北京時間或新疆時間。"); }
-  } else if (!timezone) requireField(el("timezone"), "時區（查詢地點或手動輸入）");
+    flagProblem(problems, "invalid", "請先選擇出生紀錄用的是北京時間還是新疆時間", firstChoice ? [firstChoice] : [], "請選擇北京時間或新疆時間。");
+  } else if (!timezone) flagProblem(problems, "missing", "時區（查詢地點或手動輸入）", [el("timezone")]);
   // 服務只接受隨程式碼釘選的 IANA 名單（不含 localtime、Factory 與舊別名）；
   // 頁面讀同一份產生出來的名單，不讓使用者送出後才被拒。
   else if (!TimezoneNames.accepts(timezone)) {
     const reason = "時區名稱不在服務接受的 IANA 名單內（例如 Asia/Taipei，大小寫須相符）";
-    invalid.push(reason);
-    fields.push(el("timezone"));
-    messages.set(el("timezone"), `${reason}。`);
+    flagProblem(problems, "invalid", reason, [el("timezone")]);
   }
   const precision = currentPrecision();
   const hour = precision === "date_only" ? 0 : collect(RI.readInteger, hourInput, "小時", true, problems);
@@ -817,17 +865,16 @@ function buildPayload() {
   // 模糊時刻沒選就 fail closed。與其猜一個再附帶告知，不如停下來問——猜錯的代價是整張盤的上升點，而使用者當場就能回答。
   const ambiguity = currentAmbiguity();
   if (ambiguity && pageState.foldChoice === null) {
-    invalid.push("這個時間在所選時區出現了兩次，請先指明是哪一次");
     // 第一個選項代表整組：送出處把整組標無效，焦點也落在這裡。
     const firstFold = form.querySelector('#fold-choice input[name="fold"]');
-    if (firstFold) { fields.push(firstFold); messages.set(firstFold, "請指明是第一次還是第二次。"); }
+    flagProblem(problems, "invalid", "這個時間在所選時區出現了兩次，請先指明是哪一次", firstFold ? [firstFold] : [], "請指明是第一次還是第二次。");
   }
   if (missing.length || invalid.length) { return { ok: false, missing, invalid, fields: fields.slice().sort(documentOrder), messages }; }
   const { year, month, day } = dateRead.value;
   return {
     ok: true,
     payload: {
-      birth_time_precision: precision, datetime: { year, month, day, hour, minute, second: secondRead === null ? 0 : secondRead },
+      birth_time_precision: precision, datetime: { year, month, day, hour, minute, second: secondRead ?? 0 },
       // fold 只在真的模糊時送出。平時省略，讓收據忠實反映「使用者沒有需要做這個選擇」，而不是「他選了第一次」。鐘點只在
       // 新疆的地點送出，收據因此只在使用者真的做了這個選擇時記下它。
       timezone: {

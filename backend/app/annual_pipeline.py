@@ -66,10 +66,12 @@ from .core.frame_compatibility import (
     body_longitude_frame_label,
 )
 from .core.house_placements import _cusp_spans, _house_for_longitude
+from .core.houses import HouseSystemUnavailableError, compute_houses
 from .core.method_status import method_receipt
 from .core.module_state import MODULE_COMPUTED, MODULE_NOT_REQUESTED
 from .core.profections import lord_frame_state, profect
 from .core.zodiacal_releasing import RELEASING_FROM
+from .core.trace import Trace
 from .core.time_utils import (
     DELTA_T_SWISS_TABLE_END_YEAR,
     civil_date,
@@ -296,18 +298,37 @@ def _solar_return_chart(
         "reason_code": None,
         **head,
         "instant": instant_receipt(root["jd_ut"]),
-        **_natal_comparison(anchor, chart, completed),
+        **_natal_comparison(
+            anchor, chart, completed,
+            _natal_houses(anchor, annual.solar_return_natal_house_system or annual.solar_return_house_system),
+        ),
         "chart": chart,
     }
 
 
+def _natal_houses(anchor: Sample, system_code: str) -> JsonObject | None:
+    """The natal houses in the natal chart's own house system.  The
+    anchor's own houses are whole sign (the lots' frame), so a comparison
+    read from them would place the return chart in another natal chart than
+    the one the selection names.  None where that system has no houses at the
+    birthplace's latitude."""
+
+    time = anchor.natal.time
+    try:
+        # A trace of its own: the natal chart's trace records the anchor's
+        # whole-sign houses only.
+        return compute_houses(system_code, time.jd_ut, time.request.location, time.context, Trace())
+    except HouseSystemUnavailableError:
+        return None
+
+
 def _natal_comparison(
     anchor: Sample | None, chart: JsonObject | None, completed: int,
+    natal_houses: JsonObject | None = None,
 ) -> JsonObject:
     """Where the return chart's ascendant and planets fall among the natal
     houses, and the year's profected sign: positions only, no reading."""
 
-    natal_houses = None if anchor is None else anchor.natal.houses.houses
     natal_sign = None if anchor is None else anchor.ascendant_sign
     comparison: dict[str, Any] = {
         "natal_house_system_code": None if natal_houses is None else natal_houses["system_code"],
@@ -640,21 +661,28 @@ def _solar_return_chart_step(trace, block: JsonObject) -> None:
     )
 
 
-def compute_annual_response(req: AnnualRequest, *, build_identity: JsonObject) -> JsonObject:
+def compute_annual_response(
+    req: AnnualRequest, *, build_identity: JsonObject, localize_timezone: Any = None
+) -> JsonObject:
+    """``localize_timezone`` is the zone the request named when a place zone
+    policy replaced it for the birth instant only; the dates after the birth
+    are localized in it, each instant resolved on its own."""
+
+    shown = req if localize_timezone is None else req.model_copy(update={"timezone": localize_timezone})
     anchor = compute_natal_anchor(natal_request(req))
     samples = representative_samples(req, anchor)
     year_boundary = _year_boundary(req, samples)
     annual_methods = {key: build(req, samples) for key, build in ANNUAL_TECHNIQUES.items()}
     natal_lots = natal_lots_block(req, samples)
-    year_boundaries = _year_boundaries(req, samples, annual_methods["annual_profection"])
+    year_boundaries = _year_boundaries(shown, samples, annual_methods["annual_profection"])
     solar_return_chart = _solar_return_chart(req, samples, build_identity=build_identity)
-    _localize_year_boundary(year_boundary, req.timezone)
+    _localize_year_boundary(year_boundary, shown.timezone)
     dated: list[float] = [
         instant["jd_ut"]
         for record in [year_boundary, *(year_boundaries or {}).get("years", [])]
         for instant in (record["start"], record["end"]) if instant is not None
     ]
-    _date_periods(annual_methods, req.timezone, dated)
+    _date_periods(annual_methods, shown.timezone, dated)
     trace = anchor.time.trace
     _bind_annual_options(trace, req.annual)
     trace.add(
@@ -702,7 +730,7 @@ def compute_annual_response(req: AnnualRequest, *, build_identity: JsonObject) -
                 "house_system_code": ANNUAL_HOUSE_SYSTEM,
                 "period_display_precision": "day",
                 "frame_refusals": list(SOLAR_RETURN_FRAME_REFUSAL_CODES),
-                "local_dates": _local_date_policy(req, dated),
+                "local_dates": _local_date_policy(shown, dated),
                 "representative_samples": (
                     None if len(samples) == 1 else [sample.reference for sample in samples]
                 ),

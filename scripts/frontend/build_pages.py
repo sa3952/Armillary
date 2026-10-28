@@ -30,7 +30,7 @@ import sys
 import textwrap
 from zoneinfo import ZoneInfo
 
-from scripts.frontend.page_checks import (_ISO_DATE, check_article_references, check_footer_links,
+from scripts.frontend.page_checks import (_ISO_DATE, check_article_references, check_footer_links, check_site_version,
     check_surface_manifest, is_article, lastmod_binding_errors, parent_surface, reject_inline_style,
     unclassified_page_paths)
 from scripts.frontend.site_locale import DEFAULT_LOCALE
@@ -250,6 +250,15 @@ def _backend(module: str):
 def _frontend_assets_module():
     return _backend("frontend_assets")
 
+CHANGELOG_FRAGMENT = "changelog"
+
+def site_version() -> str:
+    """The product version every page footer states, from the one constant /api/version also answers."""
+    return _backend("frontend_release").SITE_VERSION
+
+def require_site_version_entry() -> None:
+    check_site_version(site_version(), (PAGES / f"{CHANGELOG_FRAGMENT}.html").read_text(encoding="utf-8"))
+
 def referenced_asset_version(name: str, frontend: Path | None = None) -> str:
     assets = _frontend_assets_module()
     path = (FRONTEND if frontend is None else frontend) / assets.validate_asset_name(name)
@@ -280,7 +289,7 @@ def _versioned_url(origin: str, name: str, frontend: Path) -> str:
 
 def og_image_markup(origin: str, asset: str | None = None, alt: str | None = None,
     frontend: Path | None = None) -> tuple[str, str]:
-    """The og:image meta lines and the twitter:card value (no asset: no image, plain summary card)."""
+    """The og:image and twitter:image meta lines and the twitter:card value (no asset: no image, plain summary card)."""
     asset = OG_IMAGE_ASSET if asset is None else asset
     if asset is None:
         return "", "summary"
@@ -297,7 +306,9 @@ def og_image_markup(origin: str, asset: str | None = None, alt: str | None = Non
     lines = (f'<meta property="og:image" content="{html.escape(url, quote=True)}">',
         '<meta property="og:image:type" content="image/png">', f'<meta property="og:image:width" content="{width}">',
         f'<meta property="og:image:height" content="{height}">',
-        f'<meta property="og:image:alt" content="{html.escape(alt, quote=True)}">')
+        f'<meta property="og:image:alt" content="{html.escape(alt, quote=True)}">',
+        f'<meta name="twitter:image" content="{html.escape(url, quote=True)}">',
+        f'<meta name="twitter:image:alt" content="{html.escape(alt, quote=True)}">')
     return "".join(line + "\n" for line in lines), "summary_large_image"
 
 def stamp_asset_versions(markup: str, key: str) -> str:
@@ -591,9 +602,23 @@ def fill_figure_script(body: str, item: Mapping) -> str:
         raise ValueError(f"article figure on a page that is not an article: {item['key']!r}")
     return body + "\n" + FIGURE_SCRIPT if _INTERACTIVE_FIGURE.search(body) else body
 
+def inline_stylesheet(item: Mapping) -> str:
+    """The head's stylesheet in a stamped build: the page's bundle file, as written, inline in one bare <style>, so the
+    first paint waits for no second request.  The application serves the page with that element's SHA-256 in style-src
+    (backend/app/runtime_static.py), which reads only a <style> element without attributes whose text holds no "<".
+
+    The whole bundle goes inline, the calculator's too: its result-only rules (timelords.css) are about a fifth of it,
+    some 4 KB compressed, less than a second request would cost, and a second sheet holding the rest again would double
+    the rules every style recalculation walks."""
+    from scripts.frontend import stylesheets
+    css = (FRONTEND / stylesheets.bundle_path(stylesheets.audience_of(item))).read_text(encoding="utf-8").rstrip("\n")
+    if "<" in css:
+        raise ValueError(f"inline stylesheet of {stylesheets.audience_of(item)!r} holds '<'")
+    return f"<style>{css}</style>"
+
 def stylesheet_link(item: Mapping) -> str:
-    """The one bundle a page loads: tokens, its parts of page.css and, on the calculator, calculate.css, on an article,
-    article.css."""
+    """The link to the page's one bundle (tokens, its parts of page.css and, on the calculator, calculate.css, on an
+    article, article.css), as an unstamped build names it."""
     from scripts.frontend import stylesheets
     return (
         f'<link rel="stylesheet" href="/{stylesheets.bundle_path(stylesheets.audience_of(item))}'
@@ -895,7 +920,10 @@ def _render_dated(item: dict, origin: str, body: str, headline: str | None,
             "og_type", "og_article", "robots", "locale", "og_locale", "site_name", "title",
             "description", "canonical", "json_ld", "surface",
         )},
-        "stylesheets": stylesheet_link(item),
+        # Unstamped (the passes that read a page's names and its content digest, before the bundles exist), the head
+        # names the bundle instead.
+        "stylesheets": inline_stylesheet(item) if stamp else stylesheet_link(item),
+        "site_version": site_version(),
         "body": body,
     })
     return stamp_asset_versions(page, item["key"]) if stamp else page
@@ -909,7 +937,8 @@ def render_error_page(item: dict, stamp: bool = True) -> str:
         {"robots": "noindex", "locale": html.escape(item["locale"], quote=True),
         "title": html.escape(item["title"], quote=True),
         "surface": html.escape(f"{item['status']} · {' ＋ '.join(item['layers'])}", quote=True),
-        "stylesheets": stylesheet_link(item), "page_updated": "", "body": body})
+        "stylesheets": inline_stylesheet(item) if stamp else stylesheet_link(item),
+        "site_version": site_version(), "page_updated": "", "body": body})
     leftover = re.findall(r"\{\{(?!assets\}\})[^{}]*\}\}", rendered)
     if leftover:
         raise ValueError(f"unfilled placeholder in error page {item['key']!r}: {leftover}")
@@ -975,13 +1004,8 @@ def load_page_lastmod(path: Path | None = None) -> dict:
 def updated_page_lastmod(previous: dict, digests: dict[str, str], build_date: str) -> dict:
     if not _ISO_DATE.fullmatch(build_date):
         raise ValueError("build date must be YYYY-MM-DD")
-    pages: dict[str, dict[str, str]] = {}
-    for key, digest in digests.items():
-        entry = previous["pages"].get(key)
-        if entry is not None and entry["content_sha256"] == digest:
-            pages[key] = dict(entry)
-        else:
-            pages[key] = {"content_sha256": digest, "lastmod": build_date}
+    pages = {key: dict(entry) if (entry := previous["pages"].get(key)) is not None and entry["content_sha256"] == digest
+             else {"content_sha256": digest, "lastmod": build_date} for key, digest in digests.items()}
     return {"schema_version": PAGE_LASTMOD_SCHEMA, "pages": pages}
 
 def committed_page_lastmod(root: Path = ROOT) -> list[tuple[str, dict]]:
@@ -1158,6 +1182,7 @@ def main() -> int:
         print("UNCLASSIFIED SURFACE: no frontend/surfaces.json row: " + ", ".join(unclassified), file=sys.stderr)
         return 1
     require_footer_links(payload)
+    require_site_version_entry()
     drift: list[str] = []
     # Written before the pages: a page's `?v=` stamp is the content version of the shipped script as it is on disk.
     # The time-zone list's readable script comes first, then every shipped script from its readable source.

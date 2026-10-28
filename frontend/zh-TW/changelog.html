@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="only light">
+<meta name="robots" content="index, follow">
+<title>更新紀錄｜渾儀 Armillary</title>
+<meta name="description" content="渾儀 Armillary 每一版新增了什麼、改善了什麼、修好了什麼，用白話寫給使用的人看；目前是公開測試的 0.x 版本。">
+<link rel="canonical" href="https://projectarmillary.com/zh-TW/changelog">
+<link rel="alternate" hreflang="zh-TW" href="https://projectarmillary.com/zh-TW/changelog">
+<link rel="alternate" hreflang="x-default" href="https://projectarmillary.com/zh-TW/changelog">
+<link rel="alternate" type="application/atom+xml" title="渾儀 Armillary 文章" href="/feed.xml">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="渾儀 Armillary">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:title" content="更新紀錄｜渾儀 Armillary">
+<meta property="og:description" content="渾儀 Armillary 每一版新增了什麼、改善了什麼、修好了什麼，用白話寫給使用的人看；目前是公開測試的 0.x 版本。">
+<meta property="og:url" content="https://projectarmillary.com/zh-TW/changelog">
+<meta property="og:image" content="https://projectarmillary.com/zh-TW/og-card.png?v=16c9900d06168aab">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="渾儀 Armillary：可驗證的古典西洋占星計算器">
+<meta name="twitter:image" content="https://projectarmillary.com/zh-TW/og-card.png?v=16c9900d06168aab">
+<meta name="twitter:image:alt" content="渾儀 Armillary：可驗證的古典西洋占星計算器">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="更新紀錄｜渾儀 Armillary">
+<meta name="twitter:description" content="渾儀 Armillary 每一版新增了什麼、改善了什麼、修好了什麼，用白話寫給使用的人看；目前是公開測試的 0.x 版本。">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"https://projectarmillary.com/#website","@type":"WebSite","alternateName":["渾儀","Armillary"],"inLanguage":"zh-TW","name":"渾儀 Armillary","publisher":{"@id":"https://projectarmillary.com/#organization"},"url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/changelog#webpage","@type":"WebPage","breadcrumb":{"@id":"https://projectarmillary.com/zh-TW/changelog#breadcrumb"},"dateModified":"2026-10-28","description":"渾儀 Armillary 每一版新增了什麼、改善了什麼、修好了什麼，用白話寫給使用的人看；目前是公開測試的 0.x 版本。","inLanguage":"zh-TW","isAccessibleForFree":true,"isPartOf":{"@id":"https://projectarmillary.com/#website"},"name":"更新紀錄｜渾儀 Armillary","url":"https://projectarmillary.com/zh-TW/changelog"},{"@id":"https://projectarmillary.com/#organization","@type":"Organization","alternateName":["渾儀","Armillary","Project Armillary"],"disambiguatingDescription":"古典西洋占星的計算網站與開源程式；名稱取自天文儀器渾儀（armillary sphere），本身不是那件儀器。","logo":{"@type":"ImageObject","height":180,"url":"https://projectarmillary.com/apple-touch-icon.png","width":180},"name":"渾儀 Armillary","sameAs":["https://github.com/sa3952/Armillary"],"url":"https://projectarmillary.com/"},{"@id":"https://projectarmillary.com/zh-TW/changelog#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/","name":"首頁","position":1},{"@type":"ListItem","item":"https://projectarmillary.com/zh-TW/changelog","name":"更新紀錄","position":2}]}]}</script>
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="/zh-TW/favicon.svg?v=c95686a2f029d369" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>:root{color-scheme:only light;--paper:#F0EAD9;--paper-2:#E8E0CC;--ink:#1C1913;--ink-dim:#4F483B;--ink-faint:#696251;--hair:#CFC5AE;--hair-soft:#DFD7C2;--plate:#131210;--plate-fg:#F2ECDC;--plate-dim:#968E7C;--plate-hair:#2E2B26;--accent:#A03A22;--accent-rev:#D45633;--ring-1:#3D6949;--ring-2:#3E6B8A;--ring-3:#A0632B;--ring-v:#6E6A5F;--state-refused:#A03A22;--state-absent:#68604F;--state-unavailable:#7E5227;--serif:"Songti TC", "Noto Serif TC", "Noto Serif CJK TC", "Source Han Serif TC", "PMingLiU", "MingLiU", "Times New Roman", serif;--sans:"PingFang TC", "Noto Sans TC", "Noto Sans CJK TC", "Microsoft JhengHei", sans-serif;--mono:ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", "Liberation Mono", "PingFang TC", "Noto Sans CJK TC", "Microsoft JhengHei", monospace;--s1:.5rem;--s2:1.15rem;--s3:2rem;--s4:3.5rem;--s5:5.5rem;--s6:8rem;--print-bg:#FFFFFF;--print-fg:#000000;--stratum-2:#35322B;--stratum-3:#5C5648;--stratum-4:#D2C9B1;--on-accent:#FFFFFF;--zebra:rgba(0, 0, 0, .04);--scroll-shadow:rgba(28, 25, 19, .22);--fs-subhead:1.25rem;--fs-lead:1.1875rem;--fs-body:1.125rem;--fs-aside:1.0625rem;--fs-note:.95rem;--fs-small:.875rem;--lh-body:1.8;--lh-note:1.7;--lh-label:1.5;--lh-head:1.4;--measure-cjk:38em;--gap-related:.35rem;--gap-group:1rem;--pad-card:1.1rem 1.25rem 1.2rem;--pad-panel:1rem 1.25rem 1.25rem;--serif-latin:"Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", "Liberation Serif", "DejaVu Serif", "Songti TC", "Noto Serif TC", "Noto Serif CJK TC", "Source Han Serif TC", serif;--fx-ink:var(--ink);--fx-dim:var(--ink-faint);--fx-hi:var(--accent);--fx-hi-wash:rgba(160, 58, 34, .07);--fx-face:var(--serif-latin);--fx-num:var(--serif-latin);--serif-num:Palatino, "Palatino Linotype", "Book Antiqua", "Times New Roman", "Liberation Serif", "DejaVu Serif", serif;--selected-bg:var(--paper-2);--selected-frame:var(--ink);--selected-mark:var(--accent);--selected-mark-w:3px;--disclosure-color:var(--ink-dim);--pad:4.5rem;--measure:36em;--wrap:1160px;--radius:2px;--bp-narrow:900px;--bp-mobile:640px}@media (max-width:640px){:root{--fs-subhead:1.1875rem;--fs-lead:1.125rem;--fs-body:1.0625rem;--fs-aside:1rem;--fs-note:.9375rem}}*{box-sizing:border-box;margin:0;padding:0}html{-webkit-text-size-adjust:100%}body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--lh-body)}h1,h2,h3,.eyebrow{text-wrap:balance}h1,h2,h3{word-break:keep-all;overflow-wrap:anywhere}@media (max-width:40rem){h1,h2,h3{word-break:normal;line-break:strict;overflow-wrap:break-word}}.skip-link{position:fixed;z-index:1000;top:var(--s2);left:var(--s2);padding:.55rem .75rem;background:var(--paper);color:var(--ink);border:2px solid var(--accent);border-radius:var(--radius);transform:translateY(-180%);text-decoration:none}.skip-link:focus{transform:translateY(0)}.wrap{max-width:var(--wrap);margin:0 auto;padding:0 var(--pad)}[lang="grc"]{font-family:"Gentium Plus","GFS Didot","Palatino Linotype","Times New Roman",var(--serif)}:where(p.mono){overflow-wrap:anywhere}a{color:var(--accent);text-decoration:underline;text-decoration-style:dotted;text-decoration-thickness:1px;text-underline-offset:.22em}@media (hover:hover){a:hover{text-decoration-style:solid}}a:focus-visible,summary:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}details>summary{list-style:none}details>summary::-webkit-details-marker{display:none}details>summary::before{content:"▸" / "";display:inline-block;width:1.1em;flex:0 0 auto;font-family:var(--sans);font-style:normal;font-weight:400;color:var(--disclosure-color)}details[open]>summary::before{content:"▾" / ""}.h1-sub{display:block;font-family:var(--serif);font-size:var(--fs-subhead);line-height:1.6;font-weight:400;letter-spacing:normal;color:var(--ink-dim);margin-top:.5em}header{background:var(--plate);color:var(--plate-fg);border-bottom:1px solid var(--plate-hair)}header .wrap{display:flex;align-items:center;flex-wrap:wrap;gap:.6rem var(--s3);min-height:78px}.brand{font-family:var(--serif);font-size:1.45rem;letter-spacing:.18em}.brand small{font-family:var(--serif);font-size:var(--fs-note);letter-spacing:.3em;color:var(--plate-dim);margin-left:.7rem}section{padding:var(--s5) 0;border-top:1px solid var(--hair-soft)}h2{font-family:var(--serif);font-weight:400;font-size:clamp(1.55rem,2.6vw,1.9rem);line-height:var(--lh-head);letter-spacing:.02em;margin:var(--s2) 0 var(--s3)}.page-body h3{font-family:var(--sans);font-weight:700;font-size:var(--fs-lead);line-height:1.55;letter-spacing:0}p{max-width:var(--measure);color:var(--ink-dim)}footer{border-top:1px solid var(--ink);padding:var(--s3) 0 var(--s5)}footer .wrap{display:flex;gap:var(--s3);flex-wrap:wrap}footer span{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-faint);letter-spacing:0}footer a.site-version{color:var(--ink-faint);text-decoration:none;border-bottom:1px dashed currentColor}@media (max-width:900px){:root{--pad:1.6rem;--s5:3.75rem;--s6:5rem;--row:auto}}main{display:block}.page-body{padding-bottom:var(--s6)}.page-body h2{margin:var(--s2) 0 var(--s2)}.page-body p{margin-bottom:var(--s2)}.page-body section{padding:var(--s3) 0 var(--s4);border-top:1px solid var(--hair-soft)}.lede{font-size:var(--fs-lead);color:var(--ink-dim);max-width:var(--measure);text-wrap:pretty}.page-body ul,.page-body ol{max-width:var(--measure);color:var(--ink-dim);margin:0 0 var(--s2);padding-left:1.35rem}.page-body li{margin-bottom:.5rem}.page-body li::marker{color:var(--ink-faint)}.page-body a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--hair)}@media (hover:hover){.page-body a:hover{color:var(--accent);border-bottom-color:var(--accent)}}code{font-family:var(--mono);font-size:.88em}@media (hover:hover){a.brand:hover{color:var(--plate-fg)}}a.brand{color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:.7rem}.mark{width:2rem;height:2rem;flex:0 0 auto;overflow:visible}.mark circle,.mark ellipse,.mark line{fill:none;stroke:var(--plate-dim);stroke-width:1}.mark .mark-ecliptic{stroke:var(--accent-rev);stroke-width:1.2}@media (hover:hover){a.brand:hover .mark circle,a.brand:hover .mark ellipse,a.brand:hover .mark line{stroke:var(--plate-fg)}}.footer-rule{padding-bottom:var(--s2)}.ring-strip{display:block;height:2px;width:100%;background:linear-gradient(to right, var(--ring-1) 0 25%, var(--ring-2) 25% 50%, var(--ring-3) 50% 75%, var(--ring-v) 75% 100%)}.site-nav{margin-left:auto;display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap}.site-nav a{color:var(--plate-dim);text-decoration:none;font-size:var(--fs-note);white-space:nowrap}@media (hover:hover){.site-nav a:hover{color:var(--plate-fg)}}.site-nav a.nav-cta{background:var(--paper);color:var(--plate);padding:.5rem 1.15rem;margin-left:.6rem}@media (hover:hover){.site-nav a.nav-cta:hover{background:var(--accent-rev);color:var(--plate)}}.site-nav a.nav-cta[aria-current="page"]{background:transparent;color:var(--plate-fg);box-shadow:inset 0 0 0 1px var(--plate-hair)}.sitemap{padding-top:var(--s4);padding-bottom:var(--s3)}footer .sitemap{display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:var(--s3)}.sitemap-col{display:flex;flex-direction:column;gap:.4rem}.sitemap-col h2{font-family:var(--sans);font-size:var(--fs-small);letter-spacing:0;color:var(--ink-faint);margin:0 0 .3rem;font-weight:400}.sitemap-col a{color:var(--ink-dim);text-decoration:none;font-size:var(--fs-note)}@media (hover:hover){.sitemap-col a:hover{color:var(--accent)}}@media (max-width:900px){.site-nav{gap:.9rem}.site-nav a{font-size:var(--fs-note)}footer .sitemap{grid-template-columns:1fr 1fr}}@media (max-width:640px){header .wrap{min-height:0;padding-top:.5rem;padding-bottom:.5rem;position:relative;row-gap:.15rem}.brand{font-size:1.2rem;letter-spacing:.12em}.brand small{font-size:var(--fs-small);letter-spacing:.22em;margin-left:.5rem}.mark{width:1.6rem;height:1.6rem}a.brand{min-height:44px}.site-nav{width:100%;margin-left:0;gap:.85rem}.site-nav a{font-size:var(--fs-small)}.site-nav a.nav-cta{position:absolute;top:.5rem;right:var(--pad);margin-left:0;display:inline-flex;align-items:center;min-height:44px}}@media (max-width:340px){.brand small{display:none}}@media (pointer:coarse){a.brand{min-height:44px}.site-nav{column-gap:0}.site-nav a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px}.sitemap-col{gap:0}.sitemap-col a{display:flex;align-items:center;min-height:44px;min-width:44px}}@media (pointer:coarse) and (max-width:640px){.site-nav{gap:0}.site-nav a{justify-content:flex-start}}.ticks{list-style:none;padding:0}.ticks li{position:relative;padding-left:1.6rem;margin-bottom:var(--s2);font-size:var(--fs-body);line-height:var(--lh-body);color:var(--ink-dim)}.ticks li::before{content:"";position:absolute;left:0;top:.85em;width:.7rem;height:2px;background:var(--accent)}.ticks b{color:var(--ink)}.story .ab-sec+.ab-sec{border-top:1px solid var(--hair)}.ab-sec h2{margin:0 0 var(--s3);line-height:var(--lh-head)}.ab-sec p{max-width:var(--measure);font-size:var(--fs-body);line-height:var(--lh-body)}.ab-sec .cl-date{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-faint)}.ab-sec h3{font-family:var(--sans);font-size:var(--fs-small);font-weight:400;color:var(--ink-dim);margin:var(--s3) 0 var(--s1)}.story section{border-top:0;padding-top:0}.story .ab-sec+.ab-sec{padding-top:var(--s3)}:root{--h1-home:clamp(2.05rem, 3.9vw, 3.1rem);--h1-page:clamp(1.95rem, 3.2vw, 2.65rem);--text-measure:var(--measure)}.wrap.page-body{max-width:var(--wrap);margin-left:auto;margin-right:auto;padding-top:var(--s4)}main h1{font-family:var(--serif);font-weight:400;font-size:var(--h1-page);line-height:1.3;letter-spacing:.02em;max-width:24em;margin:var(--s2) 0 var(--s3);color:inherit}main .eyebrow{font-family:var(--sans);text-transform:none;letter-spacing:0;font-size:var(--fs-note);color:var(--ink-faint)}.page-body:not(.article)>section:first-child{padding:0 0 var(--s4);margin:0;border:0;border-bottom:1px solid var(--hair)}.ab-hero .lede,.ab-hero p{max-width:var(--text-measure)}@media (max-width:48rem){:is(.ar-scroll,.spec-scroll) :is(th,td):not(.n,.num,.mono){min-width:6.5em}:is(.ar-scroll,.spec-scroll) caption{position:sticky;left:0;max-width:calc(100vw - 3.5rem);box-sizing:border-box}}figcaption,caption{text-wrap:pretty}@media (forced-colors: active){[aria-pressed="true"],a[aria-current],button[aria-current]{forced-color-adjust:none;background-color:Highlight !important;color:HighlightText !important;border-color:Highlight !important}:is([aria-pressed="true"],a[aria-current],button[aria-current]) *{color:inherit}}</style>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">跳到主要內容</a>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="/zh-TW/">
+      <svg class="mark" viewBox="0 0 40 40" aria-hidden="true">
+        <circle cx="20" cy="20" r="16"/>
+        <ellipse cx="20" cy="20" rx="16" ry="4.5"/>
+        <ellipse cx="20" cy="20" rx="16" ry="8" transform="rotate(-32 20 20)" class="mark-ecliptic"/>
+        <ellipse cx="20" cy="20" rx="5" ry="16"/>
+        <line x1="20" y1="4" x2="20" y2="36" transform="rotate(-18 20 20)"/>
+      </svg>
+      <span>渾儀<small>ARMILLARY</small></span>
+    </a>
+    <nav class="site-nav" aria-label="主要導覽">
+      <a href="/zh-TW/features">功能</a>
+      <a href="/zh-TW/methods">方法</a>
+      <a href="/zh-TW/validation">驗證</a>
+      <a href="/zh-TW/trust">信任</a>
+      <a href="/zh-TW/blog">文章</a>
+      <a href="/zh-TW/about">關於</a>
+      <a class="nav-cta" href="/zh-TW/calculate">排一張盤</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main-content">
+<div class="wrap page-body story">
+
+  <section class="ab-hero">
+    <p class="eyebrow">更新紀錄</p>
+    <h1>更新紀錄<span class="h1-sub">每一版新增了什麼、修好了什麼。</span></h1>
+    <p class="lede">渾儀目前在公開測試，版本號是 0.x：加了新功能升第二碼，只修錯或改文字升第三碼，正式上線時改為 1.0。</p>
+  </section>
+
+  <section class="ab-sec" id="v0.13.0" data-version="0.13.0">
+    <h2>0.13.0</h2>
+    <p class="cl-date"><time datetime="2026-10-28">2026-10-28</time></p>
+    <h3>新增</h3>
+    <ul class="ticks">
+      <li><b>四個時間主星（<span lang="en">time lords</span>）計算頁加上常見問題。</b>小限、法達（<span lang="en">firdaria</span>）、黃道釋放（<span lang="en">zodiacal releasing</span>）與十年期（<span lang="en">decennials</span>）各自回答讀者最常查的問題，頁面標題也改成先寫技法名稱，比較好找。</li>
+      <li><b>首頁與相關文章直接連到四個時間主星計算頁。</b></li>
+      <li><b>分享到社群時，卡片會帶著頁面的標題、說明與圖片。</b></li>
+    </ul>
+    <h3>改善</h3>
+    <ul class="ticks">
+      <li><b>地名打錯字也找得到，而且更快。</b>拼錯時的模糊比對有了時間與數量上限，不會拖慢搜尋。</li>
+      <li><b>匯出檔比較好讀。</b>匯出的開頭用中文寫計算模式（例如「回歸黃道［tropical］」），時刻與〈時間轉換〉表寫法相同；Markdown 不再到處加反斜線；CSV 的章動欄寫「是／否」。</li>
+      <li><b>鍵盤與報讀器。</b>時間主星的表格只在比框寬時才停一下 Tab，焦點框更清楚；頁面裡的希臘文與英文詞標明語言，報讀器會用正確的語言念。</li>
+      <li><b>版面細節。</b>窄螢幕上星盤摘要移到星盤上方；按鈕滑過時不再變紅；相位方格裡「不合意」的格子畫一個淡色的「×」；行星時表的時區只寫在欄名一次。</li>
+    </ul>
+    <h3>修正</h3>
+    <ul class="ticks">
+      <li><b>太陽回歸盤的宮位對照，改用你選的本命宮位制。</b>先前選了 Placidus 等宮位制時，回歸盤的上升與行星仍被放進整宮制的本命宮位；現在落進你選的那一套。API 也多了一個欄位，寫明比對用的是哪一種宮位制。</li>
+      <li><b>人生總覽裡的黃道釋放，顯示你選的一年長度。</b>先前一律寫成一年 360 日，選了 365.25 日時也一樣。</li>
+      <li><b>月小限（monthly profections）在修改表單後不再卡住。</b>改了出生資料，舊的月小限會標明已停止，並有一顆「重新計算」按鈕。</li>
+      <li><b>三個地方的時區修正：</b>美國內華達州的 West Wendover、印第安納州的 Vincennes，以及納瓦霍保留區內、實施夏令時間的亞利桑那州 LeChee。</li>
+      <li><b>出生時間敏感度：</b>中間那個時刻排不出宮位時（例如高緯度地區），仍會列出各行星的取樣，不再整段空白。</li>
+      <li><b>每日訪客計數修好了。</b>先前同一個人每開一頁就多算一位當天訪客；現在一天只算一次，與隱私政策寫的一致，仍然不記錄任何個人資料。</li>
+      <li><b>水星逆行文章的發布日期，改為它實際上線的那一天。</b></li>
+      <li><b>年度時間主星的年界，照你指名的時區。</b>出生地的時區有特例時（例如亞利桑那州 LeChee），出生之後每年的年界先前會用特例的時區，現在用你選的時區。</li>
+      <li><b>月亮的「前一次」與「下一次」中天不再是同一個事件。</b></li>
+      <li><b>「香港」後面接的不是地名時（例如「香港12」），不再當成香港的地名回傳外地結果；「Hong_Kong Stanley」這種寫法也找得到。</b></li>
+      <li><b>月空亡（<span lang="en">void of course</span>）的說明，改用表格現在的列名。</b></li>
+    </ul>
+  </section>
+
+  <section class="ab-sec" id="v0.12.0" data-version="0.12.0">
+    <h2>0.12.0</h2>
+    <p class="cl-date"><time datetime="2026-10-27">2026-10-27</time></p>
+    <ul class="ticks">
+      <li><b>地名搜尋更好用。</b>可以用中文城市名、簡體或拼音查詢；加入香港港鐵站名，以及臺灣的舊縣市與鄉鎮名稱。</li>
+      <li><b>時間換算。</b>1950 年以前在金門、馬祖出生，會看到專屬的提醒；手動填入帶秒數的固定時差時，閏秒期間的時間標示已修正。</li>
+      <li><b>時區資料更新到 IANA 2026e。</b></li>
+      <li><b>可以直接查詢網站正在執行的版本與原始碼位置。</b>著作權頁附有連結。</li>
+      <li><b>隱私政策更新到 1.2.2。</b>新增每小時瀏覽次數與每日訪客的匿名計數，不記錄任何個人資料，並遵循瀏覽器的「全球隱私控制」（GPC）設定。</li>
+      <li><b>新文章：</b>〈水星逆行，回到原典：2026 年 10–11 月的這三週〉。</li>
+    </ul>
+  </section>
+
+  <section class="ab-sec">
+    <h2>更早的版本</h2>
+    <p>2026-10-10 公開測試開始後的更早版本，列在 <a href="https://github.com/sa3952/Armillary/releases">GitHub Releases</a>。</p>
+  </section>
+
+</div>
+</main>
+
+<footer>
+  <div class="wrap sitemap">
+    <div class="sitemap-col">
+      <h2>產品</h2>
+      <a href="/zh-TW/">首頁</a>
+      <a href="/zh-TW/calculate">計算</a>
+      <a href="/zh-TW/features">功能</a>
+      <a href="/zh-TW/roadmap">路線</a>
+      <a href="/zh-TW/blog">文章</a>
+      <a href="/zh-TW/changelog">更新紀錄</a>
+    </div>
+    <div class="sitemap-col">
+      <h2>可查證性</h2>
+      <a href="/zh-TW/methods">方法</a>
+      <a href="/zh-TW/validation">驗證</a>
+      <a href="/zh-TW/trust">信任</a>
+      <a href="/zh-TW/security">安全</a>
+    </div>
+    <div class="sitemap-col">
+      <h2>法律與聯絡</h2>
+      <a href="/zh-TW/legal/privacy">隱私政策</a>
+      <a href="/zh-TW/legal/terms">使用條款</a>
+      <a href="/zh-TW/legal/copyright">著作權與原始碼</a>
+      <a href="/zh-TW/contact">聯絡方式</a>
+      <a href="/zh-TW/about">關於</a>
+      <a href="/zh-TW/accessibility">無障礙</a>
+    </div>
+  </div>
+
+  <div class="wrap footer-rule"><span class="ring-strip" aria-hidden="true"></span></div>
+  <div class="wrap">
+    <span>渾儀 ARMILLARY</span>
+    <span><a class="site-version" href="/zh-TW/changelog">版本 0.13.0</a></span>
+    <span>只計算，不解盤，不預測</span>
+    <span>最後更新：<time datetime="2026-10-28">2026-10-28</time></span>
+  </div>
+</footer>
+<script src="/zh-TW/visit-count.js?v=a01917f51b18a502" defer></script>
+
+</body>
+</html>

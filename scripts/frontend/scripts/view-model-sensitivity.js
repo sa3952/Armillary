@@ -440,7 +440,7 @@ const SAME_GROUP_ZH = Object.freeze({
   "derived_methods.dodecatemoria": "十二分部的星座與守護行星",
 });
 const PARTIAL_GROUP_ZH = Object.freeze({
-  "derived_methods.void_of_course": "月空亡：只比較了「是否月空亡」一項；出宮時刻、下一個完成的相位與它的時刻都沒有重算",
+  "derived_methods.void_of_course": "月空亡：只比較了「是否月空亡」一項；出宮時刻、下一個將形成的相位與它的時刻都沒有重算",
 });
 const ANGLE_ZH = Object.freeze({ asc: "上升", mc: "中天", desc: "下降", ic: "天底" });
 const ANGLE_ORDER = Object.freeze(Object.keys(ANGLE_ZH));

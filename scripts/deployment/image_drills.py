@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Gate D's three resilience drills, run against the exact built image.
+"""Gate D's five resilience drills, run against the exact built image.
 
 Each drill runs in a disposable container of the image with no network and
 the run settings of ``deploy/compose.yaml`` (read-only root, tmpfs, no
@@ -22,13 +22,24 @@ tests and the byte-identical host config readback.
     The same runtime raises an exception carrying the canary and the request
     from inside the chart computation.  The response must be the generic 500
     and the process must keep serving.
+``tmpfs_full`` (disposable fault runtime)
+    /tmp and /dev/shm are filled until the kernel answers ENOSPC; with both
+    full, the failing and an ordinary chart are sent.  The failing one must be
+    the generic 500, the ordinary one must be served, and the filler is removed
+    before the tmpfs scan.
+``oom`` (disposable OOM runtime)
+    The fault runtime under a minimal restarting parent, in the compose memory
+    cap.  A chart makes the application allocate until the kernel's cgroup OOM
+    killer ends it (``oom_kill`` in ``memory.events`` must rise); the parent
+    restarts it and it must serve a chart again.  Without a cgroup (the local
+    stand-in) the drill is ``not_observed``.
 
 Every response, each container's log stream and every file of each
 container's tmpfs (/tmp and /dev/shm, after its drills) is searched for the
 canary.
 
 Gate D runs this module after the image artifact acceptance.  The module exits 1
-unless all three drills passed and the canary matched nothing.
+unless all five drills passed and the canary matched nothing.
 """
 from __future__ import annotations
 
@@ -50,7 +61,7 @@ from scripts.tools.staging_secure_io import emit_json_receipt
 from scripts.verification.verify_container_runtime import (
     _compose_run_arguments, _compose_service_model, _wait_healthy)
 
-RECEIPT_SCHEMA_VERSION = 4
+RECEIPT_SCHEMA_VERSION = 5
 # The disposable fault runtime holds the compute lock this long.  It must exceed the application's queue wait, which the
 # drill observes rather than restates: the queued chart has to be refused before the holder returns.
 HOLD_SECONDS = 30
@@ -80,11 +91,13 @@ class DrillResult(str, Enum):
 class Where(str, Enum):
     DISPOSABLE_TWIN = "disposable_twin_of_image"
     DISPOSABLE_FAULT_RUNTIME = "disposable_fault_runtime_of_image"
+    DISPOSABLE_OOM_RUNTIME = "disposable_oom_runtime_of_image"
 
 
 DRILL_LOCATIONS = {
     "worker_restart": Where.DISPOSABLE_TWIN, "timeout": Where.DISPOSABLE_FAULT_RUNTIME,
-    "unexpected_error": Where.DISPOSABLE_FAULT_RUNTIME}
+    "unexpected_error": Where.DISPOSABLE_FAULT_RUNTIME, "tmpfs_full": Where.DISPOSABLE_FAULT_RUNTIME,
+    "oom": Where.DISPOSABLE_OOM_RUNTIME}
 DRILLS = tuple(DRILL_LOCATIONS)
 
 
@@ -95,21 +108,31 @@ def _drill(result: DrillResult, **observation: Any) -> dict[str, Any]:
 # Synthetic, built on the canary's random year and longitude.  The capacity payload asks for rise／set searches on a
 # date-only chart at 66°N, which costs about a second of Swiss work per chart (2026-10-05, Apple Silicon): long enough
 # that a worker is busy when the worker drill kills it.
+FAULT_SECOND_ALLOCATE = 57
 FAULT_SECOND_RAISE = 58
 FAULT_SECOND_HOLD = 59
 
 
+FAULT_FREE_SECOND = 17
+FAULT_SECONDS = frozenset({FAULT_SECOND_ALLOCATE, FAULT_SECOND_RAISE, FAULT_SECOND_HOLD})
+
+
 def drill_payloads(canary: Canary) -> dict[str, dict[str, Any]]:
+    # The canary passed in may be derived from a fault payload (scan_canary), so the ordinary chart's second is set
+    # explicitly: an ordinary chart must never select a fault.
     base = json.loads(canary.payload_bytes)
+    base["datetime"]["second"] = FAULT_FREE_SECOND
     capacity = json.loads(canary.payload_bytes)
     capacity["birth_time_precision"] = "date_only"
     capacity["datetime"].update({"hour": 0, "minute": 0, "second": 0})
     capacity["location"]["latitude"] = 66.0
     capacity["options"] = {"include_rise_set_transits": True}
     raising, holding = json.loads(canary.payload_bytes), json.loads(canary.payload_bytes)
+    allocating = json.loads(canary.payload_bytes)
     raising["datetime"]["second"] = FAULT_SECOND_RAISE
     holding["datetime"]["second"] = FAULT_SECOND_HOLD
-    return {"ordinary": base, "capacity": capacity, "raise": raising, "hold": holding}
+    allocating["datetime"]["second"] = FAULT_SECOND_ALLOCATE
+    return {"ordinary": base, "capacity": capacity, "raise": raising, "hold": holding, "allocate": allocating}
 
 
 def scan_canary(canary: Canary) -> Canary:
@@ -156,6 +179,53 @@ failing = req("/api/chart", d["raise"])
 health = req("/api/health")
 after = req("/api/chart", d["ordinary"])
 print(json.dumps({"failing": failing, "health": health, "after": after}))
+'''
+
+# Fills each root with zero blocks until ENOSPC (or, in the local stand-in, until `fill_limit_bytes`, which is
+# `not_observed`), sends the failing and an ordinary chart while full, then removes the filler.
+TMPFS_FULL_PROBE = _PROBE_PRELUDE + r'''
+import errno
+fillers, reasons = [], []
+for root in d.get("fill_roots", ["/tmp", "/dev/shm"]):
+    path, written, reason = os.path.join(root, "drill-fill-%d" % os.getpid()), 0, None
+    fillers.append(path)
+    try:
+        with open(path, "wb") as handle:
+            while True:
+                if d.get("fill_limit_bytes") and written >= d["fill_limit_bytes"]: reason = "limit"; break
+                handle.write(bytes(1 << 20)); handle.flush(); os.fsync(handle.fileno()); written += 1 << 20
+    except OSError as error:
+        reason = "enospc" if error.errno == errno.ENOSPC else "oserror"
+    reasons.append(reason)
+failing = req("/api/chart", d["raise"])
+ordinary = req("/api/chart", d["ordinary"])
+health = req("/api/health")
+for path in fillers:
+    try: os.unlink(path)
+    except OSError: pass
+print(json.dumps({"full_reasons": reasons, "failing": failing, "ordinary": ordinary, "health": health}))
+'''
+
+# Reads the container's cgroup v2 OOM-kill count around one allocating chart; the restarting parent brings the
+# application back.  Without a cgroup nothing is allocated.
+OOM_PROBE = _PROBE_PRELUDE + r'''
+def oom_kills():
+    try:
+        with open("/sys/fs/cgroup/memory.events") as handle:
+            return int(dict(line.split() for line in handle)["oom_kill"])
+    except (OSError, KeyError, ValueError): return None
+before = oom_kills()
+if before is None:
+    print(json.dumps({"cgroup": False})); sys.exit(0)
+allocating = req("/api/chart", d["allocate"], timeout=120)
+started, health = time.monotonic(), {"status": 0}
+while time.monotonic() - started < d["replacement_wait_seconds"] * 2:
+    health = req("/api/health", timeout=5)
+    if health["status"] == 200: break
+    time.sleep(0.5)
+after = req("/api/chart", d["ordinary"])
+print(json.dumps({"cgroup": True, "oom_kills_before": before, "oom_kills_after": oom_kills(),
+                  "allocating": allocating, "health": health, "after": after}))
 '''
 
 WORKER_RESTART_PROBE = _PROBE_PRELUDE + r'''
@@ -211,24 +281,38 @@ print(json.dumps({"supervisor_found": True, "workers_before": len(before), "work
                   "inflight_echo": any(item["echo"] for item in inflight), "health": health, "after": chart}))
 '''
 
-# Every regular file under the roots, read up to 4 MiB each; the fragments are counted, never printed.  Runs as the
+# Every regular file under the roots, read whole in 1 MiB chunks that overlap by the longest fragment less one byte,
+# so a fragment split across two reads is still found; a file past the byte bound is counted unreadable, never clean.
+# The fragments are counted, never printed.  Runs as the
 # container's own user after the drills, so it reads what the application could have left there.
 TMPFS_SCAN = r'''
 import json, os, sys
 d = json.load(sys.stdin)
 fragments = [f.encode() for f in d["fragments"]]
+bound = d.get("max_file_bytes", 256 * 1024 * 1024)
+overlap = max([len(f) for f in fragments] + [1]) - 1
 files = matches = unreadable = 0
 for root in d.get("roots", ["/tmp", "/dev/shm"]):
     for directory, _dirs, names in os.walk(root):
         for name in names:
             path = os.path.join(directory, name)
             if os.path.islink(path) or not os.path.isfile(path): continue
+            found, total, tail = set(), 0, b""
             try:
-                with open(path, "rb") as handle: data = handle.read(4 * 1024 * 1024)
+                with open(path, "rb") as handle:
+                    while total <= bound:
+                        chunk = handle.read(1024 * 1024)
+                        if not chunk: break
+                        total += len(chunk)
+                        window = tail + chunk
+                        found.update(i for i, fragment in enumerate(fragments) if fragment in window)
+                        tail = window[-overlap:] if overlap else b""
             except OSError:
                 unreadable += 1; continue
+            if total > bound:
+                unreadable += 1; continue
             files += 1
-            matches += sum(1 for fragment in fragments if fragment in data)
+            matches += len(found)
 print(json.dumps({"files_read": files, "unreadable": unreadable, "match_count": matches}))
 '''
 
@@ -253,6 +337,16 @@ from app import main
 real = main._compute_chart_locked
 def drilled(req):
     second = int(req.datetime.second)
+    if second == %(allocate)d:
+        # Only under a numeric cgroup memory cap, and never past twice that cap: outside a capped container
+        # (a developer's host) the fault refuses instead of allocating.
+        try:
+            with open("/sys/fs/cgroup/memory.max") as handle: cap = int(handle.read().strip())
+        except (OSError, ValueError):
+            raise RuntimeError("drill allocation refused: no cgroup memory cap")
+        blocks = []
+        for _ in range(2 * cap // (64 << 20) + 1): blocks.append(b"\x01" * (64 << 20))
+        raise RuntimeError("drill allocation survived its cap")
     if second == %(raise)d:
         raise RuntimeError("drill fault %%s %%r" %% (marker, req))
     if second == %(hold)d:
@@ -261,7 +355,17 @@ def drilled(req):
 main._compute_chart_locked = drilled
 uvicorn.run(main.create_app, factory=True, host="127.0.0.1", port=port, http="h11", loop="asyncio",
             ws="none", access_log=False)
-''' % {"raise": FAULT_SECOND_RAISE, "hold": FAULT_SECOND_HOLD}
+''' % {"raise": FAULT_SECOND_RAISE, "hold": FAULT_SECOND_HOLD, "allocate": FAULT_SECOND_ALLOCATE}
+
+# The OOM runtime's parent stays small, so the cgroup OOM killer picks the allocating child, and restarts the child
+# whenever it dies.  It prints only the child's exit status.
+OOM_PARENT = r'''
+import subprocess, sys, time
+while True:
+    status = subprocess.call([sys.executable, "-c", sys.argv[1], *sys.argv[2:]])
+    print("drill child exited %d" % status, file=sys.stderr, flush=True)
+    time.sleep(0.5)
+'''
 
 
 def evaluate_worker_restart(observed: dict[str, Any]) -> dict:
@@ -287,6 +391,31 @@ def evaluate_timeout(observed: dict[str, Any]) -> dict:
                   holder_status=holder.get("status"), holder_seconds=holder.get("seconds"),
                   queued_status=queued.get("status"), queued_code=queued.get("code"),
                   queued_seconds=queued.get("seconds"), queued_retry_after=queued.get("retry_after"))
+
+
+def evaluate_tmpfs_full(observed: dict[str, Any]) -> dict:
+    reasons = observed.get("full_reasons") or []
+    failing, ordinary, health = (observed.get(key) or {} for key in ("failing", "ordinary", "health"))
+    if not reasons or any(reason != "enospc" for reason in reasons):
+        return _drill(DrillResult.NOT_OBSERVED, reason="tmpfs_not_full", full_reasons=reasons)
+    passed = (failing.get("status") == 500 and failing.get("code") == "internal_server_error"
+              and not failing.get("echo") and ordinary.get("status") == 200 and health.get("status") == 200)
+    return _drill(DrillResult.PASSED if passed else DrillResult.FAILED, full_reasons=reasons,
+                  failing_status=failing.get("status"), failing_code=failing.get("code"),
+                  failing_echoed_canary=failing.get("echo"), ordinary_status=ordinary.get("status"),
+                  health_status=health.get("status"))
+
+
+def evaluate_oom(observed: dict[str, Any]) -> dict:
+    if not observed.get("cgroup"): return _drill(DrillResult.NOT_OBSERVED, reason="no_cgroup_memory_events")
+    allocating, health, after = (observed.get(key) or {} for key in ("allocating", "health", "after"))
+    killed = (observed.get("oom_kills_after") or 0) > (observed.get("oom_kills_before") or 0)
+    passed = (killed and not allocating.get("echo") and allocating.get("status") != 200
+              and health.get("status") == 200 and after.get("status") == 200)
+    return _drill(DrillResult.PASSED if passed else DrillResult.FAILED,
+                  oom_kills_before=observed.get("oom_kills_before"), oom_kills_after=observed.get("oom_kills_after"),
+                  allocating_status=allocating.get("status"), allocating_echoed_canary=allocating.get("echo"),
+                  health_status=health.get("status"), chart_after_status=after.get("status"))
 
 
 def evaluate_unexpected_error(observed: dict[str, Any]) -> dict:
@@ -316,7 +445,7 @@ def _probe_input(canary: Canary, *, host: str, port: int, **extra: Any) -> dict[
 
 
 def run_disposable_drills(runtime: Runtime, canary: Canary) -> tuple[dict[str, dict], list[dict]]:
-    """worker_restart in a twin; timeout and unexpected_error in the fault runtime."""
+    """worker_restart in a twin; timeout, unexpected_error and tmpfs_full in the fault runtime; oom in its own."""
     drills: dict[str, dict] = {}
     sinks: list[dict] = []
     try:
@@ -330,11 +459,19 @@ def run_disposable_drills(runtime: Runtime, canary: Canary) -> tuple[dict[str, d
         with runtime.disposable(Where.DISPOSABLE_FAULT_RUNTIME, canary) as faulty:
             drills["timeout"] = evaluate_timeout(faulty.probe(TIMEOUT_PROBE, {}))
             drills["unexpected_error"] = evaluate_unexpected_error(faulty.probe(UNEXPECTED_ERROR_PROBE, {}))
+            drills["tmpfs_full"] = evaluate_tmpfs_full(faulty.probe(TMPFS_FULL_PROBE, {}))
             sinks.append(faulty.log_sink(canary))
             sinks.append(faulty.tmpfs_sink(canary))
     except (OSError, RuntimeError, ValueError, subprocess.SubprocessError, json.JSONDecodeError) as error:
-        for name in ("timeout", "unexpected_error"):
+        for name in ("timeout", "unexpected_error", "tmpfs_full"):
             drills.setdefault(name, _drill(DrillResult.NOT_OBSERVED, reason=f"fault runtime: {type(error).__name__}"))
+    try:
+        with runtime.disposable(Where.DISPOSABLE_OOM_RUNTIME, canary) as starved:
+            drills["oom"] = evaluate_oom(starved.probe(OOM_PROBE, {}))
+            sinks.append(starved.log_sink(canary))
+            sinks.append(starved.tmpfs_sink(canary))
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError, json.JSONDecodeError) as error:
+        drills["oom"] = _drill(DrillResult.NOT_OBSERVED, reason=f"oom runtime: {type(error).__name__}")
     for sink in sinks:
         sink.setdefault("sink_role", "disposable_container_docker_log_stream")
         if sink["sink_role"] == "exact_container_docker_log_stream":
@@ -387,9 +524,11 @@ class ImageRuntime:
             "--network", "none", "--label", DRILL_LABEL]
         for item in DRILL_ENVIRONMENT:
             arguments += ["--env", item]
+        fault = (str(HOLD_SECONDS), canary.marker, str(CONTAINER_PORT), CONTAINER_APP_DIR)
         if kind is Where.DISPOSABLE_FAULT_RUNTIME:
-            arguments += ["--entrypoint", CONTAINER_PYTHON, self.image, "-c", FAULT_HARNESS,
-                          str(HOLD_SECONDS), canary.marker, str(CONTAINER_PORT), CONTAINER_APP_DIR]
+            arguments += ["--entrypoint", CONTAINER_PYTHON, self.image, "-c", FAULT_HARNESS, *fault]
+        elif kind is Where.DISPOSABLE_OOM_RUNTIME:
+            arguments += ["--entrypoint", CONTAINER_PYTHON, self.image, "-c", OOM_PARENT, FAULT_HARNESS, *fault]
         else:
             arguments.append(self.image)   # the image's own entrypoint and command
         started = _docker(*arguments)
@@ -408,15 +547,15 @@ class ImageRuntime:
 
 
 def run_image_drills(runtime: Runtime, image: dict[str, str] | None = None) -> dict[str, Any]:
-    """Run the three drills and search every disposable log stream for the canary; `image` is the reference and the ID
+    """Run the five drills and search every disposable log stream for the canary; `image` is the reference and the ID
     the containers ran."""
     canary = scan_canary(generate_canary())
     drills, sinks = run_disposable_drills(runtime, canary)
     for name, drill in drills.items():
         drill["where"] = DRILL_LOCATIONS[name].value
     matches = sum(sink["match_count"] for sink in sinks)
-    # A log stream and a tmpfs scan for each of the two disposable containers.
-    privacy = "pass" if matches == 0 and len(sinks) == 4 else "fail"
+    # A log stream and a tmpfs scan for each disposable container.
+    privacy = "pass" if matches == 0 and len(sinks) == 2 * len(set(DRILL_LOCATIONS.values())) else "fail"
     passed = all(drills[name]["result"] == DrillResult.PASSED.value for name in DRILLS)
     return {
         "schema_version": RECEIPT_SCHEMA_VERSION, "image": image, "drills": {name: drills[name] for name in DRILLS},

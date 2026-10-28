@@ -20,6 +20,9 @@ JINCHENG = (24.43415, 118.31712)
 ZONE_MERIDIAN = 120.0
 EXAMPLE = datetime(1990, 11, 3, 14, 0, 0)
 YEAR = 2025
+# Sidereal time gains on civil (mean solar) time by this ratio, so entering a clock reading moved by m minutes moves
+# local sidereal time by m * SIDEREAL_RATE minutes; figure 3 reports that sidereal change.
+SIDEREAL_RATE = 1.00273790935
 
 def _request(clock: datetime) -> dict:
     return {"birth_time_precision": "exact",
@@ -245,16 +248,19 @@ def _year_sentences(year: dict, bound: _fx.Bound) -> list[_fx.Note]:
     for variant, name, (_, lon) in PLACES:
         offset = (lon - ZONE_MERIDIAN) * 4
         for key, i, word in (("max", hi, "最多"), ("min", lo, "最少")):
-            total = offset + days[i]
+            shift = offset + days[i]
+            total = shift * SIDEREAL_RATE
             change = "多出" if total >= 0 else "少掉"
             notes.append(_fx.Note(key, variant, (
                 f"{name}：{bound.num(f'{YEAR}')} 年 {bound.num(_day(i))}前後{word}，地方恆星時{change} "
-                f"{bound.num(f'{abs(total):.1f}')} 分鐘，也就是經度修正 {bound.num(_signed(offset))} 分鐘，"
-                f"加上那天中午的均時差 {bound.num(_signed(days[i]))} 分鐘。")))
+                f"{bound.num(f'{abs(total):.1f}')} 分鐘。填進去的鐘面時間移動了經度修正 {bound.num(_signed(offset))} "
+                f"分鐘加上那天中午的均時差 {bound.num(_signed(days[i]))} 分鐘，共 {bound.num(_signed(shift))} 分鐘；"
+                f"恆星時走得比鐘面時間快約千分之 {bound.label('2.7')}，所以多出或少掉的恆星時分鐘數略大一點。")))
         side = "東" if lon > ZONE_MERIDIAN else "西"
         notes.append(_fx.Note("lon", variant, (
             f"{name}在東經 {bound.num(f'{lon:.2f}')} 度，在時區子午線東經 {bound.label('120')} 度以{side}，"
-            f"經度修正是 {bound.num(_signed(offset))} 分鐘，一年都不變；曲線在這條虛線上下多遠，就是那天的均時差。")))
+            f"經度修正是 {bound.num(_signed(offset))} 分鐘，一年都不變；曲線在這條虛線上下多遠，大致就是那天的均時差"
+            f"（兩者都換成恆星時的分鐘，放大約千分之 {bound.label('2.7')}）。")))
     return notes
 
 def _year_art(layout: str, fid: str, year: dict, bound: _fx.Bound) -> str:
@@ -269,7 +275,7 @@ def _year_art(layout: str, fid: str, year: dict, bound: _fx.Bound) -> str:
     X = lambda day: L + (R - L) * day / (len(days) - 1)  # noqa: E731
     Y = lambda m: T + (B - T) * (YEAR_SPAN - m) / (2 * YEAR_SPAN)  # noqa: E731
     out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)]
-    out.append(_fx.text(L if wide else 14, 36 if wide else 28, "地方恆星時多出的分鐘數（經度修正＋均時差）" if wide
+    out.append(_fx.text(L if wide else 14, 36 if wide else 28, f"地方恆星時多出的分鐘數（（經度修正＋均時差）×{bound.label('1.0027')}）" if wide
                         else "地方恆星時多出的分鐘數", "fx-t fx-small" if not wide else "fx-t"))
     for m in (-20, -10, 0, 10, 20):
         out.append(_fx.line(L, Y(m), R, Y(m), "fx-axis" if m == 0 else "fx-hair"))
@@ -285,7 +291,8 @@ def _year_art(layout: str, fid: str, year: dict, bound: _fx.Bound) -> str:
     curves = {}
     for variant, name, (_, lon) in PLACES:
         offset = (lon - ZONE_MERIDIAN) * 4
-        curves[variant] = (offset, "M" + " L".join(f"{_fx.f(X(i))} {_fx.f(Y(offset + v))}" for i, v in enumerate(days)
+        curves[variant] = (offset, "M" + " L".join(f"{_fx.f(X(i))} {_fx.f(Y((offset + v) * SIDEREAL_RATE))}"
+                                                      for i, v in enumerate(days)
                                                       if i % 2 == 0 or i == len(days) - 1))
     for variant, name, (_, lon) in PLACES:
         offset, d = curves[variant]
@@ -294,11 +301,12 @@ def _year_art(layout: str, fid: str, year: dict, bound: _fx.Bound) -> str:
             if other != variant:
                 o_offset, o_d = curves[other]
                 body.append(_fx.path(o_d, "fx-curve-dim"))
-                body.append(_fx.text(X(hi) - 14, Y(o_offset + days[hi]) - 8, other_name, "fx-t fx-small fx-dim", "end"))
-        body.append(_fx.line(L, Y(offset), R, Y(offset), "fx-dash"))
+                body.append(_fx.text(X(hi) - 14, Y((o_offset + days[hi]) * SIDEREAL_RATE) - 8, other_name,
+                                     "fx-t fx-small fx-dim", "end"))
+        body.append(_fx.line(L, Y(offset * SIDEREAL_RATE), R, Y(offset * SIDEREAL_RATE), "fx-dash"))
         body.append(_fx.path(d, "fx-curve"))
         crest = 125  # the May crest: clear of the marks
-        body.append(_fx.text(X(crest), Y(offset + days[crest]) - 14, name, "fx-t fx-key", "middle"))
+        body.append(_fx.text(X(crest), Y((offset + days[crest]) * SIDEREAL_RATE) - 14, name, "fx-t fx-key", "middle"))
         share = bound.num(f"{year['share'][name]:.0%}")
         if wide:
             body.append(_fx.text(R, 36, f"{name}：上升星座被換掉的時刻 {share}", "fx-t fx-small", "end"))
@@ -307,7 +315,7 @@ def _year_art(layout: str, fid: str, year: dict, bound: _fx.Bound) -> str:
             body.append(_fx.text(14, 66, "虛線：經度修正；曲線與虛線的距離：均時差", "fx-t fx-small fx-dim"))
         lon_label = f"經度修正 {bound.num(_signed(offset))} 分鐘"
         for key, i in (("max", hi), ("min", lo)):
-            total = offset + days[i]
+            total = (offset + days[i]) * SIDEREAL_RATE
             x, y = X(i), Y(total)
             body.append(f'<g class="fx-row" data-fx-key="{key}" tabindex="0" aria-label="{name}，{_day(i)}，'
                         f'{bound.num(_signed(total))} 分鐘">')
@@ -318,8 +326,9 @@ def _year_art(layout: str, fid: str, year: dict, bound: _fx.Bound) -> str:
         # On the dashed line below the year's highest point, where the curve is far above it.
         lx = X(hi)
         body.append(f'<g class="fx-row" data-fx-key="lon" tabindex="0" aria-label="{name}，{lon_label}">')
-        body.append(_fx.circle(lx, Y(offset), 16, "fx-hit") + _fx.circle(lx, Y(offset), 5, "fx-mk"))
-        body.append(_fx.text(lx + 10, Y(offset) + 24, lon_label, "fx-t fx-small fx-key", "end"))
+        ly = Y(offset * SIDEREAL_RATE)
+        body.append(_fx.circle(lx, ly, 16, "fx-hit") + _fx.circle(lx, ly, 5, "fx-mk"))
+        body.append(_fx.text(lx + 10, ly + 24, lon_label, "fx-t fx-small fx-key", "end"))
         body.append("</g>")
         out.append(_fx.variant_group(variant, PLACES[0][0], "".join(body)))
     out.append("</svg>")
@@ -331,10 +340,11 @@ def _year_table(year: dict, bound: _fx.Bound) -> str:
     for _, name, (_, lon) in PLACES:
         offset = (lon - ZONE_MERIDIAN) * 4
         rows.append(f'<tr><th scope="row">{name}</th><td class="n">{bound.num(f"{lon:.2f}")}°</td>'
-                    f'<td class="n">{bound.num(_signed(offset))}</td><td class="n">{bound.num(_signed(offset + lo))}</td>'
-                    f'<td class="n">{bound.num(_signed(offset + hi))}</td>'
+                    f'<td class="n">{bound.num(_signed(offset))}</td>'
+                    f'<td class="n">{bound.num(_signed((offset + lo) * SIDEREAL_RATE))}</td>'
+                    f'<td class="n">{bound.num(_signed((offset + hi) * SIDEREAL_RATE))}</td>'
                     f'<td class="n">{bound.num(f"{year["share"][name]:.0%}")}</td></tr>')
-    return _fx.data_table(("地點", "東經", "經度修正（分鐘）", "一年內最少（分鐘）", "一年內最多（分鐘）", "上升星座被換掉的時刻"), rows)
+    return _fx.data_table(("地點", "東經", "經度修正（鐘面分鐘）", "地方恆星時一年內最少（分鐘）", "地方恆星時一年內最多（分鐘）", "上升星座被換掉的時刻"), rows)
 
 def _figures(e: dict, year: dict, gained: float, asc_moved: float) -> dict[str, str]:
     out = {}
@@ -393,7 +403,9 @@ def _figures(e: dict, year: dict, gained: float, asc_moved: float) -> dict[str, 
         fid="fig-solar-year",
         title=f"{YEAR} 年每天中午，先換真太陽時再輸入，地方恆星時多出或少掉的分鐘數：臺北與金門",
         caption=(f"<b>{bound.label('圖 3')}</b>先換真太陽時、再當成鐘面時間輸入時，地方恆星時多出（正）或少掉（負）的分鐘數，"
-                 f"{bound.label(str(YEAR))} 年每天中午一點。虛線是經度修正，一年不變；曲線在虛線上下多遠，就是那天的均時差。"
+                 f"{bound.label(str(YEAR))} 年每天中午一點。填進去的鐘面時間移動了經度修正加均時差那麼多分鐘；恆星時走得比鐘面時間快，"
+                 f"地方恆星時的變化是它的 {bound.label('1.0027')} 倍。虛線是經度修正（換成恆星時），一年不變；"
+                 "曲線在虛線上下多遠，大致就是那天的均時差。"
                  "按鈕切換臺北與金門，另一地畫成淡色虛線。均時差以 Swiss Ephemeris 的 <code>swe_time_equ</code> 計算，"
                  f"本站結果頁的真太陽時用的也是它；上升星座被換掉的比例，以 {bound.label(str(YEAR))} 年每 "
                  f"{bound.label('10')} 分鐘的時刻計算。"),
@@ -432,8 +444,8 @@ def build() -> tuple[dict[str, str], list[str]]:
         f"地方恆星時從 {_hm(e['right']['last'])} 變成 {_hm(e['wrong']['last'])}，多了約 {gained:.1f} 分鐘",
         f"上升點從{_asc(e['right']['asc'])}移到{_asc(e['wrong']['asc'])}，差了 {asc_moved:.1f} 度",
         f"均時差在 {_signed(lo)} 到 {_signed(hi)} 分鐘之間",
-        f"臺北在 {_signed(lon_minutes + lo)} 到 {_signed(lon_minutes + hi)} 分鐘之間",
-        f"金門在 {_signed(jin + lo)} 到 {_signed(jin + hi)} 分鐘之間", f"臺北有 {year['share']['臺北']:.0%} 的時刻",
+        f"臺北在 {_signed((lon_minutes + lo) * SIDEREAL_RATE)} 到 {_signed((lon_minutes + hi) * SIDEREAL_RATE)} 分鐘之間",
+        f"金門在 {_signed((jin + lo) * SIDEREAL_RATE)} 到 {_signed((jin + hi) * SIDEREAL_RATE)} 分鐘之間", f"臺北有 {year['share']['臺北']:.0%} 的時刻",
         f"金門有 {year['share']['金門']:.0%}",
         f"NOAA 試算表的公式在同一刻給出 {e['noaa_eot']:.2f} 分鐘，本站是 {e['eot']:.2f} 分鐘，相差約 {eot_gap:.0f} 秒",
         e["step_title"], f"比世界時快 {lmt // 3600} 小時 {lmt % 3600 // 60} 分"]

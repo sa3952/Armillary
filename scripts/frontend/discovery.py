@@ -8,9 +8,9 @@ import html
 from html.parser import HTMLParser
 from pathlib import Path
 import re
-from xml.sax.saxutils import escape as xml_escape
+from xml.sax.saxutils import escape as xml_escape, quoteattr
 
-from scripts.frontend import build_pages
+from scripts.frontend import build_pages, structured_data
 from scripts.frontend.page_checks import BLOG_SURFACE, is_article, parent_surface
 from scripts.frontend.site_locale import DEFAULT_LOCALE
 
@@ -164,7 +164,8 @@ def _english_series(names: list[str]) -> str:
 def llms_english_summary() -> str:
     """The one English passage on a Chinese-only site, for crawlers that read English."""
     return (
-        "Armillary (渾儀) is a classical Western astrology calculator with a Traditional Chinese interface: "
+        f"{structured_data.ENTITY_NAME_EN} is a classical Western astrology calculator with a Traditional Chinese interface (not the astronomical "
+        "instrument, a stargazing app or an astronomy library): "
         "enter a birth date, time and place to get a natal chart, with the method source and a calculation "
         "receipt for every number. It also computes the annual time lords: "
         + _english_series([en for _, _, en in build_pages.time_lord_techniques()])
@@ -175,16 +176,20 @@ def llms_english_summary() -> str:
         "analytics or trackers."
     )
 
+# The summary opens on the one entity string, ruling out what assistants mistake the name for.
+LLMS_ENTITY_LINE = (f"{structured_data.ENTITY_NAME_ZH}是古典西洋占星的星盤計算器，"
+    "不是天文儀器渾儀，也不是觀星 App 或天文程式庫。")
+
 def llms_text(payload: dict, shell: str | None = None) -> str:
     """/llms.txt (llmstxt.org): the site's name, summary and pages, all words already on the site.
 
     A surface the footer does not group fails the build rather than going unlisted.  Head order: the footer's closing
-    line (the site's boundary), llms_facts, llms_strengths, LLMS_CITATION_GUIDANCE, llms_english_summary.
+    line (the site's boundary), LLMS_ENTITY_LINE before it, llms_facts, llms_strengths, LLMS_CITATION_GUIDANCE, llms_english_summary.
     """
     origin = payload["origin"]
     by_surface = {item["surface"]: item for item in payload["surfaces"]}
     home = by_surface[build_pages.HOME_SURFACE]
-    lines = [f"# {build_pages.SITE_NAME}", "", f"> {_markdown_text(home['description'])}", "",
+    lines = [f"# {build_pages.SITE_NAME}", "", f"> {_markdown_text(home['description'])}", "", LLMS_ENTITY_LINE, "",
         _markdown_text(footer_tagline(shell)) + "。", "", *llms_facts(origin, by_surface), "",
         "本站的特點（每一項都能在括號裡的頁面查證）：", "", *llms_strengths(origin, by_surface), "", "引用本站時：",
         "", *(f"- {line}" for line in LLMS_CITATION_GUIDANCE), "", llms_english_summary(), ""]
@@ -299,14 +304,7 @@ class _PlainText(HTMLParser):
 
     def text(self) -> str:
         self._break()
-        lines: list[str] = []
-        for line in self.lines:
-            if line == "" and (not lines or lines[-1] == ""):
-                continue
-            lines.append(line)
-        while lines and lines[-1] == "":
-            lines.pop()
-        return "\n".join(lines)
+        return re.sub(r"\n{3,}", "\n\n", "\n".join(self.lines)).strip("\n")
 
 def plain_text(markup: str) -> str:
     parser = _PlainText()
@@ -376,17 +374,17 @@ def feed_text(payload: dict) -> str:
     updated = max(item["article"]["modified"] for item in articles)
     suffix = f"｜{build_pages.SITE_NAME}"
     lines = ['<?xml version="1.0" encoding="UTF-8"?>',
-        f'<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="{xml_escape(payload["default_locale"])}">',
+        f'<feed xmlns="http://www.w3.org/2005/Atom" xml:lang={quoteattr(payload["default_locale"])}>',
         f"  <title>{xml_escape(build_pages.SITE_NAME)} 文章</title>",
-        f'  <link rel="self" type="application/atom+xml" href="{xml_escape(origin)}/{FEED_NAME}"/>',
-        f'  <link rel="alternate" type="text/html" href="{xml_escape(origin)}/zh-TW/blog"/>',
+        f'  <link rel="self" type="application/atom+xml" href={quoteattr(f"{origin}/{FEED_NAME}")}/>',
+        f'  <link rel="alternate" type="text/html" href={quoteattr(origin + "/zh-TW/blog")}/>',
         f"  <id>{xml_escape(origin)}/{FEED_NAME}</id>", f"  <updated>{_feed_time(updated)}</updated>",
         f"  <author><name>{xml_escape(build_pages.SITE_NAME)}</name></author>"]
     for item in articles:
         url = xml_escape(origin + item["surface"])
         title = item["title"].removesuffix(suffix)
         lines += ["  <entry>", f"    <title>{xml_escape(title)}</title>",
-            f'    <link rel="alternate" type="text/html" href="{url}"/>', f"    <id>{url}</id>",
+            f'    <link rel="alternate" type="text/html" href={quoteattr(origin + item["surface"])}/>', f"    <id>{url}</id>",
             f"    <published>{_feed_time(item['article']['published'])}</published>",
             f"    <updated>{_feed_time(item['article']['modified'])}</updated>",
             f"    <summary>{xml_escape(item['description'])}</summary>", "  </entry>"]

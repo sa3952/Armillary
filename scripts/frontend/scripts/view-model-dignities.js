@@ -384,7 +384,7 @@ const VOC_VERDICT_BY_KIND_ZH = Object.freeze({
 // 非預設定義時加一句說明判定依據；預設定義不加，頁面照舊。依 search_horizon.kind 判別（預設定義沒有這個欄位）。
 const VOC_METHOD_NOTE_ZH = Object.freeze({
   moon_motion_30_degrees: "本次採「未來 30°」定義（Porphyry 名下《占星四書導論》第 23 章）：看月亮從盤上位置再走 30° 之內有沒有相位精確完成，不管換不換座；下表的「離開本星座」一列只供參考，「邊界判定」的邊界指這 30° 的終點。",
-  sign_exit_moiety_entry: "本次採 Lilly 1647 定義：月亮離開本星座前，只要進入某個入相位的容許度（兩星容許度一半相加，p.107）就不算空亡；下表的「下一個完成的相位」指進入容許度的時刻。",
+  sign_exit_moiety_entry: "本次採 Lilly 1647 定義：月亮離開本星座前，只要進入某個入相位的容許度（兩星容許度一半相加，p.107）就不算空亡；下表的「下一個將形成的相位（apply）」指進入容許度的時刻。",
 });
 
 function voidOfCourseSection(response) {

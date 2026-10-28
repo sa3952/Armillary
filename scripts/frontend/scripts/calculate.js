@@ -61,6 +61,7 @@ function dropResultsForNewAttempt() {
   renderTimeBrief(null);
   dropAnnualPanel();
   results.hidden = true;
+  resultPending.hidden = true;
   hideError();
 }
 
@@ -80,6 +81,8 @@ function clearPlaceReceipt() {
   // 鐘點的選擇屬於那個目錄地點；地點撤下，選擇一起撤下。
   pageState.manualCivilTime = false;
   renderCivilTimeChoice(null);
+  pageState.placeZone = null;
+  renderPlaceZoneChoice(null);
 }
 
 /**
@@ -132,6 +135,7 @@ cancelButton.addEventListener("click", () => {
   const active = pageState.attemptState !== ATTEMPT.IDLE;
   invalidateAttempt();
   cancelButton.hidden = true;
+  resultPending.hidden = true;
   submitButton.disabled = false;
   setStatus(aborted || active ? CANCELLED_MESSAGE : "目前沒有進行中的計算。", "info");
   submitButton.focus();

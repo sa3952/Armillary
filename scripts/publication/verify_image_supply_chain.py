@@ -60,6 +60,10 @@ MAX_TRIVY_DB_AGE_HOURS = MAX_GRYPE_DB_AGE_HOURS
 # The Trivy release this gate was verified against, and the database schema
 # generation that release reads.
 TRIVY_VERSION = "0.76.1"
+# The other scanners Gate D runs, pinned so that every machine reads an image with the same tools.
+GRYPE_VERSION = "0.121.0"
+SYFT_VERSION = "1.55.0"
+PIP_AUDIT_VERSION = "2.10.1"
 TRIVY_DB_SCHEMA = 2
 # Every Trivy run reads only the database already downloaded and checked;
 # nothing else is fetched during a scan.

@@ -24,17 +24,17 @@
 
 ## 簡介 · Introduction
 
-**渾儀 Armillary** 是可驗證的古典西洋占星計算器，介面為繁體中文，網站在 <https://projectarmillary.com/zh-TW/>。以 Swiss Ephemeris 計算；只計算，不解盤，不預測。
+**渾儀 Armillary（Project Armillary）** 是可驗證的古典西洋占星計算器，不是天文儀器渾儀，也不是觀星 App 或天文程式庫；介面為繁體中文，網站在 <https://projectarmillary.com/zh-TW/>。以 Swiss Ephemeris 計算；只計算，不解盤，不預測。
 
-**Armillary** is a verifiable calculator for classical Western astrology with a Traditional Chinese interface, live at <https://projectarmillary.com/zh-TW/>. It is computed with the Swiss Ephemeris and does calculation only: no interpretation, no prediction.
+**Armillary (Project Armillary)** is a verifiable classical Western astrology calculator with a Traditional Chinese interface; it is not the astronomical instrument, a stargazing app or an astronomy library. It is live at <https://projectarmillary.com/zh-TW/>. It is computed with the Swiss Ephemeris and does calculation only: no interpretation, no prediction.
 
 **有什麼不同。** 方法判定（界、三分性、相位容許度等）附出處代碼，對到每次發布一起公開的方法出處表；每次計算附逐步計算軌跡與一組只涵蓋這段軌跡的 SHA-256 計算收據。界表提供四套具名表並列（埃及、迦勒底、Ptolemy、Lilly），不替你挑預設。只知道約略小時或只知道日期時，在那一小時或那一天裡取樣，標出哪些判定會改變。歷史時區以 IANA 時區資料庫換算，臺灣、香港、澳門與中國的時區規則逐條列出處（〈[出生時間換算](https://projectarmillary.com/zh-TW/methods/birth-time-conversion)〉）。
 
 **What is different.** Method results (bounds, triplicities, aspect orbs and the like) carry a source code that resolves against the method-source register published with each release; every calculation carries a step-by-step trace and a SHA-256 calculation receipt over that trace only. Four named bounds tables (Egyptian, Chaldean, Ptolemy, Lilly) are shown side by side, with no default chosen for you. If you know only the hour or only the date, the calculator samples that hour or day and marks which judgements change within it. Historical time zones come from the IANA tz database, with a source for each rule used in Taiwan, Hong Kong, Macau and mainland China.
 
-**隱私是架構，不是設定。** 沒有帳號、沒有星盤資料庫；計算頁沒有任何第三方請求，不用 cookie，也不在你的瀏覽器裡存資料。〈[自己檢查](https://projectarmillary.com/zh-TW/security/verify)〉一頁教你用瀏覽器的開發者工具親手驗證。
+**隱私是架構，不是設定。** 沒有帳號、沒有星盤資料庫；計算頁沒有任何第三方請求，不用 cookie，前端程式也不在你的瀏覽器裡存資料（今日訪客數只靠瀏覽器一般的 HTTP 快取留到當天午夜）。〈[自己檢查](https://projectarmillary.com/zh-TW/security/verify)〉一頁教你用瀏覽器的開發者工具親手驗證。
 
-**Privacy as architecture.** No accounts and no chart database. The calculator makes no third-party requests, sets no cookies and stores nothing in your browser; a [hands-on check page](https://projectarmillary.com/zh-TW/security/verify) shows how to confirm this with your browser's developer tools.
+**Privacy as architecture.** No accounts and no chart database. The calculator makes no third-party requests, sets no cookies and its scripts store nothing in your browser (the daily-visitor count relies only on an ordinary HTTP cache entry that expires at midnight Taiwan time); a [hands-on check page](https://projectarmillary.com/zh-TW/security/verify) shows how to confirm this with your browser's developer tools.
 
 **費用、授權與語言。** 目前免費，不需註冊。原始碼以 AGPL-3.0-only 公開。介面目前只有繁體中文，英文版在規劃中。
 
@@ -121,8 +121,9 @@ DOM反向拼湊；列印印的是畫面本身。
 與 notices 也隨 release 提供。需要 Python 3.14 與 Node.js（前端測試只用 Node.js 內建的 `node --test`，不需 npm install）。
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+# 虛擬環境建在 checkout 外：驗證會拒絕樹裡多出來的檔案與 symlink
+python3 -m venv ../armillary-venv
+source ../armillary-venv/bin/activate
 python -m scripts.tools.install_dev_dependencies
 python scripts/verify_delivery.py
 ```
@@ -184,7 +185,8 @@ notice，詳見 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
 ## English
 
-**Armillary (渾儀)** is an open-source, Traditional-Chinese-first calculator for classical Western astrology. It
+**Armillary (Project Armillary)** (渾儀) is an open-source classical Western astrology calculator, and it is
+Traditional-Chinese-first; it is not the astronomical instrument, a stargazing app or an astronomy library. It
 computes a chart with Swiss Ephemeris and hands you, alongside the chart, the coordinate frame, the time
 conversion, and the named method and source behind each method result. The hosted service is free for now and needs no
 account: <https://projectarmillary.com/zh-TW/>. This repository is its Corresponding Source under AGPL-3.0-only.

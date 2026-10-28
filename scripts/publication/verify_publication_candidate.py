@@ -283,13 +283,6 @@ def id_parts(relative: str, data: bytes) -> list[tuple[int, str]]:
     return parts
 
 
-def comment_code_lines(
-    relative: str, data: bytes, pattern: re.Pattern[str] = TICKET_ID,
-) -> list[tuple[int, str]]:
-    """(line, id) for every match of `pattern` in the comments (or prose) of one file."""
-    return matches_in_parts(comment_parts(relative, data) or [], pattern)
-
-
 def matches_in_parts(parts: list[tuple[int, str]], pattern: re.Pattern[str]) -> list[tuple[int, str]]:
     """(line, match) for every match of `pattern` in comment_parts' (line, text) pairs."""
     return [

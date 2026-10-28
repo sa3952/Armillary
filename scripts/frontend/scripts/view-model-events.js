@@ -452,24 +452,55 @@ function localSortKey(text) {
 }
 
 /**
+ * 只填日期時，候選依真正的時間先後排、互不重疊，而且恰好蓋住回應寫明的民用日 UTC 段落
+ * （calculation_dossier.time_conversion.civil_day.utc_spans）：每一段由與它相交的候選首尾相連地蓋滿，
+ * 沒有一個候選落在所有段落之外。時鐘撥回會把民用日切成兩段 UTC，兩段之間那一時屬於另一天，
+ * 不在清單裡是對的；應有的範圍取自段落，不取自候選清單本身。
+ */
+function civilDayCandidatesBroken(candidates, civilDay) {
+  const instant = (item, key) => Date.parse(item.in(key)("utc_time", "string"));
+  const spans = needAt(civilDay, "calculation_dossier.time_conversion.civil_day").rows("utc_spans").map((span) => [
+    Date.parse(span("start_utc", "string")), Date.parse(span("end_exclusive_utc", "string"))]);
+  const times = candidates.map((item) => [instant(item, "start"), instant(item, "end")]);
+  const valid = ([from, to]) => Number.isFinite(from) && Number.isFinite(to) && from < to;
+  if (!spans.length || !spans.every(valid) || !times.every(valid)) return true;
+  if (spans.some(([from], index) => index > 0 && from < spans[index - 1][1])) return true;
+  if (times.some(([from], index) => index > 0 && from < times[index - 1][1])) return true;
+  const overlapping = (span) => times.filter(([from, to]) => from < span[1] && to > span[0]);
+  if (times.some((time) => !spans.some((span) => overlapping(span).includes(time)))) return true;
+  return spans.some((span) => {
+    const covering = overlapping(span);
+    return !covering.length || covering[0][0] > span[0] || covering.at(-1)[1] < span[1]
+      || covering.some(([from], index) => index > 0 && from !== covering[index - 1][1]);
+  });
+}
+
+/**
  * 可能的行星時：一個接一個、首尾相連地蓋住整段出生時間。應有的範圍取自出生時間敏感度的區間，
  * 不取自候選清單本身：第一個不晚於區間起點、最後一個不早於區間終點、中間不斷；代表性時刻
- * 所在的那一時必須在裡面；「跨過行星時／行星日交界」兩個旗標要與候選相符。
+ * 所在的那一時必須在裡面；「跨過行星時／行星日交界」兩個旗標要與候選相符。只填日期時改依
+ * 民用日的 UTC 段落核對（civilDayCandidatesBroken）。
  */
-function planetaryCandidates(interval, hour, sensitivity) {
+function planetaryCandidates(interval, hour, sensitivity, civilDay) {
   const candidates = interval.rows("candidates");
   const path = `${interval.path}.candidates`;
   const start = (item) => item.in("start")("local_time", "string");
   const end = (item) => item.in("end")("local_time", "string");
-  // 區間的兩端只有取樣完成時才在（checkSensitivity 已核過）；取樣被拒絕時只核首尾相連。兩端是鐘面時刻：這段時間裡時鐘撥
-  // 動過（候選的 UTC 偏移不只一種）時，鐘面先後不等於真正的先後（撥回的那一小時走兩次），也只核首尾相連。
-  const offsets = new Set(candidates.flatMap((item) => [item.in("start")("utc_offset", "string"), item.in("end")("utc_offset", "string")]));
-  const bounds = sensitivity.status === "computed" && offsets.size === 1
-    ? [localSortKey(sensitivity.interval_start_local), localSortKey(sensitivity.interval_end_exclusive_local)] : null;
-  const broken = !candidates.length
-    || (bounds && (localSortKey(start(candidates[0])) > bounds[0] || localSortKey(end(candidates.at(-1))) < bounds[1]))
-    || candidates.some((item, index) => index > 0 && start(item) !== end(candidates[index - 1]));
-  if (broken) throw exportPipeline.incompleteResponse(`${path} 沒有首尾相連地蓋住出生時間的區間`);
+  if (interval("interval", "string") === "civil_day") {
+    if (!candidates.length || civilDayCandidatesBroken(candidates, civilDay)) {
+      throw exportPipeline.incompleteResponse(`${path} 沒有恰好蓋住出生那一天的每一段 UTC 時間`);
+    }
+  } else {
+    // 區間的兩端只有取樣完成時才在（checkSensitivity 已核過）；取樣被拒絕時只核首尾相連。兩端是鐘面時刻：這段時間裡時鐘撥
+    // 動過（候選的 UTC 偏移不只一種）時，鐘面先後不等於真正的先後（撥回的那一小時走兩次），也只核首尾相連。
+    const offsets = new Set(candidates.flatMap((item) => [item.in("start")("utc_offset", "string"), item.in("end")("utc_offset", "string")]));
+    const bounds = sensitivity.status === "computed" && offsets.size === 1
+      ? [localSortKey(sensitivity.interval_start_local), localSortKey(sensitivity.interval_end_exclusive_local)] : null;
+    const broken = !candidates.length
+      || (bounds && (localSortKey(start(candidates[0])) > bounds[0] || localSortKey(end(candidates.at(-1))) < bounds[1]))
+      || candidates.some((item, index) => index > 0 && start(item) !== end(candidates[index - 1]));
+    if (broken) throw exportPipeline.incompleteResponse(`${path} 沒有首尾相連地蓋住出生時間的區間`);
+  }
   const same = (item) => item("index", "number") === hour("index", "number")
     && item("period", "string") === hour("period", "string") && start(item) === hour.in("start")("local_time", "string");
   if (!candidates.some(same)) { throw exportPipeline.incompleteResponse(`${path} 不含代表性時刻所在的那一時`); }
@@ -502,7 +533,8 @@ function planetaryHoursSection(response) {
     "日出與日落用太陽上緣、含標準大氣折射、從地表觀測者看、不計地平俯角，與「升降與中天」同一個定義。"
     + "日盤夜盤的判定另用太陽中心是否在地平線上、不計折射，所以日出後約幾分鐘內，可能行星時已是晝時、日夜盤仍判為夜盤。",
   ];
-  const candidates = anchored ? planetaryCandidates(interval, hour, response.birth_time_sensitivity) : [];
+  const candidates = anchored ? planetaryCandidates(
+    interval, hour, response.birth_time_sensitivity, response.calculation_dossier?.time_conversion?.civil_day) : [];
   if (anchored) {
     notes.push(
       "出生時刻不精確：「代表性時刻所在的行星日與行星時」表用的是代表性時刻，也就是計算時拿來代表這段時間的一個時刻，不是出生時刻；"
@@ -517,6 +549,8 @@ function planetaryHoursSection(response) {
   ];
   const timed = timedTable("時刻", instants.map(([, item]) => needInstant(item)[1]));
   const weekday = presentClosedVocabulary(day("weekday", "string"), WEEKDAY_ZH, "星期");
+  const localZone = sharedOffsetColumn(instants.map(([, item]) => item));
+  const candidateZone = sharedOffsetColumn(anchored ? candidates.flatMap((item) => [item.in("start"), item.in("end")]) : []);
   const tables = [
     {
       title: anchored ? "代表性時刻所在的行星日與行星時" : "出生時刻所在的行星日與行星時", columns: ["項目", "數值"],
@@ -528,16 +562,17 @@ function planetaryHoursSection(response) {
       ],
     }, {
       // 時間尺度標在世界時欄（timed.heading），不標在表題：當地時間欄不是 UTC。
-      title: "行星日與行星時的起訖時刻", columns: ["事件", "當地時間", timed.heading("世界時")],
-      rows: instants.map(([label, item]) => [label, localInstantText(item), timed.cell(...needInstant(item))]),
+      title: "行星日與行星時的起訖時刻", columns: ["事件", localZone.heading("當地時間"), timed.heading("世界時")],
+      rows: instants.map(([label, item]) => [label, localZone.cell(item), timed.cell(...needInstant(item))]),
     },
   ];
   if (anchored) {
     tables.push({
-      title: "可能的行星時", columns: ["行星日之主", "行星時", "行星時之主", "開始（當地時間）", "結束（當地時間）"],
+      title: "可能的行星時",
+      columns: ["行星日之主", "行星時", "行星時之主", candidateZone.heading("開始（當地時間"), candidateZone.heading("結束（當地時間")],
       rows: candidates.map((item) => [
         item("planetary_day_ruler_name", "string"), planetaryHourText(item), item("ruler_name", "string"),
-        localInstantText(item.in("start")), localInstantText(item.in("end")),
+        candidateZone.cell(item.in("start")), candidateZone.cell(item.in("end")),
       ]),
     });
   }
@@ -1143,6 +1178,23 @@ function motionStatesSection(response) {
     });
   }
   return section.make({ notes: motionNotes(response, module, { interval }), tables, blocks: MOTION_SOURCES.slice() });
+}
+
+/**
+ * 一欄當地時間：各格的時差都相同時，時差只寫在欄標頭，格裡只留時刻；不同時（例如跨過夏令時間）每格照舊帶時差。
+ * heading 收到的標題若以未閉合的「（」結尾（「開始（當地時間」），時差補在括號裡再閉合。
+ */
+function sharedOffsetColumn(records) {
+  const offsets = new Set(records.map((record) => record("utc_offset", "string")));
+  const shared = offsets.size === 1 ? [...offsets][0] : null;
+  return {
+    heading: (title) => {
+      const open = title.endsWith("當地時間") && title.includes("（");
+      if (!shared) return open ? `${title}）` : title;
+      return open ? `${title}，${shared}）` : `${title}（${shared}）`;
+    },
+    cell: (record) => (shared ? record("local_time", "string") : localInstantText(record)),
+  };
 }
 
 function localInstantText(record, timeKey = "local_time", offsetKey = "utc_offset") {

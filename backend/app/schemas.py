@@ -78,7 +78,7 @@ _ANNUAL_OPTION_RULES: tuple[tuple[str, frozenset[str], str], ...] = (
     ("include_monthly_profection", frozenset({"monthly_profection_profile"}),
      "monthly_profection_option_not_applicable"),
     ("include_solar_return_chart",
-     frozenset({"solar_return_house_system", "solar_return_location"}),
+     frozenset({"solar_return_house_system", "solar_return_natal_house_system", "solar_return_location"}),
      "solar_return_chart_option_not_applicable"),
 )
 
@@ -87,8 +87,9 @@ class AnnualInput(StrictInputModel):
     """Which year and which annual techniques; no "today" and no server clock."""
 
     # completed_years N is the return year [SR_N, SR_N+1); year_of_life is N+1.
-    # No lifetime cap: a cap would itself be a lifespan claim.  A year whose
-    # start falls after 2399 is refused by the route
+    # No lifetime cap: a cap would itself be a lifespan claim.  The 500 bound
+    # is the supported calendar span (births from 1900, returns to 2399), not
+    # an age; a year whose start falls after 2399 is refused by the route
     # (solar_return_outside_supported_year_range), not here.
     target_kind: Literal["completed_years", "year_of_life"]
     target_value: int = Field(ge=0, le=500)
@@ -121,13 +122,16 @@ class AnnualInput(StrictInputModel):
     monthly_profection_profile: MonthlyProfectionProfile = (
         "monthly_profection_solar_30_degree_months_v1"
     )
-    # The chart cast at SR_N (annual_pipeline._solar_return_chart).  This route
-    # has no natal house-system input, so the calculate page sends the house
-    # system its natal chart uses; absent, whole sign as /api/chart's default.
+    # The chart cast at SR_N (annual_pipeline._solar_return_chart).  The
+    # calculate page sends the house system its natal chart uses unless the
+    # reader picks another for the return; absent, whole sign as /api/chart's
+    # default.  The natal houses the return is compared with are in the natal
+    # chart's own system, which the page always sends; absent, the return's.
     # No location means the birth location; another place is cast only while
     # SOLAR_RETURN_LOCATION_OFFERED is on.
     include_solar_return_chart: bool = False
     solar_return_house_system: HouseSystemCode = "W"
+    solar_return_natal_house_system: Optional[HouseSystemCode] = None
     solar_return_location: Optional[LocationInput] = None
 
     @model_validator(mode="after")

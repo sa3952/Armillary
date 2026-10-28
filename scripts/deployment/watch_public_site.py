@@ -140,8 +140,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--security-txt-days", type=float, default=60.0)
     integrity = parser.add_mutually_exclusive_group(required=True)
     integrity.add_argument("--revision", help="the live frontend's public source revision (40 hex)")
+    integrity.add_argument("--release-record", help="read the revision from this current_release.json")
     integrity.add_argument("--skip-integrity", action="store_true")
     arguments = parser.parse_args(argv)
+    if arguments.release_record:
+        with open(arguments.release_record, encoding="utf-8") as record:
+            arguments.revision = json.load(record)["live"]["frontend_public_source"]
     now = datetime.now(timezone.utc)
     problems: list[str] = []
     for host in (CANONICAL_HOST, f"www.{CANONICAL_HOST}"):

@@ -2,6 +2,8 @@
 
 > 目前免費、不需註冊，開源（AGPL-3.0-only）：排出古典西洋占星本命盤，以及年度小限、法達、黃道釋放與十年期等時間主星；每個數字附方法來源與計算收據。只計算，不解盤。
 
+渾儀 Armillary（Project Armillary）是古典西洋占星的星盤計算器，不是天文儀器渾儀，也不是觀星 App 或天文程式庫。
+
 只計算，不解盤，不預測。
 
 - 授權：AGPL-3.0-only（https://spdx.org/licenses/AGPL-3.0-only.html ）
@@ -31,19 +33,20 @@
 - 轉述古典文獻的說法時，請照文章出處標的讀取等級描述（例如「只見書目」表示本站沒有讀到原書）。
 - 方法上的問題請引用方法頁的對應段落，或 method-sources.json 裡的條目代碼。
 
-Armillary (渾儀) is a classical Western astrology calculator with a Traditional Chinese interface: enter a birth date, time and place to get a natal chart, with the method source and a calculation receipt for every number. It also computes the annual time lords: annual profections, monthly profections, firdaria, zodiacal releasing and decennials, listing which planet or sign rules each period. The natal chart covers planet positions with the ascendant, midheaven and house placements, aspects, essential dignities and debilities, sect, Lots of Fortune and Spirit, fixed stars, antiscia, parallels and contra-parallels, void-of-course Moon, dodecatemoria, lunar mansions, solar phase: combustion, under the beams, cazimi, swift or slow, stationary, oriental or occidental of the Sun, lunar phases and the prenatal syzygy, eclipses and planetary hours. It only calculates; it does not interpret charts or make predictions. The code is licensed AGPL-3.0-only, and the site has no accounts, no cookies and no third-party analytics or trackers.
+Armillary (Project Armillary) is a classical Western astrology calculator with a Traditional Chinese interface (not the astronomical instrument, a stargazing app or an astronomy library): enter a birth date, time and place to get a natal chart, with the method source and a calculation receipt for every number. It also computes the annual time lords: annual profections, monthly profections, firdaria, zodiacal releasing and decennials, listing which planet or sign rules each period. The natal chart covers planet positions with the ascendant, midheaven and house placements, aspects, essential dignities and debilities, sect, Lots of Fortune and Spirit, fixed stars, antiscia, parallels and contra-parallels, void-of-course Moon, dodecatemoria, lunar mansions, solar phase: combustion, under the beams, cazimi, swift or slow, stationary, oriental or occidental of the Sun, lunar phases and the prenatal syzygy, eclipses and planetary hours. It only calculates; it does not interpret charts or make predictions. The code is licensed AGPL-3.0-only, and the site has no accounts, no cookies and no third-party analytics or trackers.
 
 ## 產品
 
 - [可驗證的古典西洋占星計算器｜渾儀 Armillary](https://projectarmillary.com/zh-TW/): 目前免費、不需註冊，開源（AGPL-3.0-only）：排出古典西洋占星本命盤，以及年度小限、法達、黃道釋放與十年期等時間主星；每個數字附方法來源與計算收據。只計算，不解盤。
 - [古典占星排盤與星盤查詢：整宮制等七種宮位制｜渾儀 Armillary](https://projectarmillary.com/zh-TW/calculate): 目前免費、不需註冊：輸入出生日期、時間與地點，查個人星盤的上升點、中天、下降點與行星落宮，可選整宮制、等分宮制、Placidus、Regiomontanus 等七種宮位制。不知道確切出生時間也能算：只知道日期或大約幾點時，會標出哪些結果在這段時間內會改變。
-- [古典西洋占星法達計算：線上排出法達（firdaria）時間主星｜渾儀 Armillary](https://projectarmillary.com/zh-TW/calculate/firdaria): 輸入出生日期、時間與地點，線上排出古典西洋占星法達的一生主期與子期：哪一段由哪顆行星或月交點輪值、從哪一天到哪一天。夜盤交點預設排在水星之後（al-Bīrūnī），附合成範例與出處連結。只列計算結果，不替你解盤，也不預測。
-- [古典西洋占星黃道釋放計算：線上排出命運點與精神點的大期、小期｜渾儀 Armillary](https://projectarmillary.com/zh-TW/calculate/zodiacal-releasing): 輸入出生日期、時間與地點，從命運點與精神點各排一條黃道釋放（zodiacal releasing），列出第一層大期與第二層小期、解鎖與從命運點數第幾個星座；一年 360 日，依 Valens 第四卷。附合成範例與出處連結。只列計算結果，不替你解盤，也不預測。
-- [古典西洋占星小限計算：線上排出年度小限、月小限與年主星｜渾儀 Armillary](https://projectarmillary.com/zh-TW/calculate/profections): 輸入出生日期、時間與地點，依古典西洋占星的規則從上升星座起排出每一年的年度小限（annual profection）與年主星，選定某一年再列出 12 個月小限；一年從太陽回歸算起。附合成範例與出處連結。只列計算結果，不替你解盤，也不預測。
-- [古典西洋占星十年期計算：線上排出十年期（decennials）時間主星｜渾儀 Armillary](https://projectarmillary.com/zh-TW/calculate/decennials): 輸入出生日期、時間與地點，排出十年期（每段 10 年 9 個月）的輪值行星與每段裡的七小段；起點可選 Firmicus 的日夜盤光體（預設）、Valens 的上升點後第一顆行星或自己指定。附合成範例與出處連結。只列計算結果，不替你解盤，也不預測。
+- [法達計算：線上排出法達主期、子期與時間主星（firdaria）｜渾儀 Armillary](https://projectarmillary.com/zh-TW/calculate/firdaria): 古典西洋占星法達計算：輸入出生日期、時間與地點，線上排出一生的法達主期與子期，哪一段由哪顆行星或月交點輪值、從哪一天到哪一天。夜盤交點預設排在水星之後（al-Bīrūnī），附合成範例與出處。只列計算結果，不解盤、不預測。
+- [黃道釋放計算：線上排出命運點與精神點的大期、小期（zodiacal releasing）｜渾儀 Armillary](https://projectarmillary.com/zh-TW/calculate/zodiacal-releasing): 古典西洋占星黃道釋放計算：輸入出生日期、時間與地點，從命運點與精神點各排一條，列出第一層大期、第二層小期、解鎖與從命運點數第幾個星座；一年 360 日，依 Valens 第四卷。附合成範例與出處。只列計算結果，不解盤、不預測。
+- [小限計算：線上排出年度小限、月小限與年主星｜渾儀 Armillary](https://projectarmillary.com/zh-TW/calculate/profections): 古典西洋占星小限計算：輸入出生日期、時間與地點，從上升星座起排出每一年的年度小限（annual profection）與年主星，選定某一年再列出 12 個月小限；一年從太陽回歸算起。附合成範例與出處。只列計算結果，不解盤、不預測。
+- [十年期計算：線上排出十年期時間主星（decennials）｜渾儀 Armillary](https://projectarmillary.com/zh-TW/calculate/decennials): 古典西洋占星十年期計算：輸入出生日期、時間與地點，排出十年期（每段 10 年 9 個月）的輪值行星與每段的七小段；起點可選 Firmicus 的日夜盤光體（預設）、Valens 的上升點後第一顆行星或自己指定。附出處。只列計算，不替你解盤，也不預測。
 - [星盤計算功能：上升點、宮位、界與三分性、恆星與匯出｜渾儀 Armillary](https://projectarmillary.com/zh-TW/features): 渾儀的計算功能：上升點與宮位、四套界表與三分性、恆星、時區資料庫版本，出生時間不確定時標出會變的結果，三套座標一起輸出、時間主星輪值表，以及計算卷宗與多格式匯出；只計算，不解盤。
 - [產品現況與後續方向｜渾儀 Armillary](https://projectarmillary.com/zh-TW/roadmap): 渾儀的產品現況與後續方向：用三階成熟度區分天文層、方法層與產品營運各自已提供的能力、正在驗證的工作與尚未承諾的方向，並列出未決問題與不打算做的事。
 - [古典占星計算文章與研究筆記｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog): 渾儀已發表的古典占星計算文章：臺灣夏令時間、不知道出生時間、真太陽時、宮位制、四套界表、真交點與平均交點、焦傷與日輪內、十二分部、時間主星等；還在寫的題目也列在頁上。
+- [更新紀錄｜渾儀 Armillary](https://projectarmillary.com/zh-TW/changelog): 渾儀 Armillary 每一版新增了什麼、改善了什麼、修好了什麼，用白話寫給使用的人看；目前是公開測試的 0.x 版本。
 
 ## 可查證性
 
@@ -69,7 +72,7 @@ Armillary (渾儀) is a classical Western astrology calculator with a Traditiona
 ## 文章
 
 - [知道幾點幾分，但怕差幾分鐘？出生時間差五分鐘，上升星座與宮位會怎麼變｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/birth-time-sensitivity): 出生時刻記到幾點幾分，但記錄可能差幾分鐘：同一天同一地點，行星幾乎不動，上升點與宮位卻可能整組換掉。以合成範例說明原因，以及渾儀怎麼標出不確定。
-- [臺灣夏令時間出生，排盤要減一小時嗎？那些要多看一眼的年份｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/taiwan-time-zone-history): 1896 年以來臺灣換過三種標準時，並在十九個夏天實施日光節約時間。依 IANA 時區資料庫整理這些年份的換算、不存在與重複的鐘點，以及資料本身仍不確定之處。
+- [臺灣夏令時間是哪幾年？日光節約時間出生，排盤要減一小時嗎｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/taiwan-time-zone-history): 臺灣夏令時間（日光節約時間）實施於 1946–1961、1974、1975、1979 年共十九個夏天，期間鐘面是 UTC+9。依 IANA 時區資料庫整理 1896 年以來三種標準時與這些年份的換算、不存在與重複的鐘點，以及資料本身仍不確定之處。
 - [民國年、昭和年怎麼換算西元？日治時期出生的排盤與臺灣時區｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/taiwan-era-years-birth-time): 民國年加 1911、昭和年加 1925、大正年加 1911 就是西元年；改元那一年要看日期。日治時期出生還要看鐘：1937 年 10 月到 1945 年 9 月臺灣用 UTC+9。附逐年對照與計算服務的實際換算。
 - [香港出生時間怎麼換算？夏令時間、日佔時期與天文台的紀錄｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/hong-kong-birth-time): 香港 1941–1979 年實施過三十多段夏令時間，日佔時期用東京時間 UTC+9。逐年對照天文台〈香港夏令時間〉表與 IANA 時區資料庫，列出兩者不同的日子，以及在渾儀怎麼填出世紙上的鐘點與香港地名。
 - [整宮制與 Placidus 差在哪：同一顆行星，兩個宮位｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/whole-sign-vs-placidus): 換一種宮位制，行星就換了宮，不代表有一邊算錯。以合成星盤比較整宮、Placidus、Regiomontanus 與 Alcabitius，並說明北極圈內為什麼算不出 Placidus。
@@ -78,7 +81,7 @@ Armillary (渾儀) is a classical Western astrology calculator with a Traditiona
 - [不知道出生時間，能排星盤嗎？只知道日期、不知道幾點時，哪些結果站得住｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/unknown-birth-time): 只知道出生日期、不知道幾點，也能排星盤。以合成範例實算：哪些行星星座整天都站得住，上升星座、宮位與日夜盤又在一天裡的哪些鐘點翻面。記得大概幾點或只差幾分鐘的情況，另有兩篇。
 - [只知道大概幾點出生，怎麼排盤？上升與宮位在那一小時的哪一刻會變｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/approximate-birth-hour): 只知道大概是哪一個鐘點，也能排星盤。本站在那一小時取五個時刻各算一次，把改變的時刻對半找到 15 秒以內，時鐘撥回或跳過的鐘點也照實處理，再用白話列出哪些結果會變、約幾點變。本站不做出生時間校正。
 - [上升星座查詢表為什麼常常不準｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/rising-sign-tables): 上升星座查詢表只問出生時段或日期，卻默默假設了出生地的緯度、經度與時鐘規則。以實算比較兩種查表做法與精算，看在臺北、金門、夏令時間年份與國外各有多少時刻查錯。
-- [西洋占星要不要換真太陽時？｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/true-solar-time): 西洋占星排盤不用換真太陽時：上升點與宮位由世界時加出生地經度決定。先換真太陽時再輸入，經度會被算兩次。以合成例子逐步列出兩種算法的數字與一年裡的誤差。
+- [西洋占星要不要換真太陽時？經度已經算進上升點，換了會算兩次｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/true-solar-time): 西洋占星排盤不用換真太陽時：真太陽時是鐘面時間加經度修正（每度 4 分鐘）與均時差，而上升點與宮位本來就由世界時加出生地經度決定。先換真太陽時再輸入，經度會被算兩次。以合成例子逐步列出兩種算法的數字與一年裡的誤差。
 - [古典西洋占星年度時間主星入門：小限、月小限、法達、黃道釋放、十年期有什麼不同｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/time-lords-introduction): 時間主星是把人生分段、每段交給一顆行星或一個星座輪值的古典西洋占星技法。說明年度小限、月小限、法達、黃道釋放與十年期各出自哪本書、怎麼切、文獻說法不同之處，以及時間軸、年表與匯出檔怎麼用。
 - [十二分部（Dodecatemoria）是什麼：乘以 12 與乘以 13 兩種算法｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/dodecatemoria): 十二分部把一個點在星座裡的度數放大十二或十三倍，對應到另一個星座。以例子說明 Firmicus 與 Paulus 兩種算法、古書怎麼看待它，以及它為什麼對出生時間特別敏感、本站怎麼標出會換星座的列。
 - [焦傷、在光束下、日輪內（cazimi）：離太陽多近才算｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/combustion-under-beams-cazimi): 焦傷（combust）、在光束下、日輪內（cazimi）各離太陽多近？Lilly 1647 是 17 角分、8°30′、17°，希臘化只有一條 15° 的線，al-Bīrūnī 依行星 12° 到 18°。三套界線並排，照原典說明各代表什麼。
@@ -95,7 +98,7 @@ Armillary (渾儀) is a classical Western astrology calculator with a Traditiona
 - [時間主星參考案例：年度小限、法達、黃道釋放與十年期的完整表格｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/time-lord-reference-cases): 兩張合成盤（一張日盤、一張夜盤）的年度小限年界、法達（夜盤兩種交點排法）、從命運點與精神點起的黃道釋放第一、二層與每一次解鎖，以及十年期第一層。表格全部由本站計算服務產生，可以拿來核對任何排盤工具。
 - [回歸黃道與恆星黃道差在哪？歲差值（ayanamsa）是什麼、四種怎麼來｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/tropical-vs-sidereal-zodiac): 回歸黃道從春分點起算，恆星黃道從相對恆星固定的約定點起算，兩者相差一個歲差值（ayanamsa）。說明本站四種歲差值的來歷、換黃道時哪些結果會變、哪些古典表格不套到恆星黃道，並用一張合成的盤比較五種黃道下的位置。
 - [為什麼兩個網站算出的上升點差 2 角分？出生地座標差一點的影響｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/ascendant-coordinates): 同一個出生時刻、同樣選臺北，兩個排盤工具的上升點常差兩、三角分，原因多半是「臺北」的座標不同。用合成時刻列出從鐘面時間、UT1、恆星時到上升點的每一步，並算出經度差 0.01 度上升點移動多少。
-- [黑月莉莉絲的平均、真與自然差多少？「真 Lilith」其實是密切遠地點｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/black-moon-lilith-mean-true-natural): 平均黑月莉莉絲與「真」Lilith 最多差 30 度。本站內附星曆逐日實算 1950–2049 年：密切（真）Lilith 有 36.3% 的時間和平均 Lilith 不同星座，自然 Lilith 只有 9.9%；三種算法的定義與本站提供哪兩種。
+- [黑月莉莉絲（Lilith）怎麼算？平均、真與自然三種的公式與差距｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/black-moon-lilith-mean-true-natural): 黑月莉莉絲（Lilith）是月球軌道的遠地點，有平均、「真」（密切）、自然三種算法。整理三者的定義與公式；本站星曆逐日實算 1950–2049 年，密切 Lilith 有 36.3% 的時間和平均 Lilith 不同星座，自然只有 9.9%。
 - [地心月亮和站心月亮差多少？月亮度數和別的網站差將近 1 度的原因｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/geocentric-vs-topocentric-moon): 從出生地看的月亮（站心）和從地心看的，最多差 1 度，有時換星座。以 2026 年臺北逐時實算差多少、何時最大，並逐一對照 NASA JPL Horizons（差不到 0.2 角秒）。
 - [行星時怎麼算？行星日從日出起算、晝夜各十二等分與迦勒底序｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/planetary-hours): 行星時把白天與夜晚各分成十二等分，依迦勒底序輪給七顆行星，第一時由星期主星開始。四個步驟算出行星時，附一週主星表，並用本站計算服務實算臺北夏至、春分、冬至；說明凌晨出生為什麼算前一天、行星時為什麼排出星期的順序。
 - [反照點是什麼？反照點與反向反照點怎麼算，為什麼以至點為鏡｜渾儀 Armillary](https://projectarmillary.com/zh-TW/blog/antiscia): 反照點（antiscia）是行星對 0° 巨蟹—0° 摩羯至點軸的鏡像，算法是 180° 減黃經；反向反照點對分點軸鏡射。照 Lilly 1647 與 Firmicus 原文說明由來、星座配對與查表法，實算示範盤，並說明恆星黃道為何不能直接用 180° 去減。

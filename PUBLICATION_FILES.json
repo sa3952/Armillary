@@ -51,8 +51,8 @@
     {
       "executable": false,
       "path": "README.md",
-      "sha256": "168c6b67ba4bbada52ff84e02a0e2895a57bac81e17a3cbcaa815aff01e98f6a",
-      "size_bytes": 21950
+      "sha256": "8536d5bcd218267bb53b3f999d8eca4d93a4534adb1426218d7e39e815fd0bcc",
+      "size_bytes": 22567
     },
     {
       "executable": false,
@@ -63,7 +63,7 @@
     {
       "executable": false,
       "path": "SOURCE_EXPORT.json",
-      "sha256": "fe6ac1b56c11fdf73f557bae0443ad05923ad7598989c8ec83f00561fe59c20d",
+      "sha256": "dd9b530a1ffacf7ec409f6c26af8d179ee7aec1748840df39f1f4996805a593c",
       "size_bytes": 136
     },
     {
@@ -93,8 +93,8 @@
     {
       "executable": false,
       "path": "backend/app/annual_pipeline.py",
-      "sha256": "3dacabbd07aaa092fe81b8703e0df0ee71dc841ae82f25e3378b3a0d221ad0f6",
-      "size_bytes": 32565
+      "sha256": "c9504e97d2de3ee32338e30cab05cb98952f880180e09acba9590002a39ea7ff",
+      "size_bytes": 33846
     },
     {
       "executable": false,
@@ -135,7 +135,7 @@
     {
       "executable": false,
       "path": "backend/app/chart_pipeline.py",
-      "sha256": "509759264dec0fbaf8daff480d15706a7233b955fe2012ad04fc6bd563ae2566",
+      "sha256": "86b2a449eee41d2342802506091301143dce40bef656416e9aa5e0c2dff2a115",
       "size_bytes": 16753
     },
     {
@@ -171,20 +171,20 @@
     {
       "executable": false,
       "path": "backend/app/core/aspect_profiles.py",
-      "sha256": "de6fd1dae9c349c33086b565c9705465eeacb0f995ee280620c9fa95eb732a40",
-      "size_bytes": 25804
+      "sha256": "28e8d16603df6f597501b6255123b699f8d71e19d54aeb637b930d4e227d1756",
+      "size_bytes": 25983
     },
     {
       "executable": false,
       "path": "backend/app/core/aspects.py",
-      "sha256": "cac1216d2dae47a4ad530c237a257c3f22996195976ee13ad35bea1ab22d9871",
-      "size_bytes": 66757
+      "sha256": "c80a1fbf18cdcdef9929c57a64235f6f277675a1df16e7b0d49d9979b673e9d3",
+      "size_bytes": 66636
     },
     {
       "executable": false,
       "path": "backend/app/core/birth_time_sensitivity.py",
-      "sha256": "b8fad16800cb99bb163bf95a501ac718f4f0634ca60111ff4ed5d95fe2f0e871",
-      "size_bytes": 85567
+      "sha256": "38fd6cefeed12a03f19b61345312124cef750d1891bd7c0aa0d03af230ae2aa6",
+      "size_bytes": 85122
     },
     {
       "executable": false,
@@ -219,8 +219,8 @@
     {
       "executable": false,
       "path": "backend/app/core/contested_methods.py",
-      "sha256": "2efd8dd928141aa31f5da3d2587623b9983fb17c1fa8c442c1209ce31b7ec398",
-      "size_bytes": 20234
+      "sha256": "5be3efe0d422924d9565944c3998fe98ce636be8a6387563f6c9b4c841b9278f",
+      "size_bytes": 20267
     },
     {
       "executable": false,
@@ -237,26 +237,26 @@
     {
       "executable": false,
       "path": "backend/app/core/dignity_tables.py",
-      "sha256": "6c85781c1e5dca95f26cd6f360e721bcae0eec1c3c4e3aadda441a0f672085f5",
-      "size_bytes": 52752
+      "sha256": "ea2baf0b0f61c16f2f2a52d8285413a02b25d932f2d082f1f71d729d5714fb9f",
+      "size_bytes": 53344
     },
     {
       "executable": false,
       "path": "backend/app/core/dodecatemoria.py",
-      "sha256": "4f899b79a31239b65794373c354029f70fd61246baea6fef46fd09b0294bf175",
-      "size_bytes": 19622
+      "sha256": "104c77a48615c32e743951cd5f3c789fd1b348f145e18414df4aa5dd33a1148e",
+      "size_bytes": 19688
     },
     {
       "executable": false,
       "path": "backend/app/core/dossier.py",
-      "sha256": "6718eeb87d8f23ef8cb59b5f72459590371af1f733952b0d3d91f09168607213",
-      "size_bytes": 50454
+      "sha256": "6fef79335014844a634d519f837d96cec3fe8883a30f2f6d5a20e53052035d92",
+      "size_bytes": 49951
     },
     {
       "executable": false,
       "path": "backend/app/core/dossier_warnings.py",
-      "sha256": "d6ebd42c069bd004544cfc49d46f59c5273aef981821fc355d08e7b0056692b2",
-      "size_bytes": 52240
+      "sha256": "4e454cc52c371cd12b6e2034483ccd8e24e099b5fcb46ba7fc36f84de6fcc2cf",
+      "size_bytes": 51930
     },
     {
       "executable": false,
@@ -273,8 +273,8 @@
     {
       "executable": false,
       "path": "backend/app/core/firdaria.py",
-      "sha256": "6f4e07a9b9d75f7dfacc1931d2900054022194574ad10a99f3d7dc6d64bf3ff3",
-      "size_bytes": 11189
+      "sha256": "f90e5615a7c2aa54547f85f9ca797e7f82c64693630ebb0abe575f90c06014a9",
+      "size_bytes": 11468
     },
     {
       "executable": false,
@@ -297,14 +297,14 @@
     {
       "executable": false,
       "path": "backend/app/core/hong_kong_place_aliases.py",
-      "sha256": "ed6b6e18c9e096c346e7e59225c0efd624d61c28e0323ab5db6b64c4023d472f",
-      "size_bytes": 9485
+      "sha256": "942d427e88d021b903aebf096b45a7498c6cc8858a6e0eb1946e1c249148a9af",
+      "size_bytes": 9677
     },
     {
       "executable": false,
       "path": "backend/app/core/horizon_events.py",
-      "sha256": "4d955b1654d2c3a837f36e2fbaa2f388771dcba6d449ddd671a751c7e1032dc5",
-      "size_bytes": 60364
+      "sha256": "c4e5a7d4f7e0a858cfe93830df2ac7973ae82d0ceda22f3c4f2c3714458e8f1e",
+      "size_bytes": 61367
     },
     {
       "executable": false,
@@ -327,8 +327,8 @@
     {
       "executable": false,
       "path": "backend/app/core/lots.py",
-      "sha256": "38839ec68eb926d1b3a6937c8c1bdf71612380a5ef0b69fa7c1699c336a774f8",
-      "size_bytes": 26398
+      "sha256": "27956d50bacb9781668dd6036c1cbd91d4422aeaf1497333da8b8f46796dbd08",
+      "size_bytes": 26289
     },
     {
       "executable": false,
@@ -345,8 +345,8 @@
     {
       "executable": false,
       "path": "backend/app/core/method_status.py",
-      "sha256": "5d3a660f76a4559087f09b21fbda654c662fc9aef607664224e230987434f9f6",
-      "size_bytes": 8587
+      "sha256": "cc0e05807199c3c4ad41d5d64f8a04079d751755824c0a4b4d9ad73f2b8ed919",
+      "size_bytes": 9804
     },
     {
       "executable": false,
@@ -363,25 +363,31 @@
     {
       "executable": false,
       "path": "backend/app/core/moon.py",
-      "sha256": "3192134235597d96f27d8b86d0b3d9efe12e1c93196130c5bc76b0407e055e4e",
-      "size_bytes": 43330
+      "sha256": "ddf5b6d1b36023930a3c40f7a4831ab04be3302ed23a56e72ca374cc4266d9b6",
+      "size_bytes": 43456
     },
     {
       "executable": false,
       "path": "backend/app/core/motion_states.py",
-      "sha256": "0d571b421d47e79ceb89512c4ddbe2d71106e630306a994a8c60ba1ecaa95cf1",
-      "size_bytes": 29483
+      "sha256": "fd6f69bf66e38ad2118c18f70d7723d7349bbf6f13a12cb94a487eef9b27d808",
+      "size_bytes": 29546
     },
     {
       "executable": false,
       "path": "backend/app/core/place_catalog.py",
-      "sha256": "870f10fdbf9bd98b62a455ca864b095d6cf369e532822ba9c757aba779cf2c05",
-      "size_bytes": 58024
+      "sha256": "23eeab1cc9aa235049d70cdd4f3f62013e7056d6b6de13b48d7c06a1e5b30739",
+      "size_bytes": 62543
+    },
+    {
+      "executable": false,
+      "path": "backend/app/core/place_zone_policy.py",
+      "sha256": "fd724b38283be4bcf40ab210d5f139141218c4c26e327d118cf005f6e4bb3562",
+      "size_bytes": 4529
     },
     {
       "executable": false,
       "path": "backend/app/core/planetary_hours.py",
-      "sha256": "d450019d79b68f212ee1136928fcb2d3b02b414e535e3341d104b63ae8dca42a",
+      "sha256": "fcfd903e9a930d474548e63c18c72831cca477a1c9b5a7acf71f5753cbe262e5",
       "size_bytes": 14660
     },
     {
@@ -417,8 +423,8 @@
     {
       "executable": false,
       "path": "backend/app/core/solar_phase.py",
-      "sha256": "c22851ba090cba05f825b795f33828d397455cf538a36205b5450bcc7a452914",
-      "size_bytes": 38184
+      "sha256": "defba40ec85c2c4c60f508edfeaf97cf27843b5662c5d3dbafcb7aec505ba899",
+      "size_bytes": 38243
     },
     {
       "executable": false,
@@ -429,14 +435,14 @@
     {
       "executable": false,
       "path": "backend/app/core/time_conversion.py",
-      "sha256": "ce82522f676c8198fa5688bd3e80302f1f20962500ceee44c95a62dba344efff",
-      "size_bytes": 7804
+      "sha256": "76026b9c2bbef9fce7442cd5cc28cb76c19d2dfdc7a36e94d084342e3fd0ccd3",
+      "size_bytes": 7645
     },
     {
       "executable": false,
       "path": "backend/app/core/time_utils.py",
-      "sha256": "7b2efb1ec6aa8a9d1090cb5f31986edd6da2d921e8e22d95d66efb8bdb0c12ed",
-      "size_bytes": 87523
+      "sha256": "e26cfec756cbffa004e1afd1ac203de6602cbdd612a5e8546642ccfb530f13e2",
+      "size_bytes": 87784
     },
     {
       "executable": false,
@@ -453,8 +459,8 @@
     {
       "executable": false,
       "path": "backend/app/core/year_boundary.py",
-      "sha256": "e7fcee02b6cff6472980ab6294eb968d4906e132c422973c65c55840a835f144",
-      "size_bytes": 21512
+      "sha256": "941b70fa621b5a9153f03850cbecffad9f746d877701224fc630aa83c0c5887e",
+      "size_bytes": 21788
     },
     {
       "executable": false,
@@ -483,8 +489,8 @@
     {
       "executable": false,
       "path": "backend/app/frontend_release.py",
-      "sha256": "b5322b9af53502e481579d8e1f6f446200fbe4b2e08a10b356bccdff101113f9",
-      "size_bytes": 16240
+      "sha256": "a75b7705d97a805a6e1bc4fb6c814b7c08a7bcc373286f9ceafbb17ea849bc3c",
+      "size_bytes": 16562
     },
     {
       "executable": false,
@@ -495,8 +501,8 @@
     {
       "executable": false,
       "path": "backend/app/main.py",
-      "sha256": "a0fdcd659ffec1afa2397d4ba946012da8de46d035e7529f755574b78904e3c4",
-      "size_bytes": 31621
+      "sha256": "d3999993fff623ec6459879229b3a6425b6ab98ecd99ed7225755133d2b980e3",
+      "size_bytes": 32563
     },
     {
       "executable": false,
@@ -507,8 +513,8 @@
     {
       "executable": false,
       "path": "backend/app/privacy_logging.py",
-      "sha256": "42e103b1643b9ea4e8dbfff9df8fd9d655cec38574104ae58f1048ad1f296a80",
-      "size_bytes": 30333
+      "sha256": "0c83453520bd5c462931c45e1777f24c1967c56e1b10cfc0e5926c4c6c32f857",
+      "size_bytes": 31700
     },
     {
       "executable": false,
@@ -525,20 +531,20 @@
     {
       "executable": false,
       "path": "backend/app/request_limits.py",
-      "sha256": "7213cc0ce970c401dd1566cc7bf3faee1bfd9e8f2526d333ac5d64fe8bf01ea6",
-      "size_bytes": 25499
+      "sha256": "c39c1d38c5d6bace0b82902dfb38013d516bcb4976a1f5ccadf98c164afaaeac",
+      "size_bytes": 26681
     },
     {
       "executable": false,
       "path": "backend/app/response_projection.py",
-      "sha256": "3d098ed54bf87a9bd02499f39489c028f0d097abfd46754b05bc9e79284eb184",
-      "size_bytes": 24892
+      "sha256": "ffe48b53d98cecda71458392c969694ddf1081d14507e7341a3df993ff449cf5",
+      "size_bytes": 25155
     },
     {
       "executable": false,
       "path": "backend/app/runtime_static.py",
-      "sha256": "147c29d38040fc2c6cccefa8db131c3ed9ba411b49fda8ddd6a7e539ed0c6d3e",
-      "size_bytes": 25038
+      "sha256": "d94cf1f637101cebfd7740f57a26a8075a6014fa0314ed4761b3c2134b96dec8",
+      "size_bytes": 27047
     },
     {
       "executable": false,
@@ -567,8 +573,8 @@
     {
       "executable": false,
       "path": "backend/app/schemas.py",
-      "sha256": "296b92dcb5bc6e1bcda93738673e210e591bf100e61553262564441466d49883",
-      "size_bytes": 10202
+      "sha256": "9f5944434aa8ebb93dbd8cf38f6a1d3ec50253ae86b29eeb46709dcb6e31b8f3",
+      "size_bytes": 10553
     },
     {
       "executable": false,
@@ -615,25 +621,25 @@
     {
       "executable": false,
       "path": "backend/place_data/README.md",
-      "sha256": "03991d8c890db8b081d5201b7bc7af3f6adca37fa77f92d6e6bffaadaa6512b9",
+      "sha256": "b581a5ab290b0da3f9589722888e8f6f575fed8841642f9a78dfb24ab7c99030",
       "size_bytes": 9615
     },
     {
       "executable": false,
       "path": "backend/place_data/catalog_manifest.json",
-      "sha256": "1fe064a79ec5be93866b1a3570f005761b27d0b7c897d83e971e616dcc07aa58",
-      "size_bytes": 244764
+      "sha256": "1f54a67208abca0691c24693882ca73550f89e7be16246ec29ddc343d39a7d64",
+      "size_bytes": 248245
     },
     {
       "executable": false,
       "path": "backend/place_data/input_archive.json",
-      "sha256": "104b4bf128fa82241a3b9d3e302539299238981687ec1dc228320de1213db93d",
-      "size_bytes": 5669
+      "sha256": "c986ba26cf673444a41b628feb57c0c9b37d5e3837034f12b00449ec700ee6c7",
+      "size_bytes": 5738
     },
     {
       "executable": false,
       "path": "backend/place_data/places.sqlite3",
-      "sha256": "1f8f9b2da4f385fd53b598463bd0207d719bc30e100ede6443150446f5b13a8a",
+      "sha256": "512173a41e0d8db90530a20cd0fb45293af8c672fdd6b190e51ab64d48ff1268",
       "size_bytes": 92016640
     },
     {
@@ -669,8 +675,8 @@
     {
       "executable": false,
       "path": "deploy/Dockerfile",
-      "sha256": "da399360310bc7b9ded93a7b0a0dcc0a97828f495aa43f3ce47db45db35a0fb3",
-      "size_bytes": 15558
+      "sha256": "e14e047cf401bd2b9ca663c366e5b7fc8b35d06efbfba0c5607cd0c11489bba9",
+      "size_bytes": 15953
     },
     {
       "executable": false,
@@ -723,20 +729,26 @@
     {
       "executable": false,
       "path": "deploy/frontend-contract.json",
-      "sha256": "3d72e17f46d2942c92861e6450269b9b5b0b0b1017b9dbd2512232c919c75a51",
+      "sha256": "1a947c596706d21b020b3428ac192cd82bd3146e29fbdec92e4203de1133d215",
       "size_bytes": 112
     },
     {
       "executable": false,
       "path": "deploy/image-app-tree.json",
-      "sha256": "746477c03c74fd3493923618e7b00b5b676ab017fb8b7402a42ed40f246301bd",
-      "size_bytes": 4194
+      "sha256": "f2733d1b41004f310a4f170c11ab8e15c8c3c9f03e5cba237642b69187251877",
+      "size_bytes": 4239
     },
     {
       "executable": false,
       "path": "deploy/image-executables.json",
       "sha256": "fb5f03ddb6305b00c731377bbe543a89ba46d40ad431d889fb22760bf0b4d06e",
       "size_bytes": 6165
+    },
+    {
+      "executable": false,
+      "path": "deploy/release-allowed-signers",
+      "sha256": "20bb9ec7dd63ee9351b1af672eeb3f562447b6d0efbc19a854d3bfae40557958",
+      "size_bytes": 161
     },
     {
       "executable": false,
@@ -759,8 +771,8 @@
     {
       "executable": false,
       "path": "deploy/staging/nginx-site.conf.template",
-      "sha256": "395bf4faab3247b4c960ac125016ed5e815943884d0fdf4d0e2aae49e9c6bbdf",
-      "size_bytes": 25009
+      "sha256": "8aebdbe6734b3bed7a7946e5117d6e89af1989de042041ecb0c47ade61bf4b29",
+      "size_bytes": 26227
     },
     {
       "executable": false,
@@ -795,8 +807,8 @@
     {
       "executable": false,
       "path": "docs/REPRODUCIBLE_BUILD.md",
-      "sha256": "62d39d25448a7d4b265dd66874a0e5e164b719d5303965d3cfc9fddb8f66bacf",
-      "size_bytes": 6344
+      "sha256": "f5802712a45e075c8fe13d08d6a4c0b17a9b2348e62c3b7fbd8497cedaec6e3d",
+      "size_bytes": 10043
     },
     {
       "executable": false,
@@ -849,20 +861,20 @@
     {
       "executable": false,
       "path": "frontend/feed.xml",
-      "sha256": "c8a3ea0bd224a76b6885fc1d96a4daa3e7ec9e3564884a28224b98b8d9f87bf2",
-      "size_bytes": 23047
+      "sha256": "95c9bf5e83090b12394379b8c9771ab53ea11adea1fc2121d3dc296747e27e48",
+      "size_bytes": 23270
     },
     {
       "executable": false,
       "path": "frontend/llms-full.txt",
-      "sha256": "26642ed83d04f68e9b7563be0977b80c63fa8c9dcd0a220ab5b71ed5dfa0e168",
-      "size_bytes": 211153
+      "sha256": "3c39b687300d905a6b89ca3318f5f0690c3b7bfb2c4ebe1f750a34e69b350369",
+      "size_bytes": 211630
     },
     {
       "executable": false,
       "path": "frontend/llms.txt",
-      "sha256": "f28cb9a90c0a40d243884c659c0af73a0ffa6e350480c5f9614bef1550b99775",
-      "size_bytes": 28019
+      "sha256": "e8bb81520ab8d0eee54444f34c12085f3df1792bb79402d9cc43d667f4a741e5",
+      "size_bytes": 28667
     },
     {
       "executable": false,
@@ -891,14 +903,14 @@
     {
       "executable": false,
       "path": "frontend/sitemap.xml",
-      "sha256": "a80123d9f3324e759501a1cc8eeaed66d49275c0d7a8e95c89f155dcef485439",
-      "size_bytes": 6254
+      "sha256": "924ea8fb7bf33c22f433210cbf51b2713cb83e9d593edb4136dc594491bf990f",
+      "size_bytes": 6352
     },
     {
       "executable": false,
       "path": "frontend/surfaces.json",
-      "sha256": "a2fec0f513d099345f0561cda32447b20a020fd5bc6305828d9f9b98291158e4",
-      "size_bytes": 36603
+      "sha256": "bf322914784bb0a47a4097fad9854a61df4ae0aadc9f509e94e125f5c044a761",
+      "size_bytes": 37159
     },
     {
       "executable": false,
@@ -909,20 +921,20 @@
     {
       "executable": false,
       "path": "frontend/tests/exporters.test.cjs",
-      "sha256": "178552a7fb03339b8d22f3738750a0c42e6249118bc287f68ecc342701e09af9",
-      "size_bytes": 54858
+      "sha256": "0c7799e21a085f59958088da0a78053b2e96fdc51eae1e783e071aeca766b6a4",
+      "size_bytes": 54925
     },
     {
       "executable": false,
       "path": "frontend/tests/fixtures/chart-requests.json",
-      "sha256": "98179c63628d19a44439a9019c43c3bbcf62b5dfa281cd9485129cfc1c6ffdef",
-      "size_bytes": 7559
+      "sha256": "8f3cb4cb6e669fc47f9505ab1ec96b157625976985c80efcacd56c2c830fef31",
+      "size_bytes": 8172
     },
     {
       "executable": false,
       "path": "frontend/tests/fixtures/response-compatibility.json",
-      "sha256": "51a1333d96647b0794bc92a69be64d178b2a6c4fb000350ce952159fd939d477",
-      "size_bytes": 1000
+      "sha256": "24e8b993df06818db133c4c17bc02174ee2b545329e3b2711b85ed037472186a",
+      "size_bytes": 999
     },
     {
       "executable": false,
@@ -933,26 +945,26 @@
     {
       "executable": false,
       "path": "frontend/tests/request_input.test.cjs",
-      "sha256": "a22701b1c78f2b856f92db4053a425f6d4819c0f5811ed84091af041f009e0c5",
-      "size_bytes": 17772
+      "sha256": "4e9313956c23d04601309932f08e3816c245fa1751575b17267f1089ada9ee60",
+      "size_bytes": 19794
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/404.html",
-      "sha256": "722045cd3526f628f5aa3549c88325cc0ab72959ba663b5b775143f54ef54b0c",
-      "size_bytes": 3082
+      "sha256": "8a6ce77d008cda0cf30dc848115183877006d371736c6c7f05c8cc1ed90f859b",
+      "size_bytes": 13243
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/about.html",
-      "sha256": "cc857ed67635f4ee5c7da928f4200e4d8deaee2f54e4c1b1595eaa0bb6afb4fa",
-      "size_bytes": 15164
+      "sha256": "76b3b8974ecb5e45c20db0b4d04787b93b271ec115fef5249152d5443f10ad08",
+      "size_bytes": 28506
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/accessibility.html",
-      "sha256": "49f6acb421efa4db6774288ae9997247c860877dc92fbf6e51b907a074ddfff2",
-      "size_bytes": 11160
+      "sha256": "caa701f81e2366d7965c0a06b2b18cfb9e0cb05e09569e6aa12432598d364c60",
+      "size_bytes": 22296
     },
     {
       "executable": false,
@@ -963,236 +975,242 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/blog.html",
-      "sha256": "f343fd7f985857ab95447d6b1fc8b72520792d31581190590150c93bd257ae74",
-      "size_bytes": 30022
+      "sha256": "704a6ea031b76cc8b310e7e3e56327e7a8bfbfed19ec19febd225041d421e09c",
+      "size_bytes": 44297
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/antiscia.html",
-      "sha256": "3dcb5e35f74262d0025352025636d87e3459d372ba4c556071a02d90eb574092",
-      "size_bytes": 67719
+      "sha256": "679df082998832ad4ab987f35d8f544ae2226fa0855b3b22e56b36053b406c5b",
+      "size_bytes": 100933
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/approximate-birth-hour.html",
-      "sha256": "7c6463169c671eb64f275565ce8fda71fdf1d646f00a3ac72099b817a784a153",
-      "size_bytes": 102238
+      "sha256": "3c2b17fbc201bcf7bb4091664b859d451964485fcec2a58c51550522ea1f761c",
+      "size_bytes": 135451
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/ascendant-coordinates.html",
-      "sha256": "6fdb6aca309486dfb563eb1cddac9aaa0d40b0e9296c2b03df0e93e89811bde4",
-      "size_bytes": 34116
+      "sha256": "aad6da2cb3334f8b5fe1ace825188283c70eda3200e1a1fb3ea296783f53d37d",
+      "size_bytes": 67310
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/birth-time-sensitivity.html",
-      "sha256": "f0595919549d9e4eda4748161f70a773c48f5a5a22ada5a4f08f31d88b7a7367",
-      "size_bytes": 82051
+      "sha256": "d259459c44b3d59d39814ede1bade8ad06955f8ea3a66435f2e649bd89972333",
+      "size_bytes": 115203
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/black-moon-lilith-mean-true-natural.html",
-      "sha256": "417c6ce72326baa6a253ff8d290081f1ef4ab7607585fffd3e5f3273df8da584",
-      "size_bytes": 124953
+      "sha256": "007cc83a3ff90df0ee9c7770d40ff16d020f6ad04f1b747cb41f202c9f646193",
+      "size_bytes": 159644
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/chart-calculation-accuracy.html",
-      "sha256": "536d33482651636b3e939e543237a534631c617b8088ea609607e35fdb50dc4d",
-      "size_bytes": 73742
+      "sha256": "be13fb7663ba1a4abcf2467d6e31026bfa7f16b02b21a2ca1875b3abd2f6804b",
+      "size_bytes": 106903
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/choose-astrology-chart-calculator.html",
-      "sha256": "4a65e1132fd615fdbff4bb202423d9c94570dda74aae4dcb369491d03442a5f3",
-      "size_bytes": 33312
+      "sha256": "4464ea385ebc4ebea6c373bda716b26ee85c9b644bcc6b17c46237981339e98b",
+      "size_bytes": 50577
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/combustion-under-beams-cazimi.html",
-      "sha256": "2f6eaa46723ddb39fc0b6652def1bf1332d284c40196ffc4c3026e4e7967ca1e",
-      "size_bytes": 112465
+      "sha256": "7e3a5bbe448b357efe83ea6f1f121f20cf54112d199e7baa1e7a81ff73b74fac",
+      "size_bytes": 145621
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/day-or-night-chart.html",
-      "sha256": "3261604a6d7ede825045f03f4e1909de18142d1dbfce7e358c0a24e73090406d",
-      "size_bytes": 37392
+      "sha256": "72464e75830805ac6720235b947a5b0550c95b87cd1df6a4a7d821907a8e35ea",
+      "size_bytes": 54896
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/dodecatemoria.html",
-      "sha256": "b6c6bf4fcfdd70ccc7fc65cf7bbe5d3db14736cdc6a864b09796ef7ed3b6df53",
-      "size_bytes": 143636
+      "sha256": "7590178b5515e4862c9c11f25adc0aff99557b095be33f6f7bf9a17eba1f1136",
+      "size_bytes": 176962
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/firdaria-night-node-order.html",
-      "sha256": "d5e9462edcba90064dc5d253dde7580682c471ce76703044b70139a25b372a81",
-      "size_bytes": 46516
+      "sha256": "56a8ffbfcda168e0d5ed55fda2676aa951643362812c9f9814e34e62c44e31e8",
+      "size_bytes": 79715
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/four-bounds-tables.html",
-      "sha256": "2d51821e3cafc96af40bb7581b4afadfbee1b4e6566da64aa937172efb699ff2",
-      "size_bytes": 131991
+      "sha256": "4cafac895cd713ad68b16832e2548468bb62c0d44deff762cabb0289e8e0ab04",
+      "size_bytes": 165142
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/geocentric-vs-topocentric-moon.html",
-      "sha256": "3acd61807d4da5de9eb7a43226dec8ce988ca18edec6b7f704edef98ed3e6486",
-      "size_bytes": 62071
+      "sha256": "d46cddf29cd8b801a67a6f4768ead09da22097cf4d518eba3ed6d0a20e239516",
+      "size_bytes": 95207
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/hong-kong-birth-time.html",
-      "sha256": "6cc896345a35b24b94381ee0ba40a5788f60a617db333570d3f57abe55fa94c5",
-      "size_bytes": 146009
+      "sha256": "e044b24cde0de94b770f138087faff565cfe6a3a6a129e7e75863f77560da5ae",
+      "size_bytes": 179186
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/house-systems-explained.html",
-      "sha256": "653e6050e86709b39d9011422f5ca98a0c7f736aa62f22f04d394c4c4c82dd56",
-      "size_bytes": 395846
+      "sha256": "b970263a7834ff68d54627489f2e1265eff3dae1c421fb55f488adf52556c14e",
+      "size_bytes": 429004
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/lot-of-fortune-formula.html",
-      "sha256": "bbba45306cfea596db2d2029b9a60e14fcbc4d4c1bd7e25b507850d25c8c1360",
-      "size_bytes": 49834
+      "sha256": "fe8f07b6b8d971b607975abeb8271dcafc2376c3501d2bbdf1cb29d7bb922298",
+      "size_bytes": 83215
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/lunar-mansions.html",
-      "sha256": "0d9c872109c8731c92a64d957585ac2874685ec3e81033b8a5856bae98b355eb",
-      "size_bytes": 100493
+      "sha256": "94a3101032c28032c942eaec3f70b4e85941f5d6a3bd8782fc47c97739a2edfb",
+      "size_bytes": 133715
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/mean-vs-osculating-node.html",
-      "sha256": "519fa0447ca1d8d1aadcf02484937ae28dca96fdd9ef59dc8a25a21d3a5636b7",
-      "size_bytes": 97182
+      "sha256": "d2adc7ac620207dcf7f4729d868f82e2feff6ca23a0f318ba238611184ac87aa",
+      "size_bytes": 130373
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/mercury-retrograde-2026.html",
-      "sha256": "e0f78ef87d2c9a35ef3a25f2f09c9afa68906d9c1ee907ce719bc0985577f196",
-      "size_bytes": 85401
+      "sha256": "53c6bdb23fc2e2b6bfeb39601fe804449c0aa14371ffc41bc06c47963dcb0f8e",
+      "size_bytes": 118844
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/planetary-hours.html",
-      "sha256": "f86f3a33e2354e11e65a362c3989aac0d48fb7d88cdc2160108a70936100d85f",
-      "size_bytes": 91714
+      "sha256": "2818265833cfdb425105e9c672e124371b0b5ce54b717b39127bdcf84d8c7292",
+      "size_bytes": 124950
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/prenatal-syzygy.html",
-      "sha256": "2cae28156c9a0c348a874a58011b4d88fdce36523ff73233fc9ea4a30981309b",
-      "size_bytes": 66810
+      "sha256": "a181e4d9150293df72af387d558537892fe0085e66a7d5fb64e0d803d7f52f58",
+      "size_bytes": 100004
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/rising-sign-tables.html",
-      "sha256": "d7901f4c83c71bddde8617e76e0f41362310871249abf1fed39a635f6dd7d900",
-      "size_bytes": 67886
+      "sha256": "61b089bec6a9c0b5e3b9dd7fae273dfb1df4542f86bf12c38945c48cc547efda",
+      "size_bytes": 100999
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/taiwan-era-years-birth-time.html",
-      "sha256": "73d5c7fcb9e8e9381dd732bbed42a9698f4f13ecc2f48e17bda28d8168b8fc54",
-      "size_bytes": 123655
+      "sha256": "3bf535563482ad2f77fc375cae1001a6f88d96627b21da5d86b7903583914a93",
+      "size_bytes": 156811
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/taiwan-time-zone-history.html",
-      "sha256": "9a67c47205e37651763740f57e23d6f2de2bdfa1f01486988cf57cb6761d1ce7",
-      "size_bytes": 68833
+      "sha256": "168544271e0f88b7e3bda736fa9a4bf29adee58e37ba0519701165160c46d6a6",
+      "size_bytes": 102337
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/time-lord-reference-cases.html",
-      "sha256": "a74ab4f1a1bf98e2c6a8a6cd54321c8f9d497cb2adb2350cd5cc5ce01918437e",
-      "size_bytes": 88953
+      "sha256": "7bfe9a01b88100b7dac96d646cbe14388ac0755b2aa0ba448acefafb74a0d4b2",
+      "size_bytes": 106687
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/time-lords-introduction.html",
-      "sha256": "8a7db4d75cc6c3d24a47fb52fa55afbed52f1f8aff7846b198b53eac54078158",
-      "size_bytes": 172673
+      "sha256": "cf0795cb15e004319c089efc934652947e271b5d00c850a70f5f3fafc0fc0819",
+      "size_bytes": 205903
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/triplicity-rulers.html",
-      "sha256": "85f2d24b19a675904bd34066db88dc91b2ee7de3d514e21cd403f0d76ae36845",
-      "size_bytes": 77685
+      "sha256": "1891ffb01bbf0881588871ba469f7a0e2f825c950ad3a4d7b734b7e3d551ac75",
+      "size_bytes": 110901
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/tropical-vs-sidereal-zodiac.html",
-      "sha256": "a110bd28663b3ba57790f6dc4c84e756cdb3ac0d3b059e59ee691dac6ceb93a7",
-      "size_bytes": 27654
+      "sha256": "d8c9c356325d96d62977fc956a28b724376f4f8f5f240d81d7bb543dbbab5ece",
+      "size_bytes": 44932
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/true-solar-time.html",
-      "sha256": "6e3155ff92086993dc06e5d4205937a87a18e4043384718d92ade61fbd1d07c6",
-      "size_bytes": 75980
+      "sha256": "89d6eb1b43ed5e9c60583d519d5bced0d9170a7b9c49904f7c6092995f1b2a5c",
+      "size_bytes": 110863
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/unknown-birth-time.html",
-      "sha256": "8486ae4ba92efe2264c30ec35da1a14fe038b70df4f1a3df74abf0b63569bc09",
-      "size_bytes": 71328
+      "sha256": "1d204997982dc4ae0c67fecea79768985786508a88c9678f45d23ac2f1134608",
+      "size_bytes": 104522
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/verify-chart-calculation.html",
-      "sha256": "2d024e8651c58a59386bf041dfb32a7be823137e42289313d4b922e7cb40a00a",
-      "size_bytes": 82566
+      "sha256": "daf5df40581098a21bf264f1fe26562f5acecb75549c6b331d43a67b2213d055",
+      "size_bytes": 115779
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/whole-sign-vs-placidus.html",
-      "sha256": "95bdaae0d3b581ab8c3f702d112dc80ac87df68d7c26242efaee884ca6756202",
-      "size_bytes": 161709
+      "sha256": "e976cb42706c84947acb574f3ef8901ebcace81c06d8044f8e51ea1bf28ca5a2",
+      "size_bytes": 194799
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/calculate.html",
-      "sha256": "74bdcde68328bfbfd505ea2745b1098f275e4e52f5cfb08474ac4e1dae7470de",
-      "size_bytes": 74630
+      "sha256": "c429c410daaad9e0c1e0598fad156dd9ac54b22da936f9382940242a357584a1",
+      "size_bytes": 187943
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/calculate.js",
-      "sha256": "94c3013895d357eefbebd6f81b1f564ce689319fa77f722beb380f843f85499e",
-      "size_bytes": 170889
+      "sha256": "c1243c13a44795eb6dcc7454b8e565facfaa231775ee187dd0d368196b8277a5",
+      "size_bytes": 174212
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/calculate/decennials.html",
-      "sha256": "6007eadb96d92a4ae297c34b45d2a3a218942145f2467fa92996cac70e655a74",
-      "size_bytes": 16310
+      "sha256": "ec28c50dff7838330ac1ca9edee8f9bc32e9c5a85f50d81efa5e067f3832c689",
+      "size_bytes": 32587
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/calculate/firdaria.html",
-      "sha256": "f56e742301869c75bca3a8b8cdde12629caccbe21310aab878bf1f0455d0cf77",
-      "size_bytes": 16583
+      "sha256": "b3652a19f143dd4c700b24bf8dfe3cb3b3f77b2283bc4b6d113bc80c457e9822",
+      "size_bytes": 33122
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/calculate/profections.html",
-      "sha256": "30f0e0e93e3a6bca1a93c00af641506116e67ed7d46c8692c07d2fd768c892d8",
-      "size_bytes": 17327
+      "sha256": "2255c9ea4d03ac4f1247555f989ad10a4259b2e38447e03908d53611a9d4d40a",
+      "size_bytes": 33523
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/calculate/zodiacal-releasing.html",
-      "sha256": "c8100a3b205e436aacb4f799e68924a1037518afa5819877b8575e5ef32d2c3c",
-      "size_bytes": 16391
+      "sha256": "4ab4beb037817c5868aa9ed0ac246ea0b86e16a9a2780298e9850a512e99009d",
+      "size_bytes": 32974
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/changelog.html",
+      "sha256": "980d94d03357222c3af5a32e926fdb3a864081a789989597d6860d7dbc877419",
+      "size_bytes": 22598
     },
     {
       "executable": false,
@@ -1215,8 +1233,8 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/chart-wheel-model.js",
-      "sha256": "afeb6a7e4a62299f84aaffdf6e1df22c8f20c8af5e4ab32839c27ef94448aa44",
-      "size_bytes": 39446
+      "sha256": "feddd6d78d795d26cbd71eb4b14ef44d5e90a6e23c39259cf219e60a3bbae327",
+      "size_bytes": 39418
     },
     {
       "executable": false,
@@ -1233,14 +1251,14 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/contact.html",
-      "sha256": "152bbf95c5252f20b4706d0d16c4ad4801714257978d23bb719656ca02f89e87",
-      "size_bytes": 15676
+      "sha256": "7392f4dae25dbe2ecf497d044c00e5b6e8c9cb2aaa6f8dc0fede075b48de0bd8",
+      "size_bytes": 30291
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/exporters.js",
-      "sha256": "e48e204609e7eebb491869be49713ab04542acb9d768b078d193a9ddefc64f02",
-      "size_bytes": 28165
+      "sha256": "cda756f1e0ca9a603291528666810bc0f189a5ce50ea705d6032e7e2ca7bd0c1",
+      "size_bytes": 28980
     },
     {
       "executable": false,
@@ -1251,8 +1269,8 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/features.html",
-      "sha256": "30f53c3b8854bb48d3818869b9563fa6646503d69fa2eb2c10cbf966add56422",
-      "size_bytes": 40378
+      "sha256": "e2d5b947850622ba847a1444d6c0ce92bcee4dbf2ced4dec382a330e1fa587e0",
+      "size_bytes": 60875
     },
     {
       "executable": false,
@@ -1287,8 +1305,8 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/index.html",
-      "sha256": "5ad6f3c4f3b7da06603604c3d2b5f36840317252d4394cd68e080caec68e42b0",
-      "size_bytes": 29303
+      "sha256": "14a731dc133074dddd1180f6cca4a3deaf227a6caf7f079cd6e71a7fda5e03d8",
+      "size_bytes": 56941
     },
     {
       "executable": false,
@@ -1299,20 +1317,20 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/legal/copyright.html",
-      "sha256": "f1ce644964d3931cd090958dd28552252168574346fff401fc07ee381353c07a",
-      "size_bytes": 22321
+      "sha256": "50f2f35ec7f7230a67315830e12d1a46cda89be48ff989585d569d8c25472701",
+      "size_bytes": 38791
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/legal/privacy.html",
-      "sha256": "87599cd9863adb1875558cabd421fb3f2f8ef153a754f9e0f4caf45cbb860ffa",
-      "size_bytes": 28343
+      "sha256": "1413a49d2c5ec250bf682da2db85816c2711bd578da2bf8cf349a5e598357823",
+      "size_bytes": 47507
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/legal/terms.html",
-      "sha256": "55eb8a69f42506206e9d34e57e3130e2830e9a8f0de09573f7d206eb12dc734e",
-      "size_bytes": 16949
+      "sha256": "a821aee5545f83dea21acc4750904b23e116afa4eff26d7012bebd3d688bed9a",
+      "size_bytes": 31612
     },
     {
       "executable": false,
@@ -1323,38 +1341,38 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/method-sources.json",
-      "sha256": "de583e7d997e9fc0c43d959bfab6417302c2ffd6a073081c9e54a75334fc3c69",
-      "size_bytes": 218400
+      "sha256": "7109bf7912ef207c850904d2a019f0427dfb7cd714e872d01cc81955d67b79f0",
+      "size_bytes": 219600
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/methods.html",
-      "sha256": "471af092f8135fb8209220b14a26e0117bad3f612d2cb726e1c3a0816b8b64da",
-      "size_bytes": 195838
+      "sha256": "d27d83221ae150577d0076c25c27350519d9827ef4e28b14f2482ed40f9d88f7",
+      "size_bytes": 219276
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/methods/birth-time-conversion.html",
-      "sha256": "22e27a5d358d74e05b2912f768516241905407cc10b66ea316b0dbc70a8fc7f1",
-      "size_bytes": 108579
+      "sha256": "7f493ecfca8193f50653e560b164c2d897444d367c56b3e4fdb81a3956a835ae",
+      "size_bytes": 123725
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/methods/decennials.html",
-      "sha256": "5fb28d8fa5a19a2fdd97248f2a385369227d8c99b48e2416e8e7c221d659d0e5",
-      "size_bytes": 43729
+      "sha256": "c517753ccb617de172170055a419bf8bee2624276facbf49531b51fc881e4721",
+      "size_bytes": 58362
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/methods/glossary.html",
-      "sha256": "2847dfa6c35d9a6d6a9295d4d32c9018488e090a0edda1e988badf6f660b0f43",
-      "size_bytes": 52014
+      "sha256": "d1c35468c4857793439a82f7c05b1b9e96dcf3761b74826eda9076bb6add7aa9",
+      "size_bytes": 63695
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/methods/time-lords.html",
-      "sha256": "b2474cae543a5944b13fd418a33c228bd1c85ba1119913fce951d1b157604882",
-      "size_bytes": 52432
+      "sha256": "080f031c00f6925086301a44c693eeb83da5852b6cc4eb76fd5c09cffd6a65c9",
+      "size_bytes": 66286
     },
     {
       "executable": false,
@@ -1377,8 +1395,8 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/request-input.js",
-      "sha256": "40e3d69bc03b0eef32a34136343571329b4cd2747215f261a2056088d129dd3c",
-      "size_bytes": 12976
+      "sha256": "9ebfb5364bb3edca1fbe96760198d90c382783602a974ca58d69c9479f8d9680",
+      "size_bytes": 13855
     },
     {
       "executable": false,
@@ -1389,20 +1407,20 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/roadmap.html",
-      "sha256": "953baca6c8e6681fd28f595a7f8e5117e51d9b0cd9fd90d871b9bdca55154149",
-      "size_bytes": 30129
+      "sha256": "68d51f16443fd38dd3d8eda3d152eb2f7cbb09c5e8c1bb2a96b74100632c59fc",
+      "size_bytes": 49919
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/security.html",
-      "sha256": "bc21f7dc2df71b249cda4eae2926e02d10fa38d96047204af33c879e8f735fd3",
-      "size_bytes": 58813
+      "sha256": "6feabf8078e6b2651c0b3548fc1ccc693509001c76287e5daa592b4f91373d1a",
+      "size_bytes": 79498
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/security/verify.html",
-      "sha256": "49e30fa7043c2293b4440af5af00f9bad5835d0be7f317c4276a5906f0aed17c",
-      "size_bytes": 51307
+      "sha256": "d31f8b9efffb02961bb09c1767a43de933caa2d6c44c1141c4c2404dc98926fc",
+      "size_bytes": 68548
     },
     {
       "executable": false,
@@ -1413,146 +1431,152 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/style/about.css",
-      "sha256": "b7db82d7f59e9a249248a47846d9621582018438d385e460e7980e2b77ec0bd4",
-      "size_bytes": 12123
+      "sha256": "7cc67697fd36fe626ec2fae6f1ee5849d269c29f250ad9536f7b24939b955621",
+      "size_bytes": 12475
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/accessibility.css",
-      "sha256": "177ad271a86e50edfef0f22501550aaf14c888e57eee94776f8e8400413786d4",
-      "size_bytes": 10216
+      "sha256": "1a42d1c9684756aaa2c371023eb993fa88c412a1a0963101b23bc1ed88c37910",
+      "size_bytes": 10567
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/blog-article-figures.css",
-      "sha256": "859fe55410705852b42ccb2580e92ac9f1cbc525cfd36a2c9fcd85417eb96539",
-      "size_bytes": 32245
+      "sha256": "680f4bf1ddc7177bc4ed638f610348b00557f84996c59f618089aa2b9538f24c",
+      "size_bytes": 32466
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/blog-article.css",
-      "sha256": "431b755ea7d87fc6411d8ffa95a4c5da28148e4b84c30806bc0b411d1b834b03",
-      "size_bytes": 16290
+      "sha256": "691be191f7af6113266a36fa239d732b42b9eaa6949ea952a3c7214564931ee4",
+      "size_bytes": 16511
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/blog.css",
-      "sha256": "21943d7a2c51c9bce6906e1f5147277b6f6e61e38514c03410b04ca0d08c55c7",
-      "size_bytes": 13379
+      "sha256": "03deb711d0d1a312cb80c29ea516ed36cb952b1b5e5c97509dde1b4450079a01",
+      "size_bytes": 13603
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/calculate-landing.css",
-      "sha256": "437c2cd2f836f83b7f6c16ab3d40164324302c464deb625a9e26131bf34c1fd0",
-      "size_bytes": 12892
+      "sha256": "dabc92a08dc722aaa66f8c0e6dd2d24b3f82e57f832598ce9afad4d8b970d60c",
+      "size_bytes": 13428
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/calculate.css",
-      "sha256": "ef3c1ad07dd5d05089e68bfdf96cd1184af72aebe2c24ba8fb60b2d046e3cf41",
-      "size_bytes": 110202
+      "sha256": "2b504f3329c302a1545385abb2b34c27b1ce43d8c0cae4880affc29ad72639a6",
+      "size_bytes": 111484
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/style/changelog.css",
+      "sha256": "e4e6d6a84796ee92cd7f93d6f5238ec689dd3a6a6c7a22079c7ba9b8699608cf",
+      "size_bytes": 10657
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/contact.css",
-      "sha256": "a02e7787bbc5ef1a66f4f9e8edbe02bf031d859911dee6cbec63ec6607a7e7e3",
-      "size_bytes": 13845
+      "sha256": "b83fde9519d06bec9e49f7fc7eabe00587072637c31df7d6fdb225472b68a1fb",
+      "size_bytes": 14069
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/features.css",
-      "sha256": "256fa408172ee40f76cdf990a25108e78fc5bd7fb4b296c567b1484af1496126",
-      "size_bytes": 19532
+      "sha256": "154bc438998a241c17c7a0c3f744cd12325a6ada890af27ee3af607648d73c3d",
+      "size_bytes": 19757
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/home.css",
-      "sha256": "208470aa4a266944e57aaf763288cdec8f33202dab18639c5a687da8d62a359d",
-      "size_bytes": 26203
+      "sha256": "f555f445c157180dff095f05795f7465bcf0be39967425e5d6b789580ea88633",
+      "size_bytes": 26425
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/legal-copyright.css",
-      "sha256": "6c1330b032f40e01c636de010c31ef2ce84c0ff83ad74a6e30d403db6694dbd1",
-      "size_bytes": 15649
+      "sha256": "8c9c28242159a5031954f17b9e2137e3d12b5cfd0c0a843ef5356c9d6c3fbefa",
+      "size_bytes": 15856
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/legal-privacy.css",
-      "sha256": "eb40ffa17ecaa2f57f696762437a4a1977b099a5dcb16e75e306d50ab23be4fa",
-      "size_bytes": 17395
+      "sha256": "943e377784688be216453339b8062092e39f2fd05d594b839bd77de90e7225a8",
+      "size_bytes": 17619
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/legal-terms.css",
-      "sha256": "24630428ffc4c08895c57887770230b49cc4d233d0c3b243cfd94f819204f4ed",
-      "size_bytes": 13683
+      "sha256": "40f596de9a2ccf4751acb59e63c389aca7b7b434482f1af0e8afd579af3ca5bb",
+      "size_bytes": 13890
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/methods-birth-time-conversion.css",
-      "sha256": "62d18502cdadce70d32b26a635e54b4e23c9af81676b13fd0f942e645a2456a2",
-      "size_bytes": 14297
+      "sha256": "5a490effc7b94c0c4cf9b89119b9f55f563a5be005ba1f4fe1ca78f66223056d",
+      "size_bytes": 14521
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/methods-decennials.css",
-      "sha256": "39a8ee2aeb89ecffbad3fbe55766441074105cf0464607aed8f70b44ce4f3d8b",
-      "size_bytes": 13795
+      "sha256": "5aca555050b7e7244b6bc4479669b43b952a74d8cc52019b7164ccf9a67b8712",
+      "size_bytes": 14019
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/methods-glossary.css",
-      "sha256": "d1e5b001c421157e1c7d022e3296814c4aad3d398200e65cf821de192d41a8ae",
-      "size_bytes": 10653
+      "sha256": "fd03bf0926e3a81a23825787c93866c59c4129e95c5a6da0272940ca46099b01",
+      "size_bytes": 10877
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/methods-time-lords.css",
-      "sha256": "dbbb0f4dfd68c6e41aeafd5c287343ef1f5ed7becede070dd91b69beb3a90060",
-      "size_bytes": 12861
+      "sha256": "4c8fa803532d0ec4a75ec1e1511bace76a244155d9fbd0e61a3d89da06c8d35b",
+      "size_bytes": 13085
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/methods.css",
-      "sha256": "c5b2c5fb87fe51922167ac8cd9080142f8e1970fbc1f6c107fb29682f0ba72f9",
-      "size_bytes": 22422
+      "sha256": "a7ce8d16c23646cc7ac7d9025d48d6d551575a84134f0f6c450cab7c25669484",
+      "size_bytes": 22664
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/not-found.css",
-      "sha256": "be829e1c461a4024335649e956f4774cd5970719fb46ee46345062040f2c19b0",
-      "size_bytes": 9865
+      "sha256": "5b5a5fc408e618d53d6314852f03c2115d48e360afe2ae492f7b4c3c8c103da4",
+      "size_bytes": 10090
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/roadmap.css",
-      "sha256": "f08c0142e1cab74d06ef98f13149bc4143fd57316fd1cedd1b00c2a2655269f2",
-      "size_bytes": 18938
+      "sha256": "4df9b6f81003fbc13dd46e92361a2ce3eacdacd43e4256c2ac4f6b753477e8f4",
+      "size_bytes": 19163
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/security-verify.css",
-      "sha256": "d0287749afd52f55e1ecfaefabe514c9cd6221fd58e4a335bb6b82caf609de8f",
-      "size_bytes": 16846
+      "sha256": "1ee01edb95af0c715b9ba5bb3f923e9c47c56ca4a6961ee3de18a0fca263b32c",
+      "size_bytes": 17071
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/security.css",
-      "sha256": "7afe6b05db9834186125d766842bff196d12aab6e46dfa625446ff615ab62a69",
-      "size_bytes": 19374
+      "sha256": "f5b109a0ff46edc37d24fe41db973f9e42f837a730eafb1c04601783b9439b2d",
+      "size_bytes": 19599
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/trust.css",
-      "sha256": "c2e2bc35f4179d4999fd5d92c615c99edd5d636921b932b22afd08302db435f7",
-      "size_bytes": 21690
+      "sha256": "159dede1fa4ded978df8e47440d9d79e7a23ce53fb9b44facfd1bc7d737a712a",
+      "size_bytes": 21915
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/style/validation.css",
-      "sha256": "d37d4349b527eacc9b8126a92ade5729cd4e316a1442b6d72765a05e2f79dad6",
-      "size_bytes": 15356
+      "sha256": "bb9824c8a967ea0eac7a8915b04206c0c1d06a813cfe49ddeaedbfc83a82bbd7",
+      "size_bytes": 15580
     },
     {
       "executable": false,
@@ -1563,14 +1587,14 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/timelords-model.js",
-      "sha256": "5c6e0a3847b00fda486a03a786b6b43f2083e98c35382171a4a0fb1dc74ce4e5",
-      "size_bytes": 87799
+      "sha256": "d92f7af233f544801cbc182416758d89c2d251a68ec8fae0456336cc04043ec5",
+      "size_bytes": 88551
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/timelords.js",
-      "sha256": "adf045d355c9ee12ac5bc5b284123e93a61a652846504d5edd85c16475b93be6",
-      "size_bytes": 80945
+      "sha256": "7d1f7ad69c33d7ce47bdcea0487a327b8d24398ea6218964238a0eba9a576ba7",
+      "size_bytes": 81754
     },
     {
       "executable": false,
@@ -1581,20 +1605,20 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/trust.html",
-      "sha256": "81090ec3e9d2165a6026d372c8a312eddfb8edb2ac0b58966924be1254d99dee",
-      "size_bytes": 40020
+      "sha256": "a947e3ba592900d891266ffa0f926ab96336ecb335e48781892100e8692d5b43",
+      "size_bytes": 62729
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/validation.html",
-      "sha256": "4fc98d9610f320c9bb85899f89a516d1a5463db1ee7911c8e2e3dc3b18e290e2",
-      "size_bytes": 30096
+      "sha256": "a1036ce2e7981a3caf8245e920c7d5af7541e4ddd89ec3f78f7ac3f8cb095ef9",
+      "size_bytes": 46384
     },
     {
       "executable": false,
       "path": "frontend/zh-TW/view-model.js",
-      "sha256": "73a4e669c509237cddeec05790f32e2e46c9290e1d6d421aa8b3f47ab645ba67",
-      "size_bytes": 265340
+      "sha256": "88a4baee081cd0e04b348efa61b0590fccf9bc3554190d1f0e7a832bc00d3a0b",
+      "size_bytes": 267571
     },
     {
       "executable": false,
@@ -1605,7 +1629,7 @@
     {
       "executable": false,
       "path": "publication/public_binary_files.json",
-      "sha256": "be07f9752a23cc316ab9004f28c1deb067d82e5ef4357b6d269be7307f066d9b",
+      "sha256": "ab6b803d37fd8165a6c47685cc6f77f0b4061c91343b16ffa9bc7cbd3dc0c5d4",
       "size_bytes": 1249
     },
     {
@@ -1641,8 +1665,20 @@
     {
       "executable": false,
       "path": "scripts/deployment/image_drills.py",
-      "sha256": "ca6fcf46a552171041fe587c2dbe5b6314425ea37b345aafedb685e93f9cb754",
-      "size_bytes": 23838
+      "sha256": "52f7db5703b4206cfcd92f6cb0911c3ad6fb538172cd87089d5cd44b1074a941",
+      "size_bytes": 31789
+    },
+    {
+      "executable": false,
+      "path": "scripts/deployment/notify_phone.py",
+      "sha256": "92db570a48f42225d310365275b56e90fe8c3e75fa7c8cdb5214e0a9b832727a",
+      "size_bytes": 4638
+    },
+    {
+      "executable": false,
+      "path": "scripts/deployment/release_identity.py",
+      "sha256": "5042cce0ad221443454f227990e6187afad815c8d05e1fcb978e004915b02b85",
+      "size_bytes": 5855
     },
     {
       "executable": false,
@@ -1659,14 +1695,14 @@
     {
       "executable": false,
       "path": "scripts/deployment/visit_report.py",
-      "sha256": "616b65735e0284413fa87daf05ed2b1c04fa964a2460c00e18d78d9a0969eed0",
-      "size_bytes": 6584
+      "sha256": "22b87405179040a896a2125e062e3dcdb11a81dceb8bd075afe14a489b0bd31d",
+      "size_bytes": 7966
     },
     {
       "executable": false,
       "path": "scripts/deployment/watch_public_site.py",
-      "sha256": "75d3b156d9f658f74434a3c261b75fd4baed9ceb4ea85c159e5469a5b57deebf",
-      "size_bytes": 8095
+      "sha256": "972e03395de223d194bd47ccf4ac75dc9f52fe9f0a51623f7e962a5f23deae0f",
+      "size_bytes": 8390
     },
     {
       "executable": false,
@@ -1677,8 +1713,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/build_pages.py",
-      "sha256": "719e3f92c25f76578987b403d2392ac6023683c6f5e570791feec3588ed3958e",
-      "size_bytes": 67514
+      "sha256": "254ef503067dab17a3813e13a8a30bc368bd631985f87e9ea20746a286156df4",
+      "size_bytes": 69378
     },
     {
       "executable": false,
@@ -1695,8 +1731,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/discovery.py",
-      "sha256": "4580addf8e3bd6a46204c4adfc7c7b496dac9390dd2aef534a8e7fd1f67ccdfd",
-      "size_bytes": 22461
+      "sha256": "2c34286987e86ce12d26cbd721c6a6823245602c7c30525371452adc2b7fefbf",
+      "size_bytes": 22741
     },
     {
       "executable": false,
@@ -1797,8 +1833,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/figures/dodecatemoria.py",
-      "sha256": "15063e7da13453e3e71c1e2de8c10ddecd854a4fadee82b900957920bd479114",
-      "size_bytes": 32896
+      "sha256": "e9659ae36cf41f4f6698b489ffdc6bfa47d401f7f1cc04e3a66fa634eb56c7e4",
+      "size_bytes": 33052
     },
     {
       "executable": false,
@@ -1863,8 +1899,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/figures/mercury_retrograde.py",
-      "sha256": "e87d271531477be5ae9750bd7cec763dda7e026f1276216df7d933c6a615c32e",
-      "size_bytes": 39800
+      "sha256": "79776e558a643534c30d5803ca096178a9eea7ce2ce6e752e46a775bb01eb118",
+      "size_bytes": 41010
     },
     {
       "executable": false,
@@ -1953,8 +1989,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/figures/solar_time.py",
-      "sha256": "c44e4daca2a800d88e67be18ddfab560b81123ff4b425ea42109e2b1e4dd93f8",
-      "size_bytes": 25640
+      "sha256": "91231f7ec79f8a2a256568cdca8cc3c64359a65ea93ba455f3e5bda97e2f002b",
+      "size_bytes": 26887
     },
     {
       "executable": false,
@@ -2001,8 +2037,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/gen_armillary.py",
-      "sha256": "2e404b2e313347aa69fc2ca86736673d141550db6bcd631003651a2bfa0105f7",
-      "size_bytes": 12635
+      "sha256": "85cb11834369cbdfb30b2c05c007d2efc22c9f227f43b24f658368b1b946cb0e",
+      "size_bytes": 12833
     },
     {
       "executable": false,
@@ -2025,32 +2061,32 @@
     {
       "executable": false,
       "path": "scripts/frontend/page_checks.py",
-      "sha256": "e30940dda9c24e4771380277de74d450a2482650a330a8b87733cc9401d30135",
-      "size_bytes": 13402
+      "sha256": "40c3bcbce4977b3f967da5883da1b8954700361e3df6035aa43a66a1b1522819",
+      "size_bytes": 15050
     },
     {
       "executable": false,
       "path": "scripts/frontend/page_lastmod.json",
-      "sha256": "964269015166fac657fbf61b5da39214a64163f550415f38897bb69ffb0f6dd6",
-      "size_bytes": 8991
+      "sha256": "a7e815400652711cd820517802f70ea37a745c2c9d4de7b58af993b254807c0d",
+      "size_bytes": 9139
     },
     {
       "executable": false,
       "path": "scripts/frontend/pages/_shell.html",
-      "sha256": "384ed8a3ad61fce3a99073bd2153bfe045b32907fe091f1d7146b03aa6b1d07d",
-      "size_bytes": 3572
+      "sha256": "debf658ace4a48cd326f5bfeb5ccf5af931e912ccf27cefcb6f4bc5092dbe055",
+      "size_bytes": 3823
     },
     {
       "executable": false,
       "path": "scripts/frontend/pages/about.html",
-      "sha256": "6689debad772110a853f61c7d20d7aed63f92ce30d738f85e81178da0c18ba79",
-      "size_bytes": 8926
+      "sha256": "b8e5274cbc86aefb33749c18b1bb3003f36b34f224cfecb141382f1bdff74618",
+      "size_bytes": 9117
     },
     {
       "executable": false,
       "path": "scripts/frontend/pages/accessibility.html",
-      "sha256": "e49ed0a4fb67c720a79dd0e09ecdb82affe195495fac69a9db7431230bb444b5",
-      "size_bytes": 4995
+      "sha256": "86d405e2053aa9663b75a856a1f834a88897e237e6fb89bcab7cf21e1429a945",
+      "size_bytes": 4991
     },
     {
       "executable": false,
@@ -2079,8 +2115,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/pages/blog-black-moon-lilith-mean-true-natural.html",
-      "sha256": "a9f42a28ebd710cf550a849935706c1bba4da7aa660d6d31549f9596e424331a",
-      "size_bytes": 110893
+      "sha256": "1f9ab448ebf4058b00d55c19801b34a69382e1aa5c0df93a22c35a3ac818c52b",
+      "size_bytes": 111591
     },
     {
       "executable": false,
@@ -2103,14 +2139,14 @@
     {
       "executable": false,
       "path": "scripts/frontend/pages/blog-day-or-night-chart.html",
-      "sha256": "10b6e5dcbc273fcc2d3f3ce3561e0701d28351ea4070e18998bffaf8c25d9d67",
-      "size_bytes": 21331
+      "sha256": "679f32f42b49ec5f8d6992fd240afba91d831ba3ce93e2802e247d449af90e8d",
+      "size_bytes": 21566
     },
     {
       "executable": false,
       "path": "scripts/frontend/pages/blog-dodecatemoria.html",
-      "sha256": "cad07c2ddb32e1000684a7b6da1fb96bec8bddb71dbe15b52af76ed4da8fe77b",
-      "size_bytes": 126858
+      "sha256": "dd937e940b970f0d464b541cad2dab795dfbf14a9c57acc01f0f5b6ff4830f86",
+      "size_bytes": 127011
     },
     {
       "executable": false,
@@ -2145,8 +2181,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/pages/blog-lot-of-fortune-formula.html",
-      "sha256": "2e94513ee3a60c3d8d904c5216e5431725dcdf63d9d495fa8928afea27246c67",
-      "size_bytes": 34556
+      "sha256": "42a8a621cd433f71e446a5651d11132d8fd6debf98369176264d231398cdc7ad",
+      "size_bytes": 34690
     },
     {
       "executable": false,
@@ -2163,8 +2199,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/pages/blog-mercury-retrograde-2026.html",
-      "sha256": "c47416f111fef3af7f2cc4bc8cc33dd9d5a76ff3728d1cfb43f30f3ce5e21af2",
-      "size_bytes": 66256
+      "sha256": "4c46c2eae2d2d8833b37f47196ded578a594eb97377a0bb4c600e9e18fdba774",
+      "size_bytes": 66503
     },
     {
       "executable": false,
@@ -2199,8 +2235,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/pages/blog-time-lord-reference-cases.html",
-      "sha256": "df205aab24e02697751fc1a152fc5995d176b4246743db2dd3bd901305210363",
-      "size_bytes": 74965
+      "sha256": "426dd04e422f8d94f9840158dc353a597fd42a45466e97a21c05af02072dcfe0",
+      "size_bytes": 75425
     },
     {
       "executable": false,
@@ -2223,8 +2259,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/pages/blog-true-solar-time.html",
-      "sha256": "16a286dbe844b2327cfb77ab3d45a317ceb54b179d8e286f0a5e5c136cc747d9",
-      "size_bytes": 64570
+      "sha256": "5193041aef1ccb341093e9f174a313c2a3a7d28e626baeb25c5bc8831734bc57",
+      "size_bytes": 65713
     },
     {
       "executable": false,
@@ -2235,8 +2271,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/pages/blog-verify-chart-calculation.html",
-      "sha256": "364341fbf3aafa8b239a8fafc46f6289079ff95d0fdadf52343fecd7e78109df",
-      "size_bytes": 67416
+      "sha256": "479055eb90a4c414a18992184a162f1a12894f4a4310f462ad6be81ae22e4218",
+      "size_bytes": 67464
     },
     {
       "executable": false,
@@ -2253,50 +2289,56 @@
     {
       "executable": false,
       "path": "scripts/frontend/pages/calculate-decennials.html",
-      "sha256": "344da8eea2caab15558e02ca265751e14b08f01ad73f643f0fd142590c656b2b",
-      "size_bytes": 7101
+      "sha256": "ccb9dc3e8dd71be8e898f391f3d4a6970e5a3d28f4df029cb877536b654f7277",
+      "size_bytes": 9493
     },
     {
       "executable": false,
       "path": "scripts/frontend/pages/calculate-firdaria.html",
-      "sha256": "ca051c27e355cd043beb545f505563693fae2ae3310561a39e4be2e5fe386b2f",
-      "size_bytes": 7410
+      "sha256": "881076d12052f475e3f289c075236e26efef4377872ca13a4e799ae04644942e",
+      "size_bytes": 10027
     },
     {
       "executable": false,
       "path": "scripts/frontend/pages/calculate-profections.html",
-      "sha256": "4c55247d9811ef3d38c591fb49294d2f289faa7fa273690c7e826bd6ab708e77",
-      "size_bytes": 8130
+      "sha256": "65ff71923e922eb11cb9e121af30b41dc4c794ddbb8a6c34a10ad9e708da9b3e",
+      "size_bytes": 10523
     },
     {
       "executable": false,
       "path": "scripts/frontend/pages/calculate-zodiacal-releasing.html",
-      "sha256": "dfbd6a1accc21586794f52045e5d858b520649f028652c9cde0227ba6141e58e",
-      "size_bytes": 7049
+      "sha256": "be60c3aac9aae76550881df895a7f11c921c51563432021e0ce0ad00f540f415",
+      "size_bytes": 9714
     },
     {
       "executable": false,
       "path": "scripts/frontend/pages/calculate.html",
-      "sha256": "c564c372d859e27e7db6bce77ce34b4e8858c976523eb980daf171e8a80341b6",
-      "size_bytes": 61293
+      "sha256": "3c1efc1c896dc2a8d893815e87b59f58b55a41b6e3bdeb6ee8e2adbeebc0898f",
+      "size_bytes": 62638
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/pages/changelog.html",
+      "sha256": "facc9a8aae09660d0a295db38e2ef308a7536b36537b99ed5c9ab9b6397a3d0e",
+      "size_bytes": 5292
     },
     {
       "executable": false,
       "path": "scripts/frontend/pages/contact.html",
-      "sha256": "3ae40a58a88652e65c47732c7ce400fec94d43c4294f773f9d7728a4f8271bd1",
+      "sha256": "3f3401e754d5ebefd24568ae7814f3dbb8fc5032f06bcaf7d88ca66338a7b1df",
       "size_bytes": 9906
     },
     {
       "executable": false,
       "path": "scripts/frontend/pages/features.html",
-      "sha256": "e6b86b9c5dbfe2988311cefd8366f07a2a7586dbdaacb1e64f46278e58c0cbf0",
-      "size_bytes": 31702
+      "sha256": "d1b57f9d468070efe886f81949bb2c74ef5a163e78909d90b79f95a5392a6c81",
+      "size_bytes": 31720
     },
     {
       "executable": false,
       "path": "scripts/frontend/pages/home.html",
-      "sha256": "9d5d64f322b454f4c8845f03710d59c9931e212e6db0bf1f322caf99d91eae8f",
-      "size_bytes": 17940
+      "sha256": "b3370496f4948987c335b869b32e582e0d885e5089f108c910834ccf21f13e57",
+      "size_bytes": 18495
     },
     {
       "executable": false,
@@ -2307,14 +2349,14 @@
     {
       "executable": false,
       "path": "scripts/frontend/pages/legal-privacy.html",
-      "sha256": "919e5baa57af1de51e279f9e25868dd86af0228162836c0380260598b579696c",
-      "size_bytes": 20921
+      "sha256": "1aa2000a3b3b1768e1bf9dbae89b4231794cea2ba365631c5874565ee49d7466",
+      "size_bytes": 21914
     },
     {
       "executable": false,
       "path": "scripts/frontend/pages/legal-terms.html",
-      "sha256": "3dc9608f0d54b482e14d8d52a1dd6d19e6daf2fcbfd83e06d63a7065b4efe2ab",
-      "size_bytes": 10984
+      "sha256": "6067b828755acdbb45e03b50d0a230d0acb2d39c36c251bc2cd74fb45e733290",
+      "size_bytes": 11170
     },
     {
       "executable": false,
@@ -2343,8 +2385,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/pages/methods.html",
-      "sha256": "9c3cecd6aff5c0e335bffbda828e46c1372493218d806a817ed921860dfcc0c0",
-      "size_bytes": 188875
+      "sha256": "a2099379bcee54a4b4ad92b5e047edcfca040c3172e77a46ba53e84291132977",
+      "size_bytes": 188923
     },
     {
       "executable": false,
@@ -2355,26 +2397,26 @@
     {
       "executable": false,
       "path": "scripts/frontend/pages/roadmap.html",
-      "sha256": "bf0a7c7c7f016b0c7c875970202f29ef8aad38a012f79c01c0dd34cf7cead6dd",
+      "sha256": "41a313910fe6b213441df5a66c025bf60ef3e368369b4c0a151fa5f2c7f54693",
       "size_bytes": 19909
     },
     {
       "executable": false,
       "path": "scripts/frontend/pages/security-verify.html",
-      "sha256": "5c517a13927531361a264092d9b7b0db6fd1705bc88915c973be53f324abf60c",
-      "size_bytes": 18212
+      "sha256": "32afb6420869287b85140fec796742fbf99ca815a376707416aaa5113508db91",
+      "size_bytes": 18288
     },
     {
       "executable": false,
       "path": "scripts/frontend/pages/security.html",
-      "sha256": "e16d3ad457596bb247480c398bc34a1d50d9a4f55c06749ca05624f47b13ca1e",
-      "size_bytes": 48301
+      "sha256": "903439966c8a3465a304a25a910ee5133fa0ae27760760d59203cf899bcb5758",
+      "size_bytes": 48746
     },
     {
       "executable": false,
       "path": "scripts/frontend/pages/trust.html",
-      "sha256": "3ada43b7ca7d347978da79852da0f0469b3c089c9eb05240458310bb49532540",
-      "size_bytes": 31621
+      "sha256": "eb9fd925ab085205494cdb18402b1752f856e8670735d5864c6d93a9dbace56c",
+      "size_bytes": 31708
     },
     {
       "executable": false,
@@ -2385,8 +2427,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/privacy_check.py",
-      "sha256": "94e7f7ef630866d571bc10e6afc48f63ed95d6a7826dd1da8f99544d313757c4",
-      "size_bytes": 22035
+      "sha256": "7b202c66785db4992ded888901a7d9a40dec42398d822355990afd36425532c9",
+      "size_bytes": 22246
     },
     {
       "executable": false,
@@ -2415,44 +2457,44 @@
     {
       "executable": false,
       "path": "scripts/frontend/scripts/calculate-input.js",
-      "sha256": "52b24d03c8d083f60e6efb0ee7d16a131b8a60ea44e9243922e602cfc224b794",
-      "size_bytes": 53033
+      "sha256": "1f4d97d3df8d3d924022fe167b29a32777949403ea456da62ef6b3ec68e1888e",
+      "size_bytes": 55665
     },
     {
       "executable": false,
       "path": "scripts/frontend/scripts/calculate-options.js",
-      "sha256": "c46f6ef15aa45dc0569395e6094526800383826abb656b820705b28271964573",
-      "size_bytes": 31310
+      "sha256": "8f3c9d3f124cd5e17f95c3118f45b026968984086460148a5a8ede474afc920f",
+      "size_bytes": 32450
     },
     {
       "executable": false,
       "path": "scripts/frontend/scripts/calculate-render.js",
-      "sha256": "6c6203a9a8685aea886beef86e5fea1f457d7062facadcb5460eed5efb2240f4",
-      "size_bytes": 61610
+      "sha256": "891610df9c0d6e54e3f6143a90d67236cc911b01070278c236b1bcb2446c2122",
+      "size_bytes": 63758
     },
     {
       "executable": false,
       "path": "scripts/frontend/scripts/calculate-request.js",
-      "sha256": "e3c0a59c70ec4ddecef58e6af991686776f89f4ccef4528cb391b1552c2a7e86",
-      "size_bytes": 12119
+      "sha256": "58a5266f523ef6f38b6fd1a2b750dd946eaa59c65e353f27f5008bdd514f4963",
+      "size_bytes": 12285
     },
     {
       "executable": false,
       "path": "scripts/frontend/scripts/calculate-sections.js",
-      "sha256": "c5b6cb9d26654ab0a76af0df547416b260f944ec2df15b9cc94e6c6b71771907",
-      "size_bytes": 69071
+      "sha256": "c07e86260ab6ba5f6a4a5dcaca113880d5761a1a93d27707f86871c560669ae4",
+      "size_bytes": 68602
     },
     {
       "executable": false,
       "path": "scripts/frontend/scripts/calculate-tables.js",
-      "sha256": "341f3b2a87e4c608103afc947d6cbc83c110c8d7ace71a6185aba5866e3f332f",
-      "size_bytes": 19122
+      "sha256": "a6ebb998b166bfb16b1e8e4987dc73584ca14202b68c166382e84e2970b07681",
+      "size_bytes": 19189
     },
     {
       "executable": false,
       "path": "scripts/frontend/scripts/calculate.js",
-      "sha256": "191f21196cb0a517e9b8f7cd3558058bfe9b2985e763c9c6b4cb423fd55ff288",
-      "size_bytes": 8306
+      "sha256": "5176e5e48b99ef33a1a5819af4e1a13aeb8fe5153da8fbfe1ce1e8b17b0186f7",
+      "size_bytes": 8429
     },
     {
       "executable": false,
@@ -2475,8 +2517,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/scripts/chart-wheel-model.js",
-      "sha256": "4cd3b7ca5df4db17fa038b84e63eb105c26c4bc7f9d195372af12add642ffed6",
-      "size_bytes": 64683
+      "sha256": "d34203ce83c8e2363ed97fc4946e465dc649c9e6fb2ffd2062bd798dc9d7b89a",
+      "size_bytes": 64647
     },
     {
       "executable": false,
@@ -2493,8 +2535,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/scripts/exporters.js",
-      "sha256": "40ce75f0210fb7e8344fa76acb972afb8441a8129c99f9a29e6a1366ecb0325a",
-      "size_bytes": 44861
+      "sha256": "9a956283e956634495018edfd81ef9a193089ea219f2c784c1cdb8845e0a26f6",
+      "size_bytes": 46385
     },
     {
       "executable": false,
@@ -2523,8 +2565,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/scripts/labels.js",
-      "sha256": "3d5afe372a546ff0bdc14d32bba7e8f527c35e9466b97722b20bcda58d9c3c3f",
-      "size_bytes": 13327
+      "sha256": "1fbd3e53999f353ff86049483ca963a839cf297857d5857f608760dd7d858cdb",
+      "size_bytes": 13335
     },
     {
       "executable": false,
@@ -2547,8 +2589,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/scripts/request-input.js",
-      "sha256": "49b5f4d417b9714500331219441371daf4c56f539a782db37abf920651efb02c",
-      "size_bytes": 24112
+      "sha256": "c103290b3318e9ca61453edb7ef0cb1e14517c0eacda58c5270d066be58b4a1e",
+      "size_bytes": 25771
     },
     {
       "executable": false,
@@ -2571,14 +2613,14 @@
     {
       "executable": false,
       "path": "scripts/frontend/scripts/timelords-model.js",
-      "sha256": "cea57ef940dede006aeb47fdad66474023d2c1bd0c8df67a90a23050c1db18d0",
-      "size_bytes": 118473
+      "sha256": "24de5d404d2e1b39002abff685da07a25771260fa4886daf5c84d0a7b8c5ee8c",
+      "size_bytes": 119517
     },
     {
       "executable": false,
       "path": "scripts/frontend/scripts/timelords.js",
-      "sha256": "d0ca26773ab9c42126a4af95638c1ff63de779f557a6f3beaf2e08e64f4d84a1",
-      "size_bytes": 114474
+      "sha256": "6a2759d6bff2d661a517085a5fe44e1bbef4fdcff717b706977e6fc67d540d3e",
+      "size_bytes": 115963
     },
     {
       "executable": false,
@@ -2589,26 +2631,26 @@
     {
       "executable": false,
       "path": "scripts/frontend/scripts/view-model-core.js",
-      "sha256": "d507ca05227ca75a1829378436ae903f69026375f72206933e3fdff1cc5b4d22",
-      "size_bytes": 26829
+      "sha256": "735b4a1097e915ab19e59bd05d9528ec2466b3f47bf1a3ff97935240051801b3",
+      "size_bytes": 26965
     },
     {
       "executable": false,
       "path": "scripts/frontend/scripts/view-model-dignities.js",
-      "sha256": "f6a11437a528798363f30040a59ce63ca65d6b48abab3927201869ab56a69a32",
-      "size_bytes": 64133
+      "sha256": "18b54bb4b37f97f4e6aaf8a94e77720c428f274ae5d6352f2d19b31f58e01aae",
+      "size_bytes": 64147
     },
     {
       "executable": false,
       "path": "scripts/frontend/scripts/view-model-events.js",
-      "sha256": "813799c71aff288bafe55b6c6f94a864d7785bf387611f1cc2250a4460a85791",
-      "size_bytes": 77418
+      "sha256": "dd98cdd96be581eaf80d5ff8cd1353f614ae7992f74a4e339413ee61f6003ec5",
+      "size_bytes": 80702
     },
     {
       "executable": false,
       "path": "scripts/frontend/scripts/view-model-positions.js",
-      "sha256": "9246575e3bc9c6e5d5277f028234d84973db9054447f0023f59a12beb67c09d8",
-      "size_bytes": 58207
+      "sha256": "62c0b4f84810358392d1573cdd682261bd188d4460b8ad6ec59f0fab2e55acc8",
+      "size_bytes": 58227
     },
     {
       "executable": false,
@@ -2619,8 +2661,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/scripts/view-model-sensitivity.js",
-      "sha256": "24e727cbcb1883ebdf616a55a2e5e9899102bc91057f3b68b60b3a7466231b57",
-      "size_bytes": 58004
+      "sha256": "9b21a8b2c4d0b0a144b656fb8d4306cd0fbad5089679821ac724cff8a3b8c1a8",
+      "size_bytes": 58007
     },
     {
       "executable": false,
@@ -2643,20 +2685,20 @@
     {
       "executable": false,
       "path": "scripts/frontend/structured_data.py",
-      "sha256": "519d38153ee9cf67ea9d4cea3a6b2840d1a4eecadfbed3f8e7751e75e6451c8b",
-      "size_bytes": 24933
+      "sha256": "b452c5130a33afc9e27f65598c09b2c4382b01e53362e63bdf375e5a7298b232",
+      "size_bytes": 22946
     },
     {
       "executable": false,
       "path": "scripts/frontend/styles/article.css",
-      "sha256": "452321c127ee139146adce87567ffb5919e460f39bca05b69f7e7429d60616f4",
-      "size_bytes": 17980
+      "sha256": "74f324002aa9f327daa1e45d5b49b5960c002d25fe6148f8252cfd17035e7559",
+      "size_bytes": 17994
     },
     {
       "executable": false,
       "path": "scripts/frontend/styles/calculate.css",
-      "sha256": "06e857237f5ecade76d0fb52631d8274565b426180060d4a231c4385198f52c5",
-      "size_bytes": 107131
+      "sha256": "866ff9bd5a34578947fe080852947b3fa5b8df22603ff3af7534f12073cf58ac",
+      "size_bytes": 108575
     },
     {
       "executable": false,
@@ -2667,14 +2709,14 @@
     {
       "executable": false,
       "path": "scripts/frontend/styles/page.css",
-      "sha256": "b7ee130ca991e3ecb7dc42485a4f897589ef1beb77d46517884afabc64194c63",
-      "size_bytes": 131213
+      "sha256": "6f54484b1c1821cb8a6b412f904aeec5297126f5dad8faa6300c13fcc7656563",
+      "size_bytes": 132263
     },
     {
       "executable": false,
       "path": "scripts/frontend/styles/timelords.css",
-      "sha256": "b95e0e90cc9f56360293c8f68d0beb5f40713262baf7af22d349fddc4bc4421d",
-      "size_bytes": 31117
+      "sha256": "d8e3800f635d277b66913f03b42ddfd23bceceb3b9af8a2263668db741a36030",
+      "size_bytes": 31269
     },
     {
       "executable": false,
@@ -2685,8 +2727,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/stylesheets.py",
-      "sha256": "5f1c2b6bad11acba88c5c902cb9a91eab6993c98fd996575ace0ebb1430d1939",
-      "size_bytes": 21103
+      "sha256": "e235456e835d23531e9f2d282b67e9a7e5043c89745c74c0bdf7a4159873b9d5",
+      "size_bytes": 21116
     },
     {
       "executable": false,
@@ -2715,20 +2757,20 @@
     {
       "executable": false,
       "path": "scripts/publication/verify_image_supply_chain.py",
-      "sha256": "80208da6d63d034a63c9d773747899a75a7fca35b7f7987120d3d2b4f6c65eaf",
-      "size_bytes": 38551
+      "sha256": "f342fbb3264f9866409670d274cb654480c1c7e3366e80752665deea26b6031a",
+      "size_bytes": 38729
     },
     {
       "executable": false,
       "path": "scripts/publication/verify_publication_candidate.py",
-      "sha256": "841422f9004b010cae49497d7d1c418c672db61b7415060b4a08f0a6ad56d883",
-      "size_bytes": 42981
+      "sha256": "835e3702547e6a9f52c546f781ff1322ab93c5d37ad231983fb0abc883b84d56",
+      "size_bytes": 42693
     },
     {
       "executable": false,
       "path": "scripts/publication/write_publication_receipt.py",
-      "sha256": "7fa51647759903be3e52e56867df57461a16b553c5bfe513353cdd5a98e2003b",
-      "size_bytes": 24997
+      "sha256": "49664b9592dfaf64eca60a90e0620a6a96850ca2f3ad7132854ce52e9f607a12",
+      "size_bytes": 27300
     },
     {
       "executable": false,
@@ -2799,14 +2841,14 @@
     {
       "executable": false,
       "path": "scripts/validation/audit_place_timezones.py",
-      "sha256": "aeb2cfd5b5db99d9dc559ad4f586658b5adf855a5c9ed9d78cc4d662fca38771",
-      "size_bytes": 8508
+      "sha256": "bdfc916f3cf37907e7801b9c96c9f3432903ffa6cbb40beb8418535d23b5dea3",
+      "size_bytes": 11506
     },
     {
       "executable": false,
       "path": "scripts/validation/build_place_catalog.py",
-      "sha256": "01888331642d875e219a5ef05cc74ba173f4890d443a8f23907265db94cd0af6",
-      "size_bytes": 97187
+      "sha256": "341332c7fff2a85828d2f2aea211763ec580d739a1dd2b527f2fac4ce9ea5581",
+      "size_bytes": 100439
     },
     {
       "executable": false,
@@ -2817,8 +2859,14 @@
     {
       "executable": false,
       "path": "scripts/validation/place_timezone_corrections.json",
-      "sha256": "d8e6085f05886d6f28a3c6dcdfba5ff84bba8237dd959acdad55ff65be36c79f",
-      "size_bytes": 93961
+      "sha256": "80ad0446d201960e1d6b1e5c1151c71bce16e43a5427eddbc1243ab96b87fb7b",
+      "size_bytes": 94455
+    },
+    {
+      "executable": false,
+      "path": "scripts/validation/place_zone_policies.json",
+      "sha256": "1e786bc3a4c715600abef9294c03567f58efe3bdd2b5fc406b101f611cbd3953",
+      "size_bytes": 2479
     },
     {
       "executable": false,
@@ -2828,9 +2876,15 @@
     },
     {
       "executable": false,
+      "path": "scripts/verification/build_provenance.py",
+      "sha256": "23d186e81f02372172d91a3ecdbb1b52aa1a5e45f89f0e53cad819569832d543",
+      "size_bytes": 7106
+    },
+    {
+      "executable": false,
       "path": "scripts/verification/build_release_image.py",
-      "sha256": "11b3dba9d71b3a7a41b356e51a7472fd9c00e948d63e76dd1d3c04456e16beab",
-      "size_bytes": 14007
+      "sha256": "502e2e83070e24acee9dde1523f40f2b0e14d23b1f5ac4a728f5a80813cbfb55",
+      "size_bytes": 14127
     },
     {
       "executable": false,
@@ -2876,6 +2930,12 @@
     },
     {
       "executable": false,
+      "path": "scripts/verification/web_vitals.py",
+      "sha256": "afbd561e46af4ae55e87e3c56c4ee66e079db11c449782d26a80fcc84cc710ad",
+      "size_bytes": 6289
+    },
+    {
+      "executable": false,
       "path": "scripts/verify_delivery.py",
       "sha256": "d9a924186b2ef57ea7fd775dd83ce2f0dee90a0411bf2f033207ccb0e1c53847",
       "size_bytes": 10193
@@ -2883,8 +2943,8 @@
     {
       "executable": false,
       "path": "tests/backend/__init__.py",
-      "sha256": "6adaf93e74084258c80f0b6c5be15f71efc14fa9679c1a042abfb9782be57cea",
-      "size_bytes": 11817
+      "sha256": "1b50f1beeb3b8625853acda970eb352c6b4d382e4073c4d6a200654467524ffa",
+      "size_bytes": 12355
     },
     {
       "executable": false,
@@ -2907,14 +2967,14 @@
     {
       "executable": false,
       "path": "tests/deployment/test_production_runtime_contract.py",
-      "sha256": "5fec24f3a6e0886448cd75cd3d24c12131656f882734c1bdf72b0513987dbbd4",
-      "size_bytes": 42862
+      "sha256": "5ef4ab8601eed54ade3f457a431cfe66b57fe8cb6643bf16b99a79c742e53bc0",
+      "size_bytes": 43023
     },
     {
       "executable": false,
       "path": "tests/deployment/test_release_build_transaction.py",
-      "sha256": "b8fcd449d8ca46e20c57ba0b953c78bc31a48751dda908bb58b6f7113de01082",
-      "size_bytes": 13153
+      "sha256": "ca163cad8caf8c132bf785a921126338409d6e09d1c881ede10ab7a2a12f2ef7",
+      "size_bytes": 13584
     },
     {
       "executable": false,

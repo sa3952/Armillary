@@ -709,7 +709,7 @@ test("UTC 偏移在每一種輸出都是同一個「UTC±hh:mm」字串，不以
     const offsetCells = csvRows.filter((row) => row[0] === "time" && row[4] === "項目" && row[5] === "UTC 偏移")
       .map((label) => csvRows.find((row) => row[0] === "time" && row[2] === label[2] && row[3] === label[3] && row[4] === "數值")[5]);
     assert.deepEqual(offsetCells, [offset], `${name} CSV 的 UTC 偏移格`);
-    assert.match(render("md"), new RegExp(`\\| UTC 偏移 \\| ${offset.replace("+", "\\\\\\+")} \\|`), `${name} Markdown`);
+    assert.match(render("md"), new RegExp(`\\| UTC 偏移 \\| ${offset.replace("+", "\\+")} \\|`), `${name} Markdown`);
   }
   assert.deepEqual([...signs].sort(), [-1, 1], "fixture 必須涵蓋正負兩種偏移");
 });
@@ -816,9 +816,9 @@ test("恆星／回歸黃道的預設匯出四種格式都寫出黃道，JSON 帶
   // 恆星黃道：同一份頁面回應換上恆星黃道的 computation_mode（後端回應裡的形狀）。
   const siderealPage = structuredClone(tropicalPage);
   siderealPage.computation_mode = { ...tropicalPage.computation_mode, zodiac: "sidereal" };
-  for (const [name, page, zodiac, ayanamsaShown] of [
-    ["sidereal", siderealPage, "sidereal", true],
-    ["tropical", tropicalPage, "tropical", false],
+  for (const [name, page, zodiac, ayanamsaShown, zodiacZh] of [
+    ["sidereal", siderealPage, "sidereal", true, "恆星黃道"],
+    ["tropical", tropicalPage, "tropical", false, "回歸黃道"],
   ]) {
     const document = canonicalDocument(page);
     const render = (format) => Exporters.buildDownloadArtifact(document, format, Exporters.OUTPUT_MODES.chart_data_only).content;
@@ -828,12 +828,12 @@ test("恆星／回歸黃道的預設匯出四種格式都寫出黃道，JSON 帶
     const csv = render("csv");
     const json = JSON.parse(render("json"));
     const ayanamsa = page.computation_mode.ayanamsa;
-    assert.ok(txt.includes(`計算模式: 黃道 ${zodiac}；`), `${name} TXT：${txt.slice(0, 300)}`);
-    assert.ok(md.includes(`- 計算模式: 黃道 ${zodiac}；`), `${name} Markdown：${md.slice(0, 300)}`);
+    assert.ok(txt.includes(`計算模式: 黃道 ${zodiacZh}［${zodiac}］；`), `${name} TXT：${txt.slice(0, 300)}`);
+    assert.ok(md.includes(`- 計算模式: 黃道 ${zodiacZh}［${zodiac}］；`), `${name} Markdown：${md.slice(0, 300)}`);
     assert.ok(csv.includes(`_computation_mode,計算模式,計算模式,1,黃道,${zodiac},zodiac`),
       `${name} CSV`);
-    // Markdown 把 `_` 跳脫成 `\_`（escapeMarkdownText），渲染後才是原代碼。
-    for (const text of [txt, md.replace(/\\_/g, "_"), csv]) {
+    // 代碼裡夾在英數字之間的 `_` 不跳脫（escapeMarkdownText），Markdown 原樣含代碼。
+    for (const text of [txt, md, csv]) {
       assert.equal(text.includes(ayanamsa), ayanamsaShown,
         `${name}：歲差校正只在恆星黃道下印出`);
     }

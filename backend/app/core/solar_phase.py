@@ -25,7 +25,7 @@ import swisseph as swe
 from .invariants import InternalInvariantError
 from ..ephemeris import guarded_calc
 from .formatting import dms_text, zodiac_sign_index
-from .method_status import method_head
+from .method_status import method_head, profile_period
 from .module_state import (
     Applicability,
     ModuleState,
@@ -550,6 +550,7 @@ def _empty_profile_results(disc_cazimi: bool, interval: str | None) -> dict[str,
 
     return {
         pid: {
+            "period": profile_period(pid),
             "limits": limits_table(pid),
             "venus_latitude_exception_degrees": PROFILES[pid]["venus_latitude_exception_degrees"],
             "disc_cazimi_applied": disc_cazimi and profile_has_cazimi(pid),

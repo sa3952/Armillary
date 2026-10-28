@@ -121,6 +121,9 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     "calculation_dossier.trace_receipt.python_json_serialization_sha256",
     "calculation_dossier.warnings[].{code,message}",
     "calculation_dossier.time_conversion.{utc_iso_8601,time_scale_era}",
+    # A date-only chart's civil date as UTC stretches: the planetary-hour
+    # candidates must cover each one (a clock rollback can split the date).
+    "calculation_dossier.time_conversion.civil_day.utc_spans[].{start_utc,end_exclusive_utc}",
     "calculation_dossier.birth_time.sensitivity_coverage",
     "calculation_dossier.calculation_policy.modules.*",
     f"calculation_dossier.calculation_policy.option_states.*.{{{_OPTION_STATE},response_paths,"
@@ -253,7 +256,7 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     "derived_methods.planetary_hours.birth_time_interval.{interval,crosses_hour_boundary,"
     "crosses_planetary_day_boundary}",
     "derived_methods.planetary_hours.birth_time_interval.candidates[].{planetary_day_ruler_name,"
-    "index,period,index_in_period,ruler_name,start.{local_time,utc_offset},end.{local_time,utc_offset}}",
+    "index,period,index_in_period,ruler_name,start.{local_time,utc_offset,utc_time},end.{local_time,utc_offset,utc_time}}",
     f"derived_methods.lunar_mansions.{{{_RECEIPT}}}",
     "derived_methods.lunar_mansions.division.width_text",
     "derived_methods.lunar_mansions.placements[].{key,name,degrees_into_mansion_text,"

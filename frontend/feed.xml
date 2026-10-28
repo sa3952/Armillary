@@ -4,14 +4,14 @@
   <link rel="self" type="application/atom+xml" href="https://projectarmillary.com/feed.xml"/>
   <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog"/>
   <id>https://projectarmillary.com/feed.xml</id>
-  <updated>2026-10-26T00:00:00+08:00</updated>
+  <updated>2026-10-28T00:00:00+08:00</updated>
   <author><name>渾儀 Armillary</name></author>
   <entry>
     <title>水星逆行，古書怎麼說？2026 年 10–11 月天蠍座水逆的時刻表與原典</title>
     <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/mercury-retrograde-2026"/>
     <id>https://projectarmillary.com/zh-TW/blog/mercury-retrograde-2026</id>
-    <published>2026-10-26T00:00:00+08:00</published>
-    <updated>2026-10-26T00:00:00+08:00</updated>
+    <published>2026-10-28T00:00:00+08:00</published>
+    <updated>2026-10-28T00:00:00+08:00</updated>
     <summary>2026 年 10 月 24 日到 11 月 13 日的水星逆行：停滯、下合、焦傷與日輪內的逐分時刻表，三次水逆為何都在水象，並照 Lilly、Valens 希臘原文、Ptolemy、al-Bīrūnī 說明這些狀態原本指誰的水星。不解盤、不預測。</summary>
   </entry>
   <entry>
@@ -63,12 +63,12 @@
     <summary>法達（firdaria）夜盤從月亮起，但北交點與南交點該排在七顆行星之後，還是插在火星與太陽之間，書上與現代讀法不一致。照 al-Bīrūnī、Bonatti 與 Abū Maʿshar 的出處說明兩種排法、差在哪幾年，以及本站預設哪一種、為什麼。</summary>
   </entry>
   <entry>
-    <title>黑月莉莉絲的平均、真與自然差多少？「真 Lilith」其實是密切遠地點</title>
+    <title>黑月莉莉絲（Lilith）怎麼算？平均、真與自然三種的公式與差距</title>
     <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/black-moon-lilith-mean-true-natural"/>
     <id>https://projectarmillary.com/zh-TW/blog/black-moon-lilith-mean-true-natural</id>
     <published>2026-10-21T00:00:00+08:00</published>
     <updated>2026-10-21T00:00:00+08:00</updated>
-    <summary>平均黑月莉莉絲與「真」Lilith 最多差 30 度。本站內附星曆逐日實算 1950–2049 年：密切（真）Lilith 有 36.3% 的時間和平均 Lilith 不同星座，自然 Lilith 只有 9.9%；三種算法的定義與本站提供哪兩種。</summary>
+    <summary>黑月莉莉絲（Lilith）是月球軌道的遠地點，有平均、「真」（密切）、自然三種算法。整理三者的定義與公式；本站星曆逐日實算 1950–2049 年，密切 Lilith 有 36.3% 的時間和平均 Lilith 不同星座，自然只有 9.9%。</summary>
   </entry>
   <entry>
     <title>為什麼兩個網站算出的上升點差 2 角分？出生地座標差一點的影響</title>
@@ -215,20 +215,20 @@
     <summary>只知道出生日期、不知道幾點，也能排星盤。以合成範例實算：哪些行星星座整天都站得住，上升星座、宮位與日夜盤又在一天裡的哪些鐘點翻面。記得大概幾點或只差幾分鐘的情況，另有兩篇。</summary>
   </entry>
   <entry>
-    <title>西洋占星要不要換真太陽時？</title>
+    <title>西洋占星要不要換真太陽時？經度已經算進上升點，換了會算兩次</title>
     <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/true-solar-time"/>
     <id>https://projectarmillary.com/zh-TW/blog/true-solar-time</id>
     <published>2026-10-11T00:00:00+08:00</published>
     <updated>2026-10-14T00:00:00+08:00</updated>
-    <summary>西洋占星排盤不用換真太陽時：上升點與宮位由世界時加出生地經度決定。先換真太陽時再輸入，經度會被算兩次。以合成例子逐步列出兩種算法的數字與一年裡的誤差。</summary>
+    <summary>西洋占星排盤不用換真太陽時：真太陽時是鐘面時間加經度修正（每度 4 分鐘）與均時差，而上升點與宮位本來就由世界時加出生地經度決定。先換真太陽時再輸入，經度會被算兩次。以合成例子逐步列出兩種算法的數字與一年裡的誤差。</summary>
   </entry>
   <entry>
-    <title>臺灣夏令時間出生，排盤要減一小時嗎？那些要多看一眼的年份</title>
+    <title>臺灣夏令時間是哪幾年？日光節約時間出生，排盤要減一小時嗎</title>
     <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/taiwan-time-zone-history"/>
     <id>https://projectarmillary.com/zh-TW/blog/taiwan-time-zone-history</id>
     <published>2026-10-11T00:00:00+08:00</published>
     <updated>2026-10-14T00:00:00+08:00</updated>
-    <summary>1896 年以來臺灣換過三種標準時，並在十九個夏天實施日光節約時間。依 IANA 時區資料庫整理這些年份的換算、不存在與重複的鐘點，以及資料本身仍不確定之處。</summary>
+    <summary>臺灣夏令時間（日光節約時間）實施於 1946–1961、1974、1975、1979 年共十九個夏天，期間鐘面是 UTC+9。依 IANA 時區資料庫整理 1896 年以來三種標準時與這些年份的換算、不存在與重複的鐘點，以及資料本身仍不確定之處。</summary>
   </entry>
   <entry>
     <title>上升星座查詢表為什麼常常不準</title>

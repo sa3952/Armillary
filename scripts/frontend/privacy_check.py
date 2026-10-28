@@ -136,7 +136,9 @@ HEADER_MEANINGS = {
         "瀏覽器只准這個頁面從本站載入程式、樣式、圖片與連線（<span class=\"mono\">'self'</span>），"
         "<span class=\"mono\">connect-src 'self'</span> 讓頁面上的程式連不到其他網域；"
         "<span class=\"mono\">require-trusted-types-for 'script'</span> 與 "
-        "<span class=\"mono\">trusted-types 'none'</span> 讓任何程式都不能把一段字串變成 HTML 或程式網址"
+        "<span class=\"mono\">trusted-types 'none'</span> 讓任何程式都不能把一段字串變成 HTML 或程式網址。"
+        "頁面本身（HTML）的 <span class=\"mono\">style-src</span> 另多一個 "
+        "<span class=\"mono\">'sha256-…'</span>：那一頁寫在頁首的樣式表的雜湊，只准那一段樣式"
     ),
     "X-Content-Type-Options": "瀏覽器照標示的檔案類型處理，不自己猜",
     "Referrer-Policy": "你從本站點出去時，瀏覽器不告訴對方你從哪一頁來",

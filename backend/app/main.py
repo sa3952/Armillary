@@ -13,7 +13,7 @@ import os
 from pathlib import Path
 from collections.abc import AsyncIterator, Awaitable, Callable, Coroutine, Mapping
 from contextvars import ContextVar
-from typing import NamedTuple, cast
+from typing import Any, NamedTuple, cast
 
 import swisseph as swe
 from fastapi import FastAPI, Request
@@ -85,6 +85,7 @@ from .core.place_catalog import (
     PlaceCatalog,
     PlaceCatalogUnavailableError,
     PlaceSearchBudgetExceededError,
+    apply_place_zone_policy,
     check_request_places,
 )
 from .privacy_logging import (
@@ -110,7 +111,7 @@ from .request_limits import (
     mark_compute_entered,
 )
 from .runtime_static import ChartResultCompression, RuntimeStaticFiles
-from .frontend_release import PUBLIC_REPOSITORY_URL, SOURCE_URL_PREFIX, load_runtime_release
+from .frontend_release import PUBLIC_REPOSITORY_URL, SITE_VERSION, SOURCE_URL_PREFIX, load_runtime_release
 from .frontend_assets import discover_source_assets
 from .settings import AppSettings, load_settings
 from .visit_counts import DAILY_VISITOR, PAGE_VIEW, VisitCounter, seconds_until_next_count_day
@@ -235,18 +236,13 @@ async def _handle_http_exception(request: Request, exc: Exception) -> JSONRespon
     )
 
 
-def _declared_request_names(request: Request) -> frozenset[str]:
-    # The answering route's own names only; no route means every name masked.
-    return getattr(request.scope.get("route"), "declared_request_names", frozenset())
-
-
 async def _handle_request_validation(
     request: Request,
     exc: RequestValidationError,
 ) -> JSONResponse:
-    issues = validation_issues(
-        exc.errors(), declared_names=_declared_request_names(request)
-    )
+    # The answering route's own names only; no route means every name masked.
+    declared: frozenset[str] = getattr(request.scope.get("route"), "declared_request_names", frozenset())
+    issues = validation_issues(exc.errors(), declared_names=declared)
     # A body the parser never read is a syntax refusal, not a field finding.
     if any(issue["type"] == "json_invalid" for issue in issues):
         return _refuse(request, "json_invalid")
@@ -326,6 +322,10 @@ _BUILD_IDENTITY_CONTEXT: ContextVar[JsonObject | None] = ContextVar(
     "classical_astrology_build_identity",
     default=None,
 )
+# The zone the request named, before a place zone policy replaced it for the
+# birth instant: annual dates after the birth are localized in it, each
+# instant on its own (LeChee's pre-1967 Phoenix override is not 2024's zone).
+_NAMED_TIMEZONE_CONTEXT: ContextVar[Any] = ContextVar("classical_astrology_named_timezone", default=None)
 
 
 class ComputeCapacityExhaustedError(Exception):
@@ -403,7 +403,9 @@ def _compute_chart_locked(req: ChartRequest) -> JsonObject:
 
 
 def _compute_annual_locked(req: AnnualRequest) -> JsonObject:
-    return compute_annual_response(req, build_identity=_build_identity())
+    return compute_annual_response(
+        req, build_identity=_build_identity(), localize_timezone=_NAMED_TIMEZONE_CONTEXT.get()
+    )
 
 
 def _declared_refusals(route: str) -> dict[int | str, dict[str, object]]:
@@ -429,11 +431,20 @@ async def _identified[RequestT: (ChartRequest, AnnualRequest)](
 ) -> JsonObject:
     # Before the compute line: a refusal here costs no Swiss slot.
     await run_in_threadpool(check_request_places, req, place_catalog.record)
+    named_timezone = req.timezone
+    req, place_zone = await run_in_threadpool(apply_place_zone_policy, req, place_catalog.record)
     token = _BUILD_IDENTITY_CONTEXT.set(identity)
+    named_token = _NAMED_TIMEZONE_CONTEXT.set(named_timezone)
     try:
+        response = await compute(req, request)
+        # The zone the request named, the one applied and why; None for a
+        # place without a zone policy (core.place_zone_policy).  Detailed
+        # only: the page reads the policy from the place search instead.
+        response["place_zone_policy"] = place_zone
         # page is derived from this one detailed response.
-        return project(await compute(req, request), projection)
+        return project(response, projection)
     finally:
+        _NAMED_TIMEZONE_CONTEXT.reset(named_token)
         _BUILD_IDENTITY_CONTEXT.reset(token)
 
 
@@ -458,6 +469,7 @@ def _version_answer(runtime_build_identity: JsonObject) -> dict[str, object]:
         "public_repository": PUBLIC_REPOSITORY_URL,
         "license": "AGPL-3.0-only",
         "contracts": {"api_schema_version": SCHEMA_VERSION, "dossier_version": DOSSIER_VERSION},
+        "site_version": SITE_VERSION,
     }
 
 

@@ -13,11 +13,14 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from .refusals import (
     ANNUAL_ROUTE,
     CHART_ROUTE,
+    DAILY_VISIT_ROUTE,
     HEALTH_ROUTE,
     PLACE_SEARCH_ROUTE,
     READY_ROUTE,
     RETRY_AFTER_SECONDS,
     TIME_CONVERT_ROUTE,
+    VERSION_ROUTE,
+    VISIT_ROUTE,
     refusal_response,
 )
 
@@ -100,6 +103,12 @@ _BOUNDED_JSON_PATHS: Final = frozenset({CHART_ROUTE, PLACE_SEARCH_ROUTE, TIME_CO
 # The calculation pool.  An app registering another calculation route (the
 # flagged annual route) passes both sets; an unregistered route is never
 # admitted here and reaches unknown_api_path like any undeclared path.
+# The declared routes that take no body (method, path): a body on one of them is
+# refused.  A wrong method or unknown path keeps its own answer.
+_BODYLESS_ROUTES: Final = frozenset({
+    ("GET", HEALTH_ROUTE), ("HEAD", HEALTH_ROUTE), ("GET", READY_ROUTE),
+    ("GET", VERSION_ROUTE), ("POST", VISIT_ROUTE), ("GET", DAILY_VISIT_ROUTE),
+})
 _COMPUTE_PATHS: Final = frozenset({CHART_ROUTE})
 _LOOKUP_PATHS: Final = frozenset({PLACE_SEARCH_ROUTE, TIME_CONVERT_ROUTE})
 # The liveness probe returns a constant on the event loop and is never charged
@@ -132,6 +141,8 @@ BOUNDARY_REASON_CODES: Final = frozenset({
     "request_body_too_large",
     "empty_request_body",
     "request_body_read_timeout",
+    # A body on an API route that takes none is refused.
+    "request_validation_failed",
 })
 
 
@@ -435,13 +446,6 @@ def _header_values(scope: Scope, name: bytes) -> list[bytes]:
     ]
 
 
-def _header_bytes(scope: Scope) -> int:
-    return sum(
-        len(name) + len(value) + 4
-        for name, value in scope.get("headers", [])
-    )
-
-
 def _content_length(scope: Scope) -> int | None:
     values = _header_values(scope, b"content-length")
     if not values:
@@ -455,6 +459,16 @@ def _content_length(scope: Scope) -> int | None:
     if not rendered.isdecimal():
         raise ValueError("invalid content length")
     return int(rendered, 10)
+
+
+def _declares_body(scope: Scope) -> bool:
+    if _header_values(scope, b"transfer-encoding"):
+        return True
+    try:
+        length = _content_length(scope)
+    except ValueError:
+        return True
+    return bool(length)
 
 
 def _has_conflicting_framing(scope: Scope) -> bool:
@@ -545,7 +559,8 @@ class ChartRequestBoundary:
         # header budget instead of leaving the only bound to the edge.
         if (
             scope.get("type") == "http"
-            and _header_bytes(scope) > MAX_HOSTED_HEADER_BYTES
+            and sum(len(name) + len(value) + 4 for name, value in scope.get("headers", []))
+            > MAX_HOSTED_HEADER_BYTES
         ):
             await _refuse(scope, receive, send, "request_headers_too_large")
             return
@@ -554,6 +569,18 @@ class ChartRequestBoundary:
             or scope.get("method") != "POST"
             or scope.get("path") not in self.bounded_json_paths
         ):
+            if (
+                scope["type"] == "http"
+                and (scope.get("method"), scope.get("path")) in _BODYLESS_ROUTES
+                and _declares_body(scope)
+            ):
+                # Only the bounded JSON posts take a body; elsewhere it was
+                # read by nobody and accepted unbounded.
+                await _refuse(
+                    scope, receive, send, "request_validation_failed",
+                    issues=[{"type": "extra_forbidden", "loc": ["body"]}],
+                )
+                return
             await self.app(scope, receive, send)
             return
 

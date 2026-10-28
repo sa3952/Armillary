@@ -291,3 +291,30 @@ test("年號換算：每個年號的每一天都換回同一天（逐日走過 1
     }
   }
 });
+
+// 時區有爭議的地點：政策照 scripts/validation/place_zone_policies.json 的形狀，日期分別落在期間之前、之內、之後。
+const ZONE_POLICIES = JSON.parse(require("node:fs").readFileSync(
+  require("node:path").join(__dirname, "../../scripts/validation/place_zone_policies.json"), "utf8"));
+const zonePolicy = (id) => ZONE_POLICIES[`geonames_cities500/${id}`];
+const zoneChoiceAt = (id, year, month, day) => RequestInput.placeZoneChoice(zonePolicy(id), { year, month, day });
+
+test("時區有爭議的地點：替代時區只在它的期間內可選，目錄時區排第一；推定的時段只標不確定、不給選項", () => {
+  // West Wendover：市府試行太平洋時間的期間（1980-01-01 起，1999-10-31 止）。
+  assert.equal(zoneChoiceAt("5710035", 1979, 12, 31), null);
+  assert.deepEqual(zoneChoiceAt("5710035", 1990, 7, 15).options.map((option) => option.zone), ["America/Denver", "America/Los_Angeles"]);
+  assert.equal(zoneChoiceAt("5710035", 1999, 10, 31), null);
+  assert.equal(zoneChoiceAt("5710035", 2005, 7, 15), null);
+  // Fort Pierre：法規時區永遠可選；1967 年前另標不確定。
+  assert.deepEqual(zoneChoiceAt("5764864", 1990, 7, 15).options.map((option) => option.zone), ["America/Chicago", "America/Denver"]);
+  assert.equal(zoneChoiceAt("5764864", 1990, 7, 15).uncertain, false);
+  assert.equal(zoneChoiceAt("5764864", 1966, 12, 31).uncertain, true);
+  // LeChee：1967 年前服務推定亞利桑那州時間，沒有可切換的選項。
+  const lechee1966 = zoneChoiceAt("7261646", 1966, 7, 15);
+  assert.equal(lechee1966.uncertain, true);
+  assert.equal(lechee1966.overrideZone, "America/Phoenix");
+  assert.deepEqual(lechee1966.options, []);
+  assert.equal(zoneChoiceAt("7261646", 1967, 1, 1), null);
+  // 沒有政策的地點、沒有日期都沒有選擇。
+  assert.equal(RequestInput.placeZoneChoice(null, { year: 1990, month: 7, day: 15 }), null);
+  assert.equal(RequestInput.placeZoneChoice(zonePolicy("5710035"), null), null);
+});

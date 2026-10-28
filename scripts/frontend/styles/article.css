@@ -94,7 +94,7 @@
   text-align:left; vertical-align:top}
 .ar-table thead th{font-family:var(--mono); font-weight:400; font-size:var(--fs-small); letter-spacing:0;
   color:var(--ink-faint); border-bottom:1px solid var(--ink)}
-.ar-table .n{font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap}
+.ar-table .n{font-family:var(--serif-num); font-variant-numeric:lining-nums tabular-nums; white-space:nowrap}
 /* 中文只在空格與標點處折行：等寬的時間欄不折行時，短詞（「命運點星座」）原本被擠成一字一行。 */
 .ar-table th, .ar-table td{word-break:keep-all}
 .ar-table tr.hl td{background:var(--paper-2)}
@@ -127,7 +127,7 @@
 .ar-next p{color:var(--plate-dim); font-size:var(--fs-aside)}
 .page-body .ar-next .btn-paper{display:inline-block; background:var(--paper); color:var(--plate);
   padding:.75rem 1.5rem; border-bottom:0; margin-top:var(--s1)}
-@media (hover:hover){.page-body .ar-next .btn-paper:hover{background:var(--accent-rev); color:var(--plate)}}
+@media (hover:hover){.page-body .ar-next .btn-paper:hover{background:var(--paper-2); color:var(--plate)}}
 .ar-next ul{list-style:none; padding:0; margin:0}
 .ar-next li{padding:.55rem 0; border-bottom:1px solid var(--hair-soft); font-size:var(--fs-aside)}
 .ar-next .ar-k{display:block; font-family:var(--sans); font-size:var(--fs-small); letter-spacing:0;

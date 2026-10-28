@@ -730,21 +730,13 @@ def _birth_time_section(
     representative_policy: str,
     sensitivity_coverage: JsonObject | None,
 ) -> JsonObject:
+    date = f"{request.datetime.year:04d}-{request.datetime.month:02d}-{request.datetime.day:02d}"
+    date_only = request.birth_time_precision == "date_only"
     return {
         "precision": request.birth_time_precision,
-        "input_birth_date": (
-            f"{request.datetime.year:04d}-{request.datetime.month:02d}-"
-            f"{request.datetime.day:02d}"
-        ),
-        "input_civil_hour": (
-            None
-            if request.birth_time_precision == "date_only"
-            else (
-                f"{request.datetime.year:04d}-{request.datetime.month:02d}-"
-                f"{request.datetime.day:02d} {request.datetime.hour:02d}"
-            )
-        ),
-        "birth_time_known": request.birth_time_precision != "date_only",
+        "input_birth_date": date,
+        "input_civil_hour": None if date_only else f"{date} {request.datetime.hour:02d}",
+        "birth_time_known": not date_only,
         "representative_local_time": time_conversion["input_local_time"],
         # The anchor the time step actually chose, as that step labelled it
         # (time_utils.representative_policy), not one inferred from the precision.
@@ -758,10 +750,9 @@ def _birth_time_section(
 
 def _location_section(request: ChartRequest) -> JsonObject:
     return {
-        "place_label": request.location.place_label,
-        "location_source": request.location.location_source,
-        "source_record_id": request.location.source_record_id,
-        "location_precision": request.location.location_precision,
+        **{key: getattr(request.location, key) for key in (
+            "place_label", "location_source", "source_record_id", "location_precision",
+        )},
         # The chart routes compute a catalogue location only when it equals
         # the catalogue's row (core.place_catalog.check_request_places).
         "verification_status": (
@@ -790,14 +781,10 @@ def _time_conversion_section(request: ChartRequest, time_conversion: JsonObject)
         "utc_iso_8601": time_conversion["utc_time"].replace(" ", "T") + "Z",
         "jd_ut1": time_conversion["jd_ut"],
         "jd_tt": time_conversion["jd_et"],
-        "delta_t_seconds": time_conversion["delta_t_seconds"],
-        "delta_t_model": time_conversion["delta_t_model"],
-        "swiss_time_input_semantics": time_conversion[
-            "swiss_time_input_semantics"
-        ],
-        "leap_second_input": time_conversion["leap_second_input"],
-        "time_scale_era": time_conversion["time_scale_era"],
-        "sidereal_time_model": time_conversion["sidereal_time_model"],
+        **{key: time_conversion[key] for key in (
+            "delta_t_seconds", "delta_t_model", "swiss_time_input_semantics",
+            "leap_second_input", "time_scale_era", "sidereal_time_model",
+        )},
         "date_only_anchor": time_conversion.get("date_only_anchor"),
         "civil_day": time_conversion.get("civil_day"),
         "ecl_nut_retflag": _retflag_receipt(

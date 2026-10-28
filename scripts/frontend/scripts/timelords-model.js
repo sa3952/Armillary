@@ -556,7 +556,20 @@
       ? Object.freeze({ day: model.todayDay, date: model.today, age: ageOnDay(model, model.todayDay) }) : null;
     return Object.freeze({
       startDay, endDay, startAge: first.n, endAge: last.n + 1, lanes: Object.freeze(lanes), ticks: Object.freeze(ticks), today,
+      yearNote: lifeYearNote(model.data),
     });
+  }
+
+  // 年長照回應這次實際用的寫：黃道釋放的一年可以改選，十年期固定。
+  function lifeYearNote(data) {
+    const days = (technique, fallback) => {
+      const value = (((data[technique] || {}).head || {}).year_model || {}).days_per_year;
+      return Number.isFinite(value) ? String(value) : fallback;
+    };
+    const zr = days("releasing", null), decennials = days("decennials", "360");
+    const lengths = zr === decennials ? `黃道釋放與十年期一年 ${zr} 日`
+      : `${zr ? `黃道釋放一年 ${zr} 日，` : ""}十年期一年 ${decennials} 日`;
+    return `底色兩種紙色交替只為分辨相鄰兩段，不代表好壞。各技法的年長不同（法達與小限以太陽回歸為年界，${lengths}），所以同一個年數的分界不一定對齊。日期是${DATE_NOTE}。`;
   }
 
   /** 一段的白話描述：技法、主星（小限另附年主星）、起訖日期與足歲。報讀器名稱、讀出列與表格共用。 */
@@ -1555,6 +1568,8 @@
     body.annual = {
       target_kind: "completed_years", target_value: completedYears, include_profection: false, include_solar_return_chart: true,
       solar_return_house_system: solarReturnChosenHouseSystem(chartPayload, scope.houseSystem),
+      // 對照用本命盤自己的宮位制，回歸盤另選宮位制時也一樣。
+      solar_return_natal_house_system: solarReturnHouseSystem(chartPayload),
       ...(scope.location ? { solar_return_location: { latitude: scope.location.latitude, longitude: scope.location.longitude } } : {}),
     };
     return body;

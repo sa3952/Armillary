@@ -251,3 +251,30 @@ def lastmod_binding_errors(record: dict, history: list[tuple[str, dict]], today:
         if previous is not None and entry["lastmod"] < previous:
             errors.append(f"{key}: lastmod {entry['lastmod']} is before its previous date {previous}")
     return errors
+
+# The changelog page lists one section per site version, `data-version="X.Y.Z"`, whose first <time datetime> is its
+# release date; a section without one is the version not yet released.
+_CHANGELOG_ENTRY = re.compile(r'<section\b[^>]*\bdata-version="([^"]+)"[^>]*>(.*?)</section>', re.DOTALL)
+_ENTRY_DATE = re.compile(r'<time datetime="(\d{4}-\d{2}-\d{2})">')
+SITE_VERSION_FORMAT = re.compile(r"\d+\.\d+\.\d+")
+
+def changelog_entries(markup: str) -> dict[str, str | None]:
+    entries: dict[str, str | None] = {}
+    for version, body in _CHANGELOG_ENTRY.findall(markup):
+        if version in entries:
+            raise ValueError(f"changelog lists version {version} twice")
+        found = _ENTRY_DATE.search(body)
+        entries[version] = found.group(1) if found else None
+    return entries
+
+def check_site_version(site_version: str, changelog: str, release_date: str | None = None) -> None:
+    """The site version is major.minor.patch and the changelog has its entry; at a release (`release_date`, the
+    Taiwan date the tag names) that entry is dated that day."""
+    if not SITE_VERSION_FORMAT.fullmatch(site_version):
+        raise ValueError(f"site version must be major.minor.patch: {site_version!r}")
+    entries = changelog_entries(changelog)
+    if site_version not in entries:
+        raise ValueError(f"the changelog has no entry for the site version {site_version}")
+    if release_date is not None and entries[site_version] != release_date:
+        raise ValueError(f"the changelog entry for {site_version} is dated {entries[site_version] or '(unreleased)'}, "
+                         f"not the release date {release_date}")

@@ -35,7 +35,7 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
         "response_path": "derived_methods.void_of_course",
         "note_zh": (
             "月空亡的定義至少有三種，同一張盤可能得到不同結論：Porphyry 名下的"
-            "《占星四書導論》（Eisagōgē）第 23 章看月亮在接下來 30° 內是否與行星接合，不管是否換座；"
+            "《占星四書導論》（Eisagōgē）第 23 章看月亮在接下來 30° 內是否與任何行星形成主要相位（含合相），不管是否換座；"
             "Lilly《Christian Astrology》（1647）p.112 以月亮離開本星座前是否再入相位為準。"
             "本產品預設採第三種：「離開本星座前沒有任何相位精確完成」；前兩種可在選項改用，改用時月空亡一節開頭會註明。"
             "要求換座前精確完成：後人文獻歸於 Al H. Morrison（AFA Bulletin 第 28 卷第 10 期，1966 年 10 月；原是當年 AFA 大會的演講，後來印成 AFA 小冊《The Void of Course Moon》；原文未讀）；"

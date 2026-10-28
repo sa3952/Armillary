@@ -404,7 +404,33 @@
     return `UTC${sign}${String(hours).padStart(2, "0")}:00`;
   }
 
+  /**
+   * 時區有爭議的地點（地名查詢回傳的 zone_policy）在某個出生日期可選哪些時區。日期落在替代時區的期間內才有選項，
+   * 目錄時區永遠排第一；期間的起訖以 UTC 日期比較，所以起訖當天前後幾小時可能落在另一邊（服務以出生瞬間判斷）。
+   * 有「推定」的覆寫（例：1967 年前的 LeChee 改用亞利桑那州時間）或日期早於 uncertain_before 時標成不確定，
+   * 但覆寫由服務套用，不是可選的時區。沒有政策或該日期沒有爭議時回 null。
+   */
+  function placeZoneChoice(policy, date) {
+    if (!policy || typeof policy !== "object" || !date) return null;
+    const day = isoDate(date.year, date.month, date.day);
+    const edge = (text) => String(text).slice(0, 10);
+    const inRange = (entry) => (entry.from === undefined || edge(entry.from) <= day) && (entry.until === undefined || day < edge(entry.until));
+    const alternatives = (policy.alt_zones || []).filter(inRange);
+    const override = (policy.overrides || []).find(inRange) || null;
+    const uncertain = Boolean(override) || (policy.uncertain_before ? day < edge(policy.uncertain_before) : false);
+    if (!alternatives.length && !uncertain) return null;
+    return Object.freeze({
+      note: policy.note,
+      uncertain,
+      overrideZone: override ? override.zone : null,
+      options: alternatives.length
+        ? Object.freeze([{ zone: policy.zone, label: "目錄時區（當地實際使用）" }, ...alternatives.map((entry) => ({ zone: entry.zone, label: entry.label }))])
+        : Object.freeze([]),
+    });
+  }
+
   return Object.freeze({
+    placeZoneChoice,
     STATES: Object.freeze({ EMPTY, INVALID, VALUE }), etcGmtOffsetText, ERAS, readEraDate, readBirthDateParts,
     readBirthDateText, isoDate, pad2, civilTimeOccurrences, civilHourOccurrences, readInteger, readSecond, readDecimal,
     boundsProblem, numericOptionProblems,

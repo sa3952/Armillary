@@ -69,17 +69,33 @@ map $request_uri $armillary_not_versioned_asset {
 # value and owns only the privacy floor beneath it, which holds even if the
 # application regresses: anything under /api (birth data, place queries), any
 # 4xx/5xx, any answer the edge generates itself, and any answer without the
-# header is `no-store`.  The edge-served security.txt revalidates against the
-# ETag/Last-Modified NGINX sends for a static file.
+# header is `no-store`.  The one API answer kept is the daily-visitor 204: the
+# browser's own copy, held until midnight in Taiwan, is what counts each
+# browser once a day, so only its exact `private, max-age=N` is relayed.  The
+# edge-served security.txt revalidates against the ETag/Last-Modified NGINX
+# sends for a static file.
 map $uri $armillary_cache_scope {
     default site;
     ~^/api(?:/|$) api;
+    /api/visit/daily daily_visit;
     /.well-known/security.txt edge_file;
 }
 map "$armillary_cache_scope $status $upstream_http_cache_control" $armillary_cache_control {
     default no-store;
     "~^site [23][0-9][0-9] (?<armillary_relayed_cache_control>.+)$" $armillary_relayed_cache_control;
+    "~^daily_visit 204 (?<armillary_daily_cache>private, max-age=[0-9]+)$" $armillary_daily_cache;
     "~^edge_file (?:200|304) $" no-cache;
+}
+
+# Content-Security-Policy.  A page carries its stylesheet inline, so its
+# policy names that stylesheet's SHA-256 in style-src; only the application,
+# which serves the page bytes, can compute it (backend/app/runtime_static.py
+# `inline_style_digests`).  The edge relays the application's policy only in
+# exactly that shape, the base policy with 'sha256-' sources added to
+# style-src and nothing else; any other value, or none, becomes the base policy.
+map $upstream_http_content_security_policy $armillary_content_security_policy {
+    default "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'; require-trusted-types-for 'script'; trusted-types 'none'";
+    "~^default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self'(?: 'sha256-[A-Za-z0-9+/]{43}=')+; connect-src 'self'; form-action 'self'; require-trusted-types-for 'script'; trusted-types 'none'$" $upstream_http_content_security_policy;
 }
 
 # An answer NGINX writes itself (413, 429, 502, 503) for an /api path is a
@@ -264,7 +280,7 @@ server {
     limit_conn_status 503;
 
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-    add_header Content-Security-Policy "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'; require-trusted-types-for 'script'; trusted-types 'none'" always;
+    add_header Content-Security-Policy $armillary_content_security_policy always;
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
     add_header X-Robots-Tag "noindex, nofollow, noarchive" always;  # staging_noindex
     add_header X-Content-Type-Options "nosniff" always;

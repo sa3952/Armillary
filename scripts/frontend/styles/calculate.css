@@ -186,22 +186,27 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
   .result-lead > .chart-summary{grid-area:summary; min-width:0}
   .result-lead > .quick-toolbar{grid-area:tools; border-bottom:0}
   .result-lead > .result-lead-wheel{grid-area:wheel; min-width:0}
-  /* 答案帶：同一張表排成上下三格（列標頭在上、星座度數在下），表格語意與報讀順序不變；
-     欄標頭只給輔助科技。格與格之間一條髮線，上下各一條墨線，不加底色。 */
-  .result-lead > .chart-summary .table-wrap{overflow:visible}
-  .result-lead > .chart-summary table{display:block; border-top:1px solid var(--ink); border-bottom:1px solid var(--ink)}
-  .result-lead > .chart-summary caption{display:block; text-align:left}
-  .result-lead > .chart-summary thead{position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0; overflow:hidden;
-    clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap}
-  .result-lead > .chart-summary tbody{display:grid; grid-template-columns:minmax(0,1fr)}
-  .result-lead > .chart-summary tbody tr{display:flex; flex-direction:column; gap:.2rem; padding:var(--s2) 0}
-  .result-lead > .chart-summary tbody tr + tr{border-top:1px solid var(--hair)}
-  .result-lead > .chart-summary :is(th,td){
-    display:block; position:static; padding:0; border:0; background:none;
-    white-space:normal; word-break:keep-all; overflow-wrap:anywhere}
-  .result-lead > .chart-summary tbody th[scope="row"]{position:static; font-size:var(--fs-small); color:var(--ink-faint); background:none}
-  .result-lead > .chart-summary tbody td{font-family:var(--serif); font-size:var(--fs-lead); color:var(--ink)}
-  .result-lead > .chart-summary tbody tr:hover td{background:none}
+}
+/* 答案帶：同一張表排成三格：窄螢幕一行三格排在星盤上方，寬螢幕在右欄上下排（列標頭在上、星座度數在下），表格語意與報讀順序不變；
+   欄標頭只給輔助科技。格與格之間一條髮線，上下各一條墨線，不加底色。 */
+.result-lead > .chart-summary .table-wrap{overflow:visible}
+.result-lead > .chart-summary table{display:block; border-top:1px solid var(--ink); border-bottom:1px solid var(--ink)}
+.result-lead > .chart-summary caption{display:block; text-align:left}
+.result-lead > .chart-summary thead{position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0; overflow:hidden;
+  clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap}
+.result-lead > .chart-summary tbody{display:grid; grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:599px){ .result-lead > .chart-summary tbody{grid-template-columns:minmax(0,1fr)} }
+.result-lead > .chart-summary tbody tr{display:flex; flex-direction:column; gap:.2rem; padding:var(--s2) 0}
+.result-lead > .chart-summary tbody tr + tr{border-left:1px solid var(--hair); padding-left:var(--s1)}
+.result-lead > .chart-summary :is(th,td){
+  display:block; position:static; padding:0; border:0; background:none;
+  white-space:normal; word-break:keep-all; overflow-wrap:anywhere}
+.result-lead > .chart-summary tbody th[scope="row"]{position:static; font-size:var(--fs-small); color:var(--ink-faint); background:none}
+.result-lead > .chart-summary tbody td{font-family:var(--serif); font-size:var(--fs-lead); color:var(--ink)}
+.result-lead > .chart-summary tbody tr:hover td{background:none}
+@media screen and (min-width:1100px){
+  .result-lead > .chart-summary tbody{grid-template-columns:minmax(0,1fr)}
+  .result-lead > .chart-summary tbody tr + tr{border-left:0; padding-left:0; border-top:1px solid var(--hair)}
 }
 
 /* 完整時間收據：預設收合，排在各區之後、技術細節之前；外觀與技術細節同一套。 */
@@ -432,6 +437,8 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
 /* ═══ 兩個區：填表與結果，只承擔間距與分隔線。 ═══ */
 .compose{padding:var(--s4) 0 var(--s5)}
 .results{padding:var(--s3) 0 var(--s5)}
+/* 送出時先占住結果的位置，至少一個視窗高：結果幾秒後才到，那時再推動下方的常見問題就是版面位移。 */
+.result-pending{min-height:100vh; min-height:100svh}
 .compose + .results{border-top:2px solid var(--ink)}
 
 /* 中文術語旁的英文技術詞：拉丁襯線斜體小字、不加字距（等寬加字距的英文像終端機輸出，和中文標籤搶眼）。
@@ -537,6 +544,8 @@ legend.choice-lead + *,legend.fold-choice-title + *,legend.export-mode-title + *
 .inline-control select{min-width:0; width:100%}
 
 .grid.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+/* 寬螢幕上日期欄連同說明較長：給它兩倍寬，說明不被擠成五行。 */
+@media (min-width:901px){ .grid.four:has(> #field-date){grid-template-columns:minmax(0,2fr) repeat(3,minmax(0,1fr))} }
 @media (max-width:900px){ .grid.four{grid-template-columns:1fr 1fr} }
 
 /* ═══ 選項列：呼吸空間與可按的目標 ═══════════════════════ */
@@ -554,7 +563,7 @@ legend.choice-lead + *,legend.fold-choice-title + *,legend.export-mode-title + *
 
 /* 下拉：與輸入框同一套，不用系統預設外觀 */
 /* 箭頭以兩段漸層畫成：CSP 擋 data: 圖片，select 也不能掛偽元素。 */
-select.option-control{
+select.option-control,.annual select{
   appearance:none; width:100%;
   background-color:var(--paper-2);
   /* 45deg 的色帶垂直於漸層方向，畫出來是「＼」；135deg 是「／」。左段在前、右段在後，合起來才是向下的 v。 */
@@ -699,6 +708,9 @@ input[type="checkbox"].option-control:disabled{border-color:var(--hair); backgro
 .table-columns{margin:var(--s2) 0 .4rem}
 table.is-compact [data-full-only]{display:none}
 table:not(.is-compact) [data-compact-only]{display:none}
+
+/* 按鈕在排版上是 inline-block：緊接的標點和它包在一起，不被推到下一行行首（禁則）。 */
+.term-nb{white-space:nowrap}
 
 /* 名詞解釋：頁面上可點的詞與抽屜。抽屜不擋住結果：寬螢幕是右側欄，窄螢幕是底部 72% 高的抽屜。 */
 button.term{
@@ -886,6 +898,8 @@ table.aspect-grid .asp-mark{display:inline-flex; flex-direction:column; align-it
 table.aspect-grid .asp-glyph{width:1.4em; height:1.4em; fill:none; stroke:var(--ink); stroke-width:1.35; stroke-linecap:round; stroke-linejoin:round}
 /* 其他文字格（軸點組合的「—」）：字退一階，讓有記號的格先被看到。 */
 table.aspect-grid td:not(.asp-cell){font-size:var(--fs-small); color:var(--ink-faint)}
+table.aspect-grid td.asp-aversion .asp-aversion-mark{font-size:var(--fs-small); color:var(--ink-faint)}
+table.aspect-grid td.asp-aversion .asp-aversion-mark::before{content:"×"}
 /* 整宮成相位、逐度不在容許度內：同一個記號，淡墨細虛線、小一號；不合意的格留白。 */
 table.aspect-grid td.asp-whole .asp-glyph{width:1.1em; height:1.1em; stroke:var(--ink-faint); stroke-width:1.1; stroke-dasharray:2 1.6}
 table.aspect-grid .asp-mark[data-orb]::after{content:attr(data-orb); font-family:var(--serif-latin);
@@ -932,6 +946,8 @@ th.num,td.num{text-align:right}
 td.num{font-family:var(--serif-num); font-variant-numeric:lining-nums tabular-nums}
 /* 時刻與度數範圍：靠左的文字格，字面與數字欄相同。 */
 td.num-text{font-family:var(--serif-num); font-variant-numeric:lining-nums tabular-nums}
+/* 行星時的兩張時刻表：當地時間與世界時兩欄都靠右，時分秒上下對齊。 */
+table[data-section="planetary_hours"]:not(.two-column) td.num-text,table[data-section="planetary_hours"]:not(.two-column) thead th:nth-last-child(-n+2){text-align:right}
 /* 同一天的日期只寫一次的時刻欄（calculate.js 標 .num-time）：格長短不一，靠右排，時分秒才上下對齊。 */
 th.num-time,td.num-time{text-align:right}
 /* 格裡的日期不在連字號處折行（calculate.js 包成 .date-whole）。 */
@@ -1061,7 +1077,7 @@ main,
 @media (forced-colors: active){
   .choice input[type="radio"]:checked::after,
   .export-mode input[type="radio"]:checked::after{forced-color-adjust:none; background:CanvasText}
-  select.option-control{appearance:auto; -webkit-appearance:auto}
+  select.option-control,.annual select{appearance:auto; -webkit-appearance:auto}
 }
 
 /* ═══ 星盤圖：chart-wheel.js 建立 SVG，顏色與字體只用這些 class（CSP）；唯一的強調色是四軸。 ═══ */

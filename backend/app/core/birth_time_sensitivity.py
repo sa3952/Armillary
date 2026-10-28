@@ -48,9 +48,8 @@ from .time_utils import (
     _existing_utc_instants,
     _to_utc_datetime,
     _local_wall_time_and_fold,
-    MICROSECONDS_PER_SECOND,
     civil_hour_spans,
-    civil_time_label,
+    civil_time_label_of,
     compute_time_conversion,
     repeated_wall_clock_stretches,
     utc_datetime_to_jd_ut,
@@ -551,7 +550,13 @@ def _extract_probe(
         trace=trace,
     )
     houses = None
-    if probe_request.options.include_houses:
+    # The chart's own premise (chart_astronomy._houses): an observer centre
+    # with no horizon has no houses, so the sample keeps its bodies and skips
+    # only the house-dependent methods.
+    houses_apply = method_frame_state(
+        "house_division", probe_request.computation_mode
+    )["applicable"]
+    if probe_request.options.include_houses and houses_apply:
         houses = compute_houses(
             probe_request.options.house_system,
             jd_ut,
@@ -579,6 +584,8 @@ def _extract_probe(
             placements,
             trace,
         )
+    elif probe_request.options.include_houses:
+        placements = compute_planet_house_placements(bodies, None, context, trace)
     else:
         placements = {
             "execution_status": "not_requested",
@@ -1214,11 +1221,7 @@ def _refine_transitions(
 def _whole_second_label(iso_local: str) -> str:
     """An ISO wall-clock second in the shape of ``input_local_time``."""
 
-    value = dtmod.datetime.fromisoformat(iso_local)
-    return civil_time_label(
-        value.year, value.month, value.day, value.hour, value.minute,
-        value.second * MICROSECONDS_PER_SECOND,
-    )
+    return civil_time_label_of(dtmod.datetime.fromisoformat(iso_local))
 
 
 def _probe_fold(request, offset_seconds: int) -> int:
@@ -1231,9 +1234,7 @@ def _probe_fold(request, offset_seconds: int) -> int:
     was computed at, as date_only samples carry theirs.
     """
 
-    probe = _probe_request(request, offset_seconds)
-    utc_value, _offset, _label, _warning = _to_utc_datetime(probe.datetime, probe.timezone)
-    return _local_wall_time_and_fold(utc_value, request.timezone)[1]
+    return _local_wall_time_and_fold(_probe_utc(request, offset_seconds), request.timezone)[1]
 
 
 def _probe_utc(request, offset_seconds: int) -> dtmod.datetime:
@@ -1372,15 +1373,9 @@ def _hour_body_signs(
     """Each body's sampled signs and longitude envelope."""
 
     body_signs = []
+    bodies_by_probe = [{body["key"]: body for body in probe["bodies"]} for probe in evaluated]
     for body_def in body_defs:
-        values = [
-            next(
-                body["longitude"]
-                for body in probe["bodies"]
-                if body["key"] == body_def["key"]
-            )
-            for probe in evaluated
-        ]
+        values = [bodies[body_def["key"]]["longitude"] for bodies in bodies_by_probe]
         body_signs.append(_sampled_sign_row(
             body_def["key"], body_def["zh"],
             None if any(value is None for value in values) else values,
@@ -1400,27 +1395,18 @@ def _hour_planet_in_house(
 
     planet_in_house = []
     if representative_placements["execution_status"] == "computed":
+        representative = {placement["key"]: placement["house"] for placement in representative_placements["placements"]}
+        houses_by_probe = [
+            {placement["key"]: placement["house"] for placement in probe["placements"]["placements"]}
+            for probe in evaluated
+        ]
         for body_def in body_defs:
-            sampled_houses = sorted(
-                {
-                    next(
-                        placement["house"]
-                        for placement in probe["placements"]["placements"]
-                        if placement["key"] == body_def["key"]
-                    )
-                    for probe in evaluated
-                }
-            )
-            representative_house = next(
-                placement["house"]
-                for placement in representative_placements["placements"]
-                if placement["key"] == body_def["key"]
-            )
+            sampled_houses = sorted({houses[body_def["key"]] for houses in houses_by_probe})
             planet_in_house.append(
                 {
                     "key": body_def["key"],
                     "name": body_def["zh"],
-                    "representative_house": representative_house,
+                    "representative_house": representative[body_def["key"]],
                     "sampled_houses": sampled_houses,
                     "status": _state(sampled_houses),
                 }
@@ -1436,40 +1422,35 @@ def _hour_angle_envelopes(
 ) -> tuple[dict, list[dict]]:
     """The angles' and house cusps' sampled envelopes."""
 
-    # Declared so mypy does not type it from whichever branch it reads first.
-    angles: dict
-    house_cusps: list[dict]
-    if representative_houses is not None:
-        angle_values = {
-            key: [probe["houses"][key] for probe in evaluated] for key in ANGLE_KEYS
-        }
-        angles = {key: _classified_envelope(values) for key, values in angle_values.items()}
-        house_cusps = []
-        for index in range(12):
-            values = [probe["houses"]["cusps"][index] for probe in evaluated]
-            # A quadrant system's cusps 1/4/7/10 are the angles themselves; a
-            # cusp equal to its angle at every sample names the angle instead
-            # of repeating its envelope.  Whole-sign, equal-from-MC and the
-            # like differ from the angle, so they keep their own.
-            angle = _ANGLE_AT_CUSP.get(index + 1)
-            if angle is not None and angle_values[angle] == values:
-                house_cusps.append({
-                    "house": index + 1,
-                    "same_as_angle": angle,
-                    "status": angles[angle]["status"],
-                })
-            else:
-                house_cusps.append({
-                    "house": index + 1,
-                    "same_as_angle": None,
-                    **_classified_envelope(values),
-                })
-    else:
-        angles = {
+    if representative_houses is None:
+        return {
             "status": NOT_REQUESTED_STATE,
             "reason_code": "house_calculation_not_executed",
-        }
-        house_cusps = []
+        }, []
+    angle_values = {
+        key: [probe["houses"][key] for probe in evaluated] for key in ANGLE_KEYS
+    }
+    angles = {key: _classified_envelope(values) for key, values in angle_values.items()}
+    house_cusps = []
+    for index in range(12):
+        values = [probe["houses"]["cusps"][index] for probe in evaluated]
+        # A quadrant system's cusps 1/4/7/10 are the angles themselves; a
+        # cusp equal to its angle at every sample names the angle instead
+        # of repeating its envelope.  Whole-sign, equal-from-MC and the
+        # like differ from the angle, so they keep their own.
+        angle = _ANGLE_AT_CUSP.get(index + 1)
+        if angle is not None and angle_values[angle] == values:
+            house_cusps.append({
+                "house": index + 1,
+                "same_as_angle": angle,
+                "status": angles[angle]["status"],
+            })
+        else:
+            house_cusps.append({
+                "house": index + 1,
+                "same_as_angle": None,
+                **_classified_envelope(values),
+            })
     return angles, house_cusps
 
 
@@ -1572,14 +1553,7 @@ def _hour_voc_summary(
 
 
 def _hour_local_time_label(request, offset_seconds: int) -> str:
-    return civil_time_label(
-        request.datetime.year,
-        request.datetime.month,
-        request.datetime.day,
-        request.datetime.hour,
-        offset_seconds // 60,
-        offset_seconds % 60 * MICROSECONDS_PER_SECOND,
-    )
+    return civil_time_label_of(_hour_start(request) + dtmod.timedelta(seconds=offset_seconds))
 
 
 def _probe_coverage(

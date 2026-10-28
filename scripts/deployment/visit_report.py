@@ -15,7 +15,8 @@ or from the Mac, `ssh USER@HOST "sudo journalctl -o json ..." | python -m
 scripts.deployment.visit_report`.  `--chart-load` instead prints, per UTC
 hour, the chart requests, how many the service refused with 503 and how many
 took a second or more, from the request events (journal JSON only: the event
-carries no time of its own).  A line it cannot read stops it: a smaller
+carries no time of its own) and the per-second admission refusal totals (busy
+refusals are written only there).  A line it cannot read stops it: a smaller
 number would look like a quieter day.
 """
 
@@ -34,7 +35,9 @@ from zoneinfo import ZoneInfo
 COUNT_ZONE = ZoneInfo("Asia/Taipei")
 VISIT_MARKER = "VISIT_COUNTS "
 EVENT_MARKER = "PRIVACY_EVENT "
+REFUSALS_MARKER = "PRIVACY_REFUSALS "
 HOUR = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}")
+SECOND = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}")
 CHART_ROUTES = frozenset({"/api/chart", "/api/chart/annual"})
 SLOW_BUCKETS = frozenset({"1_to_9s", "gte_10s"})
 
@@ -105,6 +108,23 @@ def chart_load(stream: TextIO) -> dict[str, dict[str, int]]:
     """{UTC hour: charts, refused_503, slow_1s_or_more} from the request events."""
     hours: dict[str, dict[str, int]] = {}
     for message, stamp in _entries(stream):
+        totals = _payload(message, REFUSALS_MARKER)
+        if totals is not None:
+            # Busy refusals arrive only as per-second totals, never as request events.
+            second, rows = totals.get("second_utc"), totals.get("totals")
+            if (totals.get("event") != "admission_refusals" or not isinstance(second, str)
+                    or not SECOND.fullmatch(second) or not isinstance(rows, list)):
+                raise ReportError(f"PRIVACY_REFUSALS line is not the totals' shape: {message[:120]!r}")
+            for row in rows:
+                count = row.get("count") if isinstance(row, dict) else None
+                if (not isinstance(row, dict) or not isinstance(row.get("route"), str)
+                        or not isinstance(count, int) or isinstance(count, bool) or count < 0):
+                    raise ReportError(f"PRIVACY_REFUSALS line is not the totals' shape: {message[:120]!r}")
+                if row["route"] not in CHART_ROUTES: continue
+                counts = hours.setdefault(second[:13], {"charts": 0, "refused_503": 0, "slow_1s_or_more": 0})
+                counts["charts"] += count
+                counts["refused_503"] += count
+            continue
         event = _payload(message, EVENT_MARKER)
         if event is None or event.get("route") not in CHART_ROUTES: continue
         if stamp is None: raise ReportError("--chart-load needs `journalctl -o json`: a request event carries no time")

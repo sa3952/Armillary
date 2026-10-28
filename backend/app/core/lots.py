@@ -399,13 +399,6 @@ def lots_not_applicable(state: Applicability, sect: dict, trace: Trace) -> dict:
     }
 
 
-def _lots_sect_band_fields(sect: dict) -> dict:
-    return {
-        "sect_in_near_horizon_band": sect.get("in_near_horizon_band"),
-        "sect_named_boundary_disagreement": sect.get("named_boundary_disagreement"),
-    }
-
-
 def compute_lots(
     asc: float,
     sun_lon: float,
@@ -490,7 +483,8 @@ def compute_lots(
             }
             for key, value in by_sect.items()
         },
-        **_lots_sect_band_fields(sect),
+        "sect_in_near_horizon_band": sect.get("in_near_horizon_band"),
+        "sect_named_boundary_disagreement": sect.get("named_boundary_disagreement"),
     }
 
 

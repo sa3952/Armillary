@@ -231,9 +231,12 @@ def alias_key(query: str) -> tuple[str, bool]:
         if prefix.isascii() and text[len(prefix)].isascii() and text[len(prefix)].isalnum():
             continue
         rest = _compact(text[len(prefix):].lstrip(" ,，、"))
-        # 香港x, hk 1: one character is no place name to search for.  The
-        # longest prefix that matched decides: 香港特區x is not 香港 + 特區x.
-        if len(rest) >= 2:
+        # 香港x, hk 1, 香港12, hk a b: digits, punctuation and one or two
+        # Latin letters are no place name to search for (two Chinese
+        # characters are, 灣仔).  The longest prefix that matched decides:
+        # 香港特區x is not 香港 + 特區x.
+        letters = sum(1 for ch in rest if ch.isalpha())
+        if letters >= (3 if rest.isascii() else 2):
             return rest, True
         break
     return _compact(text), False

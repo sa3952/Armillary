@@ -53,6 +53,7 @@ const MODULE_COVERAGE = Object.freeze({
   "derived_geometry": { not_rendered: "層容器本身；其下每個模組各自宣告。" },
   "derived_methods": { not_rendered: "層容器本身；其下每個模組各自宣告。" },
   "birth_time_sensitivity": { section: "sensitivity" }, "calculation_trace": { section: "trace" },
+  "place_zone_policy": { not_rendered: "詳細回應才有；頁面在輸入區依地名查詢的 zone_policy 顯示時區切換。" },
 });
 
 const DASH = "—";

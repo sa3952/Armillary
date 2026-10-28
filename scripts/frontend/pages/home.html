@@ -2,7 +2,7 @@
   <div class="wrap">
     <div class="eyebrow">古典西洋占星本命盤計算 · <b>只計算，不解盤</b></div>
     <h1>渾儀 Armillary：<br>可驗證的古典西洋占星<wbr>排盤計算器<span class="h1-sub"><span class="keep">星盤不是一張圖。</span><span class="keep">是<em>一步一步</em>算出來的。</span></span></h1>
-    <p class="lede">民用時刻 → 儒略日 → 地方恆星時 → 黃道座標 → 十二宮。每一步都攤開給你，可以拿去跟任何一台星曆機對帳。</p>
+    <p class="lede">渾儀 Armillary（Project Armillary）是古典西洋占星的星盤計算器，不是天文儀器渾儀，也不是觀星 App。<br>民用時刻 → 儒略日 → 地方恆星時 → 黃道座標 → 十二宮。每一步都攤開給你，可以拿去跟任何一台星曆機對帳。</p>
     <div class="hero-act">
       <a class="btn rev" href="/zh-TW/calculate">排一張盤 →</a>
     </div>
@@ -58,7 +58,7 @@
       </div>
     </div>
 
-    <p class="computes-route">在計算頁選「古典完整」，星盤算完會接著排出時間主星；選「自訂」，在結果的「時間主星」一章按一下排出。規則與出處見〈<a href="/zh-TW/methods/time-lords">年度時間主星的規則與出處</a>〉，入門見〈<a href="/zh-TW/blog/time-lords-introduction">年度時間主星入門</a>〉。</p>
+    <p class="computes-route">在計算頁選「古典完整」，星盤算完會接著排出時間主星；選「自訂」，在結果的「時間主星」一章按一下排出。規則與出處見〈<a href="/zh-TW/methods/time-lords">年度時間主星的規則與出處</a>〉，入門見〈<a href="/zh-TW/blog/time-lords-introduction">年度時間主星入門</a>〉。只想排其中一種：<a href="/zh-TW/calculate/profections">線上計算年度小限與年主星</a>、<a href="/zh-TW/calculate/firdaria">線上排法達時間主星</a>、<a href="/zh-TW/calculate/zodiacal-releasing">黃道釋放計算</a>、<a href="/zh-TW/calculate/decennials">十年期時間主星計算</a>。</p>
   </section>
 
   <section id="fig1">
@@ -191,7 +191,7 @@
           <li>時間轉換</li>
           <li>天體位置<em>七政</em></li>
           <li>月交點<em>密切與平均並列</em></li>
-          <li>軸點<em>ASC · MC · DSC · IC</em></li>
+          <li>軸點<em lang="en">ASC · MC · DSC · IC</em></li>
           <li>恆星<em>{{fixed_star_count}} 顆與 {{fixed_star_cluster_count}} 個星團</em></li>
           <li>Lilith 與 Priapus</li>
           <li>站心月亮</li>
@@ -251,7 +251,7 @@
       </li>
       <li>
         <b>日誌只有 {{telemetry_field_count}} 個固定欄位</b>
-        <span>每完成一個請求輸出一行事件，欄位是封閉清單。不含出生資料、IP、User-Agent、請求內容。這一行會留在容器日誌裡，保存方式見〈<a href="/zh-TW/legal/privacy">隱私政策</a>〉。</span>
+        <span>每完成一個 API 請求輸出一行事件（網頁與靜態檔不記，伺服器出錯時才記），欄位是封閉清單。不含出生資料、IP、User-Agent、請求內容。這一行會留在容器日誌裡，保存方式見〈<a href="/zh-TW/legal/privacy">隱私政策</a>〉。</span>
       </li>
       <li>
         <b>不引入第三方追蹤、分析或遠端日誌相依</b>
@@ -279,9 +279,9 @@
     <h2>離開這個網站以後，<br>這份計算仍然完整。</h2>
     <p>畫面與匯出讀同一份資料，不從畫面反推。選「運算結果＋驗算資料」匯出時，每一份都附完整逐步軌跡與計算收據，也含出生地的精確經緯度與海拔；預設的「運算結果」含天體、座標、宮位、相位與所選計算，不另列出生地座標，但星盤數值本身可推回出生地點。在相同輸入、版本、資料與計算口徑下重算，結果應當一致。</p>
     <div class="formats">
-      <div><b>JSON</b><span>完整結構</span></div>
-      <div><b>Markdown</b><span>可讀卷宗</span></div>
-      <div><b>CSV</b><span>表格核對</span></div>
+      <div><b lang="en">JSON</b><span>完整結構</span></div>
+      <div><b lang="en">Markdown</b><span>可讀卷宗</span></div>
+      <div><b lang="en">CSV</b><span>表格核對</span></div>
       <div><b>純文字</b><span>筆記保存</span></div>
     </div>
     <p class="formats-note">結果頁另有列印版面：直接列印或存成 PDF 時，隱藏表單與控制項、展開所有摺疊區塊並印出結果；若已打開「技術細節與驗算資料」取得驗算資料，收據與驗算資料也一併印出。</p>

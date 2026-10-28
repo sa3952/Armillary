@@ -18,6 +18,9 @@ from scripts.frontend.site_locale import DEFAULT_LOCALE
 # apart from the astronomical instrument it is named after; `sameAs` is the public source repository.
 ORGANIZATION_ID = "/#organization"
 ORGANIZATION_ALTERNATE_NAMES = (*build_pages.SITE_NAME.split(" "), "Project Armillary")
+# The one entity string every first-read surface (home lede, about hero, llms.txt, the public README) uses.
+ENTITY_NAME_ZH = "渾儀 Armillary（Project Armillary）"
+ENTITY_NAME_EN = "Armillary (Project Armillary)"
 ORGANIZATION_DISAMBIGUATION = ("古典西洋占星的計算網站與開源程式；名稱取自天文儀器渾儀（armillary sphere），本身不是那件儀器。")
 
 def _organization(origin: str) -> dict:
@@ -111,14 +114,18 @@ class _GlossaryEntries(HTMLParser):
         if self._field and self.entries:
             self.entries[-1][self._field] += data
 
-def glossary_entries(body: str) -> list[dict]:
-    if "gl-list" not in body:
+def _entries(parser: "_GlossaryEntries | _FaqEntries", body: str, marker: str, required: tuple[str, ...], refusal: str) -> list[dict]:
+    if marker not in body:
         return []
-    parser = _GlossaryEntries()
     parser.feed(body)
     entries = [{name: re.sub(r"\s+", " ", value).strip() for name, value in entry.items()} for entry in parser.entries]
-    if any(not entry["id"] or not entry["term"] or not entry["text"] for entry in entries):
-        raise ValueError("a glossary entry has no anchor, term or explanation")
+    if any(not entry[name] for entry in entries for name in required):
+        raise ValueError(refusal)
+    return entries
+
+def glossary_entries(body: str) -> list[dict]:
+    entries = _entries(_GlossaryEntries(), body, "gl-list", ("id", "term", "text"),
+        "a glossary entry has no anchor, term or explanation")
     if len({entry["id"] for entry in entries}) != len(entries):
         raise ValueError("two glossary entries share an anchor")
     return entries
@@ -177,67 +184,8 @@ class _FaqEntries(HTMLParser):
         if self._field:
             self.entries[-1][self._field] += data
 
-class _ArticleSources(HTMLParser):
-    """An article's listed sources: the text of each `li` in the `ol` of `section.ar-refs`, without its
-    reading-level mark (`span.rs`)."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.entries: list[str] = []
-        self._stack: list[str] = []
-        self._refs_depth: int | None = None
-        self._item: list[str] | None = None
-        self._mark_depth: int | None = None
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        classes = (dict(attrs).get("class") or "").split()
-        if tag in ("br", "img", "input", "meta", "link", "hr", "wbr"):
-            return
-        self._stack.append(tag)
-        depth = len(self._stack)
-        if tag == "section" and "ar-refs" in classes and self._refs_depth is None:
-            self._refs_depth = depth
-        elif self._refs_depth is not None and tag == "li" and self._item is None:
-            self._item = []
-        elif self._item is not None and tag == "span" and "rs" in classes and self._mark_depth is None:
-            self._mark_depth = depth
-
-    def handle_endtag(self, tag: str) -> None:
-        while self._stack:
-            depth = len(self._stack)
-            closed = self._stack.pop()
-            if self._mark_depth == depth:
-                self._mark_depth = None
-            if closed == "li" and self._item is not None and self._refs_depth is not None and depth > self._refs_depth:
-                self.entries.append(re.sub(r"\s+", " ", "".join(self._item)).strip())
-                self._item = None
-            if self._refs_depth == depth:
-                self._refs_depth = None
-            if closed == tag:
-                break
-
-    def handle_data(self, data: str) -> None:
-        if self._item is not None and self._mark_depth is None:
-            self._item.append(data)
-
-def article_sources(body: str) -> list[str]:
-    if "ar-refs" not in body:
-        return []
-    parser = _ArticleSources()
-    parser.feed(body)
-    if any(not entry for entry in parser.entries):
-        raise ValueError("an article source has no text")
-    return parser.entries
-
 def faq_entries(body: str) -> list[dict]:
-    if "faq" not in body:
-        return []
-    parser = _FaqEntries()
-    parser.feed(body)
-    entries = [{name: re.sub(r"\s+", " ", value).strip() for name, value in entry.items()} for entry in parser.entries]
-    if any(not entry["question"] or not entry["answer"] for entry in entries):
-        raise ValueError("a FAQ entry has no question or answer")
-    return entries
+    return _entries(_FaqEntries(), body, "faq", ("question", "answer"), "a FAQ entry has no question or answer")
 
 def _faq_page(item: Mapping, origin: str, entries: list[dict]) -> dict:
     """The page's visible FAQ as FAQPage structured data, for answer engines."""
@@ -250,13 +198,7 @@ def _faq_page(item: Mapping, origin: str, entries: list[dict]) -> dict:
 def _defined_term_set(item: Mapping, origin: str, entries: list[dict]) -> dict:
     """The glossary as a DefinedTermSet: one DefinedTerm per entry, at the entry's own anchor."""
     canonical = origin + item["surface"]
-    terms = []
-    for entry in entries:
-        term = {"@type": "DefinedTerm", "@id": f"{canonical}#{entry['id']}", "url": f"{canonical}#{entry['id']}",
-            "name": entry["term"], "description": entry["text"], "inDefinedTermSet": {"@id": canonical + "#terms"}}
-        if entry["en"]:
-            term["alternateName"] = entry["en"]
-        terms.append(term)
+    terms = [{**_defined_term(canonical, entry), "description": entry["text"]} for entry in entries]
     return {"@type": "DefinedTermSet", "@id": canonical + "#terms", "url": canonical, "name": item["title"].split("｜")[0],
         "inLanguage": item["locale"], "hasDefinedTerm": terms}
 
@@ -265,6 +207,8 @@ def _defined_term_set(item: Mapping, origin: str, entries: list[dict]) -> dict:
 _REFS_SECTION = re.compile(r'<section class="ar-refs"[^<>]*>(.*?)</section>', re.DOTALL)
 _REF_ITEM = re.compile(r'<li id="(ref-\d+)">(.*?)</li>', re.DOTALL)
 _FIRST_LINK = re.compile(r'<a href="([^"]+)"')
+# A span whose class list holds the token rs, with at most one level of span nested inside it.
+_READING_MARK = re.compile(r'<span class="(?:[^"]*\s)?rs(?:\s[^"]*)?"[^>]*>(?:<span\b.*?</span>|.)*?</span>', re.DOTALL)
 # The reading level that marks a source as the site's own calculation.
 COMPUTED_READING_LABEL = "rs-computed"
 
@@ -277,11 +221,16 @@ def article_source_links(body: str) -> list[dict]:
     sections = _REFS_SECTION.findall(body)
     if len(sections) > 1:
         raise ValueError("an article has more than one section.ar-refs")
+    items = _REF_ITEM.findall(sections[0]) if sections else []
+    if sections and len(re.findall(r"<li\b", sections[0])) != len(items):
+        raise ValueError("article source list is not numbered ref-1..")
     sources = []
-    for anchor, markup in _REF_ITEM.findall(sections[0]) if sections else []:
+    for anchor, markup in items:
         link = _FIRST_LINK.search(markup)
         sources.append({"id": anchor, "href": html.unescape(link.group(1)) if link else None,
-            "computed": COMPUTED_READING_LABEL in markup})
+            "computed": COMPUTED_READING_LABEL in markup, "text": _plain(_READING_MARK.sub("", markup))})
+    if any(not source["text"] for source in sources):
+        raise ValueError("an article source has no text")
     return sources
 
 def _citation(canonical: str, origin: str, source: Mapping) -> dict:
@@ -312,10 +261,10 @@ def _glossary_terms() -> list[dict]:
 def _names_term(text: str, term: Mapping) -> bool:
     return any(part in text for part in term["parts"])
 
-def _defined_term(origin: str, term: Mapping) -> dict:
-    url = f"{origin}{GLOSSARY_SURFACE}#{term['id']}"
+def _defined_term(glossary: str, term: Mapping) -> dict:
+    url = f"{glossary}#{term['id']}"
     node = {"@type": "DefinedTerm", "@id": url, "url": url, "name": term["term"],
-        "inDefinedTermSet": {"@id": origin + GLOSSARY_SURFACE + "#terms"}}
+        "inDefinedTermSet": {"@id": glossary + "#terms"}}
     if term["en"]:
         node["alternateName"] = term["en"]
     return node
@@ -401,11 +350,11 @@ def _json_ld(item: dict, origin: str, headline: str | None = None,
         # The page's recorded lastmod.  No datePublished: only an article has a recorded first-publication date.
         graph[1]["dateModified"] = updated
     # The calculator's sub-pages (the time-lord landing pages) describe the same application.
-    application = item["surface"] in APPLICATION_SURFACES or parent_surface(item,
-        build_pages.load_surface_manifest()["surfaces"]) == CALCULATE_SURFACE
+    surfaces = build_pages.load_surface_manifest()["surfaces"]
+    application = item["surface"] in APPLICATION_SURFACES or parent_surface(item, surfaces) == CALCULATE_SURFACE
     if application:
         home = item if item["surface"] == build_pages.HOME_SURFACE else next(
-            row for row in build_pages.load_surface_manifest()["surfaces"] if row["surface"] == build_pages.HOME_SURFACE
+            row for row in surfaces if row["surface"] == build_pages.HOME_SURFACE
         )
         graph.append(_web_application(origin, home))
         graph.append(_source_code(origin))
@@ -414,7 +363,7 @@ def _json_ld(item: dict, origin: str, headline: str | None = None,
         # A trail is home and the page; an article's is home, the blog and its headline; a sub-page's is home, its
         # parent and its headline.
         trail = [(build_pages.HOME_SURFACE, labels.get(build_pages.HOME_SURFACE))]
-        parent = BLOG_SURFACE if is_article(item) else parent_surface(item, build_pages.load_surface_manifest()["surfaces"])
+        parent = BLOG_SURFACE if is_article(item) else parent_surface(item, surfaces)
         if parent is not None:
             if not headline:
                 raise ValueError(f"page has no headline: {item['surface']}")
@@ -463,19 +412,17 @@ def _json_ld(item: dict, origin: str, headline: str | None = None,
         if body is not None:
             # The article's source list for answer engines: each source a CreativeWork at its anchor.
             sources = article_source_links(body)
-            names = article_sources(body)
-            if len(names) != len(sources):
-                raise ValueError(f"article source list is not numbered ref-1..: {item['key']}")
             if sources:
-                post["citation"] = [_citation(canonical, origin, {**source, "text": name}) for source, name in zip(sources, names)]
+                post["citation"] = [_citation(canonical, origin, source) for source in sources]
             if any(source["computed"] for source in sources):
                 post["isBasedOn"] = {"@type": "WebApplication", "@id": origin + APPLICATION_ID, "name": build_pages.SITE_NAME,
                     "url": origin + build_pages.HOME_SURFACE}
             about, mentions = article_terms(headline or "", body)
+            glossary = origin + GLOSSARY_SURFACE
             if about:
-                post["about"] = [_defined_term(origin, term) for term in about]
+                post["about"] = [_defined_term(glossary, term) for term in about]
             if mentions:
-                post["mentions"] = [_defined_term(origin, term) for term in mentions]
+                post["mentions"] = [_defined_term(glossary, term) for term in mentions]
         graph.append(post)
     return json.dumps({"@context": "https://schema.org", "@graph": graph}, ensure_ascii=False, sort_keys=True,
         separators=(",", ":")).replace("<", "\\u003c")

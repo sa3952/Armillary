@@ -350,16 +350,19 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         "method_provenance": "Persian and Arabic revolution tradition and its Latin heirs",
         "statement": (
             "The chart cast at SR_N, the instant the Sun returns to its natal ecliptic "
-            "longitude (year_boundary), for the birth place, in the house system the "
-            "natal chart uses, with the natal chart's zodiac. Positions only; no reading."
+            "longitude (year_boundary), with the natal chart's zodiac, for the birth place "
+            "unless the request names another place (solar_return_location), in the house "
+            "system the request names (solar_return_house_system; the calculate page sends "
+            "the one its natal chart uses). Positions only; no reading."
         ),
         "product_conventions": [
             "whole sign as the default house system: no pre-modern source read casts a "
             "return chart with whole-sign houses; the sources read use quadrant cusps",
             "a sidereal return when the natal chart is sidereal: no pre-modern source read "
             "gives a rule for it",
-            "the birth place only: casting for the place where the native is at the "
-            "return (Morin) is not offered",
+            "the birth place by default; another place is cast only when the request "
+            "names one (solar_return_location), which is Morin's practice: the earlier "
+            "return tradition read uses the birth place",
         ],
         "precession_note": (
             "None of the classical texts read asks for a precession correction of the "

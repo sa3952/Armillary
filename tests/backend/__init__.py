@@ -218,6 +218,19 @@ def walk_json(node: Any, sequences: tuple[type, ...] = (list,), _path: JsonPath 
         yield from walk_json(value, sequences, (*_path, key))
 
 
+def json_strings(node: Any) -> list[str]:
+    """Every dictionary key and string value in a decoded JSON value."""
+
+    return [text for _path, key, value in walk_json(node)
+            for text in ((key,) if isinstance(key, str) else ()) + ((value,) if isinstance(value, str) else ())]
+
+
+def json_dicts(node: Any, sequences: tuple[type, ...] = (list,)) -> list[dict]:
+    """`node` and every dict under it, parents before children."""
+
+    return [value for _path, _key, value in walk_json(node, sequences) if isinstance(value, dict)]
+
+
 def json_path(path: JsonPath, root: str = "$") -> str:
     """`root.key[0].key` for a `walk_json` path."""
 

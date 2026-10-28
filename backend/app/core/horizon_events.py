@@ -782,6 +782,9 @@ SEARCH_GRID_DAYS: Final = 1.0
 # chain resumes a minute after each event; two events of one kind a minute
 # apart do not exist outside a grazing contact.
 CHAIN_RESUME_DAYS: Final = 1.0 / 1440.0
+# Roots of one event solved from two grid cells lie within this of each other;
+# two real events of one kind are hours apart.
+SAME_EVENT_DAYS: Final = 60.0 / SECONDS_PER_DAY
 # A chain finds at most a couple of events of one kind per day (a grazing
 # contact adds one more); four is a bound no real sky reaches.
 WALK_EVENTS_PER_DAY_BOUND: Final = 4
@@ -974,19 +977,38 @@ def _searched_pair(
         "next": {"status": "not_searched"},
     }
     values: dict[str, dict | None] = {"previous": None, "next": None}
-    for side, searcher in (("previous", _search_previous), ("next", _search_next)):
+    found: dict[str, float | None] = {"previous": None, "next": None}
+
+    def run(side: str, reference: float) -> None:
+        searcher = _search_previous if side == "previous" else _search_next
         try:
             status, jd = searcher(
-                reference_jd_ut, body_id, event_name, geopos, pressure_hpa, temperature_c,
+                reference, body_id, event_name, geopos, pressure_hpa, temperature_c,
                 probe_cache,
             )
         except swe.Error:
             # A closed code only: Swiss messages can name the ephemeris
             # directory and the instant asked for.
-            search[side]["status"] = "numerically_unavailable"
-            search[side]["error"] = SEARCH_SWISS_ERROR_CODE
-            continue
-        search[side]["status"] = status
+            search[side] = {"status": "numerically_unavailable", "error": SEARCH_SWISS_ERROR_CODE}
+            found[side] = None
+            return
+        search[side] = {"status": status}
+        found[side] = jd
+
+    run("previous", reference_jd_ut)
+    run("next", reference_jd_ut)
+    previous, following = found["previous"], found["next"]
+    if previous is not None and following is not None and following - previous < SAME_EVENT_DAYS:
+        # Two grid cells solved one event to roots either side of the
+        # reference: it is one event, on the side its middle lies, and the
+        # other side is searched again beyond it.
+        middle = (previous + following) / 2
+        if middle > reference_jd_ut:
+            run("previous", previous - SAME_EVENT_DAYS)
+        else:
+            run("next", following + SAME_EVENT_DAYS)
+    for side in ("previous", "next"):
+        jd = found[side]
         values[side] = _event_value(jd) if jd is not None else None
     return {
         # Pair-level status is finalised once sampled evidence is available;

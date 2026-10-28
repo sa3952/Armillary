@@ -21,7 +21,7 @@ import swisseph as swe
 from ..ephemeris import guarded_calc
 from .formatting import dms_text
 from .invariants import InternalInvariantError
-from .method_status import method_head
+from .method_status import method_head, profile_period
 from .module_state import (
     Applicability,
     ModuleState,
@@ -396,6 +396,7 @@ def compute_motion_states(
     sun = by_key["sun"]
     profile_results: dict[str, dict] = {
         profile: {
+            "period": profile_period(profile),
             "means": _means_table(profile),
             "courses": {},
             "courses_seen_in_birth_time_interval": None if interval is None else {},

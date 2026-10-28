@@ -1576,6 +1576,13 @@
    "place": "Rockport (39.88087, -87.2789), US"
   },
   {
+   "source_record_id": "4266307",
+   "expected": "America/Chicago",
+   "corrected": "America/Indiana/Vincennes",
+   "place": "Vincennes (38.67727, -87.52863), US",
+   "authority": "Knox County, Indiana: US DOT final rule, Standard Time Zone Boundary in the State of Indiana, 72 FR 54367 (2007-09-25), effective 2007-11-04"
+  },
+  {
    "source_record_id": "4653999",
    "expected": "America/Chicago",
    "corrected": "America/New_York",
@@ -1586,6 +1593,13 @@
    "expected": "America/Juneau",
    "corrected": "America/Sitka",
    "place": "Klawock (55.55222, -133.09583), US"
+  },
+  {
+   "source_record_id": "5710035",
+   "expected": "America/Los_Angeles",
+   "corrected": "America/Denver",
+   "place": "West Wendover (40.7391, -114.07335), US",
+   "authority": "City of West Wendover, Elko County, Nevada: US DOT final rule, Relocation of Standard Time Zone Boundary in the State of Nevada, Federal Register 1999-10-21 (FR Doc. 99-27240); 49 CFR 71.9(b), effective 1999-10-31"
   },
   {
    "source_record_id": "5845544",
@@ -1742,6 +1756,13 @@
    "expected": "Asia/Hovd",
    "corrected": "Asia/Ulaanbaatar",
    "place": "Asgat (49.51082, 96.79944), MN"
+  },
+  {
+   "source_record_id": "7261646",
+   "expected": "America/Phoenix",
+   "corrected": "America/Denver",
+   "place": "LeChee (36.86211, -111.44063), US",
+   "authority": "Navajo Nation (Western Agency), LeChee Chapter: Navajo Tribal Council resolution of March 1968 (number not found), reported by AP 2024-03 (T. Tang); LeChee Chapter minutes 2026-09-14 ('All times are Day Light Time'); tzdb northamerica: America/Denver for the Navajo Nation, effective 1968-03. Births before 1967 are presumed: tzdb's America/Denver applies Denver city rules in 1920-21 and 1965-66, which differ from Arizona's America/Phoenix"
   },
   {
    "source_record_id": "7306526",
@@ -2521,20 +2542,6 @@
    "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
   },
   {
-   "source_record_id": "4266307",
-   "expected": "America/Chicago",
-   "corrected": "America/Indiana/Vincennes",
-   "place": "Vincennes (38.67727, -87.52863), US",
-   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
-  },
-  {
-   "source_record_id": "5710035",
-   "expected": "America/Los_Angeles",
-   "corrected": "America/Denver",
-   "place": "West Wendover (40.7391, -114.07335), US",
-   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
-  },
-  {
    "source_record_id": "5764864",
    "expected": "America/Chicago",
    "corrected": "America/Denver",
@@ -2742,13 +2749,6 @@
    "expected": "America/Edmonton",
    "corrected": "America/Inuvik",
    "place": "Deline (65.19844, -123.40565), CA",
-   "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
-  },
-  {
-   "source_record_id": "7261646",
-   "expected": "America/Phoenix",
-   "corrected": "America/Denver",
-   "place": "LeChee (36.86211, -111.44063), US",
    "reason": "a boundary row: the coordinate's zone is not the zone most of its nearest same-country neighbours carry"
   },
   {

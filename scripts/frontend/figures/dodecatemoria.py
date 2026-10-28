@@ -547,6 +547,7 @@ def build() -> tuple[dict[str, str], list[str]]:
         f"走了約 {round(twelfth_moved)}°",
         f"月亮的十二分部在取樣的時刻裡出現過{zh_counts[moon_day - 1]}個星座",
         "金星用乘以 12 時取樣到兩個星座，改用乘以 13 只有一個",
-        f"上升點、命運點、精神點各取樣到{zh_counts[sampled_each - 1]}個",
+        # The count depends on the search's added midpoints, so the prose says only "several".
+        "上升點、命運點、精神點則各取樣到好幾個" if sampled_each > 1 else "上升點、命運點、精神點各只取樣到一個",
     ]
     return {**figures, "examples": examples, "hour": hour_rows}, quoted

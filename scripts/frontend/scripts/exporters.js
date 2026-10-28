@@ -7,7 +7,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function buildExportPipeline(Labels) {
   "use strict";
 
-  const EXPORT_CONTRACT_VERSION = "0.5.0";
+  const EXPORT_CONTRACT_VERSION = "0.6.0";
   // 畫面（view-model.js）與匯出共用這一份；與後端 time_utils.py 同字由 tests/integration/test_frontend_contract.py 對
   // 照。1972 年前與約 2033-09 以後的盤是 UT1 而不是 UTC；這時欄位值結尾的 Z 只是沿用欄位格式，所以一併去掉。
   const TIME_SCALE_ZH = Object.freeze({
@@ -24,7 +24,9 @@
     const modern = !era || era === "modern_leap_second_utc";
     const scale = modern ? "UTC" : Labels.closedLabel(era, TIME_SCALE_ZH, "時間尺度");
     const label = precision && precision !== "exact" ? `代表性錨點（非出生時刻，${scale}）` : scale;
-    return { label, value: modern ? value : String(value).replace(/Z$/, "") };
+    // 與〈時間轉換〉表的 UTC 列同一種寫法（日期 空格 時刻，到秒），同一份檔案不出現兩種時刻格式；完整精度在驗算資料。
+    const shown = String(value).replace(/^(-?\d{4,}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(?:\.\d+)?Z?$/, "$1 $2");
+    return { label, value: modern ? shown : shown.replace(/Z$/, "") };
   }
 
   // 輸入假設：出生時刻的把握程度（兩種模式都印，附代碼）；輸入座標的原值只在驗算資料（Dossier 的
@@ -68,8 +70,19 @@
     return COMPUTATION_MODE_FIELDS.filter(([key]) => Object.hasOwn(mode, key))
       .filter(([key]) => key !== "ayanamsa" || mode.zodiac === "sidereal")
       .map(([key, label]) => ({
-        key, label, value: typeof mode[key] === "boolean" ? (mode[key] ? "是" : "否") : String(mode[key]), raw: mode[key],
+        key, label, value: modeValueText(mode[key]), raw: mode[key],
       }));
+  }
+  // 計算模式的值：中文在前，後端代碼留在［］裡供對照（與輸入假設同一寫法）；表外的代碼照原樣。
+  const MODE_VALUE_ZH = Object.freeze({
+    tropical: "回歸黃道", sidereal: "恆星黃道", geocentric: "地心", topocentric: "站心", heliocentric: "日心",
+    barycentric: "太陽系質心", apparent: "視位置", true: "真位置", of_date: "當日黃道", j2000: "J2000 黃道",
+    fagan_bradley: "Fagan–Bradley", hipparchos: "Hipparchos", sassanian: "Sassanian", aldebaran_15_tau: "Aldebaran 15° 金牛",
+  });
+  function modeValueText(value) {
+    if (typeof value === "boolean") return value ? "是" : "否";
+    const code = String(value);
+    return Object.hasOwn(MODE_VALUE_ZH, code) ? `${MODE_VALUE_ZH[code]}［${code}］` : code;
   }
 
   function contractVersionLines(document) {
@@ -87,7 +100,7 @@
 
   const OUTPUT_MODES = Object.freeze({ chart_data_only: "chart_data_only", reproducibility_detail: "reproducibility_detail" });
   const REPRODUCIBILITY_SECTION_IDS = new Set(["trace", "requested_options", "contract", "receipt"]);
-  const SUPPORTED_RESPONSE_CONTRACTS = Object.freeze({ "0.21.0": Object.freeze(["0.13.0"]) });
+  const SUPPORTED_RESPONSE_CONTRACTS = Object.freeze({ "0.22.0": Object.freeze(["0.13.0"]) });
 
   function assertCompatibleSourceResponse(sourceResponse) {
     const apiVersion = sourceResponse && sourceResponse.schema_version;
@@ -500,7 +513,7 @@
     // 欄位是中文標籤、值是後端代碼（計算模式行一律印代碼），代碼欄是欄位的鍵。
     computationModeEntries(document.source_response).forEach((entry, index) => {
       rows.push([
-        "_computation_mode", "計算模式", "計算模式", index + 1, entry.label, entry.raw === null ? "null" : String(entry.raw), entry.key,
+        "_computation_mode", "計算模式", "計算模式", index + 1, entry.label, typeof entry.raw === "boolean" ? entry.value : entry.raw === null ? "null" : String(entry.raw), entry.key,
       ]);
     });
     inputAssumptionEntries(document).forEach((entry, index) => {
@@ -558,10 +571,13 @@
    * textContent、CSV 有 formula hardening、Markdown 走這裡。`&` 必須先換，否則後面換出來的 `&lt;` 會再被換一次。
    */
   function escapeMarkdownText(value) {
-    return text(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/([\\`*_{}\[\]()#+|~])/g, "\\$1")
-      // 行首的 `-`（清單／分隔線）與 `1.`（編號清單）不在字元
-      // 類裡，因為它們只在行首有意義；換行已折成 <br>，所以只看字串開頭。
-      .replace(/^(\s{0,3})-(?=[\s-]|$)/, "$1\\-").replace(/^(\s{0,3})(\d{1,9})\.(?=\s|$)/, "$1$2\\.")
+    return text(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/([\\`*\[\]|~])/g, "\\$1")
+      // 只跳脫真的會改變渲染的位置（跳脫過頭會讓讀者看到滿篇反斜線）：`_` 夾在兩個英數字之間不成強調（代碼
+      // ecliptic_frame 照原樣）；`(` `)` 只在 `]` 之後成連結，而 `[` `]` 已跳脫；`{}` 在 CommonMark 沒有意義；`#` 只在
+      // 開頭、空白或 <br> 之後成標題或 ATX 收尾；`-`、`+`、`1.`、`1)` 只在行首成清單，換行已折成 <br>，所以只看字串開頭。
+      .replace(/_/g, (mark, at, whole) => (/[A-Za-z0-9]/.test(whole[at - 1] || "") && /[A-Za-z0-9]/.test(whole[at + 1] || "") ? mark : "\\_"))
+      .replace(/(^|[\s>])#/g, "$1\\#")
+      .replace(/^(\s{0,3})([-+])(?=[\s-]|$)/, "$1\\$2").replace(/^(\s{0,3})(\d{1,9})([.)])(?=\s|$)/, "$1$2\\$3")
       // GFM 的延伸自動連結把散文裡的 http(s)://、ftp://、mailto:、xmpp:、電子郵件地址與 www. 變成
       // 可點的連結，markdown-it 的 linkify 另認得只剩 // 開頭的網址；跳脫 scheme 的冒號（不論前面
       // 接什麼：1http:// 在 GFM 也成連結）、// 的第二條斜線、郵件地址的 @ 與 www 後的點，渲染出的

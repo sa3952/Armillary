@@ -232,7 +232,10 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         "naming_note": (
             "Neither nocturnal profile is marked the only correct one; the "
             "provenance says 'tradition, explicit profile per Abu Ma'shar', not that "
-            "Abu Ma'shar invented the technique."
+            "Abu Ma'shar invented the technique. The id keeps his name as the "
+            "secondary literature attributes it, but his book was not consulted and "
+            "al-Qabisi is not verified: the source actually read for the nodes-after-"
+            "Mercury order is al-Biruni §438-439 in Wright's translation."
         ),
     },
 }

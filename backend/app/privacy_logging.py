@@ -199,13 +199,38 @@ _PROCESS_CONTROL_EXCEPTIONS: Final = (
     GeneratorExit,
 )
 
+_CSP_HEAD: Final = (
+    "default-src 'self'; base-uri 'none'; object-src 'none'; "
+    "frame-ancestors 'none'; script-src 'self'; style-src 'self'"
+)
+_CSP_TAIL: Final = (
+    "; connect-src 'self'; form-action 'self'; "
+    "require-trusted-types-for 'script'; trusted-types 'none'"
+)
+CONTENT_SECURITY_POLICY: Final = _CSP_HEAD + _CSP_TAIL
+# A page carries its stylesheet inline (one <style> element, written by the
+# page build) so the first paint waits for no second request.  Its policy
+# admits exactly that element by digest: the base policy with one or more
+# 'sha256-...' sources added to style-src and nothing else changed.
+_STYLE_SOURCE: Final = r"'sha256-[A-Za-z0-9+/]{43}='"
+_PAGE_POLICY: Final = re.compile(
+    re.escape(_CSP_HEAD) + rf"(?: {_STYLE_SOURCE})+" + re.escape(_CSP_TAIL)
+)
+
+
+def page_content_security_policy(style_digests: tuple[str, ...]) -> str:
+    """The policy of a page whose inline stylesheets have these base64 SHA-256 digests."""
+
+    if not style_digests:
+        return CONTENT_SECURITY_POLICY
+    policy = _CSP_HEAD + "".join(f" 'sha256-{digest}'" for digest in style_digests) + _CSP_TAIL
+    if _PAGE_POLICY.fullmatch(policy) is None:
+        raise ValueError("inline stylesheet digest is not a base64 SHA-256 value")
+    return policy
+
+
 _SECURITY_HEADERS: Final = {
-    "Content-Security-Policy": (
-        "default-src 'self'; base-uri 'none'; object-src 'none'; "
-        "frame-ancestors 'none'; script-src 'self'; style-src 'self'; "
-        "connect-src 'self'; form-action 'self'; "
-        "require-trusted-types-for 'script'; trusted-types 'none'"
-    ),
+    "Content-Security-Policy": CONTENT_SECURITY_POLICY,
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
@@ -572,8 +597,13 @@ def _apply_security_headers(
     message: Message, request_id: str, cache_control: str
 ) -> None:
     headers = MutableHeaders(scope=message)
+    page_policy = headers.get("Content-Security-Policy")
     for name, value in _SECURITY_HEADERS.items():
         headers[name] = value
+    # The static mount's page policy survives only in its exact shape; any
+    # other value an inner layer set is replaced by the base policy.
+    if page_policy is not None and _PAGE_POLICY.fullmatch(page_policy):
+        headers["Content-Security-Policy"] = page_policy
     headers["Cache-Control"] = cache_control
     headers["X-Request-ID"] = request_id
 

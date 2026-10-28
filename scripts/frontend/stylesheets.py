@@ -1,7 +1,8 @@
 """Per-page stylesheet bundles, built from the readable sources in `styles/`.
 
-A page loads one render-blocking stylesheet: tokens.css and page.css, then calculate.css and timelords.css on the
-calculator or article.css (and figures.css) on an article, in source order, cut to the rules its page could match.
+A page carries one stylesheet inline in its head (build_pages.inline_stylesheet): tokens.css and page.css, then
+calculate.css and timelords.css on the calculator or article.css (and figures.css) on an article, in source order, cut
+to the rules its page could match.
 
 Which rules a page receives is read from the page itself: the classes and ids its markup carries and its scripts'
 string literals can add (`names_on_page`).  A rule goes to a page when every class and id one of its selectors
@@ -163,10 +164,7 @@ SHARED_BUNDLES: Mapping[str,
     "calculate-profections", "calculate-zodiacal-releasing"})}
 
 def bundle_name(audience: str) -> str:
-    for name, members in SHARED_BUNDLES.items():
-        if audience in members:
-            return name
-    return audience
+    return next((name for name, members in SHARED_BUNDLES.items() if audience in members), audience)
 
 def bundle_path(audience: str) -> str:
     return f"{BUNDLE_DIRECTORY}/{bundle_name(audience)}.css"

@@ -505,6 +505,11 @@ def civil_time_label(
     )
 
 
+def civil_time_label_of(value: dtmod.datetime, *, separator: str = " ") -> str:
+    second_microseconds = value.second * MICROSECONDS_PER_SECOND + value.microsecond
+    return civil_time_label(*value.timetuple()[:5], second_microseconds, separator=separator)
+
+
 # A Julian day near 2.45e6 resolves 2^-31 day (about 40 µs), and Swiss's own
 # UTC round trip is off by at most half of that, so an instant made from a
 # whole millisecond can come back as 59.99998659 s.  Only such a reading, within

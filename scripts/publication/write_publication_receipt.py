@@ -62,7 +62,14 @@ EVIDENCE_NAME = "publication-evidence.json"
 EVIDENCE_SCHEMA = "corresponding-source-publication-evidence-v3"
 MAX_EVIDENCE_BYTES = 32 * 1024
 # The only identity a public commit or release tag may carry (no personal address).
-NOREPLY_EMAIL = re.compile(r"[^@\s]+@users\.noreply\.github\.com", re.IGNORECASE)
+# GitHub's noreply forms (id+login, or the older bare login), and the Actions bot by name.
+NOREPLY_EMAIL = re.compile(
+    r"(?:\d+\+)?[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})@users\.noreply\.github\.com"
+    r"|41898282\+github-actions\[bot\]@users\.noreply\.github\.com",
+    re.IGNORECASE,
+)
+# GitHub commits a change made in its web interface as this committer; the author is still the account's own address.
+WEB_COMMITTER_EMAIL = "noreply@github.com"
 REVISION_RE = re.compile(r"^[0-9a-f]{40}$")
 MAX_ARCHIVE_EXPANDED_BYTES = 2 * 1024 * 1024 * 1024
 _scrubbed_git_environment = consumer.anonymous_git_environment
@@ -409,6 +416,31 @@ def verify_receipt(
     return evidence
 
 
+def require_noreply_identities(checkout: Path, *revisions: str) -> int:
+    """Every commit `git log REVISIONS` lists in `checkout` names a GitHub noreply
+    author and committer; the number of commits read.  Raw metadata, not mailmap:
+    what is checked is what each commit stores."""
+    with tempfile.TemporaryDirectory(prefix="identities-home-") as raw_home:
+        try:
+            listed = subprocess.run(
+                ["git", "log", "-z", "--no-show-signature", "--format=%H%x00%ae%x00%ce", *revisions, "--"],
+                cwd=checkout, capture_output=True, text=True, check=True,
+                env=_scrubbed_git_environment(Path(raw_home)),
+            ).stdout
+        except (OSError, subprocess.CalledProcessError) as error:
+            raise ReceiptRefusal(f"cannot read the commits of {checkout}: {error}") from None
+    fields = listed.split("\0")
+    if fields[-1:] != [""] or (len(fields) - 1) % 3:
+        raise ReceiptRefusal("cannot parse commit identities")
+    fields.pop()
+    for offset in range(0, len(fields), 3):
+        commit, author, committer = (field.strip() for field in fields[offset:offset + 3])
+        for role, email in (("author", author), ("committer", committer)):
+            if NOREPLY_EMAIL.fullmatch(email) is None and not (role == "committer" and email == WEB_COMMITTER_EMAIL):
+                raise ReceiptRefusal(f"public commit {commit} {role} must use a GitHub noreply identity")
+    return len(fields) // 3
+
+
 def compare_commit(*, candidate: Path, checkout: Path) -> str:
     """Before any push: the commit at `checkout` HEAD holds exactly the candidate,
     and every commit the push would add (reachable from HEAD, on no
@@ -477,6 +509,9 @@ def main(argv: list[str] | None = None) -> int:
     compare = commands.add_parser("compare", help="before pushing: the local commit equals the candidate")
     compare.add_argument("--candidate", type=Path, required=True)
     compare.add_argument("--checkout", type=Path, required=True)
+    identities = commands.add_parser(
+        "identities", help="before pushing: every commit not yet on a remote names a GitHub noreply identity")
+    identities.add_argument("--checkout", type=Path, required=True)
     verify = commands.add_parser("verify", help="re-check a receipt anonymously")
     verify.add_argument("--receipt", type=Path, required=True)
     verify.add_argument("--revision", required=True)
@@ -496,6 +531,10 @@ def main(argv: list[str] | None = None) -> int:
         elif arguments.command == "compare":
             revision = compare_commit(candidate=arguments.candidate, checkout=arguments.checkout)
             print(f"COMMIT EQUALS CANDIDATE: {revision}")
+            return 0
+        elif arguments.command == "identities":
+            count = require_noreply_identities(arguments.checkout, "HEAD", "--not", "--remotes")
+            print(f"PUBLIC COMMIT IDENTITIES NOREPLY: {count} unpushed commit(s)")
             return 0
         else:
             result = verify_receipt(

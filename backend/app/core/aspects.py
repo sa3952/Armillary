@@ -418,6 +418,20 @@ def _perfection_times(
     )
 
 
+def _orb_configuration(policy: OrbPolicy) -> tuple:
+    """The receipt's configuration mode, source and rule: the first setting in force, fixed threshold first."""
+    profile = policy.profile
+    if policy.fixed_orb_degrees is not None:
+        return "user_fixed_pair_threshold", "user_override", "fixed_pair_threshold"
+    if profile is not None and policy.scale_percent is not None:
+        return "named_profile_scaled", "user_scaled_named_profile", profile["rule"]
+    if profile is not None:
+        return "named_profile", profile.get("provenance"), profile["rule"]
+    if policy.angle_orb_degrees is not None:
+        return "angle_pair_override_only", "user_override", "angle_pair_threshold"
+    return "none", None, None
+
+
 def _orb_receipt(participants: list[dict], policy: OrbPolicy) -> dict:
     """Return the effective orb table independently of pair rendering.
 
@@ -430,12 +444,8 @@ def _orb_receipt(participants: list[dict], policy: OrbPolicy) -> dict:
     participant_orbs = []
     for participant in participants:
         eligible = participant["category"] in ORB_ELIGIBLE_CATEGORIES
-        orb = (
-            profile["orbs_degrees"].get(participant["key"]) * scale
-            if profile is not None and eligible
-            and profile["orbs_degrees"].get(participant["key"]) is not None
-            else None
-        )
+        raw = profile["orbs_degrees"].get(participant["key"]) if profile is not None and eligible else None
+        orb = raw * scale if raw is not None else None
         if participant["category"] == "angle" and angle_orb_degrees is not None:
             reason_code = "angle_pair_threshold_recorded_separately"
         elif fixed_orb_degrees is not None:
@@ -456,28 +466,7 @@ def _orb_receipt(participants: list[dict], policy: OrbPolicy) -> dict:
             }
         )
 
-    # str | None: profile.get("provenance") may be absent.
-    source: str | None
-    if fixed_orb_degrees is not None:
-        configuration_mode = "user_fixed_pair_threshold"
-        source = "user_override"
-        rule = "fixed_pair_threshold"
-    elif profile is not None and orb_scale_percent is not None:
-        configuration_mode = "named_profile_scaled"
-        source = "user_scaled_named_profile"
-        rule = profile["rule"]
-    elif profile is not None:
-        configuration_mode = "named_profile"
-        source = profile.get("provenance")
-        rule = profile["rule"]
-    elif angle_orb_degrees is not None:
-        configuration_mode = "angle_pair_override_only"
-        source = "user_override"
-        rule = "angle_pair_threshold"
-    else:
-        configuration_mode = "none"
-        source = None
-        rule = None
+    configuration_mode, source, rule = _orb_configuration(policy)
 
     in_force = (
         profile is not None

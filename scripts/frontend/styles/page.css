@@ -15,6 +15,8 @@ h1,h2,h3{word-break:keep-all; overflow-wrap:anywhere}
 .skip-link:focus{transform:translateY(0)}
 .wrap{max-width:var(--wrap); margin:0 auto; padding:0 var(--pad)}
 .mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
+/* 多調希臘文：先找帶完整多調字形的襯線字，避免重音落在 CJK 字型的 fallback 上。 */
+[lang="grc"]{font-family:"Gentium Plus","GFS Didot","Palatino Linotype","Times New Roman",var(--serif)}
 /* 段落、清單與定義清單裡的長網址與雜湊可在窄螢幕斷開；表格不加，否則 Chrome 算欄寬會把表撐寬。 */
 :where(p, li, dd, dt) > .mono, :where(p.mono){overflow-wrap:anywhere}
 
@@ -66,7 +68,7 @@ header .wrap{display:flex; align-items:center; flex-wrap:wrap; gap:.6rem var(--s
 /* ─── 首屏行動列：次要按鈕指向範例卷宗，不交出生資料也能看到完整輸出。 ─── */
 .hero-act{display:flex; flex-wrap:wrap; align-items:center; gap:var(--s3); margin-top:var(--s3)}
 .btn.rev{background:var(--paper); color:var(--plate)}
-@media (hover:hover){.btn.rev:hover{background:var(--accent-rev); color:var(--plate)}}
+@media (hover:hover){.btn.rev:hover{background:var(--paper-2); color:var(--plate)}}
 
 /* ─── 首屏憑證列：內容須為可查證事實（AGPL-3.0 見 /legal/copyright，追蹤器為零見 /security）。 ─── */
 .hero .creds{flex-wrap:wrap}
@@ -307,11 +309,12 @@ p{max-width:var(--measure); color:var(--ink-dim)}
 .cta h2{margin-bottom:var(--s1); max-width:24rem}
 .btn{display:inline-block; font-family:var(--sans); font-size:var(--fs-aside); background:var(--ink); color:var(--paper);
   padding:1.05rem 2.4rem; text-decoration:none}
-@media (hover:hover){.btn:hover{background:var(--accent)}}
+@media (hover:hover){.btn:hover{background:var(--ink-dim)}}
 
 footer{border-top:1px solid var(--ink); padding:var(--s3) 0 var(--s5)}
 footer .wrap{display:flex; gap:var(--s3); flex-wrap:wrap}
 footer span{font-family:var(--sans); font-size:var(--fs-small); color:var(--ink-faint); letter-spacing:0}
+footer a.site-version{color:var(--ink-faint); text-decoration:none; border-bottom:1px dashed currentColor}
 
 @media (max-width:900px) {
   :root{--pad:1.6rem; --s5:3.75rem; --s6:5rem; --row:auto}
@@ -340,11 +343,11 @@ main{display:block}
 .page-body p{margin-bottom:var(--s2)}
 /* 段落節奏（書頁）：分節線上方留得比下方多，線屬於它下面的標題，不懸在兩段之間。 */
 .page-body section{padding:var(--s3) 0 var(--s4); border-top:1px solid var(--hair-soft)}
-.lede{font-size:var(--fs-lead); color:var(--ink-dim); max-width:var(--measure)}
+.lede{font-size:var(--fs-lead); color:var(--ink-dim); max-width:var(--measure); text-wrap:pretty}
 /* `.cta` 在本檔另有一個同名的版面容器，因此這兩條必須以 `.page-body` 限定範圍，否則同名同分數的後者會覆蓋前者。 */
 .page-body .cta{display:inline-block; background:var(--ink);
   padding:.95rem 2.4rem; text-decoration:none; margin-top:var(--s2)}
-@media (hover:hover){.page-body .cta:hover{background:var(--accent)}}
+@media (hover:hover){.page-body .cta:hover{background:var(--ink-dim)}}
 .draft-flag{max-width:var(--measure);
   padding:.75rem 0 .75rem 1.1rem; color:var(--ink-dim); font-size:var(--fs-note); line-height:var(--lh-body)}
 
@@ -484,7 +487,7 @@ footer .sitemap{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); g
 .ticks,.opens,.notdone,.asks,.weak{list-style:none; padding:0}
 .ticks li{position:relative; padding-left:1.6rem; margin-bottom:var(--s2); font-size:var(--fs-body); line-height:var(--lh-body);
   color:var(--ink-dim)}
-.ticks li::before{content:""; position:absolute; left:0; top:.85em; width:.7rem; height:1px; background:var(--accent)}
+.ticks li::before{content:""; position:absolute; left:0; top:.85em; width:.7rem; height:2px; background:var(--accent)}
 .ticks b{color:var(--ink)}
 
 /* ─── 細節收合 ─── */
@@ -687,6 +690,8 @@ footer .sitemap{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); g
 .story .ab-sec + .ab-sec{border-top:1px solid var(--hair)}
 .ab-sec h2{margin:0 0 var(--s3); line-height:var(--lh-head)}
 .ab-sec p{max-width:var(--measure); font-size:var(--fs-body); line-height:var(--lh-body)}
+.ab-sec .cl-date{font-family:var(--sans); font-size:var(--fs-small); color:var(--ink-faint)}
+.ab-sec h3{font-family:var(--sans); font-size:var(--fs-small); font-weight:400; color:var(--ink-dim); margin:var(--s3) 0 var(--s1)}
 
 /* 拉出的引句：本頁的節奏由它斷開，取代其他頁的分節線 */
 .story .pull{font-family:var(--serif); font-size:1.7rem; line-height:1.5; color:var(--ink); margin:var(--s4) 0 var(--s4);
@@ -1800,7 +1805,7 @@ main .eyebrow{font-family:var(--sans); text-transform:none; letter-spacing:0; fo
 /* 首屏下緣不畫線：緊接著的數字列自己有一條墨線收住。 */
 .page-body:not(.article) > section.ap-hero{border-bottom:0; padding-bottom:var(--s2)}
 .apparatus .ap-hero .eyebrow{color:var(--ink-faint); margin:0}
-.apparatus .ap-q{max-width:var(--measure); margin-top:var(--s2); font-size:var(--fs-body); line-height:var(--lh-body); color:var(--ink-dim)}
+.apparatus .ap-q{max-width:var(--measure); text-wrap:pretty; margin-top:var(--s2); font-size:var(--fs-body); line-height:var(--lh-body); color:var(--ink-dim)}
 .rail{background:transparent; color:var(--ink-faint); border:0; border-top:1px solid var(--hair); border-bottom:1px solid var(--hair)}
 .apparatus .rail b{color:var(--ink)}
 .apparatus .rail-row{padding:var(--s2) 0}
@@ -1940,3 +1945,8 @@ figcaption,caption{text-wrap:pretty}
 .scroll-hint::before{content:"↔ "; content:"↔ " / ""}
 .scroll-hint[hidden]{display:none}
 @media print{.scroll-hint{display:none}}
+/* 子計算頁的常見問題：一題一個原生 <details>，問題就是 summary（與計算頁的常見問題同一個樣子）。 */
+.lp-faq-q{border-bottom:1px solid var(--hair-soft); max-width:var(--measure)}
+.lp-faq-q > summary{cursor:pointer; padding:.7rem 0; font-size:var(--fs-aside); line-height:1.6; color:var(--ink)}
+.lp-faq-q p{margin:0 0 .8rem; font-size:var(--fs-note); line-height:1.75; color:var(--ink-dim)}
+@media print{.lp-faq{display:none}}

@@ -1,0 +1,50 @@
+{
+ "geonames_cities500/5710035": {
+  "zone": "America/Denver",
+  "alt_zones": [
+   {
+    "zone": "America/Los_Angeles",
+    "from": "1980-01-01",
+    "until": "1999-10-31T09:00:00Z",
+    "label": "市府試行太平洋時間期間（起訖不明）"
+   }
+  ],
+  "overrides": [],
+  "legal_zone": null,
+  "uncertain_before": null,
+  "note_key": "west_wendover_1999",
+  "note": "West Wendover 依美國運輸部 1999 年規則於 1999-10-31 正式改屬山區時間；該規則指出當地早已實際使用山區時間，本站對所有日期採山區時間。1980 至 1990 年代市府曾試行太平洋時間，若出生紀錄的時間是依太平洋時間記錄，請切換。",
+  "source": "US DOT final rule, 64 FR 56705-56707 (1999-10-21, FR Doc. 99-27240): the mayor's petition and the 1999-08-10 hearing state the city has always observed Mountain time; 49 CFR 71.9(b)"
+ },
+ "geonames_cities500/5764864": {
+  "zone": "America/Chicago",
+  "alt_zones": [
+   {
+    "zone": "America/Denver",
+    "label": "法規時區（山區時間）"
+   }
+  ],
+  "overrides": [],
+  "legal_zone": "America/Denver",
+  "uncertain_before": "1967-01-01",
+  "note_key": "de_facto_central_fort_pierre",
+  "note": "Fort Pierre 依聯邦法規屬山區時間（49 CFR 71.7(g)：位在界線上的城鎮屬山區時間），但當地實際使用中部時間，本站依實際使用。1967 年以前南達科他州是否實行夏令時間沒有一手資料，該期間的時區不確定。",
+  "source": "49 CFR 71.7(b) and (g); City of Fort Pierre administrator, 2015-12-21, quoted in the tz database (northamerica): Fort Pierre and most of Stanley County use Central time"
+ },
+ "geonames_cities500/7261646": {
+  "zone": "America/Denver",
+  "alt_zones": [],
+  "overrides": [
+   {
+    "until": "1967-01-01",
+    "zone": "America/Phoenix",
+    "confidence": "inferred"
+   }
+  ],
+  "legal_zone": null,
+  "uncertain_before": null,
+  "note_key": "navajo_dst_1968",
+  "note": "LeChee 屬 Navajo Nation，依 1968 年 3 月部族議會決議實行夏令時間（決議編號未查得），本站採山區時間（America/Denver）。1967 年亞利桑那州全州都實行夏令時間；1967 年以前採亞利桑那州時間（America/Phoenix），屬推定。",
+  "source": "Navajo Tribal Council resolution of March 1968 (number not found), reported by AP 2024-03 (T. Tang); LeChee Chapter minutes 2026-09-14 ('All times are Day Light Time'); tzdb northamerica: America/Denver for the Navajo Nation"
+ }
+}

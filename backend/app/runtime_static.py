@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+import base64
 import gzip
 import hashlib
 import os
@@ -35,7 +36,7 @@ from .frontend_assets import (
     asset_parent_directories,
     validate_asset_name,
 )
-from .privacy_logging import DOMAIN_ERROR_STATE_KEY
+from .privacy_logging import DOMAIN_ERROR_STATE_KEY, page_content_security_policy
 from .refusals import ANNUAL_ROUTE, CHART_ROUTE
 from .request_limits import is_api_path
 
@@ -82,6 +83,19 @@ def page_link_header(assets: frozenset[str]) -> str | None:
 GZIP_LEVEL = 6
 
 
+# The page build writes each inline stylesheet as one bare <style> element
+# whose text holds no "<"; anything else is not an inline stylesheet of ours
+# and gets no digest, so the browser refuses it.
+_INLINE_STYLE = re.compile(rb"<style>([^<]*)</style>")
+
+
+def inline_style_digests(page: bytes) -> tuple[str, ...]:
+    return tuple(
+        base64.b64encode(hashlib.sha256(match.group(1)).digest()).decode("ascii")
+        for match in _INLINE_STYLE.finditer(page)
+    )
+
+
 def _file_identity(stat_result: os.stat_result) -> tuple[int, ...]:
     return (
         stat_result.st_dev, stat_result.st_ino, stat_result.st_size,
@@ -99,6 +113,8 @@ class _AssetSnapshot:
     version: str
     sha256: str
     gzip_body: bytes | None
+    # Base64 SHA-256 of each inline <style> element of a page; empty otherwise.
+    style_digests: tuple[str, ...] = ()
 
 
 # RFC 9110 §12.4.2: qvalue = ( "0" [ "." 0*3DIGIT ] ) / ( "1" [ "." 0*3("0") ] )
@@ -198,6 +214,16 @@ class _HeldFileResponse(_RangeLenientFileResponse):
             if key != "http.response.pathsend"
         }
         await super().__call__({**scope, "extensions": extensions}, receive, send)
+
+
+def _not_modified(headers: Headers, page_policy: str | None) -> Response:
+    """A 304 for a page keeps the page's policy: the browser merges a 304's
+    headers into its stored response, so a 304 carrying the base policy would
+    refuse the inline stylesheet of the page it revalidated."""
+    response = NotModifiedResponse(headers)
+    if page_policy is not None:
+        response.headers["content-security-policy"] = page_policy
+    return response
 
 
 class RuntimeStaticFiles(StaticFiles):
@@ -302,20 +328,26 @@ class RuntimeStaticFiles(StaticFiles):
             return None
         held = self._receipted(self._not_found_page, full_path, stat_result)
         scope.setdefault("state", {})[DOMAIN_ERROR_STATE_KEY] = "not_found"
+        page = held or self._snapshot(full_path, stat_result)
+        response: FileResponse
         if held is not None:
-            return _HeldFileResponse(
+            response = _HeldFileResponse(
                 full_path,
                 status_code=404,
                 stat_result=held.stat_result,
                 media_type=_media_type(full_path),
                 body=held.body,
             )
-        return FileResponse(
-            full_path,
-            status_code=404,
-            stat_result=stat_result,
-            media_type=_media_type(full_path),
-        )
+        else:
+            response = FileResponse(
+                full_path,
+                status_code=404,
+                stat_result=stat_result,
+                media_type=_media_type(full_path),
+            )
+        if page.style_digests:
+            response.headers["content-security-policy"] = page_content_security_policy(page.style_digests)
+        return response
 
     async def get_response(self, path: str, scope: Scope) -> Response:
         redirect = self._canonical_redirect(scope)
@@ -426,6 +458,10 @@ class RuntimeStaticFiles(StaticFiles):
             version=asset_content_version(data),
             sha256=hashlib.sha256(data).hexdigest(),
             gzip_body=encoded,
+            style_digests=(
+                inline_style_digests(data)
+                if os.path.splitext(full_path)[1].casefold() == ".html" else ()
+            ),
         )
         self._snapshots[full_path] = snapshot
         return snapshot
@@ -484,9 +520,15 @@ class RuntimeStaticFiles(StaticFiles):
         page_links = self._page_links if status_code == 200 and suffix == ".html" else None
         if page_links is not None:
             identity.headers["link"] = page_links
+        page_policy: str | None = None
+        if suffix == ".html":
+            page = held or self._snapshot(os.fspath(full_path), stat_result)
+            if page.style_digests:
+                page_policy = page_content_security_policy(page.style_digests)
+                identity.headers["content-security-policy"] = page_policy
         if status_code != 200 or suffix not in COMPRESSIBLE_ASSET_SUFFIXES:
             if self.is_not_modified(identity.headers, request_headers):
-                return NotModifiedResponse(identity.headers)
+                return _not_modified(identity.headers, page_policy)
             return identity
         # Both representations name the request header that chose between them.
         identity.headers["vary"] = "Accept-Encoding"
@@ -496,7 +538,7 @@ class RuntimeStaticFiles(StaticFiles):
             snapshot = held or self._snapshot(os.fspath(full_path), stat_result)
         if snapshot is None or snapshot.gzip_body is None:
             if self.is_not_modified(identity.headers, request_headers):
-                return NotModifiedResponse(identity.headers)
+                return _not_modified(identity.headers, page_policy)
             return identity
         encoded_headers = Headers(headers={
             "content-type": identity.headers["content-type"],
@@ -506,9 +548,10 @@ class RuntimeStaticFiles(StaticFiles):
             # A strong validator names exactly one representation.
             "etag": identity.headers["etag"][:-1] + '-gzip"',
             **({"link": page_links} if page_links is not None else {}),
+            **({"content-security-policy": page_policy} if page_policy is not None else {}),
         })
         if self.is_not_modified(encoded_headers, request_headers):
-            return NotModifiedResponse(encoded_headers)
+            return _not_modified(encoded_headers, page_policy)
         if scope.get("method") == "HEAD":
             return Response(
                 b"",

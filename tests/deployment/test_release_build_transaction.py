@@ -82,6 +82,11 @@ def test_a_build_is_bound_to_its_revision_snapshot_and_image(tmp_path, monkeypat
     assert f"VCS_REF={revision}" in build
     saved = json.loads((tmp_path / "evidence" / "build-transaction.json").read_text(encoding="utf-8"))
     assert saved == receipt
+    # Beside it, the unsigned build provenance of exactly this image and revision.
+    provenance = json.loads((tmp_path / "evidence" / "provenance.intoto.json").read_text(encoding="utf-8"))
+    assert provenance["subject"] == [{"name": "fixture:latest", "digest": {"sha256": "b" * 64}}]
+    source = provenance["predicate"]["buildDefinition"]["externalParameters"]["source"]
+    assert source["digest"] == {"gitCommit": revision}
 
 
 @pytest.mark.parametrize(

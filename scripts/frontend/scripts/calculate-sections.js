@@ -415,9 +415,10 @@ function decoratePeregrineTable(host) {
   }));
 }
 
-// 行速、停滯與東出西入。度分秒字串（「14°38′38.77″」「59′08″」「2′00″35‴」）換成度；讀不懂回 null（不畫橫條）。
+// 行速、停滯與東出西入。度分秒字串（「14°38′38.77″」「59′08″」「2′00″35‴」，可帶正負號）換成度的大小；
+// 負號（逆行的速度）只表示方向，方向另由「逆行」欄決定，所以這裡取絕對值。讀不懂回 null（不畫橫條）。
 function dmsDegrees(text) {
-  const match = /^(?:(\d+)°)?(?:(\d+)′)?(?:(\d+(?:\.\d+)?)″)?(?:(\d+)‴)?$/.exec(String(text || "").trim());
+  const match = /^[+\-−]?(?:(\d+)°)?(?:(\d+)′)?(?:(\d+(?:\.\d+)?)″)?(?:(\d+)‴)?$/.exec(String(text || "").trim());
   if (!match || !match.slice(1).some((part) => part !== undefined)) return null;
   const [deg, min, sec, third] = match.slice(1).map((part) => (part === undefined ? 0 : Number(part)));
   return deg + min / 60 + sec / 3600 + third / 216000;
@@ -435,17 +436,9 @@ function offsetDays(text) {
 // 逆行畫空心（比的是每天退的度數，與表格同一句）。橫條只是圖，aria-hidden；數字在旁邊的字裡。
 const SPEED_SCALE = 2;
 function speedGauge(daily, mean, retrograde) {
-  const svg = document.createElementNS(SVG_NS, "svg");
-  svg.setAttribute("class", "speed-gauge");
-  svg.setAttribute("aria-hidden", "true");
-  svg.setAttribute("focusable", "false");
+  const svg = plateNode("svg", { class: "speed-gauge", "aria-hidden": "true", focusable: "false" });
   const ratio = daily / mean / SPEED_SCALE;
-  const shape = (tag, attributes) => {
-    const node = document.createElementNS(SVG_NS, tag);
-    Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, String(value)));
-    svg.appendChild(node);
-    return node;
-  };
+  const shape = (tag, attributes) => plateNode(tag, attributes, svg);
   shape("rect", { class: "speed-track", x: "0", y: "3", width: "100%", height: "8" });
   if (ratio > 0) {
     shape("rect", {
@@ -484,22 +477,12 @@ function turnTimeline(model, windowDays, anchorLabel) {
   const laneHeight = 20;
   const axisY = 12 + lanes.length * laneHeight + 8;
   const height = axisY + 24;
-  const svg = document.createElementNS(SVG_NS, "svg");
-  svg.setAttribute("class", "turn-timeline");
-  svg.setAttribute("height", String(height));
-  svg.setAttribute("aria-hidden", "true");
-  svg.setAttribute("focusable", "false");
-  const inner = document.createElementNS(SVG_NS, "svg");
+  const svg = plateNode("svg", { class: "turn-timeline", height, "aria-hidden": "true", focusable: "false" });
   // 左右各留 1.5%，最外側的字不貼邊。
-  inner.setAttribute("x", "1.5%");
-  inner.setAttribute("width", "97%");
-  inner.setAttribute("overflow", "visible");
-  svg.appendChild(inner);
+  const inner = plateNode("svg", { x: "1.5%", width: "97%", overflow: "visible" }, svg);
   const shape = (tag, attributes, text) => {
-    const node = document.createElementNS(SVG_NS, tag);
-    Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, String(value)));
+    const node = plateNode(tag, attributes, inner);
     if (text !== undefined) node.textContent = text;
-    inner.appendChild(node);
     return node;
   };
   shape("line", { class: "turn-axis", x1: "0%", x2: "100%", y1: axisY, y2: axisY });

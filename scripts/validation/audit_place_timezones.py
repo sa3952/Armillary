@@ -18,11 +18,20 @@ A row is corrected only when all of these hold:
 * after the corrections, the corrected zone is the one most of the row's eight
   nearest same-country rows within 50 km carry (150 km where fewer than two
   are that near), the oracle tests/backend/test_place_catalog.py holds every
-  named correction to.  A row the two oracles disagree on is a boundary row.
+  named correction to.  A row the two oracles disagree on is a boundary row,
+  unless AUTHORITATIVE_ZONE_EXCEPTIONS names it: a jurisdiction a governing
+  rule puts on another zone than its neighbours is kept by that rule, and the
+  audit refuses to run if the rule's zone is not the zone at the coordinate.
 
 Rows that meet the first two conditions but sit in such a country are written
 to ``left_as_source`` with the reason, so the coordinate check can tell a known
 row from a new one.
+
+The output depends on the polygons and on the tz database's zone histories:
+the committed table reproduces with timezonefinder 9.2.0 (timezonefinder-data
+4.2026.5) and the ``tzdata`` package's build (PYTHONTZPATH empty, --zone-tab
+from that package), in which linked zones such as Africa/Mogadishu share their
+target's history.
 """
 
 from __future__ import annotations
@@ -51,6 +60,35 @@ LEFT_AS_SOURCE_COUNTRIES = {
     "UA": "Crimea: a disputed territory",
     "GE": "Abkhazia and South Ossetia: disputed territories",
     "CN": "Xinjiang keeps both Asia/Urumqi and Beijing time; the producer's hand table settles rows by their neighbours",
+}
+# Jurisdictions whose zone differs from their neighbours' by a governing rule,
+# each with the rule that sets it.  Neighbour voting alone cannot tell such a
+# place from a coordinate that strays over a line, so these are not put to it.
+AUTHORITATIVE_ZONE_EXCEPTIONS = {
+    "5710035": {
+        "zone": "America/Denver",
+        "jurisdiction": "City of West Wendover, Elko County, Nevada",
+        "effective": "1999-10-31",
+        "authority": "US DOT final rule, Relocation of Standard Time Zone Boundary in the State of "
+                     "Nevada, Federal Register 1999-10-21 (FR Doc. 99-27240); 49 CFR 71.9(b)",
+    },
+    "4266307": {
+        "zone": "America/Indiana/Vincennes",
+        "jurisdiction": "Knox County, Indiana",
+        "effective": "2007-11-04",
+        "authority": "US DOT final rule, Standard Time Zone Boundary in the State of Indiana, "
+                     "72 FR 54367 (2007-09-25)",
+    },
+    "7261646": {
+        "zone": "America/Denver",
+        "jurisdiction": "Navajo Nation (Western Agency), LeChee Chapter",
+        "effective": "1968-03",
+        "authority": "Navajo Tribal Council resolution of March 1968 (number not found), reported by "
+                     "AP 2024-03 (T. Tang); LeChee Chapter minutes 2026-09-14 ('All times are Day "
+                     "Light Time'); tzdb northamerica: America/Denver for the Navajo Nation",
+        "note": "Births before 1967 are presumed: tzdb's America/Denver applies Denver city rules in "
+                "1920-21 and 1965-66, which differ from Arizona's America/Phoenix",
+    },
 }
 SAMPLE_INSTANTS = tuple(
     datetime(year, month, 15, 12, tzinfo=timezone.utc) for year in range(1900, 2031) for month in (1, 4, 7, 10)
@@ -136,13 +174,19 @@ def audit(cities500: Path, zone_tab: Path) -> dict:
                 left.append({**entry, "reason": LEFT_AS_SOURCE_COUNTRIES[country]})
             else:
                 corrections.append(entry)
+    found_ids = {entry["source_record_id"]: entry["corrected"] for entry in corrections}
+    for record_id, rule in AUTHORITATIVE_ZONE_EXCEPTIONS.items():
+        if found_ids.get(record_id) != rule["zone"]:
+            raise SystemExit(f"authoritative zone exception {record_id}: the zone at the coordinate is "
+                             f"{found_ids.get(record_id)!r}, not the rule's {rule['zone']}")
     # Keep only corrections the neighbours agree with once applied; dropping one
     # can change its neighbours' votes, so repeat until nothing changes.
     while True:
         applied = {**zones, **{entry["source_record_id"]: entry["corrected"] for entry in corrections}}
         disagreeing = [
             entry for entry in corrections
-            if _neighbour_majority(rows[entry["source_record_id"]], by_cell, applied)
+            if entry["source_record_id"] not in AUTHORITATIVE_ZONE_EXCEPTIONS
+            and _neighbour_majority(rows[entry["source_record_id"]], by_cell, applied)
             != (entry["corrected"], True)
         ]
         if not disagreeing:
@@ -151,6 +195,12 @@ def audit(cities500: Path, zone_tab: Path) -> dict:
             corrections.remove(entry)
             left.append({**entry, "reason": "a boundary row: the coordinate's zone is not the zone "
                                              "most of its nearest same-country neighbours carry"})
+    for entry in corrections:
+        if entry["source_record_id"] in AUTHORITATIVE_ZONE_EXCEPTIONS:
+            rule = AUTHORITATIVE_ZONE_EXCEPTIONS[entry["source_record_id"]]
+            entry["authority"] = f"{rule['jurisdiction']}: {rule['authority']}, effective {rule['effective']}"
+            if "note" in rule:
+                entry["authority"] += f". {rule['note']}"
     return {
         "engine": f"timezonefinder {timezonefinder.__version__ if hasattr(timezonefinder, '__version__') else '?'}",
         "zone_tab": zone_tab.name,

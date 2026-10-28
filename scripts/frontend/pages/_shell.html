@@ -19,6 +19,8 @@
 <meta property="og:description" content="{{description}}">
 <meta property="og:url" content="{{canonical}}">
 {{og_article}}{{og_image}}<meta name="twitter:card" content="{{twitter_card}}">
+<meta name="twitter:title" content="{{title}}">
+<meta name="twitter:description" content="{{description}}">
 <script type="application/ld+json">{{json_ld}}</script>
 {{/discovery}}
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
@@ -67,6 +69,7 @@
       <a href="/zh-TW/features">功能</a>
       <a href="/zh-TW/roadmap">路線</a>
       <a href="/zh-TW/blog">文章</a>
+      <a href="/zh-TW/changelog">更新紀錄</a>
     </div>
     <div class="sitemap-col">
       <h2>可查證性</h2>
@@ -89,6 +92,7 @@
   <div class="wrap footer-rule"><span class="ring-strip" aria-hidden="true"></span></div>
   <div class="wrap">
     <span>渾儀 ARMILLARY</span>
+    <span><a class="site-version" href="/zh-TW/changelog">版本 {{site_version}}</a></span>
     <span>只計算，不解盤，不預測</span>{{page_updated}}
   </div>
 </footer>

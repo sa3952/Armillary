@@ -173,6 +173,14 @@
             <p class="note" id="civil-time-choice-note">新疆同時使用北京時間與新疆時間，兩者相差 2 小時，上升點與宮位可能整個不同。請依出生紀錄（例如出生證明）上的鐘點選擇；服務不替你猜。不確定時，請先向開立紀錄的單位或家人確認。</p>
           </fieldset>
 
+          <!-- 時區有爭議的地點：出生日期落在替代時區的期間內時，列出目錄時區與替代時區供切換（預設目錄時區）；
+               服務推定的時段只顯示說明。選項由控制器依地名查詢回傳的 zone_policy 與出生日期產生。 -->
+          <fieldset class="fold-choice" id="place-zone-choice" hidden>
+            <legend class="fold-choice-title" id="place-zone-choice-title">此時間的時區有爭議，可切換</legend>
+            <div class="choice" id="place-zone-choice-options"></div>
+            <p class="note" id="place-zone-choice-note"></p>
+          </fieldset>
+
           <details class="manual-place" id="manual-place">
             <summary>改為手動輸入座標與時區</summary>
             <p class="note">目錄查不到、或你握有比目錄更精確的座標時使用。手動輸入的座標不會附帶目錄收據。</p>
@@ -315,6 +323,8 @@
       </div>
     </section>
 
+    <div class="result-pending" id="result-pending" hidden aria-hidden="true"></div>
+
     <section class="results" id="results" hidden aria-labelledby="results-heading">
       <div class="result-head">
         <h2 id="results-heading" tabindex="-1">計算結果</h2>
@@ -416,7 +426,7 @@
       <section class="chapter" id="chapter-positions" data-chapter="positions" aria-labelledby="chapter-positions-title" hidden>
         <div class="chapter-head">
           <h2 id="chapter-positions-title" tabindex="-1">位置</h2>
-          <p class="chapter-lead">每顆行星與每個點（例如<button type="button" class="term" data-term="node">月交點</button>、<button type="button" class="term" data-term="asc">上升星座</button>）在黃道上的位置、是否<button type="button" class="term" data-term="retrograde">逆行</button>，以及由位置直接推出來的點（例如<button type="button" class="term" data-term="dodecatemoria">十二分部</button>）。<span class="chapter-fixed">本章照原典列出的各區，不替你解盤，也不預測。</span></p>
+          <p class="chapter-lead">每顆行星與每個點（例如<span class="term-nb"><button type="button" class="term" data-term="node">月交點</button>、</span><span class="term-nb"><button type="button" class="term" data-term="asc">上升星座</button>）</span>在黃道上的位置、是否<span class="term-nb"><button type="button" class="term" data-term="retrograde">逆行</button>，</span>以及由位置直接推出來的點（例如<span class="term-nb"><button type="button" class="term" data-term="dodecatemoria">十二分部</button>）</span>。<span class="chapter-fixed">本章照原典列出位置，不替你解盤，也不預測。</span></p>
         </div>
         <div class="chapter-sections" data-chapter-host="positions"></div>
       </section>
@@ -424,7 +434,7 @@
       <section class="chapter" id="chapter-houses_aspects" data-chapter="houses_aspects" aria-labelledby="chapter-houses_aspects-title" hidden>
         <div class="chapter-head">
           <h2 id="chapter-houses_aspects-title" tabindex="-1">宮位與相位</h2>
-          <p class="chapter-lead">宮位：依出生的時間與地點把天空分成 12 塊，看每顆行星落在哪一塊（例如<button type="button" class="term" data-term="whole_sign">整宮制</button>）。相位：兩顆行星在黃道上相隔接近特定的角度，例如 90 度、120 度；差多少度以內還算數，叫<button type="button" class="term" data-term="orb">容許度</button>。原典替<button type="button" class="term" data-term="aspect">相位</button>分了性質：拱與六分是和諧的，刑與沖是不和諧的（Ptolemy《占星四書》（Tetrabiblos）I.13）。</p>
+          <p class="chapter-lead">宮位：依出生的時間與地點把天空分成 12 塊，看每顆行星落在哪一塊（例如<span class="term-nb"><button type="button" class="term" data-term="whole_sign">整宮制</button>）</span>。相位：兩顆行星在黃道上相隔接近特定的角度，例如 90 度、120 度；差多少度以內還算數，叫<span class="term-nb"><button type="button" class="term" data-term="orb">容許度</button>。</span>原典替<button type="button" class="term" data-term="aspect">相位</button>分了性質：拱與六分是和諧的，刑與沖是不和諧的（Ptolemy《占星四書》（Tetrabiblos）I.13）。</p>
         </div>
         <div class="chapter-sections" data-chapter-host="houses_aspects"></div>
       </section>
@@ -432,7 +442,7 @@
       <section class="chapter" id="chapter-classical" data-chapter="classical" aria-labelledby="chapter-classical-title" hidden>
         <div class="chapter-head">
           <h2 id="chapter-classical-title" tabindex="-1">古典判斷</h2>
-          <p class="chapter-lead">古典占星讀盤前先要確認的幾件事：<button type="button" class="term" data-term="sect">日盤還是夜盤</button>、行星的<button type="button" class="term" data-term="domicile_exaltation">廟與旺</button>和<button type="button" class="term" data-term="detriment">陷</button>、<button type="button" class="term" data-term="fall">弱</button>、<button type="button" class="term" data-term="peregrine">外來</button>、<button type="button" class="term" data-term="lots">命運點與精神點</button>、<button type="button" class="term" data-term="planetary_hours">行星時</button>。選了對應的選項時，這一章另列<button type="button" class="term" data-term="bounds_dignity">界</button>、<button type="button" class="term" data-term="face">面／旬</button>與<button type="button" class="term" data-term="triplicity">三分性</button>，<button type="button" class="term" data-term="lunar_mansions">月宿</button>，<button type="button" class="term" data-term="void_of_course">月空亡</button>，<button type="button" class="term" data-term="combust">焦傷</button>與<button type="button" class="term" data-term="under_beams">在光束下</button>（行星離太陽多近），以及行星與宮的古典分類（<button type="button" class="term" data-term="benefic_malefic">吉星與凶星</button>、<button type="button" class="term" data-term="joys">喜樂宮</button>、<button type="button" class="term" data-term="hayz">hayz 與 halb</button>、<button type="button" class="term" data-term="house_triad">始宮／續宮／果宮</button>）。照原典列出。不替你解盤，也不預測。<span class="chapter-fixed">本章照原典列出的各區，不替你解盤，也不預測。</span></p>
+          <p class="chapter-lead">古典占星讀盤前先要確認的幾件事：<span class="term-nb"><button type="button" class="term" data-term="sect">日盤還是夜盤</button>、</span>行星的<button type="button" class="term" data-term="domicile_exaltation">廟與旺</button>和<span class="term-nb"><button type="button" class="term" data-term="detriment">陷</button>、</span><span class="term-nb"><button type="button" class="term" data-term="fall">弱</button>、</span><span class="term-nb"><button type="button" class="term" data-term="peregrine">外來</button>、</span><span class="term-nb"><button type="button" class="term" data-term="lots">命運點與精神點</button>、</span><span class="term-nb"><button type="button" class="term" data-term="planetary_hours">行星時</button>。</span>選了對應的選項時，這一章另列<span class="term-nb"><button type="button" class="term" data-term="bounds_dignity">界</button>、</span><button type="button" class="term" data-term="face">面／旬</button>與<span class="term-nb"><button type="button" class="term" data-term="triplicity">三分性</button>，</span><span class="term-nb"><button type="button" class="term" data-term="lunar_mansions">月宿</button>，</span><span class="term-nb"><button type="button" class="term" data-term="void_of_course">月空亡</button>，</span><button type="button" class="term" data-term="combust">焦傷</button>與<button type="button" class="term" data-term="under_beams">在光束下</button>（行星離太陽多近），以及行星與宮的古典分類（<span class="term-nb"><button type="button" class="term" data-term="benefic_malefic">吉星與凶星</button>、</span><span class="term-nb"><button type="button" class="term" data-term="joys">喜樂宮</button>、</span><span class="term-nb"><button type="button" class="term" data-term="hayz">hayz 與 halb</button>、</span><span class="term-nb"><button type="button" class="term" data-term="house_triad">始宮／續宮／果宮</button>）</span>。<span class="chapter-fixed">本章照原典列出的各區，不替你解盤，也不預測。</span></p>
         </div>
         <div class="chapter-sections" data-chapter-host="classical"></div>
       </section>
@@ -485,7 +495,7 @@
         </div>
         <div class="annual-start" id="annual-start">
           <button type="button" class="ghost small" id="annual-load">排出時間主星</button>
-          <p class="note">用上面這張本命盤的出生資料，再請計算服務算一次<button type="button" class="term" data-term="profection">年度小限</button>（選定某一年時，另外取那一年的<button type="button" class="term" data-term="monthly_profection">月小限</button>）、<button type="button" class="term" data-term="firdaria">法達</button>（firdaria）、<button type="button" class="term" data-term="zodiacal_releasing">黃道釋放</button>（zodiacal releasing）與<button type="button" class="term" data-term="decennials">十年期</button>（decennials）；不必再填任何資料，伺服器不留副本。排出之後，可以再替選定的那一年另外排一張太陽回歸盤（solar return）。</p>
+          <p class="note">用上面這張本命盤的出生資料，再請計算服務算一次<button type="button" class="term" data-term="profection">年度小限</button>（選定某一年時，另外取那一年的<span class="term-nb"><button type="button" class="term" data-term="monthly_profection">月小限</button>）</span>、<button type="button" class="term" data-term="firdaria">法達</button>（firdaria）、<button type="button" class="term" data-term="zodiacal_releasing">黃道釋放</button>（zodiacal releasing）與<button type="button" class="term" data-term="decennials">十年期</button>（decennials）；不必再填任何資料，伺服器不留副本。排出之後，可以再替選定的那一年另外排一張太陽回歸盤（solar return）。</p>
         </div>
         <p class="status-line" id="annual-status" role="status" aria-live="polite"></p>
         <div class="annual-body" id="annual-body" hidden></div>
@@ -541,7 +551,7 @@
        「兩個網站算出的上升星座不一樣」與「怎麼逐項對照」兩題的先後（先輸入、後黃道；宮位制不改上升點）
        與首頁、功能頁、〈線上排盤準不準？〉相同，由 tests/publication/test_faq_copy.py 守著。 -->
     <section class="calc-faq" aria-labelledby="faq-heading">
-      <h2 id="faq-heading">常見問題</h2>
+      <h2 id="faq-heading">常見問題：上升星座怎麼查、不知道出生時間怎麼辦</h2>
       <details>
         <summary>上升星座怎麼查？</summary>
         <p>在本頁填出生日期、出生時間，從目錄選出生地點，按「開始排盤」；結果「總覽」章的第一張表就是太陽、月亮與上升星座。上升點要靠出生時間與地點，時間差幾分鐘就可能換星座，見〈<a href="/zh-TW/blog/birth-time-sensitivity">差五分鐘，上升星座與宮位會怎麼變</a>〉。</p>

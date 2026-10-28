@@ -84,6 +84,8 @@ function submitPayload(payload, generation, signature) {
   const finishAttempt = () => { window.clearTimeout(timeout.handle); cancelButton.hidden = true; };
   submitButton.disabled = true;
   cancelButton.hidden = false;
+  // 在送出這次互動之內占住結果的位置（calculate.css .result-pending）。
+  resultPending.hidden = false;
   setStatus("計算中…", "info");
   Promise.race([
     Promise.all([postJson("/api/chart", payload, controller.signal), loadResultScripts().then(() => true, () => false)]),
@@ -100,7 +102,7 @@ function submitPayload(payload, generation, signature) {
       if (!body || typeof body !== "object" || Array.isArray(body)) { showIncompleteResponse(); return; }
       // 呈現結果的模組沒抓到，與計算請求沒送到是同一種失敗：連不上本站。
       if (!viewModelReady) { showServiceUnreachable(); return; }
-      renderResponse(body, signature, payload);
+      return renderResponse(body, signature, payload);
     }).catch((error) => {
       if (!lifecycle.isCurrentRequest(token)) return;
       if (error && error.name === "AbortError") {
@@ -119,6 +121,7 @@ function submitPayload(payload, generation, signature) {
       // 只有仍是當前世代的嘗試可以碰送出鈕與中止鈕；被中止或被取代的
       // 嘗試連 finishAttempt 都不做，否則會把下一次嘗試的中止鈕收掉。
       if (!isCurrentAttempt(generation)) { window.clearTimeout(timeout.handle); return; }
+      resultPending.hidden = true;
       finishAttempt();
       endAttempt(generation);
       if (lifecycle.isCurrentRequest(token)) lifecycle.finishRequest(token);

@@ -29,6 +29,7 @@ from .time_utils import (
     hk_observatory_summer_time_period,
     offshore_island_before_taiwan_rule,
     prc_1988_dst_start_disputed,
+    utc_offset_text,
 )
 
 if TYPE_CHECKING:
@@ -404,26 +405,21 @@ def _sect_near_critical_warnings(
     )
     dignities_near = rulers_near or peregrine_near
     if lots_near or dignities_near:
-        tolerance = (sect or {}).get("near_horizon_band_half_width_degrees")
-        if tolerance is None:
-            tolerance = dignity_sect.get("near_horizon_band_half_width_degrees")
+        lots_tolerance = (sect or {}).get("near_horizon_band_half_width_degrees")
+        tolerance = (lots_tolerance if lots_tolerance is not None
+                     else dignity_sect.get("near_horizon_band_half_width_degrees"))
         if tolerance is None:
             raise RuntimeError("near-critical sect receipt lacks its tolerance")
-        consequences = []
-        consequence_codes = []
+        picked = [(zh, code) for near, zh, code in (
+            (lots_near, "阿拉伯點因此並列日盤與夜盤兩套公式", "lots_list_both_sect_formulas"),
+            (rulers_near, "本質尊貴的迦勒底界主與三分性主星依這個日夜盤選定，換一種邊界可能改變",
+             "dignity_rulers_follow_this_sect"),
+            (peregrine_near, "只差三分性一項就決定外來與否的行星，列為無法判定",
+             "peregrine_undetermined_where_the_sect_decides"),
+        ) if near]
         affected = ["derived_methods.sect"] if sect else []
         if lots_near:
-            consequences.append("阿拉伯點因此並列日盤與夜盤兩套公式")
-            consequence_codes.append("lots_list_both_sect_formulas")
             affected.append("derived_methods.lots")
-        if rulers_near:
-            consequences.append(
-                "本質尊貴的迦勒底界主與三分性主星依這個日夜盤選定，換一種邊界可能改變"
-            )
-            consequence_codes.append("dignity_rulers_follow_this_sect")
-        if peregrine_near:
-            consequences.append("只差三分性一項就決定外來與否的行星，列為無法判定")
-            consequence_codes.append("peregrine_undetermined_where_the_sect_decides")
         if dignities_near:
             affected.append("derived_methods.essential_dignities")
         yield _warning(
@@ -434,14 +430,14 @@ def _sect_near_critical_warnings(
                 f"{tolerance * 60:.0f} 角分內"
                 "（本產品的近地平敏感提示帶，屬產品慣例）。判定本身仍是確定的，"
                 "但以視日出等其他具名邊界可能得到相反的日夜盤；"
-                + "；".join(consequences)
+                + "；".join(zh for zh, _code in picked)
                 + "。換算成出生時刻的寬度依緯度與季節而異。"
             ),
             affected[0],
             affected,
             {
                 "band_half_width_degrees": tolerance,
-                "consequences": consequence_codes,
+                "consequences": [code for _zh, code in picked],
             },
         )
 
@@ -723,7 +719,7 @@ def offshore_island_civil_time_warnings(request, time_conversion: dict) -> Itera
         (
             f"{name}在 1950 年以前不在臺灣的行政範圍內。時區資料庫把{name}併在 Asia/Taipei，"
             "這段期間的規則（日治時期的標準時、戰後的夏令時間）出自在臺灣施行的命令；"
-            f"本站沒有找到{name}當時鐘點的出處。本服務依時區資料庫採用 {_offset_hours_label(used)}，"
+            f"本站沒有找到{name}當時鐘點的出處。本服務依時區資料庫採用 {utc_offset_text(used)}，"
             "當地實際用的鐘點可能不同，上升點與宮位可能跟著不同。本服務只算這一張盤，不替你改動時刻。"
         ),
         (
@@ -733,10 +729,6 @@ def offshore_island_civil_time_warnings(request, time_conversion: dict) -> Itera
         ["calculation_dossier.time_conversion", "astronomical_data.time"],
         {"timezone": timezone.iana_name, "area": area, "utc_offset_hours_used": used},
     )
-
-
-def _offset_hours_label(hours: float) -> str:
-    return _utc_offset_label(dtmod.timedelta(hours=hours))
 
 
 def _supported_range_warnings(
@@ -879,16 +871,14 @@ def _module_state_warnings(
 ) -> Iterator[dict]:
     # A refused event search is recognised by its recorded reason code, wherever
     # the module keeps its state (VOC on its own module object).
-    refused_by_reason = {
-        reason: [
+    def refused(reason: str) -> list[str]:
+        return [
             name
             for name, state in states.items()
-            if state["requested"]
-            and not state["available"]
-            and state["reason_code"] == reason
+            if state["requested"] and not state["available"] and state["reason_code"] == reason
         ]
-        for reason in EVENT_SEARCH_REASON_CODES
-    }
+
+    refused_by_reason = {reason: refused(reason) for reason in EVENT_SEARCH_REASON_CODES}
     event_not_applicable_modules = [
         name for names in refused_by_reason.values() for name in names
     ]
@@ -916,13 +906,7 @@ def _module_state_warnings(
 
     # No sunrise and sunset within one diurnal cycle is a fact of the place and
     # season, not of the request's mode; it has its own notice.
-    no_diurnal_cycle_modules = [
-        name
-        for name, state in states.items()
-        if state["requested"]
-        and not state["available"]
-        and state["reason_code"] == NO_DIURNAL_CYCLE
-    ]
+    no_diurnal_cycle_modules = refused(NO_DIURNAL_CYCLE)
     if no_diurnal_cycle_modules:
         yield _warning(
             "no_sunrise_sunset_cycle",

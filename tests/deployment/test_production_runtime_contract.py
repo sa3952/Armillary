@@ -789,14 +789,16 @@ def test_the_image_and_gate_d_trust_no_forwarding_header():
         assert uvicorn_options(command)["proxy_headers"] is False
 
 
-def test_a_worker_has_time_to_start_on_one_busy_cpu():
-    """On one CPU under load importing the application took about 3.3 s, and a
-    5 s worker health-check timeout killed and respawned workers eight times
-    before the first answer.  The image and Gate D give a worker 20 s."""
+def test_a_recycled_worker_is_replaced_within_five_seconds():
+    """While the supervisor waits on a recycled worker the other carries the
+    site; two workers out at once stalled everything for the 20 s timeout
+   .   The image waits 5 s (a fresh worker is ready in about
+    2.5 s).  Gate D runs a single worker on a busy CPU and keeps 20 s."""
 
     runtime = _load_script("container_runtime_gate", CONTAINER_GATE)
-    for command in (image_command(), runtime.SINGLE_WORKER_COMMAND):
-        assert uvicorn_options(command)["timeout_worker_healthcheck"] >= 20
+    assert uvicorn_options(image_command())["timeout_worker_healthcheck"] == 5
+    assert uvicorn_options(runtime.SINGLE_WORKER_COMMAND)["timeout_worker_healthcheck"] >= 20
+    assert uvicorn_options(image_command())["server_header"] is False
 
 
 def test_a_full_tmp_restarts_a_once_healthy_container(monkeypatch, tmp_path):

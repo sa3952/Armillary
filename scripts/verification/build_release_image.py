@@ -31,6 +31,7 @@ from scripts.publication.prepare_third_party_sources import SourcePreparationErr
 from scripts.tools.commands import run_checked
 from scripts.tools.output_confinement import external_output_path
 from scripts.tools.source_tree_identity import materialize_git_snapshot, sha256_file
+from scripts.verification.build_provenance import write as write_provenance
 from scripts.verification.verify_docker_context import DockerContextFailure, verify as verify_context
 
 
@@ -272,6 +273,7 @@ def build_image(
     (evidence_dir / "build-transaction.json").write_text(
         json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
+    write_provenance(evidence_dir, receipt)
     return receipt
 
 

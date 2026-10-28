@@ -43,6 +43,7 @@ const errorPanel = el("error-panel");
 const errorMessage = el("error-message");
 const errorActions = el("error-actions");
 const results = el("results");
+const resultPending = el("result-pending");
 const Chapters = window.ResultChapters;
 const chapterHosts = new Map([...document.querySelectorAll("[data-chapter-host]")].map((node) => [node.dataset.chapterHost, node]));
 const warningsHost = el("warnings");
@@ -99,6 +100,23 @@ const loadResultScripts = lazyScripts([
 ]);
 const loadTimelords = lazyScripts([["timelordsModel", "ArmillaryTimelordsModel"], ["timelords", "ArmillaryTimelords"]]);
 form.addEventListener("focusin", () => { loadResultScripts().catch(() => {}); }, { once: true });
+// 頁面載完、主執行緒閒下來時先把延後的 script 抓進快取（modulepreload 只抓取與編譯，不執行）：送出時 import() 直接取用，
+// 結果不必等 API 回來後再下載。執行仍在需要時才發生。
+function preloadLazyScripts() {
+  if (!lazySource) return;
+  ["chartGlyphs", "chartWheelAspects", "chartWheelModel", "chartSquare", "chartWheel", "viewModel", "timelordsModel", "timelords"]
+    .forEach((key) => {
+      const url = lazySource.dataset[key];
+      if (!url) return;
+      const link = document.createElement("link");
+      link.rel = "modulepreload";
+      link.href = url;
+      document.head.appendChild(link);
+    });
+}
+const whenIdle = (callback) => (window.requestIdleCallback ? window.requestIdleCallback(callback, { timeout: 3000 }) : window.setTimeout(callback, 1));
+if (document.readyState === "complete") whenIdle(preloadLazyScripts);
+else window.addEventListener("load", () => whenIdle(preloadLazyScripts), { once: true });
 // 技術區塊的集合只有一個出處：exporters 匯出的驗算區段集合。「運算結果」匯出排除哪些區段，畫面就把哪些收進「技術細
 // 節」；不另抄一份 id 清單。不從投影結果反推：投影同時排除「未請求」的區段，反推會把它們錯收進技術細節。缺少這個集合時
 // 讓初始化失敗，載入訊息留在畫面上。
@@ -118,6 +136,7 @@ const pageState = {
   selectedPlace: null,  // 目錄選定的地點，含收據欄位
   civilTimeBasis: null,  // 新疆的地點：出生紀錄用的鐘點；null = 尚未選
   manualCivilTime: false,  // 手動座標、時區填的是新疆時間：同樣要問鐘點
+  placeZone: null,  // 時區有爭議的地點：使用者改選的替代時區；null = 目錄時區
   boundPayload: null,  // 畫面上那份結果的請求；清除結果時一併放掉
   pageCanonical: null,  // 畫面上那份結果（預設回應）的 canonical document
   resultGeneration: 0,  // 每次畫出或清除結果都前進；遲到的驗算資料比對它

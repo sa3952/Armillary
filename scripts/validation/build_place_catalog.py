@@ -36,6 +36,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 import csv
+from datetime import datetime
 from dataclasses import dataclass
 import hashlib
 import io
@@ -374,6 +375,55 @@ for _entry in _TIMEZONE_AUDIT["corrections"]:
         "reason": (f"{_entry['place']}: the zone at the coordinate is {_entry['corrected']} "
                    f"({_TIMEZONE_AUDIT['engine']}), whose UTC offsets differ from {_entry['expected']}'s"),
     })
+# Places whose zone is disputed for some dates (app.core.place_zone_policy):
+# keyed "source/source_record_id", each naming the catalogue zone, tz database
+# alternatives and overrides with their dates, and the note and source the
+# response repeats.  Carried in the catalogue metadata; checked at build against
+# the row it names.
+ZONE_POLICIES_PATH = Path(__file__).with_name("place_zone_policies.json")
+ZONE_POLICIES: dict[str, dict] = json.loads(ZONE_POLICIES_PATH.read_text(encoding="utf-8"))
+_ZONE_POLICY_FIELDS = frozenset({
+    "zone", "alt_zones", "overrides", "legal_zone", "uncertain_before", "note_key", "note", "source",
+})
+
+
+def check_zone_policies(connection: sqlite3.Connection) -> dict[str, dict]:
+    """The policies of the rows this build holds, each checked: it names the row
+    by its zone, tz database zones only, and dated entries the runtime can read.
+    A policy whose row the inputs do not carry is left out, as a named source
+    correction is applied only while the source still carries its row; the
+    shipped catalogue's tests read each policy back."""
+
+    kept: dict[str, dict] = {}
+    for key, policy in ZONE_POLICIES.items():
+        source, _, record_id = key.partition("/")
+        if set(policy) != _ZONE_POLICY_FIELDS:
+            raise ValueError(f"zone policy {key} has fields {sorted(policy)}")
+        row = connection.execute(
+            "SELECT timezone FROM places WHERE source = ? AND source_record_id = ?", (source, record_id)
+        ).fetchone()
+        if row is None:
+            continue
+        if row[0] != policy["zone"]:
+            raise ValueError(f"zone policy {key} names zone {policy['zone']}, the row carries {row and row[0]}")
+        zones = [policy["zone"], *(entry["zone"] for entry in policy["alt_zones"] + policy["overrides"])]
+        if policy["legal_zone"] is not None:
+            zones.append(policy["legal_zone"])
+        for zone in zones:
+            _require_iana_timezone(zone, record_id=record_id)
+        for entry in policy["alt_zones"] + policy["overrides"]:
+            for edge in ("from", "until"):
+                if edge in entry:
+                    datetime.fromisoformat(entry[edge].replace("Z", "+00:00"))
+        for entry in policy["overrides"]:
+            if entry["confidence"] not in {"inferred", "documented"} or "until" not in entry and "from" not in entry:
+                raise ValueError(f"zone policy {key} has an override without a date or confidence")
+        if not all(entry["label"] for entry in policy["alt_zones"]) or not policy["note"] or not policy["source"]:
+            raise ValueError(f"zone policy {key} leaves a label, note or source blank")
+        kept[key] = policy
+    return kept
+
+
 # Known disagreements the producer keeps as GeoNames has them, with the reason.
 TIMEZONE_LEFT_AS_SOURCE: dict[str, str] = {
     entry["source_record_id"]: entry["reason"] for entry in _TIMEZONE_AUDIT["left_as_source"]
@@ -671,7 +721,7 @@ class _CountyGroup(TypedDict):
 
 @dataclass
 class BoundedInput:
-    """One input opened once; hashed and streamed through the same descriptor."""
+    """One input read once; hashed and streamed from the same in-memory buffer."""
 
     path: Path
     handle: BinaryIO
@@ -692,8 +742,8 @@ def _open_bounded_input(path: Path) -> BoundedInput:
     The previous producer checked the path, read the rows through one open and
     hashed the path through a second.  Replacing the file between those two
     opens produced a manifest that described bytes the build never consumed.
-    Here the descriptor is held for the whole build: size, digest and the
-    streamed rows all come from the same open file.
+    Here the file is read once into memory: size, digest and the streamed
+    rows all come from that one buffer.
     """
 
     if path.is_symlink():
@@ -703,19 +753,19 @@ def _open_bounded_input(path: Path) -> BoundedInput:
         descriptor = os.open(path, flags)
     except OSError as exc:
         raise ValueError(f"input must be a regular non-symlink file: {path}") from exc
-    handle = os.fdopen(descriptor, "rb")
-    try:
-        status = os.fstat(handle.fileno())
+    with os.fdopen(descriptor, "rb") as source:
+        status = os.fstat(source.fileno())
         if not stat.S_ISREG(status.st_mode):
             raise ValueError(f"input must be a regular non-symlink file: {path}")
         if status.st_size > MAX_INPUT_BYTES:
             raise ValueError(f"input exceeds bounded byte limit: {path.name}")
-        digest = hashlib.file_digest(handle, "sha256")
-        handle.seek(0)
-    except Exception:
-        handle.close()
-        raise
-    return BoundedInput(path=path, handle=handle, sha256=digest.hexdigest(), size_bytes=status.st_size)
+        # Read once into memory; the digest and every later parse use this
+        # buffer, so an in-place rewrite of the file cannot split them.
+        content = source.read(MAX_INPUT_BYTES + 1)
+    if len(content) > MAX_INPUT_BYTES:
+        raise ValueError(f"input exceeds bounded byte limit: {path.name}")
+    digest = hashlib.sha256(content)
+    return BoundedInput(path=path, handle=io.BytesIO(content), sha256=digest.hexdigest(), size_bytes=len(content))
 
 
 def _as_bounded_input(source: Path | BoundedInput) -> tuple[BoundedInput, bool]:
@@ -1936,6 +1986,7 @@ def build_catalog(
         )
         _reject_markup_and_private_use(connection)
         timezone_check = check_timezones_against_coordinates(connection)
+        zone_policies = check_zone_policies(connection)
         label_disambiguation = disambiguate_duplicate_labels(connection, admin2_names=admin2_names)
         (rows_marked,) = connection.execute(
             "SELECT COUNT(*) FROM places WHERE instr(display_name, ?) > 0", (MISSING_GLYPH_MARK,)
@@ -1974,6 +2025,8 @@ def build_catalog(
             "source_exclusions_table_sha256": _table_sha256(SOURCE_ROW_EXCLUSIONS),
             "source_admin1_corrections": admin1_corrections,
             "source_admin1_corrections_table_sha256": _table_sha256(SOURCE_ADMIN1_CORRECTIONS),
+            "zone_policies": zone_policies,
+            "zone_policies_table_sha256": _table_sha256(ZONE_POLICIES),
             "timezone_coordinate_check": timezone_check,
             "label_disambiguation": label_disambiguation,
             "missing_glyph_policy": {
@@ -2061,6 +2114,8 @@ def build_artifact_manifest(metadata: dict, *, catalog_path: Path) -> dict:
         "source_exclusions_table_sha256": metadata["source_exclusions_table_sha256"],
         "source_admin1_corrections": metadata["source_admin1_corrections"],
         "source_admin1_corrections_table_sha256": metadata["source_admin1_corrections_table_sha256"],
+        "zone_policies": metadata["zone_policies"],
+        "zone_policies_table_sha256": metadata["zone_policies_table_sha256"],
         "source_chinese_name_exclusions": metadata["source_chinese_name_exclusions"],
         "source_chinese_name_exclusions_table_sha256": metadata["source_chinese_name_exclusions_table_sha256"],
         "han_script_folding": metadata["han_script_folding"],

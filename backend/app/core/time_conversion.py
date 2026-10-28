@@ -29,8 +29,8 @@ from .dossier_warnings import (
     prc_1988_dst_dispute_warnings,
 )
 from .time_utils import (
-    MICROSECONDS_PER_SECOND,
     civil_time_label,
+    civil_time_label_of,
     exact_second_microseconds_or_raise,
     offset_status,
     utc_offset_text,
@@ -48,11 +48,7 @@ class TimeConversionZoneNotCoveredError(ValueError):
 
 
 def _utc_iso(instant: dtmod.datetime) -> str:
-    return civil_time_label(
-        instant.year, instant.month, instant.day, instant.hour, instant.minute,
-        instant.second * MICROSECONDS_PER_SECOND + instant.microsecond,
-        separator="T",
-    ) + "Z"
+    return civil_time_label_of(instant, separator="T") + "Z"
 
 
 def _wall_clock_text(value: dtmod.datetime) -> str:

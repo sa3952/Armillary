@@ -793,6 +793,8 @@ TRIPLICITY_SOURCE_DETAILS: dict[str, dict[str, Any]] = {
             "Ptolemy's Venus/Moon co-rulers."
         ),
         "citation_verification": _EDITION_PAGES_CHECKED,
+        # PDF pages 138-139 of the scan (zero-based leaves n137-n138), the p.104 table.
+        "read_at": _LILLY_SCAN_P104,
     },
 }
 
@@ -831,6 +833,13 @@ DOMICILE_EXALTATION_SOURCES = [
         "role": (
             "also_attested_domiciles_and_exaltation_signs_source_"
             "also_supplies_exact_degrees_not_evaluated_by_this_profile"
+        ),
+        "degree_text_note": (
+            "on p.44 the Saturn and Jupiter exaltation degrees are the editors' "
+            "emendations, not the manuscripts' readings (see the Kroll-Skutsch "
+            "apparatus); Mars XXVIII was not checked against the apparatus. The "
+            "profile uses the signs only, so no degree here enters the output (the "
+            "emendation is reported by an external review of 2026-10-28, not yet checked here)"
         ),
     },
 ]
