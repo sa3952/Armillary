@@ -63,7 +63,7 @@
     {
       "executable": false,
       "path": "SOURCE_EXPORT.json",
-      "sha256": "dd9b530a1ffacf7ec409f6c26af8d179ee7aec1748840df39f1f4996805a593c",
+      "sha256": "4ea85029c3c3d25932c0b314612d00521ff810fedd57f70e0bf572679531df37",
       "size_bytes": 136
     },
     {
@@ -1677,8 +1677,8 @@
     {
       "executable": false,
       "path": "scripts/deployment/release_identity.py",
-      "sha256": "5042cce0ad221443454f227990e6187afad815c8d05e1fcb978e004915b02b85",
-      "size_bytes": 5855
+      "sha256": "f75bd056d0bc337b0294ce9656a59ef9a60dbedba9d25fb39149c62909df036e",
+      "size_bytes": 5906
     },
     {
       "executable": false,

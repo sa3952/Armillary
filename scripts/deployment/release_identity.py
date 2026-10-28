@@ -9,7 +9,7 @@ reader can check without trusting the repository's content:
 
     Armillary-Release: <version>
     Armillary-Public-Revision: <40-hex public source revision>
-    Armillary-Frontend-Artifact-Digest: sha256:<64 hex>
+    Armillary-Frontend-Artifact-Digest: <64 hex>
     Armillary-Backend-Image: sha256:<64 hex>
 
 ``render`` writes that message from the frontend release record and the image
@@ -30,7 +30,8 @@ import sys
 FIELDS = {
     "Armillary-Release": re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}"),
     "Armillary-Public-Revision": re.compile(r"[0-9a-f]{40}"),
-    "Armillary-Frontend-Artifact-Digest": re.compile(r"sha256:[0-9a-f]{64}"),
+    # The frontend release record writes its digest as bare hex.
+    "Armillary-Frontend-Artifact-Digest": re.compile(r"[0-9a-f]{64}"),
     "Armillary-Backend-Image": re.compile(r"sha256:[0-9a-f]{64}"),
 }
 _SIGNATURE_START = "-----BEGIN "
