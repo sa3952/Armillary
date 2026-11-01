@@ -542,13 +542,33 @@ def _eclipse_result(kind: str, retflag: int, tret: tuple[float, ...]) -> dict:
     }
 
 
+# Swiss's backward eclipse search drops any maximum at or after
+# tjd_start - 0.0001 day (swecl.c 2.10.03), so a search started at the
+# reference would skip an eclipse up to 8.64 s before it.  Start past that
+# window and keep only a maximum strictly before the reference.
+_BACKWARD_SEARCH_MARGIN_DAYS = 0.001
+
+
+def _previous_strictly_before(search, reference_jd_ut: float):
+    start = reference_jd_ut + _BACKWARD_SEARCH_MARGIN_DAYS
+    while True:
+        flag, times = search(start)
+        if times[0] < reference_jd_ut:
+            return flag, times
+        # Starting at this maximum makes Swiss reject it and look earlier.
+        start = times[0]
+
+
 def compute_previous_eclipses(reference_jd_ut: float, trace: Trace) -> dict:
-    start = math.nextafter(reference_jd_ut, -math.inf)
     with chart_observer_restored():
-        solar_flag, solar_times = swe.sol_eclipse_when_glob(
-            start, swe.FLG_SWIEPH, 0, True
+        solar_flag, solar_times = _previous_strictly_before(
+            lambda start: swe.sol_eclipse_when_glob(start, swe.FLG_SWIEPH, 0, True),
+            reference_jd_ut,
         )
-    lunar_flag, lunar_times = swe.lun_eclipse_when(start, swe.FLG_SWIEPH, 0, True)
+    lunar_flag, lunar_times = _previous_strictly_before(
+        lambda start: swe.lun_eclipse_when(start, swe.FLG_SWIEPH, 0, True),
+        reference_jd_ut,
+    )
     solar = _eclipse_result("solar", solar_flag, solar_times)
     lunar = _eclipse_result("lunar", lunar_flag, lunar_times)
     trace.add(

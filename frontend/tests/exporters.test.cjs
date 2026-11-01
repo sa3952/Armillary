@@ -271,9 +271,9 @@ test("every download format has one renderer, MIME type, generic filename, and C
   })) {
     const artifact = Exporters.buildDownloadArtifact(document, format);
     assert.equal(artifact.mime_type, mimeType);
-    // 檔名固定，從不帶出生資料。
-    assert.equal(artifact.filename, `classical-astrology-export.${format}`);
-    assert.equal(Exporters.buildDownloadName(format), artifact.filename);
+    // 檔名從不帶出生資料；預設（驗算版）以 -verify 結尾。
+    assert.equal(artifact.filename, `armillary-verify.${format}`);
+    assert.equal(Exporters.buildDownloadName(format, { verify: true }), artifact.filename);
     assert.ok(artifact.content.length > 100);
     assert.equal(artifact.content.startsWith("\uFEFF"), format === "csv");
   }
@@ -282,6 +282,30 @@ test("every download format has one renderer, MIME type, generic filename, and C
   assert.deepEqual(Exporters.runDownloadAction(document, "json", () => {
     throw new Error("simulated Blob delivery failure");
   }), { ok: false, error_message: "simulated Blob delivery failure" });
+});
+
+test("file names carry the calculation time, an optional case code and the verify suffix, never input values", () => {
+  const document = fixtureDocument();
+  const at = new Date(2026, 9, 29, 19, 30);
+  assert.equal(Exporters.buildDownloadName("json", { at, verify: true }), "armillary-20261029-1930-verify.json");
+  assert.equal(Exporters.buildDownloadName("csv", { at }), "armillary-20261029-1930.csv");
+  assert.equal(Exporters.buildDownloadName("md", { at, caseLabel: " A/12 個案 ", work: true }), "armillary-20261029-1930-A-12-個案-work.md");
+  assert.equal(Exporters.buildDownloadName("txt", { caseLabel: "../../x" }), "armillary-x.txt");
+  const dataOnly = Exporters.buildDownloadArtifact(document, "json", Exporters.OUTPUT_MODES.chart_data_only, { at });
+  assert.equal(dataOnly.filename, "armillary-20261029-1930.json");
+  const verify = Exporters.buildDownloadArtifact(document, "json", Exporters.OUTPUT_MODES.reproducibility_detail, { at });
+  assert.equal(verify.filename, "armillary-20261029-1930-verify.json");
+});
+
+test("working Markdown holds only the ticked sections and refuses an empty pick", () => {
+  const document = fixtureDocument();
+  const [first, second] = document.sections.filter((section) => section.tables.length);
+  const artifact = Exporters.buildWorkingMarkdown(document, [first.id], Exporters.OUTPUT_MODES.chart_data_only);
+  assert.match(artifact.content, /（作業版）/);
+  assert.ok(artifact.content.includes(`## ${Exporters.escapeMarkdownText(first.title)}`));
+  assert.ok(!artifact.content.includes(`## ${Exporters.escapeMarkdownText(second.title)}\n`));
+  assert.equal(artifact.filename, "armillary-work.md");
+  assert.throws(() => Exporters.buildWorkingMarkdown(document, [], Exporters.OUTPUT_MODES.chart_data_only), /沒有勾選/);
 });
 
 // ── 每一種輸出各自中和自己的邊界 ─────────────────────────────────────

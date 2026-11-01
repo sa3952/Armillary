@@ -335,6 +335,7 @@ _MANIFEST_RACY = False
 # search.  The signature is checked once per chart start and on explicit file
 # checks; in between the hot path reads the manifest as of the chart's start.
 _MANIFEST_CACHE: tuple[tuple | None, dict[str, dict]] | None = None
+_MANIFEST_LOCK = threading.RLock()
 
 
 def _stat_identity(stat: os.stat_result) -> tuple:
@@ -366,14 +367,15 @@ def refresh_ephemeris_file_manifest() -> dict[str, dict]:
     """Re-stat the input files and rebuild the manifest when any of them changed."""
 
     global _MANIFEST_CACHE, _MANIFEST_RACY
-    signature = input_files_signature()
-    if _MANIFEST_CACHE is None or _MANIFEST_CACHE[0] != signature or _MANIFEST_RACY:
-        hashing_began_ns = time.time_ns()
-        manifest = _build_manifest()
-        stable = input_files_signature() == signature
-        _MANIFEST_RACY = _written_within_a_tick_of(signature, hashing_began_ns)
-        _MANIFEST_CACHE = (signature if stable else None, manifest)
-    return _MANIFEST_CACHE[1]
+    with _MANIFEST_LOCK:
+        signature = input_files_signature()
+        if _MANIFEST_CACHE is None or _MANIFEST_CACHE[0] != signature or _MANIFEST_RACY:
+            hashing_began_ns = time.time_ns()
+            manifest = _build_manifest()
+            stable = input_files_signature() == signature
+            _MANIFEST_RACY = _written_within_a_tick_of(signature, hashing_began_ns)
+            _MANIFEST_CACHE = (signature if stable else None, manifest)
+        return _MANIFEST_CACHE[1]
 
 
 def _written_within_a_tick_of(signature: tuple, moment_ns: int) -> bool:
@@ -649,7 +651,8 @@ def guarded_calc(jd_ut: float, body: int, flags: int, operation: str) -> tuple[t
 
     require_object_coverage(body=body, flags=flags, jd_ut=jd_ut, operation=operation)
     values, retflag = swe.calc_ut(jd_ut, body, flags)
-    require_full_ephemeris(retflag, operation=operation, jd_ut=jd_ut)
+    require_full_ephemeris(retflag, operation=operation, jd_ut=jd_ut,
+                           segments=segments_read_by(body, flags))
     return values, retflag
 
 

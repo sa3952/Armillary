@@ -7,7 +7,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function buildExportPipeline(Labels) {
   "use strict";
 
-  const EXPORT_CONTRACT_VERSION = "0.6.0";
+  const EXPORT_CONTRACT_VERSION = "0.7.0";
   // 畫面（view-model.js）與匯出共用這一份；與後端 time_utils.py 同字由 tests/integration/test_frontend_contract.py 對
   // 照。1972 年前與約 2033-09 以後的盤是 UT1 而不是 UTC；這時欄位值結尾的 Z 只是沿用欄位格式，所以一併去掉。
   const TIME_SCALE_ZH = Object.freeze({
@@ -100,7 +100,7 @@
 
   const OUTPUT_MODES = Object.freeze({ chart_data_only: "chart_data_only", reproducibility_detail: "reproducibility_detail" });
   const REPRODUCIBILITY_SECTION_IDS = new Set(["trace", "requested_options", "contract", "receipt"]);
-  const SUPPORTED_RESPONSE_CONTRACTS = Object.freeze({ "0.22.0": Object.freeze(["0.13.0"]) });
+  const SUPPORTED_RESPONSE_CONTRACTS = Object.freeze({ "0.23.0": Object.freeze(["0.13.0"]) });
 
   function assertCompatibleSourceResponse(sourceResponse) {
     const apiVersion = sourceResponse && sourceResponse.schema_version;
@@ -697,14 +697,27 @@
     };
   }
 
-  function buildDownloadName(extension) {
+  // 檔名：armillary-<計算時間 年月日-時分>[-個案代號][-work][-verify].<副檔名>。時間是按下排盤、結果算出來的那一刻（本機時鐘），
+  // 不是出生時間；個案代號是使用者自己填的、只用在檔名的短代號，只留字母、數字、底線與連字號，最多 24 字。檔名不放任何
+  // 輸入值。驗算版一律以 -verify 結尾，與只含運算結果的檔分得開。
+  function fileStamp(at) {
+    if (!(at instanceof Date) || Number.isNaN(at.getTime())) return null;
+    const pad = (value) => String(value).padStart(2, "0");
+    return `${at.getFullYear()}${pad(at.getMonth() + 1)}${pad(at.getDate())}-${pad(at.getHours())}${pad(at.getMinutes())}`;
+  }
+  function cleanCaseLabel(label) {
+    return String(label || "").normalize("NFKC").replace(/[^\p{L}\p{N}_-]+/gu, "-").replace(/-{2,}/g, "-")
+      .replace(/^-|-$/g, "").slice(0, 24).replace(/-$/, "");
+  }
+  function buildDownloadName(extension, { at = null, caseLabel = "", verify = false, work = false } = {}) {
     const clean = String(extension).toLowerCase().replace(/^\./, "");
     if (!["csv", "json", "txt", "md"].includes(clean)) { throw new Error(`不支援的匯出格式: ${extension}`); }
-    return `classical-astrology-export.${clean}`;
+    const parts = ["armillary", fileStamp(at), cleanCaseLabel(caseLabel) || null, work ? "work" : null, verify ? "verify" : null];
+    return `${parts.filter(Boolean).join("-")}.${clean}`;
   }
 
   function buildDownloadArtifact(
-    document, format, mode = OUTPUT_MODES.reproducibility_detail) {
+    document, format, mode = OUTPUT_MODES.reproducibility_detail, naming = {}) {
     const definitions = {
       csv: { renderer: renderCsv, mime_type: "text/csv;charset=utf-8", prefix: "\uFEFF" },
       json: { renderer: renderJson, mime_type: "application/json;charset=utf-8", prefix: "" },
@@ -714,14 +727,32 @@
     const definition = definitions[format];
     if (!definition) throw new Error(`不支援的匯出格式: ${format}`);
     const projected = projectOutputDocument(document, mode);
+    const verify = projected.include_reproducibility !== false;
     return {
-      filename: buildDownloadName(format), mime_type: definition.mime_type, content: definition.prefix + definition.renderer(projected),
+      filename: buildDownloadName(format, { ...naming, verify, work: false }),
+      mime_type: definition.mime_type, content: definition.prefix + definition.renderer(projected),
     };
   }
 
-  function runDownloadAction(document, format, deliverArtifact, mode) {
+  // 作業版 Markdown：只含使用者勾選的區段（sectionIds，照文件原順序），開頭註明這是節錄。其餘與完整 Markdown 同一套
+  // 中和規則與表頭；一個區段都沒勾時拒絕，不產生只有表頭的空檔。
+  function buildWorkingMarkdown(document, sectionIds, mode = OUTPUT_MODES.chart_data_only, naming = {}) {
+    const wanted = new Set(sectionIds || []);
+    const projected = projectOutputDocument(document, mode);
+    const sections = projected.sections.filter((section) => wanted.has(section.id));
+    if (!sections.length) throw new Error("作業版沒有勾選任何章節。");
+    const body = renderMarkdown({ ...projected, sections });
+    const [title, ...rest] = body.split("\n");
+    const content = [`${title}（作業版）`, "", "> 作業版只含勾選的章節，不是完整結果。", ...rest].join("\n");
+    return {
+      filename: buildDownloadName("md", { ...naming, verify: projected.include_reproducibility !== false, work: true }),
+      mime_type: "text/markdown;charset=utf-8", content,
+    };
+  }
+
+  function runDownloadAction(document, format, deliverArtifact, mode, naming) {
     try {
-      deliverArtifact(buildDownloadArtifact(document, format, mode));
+      deliverArtifact(buildDownloadArtifact(document, format, mode, naming));
       return { ok: true, error_message: null };
     } catch (error) { return { ok: false, error_message: error instanceof Error ? error.message : String(error) }; }
   }
@@ -730,7 +761,7 @@
     EXPORT_CONTRACT_VERSION, INCOMPLETE_RESPONSE, isRecord, incompleteResponse, assertRenderableResponse, OUTPUT_MODES,
     REPRODUCIBILITY_SECTION_IDS, SECTION_STATES, createDocument, holdsVerificationDetail, bindsToPageDocument,
     projectOutputDocument, renderSectionText, renderPlainText, renderCsv, renderJson, renderMarkdown, buildDownloadName,
-    buildDownloadArtifact, runDownloadAction, printExpansion, TIME_SCALE_ZH, COMPUTATION_MODE_FIELDS,
+    buildDownloadArtifact, buildWorkingMarkdown, runDownloadAction, printExpansion, TIME_SCALE_ZH, COMPUTATION_MODE_FIELDS,
     contractVersionLines, computationModeLine, inputAssumptionEntries, inputAssumptionText,
     // 另一份匯出檔（時間主星表）沿用同一套儲存格與 Markdown 中和規則與同一份 CSV 欄名，不另寫一份。
     CSV_HEADER, SUPPORTED_API_SCHEMA_VERSIONS: Object.freeze(Object.keys(SUPPORTED_RESPONSE_CONTRACTS)), csvCell,

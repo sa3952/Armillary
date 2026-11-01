@@ -38,14 +38,40 @@ function copyAll(button) {
   writeToClipboard(text, "已複製所選內容。", button);
 }
 
+// 檔名的兩個來源：這份結果算出來的時間（不是出生時間），與匯出選單裡可不填的「個案代號」。都只在本機組檔名，不送出。
+function exportNaming() {
+  const label = el("export-case-label");
+  return { at: pageState.computedAt || null, caseLabel: label ? label.value : "" };
+}
+
 function downloadExport(format, button) {
   let canonical;
   const mode = selectedExportMode();
   try { canonical = requireExportableDocument(mode); } catch (error) { reportAt(button, `下載失敗：${error.message}`, "error"); return; }
-  const outcome = window.ChartExport.runDownloadAction(canonical, format, deliverArtifact, mode);
+  const outcome = window.ChartExport.runDownloadAction(canonical, format, deliverArtifact, mode, exportNaming());
   reportAt(
     button, outcome.ok ? `已產生 ${format.toUpperCase()} 檔案。` : `下載失敗：${outcome.error_message}`, outcome.ok ? "info" : "error"
   );
+}
+
+// 作業版 Markdown：只含勾選的章（input[name="export-work-chapter"]，值是章 id）。區段取自畫面上那一章實際放了哪些區塊，
+// 與使用者看到的分章一致。
+function workingSectionIds() {
+  const ids = [];
+  document.querySelectorAll('input[name="export-work-chapter"]:checked').forEach((box) => {
+    const chapter = chapterNodes.get(box.value);
+    if (!chapter) return;
+    chapter.querySelectorAll("section.result-section[id^='section-']").forEach((node) => ids.push(node.id.slice("section-".length)));
+  });
+  return ids;
+}
+function downloadWorking(button) {
+  const mode = selectedExportMode();
+  try {
+    const canonical = requireExportableDocument(mode);
+    deliverArtifact(window.ChartExport.buildWorkingMarkdown(canonical, workingSectionIds(), mode, exportNaming()));
+  } catch (error) { reportAt(button, `下載失敗：${error.message}`, "error"); return; }
+  reportAt(button, "已產生作業版 Markdown。", "info");
 }
 
 document.querySelectorAll("[data-copy], [data-quick-copy]").forEach((button) => {
@@ -54,6 +80,9 @@ document.querySelectorAll("[data-copy], [data-quick-copy]").forEach((button) => 
 
 document.querySelectorAll("[data-download], [data-quick-download]").forEach((button) => {
   button.addEventListener("click", () => downloadExport(button.dataset.download || button.dataset.quickDownload, button));
+});
+document.querySelectorAll("[data-download-work]").forEach((button) => {
+  button.addEventListener("click", () => downloadWorking(button));
 });
 
 function deliverArtifact(artifact) {

@@ -47,6 +47,7 @@ from .lunar_events import (
     _eclipse_result,
     _phase_event,
     _phase_state,
+    _previous_strictly_before,
     previous_phase_strictly_before,
 )
 from .time_utils import civil_instant, earth_rotation_jd_ut
@@ -436,9 +437,11 @@ def extend_previous_eclipses(
 ) -> dict:
     """Degrees on the two previous eclipses and the previous umbral lunar eclipse."""
 
-    start = math.nextafter(reference_jd_ut, -math.inf)
-    umbral_flag, umbral_times = swe.lun_eclipse_when(
-        start, swe.FLG_SWIEPH, swe.ECL_PARTIAL | swe.ECL_TOTAL, True
+    umbral_flag, umbral_times = _previous_strictly_before(
+        lambda start: swe.lun_eclipse_when(
+            start, swe.FLG_SWIEPH, swe.ECL_PARTIAL | swe.ECL_TOTAL, True
+        ),
+        reference_jd_ut,
     )
     umbral = _eclipse_result("lunar", umbral_flag, umbral_times)
     for key in ("previous_solar", "previous_lunar"):
@@ -517,10 +520,10 @@ def eclipses_at_birth(
         end = (previous["contacts"].get(end_label) or {}).get("jd_ut")
         begin_index, _end_index = _OUTER_CONTACTS[kind]
         flag, times = _eclipse_ending_by(kind, reference_jd_ut)
-        if 0 < times[begin_index] <= reference_jd_ut < times[0]:
+        if 0 < times[begin_index] <= reference_jd_ut <= times[0]:
             record = _enrich_eclipse(_eclipse_result(kind, flag, times), place)
             in_progress[kind] = {
-                "relation": IN_PROGRESS_RELATIONS[0],
+                "relation": IN_PROGRESS_RELATIONS[0] if reference_jd_ut < times[0] else IN_PROGRESS_RELATIONS[1],
                 "maximum_minus_birth_minutes": (times[0] - reference_jd_ut) * 1440.0,
                 "same_as": None,
                 "eclipse": record,
@@ -540,7 +543,7 @@ def eclipses_at_birth(
         "出生前的日月食：度數、本影月食與出生時正在進行的日月食",
         formula=(
             "swe.lun_eclipse_when(ECL_PARTIAL|ECL_TOTAL, backwards=True)；"
-            "自出生後半日往回搜尋日食與月食，第一次接觸 ≤ 出生 < 食甚即列為正在進行"
+            "自出生後半日往回搜尋日食與月食，第一次接觸 ≤ 出生 ≤ 食甚即列為正在進行"
         ),
         inputs={"reference_JD_UT": reference_jd_ut},
         result={

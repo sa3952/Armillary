@@ -38,6 +38,10 @@ function utcOffsetText(hours) {
   return `UTC${hours < 0 ? "-" : "+"}${hm}${seconds ? `:${pad2(seconds)}` : ""}`;
 }
 
+function summerTimeText(value) {
+  return value === null ? "不適用（固定 UTC 偏移）" : value ? "是" : "否";
+}
+
 function timeSection(response) {
   const time = needAt(response.astronomical_data.time, "time");
   const atmosphere = needAt(response.astronomical_data.atmosphere, "atmosphere");
@@ -55,7 +59,10 @@ function timeSection(response) {
       title: "時間", columns: ["項目", "數值"],
       rows: [
         [anchored ? "代表性錨點（非出生時刻）" : "本地時間", clockTimeText(time("input_local_time", "string"))],
-        ["時區", Labels.timezoneText(time("timezone_label", "string"))], ["UTC 偏移", utcOffsetText(time("utc_offset_hours", "number"))],
+        ["時區", Labels.timezoneText(time("timezone_label", "string"))], ...Labels.placeZoneRows(response.place_zone_policy),
+        ["UTC 偏移", utcOffsetText(time("utc_offset_hours", "number"))],
+        // 後端從時區資料庫讀出這個時刻是否在夏令時間；固定 UTC 偏移沒有時區規則可讀，寫「不適用」。
+        ["夏令時間", summerTimeText(time("daylight_saving_time", "boolean?"))],
         [scale, clockTimeText(time("utc_time", "string"))], ["儒略日 JD(UT)", num(time("jd_ut", "number"), 6)],
         ["ΔT（秒）", num(time("delta_t_seconds", "number"), 3)],
         ["地方真恆星時 LAST（小時）", cyclicFixed(time("last_hours", "number"), 6)],
@@ -103,7 +110,7 @@ function bodiesSection(response) {
   return makeSection("bodies", "天體位置", RING.ASTRONOMICAL, { state: "present" }, {
     notes: [
       "黃道、赤道、地平三套座標一次輸出，不必換工具重填生辰。",
-      "星座與星座內度數由後端黃經以 30° 分段換寫，非另一次計算；完整精度在『運算結果＋驗算資料』的 JSON 匯出中。",
+      "星座與星座內度數由後端黃經以 30° 分段換寫，非另一次計算；完整精度在「附驗算資料」的 JSON 匯出中。",
       bodies.some((body, index) => need(body, `bodies[${index}]`, "speed_position_derivative_status", "string?")
         === "known_internal_disagreement_for_sun_moon")
         ? "站心速度為 Swiss FLG_SPEED 解析值；太陽／月亮部分欄位已知不等於同次位置的有限差分導數，請勿把它當作已驗證的導數精度。" : null,

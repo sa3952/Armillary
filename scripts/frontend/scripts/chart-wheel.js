@@ -20,10 +20,10 @@
   // 下載版（白底）的顏色：每一個都是 tokens.css 的 token 值，測試逐一核對。
   // aspect：相位線用結果頁「方法判斷」那一環的顏色，表示這是依容許度表作出的判斷，不表吉凶。
   const DOWNLOAD_PALETTE_TOKENS = Object.freeze({
-    bg: "print-bg", band: "paper", fg: "ink", dim: "ink-dim", hair: "hair", accent: "accent", aspect: "ring-3",
+    bg: "print-bg", band: "paper", fg: "ink", dim: "ink-dim", hair: "hair", geo: "geo", aspect: "ring-3",
   });
   const DOWNLOAD_PALETTE = Object.freeze({
-    bg: "#FFFFFF", band: "#F0EAD9", fg: "#1C1913", dim: "#4F483B", hair: "#CFC5AE", accent: "#A03A22", aspect: "#A0632B",
+    bg: "#FFFFFF", band: "#F0EAD9", fg: "#1C1913", dim: "#4F483B", hair: "#CFC5AE", geo: "#3E6B8A", aspect: "#A0632B",
   });
   const FONT_TOKENS = Object.freeze({ sans: "sans", mono: "mono", serif: "serif-num", book: "serif" });
   const FONTS = Object.freeze({
@@ -72,6 +72,8 @@
     const names = [`cw-${item.part}`];
     if (item.type === "text") names.push(`cw-font-${item.font}`);
     if (item.halo !== undefined) names.push("cw-halo");
+    // 圓心的時區一行是輸入的一部分：一頁摘要沒勾加印出生資料時不印（calculate.css）。
+    if (item.part === "centre-zone") names.push("cw-input");
     if (item.fill !== undefined) names.push(item.fill ? `cw-f-${item.fill}` : "cw-f-none");
     else if (STROKE_ONLY.has(item.type)) names.push("cw-f-none");
     if (item.stroke) names.push(`cw-s-${item.stroke}`);
@@ -135,8 +137,15 @@
       svg.appendChild(title);
       svg.appendChild(svgElement(doc, "rect", { x: 0, y: 0, width: model.width, height: model.height, fill: DOWNLOAD_PALETTE.bg }));
     }
-    for (const group of model.scene) appendGroup(doc, svg, group, variant, true);
+    for (const group of variant === "download" ? downloadScene(model) : model.scene) appendGroup(doc, svg, group, variant, true);
     return svg;
+  }
+
+  /** 下載檔：沒勾選加印輸入摘要時，拿掉圓心的時區那一行（時區屬於輸入）。 */
+  function downloadScene(model) {
+    if (model.inputPrinted !== false) return model.scene;
+    return model.scene.map((group) => (group.group === "centre"
+      ? { ...group, items: (group.items || []).filter((item) => item.part !== "centre-zone") } : group));
   }
 
   function serializeSvg(svg) {
@@ -153,7 +162,7 @@
     ctx.scale(scale, scale);
     ctx.fillStyle = P.bg;
     ctx.fillRect(0, 0, model.width, model.height);
-    for (const item of flatten(model.scene)) {
+    for (const item of flatten(downloadScene(model))) {
       ctx.save();
       ctx.setLineDash(item.dash ? item.dash.split(" ").map(Number) : []);
       if (item.width) ctx.lineWidth = item.width;
@@ -215,11 +224,11 @@
       tick: "星座環內緣的短刻線是天體的真實黃經，不會移動。",
       label: "標籤由外往內是符號、度、星座、分；度與分直接取自回應，與表格「星座度數」欄相同（圖只到分）。",
       compact: "標籤擠在一起時，同一星座只在第一個標籤印星座符號，後面的只印度與分；角距不到 1° 的兩點"
-        + "可共用一條標籤，由外往內依黃經先後排，各有一條引線連回自己的刻線。", retro: "℞：逆行，與表格「行進」欄同源；月交點不標。",
-      retroWithLilith: "℞：逆行，與表格「行進」欄同源；月交點與 Lilith 不標。",
+        + "可共用一條標籤，由外往內依黃經先後排，各有一條引線連回自己的刻線。", retro: "℞\uFE0E：逆行，與表格「行進」欄同源；月交點不標。",
+      retroWithLilith: "℞\uFE0E：逆行，與表格「行進」欄同源；月交點與 Lilith 不標。",
       nodes: "密、平：密切交點與平均交點；表格兩者分列，圖也兩者都畫。",
-      lilith: "⚸ 平、自然：兩種算法的黑月 Lilith（月球軌道離地球最遠的那一點）。平均：把月球軌道的短期變動平均掉，位置等速前進；自然：依月亮實際經過最遠點的位置推算，會在平均位置前後擺動。表格兩者分列，圖也兩者都畫。",
-      angles: "ASC、MC、DSC、IC：四軸畫在真實位置，中天不一定在正上方；紅色只用來標四軸，不表示吉凶。",
+      lilith: "⚸\uFE0E 平、自然：兩種算法的黑月 Lilith（月球軌道離地球最遠的那一點）。平均：把月球軌道的短期變動平均掉，位置等速前進；自然：依月亮實際經過最遠點的位置推算，會在平均位置前後擺動。表格兩者分列，圖也兩者都畫。",
+      angles: "ASC、MC、DSC、IC：四軸畫在真實位置，中天不一定在正上方；四軸以墨色標示，不表示吉凶。",
       houses: "1–12：宮號，只畫本次所選的宮位制；象限宮制的宮頭度數見表格。",
       aspectColour: "相位線的顏色只表示這是依容許度表作出的方法判斷，不表示吉凶；整宮相位不畫，見相位表。",
       link: "滑鼠移到符號上，表格對應的列會一起標示；手機請用圖下方的符號對照。" }), symbols: Object.freeze({ title: "符號對照",
@@ -252,7 +261,7 @@
       ...([...keys].some((key) => /node$/.test(key)) ? [L.nodes] : []), ...(lilith ? [L.lilith] : []),
       ...(kinds.has("angle") ? [L.angles] : []), ...(model.scene.some((group) => group.group === "houses") ? [L.houses] : []),
       // 方向、宮位制、只有日期與未畫的點：與下載圖頁尾同一組句子。
-      ...model.notes.filter((note) => note !== WheelModel.TEXT.accent),
+      ...model.notes,
     ];
   }
 
@@ -405,7 +414,7 @@
       if (label.glyph && Glyphs.GLYPHS[label.glyph]) button.appendChild(symbolGlyph(doc, label.glyph));
       button.append(htmlElement(doc, "span", "chart-wheel-symbol-name", label.name),
         htmlElement(doc, "span", "chart-wheel-symbol-position", label.position));
-      if (label.retro) button.appendChild(htmlElement(doc, "span", "chart-wheel-symbol-retro", "℞"));
+      if (label.retro) button.appendChild(htmlElement(doc, "span", "chart-wheel-symbol-retro", "℞\uFE0E"));
       button.addEventListener("click", () => link.onActivate(label.key));
       return button;
     });
@@ -497,6 +506,19 @@
       return typeof base.forPreset === "function" ? base.forPreset(preset) : base;
     };
     const figure = htmlElement(doc, "div", "chart-wheel-figure");
+    let entranceStarted = false;
+    const startEntrance = () => {
+      if (entranceStarted) return;
+      entranceStarted = true;
+      if (doc.defaultView?.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+      figure.classList.add("cw-enter");
+      const finishEntrance = (event) => {
+        if (event.target === figure) figure.classList.remove("cw-enter");
+      };
+      figure.addEventListener("animationend", finishEntrance);
+      figure.addEventListener("animationcancel", finishEntrance);
+    };
+    if (typeof doc.defaultView?.ResizeObserver !== "function") startEntrance();
     const legend = htmlElement(doc, "ul", "chart-wheel-legend");
     let shown = null;
     const show = (next) => {
@@ -525,7 +547,13 @@
         frame(() => {
           pending = false;
           if (!section.isConnected) { observer.disconnect(); return; }
-          if (figure.clientWidth > 0) show(modelFor(WheelModel.presetForWidth(figure.clientWidth)));
+          if (figure.clientWidth > 0) {
+            if (!entranceStarted) {
+              startEntrance();
+              shown = null;
+            }
+            show(modelFor(WheelModel.presetForWidth(figure.clientWidth)));
+          }
         });
       });
       observer.observe(figure);
@@ -552,24 +580,39 @@
       return button;
     });
     // 圓盤／方盤：切換只換圖、引言與讀圖說明（區塊加 cw-style-square，calculate.css 依此藏起相位線的勾選框）。
+    let styleAnimation = null;
     const styleControl = alternate ? alternate.control(doc, (next) => {
-      style = next === "square" ? "square" : "wheel";
-      section.classList.toggle("cw-style-square", style === "square");
-      // 符號對照跟著畫出來的那一種：方盤沒有放進格子的點（例如四分宮制下的月交點）不列按鈕，
-      // 按鈕上的宮號與格子一致。重建後由 show() 的 onRedraw 重新套上標示。
-      if (symbols) {
-        // 按鈕順序照圓盤（也就是表格）的順序，方盤的標籤是依格子排的。
-        const order = new Map(model.labels.map((label, index) => [label.key, index]));
-        const rank = (label) => (order.has(label.key) ? order.get(label.key) : model.labels.length);
-        const base = style === "square" ? { labels: [...alternate.model.labels].sort((a, b) => rank(a) - rank(b)) } : model;
-        const rebuilt = base.labels.length ? symbolBar(doc, base, link) : null;
-        if (rebuilt) symbols.replaceWith(rebuilt);
-        else symbols.remove();
-        symbols = rebuilt;
+      if (styleAnimation) styleAnimation.cancel();
+      const redraw = () => {
+        style = next === "square" ? "square" : "wheel";
+        section.classList.toggle("cw-style-square", style === "square");
+        // 符號對照跟著畫出來的那一種：方盤沒有放進格子的點（例如四分宮制下的月交點）不列按鈕，
+        // 按鈕上的宮號與格子一致。重建後由 show() 的 onRedraw 重新套上標示。
+        if (symbols) {
+          // 按鈕順序照圓盤（也就是表格）的順序，方盤的標籤是依格子排的。
+          const order = new Map(model.labels.map((label, index) => [label.key, index]));
+          const rank = (label) => (order.has(label.key) ? order.get(label.key) : model.labels.length);
+          const base = style === "square" ? { labels: [...alternate.model.labels].sort((a, b) => rank(a) - rank(b)) } : model;
+          const rebuilt = base.labels.length ? symbolBar(doc, base, link) : null;
+          if (rebuilt) symbols.replaceWith(rebuilt);
+          else symbols.remove();
+          symbols = rebuilt;
+        }
+        section.querySelector(".section-note").textContent = style === "square" ? alternate.lead
+          : drawsAspects ? SECTION_TEXT.leadWithAspects : SECTION_TEXT.lead;
+        show(modelFor(WheelModel.presetForWidth(figure.clientWidth)));
+      };
+      const motion = doc.defaultView && doc.defaultView.matchMedia
+        ? doc.defaultView.matchMedia("(prefers-reduced-motion: reduce)") : null;
+      if (!motion || motion.matches || typeof figure.animate !== "function") {
+        redraw();
+        return;
       }
-      section.querySelector(".section-note").textContent = style === "square" ? alternate.lead
-        : drawsAspects ? SECTION_TEXT.leadWithAspects : SECTION_TEXT.lead;
-      show(modelFor(WheelModel.presetForWidth(figure.clientWidth)));
+      styleAnimation = figure.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 75, easing: "ease-in" });
+      styleAnimation.onfinish = () => {
+        redraw();
+        styleAnimation = figure.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 75, easing: "ease-out" });
+      };
     }) : null;
     actions.append(...(aspects.control ? [aspects.control] : []), enlarge, ...(includeInput ? [inputLabel] : []), ...downloads);
     // 放大檢視：原生 <dialog> 的 showModal 提供焦點圈限、背景 inert 與 Esc 關閉；關閉後焦點回到開啟它的按鈕。

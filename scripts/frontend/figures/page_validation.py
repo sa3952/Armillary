@@ -178,7 +178,7 @@ def _engine() -> list[str]:
 
 def build() -> tuple[dict[str, str], list[str]]:
     points, rows = size()
-    quoted = [f"<b>{rows:,}</b><span>天體—小時比對列</span><small>{START.year}–{END.year}，{zh(len(BODIES))}個天體",
+    quoted = [f"<b>{rows:,}</b><span>列天體—小時比對：{START.year}–{END.year}，{zh(len(BODIES))}個天體",
         f"{START:%Y-%m-%d}至{END:%Y-%m-%d}，逐小時，共{points:,}個時點", f'<td class="num">{rows:,} 列</td>',
         f"<td>{START.year} 到 {END.year} 年，逐小時</td>", *_horizons(), *_eclipses(), *_houses(), *_solar_return(),
         *_sidereal_time(), *_civil_time(), *_fixed_stars(), *_engine(),]

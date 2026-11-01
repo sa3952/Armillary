@@ -66,17 +66,20 @@ BM25_COLUMN_WEIGHTS = (8.0, 2.0, 1.0, 1.0)
 
 # 排序法的具名版本。排序規則的變更會直接改變使用者選到哪一個地點、
 # 進而改變整張星盤，因此必須是可具名、可比對、可回報的。
-RANKING_METHOD_NAME = "match_tier_then_taiwan_county_then_town_then_population_then_weighted_bm25_v4"
+RANKING_METHOD_NAME = "match_tier_then_taiwan_county_then_town_then_population_then_weighted_bm25_v5"
 _BM25_SQL = ", ".join(str(value) for value in BM25_COLUMN_WEIGHTS)
 RANKING_STEPS = (
     (
         "CASE match_tier WHEN 'exact_name' THEN 0 "
-        "WHEN 'name_prefix' THEN 1 ELSE 2 END ASC",
+        "WHEN 'name_prefix' THEN 1 ELSE 2 END ASC, fts_alias_only ASC",
         "1. match_tier (exact_name → 0, name_prefix → 1, other_field and spelling_fallback → 2) ASC; "
+        "within a tier, stored name matches precede FTS-only alias matches; exact FTS alias phrases also count; "
         "the tier compares the name, the Traditional-Chinese name, a Taiwan county's or township's "
         "short and English names, a MOI place's phonetic names, a Taiwan GeoNames row's aliases and "
         "a large foreign city's corroborated Chinese names, with 台 read as 臺 and the query read in "
-        "Traditional characters",
+        "Traditional characters; when a row's own name or Chinese name equals the query (a Taiwan county's "
+        "or township's point always counts as its own name), a row that equals it only through an alias "
+        "or a phonetic name and lies over 30 km from every such row of its own country is other_field and follows the name prefixes",
     ),
     (
         f"CASE WHEN substr(source_record_id, 1, {len(TAIWAN_COUNTY_RECORD_PREFIX)}) "
@@ -126,6 +129,8 @@ SPELLING_FALLBACK_APPLIED = "applied"
 # How often the name scan, which runs in Python and not under the progress
 # handler, looks at the clock.
 _SPELLING_SCAN_CLOCK_INTERVAL = 4096
+# The distance scoring of the names found costs far more per name.
+_SPELLING_SCORE_CLOCK_INTERVAL = 64
 # The scan's own CPU time is bounded as well as the wall clock: scans waiting
 # on one another's GIL stretch wall time, and a scan that spends this much CPU
 # is refused however long it has waited.
@@ -666,10 +671,21 @@ def _optimal_string_alignment_distance(left: str, right: str) -> int:
     return rows[-1][-1]
 
 
-def _closest_spelling_names(key: str, names: Sequence[str]) -> list[tuple[str, int]]:
-    """The SPELLING_FALLBACK_MAX_NAMES names closest to key, each with its fallback distance."""
+def _closest_spelling_names(
+    key: str, names: Sequence[str], *, deadline: float | None = None
+) -> list[tuple[str, int]]:
+    """The SPELLING_FALLBACK_MAX_NAMES names closest to key, each with its fallback distance.
 
-    ranked = sorted((_optimal_string_alignment_distance(key, name), name) for name in names)
+    Every name is scored before the cut, so the scoring looks at the search
+    clock as the name scan does.
+    """
+
+    scored = []
+    for index, name in enumerate(names, 1):
+        if deadline is not None and index % _SPELLING_SCORE_CLOCK_INTERVAL == 0 and time.monotonic() > deadline:
+            raise PlaceSearchBudgetExceededError("place search exceeded its statement budget")
+        scored.append((_optimal_string_alignment_distance(key, name), name))
+    ranked = sorted(scored)
     return [(name, distance) for distance, name in ranked[:SPELLING_FALLBACK_MAX_NAMES]]
 
 
@@ -743,7 +759,7 @@ def _search_sql(*, spelling_fallback: bool) -> str:
         distance = "NULL"
         order = _ORDER_BY_SQL
         tier = """CASE
-                        WHEN instr(match_keys, :exact_key) > 0 THEN 'exact_name'
+                        WHEN instr(match_keys, :exact_key) > 0 OR alias_exact THEN 'exact_name'
                         WHEN instr(match_keys, :key_prefix) > 0 THEN 'name_prefix'
                         ELSE 'other_field'
                     END"""
@@ -754,6 +770,7 @@ def _search_sql(*, spelling_fallback: bool) -> str:
                         p.source,
                         p.source_record_id,
                         p.name,
+                        p.normalized_name,
                         p.display_name,
                         p.country_code,
                         p.admin1,
@@ -769,6 +786,7 @@ def _search_sql(*, spelling_fallback: bool) -> str:
                         p.population,
                         p.source_priority,
                         p.match_keys,
+                        {("0" if spelling_fallback else "p.rowid IN (SELECT rowid FROM place_search WHERE place_search MATCH :alias_exact)")} AS alias_exact,
                         {distance} AS fallback_distance,
                         bm25(place_search, {_BM25_SQL}) AS bm25_rank
                     FROM place_search
@@ -778,7 +796,8 @@ def _search_sql(*, spelling_fallback: bool) -> str:
                 )
                 SELECT
                     *,
-                    {tier} AS match_tier
+                    {tier} AS match_tier,
+                    {("0" if spelling_fallback else "CASE WHEN instr(match_keys, :exact_key) = 0 AND alias_exact THEN 1 ELSE 0 END")} AS fts_alias_only
                 FROM matched
                 WHERE 1 {keep}
                 ORDER BY
@@ -865,7 +884,7 @@ def _place_alias_row(rows: list, alias_row, receipt: dict, limit: int) -> list:
         and leader is not None
         and leader["country_code"] != "HK"
         and (
-            leader["match_tier"] in ("exact_name", "name_prefix")
+            (leader["match_tier"] in ("exact_name", "name_prefix") and not leader.get("fts_alias_only", False))
             or receipt["alias"] in ALIASES_SHARED_WITH_TAIWAN
         )
     )
@@ -1086,13 +1105,15 @@ class PlaceCatalog:
             _SEARCH_SQL,
             {
                 "match": match_query,
+                "alias_exact": 'aliases : "' + " ".join(receipt["tokens_used"]).replace('"', '""') + '"',
                 "country": country_code,
                 "exact_key": MATCH_KEY_SEPARATOR + tier_query + MATCH_KEY_SEPARATOR,
                 "key_prefix": MATCH_KEY_SEPARATOR + tier_query,
                 # Read wider than the limit so Hong Kong rows ranked lower still surface.
-                "limit": max(limit, 50),
+                "limit": max(limit, SEARCH_READ_ROWS),
             },
         ).fetchall()
+        rows = _demote_alias_only_exact_rows(rows, tier_query)
         rows = sorted(rows, key=lambda row: row["country_code"] != "HK")
         return rows[:limit]
 
@@ -1108,6 +1129,7 @@ class PlaceCatalog:
         # Recorded, not inferred from the clock afterwards, which would also
         # label a genuine fault that happened to finish late.
         interrupted = False
+        tier_query = None
 
         def spend_statement_budget() -> int:
             nonlocal interrupted
@@ -1157,15 +1179,19 @@ class PlaceCatalog:
                 _SEARCH_SQL,
                 {
                     "match": match_query,
+                    "alias_exact": 'aliases : "' + " ".join(query_receipt["tokens_used"]).replace('"', '""') + '"',
                     "country": country_code,
                     # 以 instr 而非 LIKE 比對：查詢字串是使用者輸入，LIKE 會把
                     # 其中的 % 與 _ 當成萬用字元；instr 沒有萬用字元語意。鍵以
                     # 分隔字元包住，所以「整個鍵相等」與「鍵以查詢開頭」可分。
                     "exact_key": MATCH_KEY_SEPARATOR + tier_query + MATCH_KEY_SEPARATOR,
                     "key_prefix": MATCH_KEY_SEPARATOR + tier_query,
-                    "limit": limit,
+                    # A bounded window wider than the answer, so an own-name row
+                    # ranked below alias-only matches is still read and promoted.
+                    "limit": max(limit, SEARCH_READ_ROWS),
                 },
             ).fetchall()
+            rows = _demote_alias_only_exact_rows(rows, tier_query)[:limit]
             if rows:
                 fallback = SPELLING_FALLBACK_NOT_NEEDED
             elif not _spelling_fallback_eligible(tier_query):
@@ -1183,7 +1209,7 @@ class PlaceCatalog:
                     )
                 finally:
                     _SPELLING_SCAN_LOCK.release()
-                closest = _closest_spelling_names(tier_query, names)
+                closest = _closest_spelling_names(tier_query, names, deadline=deadline)
                 if closest:
                     connection.create_function(
                         _FALLBACK_DISTANCE_FUNCTION, 1, _fallback_distance_function(closest), deterministic=True
@@ -1241,6 +1267,7 @@ class PlaceCatalog:
             connection.set_progress_handler(None, 0)
             connection.close()
 
+        rows = _demote_alias_only_exact_rows(rows, tier_query)
         results = [
             {
                 **{column: row[column] for column in _RESULT_COLUMNS},
@@ -1268,6 +1295,78 @@ class PlaceCatalog:
             for row in rows
         ]
         return self._response(results, metadata, query_receipt)
+
+
+# An alias-only exact row farther than this from every row whose own name the
+# query is names another place (in the case that prompted this, about 120 km away).
+ALIAS_OTHER_PLACE_KILOMETRES = 30.0
+# Rows each name search reads before reordering: bounded, and wider than any answer.
+SEARCH_READ_ROWS = 50
+
+
+def _kilometres_apart(left, right) -> float:
+    import math
+
+    lat1, lat2 = math.radians(left["latitude"]), math.radians(right["latitude"])
+    dlat, dlon = lat2 - lat1, math.radians(right["longitude"] - left["longitude"])
+    a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+    return 2 * 6371.0 * math.asin(min(1.0, math.sqrt(a)))
+
+
+def _demote_alias_only_exact_rows(rows, tier_query: str | None) -> list:
+    """An exact match through an alias yields to a place whose own name it is.
+
+    GeoNames lists a city's romanised name among the aliases of another town,
+    so a search for that name put the other town beside the city as an exact name.  When some exact row's own name (or Chinese name)
+    equals the query, every exact row matched only through other names becomes
+    other_field and moves after the last exact or prefix row; every other row
+    keeps its place.
+    """
+
+    rows = [row if isinstance(row, dict) else dict(row) for row in rows]
+    if not tier_query:
+        return rows
+
+    chinese_keys = {}
+
+    def own_name(row) -> bool:
+        # A Taiwan county's or township's representative point answers to its
+        # short and English names by construction, not through an alias.
+        if str(row["source_record_id"]).startswith((TAIWAN_COUNTY_RECORD_PREFIX, TAIWAN_TOWN_RECORD_PREFIX)):
+            return True
+        if row["normalized_name"].replace("台", "臺") == tier_query:
+            return True
+        chinese = row["name_zh"]
+        if not chinese:
+            return False
+        if chinese not in chinese_keys:
+            chinese_keys[chinese] = place_tier_key(chinese)
+        return chinese_keys[chinese] == tier_query
+
+    exact = [row for row in rows if row["match_tier"] == "exact_name"]
+    if not any(own_name(row) for row in exact):
+        return rows
+    owners = [row for row in exact if own_name(row)]
+
+    def names_another_place(row) -> bool:
+        # The alias is the other place's name only when the row lies away from
+        # every row that bears it: 臺北市's GeoNames point answers to 台北 and
+        # sits beside the county point, so it stays exact.
+        # Only within one country: 深圳 is Shenzhen's corroborated Chinese name
+        # even though a Taiwanese street bears it as its own.
+        same_country = [owner for owner in owners if owner["country_code"] == row["country_code"]]
+        return bool(same_country) and all(
+            _kilometres_apart(row, owner) > ALIAS_OTHER_PLACE_KILOMETRES for owner in same_country)
+
+    demoted = [row for row in exact if not own_name(row) and names_another_place(row)]
+    if not demoted:
+        return rows
+    kept = [row for row in rows if not any(row is other for other in demoted)]
+    for row in demoted:
+        row["match_tier"] = "other_field"
+    cut = max((index + 1 for index, row in enumerate(kept)
+               if row["match_tier"] in ("exact_name", "name_prefix")), default=0)
+    return kept[:cut] + demoted + kept[cut:]
 
 
 # A catalogue location in a chart request is the catalogue's row.  A request

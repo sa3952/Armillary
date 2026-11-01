@@ -33,7 +33,7 @@
       cell: "每格第一行是宮號與宮頭（這一宮起點）的星座與度數，下面是落在這一宮的天體：符號、度、星座、分；"
         + "℞ 表示逆行。", wholeSign: "整宮制的每一宮正好是一個星座，宮頭都在星座的 0°，所以每格第一行只寫宮號與星座。",
       quadrant: "這個宮位制的宮頭不一定在星座起點，同一宮可能跨兩個星座，所以每個天體都另標星座。",
-      centre: "中央方格寫宮位制與四軸。舊時的方盤在這裡寫出生日期、時間與地點；這裡預設不印。",
+      centre: "中央方格寫四軸。舊時的方盤在這裡寫出生日期、時間與地點；這裡預設不印。",
       same: "方盤與圓盤是同一份計算結果的兩種畫法，數值相同，也與表格同源；方盤只按宮位分格，"
         + "不按黃經比例排位置，也不畫相位線。", nodes: "密、平：密切交點與平均交點；表格兩者分列，方盤也兩者都列。",
       lilith: "⚸ 平、自然：兩種算法的黑月 Lilith（月球軌道離地球最遠的那一點）。平均：把月球軌道的短期變動平均掉，位置等速前進；自然：依月亮實際經過最遠點的位置推算，會在平均位置前後擺動。表格兩者分列，方盤也兩者都列。",
@@ -51,7 +51,7 @@
   // 與圓盤同一套標籤語言：符號依墨框光學正規化、度星座分是一行拉丁襯線數字，全圖兩種字級——符號一級（glyph），其餘的字
   // （度分、星座符號、宮號、中央的宮位制與四軸）一級（text）；℞ 與交點的下標是掛在符號上的記號，不算一級字。
   const SIZE = Object.freeze({
-    glyph: 24, text: 14, sign: 14, mark: 10, suffix: 10, number: 14, row: 18, angleName: 14, centre: 14, centreRow: 24,
+    glyph: 24, text: 14, sign: 14, mark: 10, suffix: 10, number: 14, row: 18, angleName: 14, centreRow: 24,
   });
   // 格子太擠時，整張圖的標籤一起等比縮小（與圓盤相同的作法），直到每一格都放得下。
   const LABEL_SCALES = Object.freeze([1, 0.92, 0.85, 0.78, 0.72, 0.66, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35]);
@@ -266,19 +266,15 @@
     ];
   }
 
-  /** 中央方格：宮位制一行，下面是四軸（名稱、星座、度分；紅色，與圓盤的四軸同色）。 */
-  function centreContent(division, angles, fs) {
+  /** 中央方格：四軸（名稱、星座、度分；墨色，與圓盤的四軸同色）。宮位制寫在圖下的頁尾。 */
+  function centreContent(angles, fs) {
     const rowHeight = SIZE.centreRow * fs;
     const centre = { x: G.x0 + G.side / 2, y: G.y0 + G.side / 2 };
-    const room = G.side / 2 - 16;
-    const titleSize = SIZE.centre * fs;
-    const titleLines = R.wrap(`宮位制：${division.text}`, titleSize, room);
-    const rows = [...titleLines.map((line) => ({ kind: "title", line })), ...angles.map((angle) => ({ kind: "angle", angle }))];
+    const rows = angles.map((angle) => ({ kind: "angle", angle }));
     const prims = [];
     const angleRows = [];
     rows.forEach((row, index) => {
       const y = centre.y + (index - (rows.length - 1) / 2) * rowHeight;
-      if (row.kind === "title") { prims.push(textPrim("sq-centre-title", centre.x, y, row.line, titleSize, "book", "dim")); return; }
       // 兩欄：名稱靠右對齊到中線左側，星座與度分從中線右側開始；字寬只是估計，這樣排不會擠到。
       const { angle } = row;
       const nameSize = SIZE.angleName * fs;
@@ -288,13 +284,13 @@
       const degreeWidth = R.numBox(angle.deg, textSize).w;
       const minuteWidth = R.numBox(angle.min, textSize).w;
       const h = SIZE.row * fs;
-      const items = [textPrim("sq-angle-name", centre.x - 4 * fs, y, angle.name, nameSize, "book", "accent", { anchor: "end" })];
+      const items = [textPrim("sq-angle-name", centre.x - 4 * fs, y, angle.name, nameSize, "book", "fg", { anchor: "end" })];
       let x = centre.x + 4 * fs;
-      items.push(glyphPrim("sq-angle-sign", SIGN_KEYS[angle.sign], x + sign.w / 2, y, SIZE.sign * fs, "accent"));
+      items.push(glyphPrim("sq-angle-sign", SIGN_KEYS[angle.sign], x + sign.w / 2, y, SIZE.sign * fs, "fg"));
       x += sign.w + 1.5 * fs;
-      items.push(textPrim("sq-angle-text", x + degreeWidth / 2, y, angle.deg, textSize, "serif", "accent"));
+      items.push(textPrim("sq-angle-text", x + degreeWidth / 2, y, angle.deg, textSize, "serif", "fg"));
       x += degreeWidth;
-      items.push(textPrim("sq-angle-text", x + minuteWidth / 2, y, angle.min, textSize, "serif", "accent"));
+      items.push(textPrim("sq-angle-text", x + minuteWidth / 2, y, angle.min, textSize, "serif", "fg"));
       x += minuteWidth;
       angleRows.push({ angle, items, box: { x0: centre.x - 4 * fs - nameWidth, y0: y - h / 2, x1: x, y1: y + h / 2 } });
     });
@@ -331,7 +327,7 @@
     cells.forEach((cell, index) => { cell.items.forEach((item, k) => { if (!packed[index].boxes[k + 1]) overflow.push(item); }); });
     const notDrawn = [...omitted, ...positions.omitted.filter((name) => !omitted.includes(name)), ...overflow.map((item) => item.name)];
     const notes = [
-      TEXT.orientation, ...(angles.length ? [WheelModel.TEXT.accent] : []),
+      `宮位制：${division.text}`, TEXT.orientation,
       ...(unplaced.length ? [`${TEXT.unplaced}：${unplaced.map((point) => point.name).join("、")}（見表格）`] : []),
       ...(notDrawn.length ? [`圖上未畫：${notDrawn.join("、")}（見表格）`] : []),
     ];
@@ -354,7 +350,7 @@
         });
       });
     });
-    const centre = centreContent(division, angles, preset.text);
+    const centre = centreContent(angles, preset.text);
     for (const row of centre.angleRows) {
       labelGroups.push({ group: "label", items: row.items });
       const { angle } = row;
@@ -375,7 +371,7 @@
       L.what, L.read, L.cell, division.code === "W" ? L.wholeSign : L.quadrant, L.centre, L.same,
       ...([...placedKeys].some((key) => /node$/.test(key)) ? [L.nodes] : []),
       ...([...placedKeys].some((key) => /lilith$/.test(key)) ? [L.lilith] : []),
-      ...notes.filter((note) => note !== TEXT.orientation && note !== WheelModel.TEXT.accent),
+      ...notes.filter((note) => note !== TEXT.orientation),
     ];
     return {
       kind: "square", width: G.width, height: foot.height, preset: presetName, ariaLabel: asc

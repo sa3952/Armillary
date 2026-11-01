@@ -4,6 +4,7 @@
     <p class="eyebrow">路線</p>
     <h1>這不是功能清單，<br>是一道階梯。</h1>
     <p class="lede">功能清單會誘使你問「什麼時候會有 X」。階梯讓你問一個更有用的問題：<b>「他們現在站在哪一階，憑什麼上下一階？」</b></p>
+    <p>星盤計算會持續免費提供，不需登入；這項承諾的範圍是星盤計算。</p>
     <p class="rm-promise">下面每一列都附<b>「這個狀態是怎麼知道的」</b>——文件名、測試名，或一句可以自己重跑的話。<br>沒有依據的狀態，就是還沒查證的狀態。</p>
   </section>
 
@@ -109,7 +110,7 @@
       <table class="log rm-table stack-narrow">
         <thead><tr><th>項目</th><th>狀態</th><th>依據</th></tr></thead>
         <tbody>
-          <tr><td>五十七個公開介面與URL／metadata</td><td class="st ok">已登記</td><td><span class="mono">frontend/surfaces.json</span>與page producer逐頁對應</td></tr>
+          <tr><td>五十八個公開介面與URL／metadata</td><td class="st ok">已登記</td><td><span class="mono">frontend/surfaces.json</span>與page producer逐頁對應</td></tr>
           <tr><td>公開原始碼與source archive</td><td class="st ok">每版各自驗證</td><td>每一個live版本都要有自己的exact public source、匿名取得與archive readback驗證收據；一版的收據不外推到其他版本</td></tr>
           <tr><td>主機、隱私與故障通知</td><td class="st ok">每版各自實測</td><td>每一個live版本都要有自己的具名host、privacy與rollback驗證收據；可用性由容器健康檢查維持（連續失敗時自動重啟容器），故障通知來自外部可用性監控；一版的收據不外推到其他版本</td></tr>
           <tr><td>造訪計數</td><td class="st ok">已實作</td><td>只有兩個整數：每小時的頁面瀏覽數與今日訪客數，寫進主機日誌，保留上限與系統日誌相同；不是第三方分析，不記 IP、User-Agent 或你在看哪一頁，瀏覽器開了 Global Privacy Control 時不送。說明見〈<a href="/zh-TW/legal/privacy">隱私政策</a>〉</td></tr>
@@ -186,6 +187,7 @@
     <h2 class="way-title">不打算做的事</h2>
     <ul class="ticks">
       <li>不加追蹤器、不加廣告、不加第三方分析。</li>
+      <li>不做 AI 解讀：不用語言模型替你的盤寫解釋，也不加把盤交給聊天機器人的「複製提示詞」按鈕。</li>
       <li>不因為別的工具有某個功能就加進來。</li>
       <li>不把廟、旺、三分性、界、面這些不同類別的尊貴加總成一個分數——那等於宣稱它們可以通約。</li>
       <li>不做深色／淺色主題切換，維持現行的紙色配色。意圖裡曾列「補上淺色主題與更好的列印」，2026-10-11 放棄；列印版面已列在上方現況表。</li>

@@ -865,9 +865,11 @@ def _start_container(image: str, workers: int, platform: str | None) -> tuple[st
 # Measured, not inferred: the root mount's flag from /proc/self/mountinfo, a
 # write where the runtime user's permissions would allow it (/var/tmp is 1777)
 # so only a read-only mount refuses it with EROFS, and the privilege state of
-# this process and PID 1.
+# this process and PID 1.  Bytecode: the interpreter writes none, the build's
+# precompiled application and standard-library caches are there to be read,
+# and no __pycache__ appeared under /app while the workers imported it.
 _CONTAINER_CONTROL_PROBE = r"""
-import errno, json, os
+import errno, importlib.util, json, os, sys
 root_options = None
 with open("/proc/self/mountinfo", encoding="utf-8") as handle:
     for line in handle:
@@ -895,6 +897,12 @@ print(json.dumps({
     "tmpfs": attempt("/tmp/.gate-d-write-probe"),
     "self": status("self"),
     "pid1": status(1),
+    "bytecode": {
+        "dont_write": sys.flags.dont_write_bytecode,
+        "app_pyc": os.path.isfile(importlib.util.cache_from_source("/app/backend/app/main.py")),
+        "stdlib_pyc": os.path.isfile(importlib.util.cache_from_source("/usr/local/lib/python3.14/argparse.py")),
+        "app_pycache": any("__pycache__" in names for _, names, _ in os.walk("/app")),
+    },
 }, sort_keys=True))
 """
 
@@ -912,6 +920,9 @@ def _container_controls(container: str) -> dict[str, Any]:
         raise GateFailure(
             f"a root path the runtime user may write was not refused: {observed.get('dac_writable_root_path')!r}"
         )
+    bytecode = observed.get("bytecode")
+    if bytecode != {"dont_write": 1, "app_pyc": True, "stdlib_pyc": True, "app_pycache": False}:
+        raise GateFailure(f"bytecode is written at run time or the precompiled cache is missing: {bytecode!r}")
     if observed.get("tmpfs") != "written":
         raise GateFailure("bounded tmpfs did not accept a temporary write")
     for process in ("self", "pid1"):

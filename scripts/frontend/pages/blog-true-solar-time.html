@@ -101,7 +101,7 @@
     <p>整年下來，地方恆星時的變化，臺北在 −8.1 到 +22.6 分鐘之間，金門在 −21.0 到 +9.7 分鐘之間。把 2025 年每 10 分鐘的時刻都這樣比一次，上升星座因此換掉的，臺北有 7% 的時刻，金門有 8%<a class="ar-cite" href="#ref-5">[5]</a>。比例看起來不大，但它是平白多出來的錯誤，而且發生在哪些時刻完全可以預先算出來，沒有理由承擔。</p>
 
     <h2 id="site"><span class="ar-sec">§05</span>本站在哪裡顯示真太陽時</h2>
-    <p>本站會算真太陽時，但只當參考。選「運算結果＋驗算資料」匯出時，計算軌跡裡有一步叫〈均時差與真太陽時（僅供參考，不影響本次計算）〉，列出那一刻的均時差與真太陽時；其後的任何一步都不使用它<a class="ar-cite" href="#ref-3">[3]</a>。</p>
+    <p>本站會算真太陽時，但只當參考。勾「附驗算資料」匯出時，計算軌跡裡有一步叫〈均時差與真太陽時（僅供參考，不影響本次計算）〉，列出那一刻的均時差與真太陽時；其後的任何一步都不使用它<a class="ar-cite" href="#ref-3">[3]</a>。</p>
     <p>這一步的均時差，我們用 NOAA 太陽計算表的公式獨立核對過：圖 1 那一刻，NOAA 試算表的公式在同一刻給出 16.46 分鐘，本站是 16.41 分鐘，相差約 3 秒<a class="ar-cite" href="#ref-4">[4]</a><a class="ar-cite" href="#ref-5">[5]</a>。這個差距在 NOAA 公式自述的精度之內。</p>
 
     <h2 id="old"><span class="ar-sec">§06</span>什麼時候要想到「地方時」</h2>
@@ -124,7 +124,7 @@
     <ol>
       <li id="ref-1"><span>渾儀<a href="/zh-TW/methods#conventions">方法頁</a> §07.6〈UTC、UT1 與 ΔT〉：鐘面時間依卷宗記下版本的 IANA 時區資料庫換成世界時；1970 年前、特別是標為地方平時的段落，資料庫自承多為推定。<span class="rs rs-register">本站出處清單</span></span></li>
       <li id="ref-2"><span>渾儀<a href="/zh-TW/methods#conventions">方法頁</a> §07.1 與§07.6：上升點與宮頭由 Swiss Ephemeris 依世界時與出生地經緯度算出；恆星時的模型段記在每次計算的收據裡（方法出處清單條目 <code>time/sidereal_time_model</code>）。<span class="rs rs-register">本站出處清單</span></span></li>
-      <li id="ref-3"><span>本站計算服務的計算軌跡：〈平均／視恆星時〉一步以「LAST/LMST = GAST/GMST + 東經/15」計算；〈均時差與真太陽時（僅供參考，不影響本次計算）〉一步以「真太陽時 = UTC + 經度/15(小時) + 均時差」計算，均時差取自 Swiss Ephemeris <code>swe_time_equ</code>。可在計算頁選「運算結果＋驗算資料」匯出後查看。<span class="rs rs-computed">本站自算</span></span></li>
+      <li id="ref-3"><span>本站計算服務的計算軌跡：〈平均／視恆星時〉一步以「LAST/LMST = GAST/GMST + 東經/15」計算；〈均時差與真太陽時（僅供參考，不影響本次計算）〉一步以「真太陽時 = UTC + 經度/15(小時) + 均時差」計算，均時差取自 Swiss Ephemeris <code>swe_time_equ</code>。可在計算頁勾「附驗算資料」匯出後查看。<span class="rs rs-computed">本站自算</span></span></li>
       <li id="ref-4"><span>NOAA Global Monitoring Laboratory, Solar Calculator，〈Calculation Details〉頁與其試算表 NOAA_Solar_Calculations_day 的儲存格公式：Eq of Time (minutes) 與 True Solar Time (min) 兩欄（依 Meeus《Astronomical Algorithms》）。<a href="https://gml.noaa.gov/grad/solcalc/calcdetails.html">gml.noaa.gov/grad/solcalc/calcdetails.html</a><span class="rs rs-checked">已讀原文</span></span></li>
       <li id="ref-5"><span>本站計算服務對合成時刻 1990-11-03 14:00 與 14:22:31（臺北，北緯 25.05306°、東經 121.52639°，Asia/Taipei，整宮制）的回應，以本機的同版服務於 2026 年 10 月取得，不是對正式站的請求；圖 2、一年的均時差範圍與兩個比例，以 Swiss Ephemeris 2.10.03 自算；1896 年以前臺北的偏移，以 Python 3.14 zoneinfo 讀取 IANA 時區資料庫 2026d 版。金門取本站地名目錄的金城（GeoNames 1678008）。<span class="rs rs-computed">本站自算</span></span></li>
     </ol>

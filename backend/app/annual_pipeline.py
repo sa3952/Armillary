@@ -55,6 +55,7 @@ from .annual_techniques import ANNUAL_TECHNIQUES, natal_lots_block, source_head
 from .ephemeris import FullEphemerisRequiredError, input_files_unchanged_since
 from .canonical_json import CANONICAL_JSON_DUMPS_ARGUMENTS, canonical_json_bytes
 from .core import decennials as dec
+from .core import place_zone_policy
 from .core.dignity_tables import SIGNS
 from .core.dossier_warnings import SIGN_BOUNDARY_WARNING_DEGREES
 from .core.civil_time_sources import CIVIL_TIME_SOURCES, rule_zone
@@ -662,7 +663,8 @@ def _solar_return_chart_step(trace, block: JsonObject) -> None:
 
 
 def compute_annual_response(
-    req: AnnualRequest, *, build_identity: JsonObject, localize_timezone: Any = None
+    req: AnnualRequest, *, build_identity: JsonObject, localize_timezone: Any = None,
+    place_zone: JsonObject | None = None,
 ) -> JsonObject:
     """``localize_timezone`` is the zone the request named when a place zone
     policy replaced it for the birth instant only; the dates after the birth
@@ -670,6 +672,7 @@ def compute_annual_response(
 
     shown = req if localize_timezone is None else req.model_copy(update={"timezone": localize_timezone})
     anchor = compute_natal_anchor(natal_request(req))
+    place_zone_policy.add_trace_step(anchor.time.trace, place_zone)
     samples = representative_samples(req, anchor)
     year_boundary = _year_boundary(req, samples)
     annual_methods = {key: build(req, samples) for key, build in ANNUAL_TECHNIQUES.items()}

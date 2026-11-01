@@ -95,6 +95,8 @@
     // 換年度後的延遲取用，與暫時失敗後的再試（期間 id → 計時器）。
     let yearTimer = null;
     const retryTimers = new Map();
+    // 「今天」是裝置的日期：過了午夜、或頁面在背景放到隔天再回來，就換成新的一天。
+    let midnightTimer = null;
     function node(tag, className, text) {
       const element = doc.createElement(tag);
       if (className) element.className = className;
@@ -320,7 +322,43 @@
       setStatus("年度時間主星已算出。", "info");
       startNote.hidden = true;
       queueLevel2ForYear();
+      armMidnight();
     }
+    /** 用裝置當下的日期重建模型；看的是今年時跟著換到新的今年。回傳日期是否變了。 */
+    function rebuildModel() {
+      const current = today();
+      const moved = current !== state.model.today;
+      const wasCurrent = state.yearIndex === state.model.currentIndex;
+      state.model = Model.buildModel(state.data, current);
+      if (moved && wasCurrent && state.model.currentIndex >= 0) state.yearIndex = state.model.currentIndex;
+      if (moved && !state.model.byId.has(state.selected)) state.selected = defaultSelection();
+      return moved;
+    }
+    function refreshToday() {
+      if (!state.model || !state.data || state.loading) return;
+      if (today() === state.model.today) return;
+      const yearBefore = state.yearIndex;
+      rebuildModel();
+      renderAll({ keepScroll: true });
+      if (state.yearIndex !== yearBefore) queueLevel2ForYear();
+    }
+    function armMidnight() {
+      if (midnightTimer !== null) win.clearTimeout(midnightTimer);
+      const current = now();
+      const next = new win.Date(current.getFullYear(), current.getMonth(), current.getDate() + 1);
+      // 多等一秒，避開計時器比時鐘早一點醒來仍停在昨天。
+      midnightTimer = win.setTimeout(() => {
+        midnightTimer = null;
+        refreshToday();
+        if (state.model) armMidnight();
+      }, Math.max(0, next.getTime() - current.getTime()) + 1000);
+    }
+    function resumeToday() {
+      refreshToday();
+      if (state.model) armMidnight();
+    }
+    win.addEventListener("focus", resumeToday);
+    doc.addEventListener("visibilitychange", () => { if (doc.visibilityState !== "hidden") resumeToday(); });
     // 第二層（小期）按需取：只取選定年度與時間軸可見範圍裡、尚未載入的大期；一次一個請求。
     // 月小限只取選定的那一年，排在最前面：同一個請求也帶回那一年所在大期的第二層。
     function enqueueMissing(list) {
@@ -412,8 +450,8 @@
             state.data = Model.mergeLevel2(state.data, extra, { monthsFor: state.monthsWanted });
             state.sources = state.sources.concat([result.body]);
             if (!state.data.level2LoadedFor.has(next.id)) state.level2Failed.add(next.id);
-            state.model = Model.buildModel(state.data, state.model.today);
-            refreshAfterLevel2();
+            if (rebuildModel()) renderAll({ keepScroll: true });
+            else refreshAfterLevel2();
             setStatus("", "info");
           }
         } catch (error) {
@@ -619,6 +657,7 @@
     function moveYear(delta, focusId) {
       const target = state.yearIndex + delta;
       if (target < 0 || target >= state.model.years.length || delta === 0) return;
+      solarReturn.stop();
       state.yearIndex = target;
       state.openDecades.delete(target - (target % 10));
       state.openYears.delete(target);
@@ -754,7 +793,7 @@
       button.setAttribute("aria-pressed", String(item.id === state.selected));
       button.setAttribute("aria-controls", "annual-detail");
       const marks = [item.kind === "loosing" ? "解鎖" : "", item.truncated ? "被上一層截斷" : ""].filter(Boolean);
-      button.setAttribute("aria-label", `${lane.title}：${item.label}，${item.start.localDate} 到 ${item.end.localDate}${marks.length ? `，${marks.join("，")}` : ""}`);
+      button.setAttribute("aria-label", `${lane.title}：${item.label}，${item.start.localDate} 到 ${item.end.open ? "超出本站能計算的範圍（到 2399 年為止）" : item.end.localDate}${marks.length ? `，${marks.join("，")}` : ""}`);
       const label = node("span", "tl-seg-label");
       const svg = glyph(item.glyph);
       if (svg) label.appendChild(svg);
@@ -922,7 +961,7 @@
         details.open = state.openDecades.has(start) ? state.openDecades.get(start) : indexes.includes(state.yearIndex);
         const first = years[0];
         const last = years[years.length - 1];
-        details.appendChild(node("summary", null, `${first.n}–${last.n} 足歲（${first.start.localDate.slice(0, 4)}–${last.end.localDate.slice(0, 4)}）`));
+        details.appendChild(node("summary", null, `${first.n}–${last.n} 足歲（${first.start.localDate.slice(0, 4)}–${(last.end.open ? last.start : last.end).localDate.slice(0, 4)}）`));
         details.addEventListener("toggle", () => {
           state.openDecades.set(start, details.open);
           if (details.open) queueLevel2(first.startDay, last.endDay);
@@ -1245,6 +1284,7 @@
       solarReturn.clear();
       life.clear();
       if (scrollTimer !== null) { win.clearTimeout(scrollTimer); scrollTimer = null; }
+      if (midnightTimer !== null) { win.clearTimeout(midnightTimer); midnightTimer = null; }
       clearLevel2Timers();
       Object.assign(state, {
         payload: null, stale: false, loading: false, data: null, model: null, sources: [], view: null,
@@ -1383,7 +1423,7 @@
         ruler.appendChild(doc.createTextNode(item.lord));
       }
       const dates = node("span", "tl-life-read-dates tl-num", `${item.start} → ${item.end}`);
-      const ages = node("span", "tl-life-read-ages", lane.technique === "annual_profection"
+      const ages = node("span", "tl-life-read-ages", item.endAge === null ? `${item.startAge} 足歲起，終點未定` : lane.technique === "annual_profection"
         ? `${item.startAge} 足歲這一年` : `${item.startAge} 至 ${item.endAge} 足歲`);
       readout.append(head, ruler, dates, ages);
       if (item.loosing) readout.appendChild(node("span", "tl-life-read-mark", "解鎖"));
@@ -1439,7 +1479,7 @@
           row.append(
             node("td", null, item.lord ? `${item.label}（年主星 ${item.lord}）` : item.label),
             node("td", "tl-num", item.start), node("td", "tl-num", item.end),
-            node("td", "tl-num", lane.technique === "annual_profection" ? `${item.startAge}` : `${item.startAge}–${item.endAge}`),
+            node("td", "tl-num", item.endAge === null ? `${item.startAge} 起，終點未定` : lane.technique === "annual_profection" ? `${item.startAge}` : `${item.startAge}–${item.endAge}`),
           );
           group.appendChild(row);
         });

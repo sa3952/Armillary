@@ -257,7 +257,7 @@ function arrangeAspectsForPhones(host) {
 // 紙上在它的位置只印這一行，指向含整份軌跡的匯出檔；畫面上不顯示（calculate.css 的 print 規則）。
 function tracePrintLine(stepCount) {
   return make("p", "section-note trace-print-line",
-    `紙本不印逐步計算軌跡（本次 ${stepCount} 步）；整份軌跡在「運算結果＋驗算資料」的 JSON 與 Markdown 匯出檔裡。`);
+    `紙本不印逐步計算軌跡（本次 ${stepCount} 步）；整份軌跡在「附驗算資料」的 JSON 與 Markdown 匯出檔裡。`);
 }
 
 // 古典判斷三區（廟旺陷弱、外來、行速與停滯）的一覽與標記：只改畫面，不改字：一覽、標記與時間軸都讀這一區 canonical 表格
@@ -854,8 +854,8 @@ function comparisonGlance(title, models, unit) {
 }
 
 // 界的對照圖版（全部並列）。讀這一區每一套的「完整界段」表（view tree，字與下方的表同一份），不另算：每顆星一列、每套表
-// 一欄，一條 0–30° 的細框條；這顆星所在的那一段界畫斜線與兩條邊，圈裡是那一段的界主，紅色直線是這顆星在星座內的度數。列
-// 首一條紅線＝各套的界主不一致（只標「有不同」，不表示哪一家對）。寬版是一張矩陣；窄版每顆星一張小圖版、各套上下疊。整
+// 一欄，一條 0–30° 的細框條；這顆星所在的那一段界畫斜線與兩條邊，圈裡是那一段的界主，直線是這顆星在星座內的度數。列
+// 首一條標記線＝各套的界主不一致（只標「有不同」，不表示哪一家對）。寬版是一張矩陣；窄版每顆星一張小圖版、各套上下疊。整
 // 張圖是 role="img"，名稱是逐星逐套的一句話。
 const BOUNDS_FULL_SUFFIX = "：完整界段";
 const BOUNDS_RULER_SHORT = Object.freeze({ 土星: "土", 木星: "木", 火星: "火", 金星: "金", 水星: "水" });
@@ -1014,8 +1014,8 @@ function boundsPlate(section) {
   host.appendChild(boundsPlateMatrix(model));
   host.appendChild(boundsPlateStack(model));
   host.appendChild(make("p", "glance-key",
-    "斜線是這顆星所在的那一段界，圈裡是那一段的界主；紅色直線是這顆星在星座內的度數；"
-    + "列首的紅線表示各套的界主不一致（不表示哪一家對）。數字取自下方各套的「完整界段」表。"));
+    "斜線是這顆星所在的那一段界，圈裡是那一段的界主；直線是這顆星在星座內的度數；"
+    + "列首的標記線表示各套的界主不一致（不表示哪一家對）。數字取自下方各套的「完整界段」表。"));
   const sentences = model.bodies.map((body, index) => {
     const first = model.profiles[0].rows[index];
     return `${body}在${first.sign} ${plateDegree(first.degreeText)}，`

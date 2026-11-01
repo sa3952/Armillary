@@ -17,7 +17,7 @@ services:
     pids_limit: 192
     mem_limit: 512m
     memswap_limit: 512m
-    cpus: 1.0
+    cpus: 2.0
     # The event log goes to the host journal, so it shares the
     # journal's bound (the host's journald drop-in) instead
     # of size-only rotation with no time limit.  verify_staging_http checks the

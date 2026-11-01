@@ -248,7 +248,8 @@ def supervisor():
     if d.get("supervisor_pid"): return d["supervisor_pid"]
     # docker-init (PID 1 under --init) carries the whole command line too, and so
     # does this probe (its program text names both words); neither is the supervisor.
-    found = [pid for pid, (_, command, _) in processes().items() if "uvicorn" in command
+    found = [pid for pid, (_, command, _) in processes().items()
+             if ("from app.worker_supervisor import main; main()" in command or "uvicorn" in command)
              and "--workers" in command and pid != os.getpid()
              and not command.split(" ", 1)[0].endswith(("docker-init", "tini"))]
     return found[0] if len(found) == 1 else None

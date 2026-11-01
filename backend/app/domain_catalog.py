@@ -8,6 +8,8 @@ import swisseph as swe
 # accepted year range import this tuple instead of duplicating the numbers.
 PRODUCT_YEAR_RANGE = (1900, 2399)
 
+CLASSICAL_SEVEN_EXCLUDED_BODY_GROUPS = ("outer_planets", "chiron", "fixed_stars", "lilith_priapus")
+
 # 古典七政
 CLASSICAL_BODIES = [
     {"key": "sun", "zh": "太陽", "id": swe.SUN},

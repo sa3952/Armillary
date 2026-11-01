@@ -35,10 +35,12 @@ def robots_text(payload: dict) -> str:
         f"Disallow: {build_pages.API_PATH_PREFIX}", "Allow: /", "", f"Sitemap: {origin}/sitemap.xml", ""])
 
 def sitemap_date(item: Mapping, lastmod: dict) -> str:
-    """A page's <lastmod>: its lastmod record date; for an article the later of that and its own modified date, so the
-    sitemap never names a day before the page's dateModified."""
-    recorded = lastmod["pages"][item["key"]]["lastmod"]
-    return max(recorded, item["article"]["modified"]) if is_article(item) else recorded
+    """A page's <lastmod>: an article's own modified date, the day its page and its dateModified state; any other
+    page's lastmod record date (its content digest's date, which is also the date the page and its dateModified
+    state)."""
+    if is_article(item):
+        return item["article"]["modified"]
+    return lastmod["pages"][item["key"]]["lastmod"]
 
 def sitemap_text(payload: dict, lastmod: dict) -> str:
     origin = payload["origin"]
@@ -52,7 +54,7 @@ def sitemap_text(payload: dict, lastmod: dict) -> str:
     return "\n".join(['<?xml version="1.0" encoding="UTF-8"?>',
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">', *entries, "</urlset>", ""])
 
-_FOOTER_COLUMN = re.compile(r'<div class="sitemap-col">\s*<h2>(?P<heading>[^<>]+)</h2>(?P<links>.*?)</div>', re.DOTALL)
+_FOOTER_COLUMN = re.compile(r'<nav class="sitemap-col" aria-label="(?P<heading>[^"]+)">\s*<p class="sitemap-h">[^<>]*</p>(?P<links>.*?)</nav>', re.DOTALL)
 
 def footer_columns(shell: str | None = None) -> list[tuple[str, list[str]]]:
     return [
@@ -180,17 +182,37 @@ def llms_english_summary() -> str:
 LLMS_ENTITY_LINE = (f"{structured_data.ENTITY_NAME_ZH}是古典西洋占星的星盤計算器，"
     "不是天文儀器渾儀，也不是觀星 App 或天文程式庫。")
 
+def llms_capabilities() -> list[str]:
+    """What the site computes, what it does not, and where the calculation runs: the boundary an assistant needs
+    before it describes the site, stated before anything else."""
+    return [f"- 計算：古典西洋占星本命盤、年度時間主星（{build_pages.time_lord_series(with_english=False)}）與太陽回歸盤。",
+        "- 不計算：行運、推運、合盤與主限；也不解盤、不預測，沒有 AI 解讀。",
+        "- 在哪裡算：在本站位於瑞士的主機上、於伺服器記憶體中計算，不在瀏覽器裡算；網頁只把出生資料送到本站自己的伺服器。"]
+
+def _title_without_brand(title: str) -> str:
+    """A page title without its trailing ｜brand suffix: every entry sits under the site's own heading."""
+    head, bar, _brand = title.rpartition("｜")
+    return head if bar and head else title
+
+def _first_sentence(value: str) -> str:
+    """A description's first sentence (up to its first 。 or ；), for a one-line page entry; the page itself and
+    llms-full.txt hold the rest."""
+    text = _markdown_text(value)
+    ends = [index for index in (text.find("。"), text.find("；")) if index >= 0]
+    return text if not ends else text[:min(ends)] + "。"
+
 def llms_text(payload: dict, shell: str | None = None) -> str:
-    """/llms.txt (llmstxt.org): the site's name, summary and pages, all words already on the site.
+    """/llms.txt (llmstxt.org): the site's name, summary and pages, each page by title, address and its description's
+    first sentence; the full descriptions and the page text are llms-full.txt's.
 
     A surface the footer does not group fails the build rather than going unlisted.  Head order: the footer's closing
-    line (the site's boundary), LLMS_ENTITY_LINE before it, llms_facts, llms_strengths, LLMS_CITATION_GUIDANCE, llms_english_summary.
+    line (the site's boundary), LLMS_ENTITY_LINE and llms_capabilities before it, llms_facts, llms_strengths, LLMS_CITATION_GUIDANCE, llms_english_summary.
     """
     origin = payload["origin"]
     by_surface = {item["surface"]: item for item in payload["surfaces"]}
     home = by_surface[build_pages.HOME_SURFACE]
     lines = [f"# {build_pages.SITE_NAME}", "", f"> {_markdown_text(home['description'])}", "", LLMS_ENTITY_LINE, "",
-        _markdown_text(footer_tagline(shell)) + "。", "", *llms_facts(origin, by_surface), "",
+        *llms_capabilities(), "", _markdown_text(footer_tagline(shell)) + "。", "", *llms_facts(origin, by_surface), "",
         "本站的特點（每一項都能在括號裡的頁面查證）：", "", *llms_strengths(origin, by_surface), "", "引用本站時：",
         "", *(f"- {line}" for line in LLMS_CITATION_GUIDANCE), "", llms_english_summary(), ""]
     listed: set[str] = set()
@@ -213,8 +235,8 @@ def llms_text(payload: dict, shell: str | None = None) -> str:
                 continue
             listed.add(item["surface"])
             lines.append(
-                f"- [{_markdown_text(item['title'])}]({origin}{item['surface']}): "
-                f"{_markdown_text(item['description'])}"
+                f"- [{_markdown_text(_title_without_brand(item['title']))}]({origin}{item['surface']}): "
+                f"{_first_sentence(item['description'])}"
             )
         lines.append("")
     unlisted = {item["surface"] for item in payload["surfaces"] if item["indexable"]} - listed
@@ -372,7 +394,6 @@ def feed_text(payload: dict) -> str:
     if not articles:
         raise ValueError("feed.xml: no published article")
     updated = max(item["article"]["modified"] for item in articles)
-    suffix = f"｜{build_pages.SITE_NAME}"
     lines = ['<?xml version="1.0" encoding="UTF-8"?>',
         f'<feed xmlns="http://www.w3.org/2005/Atom" xml:lang={quoteattr(payload["default_locale"])}>',
         f"  <title>{xml_escape(build_pages.SITE_NAME)} 文章</title>",
@@ -382,7 +403,7 @@ def feed_text(payload: dict) -> str:
         f"  <author><name>{xml_escape(build_pages.SITE_NAME)}</name></author>"]
     for item in articles:
         url = xml_escape(origin + item["surface"])
-        title = item["title"].removesuffix(suffix)
+        title = _title_without_brand(item["title"])
         lines += ["  <entry>", f"    <title>{xml_escape(title)}</title>",
             f'    <link rel="alternate" type="text/html" href={quoteattr(origin + item["surface"])}/>', f"    <id>{url}</id>",
             f"    <published>{_feed_time(item['article']['published'])}</published>",
@@ -401,3 +422,70 @@ def discovery_outputs(payload: dict, lastmod: dict) -> dict[Path, str]:
         # Exactly the key, with no line end: an IndexNow engine compares the file with the key it was sent.
         build_pages.ROOT / "frontend" / assets.INDEXNOW_KEY_FILE: assets.INDEXNOW_KEY,
     }
+
+
+class _ContentMarkup(HTMLParser):
+    """Canonical markup with normal-flow whitespace and literal preformatted text."""
+
+    blocks = frozenset("address article aside blockquote div dl dt dd fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 header hr li main nav ol p pre section table tbody td th thead tr ul br".split())
+    literal_tags = frozenset({"pre", "textarea", "script", "style"})
+    void_tags = frozenset("area base br col embed hr img input link meta param source track wbr".split())
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.tokens = []
+        self.literal = []
+        self.block_edge = True
+
+    def boundary(self):
+        if self.tokens and self.tokens[-1][0] == "text":
+            self.tokens[-1] = ("text", self.tokens[-1][1].rstrip(" "))
+        self.block_edge = True
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self.blocks and not self.literal:
+            self.boundary()
+        printed = build_pages._printed_data_attributes()
+        attrs = [(name, value) for name, value in attrs if name in printed or not (
+            name in {"class", "tabindex", "role"} or name.startswith("data-"))]
+        self.tokens.append(("start", tag, sorted(attrs)))
+        if tag in self.literal_tags:
+            self.literal.append(tag)
+
+    def handle_startendtag(self, tag, attrs):
+        self.handle_starttag(tag, attrs)
+        if tag not in self.void_tags:
+            self.handle_endtag(tag)
+
+    def handle_endtag(self, tag):
+        closing_literal = self.literal and tag == self.literal[-1]
+        if closing_literal:
+            self.literal.pop()
+            self.block_edge = tag in self.blocks
+        elif tag in self.blocks and not self.literal:
+            self.boundary()
+        if tag not in self.void_tags:
+            self.tokens.append(("end", tag))
+
+    def handle_data(self, data):
+        if not self.literal:
+            data = re.sub(r"[ \t\r\n\f]+", " ", data)
+            if self.block_edge:
+                data = data.lstrip(" ")
+            if data:
+                self.block_edge = False
+        if data:
+            if self.tokens and self.tokens[-1][0] == "text":
+                self.tokens[-1] = ("text", self.tokens[-1][1] + data)
+            else:
+                self.tokens.append(("text", data))
+
+
+def content_markup(fragment: str) -> str:
+    import json
+
+    parser = _ContentMarkup()
+    parser.feed(fragment)
+    parser.close()
+    parser.boundary()
+    return json.dumps(parser.tokens, ensure_ascii=False, separators=(",", ":"))

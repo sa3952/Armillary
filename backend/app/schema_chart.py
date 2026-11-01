@@ -4,6 +4,8 @@ from typing import Any, Literal, Optional
 
 from pydantic import Field, model_validator
 
+from .domain_catalog import CLASSICAL_SEVEN_EXCLUDED_BODY_GROUPS
+
 from .core.moon import DEFAULT_VOC_METHOD, VocMethod
 from .core.dodecatemoria import DEFAULT_DODECATEMORIA_PROFILE, DodecatemoriaProfileOption
 from .core.solar_phase import DEFAULT_SOLAR_PHASE_PROFILE, SolarPhaseProfile
@@ -199,14 +201,8 @@ class OptionsInput(StrictInputModel):
         if self.body_selection_preset != "classical_seven_v1":
             return self
         incompatible = [
-            name
-            for name in (
-                "include_outer_planets",
-                "include_fixed_stars",
-                "include_chiron",
-                "include_lilith_priapus",
-            )
-            if getattr(self, name)
+            group for group in CLASSICAL_SEVEN_EXCLUDED_BODY_GROUPS
+            if getattr(self, f"include_{group}")
         ]
         if incompatible:
             raise _rule_error("body_selection_conflict")

@@ -14,7 +14,7 @@ from contextvars import ContextVar
 import swisseph as swe
 
 from ..domain_catalog import AYANAMSA_OPTIONS
-from ..ephemeris import configure_chart_swiss_state
+from ..ephemeris import configure_chart_swiss_state, guarded_calc, object_used_full_ephemeris
 from .trace import Trace
 
 CENTER_FLAGS = {
@@ -205,7 +205,7 @@ def _turn_into_frame_at(jd_ut: float, vector, source_flags: int, target_flags: i
 
 def _frame_triads(jd_ut: float, source_flags: int, target_flags: int):
     references = [
-        (swe.calc_ut(jd_ut, body, source_flags)[0][:3], swe.calc_ut(jd_ut, body, target_flags)[0][:3])
+        (guarded_calc(jd_ut, body, source_flags, "heliocentric frame rotation")[0][:3], guarded_calc(jd_ut, body, target_flags, "heliocentric frame rotation")[0][:3])
         for body in (swe.EARTH, swe.JUPITER, swe.SATURN)
     ]
 
@@ -238,14 +238,18 @@ def heliocentric_apparent_calc_ut(jd_ut: float, body_id: int, flags: int) -> tup
     negligible amount.  Returns the same shape as ``swe.calc_ut``.
     """
     swiss_apparent, retflag = swe.calc_ut(jd_ut, body_id, flags)
+    # Core positions retain Swiss fallback values with their non-file-backed receipt.
+    # The Sun-centred correction requires every intermediate vector to be file-backed.
+    if not object_used_full_ephemeris(retflag, body=body_id, flags=flags, jd_ut=jd_ut):
+        return swiss_apparent, retflag
     requested = (flags | swe.FLG_TRUEPOS | swe.FLG_XYZ) & ~swe.FLG_SPEED
     geometric = (requested & ~swe.FLG_SIDEREAL) | swe.FLG_J2000 | swe.FLG_NONUT
     bary = (geometric & ~swe.FLG_HELCTR) | swe.FLG_BARYCTR
-    sun_now = swe.calc_ut(jd_ut, swe.SUN, bary)[0]
+    sun_now = guarded_calc(jd_ut, swe.SUN, bary, "heliocentric light time")[0]
     tau = 0.0
     for _ in range(4):
-        planet_helio = swe.calc_ut(jd_ut - tau, body_id, geometric)[0]
-        sun_then = swe.calc_ut(jd_ut - tau, swe.SUN, bary)[0]
+        planet_helio = guarded_calc(jd_ut - tau, body_id, geometric, "heliocentric light time")[0]
+        sun_then = guarded_calc(jd_ut - tau, swe.SUN, bary, "heliocentric light time")[0]
         # P(t-tau) - S(t) = [P(t-tau) - S(t-tau)] - [S(t) - S(t-tau)]
         vector = [planet_helio[i] - (sun_now[i] - sun_then[i]) for i in range(3)]
         tau = _xyz_to_polar(*vector)[2] * _AU_LIGHT_DAYS

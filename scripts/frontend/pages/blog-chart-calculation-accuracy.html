@@ -145,7 +145,7 @@
       <li>Swiss Ephemeris 的版本與星曆的 JPL 來源；</li>
       <li>計算政策（中心、黃道、視位置、旗標），以及逐步計算軌跡的步數與雜湊。</li>
     </ul>
-    <p>匯出時選「運算結果＋驗算資料」，帶走的是整份計算卷宗，其中還逐檔列出每個星曆檔的 SHA-256，以及它是否符合公開原始碼裡釘選的值。</p>
+    <p>匯出時勾「附驗算資料」，帶走的是整份計算卷宗，其中還逐檔列出每個星曆檔的 SHA-256，以及它是否符合公開原始碼裡釘選的值。</p>
     <p>要重算，拿收據上的世界時與經緯度，用同一版 Swiss Ephemeris 呼叫 <code>swe_calc_ut</code> 算行星、<code>swe_houses_ex</code> 算宮位，旗標照收據的「計算政策」；行星位置也可以拿到 JPL Horizons 用地心視黃經去查，差多少可以對照表 1。卷宗也可以交給另一個人，用同樣的請求核對<a class="ar-cite" href="#ref-6">[6]</a>。</p>
     <p>計算在本站的伺服器上進行。瀏覽器送出了什麼、送到哪裡，可以照〈<a href="/zh-TW/security/verify">自己檢查瀏覽器送出什麼</a>〉用開發者工具親手看；線上跑的是哪一版，看卷宗裡的版本識別碼。卷宗含有你的出生資料，分享前請先想清楚。</p>
 
@@ -176,7 +176,7 @@
       <li id="ref-3"><span>渾儀〈<a href="/zh-TW/validation">驗證</a>〉：與 JPL DE442＋Astropy／ERFA 管線的逐小時比較（1990–2026 年，七個天體）、工程門檻、代表性最大差異、已涵蓋與未涵蓋的範圍。<span class="rs rs-register">本站出處清單</span></span></li>
       <li id="ref-4"><span>本站的天文基準測試（目前不在公開原始碼裡）：<code>tests/backend/test_external_astronomy_baselines.py</code>（JPL Horizons 的地心視黃經與時間差、NASA 日食典），固定資料 <code>tests/backend/fixtures/jpl_horizons_positions.json</code> 與 <code>nasa_eclipse_canon_selection.json</code>（各自寫明查詢網址、取得日期與容許值的理由）；<code>tests/backend/test_house_product_path.py</code>（宮頭對閉合公式與 USNO 恆星時）。<span class="rs rs-computed">本站自算</span></span></li>
       <li id="ref-5"><span>本文的圖 1、圖 2 與 §01–§03 的數字：本站計算服務對合成時刻 1990-05-15 14:00（臺北，整宮制）及其變化（挪後的時刻、整數度座標、UTC+9、1900 與 2399 年同一日期）的實際回應；月亮「忽略 ΔT」以 Astrodienst Swiss Ephemeris 2.10.03（經 pyswisseph 呼叫 <code>swe_calc</code>）在世界時當成地球時的時刻自算；星曆檔的 JPL 來源讀自檔頭，涵蓋年份讀自本站的星曆檔清單。2026 年 10 月自算。<span class="rs rs-computed">本站自算</span></span></li>
-      <li id="ref-6"><span>渾儀〈<a href="/zh-TW/trust">信任</a>〉第 05 節：每一次計算都產生一份可重算的卷宗，內含口徑、時間換算、引擎與星曆版本、軌跡步數與 SHA-256 收據，選「運算結果＋驗算資料」匯出即整份帶走；星曆檔的釘選雜湊在公開原始碼 <code>deploy/ephemeris.sha256</code>。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-6"><span>渾儀〈<a href="/zh-TW/trust">信任</a>〉第 05 節：每一次計算都產生一份可重算的卷宗，內含口徑、時間換算、引擎與星曆版本、軌跡步數與 SHA-256 收據，勾「附驗算資料」匯出即整份帶走；星曆檔的釘選雜湊在公開原始碼 <code>deploy/ephemeris.sha256</code>。<span class="rs rs-register">本站出處清單</span></span></li>
     </ol>
   </section>
 
@@ -189,6 +189,7 @@
     <div>
       <span class="ar-k">延伸閱讀</span>
       <ul>
+        <li><a href="/zh-TW/blog/geocentric-vs-topocentric-moon">地心月亮和站心月亮差多少？月亮為什麼差將近 1 度</a></li>
         <li><a href="/zh-TW/validation">我們怎麼驗證天文計算</a></li>
         <li><a href="/zh-TW/methods#time-scales">方法頁：UTC、UT1 與 ΔT</a></li>
         <li><a href="/zh-TW/security/verify">自己檢查瀏覽器送出什麼</a></li>

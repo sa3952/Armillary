@@ -593,19 +593,17 @@ def _extract_probe(
         }
 
     # Day or night at every probe, for _sect_dependent_dignity_limit.
-    sect_is_day = (
-        classify_sect(
-            geocentric_sun_true_altitude(jd_ut, context, probe_request.atmosphere)
-        )["is_day"]
-        if context.horizon_meaningful
-        else None
+    sun_altitude = (
+        geocentric_sun_true_altitude(jd_ut, context, probe_request.atmosphere)
+        if context.horizon_meaningful else None
     )
+    sect_is_day = classify_sect(sun_altitude)["is_day"] if context.horizon_meaningful else None
     sect = lots = voc = None
     if probe_request.options.include_lots and houses is not None:
         body_map = {item["key"]: item for item in bodies}
         # 與主回應同一個 sect 產生器：地心太陽真高度。
         sect = determine_sect(
-            geocentric_sun_true_altitude(jd_ut, context, probe_request.atmosphere),
+            sun_altitude,
             trace,
             display_center=probe_request.computation_mode.center,
         )

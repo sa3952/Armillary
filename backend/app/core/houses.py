@@ -171,7 +171,6 @@ class HouseSystemUnavailableError(Exception):
             "availability": "unavailable",
             "reason_code": reason_code,
             "house_system": code,
-            "latitude": latitude,
             "refusal_basis": "product_choice",
             "geometric_reason": reason or "Swiss Ephemeris 對此宮位制回報錯誤或自動改用其他宮位制，本產品不接受替代結果",
             # 隱私：拒絕本文不回帶命盤時刻的門檻（取到 0.1° 仍洩漏出生年份一個位元，見
@@ -179,12 +178,12 @@ class HouseSystemUnavailableError(Exception):
         }
         if reason:
             message = (
-                f"{name} ({code}) 在緯度 {latitude}° 產生退化宮頭（{reason}）；"
+                f"{name} ({code}) 在此緯度產生退化宮頭（{reason}）；"
                 "請改用此緯度可定義的宮位制。"
             )
         else:
             message = (
-                f"{name} ({code}) 在緯度 {latitude}° 無法計算；"
+                f"{name} ({code}) 在此緯度無法計算；"
                 "請改用此緯度可定義的宮位制。"
             )
         super().__init__(message)

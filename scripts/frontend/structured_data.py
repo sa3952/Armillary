@@ -14,8 +14,14 @@ from scripts.frontend import build_pages
 from scripts.frontend.page_checks import BLOG_SURFACE, is_article, parent_surface
 from scripts.frontend.site_locale import DEFAULT_LOCALE
 
-# The site as publisher of the application and the articles.  It names no person.  The description tells the site
+# The site as publisher of the application and the articles.  The description tells the site
 # apart from the astronomical instrument it is named after; `sameAs` is the public source repository.
+AUTHOR_ID = "/zh-TW/about#who"
+
+def _author(origin: str) -> dict:
+    return {"@type": "Person", "@id": origin + AUTHOR_ID, "name": build_pages.ARTICLE_SIGNER,
+        "url": origin + AUTHOR_ID, "sameAs": ["https://github.com/sa3952"]}
+
 ORGANIZATION_ID = "/#organization"
 ORGANIZATION_ALTERNATE_NAMES = (*build_pages.SITE_NAME.split(" "), "Project Armillary")
 # The one entity string every first-read surface (home lede, about hero, llms.txt, the public README) uses.
@@ -44,6 +50,10 @@ def _organization_logo(origin: str, frontend: Path | None = None) -> dict:
 CALCULATE_SURFACE = f"/{DEFAULT_LOCALE}/calculate"
 APPLICATION_SURFACES = (build_pages.HOME_SURFACE, CALCULATE_SURFACE)
 APPLICATION_ID = "/#application"
+# What the application computes and does not, and where: the same boundary llms.txt and the README open with.
+APPLICATION_DISAMBIGUATION = ("古典西洋占星的星盤計算器，不是天文儀器渾儀，也不是天文程式庫或觀星 App。"
+    "計算本命盤、年度時間主星與太陽回歸盤；不做行運、推運、合盤與主限，也不解盤。"
+    "計算在瑞士主機的伺服器記憶體中完成，不在瀏覽器裡算。")
 
 def _web_application(origin: str, home: Mapping) -> dict:
     return {
@@ -51,8 +61,9 @@ def _web_application(origin: str, home: Mapping) -> dict:
         "@id": origin + APPLICATION_ID,
         "url": origin + home["surface"],
         "name": build_pages.SITE_NAME,
-        "alternateName": "Armillary",
+        "alternateName": list(ORGANIZATION_ALTERNATE_NAMES),
         "description": home["description"],
+        "disambiguatingDescription": APPLICATION_DISAMBIGUATION,
         "applicationCategory": "ReferenceApplication",
         "operatingSystem": "Web",
         "inLanguage": home["locale"],
@@ -62,6 +73,7 @@ def _web_application(origin: str, home: Mapping) -> dict:
         "license": build_pages.LICENSE_URL,
         "sameAs": [build_pages._backend("frontend_release").PUBLIC_REPOSITORY_URL],
         "publisher": {"@id": origin + ORGANIZATION_ID},
+        "isBasedOn": {"@id": origin + SOURCE_CODE_ID},
     }
 
 SOURCE_CODE_ID = "/#source-code"
@@ -261,12 +273,19 @@ def _glossary_terms() -> list[dict]:
 def _names_term(text: str, term: Mapping) -> bool:
     return any(part in text for part in term["parts"])
 
+# Other Chinese names a term goes by, each also written once as 「又稱…」 at the start of the article on it; the term's
+# English or original-language name comes first.
+GLOSSARY_ALIASES: dict[str, tuple[str, ...]] = {"antiscia": ("映點", "反映點"), "combust": ("燃燒",)}
+
 def _defined_term(glossary: str, term: Mapping) -> dict:
     url = f"{glossary}#{term['id']}"
     node = {"@type": "DefinedTerm", "@id": url, "url": url, "name": term["term"],
         "inDefinedTermSet": {"@id": glossary + "#terms"}}
-    if term["en"]:
-        node["alternateName"] = term["en"]
+    names = [name for name in (term["en"], *GLOSSARY_ALIASES.get(term["id"], ())) if name]
+    if len(names) == 1:
+        node["alternateName"] = names[0]
+    elif names:
+        node["alternateName"] = names
     return node
 
 def article_terms(headline: str, body: str) -> tuple[list[dict], list[dict]]:
@@ -309,6 +328,8 @@ def _howto(canonical: str, locale: str, index: int, howto: Mapping) -> dict:
 # hash; the version is read from the file.
 METHODS_SURFACE = f"/{DEFAULT_LOCALE}/methods"
 METHOD_SOURCES_PATH = f"/{DEFAULT_LOCALE}/method-sources.json"
+# The methods page section that explains the register and links the file; the dataset's page, the file its download.
+METHOD_SOURCES_ANCHOR = "#rule-fields"
 METHOD_SOURCES_DESCRIPTION = ("渾儀每一條計算規則的出處登記（JSON，內文為英文）：規則套用到哪個輸出、依據哪個文本與版本、" "章節或頁碼，以及本站核到哪一層。計算收據記下這份清單的版本與雜湊。")
 
 def _method_sources_dataset(origin: str) -> dict:
@@ -316,8 +337,10 @@ def _method_sources_dataset(origin: str) -> dict:
     record = json.loads(path.read_text(encoding="utf-8"))
     url = origin + METHOD_SOURCES_PATH
     return {"@type": "Dataset", "@id": url + "#dataset", "name": "方法出處清單", "description": METHOD_SOURCES_DESCRIPTION,
-        "url": url, "version": str(record["version"]), "inLanguage": "en", "isAccessibleForFree": True,
-        "publisher": {"@id": origin + ORGANIZATION_ID},
+        "license": build_pages.LICENSE_URL,
+        "url": origin + METHODS_SURFACE + METHOD_SOURCES_ANCHOR, "version": str(record["version"]), "inLanguage": "en",
+        "isAccessibleForFree": True, "publisher": {"@id": origin + ORGANIZATION_ID},
+        "creator": {"@id": origin + ORGANIZATION_ID},
         "distribution": {"@type": "DataDownload", "contentUrl": url, "encodingFormat": "application/json"}}
 
 def _json_ld(item: dict, origin: str, headline: str | None = None,
@@ -346,6 +369,10 @@ def _json_ld(item: dict, origin: str, headline: str | None = None,
         },
         _organization(origin),
     ]
+    if is_article(item) or build_pages.is_method_page(item):
+        graph.append(_author(origin))
+    if build_pages.is_method_page(item):
+        graph[1]["author"] = {"@id": origin + AUTHOR_ID}
     if updated is not None:
         # The page's recorded lastmod.  No datePublished: only an article has a recorded first-publication date.
         graph[1]["dateModified"] = updated
@@ -398,13 +425,12 @@ def _json_ld(item: dict, origin: str, headline: str | None = None,
     if item["surface"] == METHODS_SURFACE:
         graph.append(_method_sources_dataset(origin))
     if is_article(item):
-        # The byline names a person; the structured data names none.
         post = {"@type": "BlogPosting", "@id": canonical + "#article", "url": canonical, "headline": headline,
             "description": item["description"], "datePublished": item["article"]["published"],
             "dateModified": item["article"]["modified"], "inLanguage": item["locale"],
             "mainEntityOfPage": {"@id": canonical + "#webpage"},
             "isPartOf": {"@id": origin + BLOG_SURFACE + "#webpage"}, "publisher": {"@id": origin + ORGANIZATION_ID},
-            "author": {"@id": origin + ORGANIZATION_ID}}
+            "author": {"@id": origin + AUTHOR_ID}}
         post["isAccessibleForFree"] = True
         image = build_pages.og_image_url(origin)
         if image is not None:

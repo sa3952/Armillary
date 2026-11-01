@@ -50,6 +50,9 @@ ANNUAL_PAGE_KEPT_PATHS: tuple[str, ...] = (
     "requested_annual",
     "computation_mode",
     "birth_time_precision",
+    # A disputed-zone place: the zone the request named, the one applied and
+    # why, printed with the page's date basis; null for every other place.
+    "place_zone_policy.{requested_zone,applied_zone,reason}",
     "natal_anchor.{jd_ut,utc_time,time_basis,sun.longitude_deg}",
     "natal_anchor.ascendant.{status,reason_code,sign,longitude_deg}",
     "natal_anchor.sect.{is_day,sect_status,in_near_horizon_band,named_boundary_disagreement}",
@@ -85,7 +88,7 @@ ANNUAL_PAGE_KEPT_PATHS: tuple[str, ...] = (
     "sensitivity_state}",
     f"annual_methods.decennials.sect_light_triplicity_lords.{{{_STATE},source_ref,table,"
     "sect_light,sect_light_sign,element,lords,comparison_under_other_sect,periods,"
-    "periods_reason_code,sensitivity_state}",
+    "periods_reason_code,sensitivity_state,candidates}",
     "annual_methods.decennials.candidates[].{sample_role,is_day,start_planet,order}",
     f"annual_methods.monthly_profection.{{{_STATE},profile,profile_input,profile_provenance,"
     "other_profiles,method_status,method_provenance,"

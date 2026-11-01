@@ -121,3 +121,20 @@ def skip_is_failure(reason: str, node_id: str, environment: Mapping[str, str] | 
     reason = reason.strip().removeprefix("Skipped: ")
     euid = os.geteuid() if euid is None else euid
     return not (euid == 0 and _EXPECTED_DOTTED.get(_dotted_test(node_id)) == reason)
+
+
+def main(argv: list[str]) -> None:
+    """`python -m scripts.tools.child_environment [NAME=VALUE ...] -- COMMAND ...`:
+    run COMMAND with the check's allow-list plus the NAME=VALUE pairs, so a
+    target typed by hand (`make slow`) gets the environment its Gate F run gets."""
+    if "--" not in argv or argv.index("--") == len(argv) - 1:
+        raise SystemExit("usage: python -m scripts.tools.child_environment [NAME=VALUE ...] -- COMMAND ...")
+    split = argv.index("--")
+    extra = dict(pair.split("=", 1) for pair in argv[:split])
+    command = argv[split + 1:]
+    os.execvpe(command[0], command, allowed_environment(**extra))
+
+
+if __name__ == "__main__":
+    import sys
+    main(sys.argv[1:])

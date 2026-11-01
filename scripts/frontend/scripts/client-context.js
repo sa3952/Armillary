@@ -141,8 +141,8 @@
     firdaria_option_not_applicable: STALE_PAGE_REQUEST, zodiacal_releasing_option_not_applicable: STALE_PAGE_REQUEST,
     decennials_option_not_applicable: STALE_PAGE_REQUEST, decennials_start_planet_required: STALE_PAGE_REQUEST,
     decennials_start_planet_not_applicable: STALE_PAGE_REQUEST, monthly_profection_option_not_applicable: STALE_PAGE_REQUEST,
-    solar_return_chart_option_not_applicable: STALE_PAGE_REQUEST, solar_return_requires_geocentric_center: STALE_PAGE_REQUEST,
-    solar_return_requires_ecliptic_of_date: STALE_PAGE_REQUEST, solar_return_requires_nutation: STALE_PAGE_REQUEST,
+    solar_return_chart_option_not_applicable: STALE_PAGE_REQUEST, solar_return_requires_geocentric_center: "太陽回歸盤需要地心計算，本次計算中心不適用。",
+    solar_return_requires_ecliptic_of_date: "太陽回歸盤需要當日黃道與分點，本次計算框架不適用。", solar_return_requires_nutation: "太陽回歸盤需要計入章動，本次計算設定不適用。",
     // 本頁不送另選的地點；收到這一項表示頁面版本與服務不一致。
     solar_return_location_not_yet_offered: ("太陽回歸盤目前只在出生地起盤，改用另一個地點還沒有開放；請重新載入頁面後再排一次。"),
     // 這一項是正常輸入就會遇到的：出生在可計算範圍的尾端時，時間軸上較晚的年度會落在 2399 年之後。

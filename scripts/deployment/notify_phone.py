@@ -58,7 +58,7 @@ def payload(title: str, status: int, output: str) -> tuple[bytes, dict[str, str]
     data = (f"exit {status}\n" + ("\n".join(shown) if shown else "(no output)")).encode("utf-8")
     if len(data) > MAX_BODY_BYTES:
         data = data[: MAX_BODY_BYTES - 4].decode("utf-8", "ignore").encode("utf-8") + b"\n..."
-    ascii_title = title.encode("ascii", "replace").decode("ascii")
+    ascii_title = " ".join(title.encode("ascii", "replace").decode("ascii").splitlines())
     return data, {"Title": ascii_title, "Priority": "high", "Tags": "warning"}
 
 

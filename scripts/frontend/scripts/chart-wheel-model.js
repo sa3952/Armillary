@@ -72,7 +72,7 @@
 
   const TEXT = Object.freeze({
     noAngles: "本次沒有軸點，圖以牡羊 0° 置於左方", dateOnly: "月亮刻線為虛線：正午錨點，非出生時刻",
-    accent: "紅色只標四軸，不表示吉凶", noHouses: "本次沒有宮位", brand: "渾儀 Armillary", angles: "四軸", cusps: "宮頭",
+    noHouses: "本次沒有宮位", brand: "渾儀 Armillary", angles: "四軸", cusps: "宮頭",
   });
 
   const G = Object.freeze({
@@ -684,7 +684,7 @@
     return { sources, omitted };
   }
 
-  // 場景：基本圖元。paint 是角色名（bg／band／fg／dim／hair／accent），由各 renderer 決定實際顏色。
+  // 場景：基本圖元。paint 是角色名（bg／band／fg／dim／hair／geo），由各 renderer 決定實際顏色。
   // 屬於某個點的圖元（刻線、引線、四軸線與標記）另帶 linked：那幾個點的後端點鍵，只給結果頁的
   // 圖表連動讀，三個繪製端的幾何與顏色都不讀它。不叫 points：折線與多邊形的 points 是頂點。
   function linePrim(part, a, b, stroke, width, extra = {}) {
@@ -737,7 +737,7 @@
       { type: "circle", part: "house-ring", cx: G.c, cy: G.c, r: preset.rHouseIn, fill: null, stroke: "dim", width: 0.9 },
     ];
     cusps.forEach((lon) => {
-      items.push(linePrim("house-cusp", at(lon, preset.rHouseIn), at(lon, preset.rHouseOut), "dim", 1));
+      items.push(linePrim("house-cusp", at(lon, preset.rHouseIn), at(lon, preset.rHouseOut), "geo", 1));
       items.push(linePrim("house-cusp-extension", at(lon, preset.rHouseOut), at(lon, G.rSignIn), "hair", 0.7, { dash: "2 3" }));
     });
     cusps.forEach((lon, index) => {
@@ -752,11 +752,11 @@
   function angleAxes(angles, reference, preset) {
     const at = (lon, r) => polar(lon - reference, r);
     const byKey = Object.fromEntries(angles.map((angle) => [angle.key, angle]));
-    const items = angles.map((angle) => linePrim("angle-axis", at(angle.lon, G.rOut + 9), at(angle.lon, G.rTickIn), "accent", 1.6,
+    const items = angles.map((angle) => linePrim("angle-axis", at(angle.lon, G.rOut + 9), at(angle.lon, G.rTickIn), "fg", 1.6,
       { linked: [angle.key] }));
     for (const [from, to] of [["asc", "desc"], ["mc", "ic"]]) {
       if (!byKey[from] || !byKey[to]) continue;
-      items.push(linePrim("angle-line", at(byKey[from].lon, preset.rHouseOut), at(byKey[to].lon, preset.rHouseOut), "accent", 1.2,
+      items.push(linePrim("angle-line", at(byKey[from].lon, preset.rHouseOut), at(byKey[to].lon, preset.rHouseOut), "fg", 1.2,
         { linked: [from, to] }));
     }
     for (const key of ["asc", "mc"]) {
@@ -767,7 +767,7 @@
       const ux = Math.cos(t);
       const uy = -Math.sin(t);
       const base = { x: tip.x + ux * 10, y: tip.y + uy * 10 };
-      items.push({ type: "polygon", part: "angle-marker", fill: "accent", linked: [key], points: [
+      items.push({ type: "polygon", part: "angle-marker", fill: "fg", linked: [key], points: [
         [tip.x, tip.y], [base.x - uy * 5, base.y + ux * 5], [base.x + uy * 5, base.y - ux * 5],
       ].map(([x, y]) => [round3(x), round3(y)]) });
     }
@@ -780,7 +780,7 @@
     for (const part of unitStack(unit, angle, fs).parts) {
       const { item } = part;
       const items = byItem.get(item);
-      const colour = item.kind === "angle" ? "accent" : "fg";
+      const colour = "fg";
       const p = polar(angle, part.r);
       if (part.part === "glyph" && item.kind === "angle") {
         items.push(textPrim("angle-label", p.x, p.y, item.label, part.size, NUM_FONT, colour, { halo }));
@@ -820,7 +820,7 @@
 
   /** 引線：由刻線內端先沿刻線方向走一小段，再斜向標籤外緣；標籤幾乎沒移動時是一條直線。 */
   function leaderPrim(item, angle, top) {
-    const stroke = item.kind === "angle" ? "accent" : "dim";
+    const stroke = item.kind === "angle" ? "fg" : "dim";
     const from = polar(item.a, G.rTickIn);
     const to = polar(angle, top || G.rLabelTop);
     const path = Math.abs(signedGap(item.a, angle)) < 0.5 ? [from, to] : [from, polar(item.a, G.rElbow), to];
@@ -1012,6 +1012,52 @@
     ];
   }
 
+  // 圓心的計算前提：一兩行短字，全部取自回應（宮位制、黃道、畫出的交點；時區、當時的 UTC 偏移、出生時刻把握程度）。
+  // 回應沒給的項目不寫；兩行都空時不畫。時區那一行（part centre-zone）是輸入的一部分：下載檔只在使用者勾選加印輸入摘要時
+  // 才留（renderer 依 model.inputPrinted 決定），頁面上的圖照畫。
+  const ZODIAC_SHORT = Object.freeze({ tropical: "回歸", sidereal: "恆星" });
+  const PRECISION_SHORT = Object.freeze({ exact: "精確", approximate_hour: "約略小時", date_only: "只知日期" });
+  function offsetText(hours) {
+    if (!Number.isFinite(hours)) return null;
+    const total = Math.round(Math.abs(hours) * 60);
+    const h = Math.floor(total / 60);
+    const m = total % 60;
+    return `UTC${hours < 0 ? "\u2212" : "+"}${h}${m ? `:${String(m).padStart(2, "0")}` : ""}`;
+  }
+  function assumptionLines(response, cusps, points) {
+    const pick = (...values) => values.find((value) => typeof value === "string" && value) || null;
+    const astroTime = isRecord(response.astronomical_data) && isRecord(response.astronomical_data.time) ? response.astronomical_data.time : {};
+    const dossier = isRecord(response.calculation_dossier) ? response.calculation_dossier : {};
+    const conversion = isRecord(dossier.time_conversion) ? dossier.time_conversion : {};
+    const mode = isRecord(response.computation_mode) ? response.computation_mode : {};
+    const houseName = cusps && cusps.code ? Labels.label("house_system", cusps.code) : null;
+    const zodiac = Object.hasOwn(ZODIAC_SHORT, mode.zodiac) ? ZODIAC_SHORT[mode.zodiac] : null;
+    const keys = new Set(points.map((point) => point.key));
+    const nodeTypes = [keys.has("mean_node") ? "平均" : null, keys.has("true_node") ? "密切" : null].filter(Boolean);
+    const node = nodeTypes.length ? `${nodeTypes.join("／")}交點` : null;
+    const zone = pick(astroTime.timezone_label, conversion.timezone_label);
+    const offset = offsetText(Number.isFinite(astroTime.utc_offset_hours) ? astroTime.utc_offset_hours
+      : conversion.resolved_utc_offset_hours);
+    const birth = isRecord(dossier.birth_time) ? dossier.birth_time.precision : null;
+    const sensitivity = isRecord(response.birth_time_sensitivity) ? response.birth_time_sensitivity.precision : null;
+    const precision = [birth, sensitivity].find((value) => Object.hasOwn(PRECISION_SHORT, value || ""));
+    const zoneText = [zone, offset].filter(Boolean).join(" ");
+    return [
+      { part: "centre-assumption", text: [houseName, zodiac, node].filter(Boolean).join("・") },
+      { part: zoneText ? "centre-zone" : "centre-assumption",
+        text: [zoneText || null, precision ? `時刻：${PRECISION_SHORT[precision]}` : null].filter(Boolean).join("・") },
+    ].filter((line) => line.text);
+  }
+  function centreAssumptions(lines, preset) {
+    if (!lines.length) return [];
+    const room = 2 * (preset.rHouseIn - 8);
+    let size = SIZE.footer * preset.text * 0.85;
+    const widest = Math.max(...lines.map((line) => textWidth(line.text, size)));
+    if (widest > room) size *= room / widest;
+    return lines.map((line, index) => textPrim(line.part, G.c, G.c + (index - (lines.length - 1) / 2) * size * 1.4,
+      line.text, size, "sans", "dim", { halo: 3 * preset.text }));
+  }
+
   /**
    * 回應 → 星盤圖模型。options.inputSummary：使用者勾選「加印輸入摘要」時的文字行（預設沒有）；options.preset：字級
    * （compact／standard／wide，預設 standard）；options.aspects：false 時不畫相位線（預設畫）。
@@ -1031,7 +1077,7 @@
     const ranges = readRanges(response);
     const range = rangeLayer(ranges, reference, preset, Boolean(cusps));
     const notes = [
-      cusps ? `宮位制：${cusps.text}` : TEXT.noHouses, ...(hasAngles ? [TEXT.accent] : [TEXT.noAngles]),
+      cusps ? `宮位制：${cusps.text}` : TEXT.noHouses, ...(hasAngles ? [] : [TEXT.noAngles]),
       ...(points.some((point) => point.anchorOnly) ? [TEXT.dateOnly] : []), ...range.notes,
       ...(notDrawn.length ? [`圖上未畫：${notDrawn.join("、")}（見表格）`] : []),
     ];
@@ -1063,10 +1109,12 @@
     const scene = [
       { group: "zodiac", items: zodiacRing(reference, preset.text, fadedSigns(ranges.asc)) },
       ...(cusps ? [{ group: "houses", items: houseRing(cusps.cusps.map((cusp) => cusp.lon), reference, preset) }] : []),
-      // 相位線在宮位之上、四軸之下：紅色四軸壓在線上。
+      // 相位線在宮位之上、四軸之下：四軸壓在線上。
       ...(showAspects ? [aspects.group] : []), ...(hasAngles ? [{ group: "angles", items: angleAxes(angles, reference, preset) }] : []),
       ...(range.items.length ? [{ group: "ranges", items: clearLabels(range.items, packed.boxes.flat()) }] : []),
-      ...(ranges.moon && !cusps ? [{ group: "centre", items: centreNote(preset) }] : []),
+      ...(ranges.moon && !cusps ? [{ group: "centre", items: centreNote(preset) }]
+        : (() => { const lines = assumptionLines(response, cusps, points);
+          return lines.length ? [{ group: "centre", items: centreAssumptions(lines, preset) }] : []; })()),
       { group: "markers", items: [...ticks, ...leaders] },
       // 共用一條標籤的兩點各自一組（順序與 labels 相同），都加 shared 標記；頁面版以 class
       // cw-label-shared 標出，另一點的索引在 labels[].sharedWith。
@@ -1077,6 +1125,7 @@
     ];
     return {
       width: G.width, height: foot.height, preset: presetName, center: { x: G.c, y: G.c },
+      inputPrinted: summaryLines(options).length > 0,
       frame: hasAngles ? "ascendant" : "aries", ariaLabel: asc
         ? `星盤圖：上升 ${SIGN_NAMES[asc.sign]} ${asc.deg}${asc.min}；各天體位置見下方表格`
         : "星盤圖：本次沒有軸點，牡羊 0° 置於左方；各天體位置見下方表格", notes, dateOnly,

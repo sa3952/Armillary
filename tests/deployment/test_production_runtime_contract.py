@@ -612,10 +612,13 @@ def image_command() -> list[str]:
 
 
 def uvicorn_options(argv) -> dict:
-    """The options uvicorn's own command-line parser reads from `python -m uvicorn ARGS`."""
+    """The options uvicorn's own command-line parser reads from `python -m uvicorn ARGS`
+    or from the image's `python -c "<run app.worker_supervisor.main>" ARGS`."""
 
     argv = list(argv)
-    start = next(index for index in range(len(argv) - 1) if argv[index:index + 2] == ["-m", "uvicorn"])
+    start = next(index for index in range(len(argv) - 1)
+                 if argv[index:index + 2] == ["-m", "uvicorn"]
+                 or (argv[index] == "-c" and "app.worker_supervisor" in argv[index + 1]))
     cli = importlib.import_module("uvicorn.main").main
     return cli.make_context("uvicorn", argv[start + 2:]).params
 

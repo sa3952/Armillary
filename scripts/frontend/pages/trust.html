@@ -3,15 +3,8 @@
   <section class="tr-hero">
     <p class="eyebrow">信任</p>
     <h1>星盤隱私：渾儀為什麼不儲存你的出生資料<span class="h1-sub"><span class="keep">你的出生資料，</span><span class="keep">我們沒有地方可以存。</span></span></h1>
-    <p class="lede">不是「我們承諾不保存」。是應用程式裡<b>沒有一個可以保存的位置</b>——沒有帳號資料庫、沒有命盤資料庫、沒有工作階段儲存、沒有請求快取。</p>
-    <div class="facts">
-      <div><b>0</b><span>個帳號</span><i>免註冊、免 email、無帳號密碼；公開測試（Public Alpha）階段也沒有存取憑證</i></div>
-      <div><b>0</b><span>次寫檔</span><i>預設計算請求的測試中，只要出現一次帶寫入旗標的 Python 檔案呼叫，測試就失敗</i></div>
-      <div><b>{{telemetry_field_count}}</b><span>個日誌欄位</span><i>沒有一個是個人資料。不含 IP、User-Agent 或請求內容</i></div>
-      <div><b>0</b><span>個第三方追蹤相依</span><i>不引入追蹤、分析或遠端日誌相依；主機、DNS 與網域在層五的同一家供應商</i></div>
-      <div><b>CH</b><span>瑞士</span><i>網域註冊、DNS 權威伺服器、主機——三者同一家瑞士公司</i></div>
-    </div>
-    <p class="tr-sub">但上面這些話，每個產品都寫得出來。<b>所以這一頁的其餘部分只做一件事：把每一項承諾放回它實際被執行的那一層，並寫出那一層能被反證到什麼程度。</b>打勾符號不會告訴你這些——是程式碼？是容器設定？是主機上的一行組態？還是供應商合約裡的一句話？四者的強度差很多，而打勾符號長得一模一樣。</p>
+    <p class="lede"><b>你的出生資料不會被存下來：</b>應用程式裡沒有帳號資料庫、命盤資料庫、工作階段儲存或請求快取，計算只在伺服器記憶體裡進行，回應送出後不留副本。<b>它只送到一個地方：</b>本站位於瑞士的主機，網頁不向任何第三方發出請求。</p>
+    <p class="tr-sub">但這兩句話，每個產品都寫得出來。<b>所以這一頁的其餘部分只做一件事：把每一項承諾放回它實際被執行的那一層，並寫出那一層能被反證到什麼程度。</b>打勾符號不會告訴你這些——是程式碼？是容器設定？是主機上的一行組態？還是供應商合約裡的一句話？四者的強度差很多，而打勾符號長得一模一樣。</p>
   </section>
 
   <div class="fold-tools" data-fold-tools hidden>
@@ -37,7 +30,7 @@
       <div>
         <span class="ro-k">程式與契約</span>
         <ul>
-          <li><b>Gate A（make check）完整 Python 產品迴歸測試</b>：只回報通過或失敗，不在本頁手填會漂移的總數；本機找不到 nginx 時跳過真實 NGINX 測試，CI 設為必跑</li>
+          <li><b>Gate A（make check）完整 Python 產品迴歸測試</b>：只回報通過或失敗，不在本頁手填會漂移的總數；本機找不到 nginx 時，真實 NGINX 測試無法執行，make check 會判定失敗；CI 同樣必跑</li>
           <li><b>突變測試</b>：固定具名突變體，每一個都必須被自己指定的測試殺死；每週由 CI 排程、發佈前由人跑——<b>這一項檢的不是程式對不對，是測試會不會漏</b></li>
           <li>mypy 型別檢查（任何錯誤即失敗）、ESLint、前端單元測試與 runtime JS closed-set 語法檢查</li>
         </ul>
@@ -84,7 +77,7 @@
         <ul class="claims">
           <li><b>不建立帳號資料庫</b><span>免註冊、免 email、無帳號密碼。公開測試階段沒有存取憑證，應用程式也從不接收任何憑證。</span></li>
           <li><b>出生資料不寫入資料庫、快取、佇列或檔案</b><span>測試會替換掉 <span class="mono">builtins.open</span>、<span class="mono">io.open</span> 與 <span class="mono">os.open</span>，請求處理期間只要有任何一次帶寫入旗標的呼叫，測試就失敗。涵蓋的是 Python 層的寫入——原生函式庫的行為與記憶體抹除不在內。</span></li>
-          <li><b>伺服器日誌只允許 {{telemetry_field_count}} 個固定欄位</b><span>{{telemetry_field_list}}。<b>就這 {{telemetry_field_count}} 個</b>，欄位組合不符即拒絕寫出。不含出生資料、IP、User-Agent 或請求內容。</span></li>
+          <li><b>請求事件日誌只允許 {{telemetry_field_count}} 個固定欄位</b><span>{{telemetry_field_list}}。<b>就這 {{telemetry_field_count}} 個</b>，欄位組合不符即拒絕寫出。不含出生資料、IP、User-Agent 或請求內容。另有每小時的造訪總數、每秒的容量拒絕總數，以及致命信號時不含參數與區域變數值的堆疊資訊；這些使用各自的格式，不受上述請求事件欄位數限制。</span></li>
           <li><b>不引入第三方追蹤、分析或遠端日誌相依</b><span>相依守衛以具名清單阻擋（analytics、opentelemetry、sentry 等）。這是對已知名稱的阻擋，不是完整的資訊流分析——一個沒被列名的新套件不會被它擋下。</span></li>
           <li><b>錯誤訊息不回顯例外原文或本機路徑</b><span>含串流與背景工作的失敗路徑。已知的輸入錯誤仍會回傳你需要的診斷。</span></li>
         </ul>
@@ -124,7 +117,7 @@
         </div>
         <ul class="claims">
           <li><b>不使用瀏覽器持久化儲存</b><span>不用 localStorage、sessionStorage、IndexedDB、Cache Storage、beacon。</span></li>
-          <li><b>匯出檔名不含個人資料</b><span>固定通用檔名。你另存或改名之後就不在我們控制內了。</span></li>
+          <li><b>匯出檔名預設不含個人資料</b><span>預設使用通用名稱與計算時刻；你選填的個案標籤會出現在檔名中，請自行斟酌內容。你另存或改名之後就不在我們控制內了。</span></li>
         </ul>
       </div>
 
@@ -264,7 +257,7 @@
       <div class="fold-body">
     <ul class="ticks">
       <li><b>我們只計算，不解盤。</b>不是因為解盤沒有價值，是因為還沒有能力把它做到跟前兩階同樣的嚴謹度。每一條規則的來歷、依據與待決項目逐條列在〈<a href="/zh-TW/methods">方法</a>〉。</li>
-      <li><b>每一次計算都產生一份可重算的卷宗。</b>口徑、時間換算、引擎與星曆版本、軌跡步數與 SHA-256 收據都在裡面；匯出時選「運算結果＋驗算資料」即整份帶走，預設的「運算結果」不含它。另一個人拿著它可以重建等價請求核對你的結果。<b>那份 SHA-256 收據不是簽章</b>：它沒有金鑰，只能偵測意外損壞，不證明來源，也不證明沒被刻意修改；本站不另做伺服器簽章。實際長什麼樣子見〈<a href="/zh-TW/validation">驗證</a>〉，能力清單見〈<a href="/zh-TW/features">功能</a>〉。</li>
+      <li><b>每一次計算都產生一份可重算的卷宗。</b>口徑、時間換算、引擎與星曆版本、軌跡步數與 SHA-256 收據都在裡面；匯出時勾「附驗算資料」即整份帶走，預設（不勾）不含它。另一個人拿著它可以重建等價請求核對你的結果。<b>那份 SHA-256 收據不是簽章</b>：它沒有金鑰，只能偵測意外損壞，不證明來源，也不證明沒被刻意修改；本站不另做伺服器簽章。實際長什麼樣子見〈<a href="/zh-TW/validation">驗證</a>〉，能力清單見〈<a href="/zh-TW/features">功能</a>〉。</li>
     </ul>
       </div>
     </details>

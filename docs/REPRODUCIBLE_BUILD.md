@@ -71,6 +71,21 @@ python -m scripts.deployment.frontend_release build \
   --public-source-revision "$(git rev-parse HEAD)"
 ```
 
+Without `--publication-receipt` this manifest is provisional, so its digest is not the live one. To check the
+frontend digest a live release reports, recompute it from the release record instead. The record is committed
+on `main` after the release revision, so take it from `main`, then check out the revision it names（`-B` keeps
+Python from writing bytecode into the checkout, which would break the public file list）:
+
+```bash
+git show origin/main:releases/VER/frontend-release.json > /SAFE/OUTSIDE/frontend-release.json
+git checkout VER
+python -B -m scripts.deployment.frontend_release recompute --source-root . \
+  --release-record /SAFE/OUTSIDE/frontend-release.json
+```
+
+It fails unless the rebuilt record equals the published one; the printed `artifact_digest` is the live frontend
+digest.
+
 `diagnostic` is intentionally provisional. A deployable release additionally needs publication evidence,
 artifact acceptance, an immutable frontend digest, and a combined backend/frontend identity.
 

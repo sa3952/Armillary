@@ -4,7 +4,10 @@ FROM python:3.14.10-slim-trixie@sha256:b6c548779edc1457339ef930a3914a788a74ee592
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Keep compiler-produced archives independent of wall-clock time.
+# Keep compiler-produced archives in this stage independent of wall-clock time.
+# The image's own timestamps come from the SOURCE_DATE_EPOCH build argument
+# (the revision's commit time, which build_release_image.py passes), not from
+# this stage-local environment.
 ENV SOURCE_DATE_EPOCH="0" \
     PIP_DISABLE_PIP_VERSION_CHECK="1" \
     PIP_NO_CACHE_DIR="1" \
@@ -264,9 +267,11 @@ HEALTHCHECK --interval=30s --timeout=45s --start-period=60s --start-interval=2s 
     CMD ["/opt/venv/bin/python", "/app/deploy/container_healthcheck.py"]
 
 ENTRYPOINT ["/app/deploy/entrypoint.sh"]
-# Worker health-check timeout 5 s: while uvicorn's supervisor
-# waits on a recycled worker the other one carries the site, so a shorter wait
-# shortens the window in which both are out (a fresh worker is ready in ~2.5 s).
+# Worker recycling (--limit-max-requests with jitter) is supervised by
+# backend/app/worker_supervisor.py: a worker over its limit is retired only after
+# its replacement is serving, one at a time, so both workers are never out
+# together (stock uvicorn lets each exit first and the site stalled ~5 s).
+# Worker health-check timeout 5 s bounds the wait on a hung or new worker.
 # No header-read timeout exists in uvicorn/h11; slow headers are bounded by the
 # edge (client_header_timeout 5s), and the app port is never published.
-CMD ["/opt/venv/bin/python", "-m", "uvicorn", "app.main:create_app", "--factory", "--app-dir", "/app/backend", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--loop", "asyncio", "--http", "h11", "--ws", "none", "--no-access-log", "--no-server-header", "--timeout-worker-healthcheck", "5", "--timeout-graceful-shutdown", "25", "--backlog", "32", "--limit-max-requests", "1000", "--limit-max-requests-jitter", "200", "--no-proxy-headers"]
+CMD ["/opt/venv/bin/python", "-c", "import sys; sys.path.insert(0, '/app/backend'); from app.worker_supervisor import main; main()", "app.main:create_app", "--factory", "--app-dir", "/app/backend", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--loop", "asyncio", "--http", "h11", "--ws", "none", "--no-access-log", "--no-server-header", "--timeout-worker-healthcheck", "5", "--timeout-graceful-shutdown", "25", "--backlog", "32", "--limit-max-requests", "1000", "--limit-max-requests-jitter", "200", "--no-proxy-headers"]

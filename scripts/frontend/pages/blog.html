@@ -4,13 +4,13 @@
     <p class="eyebrow">文章</p>
     <h1>古典占星計算文章與研究筆記<span class="h1-sub"><span class="keep">我們把研究過程寫出來。</span><span class="keep">包括算錯的時候。</span></span></h1>
 
-    <div class="dk-count">
-      <div><b>{{published_article_count}}</b><span>已發表</span></div>
-      <div><b>{{slate_unwritten_count}}</b><span>還在寫的題目</span></div>
-      <div><b>{{slate_topic_count:主角是我們自己的錯}}</b><span>主角是我們自己的錯</span></div>
-    </div>
+    <p class="lede">已發表 <b data-count="已發表">{{published_article_count}}</b> 篇，下面依主題列出每一篇。還在寫的題目有 <b data-count="還在寫的題目">{{slate_unwritten_count}}</b> 個，也列在後面，其中 <b data-count="主角是我們自己的錯">{{slate_topic_count:主角是我們自己的錯}}</b> 個寫的是我們自己算錯的地方；寫不出來你看得到。</p>
+    <p class="dk-sub"><a href="/feed.xml">用 RSS 訂閱新文章</a>（Atom 格式，貼進任何閱讀器即可）。</p>
+  </section>
 
-    <p class="lede"><b>第一個數字，是已經寫完、公開的篇數</b>，下面依主題列出每一篇。還沒寫完的題目也列在後面，包括要寫哪些自己的錯；寫不出來你看得到。</p>
+  <section class="dk-sec" id="latest">
+    <h2>最新發表</h2>
+    <ol class="dk-latest">{{latest_articles}}</ol>
   </section>
 
   <!-- ═══ 已發表 ═══ -->
@@ -118,6 +118,14 @@
         <li>
           <span class="tp-n">{{slate_topic_number}}</span>
           <div>
+            <b><a href="/zh-TW/blog/mercury-station-direct-2026">行星停滯，回到原典：水星 11 月 13 日轉回順行</a></b>
+            <span class="tp-why"><span class="tp-pub">已發表</span>停滯在天上是慢到幾乎不動，Lilly 替每顆行星寫了停幾天；這次水星和金星前後不到 9 小時轉順。<b>Valens 把停滯列為有力，和逆行分開。</b></span>
+          </div>
+          <span class="tp-tier">帶數據</span>
+        </li>
+        <li>
+          <span class="tp-n">{{slate_topic_number}}</span>
+          <div>
             <b><a href="/zh-TW/blog/lunar-mansions">月宿是什麼？阿拉伯的 28 宿，不是古中國的二十八宿</a></b>
             <span class="tp-why"><span class="tp-pub">已發表</span>一套沿黃道等分，一套沿赤道、以星為界。<b>同一個月亮在兩套裡的編號對不上，起點也是本站的選擇。</b></span>
           </div>
@@ -167,7 +175,7 @@
           <span class="tp-n">{{slate_topic_number}}</span>
           <div>
             <b><a href="/zh-TW/blog/firdaria-night-node-order">法達夜盤的交點排在哪裡？水星之後，還是火星之後</a></b>
-            <span class="tp-why"><span class="tp-pub">已發表</span>al-Bīrūnī 的表把交點排在七顆行星之後；「交點在火星後」是對 Bonatti 的一種讀法，不是他的原話。<b>兩種排法從滿 39 歲起每一年都不同。</b></span>
+            <span class="tp-why"><span class="tp-pub">已發表</span>al-Bīrūnī 的表把交點排在七顆行星之後；「交點在火星後」是對 Bonatti 的一種讀法，不是他的原話。<b>每個 75 年循環的第 39 至未滿 75 年，兩種排法的主期與子期合起來看不同；下一輪前 39 年再次一致。</b></span>
           </div>
           <span class="tp-tier">講方法</span>
         </li>

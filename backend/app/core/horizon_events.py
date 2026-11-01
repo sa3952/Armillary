@@ -1139,14 +1139,7 @@ def _sample_altitude_envelope(
 
     def extreme(maximum: bool) -> float:
         pick = max if maximum else min
-        sign = 1.0 if maximum else -1.0
-        last = len(true_values) - 1
-        candidates = {pick(range(len(true_values)), key=true_values.__getitem__)} | {
-            index
-            for index in range(1, last)
-            if sign * true_values[index] >= sign * true_values[index - 1]
-            and sign * true_values[index] >= sign * true_values[index + 1]
-        }
+        candidates = _extreme_candidates(true_values, maximum=maximum)
         refined, index = pick(
             (_refined_extreme(true_values, index, maximum=maximum), index) for index in candidates
         )
@@ -1158,6 +1151,20 @@ def _sample_altitude_envelope(
     return {
         "minimum_apparent_upper_limb_altitude_degrees": extreme(False),
         "maximum_apparent_upper_limb_altitude_degrees": extreme(True),
+    }
+
+
+def _extreme_candidates(values: list[float], *, maximum: bool) -> set[int]:
+    """The extreme sample and every interior local extreme of the samples."""
+
+    pick = max if maximum else min
+    sign = 1.0 if maximum else -1.0
+    last = len(values) - 1
+    return {pick(range(len(values)), key=values.__getitem__)} | {
+        index
+        for index in range(1, last)
+        if sign * values[index] >= sign * values[index - 1]
+        and sign * values[index] >= sign * values[index + 1]
     }
 
 

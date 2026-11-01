@@ -130,7 +130,11 @@ PAGE_KEPT_PATHS: tuple[str, ...] = (
     "input_presence}",
     "calculation_dossier.methodology.classical_source_disagreements.items[].{response_path,note_zh,applied_note_zh}",
     "astronomical_data.time.{input_local_time,input_semantics,timezone_label,utc_offset_hours,"
+    "daylight_saving_time,"
     "utc_time,time_scale_era,jd_ut,delta_t_seconds,last_hours,true_obliquity,ayanamsa}",
+    # A disputed-zone place: the zone the request named, the one applied and
+    # why, printed beside the time zone; null for every other place.
+    "place_zone_policy.{requested_zone,applied_zone,reason}",
     "astronomical_data.atmosphere.{temperature_c,pressure_hpa,pressure_mode,refraction}",
     f"astronomical_data.bodies[].{{key,speed_position_derivative_status,{_POSITION}}}",
     f"astronomical_data.nodes[].{{key,{_POSITION}}}",

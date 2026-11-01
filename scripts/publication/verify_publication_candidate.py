@@ -272,14 +272,33 @@ def _python_strings(text: str) -> list[tuple[int, str]]:
 
 def id_parts(relative: str, data: bytes) -> list[tuple[int, str]]:
     """Where a ticket id may not stand: comment_parts, every string literal of a
-    Python file and the whole text of a JSON file."""
+    Python file and the whole text of a JSON, HTML or CSS file."""
     parts = comment_parts(relative, data) or []
-    if relative.endswith((".py", ".json")) and b"\0" not in data[:BINARY_SNIFF_BYTES]:
+    if relative.endswith((".py", ".json", ".html", ".css")) and b"\0" not in data[:BINARY_SNIFF_BYTES]:
         try:
             text = data.decode("utf-8")
         except UnicodeDecodeError:
             return parts
         parts += _python_strings(text) if relative.endswith(".py") else [(1, text)]
+    return parts
+
+
+def javascript_string_parts(relative: str, data: bytes) -> list[tuple[int, str]]:
+    """Raw JavaScript literal spans, separate from generic code-shaped prose."""
+    parts: list[tuple[int, str]] = []
+    if relative.endswith((".js", ".cjs", ".mjs")) and b"\0" not in data[:BINARY_SNIFF_BYTES]:
+        from scripts.frontend.javascript import _scan
+
+        try:
+            text = data.decode("utf-8")
+            cursor = 0
+            for token in _scan(text):
+                offset = text.index(token.text, cursor)
+                cursor = offset + len(token.text)
+                if token.kind in {"string", "template"}:
+                    parts.append((1 + text.count("\n", 0, offset), token.text))
+        except (UnicodeDecodeError, ValueError) as error:
+            raise CandidateFailure(f"cannot read JavaScript strings of {relative}: {error}") from None
     return parts
 
 
@@ -636,6 +655,12 @@ def scan_candidate_content(
             with path.open("rb") as handle:
                 for chunk in iter(lambda: handle.read(1024 * 1024), b""):
                     window = tail + chunk
+                    # The credential prefilter reads ASCII/UTF-8 text only: a
+                    # streamed SQLite file must declare UTF-8 (header bytes 56-59 = 1).
+                    if (not searched and not tail and window.startswith(b"SQLite format 3\0")
+                            and window[56:60] != b"\0\0\0\1"):
+                        raise CandidateFailure(f"approved SQLite file is not UTF-8: {rendered} (the "
+                                               f"credential scan of a large binary reads UTF-8 text only)")
                     lowered = window.lower()
                     for marker, encoded in literals:
                         if encoded in lowered:
@@ -735,13 +760,19 @@ def _load_json(path: Path) -> dict:
 
 
 def source_lock_sdists(source_lock: dict) -> dict[tuple[str, str], str]:
-    """(lowercase name, version) -> sdist sha256, keyed as prepare_third_party_sources does."""
+    """(lowercase name, version) -> sdist sha256, keyed as prepare_third_party_sources does.
 
-    return {
-        (str(item["name"]).lower(), str(item["version"])): item["sha256"]
-        for item in source_lock.get("packages", [])
-        if isinstance(item, dict) and {"name", "version", "sha256"} <= set(item)
-    }
+    A key listed twice is refused, even with the same hash: the last entry would
+    silently replace the first."""
+
+    keyed: dict[tuple[str, str], str] = {}
+    for item in source_lock.get("packages", []):
+        if isinstance(item, dict) and {"name", "version", "sha256"} <= set(item):
+            key = (str(item["name"]).lower(), str(item["version"]))
+            if key in keyed:
+                raise CandidateFailure(f"source lock lists {key[0]} {key[1]} more than once")
+            keyed[key] = item["sha256"]
+    return keyed
 
 
 def _verify_sha256sums(base: Path, expected: set[str]) -> None:

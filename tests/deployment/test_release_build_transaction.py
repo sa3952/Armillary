@@ -42,6 +42,11 @@ def _fake_build(monkeypatch, module, *, revision: str, labels: dict, architectur
     def run(command, **kwargs):
         commands.append((command, kwargs.get("cwd")))
         stdout = ""
+        if command[:2] == ["git", "show"]:
+            stdout = "1761700000\n"
+            run.environments.append(None)
+        elif command[:3] == ["docker", "buildx", "build"]:
+            run.environments.append(kwargs.get("env"))
         if command[:2] == ["git", "rev-parse"]:
             stdout = revision if command[2] == "HEAD" else "d" * 40
         elif command[:3] == ["docker", "image", "inspect"]:
@@ -51,6 +56,7 @@ def _fake_build(monkeypatch, module, *, revision: str, labels: dict, architectur
             }])
         return type("Completed", (), {"stdout": stdout, "stderr": "", "returncode": 0})()
 
+    run.environments = []
     monkeypatch.setattr(module, "_run", run)
     monkeypatch.setattr(
         module, "materialize_git_snapshot",
@@ -271,3 +277,50 @@ def test_every_pip_in_the_image_build_is_offline():
     assert fetching >= 3
     assert ("COPY", module.WHEELHOUSE) in {(line.split()[0], line.split()[1].rstrip("/")) for line in lines
                                            if line.startswith("COPY ")}
+
+
+def test_the_image_timestamps_come_from_the_revisions_commit_time(tmp_path, monkeypatch):
+    revision = "a" * 40
+    commands = _fake_build(monkeypatch, module, revision=revision, labels={
+        "org.opencontainers.image.revision": revision,
+        "org.projectarmillary.publication.status": "provisional_unpublished",
+    })
+    # A caller's own epoch must not reach the build.
+    monkeypatch.setenv("SOURCE_DATE_EPOCH", "1")
+    module.build_image(
+        source_root=tmp_path / "source", image="fixture:latest", platform="linux/amd64",
+        purpose="diagnostic", publication_receipt=None, evidence_dir=tmp_path / "evidence",
+        require_clean=False,
+    )
+    [show] = [c for c, _cwd in commands if c[:2] == ["git", "show"]]
+    assert revision in show
+    [build] = [c for c, _cwd in commands if c[:3] == ["docker", "buildx", "build"]]
+    assert "SOURCE_DATE_EPOCH=1761700000" in build
+    assert build[build.index("--output") + 1] == "type=docker,rewrite-timestamp=true"
+    assert "--load" not in build
+    assert module._run.environments[-1]["SOURCE_DATE_EPOCH"] == "1761700000"
+
+
+@pytest.mark.parametrize("epoch", ("", "invalid"))
+def test_an_unreadable_commit_time_stops_before_materializing_or_building(tmp_path, monkeypatch, epoch):
+    commands = _fake_build(monkeypatch, module, revision="a" * 40, labels={})
+    original = module._run
+
+    def run(command, **kwargs):
+        result = original(command, **kwargs)
+        if command[:2] == ["git", "show"]:
+            result.stdout = epoch
+        return result
+
+    monkeypatch.setattr(module, "_run", run)
+    materialized = []
+    monkeypatch.setattr(module, "materialize_git_snapshot", lambda *args: materialized.append(args))
+    with pytest.raises(module.BuildTransactionFailure, match="cannot read the revision's commit time"):
+        module.build_image(
+            source_root=tmp_path / "source", image="fixture:latest", platform="linux/amd64",
+            purpose="diagnostic", publication_receipt=None, evidence_dir=tmp_path / "evidence",
+            require_clean=False,
+        )
+    assert materialized == []
+    assert all(command[0] == "git" for command, _cwd in commands)
+    assert not (tmp_path / "evidence").exists()

@@ -60,7 +60,7 @@
     <div class="versus three">
       <div><span class="vs-label">pyswisseph 套件</span><b class="vs-answer sm">2.10.3.2</b><span class="vs-src">pip 安裝的 Python 套件</span></div>
       <div><span class="vs-label">Swiss Ephemeris C 函式庫</span><b class="vs-answer sm">2.10.03</b><span class="vs-src">函式庫自報版本<br>內建星曆檔另見檔頭：based on JPL DE441（2026-05-26 建立）</span></div>
-      <div><span class="vs-label">IANA 時區資料庫</span><b class="vs-answer sm alt">隨執行環境</b><span class="vs-src">由作業系統或 image 提供，實際版本記在每份卷宗<br><b>隨部署更新，版本見更新紀錄</b></span></div>
+      <div><span class="vs-label">IANA 時區資料庫</span><b class="vs-answer sm alt">隨部署固定</b><span class="vs-src">線上 image 的版本必須與民用時間核對所用的版本一致，否則不能部署；實際版本記在每份卷宗<br><b>版本見更新紀錄</b></span></div>
     </div>
 
     <p>前兩個數字格式相近，<b>但不是同一個值</b>——我們把這句話寫進每一份卷宗，因為搞混了會誤導。第三個更重要：時區資料庫更新後，同一組輸入可能換算出不同的 UTC。所以它的版本也印在你的卷宗裡。1970 年前、特別是標為地方平時（LMT）的時段，資料庫自承多為推定，我們不把它當成已驗證的歷史鐘面。</p>
@@ -170,7 +170,7 @@
     <p class="sig">07<span class="sig-k">出處</span></p>
     <h2 id="dossier-title">算完之後，<br>這份結果還要能被查。</h2>
 
-    <p class="verdict">每次計算都能取得一份卷宗：<b>逐步軌跡、完整口徑、所有版本號，以及一組 SHA-256 收據。</b>完整卷宗在「技術細節與驗算資料」與「運算結果＋驗算資料」匯出裡；預設的結果頁只取它需要的部分。</p>
+    <p class="verdict">每次計算都能取得一份卷宗：<b>逐步軌跡、完整口徑、所有版本號，以及一組 SHA-256 收據。</b>完整卷宗在「技術細節與驗算資料」與勾「附驗算資料」的匯出裡；預設的結果頁只取它需要的部分。</p>
 
     <div class="spec-scroll" tabindex="0" role="region" aria-labelledby="dossier-title">
       <table class="log spec-table stack-narrow">
@@ -187,7 +187,7 @@
     <p class="spec-note">步數隨啟用的模組而變，實際步數印在該次卷宗裡。整份可複製、可下載、可離線核對。</p>
 
     <p>三年後你翻出一份舊卷宗，可以照著軌跡用同一個星曆函式庫重算核對；另一個人拿著它可以重建等價請求。<b>這是可重現性，不是截圖。</b></p>
-    <p>結果匯出：JSON（完整結構）、Markdown（可讀卷宗，也適合餵給 AI）、CSV（表格核對）、純文字。星盤圖可存成 SVG 或 PNG；時間主星區可以把選定的一年存成行事曆檔（.ics），或把已取得的期間存成時間主星表（Markdown、CSV 或 JSON）。預設的「運算結果」模式含天體、座標、宮位、相位與所選計算，不另列出生地座標，但星盤數值本身可推回出生地點；要把軌跡、版本與收據一起帶走，選「運算結果＋驗算資料」，它也含出生地的精確經緯度與海拔。結果頁另有列印版面，直接列印或存成 PDF 時隱藏表單與控制項、展開所有摺疊區塊並印出結果；已打開「技術細節與驗算資料」取得驗算資料時，收據與驗算資料也一併印出。畫面與匯出讀同一份資料，不從畫面反推。</p>
+    <p>結果匯出：JSON（完整結構）、Markdown（可讀卷宗，也適合餵給 AI）、CSV（表格核對）、純文字。星盤圖可存成 SVG 或 PNG；時間主星區可以把選定的一年存成行事曆檔（.ics），或把已取得的期間存成時間主星表（Markdown、CSV 或 JSON）。預設（不勾「附驗算資料」）的匯出含天體、座標、宮位、相位與所選計算，不另列出生地座標，但星盤數值本身可推回出生地點；要把軌跡、版本與收據一起帶走，勾「附驗算資料」，勾了也含出生地的精確經緯度與海拔。結果頁另有列印版面，直接列印或存成 PDF 時隱藏表單與控制項、展開所有摺疊區塊並印出結果；已打開「技術細節與驗算資料」取得驗算資料時，收據與驗算資料也一併印出。畫面與匯出讀同一份資料，不從畫面反推。</p>
 
     <p class="limit"><b>邊界：</b>收據裡的 SHA-256 只對<b>計算軌跡</b>（<span class="mono">calculation_trace</span>）這一段計算，沒有金鑰，任何人改了內容都能重算一個新的：它只能偵測意外損壞，不證明來源，也不證明沒被刻意修改。它不涵蓋位置、方法結果、版本欄位與匯出檔的其他部分，也不是「這個占星方法是對的」。各項方法採取什麼做法、依據什麼，在〈<a href="/zh-TW/methods">方法</a>〉逐項說明。</p>
   </section>

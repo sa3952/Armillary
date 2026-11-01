@@ -31,6 +31,14 @@ function searchPlaces() {
   placeResults.replaceChildren();
   placeResults.hidden = true;
   if (query.length < 2) { setPlaceStatus(PLACE_SEARCH.TOO_SHORT, "請輸入至少兩個字再查詢。", "error"); return; }
+  // 新的查詢開始，就把已選定的地點、收據與它帶入的座標和時區一起撤下：留著舊收據，畫面會同時出現新清單與舊地點，
+  // 查無結果時還會拿舊座標送出。不另寫提示，狀態列直接換成「查詢中…」。
+  if (pageState.selectedPlace) {
+    pageState.selectedPlace = null;
+    clearPlaceReceipt();
+    ["latitude", "longitude", "timezone"].forEach((id) => { el(id).value = ""; });
+    noteFormChanged();
+  }
   setPlaceStatus(PLACE_SEARCH.SEARCHING, "查詢中…", "info");
   const { controller, token, timeout } = placeSearchLifecycle.beginTimedRequest(PLACE_SEARCH_TIMEOUT_MS, window.setTimeout.bind(window));
   // 與 /api/chart 同一條政策：2xx 也要驗 media type 與形狀。
@@ -352,12 +360,10 @@ function applyPrecisionConsequences() {
   el("field-minute").hidden = precision !== "exact";
   el("field-second").hidden = precision !== "exact";
   el("field-hour").hidden = precision === "date_only";
-  if (precision !== "exact") { minuteInput.value = ""; secondInput.value = ""; }
-  if (precision === "date_only") hourInput.value = "";
   const messages = {
-    exact: "", approximate_hour: "分與秒會以 0 送出，因為後端只接受已知的民用小時，並會自行對整個小時取樣。這些 0 不代表你出生在整點。",
+    exact: "", approximate_hour: "分與秒會以 0 送出：計算服務只收你知道的那一個小時，再在這一小時裡取多個時刻逐一比對。這些 0 不代表你出生在整點。",
     date_only: "時、分、秒都會以 0 送出，那只是 API 的日期容器，不代表你出生在午夜。"
-      + "後端在這個模式下會關閉宮位計算，因為宮位需要已知時刻；結果中的宮位區塊會標示為未請求。",
+      + "這個模式不算宮位，因為宮位需要已知時刻；結果中的宮位區塊會標示為未請求。",
   };
   // 不切 hidden：這一段是 aria-live 宣告區，必須常駐在無障礙樹裡，內容改變才念得到。
   precisionConsequence.textContent = messages[precision];
@@ -619,7 +625,7 @@ function timeCheckRequest() {
   };
 }
 
-const timeCheckKey = (request) => (request.body ? JSON.stringify(request.body) : null);
+const timeCheckKey = (request) => (request.body ? JSON.stringify([request.approximate, request.body]) : null);
 
 // 表單改動後，畫面上的核對結果若不再對應目前的輸入就撤下（由 noteFormChanged 呼叫）。
 function refreshTimeCheckBinding() {

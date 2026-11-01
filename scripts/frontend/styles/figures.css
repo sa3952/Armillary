@@ -37,7 +37,7 @@
 .fx-switch button{font:inherit; font-size:var(--fs-note); min-height:44px; padding:.35rem .9rem; border:1px solid var(--fx-ink);
   background:transparent; color:var(--fx-ink); border-radius:var(--radius); cursor:pointer}
 .fx-switch button[aria-pressed="true"]{background:var(--fx-ink); color:var(--paper)}
-.fx-switch button:focus-visible, .fx-scrub input:focus-visible{outline:3px solid var(--fx-hi); outline-offset:2px}
+.fx-switch button:focus-visible, .fx-scrub input:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
 .fx-scrub{display:flex; align-items:center; gap:.8rem; margin:0 0 .7rem; font-size:var(--fs-note)}
 .fx-scrub input{flex:1; max-width:28rem; min-height:44px; accent-color:var(--fx-hi)}
 .fx-readout{min-height:3.7em; margin:.6rem 0 0; padding:.55rem .8rem; font-size:var(--fs-aside); line-height:1.75;
@@ -121,7 +121,7 @@
 .fx .fx-cell{fill:var(--paper); stroke:var(--fx-ink); stroke-width:.8}
 /* 拖拉條選到的那一步（那一刻、那一年）：朱紅，等同指著 */
 .fx .fx-cursor{fill:none; stroke:var(--fx-hi); stroke-width:2.5}
-.fx .fx-cursor-t{fill:var(--fx-hi); font-weight:700}
+.fx .fx-cursor-t{fill:var(--fx-hi); font-weight:500}
 /* 壓在排線上的字加一圈紙色外框，才讀得清楚 */
 .fx .fx-key, .fx .fx-inset-t{paint-order:stroke; stroke:var(--paper); stroke-width:4px; stroke-linejoin:round}
 

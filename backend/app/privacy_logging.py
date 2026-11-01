@@ -264,7 +264,14 @@ class _DropEveryRecord(logging.Filter):
 
 class _DropBelowWarning(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
-        return record.levelno >= logging.WARNING
+        if record.levelno < logging.WARNING:
+            return False
+        record.msg = "ASGI server warning or error."
+        record.args = ()
+        record.exc_info = None
+        record.exc_text = None
+        record.stack_info = None
+        return True
 
 
 def silence_server_access_log() -> None:
@@ -282,7 +289,7 @@ def silence_server_access_log() -> None:
 
 
 def quiet_server_error_log() -> None:
-    """Keep only WARNING and above on the ASGI server's error logger.
+    """Keep only reduced WARNING and above on the ASGI server's error logger.
 
     Below WARNING uvicorn writes the client address and, at trace level, the
     request line with its query string; a launch flag (`--log-level`) must not

@@ -10,7 +10,7 @@ import hashlib
 import swisseph as swe
 
 from .dignity_tables import SEVEN_PLANETS
-from ..domain_catalog import OUTER_BODIES, PRODUCT_YEAR_RANGE
+from ..domain_catalog import CLASSICAL_SEVEN_EXCLUDED_BODY_GROUPS, OUTER_BODIES, PRODUCT_YEAR_RANGE
 from ..ephemeris import input_file_inventory
 from ..method_sources import method_source_register_receipt
 from ..canonical_json import (
@@ -696,7 +696,7 @@ def _body_selection_receipt(options: OptionsInput) -> JsonObject:
         "source": "product_preset",
         "classical_body_keys": list(SEVEN_PLANETS),
         "excluded_optional_body_groups": (
-            ["outer_planets", "chiron", "fixed_stars"]
+            list(CLASSICAL_SEVEN_EXCLUDED_BODY_GROUPS)
             if options.body_selection_preset == "classical_seven_v1"
             else []
         ),

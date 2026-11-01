@@ -39,6 +39,7 @@ from .core.birth_time_sensitivity import (
 )
 from .core.fixed_stars import fixed_star_receipt
 from .core.dossier import build_calculation_dossier
+from .core import place_zone_policy
 from .core.module_state import EventModuleState, module_status_word
 from .chart_stages import (
     AstronomicalFacts,
@@ -56,7 +57,7 @@ from .chart_astronomy import _astronomical_facts, _houses, _positions
 from .chart_methods import _derived_chart, _sect_and_lots
 
 
-SCHEMA_VERSION = "0.22.0"
+SCHEMA_VERSION = "0.23.0"
 
 # Python distribution and embedded Swiss C-library versions are distinct.
 try:
@@ -359,6 +360,7 @@ _DERIVED_METHODS_LAYER_TEXT = (
 
 def compute_chart_response(
     req: ChartRequest, *, build_identity: JsonObject, instant_jd_ut: float | None = None,
+    place_zone: JsonObject | None = None,
 ) -> JsonObject:
     """Every stage in order, for one request; the caller holds the Swiss line.
 
@@ -368,6 +370,7 @@ def compute_chart_response(
     """
 
     time = _resolve_time(req, instant_jd_ut=instant_jd_ut)
+    place_zone_policy.add_trace_step(time.trace, place_zone)
     facts = _astronomical_facts(time)
     methods = _derived_chart(facts)
     return _assemble_chart_response(facts, methods, build_identity=build_identity)

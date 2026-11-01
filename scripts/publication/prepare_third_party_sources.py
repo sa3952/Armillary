@@ -129,12 +129,13 @@ def _require_https_url(url: str) -> None:
     parsed = urllib.parse.urlsplit(url)
     if (
         parsed.scheme != "https"
-        or not parsed.hostname
+        or parsed.hostname not in {"pypi.org", "files.pythonhosted.org"}
+        or parsed.port not in (None, 443)
         or parsed.username is not None
         or parsed.password is not None
         or parsed.fragment
     ):
-        raise SourcePreparationError("third-party source URL must use credential-free HTTPS")
+        raise SourcePreparationError("third-party source URL must use credential-free HTTPS on a PyPI host")
 
 
 class _HttpsOnlyRedirectHandler(urllib.request.HTTPRedirectHandler):
@@ -314,10 +315,12 @@ def prepare_sources(
     sources_dir.mkdir()
     try:
         source_lock_payload = json.loads(source_lock_path.read_text(encoding="utf-8"))
-        source_lock = {
-            (item["name"].lower(), item["version"]): item["sha256"]
-            for item in source_lock_payload["packages"]
-        }
+        source_lock: dict[tuple[str, str], str] = {}
+        for item in source_lock_payload["packages"]:
+            key = (item["name"].lower(), item["version"])
+            if key in source_lock:
+                raise SourcePreparationError(f"source lock lists {key[0]} {key[1]} more than once")
+            source_lock[key] = item["sha256"]
         combined: dict[tuple[str, str], dict[str, Any]] = {}
         lock_inputs = {"production": runtime_lock, "build": build_lock}
         if development_lock is not None:

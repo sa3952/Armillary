@@ -344,11 +344,9 @@ PARTILE_PROFILES: dict[str, dict] = {
         "provenance": "lilly_christian_astrology_1647_and_general_usage",
         "sources": [
             cited("William Lilly, Christian Astrology (1647) Book I ch. XIX p.106",
-                  ("partile definition and examples; Lilly writes 'exactly so many "
-                   "degrees ... as make a perfect aspect', and his own examples there "
-                   "put both planets in the same degree number (as an external review "
-                   "of 2026-10-28 reports; not yet checked here); Houlding records that "
-                   "reading as the commonest usage"),
+                  ("partile definition; Lilly writes 'exactly so many degrees ... as "
+                   "make a perfect aspect'; Houlding records the same-degree reading as "
+                   "the commonest usage"),
                   ORIGINAL_LANGUAGE_READ, LILLY_1647_READ_AT),
             cited(_HOULDING_PARTILE,
                   "partile read as the same degree, the usage she records as the commonest",

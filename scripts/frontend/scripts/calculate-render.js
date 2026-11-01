@@ -12,6 +12,34 @@ function positionsShowFull() {
   return pageState.positionsFull === null ? !(pageState.resultMode && pageState.resultMode.compactPositions) : pageState.positionsFull;
 }
 
+// 界的「各家對照」表：其他各套與埃及界說的守護不同的格子，加淡赭底（calculate.css 的 .differs-egyptian）與一個看得見的
+// 「≠」，報讀另有「與埃及界不同」，不靠顏色分辨。只比較同一列、印出來的字；沒有埃及界那一欄時不標。
+const BOUNDS_COMPARISON_TITLE = "各家對照：界";
+const EGYPTIAN_BOUNDS_COLUMN = "埃及界";
+function markBoundsDifferences() {
+  results.querySelectorAll("table").forEach((table) => {
+    if (!table.caption || table.caption.textContent.trim() !== BOUNDS_COMPARISON_TITLE || !table.tHead) return;
+    const heads = [...table.tHead.rows[0].cells].map((cell) => cell.textContent.trim());
+    const base = heads.indexOf(EGYPTIAN_BOUNDS_COLUMN);
+    if (base < 0) return;
+    const end = heads[heads.length - 1] === "各家" ? heads.length - 1 : heads.length;
+    [...table.tBodies].forEach((body) => [...body.rows].forEach((row) => {
+      const cells = [...row.cells];
+      const reference = cells[base] ? cells[base].textContent.trim() : "";
+      for (let index = base + 1; index < end && index < cells.length; index += 1) {
+        const cell = cells[index];
+        if (!reference || cell.classList.contains("differs-egyptian") || cell.textContent.trim() === reference) continue;
+        cell.classList.add("differs-egyptian");
+        // 標記只給畫面：原字記在 data-canonical，畫面與匯出的對照讀原字。
+        if (cell.dataset.canonical === undefined) cell.dataset.canonical = cell.textContent;
+        const cue = make("span", "differs-egyptian-cue", "≠");
+        cue.setAttribute("aria-hidden", "true");
+        cell.append(" ", cue, make("span", "visually-hidden", "（與埃及界不同）"));
+      }
+    }));
+  });
+}
+
 function decoratePositionTable(wrap, model) {
   const table = wrap.querySelector("table");
   const keep = new Set([0, ...POSITION_COLUMNS.map((name) => model.columns.indexOf(name))]);
@@ -228,6 +256,7 @@ function finishResultView(canonical, tree, signature, payload, built) {
     });
   }
   buildChapterNav(entries);
+  markBoundsDifferences();
   renderModeNote(hiddenTitles);
   el("chapter-timelords-entry").hidden = pageState.resultMode.chapters.includes("timelords");
   showAnnualPanel(payload);
@@ -239,6 +268,9 @@ function finishResultView(canonical, tree, signature, payload, built) {
   refreshResultBinding();
   applyOverflowRegions();
   setStatus("計算完成。", "info");
+  // 匯出檔名用算出這份結果的時間（不是出生時間）。
+  pageState.computedAt = new Date();
+  pageState.exportModeSeen = selectedExportMode();
   // 古典完整：算完星盤接著排時間主星（表單上那一格勾著時）；與按「排出時間主星」是同一個請求。
   if (pageState.resultMode.timelordsAfterChart && el("plan-timelords").checked) loadAnnualPanel();
   // 回應已到，中止鈕已無事可做：先收起再捲動。手機上它在送出鈕下自成一列，等 finally 才收起，
@@ -279,23 +311,26 @@ function focusCheckedMode() {
 }
 
 // 結果到達時把結果標題捲到視窗頂端，焦點交給它（HTML 帶 tabindex="-1"），使用者才知道畫面上多了什麼。只 focus() 時瀏覽
-// 器只捲到剛好看得見標題，畫面大半仍是表單。偏好減少動態效果時直接跳到位置，不做平滑捲動。
+// 器只捲到剛好看得見標題，畫面大半仍是表單。結果區塊是 content-visibility:auto（calculate.css），剛插入時只有估計高度；
+// 平滑捲動途中它們才排版、高度一變，標題就被推離視窗。所以等兩個影格（版面與首次排版都已完成）再一次跳到位置，不做平滑
+// 捲動；焦點先給，閱讀器不必等。
 function revealResults() {
   const added = addedSectionNode();
+  const target = added || el("results-heading");
   if (added) {
     unfoldTarget(added);
-    added.scrollIntoView({ block: "start", behavior: scrollBehavior() });
     focusSectionHeading(added);
-    return;
+  } else {
+    target.focus({ preventScroll: true });
   }
-  const heading = el("results-heading");
-  heading.scrollIntoView({ block: "start", behavior: scrollBehavior() });
-  heading.focus({ preventScroll: true });
+  const land = () => { if (!results.hidden) target.scrollIntoView({ block: "start", behavior: "auto" }); };
+  land();
+  window.requestAnimationFrame(() => window.requestAnimationFrame(land));
 }
 
 // 時間收據的一行重點：取「時間轉換」表格的本地時間（或代表性錨點）、時區與世界時三列，名稱與數值都照表格原字；只把全為
-// 0 的小數秒（「.000」）拿掉：輸入只到分鐘或秒，印出毫秒是假精度，完整值仍在收據表格裡。時區只寫城市名（「臺北」），
-// IANA 名稱留在完整收據與匯出。表格不是預期的形狀時不畫這一行，完整收據照舊在最後。
+// 0 的小數秒（「.000」）拿掉：輸入只到分鐘或秒，印出毫秒是假精度，完整值仍在收據表格裡。時區照表格原字（「臺灣時間
+// （Asia/Taipei）」）。世界時那一列緊接在夏令時間（或 UTC 偏移）之後。表格不是預期的形狀時不畫這一行，完整收據照舊在最後。
 function renderTimeBrief(section) {
   timeBrief.replaceChildren();
   timeBrief.hidden = true;
@@ -303,11 +338,13 @@ function renderTimeBrief(section) {
   const rows = table ? table.rows : [];
   const zone = rows.findIndex((row) => row[0] === "時區");
   const offset = rows.findIndex((row) => row[0] === "UTC 偏移");
-  if (zone !== 1 || offset !== 2 || rows.length < 4) return;
-  [rows[0], rows[zone], rows[offset + 1]].forEach(([term, value], index) => {
+  const summer = rows.findIndex((row) => row[0] === "夏令時間");
+  const universal = (summer === offset + 1 ? summer : offset) + 1;
+  if (zone !== 1 || offset < 2 || rows.length <= universal) return;
+  [rows[0], rows[zone], rows[universal]].forEach(([term, value], index) => {
     if (index) timeBrief.append(make("span", "visually-hidden", "；"));
     const item = make("span", "time-brief-item", "");
-    const shown = index === 1 ? String(value).replace(/（[A-Za-z_]+\/[A-Za-z_/+-]+）$/, "") : String(value).replace(/(:\d\d)\.0+$/, "$1");
+    const shown = index === 1 ? String(value) : String(value).replace(/(:\d\d)\.0+$/, "$1");
     item.append(make("span", "time-brief-term", term), " ", shown);
     timeBrief.append(item);
   });
@@ -613,7 +650,7 @@ const staleNotice = el("stale-notice");
 // 結果最下方的完整工具列，加上首屏的常用匯出（data-quick-*）：兩組按鈕走同一套處理與停用規則。
 // 列印鈕以 data-print-mode 標出它印哪一種（完整結果或一頁摘要）。
 const exportButtons = document.querySelectorAll(
-  "[data-copy], [data-download], [data-quick-copy], [data-quick-download], button[data-print-mode]"
+  "[data-copy], [data-download], [data-download-work], [data-quick-copy], [data-quick-download], button[data-print-mode]"
 );
 const printBriefInput = el("print-brief-input");
 
@@ -642,7 +679,7 @@ function setStale(stale) {
 
 /**
  * 複製、下載、列印與放大是否可按，只有這一處決定：畫面上沒有結果（剛載入、清除後）時全部停用——藏起來或移出 DOM 的按鈕仍
- * 可能被程式或舊的參照按到；結果過期時依 view-model 的 actions；選了「運算結果＋驗算資料」而驗算資料還沒到手時，複製與
+ * 可能被程式或舊的參照按到；結果過期時依 view-model 的 actions；勾了「附驗算資料」而驗算資料還沒到手時，複製與
  * 下載也先停用（列印照舊，它印的是畫面）。
  */
 function applyExportAvailability() {
@@ -650,7 +687,8 @@ function applyExportAvailability() {
   const actions = present ? pageState.lastExportActions : { copy_enabled: false, download_enabled: false };
   const waitingForDetail = selectedExportMode() === "reproducibility_detail" && verification.state !== DETAIL.READY;
   exportButtons.forEach((button) => {
-    const allowed = button.hasAttribute("data-download") || button.hasAttribute("data-quick-download")
+    const allowed = button.hasAttribute("data-download") || button.hasAttribute("data-download-work")
+      || button.hasAttribute("data-quick-download")
       ? actions.download_enabled : actions.copy_enabled;
     button.disabled = !allowed || (waitingForDetail && !button.hasAttribute("data-print-mode"));
   });
@@ -668,7 +706,7 @@ function requireExportableDocument(mode) {
   const canonical = lifecycle.requireCanonicalDocument();
   if (results.dataset.stale === "true") { throw new Error("表單已改動，這份結果對應的不是目前的輸入。請重新計算，或把欄位改回原值。"); }
   if (mode !== "reproducibility_detail") return canonical;
-  // 「運算結果＋驗算資料」只由完整回應產生。
+  // 「附驗算資料」的匯出只由完整回應產生。
   if (verification.state !== DETAIL.READY || !verification.canonical) { throw new Error("驗算資料還沒取得。"); }
   return verification.canonical;
 }
@@ -706,8 +744,8 @@ function detailStatusBlock(place, { announce = true, nameSuffix = "" } = {}) {
 function detailStatusText(place) {
   if (verification.state === DETAIL.LOADING) { return "正在取得驗算資料：以同一份輸入請伺服器再算一次，伺服器不保存任何資料。"; }
   if (verification.state === DETAIL.FAILED) { return [`無法取得驗算資料：${verification.message}`, ...verification.actions].join(" "); }
-  if (verification.state === DETAIL.READY) { return place === "export" ? "驗算資料已取得，可以複製或下載「運算結果＋驗算資料」。" : ""; }
-  return place === "export" ? "" : "尚未取得驗算資料。打開這一區，或選「運算結果＋驗算資料」時，才會以同一份輸入請伺服器再算一次。";
+  if (verification.state === DETAIL.READY) { return place === "export" ? "驗算資料已取得，可以複製或下載「附驗算資料」的匯出。" : ""; }
+  return place === "export" ? "" : "尚未取得驗算資料。打開這一區，或勾「附驗算資料」時，才會以同一份輸入請伺服器再算一次。";
 }
 
 function renderDetailStatus(block) {
@@ -828,12 +866,46 @@ function applyDetailDocument(canonical) {
   refreshDetailUi();
 }
 
-document.querySelectorAll('input[name="export-detail-mode"]').forEach((input) => {
-  input.addEventListener("change", () => {
-    if (selectedExportMode() === "reproducibility_detail") loadVerificationDetail();
+function onExportModeChange() {
+  pageState.exportModeSeen = selectedExportMode();
+  exportModeNotice(null);
+  if (pageState.exportModeSeen === "reproducibility_detail") loadVerificationDetail();
+  refreshDetailUi();
+}
+el("export-verify").addEventListener("change", onExportModeChange);
+
+// 換計算模式會把匯出內容換成那個模式的預設（result-chapters.js 的 exportDetail）。換了就在匯出選單旁說一句，不讓使用者
+// 以為下載的還是剛才選的那一種。勾選框（#export-verify）通常已由 applyMode 換好，這裡補齊並比對前後。
+function syncExportForMode(id) {
+  const wanted = Chapters.mode(id).exportDetail;
+  const box = el("export-verify");
+  if (box && box.checked !== (wanted === "reproducibility_detail")) {
+    box.checked = wanted === "reproducibility_detail";
+    if (box.checked) loadVerificationDetail();
     refreshDetailUi();
-  });
+  }
+  const now = selectedExportMode();
+  const before = pageState.exportModeSeen || "chart_data_only";
+  pageState.exportModeSeen = now;
+  if (now !== before && !results.hidden) {
+    exportModeNotice(now === "reproducibility_detail" ? "換了計算模式：匯出已改為附驗算資料。" : "換了計算模式：匯出已改為只含運算結果。");
+  }
+}
+document.querySelectorAll('input[name="calc-mode"]').forEach((input) => {
+  input.addEventListener("change", (event) => syncExportForMode(event.target.value));
 });
+function exportModeNotice(text) {
+  let note = document.querySelector("#export-toolbar .export-mode-notice");
+  if (!text) { if (note) note.hidden = true; return; }
+  if (!note) {
+    note = make("p", "note export-mode-notice");
+    note.setAttribute("role", "status");
+    const host = document.querySelector("#export-toolbar .export-menu") || el("export-toolbar").firstElementChild;
+    host.after(note);
+  }
+  note.textContent = text;
+  note.hidden = false;
+}
 
 // 可捲動表格的 region：只有真的橫向溢出的表格才是 region 與 tab 停留點；未溢出時多一個停留點只是噪音。標籤帶區塊標題，
 // 報讀時才分得出是哪一區的表。結果區塊在畫面上是 content-visibility:auto（calculate.css）：離畫面遠的區塊不排版。量它裡
@@ -1060,7 +1132,7 @@ function switchModeFromNote(event) {
   if (!button) return;
   const mode = button.dataset.mode || "classical";
   const radio = document.querySelector(`input[name="calc-mode"][value="${mode}"]`);
-  if (button.dataset.focusOnly === undefined) { radio.checked = true; applyMode(mode); }
+  if (button.dataset.focusOnly === undefined) { radio.checked = true; applyMode(mode); syncExportForMode(mode); }
   radio.scrollIntoView({ block: "center", behavior: scrollBehavior() });
   radio.focus({ preventScroll: true });
 }
@@ -1113,6 +1185,5 @@ function toggleAllChapters() { chapterNav.all = !chapterNav.all; paintChapters()
 el("chapters-all").addEventListener("click", toggleAllChapters);
 
 function selectedExportMode() {
-  const selected = document.querySelector('input[name="export-detail-mode"]:checked');
-  return selected ? selected.value : "chart_data_only";
+  return el("export-verify").checked ? "reproducibility_detail" : "chart_data_only";
 }

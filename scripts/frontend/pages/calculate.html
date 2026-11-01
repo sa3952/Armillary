@@ -47,7 +47,7 @@
           <legend>出生日期與時間</legend>
           <fieldset class="choice-group" id="precision-choice" aria-describedby="precision-help">
           <legend class="choice-lead" id="precision-lead">你對出生時刻的把握程度</legend>
-          <p class="note" id="precision-help">不知道確切出生時間？選『只知道日期』或『只知道約略小時』，結果會告訴你上升點與宮位在這段時間裡有沒有換（只知道日期時不算上升點與宮位）。</p>
+          <details><summary>出生時間精確度說明</summary><p class="note" id="precision-help">不知道確切出生時間？選『只知道日期』或『只知道約略小時』，結果會告訴你上升點與宮位在這段時間裡有沒有換（只知道日期時不算上升點與宮位）。只知道日期時，結果以一個<button type="button" class="term" data-term="representative_instant">代表性時刻</button>代表這一天。</p></details>
           <div class="choice">
             <label>
               <input type="radio" name="precision" value="exact" checked>
@@ -55,7 +55,7 @@
             </label>
             <label>
               <input type="radio" name="precision" value="approximate_hour">
-              <span><b>只知道約略小時</b><span>分與秒送出 0，後端對整個小時取樣。</span></span>
+              <span><b>只知道約略小時</b><span>分與秒送出 0；計算時在這一小時裡取多個時刻逐一比對。</span></span>
             </label>
             <label>
               <input type="radio" name="precision" value="date_only">
@@ -150,7 +150,7 @@
                 <input type="search" id="place-query" maxlength="100" aria-describedby="place-query-hint" enterkeyhint="search" autocomplete="off" spellcheck="false" placeholder="例如：臺南、Taipei、Zurich">
                 <button type="button" id="place-search-button">查詢</button>
               </div>
-              <span class="hint" id="place-query-hint">讀取內建的唯讀離線目錄，不發出對外請求。中文行政區請用空格分開，例如「臺南 北區」。</span>
+              <span class="hint" id="place-query-hint">讀取內建的唯讀離線目錄，不發出對外請求。中文行政區請用空格分開，例如「臺南 北區」。「台」與「臺」都查得到。</span>
             </div>
           </div>
           <p class="status-line" id="place-status" role="status" aria-live="polite"></p>
@@ -206,7 +206,7 @@
                 <label for="timezone">IANA 時區名稱</label>
                 <input type="text" id="timezone" aria-describedby="timezone-hint timezone-offset" autocomplete="off" spellcheck="false" placeholder="Asia/Taipei" list="timezone-suggestions">
                 <datalist id="timezone-suggestions"></datalist>
-                <span class="hint" id="timezone-hint">依出生地當時實際適用的時區。1970 年前的偏移是 IANA 資料庫推定，未經歷史驗證</span>
+                <span class="hint" id="timezone-hint"><button type="button" class="term" data-term="iana_timezone">IANA 時區名稱</button>是國際通用時區資料庫裡的名字，寫成「洲/城市」，例如 Asia/Taipei 就是臺灣時間。請依出生地當時實際適用的時區填寫。1970 年前的偏移是這個資料庫推定，未經歷史驗證</span>
                 <span class="hint" id="timezone-offset" hidden></span>
               </div>
             </div>
@@ -215,8 +215,9 @@
           <!-- 年份與時區由 test_the_calculate_page_says_how_taiwan_clock_times_become_utc
                對照釘住的 tz 歷史與地點目錄；兩種鐘點的處理對照計算服務的實際回應。 -->
           <aside class="tz-note" aria-labelledby="tz-note-title">
-            <h2 class="tz-note-title" id="tz-note-title">臺灣的時間怎麼處理</h2>
+            <details><summary><h2 class="tz-note-title" id="tz-note-title">臺灣的時間怎麼處理</h2></summary>
             <p>請照出生紀錄填當時的鐘面時間：從目錄選臺灣的地點，時區就是 Asia/Taipei，計算服務依 IANA 時區資料庫把它換算成世界時（UTC）。1937 年 10 月到 1945 年 9 月的 UTC+9，以及 1946–1961、1974、1975、1979 年夏季的日光節約時間，都由資料庫計入，不必自己先加減一小時。時鐘撥回、同一個鐘面時間出現兩次時，本頁會請你指明是哪一次；時鐘撥快而跳過、根本不存在的時刻，服務不替你挪動，會請你核對出生紀錄。逐年的期間與資料庫本身的不確定處，見〈<a href="/zh-TW/blog/taiwan-time-zone-history">臺灣的時區與夏令時間</a>〉。</p>
+          </details>
           </aside>
         </fieldset>
 
@@ -224,6 +225,7 @@
         <fieldset class="plan" id="plan">
           <legend>這次會算什麼</legend>
           <p class="note plan-summary" id="plan-summary"></p>
+          <p class="plan-house-switch" id="plan-house-switch" hidden><button type="button" class="ghost small" id="plan-house-button" aria-describedby="plan-house-note">改宮制 →</button> <span class="note" id="plan-house-note">換成「自訂」模式，可在七種宮位制中選一種。</span></p>
           <div class="plan-classical" id="plan-classical" hidden>
             <p class="note">已依古典作法勾好；不要的可以取消。</p>
             <div class="plan-checks">
@@ -266,7 +268,7 @@
                 <option value="sassanian">Sassanian（Swiss／Mercier 重建）</option>
                 <option value="aldebaran_15_tau">Aldebaran 15° 金牛（現代定義）</option>
               </select>
-              <span class="hint" id="ayanamsa-hint">僅恆星黃道適用。目前沒有 Lahiri。</span>
+              <span class="hint" id="ayanamsa-hint">僅恆星黃道適用。目前沒有 Lahiri。名詞：<button type="button" class="term" data-term="tropical">回歸黃道</button>、<button type="button" class="term" data-term="sidereal">恆星黃道</button>、<button type="button" class="term" data-term="precession">歲差</button>。</span>
             </div>
           </div>
           <div class="grid">
@@ -275,7 +277,7 @@
               <div class="inline-control" id="house-system-slot"></div>
               <span class="hint" id="opt-house_system-detail"></span>
               <span class="hint" id="opt-house_system-hint">整宮與等分宮每宮都是 30 度。四分宮制先用上升點與中天（黃道在上子午圈的那一點；子午圈是通過天頂與正南、正北的大圓）把一圈分成四段，每段再分成三宮，所以宮的大小不一。七種平等提供，本產品不排序其歷史適用性；一次計算一種。</span>
-              <span class="hint" id="opt-house_system-article">七種各怎麼切天空，見〈<a href="/zh-TW/blog/house-systems-explained">宮位制有哪些</a>〉（附可以轉的天球示意圖）。</span>
+              <span class="hint" id="opt-house_system-article">七種各怎麼切天空，見〈<a href="/zh-TW/blog/house-systems-explained">宮位制有哪些</a>〉（附可以轉的天球示意圖）。各宮制的名詞解釋：<button type="button" class="term" data-term="whole_sign">整宮制</button>、<button type="button" class="term" data-term="placidus">Placidus</button>、<button type="button" class="term" data-term="regiomontanus">Regiomontanus</button>、<button type="button" class="term" data-term="alcabitius">Alcabitius</button>、<button type="button" class="term" data-term="porphyry">Porphyry</button>、<button type="button" class="term" data-term="equal_house">等分宮制</button>、<button type="button" class="term" data-term="campanus">Campanus</button>。</span>
             </div>
           </div>
           <p class="consequence" id="zodiac-consequence" aria-live="polite"></p>
@@ -291,7 +293,7 @@
               <div class="options-actions">
                 <button type="button" class="ghost small" id="reset-options">全部回到產品預設</button>
               </div>
-              <div id="option-groups"></div>
+              <div id="option-groups">{{options_catalogue}}</div>
             </div>
           </details>
         </fieldset>
@@ -377,7 +379,7 @@
         <!-- 章節列已標示「總覽」：標題只給輔助科技與大綱，首屏留給星盤圖。 -->
         <h2 id="chapter-overview-title" class="visually-hidden" tabindex="-1">總覽</h2>
 
-      <!-- 結果首屏：本命盤速覽（calculate.js 建在最前面）、星盤圖、常用匯出。寬螢幕左圖、右邊上速覽下匯出，窄螢幕依原始碼順序上下排：
+      <!-- 結果首屏：本命盤速覽（calculate.js 建在最前面）、星盤圖、常用匯出。寬螢幕左圖、右邊依序是速覽、匯出與讀圖的三步說明，窄螢幕依原始碼順序上下排：
            速覽之後緊接著圖，匯出在圖之後。 -->
       <div class="result-lead" id="result-lead">
         <div class="result-lead-wheel" id="chart-wheel-host"></div>
@@ -386,33 +388,31 @@
           <!-- 每顆的名稱以看得見的字開頭再接「（常用匯出）」：與結果最下方同字的按鈕在按鈕清單裡分得開（WCAG 2.5.3）。 -->
           <div class="export-actions">
             <button type="button" class="ghost small" data-quick-copy="all" aria-label="複製結果（常用匯出）">複製結果</button>
-            <button type="button" class="ghost small" data-quick-download="md" aria-label="Markdown（常用匯出）" aria-describedby="quick-export-data-note">Markdown</button>
             <button type="button" class="ghost small" id="print-brief-button" data-print-mode="brief">列印一頁摘要</button>
             <button type="button" class="ghost small" id="quick-print-button" data-print-mode="full" aria-label="列印完整結果（常用匯出）">列印完整結果</button>
           </div>
           <label class="print-brief-input"><input type="checkbox" class="option-control" id="print-brief-input">摘要加印出生日期、時間與地點</label>
-          <p class="note" id="quick-export-data-note">匯出檔含出生時刻與計算結果。「運算結果」不列出生地座標，「運算結果＋驗算資料」則含出生地的精確經緯度與海拔；不論哪一種，星盤數值本身都能推回出生時間與地點，刪掉日期欄位也無法匿名。</p>
-          <p class="note"><a href="#export-toolbar">純文字、JSON、CSV 與『運算結果＋驗算資料』在「收據與匯出」一章的匯出工具列。</a></p>
+          <p class="note" id="quick-export-data-note">匯出檔含出生時刻與計算結果。不勾「附驗算資料」時不列出生地座標，勾了則含出生地的精確經緯度與海拔；不論哪一種，星盤數值本身都能推回出生時間與地點，刪掉日期欄位也無法匿名。</p>
+          <p class="note"><a href="#export-toolbar">Markdown、純文字、JSON、CSV 與「附驗算資料」在「收據與匯出」一章的「匯出」選單。</a></p>
         </div>
         <!-- 一頁摘要的位置表：畫面上不顯示；紙上排在圖的右邊、速覽之下。calculate.js 算完時依畫面上的表格原字填入。 -->
         <div class="print-brief print-brief-tables" id="print-brief-tables"></div>
+        <!-- 讀圖的三步說明：寬螢幕排在圖的右邊、常用匯出之下，窄螢幕接在常用匯出之後；首屏留給星盤圖。 -->
+        <details class="first-time" id="first-time" open>
+          <summary>第一次看星盤？三步讀這一頁</summary>
+          <ol class="howto">
+            <li><b>先看圖旁的太陽、月亮與上升三格。</b>上升星座是出生那一刻東方地平線上的星座，需要準確的出生時間。</li>
+            <li><b>再看圖。</b>外圈是 12 個星座，裡面的符號是行星，數字 1–12 是宮位。點任何一個符號，會跳到它在「位置」一章的那一列。</li>
+            <li><b>看不懂的詞，按「名詞解釋」。</b>想核對數字怎麼來的，到最後一章「收據與匯出」。</li>
+          </ol>
+          <p class="note">照原典列出。不替你解盤，也不預測。</p>
+        </details>
       </div>
 
       <!-- 出生時間不確定（約略時辰或只有日期）時的白話摘要：接在星盤圖與速覽之後，哪些結果會變、
            大約幾點變；細節連到「收據與匯出」一章的出生時刻敏感度。內容（含 h3 標題）由 calculate.js 依 view tree
            填入，所以這裡是 role=region 的 div：靜態頁上沒有標題的 section 會是無名的大綱項目。 -->
       <div class="sampling-callout" id="sampling-callout" role="region" hidden aria-labelledby="sampling-callout-title"></div>
-
-      <!-- 讀圖的三步說明排在圖、速覽與出生時間摘要之後：首屏留給星盤圖。 -->
-      <details class="first-time" id="first-time">
-        <summary>第一次看星盤？三步讀這一頁</summary>
-        <ol class="howto">
-          <li><b>先看圖旁的太陽、月亮與上升三格。</b>上升星座是出生那一刻東方地平線上的星座，需要準確的出生時間。</li>
-          <li><b>再看圖。</b>外圈是 12 個星座，裡面的符號是行星，數字 1–12 是宮位。點任何一個符號，會跳到它在「位置」一章的那一列。</li>
-          <li><b>看不懂的詞，按「名詞解釋」。</b>想核對數字怎麼來的，到最後一章「收據與匯出」。</li>
-        </ol>
-        <p class="note">照原典列出。不替你解盤，也不預測。</p>
-      </details>
 
       <!-- 一頁摘要的隱私句與頁尾：畫面上不顯示。 -->
       <div class="print-brief print-brief-body" id="print-brief-body">
@@ -510,23 +510,16 @@
         <div class="chapter-sections" data-chapter-host="receipt"></div>
 
       <div class="toolbar" id="export-toolbar">
-        <fieldset class="export-mode" aria-describedby="export-mode-help">
-          <legend class="export-mode-title" id="export-mode-title">複製與下載內容</legend>
-          <div class="export-mode-options">
-            <label><input type="radio" name="export-detail-mode" value="chart_data_only" checked><span><b>運算結果</b><small>天體、座標、宮位、相位與所選計算</small></span></label>
-            <label><input type="radio" name="export-detail-mode" value="reproducibility_detail"><span><b>運算結果＋驗算資料</b><small>再加入版本、來源、計算軌跡、完整收據，以及出生地的精確經緯度與海拔</small></span></label>
-          </div>
-        </fieldset>
-        <p class="note" id="export-mode-help">一般閱讀建議使用PDF、Markdown或純文字；JSON供程式處理，完整精度在『運算結果＋驗算資料』的 JSON 匯出中；CSV供試算表使用。</p>
-        <div class="export-actions">
-          <button type="button" class="ghost small" data-copy="all">複製結果</button>
-          <button type="button" class="ghost small" data-download="md" aria-describedby="export-data-note">Markdown</button>
-          <button type="button" class="ghost small" data-download="txt" aria-describedby="export-data-note">純文字</button>
-          <button type="button" class="ghost small" data-download="json" aria-describedby="export-data-note">JSON</button>
-          <button type="button" class="ghost small" data-download="csv" aria-describedby="export-data-note">CSV</button>
-          <button type="button" class="ghost small" id="print-button" data-print-mode="full">列印完整結果</button>
-        </div>
-        <p class="note" id="export-data-note">匯出檔含出生時刻與計算結果。「運算結果」不列出生地座標，「運算結果＋驗算資料」則含出生地的精確經緯度與海拔；不論哪一種，星盤數值本身都能推回出生時間與地點，刪掉日期欄位也無法匿名。</p>
+        <div class="eyebrow export-mode-title" id="export-mode-title">複製與下載</div>
+        <details class="export-menu"><summary>匯出 ▾</summary><div class="export-menu-body">
+          <label class="export-menu-verify"><input type="checkbox" id="export-verify"><span>附驗算資料<small>版本、來源、計算軌跡、完整收據與出生地精確經緯度、海拔</small></span></label>
+          <label class="export-menu-case">個案代號（選填，只用在檔名）<input type="text" id="export-case-label" maxlength="24" autocomplete="off" spellcheck="false"></label>
+          <div class="export-actions"><button type="button" class="ghost small" data-copy="all">複製結果</button><button type="button" class="ghost small" data-download="md" aria-describedby="export-data-note">Markdown</button><button type="button" class="ghost small" data-download="txt" aria-describedby="export-data-note">純文字</button><button type="button" class="ghost small" data-download="json" aria-describedby="export-data-note">JSON</button><button type="button" class="ghost small" data-download="csv" aria-describedby="export-data-note">CSV</button><button type="button" class="ghost small" id="print-button" data-print-mode="full">列印完整結果</button></div>
+          <fieldset class="export-menu-work"><legend>作業版 Markdown：只含勾選的章</legend><label><input type="checkbox" name="export-work-chapter" value="overview" checked>總覽</label><label><input type="checkbox" name="export-work-chapter" value="positions">位置</label><label><input type="checkbox" name="export-work-chapter" value="houses_aspects">宮位與相位</label><label><input type="checkbox" name="export-work-chapter" value="classical">古典</label><label><input type="checkbox" name="export-work-chapter" value="receipt">收據</label><button type="button" class="ghost small" data-download-work aria-describedby="export-data-note">下載作業版</button></fieldset>
+        </div></details>
+        <p class="note" id="export-mode-help">一般閱讀建議使用PDF、Markdown或純文字；JSON供程式處理，完整精度在「附驗算資料」的 JSON 匯出中；CSV供試算表使用。</p>
+        <p class="note">CSV 裡以 ' 開頭的格子是防公式注入的保護，不是資料。</p>
+        <p class="note" id="export-data-note">匯出檔含出生時刻與計算結果。不勾「附驗算資料」時不列出生地座標，勾了則含出生地的精確經緯度與海拔；不論哪一種，星盤數值本身都能推回出生時間與地點，刪掉日期欄位也無法匿名。</p>
         <p class="note">檔名不含這些資料，但內容含有；請自行決定存放位置。</p>
       </div>
       <!-- 快速看盤沒有「時間主星」一章：結果最後一行指給你看；按了只換模式（自訂只移焦點），不另外送請求。 -->
@@ -630,7 +623,7 @@
       </details>
       <details>
         <summary>替個案或學生排盤，匯出或列印會帶出出生資料嗎？</summary>
-        <p>列印「一頁摘要」預設不印出生日期、時間與地點，要印得勾選「摘要加印出生日期、時間與地點」。匯出檔都含出生時刻與計算結果：「運算結果」不列出生地座標，「運算結果＋驗算資料」則含出生地的精確經緯度、海拔與完整計算過程。要知道的是：就算不印出生資料，上升點、中天與行星位置本身也能推回出生時間與地點，所以交給別人之前，請把它當成含個人資料的文件。要不要附，由你決定。</p>
+        <p>列印「一頁摘要」預設不印出生日期、時間與地點，要印得勾選「摘要加印出生日期、時間與地點」。匯出檔都含出生時刻與計算結果：不勾「附驗算資料」時不列出生地座標，勾了則含出生地的精確經緯度、海拔與完整計算過程。要知道的是：就算不印出生資料，上升點、中天與行星位置本身也能推回出生時間與地點，所以交給別人之前，請把它當成含個人資料的文件。要不要附，由你決定。</p>
       </details>
       <details>
         <summary>可以排印度占星（吠陀）星盤嗎？</summary>

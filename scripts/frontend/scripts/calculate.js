@@ -99,6 +99,7 @@ function resetFormState() {
   setStatus("", "info");
   placeSearchLifecycle.abortActiveRequest();
   form.reset();
+  el("export-case-label").value = "";
   clearAllFieldInvalid();
   pageState.optionValues = Chapters.modeOptions(pageState.currentModeId, Catalogue.defaults());
   el("plan-timelords").checked = Chapters.mode(pageState.currentModeId).timelordsAfterChart;

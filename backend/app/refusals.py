@@ -151,7 +151,7 @@ REFUSALS: Final[Mapping[str, Refusal]] = MappingProxyType({
     ),
     "civil_time_basis_not_applicable": Refusal(
         422,
-        "timezone.civil_time_basis 只適用於目錄標示為同時使用北京時間與新疆時間的地點。",
+        "timezone.civil_time_basis 適用於目錄標示為雙民用時間的地點，或手動座標及時間換算使用北京時間或新疆時間的請求。",
         _CIVIL_TIME_ROUTES,
     ),
     # A request that names a catalogue record is computed only as the

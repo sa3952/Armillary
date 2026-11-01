@@ -57,11 +57,13 @@
     house_system: Object.freeze({
       W: "整宮", P: "Placidus", R: "Regiomontanus", B: "Alcabitius", O: "Porphyry", E: "等分宮", C: "Campanus",
     }),
-    // 時區的中文地名。計算頁時區欄的建議清單由這一組產生（依此順序），結果與匯出的時區列
-    // 也取這一組；不在表裡的時區照印 IANA 名。
+    // 時區的中文說明：寫這個時區通行的範圍（「臺灣時間」），不寫單一城市——Asia/Taipei 管全臺，寫「臺北」會讓其他縣市的
+    // 出生地看起來被換成臺北。計算頁時區欄的建議清單由這一組產生（依此順序），結果與匯出的時區列也取這一組；
+    // 不在表裡的時區照印 IANA 名。
     timezone_place: Object.freeze({
-      "Asia/Taipei": "臺北", "Asia/Shanghai": "上海", "Asia/Tokyo": "東京", "Asia/Hong_Kong": "香港",
-      "America/New_York": "紐約", "Europe/London": "倫敦", "Europe/Zurich": "蘇黎世", "Australia/Sydney": "雪梨",
+      "Asia/Taipei": "臺灣時間", "Asia/Shanghai": "中國標準時間", "Asia/Tokyo": "日本時間", "Asia/Hong_Kong": "香港時間",
+      "America/New_York": "美國東部時間", "Europe/London": "英國時間", "Europe/Zurich": "瑞士時間",
+      "Australia/Sydney": "澳洲東部時間（新南威爾斯）",
     }),
     // 黃道十二星座，依黃經序（0＝牡羊）。後端在尊貴模組回英文星座鍵、在其餘模組回
     // sign_position 的星座索引；結果表格與星盤圖都取這一組（全站寫「水瓶」）。
@@ -181,8 +183,23 @@
   const SIGNED_NUMBER = /^-(?=\d+(?:\.\d+)?(?:°\d+′\d+(?:\.\d+)?″)?$)/;
   function displayNumber(text) { return typeof text === "string" ? text.replace(SIGNED_NUMBER, "\u2212") : text; }
 
+  // 時區有爭議的地點：請求的時區、套用的時區與原因。本命盤的時間表與年度頁共用這三列與原因的說法；
+  // 其他地點 place_zone_policy 是 null，不加列。
+  const PLACE_ZONE_REASON_ZH = Object.freeze({
+    catalogue_zone: "地名目錄的時區",
+    override: "這個日期服務推定使用另一個時區",
+    alternative_chosen: "請求選了這個日期可用的替代時區",
+  });
+  function placeZoneRows(policy) {
+    if (!policy) return [];
+    return [
+      ["請求的時區", policy.requested_zone], ["套用的時區", policy.applied_zone],
+      ["時區套用原因", closedLabel(policy.reason, PLACE_ZONE_REASON_ZH, "時區套用原因")],
+    ];
+  }
+
   return Object.freeze({
     VOCABULARIES, ROLES, label, ownLabel, closedLabel, sourceLine, houseSystemCodeForName, houseSystemText,
-    timezoneText, regionName, displayNumber,
+    timezoneText, regionName, displayNumber, placeZoneRows,
   });
 });

@@ -28,6 +28,10 @@
 
 **Armillary (Project Armillary)** is a verifiable classical Western astrology calculator with a Traditional Chinese interface; it is not the astronomical instrument, a stargazing app or an astronomy library. It is live at <https://projectarmillary.com/zh-TW/>. It is computed with the Swiss Ephemeris and does calculation only: no interpretation, no prediction.
 
+**算什麼、不算什麼、在哪裡算。** 計算古典西洋占星本命盤、年度時間主星（年度小限、月小限、法達、黃道釋放與十年期）與太陽回歸盤；不算行運、推運、合盤與主限，也不解盤、不做 AI 解讀。計算在本站位於瑞士的主機上、於伺服器記憶體中完成，不在你的瀏覽器裡算。
+
+**What it computes, what it does not, and where.** It computes the natal chart, the annual time lords (annual and monthly profections, firdaria, zodiacal releasing and decennials) and the solar return chart. It does not compute transits, progressions, synastry or primary directions, and it does not interpret charts, with or without AI. The calculation runs in server memory on the site's host in Switzerland, not in your browser.
+
 **有什麼不同。** 方法判定（界、三分性、相位容許度等）附出處代碼，對到每次發布一起公開的方法出處表；每次計算附逐步計算軌跡與一組只涵蓋這段軌跡的 SHA-256 計算收據。界表提供四套具名表並列（埃及、迦勒底、Ptolemy、Lilly），不替你挑預設。只知道約略小時或只知道日期時，在那一小時或那一天裡取樣，標出哪些判定會改變。歷史時區以 IANA 時區資料庫換算，臺灣、香港、澳門與中國的時區規則逐條列出處（〈[出生時間換算](https://projectarmillary.com/zh-TW/methods/birth-time-conversion)〉）。
 
 **What is different.** Method results (bounds, triplicities, aspect orbs and the like) carry a source code that resolves against the method-source register published with each release; every calculation carries a step-by-step trace and a SHA-256 calculation receipt over that trace only. Four named bounds tables (Egyptian, Chaldean, Ptolemy, Lilly) are shown side by side, with no default chosen for you. If you know only the hour or only the date, the calculator samples that hour or day and marks which judgements change within it. Historical time zones come from the IANA tz database, with a source for each rule used in Taiwan, Hong Kong, Macau and mainland China.

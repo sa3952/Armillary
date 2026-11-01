@@ -3,11 +3,12 @@
 import json
 import re
 import typing
+from decimal import Decimal, InvalidOperation
 from collections import Counter
 from collections.abc import Iterable, Mapping
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, JsonValue, create_model
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, TypeAdapter, ValidationError, create_model
 
 from .refusals import REFUSAL_DETAIL_EXTRAS, REFUSALS
 from .schema_rules import VALIDATION_ISSUE_TYPES
@@ -263,7 +264,12 @@ def check_strict_json_body(raw: bytes, declared_names: frozenset[str] = frozense
         # refused here as json_invalid, not later as finite_number.
         document = json.loads(
             text, object_pairs_hook=_JsonObjectPairs, parse_constant=_refuse_json_constant,
+            parse_float=Decimal,
         )
+    except InvalidOperation:
+        raise StrictJsonBodyError("request_validation_failed", [
+            {"type": "finite_number", "loc": ["body"]},
+        ]) from None
     except (ValueError, RecursionError):
         raise StrictJsonBodyError("json_invalid") from None
     path = _first_duplicate_key_path(document)
@@ -278,6 +284,34 @@ def check_strict_json_body(raw: bytes, declared_names: frozenset[str] = frozense
                 ],
             }],
         )
+
+    if isinstance(document, _JsonObjectPairs):
+        datetime_input = dict(document).get("datetime")
+        if isinstance(datetime_input, _JsonObjectPairs):
+            second = dict(datetime_input).get("second")
+            if isinstance(second, Decimal):
+                from .schema_inputs import DateTimeInput
+
+                # Apply the schema's bounds to the literal before either float
+                # rounding or the finer-than-microsecond refusal can hide them.
+                bounded_second = TypeAdapter(typing.Annotated[
+                    Decimal, *DateTimeInput.model_fields["second"].metadata,
+                ])
+                try:
+                    bounded_second.validate_python(second)
+                except ValidationError as error:
+                    raise StrictJsonBodyError("request_validation_failed", [
+                        {"type": issue["type"], "loc": ["body", "datetime", "second"]}
+                        for issue in error.errors()
+                    ]) from None
+                digits = second.as_tuple()
+                # Inspect the coefficient without Decimal context rounding or
+                # expanding an arbitrarily small exponent into a large integer.
+                if isinstance(digits.exponent, int) and digits.exponent < -6 and any(digits.digits[digits.exponent + 6:]):
+                    raise StrictJsonBodyError("request_validation_failed", [{
+                        "type": "second_finer_than_microsecond",
+                        "loc": ["body", "datetime", "second"],
+                    }])
 
 
 # `POST /api/chart?projection=` selects a view of one response, not a

@@ -401,7 +401,12 @@ def trivy_matches(path: Path, config: str) -> list[dict[str, Any]]:
         raise AuditFailure(f"{path.name}: Trivy detected no operating-system packages")
     matches: list[dict[str, Any]] = []
     for result in results:
-        vulnerabilities = result.get("Vulnerabilities") or [] if isinstance(result, dict) else None
+        # A clean scan omits Vulnerabilities or writes null; any other non-list value is a malformed report.
+        vulnerabilities = None
+        if isinstance(result, dict):
+            vulnerabilities = result.get("Vulnerabilities")
+            if vulnerabilities is None:
+                vulnerabilities = []
         if not isinstance(vulnerabilities, list):
             raise AuditFailure(f"{path.name} carries a malformed result")
         for item in vulnerabilities:

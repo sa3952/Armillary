@@ -182,20 +182,14 @@ const verification = { state: DETAIL.IDLE, canonical: null, message: "", actions
 function buildOptionUi() {
   pageState.optionNodes = null;
   const host = el("option-groups");
-  host.replaceChildren();
-  Catalogue.GROUPS.filter((group) => group.in_advanced).forEach((group) => {
-    const block = make("div", "option-block");
-    block.dataset.group = group.key;
-    block.setAttribute("role", "group");
-    const heading = make("div", "option-heading");
-    heading.id = `option-group-${group.key}-heading`;
-    block.setAttribute("aria-labelledby", heading.id);
-    // 組名只寫中文：英文並列只給第一次出現的術語（各選項的標籤），一般的分組名不另掛英文。
-    heading.append(group.label_zh);
-    block.appendChild(heading);
-    Catalogue.OPTIONS.filter((option) => option.group === group.key && !option.depends_on)
-      .forEach((option) => block.appendChild(buildOptionRow(option)));
-    host.appendChild(block);
+  host.querySelectorAll("[data-option-control]").forEach((slot) => {
+    const option = Catalogue.BY_KEY[slot.dataset.optionControl];
+    const control = buildControl(option);
+    const row = slot.parentElement;
+    row.querySelector(":scope > label").htmlFor = `opt-${option.key}`;
+    const help = row.querySelector(":scope > .option-help");
+    if (help) control.setAttribute("aria-describedby", help.id);
+    slot.replaceWith(control);
   });
   // 宮位兩項已升到主表單，插進口徑區而不是進階選項。
   el("house-system-slot").replaceChildren(buildHouseControl());
@@ -256,39 +250,6 @@ function houseSystemDetail() {
   if (pageState.optionValues.include_houses === false) { return "不計算宮位：這次完全不算宮位；要用到上升點或中天的項目會標成不可用。"; }
   const chosen = Catalogue.BY_KEY.house_system.values.find((value) => String(value.value) === String(pageState.optionValues.house_system));
   return chosen ? `${chosen.label_zh}：${chosen.help_zh}` : "";
-}
-
-function buildOptionRow(option) {
-  const row = make("div", "option-row");
-  row.dataset.option = option.key;
-  const label = make("label", "option-label");
-  label.htmlFor = `opt-${option.key}`;
-  label.append(option.label_zh);
-  const en = make("span", "en");
-  en.lang = "en";
-  en.textContent = option.label_en;
-  label.appendChild(en);
-  row.appendChild(label);
-  const control = buildControl(option);
-  row.appendChild(control);
-  const helpText = Catalogue.helpText(option);
-  if (helpText) {
-    const help = make("p", "option-help");
-    help.id = `opt-${option.key}-help`;
-    help.textContent = helpText;
-    row.appendChild(help);
-    // 說明關聯到控制項，聚焦時就念得到（WCAG 1.3.1）。
-    const target = control.id === label.htmlFor ? control : control.querySelector(`#${label.htmlFor}`);
-    if (target) target.setAttribute("aria-describedby", help.id);
-  }
-  const children = Catalogue.OPTIONS.filter((child) => child.depends_on === option.key);
-  if (children.length) {
-    const nest = make("div", "option-children");
-    nest.dataset.childrenOf = option.key;
-    children.forEach((child) => nest.appendChild(buildOptionRow(child)));
-    row.appendChild(nest);
-  }
-  return row;
 }
 
 // 動態產生的控制項都關閉表單還原：否則重新載入時瀏覽器復原控制項並觸發 change，送出的模組組合與畫面初始狀態不符。
@@ -537,10 +498,13 @@ function applyMode(id) {
   el("mode").open = mode.openSettings;
   el("advanced").open = mode.openSettings;
   el("plan-classical").hidden = mode.id !== "classical";
+  el("plan-house-switch").hidden = mode.id !== "quick";
   el("plan-timelords").checked = mode.timelordsAfterChart;
-  const exportMode = document.querySelector(`input[name="export-detail-mode"][value="${mode.exportDetail}"]`);
-  if (exportMode && !exportMode.checked) {
-    exportMode.checked = true;
+  // 「附驗算資料」是匯出選單裡的一個勾選框；模式只決定它的預設。
+  const verify = el("export-verify");
+  const wantVerify = mode.exportDetail === "reproducibility_detail";
+  if (verify && verify.checked !== wantVerify) {
+    verify.checked = wantVerify;
     if (mode.exportDetail === "reproducibility_detail") loadVerificationDetail();
     refreshDetailUi();
   }
@@ -555,6 +519,15 @@ function onModeChange(event) {
   }
 }
 el("mode-choice").addEventListener("change", onModeChange);
+
+// 快速看盤固定整宮制；「改宮制 →」換到自訂模式（宮位制選單在那裡），打開計算口徑並把焦點放到宮位制。
+el("plan-house-button").addEventListener("click", () => {
+  applyMode("custom");
+  setStatus(`已換成「${Chapters.mode("custom").label}」：可以在「計算口徑」裡改宮位制。`, "info");
+  el("mode").open = true;
+  const control = el("house-system-slot").querySelector("select, input");
+  if (control) control.focus();
+});
 
 const placeQuery = el("place-query");
 const placeResults = el("place-results");

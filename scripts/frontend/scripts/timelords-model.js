@@ -14,6 +14,8 @@
   // 換成日期，也不重算任何邊界。泳道位置用「日序」（日期字串的日曆序數），它只決定畫在哪裡，不印在畫面上。
 
   const FIXED_SENTENCE = "只列計算結果：哪一段時間由哪顆行星或哪個星座輪值。不替你解盤，也不預測。";
+  // 方法頁的固定網址：不帶任何參數或識別資料。
+  const METHODS_LINE = "計算方法：https://projectarmillary.com/zh-TW/methods";
   const ICS_LABEL = "含由出生資料推得的日期";
   const DATE_NOTE = "出生地的日期，只到日";
   const ICS_FILENAME = "armillary-time-lords.ics";
@@ -111,6 +113,14 @@
     return JSON.stringify([source.schema_version, register.register_id, register.version, register.sha256]);
   }
 
+  // 起點算得出、終點落在 2399 年之後（伺服器記為 outside_supported_year_range）的年度與期間照樣收下：終點記成 open，
+  // 只為了畫與選而裁在可計算範圍的盡頭（2400-01-01，不含當日）；寫出來的終點是 OPEN_END_TEXT，不是這個日期。
+  const OPEN_END_STATUS = "outside_supported_year_range";
+  const OPEN_END_CLIP = "2400-01-01";
+  const OPEN_END_TEXT = "超出本站能計算的範圍（到 2399 年為止）";
+  const openEnd = () => Object.freeze({ localDate: OPEN_END_CLIP, localTime: null, open: true });
+  const startsInRange = (localDate) => typeof localDate === "string" && localDate < OPEN_END_CLIP;
+
   function adaptAnnualSource(source) {
     if (!source || typeof source !== "object" || Array.isArray(source)) fail("不是物件");
     const problem = compatibilityProblem(source);
@@ -132,7 +142,8 @@
     }
     const boundaries = source.year_boundaries;
     const years = (boundaries && Array.isArray(boundaries.years) ? boundaries.years : [])
-      .filter((year) => year.end_status === "computed" && year.end)
+      .filter((year) => (year.end_status === "computed" && year.end)
+        || (year.end_status === OPEN_END_STATUS && startsInRange(year.start && year.start.local_date)))
       .map((year, index) => {
         if (!Number.isInteger(year.completed_years)) fail(`year_boundaries.years[${index}].completed_years`);
         const own = times.get(year.completed_years) || {};
@@ -141,7 +152,7 @@
           n: year.completed_years,
           start: Object.freeze({
             localDate: checkedDate(year.start && year.start.local_date, `year_boundaries.years[${index}].start`),
-            localTime: own.start || previous.end || null }), end: Object.freeze({
+            localTime: own.start || previous.end || null }), end: year.end_status === OPEN_END_STATUS ? openEnd() : Object.freeze({
             localDate: checkedDate(year.end.local_date, `year_boundaries.years[${index}].end`), localTime: own.end || null,
           }),
         });
@@ -152,8 +163,9 @@
       const releasing = RELEASING_LANE.exec(lane.lane_id);
       const group = LANE_GROUP.exec(lane.lane_id);
       const segments = (lane.status === "computed" && Array.isArray(lane.segments) ? lane.segments : [])
-        // 起訖有一端算不出來（例如超出支援年份）的期間沒有日期可畫，不畫。
-        .filter((segment) => segment.status === "computed" && segment.start && segment.end)
+        // 起點算不出來的期間沒有日期可畫，不畫；只有終點超出支援年份的照樣畫，終點記成 open。
+        .filter((segment) => (segment.status === "computed" && segment.start && segment.end)
+          || (segment.status === OPEN_END_STATUS && startsInRange(segment.start)))
         .map((segment) => {
           if (!segment.id) fail(`${lane.lane_id} 有期間缺少 id`);
           const flags = Array.isArray(segment.flags) ? segment.flags : [];
@@ -162,7 +174,8 @@
             parentId: segment.parent_id && lane.parent_lane_id ? `${lane.parent_lane_id}/${segment.parent_id}` : null,
             labelKey: segment.label_key || null, lordKey: segment.lord_key || null,
             start: Object.freeze({ localDate: checkedDate(segment.start, `${lane.lane_id}/${segment.id}.start`), localTime: null }),
-            end: Object.freeze({ localDate: checkedDate(segment.end, `${lane.lane_id}/${segment.id}.end`), localTime: null }),
+            end: segment.status === OPEN_END_STATUS ? openEnd()
+              : Object.freeze({ localDate: checkedDate(segment.end, `${lane.lane_id}/${segment.id}.end`), localTime: null }),
             loosing: flags.includes("loosing_of_the_bond"), truncated: flags.includes("truncated"),
             node: flags.includes("node_period"), flags: Object.freeze(flags.slice()), detail: Object.freeze({ ...(segment.detail || {}) }),
           });
@@ -212,6 +225,8 @@
     const dossier = source.calculation_dossier || {};
     const policy = dossier.annual_policy || {};
     return Object.freeze({
+      // 時區有爭議的地點才有；其他地點是 null。
+      placeZone: source.place_zone_policy || null,
       identity: identityKey(source), precision, requestedYears: requested ? requested.completed_years : null,
       natal: Object.freeze({
         ascendantSign: anchor.ascendant && anchor.ascendant.status === "computed" ? anchor.ascendant.sign : null,
@@ -536,8 +551,8 @@
         .map((item, index) => Object.freeze({
           id: item.id, index, label: item.label, glyph: item.glyph, lord: item.aside ? item.aside.label : null,
           lordGlyph: item.aside ? item.aside.glyph : null, startDay: Math.max(item.startDay, startDay),
-          endDay: Math.min(item.endDay, endDay), start: item.start.localDate, end: item.end.localDate,
-          startAge: ageOnDay(model, item.startDay), endAge: ageOnDay(model, item.endDay),
+          endDay: Math.min(item.endDay, endDay), start: item.start.localDate, end: item.end.open ? OPEN_END_TEXT : item.end.localDate,
+          startAge: ageOnDay(model, item.startDay), endAge: item.end.open ? null : ageOnDay(model, item.endDay),
           continuesAfter: item.endDay > endDay, loosing: item.kind === "loosing",
           // 年度小限回到上升星座（每 12 年）：只是數到第 1 個星座，不是任何判斷。
           restart: lane.technique === "annual_profection" && item.record.detail
@@ -551,7 +566,8 @@
     }).filter((lane) => lane.items.length);
     const ticks = model.years.filter((year) => year.startDay >= startDay && year.startDay < endDay && year.n % 10 === 0)
       .map((year) => Object.freeze({ age: year.n, day: year.startDay, calendarYear: year.start.localDate.slice(0, 4) }));
-    if (last.n % 10 === 9) { ticks.push(Object.freeze({ age: last.n + 1, day: endDay, calendarYear: last.end.localDate.slice(0, 4) })); }
+    // 終點超出可計算範圍時沒有真正的年界，不畫那根刻度（不寫 2400）。
+    if (last.n % 10 === 9 && !last.end.open) { ticks.push(Object.freeze({ age: last.n + 1, day: endDay, calendarYear: last.end.localDate.slice(0, 4) })); }
     const today = model.todayDay >= startDay && model.todayDay < endDay
       ? Object.freeze({ day: model.todayDay, date: model.today, age: ageOnDay(model, model.todayDay) }) : null;
     return Object.freeze({
@@ -575,7 +591,7 @@
   /** 一段的白話描述：技法、主星（小限另附年主星）、起訖日期與足歲。報讀器名稱、讀出列與表格共用。 */
   function lifeItemText(lane, item) {
     const ruler = item.lord ? `${item.label}（年主星 ${item.lord}）` : item.label;
-    const ages = item.startAge === item.endAge - 1 && lane.technique === "annual_profection"
+    const ages = item.endAge === null ? `${item.startAge} 足歲起，終點未定` : item.startAge === item.endAge - 1 && lane.technique === "annual_profection"
       ? `${item.startAge} 足歲這一年` : `${item.startAge} 至 ${item.endAge} 足歲`;
     const marks = [item.loosing ? "解鎖" : "", item.continuesAfter ? "延續到圖的範圍之後" : ""].filter(Boolean);
     return `${lane.title}：${ruler}，${item.start} 到 ${item.end}（${ages}）${marks.length ? `，${marks.join("，")}` : ""}`;
@@ -591,6 +607,7 @@
     // 時刻只在兩端都有時才印，不讓一端到分鐘、另一端只到日。
     const timed = withTime && moments.start.localTime && moments.end.localTime;
     const part = (moment) => (timed ? `${moment.localDate} ${moment.localTime}` : moment.localDate);
+    if (moments.end.open) return { mono: `${part(moments.start)} → ${OPEN_END_TEXT}` };
     return { mono: `${part(moments.start)} → ${part(moments.end)}` };
   }
 
@@ -839,7 +856,7 @@
   function segmentReceipt(segment) {
     return {
       lane_id: segment.laneId, id: segment.periodId, sample_role: segment.sampleRole, label_key: segment.labelKey,
-      lord_key: segment.lordKey, start: segment.start.localDate, end: segment.end.localDate, flags: segment.flags,
+      lord_key: segment.lordKey, start: segment.start.localDate, end: segment.end.open ? null : segment.end.localDate, flags: segment.flags,
       ...Object.fromEntries(Object.entries(segment.detail).map(([key, value]) => [`detail.${key}`, value])),
     };
   }
@@ -1045,7 +1062,9 @@
     if (!detail.methodHref) detail.methodHref = "/zh-TW/methods/time-lords";
     detail.dateNote = item.technique === "annual_profection"
       ? `日期是${DATE_NOTE}；所選的那一年另附年界的時刻（到分鐘）。` : item.technique === MONTHLY_LANE
-        ? `日期是${DATE_NOTE}；每個月從哪一天開始，看那一刻落在出生地的哪一天。` : `日期是${DATE_NOTE}。`;
+        ? `日期是${DATE_NOTE}；每個月從哪一天開始，看那一刻落在出生地的哪一天。` : item.technique === "firdaria"
+          ? `日期是${DATE_NOTE}；每段從太陽回歸的年界那一刻開始（不是生日，兩者最多差將近一天），日期是那一刻落在出生地的哪一天。`
+          : `日期是${DATE_NOTE}。`;
     return Object.freeze(detail);
   }
 
@@ -1070,6 +1089,8 @@
       ["月小限：", "第 1 個月是年度小限星座，之後每月往後一個星座，每年在太陽回歸時重新數起；每個月從太陽比出生時的位置多走 30 度的那一刻開始（中世紀 Abū Maʿshar 的做法），夜盤也用太陽。Ptolemy 的每 28 日一個星座與 al-Bīrūnī 的一年 13 個月，本站沒有算。只列你選過的年度；換到還沒取過的年度時另外取。"],
       ["日期精度：", `年界到分鐘；法達、黃道釋放與十年期的期間只到「日」（原典只給年數，分秒是假精度）。日期是${DATE_NOTE}。`],
     ];
+    // 日期與年界所用的時區：時區有爭議的地點列出請求的、套用的與原因，與本命盤時間表同一套說法。
+    Labels.placeZoneRows(data.placeZone).forEach(([term, value]) => list.push([`${term}：`, value]));
     const head = data.releasing.head;
     if (head && head.fortune_spirit_same_sign === true) {
       list.push(["這張盤：", "命運點與精神點在同一個星座，上面那條 Valens 的規則本站沒有套用。"]);
@@ -1202,7 +1223,8 @@
 
   function icsPeriods(model, index) {
     return model.lanes.flatMap((lane) => itemsInYear(model, lane.id, index)
-      .filter((item) => item.kind !== "node")
+      // 終點超出可計算範圍的期間沒有真正的 DTEND，不進 .ics。
+      .filter((item) => item.kind !== "node" && !item.end.open)
       .map((item) => ({ lane, item })));
   }
 
@@ -1229,12 +1251,12 @@
     const lines = [
       "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Armillary//Time lords//ZH-TW", "CALSCALE:GREGORIAN",
       "METHOD:PUBLISH", `X-WR-CALNAME:${escapeText(`渾儀・時間主星（${ICS_LABEL}）`)}`,
-      `X-WR-CALDESC:${escapeText([`${ICS_LABEL}。${FIXED_SENTENCE}`, ...warningLines].join("\n"))}`,
+      `X-WR-CALDESC:${escapeText([`${ICS_LABEL}。${FIXED_SENTENCE}`, METHODS_LINE, ...warningLines].join("\n"))}`,
     ];
     const periods = icsPeriods(model, index);
     periods.forEach(({ lane, item }, position) => {
       const description = [
-        `起訖（${DATE_NOTE}）：${item.start.localDate} → ${item.end.localDate}`, `${ICS_LABEL}。`, FIXED_SENTENCE, ...warningLines,
+        `起訖（${DATE_NOTE}）：${item.start.localDate} → ${item.end.localDate}`, `${ICS_LABEL}。`, FIXED_SENTENCE, METHODS_LINE, ...warningLines,
       ].join("\n");
       lines.push(
         "BEGIN:VEVENT", `UID:${token}-${position + 1}@armillary`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${icsDate(item.start.localDate)}`,
@@ -1326,7 +1348,8 @@
       return {
         table: lane.title, lane_id: record.laneId, technique: lane.technique, level: lane.level,
         sample_role: record.sampleRole, period_id: record.periodId, parent_period_id: withoutLane(record.parentId),
-        start: record.start.localDate, end: record.end.localDate, ruler_key: record.labelKey,
+        start: record.start.localDate, end: record.end.open ? null : record.end.localDate,
+        end_status: record.end.open ? OPEN_END_STATUS : "computed", ruler_key: record.labelKey,
         ruler: record.labelKey ? labelOf(record.labelKey) : null, domicile_lord_key: record.lordKey,
         domicile_lord: record.lordKey ? bodyName(record.lordKey) : null, flags: record.flags.slice(),
         marks: record.flags.map((flag) => FLAG_LABELS[flag] || flag), subdivision,
@@ -1370,7 +1393,7 @@
 
   function periodCells(period) {
     const values = {
-      period_id: [period.period_id, period.lane_id], start: [period.start, ""], end: [period.end, ""],
+      period_id: [period.period_id, period.lane_id], start: [period.start, ""], end: [period.end_status === OPEN_END_STATUS ? OPEN_END_TEXT : period.end, period.end_status],
       ruler: [period.ruler, period.ruler_key], domicile_lord: [period.domicile_lord, period.domicile_lord_key],
       marks: [period.marks.join("、"), period.flags.join(",")], parent_period_id: [period.parent_period_id, ""],
       subdivision: [period.subdivision_label, period.subdivision],

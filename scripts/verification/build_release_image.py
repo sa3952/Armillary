@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import functools
 import json
+import os
 from pathlib import Path
 import re
 import secrets
@@ -207,9 +208,19 @@ def build_image(
         purpose=purpose, publication_receipt=publication_receipt, revision=revision
     )
     context_tree = _run(["git", "rev-parse", f"{revision}^{{tree}}"], cwd=source_root).stdout.strip()
+    # The image's timestamps come from the archived revision's commit time, not
+    # from the clock or the caller's SOURCE_DATE_EPOCH: the explicit build
+    # argument wins over BuildKit's environment propagation, and the exporter
+    # rewrites the layer file times to it.
+    source_date_epoch = _run(
+        ["git", "show", "--no-patch", "--format=%ct", revision], cwd=source_root
+    ).stdout.strip()
+    if not source_date_epoch.isdigit():
+        raise BuildTransactionFailure("cannot read the revision's commit time")
     command = [
-        "docker", "buildx", "build", "--load", "--progress=plain",
+        "docker", "buildx", "build", "--output", "type=docker,rewrite-timestamp=true", "--progress=plain",
         "--platform", platform, "--file", "deploy/Dockerfile", "--tag", image,
+        "--build-arg", f"SOURCE_DATE_EPOCH={source_date_epoch}",
         "--build-arg", f"VCS_REF={revision}",
         "--build-arg", f"PUBLICATION_STATUS={publication_status}",
     ]
@@ -231,7 +242,7 @@ def build_image(
         try:
             completed = _run(
                 [*command, *(("--builder", builder, "--no-cache") if builder else ()), "."],
-                cwd=context,
+                cwd=context, env={**os.environ, "SOURCE_DATE_EPOCH": source_date_epoch},
             )
         finally:
             if builder is not None and _run(

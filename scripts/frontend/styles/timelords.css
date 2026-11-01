@@ -87,9 +87,14 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 .annual button.tl-seg-item.alt{background:var(--paper-2)}
 .annual button.tl-seg-item.now{border-bottom:2px solid var(--ink)}
 .annual button.tl-seg-item[aria-pressed="true"]{outline:2px solid var(--ink); outline-offset:-1px; z-index:2}
-.annual button.tl-seg-item:focus-visible{outline:2px solid var(--accent); outline-offset:1px; z-index:3}
+.annual button.tl-seg-item:focus-visible{outline:2px solid var(--ink); outline-offset:2px; z-index:3}
 .annual button.tl-seg-item.trunc{background-image:repeating-linear-gradient(135deg, transparent 0 3px, var(--ink-faint) 3px 4px); background-size:7px 100%; background-repeat:no-repeat; background-position:right 0 top 0}
 .annual button.tl-seg-item.node{border-style:dashed; color:var(--ink-faint); background:repeating-linear-gradient(90deg, var(--paper-2) 0 4px, transparent 4px 8px)}
+/* 墨色分層：目前這一段最深（墨底紙字），已過的段淡墨，未到的段只留外框。不用好壞色；朱紅只給今天那條線。
+   過去／未來靠兄弟順序判斷（在 .now 之前或之後）；整條泳道都沒有目前段時維持原樣。 */
+.annual button.tl-seg-item.now{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+.annual button.tl-seg-item:has(~ .now){background:var(--paper-2); color:var(--ink-faint); border-color:var(--hair-soft)}
+.annual button.tl-seg-item.now ~ .tl-seg-item{background:transparent; color:var(--ink-dim); border-color:var(--ink-faint)}
 .annual .tl-seg-label{position:sticky; left:3px; display:inline-flex; align-items:center; gap:3px; min-width:0}
 .annual .tl-seg-label svg.tl-glyph{width:13px; height:13px}
 .annual button.tl-seg-item[data-size="glyph"] .tl-seg-text, .annual button.tl-seg-item[data-size="none"] .tl-seg-label{display:none}
@@ -99,15 +104,15 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 .annual .tl-loose-text{position:absolute; left:6px; top:-2px; transform:translateY(-100%); font-size:var(--fs-small); color:var(--ink); background:var(--paper); padding:0 2px; pointer-events:none}
 .annual button.tl-seg-item.loose{overflow:visible}
 .annual .tl-vline{position:absolute; top:46px; bottom:0; pointer-events:none}
-.annual .tl-vline.year{border-left:1px dashed var(--ring-1); opacity:.7; z-index:1}
-.annual .tl-vline.selected{border-left:1px solid var(--ring-1); z-index:1}
-.annual .tl-vline.selected span{position:absolute; bottom:1px; left:3px; font-size:var(--fs-small); line-height:1.3; color:var(--ring-1); background:var(--paper); white-space:nowrap}
-.annual .tl-vline.today{top:0; border-left:2px solid var(--accent); z-index:4}
-.annual .tl-vline.today span{position:absolute; top:29px; left:4px; background:var(--accent); color:var(--on-accent); font-size:var(--fs-small); padding:0 4px; white-space:nowrap}
+.annual .tl-vline.year{border-left:1px dashed var(--ink-faint); opacity:.7; z-index:1}
+.annual .tl-vline.selected{border-left:1px solid var(--ink); z-index:1}
+.annual .tl-vline.selected span{position:absolute; bottom:1px; left:3px; font-size:var(--fs-small); line-height:1.3; color:var(--ink); background:var(--paper); white-space:nowrap}
+.annual .tl-vline.today{top:0; border-left:2px solid var(--act); z-index:4}
+.annual .tl-vline.today span{position:absolute; top:29px; left:4px; background:var(--act); color:var(--on-accent); font-size:var(--fs-small); padding:0 4px; white-space:nowrap}
 .annual .tl-legend{display:flex; flex-wrap:wrap; gap:.4rem .9rem; font-size:var(--fs-note); color:var(--ink-dim); margin:.5rem 0 .2rem}
 .annual .tl-legend i{display:inline-block; vertical-align:middle; margin-right:.3rem}
-.annual .tl-lg-today{width:2px; height:14px; background:var(--accent)}
-.annual .tl-lg-year{width:0; height:14px; border-left:1px dashed var(--ring-1)}
+.annual .tl-lg-today{width:2px; height:14px; background:var(--act)}
+.annual .tl-lg-year{width:0; height:14px; border-left:1px dashed var(--ink-faint)}
 .annual .tl-lg-loose{width:8px; height:8px; background:var(--ink); transform:rotate(45deg)}
 .annual .tl-lg-trunc{width:16px; height:12px; border:1px solid var(--hair); background:repeating-linear-gradient(135deg, transparent 0 3px, var(--ink-faint) 3px 4px)}
 .annual .tl-lg-node{width:16px; height:12px; border:1px dashed var(--ink-faint); background:repeating-linear-gradient(90deg, var(--paper-2) 0 4px, transparent 4px 8px)}
@@ -117,17 +122,17 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 .annual .tl-decade:first-of-type{border-top:1px solid var(--hair)}
 .annual .tl-decade > summary{cursor:pointer; padding:.45rem .7rem; font-weight:400; font-size:var(--fs-note); background:var(--paper-2)}
 .annual .tl-book-wrap{overflow-x:auto}
-.annual .tl-book-wrap:focus-visible,.annual .tl-life-table-wrap:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.annual .tl-book-wrap:focus-visible,.annual .tl-life-table-wrap:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
 .annual .tl-book-table{width:100%; border-collapse:collapse; font-size:var(--fs-note)}
 .annual .tl-book-table th, .annual .tl-book-table td{text-align:left; vertical-align:top; padding:.4rem .5rem; border-bottom:1px solid var(--hair-soft)}
 .annual .tl-book-table thead th{font-weight:400; font-size:var(--fs-small); color:var(--ink-dim); border-bottom:1px solid var(--hair); white-space:normal; word-break:keep-all}
 .annual .tl-book-table tr.is-current > *{background:var(--paper-2)}
-.annual .tl-book-table tr.is-current > th{box-shadow:inset 4px 0 0 var(--accent)}
+.annual .tl-book-table tr.is-current > th{box-shadow:inset 4px 0 0 var(--ink)}
 .annual .tl-book-table tr.is-selected > th b{text-decoration:underline}
 .annual .tl-book-year{white-space:normal}
 .annual .tl-book-year b{font-family:var(--serif); font-size:var(--fs-body)}
 .annual .tl-book-sub{display:block; font-size:var(--fs-note); color:var(--ink-dim); font-weight:400}
-.annual .tl-now-tag{display:inline-block; font-size:var(--fs-small); background:var(--accent); color:var(--on-accent); padding:0 .35rem; margin-left:.3rem; vertical-align:2px}
+.annual .tl-now-tag{display:inline-block; font-size:var(--fs-small); background:var(--ink); color:var(--paper); padding:0 .35rem; margin-left:.3rem; vertical-align:2px}
 .annual .tl-book-line + .tl-book-line{margin-top:.15rem}
 /* 計算頁的 td 預設不折行（給座標用）；年表的格子要能折行，否則右邊的欄被擠到框外。 */
 .annual .tl-book-table td{min-width:5rem; white-space:normal}
@@ -152,7 +157,7 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
   .annual .tl-seg button:hover:not(:disabled){background:var(--paper-2); color:var(--ink)}
   .annual .tl-year-nav button:hover:not(:disabled){background:var(--paper-2); color:var(--ink)}
   .annual button.tl-tile:hover:not(:disabled){background:var(--paper-2); color:var(--ink); border-color:var(--hair)}
-  .annual button.tl-seg-item:hover:not(:disabled){background:var(--paper-2); color:var(--ink); border-color:var(--ink-dim)}
+  .annual button.tl-seg-item:hover:not(:disabled){border-color:var(--ink)}
   .annual button.tl-chip:hover:not(:disabled){background:transparent; color:var(--ink); border-bottom-color:var(--ink)}
   .annual button.tl-book-toggle:hover{background:transparent; color:var(--ink); text-decoration:underline}
   .annual .tl-detail .tl-sources > summary:hover{color:var(--ink)}
@@ -165,7 +170,7 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 .annual .tl-detail-kind{font-size:var(--fs-small); color:var(--ink-dim)}
 .annual .tl-detail-head h3{font-family:var(--serif); font-size:1.2rem; line-height:1.45; margin:.25rem 0 0}
 .annual .tl-detail-head h3:focus{outline:none}
-.annual .tl-detail-head h3:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.annual .tl-detail-head h3:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
 .annual .tl-detail-close{display:none; flex:none; white-space:nowrap}
 .annual .tl-detail-body{padding:var(--pad-panel); font-size:var(--fs-aside); line-height:var(--lh-note)}
 .annual .tl-detail dl{display:grid; grid-template-columns:4.8rem minmax(0, 1fr); gap:.55rem 1rem; margin:0 0 var(--gap-group)}
@@ -264,7 +269,7 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
   .annual .tl-book-table td{display:grid; grid-template-columns:4.2rem minmax(0, 1fr); gap:.4rem}
   .annual .tl-book-table td::before{content:attr(data-h); font-size:var(--fs-small); line-height:1.4; color:var(--ink-dim); white-space:normal; word-break:keep-all; overflow-wrap:break-word}
   .annual .tl-book-table td > .tl-book-line{grid-column:2}
-  .annual .tl-book-table tr.is-current > th{box-shadow:inset 4px 0 0 var(--accent)}
+  .annual .tl-book-table tr.is-current > th{box-shadow:inset 4px 0 0 var(--ink)}
 }
 /* 手機年表收起的年度只留年度列（只在螢幕上；列印照舊印出每一格）。 */
 @media screen and (max-width: 640px){
@@ -302,16 +307,22 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 .annual .tl-life-band{cursor:pointer; outline:none}
 .annual .tl-life-rect{fill:var(--paper); stroke:var(--hair); stroke-width:1}
 .annual .tl-life-band.alt .tl-life-rect{fill:var(--paper-2)}
-@media (hover: hover){.annual .tl-life-band:hover .tl-life-rect{stroke:var(--ink-dim)}}
+@media (hover: hover){.annual .tl-life-band:hover .tl-life-rect{stroke:var(--ink)}}
+.annual .tl-life-band.is-now .tl-life-rect{fill:var(--ink); stroke:var(--ink)}
+.annual .tl-life-band.is-now .tl-life-text,.annual .tl-life-band.is-now svg.tl-life-glyph{fill:var(--paper)}
+.annual .tl-life-band:has(~ .is-now) .tl-life-rect{fill:var(--paper-2); stroke:var(--hair-soft)}
+.annual .tl-life-band:has(~ .is-now) .tl-life-text{fill:var(--ink-faint)}
+.annual .tl-life-band.is-now ~ .tl-life-band .tl-life-rect{fill:transparent; stroke:var(--ink-faint)}
+.annual .tl-life-band.is-now.is-picked .tl-life-rect{fill:var(--ink)}
 .annual .tl-life-band.is-picked .tl-life-rect{fill:var(--selected-bg); stroke:var(--ink); stroke-width:2}
-.annual .tl-life-band:focus-visible .tl-life-rect{stroke:var(--accent); stroke-width:2}
+.annual .tl-life-band:focus-visible .tl-life-rect{stroke:var(--ink); stroke-width:2}
 .annual .tl-life-text{font-family:var(--sans); font-size:13px; fill:var(--ink)}
 .annual svg.tl-life-glyph{fill:var(--ink)}
 .annual .tl-life-nowmark{fill:var(--ink)}
 .annual .tl-life-restart{stroke:var(--ink-dim); stroke-width:1.5}
 .annual .tl-life-loose{fill:var(--ink)}
-.annual .tl-life-today line{stroke:var(--accent); stroke-width:1.5}
-.annual .tl-life-today rect{fill:var(--accent)}
+.annual .tl-life-today line{stroke:var(--act); stroke-width:1.5}
+.annual .tl-life-today rect{fill:var(--act)}
 .annual .tl-life-today text{fill:var(--on-accent); font-family:var(--sans); font-size:12px}
 .annual .tl-life-readout{max-width:none; display:flex; flex-wrap:wrap; gap:.2rem .9rem; align-items:baseline; min-height:2.9rem; margin:0; padding:.6rem 0; border-bottom:1px solid var(--hair); font-size:var(--fs-note); line-height:var(--lh-label)}
 .annual .tl-life-prompt{color:var(--ink-faint)}
@@ -323,7 +334,7 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 .annual button.tl-life-open{margin-left:auto; background:transparent; color:var(--ink); border:0; border-bottom:1px solid var(--ink-faint); border-radius:0; padding:.25rem 0; font-size:var(--fs-small)}
 .annual .tl-life-legend{display:flex; flex-wrap:wrap; gap:.3rem .9rem; font-size:var(--fs-small); color:var(--ink-dim); margin:.55rem 0 .2rem}
 .annual .tl-life-legend i{display:inline-block; vertical-align:middle; margin-right:.3rem}
-.annual .tl-life-lg-today{width:2px; height:14px; background:var(--accent)}
+.annual .tl-life-lg-today{width:2px; height:14px; background:var(--act)}
 .annual .tl-life-lg-now{width:16px; height:11px; border:1px solid var(--hair); border-bottom:3px solid var(--ink); background:var(--paper)}
 .annual .tl-life-lg-restart{width:0; height:14px; border-left:2px solid var(--ink-dim)}
 .annual .tl-life-lg-loose{width:8px; height:8px; background:var(--ink); transform:rotate(45deg)}

@@ -529,9 +529,16 @@ def _utc_reading(jd_ut: float) -> tuple[int, int, int, int, int, float]:
     reading = swe.jdut1_to_utc(jd_ut, swe.GREG_CAL)
     following = swe.jdut1_to_utc(math.nextafter(jd_ut, math.inf), swe.GREG_CAL)
     second = reading[5]
-    short_of_next = (math.floor(second * 1000.0) + 1) / 1000.0 - second
+    next_millisecond = (math.floor(second * 1000.0) + 1) / 1000.0
+    short_of_next = next_millisecond - second
     if tuple(reading) > tuple(following) or short_of_next <= math.ulp(jd_ut) * SECONDS_PER_DAY / 2:
         return following
+    # Swiss's reading can fall a little more than half a step short; the instant
+    # is the next millisecond exactly when that millisecond's own Julian day is it.
+    if short_of_next < math.ulp(jd_ut) * SECONDS_PER_DAY:
+        year, month, day, hour, minute, _ = reading
+        if swe.utc_to_jd(year, month, day, hour, minute, next_millisecond, swe.GREG_CAL)[1] == jd_ut:
+            return (year, month, day, hour, minute, next_millisecond)
     return reading
 
 
@@ -1093,6 +1100,20 @@ def _to_utc_datetime(
     return utc_dt, offset_hours, tz_label, dst_warning
 
 
+def daylight_saving_time(tz_input, utc_dt: dtmod.datetime) -> bool | None:
+    """Whether the named zone kept summer time at this instant; None for a fixed offset.
+
+    Read from the tz database's own summer-time amount at the instant (BST,
+    double summer time, Taiwan's 夏令時間 all count), not from the offset alone:
+    a zone can change its standard offset without any summer time.
+    """
+
+    if tz_input.mode != "iana" or tz_input.iana_name is None:
+        return None
+    amount = utc_dt.astimezone(ZoneInfo(tz_input.iana_name)).dst()
+    return amount is not None and amount > dtmod.timedelta(0)
+
+
 def wall_clock_readings(dt_input, tz_input) -> list[tuple[int, dtmod.datetime, float]]:
     """Every reading of an IANA wall-clock time, by the conversion the chart uses.
 
@@ -1225,6 +1246,7 @@ def compute_time_conversion(
             "input_semantics": input_semantics,
             "timezone_label": tz_label,
             "utc_offset_hours": offset_hours,
+            "daylight_saving_time": daylight_saving_time(tz_input, utc_dt),
             "offset_status": offset_status(
                 tz_input.mode, utc_dt, dst_warning is not None,
                 zone_name=tz_input.iana_name if tz_input.mode == "iana" else None,
@@ -1310,6 +1332,7 @@ def _time_conversion_of_jd(
             "input_semantics": input_semantics,
             "timezone_label": tz_label,
             "utc_offset_hours": 0.0,
+            "daylight_saving_time": None,
             "offset_status": offset_status(tz_input.mode, utc_dt, False),
             "utc_time": utc_label,
             "swiss_time_input_semantics": _LABEL_SEMANTICS_OF_ERA[time_scale_era],

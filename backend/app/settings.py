@@ -15,8 +15,10 @@ from collections.abc import Mapping
 
 # The host this deployment answers for (request_limits.ChartRequestBoundary says
 # what the check is and is not).  Unset means no check: the same module runs in
-# development and in tests, and the staging configuration verifier requires it
-# on the deployment, where the obligation belongs.
+# development and in tests.  The shipped release compose file
+# (deploy/compose.frontend-release.yaml) sets it to STAGING_SERVER_NAME with
+# `:?`, so a deployment cannot start without it.  Only the apex is listed: the
+# edge answers www itself with a redirect and never forwards it here.
 EXPECTED_HOST_ENVIRONMENT_VARIABLE = "CLASSICAL_ASTROLOGY_EXPECTED_HOST"
 SOURCE_REVISION_ENVIRONMENT_VARIABLE = (
     "CLASSICAL_ASTROLOGY_SOURCE_REVISION"

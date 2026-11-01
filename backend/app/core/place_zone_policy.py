@@ -102,3 +102,18 @@ def resolve(policy: dict, *, requested_zone: str, local: dtmod.datetime) -> dict
         "note": policy["note"],
         "source": policy["source"],
     }
+
+
+def add_trace_step(trace: Any, receipt: dict[str, Any] | None) -> None:
+    """Bind the zone the request named, the zone applied and why into the
+    calculation trace, so the trace digest changes with them.  A place
+    without a zone policy adds no step."""
+
+    if receipt is None:
+        return
+    trace.add(
+        "地點時區政策",
+        formula="地點有時區爭議：依出生日期決定套用的時區（core.place_zone_policy）",
+        inputs={"catalogue_zone": receipt["catalogue_zone"], "requested_zone": receipt["requested_zone"]},
+        result={"applied_zone": receipt["applied_zone"], "reason": receipt["reason"]},
+    )

@@ -122,6 +122,39 @@ def zh_count(value: int) -> str:
         return _ZH_DIGITS[ones]
     return ("" if tens == 1 else _ZH_DIGITS[tens]) + "十" + (_ZH_DIGITS[ones] if ones else "")
 
+@lru_cache(maxsize=1)
+def options_catalogue_html() -> str:
+    """Read labels and explanations from the maintained catalogue before browser hydration."""
+    from scripts.frontend.figures._common import node_json
+    catalogue = node_json(
+        "const C=require(process.argv[1]); console.log(JSON.stringify({groups:C.GROUPS,"
+        "options:C.OPTIONS.map(o=>({...o,help:C.helpText(o)}))}));",
+        ROOT / "scripts/frontend/scripts/options-catalogue.js", what="render the options catalogue")
+    escape = html.escape
+    def row(option: dict) -> str:
+        key = escape(option["key"])
+        out = (f'<div class="option-row" data-option="{key}"><label class="option-label">'
+               f'{escape(option["label_zh"])}<span class="en" lang="en">{escape(option["label_en"])}</span>'
+               f'</label><span data-option-control="{key}"></span>')
+        if option["help"]:
+            out += f'<p class="option-help" id="opt-{key}-help">{escape(option["help"])}</p>'
+        children = [child for child in catalogue["options"] if child.get("depends_on") == option["key"]]
+        if children:
+            out += f'<div class="option-children" data-children-of="{key}">' + "".join(map(row, children)) + '</div>'
+        return out + '</div>'
+    blocks = []
+    for group in catalogue["groups"]:
+        if not group["in_advanced"]:
+            continue
+        key = escape(group["key"])
+        blocks.append(f'<div class="option-block" data-group="{key}" role="group" '
+                      f'aria-labelledby="option-group-{key}-heading"><div class="option-heading" '
+                      f'id="option-group-{key}-heading">{escape(group["label_zh"])}</div>' +
+                      "".join(row(option) for option in catalogue["options"]
+                              if option["group"] == group["key"] and not option.get("depends_on")) + '</div>')
+    return "".join(blocks)
+
+
 def options_catalogue_counts() -> dict[str, str]:
     from scripts.frontend.figures._common import options_catalogue
     catalogue = options_catalogue()
@@ -203,6 +236,10 @@ def application_features() -> list[str]:
     items = [f"{zh}（{en}）" for _, zh, en in natal_features()]
     items.insert(1, "七種宮位制：" + "、".join(houses[code] for code in LLMS_HOUSE_SYSTEM_ORDER) + "（house systems）")
     items += [f"年度時間主星：{zh}（{en}）" for _, zh, en in time_lord_techniques()]
+    status = _backend("core.method_status")
+    if "solar_return_chart" not in status.ANNUAL_PROVISIONAL_METHODS:
+        raise ValueError("the feature list names the solar return chart, but it has no method status")
+    items.append("太陽回歸盤（solar return chart）")
     items += ["出生時間不確定時標出會變的結果（birth-time sensitivity）",
         "計算收據與 JSON、Markdown、CSV、純文字匯出（calculation receipt and exports）"]
     return items
@@ -507,7 +544,7 @@ def fill_article_byline(body: str, item: Mapping) -> str:
         return (f'<p class="ar-byline"><span class="ar-tier">{match.group(1)}</span>'
                 '<span>發布 <time datetime="{{article_published}}">{{article_published}}</time></span>'
                 f'<span class="ar-version">第 {ARTICLE_VERSION_PLACEHOLDER} 版・出處 {article_source_count(body)} 則</span>'
-                f"<span>閱讀約 {{{{article_reading_minutes}}}} 分鐘</span><span>{ARTICLE_SIGNER}</span></p>")
+                f"<span>閱讀約 {{{{article_reading_minutes}}}} 分鐘</span><span><a href=\"/zh-TW/about#who\">{ARTICLE_SIGNER}</a></span></p>")
     found = len(_ARTICLE_BYLINE.findall(body))
     if found > (1 if is_article(item) else 0):
         raise ValueError(f"{item['key']!r} has {found} article bylines; an article has at most one, any other page none")
@@ -818,6 +855,26 @@ def page_updated_line(updated: str) -> str:
         raise ValueError(f"page date must be YYYY-MM-DD: {updated!r}")
     return f'\n    <span>最後更新：<time datetime="{updated}">{updated}</time></span>'
 
+# A method page also states that date right under its h1, where a reader checking a rule looks first.  The digest pass
+# renders without a date, so the line never moves the date it states.
+METHOD_PAGES_SURFACE = f"/{DEFAULT_LOCALE}/methods"
+_FIRST_H1_END = re.compile(r"</h1>")
+
+def is_method_page(item: Mapping) -> bool:
+    return item["surface"] == METHOD_PAGES_SURFACE or item["surface"].startswith(METHOD_PAGES_SURFACE + "/")
+
+def method_updated_line(updated: str) -> str:
+    if not _ISO_DATE.fullmatch(updated):
+        raise ValueError(f"page date must be YYYY-MM-DD: {updated!r}")
+    return f'</h1>\n    <p class="page-updated">最後更新 <time datetime="{updated}">{updated}</time> · <a href="/zh-TW/about#who">{ARTICLE_SIGNER}</a></p>'
+
+def fill_method_updated(body: str, item: Mapping, updated: str | None) -> str:
+    if updated is None or not is_method_page(item):
+        return body
+    if len(_FIRST_H1_END.findall(body)) != 1:
+        raise ValueError(f"method page {item['key']!r} must have exactly one h1")
+    return _FIRST_H1_END.sub(lambda _: method_updated_line(updated), body)
+
 def recorded_page_date(item: Mapping, lastmod: dict | None = None) -> str | None:
     if not is_dated(item):
         return None
@@ -837,6 +894,7 @@ def _public_alpha_date(item: Mapping, key: str) -> str:
 # The values a fragment writes as {{name}}, each produced from its one owner only when the fragment names it: (row) ->
 # text.
 SCALARS: dict[str, Callable[[Mapping], str]] = {
+    "options_catalogue": lambda item: options_catalogue_html(),
     "telemetry_contract_rows": lambda item: telemetry_contract_rows(),
     "telemetry_field_count": lambda item: telemetry_field_count(),
     "telemetry_field_list": lambda item: telemetry_field_list(),
@@ -851,7 +909,22 @@ SCALARS: dict[str, Callable[[Mapping], str]] = {
     "time_lord_techniques": lambda item: html.escape(time_lord_series(), quote=False),
     "published_article_count": lambda item: str(
         sum(1 for row in load_surface_manifest()["surfaces"] if is_article(row))),
+    "latest_articles": lambda item: latest_articles(),
 }
+LATEST_COUNT = 5
+
+def latest_articles() -> str:
+    """The newest articles by publication date, newest first, as the blog's static 「最新發表」 list."""
+    rows = sorted((row for row in load_surface_manifest()["surfaces"] if is_article(row)),
+                  key=lambda row: (row["article"]["published"], row["key"]), reverse=True)[:LATEST_COUNT]
+    out = []
+    for row in rows:
+        title = page_headline((PAGES / f"{row['key']}.html").read_text(encoding="utf-8"), row["key"])
+        y, m, d = (int(part) for part in row["article"]["published"].split("-"))
+        out.append(f'<li><time datetime="{row["article"]["published"]}">{y} 年 {m} 月 {d} 日</time>'
+                   f'<a href="{row["surface"]}">{html.escape(title, quote=False)}</a></li>')
+    return "".join(out)
+
 _SCALAR = re.compile(r"\{\{([a-z_]+)\}\}")
 _LATER_PLACEHOLDERS = frozenset({"assets", "article_version"})
 
@@ -907,6 +980,7 @@ def _render_dated(item: dict, origin: str, body: str, headline: str | None,
     if shell.count(_PAGE_UPDATED_PLACEHOLDER) != 1:
         raise ValueError("page shell must have exactly one page date placeholder")
     shell = shell.replace(_PAGE_UPDATED_PLACEHOLDER, "" if updated is None else page_updated_line(updated))
+    body = fill_method_updated(body, item, updated)
     metadata = structured_data.metadata_values(item, origin, headline, updated, body)
     og_image, twitter_card = og_image_markup(origin)
     # {{body}} goes in first, then {{assets}} stamps the content version, in that order: fragments need the version key
@@ -974,17 +1048,21 @@ def _without_behaviour_attributes(body: str) -> str:
 _ARTICLE_VERSION_LINE = re.compile(r'<span class="ar-version">[^<]*</span>')
 # The digest scheme the record's content_sha256 values are written under; a record of another scheme has no digest
 # comparable with these.
-PAGE_LASTMOD_SCHEMA = 3
+PAGE_LASTMOD_SCHEMA = 4
 
-def page_digest(page: str) -> str:
+def page_digest(page: str, *, normalize: bool = True) -> str:
     main = _MAIN_CONTENT.findall(page)
     title = _PAGE_TITLE.findall(page)
     description = _PAGE_DESCRIPTION.findall(page)
     if len(main) != 1 or len(title) != 1 or len(description) > 1:
         raise ValueError("a page to date has one <main id=\"main-content\">, one <title> and at most one description")
-    body = _LOADED_SCRIPT.sub("", _without_behaviour_attributes(
-        _PRINTED_VERSION.sub("?v=", _ARTICLE_VERSION_LINE.sub("", main[0]))))
-    content = "\0".join([title[0], *description, body])
+    body = _PRINTED_VERSION.sub("?v=", _ARTICLE_VERSION_LINE.sub("", main[0]))
+    body = _LOADED_SCRIPT.sub("", body if normalize else _without_behaviour_attributes(body))
+    if normalize:
+        from scripts.frontend.discovery import content_markup
+        content = "\0".join(content_markup(part) for part in [title[0], *description, body])
+    else:
+        content = "\0".join([title[0], *description, body])
     return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
 def load_page_lastmod(path: Path | None = None) -> dict:
@@ -994,18 +1072,23 @@ def load_page_lastmod(path: Path | None = None) -> dict:
     record = json.loads(path.read_text(encoding="utf-8"))
     pages = record.get("pages") if isinstance(record, dict) else None
     if (not isinstance(record, dict) or set(record) != {"schema_version",
-        "pages"} or record["schema_version"] != PAGE_LASTMOD_SCHEMA or not isinstance(pages,
+        "pages"} or record["schema_version"] not in (3, PAGE_LASTMOD_SCHEMA) or not isinstance(pages,
         dict) or any(not isinstance(entry, dict) or set(entry) != {"content_sha256",
         "lastmod"} or not re.fullmatch(r"[0-9a-f]{64}",
         str(entry["content_sha256"])) or not _ISO_DATE.fullmatch(str(entry["lastmod"])) for entry in pages.values())):
         raise ValueError("page lastmod record is invalid")
     return record
 
-def updated_page_lastmod(previous: dict, digests: dict[str, str], build_date: str) -> dict:
+def updated_page_lastmod(previous: dict, digests: dict[str, str], build_date: str,
+                         *, legacy_digests: dict[str, str] | None = None) -> dict:
     if not _ISO_DATE.fullmatch(build_date):
         raise ValueError("build date must be YYYY-MM-DD")
-    pages = {key: dict(entry) if (entry := previous["pages"].get(key)) is not None and entry["content_sha256"] == digest
-             else {"content_sha256": digest, "lastmod": build_date} for key, digest in digests.items()}
+    pages = {}
+    for key, digest in digests.items():
+        entry = previous["pages"].get(key)
+        comparable = (legacy_digests or {}).get(key) if previous["schema_version"] == 3 else digest
+        unchanged = entry is not None and entry["content_sha256"] == comparable
+        pages[key] = {"content_sha256": digest, "lastmod": entry["lastmod"] if unchanged else build_date}
     return {"schema_version": PAGE_LASTMOD_SCHEMA, "pages": pages}
 
 def committed_page_lastmod(root: Path = ROOT) -> list[tuple[str, dict]]:
@@ -1196,11 +1279,15 @@ def main() -> int:
     _emit(glyph_target, glyph_text, glyph_target.name, drift, check=args.check)
     from scripts.frontend import stylesheets
     digests: dict[str, str] = {}
+    legacy_digests: dict[str, str] = {}
     parts: dict[str, tuple[str, str | None]] = {}
     for item in payload["surfaces"]:
         parts[item["key"]] = _render_parts(item, payload["origin"])
-        digests[item["key"]] = page_digest(_render_dated(item, payload["origin"], *parts[item["key"]], None, stamp=False))
-    lastmod = updated_page_lastmod(load_page_lastmod(), digests, args.date or build_date())
+        undated = _render_dated(item, payload["origin"], *parts[item["key"]], None, stamp=False)
+        digests[item["key"]] = page_digest(undated)
+        legacy_digests[item["key"]] = page_digest(undated, normalize=False)
+    lastmod = updated_page_lastmod(load_page_lastmod(), digests, args.date or build_date(),
+                                  legacy_digests=legacy_digests)
     # A page's stylesheet bundle holds the rules its own classes and ids could match (stylesheets.py), so the bundles
     # are cut from the pages, unstamped, and written before the pages that name them by content version.
     names_by_audience: dict[str, set[str]] = {}
@@ -1230,7 +1317,17 @@ def main() -> int:
         # Both calendars: a build dated in Taiwan or in the committer's zone is not in the future.
         today = max(build_date(), date.today().isoformat())
         try:
-            unbound = lastmod_binding_errors(load_page_lastmod(), committed_page_lastmod(), today)
+            record = load_page_lastmod()
+            history = committed_page_lastmod()
+            if record["schema_version"] == PAGE_LASTMOD_SCHEMA:
+                # Bridge known unchanged legacy content so rescheming cannot erase its date binding.
+                history = [(committed, {"schema_version": PAGE_LASTMOD_SCHEMA, "pages": {
+                    key: {**entry, "content_sha256": digests[key]}
+                    if entry["content_sha256"] == legacy_digests.get(key) else entry
+                    for key, entry in revision["pages"].items()}})
+                    if revision["schema_version"] == 3 else (committed, revision)
+                    for committed, revision in history]
+            unbound = lastmod_binding_errors(record, history, today)
         except ValueError as refusal:
             unbound = [str(refusal)]
         for finding in unbound:

@@ -157,6 +157,10 @@ def test_the_annual_route_is_logged_under_its_own_label_with_or_without_its_flag
     assert_events_hold_no(events, ["1987", "121.56", "47.37", "8.54", "canary"])
 
 
+def test_status_400_without_an_error_code_is_a_rejection():
+    assert _event(status_code=400)["outcome"] == "rejected"
+
+
 def test_duration_bucket_rejects_non_finite_values():
     for duration, bucket in (
         (math.nan, "invalid"), (math.inf, "invalid"), (-math.inf, "invalid"),
@@ -999,3 +1003,23 @@ def test_the_real_application_puts_the_header_allowlist_innermost():
 
     stack = [entry.cls for entry in create_app().user_middleware]
     assert stack[0] is PrivacyBoundaryMiddleware and stack[-1] is ApplicationHeaderAllowlist
+
+def test_real_server_error_records_reduce_private_messages_and_tracebacks():
+    marker = "PRIVATE_SERVER_ERROR_PROBE_783195"
+    with _real_uvicorn_probe(
+        "server-log-reduction",
+        "from app import main",
+        "import logging",
+        "from starlette.responses import PlainTextResponse",
+        "from starlette.routing import Route",
+        "async def log_failure(_request):",
+        "    try:",
+        f"        raise RuntimeError({marker!r})",
+        "    except RuntimeError:",
+        f"        logging.getLogger('uvicorn.error').exception('server failure %s', {marker!r})",
+        "    return PlainTextResponse('ok')",
+        "main.app.router.routes.insert(0, Route('/__log_failure', log_failure))",
+    ) as probe:
+        assert _request(probe.base_url + "/__log_failure") == (200, b"ok")
+    assert marker not in probe.output
+    assert "Traceback (most recent call last)" not in probe.output

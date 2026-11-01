@@ -25,8 +25,8 @@ map $binary_remote_addr $armillary_client {
 # Chart computation (the chart and, where enabled, the annual route).  A
 # default chart costs milliseconds; the slowest legal chart measured 1.2-1.75
 # CPU-s under load (every module at an approximate hour).  At 30r/m one client
-# sending only that chart sustains most of a CPU, so one or two clients can hold
-# the container's one CPU (compose `cpus: 1.0`); the compute pools and the
+# sending only that chart sustains most of a CPU, so two to four clients can hold
+# the container's two CPUs (compose `cpus: 2.0`); the compute pools and the
 # Swiss queue budget then refuse with a retryable 503 rather than queueing
 # without bound.  The burst (7 beyond the first) fits the two workers' eight
 # chart slots, and armillary_chart_compute below keeps one address to two
@@ -124,6 +124,25 @@ map "$status $upstream_http_retry_after" $armillary_edge_retry_after {
 # break in Location.
 map $request_uri $armillary_redirect_path {
     "~^(?<armillary_raw_path>[^?]*)" $armillary_raw_path;
+}
+
+# A locale prefix in any other case (/zh-tw/, /ZH-TW/ ...) goes to the one
+# canonical prefix with the rest of the raw path; like the canonical redirects
+# above it drops the query.  The exact prefix maps to "" and is served.
+map $request_uri $armillary_locale_redirect {
+    "~^/zh-TW(?:[/?]|$)" "";
+    "~*^/zh-tw(?<armillary_locale_rest>(?:/[^?]*)?)(?:\?|$)" /zh-TW$armillary_locale_rest;
+    default "";
+}
+
+# Cross-Origin-Resource-Policy: same-origin everywhere except the files other
+# sites legitimately embed (the share card and the icons).
+map $uri $armillary_resource_policy {
+    default same-origin;
+    /zh-TW/og-card.png cross-origin;
+    /zh-TW/favicon.svg cross-origin;
+    /favicon.ico cross-origin;
+    /apple-touch-icon.png cross-origin;
 }
 
 # An explicit default on each port.  Without it the first server block
@@ -243,6 +262,9 @@ server {
     add_header Content-Security-Policy "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'; require-trusted-types-for 'script'; trusted-types 'none'" always;
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
     add_header Cache-Control "no-store" always;
+    if ($request_method !~ ^(?:GET|HEAD|POST)$) {
+        return 405;
+    }
     return 308 https://__STAGING_SERVER_NAME__$armillary_redirect_path;
 }
 
@@ -271,6 +293,18 @@ server {
         return 421;
     }
 
+    # The application answers only GET, HEAD and POST (same-origin, no CORS,
+    # so no preflight OPTIONS); anything else stops here as it does on port 80,
+    # with the application's own refusal body.  A named location: an internal
+    # redirect to a URI would run this server-level check again.
+    error_page 405 @armillary_error_405;
+    if ($request_method !~ ^(?:GET|HEAD|POST)$) {
+        return 405;
+    }
+
+    if ($armillary_locale_redirect) {
+        return 308 https://$server_name$armillary_locale_redirect;
+    }
 
     client_max_body_size 16k;
     client_body_buffer_size 32k;
@@ -287,7 +321,7 @@ server {
     add_header Referrer-Policy "no-referrer" always;
     add_header Cross-Origin-Opener-Policy "same-origin" always;
     add_header Cross-Origin-Embedder-Policy "require-corp" always;
-    add_header Cross-Origin-Resource-Policy "same-origin" always;
+    add_header Cross-Origin-Resource-Policy $armillary_resource_policy always;
     add_header Cache-Control $armillary_cache_control always;
 
     # 413 goes to a named location.  An error_page URI is a new
@@ -295,7 +329,7 @@ server {
     # not mark a Content-Length-rejected body as discarded, so the 413 page
     # failed its own check and NGINX sent its built-in English page instead.
     # A named location is entered after that check.
-    error_page 413 @armillary_error_413;
+    error_page 413 @armillary_error_413_$armillary_edge_error_kind;
     error_page 429 /_error/429.$armillary_edge_error_kind;
     error_page 502 /_error/502.$armillary_edge_error_kind;
     error_page 503 /_error/503.$armillary_edge_error_kind;
@@ -314,7 +348,15 @@ server {
         charset utf-8;
     }
 
-    location @armillary_error_413 {
+    location @armillary_error_405 {
+        internal;
+        default_type application/json;
+        if ($armillary_edge_error_kind = json) {
+            return 405 '{"detail":{"code":"unsupported_method","message":"此路徑不接受這個 HTTP 方法。"}}';
+        }
+        return 405 '{"detail":{"code":"method_not_allowed","message":"此路徑不接受這個 HTTP 方法。"}}';
+    }
+    location @armillary_error_413_html {
         internal;
         default_type text/html;
         return 413 '<!doctype html><html lang="zh-TW"><meta charset="utf-8"><title>請求過大</title><p>送出的資料超過服務上限。請減少內容後重試。</p>';
@@ -337,7 +379,7 @@ server {
     # The JSON siblings for /api paths ($armillary_edge_error_kind).  413
     # on the two body routes uses its own named location (a URI
     # error page re-runs the body-size check), declared in those locations.
-    location @armillary_api_error_413 {
+    location @armillary_error_413_json {
         internal;
         default_type application/json;
         return 413 '{"detail":{"code":"request_body_too_large","message":"請求內容超過 16 KiB 上限。"}}';
@@ -382,7 +424,7 @@ server {
     # without treating /api/chartography as a sensitive chart route.
     location ~ ^/api/chart(?:/|$) {
         # An error_page here replaces every inherited one, so all four are named.
-        error_page 413 @armillary_api_error_413;
+        error_page 413 @armillary_error_413_json;
         error_page 429 /_error/429.json;
         error_page 502 /_error/502.json;
         error_page 503 /_error/503.json;
@@ -429,7 +471,7 @@ server {
     # the application now caps its own statement budget below that.
     location ~ ^/api/places/search(?:/|$) {
         # An error_page here replaces every inherited one, so all four are named.
-        error_page 413 @armillary_api_error_413;
+        error_page 413 @armillary_error_413_json;
         error_page 429 /_error/429.json;
         error_page 502 /_error/502.json;
         error_page 503 /_error/503.json;
@@ -461,7 +503,7 @@ server {
     # zone arithmetic on the event loop, so the read timeout is the lookup's.
     location ~ ^/api/time/convert(?:/|$) {
         # An error_page here replaces every inherited one, so all four are named.
-        error_page 413 @armillary_api_error_413;
+        error_page 413 @armillary_error_413_json;
         error_page 429 /_error/429.json;
         error_page 502 /_error/502.json;
         error_page 503 /_error/503.json;

@@ -9,6 +9,7 @@ import asyncio
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import json
 import os
 from pathlib import Path
 from collections.abc import AsyncIterator, Awaitable, Callable, Coroutine, Mapping
@@ -326,6 +327,8 @@ _BUILD_IDENTITY_CONTEXT: ContextVar[JsonObject | None] = ContextVar(
 # birth instant: annual dates after the birth are localized in it, each
 # instant on its own (LeChee's pre-1967 Phoenix override is not 2024's zone).
 _NAMED_TIMEZONE_CONTEXT: ContextVar[Any] = ContextVar("classical_astrology_named_timezone", default=None)
+# The place zone receipt, bound into calculation_trace so the digest covers it.
+_PLACE_ZONE_CONTEXT: ContextVar[JsonObject | None] = ContextVar("classical_astrology_place_zone", default=None)
 
 
 class ComputeCapacityExhaustedError(Exception):
@@ -399,12 +402,13 @@ def _build_identity() -> JsonObject:
 # The compute seams tests replace by name: _compute_in_line looks them up when
 # a request arrives, so a patched one is the one that runs.
 def _compute_chart_locked(req: ChartRequest) -> JsonObject:
-    return compute_chart_response(req, build_identity=_build_identity())
+    return compute_chart_response(req, build_identity=_build_identity(), place_zone=_PLACE_ZONE_CONTEXT.get())
 
 
 def _compute_annual_locked(req: AnnualRequest) -> JsonObject:
     return compute_annual_response(
-        req, build_identity=_build_identity(), localize_timezone=_NAMED_TIMEZONE_CONTEXT.get()
+        req, build_identity=_build_identity(), localize_timezone=_NAMED_TIMEZONE_CONTEXT.get(),
+        place_zone=_PLACE_ZONE_CONTEXT.get(),
     )
 
 
@@ -435,15 +439,17 @@ async def _identified[RequestT: (ChartRequest, AnnualRequest)](
     req, place_zone = await run_in_threadpool(apply_place_zone_policy, req, place_catalog.record)
     token = _BUILD_IDENTITY_CONTEXT.set(identity)
     named_token = _NAMED_TIMEZONE_CONTEXT.set(named_timezone)
+    zone_token = _PLACE_ZONE_CONTEXT.set(place_zone)
     try:
         response = await compute(req, request)
         # The zone the request named, the one applied and why; None for a
-        # place without a zone policy (core.place_zone_policy).  Detailed
-        # only: the page reads the policy from the place search instead.
+        # place without a zone policy (core.place_zone_policy).  The page
+        # view keeps the requested zone, the applied zone and the reason.
         response["place_zone_policy"] = place_zone
         # page is derived from this one detailed response.
         return project(response, projection)
     finally:
+        _PLACE_ZONE_CONTEXT.reset(zone_token)
         _NAMED_TIMEZONE_CONTEXT.reset(named_token)
         _BUILD_IDENTITY_CONTEXT.reset(token)
 
@@ -459,6 +465,12 @@ class _ApiRoute(NamedTuple):
     description: str
 
 
+# The export contract the frontend writes; deploy/frontend-contract.json is its one source.
+EXPORT_CONTRACT_VERSION: str = json.loads(
+    (Path(__file__).resolve().parents[2] / "deploy" / "frontend-contract.json").read_text(encoding="utf-8")
+)["export_contract_version"]
+
+
 def _version_answer(runtime_build_identity: JsonObject) -> dict[str, object]:
     # The build a user is talking to, and its source, without a chart first:
     # the same identity the chart routes stamp into their receipts.
@@ -468,7 +480,8 @@ def _version_answer(runtime_build_identity: JsonObject) -> dict[str, object]:
         "source_url": f"{SOURCE_URL_PREFIX}{revision}" if revision else None,
         "public_repository": PUBLIC_REPOSITORY_URL,
         "license": "AGPL-3.0-only",
-        "contracts": {"api_schema_version": SCHEMA_VERSION, "dossier_version": DOSSIER_VERSION},
+        "contracts": {"api_schema_version": SCHEMA_VERSION, "dossier_version": DOSSIER_VERSION,
+                      "export_contract_version": EXPORT_CONTRACT_VERSION},
         "site_version": SITE_VERSION,
     }
 

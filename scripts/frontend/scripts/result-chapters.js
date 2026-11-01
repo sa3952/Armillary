@@ -94,15 +94,13 @@
 
   /** 網址上的 mode 值：閉集之內才採用，其餘一律當作沒有帶。 */
   function modeFromQuery(search) {
-    let value = null;
-    try { value = new URLSearchParams(String(search || "")).get("mode"); } catch (_error) { return null; }
+    const value = new URLSearchParams(String(search || "")).get("mode");
     return MODE_IDS.includes(value) ? value : null;
   }
 
   /** 網址上的 technique 值：閉集之內才採用，其餘一律當作沒有帶。 */
   function techniqueFromQuery(search) {
-    let value = null;
-    try { value = new URLSearchParams(String(search || "")).get("technique"); } catch (_error) { return null; }
+    const value = new URLSearchParams(String(search || "")).get("technique");
     return TECHNIQUE_IDS.includes(value) ? value : null;
   }
 
