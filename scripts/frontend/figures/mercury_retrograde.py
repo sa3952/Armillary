@@ -1,5 +1,6 @@
 """〈水星逆行，回到原典〉: figure 1 (Mercury's longitude difference from the Sun, October-November 2026, with the bands of
-the three traditions), tables 1-5 and the numbers the prose quotes.
+the three traditions), figures 2 and 3 (the night of the inferior conjunction: each tradition's spans on one time axis,
+and Mercury's path past the Sun's disc), tables 1-5 and the numbers the prose quotes.
 
 Stations, conjunctions and crossings are roots found here with Swiss Ephemeris: a station is where the geocentric speed
 in longitude changes sign, a conjunction where the longitude difference from the Sun does, a crossing where that
@@ -284,6 +285,21 @@ def compute() -> dict:
         if next_transit is None:
             raise RuntimeError("no transit of Mercury before the end of the span")
         closest = least(c)
+        # The western elongation after this conjunction: the most negative longitude difference.
+        lo, hi = c, superior_after
+        for _ in range(60):
+            m1, m2 = lo + (hi - lo) / 3, hi - (hi - lo) / 3
+            if sky.difference(m1) < sky.difference(m2):
+                hi = m2
+            else:
+                lo = m1
+        elongation = (lo + hi) / 2
+        combust_ends = [x for x in crossings["lilly"]["combust"] if r < x < d]
+        if len(combust_ends) != 2:
+            raise RuntimeError("Lilly's combustion does not have two edges inside the retrograde")
+        scorpio = {int(lon // 30) for x in combust_ends for lon in (sky.mercury(x)[0], calc_ut(swe, x, swe.SUN)[0])}
+        if scorpio != {7}:
+            raise RuntimeError("the night's section says the Sun and Mercury stay in Scorpio through Lilly's combustion")
         helio = [calc_ut(swe, year_start + i, swe.MERCURY, swe.FLG_SWIEPH | swe.FLG_HELCTR)[2] for i in range(366)]
         widest = max(abs(sky.difference(year_start + i / 24)) for i in range(366 * 24))
         before_year = max(y for y in one_element if y < YEAR)
@@ -314,8 +330,9 @@ def compute() -> dict:
                 "days3": days3, "years": whole_years, "one_element": one_element, "four": four,
                 "this_index": this_index, "this_duration": d - r, "this_arc": (sky.mercury(r)[0] - sky.mercury(d)[0]) % 360,
             },
-            "transit": {"next": next_transit, "closest": sky.separation(closest),
+            "transit": {"next": next_transit, "closest": sky.separation(closest), "closest_at": closest,
                         "radius": sky.sun_semidiameter(closest)},
+            "elongation": {"at": elongation, "degrees": abs(sky.difference(elongation))},
             "helio": (min(helio), max(helio)),
             "widest": widest,
             "before_element": before_element,
@@ -351,7 +368,9 @@ def _labels(swe, data: dict) -> dict:
     marks = {}
     def add(jd: float) -> None:
         marks[jd] = {"when": _when(swe, jd), "date": _date(swe, jd), "slash": _slash(swe, jd),
-                     "year_when": _when(swe, jd, True), "year_date": _date(swe, jd, True)}
+                     "year_when": _when(swe, jd, True), "year_date": _date(swe, jd, True),
+                     "short": f"{_slash(swe, jd)} {_local(swe, jd)[3]:02d}:{_local(swe, jd)[4]:02d}",
+                     "utc": f"UTC {_utc(swe, jd)[3]:02d}:{_utc(swe, jd)[4]:02d}"}
     for x in data["retrogrades"]:
         for k in ("start", "end", "conjunction"):
             add(x[k])
@@ -364,6 +383,8 @@ def _labels(swe, data: dict) -> dict:
     add(data["superior_before"]["jd"])
     add(data["superior_after"])
     add(data["transit"]["next"])
+    add(data["transit"]["closest_at"])
+    add(data["elongation"]["at"])
     add(data["this"]["start"] - 1)
     add(data["this"]["end"] - 1)
     for i, (t, _, _) in enumerate(data["curve"]):
@@ -448,6 +469,15 @@ def _conjunction_rows(data: dict) -> str:
     ]
     return "\n".join(f'          <tr><th scope="row">{a}</th><td class="n">{b}</td><td class="n">{c}</td></tr>'
                      for a, b, c in cells)
+
+def _night_rows(data: dict, pick) -> str:
+    L = data["labels"]
+    span = lambda found: f"{L[found[0]]['short']} 到 {L[found[1]]['short']}"  # noqa: E731
+    return "\n".join((
+        f'          <tr><th scope="row">Lilly p.113（黃經 17′）</th><td>日輪內</td><td class="n">{span(pick("lilly", "cazimi"))}</td></tr>',
+        f'          <tr><th scope="row">al-Bīrūnī §481（黃經不到 16′）</th><td>日輪內（samīm）</td><td class="n">{span(pick("biruni", "cazimi"))}</td></tr>',
+        f'          <tr><th scope="row">希臘化（15°，轉引）</th><td>在光束下，沒有日輪內這一帶</td><td class="n">{span(pick("hellenistic", "under_beams"))}</td></tr>',
+        '          <tr><th scope="row">al-Qabīṣī、Bonatti（黃經與黃緯都在 16′ 內）</th><td>不算日輪內</td><td>這次沒有任何時刻符合</td></tr>'))
 
 def _drift_rows(data: dict) -> str:
     L = data["labels"]
@@ -604,7 +634,8 @@ def _plot(layout: str, fid: str, data: dict, bound: _fx.Bound) -> str:
         raise RuntimeError("figure 1 outgrew its drawing")
     return "".join(out)
 
-def _limit_text(edge: float) -> str:
+def _limit_text(edge: float | None) -> str:
+    assert edge is not None
     minutes = round(edge * 60)
     if minutes < 60:
         return f"{minutes}′"
@@ -648,6 +679,285 @@ def _figure(data: dict) -> str:
         controls=_fx.FigureControls(variants=tuple((k, label) for k, _, label in PROFILES), switch_label=SWITCH_LABEL),
         table=table, bound=bound)
 
+# --- figures 2 and 3: the night of November 4 ------------------------------------------
+
+# The plate of figure 3: arcminutes drawn on each side of the Sun, north of it and south of it.
+DISC_REACH = 32.0
+DISC_NORTH, DISC_SOUTH = 20.0, 30.0
+DISC_SCALE = {"fx-wide": 8.4, "fx-narrow": 4.7}
+PATH_STEP_DAYS = 10 / 1440
+# The longitude and latitude limit the al-Qabīṣī and Bonatti rows of the night's table name (al-Qabīṣī ch. 3; Bonatti).
+BOTH_COORDINATES_ARCMIN = 16.0
+DISC_SCRUB = "選這一晚的時刻"
+DEFAULT_DISC_STEP = 2  # the conjunction
+DISC_IDLE = "拖動滑桿，這裡會寫出那一刻水星與太陽的距離和 Lilly 的分類。"
+# The drawing plots Δλ·cos β against Δβ; on this small a patch it must agree with the great-circle separation.
+SAME_PLANE_ARCSEC = 0.5
+
+def _arc(degrees: float) -> str:
+    """To the nearest arcsecond, so a limit's own instant prints the limit: 「17′00″」."""
+    total = round(abs(degrees) * 3600)
+    return f"{total // 60}′{total % 60:02d}″"
+
+def _short(swe, jd: float) -> str:
+    y, m, d, h, mi = _local(swe, jd)
+    return f"{m}/{d} {h:02d}:{mi:02d}"
+
+def _clock(swe, jd: float) -> str:
+    _y, _m, _d, h, mi = _local(swe, jd)
+    return f"{h:02d}:{mi:02d}"
+
+def _night_data(sky: Sky, data: dict, pick) -> dict:
+    swe = sky.swe
+    this, transit = data["this"], data["transit"]
+    def at(month: int, day: int, hour: int) -> float:
+        utc = dt.datetime(YEAR, month, day, hour) - dt.timedelta(hours=TAIPEI_OFFSET_HOURS)
+        return swe.utc_to_jd(utc.year, utc.month, utc.day, utc.hour, 0, 0.0, swe.GREG_CAL)[1]
+    start, end = at(11, 4, 18), at(11, 5, 3)
+    def plane(t: float) -> tuple[float, float]:
+        m, s = sky.mercury(t), calc_ut(swe, t, swe.SUN)
+        return (sky.difference(t) * math.cos(math.radians(m[1])) * 60, (m[1] - s[1]) * 60)
+    cazimi = pick("lilly", "cazimi")
+    moments = (("晚間", start), ("Lilly 的日輪內開始", cazimi[0]), ("下合", this["conjunction"]),
+               ("最接近太陽中心", transit["closest_at"]), ("Lilly 的日輪內結束", cazimi[1]), ("過了午夜", end))
+    states = []
+    for name, t in moments:
+        d, v, sep = sky.difference(t), sky.speed(t), sky.separation(t)
+        # At a limit's own instant the verdict is the band being entered or left, not the rounding of the root.
+        inside = t + 1 / 1440 if t == cazimi[0] else t - 1 / 1440 if t == cazimi[1] else t
+        east, north = plane(t)
+        if abs(math.hypot(east, north) / 60 - sep) * 3600 > SAME_PLANE_ARCSEC:
+            raise RuntimeError("figure 3's flat plate no longer agrees with the separation on the sphere")
+        if sep <= sky.sun_semidiameter(t) or (abs(d) * 60 <= BOTH_COORDINATES_ARCMIN and abs(north) <= BOTH_COORDINATES_ARCMIN):
+            raise RuntimeError("figure 3 says the centre stays off the disc and out of the 16′ square")
+        states.append({"name": name, "t": t, "difference": d, "separation": sep, "east": east, "north": north,
+                       "band": _band(data["limits"]["lilly"], sky.difference(inside), v), "when": _when(swe, t)})
+    count = math.ceil((end - start) / PATH_STEP_DAYS)
+    path = [plane(start + i * (end - start) / count) for i in range(count + 1)]
+    if min(abs(n) for _, n in path) <= BOTH_COORDINATES_ARCMIN:
+        raise RuntimeError("Mercury's path enters the 16′ square of latitude")
+    if max(abs(e) for e, _ in path) >= DISC_REACH or not all(-DISC_SOUTH < n < DISC_NORTH for _, n in path):
+        raise RuntimeError("Mercury's path leaves figure 3")
+    closest = plane(transit["closest_at"])
+    # Three weeks' axis, Taipei midnights: the first and last tick of figure 2's upper panel.
+    ticks = [at(10, 26, 0), at(10, 31, 0), at(11, 5, 0), at(11, 10, 0), at(11, 15, 0)]
+    close_ticks = [start, at(11, 4, 21), at(11, 5, 0), end]
+    spans = {(key, band): pick(key, band) for key, _, _ in PROFILES for band, _ in BANDS if data["crossings"][key][band]}
+    return {"start": start, "end": end, "states": states, "path": path, "closest": closest,
+            "sun_radius": transit["radius"], "conjunction": this["conjunction"], "closest_at": transit["closest_at"],
+            "separation": transit["closest"], "mercury_diameter": swe.pheno_ut(this["conjunction"], swe.MERCURY)[3],
+            "spans": spans, "ticks": ticks, "close_ticks": close_ticks, "far_end": at(11, 16, 0),
+            "tick_labels": {t: _slash(swe, t) for t in ticks},
+            "close_labels": {t: _clock(swe, t) for t in close_ticks},
+            "text": {t: _short(swe, t) for pair in spans.values() for t in pair},
+            "clocks": {t: _clock(swe, t) for t in (this["conjunction"], transit["closest_at"])},
+            "range_text": (_short(swe, start), _short(swe, end)),
+            "far_text": (_slash(swe, ticks[0]), _slash(swe, at(11, 16, 0)))}
+
+def _hours(span: list[float]) -> str:
+    minutes = math.floor((span[1] - span[0]) * 1440)
+    return f"{minutes // 60} 小時 {minutes % 60} 分"
+
+def _swatch(x: float, y: float, cls: str, name: str) -> str:
+    return _fx.rect(x, y - 12, 18, 14, cls) + _fx.rect(x, y - 12, 18, 14, "fx-lens") + _fx.text(x + 24, y, name, "fx-t fx-small")
+
+def _scale_plot(layout: str, fid: str, data: dict, night: dict, bound: _fx.Bound) -> str:
+    wide = layout == "fx-wide"
+    W = _fx.WIDE if wide else _fx.NARROW
+    x0, x1 = (170.0, 860.0) if wide else (14.0, 326.0)
+    th = 26.0 if wide else 16.0
+    pitch = 36.0 if wide else 38.0
+    label_gap = 0.0 if wide else 9.0
+    # Row tops: in the phone drawing a row's name sits on its own line above the track.
+    far_top, far_axis = (48.0, 152.0) if wide else (40.0, 154.0)
+    near_top, near_axis = (250.0, 390.0) if wide else (246.0, 396.0)
+    H = 460.0 if wide else 456.0
+    far = lambda t: x0 + (t - night["ticks"][0]) / (night["far_end"] - night["ticks"][0]) * (x1 - x0)  # noqa: E731
+    near = lambda t: x0 + (t - night["start"]) / (night["end"] - night["start"]) * (x1 - x0)  # noqa: E731
+    out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)]
+    out.append(_fx.text(24 if wide else x0, 32 if wide else 24,
+                        f"三週：{bound.num(night['far_text'][0])} 到 {bound.num(night['far_text'][1])}", "fx-t fx-small fx-rub"))
+    def name(y: float, label: str) -> None:
+        out.append(_fx.text(24, y + 18, label, "fx-t fx-small") if wide else _fx.text(x0, y + 4, label, "fx-t fx-small fx-key"))
+    for i, (key, _, label) in enumerate(PROFILES):
+        y = far_top + i * pitch + label_gap
+        name(y - label_gap, bound.label(label))
+        out.append(_fx.rect(x0, y, x1 - x0, th, "fx-track"))
+        for band in ("under_beams", "combust", "cazimi"):
+            span = night["spans"].get((key, band))
+            if span:
+                out.append(_fx.rect(far(span[0]), y, max(far(span[1]) - far(span[0]), 1.5), th, BAND_CLASS[band]))
+    bottom = far_top + 2 * pitch + label_gap + th
+    out.append(_fx.line(far(night["conjunction"]), far_top - 4, far(night["conjunction"]), bottom + 4, "fx-dash"))
+    out.append(_fx.text(far(night["conjunction"]), far_top - 8 if wide else 24, "下合", "fx-t fx-small", "middle"))
+    out.append(_fx.line(x0, far_axis, x1, far_axis, "fx-axis"))
+    for i, t in enumerate(night["ticks"]):
+        out.append(_fx.line(far(t), far_axis, far(t), far_axis + 5, "fx-axis"))
+        out.append(_fx.text(far(t), far_axis + 22, bound.scale(night["tick_labels"][t]), "fx-t fx-small fx-num",
+                            "start" if i == 0 else "middle"))
+    # The lens: the night's nine hours on the upper axis, opened out over the lower panel.
+    lens_a, lens_b = far(night["start"]), far(night["end"])
+    out.append(_fx.rect(lens_a, far_top - 2, lens_b - lens_a, bottom - far_top + 4, "fx-lens"))
+    out.append(_fx.line(lens_a, bottom + 2, x0, near_top - 4, "fx-leader"))
+    out.append(_fx.line(lens_b, bottom + 2, x1, near_top - 4, "fx-leader"))
+    head = near_top - 12 if wide else near_top - 34
+    out.append(_fx.text(24 if wide else x0, head, f"這一晚：{bound.num(night['range_text'][0])} 到 {bound.num(night['range_text'][1])}",
+                        "fx-t fx-small fx-rub fx-key"))
+    c, a = night["conjunction"], night["closest_at"]
+    mark_y = near_top - 12 if wide else near_top - 14
+    out.append(_fx.text(near(c) - 4, mark_y, f"下合 {bound.num(night['clocks'][c])}", "fx-t fx-small fx-key", "end"))
+    out.append(_fx.text(near(a) + 4, mark_y, f"最近 {bound.num(night['clocks'][a])}", "fx-t fx-small fx-key"))
+    rows = (("lilly", "cazimi", "combust", PROFILES[0][2]), ("biruni", "cazimi", "combust", PROFILES[2][2]),
+            ("hellenistic", None, "under_beams", PROFILES[1][2]), (None, None, None, "al-Qabīṣī、Bonatti"))
+    for i, (row_key, row_band, row_ground, row_label) in enumerate(rows):
+        y = near_top + i * pitch + label_gap
+        span = night["spans"].get((row_key, row_band)) if row_band else None
+        note = ""
+        if row_key == "hellenistic":
+            note = "全段在光束下，沒有日輪內"
+        elif row_key is None:
+            note = "沒有任何時刻符合"
+        elif span:
+            note = bound.num(_hours(span))
+        if wide:
+            name(y, bound.label(row_label))
+        else:
+            name(y - label_gap, f"{bound.label(row_label)}：{note}")
+        out.append(_fx.rect(x0, y, x1 - x0, th, "fx-track"))
+        if row_ground:
+            out.append(_fx.rect(x0, y, x1 - x0, th, BAND_CLASS[row_ground]))
+        if span and row_band:
+            out.append(_fx.rect(near(span[0]), y, near(span[1]) - near(span[0]), th, BAND_CLASS[row_band]))
+        # The two instants cross each track; on the solid bars they are paper-coloured slits.
+        for t, cls in ((c, "fx-dash"), (a, "fx-hair")):
+            if span:
+                out.append(_fx.rect(near(t) - 1, y, 2, th, "fx-track"))
+            else:
+                out.append(_fx.line(near(t), y, near(t), y + th, cls))
+        if wide and span:
+            out.append(_fx.text(near(span[1]) + 8, y + 18, note, "fx-t fx-small fx-key"))
+        elif wide:
+            out.append(_fx.text((x0 + x1) / 2, y + 18, note, "fx-t fx-small fx-key", "middle"))
+    out.append(_fx.line(near(c), near_axis - 4, near(c), near_axis, "fx-axis"))
+    out.append(_fx.line(near(a), near_axis - 4, near(a), near_axis, "fx-axis"))
+    out.append(_fx.line(x0, near_axis, x1, near_axis, "fx-axis"))
+    for i, t in enumerate(night["close_ticks"]):
+        out.append(_fx.line(near(t), near_axis, near(t), near_axis + 5, "fx-axis"))
+        anchor = "start" if i == 0 else "end" if i == len(night["close_ticks"]) - 1 else "middle"
+        out.append(_fx.text(near(t), near_axis + 22, bound.scale(night["close_labels"][t]), "fx-t fx-small fx-num", anchor))
+    legend_y, gap = (444.0, 150.0) if wide else (444.0, 106.0)
+    lx = x0 if wide else 14.0
+    for i, (band, label) in enumerate((("under_beams", "在光束下"), ("combust", "焦傷"), ("cazimi", "日輪內"))):
+        out.append(_swatch(lx + i * gap, legend_y, BAND_CLASS[band], label))
+    out.append("</svg>")
+    return "".join(out)
+
+def _scale_figure(data: dict, night: dict) -> str:
+    bound = _fx.Bound()
+    words = {"under_beams": "在光束下", "combust": "焦傷", "cazimi": "日輪內"}
+    rows = []
+    for key, _, label in PROFILES:
+        side = _edges(data["limits"][key], "evening", "retrograde")
+        for band in ("under_beams", "combust", "cazimi"):
+            span = night["spans"].get((key, band))
+            if span:
+                rows.append(f'<tr><th scope="row">{bound.label(label)}</th>'
+                            f'<td>{words[band]}（{bound.num(_limit_text(side[band]))}）</td>'
+                            f'<td class="n">{bound.num(night["text"][span[0]])}</td>'
+                            f'<td class="n">{bound.num(night["text"][span[1]])}</td></tr>')
+    table = _fx.data_table(("誰的規則", "距離帶（逆行時的界線）", "開始", "結束"), rows)
+    caption = (f"<b>{bound.label('圖 2')}</b>同一次下合，三套界線在時間軸上的範圍。上半是這三週，下半把框起來的九個小時放大："
+               "單線是在光束下、交叉線是焦傷、實心是日輪內。照 Lilly 與 al-Bīrūnī，好幾天的焦傷裡夾著不到六小時的日輪內；"
+               "希臘化那一套只有一條線；要求黃經與黃緯都在界線內的 al-Qabīṣī、Bonatti，這一晚沒有任何時刻算日輪內。")
+    return _fx.figure(fid="fig-mr-night", title="下合前後，各家的焦傷、光束下與日輪內落在哪一段時間", caption=caption,
+        art=_fx.FigureArt.drawn(_scale_plot, "fig-mr-night", data, night, bound), table=table, bound=bound)
+
+def _disc_plot(layout: str, fid: str, data: dict, night: dict, bound: _fx.Bound) -> str:
+    wide = layout == "fx-wide"
+    W = _fx.WIDE if wide else _fx.NARROW
+    k = DISC_SCALE[layout]
+    cx = 300.0 if wide else 170.0
+    top = 60.0
+    cy = top + DISC_NORTH * k
+    bottom = cy + DISC_SOUTH * k
+    x = lambda east: cx - east * k  # noqa: E731
+    y = lambda north: cy - north * k  # noqa: E731
+    left, right = x(DISC_REACH), x(-DISC_REACH)
+    H = 520.0 if wide else 524.0
+    out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)]
+    out.append(_fx.text(left, top - 14, "← 東（昏星）", "fx-t fx-small fx-rub"))
+    out.append(_fx.text(right, top - 14, "西（晨星）→", "fx-t fx-small fx-rub", "end"))
+    clip = f"{fid}-{layout}-plot"
+    out.append(f'<clipPath id="{clip}">{_fx.rect(left, top, right - left, bottom - top)}</clipPath>')
+    out.append(f'<g clip-path="url(#{clip})">')
+    out.append(_fx.rect(left, top, right - left, bottom - top, "fx-track"))
+    cazimi_degrees = _edges(data["limits"]["lilly"], "evening", "retrograde")["cazimi"]
+    assert cazimi_degrees is not None
+    edge = cazimi_degrees * 60
+    out.append(_fx.rect(x(edge), top, 2 * edge * k, bottom - top, "fx-fill-dot"))
+    out.append(_fx.line(x(edge), top, x(edge), bottom, "fx-edge"))
+    out.append(_fx.line(x(-edge), top, x(-edge), bottom, "fx-edge"))
+    out.append(_fx.circle(cx, cy, night["sun_radius"] * 60 * k, "fx-disc"))
+    side = BOTH_COORDINATES_ARCMIN * k
+    out.append(_fx.rect(cx - side, cy - side, 2 * side, 2 * side, "fx-dash"))
+    out.append(_fx.line(left, cy, right, cy, "fx-sunline"))
+    pts = " ".join(f"{_fx.f(x(e))},{_fx.f(y(n))}" for e, n in night["path"])
+    out.append(f'<polyline points="{pts}" class="fx-curve"/>')
+    near = night["closest"]
+    out.append(_fx.line(cx, cy, x(near[0]), y(near[1]), "fx-axis"))
+    out.append("</g>")
+    out.append(_fx.rect(left, top, right - left, bottom - top, "fx-inset-frame"))
+    out.append(_fx.glyph("sun", cx, cy, 20 if wide else 16, "fx-sun-gl"))
+    out.append(_fx.text(cx + 8, (cy + y(near[1])) / 2 + 12, bound.num(_arc(night["separation"])), "fx-t fx-small fx-key fx-num"))
+    out.append(_fx.text(cx, cy - side + (20 if wide else 16), "太陽圓面", "fx-t fx-small fx-key", "middle"))
+    out.append(_fx.text(right - 6, cy - 6, "黃道", "fx-t fx-small fx-key", "end"))
+    # The panel beside the plate (wide) or under it (phone).
+    px, py, line = (590.0, 92.0, 28.0) if wide else (x(DISC_REACH), bottom + 28, 22.0)
+    for step, state in enumerate(night["states"]):
+        lines = (bound.num(state["when"]), state["name"],
+                 f"黃經差 {bound.num(_arc(state['difference']))}",
+                 f"天空中相距 {bound.num(_arc(state['separation']))}",
+                 f"照 {bound.label('Lilly')}：{BAND_NAMES[state['band']]}")
+        body = [_fx.circle(x(state["east"]), y(state["north"]), 9 if wide else 7, "fx-mk"),
+                _fx.glyph("mercury", x(state["east"]), y(state["north"]), 12 if wide else 10, "fx-mk-gl")]
+        for i, value in enumerate(lines):
+            body.append(_fx.text(px, py + i * line, value, "fx-t" if i == 0 else "fx-t fx-small"))
+        out.append(_fx.step_group(step, DEFAULT_DISC_STEP, "".join(body)))
+    ly = (py + 6 * line, 26.0) if wide else (py + 5 * line + 8, 20.0)
+    legend = (("fx-fill-dot", f"Lilly：黃經 {bound.num(_limit_text(edge / 60))} 以內"),
+              ("fx-dash", f"黃經、黃緯都在 {bound.num(_limit_text(BOTH_COORDINATES_ARCMIN / 60))} 內"),
+              ("fx-disc", f"太陽圓面，半徑約 {bound.num(_arcmin(night['sun_radius']))}"))
+    for i, (cls, label) in enumerate(legend):
+        out.append(_swatch(px, ly[0] + i * ly[1], cls, label))
+    out.append("</svg>")
+    if ly[0] + 2 * ly[1] + 6 > H:
+        raise RuntimeError("figure 3 outgrew its drawing")
+    return "".join(out)
+
+def _disc_figure(data: dict, night: dict) -> str:
+    bound = _fx.Bound()
+    notes, rows = [], []
+    for step, s in enumerate(night["states"]):
+        where = "東" if s["east"] > 0 else "西"
+        place = "與太陽同一黃經" if step == DEFAULT_DISC_STEP else f"在太陽{where}側"
+        notes.append(_fx.Note(None, None, f"{bound.num(s['when'])}（{s['name']}）：水星{place}，黃經差 {bound.num(_arc(s['difference']))}，"
+                              f"天空中相距 {bound.num(_arc(s['separation']))}。照 {bound.label('Lilly')}：{BAND_NAMES[s['band']]}；"
+                              "水星中心不在太陽圓面內。", step=step))
+        rows.append(f'<tr><th scope="row">{bound.num(s["when"])}</th><td>{s["name"]}</td>'
+                    f'<td class="n">{bound.num(_arc(s["difference"]))}</td>'
+                    f'<td class="n">{bound.num(_arc(s["separation"]))}</td><td>{BAND_NAMES[s["band"]]}</td></tr>')
+    table = _fx.data_table(("臺北時間", "這一刻", "黃經差", "天空中相距", "照 Lilly"), rows)
+    caption = (f"<b>{bound.label('圖 3')}</b>以太陽為中心的天空示意：黃道畫成水平，北在上、東在左，水星由左往右經過。"
+               f"點紋是 Lilly 只看黃經的 {bound.num(_limit_text(_edges(data['limits']['lilly'], 'evening', 'retrograde')['cazimi']))}，"
+               f"虛線方框是黃經與黃緯都要在 {bound.num(_limit_text(BOTH_COORDINATES_ARCMIN / 60))} 內。"
+               f"水星穿過點紋，所以照 Lilly 是日輪內；但它最近也離太陽中心 {bound.num(_arc(night['separation']))}，在圓面與方框的外面。"
+               f"水星的記號放大了，它實際的視直徑只有約 {bound.num(f'{night['mercury_diameter'] * 3600:.0f}')}″。"
+               "這是算出來的位置；那時臺北的太陽早已下山，不是看得到的景象。")
+    return _fx.figure(fid="fig-mr-disc", title="11 月 4 日這一晚，水星從太陽圓面南方經過", caption=caption,
+        art=_fx.FigureArt.drawn(_disc_plot, "fig-mr-disc", data, night, bound, notes=notes, idle=DISC_IDLE),
+        controls=_fx.FigureControls(steps=len(night["states"]), default_step=DEFAULT_DISC_STEP, scrub_label=DISC_SCRUB),
+        table=table, bound=bound)
+
 # --- build -----------------------------------------------------------------------
 
 def build() -> tuple[dict[str, str], list[str]]:
@@ -662,6 +972,10 @@ def build() -> tuple[dict[str, str], list[str]]:
         if max(abs(d) for _, d, _ in curve) >= Y_RANGE:
             raise RuntimeError("the curve leaves figure 1")
         figure = _figure(data)
+        night_window = (data["this"]["start"] - 14, data["this"]["end"] + 9)
+        night = _night_data(sky, data, lambda key, band: [x for x in data["crossings"][key][band]
+                                                          if night_window[0] < x < night_window[1]])
+        night_scale, night_disc = _scale_figure(data, night), _disc_figure(data, night)
         demo_differences = [sky.difference(a["astronomical_data"]["time"]["jd_ut"]) for a in data["answers"]]
     L, this, st = data["labels"], data["this"], data["stats"]
     cr = data["crossings"]
@@ -687,6 +1001,13 @@ def build() -> tuple[dict[str, str], list[str]]:
     rank_short = sum(1 for i in others if dur[i] < st["this_duration"])
     radius_text = _arcmin(data["transit"]["radius"])
     closest_text = _arcmin(data["transit"]["closest"])
+    closest_at = data["transit"]["closest_at"]
+    closest_seconds = math.floor(data["transit"]["closest"] * 3600)
+    # The night's section rests on these: no instant meets a limit that counts latitude, and the cazimi is under six hours.
+    if data["transit"]["closest"] * 60 <= 17 or cazimi_minutes >= 360:
+        raise RuntimeError("the night's section no longer holds")
+    reentry = min(x for x in cr["lilly"]["under_beams"] if x > beams[1])
+    biruni_combust = pick("biruni", "combust")
     quoted = [
         f"{statistics.mean(syn):.1f} 天",
         f"{min(syn):.1f} 天到 {max(syn):.1f} 天",
@@ -739,10 +1060,23 @@ def build() -> tuple[dict[str, str], list[str]]:
         span_label,
         _arcsec_text(demo_differences[0]),
         f"{span_label} 年",
+        L[biruni_combust[0]]["when"],
+        L[biruni_combust[1]]["when"],
+        f"每天退 {_dm(abs(this['speed_conj']))}",
+        L[this["conjunction"]]["utc"],
+        _sign_dm(this["lon_conj"]),
+        f"{closest_seconds // 60}′{closest_seconds % 60:02d}″",
+        L[closest_at]["when"],
+        f"比下合晚 {math.floor((closest_at - this['conjunction']) * 1440)} 分鐘",
+        f"只在外面 {reentry - beams[1]:.1f} 天",
+        L[reentry]["when"],
+        L[data["superior_after"]]["year_date"],
+        L[data["elongation"]["at"]]["date"],
+        _dm(data["elongation"]["degrees"]),
     ]
     quoted = list(dict.fromkeys(quoted))
-    return {"fx-defs": _fx.defs(()), "curve": figure, "year": _year_rows(data), "events": _event_rows(data),
-        "conjunctions": _conjunction_rows(data), "drift": _drift_rows(data), "demo": _demo_rows(data)}, quoted
+    return {"fx-defs": _fx.defs(()), "curve": figure, "night-scale": night_scale, "night-disc": night_disc, "year": _year_rows(data), "events": _event_rows(data),
+        "conjunctions": _conjunction_rows(data), "drift": _drift_rows(data), "demo": _demo_rows(data), "night": _night_rows(data, pick)}, quoted
 
 def _arcsec_text(degrees: float) -> str:
     return f"{abs(degrees) * 3600:.2f}″"

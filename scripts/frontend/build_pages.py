@@ -482,6 +482,7 @@ ARTICLE_SIGNER = "Sebastian"
 # of the record on the first-parent line, less the withdrawn dates below).  The byline carries a placeholder until the
 # page is dated, so the digest, which decides the date, never reads its own version.
 ARTICLE_VERSION_PLACEHOLDER = "{{article_version}}"
+_SHIPPED_ARTICLE_VERSION = re.compile(r'class="ar-version">第 (\d+) 版')
 _SOURCE_ENTRY = re.compile(r'<li id="ref-\d+">')
 
 def article_source_count(body: str) -> int:
@@ -534,6 +535,12 @@ def fill_article_version(page: str, item: Mapping, lastmod: dict | None) -> str:
         return page
     if not is_article(item) or page.count(ARTICLE_VERSION_PLACEHOLDER) != 1:
         raise ValueError(f"{item['key']!r}: an article prints its version once, any other page never")
+    if (ROOT / "SOURCE_EXPORT.json").is_file():
+        # The count needs the private record history, which an exported tree does not carry: it keeps the shipped one.
+        shipped = _SHIPPED_ARTICLE_VERSION.search((ROOT / "frontend" / item["output"]).read_text(encoding="utf-8"))
+        if shipped is None:
+            raise ValueError(f"{item['key']!r}: the shipped article states no version")
+        return page.replace(ARTICLE_VERSION_PLACEHOLDER, shipped[1])
     lastmod = load_page_lastmod() if lastmod is None else lastmod
     return page.replace(ARTICLE_VERSION_PLACEHOLDER, str(article_version(item["key"], lastmod)))
 
@@ -1318,7 +1325,9 @@ def main() -> int:
         today = max(build_date(), date.today().isoformat())
         try:
             record = load_page_lastmod()
-            history = committed_page_lastmod()
+            # The dates are bound to the private record history; an exported tree carries the record only.
+            exported = (ROOT / "SOURCE_EXPORT.json").is_file()
+            history = [] if exported else committed_page_lastmod()
             if record["schema_version"] == PAGE_LASTMOD_SCHEMA:
                 # Bridge known unchanged legacy content so rescheming cannot erase its date binding.
                 history = [(committed, {"schema_version": PAGE_LASTMOD_SCHEMA, "pages": {
@@ -1327,7 +1336,7 @@ def main() -> int:
                     for key, entry in revision["pages"].items()}})
                     if revision["schema_version"] == 3 else (committed, revision)
                     for committed, revision in history]
-            unbound = lastmod_binding_errors(record, history, today)
+            unbound = [] if exported else lastmod_binding_errors(record, history, today)
         except ValueError as refusal:
             unbound = [str(refusal)]
         for finding in unbound:
