@@ -249,6 +249,15 @@
       event.preventDefault();
       shut();
     }, true);
+    // 旋轉或縮放跨過斷點時，開著的抽屜跟著換成模態或側欄。
+    if (win) win.addEventListener("resize", () => {
+      if (drawer.hidden || narrow() === (drawer.getAttribute("aria-modal") === "true")) return;
+      releaseModal();
+      if (narrow()) {
+        makeModal();
+        if (!drawer.contains(doc.activeElement)) title.focus({ preventScroll: true });
+      }
+    });
     if (win) win.addEventListener("pagehide", () => { drawer.hidden = true; releaseModal(); });
     return Object.freeze({ open, close: shut, element: drawer });
   }

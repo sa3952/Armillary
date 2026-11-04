@@ -133,8 +133,14 @@ signature block directly:
 ```sh
 git cat-file tag VER | sed '/^-----BEGIN SSH SIGNATURE-----$/,$d' > tag.payload
 git cat-file tag VER | sed -n '/^-----BEGIN SSH SIGNATURE-----$/,$p' > tag.sig
-ssh-keygen -Y verify -f deploy/release-allowed-signers -I git -n git -s tag.sig < tag.payload
+SIGNER=$(ssh-keygen -Y find-principals -f deploy/release-allowed-signers -s tag.sig) &&
+  ssh-keygen -Y verify -f deploy/release-allowed-signers -I "$SIGNER" -n git -s tag.sig < tag.payload
 ```
+
+`-I` is the signer principal; `-n git` is the signature namespace. The commands above obtain the principal
+from `deploy/release-allowed-signers` using the signature. If `find-principals` returns multiple principals,
+select the intended principal from that output for `SIGNER` before running `verify`. Finding a principal
+does not verify the signature; the final `verify` command must succeed.
 
 The allowed-signers file comes from the same clone you are verifying, so it only proves that the tag matches
 the key this repository names; compare the key's fingerprint with one obtained elsewhere before trusting it.

@@ -57,7 +57,7 @@ from .chart_astronomy import _astronomical_facts, _houses, _positions
 from .chart_methods import _derived_chart, _sect_and_lots
 
 
-SCHEMA_VERSION = "0.23.0"
+SCHEMA_VERSION = "0.24.0"
 
 # Python distribution and embedded Swiss C-library versions are distinct.
 try:

@@ -65,6 +65,9 @@
     return Number.isFinite(parsed) ? value(parsed) : invalid("必須是數字");
   }
 
+  /** 印刷負號（U+2212）與全形負號（U+FF0D）換成 ASCII；數字欄位只認得後者，前者的負號會被瀏覽器靜默丟掉。 */
+  function normalizeMinusSigns(text) { return text.replace(/[\u2212\uff0d]/g, "-"); }
+
   /** 數字選項：範圍取自 options catalogue 同一份宣告，介面屬性與這裡的檢查因此不可能各說各話。回傳 null 表示通過。 */
   function boundsProblem(option, candidate) {
     if (candidate === null || candidate === undefined) return null;
@@ -432,7 +435,7 @@
   return Object.freeze({
     placeZoneChoice,
     STATES: Object.freeze({ EMPTY, INVALID, VALUE }), etcGmtOffsetText, ERAS, readEraDate, readBirthDateParts,
-    readBirthDateText, isoDate, pad2, civilTimeOccurrences, civilHourOccurrences, readInteger, readSecond, readDecimal,
+    readBirthDateText, isoDate, pad2, civilTimeOccurrences, civilHourOccurrences, readInteger, readSecond, readDecimal, normalizeMinusSigns,
     boundsProblem, numericOptionProblems,
   });
 });

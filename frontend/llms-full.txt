@@ -702,6 +702,12 @@ Lilly《Christian Astrology》1647 年版 pp.57–58、61–62、65、69–70、
 
 摘要：渾儀只有一個聯絡信箱，個資權利請求、安全通報、一般聯絡與錯誤回報共用；本頁說明一封信會經過哪裡、保存在哪裡。
 
+### 支持渾儀 Armillary
+
+網址：https://projectarmillary.com/zh-TW/support
+
+摘要：渾儀不收費、不需註冊；本頁說明如何透過 Portaly 支持、點出去之後適用什麼、付款時要填什麼，以及支持不會換到什麼。
+
 ### 產品現況與後續方向｜渾儀 Armillary
 
 網址：https://projectarmillary.com/zh-TW/roadmap

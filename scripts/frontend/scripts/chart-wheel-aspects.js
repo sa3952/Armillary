@@ -29,7 +29,7 @@
   const DEFAULT_GEOMETRY = Object.freeze({ cx: 300, cy: 300, r: 87 });
 
   // 線型：每種相位一種虛線樣式，顏色只有一種（paint 角色 "aspect"），所以分辨相位不靠顏色。
-  // 寬度相同，不按原典的「和諧／不和諧」（Ptolemy I.13）分組加粗或換色：線型只是畫法，性質寫在方法頁。同度（partile）加粗。
+  // 不按「和諧／不和諧」分組換色。偏離精確角度越大越細，同度（partile）保留加粗層。
   // 現代小相位共用一種細點線；名稱見相位方格。
   const WIDTH = 1.2;
   const PARTILE_WIDTH = 2.4;
@@ -71,12 +71,18 @@
     return byKey;
   }
 
+  function lineWidth(line, style) {
+    const base = line.partile ? PARTILE_WIDTH : style.width;
+    // 偏差只取回應值（度）；下限維持細線可見，不改容許度判定。
+    return round3(base * (0.5 + 0.5 / (1 + Math.abs(line.offset ?? 0))));
+  }
+
   function chordItem(geometry, line, style) {
     const p = polar(geometry, line.angleA, geometry.r);
     const q = polar(geometry, line.angleB, geometry.r);
     return {
       type: "line", part: `aspect-${line.aspect}`, x1: round3(p.x), y1: round3(p.y), x2: round3(q.x), y2: round3(q.y),
-      stroke: "aspect", width: line.partile ? PARTILE_WIDTH : style.width, ...(style.dash ? { dash: style.dash } : {}),
+      stroke: "aspect", width: lineWidth(line, style), ...(style.dash ? { dash: style.dash } : {}),
     };
   }
 
@@ -93,7 +99,7 @@
     return {
       type: "path", part: `aspect-${line.aspect}`,
       d: `M ${pt(outerFrom)} L ${pt(innerFrom)} A ${round3(inner)} ${round3(inner)} 0 0 0 ${pt(innerTo)} L ${pt(outerTo)}`,
-      stroke: "aspect", width: line.partile ? PARTILE_WIDTH : style.width,
+      stroke: "aspect", width: lineWidth(line, style),
     };
   }
 
@@ -131,7 +137,7 @@
           lines.push({
             ...record, pattern: STYLES[target.key].pattern, partile: target.partile === true,
             applying: typeof target.applying === "string" ? target.applying : null,
-            offset: typeof target.offset_from_exact_degrees === "number" ? target.offset_from_exact_degrees : null,
+            offset: typeof target.offset_from_exact_degrees === "number" && Number.isFinite(target.offset_from_exact_degrees) ? target.offset_from_exact_degrees : null,
             angleA: endA.a, angleB: endB.a,
           });
         }
@@ -182,6 +188,7 @@
       const parts = Object.keys(PATTERN_ZH).filter((pattern) => byPattern.has(pattern))
         .map((pattern) => `${PATTERN_ZH[pattern]}＝${byPattern.get(pattern).map(nameOf).join("、")}`);
       out.push(`相位線：${parts.join("；")}。`);
+      out.push("偏離精確角度越大，線越細；線寬不表示吉凶。");
       if (result.lines.some((line) => line.partile)) out.push("粗線：同度（判準見相位表）。");
     }
     if (result.missingPoints.length) {

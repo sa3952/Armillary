@@ -701,7 +701,7 @@
   }
 
   /** fade(sign)：這個星座的名稱落在上升的範圍扇形裡時為 true，名稱改淡，扇形不壓在字上搶讀。 */
-  function zodiacRing(reference, text, fade = () => false) {
+  function zodiacRing(reference, text, fade = () => false, compact = false) {
     const at = (lon, r) => polar(lon - reference, r);
     const items = [
       { type: "circle", part: "zodiac-band", cx: G.c, cy: G.c, r: G.rOut, fill: "band", stroke: "dim", width: 1.2 },
@@ -711,7 +711,7 @@
       items.push(linePrim("sign-boundary", at(sign * 30, G.rSignIn), at(sign * 30, G.rOut), "dim", 1));
     }
     for (let degree = 0; degree < 360; degree += 1) {
-      if (degree % 30 === 0) continue;
+      if (degree % 30 === 0 || (compact && degree % 5 !== 0)) continue;
       const length = degree % 10 === 0 ? 8 : degree % 5 === 0 ? 5.5 : 3;
       items.push(linePrim("degree-tick", at(degree, G.rSignIn), at(degree, G.rSignIn + length),
         degree % 5 === 0 ? "dim" : "hair", degree % 10 === 0 ? 0.9 : 0.6));
@@ -721,9 +721,9 @@
     for (let sign = 0; sign < 12; sign += 1) {
       const p = at(sign * 30 + 15, G.rSignText);
       const glyphWidth = glyphBox(SIGN_KEYS[sign], glyphSize).w;
-      const total = glyphWidth + 3 * text + 2 * nameSize;
+      const total = compact ? glyphWidth : glyphWidth + 3 * text + 2 * nameSize;
       items.push(glyphPrim("sign-glyph", SIGN_KEYS[sign], p.x - total / 2 + glyphWidth / 2, p.y, glyphSize, "fg"));
-      items.push(textPrim("sign-name", p.x - total / 2 + glyphWidth + 3 * text, p.y, SIGN_NAMES[sign], nameSize, "sans",
+      if (!compact) items.push(textPrim("sign-name", p.x - total / 2 + glyphWidth + 3 * text, p.y, SIGN_NAMES[sign], nameSize, "sans",
         fade(sign) ? "hair" : "dim", { anchor: "start" }));
     }
     return items;
@@ -1090,7 +1090,7 @@
     const topOf = new Map();
     packed.units.forEach((unit) => unit.members.forEach((item) => topOf.set(item, unit.top)));
     const ticks = points.map((point) => linePrim("body-tick", polar(point.lon - reference, G.rSignIn),
-      polar(point.lon - reference, G.rTickIn), "fg", 1.8, { ...(point.anchorOnly ? { dash: "2 1.6" } : {}), linked: [point.key] }));
+      polar(point.lon - reference, G.rTickIn), "fact", 1.8, { ...(point.anchorOnly ? { dash: "2 1.6" } : {}), linked: [point.key] }));
     const leaders = items.map((item) => leaderPrim(item, anchorOf.get(item), topOf.get(item)));
     const sceneOf = new Map();
     packed.units.forEach((unit, index) => {
@@ -1107,7 +1107,7 @@
     const aspects = aspectLayer(response, items, Boolean(cusps), preset);
     const showAspects = options.aspects !== false && aspects.group !== null;
     const scene = [
-      { group: "zodiac", items: zodiacRing(reference, preset.text, fadedSigns(ranges.asc)) },
+      { group: "zodiac", items: zodiacRing(reference, preset.text, fadedSigns(ranges.asc), presetName === "compact") },
       ...(cusps ? [{ group: "houses", items: houseRing(cusps.cusps.map((cusp) => cusp.lon), reference, preset) }] : []),
       // 相位線在宮位之上、四軸之下：四軸壓在線上。
       ...(showAspects ? [aspects.group] : []), ...(hasAngles ? [{ group: "angles", items: angleAxes(angles, reference, preset) }] : []),

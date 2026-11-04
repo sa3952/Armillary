@@ -71,7 +71,7 @@ python -m scripts.validation.build_place_catalog \
 python scripts/verification/verify_place_catalog.py --check
 ```
 
-Expected: `places.sqlite3` SHA-256 `512173a41e0d8db90530a20cd0fb45293af8c672fdd6b190e51ab64d48ff1268` (92016640 bytes), and
+Expected: `places.sqlite3` SHA-256 `daa56a3e8449e716ae626ef0a4fe0ed2705d47cc6bd32f36e568c900121afaa8` (92020736 bytes), and
 `catalog_manifest.json` unchanged (`git diff --exit-code backend/place_data/`). Input digests:
 
 | input | sha256 |
@@ -85,6 +85,13 @@ Expected: `places.sqlite3` SHA-256 `512173a41e0d8db90530a20cd0fb45293af8c672fdd6
 
 Catalog、manifest、hashes、row counts、notices、Docker context and publication candidate change as one
 reviewed release unit. Source identity and licenses come from the manifest and distributed notices.
+
+`place-catalog-builder-v10` (still schema 5) corrects Macau's rows through `SOURCE_MACAU_CORRECTIONS`: four parishes
+GeoNames codes CN become MO with their parish code, every row gets its Chinese label and the names a reader searches
+(氹仔 and 凼仔, 黑沙環, 媽閣; Luhuan is shown as 路環（Coloane）), each also keyed after 澳門. A bare name another place
+owns (新橋, 南灣, 台山) is searchable only after 澳門. Each entry applies only while the source row carries its expected
+name and country; outcomes are recorded under `source_macau_corrections`, bound and read back by the verifier.
+`tests/backend/test_macau_places.py` searches the shipped file.
 
 `place-catalog-builder-v8` (2026-10-11, still schema 5) corrects GeoNames rows whose admin1 code names a
 province the row is nowhere near (the label read "Baiyanghe, Heilongjiang, CN" for a Xinjiang township):

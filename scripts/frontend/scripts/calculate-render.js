@@ -1166,7 +1166,11 @@ function paintBackToTop() {
   if (y !== backToTopState.lastY) backToTopState.up = y < backToTopState.lastY;
   backToTopState.lastY = y;
   const wide = typeof window.matchMedia === "function" && window.matchMedia(BACK_TO_TOP_WIDE).matches;
-  const shown = !results.hidden && backToTopShown({
+  // 窄螢幕的按鈕浮在內容上：匯出選單開著時，它不能蓋住選單裡的按鈕。
+  const menu = !wide && document.querySelector("#export-toolbar .export-menu[open]");
+  const menuBox = menu && menu.getBoundingClientRect();
+  const overMenu = Boolean(menuBox) && menuBox.top < (window.innerHeight || 0) && menuBox.bottom > 0;
+  const shown = !results.hidden && !overMenu && backToTopShown({
     headingTop: el("results-heading").getBoundingClientRect().top, viewport: window.innerHeight || 0, wide, scrollingUp: backToTopState.up,
   });
   backToTop.hidden = !shown && document.activeElement !== backToTop;

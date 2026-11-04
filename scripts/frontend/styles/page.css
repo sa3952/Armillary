@@ -34,7 +34,7 @@ a{color:var(--ink); text-decoration:underline; text-decoration-style:dotted; tex
 @media (prefers-reduced-motion:reduce){a,button,summary,.btn{transition:none}}
 a:focus-visible,summary:focus-visible,button:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
 /* 深底（頁首、資料表招牌段）上的焦點框改用紙色，墨色框在黑底上看不見。 */
-header a:focus-visible,.datasheet a:focus-visible,.datasheet summary:focus-visible{outline-color:var(--plate-fg)}
+header a:focus-visible,.hero a:focus-visible,.ar-next > div:first-child a:focus-visible,.datasheet a:focus-visible,.datasheet summary:focus-visible{outline-color:var(--plate-fg)}
 /* 按鈕的字不折行（放不下時由按鈕所在的列換行）。 */
 .btn{white-space:nowrap}
 /* 標題裡語意上不能拆開的詞組（「古典西洋」「自己的圖版」）：text-wrap:balance 只平衡行長，不懂詞。 */
@@ -477,7 +477,7 @@ footer .sitemap{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); g
 .versus.two{grid-template-columns:1fr 1fr}
 .versus.three{grid-template-columns:repeat(3,1fr)}
 .versus.four{grid-template-columns:repeat(4,1fr)}
-.versus > div{border-top:1px solid var(--hair); padding:var(--s3) 0 var(--s2)}
+.versus > div{border-top:1px solid var(--hair); padding:var(--s3) 0 var(--s2); background:var(--paper)}
 .vs-label{display:block; font-family:var(--mono); font-size:var(--fs-note); letter-spacing:.04em; color:var(--ink-dim); line-height:1.55;
   min-height:2.6em}
 .vs-answer{display:block; margin:var(--s2) 0 var(--s2); font-family:var(--serif); font-size:2.1rem; font-weight:400; line-height:1.15;
@@ -496,7 +496,7 @@ footer .sitemap{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); g
 
 /* ─── 五點取樣讀數 ─── */
 .probe{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:1px; margin:var(--s3) 0 var(--s2); background:var(--hair)}
-.probe div{border-top:1px solid var(--hair-soft); padding:var(--s2) 0}
+.probe div{border-top:1px solid var(--hair-soft); padding:var(--s2) 0; background:var(--paper)}
 .probe span{display:block; font-family:var(--mono); font-size:var(--fs-note); letter-spacing:.06em; color:var(--ink-faint)}
 .probe b{display:block; overflow-wrap:break-word; margin-top:.45rem; font-family:var(--mono); font-size:var(--fs-body); font-weight:400; color:var(--ink)}
 
@@ -1875,6 +1875,7 @@ main .eyebrow{font-family:var(--sans); text-transform:none; letter-spacing:0; fo
 .hero .creds{border-bottom-color:var(--plate-hair); margin-top:var(--s4)}
 .hero .creds > * + *{border-left-color:var(--plate-hair)}
 .hero .creds span{color:var(--plate-dim)}
+.hero .creds a{color:var(--plate-fg)}
 .hero .creds b{font-size:1.5rem}
 @media (max-width:640px){
   .hero .creds > * + *{border-top-color:var(--plate-hair)}

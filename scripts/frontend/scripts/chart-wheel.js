@@ -20,10 +20,10 @@
   // 下載版（白底）的顏色：每一個都是 tokens.css 的 token 值，測試逐一核對。
   // aspect：相位線用結果頁「方法判斷」那一環的顏色，表示這是依容許度表作出的判斷，不表吉凶。
   const DOWNLOAD_PALETTE_TOKENS = Object.freeze({
-    bg: "print-bg", band: "paper", fg: "ink", dim: "ink-dim", hair: "hair", geo: "geo", aspect: "ring-3",
+    bg: "print-bg", band: "paper", fg: "ink", dim: "ink-dim", hair: "hair", geo: "geo", fact: "fact", aspect: "ring-3",
   });
   const DOWNLOAD_PALETTE = Object.freeze({
-    bg: "#FFFFFF", band: "#F0EAD9", fg: "#1C1913", dim: "#4F483B", hair: "#CFC5AE", geo: "#3E6B8A", aspect: "#A0632B",
+    bg: "#FFFFFF", band: "#F0EAD9", fg: "#1C1913", dim: "#4F483B", hair: "#CFC5AE", geo: "#3E6B8A", fact: "#3D6949", aspect: "#A0632B",
   });
   const FONT_TOKENS = Object.freeze({ sans: "sans", mono: "mono", serif: "serif-num", book: "serif" });
   const FONTS = Object.freeze({
@@ -131,10 +131,13 @@
       height: variant === "download" ? model.height : null, role: "img", "aria-label": model.ariaLabel,
       class: variant === "page" ? "chart-wheel-svg" : null,
     });
+    const title = svgElement(doc, "title", {});
+    title.textContent = model.ariaLabel;
+    const desc = svgElement(doc, "desc", {});
+    desc.textContent = [model.kind === "square" ? "依宮位排列；各點位置見文字對照" : "刻線是真實位置；標籤以引線連回刻線", ...(model.labels || [])
+      .map((label) => `${label.name}：${label.position}${label.retro ? "；逆行" : ""}`)].join("。 ");
+    svg.append(title, desc);
     if (variant === "download") {
-      const title = svgElement(doc, "title", {});
-      title.textContent = model.ariaLabel;
-      svg.appendChild(title);
       svg.appendChild(svgElement(doc, "rect", { x: 0, y: 0, width: model.width, height: model.height, fill: DOWNLOAD_PALETTE.bg }));
     }
     for (const group of variant === "download" ? downloadScene(model) : model.scene) appendGroup(doc, svg, group, variant, true);
@@ -235,7 +238,7 @@
       lead: "滑過或選取符號，圖上與表格會一起標示，畫面不移動；要看表格中那一列，按「到表格看這一顆」。",
       help: "在圖、表與相位方格上標示這一顆，畫面不移動。", clear: "清除標示", jump: "到表格看這一顆", retro: "逆行",
     }),
-    showAspects: "顯示相位線", enlarge: "放大檢視", close: "關閉", dialogTitle: "星盤圖（放大）",
+    showAspects: "顯示相位線", enlarge: "放大圖版", close: "關閉", dialogTitle: "星盤圖（放大）",
     panHint: "圖比螢幕大：用一指拖曳看四周，兩指可再放大。", fitWhole: "看整張",
     includeInput: "在圖內加印輸入摘要（出生日期、時間與地點）", downloadSvg: "下載 SVG", downloadPng: "下載 PNG",
     privacy: "圖內預設不印出生日期、時間與地點；但即使不列座標，星盤數值本身也能推回出生時間與地點。",
@@ -520,6 +523,21 @@
     };
     if (typeof doc.defaultView?.ResizeObserver !== "function") startEntrance();
     const legend = htmlElement(doc, "ul", "chart-wheel-legend");
+    const textFold = htmlElement(doc, "details", "chart-wheel-text");
+    const textSummary = htmlElement(doc, "summary", null, "星盤文字對照表");
+    const textTable = htmlElement(doc, "table", "chart-wheel-text-table");
+    textTable.appendChild(htmlElement(doc, "caption", null, "圖上天體與軸點的位置"));
+    const textHead = doc.createElement("thead");
+    const textHeadRow = doc.createElement("tr");
+    for (const name of ["天體／軸點", "星座度數", "行進"]) {
+      const cell = htmlElement(doc, "th", null, name);
+      cell.setAttribute("scope", "col");
+      textHeadRow.appendChild(cell);
+    }
+    textHead.appendChild(textHeadRow);
+    const textBody = doc.createElement("tbody");
+    textTable.append(textHead, textBody);
+    textFold.append(textSummary, textTable);
     let shown = null;
     const show = (next) => {
       if (next === shown) return;
@@ -527,6 +545,13 @@
       const svg = pageSvg(doc, shown, description, ariaLabel);
       if (link) annotatePoints(doc, svg, shown);
       figure.replaceChildren(svg);
+      textBody.replaceChildren(...(shown.labels || []).map((label) => {
+        const row = doc.createElement("tr");
+        const name = htmlElement(doc, "th", null, label.name);
+        name.setAttribute("scope", "row");
+        row.append(name, htmlElement(doc, "td", null, label.position), htmlElement(doc, "td", null, label.retro ? "逆行" : "—"));
+        return row;
+      }));
       legend.replaceChildren(...(shown.legend || legendItems(shown)).map((item) => htmlElement(doc, "li", null, item)),
         ...aspectLegendItems(shown).map((item) => htmlElement(doc, "li", "cw-legend-aspects", item)));
       if (link && shown.labels.length) {
@@ -701,7 +726,7 @@
     // 結果首屏先看到圖。
     const lead = section.querySelector(":scope > .section-note");
     section.append(figure, ...(styleControl ? [styleControl] : []), ...(lead ? [lead] : []), caption,
-      ...(symbols ? [symbols] : []), legend, actions, privacy, dialog);
+      ...(symbols ? [symbols] : []), legend, textFold, actions, privacy, dialog);
     return section;
   }
 

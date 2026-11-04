@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "purpose": "Public list of the six raw inputs places.sqlite3 was built from. The files themselves are not in this tree.",
-  "catalog_sha256": "512173a41e0d8db90530a20cd0fb45293af8c672fdd6b190e51ab64d48ff1268",
+  "catalog_sha256": "daa56a3e8449e716ae626ef0a4fe0ed2705d47cc6bd32f36e568c900121afaa8",
   "source_snapshot_date": "2026-10-26",
   "size_note": "size_bytes is null where the byte count was not recorded at retrieval; sha256 is the identity that counts.",
   "upstream_note": "GeoNames replaces its dump files under the same names daily and the MOI download URLs serve the current dataset, so the upstream URLs do not keep the hashed bytes. A Wayback capture, if one exists for the retrieval date, must match sha256 before use. The raw inputs are deliberately not redistributed; a rebuild downloads fresh copies, whose sha256 will usually differ from the recorded one. The last Wayback check (2026-10-21, no matching capture) predates this 2026-10-26 snapshot and has not been repeated for it.",

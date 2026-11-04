@@ -267,6 +267,12 @@ def check_strict_json_body(raw: bytes, declared_names: frozenset[str] = frozense
             parse_float=Decimal,
         )
     except InvalidOperation:
+        # Decimal can overflow before the reader reaches a syntax error.
+        # Keep number literals as text to finish checking the JSON grammar.
+        try:
+            json.loads(text, parse_float=str, parse_constant=_refuse_json_constant)
+        except (ValueError, RecursionError):
+            raise StrictJsonBodyError("json_invalid") from None
         raise StrictJsonBodyError("request_validation_failed", [
             {"type": "finite_number", "loc": ["body"]},
         ]) from None

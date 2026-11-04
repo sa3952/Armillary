@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 
-FROM python:3.14.10-slim-trixie@sha256:b6c548779edc1457339ef930a3914a788a74ee592993dbc19dfcecc08d2c5e26 AS builder
+FROM python:3.14.10-slim-trixie@sha256:930e1abba7c4e8f96ed93e8012c35d174d7732752731bbd5e8e757d7ec6f3966 AS builder
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -22,14 +22,14 @@ ENV CXX="g++" \
 WORKDIR /build
 
 # Install the toolchain from the same Debian snapshot the pinned base
-# image records in its sources (20261020T213255Z, the commented snapshot URIs
+# image records in its sources (20261027T000000Z, the commented snapshot URIs
 # of its /etc/apt/sources.list.d/debian.sources), not from whatever the mirror
 # serves on build day.  The snapshot's Release files are past their
 # Valid-Until, so that check is off; they are fetched over HTTPS so a party on
 # the path cannot replay an older, still validly signed Release.  pkg-config
 # and libsqlite3-dev make pyswisseph's setup.py link Debian's libsqlite3 (security-maintained, the runtime base
 # already carries libsqlite3-0) instead of compiling Swephelp's bundled SQLite.
-ARG DEBIAN_SNAPSHOT=20261020T213255Z
+ARG DEBIAN_SNAPSHOT=20261027T000000Z
 RUN sed -i \
         -e "s|http://deb.debian.org/debian-security|https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT}|" \
         -e "s|http://deb.debian.org/debian|https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}|" \
@@ -97,7 +97,7 @@ RUN --network=none mkdir --parents /licenses \
     && grep -q 'This file is part of Swiss Ephemeris' /licenses/SWISS_EPHEMERIS_LICENSE \
     && grep -q 'GNU GENERAL PUBLIC LICENSE' /licenses/SWEPHELP_LICENSE
 
-FROM python:3.14.10-slim-trixie@sha256:b6c548779edc1457339ef930a3914a788a74ee592993dbc19dfcecc08d2c5e26
+FROM python:3.14.10-slim-trixie@sha256:930e1abba7c4e8f96ed93e8012c35d174d7732752731bbd5e8e757d7ec6f3966
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 

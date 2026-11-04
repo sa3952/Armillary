@@ -318,3 +318,10 @@ test("時區有爭議的地點：替代時區只在它的期間內可選，目�
   assert.equal(RequestInput.placeZoneChoice(null, { year: 1990, month: 7, day: 15 }), null);
   assert.equal(RequestInput.placeZoneChoice(zonePolicy("5710035"), null), null);
 });
+
+test("印刷與全形負號換成 ASCII，其餘字元不動", () => {
+  assert.equal(RequestInput.normalizeMinusSigns("\u221233.5"), "-33.5");
+  assert.equal(RequestInput.normalizeMinusSigns("\uff0d33.5"), "-33.5");
+  assert.equal(RequestInput.normalizeMinusSigns("-33.5"), "-33.5");
+  assert.equal(RequestInput.normalizeMinusSigns("33.5"), "33.5");
+});

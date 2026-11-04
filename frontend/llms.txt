@@ -70,6 +70,7 @@ Armillary (Project Armillary) is a classical Western astrology calculator with a
 - [使用條款](https://projectarmillary.com/zh-TW/legal/terms): 渾儀的使用條款：服務做什麼與不做什麼、出生資料與計算結果的歸屬、計算資訊的性質與責任邊界、可用性與變更、禁止行為，以及準據法與管轄。
 - [著作權、授權與對應原始碼](https://projectarmillary.com/zh-TW/legal/copyright): 渾儀的著作權與授權：怎麼取得你正在使用那一版的 AGPLv3 對應原始碼與它的範圍，以及 Swiss Ephemeris、地名資料、Debian 基底與其他第三方依賴的授權揭露。
 - [聯絡渾儀 Armillary](https://projectarmillary.com/zh-TW/contact): 渾儀只有一個聯絡信箱，個資權利請求、安全通報、一般聯絡與錯誤回報共用。
+- [支持渾儀 Armillary](https://projectarmillary.com/zh-TW/support): 渾儀不收費、不需註冊。
 - [關於渾儀 Armillary](https://projectarmillary.com/zh-TW/about): 渾儀 Armillary 是古典西洋占星的計算網站，名稱取自天文儀器渾儀（渾天儀），不是儀器本身。
 - [無障礙聲明](https://projectarmillary.com/zh-TW/accessibility): 渾儀網頁目前做到的無障礙：鍵盤操作、控制項名稱、字級與窄螢幕、減少動態與高對比主題。
 

@@ -114,6 +114,11 @@ def _check_producer_freshness(manifest: dict) -> None:
     folding = manifest.get("han_script_folding") or {}
     if folding.get("source_table_sha256") != _table_sha256(producer.load_han_fold_source()["simplified_to_traditional"]):
         raise SystemExit("the Simplified-to-Traditional table changed since the catalogue was built; rebuild it")
+    macau = producer.SOURCE_MACAU_CORRECTIONS
+    if manifest.get("source_macau_corrections_table_sha256") != _table_sha256(macau):
+        raise SystemExit("producer Macau table changed since the catalogue was built; rebuild it")
+    if {item.get("source_record_id") for item in manifest.get("source_macau_corrections") or []} != set(macau):
+        raise SystemExit("producer Macau table and recorded Macau corrections name different rows")
     exclusions = producer.SOURCE_ROW_EXCLUSIONS
     if manifest.get("source_exclusions_table_sha256") != _table_sha256(exclusions):
         raise SystemExit("producer exclusion table changed since the catalogue was built; rebuild it")
@@ -180,6 +185,34 @@ def _check_admin1_corrections(connection: sqlite3.Connection, manifest: dict) ->
                 f"{[tuple(row) for row in rows]!r}"
             )
     return len(corrections)
+
+
+def _check_macau_corrections(connection: sqlite3.Connection, manifest: dict) -> None:
+    """Each recorded Macau row carries its country, name, Chinese name and Chinese search names."""
+
+    corrections = manifest.get("source_macau_corrections")
+    if not isinstance(corrections, list) or not corrections:
+        raise SystemExit("place catalog manifest records no Macau correction list")
+    if _stored_metadata(connection, "source_macau_corrections") != corrections:
+        raise SystemExit("catalogue and manifest record different Macau corrections")
+    for item in corrections:
+        record_id = item.get("source_record_id")
+        if item.get("status") != "applied":
+            raise SystemExit(f"Macau correction {record_id} was not applied: {item.get('status')}")
+        rows = connection.execute(
+            "SELECT country_code, name, name_zh, match_keys FROM places "
+            "WHERE source = 'geonames_cities500' AND source_record_id = ?",
+            (record_id,),
+        ).fetchall()
+        if len(rows) != 1 or tuple(rows[0])[:3] != (
+            item.get("corrected_country"), item.get("corrected_name"), item.get("name_zh")
+        ):
+            raise SystemExit(f"place catalog row {record_id} does not carry its Macau correction")
+        for name in item.get("names") or []:
+            if name.isascii() or not name.isalpha():
+                continue
+            if f"\x1f{name}\x1f" not in rows[0][3]:
+                raise SystemExit(f"place catalog row {record_id} lacks the search name {name}")
 
 
 def _check_exclusions(connection: sqlite3.Connection, manifest: dict) -> None:
@@ -435,6 +468,7 @@ def verify(*, installed_image: bool = False) -> None:
         timezone_check = _check_timezone_check(metadata, manifest)
         corrected_rows = _check_corrections(connection, manifest)
         admin1_rows = _check_admin1_corrections(connection, manifest)
+        _check_macau_corrections(connection, manifest)
         _check_exclusions(connection, manifest)
         _check_chinese_name_exclusions(connection, manifest)
         folded_characters = _check_han_script_folding(connection, manifest)

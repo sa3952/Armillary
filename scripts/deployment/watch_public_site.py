@@ -8,7 +8,8 @@ nothing about anyone.
 
 * Certificate: the apex and www certificates must have at least
   `--certificate-days` days left.  An expired certificate behind HSTS is a hard
-  outage, and a renewal that fails silently gives about 30 days' warning.
+  outage.  Certbot renews with 30 days left, so a certificate under the floor
+  means renewal has failed or stalled; the host needs no reporting channel.
 * Domain: the registration's RDAP expiration date must be at least
   `--domain-days` days away.
 * security.txt: its one `Expires` (RFC 9116) must be at least
@@ -28,10 +29,11 @@ import argparse
 from collections.abc import Callable, Sequence
 from datetime import datetime, timezone
 import hashlib
+from http.client import HTTPException
 import json
+import re
 import socket
 import ssl
-import sys
 import time
 from urllib.error import HTTPError
 from urllib.parse import quote
@@ -53,6 +55,9 @@ def fetch(url: str) -> tuple[int, bytes]:
             return response.status, response.read()
     except HTTPError as error:
         return error.code, error.read()
+    except (OSError, HTTPException):
+        # Status 0 is "no answer": every caller already reports a status it did not expect.
+        return 0, b""
 
 
 def served_path(name: str) -> str:
@@ -72,10 +77,13 @@ def integrity_problems(revision: str, *, get: Fetch = fetch, base_url: str = f"h
                        pause: float = LIVE_REQUEST_PAUSE_SECONDS) -> list[str]:
     status, body = get(f"https://api.github.com/repos/{PUBLIC_REPOSITORY}/git/trees/{revision}?recursive=1")
     if status != 200: return [f"integrity: cannot read the public tree at {revision} (HTTP {status})"]
-    tree = json.loads(body)
-    if tree.get("truncated"): return [f"integrity: the public tree at {revision} is truncated"]
-    names = sorted(entry["path"] for entry in tree["tree"]
-                   if entry["type"] == "blob" and entry["path"].startswith(SERVED_PREFIX))
+    try:
+        tree = json.loads(body)
+        if tree.get("truncated"): return [f"integrity: the public tree at {revision} is truncated"]
+        names = sorted(entry["path"] for entry in tree["tree"]
+                       if entry["type"] == "blob" and entry["path"].startswith(SERVED_PREFIX))
+    except (ValueError, KeyError, TypeError, AttributeError):
+        return [f"integrity: cannot parse the public tree at {revision}"]
     if not names: return [f"integrity: no file under {SERVED_PREFIX} at {revision}"]
     problems = []
     for name in names:
@@ -96,6 +104,7 @@ def integrity_problems(revision: str, *, get: Fetch = fetch, base_url: str = f"h
 
 def certificate_days_left(host: str, *, now: datetime) -> float:
     context = ssl.create_default_context()
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
     with socket.create_connection((host, 443), timeout=15) as raw:
         with context.wrap_socket(raw, server_hostname=host) as tls:
             certificate = tls.getpeercert()
@@ -108,10 +117,30 @@ def certificate_days_left(host: str, *, now: datetime) -> float:
 def domain_expiration(domain: str, *, get: Fetch = fetch) -> datetime | None:
     status, body = get(f"https://rdap.org/domain/{domain}")
     if status != 200: return None
-    for event in json.loads(body).get("events", []):
-        if event.get("eventAction") == "expiration":
-            return datetime.fromisoformat(event["eventDate"].replace("Z", "+00:00"))
+    try:
+        for event in json.loads(body).get("events", []):
+            if event.get("eventAction") == "expiration":
+                expiration = datetime.fromisoformat(event["eventDate"].replace("Z", "+00:00"))
+                return expiration if expiration.tzinfo is not None else None
+    except (ValueError, KeyError, TypeError, AttributeError):
+        return None
     return None
+
+
+def release_revision(path: str) -> str:
+    """The live frontend revision in a release record; raises ValueError when it cannot be used."""
+    try:
+        with open(path, encoding="utf-8") as record:
+            revision = json.load(record)["live"]["frontend_public_source"]
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        raise ValueError(f"release record {path}: cannot read live.frontend_public_source ({error!r})") from error
+    return require_revision(revision, f"release record {path}")
+
+
+def require_revision(revision: object, source: str) -> str:
+    if not isinstance(revision, str) or not re.fullmatch(r"[0-9a-f]{40}", revision):
+        raise ValueError(f"{source}: {revision!r} is not a 40-hex revision")
+    return revision
 
 
 def security_txt_problems(*, now: datetime, days: float, get: Fetch = fetch) -> list[str]:
@@ -143,25 +172,31 @@ def main(argv: Sequence[str] | None = None) -> int:
     integrity.add_argument("--release-record", help="read the revision from this current_release.json")
     integrity.add_argument("--skip-integrity", action="store_true")
     arguments = parser.parse_args(argv)
-    if arguments.release_record:
-        with open(arguments.release_record, encoding="utf-8") as record:
-            arguments.revision = json.load(record)["live"]["frontend_public_source"]
     now = datetime.now(timezone.utc)
     problems: list[str] = []
+    revision = None
+    try:
+        if arguments.release_record:
+            revision = release_revision(arguments.release_record)
+        elif not arguments.skip_integrity:
+            revision = require_revision(arguments.revision, "--revision")
+    except ValueError as error:
+        problems.append(f"integrity: {error}")
     for host in (CANONICAL_HOST, f"www.{CANONICAL_HOST}"):
         try:
             days = certificate_days_left(host, now=now)
         except (OSError, ssl.SSLError) as error:
             problems.append(f"certificate: {host}: {error}")
             continue
-        if days < arguments.certificate_days: problems.append(f"certificate: {host} expires in {days:.1f} days")
+        if days < arguments.certificate_days:
+            problems.append(f"certificate: {host} expires in {days:.1f} days; renewal has failed or stalled")
     expiration = domain_expiration(CANONICAL_HOST)
     if expiration is None:
         problems.append(f"domain: no RDAP expiration date for {CANONICAL_HOST}")
     elif (expiration - now).total_seconds() / 86400 < arguments.domain_days:
         problems.append(f"domain: {CANONICAL_HOST} registration expires {expiration.date()}")
     problems += security_txt_problems(now=now, days=arguments.security_txt_days)
-    if not arguments.skip_integrity: problems += integrity_problems(arguments.revision)
+    if revision is not None: problems += integrity_problems(revision)
     for problem in problems:
         print(problem)
     if not problems: print("PUBLIC SITE OK")

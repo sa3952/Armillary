@@ -80,7 +80,7 @@ TAIWAN_SETTLEMENT_SOURCE_URL = (
     "4A5AB0C9-0395-4B04-AE50-02624075516F/resource/"
     "AE5B85B6-0895-4D32-8027-1713F018A649/download"
 )
-GENERATOR_VERSION = "place-catalog-builder-v9"
+GENERATOR_VERSION = "place-catalog-builder-v10"
 SCHEMA_VERSION = 5
 MAX_INPUT_BYTES = 512 * 1024 * 1024
 MAX_UNCOMPRESSED_BYTES = 2 * 1024 * 1024 * 1024
@@ -605,6 +605,88 @@ SOURCE_ROW_EXCLUSIONS: dict[str, dict[str, str | None]] = {
         ),
     },
 }
+
+
+# Macau's rows as a Macau reader looks for them.  GeoNames codes four parishes
+# CN/Guangdong, spells Coloane in pinyin and gives the rows no Chinese names, so
+# 氹仔 and 黑沙環 found nothing and Macao lost to Mação.  A neighbourhood without a
+# row of its own is a name of the parish row that contains it.  A bare name
+# another place owns (新橋, 南灣, 台山) is searchable only with 澳門 before it, so
+# it cannot displace that place; every Chinese name is also keyed that way.
+# ``expected_name`` and ``expected_country`` state the source row; a row that no
+# longer carries them is left alone and reported.
+MACAU_PARISH_NAMES: dict[str, str] = {
+    "11875154": "花地瑪堂區",
+    "11875155": "聖安多尼堂區",
+    "11875156": "望德堂區",
+    "11875157": "大堂區",
+    "11875158": "聖老楞佐堂區",
+    "11875159": "嘉模堂區",
+    "11875161": "聖方濟各堂區",
+}
+MACAU_ONLY_WITH_PREFIX = {"南灣": "1821274", "新橋": "1821274", "台山": "13527308"}
+
+
+def _macau_row(expected_name, expected_country, name_zh, names, *, name=None, admin1=None):
+    return {
+        "expected_name": expected_name,
+        "expected_country": expected_country,
+        "name": name or expected_name,
+        "admin1": admin1,
+        "name_zh": name_zh,
+        "names": names,
+    }
+
+
+SOURCE_MACAU_CORRECTIONS: dict[str, dict] = {
+    "1821274": _macau_row("Macau", "MO", "澳門", [
+        "Macao", "Macau Peninsula", "澳門半島", "澳門特別行政區", "濠江", "濠鏡澳", "濠鏡", "聖若瑟",
+    ]),
+    "13527308": _macau_row("Nossa Senhora de Fátima", "CN", "花地瑪堂區", [
+        "花地瑪", "黑沙環", "青洲", "Areia Preta", "Ilha Verde",
+    ], admin1="11875154"),
+    "13527315": _macau_row("Santo António", "CN", "聖安多尼堂區", ["聖安多尼", "花王堂區", "花王堂"], admin1="11875155"),
+    "13527316": _macau_row("São Lázaro", "CN", "望德堂區", ["望德堂"], admin1="11875156"),
+    "13527318": _macau_row("São Lourenço", "CN", "聖老楞佐堂區", [
+        "聖老楞佐", "風順堂區", "風順堂", "媽閣", "下環",
+    ], admin1="11875158"),
+    "13527317": _macau_row("Sé", "MO", "大堂區", ["主教座堂區"]),
+    "1821263": _macau_row("Taipa", "MO", "氹仔", [
+        "凼仔", "嘉模", "嘉模堂區", "Our Lady of Carmo", "Nossa Senhora do Carmo",
+    ]),
+    "1821292": _macau_row("Luhuan", "MO", "路環", [
+        "Luhuan", "聖方濟各", "聖方濟各堂區", "Saint Francis Xavier", "São Francisco Xavier",
+    ], name="Coloane"),
+    "13527314": _macau_row("Cotai", "MO", "路氹城", ["路氹", "路氹填海區"]),
+    "1821279": _macau_row("Lai Chi Van", "MO", "荔枝碗", []),
+    "1821294": _macau_row("Zhuojiacun", "MO", "卓家村", []),
+    "6611390": _macau_row("Jiu’ao", "MO", "九澳", []),
+}
+
+
+def _macau_search_names(geonameid: str, entry: dict) -> list[str]:
+    """Every name of a curated row, with its Chinese names also written after 澳門."""
+
+    chinese = [name for name in (entry["name_zh"], *entry["names"]) if _has_han(name) and not name.startswith("澳")]
+    chinese += [name for name, record in MACAU_ONLY_WITH_PREFIX.items() if record == geonameid]
+    return list(dict.fromkeys([*entry["names"], *(f"澳門{name}" for name in chinese)]))
+
+
+def _macau_correction_record(geonameid: str, entry: dict, observed: tuple[str, str] | None, status: str) -> dict:
+    return {
+        "source": "geonames_cities500",
+        "source_record_id": geonameid,
+        "expected_name": entry["expected_name"],
+        "expected_country": entry["expected_country"],
+        "observed_name": observed[0] if observed else None,
+        "observed_country": observed[1] if observed else None,
+        "corrected_country": "MO",
+        "corrected_name": entry["name"],
+        "corrected_admin1": entry["admin1"],
+        "name_zh": entry["name_zh"],
+        "names": entry["names"],
+        "status": status,
+    }
 
 
 def _table_sha256(table: dict) -> str:
@@ -1197,6 +1279,7 @@ def import_geonames(
     corrections: list[dict] | None = None,
     exclusions: list[dict] | None = None,
     admin1_corrections: list[dict] | None = None,
+    macau_corrections: list[dict] | None = None,
     fold_table: dict[str, str] | None = None,
 ) -> int:
     """Import cities500; ``taiwan_counties`` maps a GeoNames admin1.admin2 code to its MOI county."""
@@ -1210,6 +1293,8 @@ def import_geonames(
     pending_exclusions = dict(SOURCE_ROW_EXCLUSIONS)
     admin1_corrections = admin1_corrections if admin1_corrections is not None else []
     pending_admin1 = dict(SOURCE_ADMIN1_CORRECTIONS)
+    macau_corrections = macau_corrections if macau_corrections is not None else []
+    pending_macau = dict(SOURCE_MACAU_CORRECTIONS)
     count = 0
     for line in _geonames_lines(source):
         if count >= MAX_SOURCE_ROWS:
@@ -1275,17 +1360,35 @@ def import_geonames(
             admin1_corrections.append(
                 _admin1_correction_record(geonameid, admin1_fix, observed_admin1, admin1_status, admin1_names)
             )
+        macau_fix = pending_macau.pop(geonameid, None)
+        macau_names: list[str] = []
+        name_zh = None
+        if macau_fix is not None:
+            observed_macau = (name, country_code)
+            applied = observed_macau == (macau_fix["expected_name"], macau_fix["expected_country"])
+            macau_corrections.append(_macau_correction_record(
+                geonameid, macau_fix, observed_macau, CORRECTION_APPLIED if applied else CORRECTION_STALE_NOT_APPLIED
+            ))
+            if applied:
+                macau_names = _macau_search_names(geonameid, macau_fix)
+                name_zh = macau_fix["name_zh"]
+                name = macau_fix["name"]
+                country_code = "MO"
+                admin1 = macau_fix["admin1"] or admin1
         aliases = " ".join(
             item
             for item in (
                 ascii_name, alternate_names.replace(",", " "),
                 " ".join(_folded_han_aliases(alternate_names, fold_table or {})),
+                " ".join(macau_names),
             )
             if item
         )
         admin1_name: str | None
         if country_code == "TW":
             admin1_name = _taiwan_county(geonameid, admin1, admin2, taiwan_counties)
+        elif macau_names:
+            admin1_name = MACAU_PARISH_NAMES.get(admin1)
         else:
             admin1_name = admin1_names.get(f"{country_code}.{admin1}") if admin1 else None
         # A Taiwan city GeoNames names only in an untagged alias (板橋 for
@@ -1294,7 +1397,7 @@ def import_geonames(
         # names (台東 for Tokyo's Taito), which would make foreign rows exact.
         match_names = (
             [item.strip() for item in alternate_names.split(",") if item.strip()]
-            if country_code == "TW" else []
+            if country_code == "TW" else macau_names
         )
         inserted = _insert(
             connection,
@@ -1302,14 +1405,14 @@ def import_geonames(
                 "source": "geonames_cities500",
                 "source_record_id": geonameid,
                 "name": name,
-                "display_name": _geonames_display_name(name, None, admin1_name, country_code),
+                "display_name": _geonames_display_name(name, name_zh, admin1_name, country_code),
                 "aliases": aliases,
                 "country_code": country_code,
                 "admin1": admin1 or None,
                 "admin1_name": admin1_name,
                 "admin2": admin2 or None,
                 "admin3": None,
-                "name_zh": None,
+                "name_zh": name_zh,
                 "match_names": match_names,
                 "latitude": float(latitude),
                 "longitude": float(longitude),
@@ -1322,6 +1425,8 @@ def import_geonames(
         count += int(inserted)
     for geonameid, exclusion in pending_exclusions.items():
         exclusions.append(_exclusion_record(geonameid, exclusion, None, CORRECTION_ROW_ABSENT))
+    for geonameid, macau_fix in pending_macau.items():
+        macau_corrections.append(_macau_correction_record(geonameid, macau_fix, None, CORRECTION_ROW_ABSENT))
     for geonameid, admin1_fix in pending_admin1.items():
         admin1_corrections.append(
             _admin1_correction_record(geonameid, admin1_fix, None, CORRECTION_ROW_ABSENT, admin1_names)
@@ -1385,7 +1490,8 @@ def apply_geonames_chinese_names(
         if len(fields) < 4:
             continue
         alternate_id, geonameid, language, value = fields[:4]
-        if geonameid not in rows:
+        # A curated Macau row keeps the label and names its entry states.
+        if geonameid not in rows or geonameid in SOURCE_MACAU_CORRECTIONS:
             continue
         value = value.strip()
         if not value:
@@ -1941,6 +2047,7 @@ def build_catalog(
         corrections: list[dict] = []
         exclusions: list[dict] = []
         admin1_corrections: list[dict] = []
+        macau_corrections: list[dict] = []
         moi_inputs = (inputs["taiwan_moi_administrative"], inputs["taiwan_moi_settlement"])
         taiwan_counties = _geonames_taiwan_counties(moi_inputs)
         fold_source = load_han_fold_source()
@@ -1957,6 +2064,7 @@ def build_catalog(
                 corrections=corrections,
                 exclusions=exclusions,
                 admin1_corrections=admin1_corrections,
+                macau_corrections=macau_corrections,
                 fold_table=fold_table,
             ),
             "taiwan_moi_administrative": import_taiwan(
@@ -2025,6 +2133,8 @@ def build_catalog(
             "source_exclusions_table_sha256": _table_sha256(SOURCE_ROW_EXCLUSIONS),
             "source_admin1_corrections": admin1_corrections,
             "source_admin1_corrections_table_sha256": _table_sha256(SOURCE_ADMIN1_CORRECTIONS),
+            "source_macau_corrections": macau_corrections,
+            "source_macau_corrections_table_sha256": _table_sha256(SOURCE_MACAU_CORRECTIONS),
             "zone_policies": zone_policies,
             "zone_policies_table_sha256": _table_sha256(ZONE_POLICIES),
             "timezone_coordinate_check": timezone_check,
@@ -2114,6 +2224,8 @@ def build_artifact_manifest(metadata: dict, *, catalog_path: Path) -> dict:
         "source_exclusions_table_sha256": metadata["source_exclusions_table_sha256"],
         "source_admin1_corrections": metadata["source_admin1_corrections"],
         "source_admin1_corrections_table_sha256": metadata["source_admin1_corrections_table_sha256"],
+        "source_macau_corrections": metadata["source_macau_corrections"],
+        "source_macau_corrections_table_sha256": metadata["source_macau_corrections_table_sha256"],
         "zone_policies": metadata["zone_policies"],
         "zone_policies_table_sha256": metadata["zone_policies_table_sha256"],
         "source_chinese_name_exclusions": metadata["source_chinese_name_exclusions"],

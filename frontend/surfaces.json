@@ -211,6 +211,16 @@
       "description": "渾儀只有一個聯絡信箱，個資權利請求、安全通報、一般聯絡與錯誤回報共用；本頁說明一封信會經過哪裡、保存在哪裡。"
     },
     {
+      "key": "support",
+      "output": "zh-TW/support.html",
+      "surface": "/zh-TW/support",
+      "layers": [
+        "L1"
+      ],
+      "title": "支持渾儀 Armillary",
+      "description": "渾儀不收費、不需註冊；本頁說明如何透過 Portaly 支持、點出去之後適用什麼、付款時要填什麼，以及支持不會換到什麼。"
+    },
+    {
       "key": "roadmap",
       "output": "zh-TW/roadmap.html",
       "surface": "/zh-TW/roadmap",

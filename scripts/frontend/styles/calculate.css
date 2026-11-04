@@ -91,6 +91,7 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
 .status-line{font-size:var(--fs-note); color:var(--ink-dim); overflow-wrap:anywhere}
 /* 按鈕旁的短訊，與 #status-line 同文。 */
 .inline-status{font-size:var(--fs-note); color:var(--ink-dim); margin-left:.5rem; overflow-wrap:anywhere}
+.inline-status:empty{display:none}
 .inline-status[data-tone="error"]{color:var(--err)}
 .status-line[data-tone="error"]{color:var(--err)}
 /* warning 是第三個狀態（結果仍可用但不完整），借 unavailable 的赭色：比 error 輕、比 info 重。 */
@@ -135,6 +136,8 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
 .detail-status > .note{margin:0; flex:1 1 16rem}
 .export-mode-title{margin:0 0 var(--s2)}
 .export-actions{display:flex; flex-wrap:wrap; gap:var(--s1); margin-top:var(--s2)}
+/* 狀態訊息排在所有按鈕之後自成一行：按鈕不因訊息出現或消失而移位。 */
+.export-actions > .inline-status{order:1; flex:1 0 100%; margin-left:0}
 
 /* 算完後焦點由程式移到結果標題（calculate.js 的 revealResults）。框只在瀏覽器判定焦點該被看見時畫
    （:focus-visible，用鍵盤送出時）：按滑鼠送出後主標外圍一圈重點色框，看起來像出錯。 */
@@ -496,6 +499,7 @@ button.small{font-size:var(--fs-note); padding:.45rem 1rem}
 .time-check-result dd{font-size:var(--fs-note); overflow-wrap:anywhere}
 /* 臺灣的鐘面時間怎麼換成世界時：地點欄位之後的常駐說明，與地點收據的 caveat 同一套語彙。 */
 .tz-note{margin-top:var(--s3); border-left:2px solid var(--judg); padding-left:.8rem; max-width:var(--measure)}
+.tz-note summary{display:flex; align-items:baseline}
 .tz-note-title{font-family:var(--serif); font-weight:400; font-size:var(--fs-lead); letter-spacing:.02em;
   line-height:1.6; color:var(--ink); margin:0 0 .3rem}
 .tz-note p{font-size:var(--fs-note); line-height:var(--lh-note); max-width:var(--measure-cjk)}
@@ -1119,6 +1123,7 @@ section.chart-wheel > .note{margin-top:var(--s1)}
 .chart-wheel-svg .cw-s-band{stroke:var(--paper-2)}
 .chart-wheel-svg .cw-s-fg{stroke:var(--ink)}
 .chart-wheel-svg .cw-s-geo{stroke:var(--geo)}
+.chart-wheel-svg .cw-s-fact{stroke:var(--fact)}
 .chart-wheel-svg .cw-s-dim{stroke:var(--ink-dim)}
 .chart-wheel-svg .cw-s-hair{stroke:var(--hair)}
 /* 標籤壓在引線上時，以紙色描一圈外框，字才讀得清楚。 */
@@ -1464,11 +1469,15 @@ td.is-quiet{color:var(--ink-faint)}
 .export-menu > summary{list-style:none; cursor:pointer; display:inline-flex; align-items:center; gap:.35rem; min-height:2.4rem;
   padding:.45rem 1rem; border:1px solid var(--ink); font-size:var(--fs-note); color:var(--ink); background:transparent}
 .export-menu > summary::-webkit-details-marker{display:none}
+.export-menu > summary::before,.export-menu[open] > summary::before{content:none}
 .export-menu > summary:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
 @media (hover:hover){ .export-menu > summary{transition:background-color .18s} .export-menu > summary:hover{background:var(--paper-2)} }
 @media (prefers-reduced-motion: reduce){ .export-menu > summary{transition:none} }
 .export-menu-body{margin-top:.4rem; padding:var(--s2); border:1px solid var(--hair); background:var(--paper); display:grid; gap:.6rem; min-width:min(20rem, 100%)}
 .export-menu-verify{display:flex; gap:.5rem; align-items:baseline; padding-bottom:.6rem; border-bottom:1px solid var(--hair)}
+.export-menu-verify input,.export-menu-work input{flex:0 0 auto; width:auto}
+.export-menu-verify small{display:block}
+.export-menu-work label{display:inline-flex; gap:.35rem; align-items:center}
 .export-menu-case{display:grid; gap:.2rem; font-size:var(--fs-note)}
 .export-menu-case input{max-width:14rem}
 .export-menu-work{border:0; padding:0; margin:0; display:flex; flex-wrap:wrap; gap:.3rem .8rem; font-size:var(--fs-note)}
@@ -1490,3 +1499,8 @@ form summary,.results summary{min-height:44px; box-sizing:border-box}
 @media print{
   #results th{position:static !important}
 }
+
+.chart-wheel-text{margin-top:var(--s2); max-width:var(--measure-cjk)}
+.chart-wheel-text > summary{cursor:pointer; min-height:44px; padding:.5rem 0}
+.chart-wheel-text-table{width:100%; font-size:var(--fs-note)}
+.chart-wheel-text-table :is(th,td){padding:.3rem .5rem; text-align:left}

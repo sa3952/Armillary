@@ -441,7 +441,28 @@ def require_noreply_identities(checkout: Path, *revisions: str) -> int:
     return len(fields) // 3
 
 
-def compare_commit(*, candidate: Path, checkout: Path) -> str:
+def _approved_release_record(release: Path, *, checkout: Path) -> tuple[str, tuple[int, str, bool]]:
+    """The public path and inventory entry of the record in `release`, proven the
+    frontend release producer's own output for this checkout's contract."""
+
+    try:
+        verified = consumer.verify_release(release, authority_root=checkout)
+        consumer.require_published(verified)
+        publication = verified["source_publication"]
+        if not isinstance(publication, dict):
+            raise ValueError("its source publication is not a record")
+        version = publication["release_version"]
+        record = release / consumer.MANIFEST_NAME
+        entry = (record.stat().st_size, sha256_file(record), False)
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        raise ReceiptRefusal(f"the approved frontend release {release} is not a published release: {error}") from None
+    path = f"releases/{version}/{consumer.MANIFEST_NAME}"
+    if not is_public_release_record(path):
+        raise ReceiptRefusal(f"the approved frontend release names no public record path: {path!r}")
+    return path, entry
+
+
+def compare_commit(*, candidate: Path, checkout: Path, approved_release: Path | None = None) -> str:
     """Before any push: the commit at `checkout` HEAD holds exactly the candidate,
     and every commit the push would add (reachable from HEAD, on no
     remote-tracking branch) carries only its subject line: no body, so no
@@ -450,9 +471,17 @@ def compare_commit(*, candidate: Path, checkout: Path) -> str:
     The commit is read through `git archive`, so a file the public `.gitignore`
     kept out of the commit is seen as missing; the operator's Git configuration
     cannot change the bytes compared.
+
+    `approved_release` is the one frontend release whose record this push may
+    add (runbook P8): bit-identical to that release's own record, at the path
+    it names, and on no remote-tracking branch yet.
     """
 
     expected, _ = candidate_inventory(candidate.resolve())
+    approved_record = None
+    if approved_release is not None:
+        approved_record, entry = _approved_release_record(approved_release, checkout=checkout)
+        expected[approved_record] = entry
     name = accepted_repository().split("/", 1)[1]
     try:
         with tempfile.TemporaryDirectory(prefix="compare-home-") as raw_home:
@@ -465,14 +494,28 @@ def compare_commit(*, candidate: Path, checkout: Path) -> str:
                 ["git", "-c", f"core.attributesFile={os.devnull}", "archive", "--format=tar.gz", f"--prefix={name}-{revision}/", "HEAD"],
                 cwd=checkout, capture_output=True, check=True, env=environment,
             ).stdout
+            published_record = approved_record is not None and subprocess.run(
+                ["git", "log", "-1", "--format=%H", "--remotes", "--", approved_record],
+                cwd=checkout, capture_output=True, text=True, check=True, env=environment,
+            ).stdout.strip()
             # Raw metadata ignores mailmap aliases: privacy is about the bytes
             # actually stored in each commit that would become public.
             added = subprocess.run(
                 ["git", "log", "-z", "--no-show-signature", "--format=%H%x00%ae%x00%ce%x00%B", "HEAD", "--not", "--remotes"],
                 cwd=checkout, capture_output=True, text=True, check=True, env=environment,
             ).stdout.split("\0")
+            touched = subprocess.run(
+                ["git", "log", "-m", "-z", "--no-renames", "--no-abbrev", "--format=", "--raw", "HEAD", "--not", "--remotes"],
+                cwd=checkout, capture_output=True, text=True, check=True, env=environment,
+            ).stdout.split("\0")
+            tip_entries = subprocess.run(
+                ["git", "ls-tree", "-r", "-z", "HEAD"],
+                cwd=checkout, capture_output=True, text=True, check=True, env=environment,
+            ).stdout.split("\0")
     except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
         raise ReceiptRefusal(f"cannot read the commit to be published: {error}") from None
+    if published_record:
+        raise ReceiptRefusal(f"the approved release record {approved_record} is already published")
     if added[-1:] != [""] or (len(added) - 1) % 4:
         raise ReceiptRefusal("cannot parse publication commit metadata")
     added.pop()
@@ -487,10 +530,28 @@ def compare_commit(*, candidate: Path, checkout: Path) -> str:
             raise ReceiptRefusal(
                 f"commit to be published {commit.strip()} must carry only its subject line"
             )
+    # Records may stay at the public tip (compare_inventories), but this push adds none
+    # except the one the operator approved by naming its release.
+    changes = list(zip(touched[0::2], touched[1::2]))
+    if touched[-1:] != [""] or any(not change.startswith(":") or len(change.split()) != 5 for change, _path in changes):
+        raise ReceiptRefusal("cannot parse publication commit changes")
+    names = {path for _change, path in changes}
+    added_records = sorted(path for path in names - set(expected) if is_public_release_record(path))
+    if added_records:
+        raise ReceiptRefusal(f"the commit to be published changes release records the approved candidate does "
+                             f"not hold: {added_records[:20]}")
     compare_inventories(
         "commit to be published", expected,
         archive_inventory(archive, repository=accepted_repository(), revision=revision),
     )
+    # The tip now equals the approved set, but a push publishes every commit: bytes
+    # that only an earlier commit holds would become public without being approved.
+    tip_blobs = {entry.split("\t", 1)[1]: entry.split("\t", 1)[0].split()[2] for entry in tip_entries if entry}
+    unapproved = sorted({path for change, path in changes
+                         if not change.endswith(" D") and tip_blobs.get(path) != change.split()[3]})
+    if unapproved:
+        raise ReceiptRefusal(f"an earlier commit to be published holds bytes the tip does not hold: {unapproved[:20]}; "
+                             "publish one commit, or fetch what is already public")
     return revision
 
 
@@ -509,6 +570,8 @@ def main(argv: list[str] | None = None) -> int:
     compare = commands.add_parser("compare", help="before pushing: the local commit equals the candidate")
     compare.add_argument("--candidate", type=Path, required=True)
     compare.add_argument("--checkout", type=Path, required=True)
+    compare.add_argument("--approved-release", type=Path,
+                         help="the frontend release directory whose record this push adds (runbook P8)")
     identities = commands.add_parser(
         "identities", help="before pushing: every commit not yet on a remote names a GitHub noreply identity")
     identities.add_argument("--checkout", type=Path, required=True)
@@ -529,7 +592,8 @@ def main(argv: list[str] | None = None) -> int:
             )
             print(f"PUBLICATION RECEIPT WRITTEN: {arguments.output_dir / RECEIPT_NAME}")
         elif arguments.command == "compare":
-            revision = compare_commit(candidate=arguments.candidate, checkout=arguments.checkout)
+            revision = compare_commit(candidate=arguments.candidate, checkout=arguments.checkout,
+                                      approved_release=arguments.approved_release)
             print(f"COMMIT EQUALS CANDIDATE: {revision}")
             return 0
         elif arguments.command == "identities":

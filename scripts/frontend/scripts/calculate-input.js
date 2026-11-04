@@ -296,6 +296,17 @@ function selectPlace(place) {
   el("place-receipt").focus();
 }
 
+// 數字欄位會在值進到 readDecimal 之前就丟掉印刷負號，貼上的 −33.5 會變成北緯 33.5，所以要在寫入前換掉。
+document.querySelectorAll('input[type="number"]').forEach((input) => {
+  input.addEventListener("beforeinput", (event) => {
+    if (!event.data) return;
+    const normalized = RI.normalizeMinusSigns(event.data);
+    if (normalized === event.data) return;
+    event.preventDefault();
+    document.execCommand("insertText", false, normalized);
+  });
+});
+
 // 手動改動座標或時區時，目錄收據不再成立，必須撤下。
 ["latitude", "longitude", "timezone"].forEach((id) => {
   el(id).addEventListener("input", () => {
@@ -974,6 +985,12 @@ function showFieldError(input, message) {
 }
 
 /** messages 是本頁自己擋下時每一欄的訊息；伺服器點名的欄位沒有逐欄訊息，連到錯誤面板裡伺服器那一句。 */
+// iOS Safari 由程式給焦點時不一定捲動；焦點與畫面都要到位。
+function focusInView(node) {
+  node.focus({ preventScroll: true });
+  if (typeof node.scrollIntoView === "function") node.scrollIntoView({ block: "center" });
+}
+
 function markInvalidFields(fields, messages) {
   fields.forEach((leader) => {
     const message = messages && messages.get(leader);
@@ -988,7 +1005,7 @@ function markInvalidFields(fields, messages) {
   // 手動座標區收在 <details> 裡；一個看不見的無效欄位無法被修正。每一個含無效欄位的 <details> 都要展開，不只第一個欄位
   // 所在的那個——否則焦點落在小時，緯度的錯誤仍藏在收合的區塊裡。
   fields.forEach((input) => { const details = input.closest("details"); if (details) details.open = true; });
-  first.focus();
+  focusInView(first);
 }
 
 function clearFieldInvalid(input) {

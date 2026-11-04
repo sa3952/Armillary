@@ -147,13 +147,13 @@ cancelButton.addEventListener("click", () => {
 el("clear-results").addEventListener("click", () => {
   dropResults();
   setStatus("已清除計算結果。表單保留，可以直接改一個欄位再算一次。", "info");
-  submitButton.focus();
+  focusInView(submitButton);
 });
 
 el("clear-sensitive").addEventListener("click", () => {
   clearSensitiveState();
   setStatus("已清除本頁的輸入與結果。已複製到剪貼簿或已下載的檔案無法由本頁收回。", "info");
-  submitButton.focus();
+  focusInView(submitButton);
 });
 
 // 離開頁面時走與「清除敏感資料」相同的清除；這不是記憶體安全抹除，也不控制瀏覽器當機還原。bfcache 可能把整個 DOM 原樣端

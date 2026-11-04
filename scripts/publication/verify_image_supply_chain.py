@@ -34,6 +34,7 @@ import argparse
 from datetime import date, datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import struct
@@ -520,15 +521,39 @@ def triage_decision(
     return decision, rows, status
 
 
-def _run(command: list[str], *, timeout: int = 1800) -> str:
-    return run_checked(command, error=AuditFailure, timeout=timeout).stdout
+def _run(command: list[str], *, timeout: int = 1800, scanner: str | None = None) -> str:
+    if scanner is None:
+        return run_checked(command, error=AuditFailure, timeout=timeout).stdout
+    if scanner not in ("grype", "trivy"):
+        raise AuditFailure(f"unknown scanner: {scanner}")
+    # Scanner policy never comes from the caller; transport settings remain available.
+    cache = Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))).resolve() / "armillary-scanners"
+    environment = {key: value for key, value in os.environ.items()
+                   if not key.startswith(("GRYPE_", "TRIVY_"))}
+    executable = str(Path(command[0]).resolve()) if "/" in command[0] else command[0]
+    with tempfile.TemporaryDirectory(prefix="scanner-policy-") as temporary:
+        root = Path(temporary)
+        config, ignore = root / "config.json", root / "ignore"
+        config.write_text("{}\n", encoding="utf-8")
+        ignore.write_text("", encoding="utf-8")
+        environment.update(HOME=str(root), XDG_CONFIG_HOME=str(root), XDG_CACHE_HOME=str(cache))
+        options = ["--config", str(config)]
+        if scanner == "grype":
+            # This is a fixed cache location, not an inherited scanner option.
+            config.write_text(json.dumps({"db": {"cache-dir": str(cache / "grype")}}), encoding="utf-8")
+        else:
+            options += ["--cache-dir", str(cache / "trivy")]
+            if command[1] in ("image", "sbom"):
+                options += ["--ignorefile", str(ignore)]
+        return run_checked([executable, *command[1:], *options], error=AuditFailure,
+                           timeout=timeout, env=environment, cwd=root).stdout
 
 
 def _database(grype: str) -> dict[str, Any]:
     """Fresh, checksummed, and of the schema generation this grype reads."""
 
-    status = json.loads(_run([grype, "db", "status", "-o", "json"]))
-    grype_version = re.search(r"^Version:\s*(\S+)", _run([grype, "version"]), re.MULTILINE)
+    status = json.loads(_run([grype, "db", "status", "-o", "json"], scanner="grype"))
+    grype_version = re.search(r"^Version:\s*(\S+)", _run([grype, "version"], scanner="grype"), re.MULTILINE)
     built = status.get("built") or status.get("buildDate") or status.get("database", {}).get("built")
     checksum = status.get("checksum") or parse_qs(urlparse(status.get("from", "")).query).get(
         "checksum", [None]
@@ -542,7 +567,7 @@ def _database(grype: str) -> dict[str, Any]:
     if not -1 <= age <= MAX_GRYPE_DB_AGE_HOURS:
         raise AuditFailure(f"Grype database age {age:.1f}h is outside 0..{MAX_GRYPE_DB_AGE_HOURS}h")
     schema = status.get("schemaVersion") or status.get("schema_version")
-    supported = re.search(r"Supported DB Schema:\s*(\d+)", _run([grype, "version"]))
+    supported = re.search(r"Supported DB Schema:\s*(\d+)", _run([grype, "version"], scanner="grype"))
     if grype_version is None:
         raise AuditFailure("grype did not report its version")
     generation = re.fullmatch(r"v?(\d+)(?:\.\d+)*", str(schema or ""))
@@ -555,9 +580,9 @@ def _database(grype: str) -> dict[str, Any]:
 def _trivy_database(trivy: str) -> dict[str, Any]:
     """The pinned Trivy release, with a fresh database of the schema it reads."""
 
-    _run([trivy, "image", "--download-db-only", "--skip-java-db-update", "--skip-version-check", "--quiet"])
+    _run([trivy, "image", "--download-db-only", "--skip-java-db-update", "--skip-version-check", "--quiet"], scanner="trivy")
     try:
-        status = json.loads(_run([trivy, "version", "--format", "json"]))
+        status = json.loads(_run([trivy, "version", "--format", "json"], scanner="trivy"))
         database = status["VulnerabilityDB"]
         version, schema, updated = status["Version"], database["Version"], database["UpdatedAt"]
         updated_at = datetime.fromisoformat(str(updated).replace("Z", "+00:00"))
@@ -594,7 +619,7 @@ def _scanner_positive_control(grype: str, workspace: Path) -> dict[str, Any]:
     name, version = POSITIVE_CONTROL_PACKAGE
     control = _positive_control_sbom(workspace)
     output = workspace / "positive-control.grype.json"
-    _run([grype, f"sbom:{control}", "-o", "json", "--file", str(output)])
+    _run([grype, f"sbom:{control}", "-o", "json", "--file", str(output)], scanner="grype")
     found = len(grype_matches(output))
     if found < 1:
         raise AuditFailure(f"scanner positive control failed: no match for {name} {version}")
@@ -604,7 +629,7 @@ def _scanner_positive_control(grype: str, workspace: Path) -> dict[str, Any]:
 def _trivy_positive_control(trivy: str, workspace: Path) -> dict[str, Any]:
     name, version = POSITIVE_CONTROL_PACKAGE
     output = workspace / "positive-control.trivy.json"
-    _run([trivy, "sbom", *TRIVY_SCAN_OPTIONS, "--output", str(output), str(_positive_control_sbom(workspace))])
+    _run([trivy, "sbom", *TRIVY_SCAN_OPTIONS, "--output", str(output), str(_positive_control_sbom(workspace))], scanner="trivy")
     document = json.loads(output.read_text(encoding="utf-8"))
     results = document.get("Results") if isinstance(document, dict) else None
     found = sum(len(result.get("Vulnerabilities") or []) for result in results or [] if isinstance(result, dict))
@@ -676,7 +701,7 @@ def main() -> int:
         image_id = image["Id"]
         if not re.fullmatch(r"sha256:[0-9a-f]{64}", str(image_id)):
             raise AuditFailure(f"{args.image} has no image ID")
-        _run([args.grype, "db", "update"])
+        _run([args.grype, "db", "update"], scanner="grype")
         positive_control = _scanner_positive_control(args.grype, output)
         trivy_database = _trivy_database(args.trivy) if args.with_trivy else None
         trivy_positive_control = _trivy_positive_control(args.trivy, output) if args.with_trivy else None
@@ -684,14 +709,14 @@ def main() -> int:
             sbom_config = image_sbom(image_id, args.syft, sbom_path, Path(workspace))
             if args.with_trivy:
                 _run([args.trivy, "image", *TRIVY_SCAN_OPTIONS, "--output", str(trivy_path),
-                      "--input", str(Path(workspace) / "image.tar")])
+                      "--input", str(Path(workspace) / "image.tar")], scanner="trivy")
         sqlite_linkage = pyswisseph_sqlite_linkage(
             image_swisseph_extension(image_id), args.pyswisseph_sdist,
         )
         sbom_path.write_text(json.dumps(with_embedded_components(
             json.loads(sbom_path.read_text(encoding="utf-8")), args.pyswisseph_sdist, sqlite_linkage,
         )), encoding="utf-8")
-        _run([args.grype, f"sbom:{sbom_path}", "-o", "json", "--file", str(grype_path)])
+        _run([args.grype, f"sbom:{sbom_path}", "-o", "json", "--file", str(grype_path)], scanner="grype")
         _run([
             args.pip_audit, "--require-hashes", "--disable-pip", "--no-deps", "--format", "json",
             "--output", str(audit_path), "--requirement", str(lock),

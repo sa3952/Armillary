@@ -504,7 +504,8 @@ _METADATA_CACHE: dict[tuple[str, int, int], dict[str, str]] = {}
 # (scripts/verification/verify_place_catalog.py) requires to equal the
 # database's own copy.
 SEARCH_RECEIPT_OMITTED_METADATA = (
-    "han_script_folding", "source_admin1_corrections", "source_corrections", "zone_policies",
+    "han_script_folding", "source_admin1_corrections", "source_corrections", "source_macau_corrections",
+    "zone_policies",
 )
 SEARCH_RECEIPT_ROW_LISTS_SOURCE = "backend/place_data/catalog_manifest.json"
 

@@ -41,14 +41,12 @@
   const ICS_MONTHS_FAILED = "這一年的月小限沒有取到，存下的檔案裡不會有月小限。";
   const ICS_MONTHS_STOPPED = "改動表單時，這一年的月小限停止取了；按「再取這一年的月小限」，取到之後才能存檔。";
 
+  function syncScrollStop(box) {
+    if (box.scrollWidth - box.clientWidth > 1) box.tabIndex = 0;
+    else box.removeAttribute("tabindex");
+  }
   function scrollStop(details, box) {
-    const update = () => {
-      if (box.scrollWidth - box.clientWidth > 1) box.tabIndex = 0;
-      else box.removeAttribute("tabindex");
-    };
-    details.addEventListener("toggle", update);
-    const view = box.ownerDocument && box.ownerDocument.defaultView;
-    if (view) view.addEventListener("resize", update);
+    details.addEventListener("toggle", () => syncScrollStop(box));
   }
 
   function createPanel(options) {
@@ -358,6 +356,8 @@
       if (state.model) armMidnight();
     }
     win.addEventListener("focus", resumeToday);
+    // 整個面板只掛一個：每次都查當下的框，重畫或清除後舊表格才不會被 window 留住。
+    win.addEventListener("resize", () => host.querySelectorAll(".tl-book-wrap, .tl-life-table-wrap").forEach(syncScrollStop));
     doc.addEventListener("visibilitychange", () => { if (doc.visibilityState !== "hidden") resumeToday(); });
     // 第二層（小期）按需取：只取選定年度與時間軸可見範圍裡、尚未載入的大期；一次一個請求。
     // 月小限只取選定的那一年，排在最前面：同一個請求也帶回那一年所在大期的第二層。

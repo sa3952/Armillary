@@ -100,7 +100,7 @@
 
   const OUTPUT_MODES = Object.freeze({ chart_data_only: "chart_data_only", reproducibility_detail: "reproducibility_detail" });
   const REPRODUCIBILITY_SECTION_IDS = new Set(["trace", "requested_options", "contract", "receipt"]);
-  const SUPPORTED_RESPONSE_CONTRACTS = Object.freeze({ "0.23.0": Object.freeze(["0.13.0"]) });
+  const SUPPORTED_RESPONSE_CONTRACTS = Object.freeze({ "0.24.0": Object.freeze(["0.13.0"]) });
 
   function assertCompatibleSourceResponse(sourceResponse) {
     const apiVersion = sourceResponse && sourceResponse.schema_version;
