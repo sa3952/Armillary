@@ -63,7 +63,7 @@
     {
       "executable": false,
       "path": "SOURCE_EXPORT.json",
-      "sha256": "dea6c6aed99f2d6f55e14e99c55602622a506dac42e13d9ab6d7f96f780e83b0",
+      "sha256": "1152729d35730a51848a83db0fe9be62088e119c9d477f6f4b90ace0eb0bf74b",
       "size_bytes": 136
     },
     {
@@ -867,20 +867,20 @@
     {
       "executable": false,
       "path": "frontend/feed.xml",
-      "sha256": "3dd9efbe13f2136ff96e1a57f1884e7bf3c589da0f433d66ab0ad74d56e139da",
-      "size_bytes": 23689
+      "sha256": "31757f5ae98326a12ac6e08f45e1f97bfe870451750380d3d81e5d471559e41e",
+      "size_bytes": 24401
     },
     {
       "executable": false,
       "path": "frontend/llms-full.txt",
-      "sha256": "c84fe41af0ffad7131acd3063d70a205ead22be87e718d5099c11c5ac3aa46de",
-      "size_bytes": 212549
+      "sha256": "c7ff2ee4af88983e99c0c24a77d85fe1c787aed39c3fd2b962b3c890337e6c13",
+      "size_bytes": 213954
     },
     {
       "executable": false,
       "path": "frontend/llms.txt",
-      "sha256": "41c90293aa20aecb56fc7f0e080f665280ca608fcfb3758de41b776893d26f06",
-      "size_bytes": 21988
+      "sha256": "32bcbe5dfc77b8f1729bdb97c135594b60bac44b6f02ffd2cc99ce0c7471a401",
+      "size_bytes": 22239
     },
     {
       "executable": false,
@@ -909,14 +909,14 @@
     {
       "executable": false,
       "path": "frontend/sitemap.xml",
-      "sha256": "64dd6030aa3f6f2a83be9e6d749aaa4ba1122255097d52645a23f53b033ab9fe",
-      "size_bytes": 6569
+      "sha256": "ca8b168155041157dcc194cb885ea73df7c5b0e428ce83f29a188a89c3ec233f",
+      "size_bytes": 6679
     },
     {
       "executable": false,
       "path": "frontend/surfaces.json",
-      "sha256": "a32850ff0515056b63e4cb584969724de4768136f43e44384b18fad1c31ab309",
-      "size_bytes": 37594
+      "sha256": "a294557d804ed553b9e30a90ae17f2670e62eaa6b9b6688e3c62e61b94ed2d86",
+      "size_bytes": 38314
     },
     {
       "executable": false,
@@ -981,8 +981,8 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/blog.html",
-      "sha256": "53d69d9af003cf8e7e6e285e8853700fd2595953ddabe30ba00a3f2bc31b18e3",
-      "size_bytes": 46112
+      "sha256": "ef88a253071122d69259e1df3ca3db8d1be8e98eb29de8dfc76da97d1322c280",
+      "size_bytes": 46620
     },
     {
       "executable": false,
@@ -1065,8 +1065,8 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/blog/hong-kong-birth-time.html",
-      "sha256": "bd4dd0f3613e40ad32607d02bbe962bcd2ac749a18532b2556c1d3ff35319480",
-      "size_bytes": 180019
+      "sha256": "17c1ccd7f73b346711aac5b66e7d0bab75f8c7190578c4e3be6a56c46de33c74",
+      "size_bytes": 180164
     },
     {
       "executable": false,
@@ -1085,6 +1085,12 @@
       "path": "frontend/zh-TW/blog/lunar-mansions.html",
       "sha256": "7bbffd42b40f893e57f3fbf6c4b4f9640f80cdfd9301b061f0ad9db5ed968d2b",
       "size_bytes": 135758
+    },
+    {
+      "executable": false,
+      "path": "frontend/zh-TW/blog/macau-birth-time.html",
+      "sha256": "0fbbad3ed2b44f8387d58d7a622b5e9431eb35c72d709689fa697a88ed8c39c0",
+      "size_bytes": 110291
     },
     {
       "executable": false,
@@ -1419,8 +1425,8 @@
     {
       "executable": false,
       "path": "frontend/zh-TW/roadmap.html",
-      "sha256": "909e504e40bf514a6422d93493bf392a359085968e89c43e938ad863cdc9d467",
-      "size_bytes": 50793
+      "sha256": "74e699cef2190b8b0dbecdc00fc819e9d24858d40af1eaf3908240803d7d5664",
+      "size_bytes": 50790
     },
     {
       "executable": false,
@@ -1767,8 +1773,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/figures/__init__.py",
-      "sha256": "5bc55ccb8b717b6909bf4da8ec09e8eb26e8f8898350e279edf34a4d1c182131",
-      "size_bytes": 6566
+      "sha256": "785e73b1c05f3f78ef344272a9574fccfa30f1977765e58bd1f1c843da4d2dc2",
+      "size_bytes": 6590
     },
     {
       "executable": false,
@@ -1913,6 +1919,12 @@
       "path": "scripts/frontend/figures/lots.py",
       "sha256": "acce72c838a1d49934b026a1b6b6c9bcbb72f3fe9f7037a5f5b1037e62a5749a",
       "size_bytes": 16363
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/figures/macau_time.py",
+      "sha256": "b71f3d2302b6ef7016b0cfc5b95eedd523815d707068c961fa190593d5f88557",
+      "size_bytes": 23825
     },
     {
       "executable": false,
@@ -2097,8 +2109,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/page_lastmod.json",
-      "sha256": "5ab0477c0fb36204ff5582553a2404b7c569b63cf25f75fa66267813cdae113d",
-      "size_bytes": 9456
+      "sha256": "d735e4fb2b4583fe98e5c56c6658a0650f06ccd74935ebfd21e03220a33c4d24",
+      "size_bytes": 9616
     },
     {
       "executable": false,
@@ -2199,8 +2211,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/pages/blog-hong-kong-birth-time.html",
-      "sha256": "4c81a84ffc78ed47301eaa47f2fa34123d507118c329d7d52235407688c00759",
-      "size_bytes": 131910
+      "sha256": "21eae879e1dbf3322b9ebb6935f4c2138e099bfa8fd5b457839091483878e66c",
+      "size_bytes": 132004
     },
     {
       "executable": false,
@@ -2219,6 +2231,12 @@
       "path": "scripts/frontend/pages/blog-lunar-mansions.html",
       "sha256": "2bfa832b784dcb838c82d986e972d5e8a677c118d50b90263593c83232cb94b1",
       "size_bytes": 85288
+    },
+    {
+      "executable": false,
+      "path": "scripts/frontend/pages/blog-macau-birth-time.html",
+      "sha256": "ccd026c180f2de61f1af5ed0b8a5cc26e76f4ef91298d582a5123298634d5378",
+      "size_bytes": 61352
     },
     {
       "executable": false,
@@ -2319,8 +2337,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/pages/blog.html",
-      "sha256": "e2096702911a3d53f352ce9eeff7ed3eeabda2e12201fb9820eec7b96bcf7ada",
-      "size_bytes": 25353
+      "sha256": "df2053b248e43ca23b92889bcebab2d9636954c0bf0b735cef649bf64d8b259c",
+      "size_bytes": 25872
     },
     {
       "executable": false,
@@ -2433,8 +2451,8 @@
     {
       "executable": false,
       "path": "scripts/frontend/pages/roadmap.html",
-      "sha256": "e690030c636368f79970452a6e76488bf9049f25821cf729668d4321f014dae7",
-      "size_bytes": 20157
+      "sha256": "e35e1247a3eccdc8bb4ea6b13df3522498dc8d0aeb8d4df34bbd7bbca6814e63",
+      "size_bytes": 20154
     },
     {
       "executable": false,

@@ -109,6 +109,7 @@ Armillary (Project Armillary) is a classical Western astrology calculator with a
 - [反照點是什麼？反照點與反向反照點怎麼算、為何以至點為鏡](https://projectarmillary.com/zh-TW/blog/antiscia): 反照點（antiscia）是行星對 0° 巨蟹—0° 摩羯至點軸的鏡像，算法是 180° 減黃經。
 - [2026 水星逆行時刻表：10–11 月天蠍座水逆與古書怎麼說](https://projectarmillary.com/zh-TW/blog/mercury-retrograde-2026): 2026 年 10 月 24 日到 11 月 13 日的水星逆行：停滯、下合、焦傷與日輪內的逐分時刻表，三次水逆為何都在水象，並照 Lilly、Valens 希臘原文、Ptolemy、al-Bīrūnī 說明這些狀態原本指誰的水星。
 - [水星轉順 2026：11 月 13 日停滯時刻，古書怎麼說行星停滯](https://projectarmillary.com/zh-TW/blog/mercury-station-direct-2026): 2026 年 11 月 13 日 23:53 水星在天蠍 5°02′ 轉回順行，金星隔天在天秤轉順。
+- [澳門出生時間怎麼換算？夏令時間、1941–1945 戰時鐘點與逐年表](https://projectarmillary.com/zh-TW/blog/macau-birth-time): 澳門 1946–1979 年實施過 32 段夏令時間，1942、1943 年夏天鐘面更曾快到 UTC+10。
 
 ## Optional
 

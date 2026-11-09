@@ -765,6 +765,21 @@
         "published": "2026-11-01",
         "modified": "2026-11-01"
       }
+    },
+    {
+      "key": "blog-macau-birth-time",
+      "output": "zh-TW/blog/macau-birth-time.html",
+      "surface": "/zh-TW/blog/macau-birth-time",
+      "layers": [
+        "L2",
+        "L3"
+      ],
+      "title": "澳門出生時間怎麼換算？夏令時間、1941–1945 戰時鐘點與逐年表｜渾儀",
+      "description": "澳門 1946–1979 年實施過 32 段夏令時間，1942、1943 年夏天鐘面更曾快到 UTC+10。逐年列出起訖與公報來源，說明澳門和香港哪裡不同、怎麼查自己出生那天的鐘面與世界時，以及填海和地點差異對上升點的實際影響。",
+      "article": {
+        "published": "2026-11-09",
+        "modified": "2026-11-09"
+      }
     }
   ],
   "error_pages": [

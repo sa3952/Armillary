@@ -1,0 +1,274 @@
+<!-- 文章：澳門出生時間的換算。鐘面依計算服務的出處表 backend/app/civil_time_sources.json，產生器以主機的 zoneinfo 逐秒核對；
+     產生圖與表的腳本是 scripts/frontend/figures/macau_time.py（python -m scripts.frontend.figures --check 核對）；例子都是合成時刻。 -->
+<div class="wrap page-body article">
+  <!-- figure:fx-defs -->
+{{fx_defs}}
+  <!-- /figure:fx-defs -->
+
+  <div class="ar-head">
+    <p class="eyebrow"><a href="/zh-TW/blog">文章</a></p>
+    <h1>澳門出生時間怎麼換算？<br>夏令時間、1941–1945 戰時鐘點與逐年表</h1>
+    <p class="ar-dek">一份出生紀錄寫著 1970 年 7 月 15 日下午 3 點，澳門（本文的合成例子）。那天的鐘面比平常快一小時；漏算這一小時，上升點會從天蠍 12°10′ 移到天蠍 25°27′，差 13.3°<a class="ar-cite" href="#ref-11">[11]</a>。</p>
+    {{article_byline:帶數據}}
+  </div>
+
+  <!-- figure:mo-clock -->
+<figure class="fx ar-fig ar-hero" id="fig-mo-clock" data-fx>
+<div class="fx-art" role="group" aria-labelledby="fig-mo-clock-title fig-mo-clock-cap">
+<span class="fx-title" id="fig-mo-clock-title">澳門的鐘面比世界時快多少，1904 到 1979 年，下方放大 1941 到 1946 年</span>
+<svg class="fx-wide" viewBox="0 0 880 452" role="group" aria-labelledby="fig-mo-clock-title"><rect x="1" y="1" width="878" height="450" class="fx-frame"/><rect x="6" y="6" width="868" height="440" class="fx-frame-in"/><line x1="92" y1="174" x2="856" y2="174" class="fx-hair"/><text x="84" y="179" class="fx-t fx-small fx-num fx-dim" text-anchor="end">UTC+8</text><line x1="92" y1="118" x2="856" y2="118" class="fx-hair"/><text x="84" y="123" class="fx-t fx-small fx-num fx-dim" text-anchor="end">UTC+9</text><line x1="92" y1="62" x2="856" y2="62" class="fx-hair"/><text x="84" y="67" class="fx-t fx-small fx-num fx-dim" text-anchor="end">UTC+10</text><rect x="92" y="174" width="43.4" height="24.1" class="fx-fill-dot"/><rect x="469.3" y="118" width="3.2" height="56" class="fx-fill-cross"/><rect x="472.5" y="62" width="4.9" height="112" class="fx-fill-cross"/><rect x="477.4" y="118" width="4" height="56" class="fx-fill-cross"/><rect x="481.4" y="62" width="3.8" height="112" class="fx-fill-cross"/><rect x="485.2" y="118" width="18" height="56" class="fx-fill-cross"/><rect x="508.4" y="118" width="3.8" height="56" class="fx-fill-solid"/><rect x="517.1" y="118" width="5.5" height="56" class="fx-fill-solid"/><rect x="526.5" y="118" width="4.5" height="56" class="fx-fill-solid"/><rect x="534.7" y="118" width="5.2" height="56" class="fx-fill-solid"/><rect x="543.7" y="118" width="5.2" height="56" class="fx-fill-solid"/><rect x="552.6" y="118" width="5.2" height="56" class="fx-fill-solid"/><rect x="561.7" y="118" width="5.2" height="56" class="fx-fill-solid"/><rect x="570.7" y="118" width="5.2" height="56" class="fx-fill-solid"/><rect x="579.3" y="118" width="5.5" height="56" class="fx-fill-solid"/><rect x="588.3" y="118" width="5.7" height="56" class="fx-fill-solid"/><rect x="597.2" y="118" width="5.7" height="56" class="fx-fill-solid"/><rect x="606.4" y="118" width="5.5" height="56" class="fx-fill-solid"/><rect x="615.3" y="118" width="5.5" height="56" class="fx-fill-solid"/><rect x="624.3" y="118" width="5.5" height="56" class="fx-fill-solid"/><rect x="633.2" y="118" width="5.7" height="56" class="fx-fill-solid"/><rect x="642.2" y="118" width="5.7" height="56" class="fx-fill-solid"/><rect x="651.1" y="118" width="5.7" height="56" class="fx-fill-solid"/><rect x="660.3" y="118" width="5.5" height="56" class="fx-fill-solid"/><rect x="669.2" y="118" width="5.5" height="56" class="fx-fill-solid"/><rect x="678.9" y="118" width="4.5" height="56" class="fx-fill-solid"/><rect x="687.8" y="118" width="4.5" height="56" class="fx-fill-solid"/><rect x="696.8" y="118" width="4.7" height="56" class="fx-fill-solid"/><rect x="705.9" y="118" width="4.5" height="56" class="fx-fill-solid"/><rect x="714.9" y="118" width="4.5" height="56" class="fx-fill-solid"/><rect x="723.8" y="118" width="4.5" height="56" class="fx-fill-solid"/><rect x="732.8" y="118" width="4.5" height="56" class="fx-fill-solid"/><rect x="741.8" y="118" width="4.6" height="56" class="fx-fill-solid"/><rect x="750.9" y="118" width="4.5" height="56" class="fx-fill-solid"/><rect x="757.1" y="118" width="7.2" height="56" class="fx-fill-solid"/><rect x="768.8" y="118" width="4.5" height="56" class="fx-fill-solid"/><rect x="777.8" y="118" width="4.5" height="56" class="fx-fill-solid"/><rect x="805.3" y="118" width="4" height="56" class="fx-fill-solid"/><line x1="92" y1="206" x2="856" y2="206" class="fx-axis"/><line x1="128" y1="206" x2="128" y2="211" class="fx-axis"/><text x="128" y="228" class="fx-t fx-small fx-num" text-anchor="middle">1904</text><line x1="271.8" y1="206" x2="271.8" y2="211" class="fx-axis"/><text x="271.8" y="228" class="fx-t fx-small fx-num" text-anchor="middle">1920</text><line x1="460.5" y1="206" x2="460.5" y2="211" class="fx-axis"/><text x="460.5" y="228" class="fx-t fx-small fx-num" text-anchor="middle">1941</text><line x1="505.5" y1="206" x2="505.5" y2="211" class="fx-axis"/><text x="505.5" y="228" class="fx-t fx-small fx-num" text-anchor="middle">1946</text><line x1="631.3" y1="206" x2="631.3" y2="211" class="fx-axis"/><text x="631.3" y="228" class="fx-t fx-small fx-num" text-anchor="middle">1960</text><line x1="802.1" y1="206" x2="802.1" y2="211" class="fx-axis"/><text x="802.1" y="228" class="fx-t fx-small fx-num" text-anchor="middle">1979</text><text x="483" y="52" class="fx-t fx-small fx-key" text-anchor="middle">戰時最快 UTC+10</text><text x="136.9" y="151" class="fx-t fx-small fx-key">1904 年起 UTC+8</text><text x="523.4" y="106" class="fx-t fx-small fx-key">1946–1979 年：32 段夏令時間，鐘面 UTC+9</text><text x="856" y="194.7" class="fx-t fx-small fx-key" text-anchor="end">1977、1978 年沒有；1980 年起不再實施</text><text x="24" y="256" class="fx-t fx-small">放大：1941–1946 年</text><line x1="92" y1="384" x2="856" y2="384" class="fx-hair"/><text x="84" y="389" class="fx-t fx-small fx-num fx-dim" text-anchor="end">UTC+8</text><line x1="92" y1="340" x2="856" y2="340" class="fx-hair"/><text x="84" y="345" class="fx-t fx-small fx-num fx-dim" text-anchor="end">UTC+9</text><line x1="92" y1="296" x2="856" y2="296" class="fx-hair"/><text x="84" y="301" class="fx-t fx-small fx-num fx-dim" text-anchor="end">UTC+10</text><rect x="215.8" y="340" width="45.4" height="44" class="fx-fill-cross"/><rect x="261.2" y="296" width="70.1" height="88" class="fx-fill-cross"/><rect x="331.3" y="340" width="57.2" height="44" class="fx-fill-cross"/><rect x="388.5" y="296" width="53.4" height="88" class="fx-fill-cross"/><rect x="441.9" y="340" width="254.7" height="44" class="fx-fill-cross"/><rect x="770.5" y="340" width="53.4" height="44" class="fx-fill-solid"/><line x1="92" y1="384" x2="856" y2="384" class="fx-axis"/><line x1="92" y1="384" x2="92" y2="389" class="fx-axis"/><text x="155.7" y="406" class="fx-t fx-small fx-num" text-anchor="middle">1941</text><line x1="219.3" y1="384" x2="219.3" y2="389" class="fx-axis"/><text x="283" y="406" class="fx-t fx-small fx-num" text-anchor="middle">1942</text><line x1="346.7" y1="384" x2="346.7" y2="389" class="fx-axis"/><text x="410.3" y="406" class="fx-t fx-small fx-num" text-anchor="middle">1943</text><line x1="474" y1="384" x2="474" y2="389" class="fx-axis"/><text x="537.7" y="406" class="fx-t fx-small fx-num" text-anchor="middle">1944</text><line x1="601.3" y1="384" x2="601.3" y2="389" class="fx-axis"/><text x="665" y="406" class="fx-t fx-small fx-num" text-anchor="middle">1945</text><line x1="728.7" y1="384" x2="728.7" y2="389" class="fx-axis"/><text x="792.3" y="406" class="fx-t fx-small fx-num" text-anchor="middle">1946</text><line x1="856" y1="384" x2="856" y2="389" class="fx-axis"/><rect x="319.5" y="293" width="12.8" height="91" class="fx-cursor"/><text x="325.9" y="285" class="fx-t fx-small fx-cursor-t" text-anchor="middle">這 31 天尚未定論</text></svg>
+<svg class="fx-narrow" viewBox="0 0 340 452" role="group" aria-labelledby="fig-mo-clock-title"><rect x="1" y="1" width="338" height="450" class="fx-frame"/><rect x="6" y="6" width="328" height="440" class="fx-frame-in"/><line x1="70" y1="174" x2="326" y2="174" class="fx-hair"/><text x="62" y="179" class="fx-t fx-small fx-num fx-dim" text-anchor="end">UTC+8</text><line x1="70" y1="118" x2="326" y2="118" class="fx-hair"/><text x="62" y="123" class="fx-t fx-small fx-num fx-dim" text-anchor="end">UTC+9</text><line x1="70" y1="62" x2="326" y2="62" class="fx-hair"/><text x="62" y="67" class="fx-t fx-small fx-num fx-dim" text-anchor="end">UTC+10</text><rect x="70" y="174" width="14.5" height="24.1" class="fx-fill-dot"/><rect x="196.4" y="118" width="1.2" height="56" class="fx-fill-cross"/><rect x="197.5" y="62" width="1.7" height="112" class="fx-fill-cross"/><rect x="199.1" y="118" width="1.4" height="56" class="fx-fill-cross"/><rect x="200.5" y="62" width="1.3" height="112" class="fx-fill-cross"/><rect x="201.8" y="118" width="6" height="56" class="fx-fill-cross"/><rect x="209.5" y="118" width="1.3" height="56" class="fx-fill-solid"/><rect x="212.5" y="118" width="1.9" height="56" class="fx-fill-solid"/><rect x="215.6" y="118" width="1.5" height="56" class="fx-fill-solid"/><rect x="218.3" y="118" width="1.7" height="56" class="fx-fill-solid"/><rect x="221.3" y="118" width="1.7" height="56" class="fx-fill-solid"/><rect x="224.3" y="118" width="1.7" height="56" class="fx-fill-solid"/><rect x="227.4" y="118" width="1.7" height="56" class="fx-fill-solid"/><rect x="230.4" y="118" width="1.7" height="56" class="fx-fill-solid"/><rect x="233.3" y="118" width="1.8" height="56" class="fx-fill-solid"/><rect x="236.3" y="118" width="1.9" height="56" class="fx-fill-solid"/><rect x="239.3" y="118" width="1.9" height="56" class="fx-fill-solid"/><rect x="242.3" y="118" width="1.8" height="56" class="fx-fill-solid"/><rect x="245.4" y="118" width="1.8" height="56" class="fx-fill-solid"/><rect x="248.4" y="118" width="1.8" height="56" class="fx-fill-solid"/><rect x="251.4" y="118" width="1.9" height="56" class="fx-fill-solid"/><rect x="254.4" y="118" width="1.9" height="56" class="fx-fill-solid"/><rect x="257.4" y="118" width="1.9" height="56" class="fx-fill-solid"/><rect x="260.4" y="118" width="1.8" height="56" class="fx-fill-solid"/><rect x="263.4" y="118" width="1.8" height="56" class="fx-fill-solid"/><rect x="266.6" y="118" width="1.5" height="56" class="fx-fill-solid"/><rect x="269.7" y="118" width="1.5" height="56" class="fx-fill-solid"/><rect x="272.7" y="118" width="1.6" height="56" class="fx-fill-solid"/><rect x="275.7" y="118" width="1.5" height="56" class="fx-fill-solid"/><rect x="278.7" y="118" width="1.5" height="56" class="fx-fill-solid"/><rect x="281.7" y="118" width="1.5" height="56" class="fx-fill-solid"/><rect x="284.7" y="118" width="1.5" height="56" class="fx-fill-solid"/><rect x="287.7" y="118" width="1.6" height="56" class="fx-fill-solid"/><rect x="290.8" y="118" width="1.5" height="56" class="fx-fill-solid"/><rect x="292.9" y="118" width="2.4" height="56" class="fx-fill-solid"/><rect x="296.8" y="118" width="1.5" height="56" class="fx-fill-solid"/><rect x="299.8" y="118" width="1.5" height="56" class="fx-fill-solid"/><rect x="309" y="118" width="1.3" height="56" class="fx-fill-solid"/><line x1="70" y1="206" x2="326" y2="206" class="fx-axis"/><line x1="82" y1="206" x2="82" y2="211" class="fx-axis"/><text x="82" y="228" class="fx-t fx-small fx-num" text-anchor="middle">1904</text><line x1="208.5" y1="206" x2="208.5" y2="211" class="fx-axis"/><text x="208.5" y="228" class="fx-t fx-small fx-num" text-anchor="middle">1946</text><line x1="307.9" y1="206" x2="307.9" y2="211" class="fx-axis"/><text x="307.9" y="228" class="fx-t fx-small fx-num" text-anchor="middle">1979</text><text x="201" y="52" class="fx-t fx-small fx-key" text-anchor="middle">戰時 UTC+10</text><text x="85.1" y="151" class="fx-t fx-small fx-key">1904 起 UTC+8</text><text x="326" y="106" class="fx-t fx-small fx-key" text-anchor="end">夏令 32 段</text><text x="24" y="256" class="fx-t fx-small">放大：1941–1946 年</text><line x1="70" y1="384" x2="326" y2="384" class="fx-hair"/><text x="62" y="389" class="fx-t fx-small fx-num fx-dim" text-anchor="end">UTC+8</text><line x1="70" y1="340" x2="326" y2="340" class="fx-hair"/><text x="62" y="345" class="fx-t fx-small fx-num fx-dim" text-anchor="end">UTC+9</text><line x1="70" y1="296" x2="326" y2="296" class="fx-hair"/><text x="62" y="301" class="fx-t fx-small fx-num fx-dim" text-anchor="end">UTC+10</text><rect x="111.5" y="340" width="15.2" height="44" class="fx-fill-cross"/><rect x="126.7" y="296" width="23.5" height="88" class="fx-fill-cross"/><rect x="150.2" y="340" width="19.2" height="44" class="fx-fill-cross"/><rect x="169.4" y="296" width="17.9" height="88" class="fx-fill-cross"/><rect x="187.2" y="340" width="85.3" height="44" class="fx-fill-cross"/><rect x="297.4" y="340" width="17.9" height="44" class="fx-fill-solid"/><line x1="70" y1="384" x2="326" y2="384" class="fx-axis"/><line x1="70" y1="384" x2="70" y2="389" class="fx-axis"/><text x="91.3" y="406" class="fx-t fx-small fx-num" text-anchor="middle">1941</text><line x1="112.7" y1="384" x2="112.7" y2="389" class="fx-axis"/><text x="134" y="406" class="fx-t fx-small fx-num" text-anchor="middle">1942</text><line x1="155.3" y1="384" x2="155.3" y2="389" class="fx-axis"/><text x="176.7" y="406" class="fx-t fx-small fx-num" text-anchor="middle">1943</text><line x1="198" y1="384" x2="198" y2="389" class="fx-axis"/><text x="219.3" y="406" class="fx-t fx-small fx-num" text-anchor="middle">1944</text><line x1="240.7" y1="384" x2="240.7" y2="389" class="fx-axis"/><text x="262" y="406" class="fx-t fx-small fx-num" text-anchor="middle">1945</text><line x1="283.3" y1="384" x2="283.3" y2="389" class="fx-axis"/><text x="304.7" y="406" class="fx-t fx-small fx-num" text-anchor="middle">1946</text><line x1="326" y1="384" x2="326" y2="389" class="fx-axis"/><rect x="145.6" y="293" width="5.6" height="91" class="fx-cursor"/><text x="148.4" y="285" class="fx-t fx-small fx-cursor-t" text-anchor="middle">這 31 天尚未定論</text></svg>
+</div>
+<details class="fx-data"><summary id="fig-mo-clock-data">圖中的數字（表格）</summary><div class="ar-scroll" tabindex="0" role="region" aria-labelledby="fig-mo-clock-data"><table class="ar-table fx-table"><thead><tr><th scope="col">切換（舊鐘面）</th><th scope="col">新鐘面</th></tr></thead><tbody><tr><th scope="row">1904-10-30 00:00</th><td>UTC+8</td></tr><tr><th scope="row">1941-12-21 23:00</th><td>UTC+9</td></tr><tr><th scope="row">1942-04-30 23:00</th><td>UTC+10</td></tr><tr><th scope="row">1942-11-17 23:00</th><td>UTC+9</td></tr><tr><th scope="row">1943-04-30 23:00</th><td>UTC+10</td></tr><tr><th scope="row">1943-09-30 23:00</th><td>UTC+9</td></tr><tr><th scope="row">1945-10-01 00:00</th><td>UTC+8</td></tr><tr><th scope="row">1946–1979</th><td>夏天 UTC+9（共 32 段，逐段見 §02）</td></tr></tbody></table></div></details>
+<figcaption id="fig-mo-clock-cap"><b>圖 1</b>澳門鐘面相對世界時的偏移。交叉線是 1941–1945 年戰時撥快的時段（UTC+9，1942、1943 年夏天 UTC+10），實心細條是 1946–1979 年的 32 段夏令時間（UTC+9），1904 年以前的點是地方平時。朱紅框是 1942 年那 31 天：圖依時區資料庫畫，公報條文的自然讀法則是這段已撥回，見 §04。依本站出處表與時區資料庫。</figcaption>
+</figure>
+  <!-- /figure:mo-clock -->
+
+  <div class="ar-body">
+    <p class="ar-lead">這樣的日子在澳門並不少。1946 到 1979 年的 12,418 天裡，有 6,581 天（53%）的中午是夏令時間；1942、1943 年夏天，鐘面更快到 UTC+10<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-11">[11]</a>。上面的例子兩邊都還在天蠍，但星座不一定保得住：在 1970 年的夏令時間內逐時試算，約一半的時刻（50%），差這一小時就換了上升星座<a class="ar-cite" href="#ref-11">[11]</a>。</p>
+    <p>地點的影響則小得多：在本站的澳門地點之間，離代表點最遠的九澳，上升點最多也只差約 4′<a class="ar-cite" href="#ref-11">[11]</a>。所以要先核對的是那一天的時制。在渾儀不必自己減一小時：照出生紀錄上的鐘點填，地點選澳門，當時的時制由時區資料庫換算。本文逐年列出澳門撥過的鐘、和香港不同的日子，也寫明一段尚未定論的日子。</p>
+    <p>排盤需要的是出生那一刻的世界時，出生紀錄上寫的通常是當時牆上時鐘的讀數。澳門自 1904 年起以 UTC+8 為標準，但戰時與戰後夏天多次撥快；地球物理氣象局的〈夏令時間〉表與排盤軟體共用的 IANA 時區資料庫，對 1946 年以後的開始日逐年一致，1941–1945 年則只能靠當年的《澳門政府公報》與資料庫。</p>
+
+    <section class="ar-points" aria-labelledby="points">
+      <h2 id="points">重點</h2>
+    <ul>
+      <li>1941 年 12 月 21 日 23 時撥快到 UTC+9<a class="ar-cite" href="#ref-4">[4]</a>，1942 年 4 月 30 日 23 時再撥快到 UTC+10<a class="ar-cite" href="#ref-5">[5]</a>；1945 年 9 月 30 日 24 時撥慢一小時，回到 UTC+8<a class="ar-cite" href="#ref-8">[8]</a>。</li>
+      <li>1946–1979 年共 32 段夏令時間，鐘面 UTC+9；1977、1978 年沒有，1980 年起不再實施<a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-2">[2]</a>。</li>
+      <li>夏令時間出生若照 UTC+8 換算，世界時會晚一小時；本文的合成例子（1970 年 7 月 15 日下午 3 點，澳門）上升點差 13.3°<a class="ar-cite" href="#ref-11">[11]</a>。</li>
+      <li>1942 年 10 月 17 日至 11 月 17 日這段有文件與資料庫的出入，尚未定論，見 §04。</li>
+    </ul>
+    </section>
+
+    <h2 id="eras"><span class="ar-sec">§01</span>澳門用過哪幾種鐘點</h2>
+    <div class="ar-scroll" tabindex="0" role="region" aria-label="澳門用過的鐘點"><table class="ar-table">
+      <thead><tr><th>時期（當地鐘面）</th><th>鐘面</th><th>依據</th><th>閱讀層級</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">1904-10-30 以前</th><td>地方平時 UTC+7:34:10（由訓令撥快 25 分 50 秒反推的值）</td><td><a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-3">[3]</a></td><td>原文、原件</td></tr>
+        <tr><th scope="row">1904-10-30 起</th><td>UTC+8</td><td>第 204 號訓令<a class="ar-cite" href="#ref-3">[3]</a></td><td>原件</td></tr>
+        <tr><th scope="row">1941-12-21 23:00 起</th><td>UTC+9</td><td>立法條例第 732 號<a class="ar-cite" href="#ref-4">[4]</a></td><td>原件</td></tr>
+        <tr><th scope="row">1942-04-30 23:00 起</th><td>UTC+10</td><td>立法條例第 764 號<a class="ar-cite" href="#ref-5">[5]</a></td><td>原件</td></tr>
+        <tr><th scope="row">1942 年撥回 UTC+9</th><td>資料庫記 11-17 23:00；公報條文見 §04</td><td><a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-6">[6]</a></td><td><b>尚未定論</b></td></tr>
+        <tr><th scope="row">1943-04-30 23:00 至 09-30 23:00</th><td>UTC+10，其後 UTC+9</td><td>第 3434、3504 號訓令，經資料庫轉引<a class="ar-cite" href="#ref-7">[7]</a></td><td>轉引</td></tr>
+        <tr><th scope="row">1945-09-30 24:00 起</th><td>UTC+8</td><td>第 3843 號訓令<a class="ar-cite" href="#ref-8">[8]</a></td><td>原件</td></tr>
+        <tr><th scope="row">1946–1979</th><td>夏天 UTC+9（§02）</td><td><a class="ar-cite" href="#ref-1">[1]</a><a class="ar-cite" href="#ref-2">[2]</a></td><td>原文，少數原件</td></tr>
+      </tbody>
+    </table></div>
+    <p>1941 年的條例說的是在非常時期維持公私服務、把民生必需品的消耗壓到最低，並設立配給；1942 年的條例說的是把用電量壓到最低<a class="ar-cite" href="#ref-4">[4]</a><a class="ar-cite" href="#ref-5">[5]</a>。</p>
+    <p><b>1944 年</b>我們沒有找到改時間的文件，資料庫也沒有記載，本站依此算 UTC+9；但我們沒有逐頁翻過當年公報。</p>
+
+    <h2 id="years"><span class="ar-sec">§02</span>逐年查：那一年有沒有夏令時間</h2>
+    <p>時間是切換那一刻的舊鐘面。表依時區資料庫<a class="ar-cite" href="#ref-1">[1]</a>，也是本站計算採用的版本；氣象局的表<a class="ar-cite" href="#ref-2">[2]</a>只寫日期，開始日逐年一致，結束日 1949、1951、1952 年差一天（1949 年原件顯示是同一刻的兩種寫法；1951、1952 年未查原件）。</p>
+    <!-- figure:mo-years -->
+    <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab-years-cap">
+    <table class="ar-table">
+    <caption id="tab-years-cap">表 1　澳門 1946–1979 年的夏令時間（切換那一刻的舊鐘面，依時區資料庫）。1977、1978 年沒有。</caption>
+    <thead><tr><th>年</th><th>撥快（鐘面）</th><th>撥回（鐘面）</th></tr></thead>
+    <tbody>
+    <tr><th scope="row">1946</th><td>4 月 30 日 23:00</td><td>9 月 30 日 24:00</td></tr>
+    <tr><th scope="row">1947</th><td>4 月 19 日 23:00</td><td>11 月 30 日 24:00</td></tr>
+    <tr><th scope="row">1948</th><td>5 月 2 日 23:00</td><td>10 月 31 日 24:00</td></tr>
+    <tr><th scope="row">1949</th><td>4 月 2 日 23:00</td><td>10 月 29 日 24:00</td></tr>
+    <tr><th scope="row">1950</th><td>4 月 1 日 23:00</td><td>10 月 28 日 24:00</td></tr>
+    <tr><th scope="row">1951</th><td>3 月 31 日 23:00</td><td>10 月 28 日 24:00</td></tr>
+    <tr><th scope="row">1952</th><td>4 月 5 日 23:00</td><td>11 月 1 日 24:00</td></tr>
+    <tr><th scope="row">1953</th><td>4 月 4 日 23:00</td><td>10 月 31 日 24:00</td></tr>
+    <tr><th scope="row">1954</th><td>3 月 20 日 23:00</td><td>10 月 30 日 24:00</td></tr>
+    <tr><th scope="row">1955</th><td>3 月 19 日 23:00</td><td>11 月 5 日 24:00</td></tr>
+    <tr><th scope="row">1956</th><td>3 月 17 日 23:00</td><td>11 月 4 日 03:30</td></tr>
+    <tr><th scope="row">1957</th><td>3 月 24 日 03:30</td><td>11 月 3 日 03:30</td></tr>
+    <tr><th scope="row">1958</th><td>3 月 23 日 03:30</td><td>11 月 2 日 03:30</td></tr>
+    <tr><th scope="row">1959</th><td>3 月 22 日 03:30</td><td>11 月 1 日 03:30</td></tr>
+    <tr><th scope="row">1960</th><td>3 月 20 日 03:30</td><td>11 月 6 日 03:30</td></tr>
+    <tr><th scope="row">1961</th><td>3 月 19 日 03:30</td><td>11 月 5 日 03:30</td></tr>
+    <tr><th scope="row">1962</th><td>3 月 18 日 03:30</td><td>11 月 4 日 03:30</td></tr>
+    <tr><th scope="row">1963</th><td>3 月 24 日 03:30</td><td>11 月 3 日 03:30</td></tr>
+    <tr><th scope="row">1964</th><td>3 月 22 日 03:30</td><td>11 月 1 日 03:30</td></tr>
+    <tr><th scope="row">1965</th><td>4 月 18 日 03:30</td><td>10 月 17 日 02:30</td></tr>
+    <tr><th scope="row">1966</th><td>4 月 17 日 03:30</td><td>10 月 16 日 02:30</td></tr>
+    <tr><th scope="row">1967</th><td>4 月 16 日 03:30</td><td>10 月 22 日 03:30</td></tr>
+    <tr><th scope="row">1968</th><td>4 月 21 日 03:30</td><td>10 月 20 日 03:30</td></tr>
+    <tr><th scope="row">1969</th><td>4 月 20 日 03:30</td><td>10 月 19 日 03:30</td></tr>
+    <tr><th scope="row">1970</th><td>4 月 19 日 03:30</td><td>10 月 18 日 03:30</td></tr>
+    <tr><th scope="row">1971</th><td>4 月 18 日 03:30</td><td>10 月 17 日 03:30</td></tr>
+    <tr><th scope="row">1972</th><td>4 月 16 日 03:30</td><td>10 月 22 日 03:30</td></tr>
+    <tr><th scope="row">1973</th><td>4 月 22 日 03:30</td><td>10 月 21 日 03:30</td></tr>
+    <tr><th scope="row">1973–74</th><td>1973 年 12 月 30 日 03:30</td><td>1974 年 10 月 20 日 03:30</td></tr>
+    <tr><th scope="row">1975</th><td>4 月 20 日 03:30</td><td>10 月 19 日 03:30</td></tr>
+    <tr><th scope="row">1976</th><td>4 月 18 日 03:30</td><td>10 月 17 日 03:30</td></tr>
+    <tr><th scope="row">1979</th><td>5 月 13 日 03:30</td><td>10 月 21 日 03:30</td></tr>
+    </tbody>
+    </table>
+    </div>
+    <!-- /figure:mo-years -->
+    <p>1965、1966 年的 02:30 撥回只見於時區資料庫，我們沒有對過原件。</p>
+    <div class="ar-stats">
+      <div><b>32</b><span>段夏令時間（1946–1979）</span></div>
+      <div><b>6,581</b><span>天中午鐘面是 UTC+9</span></div>
+      <div><b>2</b><span>年（1977、1978）中間沒有實施</span></div>
+    </div>
+
+    <h2 id="hongkong"><span class="ar-sec">§03</span>澳門和香港哪裡不一樣</h2>
+    <p>澳門和香港 1904 年同樣進入 UTC+8，但之後不能互相套用。1941 到 1979 年逐日比對每天中午的鐘面（依時區資料庫），共 677 天不同，全部落在 1941–1951 年<a class="ar-cite" href="#ref-11">[11]</a>：</p>
+    <!-- figure:mo-hk -->
+<figure class="fx ar-fig" id="fig-mo-hk" data-fx>
+<div class="fx-art" role="group" aria-labelledby="fig-mo-hk-title fig-mo-hk-cap">
+<span class="fx-title" id="fig-mo-hk-title">澳門與香港中午鐘面不同的日子，1941 到 1951 年</span>
+<svg class="fx-wide" viewBox="0 0 880 496" role="group" aria-labelledby="fig-mo-hk-title"><rect x="1" y="1" width="878" height="494" class="fx-frame"/><rect x="6" y="6" width="868" height="484" class="fx-frame-in"/><text x="124.1" y="42" class="fx-t fx-small fx-num fx-dim" text-anchor="middle">1 月</text><text x="180.2" y="42" class="fx-t fx-small fx-num fx-dim" text-anchor="middle">2 月</text><text x="236.4" y="42" class="fx-t fx-small fx-num fx-dim" text-anchor="middle">3 月</text><text x="292.6" y="42" class="fx-t fx-small fx-num fx-dim" text-anchor="middle">4 月</text><text x="348.8" y="42" class="fx-t fx-small fx-num fx-dim" text-anchor="middle">5 月</text><text x="404.9" y="42" class="fx-t fx-small fx-num fx-dim" text-anchor="middle">6 月</text><text x="461.1" y="42" class="fx-t fx-small fx-num fx-dim" text-anchor="middle">7 月</text><text x="517.2" y="42" class="fx-t fx-small fx-num fx-dim" text-anchor="middle">8 月</text><text x="573.4" y="42" class="fx-t fx-small fx-num fx-dim" text-anchor="middle">9 月</text><text x="629.6" y="42" class="fx-t fx-small fx-num fx-dim" text-anchor="middle">10 月</text><text x="685.8" y="42" class="fx-t fx-small fx-num fx-dim" text-anchor="middle">11 月</text><text x="741.9" y="42" class="fx-t fx-small fx-num fx-dim" text-anchor="middle">12 月</text><text x="86" y="71" class="fx-t fx-small fx-num" text-anchor="end">1941</text><rect x="96" y="54" width="674" height="22" class="fx-cell"/><rect x="400.7" y="54" width="199.4" height="22" class="fx-fill-hatch"/><rect x="600.1" y="54" width="151.4" height="22" class="fx-fill-dot"/><rect x="600.1" y="54" width="151.4" height="22" class="fx-frame-in"/><rect x="751.5" y="54" width="5.5" height="22" class="fx-fill-dot"/><rect x="751.5" y="54" width="5.5" height="22" class="fx-frame-in"/><text x="778" y="71" class="fx-t fx-small fx-num">193 天</text><text x="86" y="101" class="fx-t fx-small fx-num" text-anchor="end">1942</text><rect x="96" y="84" width="674" height="22" class="fx-cell"/><rect x="317.6" y="84" width="371.2" height="22" class="fx-fill-solid"/><text x="778" y="101" class="fx-t fx-small fx-num">201 天</text><rect x="631.4" y="81" width="57.2" height="28" class="fx-cursor"/><text x="86" y="131" class="fx-t fx-small fx-num" text-anchor="end">1943</text><rect x="96" y="114" width="674" height="22" class="fx-cell"/><rect x="317.6" y="114" width="282.5" height="22" class="fx-fill-solid"/><text x="778" y="131" class="fx-t fx-small fx-num">153 天</text><text x="86" y="161" class="fx-t fx-small fx-num" text-anchor="end">1944</text><rect x="96" y="144" width="674" height="22" class="fx-cell"/><text x="778" y="161" class="fx-t fx-small fx-num fx-dim">相同</text><text x="86" y="191" class="fx-t fx-small fx-num" text-anchor="end">1945</text><rect x="96" y="174" width="674" height="22" class="fx-cell"/><rect x="600.1" y="174" width="88.6" height="22" class="fx-fill-hatch"/><text x="778" y="191" class="fx-t fx-small fx-num">48 天</text><text x="86" y="221" class="fx-t fx-small fx-num" text-anchor="end">1946</text><rect x="96" y="204" width="674" height="22" class="fx-cell"/><rect x="299.1" y="204" width="18.5" height="22" class="fx-fill-hatch"/><rect x="600.1" y="204" width="112.6" height="22" class="fx-fill-hatch"/><text x="778" y="221" class="fx-t fx-small fx-num">71 天</text><text x="86" y="251" class="fx-t fx-small fx-num" text-anchor="end">1947</text><rect x="96" y="234" width="674" height="22" class="fx-cell"/><rect x="284.4" y="234" width="12.9" height="22" class="fx-fill-hatch"/><rect x="710.9" y="234" width="2.4" height="22" class="fx-fill-solid"/><text x="778" y="251" class="fx-t fx-small fx-num">8 天</text><text x="86" y="281" class="fx-t fx-small fx-num" text-anchor="end">1948</text><rect x="96" y="264" width="674" height="22" class="fx-cell"/><rect x="320.7" y="264" width="2.4" height="22" class="fx-fill-hatch"/><rect x="655.8" y="264" width="2.4" height="22" class="fx-fill-solid"/><text x="778" y="281" class="fx-t fx-small fx-num">2 天</text><text x="86" y="311" class="fx-t fx-small fx-num" text-anchor="end">1949</text><rect x="96" y="294" width="674" height="22" class="fx-cell"/><text x="778" y="311" class="fx-t fx-small fx-num fx-dim">相同</text><text x="86" y="341" class="fx-t fx-small fx-num" text-anchor="end">1950</text><rect x="96" y="324" width="674" height="22" class="fx-cell"/><text x="778" y="341" class="fx-t fx-small fx-num fx-dim">相同</text><text x="86" y="371" class="fx-t fx-small fx-num" text-anchor="end">1951</text><rect x="96" y="354" width="674" height="22" class="fx-cell"/><rect x="650" y="354" width="2.4" height="22" class="fx-fill-solid"/><text x="778" y="371" class="fx-t fx-small fx-num">1 天</text><rect x="96" y="394" width="26" height="15" class="fx-fill-solid"/><rect x="96" y="394" width="26" height="15" class="fx-frame-in"/><text x="130" y="407" class="fx-t fx-small">澳門快一小時</text><rect x="286" y="394" width="26" height="15" class="fx-fill-hatch"/><rect x="286" y="394" width="26" height="15" class="fx-frame-in"/><text x="320" y="407" class="fx-t fx-small">澳門慢一小時</text><rect x="476" y="394" width="26" height="15" class="fx-fill-dot"/><rect x="476" y="394" width="26" height="15" class="fx-frame-in"/><text x="510" y="407" class="fx-t fx-small">相差半小時</text><rect x="666" y="394" width="26" height="15" class="fx-cursor"/><text x="700" y="407" class="fx-t fx-small fx-cursor-t">尚未定論</text><text x="96" y="450" class="fx-t">1952–1979 年：逐日比對中午鐘面，沒有不同的日子。</text></svg>
+<svg class="fx-narrow" viewBox="0 0 340 467" role="group" aria-labelledby="fig-mo-hk-title"><rect x="1" y="1" width="338" height="465" class="fx-frame"/><rect x="6" y="6" width="328" height="455" class="fx-frame-in"/><text x="65.7" y="42" class="fx-t fx-small fx-num fx-dim" text-anchor="middle">1月</text><text x="123.7" y="42" class="fx-t fx-small fx-num fx-dim" text-anchor="middle">4月</text><text x="181.7" y="42" class="fx-t fx-small fx-num fx-dim" text-anchor="middle">7月</text><text x="239.7" y="42" class="fx-t fx-small fx-num fx-dim" text-anchor="middle">10月</text><text x="46" y="67" class="fx-t fx-small fx-num" text-anchor="end">1941</text><rect x="56" y="54" width="232" height="18" class="fx-cell"/><rect x="160.9" y="54" width="68.6" height="18" class="fx-fill-hatch"/><rect x="229.5" y="54" width="52.1" height="18" class="fx-fill-dot"/><rect x="229.5" y="54" width="52.1" height="18" class="fx-frame-in"/><rect x="281.6" y="54" width="2.4" height="18" class="fx-fill-dot"/><rect x="281.6" y="54" width="2.4" height="18" class="fx-frame-in"/><text x="296" y="67" class="fx-t fx-small fx-num">193 天</text><text x="46" y="92" class="fx-t fx-small fx-num" text-anchor="end">1942</text><rect x="56" y="79" width="232" height="18" class="fx-cell"/><rect x="132.3" y="79" width="127.8" height="18" class="fx-fill-solid"/><text x="296" y="92" class="fx-t fx-small fx-num">201 天</text><rect x="240.3" y="76" width="19.7" height="24" class="fx-cursor"/><text x="46" y="117" class="fx-t fx-small fx-num" text-anchor="end">1943</text><rect x="56" y="104" width="232" height="18" class="fx-cell"/><rect x="132.3" y="104" width="97.2" height="18" class="fx-fill-solid"/><text x="296" y="117" class="fx-t fx-small fx-num">153 天</text><text x="46" y="142" class="fx-t fx-small fx-num" text-anchor="end">1944</text><rect x="56" y="129" width="232" height="18" class="fx-cell"/><text x="296" y="142" class="fx-t fx-small fx-num fx-dim">相同</text><text x="46" y="167" class="fx-t fx-small fx-num" text-anchor="end">1945</text><rect x="56" y="154" width="232" height="18" class="fx-cell"/><rect x="229.5" y="154" width="30.5" height="18" class="fx-fill-hatch"/><text x="296" y="167" class="fx-t fx-small fx-num">48 天</text><text x="46" y="192" class="fx-t fx-small fx-num" text-anchor="end">1946</text><rect x="56" y="179" width="232" height="18" class="fx-cell"/><rect x="125.9" y="179" width="6.4" height="18" class="fx-fill-hatch"/><rect x="229.5" y="179" width="38.8" height="18" class="fx-fill-hatch"/><text x="296" y="192" class="fx-t fx-small fx-num">71 天</text><text x="46" y="217" class="fx-t fx-small fx-num" text-anchor="end">1947</text><rect x="56" y="204" width="232" height="18" class="fx-cell"/><rect x="120.8" y="204" width="4.4" height="18" class="fx-fill-hatch"/><rect x="267.7" y="204" width="2.4" height="18" class="fx-fill-solid"/><text x="296" y="217" class="fx-t fx-small fx-num">8 天</text><text x="46" y="242" class="fx-t fx-small fx-num" text-anchor="end">1948</text><rect x="56" y="229" width="232" height="18" class="fx-cell"/><rect x="133.3" y="229" width="2.4" height="18" class="fx-fill-hatch"/><rect x="248.7" y="229" width="2.4" height="18" class="fx-fill-solid"/><text x="296" y="242" class="fx-t fx-small fx-num">2 天</text><text x="46" y="267" class="fx-t fx-small fx-num" text-anchor="end">1949</text><rect x="56" y="254" width="232" height="18" class="fx-cell"/><text x="296" y="267" class="fx-t fx-small fx-num fx-dim">相同</text><text x="46" y="292" class="fx-t fx-small fx-num" text-anchor="end">1950</text><rect x="56" y="279" width="232" height="18" class="fx-cell"/><text x="296" y="292" class="fx-t fx-small fx-num fx-dim">相同</text><text x="46" y="317" class="fx-t fx-small fx-num" text-anchor="end">1951</text><rect x="56" y="304" width="232" height="18" class="fx-cell"/><rect x="246.7" y="304" width="2.4" height="18" class="fx-fill-solid"/><text x="296" y="317" class="fx-t fx-small fx-num">1 天</text><rect x="22" y="339" width="22" height="14" class="fx-fill-solid"/><rect x="22" y="339" width="22" height="14" class="fx-frame-in"/><text x="50" y="351" class="fx-t fx-small">澳門快一小時</text><rect x="164" y="339" width="22" height="14" class="fx-fill-hatch"/><rect x="164" y="339" width="22" height="14" class="fx-frame-in"/><text x="192" y="351" class="fx-t fx-small">澳門慢一小時</text><rect x="22" y="365" width="22" height="14" class="fx-fill-dot"/><rect x="22" y="365" width="22" height="14" class="fx-frame-in"/><text x="50" y="377" class="fx-t fx-small">相差半小時</text><rect x="164" y="365" width="22" height="14" class="fx-cursor"/><text x="192" y="377" class="fx-t fx-small fx-cursor-t">尚未定論</text><text x="22" y="421" class="fx-t fx-small">1952–1979 年：逐日比對中午</text><text x="22" y="441" class="fx-t fx-small">鐘面，沒有不同的日子。</text></svg>
+</div>
+<details class="fx-data"><summary id="fig-mo-hk-data">圖中的數字（表格）</summary><div class="ar-scroll" tabindex="0" role="region" aria-labelledby="fig-mo-hk-data"><table class="ar-table fx-table"><thead><tr><th scope="col">期間</th><th scope="col">澳門</th><th scope="col">香港</th><th scope="col">天數</th></tr></thead><tbody><tr><th scope="row">1941-06-15 至 1941-09-30</th><td>UTC+8</td><td>UTC+9</td><td>108</td></tr><tr><th scope="row">1941-10-01 至 1941-12-21</th><td>UTC+8</td><td>UTC+8.5</td><td>82</td></tr><tr><th scope="row">1941-12-22 至 1941-12-24</th><td>UTC+9</td><td>UTC+8.5</td><td>3</td></tr><tr><th scope="row">1942-05-01 至 1942-11-17</th><td>UTC+10</td><td>UTC+9</td><td>201</td></tr><tr><th scope="row">1943-05-01 至 1943-09-30</th><td>UTC+10</td><td>UTC+9</td><td>153</td></tr><tr><th scope="row">1945-10-01 至 1945-11-17</th><td>UTC+8</td><td>UTC+9</td><td>48</td></tr><tr><th scope="row">1946-04-21 至 1946-04-30</th><td>UTC+8</td><td>UTC+9</td><td>10</td></tr><tr><th scope="row">1946-10-01 至 1946-11-30</th><td>UTC+8</td><td>UTC+9</td><td>61</td></tr><tr><th scope="row">1947-04-13 至 1947-04-19</th><td>UTC+8</td><td>UTC+9</td><td>7</td></tr><tr><th scope="row">1947-11-30</th><td>UTC+9</td><td>UTC+8</td><td>1</td></tr><tr><th scope="row">1948-05-02</th><td>UTC+8</td><td>UTC+9</td><td>1</td></tr><tr><th scope="row">1948-10-31</th><td>UTC+9</td><td>UTC+8</td><td>1</td></tr><tr><th scope="row">1951-10-28</th><td>UTC+9</td><td>UTC+8</td><td>1</td></tr></tbody></table></div></details>
+<figcaption id="fig-mo-hk-cap"><b>圖 2</b>逐日比對 1941 到 1979 年的中午鐘面，共 677 天不同，全部落在 1941–1951 年。右欄是當年不同的天數。朱紅框是 1942 年尚未定論的 31 天，圖依時區資料庫；若公報的 10 月讀法才對，這幾天兩地鐘面其實相同。切換當下的鐘點沒有比對。香港依時區資料庫，不含天文台表與資料庫不同之處。</figcaption>
+</figure>
+    <!-- /figure:mo-hk -->
+    <p>逐段如下：</p>
+    <div class="ar-scroll" tabindex="0" role="region" aria-label="澳門與香港鐘面不同的期間"><table class="ar-table">
+      <thead><tr><th>期間</th><th>澳門</th><th>香港</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">1941-06-15 至 09-30</th><td>UTC+8</td><td>UTC+9</td></tr>
+        <tr><th scope="row">1941-10-01 至 12-21</th><td>UTC+8</td><td>UTC+8:30</td></tr>
+        <tr><th scope="row">1941-12-22 至 12-24</th><td>UTC+9</td><td>UTC+8:30</td></tr>
+        <tr><th scope="row">1942-05-01 至 11-17</th><td>UTC+10</td><td>UTC+9</td></tr>
+        <tr><th scope="row">1943-05-01 至 09-30</th><td>UTC+10</td><td>UTC+9</td></tr>
+        <tr><th scope="row">1945-10-01 至 11-17</th><td>UTC+8</td><td>UTC+9</td></tr>
+        <tr><th scope="row">1946-04-21 至 04-30、10-01 至 11-30</th><td>UTC+8</td><td>UTC+9</td></tr>
+        <tr><th scope="row">1947-04-13 至 04-19</th><td>UTC+8</td><td>UTC+9</td></tr>
+        <tr><th scope="row">1947-11-30</th><td>UTC+9</td><td>UTC+8</td></tr>
+        <tr><th scope="row">1948-05-02</th><td>UTC+8</td><td>UTC+9</td></tr>
+        <tr><th scope="row">1948-10-31、1951-10-28</th><td>UTC+9</td><td>UTC+8</td></tr>
+      </tbody>
+    </table></div>
+    <p>1952–1979 年每日中午相同；切換當天的鐘點我們沒有逐一比對。</p>
+    <p><b>戰時這段不要照抄香港的說法。</b> 香港文談的是日佔時期的東京時間。澳門這幾份文件由澳門總督簽署，條文寫的是服務、配給與用電，沒有提到東京時間<a class="ar-cite" href="#ref-4">[4]</a><a class="ar-cite" href="#ref-5">[5]</a><a class="ar-cite" href="#ref-8">[8]</a>。UTC+9 這個數字相同，文件的說法不同；而 1942、1943 年夏天的 UTC+10，香港的紀錄裡沒有。</p>
+
+    <h2 id="dispute"><span class="ar-sec">§04</span>尚未定論的一段：1942 年 10 月 17 日到 11 月 17 日</h2>
+    <p>1942 年把鐘面撥回一小時的文件，是 10 月 10 日簽署、同日刊於公報第 388 頁的立法條例第 781 號。條文寫「às 23 do próximo dia 17」（下一個 17 日的 23 時），沒有寫月份<a class="ar-cite" href="#ref-6">[6]</a>。依文件日期，自然讀法是 10 月 17 日；時區資料庫記的是 11 月 17 日，註記沒有說明原因<a class="ar-cite" href="#ref-1">[1]</a>。</p>
+    <p><b>我們目前只有這一份文件，不能判定哪一邊正確。</b> 可能另有後續文件把日期改到 11 月；當年 10、11 月的公報我們沒有逐頁查過。氣象局的表從 1946 年開始，幫不上這一段<a class="ar-cite" href="#ref-2">[2]</a>。</p>
+    <p><b>下一步：</b> 本站正計劃向時區資料庫提出修正建議。這件事尚未提出，也尚未定論；目前的依據只有這一份文件，提出之前會先查有沒有第二份文件。在那之前，本文不說資料庫有錯。</p>
+    <p><b>本站這段的實際行為：</b> 計算服務跟隨時區資料庫。1942 年 10 月 18 日至 11 月 17 日 22:00 之前，一律算 UTC+10；這 31 天若 10 月的讀法才對，就是多算了一小時。計算服務也把這段標成資料庫推定、未經驗證，「核對這個鐘面時間」會列出依據<a class="ar-cite" href="#ref-10">[10]</a>。</p>
+    <p>差多少：合成例 1942 年 11 月 1 日 12:00，澳門，UTC+10 時上升射手 23°42′；UTC+9 時上升摩羯 7°33′，差約 14 度，星座也變了<a class="ar-cite" href="#ref-11">[11]</a>。</p>
+    <p><b>如果你生在這 31 天：</b> 計算頁目前只算資料庫這一種，並在「核對這個鐘面時間」標明這段是推定、未經驗證。</p>
+
+    <h2 id="howto"><span class="ar-sec">§05</span>怎麼查自己出生那天的鐘面與世界時</h2>
+    <ol>
+      <li>先看 §02：那天在不在夏令時間內。戰時（1941–1945）看 §01。</li>
+      <li>開<a href="/zh-TW/calculate">計算頁</a>，地點選澳門，<b>照出生紀錄上的鐘點填，不要自己加減</b>。</li>
+      <li>按「核對這個鐘面時間」：服務會寫出那一刻的偏移、換算後的世界時、時制名稱與依據文件<a class="ar-cite" href="#ref-10">[10]</a>。</li>
+      <li>手算核對：世界時＝鐘面－偏移。1970 年 7 月 15 日 15:00 在夏令時間內，15:00－9 小時＝世界時 06:00<a class="ar-cite" href="#ref-11">[11]</a>。</li>
+    </ol>
+    <p><b>不存在與出現兩次的鐘點。</b> 撥快當天，切換後一小時的鐘點不存在；撥回當天，有一小時出現兩次。服務不替你猜，會請你核對或指明是哪一次。</p>
+    <div class="ar-scroll" tabindex="0" role="region" aria-label="不存在與出現兩次的鐘點"><table class="ar-table">
+      <thead><tr><th>鐘面</th><th>服務回應（實測）<a class="ar-cite" href="#ref-11">[11]</a></th></tr></thead>
+      <tbody>
+        <tr><th scope="row">1970-04-19 03:45</th><td>不存在</td></tr>
+        <tr><th scope="row">1970-10-18 03:15</th><td>出現兩次：UTC+9（世界時 10-17 18:15）或 UTC+8（19:15）</td></tr>
+        <tr><th scope="row">1945-09-30 23:30</th><td>出現兩次：UTC+9 或 UTC+8</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>出生紀錄寫的是不是當時鐘面？</b> 通常應該是當時牆上的鐘，但我們沒有找到澳門出生紀錄慣例的權威資料；紀錄是否被換算過，只有文件本身與家人的記憶能回答。</p>
+
+    <h2 id="method"><span class="ar-sec">§06</span>本站怎麼算</h2>
+    <ul>
+      <li>地點目錄裡的澳門地點，時區都是 <code>Asia/Macau</code>；服務以時區資料庫把鐘面換成世界時，版本記在每次計算的卷宗裡<a class="ar-cite" href="#ref-10">[10]</a>。</li>
+      <li>我們對 1946–1979 年的 32 段各抽段中那天的中午，以及每段前兩天、後兩天的中午，加上 1977、1978、1980 年 7 月 15 日，共 99 個鐘面送進計算服務，偏移全部符合 §02 的表<a class="ar-cite" href="#ref-11">[11]</a>。這只說明本站與資料庫一致，不代表資料庫每一天都對。</li>
+      <li>本站只算一張盤，採用資料庫的換算。資料庫與文件有出入的地方，我們寫出來（§04），不替你靜靜改。</li>
+    </ul>
+
+    <h2 id="places"><span class="ar-sec">§07</span>填海與地點差異，對上升點幾乎沒影響</h2>
+    <p>澳門的陸地面積從有紀錄的 1912 年 11.6 平方公里，增加到 2024 年 33.3 平方公里，其中路氹填海區 6.1 平方公里<a class="ar-cite" href="#ref-9">[9]</a>。常有人會問：出生地後來變成新填地，或家人只記得「澳門」，星盤會不會差很多？</p>
+    <p>幾乎不會。下圖把地點差異和時間差異放在同一個比例尺上。</p>
+    <!-- figure:mo-asc -->
+<figure class="fx ar-fig" id="fig-mo-asc" data-fx>
+<div class="fx-art" role="group" aria-labelledby="fig-mo-asc-title fig-mo-asc-cap">
+<span class="fx-title" id="fig-mo-asc-title">選錯地點與鐘面差一小時，對上升點的影響（同一比例尺）</span>
+<svg class="fx-wide" viewBox="0 0 880 408" role="group" aria-labelledby="fig-mo-asc-title"><rect x="1" y="1" width="878" height="406" class="fx-frame"/><rect x="6" y="6" width="868" height="396" class="fx-frame-in"/><line x1="236" y1="48" x2="236" y2="332" class="fx-hair"/><text x="236" y="352" class="fx-t fx-small fx-num" text-anchor="middle">0°</text><line x1="342" y1="48" x2="342" y2="332" class="fx-hair"/><text x="342" y="352" class="fx-t fx-small fx-num" text-anchor="middle">5°</text><line x1="448" y1="48" x2="448" y2="332" class="fx-hair"/><text x="448" y="352" class="fx-t fx-small fx-num" text-anchor="middle">10°</text><line x1="554" y1="48" x2="554" y2="332" class="fx-hair"/><text x="554" y="352" class="fx-t fx-small fx-num" text-anchor="middle">15°</text><line x1="660" y1="48" x2="660" y2="332" class="fx-hair"/><text x="660" y="352" class="fx-t fx-small fx-num" text-anchor="middle">20°</text><line x1="236" y1="332" x2="660" y2="332" class="fx-axis"/><text x="236" y="376" class="fx-t fx-small fx-dim">上升點的差距（度）</text><text x="224" y="71" class="fx-t fx-small" text-anchor="end">花地瑪堂區</text><rect x="236" y="58" width="1.6" height="18" class="fx-fill-solid"/><text x="244.1" y="71" class="fx-t fx-small fx-num fx-key">最大 0.3′（平均 0.2′）</text><text x="224" y="105" class="fx-t fx-small" text-anchor="end">氹仔</text><rect x="236" y="92" width="1.6" height="18" class="fx-fill-solid"/><text x="244.7" y="105" class="fx-t fx-small fx-num fx-key">最大 1.9′（平均 1.0′）</text><text x="224" y="139" class="fx-t fx-small" text-anchor="end">路氹</text><rect x="236" y="126" width="1.6" height="18" class="fx-fill-solid"/><text x="245" y="139" class="fx-t fx-small fx-num fx-key">最大 2.7′（平均 1.3′）</text><text x="224" y="173" class="fx-t fx-small" text-anchor="end">路環</text><rect x="236" y="160" width="1.6" height="18" class="fx-fill-solid"/><text x="245" y="173" class="fx-t fx-small fx-num fx-key">最大 2.7′（平均 1.6′）</text><text x="224" y="207" class="fx-t fx-small" text-anchor="end">九澳</text><rect x="236" y="194" width="1.6" height="18" class="fx-fill-solid"/><text x="245.5" y="207" class="fx-t fx-small fx-num fx-key">最大 4.1′（平均 2.1′）</text><text x="224" y="241" class="fx-t fx-small" text-anchor="end">香港（對照）</text><rect x="236" y="228" width="17.7" height="18" class="fx-fill-solid"/><text x="261.7" y="241" class="fx-t fx-small fx-num fx-key">最大 50.1′（平均 37.7′）</text><text x="224" y="275" class="fx-t fx-small" text-anchor="end">漏算夏令（本文例子）</text><rect x="236" y="262" width="281.8" height="18" class="fx-fill-solid"/><text x="525.8" y="275" class="fx-t fx-small fx-num fx-key">13.3°</text><text x="224" y="309" class="fx-t fx-small" text-anchor="end">同地鐘面差一小時</text><rect x="236" y="296" width="421.3" height="18" class="fx-fill-solid"/><text x="665.3" y="309" class="fx-t fx-small fx-num fx-key">最大 19.9°（平均 15.0°）</text></svg>
+<svg class="fx-narrow" viewBox="0 0 340 538" role="group" aria-labelledby="fig-mo-asc-title"><rect x="1" y="1" width="338" height="536" class="fx-frame"/><rect x="6" y="6" width="328" height="526" class="fx-frame-in"/><line x1="20" y1="46" x2="20" y2="458" class="fx-hair"/><text x="20" y="478" class="fx-t fx-small fx-num" text-anchor="middle">0°</text><line x1="95" y1="46" x2="95" y2="458" class="fx-hair"/><text x="95" y="478" class="fx-t fx-small fx-num" text-anchor="middle">5°</text><line x1="170" y1="46" x2="170" y2="458" class="fx-hair"/><text x="170" y="478" class="fx-t fx-small fx-num" text-anchor="middle">10°</text><line x1="245" y1="46" x2="245" y2="458" class="fx-hair"/><text x="245" y="478" class="fx-t fx-small fx-num" text-anchor="middle">15°</text><line x1="320" y1="46" x2="320" y2="458" class="fx-hair"/><text x="320" y="478" class="fx-t fx-small fx-num" text-anchor="middle">20°</text><line x1="20" y1="458" x2="320" y2="458" class="fx-axis"/><text x="20" y="502" class="fx-t fx-small fx-dim">上升點的差距（度）</text><text x="20" y="64" class="fx-t fx-small fx-key">花地瑪堂區</text><text x="320" y="64" class="fx-t fx-small fx-num fx-key" text-anchor="end">最大 0.3′（平均 0.2′）</text><rect x="20" y="71" width="1.6" height="14" class="fx-fill-solid"/><text x="20" y="114" class="fx-t fx-small fx-key">氹仔</text><text x="320" y="114" class="fx-t fx-small fx-num fx-key" text-anchor="end">最大 1.9′（平均 1.0′）</text><rect x="20" y="121" width="1.6" height="14" class="fx-fill-solid"/><text x="20" y="164" class="fx-t fx-small fx-key">路氹</text><text x="320" y="164" class="fx-t fx-small fx-num fx-key" text-anchor="end">最大 2.7′（平均 1.3′）</text><rect x="20" y="171" width="1.6" height="14" class="fx-fill-solid"/><text x="20" y="214" class="fx-t fx-small fx-key">路環</text><text x="320" y="214" class="fx-t fx-small fx-num fx-key" text-anchor="end">最大 2.7′（平均 1.6′）</text><rect x="20" y="221" width="1.6" height="14" class="fx-fill-solid"/><text x="20" y="264" class="fx-t fx-small fx-key">九澳</text><text x="320" y="264" class="fx-t fx-small fx-num fx-key" text-anchor="end">最大 4.1′（平均 2.1′）</text><rect x="20" y="271" width="1.6" height="14" class="fx-fill-solid"/><text x="20" y="314" class="fx-t fx-small fx-key">香港（對照）</text><text x="320" y="314" class="fx-t fx-small fx-num fx-key" text-anchor="end">最大 50.1′（平均 37.7′）</text><rect x="20" y="321" width="12.5" height="14" class="fx-fill-solid"/><text x="20" y="364" class="fx-t fx-small fx-key">漏算夏令（本文例子）</text><text x="320" y="364" class="fx-t fx-small fx-num fx-key" text-anchor="end">13.3°</text><rect x="20" y="371" width="199.4" height="14" class="fx-fill-solid"/><text x="20" y="414" class="fx-t fx-small fx-key">同地鐘面差一小時</text><text x="320" y="414" class="fx-t fx-small fx-num fx-key" text-anchor="end">最大 19.9°（平均 15.0°）</text><rect x="20" y="421" width="298.1" height="14" class="fx-fill-solid"/></svg>
+</div>
+<details class="fx-data"><summary id="fig-mo-asc-data">圖中的數字（表格）</summary><div class="ar-scroll" tabindex="0" role="region" aria-labelledby="fig-mo-asc-data"><table class="ar-table fx-table"><thead><tr><th scope="col">比較</th><th scope="col">上升點差距</th></tr></thead><tbody><tr><th scope="row">花地瑪堂區</th><td>最大 0.3′（平均 0.2′）</td></tr><tr><th scope="row">氹仔</th><td>最大 1.9′（平均 1.0′）</td></tr><tr><th scope="row">路氹</th><td>最大 2.7′（平均 1.3′）</td></tr><tr><th scope="row">路環</th><td>最大 2.7′（平均 1.6′）</td></tr><tr><th scope="row">九澳</th><td>最大 4.1′（平均 2.1′）</td></tr><tr><th scope="row">香港（對照）</th><td>最大 50.1′（平均 37.7′）</td></tr><tr><th scope="row">漏算夏令（本文例子）</th><td>13.3°</td></tr><tr><th scope="row">同地鐘面差一小時</th><td>最大 19.9°（平均 15.0°）</td></tr></tbody></table></div></details>
+<figcaption id="fig-mo-asc-cap"><b>圖 3</b>相對目錄的澳門代表點，上升點差多少；1970 年全年每 5 天每小時共 1,752 個合成時刻。澳門境內最遠的九澳最多差 4.1′，在這個比例尺下幾乎看不見；同一地點鐘面差一小時，平均差 15.0°。「本文例子」是 1970 年 7 月 15 日 15:00 這一個時刻。其他年份未測。</figcaption>
+</figure>
+    <!-- /figure:mo-asc -->
+    <p>我們用 1970 年全年、每 5 天每小時共 1,752 個合成時刻，以目錄的澳門代表點（22.2006, 113.5461）為基準，比較上升點差多少<a class="ar-cite" href="#ref-11">[11]</a>：</p>
+    <!-- figure:mo-places -->
+    <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="tab-places-cap">
+    <table class="ar-table">
+    <caption id="tab-places-cap">表 3　相對目錄的澳門代表點，上升點差多少（1,752 個合成時刻）</caption>
+    <thead><tr><th>地點</th><th class="n">平均</th><th class="n">最大</th></tr></thead>
+    <tbody>
+    <tr><th scope="row">花地瑪堂區</th><td class="n">0.2′</td><td class="n">0.3′</td></tr>
+    <tr><th scope="row">氹仔</th><td class="n">1.0′</td><td class="n">1.9′</td></tr>
+    <tr><th scope="row">路氹</th><td class="n">1.3′</td><td class="n">2.7′</td></tr>
+    <tr><th scope="row">路環</th><td class="n">1.6′</td><td class="n">2.7′</td></tr>
+    <tr><th scope="row">九澳</th><td class="n">2.1′</td><td class="n">4.1′</td></tr>
+    <tr><th scope="row">香港（對照）</th><td class="n">37.7′</td><td class="n">50.1′</td></tr>
+    <tr><th scope="row">同一地點，鐘面差一小時（對照）</th><td class="n">15.0°</td><td class="n">19.9°</td></tr>
+    </tbody>
+    </table>
+    </div>
+    <!-- /figure:mo-places -->
+    <p>所以澳門出生的讀者，要花力氣的是<b>那一天的時制</b>，不是在半島與離島之間選哪一點。只有上升點剛好落在星座交界時，幾分的差距才可能改變星座。澳門的地點全部同一個時區，選哪一點都不影響鐘點換算；但選成珠海或廣東其他地點，時區是 <code>Asia/Shanghai</code>，1949–1979 年間的夏令時段，多數日期會差一小時，請按出生日期核對。</p>
+    <p><b>地點怎麼選。</b>打「澳門」「Macau」或「Macao」，首位都是澳門；「氹仔」「凼仔」「路氹」「路環」「九澳」也都找得到。打「黑沙環」「青洲」會先出現花地瑪堂區，打「媽閣」「下環」會先出現聖老楞佐堂區。從上表可知，選哪一點差距都只有幾分；不確定就選「澳門（Macau）, MO」<a class="ar-cite" href="#ref-11">[11]</a>。</p>
+
+    <h2 id="faq"><span class="ar-sec">§08</span>常見問題</h2>
+    <h3>澳門夏令時間出生，排盤要自己減一小時嗎？</h3>
+    <p>在渾儀不用。照出生紀錄上的鐘點填、地點選澳門，計算服務會依時區資料庫套用當時的夏令時間。自己先減再輸入，反而會減兩次。</p>
+    <h3>澳門哪幾年有夏令時間？</h3>
+    <p>依時區資料庫與地球物理氣象局的表，1946 到 1979 年共 32 段，其中 1973 年 12 月底開始的一段延續到 1974 年 10 月；1977、1978 年沒有，1980 年起不再實施。1942、1943 年夏天另有 UTC+10。</p>
+    <h3>澳門可以直接用香港的夏令時間表嗎？</h3>
+    <p>不行。1941–1951 年有多段日子兩地鐘面不同，1942、1943 年夏天更差一小時。1952–1979 年每天中午的鐘面相同，但澳門仍應選澳門的地點。</p>
+    <h3>1942 年 10、11 月在澳門出生，算出來準嗎？</h3>
+    <p>這段尚未定論。公報條文的自然讀法是 10 月 17 日撥回，時區資料庫記 11 月 17 日，本站跟資料庫；只有一份文件，我們不能判定。本站正計劃向時區資料庫提出修正建議，尚未提出；提出前會先查有沒有第二份文件。</p>
+    <h3>路氹或新填地出生，星盤會不一樣嗎？</h3>
+    <p>幾乎不會。澳門目錄各點相對代表點，上升點最多差約 4 分，全部同一個時區。</p>
+    <h3>澳門和珠海出生，時區一樣嗎？</h3>
+    <p>在本站不一樣：澳門是 <code>Asia/Macau</code>，珠海屬 <code>Asia/Shanghai</code>，資料庫裡的歷史不同。這是資料庫的比較，我們沒有找到廣東的權威時制史料。</p>
+
+    <aside class="ar-scope" aria-labelledby="scope-2">
+      <span class="ar-k" id="scope-2">本文的證據範圍</span>
+    <ul>
+      <li>鐘面依本站出處表與時區資料庫，以主機 zoneinfo 逐次核對。</li>
+      <li>公報第 732、764、781、3843 號已查閱影像；第 204 號依本站出處表記為已查閱原件；第 3434、3504 號未查原件；1946–1979 年各年訓令多數未逐件查閱。</li>
+      <li>氣象局的表從 1946 年開始，沒有 1941–1945 年。</li>
+      <li>上升點數字是合成時刻，地點表限 1970 年；兩地比對是每天中午，不含切換當下的鐘點。</li>
+      <li>氣象局的表是 2026 年 11 月 2 日的整理，未另釘一份轉錄。</li>
+    </ul>
+    </aside>
+  </div>
+
+  <section class="ar-refs" aria-labelledby="refs">
+    <h2 id="refs">出處</h2>
+    {{source_legend|本文核對的原件是《澳門政府公報》的影像；1943 年兩份訓令只見於時區資料庫的轉引。}}
+    <ol>
+      <li id="ref-1"><span>IANA 時區資料庫，<code>asia</code> 檔 Macau 一節。<a href="https://github.com/eggert/tz/blob/2026d/asia" rel="noopener noreferrer">2026d 版</a><span class="rs rs-checked">已讀原文</span></span></li>
+      <li id="ref-2"><span>澳門地球物理氣象局〈Summer Time〉。<a href="https://www.smg.gov.mo/en/subpage/224/page/174" rel="noopener noreferrer">smg.gov.mo</a><span class="rs rs-checked">已讀原文</span></span></li>
+      <li id="ref-3"><span>第 204 號訓令，1904 年公報第 44 號第 360 頁；見本站<a href="/zh-TW/methods/birth-time-conversion#note-mo-1904">出處表</a><span class="rs rs-checked">已讀原件</span></span></li>
+      <li id="ref-4"><span>立法條例第 732 號，1941 年 12 月 20 日公報第 51 期。<a href="https://igallery.icm.gov.mo/Images/Archives/BO/MO_AH_PUB_BO_1941_12/MO_AH_PUB_BO_1941_12_00014_Grey.JPG" rel="noopener noreferrer">公報影像</a><span class="rs rs-checked">已讀原件</span></span></li>
+      <li id="ref-5"><span>立法條例第 764 號，1942 年 4 月 30 日公報第 9 期副刊。<a href="https://igallery.icm.gov.mo/Images/Archives/BO/MO_AH_PUB_BO_1942_04/MO_AH_PUB_BO_1942_04_00021_Grey.JPG" rel="noopener noreferrer">公報影像</a><span class="rs rs-checked">已讀原件</span></span></li>
+      <li id="ref-6"><span>立法條例第 781 號，1942 年 10 月 10 日公報第 21 期第 388 頁。<a href="https://igallery.icm.gov.mo/Images/Archives/BO/MO_AH_PUB_BO_1942_10/MO_AH_PUB_BO_1942_10_00002_Grey.JPG" rel="noopener noreferrer">公報影像</a><span class="rs rs-checked">已讀原件</span></span></li>
+      <li id="ref-7"><span>第 3434、3504 號訓令（1943），經時區資料庫註記與規則轉引<span class="rs rs-relayed">轉引</span></span></li>
+      <li id="ref-8"><span>第 3843 號訓令，1945 年 9 月 29 日公報第 39 期。<a href="https://igallery.icm.gov.mo/Images/Archives/BO/MO_AH_PUB_BO_1945_09/MO_AH_PUB_BO_1945_09_00017_Grey.JPG" rel="noopener noreferrer">公報影像</a><span class="rs rs-checked">已讀原件</span></span></li>
+      <li id="ref-9"><span>《2025 澳門年鑑》〈地理環境和人口〉。<a href="https://yearbook.gcs.gov.mo/yearbook_pdf/2025/myb2025cPA01CH22.pdf" rel="noopener noreferrer">yearbook.gcs.gov.mo</a><span class="rs rs-checked">已讀原文</span></span></li>
+      <li id="ref-10"><span>渾儀〈<a href="/zh-TW/methods/birth-time-conversion">出生時間換算的規則與出處</a>〉與計算頁「核對這個鐘面時間」<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-11"><span>本文比對與合成例：Python zoneinfo、Swiss Ephemeris、本站計算服務實際回應、本站地點目錄實際查詢（2026 年 11 月）<span class="rs rs-computed">本站自算</span></span></li>
+    </ol>
+  </section>
+
+  <section class="ar-next" aria-labelledby="next-cta">
+    <div>
+      <h2 id="next-cta">在澳門出生？<br>讓計算頁替你核對一次。</h2>
+      <p>選澳門的地點，填上出生紀錄的鐘點，按「核對這個鐘面時間」。</p>
+      <p><a class="btn-paper" href="/zh-TW/calculate">排一張盤 →</a></p>
+    </div>
+    <div>
+      <span class="ar-k">延伸閱讀</span>
+      <ul>
+        <li><a href="/zh-TW/methods/birth-time-conversion">出生時間換算的規則與出處</a></li>
+        <li><a href="/zh-TW/blog/hong-kong-birth-time">香港出生時間怎麼換算？</a></li>
+        <li><a href="/zh-TW/blog/taiwan-time-zone-history">臺灣夏令時間出生，排盤要減一小時嗎？</a></li>
+        <li><a href="/zh-TW/blog/birth-time-sensitivity">出生時間差五分鐘，上升星座與宮位會怎麼變</a></li>
+        <li><a href="/zh-TW/blog/true-solar-time">西洋占星要不要換真太陽時？</a></li>
+        <li><a href="/zh-TW/blog/ascendant-coordinates">為什麼兩個網站算出的上升差 2′？</a></li>
+      </ul>
+    </div>
+  </section>
+
+</div>

@@ -9,8 +9,8 @@
       "lastmod": "2026-10-28"
     },
     "blog": {
-      "content_sha256": "321ce40a6268612a1d35cbdf0e30ec36a0750b93ee252990092c67f9fdec3d7a",
-      "lastmod": "2026-11-01"
+      "content_sha256": "24adf2ed2ab61913f4302e8e79299ea82cbd20d2c72671f269cbab08caba8718",
+      "lastmod": "2026-11-09"
     },
     "blog-antiscia": {
       "content_sha256": "aed3bc292b03d63c8e4be15bcebccb59d28d19036f76b82618d25fec170cc02c",
@@ -65,8 +65,8 @@
       "lastmod": "2026-10-29"
     },
     "blog-hong-kong-birth-time": {
-      "content_sha256": "b6416033f2827514f4ef8fb832333e58c718ea5eff53e338d61d5afe4410b8bc",
-      "lastmod": "2026-10-29"
+      "content_sha256": "632a96878ef12fb58ea0a0a47e84caa35439791e833e1eb21895b7ba8fafb813",
+      "lastmod": "2026-11-05"
     },
     "blog-house-systems-explained": {
       "content_sha256": "0927328df9e60653cf195587d44d4c38a59bf03275c81d9ac4b8bbe49e651abc",
@@ -79,6 +79,10 @@
     "blog-lunar-mansions": {
       "content_sha256": "b507ddedfd90ff7ff57962ec86feb87c947f059cf83ff5b695926ca58c07f7a4",
       "lastmod": "2026-10-29"
+    },
+    "blog-macau-birth-time": {
+      "content_sha256": "88631081a561a718dd303cf6e1bbe77c54bb5b223677facf7c7d8d09f205e402",
+      "lastmod": "2026-11-09"
     },
     "blog-mean-vs-osculating-node": {
       "content_sha256": "653f54caf270ab2a3a244abd6a3dee02061b96ac411dd61dc78fa105cb506e6d",
@@ -213,8 +217,8 @@
       "lastmod": "2026-10-29"
     },
     "roadmap": {
-      "content_sha256": "fa625ab440e26925edc84d88a75dfb972064fc7af99cccddb7bf52eabb248349",
-      "lastmod": "2026-11-01"
+      "content_sha256": "25e0eb2f2047ecab25ecdb58b20a89cdd6acb0803631e6891056d37b9bf1a1e1",
+      "lastmod": "2026-11-05"
     },
     "security": {
       "content_sha256": "5588f679c67dfca5d765c855cca4f535fa0eb88773ca6a00cc11c46877c14f82",
