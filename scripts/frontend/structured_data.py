@@ -413,15 +413,16 @@ def _json_ld(item: dict, origin: str, headline: str | None = None,
             ],
         })
         graph[1]["breadcrumb"] = {"@id": canonical + "#breadcrumb"}
-    entries = glossary_entries(body) if body is not None else []
-    if entries:
-        graph.append(_defined_term_set(item, origin, entries))
-        graph[1]["mainEntity"] = {"@id": canonical + "#terms"}
-    questions = faq_entries(body) if body is not None else []
-    if questions:
-        graph.append(_faq_page(item, origin, questions))
-    for index, howto in enumerate(howto_lists(body) if body is not None else [], start=1):
-        graph.append(_howto(canonical, item["locale"], index, howto))
+    if body is not None:
+        entries = glossary_entries(body)
+        if entries:
+            graph.append(_defined_term_set(item, origin, entries))
+            graph[1]["mainEntity"] = {"@id": canonical + "#terms"}
+        questions = faq_entries(body)
+        if questions:
+            graph.append(_faq_page(item, origin, questions))
+        for index, howto in enumerate(howto_lists(body), start=1):
+            graph.append(_howto(canonical, item["locale"], index, howto))
     if item["surface"] == METHODS_SURFACE:
         graph.append(_method_sources_dataset(origin))
     if is_article(item):

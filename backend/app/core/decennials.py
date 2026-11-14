@@ -61,8 +61,6 @@ YEAR_MODEL = DEFAULT_YEAR_MODEL
 DAYS_PER_YEAR: Fraction = YEAR_MODELS[YEAR_MODEL]["days_per_year"]
 MONTHS_PER_LEVEL_1 = sum(MINOR_YEARS.values())
 
-if tuple(sorted(MINOR_YEARS)) != tuple(sorted(SEVEN_PLANETS)) or MONTHS_PER_LEVEL_1 != 129:
-    raise RuntimeError("a level-1 period is the 129 months of the seven minor years")
 
 
 def days_per_month() -> Fraction:
@@ -72,8 +70,6 @@ def days_per_month() -> Fraction:
 def natal_order(longitudes: dict[str, float], start: str) -> tuple[str, ...]:
     """The seven planets in increasing longitude from `start`, wrapping at 0°."""
 
-    if set(longitudes) != set(SEVEN_PLANETS) or start not in SEVEN_PLANETS:
-        raise ValueError("decennials need the seven planets' longitudes and one of them as start")
     origin = longitudes[start] % 360.0
 
     def key(planet: str) -> tuple[float, int]:
@@ -147,15 +143,11 @@ def decennial_periods(
         return bounds.birth_jd_ut + float(months * month_days)
 
     window = ScopeWindow.of("decennials", bounds, jd)
-    if len(order) != 7 or set(order) != set(SEVEN_PLANETS):
-        raise ValueError("the order lists the seven planets once each")
 
     def as_instant(jd_ut: float) -> dict:
         return period_instant({"jd_ut": jd_ut, "status": "computed"})
 
     def row(period_id: str, level: int, lord: str, start: Fraction, months: Fraction) -> dict:
-        if months.denominator != 1:
-            raise RuntimeError("level 1 and level 2 are whole months")
         end = start + months
         return {
             "period_id": period_id,

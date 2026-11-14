@@ -200,18 +200,15 @@
   function formatApiError(detail, statusCode) {
     const issues = validationIssues(detail);
     if (issues.length > 0) { return validationGuidance(issues[0]); }
+    const record = detail && typeof detail === "object" ? detail : {};
     // 地理極點沒有唯一上升點（houses.py unique_ascendant_undefined）：整宮也算不出來，
     // 唯一出路是「不計算宮位」，不能照一般宮位拒絕建議改選整宮。
-    if (
-      detail && typeof detail === "object" && detail.code === "house_system_unavailable"
-      && detail.reason_code === "unique_ascendant_undefined") {
+    if (record.code === "house_system_unavailable" && record.reason_code === "unique_ascendant_undefined") {
       return ("這個緯度沒有唯一的上升點（地理極點），任何宮位制都無法計算；" + "請在「宮位制」選單選「不計算宮位」。");
     }
     // 中天沉到地平線下（houses.py mc_below_horizon_rejected，只有 Porphyry 與 Alcabitius）：
     // 這不是緯度本身算不出來，而是這兩種方法用來分宮的四段不再是平常的樣子；說清楚原因與出路。
-    if (
-      detail && typeof detail === "object" && detail.code === "house_system_unavailable"
-      && detail.reason_code === "mc_below_horizon_rejected") {
+    if (record.code === "house_system_unavailable" && record.reason_code === "mc_below_horizon_rejected") {
       return (
         "這個時刻，中天（MC，黃道在上子午圈的那一點）沉到了地平線下，這只會在極圈內發生。"
         + "Porphyry 與 Alcabitius 都先用上升點與中天把天空分成四段，再各分成三宮；"
@@ -220,10 +217,7 @@
         + "請在「宮位制」選單改選「整宮」或「等分宮」（每宮 30 度，不靠中天分宮），或選「不計算宮位」。"
       );
     }
-    if (
-      detail && typeof detail === "object" && typeof detail.code === "string" && Object.hasOwn(ERROR_CODE_MESSAGES, detail.code)) {
-      return ERROR_CODE_MESSAGES[detail.code];
-    }
+    if (typeof record.code === "string" && Object.hasOwn(ERROR_CODE_MESSAGES, record.code)) return ERROR_CODE_MESSAGES[record.code];
     if (statusCode === 413) return "送出的資料超過服務允許大小，請重新載入頁面後再試一次。";
     if (statusCode === 415) return "送出的資料格式不受支援，請重新載入頁面後再試一次。";
     if (statusCode === 422) return "部分輸入無法驗證；請檢查必填欄位與格式。";

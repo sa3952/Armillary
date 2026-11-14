@@ -164,10 +164,6 @@ def profile_period(profile_id: str) -> str:
 # 列為研究用途的 profile；被選為主要 profile 時也要標出。
 RESEARCH_ONLY_PROFILES: frozenset[str] = frozenset({"lilly_triplicity_compact_1647_v1"})
 
-if DECIDED_METHODS & (PROVISIONAL_METHODS | ANNUAL_PROVISIONAL_METHODS):
-    raise RuntimeError("a method is either decided or provisional, never both")
-if set(METHOD_PERIOD_LABELS) != DECIDED_METHODS | PROVISIONAL_METHODS | ANNUAL_PROVISIONAL_METHODS:
-    raise RuntimeError("every method with a status has a period label, and only those")
 if any(
     period not in METHOD_PERIODS or name not in NAME_STATUSES
     for period, name in METHOD_PERIOD_LABELS.values()

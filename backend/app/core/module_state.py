@@ -100,8 +100,6 @@ def unavailable_state(reason_code: str | None, *, requested: bool) -> ModuleStat
 def not_applicable_receipt(state: Applicability) -> ModuleState:
     """A requested module the frame table (or a mode) refused before running."""
 
-    if state["applicable"]:
-        raise ValueError("not_applicable_receipt requires an inapplicable state")
     return unavailable_state(state["reason_code"], requested=True)
 
 

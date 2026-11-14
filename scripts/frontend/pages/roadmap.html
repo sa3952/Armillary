@@ -4,7 +4,7 @@
     <p class="eyebrow">路線</p>
     <h1>這不是功能清單，<br>是一道階梯。</h1>
     <p class="lede">功能清單會誘使你問「什麼時候會有 X」。階梯讓你問一個更有用的問題：<b>「他們現在站在哪一階，憑什麼上下一階？」</b></p>
-    <p>星盤計算會持續免費提供，不需登入；這項承諾的範圍是星盤計算。</p>
+    <p>目前是 Public Beta。星盤計算會持續免費提供，不需登入；這項承諾的範圍是星盤計算。</p>
     <p class="rm-promise">下面每一列都附<b>「這個狀態是怎麼知道的」</b>——文件名、測試名，或一句可以自己重跑的話。<br>沒有依據的狀態，就是還沒查證的狀態。</p>
   </section>
 
@@ -92,7 +92,7 @@
           <tr><td>不計算宮位的模式、只知道日期的模式</td><td class="st ok">已完成</td><td>計算頁的出生時刻精度三選一</td></tr>
           <tr><td>守護行星體系的整體採用</td><td class="st ok">已裁決</td><td>所有古典程序固定使用七政主宰表；現代外行星主宰不在產品範圍</td></tr>
           <tr><td>日夜盤判定基準的文獻考據</td><td class="st wip">進行中</td><td><b>研究筆記所列的古典段落沒有明定太陽中心、上緣或折射的邊界</b>；現行規則標為產品慣例，非古典來源</td></tr>
-          <tr><td>時間主星的一手出處</td><td class="st wip">進行中</td><td>Valens 的關鍵句已對 Kroll 1908 希臘文，法達已讀 al-Bīrūnī 與 Bonatti 的英譯；Abū Maʿshar 原書、Paulus 希臘文與 Pingree 校勘本（學者比對多份古抄本後整理出的版本）尚未讀到，這幾條在出處清單照實標為轉引</td></tr>
+          <tr><td>時間主星的一手出處</td><td class="st wip">進行中</td><td>Valens 的關鍵句已對 Kroll 1908 希臘文，法達已讀 al-Bīrūnī、Bonatti 與 Abū Maʿshar（Dykes 英譯、1559 年拉丁文本）；Paulus 希臘文與 Pingree 校勘本（學者比對多份古抄本後整理出的版本）尚未讀到，這幾條在出處清單照實標為轉引</td></tr>
           <tr><td>月空亡星座界線規則的歷史歸屬</td><td class="st open">未解</td><td>星座條件最晚見於 Lilly 1647 p.112；「離座前精確完成」後人文獻歸於 Al H. Morrison（AFA Bulletin 第 28 卷第 10 期，1966 年 10 月；原是當年 AFA 大會的演講，後來印成 AFA 小冊《The Void of Course Moon》；原文未讀），更早的起源尚未查證；兩者合起來的歸屬仍未定。已寫入回應的 <span class="mono">source_verification</span></td></tr>
           <tr><td>精確擢升與弱的度數</td><td class="st pend">尚未裁決</td><td>目前只判整個星座；回應的方法出處條目寫明度數不判</td></tr>
           <tr><td>相位容許度表與同度判準的各家對照欄</td><td class="st no">未開始</td><td>做法是每一對相位加一欄「依各表是否在容許度內」，星盤上的相位線照舊依你選的那一套；黃道釋放（zodiacal releasing）的年長度（360 日或 365.25 日）依已有裁決不並列</td></tr>
@@ -110,7 +110,7 @@
       <table class="log rm-table stack-narrow">
         <thead><tr><th>項目</th><th>狀態</th><th>依據</th></tr></thead>
         <tbody>
-          <tr><td>六十個公開介面與URL／metadata</td><td class="st ok">已登記</td><td><span class="mono">frontend/surfaces.json</span>與page producer逐頁對應</td></tr>
+          <tr><td>六十二個公開介面與URL／metadata</td><td class="st ok">已登記</td><td><span class="mono">frontend/surfaces.json</span>與page producer逐頁對應</td></tr>
           <tr><td>公開原始碼與source archive</td><td class="st ok">每版各自驗證</td><td>每一個live版本都要有自己的exact public source、匿名取得與archive readback驗證收據；一版的收據不外推到其他版本</td></tr>
           <tr><td>主機、隱私與故障通知</td><td class="st ok">每版各自實測</td><td>每一個live版本都要有自己的具名host、privacy與rollback驗證收據；可用性由容器健康檢查維持（連續失敗時自動重啟容器），故障通知來自外部可用性監控；一版的收據不外推到其他版本</td></tr>
           <tr><td>造訪計數</td><td class="st ok">已實作</td><td>只有兩個整數：每小時的頁面瀏覽數與今日訪客數，寫進主機日誌，保留上限與系統日誌相同；不是第三方分析，不記 IP、User-Agent 或你在看哪一頁，瀏覽器開了 Global Privacy Control 時不送。說明見〈<a href="/zh-TW/legal/privacy">隱私政策</a>〉</td></tr>
@@ -133,7 +133,7 @@
       <li><b>星座、界、相位、宮頭的邊界語料庫</b><span>這幾類分類會被幾角秒翻轉，而它們正是產品輸出的東西。要直接檢查分類會不會翻，不是拿平均誤差來安慰自己。</span></li>
       <li><b>月空亡星座界線規則的歷史歸屬</b><span>星座條件已見於 Lilly 1647；「離座前精確完成」的來歷，以及兩者合起來的歸屬仍未定。已經寫進回應裡，不等考據完成才承認。</span></li>
       <li><b>日夜盤判定基準的文獻來源</b><span>研究筆記所列的古典段落沒有明定邊界判準；現行規則是產品慣例。</span></li>
-      <li><b>時間主星還沒讀到的原典</b><span>Abū Maʿshar 論法達的原書、Paulus 論七個阿拉伯點的希臘文、Valens 的 Pingree 校勘本。讀到之前，出處清單維持「轉引」，不因功能穩定就升格。</span></li>
+      <li><b>時間主星還沒讀到的原典</b><span>Abū Maʿshar 的阿拉伯原文、Paulus 論七個阿拉伯點的希臘文、Valens 的 Pingree 校勘本。讀到之前，出處清單維持「轉引」，不因功能穩定就升格。</span></li>
       <li><b>瑞士／臺灣以外的下一個市場與法域</b><span>尚未確定。</span></li>
       <li><b>未來是否提供付費項目，以及如何定價</b><span>目前全部免費。有付費項目的話會事先公告。</span></li>
     </ul>
@@ -212,7 +212,7 @@
   <section class="feat-close">
     <div>
       <h2>與其看我們打算做什麼，<br>不如看我們現在算得出什麼。</h2>
-      <p>上面每一個「已完成」，你都可以自己去驗。</p>
+      <p>上面每一個「已完成」，你都可以自己去驗。這些工作由一個人在工作之外完成；想讓它走得更遠，可以看看〈<a href="/zh-TW/support">支持渾儀</a>〉。</p>
     </div>
     <p><a class="btn" href="/zh-TW/calculate">排一張盤 →</a></p>
   </section>

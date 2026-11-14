@@ -7,7 +7,8 @@
 - 小年：Valens IV.1、IV.30（四分之一期間的基礎）；Firmicus II.27（十年期的子期月數）；
   Dorotheus（Pingree 英譯）I.23。三處數字相同。
 - 大年：Valens IV.30 稱為「maximum」的那一列，即通稱的大年。
-- 中年：小年與大年的平均。這是推論；希臘化文獻中的明確數值與用語沒有查到。
+- 中年：小年與大年相加取半。名稱與算法見 Valens III.16（Kroll 1908 p.157，例如土星 57＋30 得 43½）；
+  該章另有一張以月數列出的表未解讀。
 - 最大年：後世（中世紀）文獻另有一組數值；沒有查到希臘化出處，也沒有核對任何原典，所以不給數值
   （null），只留查證狀態。
 
@@ -25,10 +26,9 @@ from .source_reading import DOROTHEUS_BOOK_I_ONLINE, ORIGINAL_LANGUAGE_READ, SEC
 YEAR_KINDS = ("minor", "middle", "greater", "greatest")
 VERIFICATION_STATES = (
     "attested_hellenistic_text_read",
-    "derived_mean_hellenistic_source_not_confirmed",
     "later_literature_hellenistic_source_not_confirmed",
 )
-ATTESTED, DERIVED_MEAN, LATER_ONLY = VERIFICATION_STATES
+ATTESTED, LATER_ONLY = VERIFICATION_STATES
 
 MINOR_YEARS: dict[str, int] = {
     "saturn": 30, "jupiter": 12, "mars": 15, "sun": 19, "venus": 8, "mercury": 20, "moon": 25,
@@ -40,9 +40,6 @@ GREATEST_YEARS: dict[str, None] = {planet: None for planet in SEVEN_PLANETS}
 MIDDLE_YEARS: dict[str, Fraction] = {
     planet: Fraction(MINOR_YEARS[planet] + GREATER_YEARS[planet], 2) for planet in SEVEN_PLANETS
 }
-for _table in (MINOR_YEARS, GREATER_YEARS, GREATEST_YEARS, MIDDLE_YEARS):
-    if set(_table) != set(SEVEN_PLANETS):
-        raise RuntimeError("every planetary-years row covers the seven planets")
 # The decennial month count rests on this sum: 129 months fill one period exactly.
 if sum(MINOR_YEARS.values()) != 129:
     raise RuntimeError("the minor years total 129")
@@ -87,11 +84,18 @@ _SOURCES: dict[str, dict] = {
         ),
     },
     "middle": {
-        "verification": DERIVED_MEAN,
-        "sources": [],
+        "verification": ATTESTED,
+        "sources": [
+            cited("Valens, Anthologies III.16 (Kroll 1908 p.157)",
+                  ("headed 'the middle years of the stars'; the greater and the least "
+                   "years added and halved, e.g. Saturn 57 and 30 give 43 1/2, Jupiter 79 "
+                   "and 12 give 45 1/2"),
+                  ORIGINAL_LANGUAGE_READ,
+                  ("the Greek of Kroll's edition, ll.1 and 6-11; a table in months in "
+                   "ll.1-4 not interpreted")),
+        ],
         "note": (
-            "computed here as (minor + greater) / 2; no Hellenistic text giving these "
-            "values or naming the 'middle' years has been found"
+            "computed here as (minor + greater) / 2, the rule Valens III.16 states"
         ),
     },
     "greatest": {

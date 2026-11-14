@@ -39,7 +39,7 @@
         <span class="ro-k">供應鏈與隱私</span>
         <ul>
           <li><b>SBOM</b>：Gate D 由映像以 syft 產生，與 lock 比對，保存在發佈收據中</li>
-          <li><b>隱私相依守衛</b>：以具名清單阻擋 analytics、opentelemetry、sentry 這類套件進入相依樹</li>
+          <li><b>隱私相依守衛</b>：網站沒有任何遙測。以具名清單阻擋 analytics、sentry 與能收集或送出遙測的元件進入相依樹</li>
           <li>Docker context 與 staging 組態可在 source 層預檢；exact image 的 SBOM、parity 與 runtime 只由 Gate D 回答</li>
         </ul>
       </div>
@@ -75,10 +75,10 @@
           <span class="tier-how">可被測試反證　·　反例會讓測試變紅</span>
         </div>
         <ul class="claims">
-          <li><b>不建立帳號資料庫</b><span>免註冊、免 email、無帳號密碼。公開測試階段沒有存取憑證，應用程式也從不接收任何憑證。</span></li>
+          <li><b>不建立帳號資料庫</b><span>免註冊、免 email、無帳號密碼。本服務沒有存取憑證，應用程式也從不接收任何憑證。</span></li>
           <li><b>出生資料不寫入資料庫、快取、佇列或檔案</b><span>測試會替換掉 <span class="mono">builtins.open</span>、<span class="mono">io.open</span> 與 <span class="mono">os.open</span>，請求處理期間只要有任何一次帶寫入旗標的呼叫，測試就失敗。涵蓋的是 Python 層的寫入——原生函式庫的行為與記憶體抹除不在內。</span></li>
           <li><b>請求事件日誌只允許 {{telemetry_field_count}} 個固定欄位</b><span>{{telemetry_field_list}}。<b>就這 {{telemetry_field_count}} 個</b>，欄位組合不符即拒絕寫出。不含出生資料、IP、User-Agent 或請求內容。另有每小時的造訪總數、每秒的容量拒絕總數，以及致命信號時不含參數與區域變數值的堆疊資訊；這些使用各自的格式，不受上述請求事件欄位數限制。</span></li>
-          <li><b>不引入第三方追蹤、分析或遠端日誌相依</b><span>相依守衛以具名清單阻擋（analytics、opentelemetry、sentry 等）。這是對已知名稱的阻擋，不是完整的資訊流分析——一個沒被列名的新套件不會被它擋下。</span></li>
+          <li><b>不引入第三方追蹤、分析或遠端日誌相依</b><span>我們沒有遙測，這條底線沒有變。FastAPI 必帶一個空的介面套件（opentelemetry-api），它本身不收集、也不傳送任何資料；能收集或送出資料的元件一律擋下，應用程式也不得使用它，並有測試確認排盤時沒有對外連線。相依守衛以具名清單阻擋（analytics、sentry、遙測元件等）。這是對已知名稱的阻擋，不是完整的資訊流分析——一個沒被列名的新套件不會被它擋下。</span></li>
           <li><b>錯誤訊息不回顯例外原文或本機路徑</b><span>含串流與背景工作的失敗路徑。已知的輸入錯誤仍會回傳你需要的診斷。</span></li>
         </ul>
       </div>

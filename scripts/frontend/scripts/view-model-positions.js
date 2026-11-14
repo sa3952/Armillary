@@ -851,7 +851,7 @@ function moonPositionReceipt(value) {
 
 // 不對外標 provisional。契約、Dossier 與隱私聲明的 status
 // 原值都含這個字；畫面說它的意思，原值留在 canonical 原始回應與 JSON 匯出。
-const CONTRACT_STATUS_ZH = Object.freeze({ provisional: "欄位仍可能變動，尚非已凍結的公開 API" });
+const CONTRACT_STATUS_ZH = Object.freeze({ public_beta_frozen: "自 Public Beta 起凍結：破壞性變更會先預告；Dossier 格式不在凍結範圍" });
 const CONTRACT_COMPATIBILITY_ZH = Object.freeze({
   "additive_during_0.x_unless_a_documented_correctness_fix_requires_change": "0.x 期間只新增欄位；除非有記錄在案的正確性修正，既有欄位不改",
 });

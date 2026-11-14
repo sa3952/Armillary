@@ -1,15 +1,15 @@
 # 開發/測試用依賴，不隨production部署安裝。
 -r requirements.txt
-pytest==9.1.1
+pytest==9.2.0
 # The ordinary check runs the suite once across processes (`pytest -n auto`).
 pytest-xdist==3.8.0
-httpx2==2.13.1
-hypothesis==6.169.0
+httpx2==2.16.0
+hypothesis==6.170.14
 # 型別檢查以基線模式執行（設定在 mypy.ini，由私有的型別檢查工具執行）。
 # mypy.ini 自 2026-07-27 就存在，但 mypy 從未被安裝或執行過。
-mypy==2.4.0
+mypy==2.4.1
 # 測試以真的解析器讀 Markdown（CommonMark）與 YAML 1.2，不以 regex 猜文件結構；只在測試，不進映像。
-marko==2.2.4
+marko==2.2.5
 ruamel.yaml==0.19.1
 
 # pip-tools 刻意不列在這裡。它只在「重新產生 lockfile」時需要，而它會帶進

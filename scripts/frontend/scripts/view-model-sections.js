@@ -11,14 +11,17 @@ function receiptSection(response) {
   const trace = response.calculation_trace || [];
   const buildIdentity = dossier.build_identity || {};
   const releaseIdentity = buildIdentity.release_identity || {};
+  const backend = releaseIdentity.backend || {};
+  const frontend = releaseIdentity.frontend || {};
+  const inputPlace = receipt.location || {};
   const releaseRows = releaseIdentity.status === "available" ? [
-    ["組合發布識別", releaseIdentity.combined_release_id], ["後端 image", (releaseIdentity.backend || {}).image_id],
-    ["前端 artifact", (releaseIdentity.frontend || {}).artifact_digest],
+    ["組合發布識別", releaseIdentity.combined_release_id], ["後端 image", backend.image_id],
+    ["前端 artifact", frontend.artifact_digest],
     // 兩個 public_source_revision 與 source_url 都來自後端的 release identity（由發布流程注入），前端不手打。
-    ["後端公開原始碼修訂", (releaseIdentity.backend || {}).public_source_revision],
-    ["後端原始碼網址", (releaseIdentity.backend || {}).source_url],
-    ["前端公開原始碼修訂", (releaseIdentity.frontend || {}).public_source_revision],
-    ["前端原始碼網址", (releaseIdentity.frontend || {}).source_url],
+    ["後端公開原始碼修訂", backend.public_source_revision],
+    ["後端原始碼網址", backend.source_url],
+    ["前端公開原始碼修訂", frontend.public_source_revision],
+    ["前端原始碼網址", frontend.source_url],
   ] : [];
   return makeSection("receipt", "計算收據", RING.VERIFICATION, { state: "present" }, {
     notes: [
@@ -48,8 +51,8 @@ function receiptSection(response) {
           ...(time.dst_warning ? [["重複民用時刻的處置", time.dst_warning]] : []),
           [timeScaleLabel(time.time_scale_era), clockTimeText(time.utc_time)], ["儒略日 JD(UT)", num(time.jd_ut, 6)],
           ["ΔT（秒）", num(time.delta_t_seconds, 3)], ["Swiss 時間輸入語義", time.swiss_time_input_semantics],
-          ["ΔT 模型狀態", (time.delta_t_model || {}).status], ["緯度", num((receipt.location || {}).latitude, 6)],
-          ["經度", num((receipt.location || {}).longitude, 6)], ["海拔（公尺）", num((receipt.location || {}).altitude_m, 1)],
+          ["ΔT 模型狀態", (time.delta_t_model || {}).status], ["緯度", num(inputPlace.latitude, 6)],
+          ["經度", num(inputPlace.longitude, 6)], ["海拔（公尺）", num(inputPlace.altitude_m, 1)],
         ] }, { title: "地點解析", columns: ["項目", "數值"], rows: [["地點標籤", place.place_label],
           ["來源", place.location_source], ["目錄記錄 id", place.source_record_id],
           ["位置精度", place.location_precision], ["驗證狀態", place.verification_status],
@@ -498,7 +501,7 @@ const HAYZ_REASON_ZH = Object.freeze({
 });
 const TRIAD_ZH = Object.freeze({ angular: "始宮", succedent: "續宮", cadent: "果宮" });
 const FIRMICUS_GROUP_ZH = Object.freeze({ joined_to_the_ascendant: "與上升相連", sluggish_and_cast_down: "遲滯、低落（與上升沒有關聯）" });
-const DOROTHEUS_RANK_ZH = Object.freeze({ good: "好", middling: "中等", bad: "壞" });
+const DOROTHEUS_RANK_ZH = Object.freeze({ good: "好", middling: "次於前七者、不被認為好", bad: "壞" });
 // 出處經 sourceBlocks：有引文的一行附方法出處登錄 classical_classifications 那條引文的鍵（登錄以鍵列出處）與核到層級。
 const CLASSICAL_SOURCE_LINES = Object.freeze([
   ["ptolemy_tetrabiblos_i_5",
@@ -524,7 +527,7 @@ const CLASSICAL_SOURCE_LINES = Object.freeze([
     "translation_read", "（Riley 英譯，線上重排本）"], ["ptolemy_tetrabiblos_iii_3_10",
     "出處：Ptolemy《占星四書》卷三第 3、10 章與 Robbins 英譯（LacusCurtius 線上本註 56）：始宮、續宮與「自始宮下落」的宮，"
     + "以及十二宮的希臘名稱。", "translation_read", "（Robbins 英譯）"], ["dorotheus_carmen_i_5",
-    "出處：Dorotheus《Carmen Astrologicum》卷一第 5 章（Pingree 1976 英譯 p.164）：最好的七宮、中等三宮、壞的兩宮。阿拉伯文未核。",
+    "出處：Dorotheus《Carmen Astrologicum》卷一第 5 章（Pingree 1976 英譯 p.164）：最好的七宮、次於前七者而不被認為好的三宮、壞的兩宮。阿拉伯文未核。",
     "translation_read", "（Pingree 英譯）"], ["manilius_astronomica_ii",
     "出處：Manilius《Astronomica》卷二另有一套十二宮的名稱與守護神（例如金星在中天、土星在天底），" + "本站沒有採用。",
     "secondary_only", "（拉丁原文部分核過，各宮的對應依二手整理）"],
@@ -611,7 +614,7 @@ function classicalClassificationsSection(response) {
     "十二宮的名稱沿用希臘化時期的叫法；中文是本站的譯名，並列希臘文、拉丁文與英文。"
       + "第 1、4、7、10 宮是始宮（又稱角宮），各自的下一宮是續宮，再下一宮是果宮。"
       + "好壞有兩種分法：Firmicus《Mathesis》卷二第 15–17 章說第 2、6、8、12 宮與上升沒有關聯，"
-      + "是「遲滯、低落」的位置，其餘八宮與上升相連；Dorotheus《Carmen Astrologicum》卷一第 5 章分成好、中等、壞三等。"
+      + "是「遲滯、低落」的位置，其餘八宮與上升相連；Dorotheus《Carmen Astrologicum》卷一第 5 章分成最好的七宮、不被認為好的三宮、壞的兩宮。"
       + "各宮的含義不在這裡列，見方法頁。", ...classicalDisagreementNotes(response, "derived_methods.classical_classifications"),
   );
   const near = planets.filter((row) => row("altitude_in_near_horizon_band", "boolean?") === true).map((row) => row("name"));

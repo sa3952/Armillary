@@ -19,7 +19,7 @@
   <a href="#english">English</a>
 </p>
 
-<p align="center"><sub>AGPL-3.0-only · 繁體中文 · Swiss Ephemeris · 免註冊 · 沒有帳號與星盤資料庫 · Public Alpha</sub></p>
+<p align="center"><sub>AGPL-3.0-only · 繁體中文 · Swiss Ephemeris · 免註冊 · 沒有帳號與星盤資料庫 · Public Beta</sub></p>
 <p align="center"><sub>訂閱文章更新 · Article feed：<a href="https://projectarmillary.com/feed.xml">feed.xml（Atom）</a></sub></p>
 
 ## 簡介 · Introduction
@@ -122,7 +122,7 @@ DOM反向拼湊；列印印的是畫面本身。
 
 每次 release 都是一份封閉的 Corresponding Source snapshot，而不是 private engineering history 的鏡像。
 `PUBLICATION_FILES.json` 列出公開檔案與 hash，`SOURCE_EXPORT.json` 綁定 source export，third-party source
-與 notices 也隨 release 提供。需要 Python 3.14 與 Node.js（前端測試只用 Node.js 內建的 `node --test`，不需 npm install）。
+與 notices 也隨 release 提供。需要 Python 3.15 與 Node.js（前端測試只用 Node.js 內建的 `node --test`，不需 npm install）。
 
 ```bash
 # 虛擬環境建在 checkout 外：驗證會拒絕樹裡多出來的檔案與 symlink
@@ -169,7 +169,7 @@ python -B -m scripts.deployment.frontend_release recompute --source-root . \
 
 ## 專案狀態
 
-目前是公開測試（Public Alpha）：任何人都可以直接使用，不需邀請、帳號或 email，目前仍不收費；每一個 live 版本的原始碼都保持公開。現階段刻意只做幾件事：計算正確性與明確邊界、以架構落實隱私與資安、讓結果易懂但不刪掉可驗算依據、真正可用的複製與匯出流程；加入解盤、預測或大量方法之前，先取得真實回饋。
+目前是 Public Beta：任何人都可以直接使用，不需邀請、帳號或 email，目前仍不收費；每一個 live 版本的原始碼都保持公開。自宣告 Public Beta 起，API 回應與匯出契約凍結，破壞性變更會先預告，卷宗（Dossier）的格式不在此列。現階段刻意只做幾件事：計算正確性與明確邊界、以架構落實隱私與資安、讓結果易懂但不刪掉可驗算依據、真正可用的複製與匯出流程；加入解盤、預測或大量方法之前，先取得真實回饋。
 
 本專案由 Sebastian 獨立開發與維護。只要問題可以重現、scope 綁定目前 public release，都歡迎提出 issue；程式碼貢獻依
 [CONTRIBUTING.md](CONTRIBUTING.md)，目前不接受未經邀請的程式碼。好的報告包含 exact release、不涉及他人隱私的最小輸入（請用合成資料，不要貼真實生辰）、實際結果與預期結果；方法提案請指明傳統與來源。另見
@@ -251,7 +251,7 @@ Export contract versions are in [`deploy/frontend-contract.json`](deploy/fronten
 
 ### Status and contributing
 
-Armillary is in Public Alpha and is built and maintained independently by Sebastian. Reproducible issues scoped to
+Armillary is in Public Beta and is built and maintained independently by Sebastian. Reproducible issues scoped to
 the current public release are welcome; code contributions follow [CONTRIBUTING.md](CONTRIBUTING.md), which does
 not currently accept unsolicited code. Never put real birth data in an issue. Report a potential vulnerability
 privately as described in [SECURITY.md](SECURITY.md).

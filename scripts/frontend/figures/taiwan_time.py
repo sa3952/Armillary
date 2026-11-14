@@ -249,17 +249,13 @@ def _offsets(layout: str, fid: str, eras: list[dict], bound: _fx.Bound) -> str:
         area = _fx.rect(*box(t0, t1, base, level), era["fill"])
         step.append((T(t0), level, T(t1)))
         if wide:
-            hit = (T(t0), l9 - 52 if era["key"] in ("lmt", "cst1") else l9 - 8, T(t1) - T(t0),
-                   base - (l9 - 52 if era["key"] in ("lmt", "cst1") else l9 - 8))
+            ceiling = l9 - 52 if era["key"] in ("lmt", "cst1") else l9 - 8
+            hit = (T(t0), ceiling, T(t1) - T(t0), base - ceiling)
         else:
             hit = (14.0, T(t0), W - 28, T(t1) - T(t0))
         out.append(_row(era, area + _label(era, wide, T, L, base, l8, l9), hit))
-    if wide:
-        d = " ".join(f"{'M' if i == 0 else 'L'}{_fx.f(x0)} {_fx.f(y)} L{_fx.f(x1)} {_fx.f(y)}"
-                     for i, (x0, y, x1) in enumerate(step))
-    else:
-        d = " ".join(f"{'M' if i == 0 else 'L'}{_fx.f(y)} {_fx.f(x0)} L{_fx.f(y)} {_fx.f(x1)}"
-                     for i, (x0, y, x1) in enumerate(step))
+    pt = (lambda t, v: f"{_fx.f(t)} {_fx.f(v)}") if wide else (lambda t, v: f"{_fx.f(v)} {_fx.f(t)}")
+    d = " ".join(f"{'M' if i == 0 else 'L'}{pt(x0, y)} L{pt(x1, y)}" for i, (x0, y, x1) in enumerate(step))
     out.append(_fx.path(d, "fx-step"))
     for era in eras[4:]:
         bars = "".join(_fx.rect(*_min_bar(box(_year(s), _year(e), L(standard), L(eras[2]["offset"])), wide), "fx-fill-solid")

@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 
-FROM python:3.14.10-slim-trixie@sha256:930e1abba7c4e8f96ed93e8012c35d174d7732752731bbd5e8e757d7ec6f3966 AS builder
+FROM python:3.15.2-slim-trixie@sha256:65a65fc7b30b06cb6df4930fd4650697cb23f4c2698ab81fc87e4b031bc36928 AS builder
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -22,14 +22,14 @@ ENV CXX="g++" \
 WORKDIR /build
 
 # Install the toolchain from the same Debian snapshot the pinned base
-# image records in its sources (20261027T000000Z, the commented snapshot URIs
+# image records in its sources (20261104T212339Z, the commented snapshot URIs
 # of its /etc/apt/sources.list.d/debian.sources), not from whatever the mirror
 # serves on build day.  The snapshot's Release files are past their
 # Valid-Until, so that check is off; they are fetched over HTTPS so a party on
 # the path cannot replay an older, still validly signed Release.  pkg-config
 # and libsqlite3-dev make pyswisseph's setup.py link Debian's libsqlite3 (security-maintained, the runtime base
 # already carries libsqlite3-0) instead of compiling Swephelp's bundled SQLite.
-ARG DEBIAN_SNAPSHOT=20261027T000000Z
+ARG DEBIAN_SNAPSHOT=20261104T212339Z
 RUN sed -i \
         -e "s|http://deb.debian.org/debian-security|https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT}|" \
         -e "s|http://deb.debian.org/debian|https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}|" \
@@ -79,8 +79,8 @@ RUN --network=none python -c 'import re,sys; from pathlib import Path; blocks=re
         --no-deps \
         {} + \
     && /opt/venv/bin/python -c \
-        'import platform,sys,swisseph; ok=platform.python_version()=="3.14.10" and swisseph.version=="2.10.03"; sys.exit(0 if ok else "Python or Swiss Ephemeris version mismatch")' \
-    && ldd /opt/venv/lib/python3.14/site-packages/swisseph.*.so | grep -q 'libsqlite3\.so\.0 => /' \
+        'import platform,sys,swisseph; ok=platform.python_version()=="3.15.2" and swisseph.version=="2.10.03"; sys.exit(0 if ok else "Python or Swiss Ephemeris version mismatch")' \
+    && ldd /opt/venv/lib/python3.15/site-packages/swisseph.*.so | grep -q 'libsqlite3\.so\.0 => /' \
     && /opt/venv/bin/python -m pip uninstall --yes pip \
     && find /opt/venv -depth -type d -name __pycache__ -exec rm --recursive {} +
 
@@ -97,7 +97,7 @@ RUN --network=none mkdir --parents /licenses \
     && grep -q 'This file is part of Swiss Ephemeris' /licenses/SWISS_EPHEMERIS_LICENSE \
     && grep -q 'GNU GENERAL PUBLIC LICENSE' /licenses/SWEPHELP_LICENSE
 
-FROM python:3.14.10-slim-trixie@sha256:930e1abba7c4e8f96ed93e8012c35d174d7732752731bbd5e8e757d7ec6f3966
+FROM python:3.15.2-slim-trixie@sha256:65a65fc7b30b06cb6df4930fd4650697cb23f4c2698ab81fc87e4b031bc36928
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -147,7 +147,7 @@ RUN set -eux; \
         echo "non-essential Perl survived the purge" >&2; exit 1; \
     fi; \
     python -m pip uninstall --yes pip \
-    && rm --recursive /usr/local/lib/python3.14/ensurepip \
+    && rm --recursive /usr/local/lib/python3.15/ensurepip \
     && groupadd --gid 10001 astrology \
     && useradd \
         --uid 10001 \
@@ -207,9 +207,9 @@ RUN --mount=type=bind,target=/build-context,readonly \
 # outside /app, so the /app tree stays exactly the copied sources.
 # unchecked-hash .pyc files carry no timestamps (reproducible) and are never
 # revalidated, which is right for files that cannot change.
-RUN python -c 'import py_compile, sys; sys.path.insert(0, "/app/backend"); import app.main, uvicorn.main, uvicorn.server, uvicorn.config, uvicorn.supervisors.multiprocess, uvicorn.protocols.http.h11_impl, uvicorn.lifespan.on, uvicorn.loops.asyncio, uvicorn.middleware.proxy_headers, argparse, hashlib, sqlite3, urllib.request, urllib.error; files = sorted({m.__file__ for m in list(sys.modules.values()) if (getattr(m, "__file__", None) or "").startswith("/usr/local/lib/python3.14/") and m.__file__.endswith(".py")}); len(files) > 100 or sys.exit("too few standard-library modules found to precompile"); [py_compile.compile(f, doraise=True, invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH) for f in files]' \
+RUN python -c 'import py_compile, sys; sys.path.insert(0, "/app/backend"); import app.main, uvicorn.main, uvicorn.server, uvicorn.config, uvicorn.supervisors.multiprocess, uvicorn.protocols.http.h11_impl, uvicorn.lifespan.on, uvicorn.loops.asyncio, uvicorn.middleware.proxy_headers, argparse, hashlib, sqlite3, urllib.request, urllib.error; files = sorted({m.__file__ for m in list(sys.modules.values()) if (getattr(m, "__file__", None) or "").startswith("/usr/local/lib/python3.15/") and m.__file__.endswith(".py")}); len(files) > 100 or sys.exit("too few standard-library modules found to precompile"); [py_compile.compile(f, doraise=True, invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH) for f in files]' \
     && python -m compileall -q -j 0 --invalidation-mode unchecked-hash \
-        /opt/venv/lib/python3.14/site-packages \
+        /opt/venv/lib/python3.15/site-packages \
         /app/backend/app /app/scripts/verification /app/deploy/container_healthcheck.py
 
 RUN chmod 0555 /app/deploy/entrypoint.sh \

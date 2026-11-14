@@ -322,6 +322,7 @@ test("時區有爭議的地點：替代時區只在它的期間內可選，目�
 test("印刷與全形負號換成 ASCII，其餘字元不動", () => {
   assert.equal(RequestInput.normalizeMinusSigns("\u221233.5"), "-33.5");
   assert.equal(RequestInput.normalizeMinusSigns("\uff0d33.5"), "-33.5");
+  for (const sign of ["\u2010","\u2011","\u2012","\u2013","\u2014","\u2796","\ufe63"]) assert.equal(RequestInput.normalizeMinusSigns(`${sign}33.5`), "-33.5");
   assert.equal(RequestInput.normalizeMinusSigns("-33.5"), "-33.5");
   assert.equal(RequestInput.normalizeMinusSigns("33.5"), "33.5");
 });

@@ -304,8 +304,8 @@ def _hour_axis(layout: str, fid: str, hours: dict, bound: _fx.Bound) -> str:
     wide = layout == "fx-wide"
     W = _fx.WIDE if wide else _fx.NARROW
     x0, x1 = (60.0, 820.0) if wide else (18.0, 322.0)
-    axis_y = 128.0 if wide else 128.0
-    H = 192.0 if wide else 192.0
+    axis_y = 128.0
+    H = 192.0
     out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)]
     def hx(offset: float) -> float:
         return x0 + (x1 - x0) * offset / 3600

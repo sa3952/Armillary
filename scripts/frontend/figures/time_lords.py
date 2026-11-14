@@ -405,7 +405,7 @@ def _lifespan(layout: str, fid: str, years: list[dict], rows: list[dict], bound:
             extent = p1 - p0
             room = extent if wide else w
             text = segment["name"] if room >= 15 * len(segment["name"]) + 6 else segment["short"]
-            if (extent if wide else p1 - p0) < 16:
+            if extent < 16:
                 continue
             if not wide and text != segment["short"] and w < 13 * len(text) + 4:
                 text = segment["short"]

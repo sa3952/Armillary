@@ -40,7 +40,7 @@
 .fx-switch button:focus-visible, .fx-scrub input:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
 .fx-scrub{display:flex; align-items:center; gap:.8rem; margin:0 0 .7rem; font-size:var(--fs-note)}
 .fx-scrub input{flex:1; max-width:28rem; min-height:44px; accent-color:var(--fx-hi)}
-.fx-readout{min-height:3.7em; margin:.6rem 0 0; padding:.55rem .8rem; font-size:var(--fs-aside); line-height:1.75;
+.fx-readout{min-height:3.7em; margin:.6rem 0 0; padding:.55rem .8rem; font-size:var(--fs-note); line-height:1.75;
   background:var(--paper); border-left:3px solid var(--fx-hi); max-width:var(--measure-cjk)}
 .ar-fig.fx figcaption{font-family:var(--fx-face)}
 .fx-data{margin-top:var(--s1); font-size:var(--fs-note)}

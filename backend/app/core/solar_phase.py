@@ -127,7 +127,7 @@ PROFILES: Final[dict[str, dict]] = {
             "under_beams": {
                 "mercury": (_deg(12), True),
                 "venus": (_deg(12), True),
-                "mars": {"morning": (_deg(16), True), "evening": (_deg(18), True)},
+                "mars": (_deg(18), True),
                 "jupiter": {"morning": (_deg(15), True), "evening": (_deg(16), True)},
                 "saturn": {"morning": (_deg(15), True), "evening": (_deg(16), True)},
                 "moon": (_deg(12), True),
@@ -608,8 +608,6 @@ def compute_solar_phase(
         (key, body_id, by_key[key]) for key, body_id in LISTED_BODIES
         if key in by_key and by_key[key].get("longitude") is not None
     ]
-    if interval is not None and (interval not in INTERVALS or not interval_spans):
-        raise ValueError("a non-exact birth time needs its interval and its stretches")
 
     profile_results = _empty_profile_results(disc_cazimi, interval)
     rows = []
@@ -778,15 +776,15 @@ METHOD_SOURCE_ENTRIES: Final = {
             ),
             "hellenistic_15_v1": (
                 "One band, under the beams within 15 degrees on either side; no cazimi or "
-                "combust band (Porphyry, Antiochus as reported by Brennan 2017)."
+                "combust band (Porphyry ch.2: 'more or less fifteen degrees'; Antiochus as reported by Brennan 2017)."
             ),
             "biruni_wright_v1": (
                 "al-Biruni §481-484: samim under 16 minutes (exclusive); combust to 6 "
                 "degrees, to 7 degrees for Mercury and Venus in direct motion (§482); "
                 "the Moon combust under 7 degrees and under the rays to 12 degrees "
                 "(§484); under the rays rising in the east (morning side) to 12 Venus and "
-                "Mercury, 15 Saturn and Jupiter, 16 Mars, setting in the west (evening "
-                "side) from 16 Saturn and Jupiter, 18 Mars; Mercury and Venus take 12 on "
+                "Mercury, 15 Saturn and Jupiter, 18 Mars, setting in the west "
+                "(evening side) from 16 Saturn and Jupiter (the 16 is overstruck in Wright's text and may read 15; we keep 16), 18 Mars; Mercury and Venus take 12 on "
                 "both sides, since §482 says only that their west 'resembles' the "
                 "superior planets'; Venus north of 7 degrees latitude in the samim or "
                 "combust band is 'accompanying the Sun' (§483)."
@@ -810,9 +808,10 @@ METHOD_SOURCE_ENTRIES: Final = {
         "seven_day_rule": (
             "For the five planets, every crossing of the profile's under-the-beams limit "
             "within 7 days before or after the chart instant, emerging or sinking; "
-            "stations not searched; the Moon not searched. The 7-day rule is reported "
-            "from Porphyry, Introduction ch.30 and Rhetorius (Holden 2009 pp.24, 134) "
-            "via a secondary page; the original was not read."
+            "stations not searched; the Moon not searched. The 7-day rule is read in "
+            "Porphyry, Introduction ch.30 (CCAG V/4 p.207 ll.14-16), where it is said of "
+            "the ruling planet (kurios); applying it to beam crossings is this product's "
+            "reading."
         ),
         "doctrine": [
             "Lilly 1647 p.111: 'the combustion of any Planet is the greatest misfortune "
@@ -833,7 +832,7 @@ METHOD_SOURCE_ENTRIES: Final = {
             cited("William Lilly, Christian Astrology (London 1647) Book I, pp.111, 113-114", None,
                   ORIGINAL_LANGUAGE_READ,
                   ("archive.org full text of the 1647 printing and of a 1659 transcription; "
-                   "pp.111 and 113 not checked on the scan. The p.115 table of fortitudes "
+                   "p.113 checked on the scan (b30338724 n147), p.111 not. The p.115 table of fortitudes "
                    "and debilities was read on the scan (Wellcome Library copy, "
                    "archive.org b30338724 n148); it is cited under motion_states")),
             cited("William Lilly, Christian Astrology, aphorism 26 (p.300 per Houlding)", None,
@@ -852,8 +851,11 @@ METHOD_SOURCE_ENTRIES: Final = {
                    "Dykes's English only as cited by Tony Louis")),
             cited("Ptolemy, Tetrabiblos III.10, trans. Robbins (Loeb 1940) p.285", None,
                   TRANSLATION_READ, "LacusCurtius transcription"),
-            cited(("Porphyry, Introduction ch.2 and ch.30; Antiochus; Rhetorius "
-                   "(Holden 2009 pp.24, 134); Brennan, Hellenistic Astrology (2017)"),
+            cited("Porphyry, Introduction ch.30 (CCAG V/4, 1940, pp.206-207)",
+                  "the 7-day rule, said of the ruling planet (p.207 ll.14-16)",
+                  ORIGINAL_LANGUAGE_READ, "CCAG V/4 (Greek)"),
+            cited(("Antiochus; Rhetorius (Holden 2009 pp.24, 134); Brennan, Hellenistic "
+                   "Astrology (2017); Porphyry ch.2 read in Greek, cited under contested_methods"),
                   None, SECONDARY_ONLY, "secondary pages and search excerpts only"),
             cited(("William Lilly, Christian Astrology (1647) Book I ch. XIX p.107, "
                    "first column"),

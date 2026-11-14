@@ -243,6 +243,7 @@
       const unit = Math.hypot(dx, dy) || 1;
       tagged.push({ node: labelText, x, y, ux: dx / unit, uy: dy / unit, anchor: "middle", rank: RANK[text] ?? 4 });
     }
+    const samples = (segments, at) => Array.from({ length: segments + 1 }, (_, k) => at(k));
     const sys = state.sys;
     layers.base.push(node("circle", { class: "hs-ball", cx: CX, cy: CY, r: frame.radius }));
     const horizon = greatCircle(F.N, F.E, 0, 360, 4).map(proj);
@@ -270,12 +271,8 @@
     if (sys === "B" && result.cusps) {
       const dec = Core.decOfLon(result.asc, eps);
       const arc = Core.semiArc(dec, state.lat);
-      const circle = [];
-      for (let t = 0; t <= 360; t += 4) circle.push(Core.raDecVec(t, dec));
-      poly(circle, "hs-day");
-      const upper = [];
-      for (let k = 0; k <= 30; k += 1) upper.push(Core.raDecVec(state.armc + (arc * k) / 30, dec));
-      poly(upper, "hs-arc");
+      poly(samples(360 / 4, (k) => Core.raDecVec(k * 4, dec)), "hs-day");
+      poly(samples(30, (k) => Core.raDecVec(state.armc + (arc * k) / 30, dec)), "hs-arc");
       const angles = [0, -arc / 3, (-2 * arc) / 3, -arc, -arc - (180 - arc) / 3, -arc - (2 * (180 - arc)) / 3];
       angles.forEach((h, i) => {
         if (i !== 0 && i !== 3) both(halfThrough(F.P, Core.raDecVec(state.armc - h, 0)), "hs-cut");
@@ -299,9 +296,7 @@
           const arc = Core.semiArc(dec, state.lat);
           const marks = house === 11 || house === 12 ? [0, -arc / 3, (-2 * arc) / 3, -arc]
             : [180, 180 + (180 - arc) / 3, 180 + (2 * (180 - arc)) / 3, 360 - arc];
-          const piece = [];
-          for (let k = 0; k <= 30; k += 1) piece.push(Core.raDecVec(state.armc - (marks[0] + ((marks[3] - marks[0]) * k) / 30), dec));
-          poly(piece, "hs-arc hs-arc-thin");
+          poly(samples(30, (k) => Core.raDecVec(state.armc - (marks[0] + ((marks[3] - marks[0]) * k) / 30), dec)), "hs-arc hs-arc-thin");
           marks.forEach((h) => dot3(Core.raDecVec(state.armc - h, dec), "hs-pt hs-pt-acc"));
         }
       } else {
@@ -321,9 +316,7 @@
         const start = result.cusps[i];
         const span = Core.mod360(result.cusps[(i + 1) % 12] - start);
         const steps = Math.max(2, Math.ceil(span / 3));
-        const piece = [];
-        for (let k = 0; k <= steps; k += 1) piece.push(Core.eclVec(start + (span * k) / steps, eps));
-        poly(piece, i % 2 ? "hs-ecl hs-ecl-b" : "hs-ecl hs-ecl-a");
+        poly(samples(steps, (k) => Core.eclVec(start + (span * k) / steps, eps)), i % 2 ? "hs-ecl hs-ecl-b" : "hs-ecl hs-ecl-a");
         label(Core.eclVec(start + span / 2, eps), String(i + 1), "hs-t hs-t-num", 20);
       }
       result.cusps.forEach((c, i) => dot3(Core.eclVec(c, eps), i % 3 === 0 ? "hs-pt hs-pt-ink hs-pt-big" : "hs-pt hs-pt-ink"));

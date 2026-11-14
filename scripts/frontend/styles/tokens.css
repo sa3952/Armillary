@@ -10,11 +10,13 @@
   --paper-2:    #E8E0CC;
   --ink:        #1C1913;
   /* 內文淡墨：對 --paper 7.52:1（AAA 7）、--paper-2 6.87:1。 */
-  --ink-dim:    #4F483B;
+  --ink-2:      #4F483B;
   /* 欄位說明用的小字：對 --paper 5.04:1、--paper-2 4.61:1（WCAG AA 4.5）。 */
-  --ink-faint:  #696251;
-  --hair:       #CFC5AE;
-  --hair-soft:  #DFD7C2;
+  --ink-3:      #696251;
+  --rule:       #CFC5AE;
+  --rule-soft:  #DFD7C2;
+  /* 輸入欄：比紙色淺一階，欄位在紙上讀得出來。 */
+  --field:      #E8E0CC;
 
   /* ── 黑底招牌段 ─────────────────────────────────────── */
   --plate:      #131210;
@@ -29,42 +31,53 @@
 
   /* ── 語意色（各頁一律用這五個名字，不直接引用色相）：--act 只給主要動作、目前選取、今天那條線；--err 給錯誤；
      --fact／--geo／--judg 是三層宣稱（天文事實、幾何推導、方法判斷）。連結是墨色加底線，不用朱紅。 */
-  --act:        #A03A22;
   --err:        #9B2C3F;
   --fact:       #3D6949;
   --geo:        #3E6B8A;
+  /* 這個值擔小字，要過 4.5:1（對 --paper 5.28:1）；星盤相位線另用 --ring-3。 */
   --judg:       #885322;
+  --warn:       #7E5227;
+  --verify:     #6E6A5F;
 
   /* ── 三環與驗證層：四個各自獨立，共用會讓分層在畫面上不可見。 ── */
   /* /validation 的 PASS 籤是小字：對 --paper 5.27:1、--paper-2 4.82:1。 */
-  --ring-1:     #3D6949;   /* 天文事實 */
-  --ring-2:     #3E6B8A;   /* 幾何推導 */
+  --ring-1:     var(--fact);   /* 天文事實 */
+  --ring-2:     var(--geo);    /* 幾何推導 */
   --ring-3:     #A0632B;   /* 方法判斷 */
-  --ring-v:     #6E6A5F;   /* 驗證 */
+  --ring-v:     var(--verify); /* 驗證 */
 
   /* ── 收據狀態 ──「產品明確拒絕」與「使用者未請求」由邊框形狀區分，不靠顏色深淺；每個值在 --paper 與 --paper-2 上都達
      AA 4.5（absent 5.18／4.73，unavailable 5.60／5.11）。 */
   --state-refused:     #A03A22;
   --state-absent:      #68604F;
-  --state-unavailable: #7E5227;
+  --state-unavailable: var(--warn);
+
+  /* ── 舊名：與上面的新名同值，既有規則照常運作。 ── */
+  --act:        var(--accent);
+  --ink-dim:    var(--ink-2);
+  --ink-faint:  var(--ink-3);
+  --hair:       var(--rule);
+  --hair-soft:  var(--rule-soft);
 
   /* ── 字體 ───────────────────────────────────────────── */
   /* 繁中字型依平台列：macOS／iOS、網頁字型名、Linux 套件的字族名（Noto … CJK TC）、Windows。不列日文字型：同一碼位的日
      文字形與台灣標準字形不同。等寬字型只供拉丁字母與數字，其中夾的中文落到同一組繁中字型，不交給瀏覽器任選。 */
-  --serif: "Songti TC", "Noto Serif TC", "Noto Serif CJK TC", "Source Han Serif TC",
+  --zh-serif: "Songti TC", "Noto Serif TC", "Noto Serif CJK TC", "Source Han Serif TC",
            "PMingLiU", "MingLiU", "Times New Roman", serif;
-  --sans:  "PingFang TC", "Noto Sans TC", "Noto Sans CJK TC", "Microsoft JhengHei",
+  --zh-text:  "PingFang TC", "Noto Sans TC", "Noto Sans CJK TC", "Microsoft JhengHei",
            sans-serif;
+  --serif: var(--zh-serif);
+  --sans:  var(--zh-text);
   --mono:  ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono",
            "Liberation Mono", "PingFang TC", "Noto Sans CJK TC", "Microsoft JhengHei", monospace;
 
   /* ── 間距階梯 ───────────────────────────────────────── */
   --s1: .5rem;
-  --s2: 1.15rem;
-  --s3: 2rem;
-  --s4: 3.5rem;
-  --s5: 5.5rem;
-  --s6: 8rem;
+  --s2: 1rem;
+  --s3: 1.5rem;
+  --s4: 2.25rem;
+  --s5: 3.25rem;
+  --s6: 4.5rem;
 
   /* ── 列印：強制白底黑字，也寫成 token。 ── */
   --print-bg: #FFFFFF;
@@ -82,24 +95,36 @@
   --zebra:     rgba(0, 0, 0, .04);
   --scroll-shadow: rgba(28, 25, 19, .22);
 
-  /* ── 中文排印階梯 ── 每行字數寫成 em：中文每字約 1em，38em 就是一行約 38 字，不論字級。內文級字級只有下面六階，其餘
-     CSS 引用它們（標題、SVG 與列印的字級不在此列）：  --fs-subhead  小標、粗體引句              20px（窄螢幕 19px）
-     --fs-lead     導言、比內文稍重的段落        19px（18px）  --fs-body     內文                        18px（17px）
-     --fs-aside    次要內文、表單、按鈕、文字表格 17px（16px）  --fs-note     說明、圖說、數值表格          15.2px
-     （15px）  --fs-small    小型標籤、欄標頭、等寬註記     14px 行距三階：內文（17–19px 的段落、清單、導言）--lh-body
-     1.8，小字說明（--fs-note 以下）--lh-note 1.7，標題 h2 --lh-head 1.4（h1 另有 1.3）。各頁不另寫行距數字。行長：內容
-     頁的段落一律 --measure（36 字）；計算頁的說明與圖說用 --measure-cjk（38 字）。--gap-related 必須比 --gap-group 小，
-     否則看不出哪幾行是一組。只用在畫面；紙本有自己的字級與間距預算。 */
-  --fs-subhead:   1.25rem;
-  --fs-lead:      1.1875rem;
-  --fs-body:      1.125rem;
-  --fs-aside:     1.0625rem;
-  --fs-note:      .95rem;
-  --fs-small:     .875rem;
-  --lh-body:      1.8;
-  --lh-note:      1.7;
+  /* ── 中文排印階梯 ── 每行字數寫成 em：中文每字約 1em，38em 就是一行約 38 字，不論字級。字級只有下面八階，其餘
+     CSS 引用它們（SVG、列印與隨上下文縮放的 em 字級不在此列）。八階，桌機／手機（px）：
+     display 38／28、h1 33／27、h2 25／21、h3 18／17、lead 17／16、body 16、note 15、small 13。字重只用 400／500。
+     行距見下方 --lh-*。內頁段落用 --measure（36 字），
+     計算頁的說明與圖說用 --measure-cjk（38 字）。 */
+  --fs-display:   2.375rem;
+  --fs-h1:        2.0625rem;
+  --fs-h2:        1.5625rem;
+  --fs-h3:        1.125rem;
+  --fs-lead:      1.0625rem;
+  --fs-body:      1rem;
+  --fs-note:      .9375rem;
+  --fs-small:     .8125rem;
+  /* 舊名：併進相鄰的階。 */
+  --fs-subhead:   var(--fs-lead);
+  --fs-aside:     var(--fs-note);
+  /* 行距與字距跟著字級的角色走；表格的說明級用 --lh-table，單行標籤用 --lh-small。 */
+  --lh-display:   1.2;
+  --lh-h1:        1.25;
+  --lh-h2:        1.3;
+  --lh-h3:        1.4;
+  --lh-lead:      1.65;
+  --lh-body:      1.75;
+  --lh-note:      1.65;
+  --lh-table:     1.5;
+  --lh-small:     1.4;
   --lh-label:     1.5;
   --lh-head:      1.4;
+  --ls-display:   .04em;
+  --ls-head:      .02em;
   --measure-cjk:  38em;
   --gap-related:  .35rem;
   --gap-group:    1rem;
@@ -108,19 +133,21 @@
 
   /* ── 文章圖版（甲・銅版星圖，figures.css）───────────────────── 圖上只用墨色，分層靠線的粗細與排線；--fx-hi（朱紅）只
      給目前指著的那一個。圖上的字先用拉丁襯線：宋體把 ° ′ 排成全形，16°34′ 會被拆開；中文落到同一組宋體。 */
-  --serif-latin: "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman",
+  --latin: "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman",
                  "Liberation Serif", "DejaVu Serif", "Songti TC", "Noto Serif TC",
                  "Noto Serif CJK TC", "Source Han Serif TC", serif;
   --fx-ink:     var(--ink);
   --fx-dim:     var(--ink-faint);
   --fx-hi:      var(--accent);
   --fx-hi-wash: rgba(160, 58, 34, .07);   /* --accent 的淡底：指著的那一列 */
-  --fx-face:    var(--serif-latin);
-  --fx-num:     var(--serif-latin);
-  /* 星盤與表格上的數字：與 --serif-latin 同一類拉丁襯線，但 Palatino 排第一——Iowan Old Style 的
+  --fx-face:    var(--latin);
+  --fx-num:     var(--latin);
+  /* 星盤與表格上的數字：與 --latin 同一類拉丁襯線，但 Palatino 排第一——Iowan Old Style 的
      行框高約 1.37 em（瀏覽器量字框用它），標籤因此要攤得更開；Palatino 約 1.10 em、數字寬 .5 em。 */
-  --serif-num: Palatino, "Palatino Linotype", "Book Antiqua", "Times New Roman", "Liberation Serif",
+  --num: Palatino, "Palatino Linotype", "Book Antiqua", "Times New Roman", "Liberation Serif",
                "DejaVu Serif", serif;
+  --serif-latin: var(--latin);
+  --serif-num:   var(--num);
 
   /* ── 已選取（一種樣子）─────────────────────────────────── 模式卡、章節欄與分頁列、分段切換、匯出方式：選中的那一個都
      是紙色加深一階、墨色框，加一條 3px 的重點色線（直排在左、橫排在下）。只靠顏色分不出時還有那條線與框。 */
@@ -144,7 +171,8 @@
                          * 記於此以維持單一出處，改值時兩處都要改。 */
 }
 
-/* 窄螢幕：內文 17px、說明 15px，與 --bp-mobile 同一斷點。 */
+/* 窄螢幕：字級與章節間距再收一階，與 --bp-mobile 同一斷點。 */
 @media (max-width:640px){
-  :root{--fs-subhead: 1.1875rem; --fs-lead:    1.125rem; --fs-body:    1.0625rem; --fs-aside:   1rem; --fs-note:    .9375rem}
+  :root{--fs-display: 1.75rem; --fs-h1: 1.6875rem; --fs-h2: 1.3125rem; --fs-h3: 1.0625rem; --fs-lead: 1rem;
+    --s3: 1.25rem; --s4: 1.75rem; --s5: 2.25rem; --s6: 3rem}
 }

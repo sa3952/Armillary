@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from . import _demo, _site
 from ._common import zh, zh_quantity
+from .page_home import calculation_sentence
 
 FRAGMENT = "features"
 # The page's names for the four bounds tables, in _demo.BOUNDS order.
@@ -64,6 +65,14 @@ def _headers() -> list[str]:
         *(f'<tr><td>{name}</td><td class="num">{headers[name]}</td>' for name in PLAIN_SHOWN),
         f'<tr><td>Strict-Transport-Security</td><td class="num">{_site.edge_hsts()}</td>']
 
+def _plate_inputs(epsilon: float) -> None:
+    """The caption says both ecliptic obliquity and horizon latitude are true values."""
+    from scripts.frontend import gen_armillary
+    latitude = _demo.DEMO["location"]["latitude"]
+    if abs(gen_armillary.EPS - epsilon) > 5e-8 or gen_armillary.PHI != round(latitude, 3):
+        raise RuntimeError(f"the armillary plate draws ε={gen_armillary.EPS}, φ={gen_armillary.PHI}; "
+                           f"the chart has ε={epsilon}, φ={latitude}")
+
 def build() -> tuple[dict[str, str], list[str]]:
     data = _demo.answers()
     chart, sidereal = data["chart"], data["sidereal"]
@@ -71,6 +80,7 @@ def build() -> tuple[dict[str, str], list[str]]:
     library = chart["library_info"]
     jpl, created = _site.ephemeris_header()
     obliquity = _demo.step(chart, "黃赤交角與章動 (swe.calc_ut ECL_NUT)")[1]
+    _plate_inputs(obliquity["真黃赤交角ε(度)"])
     hour = _demo.hour_summary()
     site = _site.product()
     if hour["width_seconds"] > site["transition_resolution_seconds"]:
@@ -104,9 +114,11 @@ def build() -> tuple[dict[str, str], list[str]]:
         f"<div><b>{hour['asc_range']:.2f}°</b><span>上升點在這一小時內取樣到的範圍</span></div>",
         f"做法是對整個小時取樣{zh(hour['probes'])}個時刻",
         f"月亮在每個取樣點都在{hour['moon_sign']}",
-        f'<b class="vs-answer">{_demo.zodiacal(tropical, 1)}</b><span class="vs-src">黃經 {tropical:.6f}°</span>',
+        f'<b class="vs-answer">{_demo.zodiacal(tropical, 1)}</b><span class="vs-src">黃經 {tropical:.6f}°<br>',
         f'<b class="vs-answer alt">{_demo.zodiacal(sidereal_asc, 1)}</b>'
-        f'<span class="vs-src">黃經 {sidereal_asc:.6f}°</span>',
+        f'<span class="vs-src">黃經 {sidereal_asc:.6f}°<br>扣掉歲差 {_demo.dms(ayanamsa, 1)}（Fagan–Bradley）',
+        f"傾角 ε＝{_demo.dms(obliquity['真黃赤交角ε(度)'], 2)}，取這一刻的真黃赤交角",
+        calculation_sentence(chart),
         f"兩者相差 <b>{_demo.dms(ayanamsa, 1)}</b>",
         f"黃道系統（回歸／{zh(_site.count('ayanamsa'))}種恆星）、"
         f"宮位制（{'／'.join(HOUSE_NAMES.values())}／不算宮位）",

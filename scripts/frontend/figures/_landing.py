@@ -14,6 +14,8 @@ BODY = time_lords.BODY
 SIGN = time_lords.SIGN
 PROFECTION_YEARS = 13  # years 1-13: one full round of the twelve signs and the return to the first
 FIRDARIA_ROWS = 9      # one 75-year cycle
+EXAMPLE_YEAR = 35      # the year Valens IV.11 works, as the methods page reads it
+DECENNIAL_LEAST_MONTHS = {"sun": 19}  # the page's least-years list; only the demonstration chart's first lord is quoted
 
 def _age(value: float) -> str:
     return f"{value:g}"
@@ -74,13 +76,59 @@ def _decennials(answer: dict) -> tuple[str, list[str]]:
     quoted = [f"每段 {months} 個月", f"從{BODY[method['start_planet']]}起"]
     return rows, quoted
 
+def _example(text: str) -> str:
+    return f'    <p class="lp-example"><b>算例。</b>{text}</p>'
+
+def _profections_example(lifetime: dict) -> str:
+    years = time_lords._years(lifetime)
+    rising, year = years[0], years[EXAMPLE_YEAR - 1]
+    return _example(
+        f"第 {year['year_of_life']} 年就是已滿 {year['completed_years']} 歲。{EXAMPLE_YEAR} 除以 12 餘 {EXAMPLE_YEAR % 12}，"
+        f"從上升星座{SIGN[rising['profection_sign']]}起、含起點數到第 {EXAMPLE_YEAR % 12} 個星座，是{SIGN[year['profection_sign']]}；"
+        f"{SIGN[year['profection_sign']]}的守護行星是{BODY[year['year_lord']]}，所以這一年的年主星是{BODY[year['year_lord']]}。"
+        f"本站算出這一年從 {year['start']['local_date']} 起。")
+
+def _firdaria_example(answer: dict) -> str:
+    periods = [p for p in answer["annual_methods"]["firdaria"]["periods"] if p["level"] == 1]
+    sun, venus, third = periods[:3]
+    span = [_age(p["end_year"] - p["start_year"]) for p in (sun, venus, third)]
+    return _example(
+        f"日盤從{BODY[sun['level_1_lord']]}起：{BODY[sun['level_1_lord']]} {span[0]} 年、{BODY[venus['level_1_lord']]} {span[1]} 年，"
+        f"接著{BODY[third['level_1_lord']]} {span[2]} 年，所以{BODY[third['level_1_lord']]}主期從 {_age(third['start_year'])} 足歲到 "
+        f"{_age(third['end_year'])} 足歲；本站算出的日期是 {third['start']['local_date']} 到 {third['end']['local_date']}。"
+        f"這段主期再平分成七個子期，每個子期是 {span[2]}/7 年。")
+
+def _releasing_example(answer: dict) -> str:
+    releases = answer["annual_methods"]["zodiacal_releasing"]["releases"]
+    fortune = next(r for r in releases if r["releasing_from"] == "fortune")
+    first, second = [p for p in fortune["periods"] if p["level"] == 1][:2]
+    def days(period: dict) -> str:
+        return f"{period['effective_units'] * 360:,}"
+    return _example(
+        f"命運點在{SIGN[first['sign']]}，第一段是{SIGN[first['sign']]} {first['effective_units']} 年。一年算 360 日，"
+        f"{first['effective_units']} × 360 = {days(first)} 日，從 {first['start']['local_date']} 起算到 {first['effective_end']['local_date']}；"
+        f"下一段{SIGN[second['sign']]} {second['effective_units']} 年，{days(second)} 日，到 {second['effective_end']['local_date']}。")
+
+def _decennials_example(answer: dict) -> str:
+    method = answer["annual_methods"]["decennials"]
+    model = method["year_model"]
+    first = next(p for p in method["periods"] if p["level"] == 1)
+    months, per_month = model["months_per_level_1"], int(model["days_per_month"])
+    least = DECENNIAL_LEAST_MONTHS[first["lord"]]
+    return _example(
+        f"第一段是{BODY[first['lord']]}。每段 {months} 個月、一個月 {per_month} 日，{months} × {per_month} = {months * per_month:,} 日，"
+        f"從 {first['start']['local_date']} 起算到 {first['end']['local_date']}。這一段裡{BODY[first['lord']]}的小段是 {least} 個月"
+        f"（{BODY[first['lord']]}的小年），{least} × {per_month} = {least * per_month} 日。")
+
 def build_for(technique: str) -> tuple[dict[str, str], list[str]]:
     lifetime = time_lords._lifetime()
     if technique == "profections":
         rows, quoted = _profections(lifetime)
     else:
         rows, quoted = {"firdaria": _firdaria, "releasing": _releasing, "decennials": _decennials}[technique](lifetime)
-    return {f"lp-{technique}": rows}, quoted
+    example = {"profections": _profections_example, "firdaria": _firdaria_example, "releasing": _releasing_example,
+               "decennials": _decennials_example}[technique](lifetime)
+    return {f"lp-{technique}": rows, f"lp-{technique}-example": example}, quoted
 
 @dataclass(frozen=True)
 class Landing:

@@ -173,9 +173,8 @@ VOC_SOURCE_VERIFICATION = {
 }
 
 _PORPHYRY_30_READ_AT = (
-    "an online Greek transcription and Holden 2009 trans. p.18, the CCAG page itself "
-    "not checked; level pending: the record does not say whether the Greek was read "
-    "closely enough to count as the original language, so only the translation is claimed"
+    "the Greek at CCAG V/4 p.202 ll.6-9, read at the printed page; Holden 2009 p.18 "
+    "also consulted"
 )
 # The receipts of the two alternative definitions.  Neither claims more than the
 # default does: primary texts are not independently transcribed here either.
@@ -202,7 +201,7 @@ VOC_ALTERNATIVE_SOURCES = {
             cited("Ps.-Porphyry, Introduction ch.23 (Boer-Weinstock, CCAG V/4, 1940, p.202)",
                   ("the Moon joins no planet, by sign, degree, aspect or kollesis, "
                    "within the next 30 degrees, regardless of the sign boundary"),
-                  TRANSLATION_READ, _PORPHYRY_30_READ_AT),
+                  ORIGINAL_LANGUAGE_READ, _PORPHYRY_30_READ_AT),
             cited("Antiochus (as reported by Louis 2013 citing Gramaglia p.188)",
                   ("a variant of one day and night (about 13 degrees); not implemented "
                    "here, the original is not checked"),

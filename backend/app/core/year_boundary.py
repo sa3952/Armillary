@@ -45,7 +45,7 @@ import swisseph as swe
 
 from ..domain_catalog import PRODUCT_YEAR_RANGE
 from .root_finding import SOLVER_NAME, find_crossings_detailed, wrap_to_signed_180
-from .source_reading import BIBLIOGRAPHIC_ONLY, ORIGINAL_LANGUAGE_READ, SECONDARY_ONLY, TRANSLATION_READ, cited
+from .source_reading import ORIGINAL_LANGUAGE_READ, SECONDARY_ONLY, TRANSLATION_READ, cited
 from .time_utils import jd_ut_to_iso_utc, time_scale_for_jd_ut
 
 YEAR_BOUNDARY_DEFINITION = "solar_return_root_v1"
@@ -112,8 +112,6 @@ def lifetime_window(completed_years: int) -> tuple[int, int]:
 
 def solar_return_profile(mode) -> str:
     profile = f"solar_return_{mode.zodiac}_geocentric_{mode.position_mode}_of_date_v1"
-    if profile not in SOLAR_RETURN_PROFILES:
-        raise ValueError(f"no solar return profile for {profile}")
     return profile
 
 
@@ -155,8 +153,6 @@ class SolarReturnClock:
     def root(self, n: int) -> dict:
         """``{"status", "jd_ut"}`` of SR_n; n = 0 is the birth instant."""
 
-        if n < 0:
-            raise ValueError("return numbers start at 0")
         if n not in self._roots:
             self._roots[n] = self._search(n)
         return dict(self._roots[n])
@@ -334,11 +330,24 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "birth)."
         ),
         "sources": [
-            cited(("Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, "
-                   "Persian Nativities IV (2019)"),
-                  "revolutions used together with profections and firdaria",
-                  BIBLIOGRAPHIC_ONLY,
-                  "bibliographic record only; chapter and page not verified"),
+            cited(("[Abū Maʿshar], De revolutionibus nativitatum I.1, I.3, Latin translation "
+                   "printed under the name of Hermes (Basel 1559) pp.211, 213"),
+                  ("the year begins when the Sun returns to its natal place (I.1); the year's "
+                   "ascendant is to be found with the same tables as the nativity's, or the "
+                   "two will not agree (I.3, p.213; the phrase 'per medios motus' there is "
+                   "not fully understood)"),
+                  TRANSLATION_READ, "the medieval Latin translation at the cited pages"),
+            cited("Abraham Ibn Ezra, The Book of the Revolution (Sefer ha-Tequfah) §1:1, ed. and tr. S. Sela (2014) p.373",
+                  "the revolution is the Sun's return to its natal degree and minute",
+                  TRANSLATION_READ, "Sela's English translation at the cited place"),
+            cited("The Book of Aristotle IV.1, tr. B. Dykes, Persian Nativities I (2009) p.185",
+                  ("sentence [1]: each year adds six hours and a fifth of an hour, a year of "
+                   "about 365.2583 days by Dykes's note, close to the sidereal year; not the "
+                   "product's model"),
+                  TRANSLATION_READ, "Dykes's English translation and note at the cited place"),
+            cited("William Lilly, Christian Astrology (1647) ch. CLXXII p.734",
+                  "the revolution is the Sun's return to its natal degree and minute",
+                  ORIGINAL_LANGUAGE_READ, "the 1647 first edition at the cited page"),
             cited("Swiss Ephemeris 2.10.03 swe_solcross_ut",
                   ("the crossing the test suite compares the product's own search against "
                    "(same engine, another algorithm)"),
@@ -387,8 +396,15 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
                    "translation printed under the name of Hermes (Basel 1559) pp.211-214"),
                   ("the year begins when the Sun returns to its place; the return does not "
                    "override the nativity; the figure has twelve houses with cusps by "
-                   "quadrant division and marks the natal ascendant, the profected sign and "
-                   "the year's ascendant; the place of casting is not discussed"),
+                   "hour-degrees and right ascensions ('per partes horarum & "
+                   "ascensiones rectae sphaerae', the practice of 'Astrologi temporis "
+                   "nostri') and marks the natal ascendant and planets, the profected sign "
+                   "and the year's ascendant; I.5 (p.214) also marks the profection of "
+                   "Fortune, the distribution with its distributor and partner, the firdaria "
+                   "lord and its partner, the lord of the orb and fixed stars on the "
+                   "midheaven or the luminaries before the figure is complete, and I.6 "
+                   "begins the judgement from the year's ascendant; the place of casting is "
+                   "not discussed"),
                   TRANSLATION_READ,
                   ("the medieval Latin translation at the cited pages; its attribution to "
                    "Abū Maʿshar is the scholarly consensus, not checked here")),

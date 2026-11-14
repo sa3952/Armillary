@@ -405,7 +405,7 @@ def check_zone_policies(connection: sqlite3.Connection) -> dict[str, dict]:
         if row is None:
             continue
         if row[0] != policy["zone"]:
-            raise ValueError(f"zone policy {key} names zone {policy['zone']}, the row carries {row and row[0]}")
+            raise ValueError(f"zone policy {key} names zone {policy['zone']}, the row carries {row[0]}")
         zones = [policy["zone"], *(entry["zone"] for entry in policy["alt_zones"] + policy["overrides"])]
         if policy["legal_zone"] is not None:
             zones.append(policy["legal_zone"])
@@ -890,17 +890,9 @@ def taiwan_written_characters(sources: tuple[Path | BoundedInput, ...]) -> set[s
     """Every character the MOI files write in a place, county, town or village name."""
 
     characters: set[str] = set()
-    for source in sources:
-        bounded, owned = _as_bounded_input(source)
-        try:
-            for line_number, row in enumerate(_taiwan_reader(bounded), start=2):
-                if line_number > MAX_SOURCE_ROWS + 1:
-                    raise ValueError("Taiwan input exceeds bounded row limit")
-                for field in _MOI_NAME_FIELDS:
-                    characters.update(str(row.get(field) or ""))
-        finally:
-            if owned:
-                bounded.close()
+    for row in _moi_rows(sources):
+        for field in _MOI_NAME_FIELDS:
+            characters.update(str(row.get(field) or ""))
     return characters
 
 
@@ -1177,20 +1169,12 @@ def taiwan_counties_by_code(sources: tuple[Path | BoundedInput, ...]) -> dict[st
     """MOI CountyCode -> County name, read from the MOI files themselves."""
 
     counties: dict[str, str] = {}
-    for source in sources:
-        bounded, owned = _as_bounded_input(source)
-        try:
-            for line_number, row in enumerate(_taiwan_reader(bounded), start=2):
-                if line_number > MAX_SOURCE_ROWS + 1:
-                    raise ValueError("Taiwan input exceeds bounded row limit")
-                county = str(row.get("County") or "").strip()
-                code = str(row.get("CountyCode") or "").strip()
-                if county and code:
-                    if counties.setdefault(code, county) != county:
-                        raise ValueError(f"MOI CountyCode {code} names two counties")
-        finally:
-            if owned:
-                bounded.close()
+    for row in _moi_rows(sources):
+        county = str(row.get("County") or "").strip()
+        code = str(row.get("CountyCode") or "").strip()
+        if county and code:
+            if counties.setdefault(code, county) != county:
+                raise ValueError(f"MOI CountyCode {code} names two counties")
     return counties
 
 
@@ -1499,9 +1483,8 @@ def apply_geonames_chinese_names(
         # An excluded name is no name of the row: neither label nor match key.
         if (geonameid in keyed and (language.startswith("zh") or language == "") and _has_han(value)
                 and value not in excluded_names.get(geonameid, ())):
-            historic = len(fields) > 7 and fields[7] == "1"
-            colloquial = len(fields) > 6 and fields[6] == "1"
-            if not historic and not colloquial:
+            # fields[6] is the colloquial flag, fields[7] the historic one; short rows carry neither.
+            if "1" not in fields[6:8]:
                 chinese_entries.setdefault(geonameid, []).append(value)
         if language not in rank:
             continue
@@ -1570,6 +1553,21 @@ def _taiwan_reader(bounded: BoundedInput):
         yield from csv.DictReader(wrapper)
     finally:
         wrapper.detach()
+
+
+def _moi_rows(sources: tuple[Path | BoundedInput, ...]):
+    """Every row of the MOI files, each file held to the bounded row limit."""
+
+    for source in sources:
+        bounded, owned = _as_bounded_input(source)
+        try:
+            for line_number, row in enumerate(_taiwan_reader(bounded), start=2):
+                if line_number > MAX_SOURCE_ROWS + 1:
+                    raise ValueError("Taiwan input exceeds bounded row limit")
+                yield row
+        finally:
+            if owned:
+                bounded.close()
 
 
 def import_taiwan(
@@ -1688,29 +1686,21 @@ def import_taiwan_town_representatives(
     inside them, or a place abroad."""
 
     groups: dict[tuple[str, str, str], dict] = {}
-    for source in sources:
-        bounded, owned = _as_bounded_input(source)
-        try:
-            for line_number, row in enumerate(_taiwan_reader(bounded), start=2):
-                if line_number > MAX_SOURCE_ROWS + 1:
-                    raise ValueError("Taiwan input exceeds bounded row limit")
-                county = str(row.get("County") or "").strip()
-                town = str(row.get("Town") or "").strip()
-                if not county or not town:
-                    continue
-                key = (str(row.get("CountyCode") or ""), county, town)
-                group = groups.setdefault(key, {"coordinates": [], "aliases": set()})
-                if row.get("Longitude") and row.get("Latitude") and not _is_upstream_test_row(row):
-                    group["coordinates"].append((float(row["Longitude"]), float(row["Latitude"])))
-                if row.get("PlaceName") == town:
-                    group["aliases"].update(
-                        str(row.get(field) or "").strip()
-                        for field in ("ChinesePhonetic", "CommonPhonetic", "AnotherName")
-                        if str(row.get(field) or "").strip()
-                    )
-        finally:
-            if owned:
-                bounded.close()
+    for row in _moi_rows(sources):
+        county = str(row.get("County") or "").strip()
+        town = str(row.get("Town") or "").strip()
+        if not county or not town:
+            continue
+        key = (str(row.get("CountyCode") or ""), county, town)
+        group = groups.setdefault(key, {"coordinates": [], "aliases": set()})
+        if row.get("Longitude") and row.get("Latitude") and not _is_upstream_test_row(row):
+            group["coordinates"].append((float(row["Longitude"]), float(row["Latitude"])))
+        if row.get("PlaceName") == town:
+            group["aliases"].update(
+                str(row.get(field) or "").strip()
+                for field in ("ChinesePhonetic", "CommonPhonetic", "AnotherName")
+                if str(row.get(field) or "").strip()
+            )
 
     count = 0
     for (county_code, county, town) in sorted(groups):
@@ -1765,30 +1755,22 @@ def import_taiwan_county_representatives(
     """
 
     groups: dict[str, _CountyGroup] = {}
-    for source in sources:
-        bounded, owned = _as_bounded_input(source)
-        try:
-            for line_number, row in enumerate(_taiwan_reader(bounded), start=2):
-                if line_number > MAX_SOURCE_ROWS + 1:
-                    raise ValueError("Taiwan input exceeds bounded row limit")
-                county = str(row.get("County") or "").strip()
-                if not county:
-                    continue
-                group = groups.setdefault(
-                    county,
-                    {"county_code": str(row.get("CountyCode") or ""), "coordinates": [], "aliases": set()},
-                )
-                if row.get("Longitude") and row.get("Latitude") and not _is_upstream_test_row(row):
-                    group["coordinates"].append((float(row["Longitude"]), float(row["Latitude"])))
-                if row.get("PlaceName") == county:
-                    group["aliases"].update(
-                        str(row.get(key) or "").strip()
-                        for key in ("ChinesePhonetic", "CommonPhonetic", "AnotherName")
-                        if str(row.get(key) or "").strip()
-                    )
-        finally:
-            if owned:
-                bounded.close()
+    for row in _moi_rows(sources):
+        county = str(row.get("County") or "").strip()
+        if not county:
+            continue
+        group = groups.setdefault(
+            county,
+            {"county_code": str(row.get("CountyCode") or ""), "coordinates": [], "aliases": set()},
+        )
+        if row.get("Longitude") and row.get("Latitude") and not _is_upstream_test_row(row):
+            group["coordinates"].append((float(row["Longitude"]), float(row["Latitude"])))
+        if row.get("PlaceName") == county:
+            group["aliases"].update(
+                str(row.get(key) or "").strip()
+                for key in ("ChinesePhonetic", "CommonPhonetic", "AnotherName")
+                if str(row.get(key) or "").strip()
+            )
 
     admin2_names = admin2_names or {}
     count = 0

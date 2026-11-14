@@ -1,7 +1,6 @@
 {
  "excluded_from_image": [
-  "Factory",
-  "localtime"
+  "Factory"
  ],
  "names": [
   "Africa/Abidjan",

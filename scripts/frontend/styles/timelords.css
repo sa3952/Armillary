@@ -4,7 +4,7 @@
 /* page.css 給每個 section 的上下留白與分隔線，不用在這一區裡的小區塊。 */
 .annual section{padding:0; border-top:0}
 .annual[hidden]{display:none}
-.annual > h2{font-family:var(--serif); font-weight:400; font-size:1.45rem; margin:.4rem 0 .3rem}
+.annual > h2{font-family:var(--zh-serif); font-weight:400; font-size:var(--fs-lead); margin:.4rem 0 .3rem; letter-spacing:var(--ls-head); line-height:var(--lh-lead)}
 /* 「只列計算結果…」：章首一次，小號淡墨字，不加框。 */
 .annual-fixed{font-size:var(--fs-small); color:var(--ink-faint); margin:.3rem 0 .5rem; max-width:var(--measure-cjk)}
 /* 十年期的起點：排出之前選，排出之後仍可改。 */
@@ -24,7 +24,7 @@
 .annual .tl-code code{font-family:var(--mono); font-size:inherit}
 .annual .note{max-width:var(--measure-cjk)}
 /* 日期與足歲：與表格數字同一套拉丁襯線。 */
-.annual .tl-num{font-family:var(--serif-num); font-variant-numeric:lining-nums tabular-nums}
+.annual .tl-num{font-family:var(--num); font-variant-numeric:lining-nums tabular-nums}
 
 svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em; fill:currentColor; flex:none}
 
@@ -37,7 +37,7 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 /* 年度導覽 */
 .annual .tl-year-nav{display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; margin:.4rem 0 .6rem}
 .annual .tl-year-nav button{background:transparent; color:var(--ink); border:0; padding:.35rem .7rem; font-size:var(--fs-note)}
-.annual .tl-year-title{font-family:var(--serif); font-size:1.35rem; font-weight:400}
+.annual .tl-year-title{font-family:var(--zh-serif); font-size:var(--fs-lead); font-weight:400; letter-spacing:var(--ls-head); line-height:var(--lh-lead)}
 .annual .tl-year-range{font-size:var(--fs-note); line-height:var(--lh-label); color:var(--ink-dim); flex-basis:100%; margin-bottom:.4rem}
 
 /* 今年摘要卡 */
@@ -48,7 +48,7 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 .annual button.tl-tile:focus-visible{background:var(--paper-2); color:var(--ink); border-color:var(--hair)}
 .annual button.tl-tile[aria-pressed="true"]{background:var(--selected-bg); box-shadow:inset 0 calc(-1 * var(--selected-mark-w)) 0 var(--selected-mark)}
 .annual .tl-tile-key{font-size:var(--fs-small); color:var(--ink-dim)}
-.annual .tl-tile-value{font-family:var(--serif); font-size:1.45rem; font-weight:400; line-height:1.3; overflow-wrap:anywhere}
+.annual .tl-tile-value{font-family:var(--zh-serif); font-size:var(--fs-lead); font-weight:400; line-height:var(--lh-lead); overflow-wrap:anywhere; letter-spacing:var(--ls-head)}
 .annual .tl-tile-value .tl-small{display:inline; font-size:.75em; font-weight:400; color:var(--ink-dim)}
 .annual .tl-tile-sub{font-size:var(--fs-note); line-height:var(--lh-label); overflow-wrap:anywhere}
 /* 名詞解釋與上面的數值是不同的兩組：上方留一條細線與組距，字級與行距照小字說明。 */
@@ -62,12 +62,12 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 .annual .tl-layout{display:grid; grid-template-columns:minmax(0, 1fr) 24rem; gap:var(--s2); margin-top:var(--s2); align-items:start}
 .annual .tl-main{min-width:0}
 .annual .tl-panel-title{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:.3rem 1rem}
-.annual .tl-panel-title h3{font-family:var(--serif); font-size:var(--fs-subhead); font-weight:400}
+.annual .tl-panel-title h3{font-family:var(--zh-serif); font-size:var(--fs-lead); font-weight:400; letter-spacing:var(--ls-head); line-height:var(--lh-lead)}
 
 /* 方案 A：橫向時間軸 */
 .annual .tl-frame{display:grid; grid-template-columns:9.5rem minmax(0, 1fr); border:1px solid var(--hair); background:var(--paper)}
 .annual .tl-labels{border-right:1px solid var(--hair)}
-.annual .tl-axis-label{height:46px; border-bottom:1px solid var(--hair); font-size:var(--fs-small); line-height:1.3; color:var(--ink-faint); padding:.3rem .5rem}
+.annual .tl-axis-label{height:46px; border-bottom:1px solid var(--hair); font-size:var(--fs-small); line-height:var(--lh-small); color:var(--ink-faint); padding:.3rem .5rem}
 .annual .tl-lane-label{display:flex; flex-direction:column; justify-content:center; padding:0 .5rem; border-bottom:1px solid var(--hair-soft); line-height:1.15; overflow:hidden}
 .annual .tl-lane-label b{font-size:var(--fs-note); font-weight:400}
 .annual .tl-lane-label small{font-size:var(--fs-small); color:var(--ink-faint)}
@@ -80,7 +80,7 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 /* 底下留一條空白帶寫「第 N 年起」，不壓在最後一條泳道的期間上。 */
 .annual .tl-canvas{position:relative; padding-bottom:18px}
 .annual .tl-axis{position:relative; height:46px; border-bottom:1px solid var(--hair)}
-.annual .tl-tick{position:absolute; top:0; height:100%; border-left:1px solid var(--hair); padding-left:3px; font-size:var(--fs-small); line-height:1.25; color:var(--ink-dim); white-space:nowrap}
+.annual .tl-tick{position:absolute; top:0; height:100%; border-left:1px solid var(--hair); padding-left:3px; font-size:var(--fs-small); line-height:var(--lh-small); color:var(--ink-dim); white-space:nowrap}
 .annual .tl-tick b{font-weight:400; color:var(--ink)}
 .annual .tl-lane{position:relative; border-bottom:1px solid var(--hair-soft)}
 .annual button.tl-seg-item{position:absolute; top:3px; bottom:3px; display:flex; align-items:center; padding:0 4px; overflow:clip; white-space:nowrap; font-size:var(--fs-small); line-height:1; text-align:left; background:var(--paper); color:var(--ink); border:1px solid var(--hair); border-radius:var(--radius)}
@@ -106,7 +106,7 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 .annual .tl-vline{position:absolute; top:46px; bottom:0; pointer-events:none}
 .annual .tl-vline.year{border-left:1px dashed var(--ink-faint); opacity:.7; z-index:1}
 .annual .tl-vline.selected{border-left:1px solid var(--ink); z-index:1}
-.annual .tl-vline.selected span{position:absolute; bottom:1px; left:3px; font-size:var(--fs-small); line-height:1.3; color:var(--ink); background:var(--paper); white-space:nowrap}
+.annual .tl-vline.selected span{position:absolute; bottom:1px; left:3px; font-size:var(--fs-small); line-height:var(--lh-small); color:var(--ink); background:var(--paper); white-space:nowrap}
 .annual .tl-vline.today{top:0; border-left:2px solid var(--act); z-index:4}
 .annual .tl-vline.today span{position:absolute; top:29px; left:4px; background:var(--act); color:var(--on-accent); font-size:var(--fs-small); padding:0 4px; white-space:nowrap}
 .annual .tl-legend{display:flex; flex-wrap:wrap; gap:.4rem .9rem; font-size:var(--fs-note); color:var(--ink-dim); margin:.5rem 0 .2rem}
@@ -130,7 +130,7 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 .annual .tl-book-table tr.is-current > th{box-shadow:inset 4px 0 0 var(--ink)}
 .annual .tl-book-table tr.is-selected > th b{text-decoration:underline}
 .annual .tl-book-year{white-space:normal}
-.annual .tl-book-year b{font-family:var(--serif); font-size:var(--fs-body)}
+.annual .tl-book-year b{font-family:var(--zh-serif); font-size:var(--fs-body)}
 .annual .tl-book-sub{display:block; font-size:var(--fs-note); color:var(--ink-dim); font-weight:400}
 .annual .tl-now-tag{display:inline-block; font-size:var(--fs-small); background:var(--ink); color:var(--paper); padding:0 .35rem; margin-left:.3rem; vertical-align:2px}
 .annual .tl-book-line + .tl-book-line{margin-top:.15rem}
@@ -168,11 +168,11 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 .annual .tl-detail-head{display:flex; justify-content:space-between; align-items:start; gap:.5rem; padding:1rem 1.25rem .8rem; border-bottom:1px solid var(--hair)}
 /* 小字用墨色：赭色 --ring-3 對紙色只有 4.05:1，只當邊線（.tl-explain）。 */
 .annual .tl-detail-kind{font-size:var(--fs-small); color:var(--ink-dim)}
-.annual .tl-detail-head h3{font-family:var(--serif); font-size:1.2rem; line-height:1.45; margin:.25rem 0 0}
+.annual .tl-detail-head h3{font-family:var(--zh-serif); font-size:var(--fs-lead); line-height:var(--lh-lead); margin:.25rem 0 0; letter-spacing:var(--ls-head)}
 .annual .tl-detail-head h3:focus{outline:none}
 .annual .tl-detail-head h3:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
 .annual .tl-detail-close{display:none; flex:none; white-space:nowrap}
-.annual .tl-detail-body{padding:var(--pad-panel); font-size:var(--fs-aside); line-height:var(--lh-note)}
+.annual .tl-detail-body{padding:var(--pad-panel); font-size:var(--fs-note); line-height:var(--lh-note)}
 .annual .tl-detail dl{display:grid; grid-template-columns:4.8rem minmax(0, 1fr); gap:.55rem 1rem; margin:0 0 var(--gap-group)}
 .annual .tl-detail dt{color:var(--ink-dim); font-size:var(--fs-small); line-height:inherit; padding-top:.1em}
 .annual .tl-detail dd{margin:0; line-height:1.6; overflow-wrap:anywhere}
@@ -185,11 +185,11 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
   font-weight:400; color:var(--ink-dim)}
 .annual .tl-detail ul{font-size:var(--fs-note); line-height:var(--lh-note); margin:.5rem 0 .2rem; padding-left:1.1rem}
 .annual .tl-detail li + li{margin-top:.5rem}
-.annual .tl-receipt pre{font-size:var(--fs-small); line-height:1.5; white-space:pre-wrap; word-break:break-all; background:var(--paper-2); padding:.5rem; margin:.4rem 0 0}
+.annual .tl-receipt pre{font-size:var(--fs-small); line-height:var(--lh-small); white-space:pre-wrap; word-break:break-all; background:var(--paper-2); padding:.5rem; margin:.4rem 0 0}
 
 /* 約定、樣本、匯出、擴充點 */
 .annual .tl-box{border-top:1px solid var(--hair); background:var(--paper); padding:1.25rem 0 1.4rem; margin-top:var(--s2)}
-.annual .tl-box h3{font-family:var(--serif); font-size:var(--fs-subhead); margin-bottom:.6rem}
+.annual .tl-box h3{font-family:var(--zh-serif); font-size:var(--fs-lead); margin-bottom:.6rem; letter-spacing:var(--ls-head); line-height:var(--lh-lead)}
 .annual .tl-box ul{margin:.6rem 0 0; padding-left:1.2rem; font-size:var(--fs-note); line-height:var(--lh-note); max-width:var(--measure-cjk)}
 .annual .tl-box li + li{margin-top:.55rem}
 .annual .tl-export button{margin:.8rem 0}
@@ -216,11 +216,11 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 .annual .tl-sr-facts dt, .annual .tl-sr-ascendants dt{color:var(--ink-dim)}
 .annual .tl-sr-facts dd, .annual .tl-sr-ascendants dd{margin:0; overflow-wrap:anywhere}
 .annual section.tl-sr-wheel{margin:var(--gap-group) 0; padding:0; border-bottom:0}
-.annual .tl-sr-wheel h4{font-family:var(--serif); font-size:var(--fs-aside); font-weight:400}
+.annual .tl-sr-wheel h4{font-family:var(--zh-serif); font-size:var(--fs-note); font-weight:400}
 .annual .tl-sr-wheel .chart-wheel-figure{max-width:min(100%, 520px)}
 .annual .tl-sr-table{margin-top:var(--gap-group)}
 .annual .tl-sr-compare{margin-top:calc(var(--gap-group) * 1.5); border-top:1px solid var(--hair-soft); padding-top:var(--gap-group)}
-.annual .tl-sr-compare .tl-sr-compare-title{font-family:var(--serif); font-size:var(--fs-aside); font-weight:400; margin:0 0 .6rem}
+.annual .tl-sr-compare .tl-sr-compare-title{font-family:var(--zh-serif); font-size:var(--fs-note); font-weight:400; margin:0 0 .6rem}
 .annual .tl-sr-compare .tl-sr-ascendants{margin-bottom:var(--gap-related)}
 .annual .tl-sr-asc-house{margin:0; font-size:var(--fs-note); line-height:var(--lh-note)}
 .annual .tl-sr-compare-note{margin-top:var(--gap-related)}
@@ -257,7 +257,7 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
   /* 回歸盤：這一格不再另加左右框與留白，圖與本命盤一樣寬。 */
   .annual .tl-box.tl-sr{padding-inline:0; border-inline:0}
   .annual .tl-sr-wheel .chart-wheel-figure{max-width:none}
-  .annual .tl-tile-value{font-size:var(--fs-subhead)}
+  .annual .tl-tile-value{font-size:var(--fs-lead); letter-spacing:var(--ls-head); line-height:var(--lh-lead)}
   .annual .tl-frame{grid-template-columns:4.6rem minmax(0, 1fr)}
   .annual .tl-lane-label small{display:none}
   .annual .tl-lane-label .tl-long{display:none}
@@ -267,7 +267,7 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
   .annual .tl-book-table tr{border-bottom:1px solid var(--hair); padding:.3rem 0 .5rem}
   .annual .tl-book-table th, .annual .tl-book-table td{border:0; padding:.15rem .7rem}
   .annual .tl-book-table td{display:grid; grid-template-columns:4.2rem minmax(0, 1fr); gap:.4rem}
-  .annual .tl-book-table td::before{content:attr(data-h); font-size:var(--fs-small); line-height:1.4; color:var(--ink-dim); white-space:normal; word-break:keep-all; overflow-wrap:break-word}
+  .annual .tl-book-table td::before{content:attr(data-h); font-size:var(--fs-small); line-height:var(--lh-small); color:var(--ink-dim); white-space:normal; word-break:keep-all; overflow-wrap:break-word}
   .annual .tl-book-table td > .tl-book-line{grid-column:2}
   .annual .tl-book-table tr.is-current > th{box-shadow:inset 4px 0 0 var(--ink)}
 }
@@ -294,15 +294,15 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 /* ── 人生時間軸：每種技法的第一層並列在同一條足歲軸上（timelords.js 的 createLifeOverview）──
  * 圖是 SVG，位置寫在屬性上；顏色、字體只在這裡。上下兩條線框住圖，不加外框，像書裡的一張附表。 */
 .annual .tl-life{margin:var(--s2) 0 var(--s3)}
-.annual .tl-life-head h3{font-family:var(--serif); font-size:var(--fs-subhead); font-weight:400; margin:0 0 .25rem}
+.annual .tl-life-head h3{font-family:var(--zh-serif); font-size:var(--fs-lead); font-weight:400; margin:0 0 .25rem; letter-spacing:var(--ls-head); line-height:var(--lh-lead)}
 .annual .tl-life-lead{font-size:var(--fs-note); line-height:var(--lh-note); color:var(--ink-dim); max-width:var(--measure-cjk); margin:0 0 .8rem}
 .annual .tl-life-figure{border-top:1px solid var(--ink); border-bottom:1px solid var(--hair); background:var(--paper); padding:.7rem 0 .3rem; min-width:0}
 .annual svg.tl-life-svg{display:block; width:100%; height:auto; overflow:visible}
-.annual .tl-life-age{font-family:var(--serif-num); font-size:13px; fill:var(--ink); font-variant-numeric:lining-nums tabular-nums}
-.annual .tl-life-year{font-family:var(--serif-num); font-size:11px; fill:var(--ink-faint); font-variant-numeric:lining-nums tabular-nums}
-.annual .tl-life-lane{font-family:var(--serif); font-size:14.5px; fill:var(--ink)}
-.annual .tl-life-lane-note{font-family:var(--sans); font-size:11.5px; fill:var(--ink-faint)}
-.annual .tl-life-lane-sample{font-family:var(--sans); font-size:12px; fill:var(--ink-dim)}
+.annual .tl-life-age{font-family:var(--num); font-size:13px; fill:var(--ink); font-variant-numeric:lining-nums tabular-nums}
+.annual .tl-life-year{font-family:var(--num); font-size:11px; fill:var(--ink-faint); font-variant-numeric:lining-nums tabular-nums}
+.annual .tl-life-lane{font-family:var(--zh-serif); font-size:14.5px; fill:var(--ink)}
+.annual .tl-life-lane-note{font-family:var(--zh-text); font-size:11.5px; fill:var(--ink-faint)}
+.annual .tl-life-lane-sample{font-family:var(--zh-text); font-size:12px; fill:var(--ink-dim)}
 .annual .tl-life-gridline{stroke:var(--hair-soft); stroke-width:1}
 .annual .tl-life-band{cursor:pointer; outline:none}
 .annual .tl-life-rect{fill:var(--paper); stroke:var(--hair); stroke-width:1}
@@ -316,18 +316,18 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 .annual .tl-life-band.is-now.is-picked .tl-life-rect{fill:var(--ink)}
 .annual .tl-life-band.is-picked .tl-life-rect{fill:var(--selected-bg); stroke:var(--ink); stroke-width:2}
 .annual .tl-life-band:focus-visible .tl-life-rect{stroke:var(--ink); stroke-width:2}
-.annual .tl-life-text{font-family:var(--sans); font-size:13px; fill:var(--ink)}
+.annual .tl-life-text{font-family:var(--zh-text); font-size:13px; fill:var(--ink)}
 .annual svg.tl-life-glyph{fill:var(--ink)}
 .annual .tl-life-nowmark{fill:var(--ink)}
 .annual .tl-life-restart{stroke:var(--ink-dim); stroke-width:1.5}
 .annual .tl-life-loose{fill:var(--ink)}
 .annual .tl-life-today line{stroke:var(--act); stroke-width:1.5}
 .annual .tl-life-today rect{fill:var(--act)}
-.annual .tl-life-today text{fill:var(--on-accent); font-family:var(--sans); font-size:12px}
+.annual .tl-life-today text{fill:var(--on-accent); font-family:var(--zh-text); font-size:12px}
 .annual .tl-life-readout{max-width:none; display:flex; flex-wrap:wrap; gap:.2rem .9rem; align-items:baseline; min-height:2.9rem; margin:0; padding:.6rem 0; border-bottom:1px solid var(--hair); font-size:var(--fs-note); line-height:var(--lh-label)}
 .annual .tl-life-prompt{color:var(--ink-faint)}
 .annual .tl-life-read-lane{color:var(--ink-dim); font-size:var(--fs-small)}
-.annual .tl-life-read-ruler{font-family:var(--serif); font-size:1.15rem; display:inline-flex; align-items:baseline; gap:.2rem}
+.annual .tl-life-read-ruler{font-family:var(--zh-serif); font-size:var(--fs-body); display:inline-flex; align-items:baseline; gap:.2rem}
 .annual .tl-life-read-ruler svg.tl-glyph{align-self:center}
 .annual .tl-life-read-ages{color:var(--ink-dim)}
 .annual .tl-life-read-mark{font-size:var(--fs-small); color:var(--ink-dim)}
@@ -345,7 +345,7 @@ svg.tl-glyph{display:inline-block; width:1em; height:1em; vertical-align:-.16em;
 .annual .tl-life-table caption{text-align:left; font-size:var(--fs-small); color:var(--ink-faint); padding-bottom:.3rem}
 .annual .tl-life-table th, .annual .tl-life-table td{padding:.2rem .7rem .2rem 0; border-bottom:1px solid var(--hair-soft); text-align:left; vertical-align:top; font-weight:400}
 .annual .tl-life-table thead th{color:var(--ink-dim); font-size:var(--fs-small); border-bottom:1px solid var(--hair)}
-.annual .tl-life-table tbody th{font-family:var(--serif)}
+.annual .tl-life-table tbody th{font-family:var(--zh-serif)}
 
 @media print{
   /* 還沒排出：紙上只會剩標題與說明，整區不印。 */

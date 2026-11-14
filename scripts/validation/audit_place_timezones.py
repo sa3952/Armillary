@@ -202,7 +202,7 @@ def audit(cities500: Path, zone_tab: Path) -> dict:
             if "note" in rule:
                 entry["authority"] += f". {rule['note']}"
     return {
-        "engine": f"timezonefinder {timezonefinder.__version__ if hasattr(timezonefinder, '__version__') else '?'}",
+        "engine": f"timezonefinder {getattr(timezonefinder, '__version__', '?')}",
         "zone_tab": zone_tab.name,
         "offset_sampling": "UTC 12:00 on the 15th of January, April, July and October, 1900-2030",
         "corrections": sorted(corrections, key=lambda item: int(item["source_record_id"])),

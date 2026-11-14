@@ -5,7 +5,7 @@ function readInteger(raw){const text=String(raw===undefined||raw===null?"":raw).
 const SHORTEST_DECIMAL=/^\d+(?:\.(\d+))?(?:e([+-]\d+))?$/;function fractionDigits(number){const match=SHORTEST_DECIMAL.exec(String(number));if(!match)return Infinity;return Math.max((match[1]||"").length-Number(match[2]||0),0);}
 function readSecond(raw){const read=readDecimal(raw);if(read.state!==VALUE)return read;if(read.value<0||read.value>60)return invalid("必須介於 0 與 60 之間");if(fractionDigits(read.value)>6)return invalid("最多到小數第六位（微秒）");return read;}
 function readDecimal(raw){const text=String(raw===undefined||raw===null?"":raw).trim();if(text==="")return empty();const parsed=Number(text);return Number.isFinite(parsed)?value(parsed):invalid("必須是數字");}
-function normalizeMinusSigns(text){return text.replace(/[\u2212\uff0d]/g,"-");}
+function normalizeMinusSigns(text){return text.replace(/[\u2010-\u2014\u2212\u2796\ufe63\uff0d]/g,"-");}
 function boundsProblem(option,candidate){if(candidate===null||candidate===undefined)return null;if(!Number.isFinite(candidate))return"必須是數字";if(option.min!==undefined&&candidate<option.min){return`不得小於 ${option.min}`;}
 if(option.max!==undefined&&candidate>option.max){return`不得大於 ${option.max}`;}
 return null;}

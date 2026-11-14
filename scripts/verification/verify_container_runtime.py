@@ -129,7 +129,7 @@ FORBIDDEN_EXECUTABLES = frozenset({
 })
 EXPECTED_IMAGE_ENVIRONMENT = {
     "LANG": "C.UTF-8",
-    "PYTHON_VERSION": "3.14.10",
+    "PYTHON_VERSION": "3.15.2",
     "CLASSICAL_ASTROLOGY_REQUIRE_FRONTEND_RELEASE": "1",
     "PYTHONFAULTHANDLER": "1",
     "PYTHONUNBUFFERED": "1",
@@ -414,7 +414,7 @@ def _inventory_image(image: str, platform: str | None) -> dict[str, Any]:
             f"of which forbidden={sorted(FORBIDDEN_PACKAGES & unexpected)}"
         )
     if (
-        runtime["python"] != "3.14.10"
+        runtime["python"] != "3.15.2"
         or runtime["pyswisseph"] != "2.10.3.2"
         or runtime.get("machine") != MACHINE_BY_DOCKER_ARCHITECTURE.get(architecture)
     ):
@@ -900,7 +900,7 @@ print(json.dumps({
     "bytecode": {
         "dont_write": sys.flags.dont_write_bytecode,
         "app_pyc": os.path.isfile(importlib.util.cache_from_source("/app/backend/app/main.py")),
-        "stdlib_pyc": os.path.isfile(importlib.util.cache_from_source("/usr/local/lib/python3.14/argparse.py")),
+        "stdlib_pyc": os.path.isfile(importlib.util.cache_from_source("/usr/local/lib/python3.15/argparse.py")),
         "app_pycache": any("__pycache__" in names for _, names, _ in os.walk("/app")),
     },
 }, sort_keys=True))

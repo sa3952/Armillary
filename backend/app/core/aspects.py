@@ -585,6 +585,7 @@ def _degree_based_receipt(
     partile_profile = PARTILE_PROFILES[partile_profile_key]
     orb_profile_key, profile = orb.profile_key, orb.profile
     fixed_orb_degrees, angle_orb_degrees = orb.fixed_orb_degrees, orb.angle_orb_degrees
+    orb_available = profile is not None or fixed_orb_degrees is not None or angle_orb_degrees is not None
     return {
         **method_head(degree_method_name, "aspects"),
         "aspect_set_profile": aspect_set_profile_key,
@@ -673,18 +674,8 @@ def _degree_based_receipt(
             if profile and orb_profile_key
             else None
         ),
-        "orb_verdict_available": (
-            profile is not None
-            or fixed_orb_degrees is not None
-            or angle_orb_degrees is not None
-        ),
-        "orb_unavailable_reason_code": (
-            None
-            if profile is not None
-            or fixed_orb_degrees is not None
-            or angle_orb_degrees is not None
-            else "orb_profile_not_selected"
-        ),
+        "orb_verdict_available": orb_available,
+        "orb_unavailable_reason_code": None if orb_available else "orb_profile_not_selected",
         "orb_receipt": _orb_receipt(usable, orb),
         "angle_participation": {
             **module_state(
@@ -865,9 +856,7 @@ def compute_aspects(
     profile = ORB_PROFILES.get(s.orb_profile_key) if s.orb_profile_key else None
     if s.orb_profile_key and profile is None:
         raise ValueError(f"unknown orb profile: {s.orb_profile_key}")
-    aspect_set_profile = ASPECT_SET_PROFILES.get(s.aspect_set_profile_key)
-    if aspect_set_profile is None:
-        raise ValueError(f"unknown aspect set profile: {s.aspect_set_profile_key}")
+    aspect_set_profile = ASPECT_SET_PROFILES[s.aspect_set_profile_key]
     aspect_definitions = tuple(
         _ASPECT_BY_KEY[key] for key in aspect_set_profile["aspect_keys"]
     )
@@ -878,9 +867,7 @@ def compute_aspects(
         and s.angle_orb_degrees is None
         else EXTENDED_DEGREE_ASPECT_METHOD_NAME
     )
-    partile_profile = PARTILE_PROFILES.get(s.partile_profile_key)
-    if partile_profile is None:
-        raise ValueError(f"unknown partile profile: {s.partile_profile_key}")
+    partile_profile = PARTILE_PROFILES[s.partile_profile_key]
     if longitude_at is not None:
         # Every pair's perfection search samples the same coarse grid.
         longitude_at = memoized_longitudes(longitude_at)
@@ -1249,14 +1236,9 @@ def _pair_record(
         raise ValueError("nearest aspect must belong to aspect_definitions")
     # The threshold depends only on the pair (its participants and the orb
     # configuration); a target the rule does not govern says why in its
-    # in_orb_reason_code.  Two thresholds in one pair would make the pair-level
-    # value wrong for some target, so that is refused rather than reported.
-    if len(pair_orbs) > 1:
-        raise ValueError("one pair cannot have two orb thresholds")
+    # in_orb_reason_code.  A pair therefore never has two thresholds, and its
+    # one entry is the pair-level value.
     pair_threshold, pair_rule = next(iter(pair_orbs), (None, None))
-    if not any(target is nearest_target for target in targets):
-        # ASPECT_TARGET_LISTING.nearest_aspect_entry 是消費端唯一的取值路徑。
-        raise ValueError("nearest aspect target must be listed in aspect_targets")
 
     record = {
         "body_a": participant_a["key"],

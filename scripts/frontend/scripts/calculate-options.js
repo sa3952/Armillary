@@ -166,7 +166,7 @@ const pageState = {
   resultMode: null, spyFrame: 0,
   // 「加算」：按下時記下要打開的選項；送出時移到 resultFocusOptions（只屬於那一次送出），結果到了
   // 由 revealResults 把焦點與捲動交給新加的那一區的標題，不回到頁首。
-  addRequested: null, resultFocusOptions: null, pendingPrintMode: null, restorePrintExpansion: null,
+  addRequested: null, resultFocusOptions: null, pendingPrintMode: null, restorePrintExpansion: null, printView: null,
   annualPayload: null,  // 交給年度一區（或等它載入）的那份請求；丟棄時放掉
 };
 const sectionSnapshots = new Map();  // section id -> canonical section
@@ -193,6 +193,7 @@ function buildOptionUi() {
   });
   // 宮位兩項已升到主表單，插進口徑區而不是進階選項。
   el("house-system-slot").replaceChildren(buildHouseControl());
+  el("house-presets").replaceChildren(...buildHousePresets());
   // 下拉選單由這裡產生，靜態 HTML 的 label 不能先寫 for：指向不存在的
   // id 是 HTML 錯誤（W3C Nu checker）。控制項出現後才接上。
   el("house-system-label").htmlFor = "opt-house_system";
@@ -244,6 +245,31 @@ function buildHouseControl() {
   wrap.appendChild(select);
   wrap.appendChild(mirror);
   return wrap;
+}
+
+// 中文名接「制」（整宮制、等分宮制）；以人名命名的拉丁名不接中文字。
+function houseSystemName(value) {
+  return value.label_zh === value.label_en ? value.label_zh : `${value.label_zh}制`;
+}
+
+// 別站常見的四種預設，一鍵換成同一種再比對；只換宮位制，走選單自己的 change，其他口徑不動。排列同選單，不表示推薦。
+const HOUSE_PRESETS = Object.freeze(["W", "B", "R", "P"]);
+
+function buildHousePresets() {
+  const option = Catalogue.BY_KEY.house_system;
+  return HOUSE_PRESETS.map((code) => {
+    const value = option.values.find((candidate) => String(candidate.value) === code);
+    const button = make("button", "ghost small");
+    button.type = "button";
+    button.dataset.houseSystem = code;
+    button.textContent = `套用${houseSystemName(value)}`;
+    button.addEventListener("click", () => {
+      const select = el("opt-house_system");
+      select.value = code;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    return button;
+  });
 }
 
 function houseSystemDetail() {
@@ -349,6 +375,9 @@ function refreshOptionUi() {
     if (mirror) mirror.value = String(pageState.optionValues.include_houses === true);
     const detail = document.getElementById("opt-house_system-detail");
     if (detail) detail.textContent = houseSystemDetail();
+    document.querySelectorAll("#house-presets button").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.houseSystem === houseSelect.value));
+    });
   }
   // 標題說的是「進階選項」，只數進階群組。主表單的宮位選擇就在眼前；計進來會讓只選了「不計算宮位」的人讀到「已調整 1
   // 項」，卻在進階選項裡找不到那一項。「已調整」只數使用者自己改的：模式預先勾好的那幾項（例如古典完整的 5 項）不算，改
@@ -383,8 +412,7 @@ function refreshModeSummary() {
   if (pageState.optionValues.include_houses === false) { parts.push("不計算宮位"); } else {
     const option = Catalogue.BY_KEY.house_system;
     const chosen = option.values.filter((value) => String(value.value) === String(pageState.optionValues.house_system))[0];
-    // 中文名接「制」（整宮制、等分宮制）；以人名命名的拉丁名不接中文字。
-    if (chosen) parts.push(chosen.label_zh === chosen.label_en ? chosen.label_zh : `${chosen.label_zh}制`);
+    if (chosen) parts.push(houseSystemName(chosen));
   }
   summary.textContent = parts.join(" · ");
   refreshPlanUi();

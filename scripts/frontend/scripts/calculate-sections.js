@@ -176,19 +176,19 @@ function materializeSection(section) {
   // 古書出處的「出處」摺疊：這一區第一條出處時才建，之後的出處都放進同一個。
   let sources = null;
   let leadNote = true;
+  const before = collapsible ? body : null;
   section.children.forEach((child) => {
-    const target = child.type === "note" && !collapsible ? host : body;
     if (child.type === "figure") {
       // 摘要圖與它的第一行永遠在摺疊之外（預設不得摺疊）。
-      host.insertBefore(materializeFigure(child.figure), collapsible ? body : null);
+      host.insertBefore(materializeFigure(child.figure), before);
     } else if (child.type === "note") {
       const note = make("p", "section-note", child.text);
       // 備註留在摺疊外面：使用者要在展開前就知道這一區在講什麼。預設收起的區只留第一句。
       if (folded && !leadNote) body.appendChild(note);
-      else (collapsible ? host : target).insertBefore(note, collapsible ? body : null);
+      else host.insertBefore(note, before);
       leadNote = false;
     } else if (child.type === "explain") {
-      if (!explain) { explain = makeFold("section-explain", "說明與原典"); host.insertBefore(explain, collapsible ? body : null); }
+      if (!explain) { explain = makeFold("section-explain", "說明與原典"); host.insertBefore(explain, before); }
       const line = make("p", "section-note", child.text);
       explain.appendChild(line);
     } else if (child.type === "block") {

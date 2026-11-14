@@ -57,8 +57,6 @@ NOCTURNAL_SEQUENCES = {
     ),
 }
 NODES = frozenset({"north_node", "south_node"})
-if CYCLE_YEARS != 75:
-    raise RuntimeError("the firdaria periods total 75 years")
 
 
 def method_provenance(nocturnal_node_profile: str) -> str:
@@ -104,8 +102,6 @@ def firdaria_periods(
     names its cycle (``C1.L1-3.L2-4``), so two cycles never share one.
     """
 
-    if scope not in SCOPES:
-        raise ValueError(f"unknown firdaria scope {scope!r}")
     lords = sequence(is_day, nocturnal_node_profile)
     cycle_index = completed_years // CYCLE_YEARS
     if scope == SCOPES[0]:
@@ -192,17 +188,35 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             "(Basel 1550 col.814) for the diurnal sequence ('post hoc revertitur "
             "dispositio ad Solem', after the South Node); the nocturnal sequence follows "
             "the diurnal one, since Bonatti says it goes 'in omnibus et per omnia, ut "
-            "dictum est' as when it starts from the Sun"
+            "dictum est' as when it starts from the Sun; Abū Maʿshar (in Dykes's "
+            "translation and the Latin of Basel 1559) returns after 75 years to the "
+            "planet it began from, and Ibn Ezra restarts the sequence likewise"
         ),
         "method_provenance": dict(_METHOD_PROVENANCE),
         "sources": [
             cited(("Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, "
                    "Persian Nativities IV (2019); Latin abridgement in Persian Nativities III (2010)"),
-                  ("the fullest surviving operational account per the research notes, "
-                   "nocturnal nodes after Mercury; chapter located as PN IV IV.8 via secondary "
-                   "sources"),
-                  SECONDARY_ONLY,
-                  "secondary sources and the research notes; the book not consulted"),
+                  ("IV.1.2-4: the periods, the diurnal sequence in full and the nocturnal "
+                   "from the Moon; IV.1.8: the nodes govern alone once the seven planets' 70 "
+                   "years are done; IV.7.24-25: by day the nodes follow Mars, by night "
+                   "Mercury, both from age 71, and after 75 years the sequence returns to the "
+                   "luminary it began from (Book IV has chapters IV.1-IV.7 only)"),
+                  TRANSLATION_READ,
+                  ("Dykes's English translation, PN IV pp.116-117, 364-366 and 392-394, "
+                   "read at those pages; the Arabic not checked")),
+            cited(("[Abū Maʿshar], De revolutionibus nativitatum, Lib. II, Latin translation "
+                   "printed under the name of Hermes (Basel 1559) pp.264, 272"),
+                  ("p.264: the periods (75 in all), the diurnal sequence from the Sun and the "
+                   "nocturnal from the Moon, each period in sevenths, the nodes alone; p.272: "
+                   "'in nocturnis uero post Mercurium' for the nodes, and after 75 years the "
+                   "return 'ad planetam a quo incepit'"),
+                  TRANSLATION_READ,
+                  ("the medieval Latin translation at pp.264 and 272; pp.265-271 not read "
+                   "line by line")),
+            cited("Abraham Ibn Ezra, Sefer ha-Tequfah §14, ed. and tr. S. Sela (2014) pp.383-385",
+                  ("the diurnal and nocturnal orders, by night to Mercury and then the nodes; "
+                   "the sequence restarts after 75 years"),
+                  TRANSLATION_READ, "Sela's English translation at the cited pages"),
             cited(("al-Biruni, Book of Instruction in the Elements of the Art of Astrology "
                    "§438-439 (tr. R. R. Wright, 1934, p.48)"),
                   ("the table of periods and sequences; the nodes, 3 and 2 years for day and "
@@ -232,10 +246,10 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         "naming_note": (
             "Neither nocturnal profile is marked the only correct one; the "
             "provenance says 'tradition, explicit profile per Abu Ma'shar', not that "
-            "Abu Ma'shar invented the technique. The id keeps his name as the "
-            "secondary literature attributes it, but his book was not consulted and "
-            "al-Qabisi is not verified: the source actually read for the nodes-after-"
-            "Mercury order is al-Biruni §438-439 in Wright's translation."
+            "Abu Ma'shar invented the technique. The nodes-after-Mercury order is read "
+            "in his book (Dykes's translation and the Latin of Basel 1559), "
+            "in al-Biruni §438-439 (Wright's translation) and in Ibn Ezra; "
+            "al-Qabisi is not verified."
         ),
     },
 }

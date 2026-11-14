@@ -1651,11 +1651,6 @@ def build_approximate_hour_sensitivity(
     usable_offsets = [
         offset for offset in requested_offsets if offset in probes_by_offset
     ]
-    if not usable_offsets:
-        # 整個小時都不存在。維持既有行為：由呼叫端轉成 422。
-        raise NonexistentLocalTimeError(
-            "no instant in the stated civil hour exists in this time zone"
-        )
     probes = [probes_by_offset[offset] for offset in usable_offsets]
     start = _hour_start(request)
     spans = civil_hour_spans(request.timezone, start)

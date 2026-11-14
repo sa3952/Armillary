@@ -576,8 +576,6 @@ def _without_fraction(label: str) -> str:
     """A civil label cut to its whole second (truncated, as every label is)."""
 
     head, dot, tail = label.partition(".")
-    if dot != "." or not tail.rstrip("Z").isdigit():
-        raise InternalInvariantError(f"{label!r} carries no fraction of a second")
     return head + ("Z" if tail.endswith("Z") else "")
 
 
@@ -588,8 +586,6 @@ def _without_seconds(label: str) -> str:
     zulu = head.endswith("Z")
     bare = head.removesuffix("Z")
     minute, colon, second = bare.rpartition(":")
-    if colon != ":" or len(second) != 2 or not second.isdigit() or minute.count(":") != 1:
-        raise InternalInvariantError(f"{label!r} carries no seconds")
     return minute + ("Z" if zulu else "")
 
 

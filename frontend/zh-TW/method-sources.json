@@ -345,6 +345,12 @@
        "reading": "translation_read"
       },
       {
+       "citation": "Abū Maʿshar, Great Introduction VII.1.13, VII.6.2b",
+       "read_at": "the Arabic and Latin in the Würzburg Arabic and Latin Corpus transcription",
+       "reading": "original_language_read",
+       "says": "hayz with the same day-night, hemisphere and gender conditions, Mars excepted ('illā al-mirrīkh waḥdahu'); VII.6.2b reads ḥalb as a class of dignities instead"
+      },
+      {
        "citation": "Bonatti, Liber astronomiae III.8",
        "read_at": "the chapter reference only",
        "reading": "bibliographic_only"
@@ -359,7 +365,7 @@
      "citation": "Dorotheus, Carmen Astrologicum I.5 (Pingree 1976 p.164)",
      "read_at": "Pingree's English translation (Teubner 1976), Book I as put online by the translation's rights holder (D. Houlding, skyscript.co.uk/dorotheus1.pdf, 2013; searchable text keeping the Teubner page breaks): I.5 on p.164; the Arabic not checked",
      "reading": "translation_read",
-     "says": "the best places 1, 10, 11, 5, 7, 4, 9; middling 3, 2, 8; bad 6 and 12"
+     "says": "the best places 1, 10, 11, 5, 7, 4, 9; 3, 2, 8 next to them and not considered good; bad 6 and 12"
     },
     "firmicus_mathesis_ii_15_20": {
      "citation": "Firmicus Maternus, Mathesis II.15-20 (Kroll-Skutsch)",
@@ -375,7 +381,7 @@
     },
     "lilly_christian_astrology_p113": {
      "citation": "William Lilly, Christian Astrology (1647) p.113, 'Hayz'",
-     "read_at": "archive.org OCR text of a modern reset edition",
+     "read_at": "the 1647 first edition as scanned at archive.org (b30338724, leaf n147 = p.113)",
      "reading": "original_language_read",
      "says": "a masculine diurnal planet by day above the earth in a masculine sign; a feminine nocturnal planet by night in a feminine sign and under the earth; no halb"
     },
@@ -506,7 +512,7 @@
     },
     {
      "citation": "William Lilly, Christian Astrology (1647) p.113",
-     "read_at": "an archive.org OCR text of a modern reset edition",
+     "read_at": "the 1647 first edition as scanned at archive.org (b30338724, leaf n147 = p.113)",
      "reading": "original_language_read",
      "says": "a feminine nocturnal planet by night under the earth in a feminine sign; no halb"
     }
@@ -524,7 +530,7 @@
     },
     {
      "citation": "Vettius Valens, Anthologies III.11 (Pingree; = III.14 Kroll/Riley, '14K;11P')",
-     "read_at": "Riley's translation in a reformatted online copy of his preliminary edition (github.com/janegca/latex-valens), the chapter headed '(14K,11P)': for night births Moon to Sun while the Moon is above the earth, 'i.e. until the time it sets', and Sun to Moon after it has set, after Riley's /147P/ marker; the Greek not checked",
+     "read_at": "Riley's translation in a reformatted online copy of his preliminary edition (github.com/janegca/latex-valens), the chapter headed '(14K,11P)': for night births Moon to Sun while the Moon is above the earth, 'i.e. until the time it sets', and Sun to Moon after it has set, after Riley's /147P/ marker; the Greek checked in Kroll 1908 p.155 ll.5-9 (III.14); Pingree p.147 not checked",
      "reading": "translation_read",
      "says": "at night the formula changes with whether the Moon has set"
     },
@@ -584,7 +590,7 @@
    "sources": [
     {
      "citation": "William Lilly, Christian Astrology (1647) p.113",
-     "read_at": "reading level as recorded; the record does not say which copy of the 1647 English text was read",
+     "read_at": "the 1647 first edition as scanned at archive.org (b30338724, leaf n147 = p.113)",
      "reading": "original_language_read",
      "says": "17 minutes, 8 deg 30 min, 17 degrees"
     },
@@ -598,7 +604,13 @@
      "citation": "al-Biruni, Book of Instruction, trans. Wright (1934) §481-484",
      "read_at": "R. Ramsay Wright's English translation (1934)",
      "reading": "translation_read",
-     "says": "under 16 minutes, 6 degrees (§481; 7 for Mercury and Venus direct, §482), under the rays 12-18 degrees by planet and side (§481: rising in the east 12 Venus and Mercury, 15 Saturn and Jupiter, 16 Mars; setting in the west 16 Saturn and Jupiter, 18 Mars)"
+     "says": "under 16 minutes, 6 degrees (§481; 7 for Mercury and Venus direct, §482), under the rays 12-18 degrees by planet and side (§481: rising in the east 12 Venus and Mercury, 15 Saturn and Jupiter, 18 Mars; setting in the west 16 Saturn and Jupiter, 18 Mars; the 16 is overstruck on p.90 and may read 15)"
+    },
+    {
+     "citation": "Porphyry, Introduction ch.2 (CCAG V/4, 1940, p.193 ll.24-26)",
+     "read_at": "the Greek at the cited lines, read at the printed page",
+     "reading": "original_language_read",
+     "says": "under the beams within 'more or less fifteen degrees' (πλέον ἢ ἔλασσον μοιρῶν ιε'): an approximate distance, not a sharp threshold"
     },
     {
      "citation": "Porphyry, Introduction ch.2; Antiochus",
@@ -614,8 +626,8 @@
    "sources": [
     {
      "citation": "Ps.-Porphyry, Introduction ch.23 (Boer-Weinstock, CCAG V/4, 1940, p.202)",
-     "read_at": "an online Greek transcription and Holden 2009 trans. p.18, the CCAG page itself not checked; level pending: the record does not say whether the Greek was read closely enough to count as the original language, so only the translation is claimed",
-     "reading": "translation_read",
+     "read_at": "the Greek at CCAG V/4 p.202 ll.6-9, read at the printed page; Holden 2009 p.18 also consulted",
+     "reading": "original_language_read",
      "says": "the Moon joins no planet, by sign, degree, aspect or kollesis, within the next 30 degrees, regardless of the sign boundary"
     },
     {
@@ -1645,7 +1657,7 @@
    "default_profile": "twelvefold_from_sign_start_v1",
    "documentary_evidence": "P.Berl. 9825 (horoscope of 319 CE) gives the twelfth-part signs only. Greenbaum and Jones 2017 para. 188: the Moon, Saturn, Jupiter (at its corrected position), Mars and Venus match the 13-fold formula; Mercury, both nodes and the prenatal full Moon do not, and match the 12-fold formula, which also fits Saturn, Jupiter and Mars. So only the Moon and Venus favour the 13-fold rule against the 12-fold one, and three planets fit both. They leave two explanations open: the 13-fold rule with the minutes neglected, or the 12-fold rule miscalculated for the Moon and Venus.",
    "lord_rule": "The lord listed is the domicile lord of the twelfth-part's sign in the traditional seven-planet scheme (the product's domicile table). Later steps that look at which planets occupy or aspect that sign are not computed; this product lists positions and lords only.",
-   "not_computed": "Manilius's further division of each part among the five planets; the midheaven (no witness read); judgements of which planets occupy or aspect the twelfth-part.",
+   "not_computed": "Manilius's further division of each part among the five planets; the midheaven (Paulus ch.22's rule covers the angles, but the pages read give no worked midheaven example); judgements of which planets occupy or aspect the twelfth-part.",
    "profiles": {
     "thirteenfold_from_sign_start_v1": "Multiply the degrees inside the sign by 13 and count on from the start of the same sign; the same as multiplying by 12 and counting on from the point's own degree. The product multiplies the full position, minutes included; the worked examples of Paulus and Olympiodorus use whole degrees, and Greenbaum and Jones infer that P.Berl. 9825 multiplied the whole degrees and disregarded the minutes.",
     "twelvefold_from_sign_start_v1": "Multiply the degrees and minutes inside the sign by 12 and count the product on from the start of the same sign, 30 to each sign. The product's default. At sign level this equals the division of each sign into twelve parts of 2 deg 30 min given to the sign itself and the following signs in order."
@@ -2038,7 +2050,7 @@
   },
   "firdaria": {
    "applies_to": "annual_methods.firdaria",
-   "cycle_rule": "after 75 years the same sequence starts again: explicit in Bonatti (Basel 1550 col.814) for the diurnal sequence ('post hoc revertitur dispositio ad Solem', after the South Node); the nocturnal sequence follows the diurnal one, since Bonatti says it goes 'in omnibus et per omnia, ut dictum est' as when it starts from the Sun",
+   "cycle_rule": "after 75 years the same sequence starts again: explicit in Bonatti (Basel 1550 col.814) for the diurnal sequence ('post hoc revertitur dispositio ad Solem', after the South Node); the nocturnal sequence follows the diurnal one, since Bonatti says it goes 'in omnibus et per omnia, ut dictum est' as when it starts from the Sun; Abū Maʿshar (in Dykes's translation and the Latin of Basel 1559) returns after 75 years to the planet it began from, and Ibn Ezra restarts the sequence likewise",
    "diurnal_sequence": [
     "sun",
     "venus",
@@ -2055,7 +2067,7 @@
     "abu_mashar_nodes_after_mercury_v1": "persian_arabic_tradition_explicit_profile_abu_mashar_v1",
     "bonatti_reading_nodes_after_mars_v1": "latin_transmission_interpretive_reading_of_bonatti_v1"
    },
-   "naming_note": "Neither nocturnal profile is marked the only correct one; the provenance says 'tradition, explicit profile per Abu Ma'shar', not that Abu Ma'shar invented the technique. The id keeps his name as the secondary literature attributes it, but his book was not consulted and al-Qabisi is not verified: the source actually read for the nodes-after-Mercury order is al-Biruni §438-439 in Wright's translation.",
+   "naming_note": "Neither nocturnal profile is marked the only correct one; the provenance says 'tradition, explicit profile per Abu Ma'shar', not that Abu Ma'shar invented the technique. The nodes-after-Mercury order is read in his book (Dykes's translation and the Latin of Basel 1559), in al-Biruni §438-439 (Wright's translation) and in Ibn Ezra; al-Qabisi is not verified.",
    "nocturnal_sequences": {
     "abu_mashar_nodes_after_mercury_v1": [
      "moon",
@@ -2095,9 +2107,21 @@
    "sources": [
     {
      "citation": "Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, Persian Nativities IV (2019); Latin abridgement in Persian Nativities III (2010)",
-     "read_at": "secondary sources and the research notes; the book not consulted",
-     "reading": "secondary_only",
-     "says": "the fullest surviving operational account per the research notes, nocturnal nodes after Mercury; chapter located as PN IV IV.8 via secondary sources"
+     "read_at": "Dykes's English translation, PN IV pp.116-117, 364-366 and 392-394, read at those pages; the Arabic not checked",
+     "reading": "translation_read",
+     "says": "IV.1.2-4: the periods, the diurnal sequence in full and the nocturnal from the Moon; IV.1.8: the nodes govern alone once the seven planets' 70 years are done; IV.7.24-25: by day the nodes follow Mars, by night Mercury, both from age 71, and after 75 years the sequence returns to the luminary it began from (Book IV has chapters IV.1-IV.7 only)"
+    },
+    {
+     "citation": "[Abū Maʿshar], De revolutionibus nativitatum, Lib. II, Latin translation printed under the name of Hermes (Basel 1559) pp.264, 272",
+     "read_at": "the medieval Latin translation at pp.264 and 272; pp.265-271 not read line by line",
+     "reading": "translation_read",
+     "says": "p.264: the periods (75 in all), the diurnal sequence from the Sun and the nocturnal from the Moon, each period in sevenths, the nodes alone; p.272: 'in nocturnis uero post Mercurium' for the nodes, and after 75 years the return 'ad planetam a quo incepit'"
+    },
+    {
+     "citation": "Abraham Ibn Ezra, Sefer ha-Tequfah §14, ed. and tr. S. Sela (2014) pp.383-385",
+     "read_at": "Sela's English translation at the cited pages",
+     "reading": "translation_read",
+     "says": "the diurnal and nocturnal orders, by night to Mercury and then the nodes; the sequence restarts after 75 years"
     },
     {
      "citation": "al-Biruni, Book of Instruction in the Elements of the Art of Astrology §438-439 (tr. R. R. Wright, 1934, p.48)",
@@ -2708,7 +2732,7 @@
     },
     {
      "citation": "Vettius Valens, Anthologies III.11 (Pingree p.147; = III.14 Kroll/Riley, '14K;11P')",
-     "read_at": "Riley's translation in a reformatted online copy of his preliminary edition (github.com/janegca/latex-valens), the chapter headed '(14K,11P)', after Riley's /147P/ marker: 'After the Moon has set, determine the distance from the Sun to it'; the Greek not checked",
+     "read_at": "Riley's translation in a reformatted online copy of his preliminary edition (github.com/janegca/latex-valens), the chapter headed '(14K,11P)', after Riley's /147P/ marker: 'After the Moon has set, determine the distance from the Sun to it'; the Greek checked in Kroll 1908 p.155 ll.5-9 (III.14); Pingree p.147 checked",
      "reading": "translation_read",
      "says": "the day formula at night once the Moon has set; not adopted"
     },
@@ -2826,9 +2850,10 @@
     "says": "months of 28 days to a sign counted from the places that govern the year, and days of 2 1/3 days to a sign; the note records 30 days to a sign (Bouche-Leclercq, Cardanus, without manuscript support) and 2 1/2 days (two manuscripts). About 13.04 such months fall in a year and they do not restart at the return, so they do not fit the return year; not computed"
    },
    "not_from_the_sources": [
+    "moving every month forward whatever the sign: Abu Ma'shar turns the months backward from movable signs and from the second half of double-bodied signs",
     "the Sun's 30-degree steps for a night birth: Valens IV.28 uses the Moon by night; the product uses the Sun for every chart, as Abu Ma'shar is reported to do",
     "the equal-twelfths profile: no classical source for it was found; it is the arrangement common in modern software",
-    "the profile names and the word 'month' for a 30-degree step of the Sun"
+    "the profile names"
    ],
    "profiles": {
     "monthly_profection_return_year_twelfths_v1": "modern_convention_no_classical_source_found",
@@ -2845,13 +2870,25 @@
      "citation": "Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, Persian Nativities IV (2019)",
      "read_at": "known only from Dykes's spoken summary (The Astrology Podcast, episode 218, 2019); the book is not checked",
      "reading": "secondary_only",
-     "says": "the year's sign is also the first month's sign and each following sign the next month; the monthly revolution charts are cast when the Sun reaches the natal Sun's degree in each following sign, the solar return being also the first month; Ptolemy's monthly method rejected. Timing the profected months by those same instants is the product's reading of that summary"
+     "says": "the year's sign is also the first month's sign; the monthly revolution charts are cast when the Sun reaches the natal Sun's degree in each following sign, the solar return being also the first month; Ptolemy's monthly method rejected. Timing the profected months by those same instants is the product's reading of that summary. His own rule for moving the month's sign is IX.1.26-31 below, which the product does not adopt"
+    },
+    {
+     "citation": "Abu Ma'shar, On the Revolutions of the Years of Nativities IX.1.26-31, tr. B. Dykes, Persian Nativities IV (2019)",
+     "read_at": "read in Dykes's English; the Arabic not read",
+     "reading": "translation_read",
+     "says": "each of the four indicators moves by month according to its sign (§32 moves the second indicator always forward): forward from a fixed sign, backward from a movable sign (the second month is the twelfth sign), and from a double-bodied sign forward through its first 15 degrees and backward from the 16th. The product moves every month forward, so it does not follow this rule"
     },
     {
      "citation": "al-Biruni, Book of Instruction in the Elements of the Art of Astrology, tr. R. R. Wright (1934), section 522",
      "read_at": "Wright's English translation",
      "reading": "translation_read",
      "says": "the monthly revolution is taken each time the Sun reaches the degree and minute it held at the nativity or the revolution; the same section divides the profection year into thirteen months of 28 days 1 hour 51 minutes, the thirteenth repeating the year's sign, which the product does not compute"
+    },
+    {
+     "citation": "[Abū Maʿshar], De revolutionibus nativitatum I.1, Latin translation printed under the name of Hermes (Basel 1559) p.211",
+     "read_at": "the medieval Latin translation at the cited page",
+     "reading": "translation_read",
+     "says": "'Solaris mensis xxx graduum': a solar month of 30 degrees, in his argument for why the year follows the Sun; no monthly profection rule there"
     },
     {
      "citation": "Guido Bonatti, Liber astronomiae Tr.9 (Dykes translation)",
@@ -2980,9 +3017,16 @@
      "verification": "later_literature_hellenistic_source_not_confirmed"
     },
     "middle": {
-     "note": "computed here as (minor + greater) / 2; no Hellenistic text giving these values or naming the 'middle' years has been found",
-     "sources": [],
-     "verification": "derived_mean_hellenistic_source_not_confirmed"
+     "note": "computed here as (minor + greater) / 2, the rule Valens III.16 states",
+     "sources": [
+      {
+       "citation": "Valens, Anthologies III.16 (Kroll 1908 p.157)",
+       "read_at": "the Greek of Kroll's edition, ll.1 and 6-11; a table in months in ll.1-4 not interpreted",
+       "reading": "original_language_read",
+       "says": "headed 'the middle years of the stars'; the greater and the least years added and halved, e.g. Saturn 57 and 30 give 43 1/2, Jupiter 79 and 12 give 45 1/2"
+      }
+     ],
+     "verification": "attested_hellenistic_text_read"
     },
     "minor": {
      "sources": [
@@ -3020,7 +3064,7 @@
       "years": null
      },
      "middle": {
-      "verification": "derived_mean_hellenistic_source_not_confirmed",
+      "verification": "attested_hellenistic_text_read",
       "years": 45.5
      },
      "minor": {
@@ -3038,7 +3082,7 @@
       "years": null
      },
      "middle": {
-      "verification": "derived_mean_hellenistic_source_not_confirmed",
+      "verification": "attested_hellenistic_text_read",
       "years": 40.5
      },
      "minor": {
@@ -3056,7 +3100,7 @@
       "years": null
      },
      "middle": {
-      "verification": "derived_mean_hellenistic_source_not_confirmed",
+      "verification": "attested_hellenistic_text_read",
       "years": 48.0
      },
      "minor": {
@@ -3074,7 +3118,7 @@
       "years": null
      },
      "middle": {
-      "verification": "derived_mean_hellenistic_source_not_confirmed",
+      "verification": "attested_hellenistic_text_read",
       "years": 66.5
      },
      "minor": {
@@ -3092,7 +3136,7 @@
       "years": null
      },
      "middle": {
-      "verification": "derived_mean_hellenistic_source_not_confirmed",
+      "verification": "attested_hellenistic_text_read",
       "years": 43.5
      },
      "minor": {
@@ -3110,7 +3154,7 @@
       "years": null
      },
      "middle": {
-      "verification": "derived_mean_hellenistic_source_not_confirmed",
+      "verification": "attested_hellenistic_text_read",
       "years": 69.5
      },
      "minor": {
@@ -3128,7 +3172,7 @@
       "years": null
      },
      "middle": {
-      "verification": "derived_mean_hellenistic_source_not_confirmed",
+      "verification": "attested_hellenistic_text_read",
       "years": 45.0
      },
      "minor": {
@@ -3139,14 +3183,13 @@
    },
    "verification_states": [
     "attested_hellenistic_text_read",
-    "derived_mean_hellenistic_source_not_confirmed",
     "later_literature_hellenistic_source_not_confirmed"
    ]
   },
   "sect": {
    "applies_to": "derived_methods.sect",
    "method_provenance": "product_convention_sources_checked_do_not_specify_boundary",
-   "source_summary": "Passages (not independently verified): Dorotheus I.1 (Pingree 1976 pp.161–162), I.22 (Pingree 1976 p.183); Ptolemy I.7 (Robbins p.43); Valens III.5 (Pingree pp.133–134); Paulus ch.6, ch.23 (Boer 1958, main text; Schmidt 1995 pp.13, 43); Firmicus II.7.1–4; Rhetorius ch.2, ch.44 (Holden 2009 numbering, a compilation of epitomes; not verified); Abū Maʿshar, Great Introduction II.9.1 (locator not verified), Abbreviation III.3 (Dykes ITA §III.2); al-Qabīṣī I (Latin 1512); Lilly 1647 p.113 (Hayz), p.42. Most treat a diurnal or nocturnal birth as a given category, or describe planetary conditions as above or below the earth; the closest to a solar day/night criterion are Valens III.11 (Pingree; = III.14 Kroll/Riley, '14K;11P'; the Moon 'above the earth' read as until it sets) and Lilly 1647 p.42 (checking the chart time by the Sun's house). None specifies sun-centre, upper limb or refraction; the >0° rule is a product convention.",
+   "source_summary": "Passages (not independently verified): Dorotheus I.1 (Pingree 1976 pp.161–162), I.22 (Pingree 1976 p.183); Ptolemy I.7 (Robbins p.43); Valens III.5 (Pingree pp.133–134); Paulus ch.6, ch.23 (Boer 1958, main text; Schmidt 1995 pp.13, 43); Firmicus II.7.1–4; Rhetorius ch.2, ch.44 (Holden 2009 numbering, a compilation of epitomes; not verified); Abū Maʿshar, Great Introduction II.9.1 (locator not verified), Abbreviation III.3 (Dykes ITA §III.2); al-Qabīṣī I (Latin 1512); Lilly 1647 p.113 (Hayz), p.42. Most treat a diurnal or nocturnal birth as a given category, or describe planetary conditions as above or below the earth; the closest to a solar day/night criterion is Lilly 1647 p.42 (checking the chart time by the Sun's house); Valens III.11 (Pingree; = III.14 Kroll/Riley) changes Fortune's formula within a night birth by whether the Moon has set, which is not a day/night criterion. None specifies sun-centre, upper limb or refraction; the >0° rule is a product convention.",
    "sources": [
     {
      "citation": "Dorotheus, Carmen Astrologicum I.1 (Pingree 1976 pp.161-162)",
@@ -3210,9 +3253,9 @@
     },
     {
      "citation": "William Lilly, Christian Astrology (1647) p.113, 'Hayz'",
-     "read_at": "archive.org OCR text of a modern reset edition",
+     "read_at": "the 1647 first edition as scanned at archive.org (b30338724, leaf n147 = p.113)",
      "reading": "original_language_read",
-     "says": "a diurnal planet by day above the earth, a nocturnal planet by night under the earth"
+     "says": "a masculine diurnal planet by day above the earth in a masculine sign, a feminine nocturnal planet by night under the earth in a feminine sign"
     },
     {
      "citation": "William Lilly, Christian Astrology (1647) p.42",
@@ -3222,9 +3265,9 @@
     },
     {
      "citation": "Vettius Valens, Anthologies III.11 (Pingree; = III.14 Kroll/Riley, '14K;11P')",
-     "read_at": "Riley's translation in a reformatted online copy of his preliminary edition (github.com/janegca/latex-valens), the chapter headed '(14K,11P)': 'if the Moon is above the earth, i.e. until the time it sets'; the Greek not checked",
+     "read_at": "Riley's translation in a reformatted online copy of his preliminary edition (github.com/janegca/latex-valens), the chapter headed '(14K,11P)': 'if the Moon is above the earth, i.e. until the time it sets'; the Greek checked in Kroll 1908 p.155 ll.5-9 (III.14)",
      "reading": "translation_read",
-     "says": "the Moon 'above the earth' read as until it sets"
+     "says": "for a night birth, Moon to Sun while the Moon is above the earth, Sun to Moon once it has set: a rule within a night birth, not a day/night criterion"
     }
    ]
   },
@@ -3276,16 +3319,16 @@
    ],
    "not_applied": "Bonatti and al-Qabisi require the latitude as well as the longitude within 16 minutes for cazimi (al-Qabisi Introduction III, John of Seville's Latin translation read; Bonatti via Dykes 2007 p.211, secondary); the optional solar-disc reading comes close but is not their rule. Abu Ma'shar's own limits (combust 6 degrees, Mars 10; under the rays east 15, Mars 18) are not offered as a profile. Visibility by place and atmosphere (Swiss heliacal functions) is not computed.",
    "profiles": {
-    "biruni_wright_v1": "al-Biruni §481-484: samim under 16 minutes (exclusive); combust to 6 degrees, to 7 degrees for Mercury and Venus in direct motion (§482); the Moon combust under 7 degrees and under the rays to 12 degrees (§484); under the rays rising in the east (morning side) to 12 Venus and Mercury, 15 Saturn and Jupiter, 16 Mars, setting in the west (evening side) from 16 Saturn and Jupiter, 18 Mars; Mercury and Venus take 12 on both sides, since §482 says only that their west 'resembles' the superior planets'; Venus north of 7 degrees latitude in the samim or combust band is 'accompanying the Sun' (§483).",
-    "hellenistic_15_v1": "One band, under the beams within 15 degrees on either side; no cazimi or combust band (Porphyry, Antiochus as reported by Brennan 2017).",
+    "biruni_wright_v1": "al-Biruni §481-484: samim under 16 minutes (exclusive); combust to 6 degrees, to 7 degrees for Mercury and Venus in direct motion (§482); the Moon combust under 7 degrees and under the rays to 12 degrees (§484); under the rays rising in the east (morning side) to 12 Venus and Mercury, 15 Saturn and Jupiter, 18 Mars, setting in the west (evening side) from 16 Saturn and Jupiter (the 16 is overstruck in Wright's text and may read 15; we keep 16), 18 Mars; Mercury and Venus take 12 on both sides, since §482 says only that their west 'resembles' the superior planets'; Venus north of 7 degrees latitude in the samim or combust band is 'accompanying the Sun' (§483).",
+    "hellenistic_15_v1": "One band, under the beams within 15 degrees on either side; no cazimi or combust band (Porphyry ch.2: 'more or less fifteen degrees'; Antiochus as reported by Brennan 2017).",
     "lilly_1647_p113_v1": "Lilly 1647 p.113: cazimi within 17 minutes, combust within 8 deg 30 min, under the Sun-beams until 17 degrees; every limit inclusive; the same numbers for every body and side. The default."
    },
    "same_sign_rule": "Lilly p.113-114: combustion only by bodily conjunction in one sign, not by aspect. No other source read has the rule and Lilly's aphorism 26 puts a planet under the beams 'in what Signe it will'; the product reports same_sign_as_sun and does not apply the rule. In the sidereal zodiac only this flag can differ; the distance and the band cannot.",
-   "seven_day_rule": "For the five planets, every crossing of the profile's under-the-beams limit within 7 days before or after the chart instant, emerging or sinking; stations not searched; the Moon not searched. The 7-day rule is reported from Porphyry, Introduction ch.30 and Rhetorius (Holden 2009 pp.24, 134) via a secondary page; the original was not read.",
+   "seven_day_rule": "For the five planets, every crossing of the profile's under-the-beams limit within 7 days before or after the chart instant, emerging or sinking; stations not searched; the Moon not searched. The 7-day rule is read in Porphyry, Introduction ch.30 (CCAG V/4 p.207 ll.14-16), where it is said of the ruling planet (kurios); applying it to beam crossings is this product's reading.",
    "sources": [
     {
      "citation": "William Lilly, Christian Astrology (London 1647) Book I, pp.111, 113-114",
-     "read_at": "archive.org full text of the 1647 printing and of a 1659 transcription; pp.111 and 113 not checked on the scan. The p.115 table of fortitudes and debilities was read on the scan (Wellcome Library copy, archive.org b30338724 n148); it is cited under motion_states",
+     "read_at": "archive.org full text of the 1647 printing and of a 1659 transcription; p.113 checked on the scan (b30338724 n147), p.111 not. The p.115 table of fortitudes and debilities was read on the scan (Wellcome Library copy, archive.org b30338724 n148); it is cited under motion_states",
      "reading": "original_language_read"
     },
     {
@@ -3309,7 +3352,13 @@
      "reading": "translation_read"
     },
     {
-     "citation": "Porphyry, Introduction ch.2 and ch.30; Antiochus; Rhetorius (Holden 2009 pp.24, 134); Brennan, Hellenistic Astrology (2017)",
+     "citation": "Porphyry, Introduction ch.30 (CCAG V/4, 1940, pp.206-207)",
+     "read_at": "CCAG V/4 (Greek)",
+     "reading": "original_language_read",
+     "says": "the 7-day rule, said of the ruling planet (p.207 ll.14-16)"
+    },
+    {
+     "citation": "Antiochus; Rhetorius (Holden 2009 pp.24, 134); Brennan, Hellenistic Astrology (2017); Porphyry ch.2 read in Greek, cited under contested_methods",
      "read_at": "secondary pages and search excerpts only",
      "reading": "secondary_only"
     },
@@ -3359,7 +3408,7 @@
      "citation": "[Abū Maʿshar], De revolutionibus nativitatum I.1, I.3-6, Latin translation printed under the name of Hermes (Basel 1559) pp.211-214",
      "read_at": "the medieval Latin translation at the cited pages; its attribution to Abū Maʿshar is the scholarly consensus, not checked here",
      "reading": "translation_read",
-     "says": "the year begins when the Sun returns to its place; the return does not override the nativity; the figure has twelve houses with cusps by quadrant division and marks the natal ascendant, the profected sign and the year's ascendant; the place of casting is not discussed"
+     "says": "the year begins when the Sun returns to its place; the return does not override the nativity; the figure has twelve houses with cusps by hour-degrees and right ascensions ('per partes horarum & ascensiones rectae sphaerae', the practice of 'Astrologi temporis nostri') and marks the natal ascendant and planets, the profected sign and the year's ascendant; I.5 (p.214) also marks the profection of Fortune, the distribution with its distributor and partner, the firdaria lord and its partner, the lord of the orb and fixed stars on the midheaven or the luminaries before the figure is complete, and I.6 begins the judgement from the year's ascendant; the place of casting is not discussed"
     },
     {
      "citation": "Guido Bonatti, De astronomia, Pars IV preface (Basel 1550) cols. 489-490",
@@ -3516,8 +3565,8 @@
      "sources": [
       {
        "citation": "Ps.-Porphyry, Introduction ch.23 (Boer-Weinstock, CCAG V/4, 1940, p.202)",
-       "read_at": "an online Greek transcription and Holden 2009 trans. p.18, the CCAG page itself not checked; level pending: the record does not say whether the Greek was read closely enough to count as the original language, so only the translation is claimed",
-       "reading": "translation_read",
+       "read_at": "the Greek at CCAG V/4 p.202 ll.6-9, read at the printed page; Holden 2009 p.18 also consulted",
+       "reading": "original_language_read",
        "says": "the Moon joins no planet, by sign, degree, aspect or kollesis, within the next 30 degrees, regardless of the sign boundary"
       },
       {
@@ -3646,10 +3695,28 @@
    ],
    "sources": [
     {
-     "citation": "Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, Persian Nativities IV (2019)",
-     "read_at": "bibliographic record only; chapter and page not verified",
-     "reading": "bibliographic_only",
-     "says": "revolutions used together with profections and firdaria"
+     "citation": "[Abū Maʿshar], De revolutionibus nativitatum I.1, I.3, Latin translation printed under the name of Hermes (Basel 1559) pp.211, 213",
+     "read_at": "the medieval Latin translation at the cited pages",
+     "reading": "translation_read",
+     "says": "the year begins when the Sun returns to its natal place (I.1); the year's ascendant is to be found with the same tables as the nativity's, or the two will not agree (I.3, p.213; the phrase 'per medios motus' there is not fully understood)"
+    },
+    {
+     "citation": "Abraham Ibn Ezra, The Book of the Revolution (Sefer ha-Tequfah) §1:1, ed. and tr. S. Sela (2014) p.373",
+     "read_at": "Sela's English translation at the cited place",
+     "reading": "translation_read",
+     "says": "the revolution is the Sun's return to its natal degree and minute"
+    },
+    {
+     "citation": "The Book of Aristotle IV.1, tr. B. Dykes, Persian Nativities I (2009) p.185",
+     "read_at": "Dykes's English translation and note at the cited place",
+     "reading": "translation_read",
+     "says": "sentence [1]: each year adds six hours and a fifth of an hour, a year of about 365.2583 days by Dykes's note, close to the sidereal year; not the product's model"
+    },
+    {
+     "citation": "William Lilly, Christian Astrology (1647) ch. CLXXII p.734",
+     "read_at": "the 1647 first edition at the cited page",
+     "reading": "original_language_read",
+     "says": "the revolution is the Sun's return to its natal degree and minute"
     },
     {
      "citation": "Swiss Ephemeris 2.10.03 swe_solcross_ut",

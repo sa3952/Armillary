@@ -1345,9 +1345,9 @@ def _demote_alias_only_exact_rows(rows, tier_query: str | None) -> list:
         return chinese_keys[chinese] == tier_query
 
     exact = [row for row in rows if row["match_tier"] == "exact_name"]
-    if not any(own_name(row) for row in exact):
-        return rows
     owners = [row for row in exact if own_name(row)]
+    if not owners:
+        return rows
 
     def names_another_place(row) -> bool:
         # The alias is the other place's name only when the row lies away from

@@ -209,7 +209,9 @@ def leader_path(anchor, row_y):
     (ax, ay), (ex, ey), (fx, _) = leader_path_points(anchor, row_y)
     return f"M{ax:.1f},{ay:.1f} L{ex:.1f},{ey} H{fx:.0f}"
 
-def build(hk, azim, elev, phi=PHI, eps=EPS):
+RING_NAMES = {"ecliptic": "黃道環", "equator": "赤道環", "axis": "極軸", "horizon": "地平環", "meridian": "子午環"}
+
+def build(hk, azim, elev, phi=PHI, eps=EPS, named=False):
     ns, el, basis, P = rings(phi, eps, hk, azim, elev, CX, CY, R)
     for k, n in ns.items():
         err = max_ellipse_error(n, el[k], basis, CX, CY, R)
@@ -218,8 +220,9 @@ def build(hk, azim, elev, phi=PHI, eps=EPS):
         assert abs(el[k]["rx"] - R) < 1e-9
     _, pa, pb = _axis_samples(P, basis)
     anchors = pick_anchors(ns, P, basis)
-    L = ['<svg viewBox="0 0 640 520" role="img" aria-label="渾儀環組圖版，'
-         '編號標示黃道環、赤道環、極軸、地平環與子午環">',
+    label = "標示" if named else "編號標示"
+    L = [f'<svg viewBox="0 0 {700 if named else 640} 520" role="img" aria-label="渾儀環組圖版，'
+         f'{label}黃道環、赤道環、極軸、地平環與子午環">',
          '  <g>',
          f'    <circle class="{STYLE["limb"]}" cx="{CX:.0f}" cy="{CY:.0f}" r="{R:.0f}"/>']
     for k in ("horizon", "meridian", "equator", "ecliptic"):
@@ -237,9 +240,10 @@ def build(hk, azim, elev, phi=PHI, eps=EPS):
     for k in ORDER:
         x, y = anchors[k]
         L.append(f'    <circle cx="{x:.1f}" cy="{y:.1f}" r="2.2"/>')
-    L += ['  </g>', '  <g class="s-num">']
+    L += ['  </g>', f'  <g class="{"s-name" if named else "s-num"}">']
     for idx in range(5):
-        L.append(f'    <text x="610" y="{ROWS[idx] + 4}">{idx + 1}</text>')
+        text = RING_NAMES[ORDER[idx]] if named else idx + 1
+        L.append(f'    <text x="610" y="{ROWS[idx] + (6 if named else 4)}">{text}</text>')
     L += ['  </g>', '</svg>']
     return "\n".join(L), el, ns, basis, P
 

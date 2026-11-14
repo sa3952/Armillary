@@ -5,7 +5,7 @@ from __future__ import annotations
 from html import escape
 
 from . import _site
-from ._common import PLANETS, SIGNS, backend_on_path
+from ._common import PLANETS, SIGNS, backend_on_path, zh
 
 FRAGMENT = "methods"
 # (schema field, the page's name for it, the page's name for each default it may have)
@@ -163,7 +163,8 @@ def sidereal_switch_sentences() -> list[str]:
 
 def build() -> tuple[dict[str, str], list[str]]:
     mansion_rows, mansion_width = _mansion_rows()
-    quoted = [f"每宿 360°÷28＝{mansion_width}", *sidereal_switch_sentences()]
+    quoted = [f"每宿 360°÷28＝{mansion_width}", *sidereal_switch_sentences(),
+              f"宮位分割<em>{zh(_site.count('house_system'))}種，或不算宮位</em>"]
     for field, label, names in CHOICES:
         count, default = _site.count(field), _site.default(field)
         if default is None:

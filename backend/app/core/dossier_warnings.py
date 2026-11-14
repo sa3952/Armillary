@@ -277,7 +277,7 @@ def _sect_house_hemisphere_warnings(
     below = _WHOLE_SIGN_HOUSES_BELOW_HORIZON if whole_sign else _QUADRANT_HOUSES_BELOW_HORIZON
     above = _WHOLE_SIGN_HOUSES_ABOVE_HORIZON if whole_sign else _QUADRANT_HOUSES_ABOVE_HORIZON
     house = sun["house"]
-    if (is_day and house in below) or (not is_day and house in above):
+    if house in (below if is_day else above):
         yield _warning(
             "sect_vs_house_hemisphere_disagree",
             "notice",
@@ -581,15 +581,22 @@ def _utc_offset_label(offset: dtmod.timedelta) -> str:
     return f"UTC{sign}{hours:02d}:{rest:02d}"
 
 
+def _iana_local_minute(request) -> dtmod.datetime | None:
+    """The stated wall time to the minute, or None off an IANA zone."""
+    if request.timezone.mode != "iana":
+        return None
+    stated = request.datetime
+    return dtmod.datetime(stated.year, stated.month, stated.day, stated.hour, stated.minute)
+
+
 def prc_1988_dst_dispute_warnings(request) -> Iterator[dict]:
     # A notice of disagreeing sources, not a second chart: the calculation keeps
     # the tz database's offset.  Both offsets are read from the running zone
     # data (inside the interval and one hour on), not written here.
     timezone = request.timezone
-    if timezone.mode != "iana":
+    local = _iana_local_minute(request)
+    if local is None:
         return
-    stated = request.datetime
-    local = dtmod.datetime(stated.year, stated.month, stated.day, stated.hour, stated.minute)
     if not prc_1988_dst_start_disputed(
         timezone.iana_name, request.birth_time_precision, local
     ):
@@ -643,10 +650,9 @@ def hk_observatory_summer_time_warnings(request) -> Iterator[dict]:
     # from the zone inside the span; the summer offset from the zone's own
     # neighbouring summer-time hour (before the 1945 span, after the 1946 day).
     timezone = request.timezone
-    if timezone.mode != "iana":
+    local = _iana_local_minute(request)
+    if local is None:
         return
-    stated = request.datetime
-    local = dtmod.datetime(stated.year, stated.month, stated.day, stated.hour, stated.minute)
     period = hk_observatory_summer_time_period(
         timezone.iana_name, request.birth_time_precision, local, timezone.fold or 0
     )
@@ -701,10 +707,9 @@ def offshore_island_civil_time_warnings(request, time_conversion: dict) -> Itera
     # Like the Hong Kong notice: one chart on the tz database's offset, and a
     # note that the documents behind that offset did not govern the islands.
     timezone = request.timezone
-    if timezone.mode != "iana":
+    local = _iana_local_minute(request)
+    if local is None:
         return
-    stated = request.datetime
-    local = dtmod.datetime(stated.year, stated.month, stated.day, stated.hour, stated.minute)
     area = offshore_island_before_taiwan_rule(
         timezone.iana_name, request.birth_time_precision, local,
         request.location.latitude, request.location.longitude,
@@ -878,14 +883,15 @@ def _module_state_warnings(
             if state["requested"] and not state["available"] and state["reason_code"] == reason
         ]
 
-    refused_by_reason = {reason: refused(reason) for reason in EVENT_SEARCH_REASON_CODES}
+    refused_by_reason = {
+        reason: names for reason in EVENT_SEARCH_REASON_CODES if (names := refused(reason))
+    }
     event_not_applicable_modules = [
         name for names in refused_by_reason.values() for name in names
     ]
     clauses = [
         EVENT_SEARCH_CAUSES_ZH[reason].format(modules=_module_names(names))
         for reason, names in refused_by_reason.items()
-        if names
     ]
     if clauses:
         yield _warning(
@@ -897,11 +903,7 @@ def _module_state_warnings(
                 "calculation_dossier.calculation_policy.modules",
                 "calculation_dossier.provenance.event_modules",
             ],
-            {
-                "modules_by_reason": {
-                    reason: names for reason, names in refused_by_reason.items() if names
-                },
-            },
+            {"modules_by_reason": refused_by_reason},
         )
 
     # No sunrise and sunset within one diurnal cycle is a fact of the place and

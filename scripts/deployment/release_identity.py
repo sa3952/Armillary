@@ -22,6 +22,7 @@ receipt.
 from __future__ import annotations
 
 import argparse
+from datetime import date
 import json
 from pathlib import Path
 import re
@@ -35,10 +36,24 @@ FIELDS = {
     "Armillary-Backend-Image": re.compile(r"sha256:[0-9a-f]{64}"),
 }
 _SIGNATURE_START = "-----BEGIN "
+_RELEASE_NAME = re.compile(r"public-(?:alpha|beta)-([0-9]{4}-[0-9]{2}-[0-9]{2})(?:-[1-9][0-9]*)?")
 
 
 class IdentityRefusal(ValueError):
     pass
+
+
+def release_day(name: str) -> str:
+    """The Taiwan date a release name carries: public-alpha-YYYY-MM-DD[-n] or public-beta-YYYY-MM-DD[-n]."""
+    match = _RELEASE_NAME.fullmatch(name)
+    try:
+        if match is None:
+            raise ValueError
+        date.fromisoformat(match[1])
+    except ValueError:
+        raise IdentityRefusal(f"{name!r} is not a release name: public-alpha-YYYY-MM-DD[-n] or "
+                              "public-beta-YYYY-MM-DD[-n], with a real date") from None
+    return match[1]
 
 
 def _record_identity(record: dict) -> tuple[str, str]:
@@ -108,6 +123,8 @@ def main() -> None:
     try:
         record = json.loads(args.frontend_release_record.read_text(encoding="utf-8"))
         if args.command == "render":
+            # The public tag cannot be deleted once pushed, so a bad name stops here, before it is signed.
+            release_day(args.version)
             message = render(record, version=args.version, image_id=args.image)
             if args.output is None:
                 sys.stdout.write(message)

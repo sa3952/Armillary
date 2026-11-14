@@ -1023,3 +1023,30 @@ def test_real_server_error_records_reduce_private_messages_and_tracebacks():
         assert _request(probe.base_url + "/__log_failure") == (200, b"ok")
     assert marker not in probe.output
     assert "Traceback (most recent call last)" not in probe.output
+
+
+def test_a_real_chart_and_place_search_export_nothing_even_with_otel_configured(monkeypatch):
+    """FastAPI carries the OpenTelemetry API; with no SDK installed, operator-style
+    OTEL_* settings must still leave no-op providers and no outbound connection."""
+    import socket
+    import sys
+
+    from opentelemetry import metrics, trace
+
+    from tests.backend import minimal_chart_payload
+
+    connections = []
+    monkeypatch.setattr(socket.socket, "connect", lambda _self, address: connections.append(address))
+    monkeypatch.setattr(socket, "getaddrinfo", lambda *args, **_kw: connections.append(args) or [])
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://203.0.113.9:4318")
+    monkeypatch.setenv("OTEL_TRACES_EXPORTER", "otlp")
+    monkeypatch.setenv("OTEL_METRICS_EXPORTER", "otlp")
+    with TestClient(create_app()) as client:
+        chart = client.post("/api/chart", json=minimal_chart_payload(year=1990, month=6, day=15, hour=14, minute=30))
+        places = client.post("/api/places/search", json={"query": "Taipei"})
+    assert (chart.status_code, places.status_code) == (200, 200)
+    assert connections == []
+    assert type(trace.get_tracer_provider()).__name__ == "ProxyTracerProvider"
+    assert type(metrics.get_meter_provider()).__name__ == "_ProxyMeterProvider"
+    assert not [name for name in sys.modules
+                if name.startswith(("opentelemetry.sdk", "opentelemetry.exporter", "opentelemetry.instrumentation"))]

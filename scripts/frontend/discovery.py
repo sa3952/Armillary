@@ -115,7 +115,8 @@ def llms_facts(origin: str, by_surface: Mapping[str, dict]) -> list[str]:
         ("宮位制", "、".join(houses[code] for code in build_pages.LLMS_HOUSE_SYSTEM_ORDER)),
         ("時間主星", build_pages.time_lord_series() + "；只列哪一段時間由哪顆行星或哪個星座輪值"),
         ("本命盤", "；".join(zh for _, zh, _ in build_pages.natal_features())),
-        ("狀態", f"公開測試（Public Alpha），自{build_pages.PUBLIC_ALPHA_START.isoformat()}起"),
+        ("狀態", f"Public Beta，自{build_pages.PUBLIC_BETA_START.isoformat()}起。"
+            f"公開測試（Public Alpha）自{build_pages.PUBLIC_ALPHA_START.isoformat()}起"),
         ("已知限制（英文）", repository + LLMS_KNOWN_LIMITATIONS_PATH),
         ("方法頁全文與文章重點（純文字）", f"{origin}/{build_pages.LLMS_FULL_NAME}"))
     check = by_surface.get(LLMS_PRIVACY_CHECK_SURFACE)

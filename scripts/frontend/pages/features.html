@@ -106,19 +106,23 @@
   </section>
 
   <!-- ═══ 04 口徑 ═══ -->
-  <section class="feat">
+  <section class="feat" id="zodiacs">
     <p class="sig">04<span class="sig-k">口徑</span></p>
     <h2>兩個網站算出<wbr>不同的上升星座。<br>多半是輸入不同，不是誰算錯。</h2>
 
-    <p>先對照兩邊的時區、夏令時間、出生地座標與出生時間；這四樣都一樣還是不同，再看黃道的起算點。宮位制只決定宮頭，不改上升點。</p>
+    <p>先對照兩邊的時區、夏令時間、出生地座標與出生時間；這四樣都一樣卻還是不同，常見原因是黃道的起算點：回歸黃道從春分點起算，恆星黃道扣掉歲差、從恆星背景起算。宮位制只決定宮頭，不改上升點。同一個上升點，在兩套裡讀出來的星座可以不一樣——下面就是。</p>
+
+    <p class="eyebrow">FIG 1 — 同一時刻，兩種黃道，上升星座不同</p>
 
     <p class="verdict">同一個時間、同一個地點。<b>換一把尺，上升星座整個退一格。</b></p>
 
     <div class="versus two">
-      <div><span class="vs-label">回歸黃道 · 春分點為原點</span><b class="vs-answer">天秤 1°35′32.3″</b><span class="vs-src">黃經 181.592310°</span></div>
-      <div><span class="vs-label">恆星黃道 · Fagan–Bradley</span><b class="vs-answer alt">處女 6°58′59.9″</b><span class="vs-src">黃經 156.983307°</span></div>
+      <div><span class="vs-label">回歸黃道 tropical · 春分點為原點 · 上升 ASC</span><b class="vs-answer">天秤 1°35′32.3″</b><span class="vs-src">黃經 181.592310°<br>從春分點起算。這是多數西洋占星軟體的預設。</span></div>
+      <div><span class="vs-label">恆星黃道 sidereal · Fagan–Bradley · 上升 ASC</span><b class="vs-answer alt">處女 6°58′59.9″</b><span class="vs-src">黃經 156.983307°<br>扣掉歲差 24°36′32.4″（Fagan–Bradley）。上升星座因此退到前一個星座。</span></div>
     </div>
     <p class="spec-note">兩者相差 <b>24°36′32.4″</b>，就是這套歲差修正值。<b>你可以自己把兩個黃經相減來核對。</b></p>
+
+    <p class="stake">兩個都對，差的是起算點，不是天空。<b>但如果一張盤沒寫它用了哪一套，你就沒辦法拿它跟另一張盤對照，也沒辦法重現自己這一張。</b>渾儀把用了哪一套寫在每一次計算的結果與匯出檔裡；想換另一套，在計算頁換一個選項就行。</p>
 
     <p>可以換的口徑：黃道系統（回歸／四種恆星）、宮位制（整宮／等分宮／Porphyry／Alcabitius／Campanus／Regiomontanus／Placidus／不算宮位）、月亮位置（跟隨全域或單獨改用出生地站心）。<b>換一項，哪些數字會動、動多少，當場看得見。</b></p>
 
@@ -126,7 +130,7 @@
   </section>
 
   <!-- ═══ 05 座標 ═══ -->
-  <section class="feat">
+  <section class="feat" id="coordinates">
     <p class="sig">05<span class="sig-k">座標</span></p>
     <h2>一次計算，<br>三套座標一起輸出。</h2>
 
@@ -139,9 +143,24 @@
     </div>
     <p class="spec-note">同一顆太陽，同一個時刻。這條驗證管道是刻意留的。</p>
 
-    <p>涵蓋七政、三王星、凱龍星、平均與密切交點（密切交點即 osculating node，常被稱為真交點；兩者都含南交點）、Lilith 與 Priapus，以及 <b>{{fixed_star_count}} 顆</b>恆星與 <b>{{fixed_star_cluster_count}} 個</b>星團。相位分兩層輸出：整宮配置層（純算術）與逐度層（角距離、距精確相位差、入相位方向）；逐度層另排成一張相位方格，每格列出容許度內的相位、距精確的度數與入相位或出相位，不另計算。四套相位集合（預設合相＋四種傳統相位）、兩套具名容許度表（預設 Lilly 1647），都可切換，<b>每一次的預設值都印在卷宗裡</b>。</p>
+    <p class="eyebrow">FIG 2 — 同一顆星，三種說法</p>
+    <h3>黃道、赤道、地平——為什麼要三套？</h3>
+    <p>黃道座標問「它在十二宮的哪裡」，赤道座標問「它在天球的哪裡」，地平座標問「此時此地你要抬頭往哪看」。三者互相可換算，但用途完全不同。<b>渾儀一次全給你——不必為了查赤緯或方位角，換一個工具、把生辰再填一次。</b></p>
 
-    <p class="limit"><b>邊界：</b>恆星只輸出座標與星等，不判定合相——那要先選定幾何（黃道合相、與角點同升或中天、地平事件），再定容許度與歲差政策，這些都還沒裁決。行運、推運與合盤目前一項都沒有；太陽回歸盤（solar return）可以在計算頁另外排（見下方第 06 節），預設在出生地起盤，也可以改用另一個地點。</p>
+    <div class="plate">
+      {{armillary_svg}}
+
+      <ul class="legend">
+        <li><b>黃道環 <i>Ecliptic</i></b><span>太陽視行的大圓。傾角 ε＝23°26′31.79″，取這一刻的真黃赤交角（平值加章動），不是固定值。</span></li>
+        <li><b>赤道環 <i>Æquator</i></b><span>地球自轉的投影。赤緯由此量起；換一套黃道的算法，赤緯也不會動。</span></li>
+        <li><b>極軸 <i>Axis</i></b><span>指向天極。地方恆星時決定它此刻轉到哪裡。</span></li>
+        <li><b>地平環 <i>Horizon</i></b><span>觀測地決定的圈。方位角與高度自此量起。</span></li>
+        <li><b>子午環 <i>Meridian</i></b><span>上中天所在。中天 MC 即黃道與此環之交。</span></li>
+      </ul>
+
+      <div class="caption">本頁數字都是實際計算的結果。這張圖、本頁的示範盤與計算步驟取自同一次計算：1990-05-15 14:30 臺北（25.0531°N 121.5264°E），整宮制、回歸黃道、視位置、地心。第 03 節是同一天那一小時裡的取樣，每個取樣時刻各算一次；FIG 1 的恆星黃道上升，是同一時刻改用恆星黃道另算一次。圖版的環間比例為示意，緯度與傾角為真值。</div>
+    </div>
+
   </section>
 
   <!-- ═══ 06 時間主星 ═══ -->
@@ -161,6 +180,21 @@
     </ul>
 
     <p>一年從太陽回歸的那一刻算起；期間的日期是<b>出生地的日期，只到日</b>。每一條規則用了哪一份文獻、我們核到哪一層、文獻說法不同時用哪一種，見〈<a href="/zh-TW/methods/time-lords">年度時間主星的規則與出處</a>〉。</p>
+
+    <h3 id="computes">一張本命盤，加上一生的時間主星。</h3>
+    <p>兩類結果都在計算頁產生，都附方法出處與計算收據。<b>本命盤</b>是出生那一刻的天空：行星在哪裡、落在哪一宮、彼此成什麼相位。</p>
+    <p>涵蓋七政、三王星、凱龍星、平均與密切交點（密切交點即 osculating node，常被稱為真交點；兩者都含南交點）、Lilith 與 Priapus，以及 <b>{{fixed_star_count}} 顆</b>恆星與 <b>{{fixed_star_cluster_count}} 個</b>星團。相位分兩層輸出：整宮配置層（純算術）與逐度層（角距離、距精確相位差、入相位方向）；逐度層另排成一張相位方格，每格列出容許度內的相位、距精確的度數與入相位或出相位，不另計算。四套相位集合（預設合相＋四種傳統相位）、兩套具名容許度表（預設 Lilly 1647），都可切換，<b>每一次的預設值都印在卷宗裡</b>。</p>
+
+    <p class="limit"><b>邊界：</b>恆星只輸出座標與星等，不判定合相——那要先選定幾何（黃道合相、與角點同升或中天、地平事件），再定容許度與歲差政策，這些都還沒裁決。行運、推運與合盤目前一項都沒有；太陽回歸盤（solar return）可以在計算頁另外排（見下方第 06 節），預設在出生地起盤，也可以改用另一個地點。</p>
+    <ul class="ticks">
+      <li>行星位置、上升點與中天</li>
+      <li>宮位（七種宮位制可選，或不算宮位）</li>
+      <li>相位</li>
+      <li>本質尊貴（廟、旺、陷、弱、界、面、三分性、外來）</li>
+      <li>日夜盤、命運點與精神點</li>
+      <li>恆星、反照點、月空亡、十二分部、月宿</li>
+    </ul>
+    <p>在計算頁選「古典完整」，星盤算完會接著排出時間主星；選「自訂」，在結果的「時間主星」一章按一下排出。入門見〈<a href="/zh-TW/blog/time-lords-introduction">年度時間主星入門</a>〉。只想排其中一種：<a href="/zh-TW/calculate/profections">線上計算年度小限與年主星</a>、<a href="/zh-TW/calculate/firdaria">線上排法達時間主星</a>、<a href="/zh-TW/calculate/zodiacal-releasing">黃道釋放計算</a>、<a href="/zh-TW/calculate/decennials">十年期時間主星計算</a>。</p>
 
     <p class="limit"><b>邊界：</b>選定某一年後，可以另外排那一年的太陽回歸盤（預設在出生地起盤，也可以改用另一個地點；需要確切的出生時間）。只知道出生日期時，這幾種都不產生；黃道釋放與十年期都只算兩層。</p>
   </section>
@@ -208,16 +242,16 @@
       <div><dt>第三方主機</dt><dd class="zero-count">0</dd><dd>整個計算頁載入的每一個檔案<b>都來自本站</b>——沒有外部字型、沒有 CDN、沒有分析腳本。任何一個外部請求都會把你的 IP 交給別人。</dd></div>
     </dl>
 
-    <p>另外沒有的：<b>帳號、email、帳號密碼</b>——公開測試（Public Alpha）階段連存取憑證也沒有，任何人都可以直接使用。沒有帳號資料庫、沒有命盤資料庫、沒有請求快取、沒有背景佇列。</p>
+    <p>另外沒有的：<b>帳號、email、帳號密碼</b>——連存取憑證也沒有，任何人都可以直接使用。沒有帳號資料庫、沒有命盤資料庫、沒有請求快取、沒有背景佇列。</p>
 
     <ul class="ticks">
       <li>預設計算請求期間，若有 Python 程式碼以寫入模式開檔，<b>測試會直接失敗</b>——這是機制，不是承諾；原生函式庫不在涵蓋範圍內。</li>
       <li>地名搜尋讀<b>內建的離線資料庫</b>，不呼叫第三方地理服務、不使用瀏覽器定位、不看你的 IP。</li>
-      <li>每一種下載的檔名都是固定的：結果匯出為 <span class="mono">classical-astrology-export.{json,md,csv,txt}</span>，星盤圖為 <span class="mono">classical-astrology-chart.{svg,png}</span>（方盤 <span class="mono">classical-astrology-square-chart.{svg,png}</span>、太陽回歸盤 <span class="mono">classical-astrology-solar-return-chart.{svg,png}</span>），時間主星為 <span class="mono">armillary-time-lords.ics</span> 與 <span class="mono">armillary-time-lords.{md,csv,json}</span>；<b>都不嵌入出生日期、時間、姓名或座標</b>。</li>
+      <li>結果匯出的檔名為 <span class="mono">armillary-&lt;時刻&gt;[-個案代號][-work][-verify].{json,md,csv,txt}</span>，時刻是結果算出的那一刻（本機時鐘），不是出生時間；個案代號是你選填的。其餘檔名固定：星盤圖為 <span class="mono">classical-astrology-chart.{svg,png}</span>（方盤 <span class="mono">classical-astrology-square-chart.{svg,png}</span>、太陽回歸盤 <span class="mono">classical-astrology-solar-return-chart.{svg,png}</span>），時間主星為 <span class="mono">armillary-time-lords.ics</span> 與 <span class="mono">armillary-time-lords.{md,csv,json}</span>；<b>都不嵌入出生日期、時間、姓名或座標</b>，除非你自己寫進個案代號。</li>
       <li>「清除本頁敏感資料」會清空表單、結果、錯誤與網址列的 query 與 fragment，並使已發出的複製／下載 handler 立即失效。</li>
     </ul>
 
-    <p class="limit"><b>邊界：</b>此為目前公開測試階段的架構陳述，不是對未來所有階段的無限期承諾。你按下下載之後，檔案就在你的裝置上，我們無法撤回；貼進剪貼簿的內容同理。這說的是<b>沒有主動寫入，不是安全抹除</b>——我們不宣稱能從記憶體、swap 或當機傾印中抹除任何東西。完整資料流見〈信任中心〉。</p>
+    <p class="limit"><b>邊界：</b>此為目前 Public Beta 階段的架構陳述，不是對未來所有階段的無限期承諾。你按下下載之後，檔案就在你的裝置上，我們無法撤回；貼進剪貼簿的內容同理。這說的是<b>沒有主動寫入，不是安全抹除</b>——我們不宣稱能從記憶體、swap 或當機傾印中抹除任何東西。完整資料流見〈信任中心〉。</p>
   </section>
 
   <!-- ═══ 08 資安 ═══ -->

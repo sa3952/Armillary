@@ -416,6 +416,11 @@ def verify_receipt(
     return evidence
 
 
+def public_identity(role: str, email: str) -> bool:
+    """A public commit's author or committer address: GitHub noreply, or GitHub's own web committer."""
+    return NOREPLY_EMAIL.fullmatch(email) is not None or (role == "committer" and email == WEB_COMMITTER_EMAIL)
+
+
 def require_noreply_identities(checkout: Path, *revisions: str) -> int:
     """Every commit `git log REVISIONS` lists in `checkout` names a GitHub noreply
     author and committer; the number of commits read.  Raw metadata, not mailmap:
@@ -436,9 +441,70 @@ def require_noreply_identities(checkout: Path, *revisions: str) -> int:
     for offset in range(0, len(fields), 3):
         commit, author, committer = (field.strip() for field in fields[offset:offset + 3])
         for role, email in (("author", author), ("committer", committer)):
-            if NOREPLY_EMAIL.fullmatch(email) is None and not (role == "committer" and email == WEB_COMMITTER_EMAIL):
+            if not public_identity(role, email):
                 raise ReceiptRefusal(f"public commit {commit} {role} must use a GitHub noreply identity")
     return len(fields) // 3
+
+
+def public_remote_exclusion(checkout: Path, environment: dict[str, str] | None = None) -> list[str]:
+    """The `git log` arguments that leave out what the public repository already holds.
+
+    Only commits the public repository itself holds count as already public:
+    its branch and tag tips are read from it with `git ls-remote`, never from
+    the local `refs/remotes/origin/*`, whose content says nothing about where it
+    came from (a private remote's fetch refspec, or a hand-made ref, can write
+    there).  A tip this checkout lacks leaves nothing out.  Without an `origin`
+    nothing is left out; an `origin` elsewhere refuses; an unreadable public
+    repository refuses.
+    """
+
+    with tempfile.TemporaryDirectory(prefix="remote-home-") as raw_home:
+        try:
+            completed = subprocess.run(
+                ["git", "remote", "get-url", "origin"], cwd=checkout, capture_output=True, text=True,
+                check=False, env=environment or _scrubbed_git_environment(Path(raw_home)),
+            )
+        except OSError as error:
+            raise ReceiptRefusal(f"cannot read the remotes of {checkout}: {error}") from None
+    if completed.returncode:
+        if "No such remote" in completed.stderr:
+            return []
+        raise ReceiptRefusal(f"cannot read the origin of {checkout}: {completed.stderr[-2000:]}")
+    clone_url = canonical_urls("")["clone_url"]
+    if completed.stdout.strip() not in (clone_url, clone_url.removesuffix(".git")):
+        raise ReceiptRefusal(f"origin of {checkout} is not {clone_url}: only the public repository counts as published")
+    with tempfile.TemporaryDirectory(prefix="ls-remote-home-") as raw_home:
+        try:
+            # Run outside the checkout: its local config (insteadOf) cannot redirect the listing.
+            listed = subprocess.run(
+                ["git", "-c", "credential.helper=", "-c", "core.askPass=", "ls-remote",
+                 _public_listing_transport(clone_url, checkout), "refs/heads/*", "refs/tags/*"],
+                cwd=raw_home, capture_output=True, text=True, check=True, timeout=300,
+                env=_scrubbed_git_environment(Path(raw_home)), stdin=subprocess.DEVNULL,
+            ).stdout
+        except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+            raise ReceiptRefusal(f"cannot list what {clone_url} publishes: {error}") from None
+    tips = sorted({line.split("\t", 1)[0] for line in listed.splitlines() if line.strip()})
+    if any(not REVISION_RE.fullmatch(tip) for tip in tips):
+        raise ReceiptRefusal(f"cannot parse what {clone_url} publishes")
+    if not tips:
+        return []
+    with tempfile.TemporaryDirectory(prefix="remote-home-") as raw_home:
+        try:
+            present = subprocess.run(
+                ["git", "cat-file", "--batch-check=%(objectname) %(objecttype)"], cwd=checkout,
+                input="".join(f"{tip}\n" for tip in tips), capture_output=True, text=True, check=True,
+                env=environment or _scrubbed_git_environment(Path(raw_home)),
+            ).stdout.splitlines()
+        except (OSError, subprocess.CalledProcessError) as error:
+            raise ReceiptRefusal(f"cannot read the objects of {checkout}: {error}") from None
+    held = [line.split()[0] for line in present if line.split()[-1] in ("commit", "tag")]
+    return ["--not", *held] if held else []
+
+
+def _public_listing_transport(clone_url: str, checkout: Path) -> str:
+    """The address `git ls-remote` reads the public repository at; tests point it at a local stand-in."""
+    return clone_url
 
 
 def _approved_release_record(release: Path, *, checkout: Path) -> tuple[str, tuple[int, str, bool]]:
@@ -465,7 +531,7 @@ def _approved_release_record(release: Path, *, checkout: Path) -> tuple[str, tup
 def compare_commit(*, candidate: Path, checkout: Path, approved_release: Path | None = None) -> str:
     """Before any push: the commit at `checkout` HEAD holds exactly the candidate,
     and every commit the push would add (reachable from HEAD, on no
-    remote-tracking branch) carries only its subject line: no body, so no
+    branch of the public `origin`) carries only its subject line: no body, so no
     co-author, generator or other trailer reaches the public history.
 
     The commit is read through `git archive`, so a file the public `.gitignore`
@@ -474,7 +540,7 @@ def compare_commit(*, candidate: Path, checkout: Path, approved_release: Path | 
 
     `approved_release` is the one frontend release whose record this push may
     add (runbook P8): bit-identical to that release's own record, at the path
-    it names, and on no remote-tracking branch yet.
+    it names, and on no branch of the public `origin` yet.
     """
 
     expected, _ = candidate_inventory(candidate.resolve())
@@ -486,6 +552,7 @@ def compare_commit(*, candidate: Path, checkout: Path, approved_release: Path | 
     try:
         with tempfile.TemporaryDirectory(prefix="compare-home-") as raw_home:
             environment = archive_environment(checkout, _scrubbed_git_environment(Path(raw_home)))
+            public = public_remote_exclusion(checkout, environment)
             revision = subprocess.run(
                 ["git", "rev-parse", "HEAD"], cwd=checkout, capture_output=True,
                 text=True, check=True, env=environment,
@@ -494,18 +561,18 @@ def compare_commit(*, candidate: Path, checkout: Path, approved_release: Path | 
                 ["git", "-c", f"core.attributesFile={os.devnull}", "archive", "--format=tar.gz", f"--prefix={name}-{revision}/", "HEAD"],
                 cwd=checkout, capture_output=True, check=True, env=environment,
             ).stdout
-            published_record = approved_record is not None and subprocess.run(
-                ["git", "log", "-1", "--format=%H", "--remotes", "--", approved_record],
+            published_record = approved_record is not None and bool(public) and subprocess.run(
+                ["git", "log", "-1", "--format=%H", *public[1:], "--", approved_record],
                 cwd=checkout, capture_output=True, text=True, check=True, env=environment,
             ).stdout.strip()
             # Raw metadata ignores mailmap aliases: privacy is about the bytes
             # actually stored in each commit that would become public.
             added = subprocess.run(
-                ["git", "log", "-z", "--no-show-signature", "--format=%H%x00%ae%x00%ce%x00%B", "HEAD", "--not", "--remotes"],
+                ["git", "log", "-z", "--no-show-signature", "--format=%H%x00%ae%x00%ce%x00%B", "HEAD", *public],
                 cwd=checkout, capture_output=True, text=True, check=True, env=environment,
             ).stdout.split("\0")
             touched = subprocess.run(
-                ["git", "log", "-m", "-z", "--no-renames", "--no-abbrev", "--format=", "--raw", "HEAD", "--not", "--remotes"],
+                ["git", "log", "-m", "-z", "--no-renames", "--no-abbrev", "--format=", "--raw", "HEAD", *public],
                 cwd=checkout, capture_output=True, text=True, check=True, env=environment,
             ).stdout.split("\0")
             tip_entries = subprocess.run(
@@ -524,7 +591,7 @@ def compare_commit(*, candidate: Path, checkout: Path, approved_release: Path | 
         if not REVISION_RE.fullmatch(commit):
             raise ReceiptRefusal("cannot parse publication commit identity")
         for role, email in (("author", author), ("committer", committer)):
-            if NOREPLY_EMAIL.fullmatch(email) is None:
+            if not public_identity(role, email):
                 raise ReceiptRefusal(f"commit to be published {commit} {role} must use a GitHub noreply identity")
         if "\n" in message.strip():
             raise ReceiptRefusal(
@@ -597,7 +664,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"COMMIT EQUALS CANDIDATE: {revision}")
             return 0
         elif arguments.command == "identities":
-            count = require_noreply_identities(arguments.checkout, "HEAD", "--not", "--remotes")
+            count = require_noreply_identities(
+                arguments.checkout, "HEAD", *public_remote_exclusion(arguments.checkout))
             print(f"PUBLIC COMMIT IDENTITIES NOREPLY: {count} unpushed commit(s)")
             return 0
         else:

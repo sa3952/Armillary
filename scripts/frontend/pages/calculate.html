@@ -275,6 +275,7 @@
             <div class="field">
               <label id="house-system-label">宮位制</label>
               <div class="inline-control" id="house-system-slot"></div>
+              <div class="house-presets" id="house-presets" role="group" aria-label="套用宮位制"></div>
               <span class="hint" id="opt-house_system-detail"></span>
               <span class="hint" id="opt-house_system-hint">整宮與等分宮每宮都是 30 度。四分宮制先用上升點與中天（黃道在上子午圈的那一點；子午圈是通過天頂與正南、正北的大圓）把一圈分成四段，每段再分成三宮，所以宮的大小不一。七種平等提供，本產品不排序其歷史適用性；一次計算一種。</span>
               <span class="hint" id="opt-house_system-article">七種各怎麼切天空，見〈<a href="/zh-TW/blog/house-systems-explained">宮位制有哪些</a>〉（附可以轉的天球示意圖）。各宮制的名詞解釋：<button type="button" class="term" data-term="whole_sign">整宮制</button>、<button type="button" class="term" data-term="placidus">Placidus</button>、<button type="button" class="term" data-term="regiomontanus">Regiomontanus</button>、<button type="button" class="term" data-term="alcabitius">Alcabitius</button>、<button type="button" class="term" data-term="porphyry">Porphyry</button>、<button type="button" class="term" data-term="equal_house">等分宮制</button>、<button type="button" class="term" data-term="campanus">Campanus</button>。</span>
@@ -333,6 +334,7 @@
         <p class="result-mode" id="result-mode">模式：<b id="result-mode-name">快速看盤</b></p>
         <button type="button" class="ghost small glossary-open" data-glossary-open aria-label="名詞解釋（結果頁）">名詞解釋</button>
       </div>
+      <p class="note result-reconcile" id="result-reconcile">跟別站對不上？<a href="/zh-TW/blog/chart-settings-reconcile" target="_blank" rel="noopener">依序對照這幾項（新分頁）</a>。</p>
 
       <!-- 一頁摘要的標頭與收據身分：畫面上不顯示，只在按「列印一頁摘要」時印出。收據身分由 calculate.js
            算完時填入（三個契約版本、計算模式、出生時刻把握程度），不含任何輸入；空的 dd 只為讓 dl 合法，
@@ -528,6 +530,7 @@
 
 
       <div class="clear-zone">
+        <p class="note result-support">渾儀不收費，由一個人在工作之外的時間維護。如果這張盤幫上了你，可以看看〈<a href="/zh-TW/support">支持渾儀</a>〉。</p>
         <div class="eyebrow">清除</div>
         <div class="row wrap-row">
           <button type="button" class="ghost small" id="clear-results">清除計算結果（保留表單）</button>
@@ -557,7 +560,7 @@
         <summary>為什麼兩個網站算出的上升星座不一樣？</summary>
         <p>多半是輸入不同：時區、夏令時間、出生地經緯度或出生時間填得不一樣。這些都一樣還是不同，再看黃道是回歸還是恆星。宮位制只決定宮頭，不改上升點本身。渾儀把用了哪一套都寫在結果的收據裡。各種原因讓上升點差多少，見〈<a href="/zh-TW/blog/chart-calculation-accuracy">線上排盤準不準？</a>〉。</p>
       </details>
-      <details>
+      <details id="faq-reconcile">
         <summary>跟其他排盤網站對不上時，怎麼逐項對照？</summary>
         <p>依序對照：①時區與夏令時間（對照收據上的世界時）；②出生地經緯度；③出生時間；④黃道（回歸或恆星）；⑤交點用平均還是真交點；⑥位置是視位置還是真位置。宮位制只影響宮頭，不影響上升點與行星位置。收據在哪裡、怎麼重算，見〈<a href="/zh-TW/blog/verify-chart-calculation">怎麼自己驗算</a>〉。</p>
       </details>

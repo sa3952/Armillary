@@ -276,20 +276,22 @@ function materializeTable(model, sectionId, sectionTitle) {
     const tr = document.createElement("tr");
     const rowKeys = model.points && Array.isArray(model.points.rows) ? model.points.rows[rowIndex] : null;
     row.forEach((cell, index) => {
+      const shown = String(cell == null ? "" : cell);
+      const gridCell = isGrid && index > 0;
       // 第一格說明這一列是什麼（天體、步驟、項目），做成列標頭；報讀器讀到後面的數值時才知道屬於哪一列。
       const node = document.createElement(index === 0 ? "th" : "td");
       if (index === 0) node.scope = "row";
       if (numeric[index]) node.className = "num";
-      else if (index > 0 && NUMERIC_TEXT_CELL.test(String(cell == null ? "" : cell).trim())) node.className = "num-text";
+      else if (index > 0 && NUMERIC_TEXT_CELL.test(shown.trim())) node.className = "num-text";
       if (clockColumns[index]) node.classList.add("num-time");
       // 格內連結（十二宮表的宮名連到方法頁宮義對照表的那一列）：文字照原字，包在連結裡。
       const href = index > 0 && model.links && model.links.column === index && Array.isArray(model.links.rows)
         ? model.links.rows[rowIndex] : null;
       const host = typeof href === "string" && href.startsWith("/zh-TW/") ? document.createElement("a") : node;
       if (host !== node) { host.href = href; node.appendChild(host); }
-      const marks = isGrid && index > 0 && Array.isArray(model.marks) && Array.isArray(model.marks[rowIndex])
+      const marks = gridCell && Array.isArray(model.marks) && Array.isArray(model.marks[rowIndex])
         ? model.marks[rowIndex][index - 1] : null;
-      const wholeSign = isGrid && index > 0 ? WHOLE_SIGN_CELL.exec(String(cell == null ? "" : cell)) : null;
+      const wholeSign = gridCell ? WHOLE_SIGN_CELL.exec(shown) : null;
       if (Array.isArray(marks) && marks.length) {
         const spoken = make("span", "visually-hidden", String(cell));
         host.append(spoken, ...marks.map(aspectMark));
@@ -298,14 +300,14 @@ function materializeTable(model, sectionId, sectionTitle) {
         // 整宮成相位、逐度不在容許度內：淡墨虛線的同一個記號；字只給報讀與複製。
         host.append(make("span", "visually-hidden", String(cell)), aspectMark({ aspect: WHOLE_SIGN_ASPECTS[wholeSign[1]] }));
         node.classList.add("asp-cell", "asp-whole");
-      } else if (isGrid && index > 0 && String(cell) === AVERSION_CELL) {
+      } else if (gridCell && String(cell) === AVERSION_CELL) {
         // 星座不合意：畫一個淡墨的「×」（CSS 畫，不進複製），與沒算的空格分開；字只給報讀與複製（說明在相位一區的備註）。
         const mark = make("span", "asp-aversion-mark", "");
         mark.setAttribute("aria-hidden", "true");
         host.append(make("span", "visually-hidden", String(cell)), mark);
         node.classList.add("asp-cell", "asp-aversion");
       } else {
-        fillCell(host, String(cell == null ? "" : cell), index === 0, index === 0 && Array.isArray(rowKeys) ? rowKeys : null);
+        fillCell(host, shown, index === 0, index === 0 && Array.isArray(rowKeys) ? rowKeys : null);
         markCanonical(node, cell);
       }
       tr.appendChild(node);

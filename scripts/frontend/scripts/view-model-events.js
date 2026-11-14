@@ -727,7 +727,7 @@ const SOLAR_PHASE_SOURCE_LINES = Object.freeze([
     "original_language_read", "（1659 年轉錄本，頁碼依 Houlding）"], ["al-Biruni, The Book of Instruction",
     "出處：al-Bīrūnī《占星術入門》（Kitāb al-Tafhīm，Wright 1934 英譯）§481–484：不到 16′ 稱 samīm（即 Cazimi）；"
     + "到 6° 稱 muḥtariq（焦傷，字面是「被燒」），水星、金星順行時到 7°；之後在光束下，行星「像被關住的囚犯」，"
-    + "在東方升出的界線是金星、水星 12°，土星、木星 15°，火星 16°，在西方隱入的界線是土星、木星 16°，火星 18°；"
+    + "在東方升出的界線是金星、水星 12°，土星、木星 15°，火星 18°，在西方隱入的界線是土星、木星 16°（土星、木星西側的 16 在 Wright 版印面疊打，也可能讀作 15；本站取 16），火星 18°；"
     + "月亮不到 7° 為焦傷，到 12° 為止在光束下。",
     "translation_read", "（英譯，線上打字稿，1934 年版的頁碼未核）"],
   [null, "出處：al-Bīrūnī 同書 §483：金星在會合時北黃緯超過 7°，不稱 samīm 也不稱焦傷，只稱「伴隨太陽」（muqārina）；"
@@ -739,9 +739,12 @@ const SOLAR_PHASE_SOURCE_LINES = Object.freeze([
     + "這樣的金星在天空中離太陽已有 7°–8°，若他們量的是天空中的實際距離，它本來就在 16′ 與 6° 之外，"
     + "根本不需要例外；正因為他們量的是黃道上的度數，金星與太陽「在同一度」，才需要另外說明它看得見、不算焦傷。"], ["Ptolemy, ",
     "出處：Ptolemy《占星四書》III.10（Robbins 1940 英譯 p.285）：在太陽光線下的行星，不採為破壞者，也不採為援助者。",
-    "translation_read", "（英譯，LacusCurtius 轉錄）"], ["Porphyry, Introduction ch.2 and ch.30",
-    "出處：希臘化時期一條 15° 的線，以及出生前後 7 天內升出或隱入光束：Porphyry 名下的《占星四書導論》（Eisagōgē）第 2、30 章、Antiochus、"
-    + "Rhetorius（Brennan 2017；Holden 2009 pp.24、134 經網頁轉引），原文未核。",
+    "translation_read", "（英譯，LacusCurtius 轉錄）"], ["Porphyry, Introduction ch.30",
+    "出處：出生前後 7 天內升出或隱入光束：Porphyry 名下的《占星四書導論》（Eisagōgē）第 30 章（CCAG V/4 pp.206–207）；"
+    + "原文說的是主星（kurios），套用到穿越光束下是本站的讀法。",
+    "original_language_read"], ["Antiochus; Rhetorius",
+    "出處：希臘化時期一條 15° 的線：Antiochus、Rhetorius（Brennan 2017；Holden 2009 pp.24、134 經網頁轉引），原文未核；"
+    + "Porphyry 第 2 章已讀希臘文，另列在方法頁的爭議做法。",
     "secondary_only"],
   [null, "出處：完整書目與每一條核到哪一層，見方法頁〈焦傷與光束下〉一節。"],
 ]);

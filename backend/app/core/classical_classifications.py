@@ -194,7 +194,7 @@ PLACES = (
 # Firmicus II.15–17：四個樞軸、與上升相連的四處（3、9、5、11），以及與上升沒有關聯的四處
 # 「遲滯、低落」（2、8、6、12）。
 _FIRMICUS_SLUGGISH = {2, 6, 8, 12}
-# Dorotheus I.5（Pingree 譯自阿拉伯文本）：最好的七處、中等三處、壞的兩處。
+# Dorotheus I.5（Pingree 譯自阿拉伯文本）：最好的七處、次於前七者而不被認為好的三處、壞的兩處。
 _DOROTHEUS = {
     **dict.fromkeys((1, 10, 11, 5, 7, 4, 9), "good"),
     **dict.fromkeys((3, 2, 8), "middling"),
@@ -379,6 +379,12 @@ SOURCES = {
             cited("al-Qabīṣī, Introduction I.78 (Burnett et al. 2004)", None,
                   TRANSLATION_READ,
                   "John of Seville's Latin translation and Burnett's English, read online"),
+            cited("Abū Maʿshar, Great Introduction VII.1.13, VII.6.2b",
+                  ("hayz with the same day-night, hemisphere and gender conditions, Mars "
+                   "excepted ('illā al-mirrīkh waḥdahu'); VII.6.2b reads ḥalb as a class of "
+                   "dignities instead"),
+                  ORIGINAL_LANGUAGE_READ,
+                  "the Arabic and Latin in the Würzburg Arabic and Latin Corpus transcription"),
             cited("Bonatti, Liber astronomiae III.8", None, BIBLIOGRAPHIC_ONLY,
                   "the chapter reference only"),
         ]),
@@ -386,7 +392,7 @@ SOURCES = {
         "William Lilly, Christian Astrology (1647) p.113, 'Hayz'",
         ("a masculine diurnal planet by day above the earth in a masculine sign; a feminine "
          "nocturnal planet by night in a feminine sign and under the earth; no halb"),
-        ORIGINAL_LANGUAGE_READ, "archive.org OCR text of a modern reset edition"),
+        ORIGINAL_LANGUAGE_READ, "the 1647 first edition as scanned at archive.org (b30338724, leaf n147 = p.113)"),
     "ptolemy_tetrabiblos_iii_3_10": cited(
         "Ptolemy, Tetrabiblos III.3 and III.10 with Robbins's translator's notes (LacusCurtius online numbering, notes 56-57)",
         ("angles, succedent places and places declining from the angles; the names of the twelve "
@@ -401,7 +407,7 @@ SOURCES = {
         ORIGINAL_LANGUAGE_READ, "Latin text, LacusCurtius"),
     "dorotheus_carmen_i_5": cited(
         "Dorotheus, Carmen Astrologicum I.5 (Pingree 1976 p.164)",
-        "the best places 1, 10, 11, 5, 7, 4, 9; middling 3, 2, 8; bad 6 and 12",
+        "the best places 1, 10, 11, 5, 7, 4, 9; 3, 2, 8 next to them and not considered good; bad 6 and 12",
         TRANSLATION_READ,
         f"{DOROTHEUS_BOOK_I_ONLINE}: I.5 on p.164; the Arabic not checked"),
     "valens_anthologies_iv_12": cited(

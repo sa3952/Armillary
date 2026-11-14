@@ -1,0 +1,51 @@
+<div class="wrap page-body article">
+  <div class="ar-head">
+    <p class="eyebrow"><a href="/zh-TW/blog">文章</a></p>
+    <h1>星盤和其他網站不一樣？依序檢查 7 個設定</h1>
+    <p class="ar-dek">不同不等於有一邊算錯。先確認輸入相同，再照這張表一項一項對。</p>
+    {{article_byline:講方法}}
+  </div>
+
+  <div class="ar-body">
+    <p class="ar-lead">開始之前，先確認兩邊填的出生時間與出生地經緯度相同。上升星座不同時，多半是輸入不同<a class="ar-cite" href="#ref-1">[1]</a>。</p>
+
+    <section class="ar-points" aria-labelledby="points">
+      <h2 id="points">重點</h2>
+      <ul>
+        <li>先比時間：對照收據上的世界時<a class="ar-cite" href="#ref-1">[1]</a>。</li>
+        <li>宮位制只決定宮頭，不改上升點與行星位置<a class="ar-cite" href="#ref-1">[1]</a>。</li>
+        <li>下表只列選項與本站預設，不替任何一種排序。</li>
+      </ul>
+    </section>
+
+    <h2 id="table"><span class="ar-sec">§01</span>七個設定</h2>
+    <div class="ar-scroll" tabindex="0" role="region" aria-labelledby="reconcile-cap">
+      <table class="ar-table">
+        <caption id="reconcile-cap">依序對照（本站的值都印在結果的收據裡）</caption>
+        <thead><tr><th scope="col">順序與設定</th><th scope="col">要對照什麼</th><th scope="col">本站的做法</th><th scope="col">再讀</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">1 時區與夏令時間</th><td>兩邊換出來的世界時是否相同</td><td>填出生紀錄的鐘面時間，依 IANA 時區資料庫換成世界時</td><td><a href="/zh-TW/methods/birth-time-conversion">出生時間換算</a></td></tr>
+          <tr><th scope="row">2 真太陽時</th><td>對方是否要求先換成真太陽時再輸入</td><td>不換；先換再輸入，經度會算兩次<a class="ar-cite" href="#ref-2">[2]</a></td><td><a href="/zh-TW/blog/true-solar-time">要不要換真太陽時</a></td></tr>
+          <tr><th scope="row">3 黃道</th><td>回歸或恆星；恆星黃道還要對歲差校正</td><td>預設回歸；恆星黃道有四種歲差校正，目前沒有 Lahiri<a class="ar-cite" href="#ref-3">[3]</a></td><td><a href="/zh-TW/blog/tropical-vs-sidereal-zodiac">回歸與恆星黃道</a></td></tr>
+          <tr><th scope="row">4 宮位制</th><td>行星落宮不同時，先對這項</td><td>預設整宮制，共七種可選；計算口徑裡有四顆套用鈕<a class="ar-cite" href="#ref-3">[3]</a></td><td><a href="/zh-TW/blog/house-systems-explained">宮位制有哪些</a></td></tr>
+          <tr><th scope="row">5 交點</th><td>平均交點或「真交點」（密切交點 osculating node）；兩者最多差將近 2 度<a class="ar-cite" href="#ref-4">[4]</a></td><td>正式技法採平均交點，密切交點並列輸出<a class="ar-cite" href="#ref-4">[4]</a></td><td><a href="/zh-TW/blog/mean-vs-osculating-node">真交點與平均交點</a></td></tr>
+          <tr><th scope="row">6 地心或站心</th><td>月亮差將近 1 度時，先對這項<a class="ar-cite" href="#ref-5">[5]</a></td><td>預設地心視位置；可選僅月亮採站心<a class="ar-cite" href="#ref-3">[3]</a></td><td><a href="/zh-TW/blog/geocentric-vs-topocentric-moon">地心與站心月亮</a></td></tr>
+          <tr><th scope="row">7 界表</th><td>界主不同時，對方用哪一套表</td><td>四套具名表平等並列；「古典完整」模式預選全部並列，自訂模式與 API 沒有預設，不選就不計算<a class="ar-cite" href="#ref-6">[6]</a></td><td><a href="/zh-TW/methods">方法頁</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section class="ar-refs" aria-labelledby="refs">
+    <h2 id="refs">出處</h2>
+    {{source_legend}}
+    <ol>
+      <li id="ref-1"><span>渾儀<a href="/zh-TW/calculate">計算頁</a>常見問題：兩個網站上升星座不同、逐項對照。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-2"><span>〈<a href="/zh-TW/blog/true-solar-time">西洋占星要不要換真太陽時？</a>〉。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-3"><span>渾儀<a href="/zh-TW/calculate">計算頁</a>「計算口徑」與進階選項。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-4"><span>〈<a href="/zh-TW/blog/mean-vs-osculating-node">真交點與平均交點差多少</a>〉。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-5"><span>〈<a href="/zh-TW/blog/geocentric-vs-topocentric-moon">地心月亮和站心月亮差多少？</a>〉。<span class="rs rs-register">本站出處清單</span></span></li>
+      <li id="ref-6"><span>渾儀<a href="/zh-TW/methods">方法頁</a>界的一節。<span class="rs rs-register">本站出處清單</span></span></li>
+    </ol>
+  </section>
+</div>

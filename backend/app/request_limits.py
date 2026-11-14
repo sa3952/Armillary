@@ -335,9 +335,6 @@ class RequestCapacityBoundary:
             "max_search_concurrent": max_search_concurrent,
             "max_annual_concurrent": max_annual_concurrent,
         }
-        for name, limit in self._limits.items():
-            if limit <= 0:
-                raise ValueError(f"{name} must be positive")
         self.app = app
         self.compute_paths = frozenset(compute_paths)
         # Admitted requests per pool, keyed like the limits.

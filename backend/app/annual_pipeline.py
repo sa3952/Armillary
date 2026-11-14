@@ -129,11 +129,11 @@ SOLAR_RETURN_CHART_FIXED_OPTIONS: dict[str, Any] = {
 SOLAR_RETURN_METHOD_PROVENANCE = "波斯／阿拉伯回歸傳統"
 SOLAR_RETURN_RELOCATION_NOTE = (
     "回歸盤改用你填的地點起盤，這是 Morin 的做法（Astrologia Gallica 第 XXIII 卷，1661）；"
-    "較早的回歸傳統用出生地點。"
+    "Morin 說古人對地點沒有定論（p.600）；我們讀過的更早出處（1559 年拉丁文本）沒有回歸盤立盤地點的規定。"
 )
 SOLAR_RETURN_WHOLE_SIGN_NOTE = (
-    "目前讀過的古典作者（Abū Maʿshar 經 Dykes 英譯、Morin、Gadbury）替回歸盤分宮時，"
-    "都用依天球四象限切分的宮位（例如 Regiomontanus），沒有一本用整宮制；"
+    "Morin、Gadbury 替回歸盤分宮時都用依天球四象限切分的宮位；Abū Maʿshar（PN IV I.6.2，1559 年拉丁文本 p.213）"
+    "只說依時分與正球上升計宮，Dykes 的注稱為象限制，沒有指名宮制。這些書都沒有用整宮制；"
     "整宮是本站的預設，不是這些書的做法。"
 )
 SOLAR_RETURN_SIDEREAL_NOTE = (
@@ -383,13 +383,14 @@ def _warnings(
         ):
             if requested:
                 warnings.append({"code": ANNUAL_WARNING_CODES[0], "path": path})
-    if annual.include_firdaria and (anchor.sect or {}).get("in_near_horizon_band"):
+    near_horizon = (anchor.sect or {}).get("in_near_horizon_band")
+    if annual.include_firdaria and near_horizon:
         warnings.append({"code": ANNUAL_WARNING_CODES[1], "path": "annual_methods.firdaria"})
     # Only the sect-light start reads the Sect; the other two profiles do not.
     if (
         annual.include_decennials
         and annual.decennials_start_profile == dec.START_PROFILES[0]
-        and (anchor.sect or {}).get("in_near_horizon_band")
+        and near_horizon
     ):
         warnings.append({"code": ANNUAL_WARNING_CODES[5], "path": "annual_methods.decennials"})
     if natal_lots is not None and natal_lots["lots"]:
@@ -398,14 +399,14 @@ def _warnings(
             warnings.append({"code": ANNUAL_WARNING_CODES[2], "path": "natal_lots", "lot_method_ids": near})
     # Fortune and Spirit exchange formulas with the sect; the warning is given
     # only when that would move a starting sign, in any sample listed.
-    if releasing is not None and releasing["status"] == "computed" and any(
-        row["start_sign_differs_under_other_sect"] is True
-        for rows in [releasing["releases"] or [],
-                     *(candidate["releases"] for candidate in releasing["candidates"] or [])]
-        for row in rows
-    ):
-        warnings.append({"code": ANNUAL_WARNING_CODES[6], "path": "annual_methods.zodiacal_releasing"})
     if releasing is not None and releasing["status"] == "computed":
+        if any(
+            row["start_sign_differs_under_other_sect"] is True
+            for rows in [releasing["releases"] or [],
+                         *(candidate["releases"] for candidate in releasing["candidates"] or [])]
+            for row in rows
+        ):
+            warnings.append({"code": ANNUAL_WARNING_CODES[6], "path": "annual_methods.zodiacal_releasing"})
         near_lots = [lot for lot in RELEASING_FROM if _near_sign_boundary(anchor.lots[lot])]
         if near_lots:
             warnings.append({"code": ANNUAL_WARNING_CODES[4],
@@ -709,7 +710,7 @@ def compute_annual_response(
     response: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "output_contract": {
-            "status": "provisional",
+            "status": "public_beta_frozen",
             "route_status": ANNUAL_ROUTE_STATUS,
             "flag": ANNUAL_ROUTE_ENVIRONMENT_VARIABLE,
             "compatibility": "additive_during_0.x_unless_a_documented_correctness_fix_requires_change",

@@ -801,7 +801,7 @@
         "Bonatti《天文學之書》（De astronomia，1550 年巴塞爾版）本命論第 3 章：各期年數、日盤順序、75 年後重來；夜盤「一切照日盤」。",
         "original_language_read", "（拉丁原文，第 813–814 欄）"], ["Abu Ma'shar, On the Revolutions of the Years of Nativities",
         "Abū Maʿshar《論本命年的回歸》（Kitāb taḥāwīl sinī al-mawālīd；有 Dykes 英譯，收在 Persian Nativities IV）：現存最完整的操作說明。",
-        "secondary_only", "（本書與英譯都未核）"],
+        "translation_read", "（Dykes 英譯，PN IV 書頁影像；阿拉伯文未核）"],
     ]), zodiacal_releasing: Object.freeze([
       [["Vettius Valens, Anthologies IV.4", "Valens IV.7", "Valens IV.8"],
         "Vettius Valens《占星選集》（Anthologiae）IV.4（起點、星座年數、小期、解鎖到對宮）、IV.7（從命運點數位置）、IV.8（例盤）。",
@@ -816,7 +816,7 @@
         "Firmicus Maternus《Mathesis》II.26–27：日盤從太陽、夜盤從月亮起，每段再依小年分成月。",
         "original_language_read", "（拉丁文本）"]]), monthly_profection: Object.freeze([["Vettius Valens, Anthologies IV.28",
         "古希臘占星家 Valens 的《占星選集》（Anthologiae，第四卷第 28 章）：看此刻的太陽離出生時的太陽多遠，從年度小限的星座數同樣的距離，就是這個月；夜盤改用月亮，本站沒有採用。",
-        "translation_read", "（Riley 英譯；希臘文未核）"], ["Abu Ma'shar, On the Revolutions of the Years of Nativities",
+        "translation_read", "（Riley 英譯；希臘文未核）"], ["Abu Ma'shar, On the Revolutions of the Years of Nativities, tr.",
         "中世紀占星家 Abū Maʿshar 的《論本命年的回歸》（Kitāb taḥāwīl sinī al-mawālīd）：年度小限的星座也是第 1 個月，太陽每多走 30 度換下一個月。",
         "secondary_only", "（只讀到英譯者 Dykes 的介紹，原書未核）"], ["al-Biruni, Book of Instruction",
         "al-Bīrūnī 的《占星術入門》（Kitāb al-Tafhīm，第 522 節）：每個月從太陽走到出生時同一度數算起；同一節另有一年 13 個月的分法，本站沒有算。",
@@ -867,198 +867,221 @@
     return out;
   }
 
+  function describeAnnualProfection(model, item, detail, sampleNote) {
+    const data = model.data;
+    const facts = item.record.detail;
+    const n = facts.completed_years;
+    const year = model.years.find((candidate) => candidate.n === n);
+    const range = year || item;
+    detail.kind = `年度小限${sampleNote}`;
+    detail.title = [`第 ${n + 1} 年：`, ...named(item.glyph, item.label)];
+    if (item.aside) detail.title.push("（年主星 ", ...named(item.aside.glyph, item.aside.label), "）");
+    detail.rows.push(["起訖", [dateRange(range, true)]]);
+    detail.rows.push(["長度", ["一年：從太陽回到出生時位置的那一刻，到下一次回到同一位置"]]);
+    detail.rows.push(["落在", [`從上升星座數第 ${facts.profected_place} 個星座（第 ${facts.profected_place} 宮；這裡一個星座算一宮，叫「整宮」）`]]);
+    if (item.aside) detail.rows.push(["年主星", [...named(item.aside.glyph, item.aside.label), `（古書指定管${item.label}的行星）`]]);
+    const asc = data.natal.ascendantSign;
+    detail.explanation = [
+      "你出生那一刻，從東方地平線升起的星座是", { strong: asc ? signName(asc) : "（未知）" },
+      `（上升星座）。年度小限從它開始：出生後第一年就是上升星座本身，之後每滿一歲往後換一個星座，12 年繞一圈。這一年你已滿 ${n} 歲，數到第 ${facts.profected_place} 個星座`,
+      { strong: item.label }, "；古書指定管這個星座的行星，就是這一年的年主星。", year && year.start.localTime
+        ? "這一年從太陽回到出生時位置的那一刻開始，到下一次回到同一位置為止；這裡列到分鐘。"
+        : "這一年從太陽回到出生時位置的那一天開始，到下一次回到同一位置的那一天為止。",
+    ];
+    detail.sources = SOURCES.annual_profection.slice();
+    const head = data.profection.head || {};
+    detail.receipt = {
+      ...segmentReceipt(item.record), solar_return_profile: data.yearBoundary ? data.yearBoundary.profile : null,
+      ...headReceipt(head, ["profile", "method_status", "method_provenance"]), interpretation: null,
+    };
+    glossFirstEdition(detail.sources);
+  }
+
+  function describeMonthlyProfection(model, item, detail, sampleNote) {
+    const data = model.data;
+    const facts = item.record.detail;
+    const n = facts.completed_years;
+    const month = facts.month_of_year;
+    const head = data.monthly.head || {};
+    const parent = item.parentId ? model.byId.get(item.parentId) : null;
+    const yearSign = parent ? parent.label : "";
+    const solar = head.profile !== "monthly_profection_return_year_twelfths_v1";
+    detail.kind = `月小限${sampleNote}`;
+    detail.title = [`第 ${n + 1} 年第 ${month} 個月：`, ...named(item.glyph, item.label)];
+    if (item.aside) detail.title.push("（月主星 ", ...named(item.aside.glyph, item.aside.label), "）");
+    detail.rows.push(["起訖", [dateRange(item, false)]]);
+    detail.rows.push(["長度", [solar
+      ? "太陽在黃道上走 30 度的時間（約 29 到 32 天，太陽走得快慢不同）"
+      : "一年的十二分之一：從這次太陽回到出生時位置，到下一次回到同一位置，平均分成 12 段"]]);
+    detail.rows.push(["落在", [`這一年的第 ${month} 個月：從年度小限星座數第 ${month} 個星座（從上升星座數是第 ${facts.profected_place} 個）`]]);
+    if (item.aside) detail.rows.push(["月主星", [...named(item.aside.glyph, item.aside.label), `（古書指定管${item.label}的行星，也就是它的守護行星）`]]);
+    detail.explanation = [
+      "月小限把年度小限再細分到「月」。這一年的年度小限星座是", { strong: yearSign || "（見年度小限）" },
+      "，它也是這一年的第 1 個月；之後每個月往後換一個星座，12 個月繞一圈，下一次太陽回歸時再從新一年的年度小限星座數起。", solar
+        ? "每個月從太陽比出生時的位置再往前走 30 度的那一刻開始：第 1 個月從太陽回到出生時位置的那一刻開始，太陽多走 30 度就進入第 2 個月，以此類推。所以這裡的「月」是太陽走 30 度的時間，和日曆上的月份無關。"
+        : "這次選的是另一種分法：把這一年（從這次太陽回歸到下一次）平均分成 12 段，每段一個月，和日曆上的月份無關。",
+      `這是第 ${month} 個月，數到`, { strong: item.label }, "；古書指定管這個星座的行星（守護行星），就是這個月的月主星。",
+    ];
+    detail.sources = SOURCES.monthly_profection.slice();
+    glossFirstEdition(detail.sources);
+    detail.receipt = {
+      ...segmentReceipt(item.record), solar_return_profile: data.yearBoundary ? data.yearBoundary.profile : null,
+      ...headReceipt(head, ["profile", "method_status", "method_provenance"]),
+      boundary_rule: (head.month_model || {}).boundary_rule || null, interpretation: null,
+    };
+  }
+
+  function describeFirdaria(model, item, detail, sampleNote) {
+    const data = model.data;
+    const levelOne = item.level === 1;
+    const node = item.kind === "node";
+    const parentItem = levelOne || node ? item : model.byId.get(item.parentId);
+    const parent = parentItem ? parentItem.record : null;
+    const head = data.firdaria.head || {};
+    const parentName = parent ? bodyName(parent.labelKey) : "";
+    detail.kind = `${levelOne ? "法達・主期" : "法達・子期"}${sampleNote}`;
+    if (node) detail.title = [`${parentName}期：不分子期`];
+    else if (levelOne) detail.title = [...named(item.glyph, item.label), "主期"];
+    else detail.title = [...named(item.glyph, item.label), `子期（屬${parentName}主期）`];
+    detail.rows.push(["起訖", [dateRange(item, false)]]);
+    if (levelOne || node) {
+      detail.rows.push(["足歲", [{ mono: `${formatYears(parent.detail.start_year, 0)} → ${formatYears(parent.detail.end_year, 0)}` }]]);
+      detail.rows.push(["主期主星", named(parent.labelKey, parentName)]);
+    } else {
+      detail.rows.push(["主期主星", parent ? named(parent.labelKey, parentName) : ["—"]]);
+      detail.rows.push(["子期主星", named(item.glyph, item.label)]);
+    }
+    const day = data.natal.isDay;
+    const sectText = day === false ? "你出生時太陽在地平線下（古書叫「夜盤」），所以法達從月亮開始"
+      : "你出生時太陽在地平線上（古書叫「日盤」），所以法達從太陽開始";
+    if (levelOne) {
+      detail.explanation = [
+        `${sectText}，依序輪下去；每一段的年數是古書定好的：${firdariaSequence(data)} 年，加起來 75 年。75 年後照同一個順序再輪一次（中世紀占星家 Bonatti 的寫法）。`,
+        `${item.label}這一段從滿 ${formatYears(parent.detail.start_year, 0)} 歲到滿 ${formatYears(parent.detail.end_year, 0)} 歲。換成日期時，「滿幾歲」那一天，就是那一年太陽回到出生時位置的那一刻。`,
+      ];
+    } else if (node) { detail.explanation = ["月交點的期間不再細分（交點期不分子期）。"]; } else {
+      detail.explanation = [
+        `主期${parentName}${parent ? `（${formatYears(parent.detail.start_year, 0)} 到 ${formatYears(parent.detail.end_year, 0)} 足歲）` : ""}平均切成 7 段。第一段給主期行星自己，其餘依迦勒底序（土、木、火、日、金、水、月）往下輪。`,
+        "不是整數的年份，在所屬的那一個太陽回歸年內按比例換成日期（本站的計算慣例）。",
+      ];
+    }
+    detail.sources = SOURCES.firdaria.slice();
+    if (day === false) detail.sources.push(FIRDARIA_NIGHT_SOURCE[head.nocturnal_node_profile] || FIRDARIA_NIGHT_SOURCE[FIRDARIA_NODE_PROFILES[0]]);
+    glossFirstEdition(detail.sources);
+    detail.receipt = {
+      ...segmentReceipt(item.record),
+      ...headReceipt(head, ["profile", "nocturnal_node_profile", "nocturnal_node_profile_input", "nocturnal_node_profile_applies", "method_status", "method_provenance"]),
+      interpretation: null,
+    };
+  }
+
+  function describeZodiacalReleasing(model, item, detail, sampleNote) {
+    const data = model.data;
+    const segment = item.record;
+    const facts = segment.detail;
+    const lot = item.lot;
+    const head = data.releasing.head || {};
+    const levelOne = item.level === 1;
+    const yearModel = head.year_model || {};
+    const daysPerYear = yearModel.days_per_year;
+    const daysPerMonth = yearModel.days_per_level_2_unit;
+    detail.kind = `黃道釋放・${LOT_NAMES[lot]}・${levelOne ? "第一層（大期）" : "第二層（小期）"}${sampleNote}`;
+    detail.title = [...named(item.glyph, item.label)];
+    if (segment.lordKey) detail.title.push("（主星 ", ...named(segment.lordKey, bodyName(segment.lordKey)), "）");
+    detail.rows.push(["起訖", [dateRange(item, false)]]);
+    const unit = levelOne ? "年" : " 個月";
+    const unitNote = levelOne ? `（每年 ${daysPerYear} 日，不是日曆年）` : `（每月 ${daysPerMonth} 日）`;
+    detail.rows.push(["長度", [`${facts.nominal_units}${unit}${unitNote}`
+      + (item.truncated ? `；${levelOne ? "上一層" : "所屬的大期"}先結束，這一段實際只走了 ${facts.effective_units}${unit}` : "")]]);
+    if (segment.lordKey) detail.rows.push(["主星", [...named(segment.lordKey, bodyName(segment.lordKey)), `（古書指定管${item.label}的行星）`]]);
+    const position = [`從命運點所在星座數第 ${facts.position_from_fortune} 個・${ANGULARITY[facts.angularity_from_fortune] || facts.angularity_from_fortune}`];
+    if (lot === "spirit") position.push(`；從精神點數第 ${facts.position_from_start_lot} 個`);
+    position.push({ small: "Valens《占星選集》（Anthologiae）IV.7 說，從命運點數第 1、4、7、10 個星座的位置最有力。本站照列位置，不另標現代的「高峰期」分級。" });
+    detail.rows.push(["位置", position]);
+    const parent = levelOne ? null : model.byId.get(item.parentId);
+    const parentSign = parent ? parent.label : "";
+    if (levelOne) {
+      const startSign = data.releasing.startSigns[lot];
+      detail.explanation = [
+        `從${LOT_NAMES[lot]}所在的`, { strong: startSign ? signName(startSign) : "星座" },
+        `起，依黃道順序每個星座分到固定年數。這裡的「年」是 ${daysPerYear} 日`,
+        yearModel.profile === "zr_year_360_days_v1" ? "（Valens 的分配年）" : "",
+        `，不是日曆年：${item.label}分到 ${facts.nominal_units} 年。`,
+      ];
+    } else if (item.kind === "loosing") {
+      detail.explanation = [
+        "在大期", { strong: parentSign }, `裡，小期從${parentSign}起依序輪過十二個星座。輪完一圈時大期還沒結束，下一段不回到起點，而是跳到${parentSign}的對宮`,
+        { strong: item.label }, "繼續，古典稱為", { strong: "解鎖" }, "（輪完一圈跳到對宮；loosing of the bond，Valens IV.4）。",
+      ];
+    } else {
+      detail.explanation = [
+        "大期", { strong: parentSign },
+        `裡面再切成小段（小期）：從${parentSign}開始，照十二星座的固定順序（牡羊、金牛、雙子……到雙魚）一個接一個輪。每個星座分到的月數，和它當大期時分到的年數相同，每月 ${daysPerMonth} 日；${item.label}分到 ${facts.nominal_units} 個月。`,
+        item.truncated ? "大期在這一段還沒走完時就結束了，所以這一段比原本的月數短。" : "",
+      ];
+    }
+    detail.sources = SOURCES.zodiacal_releasing.slice();
+    glossFirstEdition(detail.sources);
+    detail.receipt = {
+      releasing_from: lot, ...segmentReceipt(segment),
+      ...headReceipt(head, ["profile", "period_table_profile", "method_status", "method_provenance"]),
+      year_model: yearModel.profile || null, year_model_input: yearModel.input || null, interpretation: null,
+    };
+  }
+
+  function describeDecennials(model, item, detail, sampleNote) {
+    const data = model.data;
+    const facts = item.record.detail;
+    const head = data.decennials.head || {};
+    const levelOne = item.level === 1;
+    const parent = levelOne ? null : model.byId.get(item.parentId);
+    detail.kind = `${levelOne ? "十年期・第一層" : "十年期・第二層"}${sampleNote}`;
+    detail.title = levelOne ? [...named(item.glyph, item.label), "輪值"]
+      : [...named(item.glyph, item.label), `（屬${parent ? parent.label : ""}的十年期）`];
+    detail.rows.push(["起訖", [dateRange(item, false)]]);
+    const yearModel = head.year_model;
+    detail.rows.push(["長度", [`${facts.months} 個分配月（每月 ${yearModel.days_per_month} 日）`]]);
+    detail.rows.push(["輪值行星", named(item.glyph, item.label)]);
+    if (levelOne) {
+      detail.rows.push(["順序", [`第 ${facts.cycle_index + 1} 輪的第 ${facts.position_in_order} 位`]]);
+    } else if (parent) { detail.rows.push(["第一層", named(parent.glyph, parent.label)]); }
+    const start = DECENNIALS_START_TEXT[(head.start_profile || {}).profile] || "";
+    detail.explanation = levelOne ? [
+      `十年期把出生之後的時間切成每段 ${yearModel.months_per_level_1} 個月（一個月 ${yearModel.days_per_month} 日、一年 ${yearModel.days_per_year} 日的「分配年」），每段由一顆行星輪值。${start}`,
+      "之後依出生時七顆行星在黃道上的實際順序往下排，七段輪完再從頭開始。"] : [
+      `每一段第一層再分成七小段，由這一段的輪值行星${parent ? `（${parent.label}）` : ""}自己先開始，其餘依同一個黃道順序；每顆行星分到的月數等於它的「小年」（古書給每顆行星的固定年數），七個加起來正好 ${yearModel.months_per_level_1} 個月。`,
+    ];
+    detail.sources = SOURCES.decennials.slice();
+    glossFirstEdition(detail.sources);
+    detail.methodHref = "/zh-TW/methods/decennials";
+    detail.receipt = {
+      ...segmentReceipt(item.record), ...headReceipt(head, ["profile", "order_rule", "method_status", "method_provenance"]),
+      start_profile: (head.start_profile || {}).profile || null, start_planet: head.start_planet || null, interpretation: null,
+    };
+  }
+
+  function describeOtherLane(item, detail) {
+    // 還沒有專屬說明的泳道：起訖與回應原值照列。
+    detail.kind = laneMeta(item.record.laneId).title;
+    detail.title = [...named(item.glyph, item.label)];
+    detail.rows.push(["起訖", [dateRange(item, false)]]);
+    detail.receipt = { ...segmentReceipt(item.record), interpretation: null };
+  }
+
+  const DESCRIBERS = new Map([
+    ["annual_profection", describeAnnualProfection], [MONTHLY_LANE, describeMonthlyProfection], ["firdaria", describeFirdaria],
+    ["zodiacal_releasing", describeZodiacalReleasing], ["decennials", describeDecennials],
+  ]);
+
   /** 一段期間的細節：類別、標題、欄位、白話算法、出處與收據（回應原值）。角宮位置只出現在這裡，不畫在時間軸上。 */
   function describeItem(model, id) {
     const item = model.byId.get(id);
     if (!item) return null;
-    const data = model.data;
     const detail = { id, technique: item.technique, kind: "", title: [], rows: [], explanation: [], sources: [], receipt: {} };
     const sampleNote = item.sampleRole ? `（出生時刻取${SAMPLE_ROLES[item.sampleRole]}）` : "";
-    if (item.technique === "annual_profection") {
-      const facts = item.record.detail;
-      const n = facts.completed_years;
-      const year = model.years.find((candidate) => candidate.n === n);
-      const range = year || item;
-      detail.kind = `年度小限${sampleNote}`;
-      detail.title = [`第 ${n + 1} 年：`, ...named(item.glyph, item.label)];
-      if (item.aside) detail.title.push("（年主星 ", ...named(item.aside.glyph, item.aside.label), "）");
-      detail.rows.push(["起訖", [dateRange(range, true)]]);
-      detail.rows.push(["長度", ["一年：從太陽回到出生時位置的那一刻，到下一次回到同一位置"]]);
-      detail.rows.push(["落在", [`從上升星座數第 ${facts.profected_place} 個星座（第 ${facts.profected_place} 宮；這裡一個星座算一宮，叫「整宮」）`]]);
-      if (item.aside) detail.rows.push(["年主星", [...named(item.aside.glyph, item.aside.label), `（古書指定管${item.label}的行星）`]]);
-      const asc = data.natal.ascendantSign;
-      detail.explanation = [
-        "你出生那一刻，從東方地平線升起的星座是", { strong: asc ? signName(asc) : "（未知）" },
-        `（上升星座）。年度小限從它開始：出生後第一年就是上升星座本身，之後每滿一歲往後換一個星座，12 年繞一圈。這一年你已滿 ${n} 歲，數到第 ${facts.profected_place} 個星座`,
-        { strong: item.label }, "；古書指定管這個星座的行星，就是這一年的年主星。", year && year.start.localTime
-          ? "這一年從太陽回到出生時位置的那一刻開始，到下一次回到同一位置為止；這裡列到分鐘。"
-          : "這一年從太陽回到出生時位置的那一天開始，到下一次回到同一位置的那一天為止。",
-      ];
-      detail.sources = SOURCES.annual_profection.slice();
-      const head = data.profection.head || {};
-      detail.receipt = {
-        ...segmentReceipt(item.record), solar_return_profile: data.yearBoundary ? data.yearBoundary.profile : null,
-        ...headReceipt(head, ["profile", "method_status", "method_provenance"]), interpretation: null,
-      };
-      glossFirstEdition(detail.sources);
-    } else if (item.technique === MONTHLY_LANE) {
-      const facts = item.record.detail;
-      const n = facts.completed_years;
-      const month = facts.month_of_year;
-      const head = data.monthly.head || {};
-      const parent = item.parentId ? model.byId.get(item.parentId) : null;
-      const yearSign = parent ? parent.label : "";
-      const solar = head.profile !== "monthly_profection_return_year_twelfths_v1";
-      detail.kind = `月小限${sampleNote}`;
-      detail.title = [`第 ${n + 1} 年第 ${month} 個月：`, ...named(item.glyph, item.label)];
-      if (item.aside) detail.title.push("（月主星 ", ...named(item.aside.glyph, item.aside.label), "）");
-      detail.rows.push(["起訖", [dateRange(item, false)]]);
-      detail.rows.push(["長度", [solar
-        ? "太陽在黃道上走 30 度的時間（約 29 到 32 天，太陽走得快慢不同）"
-        : "一年的十二分之一：從這次太陽回到出生時位置，到下一次回到同一位置，平均分成 12 段"]]);
-      detail.rows.push(["落在", [`這一年的第 ${month} 個月：從年度小限星座數第 ${month} 個星座（從上升星座數是第 ${facts.profected_place} 個）`]]);
-      if (item.aside) detail.rows.push(["月主星", [...named(item.aside.glyph, item.aside.label), `（古書指定管${item.label}的行星，也就是它的守護行星）`]]);
-      detail.explanation = [
-        "月小限把年度小限再細分到「月」。這一年的年度小限星座是", { strong: yearSign || "（見年度小限）" },
-        "，它也是這一年的第 1 個月；之後每個月往後換一個星座，12 個月繞一圈，下一次太陽回歸時再從新一年的年度小限星座數起。", solar
-          ? "每個月從太陽比出生時的位置再往前走 30 度的那一刻開始：第 1 個月從太陽回到出生時位置的那一刻開始，太陽多走 30 度就進入第 2 個月，以此類推。所以這裡的「月」是太陽走 30 度的時間，和日曆上的月份無關。"
-          : "這次選的是另一種分法：把這一年（從這次太陽回歸到下一次）平均分成 12 段，每段一個月，和日曆上的月份無關。",
-        `這是第 ${month} 個月，數到`, { strong: item.label }, "；古書指定管這個星座的行星（守護行星），就是這個月的月主星。",
-      ];
-      detail.sources = SOURCES.monthly_profection.slice();
-      glossFirstEdition(detail.sources);
-      detail.receipt = {
-        ...segmentReceipt(item.record), solar_return_profile: data.yearBoundary ? data.yearBoundary.profile : null,
-        ...headReceipt(head, ["profile", "method_status", "method_provenance"]),
-        boundary_rule: (head.month_model || {}).boundary_rule || null, interpretation: null,
-      };
-    } else if (item.technique === "firdaria") {
-      const levelOne = item.level === 1;
-      const node = item.kind === "node";
-      const parentItem = levelOne || node ? null : model.byId.get(item.parentId);
-      const parent = node ? item.record : levelOne ? item.record : (parentItem ? parentItem.record : null);
-      const head = data.firdaria.head || {};
-      const parentName = parent ? bodyName(parent.labelKey) : "";
-      detail.kind = `${levelOne ? "法達・主期" : "法達・子期"}${sampleNote}`;
-      if (node) detail.title = [`${parentName}期：不分子期`];
-      else if (levelOne) detail.title = [...named(item.glyph, item.label), "主期"];
-      else detail.title = [...named(item.glyph, item.label), `子期（屬${parentName}主期）`];
-      detail.rows.push(["起訖", [dateRange(item, false)]]);
-      if (levelOne || node) {
-        detail.rows.push(["足歲", [{ mono: `${formatYears(parent.detail.start_year, 0)} → ${formatYears(parent.detail.end_year, 0)}` }]]);
-        detail.rows.push(["主期主星", named(parent.labelKey, parentName)]);
-      } else {
-        detail.rows.push(["主期主星", parent ? named(parent.labelKey, parentName) : ["—"]]);
-        detail.rows.push(["子期主星", named(item.glyph, item.label)]);
-      }
-      const day = data.natal.isDay;
-      const sectText = day === false ? "你出生時太陽在地平線下（古書叫「夜盤」），所以法達從月亮開始"
-        : "你出生時太陽在地平線上（古書叫「日盤」），所以法達從太陽開始";
-      if (levelOne) {
-        detail.explanation = [
-          `${sectText}，依序輪下去；每一段的年數是古書定好的：${firdariaSequence(data)} 年，加起來 75 年。75 年後照同一個順序再輪一次（中世紀占星家 Bonatti 的寫法）。`,
-          `${item.label}這一段從滿 ${formatYears(parent.detail.start_year, 0)} 歲到滿 ${formatYears(parent.detail.end_year, 0)} 歲。換成日期時，「滿幾歲」那一天，就是那一年太陽回到出生時位置的那一刻。`,
-        ];
-      } else if (node) { detail.explanation = ["月交點的期間不再細分（交點期不分子期）。"]; } else {
-        detail.explanation = [
-          `主期${parentName}${parent ? `（${formatYears(parent.detail.start_year, 0)} 到 ${formatYears(parent.detail.end_year, 0)} 足歲）` : ""}平均切成 7 段。第一段給主期行星自己，其餘依迦勒底序（土、木、火、日、金、水、月）往下輪。`,
-          "不是整數的年份，在所屬的那一個太陽回歸年內按比例換成日期（本站的計算慣例）。",
-        ];
-      }
-      detail.sources = SOURCES.firdaria.slice();
-      if (day === false) detail.sources.push(FIRDARIA_NIGHT_SOURCE[head.nocturnal_node_profile] || FIRDARIA_NIGHT_SOURCE[FIRDARIA_NODE_PROFILES[0]]);
-      glossFirstEdition(detail.sources);
-      detail.receipt = {
-        ...segmentReceipt(node ? parent : item.record),
-        ...headReceipt(head, ["profile", "nocturnal_node_profile", "nocturnal_node_profile_input", "nocturnal_node_profile_applies", "method_status", "method_provenance"]),
-        interpretation: null,
-      };
-    } else if (item.technique === "zodiacal_releasing") {
-      const segment = item.record;
-      const facts = segment.detail;
-      const lot = item.lot;
-      const head = data.releasing.head || {};
-      const levelOne = item.level === 1;
-      const yearModel = head.year_model || {};
-      const daysPerYear = yearModel.days_per_year;
-      const daysPerMonth = yearModel.days_per_level_2_unit;
-      detail.kind = `黃道釋放・${LOT_NAMES[lot]}・${levelOne ? "第一層（大期）" : "第二層（小期）"}${sampleNote}`;
-      detail.title = [...named(item.glyph, item.label)];
-      if (segment.lordKey) detail.title.push("（主星 ", ...named(segment.lordKey, bodyName(segment.lordKey)), "）");
-      detail.rows.push(["起訖", [dateRange(item, false)]]);
-      const unit = levelOne ? "年" : " 個月";
-      const unitNote = levelOne ? `（每年 ${daysPerYear} 日，不是日曆年）` : `（每月 ${daysPerMonth} 日）`;
-      detail.rows.push(["長度", [`${facts.nominal_units}${unit}${unitNote}`
-        + (item.truncated ? `；${levelOne ? "上一層" : "所屬的大期"}先結束，這一段實際只走了 ${facts.effective_units}${unit}` : "")]]);
-      if (segment.lordKey) detail.rows.push(["主星", [...named(segment.lordKey, bodyName(segment.lordKey)), `（古書指定管${item.label}的行星）`]]);
-      const position = [`從命運點所在星座數第 ${facts.position_from_fortune} 個・${ANGULARITY[facts.angularity_from_fortune] || facts.angularity_from_fortune}`];
-      if (lot === "spirit") position.push(`；從精神點數第 ${facts.position_from_start_lot} 個`);
-      position.push({ small: "Valens《占星選集》（Anthologiae）IV.7 說，從命運點數第 1、4、7、10 個星座的位置最有力。本站照列位置，不另標現代的「高峰期」分級。" });
-      detail.rows.push(["位置", position]);
-      const parent = levelOne ? null : model.byId.get(item.parentId);
-      const parentSign = parent ? parent.label : "";
-      if (levelOne) {
-        const startSign = data.releasing.startSigns[lot];
-        detail.explanation = [
-          `從${LOT_NAMES[lot]}所在的`, { strong: startSign ? signName(startSign) : "星座" },
-          `起，依黃道順序每個星座分到固定年數。這裡的「年」是 ${daysPerYear} 日`,
-          yearModel.profile === "zr_year_360_days_v1" ? "（Valens 的分配年）" : "",
-          `，不是日曆年：${item.label}分到 ${facts.nominal_units} 年。`,
-        ];
-      } else if (item.kind === "loosing") {
-        detail.explanation = [
-          "在大期", { strong: parentSign }, `裡，小期從${parentSign}起依序輪過十二個星座。輪完一圈時大期還沒結束，下一段不回到起點，而是跳到${parentSign}的對宮`,
-          { strong: item.label }, "繼續，古典稱為", { strong: "解鎖" }, "（輪完一圈跳到對宮；loosing of the bond，Valens IV.4）。",
-        ];
-      } else {
-        detail.explanation = [
-          "大期", { strong: parentSign },
-          `裡面再切成小段（小期）：從${parentSign}開始，照十二星座的固定順序（牡羊、金牛、雙子……到雙魚）一個接一個輪。每個星座分到的月數，和它當大期時分到的年數相同，每月 ${daysPerMonth} 日；${item.label}分到 ${facts.nominal_units} 個月。`,
-          item.truncated ? "大期在這一段還沒走完時就結束了，所以這一段比原本的月數短。" : "",
-        ];
-      }
-      detail.sources = SOURCES.zodiacal_releasing.slice();
-      glossFirstEdition(detail.sources);
-      detail.receipt = {
-        releasing_from: lot, ...segmentReceipt(segment),
-        ...headReceipt(head, ["profile", "period_table_profile", "method_status", "method_provenance"]),
-        year_model: yearModel.profile || null, year_model_input: yearModel.input || null, interpretation: null,
-      };
-    } else if (item.technique === "decennials") {
-      const facts = item.record.detail;
-      const head = data.decennials.head || {};
-      const levelOne = item.level === 1;
-      const parent = levelOne ? null : model.byId.get(item.parentId);
-      detail.kind = `${levelOne ? "十年期・第一層" : "十年期・第二層"}${sampleNote}`;
-      detail.title = levelOne ? [...named(item.glyph, item.label), "輪值"]
-        : [...named(item.glyph, item.label), `（屬${parent ? parent.label : ""}的十年期）`];
-      detail.rows.push(["起訖", [dateRange(item, false)]]);
-      const yearModel = head.year_model;
-      detail.rows.push(["長度", [`${facts.months} 個分配月（每月 ${yearModel.days_per_month} 日）`]]);
-      detail.rows.push(["輪值行星", named(item.glyph, item.label)]);
-      if (levelOne) {
-        detail.rows.push(["順序", [`第 ${facts.cycle_index + 1} 輪的第 ${facts.position_in_order} 位`]]);
-      } else if (parent) { detail.rows.push(["第一層", named(parent.glyph, parent.label)]); }
-      const start = DECENNIALS_START_TEXT[(head.start_profile || {}).profile] || "";
-      detail.explanation = levelOne ? [
-        `十年期把出生之後的時間切成每段 ${yearModel.months_per_level_1} 個月（一個月 ${yearModel.days_per_month} 日、一年 ${yearModel.days_per_year} 日的「分配年」），每段由一顆行星輪值。${start}`,
-        "之後依出生時七顆行星在黃道上的實際順序往下排，七段輪完再從頭開始。"] : [
-        `每一段第一層再分成七小段，由這一段的輪值行星${parent ? `（${parent.label}）` : ""}自己先開始，其餘依同一個黃道順序；每顆行星分到的月數等於它的「小年」（古書給每顆行星的固定年數），七個加起來正好 ${yearModel.months_per_level_1} 個月。`,
-      ];
-      detail.sources = SOURCES.decennials.slice();
-      glossFirstEdition(detail.sources);
-      detail.methodHref = "/zh-TW/methods/decennials";
-      detail.receipt = {
-        ...segmentReceipt(item.record), ...headReceipt(head, ["profile", "order_rule", "method_status", "method_provenance"]),
-        start_profile: (head.start_profile || {}).profile || null, start_planet: head.start_planet || null, interpretation: null,
-      };
-    } else {
-      // 還沒有專屬說明的泳道：起訖與回應原值照列。
-      detail.kind = laneMeta(item.record.laneId).title;
-      detail.title = [...named(item.glyph, item.label)];
-      detail.rows.push(["起訖", [dateRange(item, false)]]);
-      detail.receipt = { ...segmentReceipt(item.record), interpretation: null };
-    }
+    const describe = DESCRIBERS.get(item.technique);
+    if (describe) describe(model, item, detail, sampleNote);
+    else describeOtherLane(item, detail);
     if (!detail.methodHref) detail.methodHref = "/zh-TW/methods/time-lords";
     detail.dateNote = item.technique === "annual_profection"
       ? `日期是${DATE_NOTE}；所選的那一年另附年界的時刻（到分鐘）。` : item.technique === MONTHLY_LANE

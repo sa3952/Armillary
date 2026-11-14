@@ -68,8 +68,6 @@ def quantize_keep_degree(value_degrees: float, ticks_per_degree: int) -> int:
     浮點乘法可能把極靠近整數度的值乘成恰好整數刻度，所以用夾住而不是 `floor`。
     """
 
-    if value_degrees < 0:
-        raise ValueError("quantize_keep_degree takes a non-negative value")
     whole = math.floor(value_degrees)
     ceiling = (whole + 1) * ticks_per_degree
     ticks = round(value_degrees * ticks_per_degree)
@@ -100,8 +98,6 @@ def degree_text(value_degrees: float, places: int) -> str:
     之前的最後一個值，例如 359.9999999 → "359.999999"。
     """
 
-    if value_degrees < 0:
-        raise ValueError("degree_text takes a non-negative value")
     whole = math.floor(value_degrees)
     text = f"{value_degrees:.{places}f}"
     if float(text) >= whole + 1:

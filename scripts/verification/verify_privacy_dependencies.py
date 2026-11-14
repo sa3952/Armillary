@@ -55,6 +55,10 @@ FORBIDDEN_EXACT_MODULES = frozenset(
 )
 FORBIDDEN_DISTRIBUTIONS = frozenset(module.replace("_", "-") for module in FORBIDDEN_ROOT_MODULES)
 FORBIDDEN_DISTRIBUTION_PREFIXES = ("datadog-", "opentelemetry-", "psycopg2-", "sentry-")
+# FastAPI requires this API package; alone it holds no-op providers and cannot
+# export.  The SDK, exporters and instrumentation stay refused, and application
+# code still may not import opentelemetry at all.
+ALLOWED_DISTRIBUTIONS = frozenset({"opentelemetry-api"})
 REVIEWED_EXACT_IMPORTS = {(BACKEND_APP / "core" / "place_catalog.py").resolve(): frozenset({"sqlite3"})}
 
 
@@ -242,7 +246,7 @@ def check_requirements(
             name = _requirement_name(line)
         except PrivacyDependencyFailure as error:
             raise PrivacyDependencyFailure(f"{path}: line {line_number}: {error}") from error
-        if name is not None and (
+        if name is not None and name not in ALLOWED_DISTRIBUTIONS and (
             name in FORBIDDEN_DISTRIBUTIONS or name.startswith(FORBIDDEN_DISTRIBUTION_PREFIXES)
         ):
             raise PrivacyDependencyFailure(

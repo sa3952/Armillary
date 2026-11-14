@@ -51,6 +51,13 @@ def _plate_inputs(epsilon: float) -> None:
         raise RuntimeError(f"the armillary plate draws ε={gen_armillary.EPS}, φ={gen_armillary.PHI}; "
                            f"the chart has ε={epsilon}, φ={latitude}")
 
+def calculation_sentence(chart: dict) -> str:
+    """The demonstration calculation as the home and features pages state it."""
+    when, where, mode = _demo.DEMO["datetime"], _demo.DEMO["location"], chart["computation_mode"]
+    return (f"{when['year']}-{when['month']:02d}-{when['day']:02d} {when['hour']:02d}:{when['minute']:02d} 臺北"
+            f"（{where['latitude']:.4f}°N {where['longitude']:.4f}°E），{HOUSES[_demo.DEMO['options']['house_system']]}、"
+            f"{ZODIAC[mode['zodiac']]}、{POSITION[mode['position_mode']]}、{CENTER[mode['center']]}。")
+
 def build() -> tuple[dict[str, str], list[str]]:
     data = _demo.answers()
     chart, sidereal = data["chart"], data["sidereal"]

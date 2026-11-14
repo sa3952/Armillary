@@ -57,7 +57,7 @@ from .chart_astronomy import _astronomical_facts, _houses, _positions
 from .chart_methods import _derived_chart, _sect_and_lots
 
 
-SCHEMA_VERSION = "0.24.0"
+SCHEMA_VERSION = "0.25.0"
 
 # Python distribution and embedded Swiss C-library versions are distinct.
 try:
@@ -289,7 +289,7 @@ def _chart_sections(facts: AstronomicalFacts, methods: DerivedChart) -> ChartSec
 
 def _output_contract() -> JsonObject:
     return {
-        "status": "provisional",
+        "status": "public_beta_frozen",
         "compatibility": "additive_during_0.x_unless_a_documented_correctness_fix_requires_change",
         "layers": {
             "astronomical_data": "直接天文計算與座標／時間轉換",

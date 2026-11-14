@@ -100,7 +100,7 @@ def normalized(name: str) -> str:
 def locked_runtime_versions(lock: Path, architecture: str = "amd64") -> dict[str, str]:
     """Distributions the image installs from `lock`: name -> pinned version.
 
-    A line whose PEP 508 marker is false in the image (CPython 3.14.10 on
+    A line whose PEP 508 marker is false in the image (CPython 3.15.2 on
     Linux) is listed in the lock but never installed.
     """
 
@@ -108,7 +108,7 @@ def locked_runtime_versions(lock: Path, architecture: str = "amd64") -> dict[str
     environment.update({
         "os_name": "posix", "platform_system": "Linux", "sys_platform": "linux",
         "platform_machine": {"amd64": "x86_64", "arm64": "aarch64"}[architecture],
-        "python_full_version": "3.14.10", "python_version": "3.14",
+        "python_full_version": "3.15.2", "python_version": "3.15",
     })
     logical = re.sub(r"\\\n", " ", lock.read_text(encoding="utf-8"))
     versions: dict[str, str] = {}

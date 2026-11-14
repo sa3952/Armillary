@@ -45,11 +45,8 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
             cited("Ps.-Porphyry, Introduction ch.23 (Boer-Weinstock, CCAG V/4, 1940, p.202)",
                   ("the Moon joins no planet, by sign, degree, aspect or kollesis, within "
                    "the next 30 degrees, regardless of the sign boundary"),
-                  _TRANSLATION,
-                  ("an online Greek transcription and Holden 2009 trans. p.18, the CCAG "
-                   "page itself not checked; level pending: the record does not say "
-                   "whether the Greek was read closely enough to count as the original "
-                   "language, so only the translation is claimed")),
+                  _ORIGINAL,
+                  "the Greek at CCAG V/4 p.202 ll.6-9, read at the printed page; Holden 2009 p.18 also consulted"),
             cited("William Lilly, Christian Astrology (1647) p.112 'Voyd of course'",
                   "bounded by the sign", _ORIGINAL, LILLY_1647_READ_AT),
             cited(("Al H. Morrison, a talk at the AFA's 1966 meeting, printed in the AFA "
@@ -81,7 +78,8 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
                    "edition (github.com/janegca/latex-valens), the chapter headed "
                    "'(14K,11P)': for night births Moon to Sun while the Moon is above the "
                    "earth, 'i.e. until the time it sets', and Sun to Moon after it has "
-                   "set, after Riley's /147P/ marker; the Greek not checked")),
+                   "set, after Riley's /147P/ marker; the Greek checked in Kroll 1908 p.155 "
+                   "ll.5-9 (III.14); Pingree p.147 not checked")),
             cited("Paulus Alexandrinus, Introduction ch.23",
                   "reversal at night (the product's formula)", _TRANSLATION,
                   ("the Greek-Latin first printing (Wittenberg 1586) in the archive.org scan of the "
@@ -192,16 +190,21 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
         ),
         "sources": [
             cited("William Lilly, Christian Astrology (1647) p.113",
-                  "17 minutes, 8 deg 30 min, 17 degrees", _ORIGINAL, LILLY_1647_READ_AT),
+                  "17 minutes, 8 deg 30 min, 17 degrees", _ORIGINAL, "the 1647 first edition as scanned at archive.org (b30338724, leaf n147 = p.113)"),
             cited("William Lilly, Christian Astrology, aphorism 26 (p.300 per Houlding)",
                   "12 degrees and 16 minutes", _ORIGINAL,
                   "the English text; the page number is Houlding's"),
             cited("al-Biruni, Book of Instruction, trans. Wright (1934) §481-484",
                   ("under 16 minutes, 6 degrees (§481; 7 for Mercury and Venus direct, "
                    "§482), under the rays 12-18 degrees by planet and side (§481: rising "
-                   "in the east 12 Venus and Mercury, 15 Saturn and Jupiter, 16 Mars; "
-                   "setting in the west 16 Saturn and Jupiter, 18 Mars)"),
+                   "in the east 12 Venus and Mercury, 15 Saturn and Jupiter, 18 Mars; "
+                   "setting in the west 16 Saturn and Jupiter, 18 Mars; the 16 is overstruck "
+                   "on p.90 and may read 15)"),
                   _TRANSLATION, "R. Ramsay Wright's English translation (1934)"),
+            cited("Porphyry, Introduction ch.2 (CCAG V/4, 1940, p.193 ll.24-26)",
+                  ("under the beams within 'more or less fifteen degrees' (πλέον ἢ ἔλασσον "
+                   "μοιρῶν ιε'): an approximate distance, not a sharp threshold"),
+                  _ORIGINAL, "the Greek at the cited lines, read at the printed page"),
             cited("Porphyry, Introduction ch.2; Antiochus", "one band of 15 degrees", _SECONDARY,
                   "via Brennan 2017, a secondary work"),
         ],
@@ -244,7 +247,7 @@ CONTESTED_METHODS: dict[str, dict[str, Any]] = {
             cited("William Lilly, Christian Astrology (1647) p.113",
                   ("a feminine nocturnal planet by night under the earth in a feminine "
                    "sign; no halb"),
-                  _ORIGINAL, "an archive.org OCR text of a modern reset edition"),
+                  _ORIGINAL, "the 1647 first edition as scanned at archive.org (b30338724, leaf n147 = p.113)"),
         ],
     },
 }
@@ -268,9 +271,7 @@ def _applies(key: str, derived_methods: dict, modules: dict) -> bool:
     module_name = entry["response_path"].split(".", 1)[1]
     if modules.get(module_name) != "computed":
         return False
-    module = derived_methods.get(module_name)
-    if not isinstance(module, dict):
-        return False
+    module = derived_methods[module_name]
     if key == "bounds_tables":
         selected = module.get("selected_profiles")
         return isinstance(selected, dict) and bool(selected.get("bounds"))

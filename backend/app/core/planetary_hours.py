@@ -299,10 +299,6 @@ def compute_planetary_hours(
     refusal of ``require_search_coverage`` before any Swiss call.
     """
 
-    if (interval is None) != (interval_spans is None) or (
-        interval is not None and interval not in INTERVALS
-    ):
-        raise ValueError("interval and its spans go together")
     spans = interval_spans or [(reference_jd_ut, math.nextafter(reference_jd_ut, math.inf))]
     low = min(reference_jd_ut, spans[0][0]) - SEARCH_WINDOW_DAYS
     high = max(reference_jd_ut, spans[-1][1]) + SEARCH_WINDOW_DAYS

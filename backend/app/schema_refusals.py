@@ -3,7 +3,7 @@
 import json
 import re
 import typing
-from decimal import Decimal, InvalidOperation
+from decimal import MAX_EMAX, MIN_ETINY, Decimal, InvalidOperation
 from collections import Counter
 from collections.abc import Iterable, Mapping
 from typing import Any, Literal
@@ -238,6 +238,39 @@ def check_strict_query(
         raise StrictJsonBodyError("request_validation_failed", issues)
 
 
+# Enough to decide any comparison against the schema's bounds on `second`.
+_JSON_DECIMAL_KEPT_DIGITS = 64
+
+
+def _json_decimal(literal: str) -> Decimal:
+    """Read a JSON number literal the same way under either decimal implementation.
+
+    CPython falls back to the pure-Python `decimal` where the C one was not
+    built.  That one takes exponents the C one refuses and raises the integer
+    digit limit's ValueError on a long coefficient, which would turn a valid
+    number into `json_invalid`.  Exponent range is therefore decided here, and
+    a long coefficient is cut to its leading digits plus one sticky digit, so
+    the bounds and the finer-than-microsecond check read the same answer.
+    """
+
+    mantissa, _, exponent_text = literal.lower().partition("e")
+    sign = "-" if mantissa.startswith("-") else ""
+    whole, _, fraction = mantissa.removeprefix("-").partition(".")
+    magnitude = exponent_text.lstrip("+-").lstrip("0")
+    # Past 19 digits the exponent is out of every range below; int() must not see it.
+    if len(magnitude) > 19:
+        raise InvalidOperation
+    exponent = int(f"{'-' if exponent_text.startswith('-') else ''}{magnitude or '0'}") - len(fraction)
+    digits = (whole + fraction).lstrip("0") or "0"
+    if exponent + len(digits) - 1 > MAX_EMAX or exponent < MIN_ETINY:
+        raise InvalidOperation
+    if len(digits) > _JSON_DECIMAL_KEPT_DIGITS:
+        dropped = digits[_JSON_DECIMAL_KEPT_DIGITS:]
+        exponent += len(dropped) - 1
+        digits = digits[:_JSON_DECIMAL_KEPT_DIGITS] + ("1" if dropped.strip("0") else "0")
+    return Decimal(f"{sign}{digits}E{exponent}")
+
+
 def check_strict_json_body(raw: bytes, declared_names: frozenset[str] = frozenset()) -> None:
     """Refuse a body two JSON readers could read differently.
 
@@ -264,7 +297,7 @@ def check_strict_json_body(raw: bytes, declared_names: frozenset[str] = frozense
         # refused here as json_invalid, not later as finite_number.
         document = json.loads(
             text, object_pairs_hook=_JsonObjectPairs, parse_constant=_refuse_json_constant,
-            parse_float=Decimal,
+            parse_float=_json_decimal,
         )
     except InvalidOperation:
         # Decimal can overflow before the reader reaches a syntax error.

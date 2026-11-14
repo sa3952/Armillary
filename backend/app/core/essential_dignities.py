@@ -593,16 +593,6 @@ def compute_essential_dignities(
 ) -> dict | None:
     """Compute selected source-named components for the classical seven only."""
 
-    requested = bool(
-        selection.include_domicile_exaltation
-        or selection.bounds_profile
-        or selection.decan_profile
-        or selection.triplicity_profile
-        or selection.include_triplicity_comparison
-        or selection.peregrine_profile
-    )
-    if not requested:
-        return None
     selected = {
         "domicile_exaltation": (
             DOMICILE_EXALTATION_PROFILE_ID
@@ -614,6 +604,8 @@ def compute_essential_dignities(
         "triplicity": selection.triplicity_profile,
         "peregrine": selection.peregrine_profile,
     }
+    if not (any(selected.values()) or selection.include_triplicity_comparison):
+        return None
     # What each technique's requested value expands to, in catalogue order: one
     # id for a single choice, every table for "all" (which has no primary
     # table).  The same whether or not the frame lets the module run, as the

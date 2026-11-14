@@ -234,14 +234,14 @@ curl -sv -o /dev/null https://projectarmillary.com/zh-TW/ 2&gt;&amp;1 | grep -iE
           <tr><td class="mono">Cross-Origin-Resource-Policy</td><td class="mono val">same-origin</td></tr>
           <tr><td class="mono">Referrer-Policy</td><td class="mono val">no-referrer</td></tr>
           <tr><td class="mono">X-Content-Type-Options</td><td class="mono val">nosniff</td></tr>
-          <tr><td class="mono">Cache-Control</td><td class="val">API 與錯誤回應：<span class="mono">no-store</span>；頁面：<span class="mono">no-cache</span>（每次使用前向伺服器確認）；網址帶內容版本的樣式、程式與圖示檔：<span class="mono">public, max-age=31536000, immutable</span>；網址帶其他查詢參數：<span class="mono">no-store</span></td></tr>
+          <tr><td class="mono">Cache-Control</td><td class="val">API 與錯誤回應：<span class="mono">no-store</span>（唯一例外：每日造訪計數 <span class="mono">/api/visit/daily</span> 那個沒有內容的 204，送 <span class="mono">private, max-age</span> 到臺灣午夜）；頁面：<span class="mono">no-cache</span>（每次使用前向伺服器確認）；網址帶內容版本的樣式、程式與圖示檔：<span class="mono">public, max-age=31536000, immutable</span>；網址帶其他查詢參數：<span class="mono">no-store</span></td></tr>
         </tbody>
       </table>
     </div>
     <p><span class="mono">geolocation=()</span> 是刻意的：<b>連瀏覽器都被告知這個頁面不得使用定位</b>，所以「本站不用定位」不只是承諾，是瀏覽器層級的封鎖。<span class="mono">frame-ancestors 'none'</span> 讓這個站不能被嵌進別人的 iframe。<span class="mono">no-referrer</span> 讓你從本站點出去的連結，不會告訴對方你從哪一頁來。</p>
-    <p><span class="mono">no-store</span> 讓 API 回應與錯誤回應不進任何快取——<b>出生資料只出現在這些回應裡</b>。這一條由反向代理自己守住底線：<span class="mono">/api</span> 底下的所有回應、所有錯誤回應（4xx／5xx）、代理自己產生的回應（例如限流的 429），以及沒有帶快取指示的回應，一律送 <span class="mono">no-store</span>，即使應用程式出錯要求快取也一樣。</p>
+    <p><span class="mono">no-store</span> 讓 API 回應與錯誤回應不進任何快取——<b>出生資料只出現在這些回應裡</b>。這一條由反向代理自己守住底線：<span class="mono">/api</span> 底下的所有回應、所有錯誤回應（4xx／5xx）、代理自己產生的回應（例如限流的 429），以及沒有帶快取指示的回應，一律送 <span class="mono">no-store</span>，即使應用程式出錯要求快取也一樣。唯一例外是每日造訪計數（<span class="mono">/api/visit/daily</span>）：回應沒有內容，靠瀏覽器快取到臺灣午夜來只數一次，見〈<a href="/zh-TW/legal/privacy">隱私政策</a>〉。</p>
     <p>頁面與樣式、程式檔可以被瀏覽器暫存。頁面每次使用前都會向伺服器確認是否變過；網址帶內容版本（<span class="mono">?v=</span>，由檔案內容的雜湊算出）的樣式、程式與圖示檔，內容一變網址就變，所以可以長期暫存；版本不符或網址帶其他參數時不快取。<span class="mono">/.well-known/security.txt</span> 由代理直接提供，同樣每次確認。<b>代價要說清楚：</b>共用同一台電腦的人，可以從瀏覽器快取看出這台電腦開過本站——瀏覽紀錄本來就看得出這件事；<b>快取裡沒有出生資料，也沒有計算結果</b>。</p>
-    <p>反向代理另外加上 <span class="mono">Strict-Transport-Security: max-age=31536000; includeSubDomains</span>，加密協定只接受 TLS 1.2 與 1.3（第 01 節第一項）。公開測試（Public Alpha）期間，回應<b>不帶 <span class="mono">X-Robots-Tag</span></b>：本站開放搜尋引擎收錄；個別頁面是否收錄，由頁內 robots 標記與 <span class="mono">robots.txt</span> 決定，兩者由同一份頁面清單產生。</p>
+    <p>反向代理另外加上 <span class="mono">Strict-Transport-Security: max-age=31536000; includeSubDomains</span>，加密協定只接受 TLS 1.2 與 1.3（第 01 節第一項）。回應<b>不帶 <span class="mono">X-Robots-Tag</span></b>：本站開放搜尋引擎收錄；個別頁面是否收錄，由頁內 robots 標記與 <span class="mono">robots.txt</span> 決定，兩者由同一份頁面清單產生。</p>
     <p>前端不使用 localStorage、sessionStorage、IndexedDB、Cache Storage 或 beacon。敏感欄位標 <span class="mono">autocomplete="off"</span>——<b>那是給瀏覽器的請求，不是它必須遵守的保證。</b></p>
   </section>
 
@@ -290,7 +290,7 @@ curl -sv -o /dev/null https://projectarmillary.com/zh-TW/ 2&gt;&amp;1 | grep -iE
       </table>
     </div>
     <p><b>反向代理：</b>存取日誌關閉；不轉送原始 IP 與各種轉送標頭給應用程式；不在回應裡透露 nginx 的版本；線上的 API 文件關閉。<b>作業系統：</b>系統日誌短保留上限；防火牆封包紀錄關閉；停用 swap 與當機傾印。<b>網路：</b>防火牆預設拒絕連入，只開網頁與管理用連線；SSH 只收金鑰、禁止密碼與 root 登入、只接受受限來源；另一層規則對每個來源的新連線速度與同時連線數設上限。<b>更新：</b>作業系統安全更新每天自動安裝，Docker 本身改由人工在可回滾的程序下更新。主機供應商的自動備份與快照關閉，屬營運者設定、人工確認，主機本身讀不到、沒有自動檢查。</p>
-    <p><b>存取控制：</b>公開測試階段<b>不設存取憑證</b>，任何人都可以直接使用；先前 Private Alpha 階段發給受邀者的代理層憑證已隨該階段撤除。沒有帳號資料庫、沒有自助註冊、沒有 email 名單、沒有忘記密碼資料庫。濫用防護靠上一節的限流與大小上限。</p>
+    <p><b>存取控制：</b>本服務<b>不設存取憑證</b>，任何人都可以直接使用；先前 Private Alpha 階段發給受邀者的代理層憑證已隨該階段撤除。沒有帳號資料庫、沒有自助註冊、沒有 email 名單、沒有忘記密碼資料庫。濫用防護靠上一節的限流與大小上限。</p>
     <div class="fail">
       <span class="fail-k">驗證狀態</span>
       <p>上列容器與代理設定<b>可在公開原始碼的 compose、Dockerfile 與 nginx 設定檔中逐行核對</b>；主機的防火牆、SSH、日誌與更新設定不在公開原始碼裡。公開版本的部署驗收會在主機上讀回這些主機設定，並確認 HSTS、nosniff、no-referrer 存在、X-Robots-Tag 不存在，逐類核對上述快取指示（頁面每次確認、帶版本的檔案長期暫存、API 與錯誤回應 no-store）。但主機組態可能在我不知情的情況下改變——「已在主機驗證」只描述具名時間點，不自動代表現況。</p>

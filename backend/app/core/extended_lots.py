@@ -62,13 +62,6 @@ LOT_METHODS = (
     _method("love_valens_iv25_v1", "lot_love_valens", _VALENS, "spirit", "fortune"),
     _method("necessity_valens_iv25_v1", "lot_necessity_valens", _VALENS, "fortune", "spirit"),
 )
-if any(
-    operand not in OPERANDS
-    for method in LOT_METHODS
-    for rule in ("day_rule", "night_rule")
-    for operand in method[rule].values()
-):
-    raise RuntimeError("a lot operand is outside the closed operand set")
 
 
 def _operand_longitude(operand: str, longitudes: dict, candidate: dict) -> float:

@@ -56,11 +56,11 @@
     { key: "time_lords", term: "時間主星", en: "Time lords", chapter: "時間主星",
       text: "把一生切成一段段時期，每段由某顆行星或某個星座輪值的一類古典技法。本站照原典列出輪值表。不替你解盤，也不預測。" },
     { key: "profection", term: "年度小限", en: "Annual profections", chapter: "時間主星",
-      text: "從上升星座開始，每過一歲往後換一個星座，12 年繞一圈。管那個星座的行星叫年主星。" },
+      text: "（又稱小限法）從上升星座開始，每過一歲往後換一個星座，12 年繞一圈。管那個星座的行星叫年主星。" },
     { key: "monthly_profection", term: "月小限", en: "Monthly profections", chapter: "時間主星",
       text: "把一年再分成 12 個月，每個月從年度小限的星座往後換一個星座。" },
     { key: "firdaria", term: "法達", en: "Firdaria", chapter: "時間主星",
-      text: "把一生依古書定好的年數，輪流分給七顆行星和兩個月交點，一輪 75 年；每顆行星的那一大段再分成七小段。" },
+      text: "（又稱法達星限）把一生依古書定好的年數，輪流分給七顆行星和兩個月交點，一輪 75 年；每顆行星的那一大段再分成七小段。" },
     { key: "zodiacal_releasing", term: "黃道釋放", en: "Zodiacal releasing", chapter: "時間主星",
       text: "從命運點或精神點所在的星座起，依各星座的年數往後分期。這個名稱是現代人取的，Valens 本人沒有用這個詞。" },
     { key: "decennials", term: "十年期", en: "Decennials", chapter: "時間主星",
@@ -73,7 +73,7 @@
         + "界線各家不同：Lilly《Christian Astrology》1647 年版 p.113 是 8°30′ 以內，al-Bīrūnī《占星術入門》§481–484 大多是 6° 以內。"
         + "Lilly 說任何行星的焦傷「是所能有的最大不幸」（p.111）；al-Bīrūnī 說行星的作用在焦傷時最小（§486）。" },
     { key: "under_beams", term: "在光束下", en: "Under the beams", chapter: "古典判斷",
-      text: "比焦傷再遠一點，行星仍被太陽的光芒蓋住，肉眼看不到。Lilly《Christian Astrology》1647 年版 p.113 到 17° 為止；"
+      text: "比焦傷再遠一點，古典上描述行星被太陽的光芒遮蔽；本站依固定角距分類，不做可見性模型。Lilly《Christian Astrology》1647 年版 p.113 到 17° 為止；"
         + "希臘化時期的作者只用一條 15° 的線。al-Bīrūnī《占星術入門》§481 說行星在光束下「像被關住的囚犯」。" },
     { key: "swift_slow", term: "行速快慢", en: "Swift or slow in motion", chapter: "古典判斷",
       text: "行星這一天在黃道上走的度數，比它的「平均每日行度」（mean motion）多是行速快，少是行速慢。"
@@ -88,7 +88,7 @@
         + "在黃道上它其實位於太陽的西側。西入（occidental）的行星在太陽下山後還留在西方天空，叫昏星，在黃道上位於太陽東側。"
         + "Lilly《Christian Astrology》1647 年版 p.114 這樣定義；月亮從滿月到新月是東出。古書另有以天空四象限分東西的用法，本站不輸出。" },
     { key: "void_of_course", term: "月空亡", en: "Void of course", chapter: "古典判斷",
-      text: "月亮離開它所在的星座之前，不再與任何行星完成相位。Lilly《Christian Astrology》1647 年版 p.112 有這一條，"
+      text: "月亮離開它所在的星座之前，不再與任何行星入相。Lilly《Christian Astrology》1647 年版 p.112 有這一條，"
         + "並說在卜卦（就一個問題起盤）裡，月空亡時事情很少順利進展。本站另要求相位在換星座前精確完成；"
         + "這兩個條件合起來是誰定的，至今沒有定論，所以名稱不掛古人，見方法頁〈月空亡〉一節。" },
     { key: "joys", term: "喜樂宮", en: "Joys", chapter: "古典判斷",

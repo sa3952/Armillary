@@ -4,14 +4,30 @@
   <link rel="self" type="application/atom+xml" href="https://projectarmillary.com/feed.xml"/>
   <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog"/>
   <id>https://projectarmillary.com/feed.xml</id>
-  <updated>2026-11-09T00:00:00+08:00</updated>
+  <updated>2026-11-14T00:00:00+08:00</updated>
   <author><name>渾儀 Armillary</name></author>
+  <entry>
+    <title>小限第幾年怎麼數？第 N 年是已滿 N−1 歲</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/profection-year-count"/>
+    <id>https://projectarmillary.com/zh-TW/blog/profection-year-count</id>
+    <published>2026-11-14T00:00:00+08:00</published>
+    <updated>2026-11-14T00:00:00+08:00</updated>
+    <summary>年度小限的第 N 年就是已滿 N−1 歲：第 1 年是上升星座本身，第 13 年回到上升星座。附第 35 年的算例與 Valens IV.11 的讀法。只列計算規則，不解盤、不預測。</summary>
+  </entry>
+  <entry>
+    <title>星盤和其他網站不一樣？依序檢查 7 個設定</title>
+    <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/chart-settings-reconcile"/>
+    <id>https://projectarmillary.com/zh-TW/blog/chart-settings-reconcile</id>
+    <published>2026-11-14T00:00:00+08:00</published>
+    <updated>2026-11-14T00:00:00+08:00</updated>
+    <summary>兩個網站排出的星盤不同，多半是設定不同，不等於有一邊算錯。先確認出生時間與地點相同，再依序對照時區與夏令時間、真太陽時、黃道、宮位制、交點、地心或站心、界表。</summary>
+  </entry>
   <entry>
     <title>澳門出生時間怎麼換算？夏令時間、1941–1945 戰時鐘點與逐年表</title>
     <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/macau-birth-time"/>
     <id>https://projectarmillary.com/zh-TW/blog/macau-birth-time</id>
-    <published>2026-11-09T00:00:00+08:00</published>
-    <updated>2026-11-09T00:00:00+08:00</updated>
+    <published>2026-11-10T00:00:00+08:00</published>
+    <updated>2026-11-10T00:00:00+08:00</updated>
     <summary>澳門 1946–1979 年實施過 32 段夏令時間，1942、1943 年夏天鐘面更曾快到 UTC+10。逐年列出起訖與公報來源，說明澳門和香港哪裡不同、怎麼查自己出生那天的鐘面與世界時，以及填海和地點差異對上升點的實際影響。</summary>
   </entry>
   <entry>
@@ -47,20 +63,20 @@
     <summary>兩張合成盤（一張日盤、一張夜盤）的年度小限年界、法達（夜盤兩種交點排法）、從命運點與精神點起的黃道釋放第一、二層與每一次解鎖，以及十年期第一層。表格全部由本站計算服務產生，可以拿來核對任何排盤工具。</summary>
   </entry>
   <entry>
-    <title>行星時怎麼算？從日出起算、晝夜各十二等分與迦勒底序</title>
+    <title>行星時怎麼算？四步驟算出任一天每個小時的主星（附對照表）</title>
     <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/planetary-hours"/>
     <id>https://projectarmillary.com/zh-TW/blog/planetary-hours</id>
     <published>2026-10-21T00:00:00+08:00</published>
     <updated>2026-10-21T00:00:00+08:00</updated>
-    <summary>行星時把白天與夜晚各分成十二等分，依迦勒底序輪給七顆行星，第一時由星期主星開始。四個步驟算出行星時，附一週主星表，並用本站計算服務實算臺北夏至、春分、冬至；說明凌晨出生為什麼算前一天、行星時為什麼排出星期的順序。</summary>
+    <summary>從日出起，白天和夜晚各分十二等分，依迦勒底序輪給七顆行星。四個步驟就能自己算，附一週主星表與臺北夏至、春分、冬至的實算；凌晨出生為什麼算前一天，也一併說明。</summary>
   </entry>
   <entry>
-    <title>香港出生時間怎麼換算？夏令時間、日佔時期與天文台的紀錄</title>
+    <title>香港夏令時間是哪幾年？1941–1979 逐年表與出生時間換算</title>
     <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/hong-kong-birth-time"/>
     <id>https://projectarmillary.com/zh-TW/blog/hong-kong-birth-time</id>
     <published>2026-10-21T00:00:00+08:00</published>
     <updated>2026-10-21T00:00:00+08:00</updated>
-    <summary>香港 1941–1979 年實施過三十多段夏令時間，日佔時期用東京時間 UTC+9。逐年對照天文台〈香港夏令時間〉表與 IANA 時區資料庫，列出兩者不同的日子，以及在渾儀怎麼填出世紙上的鐘點與香港地名。</summary>
+    <summary>香港 1941–1979 年有三十多段夏令時間，日佔時期用東京時間 UTC+9。逐年表查出你出生那天鐘面快不快、要不要減一小時；並列天文台表與 IANA 時區資料庫不同的日子。</summary>
   </entry>
   <entry>
     <title>地心月亮和站心月亮差多少？為什麼月亮會差將近 1 度</title>
@@ -239,12 +255,12 @@
     <summary>西洋占星排盤不用換真太陽時：真太陽時是鐘面時間加經度修正（每度 4 分鐘）與均時差，而上升點與宮位本來就由世界時加出生地經度決定。先換真太陽時再輸入，經度會被算兩次。以合成例子逐步列出兩種算法的數字與一年裡的誤差。</summary>
   </entry>
   <entry>
-    <title>臺灣夏令時間是哪幾年？夏令時間出生排盤要減一小時嗎</title>
+    <title>台灣夏令時間是哪幾年？1946–1979 全部 19 個夏天一覽</title>
     <link rel="alternate" type="text/html" href="https://projectarmillary.com/zh-TW/blog/taiwan-time-zone-history"/>
     <id>https://projectarmillary.com/zh-TW/blog/taiwan-time-zone-history</id>
     <published>2026-10-11T00:00:00+08:00</published>
     <updated>2026-10-14T00:00:00+08:00</updated>
-    <summary>臺灣夏令時間（日光節約時間）實施於 1946–1961、1974、1975、1979 年共十九個夏天，期間鐘面是 UTC+9。依 IANA 時區資料庫整理 1896 年以來三種標準時與這些年份的換算、不存在與重複的鐘點，以及資料本身仍不確定之處。</summary>
+    <summary>台灣夏令時間（日光節約時間）實施於 1946–1961、1974、1975、1979 年，共 19 個夏天，期間鐘面是 UTC+9。附各年的換算、出生排盤要不要自己減一小時，以及不存在和重複的鐘點。</summary>
   </entry>
   <entry>
     <title>上升星座查詢表為什麼常常不準</title>

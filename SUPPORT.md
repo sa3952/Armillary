@@ -1,6 +1,6 @@
 # Support
 
-Armillary is in Public Alpha and is run by one person. Support is best-effort
+Armillary is in Public Beta and is run by one person. Support is best-effort
 and no uptime, response-time, data-recovery, or long-term maintenance guarantee
 is made.
 

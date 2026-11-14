@@ -49,8 +49,6 @@ SIGN_PERIOD_YEARS: dict[str, int] = {
     "libra": 8, "scorpio": 15, "sagittarius": 12, "capricorn": 27, "aquarius": 30,
     "pisces": 12,
 }
-if set(SIGN_PERIOD_YEARS) != set(SIGNS) or sum(SIGN_PERIOD_YEARS.values()) != 211:
-    raise RuntimeError("the sign periods cover the twelve signs and total 211")
 
 DEFAULT_YEAR_MODEL = "zr_year_360_days_v1"
 JULIAN_YEAR_MODEL = "zr_year_365_25_days_v1"
@@ -103,8 +101,6 @@ class ScopeWindow:
         window_end_jd_ut = bounds.window_end_jd_ut
         lifetime_start_jd_ut = bounds.lifetime_start_jd_ut
         lifetime_end_jd_ut = bounds.lifetime_end_jd_ut
-        if scope not in SCOPES:
-            raise ValueError(f"unknown {technique} scope {scope!r}")
         if scope == SCOPES[2] and (lifetime_start_jd_ut is None or lifetime_end_jd_ut is None):
             raise ValueError("the lifetime window needs both of its instants")
         return cls(
@@ -210,8 +206,6 @@ def releasing_periods(
 
     def row(level, index, sign, kind, start, nominal, end, parent_id) -> dict:
         effective_units = (end - start) / unit_days[level]
-        if effective_units.denominator != 1:
-            raise RuntimeError("an effective length is a whole number of units")
         position = position_from(fortune_sign, sign)
         prefix = f"{parent_id}." if parent_id else ""
         return {

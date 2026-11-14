@@ -144,7 +144,7 @@
     return `${r((x0 + x1) / 2 - side / 2)} ${r((y0 + y1) / 2 - side / 2)} ${r(side)} ${r(side)}`;
   }
 
-  // 星盤數字（--serif-num）的字寬與字框高（em），取堆疊裡最大的：Palatino 數字 .5、° .4、′ .22、
+  // 星盤數字（--num）的字寬與字框高（em），取堆疊裡最大的：Palatino 數字 .5、° .4、′ .22、
   // 行框 1.10；Times New Roman 與同字寬的 Liberation Serif 數字 .5、行框約 1.11–1.15；只有退到 DejaVu Serif 時數字約 .64。
   // 字框高是瀏覽器 getBoundingClientRect 量到的行框，不是墨高：相鄰標籤的字框不相交，真實版面才不相撞。
   const SERIF_ADVANCE = Object.freeze({ digit: 0.58, "°": 0.42, "′": 0.3, upper: 0.72, other: 0.6 });
@@ -712,9 +712,8 @@
     }
     for (let degree = 0; degree < 360; degree += 1) {
       if (degree % 30 === 0 || (compact && degree % 5 !== 0)) continue;
-      const length = degree % 10 === 0 ? 8 : degree % 5 === 0 ? 5.5 : 3;
-      items.push(linePrim("degree-tick", at(degree, G.rSignIn), at(degree, G.rSignIn + length),
-        degree % 5 === 0 ? "dim" : "hair", degree % 10 === 0 ? 0.9 : 0.6));
+      const [length, tone, width] = degree % 10 === 0 ? [8, "dim", 0.9] : degree % 5 === 0 ? [5.5, "dim", 0.6] : [3, "hair", 0.6];
+      items.push(linePrim("degree-tick", at(degree, G.rSignIn), at(degree, G.rSignIn + length), tone, width));
     }
     const glyphSize = SIZE.ringGlyph * text;
     const nameSize = SIZE.ringName * minorText(text);
@@ -1045,7 +1044,7 @@
     return [
       { part: "centre-assumption", text: [houseName, zodiac, node].filter(Boolean).join("・") },
       { part: zoneText ? "centre-zone" : "centre-assumption",
-        text: [zoneText || null, precision ? `時刻：${PRECISION_SHORT[precision]}` : null].filter(Boolean).join("・") },
+        text: [zoneText, precision ? `時刻：${PRECISION_SHORT[precision]}` : null].filter(Boolean).join("・") },
     ].filter((line) => line.text);
   }
   function centreAssumptions(lines, preset) {
@@ -1054,7 +1053,8 @@
     let size = SIZE.footer * preset.text * 0.85;
     const widest = Math.max(...lines.map((line) => textWidth(line.text, size)));
     if (widest > room) size *= room / widest;
-    return lines.map((line, index) => textPrim(line.part, G.c, G.c + (index - (lines.length - 1) / 2) * size * 1.4,
+    // 畫在 ASC–DSC 軸線下方，不壓線。
+    return lines.map((line, index) => textPrim(line.part, G.c, G.c + (index + 1) * size * 1.4,
       line.text, size, "sans", "dim", { halo: 3 * preset.text }));
   }
 

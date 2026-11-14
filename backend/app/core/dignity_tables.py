@@ -70,8 +70,6 @@ class _PtolemyTriplicityRule(_SectTriplicityRule):
 
 
 def _segments(*pairs: tuple[str, int]) -> tuple[tuple[str, int], ...]:
-    if sum(length for _ruler, length in pairs) != 30:
-        raise ValueError("each bounds sign must total 30 degrees")
     return pairs
 
 

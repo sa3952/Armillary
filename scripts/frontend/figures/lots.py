@@ -135,16 +135,10 @@ def _wheel(layout: str, fid: str, chart: dict, text: dict, bound: _fx.Bound) -> 
         for key, lon in points.items():
             x, y = pt(lon, r_lot - (24 if wide else 18))
             body.append(_fx.text(x, y + 5, NAMES[variant][key], lot_cls, "middle"))
-        if wide:
-            lx, ly = 566.0, 70.0
-            body.append(_fx.text(lx, ly, text["heading"][variant], "fx-t"))
-            for i, line in enumerate(FORMULAS[variant]):
-                body.append(_fx.text(lx, ly + 34 + 26 * i, line, "fx-t fx-small"))
-        else:
-            lx, ly = 18.0, 2 * cy + 26
-            body.append(_fx.text(lx, ly, text["heading"][variant], "fx-t"))
-            for i, line in enumerate(FORMULAS[variant]):
-                body.append(_fx.text(lx, ly + 24 + 20 * i, line, "fx-t fx-small"))
+        lx, ly, first_offset, step = (566.0, 70.0, 34, 26) if wide else (18.0, 2 * cy + 26, 24, 20)
+        body.append(_fx.text(lx, ly, text["heading"][variant], "fx-t"))
+        for i, line in enumerate(FORMULAS[variant]):
+            body.append(_fx.text(lx, ly + first_offset + step * i, line, "fx-t fx-small"))
         out.append(_fx.variant_group(variant, VARIANTS[0][0], "".join(body)))
     rows = (("fx-curve", "實線：月亮到太陽的弧", f"（{text['arc']}）"), ("fx-dash", "虛線：同一段弧，", "從上升點往兩邊各量一次"))
     if wide:

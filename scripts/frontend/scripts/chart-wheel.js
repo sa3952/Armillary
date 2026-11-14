@@ -20,12 +20,12 @@
   // 下載版（白底）的顏色：每一個都是 tokens.css 的 token 值，測試逐一核對。
   // aspect：相位線用結果頁「方法判斷」那一環的顏色，表示這是依容許度表作出的判斷，不表吉凶。
   const DOWNLOAD_PALETTE_TOKENS = Object.freeze({
-    bg: "print-bg", band: "paper", fg: "ink", dim: "ink-dim", hair: "hair", geo: "geo", fact: "fact", aspect: "ring-3",
+    bg: "print-bg", band: "paper", fg: "ink", dim: "ink-2", hair: "rule", geo: "geo", fact: "fact", aspect: "ring-3",
   });
   const DOWNLOAD_PALETTE = Object.freeze({
     bg: "#FFFFFF", band: "#F0EAD9", fg: "#1C1913", dim: "#4F483B", hair: "#CFC5AE", geo: "#3E6B8A", fact: "#3D6949", aspect: "#A0632B",
   });
-  const FONT_TOKENS = Object.freeze({ sans: "sans", mono: "mono", serif: "serif-num", book: "serif" });
+  const FONT_TOKENS = Object.freeze({ sans: "zh-text", mono: "mono", serif: "num", book: "zh-serif" });
   const FONTS = Object.freeze({
     sans: "\"PingFang TC\", \"Noto Sans TC\", \"Noto Sans CJK TC\", \"Microsoft JhengHei\", sans-serif",
     mono: "ui-monospace, \"SF Mono\", SFMono-Regular, Menlo, Consolas, \"DejaVu Sans Mono\", "
@@ -521,7 +521,8 @@
       figure.addEventListener("animationend", finishEntrance);
       figure.addEventListener("animationcancel", finishEntrance);
     };
-    if (typeof doc.defaultView?.ResizeObserver !== "function") startEntrance();
+    const canObserve = typeof doc.defaultView?.ResizeObserver === "function";
+    if (!canObserve) startEntrance();
     const legend = htmlElement(doc, "ul", "chart-wheel-legend");
     const textFold = htmlElement(doc, "details", "chart-wheel-text");
     const textSummary = htmlElement(doc, "summary", null, "星盤文字對照表");
@@ -561,7 +562,7 @@
     };
     show(model);
     const View = doc.defaultView;
-    if (View && typeof View.ResizeObserver === "function") {
+    if (canObserve) {
       // 重畫放到下一個畫格：在回呼裡直接換掉被觀察的內容，Safari 會報「ResizeObserver loop」錯誤。
       const frame = typeof View.requestAnimationFrame === "function"
         ? (callback) => View.requestAnimationFrame(callback) : (callback) => callback();

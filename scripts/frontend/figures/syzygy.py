@@ -225,7 +225,7 @@ def _horizon(layout: str, fid: str, data: dict, bound: _fx.Bound) -> str:
         out.append(_fx.line(ax - 5, y(alt), ax, y(alt), "fx-axis"))
         sign = "+" if alt > 0 else "−" if alt < 0 else ""
         out.append(_fx.text(ax - 9, y(alt) + 5, bound.scale(f"{sign}{abs(alt)}°"), "fx-t fx-small fx-num", "end"))
-    out.append(_fx.text(ax - 9 if wide else 14, top - 22 if wide else top - 22, "高度", "fx-t fx-small fx-dim",
+    out.append(_fx.text(ax - 9 if wide else 14, top - 22, "高度", "fx-t fx-small fx-dim",
                         "end" if wide else None))
     for variant, _ in HORIZON_VARIANTS:
         item = data[variant]

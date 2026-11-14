@@ -59,8 +59,10 @@ def test_the_guard_keeps_the_stdlib_siblings_and_the_reviewed_sqlite_module(tmp_
 @pytest.mark.parametrize(("files", "refusal"), [
     ({"requirements.txt": "fastapi==0.139.2\nsentry-sdk==2.0.0\n"}, "privacy-sensitive"),
     *(({"requirements.txt": requirement}, None) for requirement in (
-        "opentelemetry-api==1.40.0\n", "opentelemetry-sdk==1.40.0\n",
-        "opentelemetry-instrumentation-fastapi==0.61b0\n", "datadog-api-client==2.0.0\n",
+        "opentelemetry==1.0.0\n", "opentelemetry-sdk==1.40.0\n",
+        "opentelemetry-exporter-otlp==1.40.0\n", "opentelemetry-exporter-otlp-proto-http==1.40.0\n",
+        "opentelemetry-instrumentation-fastapi==0.61b0\n", "opentelemetry-distro==0.61b0\n",
+        "datadog-api-client==2.0.0\n",
         "boto3==1.42.76\n", "posthog==7.11.0\n", "psycopg2-binary==2.9.11\n", "pymongo==4.16.0\n",
         "file:///tmp/unreviewed.whl\n")),
     ({"requirements.txt": "-r nested.txt\n", "nested.txt": "sentry-sdk==2.0.0\n"}, "privacy-sensitive"),
@@ -75,6 +77,15 @@ def test_the_guard_rejects_sink_distributions_urls_and_unsafe_includes(tmp_path,
         (tmp_path / name).write_text(text, encoding="utf-8")
     with pytest.raises(guard.PrivacyDependencyFailure, match=refusal):
         guard.check_requirements(tmp_path / next(iter(files)))
+
+
+def test_only_the_opentelemetry_api_distribution_is_allowed_and_no_source_may_import_it(tmp_path, guard):
+    (tmp_path / "requirements.txt").write_text("opentelemetry-api==1.45.2\n", encoding="utf-8")
+    guard.check_requirements(tmp_path / "requirements.txt")
+    assert guard.ALLOWED_DISTRIBUTIONS == {"opentelemetry-api"}
+    (tmp_path / "candidate.py").write_text("from opentelemetry import trace\n", encoding="utf-8")
+    with pytest.raises(guard.PrivacyDependencyFailure):
+        guard.check_python_source(tmp_path / "candidate.py")
 
 
 def test_the_guard_scans_the_requirement_files_it_discovers(tmp_path, guard):

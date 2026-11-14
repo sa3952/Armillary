@@ -15,26 +15,29 @@
   <section class="ds-sec" id="year-boundary" data-register-entry="year_boundary">
     <h2 class="hdr"><span>01</span>一年從哪一刻算起</h2>
     <p>年度小限與法達都要先知道「一年」從哪一刻開始。我們用<b>太陽回歸</b>的瞬間：出生後太陽第 N 次回到出生時的黃經，那一刻就是第 N 次太陽回歸。第 N＋1 年從第 N 次太陽回歸開始，到第 N＋1 次為止；第 1 年從出生那一刻開始。所以 2 月 29 日出生、生日前後一天這類問題都不存在：回歸落在哪一天，新的一年就從哪一天開始。</p>
-    <p>選恆星黃道時，回歸也照恆星黃道算，每年大約晚 20 分鐘。黃道釋放不用這個年界，它有自己的年長（見第 04 節）。</p>
+    <p>選恆星黃道時，回歸也照恆星黃道算，每年大約晚 20 分鐘。黃道釋放不用這個年界，它有自己的年長（見第 04 節）。年度請求必須是地心、當日黃道、含章動，否則回歸時刻會移動，整個請求拒絕。</p>
     <p><b>「第幾年」與「已滿幾歲」。</b>第 N 年就是已滿 N−1 歲；出生後的第一年（已滿 0 歲）也算得出。下面年度小限一節的「第 35 年」，就是這樣對應的。</p>
     <p><b>不同的年界差多少。</b>有些軟體用固定長度的年（均勻回歸年，365.2422 日），或用民用週年（每年同一個日期與鐘點）。我們以四個合成的出生時刻，各量了 100 年的回歸：太陽回歸的瞬間與均勻回歸年最多相差 1.57 小時，與民用週年最多相差 21.8 小時。這兩個數字是同一個星曆引擎內部的比較，只說明量級；回歸瞬間本身另與 JPL Horizons 的星曆核對過。回歸瞬間用星曆程式庫預設歲差模型的當日黃道來定；如果改用 IAU 1976 的歲差模型，相隔 63 年的回歸瞬間大約會差 5 秒（獨立對照實測：1900 年出生、1963 年那次回歸差 4.7 秒）。</p>
-    <p><b>出生時間不精確時。</b>只知道日期時，沒有上升點，也判不出日盤或夜盤，所以年度小限、法達、黃道釋放、十年期與延伸的阿拉伯點都不產生，畫面寫出原因。只知道約略小時時，在那一小時的起點、代表性時刻（也就是計算時拿來代表這段時間的一個時刻，不是出生時刻）與終點各算一次，三個結果並列，並標出它們是否一致。只知道日期或約略小時時，那一天或那一小時的頭、中、尾三個時刻都要算；接近西元 2399 年（本站能算的最後一年）時，只要其中一個時刻算出的那一年在 2399 年之後才開始，這一整年就不算，畫面直接說明原因，不只列出算得出來的部分。</p>
+    <p><b>出生時間不精確時。</b>只知道日期時，沒有上升點，也判不出日盤或夜盤，所以年度小限、法達、黃道釋放、日夜盤起點與上升起點的十年期、延伸的阿拉伯點都不產生，畫面寫出原因；自選起星的十年期照算。只知道約略小時時，在那一小時的起點、代表性時刻（也就是計算時拿來代表這段時間的一個時刻，不是出生時刻）與終點各算一次，三個結果並列，並標出它們是否一致。只知道日期或約略小時時，那一天或那一小時的頭、中、尾三個時刻都要算；接近西元 2399 年（本站能算的最後一年）時，只要其中一個時刻算出的那一年在 2399 年之後才開始，這一整年就不算，畫面直接說明原因，不只列出算得出來的部分。</p>
     <p><b>期間只到日。</b>原典只給年數與月數，算到分秒是假精度。畫面上的日期是出生地當地的日期；完整的瞬間仍留在驗算資料裡，可以重算。</p>
     <h3>出處</h3>
     <ol class="ct-notes">
-      <li data-source="Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, Persian Nativities IV">Abū Maʿshar《論本命年的回歸》（Kitāb taḥāwīl sinī al-mawālīd；Dykes 英譯，Persian Nativities IV，2019）：太陽回歸與小限、法達一起使用。核到：<span class="mono">只見書目</span>（章節與頁碼未核）。</li>
+      <li data-source="[Abū Maʿshar], De revolutionibus nativitatum I.1, I.3, Latin translation printed under the name of Hermes">學界歸於 Abū Maʿshar 的《論本命年度回歸》，拉丁本託名 Hermes（巴塞爾 1559）I.1、I.3，頁 211、213：太陽回到本命的位置，一年開始；年之上升要用與本命同一套表求出，否則兩者對不上（其中「per medios motus」一語的意思我們還沒完全讀懂）。核到：<span class="mono">已讀譯本</span>（中世紀拉丁譯本）。</li>
+      <li data-source="Abraham Ibn Ezra, The Book of the Revolution">Ibn Ezra《回歸之書》（Sefer ha-Tequfah）§1:1（Sela 2014，頁 373）：回歸是太陽回到本命的度與分。核到：<span class="mono">已讀譯本</span>（Sela 英譯）。</li>
+      <li data-source="The Book of Aristotle IV.1, tr. B. Dykes, Persian Nativities I">《Book of Aristotle》IV.1 第 [1] 句（Dykes 英譯，Persian Nativities I，2009，頁 185）：每年加 6 小時又五分之一小時；依 Dykes 的注，年長約 365.2583 日，接近恆星年。這不是本站的年長。核到：<span class="mono">已讀譯本</span>（Dykes 英譯與注）。</li>
+      <li data-source="William Lilly, Christian Astrology">Lilly《Christian Astrology》（1647）第 172 章，頁 734：回歸是太陽回到本命的度與分。核到：<span class="mono">已讀原文</span>（1647 初版）。</li>
       <li data-source="Swiss Ephemeris 2.10.03 swe_solcross_ut">Swiss Ephemeris 2.10.03 的 <code>swe_solcross_ut</code>：測試以它對照我們自己的回歸求根（同一個引擎、另一套算法）。核到：<span class="mono">已讀原文</span>（程式原始碼與文件）。</li>
     </ol>
     <p>以太陽回歸切分年份，是我們和小限、法達共用的產品慣例。</p>
     <div id="solar-return-chart" data-register-entry="solar_return_chart">
     <h3>太陽回歸盤</h3>
-    <p>這裡用太陽回歸的那一刻切分年份。那一刻的星盤可以在計算頁的「時間主星」一章另外排：選定年度的第 N 次太陽回歸那一瞬間，預設在出生地起盤（也可以改用另一個地點），宮位制與黃道沿用本命盤。只列計算結果，不替你解盤，也不預測。怎麼算、在哪裡立盤、宮位制與黃道的理由，見方法頁〈<a href="/zh-TW/methods#solar-return">08.1 太陽回歸盤</a>〉；下面是它的出處。</p>
+    <p>太陽回歸盤（又稱太陽返照）：這裡用太陽回歸的那一刻切分年份。那一刻的星盤可以在計算頁的「時間主星」一章另外排：選定年度的第 N 次太陽回歸那一瞬間，預設在出生地起盤（也可以改用另一個地點），宮位制與黃道沿用本命盤。只列計算結果，不替你解盤，也不預測。怎麼算、在哪裡立盤、宮位制與黃道的理由，見方法頁〈<a href="/zh-TW/methods#solar-return">08.1 太陽回歸盤</a>〉；下面是它的出處。</p>
     <h3>太陽回歸盤的出處</h3>
     <ol class="ct-notes">
       <li data-source="Abraham Ibn Ezra, The Book of the Revolution">Ibn Ezra《回歸之書》（Sefer ha-Tequfah）§1:1（Sela 2014，頁 373）：回歸是太陽回到本命的度與分。核到：<span class="mono">已讀譯本</span>（Sela 英譯）。</li>
       <li data-source="Abraham Ibn Ezra, The Book of Nativities">Ibn Ezra《本命之書》（Sefer ha-Moladot）IV 1:9、IV 2:3（Sela 2014，頁 185）：用出生國家的上升時間表求年初上升；他採的每年增量 87°15′ 屬回歸年長度。核到：<span class="mono">已讀譯本</span>（Sela 英譯）。</li>
       <li data-source="al-Bīrūnī, The Book of Instruction in the Elements of the Art of Astrology, trans. R. Ramsay Wright">al-Bīrūnī《占星術入門》§522（Wright 1934，頁 119）：太陽回到本命時所在的度與分，就是回歸（taḥwīl）。核到：<span class="mono">已讀譯本</span>（Wright 英譯）。</li>
-      <li data-source="[Abū Maʿshar], De revolutionibus nativitatum I.1, I.3-6, Latin translation printed under the name of Hermes">學界歸於 Abū Maʿshar 的《論本命年度回歸》，拉丁本託名 Hermes（巴塞爾 1559）I.1、I.3–I.6，頁 211–214：太陽回到原位開始一年；回歸不推翻本命；回歸盤分十二宮、用象限式宮頭，同盤標出本命上升、小限星座與年之上升；沒有談在哪裡立盤。核到：<span class="mono">已讀譯本</span>（中世紀拉丁譯本；歸屬 Abū Maʿshar 是學界通說，論證未讀）。</li>
+      <li data-source="[Abū Maʿshar], De revolutionibus nativitatum I.1, I.3-6, Latin translation printed under the name of Hermes">學界歸於 Abū Maʿshar 的《論本命年度回歸》，拉丁本託名 Hermes（巴塞爾 1559）I.1、I.3–I.6，頁 211–214：太陽回到原位開始一年；回歸不推翻本命；回歸盤分十二宮，宮頭用時度與赤經求出（「如今我們這時代的占星家」的做法），同盤標出本命上升與行星、小限星座與年之上升；I.5（頁 214）還要標福點的小限、分配者與同配者、法達主與其同配、orb 之主，以及與中天或光體同度的恆星，回歸盤才算完成，I.6 從年之上升開始判讀；沒有談在哪裡立盤。核到：<span class="mono">已讀譯本</span>（中世紀拉丁譯本；歸屬 Abū Maʿshar 是學界通說，論證未讀）。</li>
       <li data-source="Guido Bonatti, De astronomia, Pars IV preface">Bonatti《De astronomia》第四部序言（巴塞爾 1550，第 489–490 欄）：本命的年度回歸從本命太陽那一分算起，到太陽回到同一點。核到：<span class="mono">已讀原文</span>（拉丁文；判讀回歸的專章未找到）。</li>
       <li data-source="William Lilly, Christian Astrology">Lilly《Christian Astrology》（1647）第 172 章，頁 734–736：回歸是太陽回到本命的度與分；本命太陽差 1 分，回歸時刻差約 24 分鐘；例盤用出生地緯度的宮位表，沒有談換地點。核到：<span class="mono">已讀原文</span>（1647 初版；這一章沒有寫宮位制的名稱）。</li>
       <li data-source="J.-B. Morin, Astrologia Gallica XXIII">Morin《法國占星學》（Astrologia Gallica，1661）第 23 卷第 4 章頁 600–601、第 5 章頁 602、第 7 章頁 609、第 9 章頁 634：回歸盤應在回歸那一刻本人所在的地點起盤；古人對此沒有規定，當時通行用出生地；回歸不推翻本命。核到：<span class="mono">已讀原文</span>（拉丁文）。</li>
@@ -51,7 +54,7 @@
   <section class="ds-sec" id="profection" data-register-entry="annual_profection">
     <h2 class="hdr"><span>02</span>年度小限</h2>
     <p><b>年度小限</b>（annual profection）：從上升星座起，每過一年往後推一個星座；推到的那個星座叫「小限星座」，它的主星叫「年主星」。線上排小限見<a href="/zh-TW/calculate/profections">小限計算</a>。</p>
-    <p><b>規則。</b>第 Y 年推 Y−1 個星座，從上升星座起含起點計數，所以第 1 年是上升星座本身（第 1 宮位），第 13 年又回到上升星座。年主星取這個星座的守護行星（古書也叫廟主），只用古典七政：日、月、水、金、火、木、土；例如雙魚的年主星是木星。宮位一律整宮，不看度數，不輸出這一宮管什麼事。</p>
+    <p><b>規則。</b>第 Y 年推 Y−1 個星座，從上升星座起含起點計數，所以第 1 年是上升星座本身（第 1 宮位），第 13 年又回到上升星座。年主星取這個星座的守護行星（古書也叫廟主），只用古典七政：日、月、水、金、火、木、土；例如雙魚的年主星是木星。選恆星黃道時不輸出年主星。宮位一律整宮，不看度數，不輸出這一宮管什麼事。</p>
     <p><b>「第 35 年」是第幾年。</b>Valens《占星選集》（Anthologiae）IV.11 的例子說「我們查第 35 年」，把 35 除以 12 餘 11，從上升星座數到第 11 個星座。問題是：這個「第 35 年」是已滿 35 歲，還是已滿 34 歲？我們讀了 Kroll 1908 年的希臘文校勘本（學者比對多份古抄本後整理出的版本）第 174 頁：原文用單數、帶冠詞的「在第 35 年」，是序數；若是「35 年」的基數，會用複數。同書 IV.9（p.169）Kroll 的校注也把「第 33 年」讀成已滿 32 年、第 33 年未滿。所以 Valens 的「第 35 年」是已滿 34 歲，我們的計數與他一致。Pingree 1986 年的校勘本我們沒有讀到。</p>
     <h3>文獻說法不同的兩處</h3>
     <ul>
@@ -69,11 +72,12 @@
     <div data-register-entry="monthly_profection" id="monthly-profection">
       <h3>月小限</h3>
       <p><b>月小限</b>（monthly profection）：把年度小限的那一年再分成 12 個月，每個月往後推一個星座；那個月推到的星座的守護行星，叫「月主星」。</p>
-      <p><b>規則。</b>第 1 個月就是這一年的年度小限星座，第 2 個月往後一個星座，依此類推，第 12 個月是年度小限星座的前一個星座。下一次太陽回歸時，從新一年的年度小限星座重新數起，所以每一年都剛好 12 個月，不會跨年接下去。月主星和年主星用同一張表（傳統七顆行星各自守護的星座）。</p>
+      <p><b>規則。</b>第 1 個月就是這一年的年度小限星座，第 2 個月往後一個星座，依此類推，第 12 個月是年度小限星座的前一個星座。下一次太陽回歸時，從新一年的年度小限星座重新數起，所以每一年都剛好 12 個月，不會跨年接下去。月主星和年主星用同一張表（傳統七顆行星各自守護的星座），恆星黃道下同樣不輸出。</p>
       <p><b>一個月從哪一刻開始。</b>每個月從太陽比出生時的位置再往前走 30 度的那一刻開始：第 1 個月從太陽回到出生時位置（太陽回歸）的那一刻開始，太陽多走 30 度進入第 2 個月，走滿 360 度正好是下一次太陽回歸。太陽在每年 1 月初走得最快、7 月初最慢，所以一個月大約 29 到 32 天，落在 7 月前後的月份比 1 月前後長兩天左右。這裡的「月」和日曆上的月份無關。</p>
-      <p><b>為什麼這樣分。</b>中世紀的 Abū Maʿshar（依英譯者 Dykes 的介紹）說，年度小限的星座也是這一年的第 1 個月，每月的回歸盤取太陽走到出生時度數的下一個星座同一度數的時刻；al-Bīrūnī 也用太陽回到同一度數來定每個月的回歸盤。更早的 Valens 是看此刻的太陽離出生時的太陽多遠，從年度小限的星座數同樣的距離。三者合起來，就是上面這個做法。</p>
+      <p><b>為什麼這樣分。</b>中世紀的 Abū Maʿshar（依英譯者 Dykes 的介紹）說，年度小限的星座也是這一年的第 1 個月，每月的回歸盤取太陽走到出生時度數的下一個星座同一度數的時刻；al-Bīrūnī 也用太陽回到同一度數來定每個月的回歸盤。更早的 Valens 是看此刻的太陽離出生時的太陽多遠，從年度小限的星座數同樣的距離。本站取這些說法的定時方式，每個月一律順推一個星座；Abū Maʿshar 自己的推法見下一節。</p>
       <h3>月小限：文獻說法不同的幾處</h3>
       <ul>
+        <li><b>星座類型決定方向。</b>Abū Maʿshar（《Persian Nativities IV》IX.1.26–31，Dykes 英譯）說，指標落在固定星座逐月順推；落在啟動星座逐月逆推（第二個月是第十二個星座）；落在雙體星座則前 15 度順推，第 16 度起逆推。我們<b>一律順推</b>，所以這不是他的做法。年度小限落在啟動星座或雙體星座後半時，第 2～12 月的星座與月主星會不同。</li>
         <li><b>夜盤用月亮。</b>Valens 說夜間出生的人要改看月亮離出生時的月亮多遠。我們<b>不分日夜盤，一律用太陽</b>（照 Abū Maʿshar 的介紹）。</li>
         <li><b>數整個星座，還是數 30 度。</b>Valens 的「距離」是數到太陽所在的星座，還是數滿 30 度，英譯看不出來，我們沒有讀到希臘原文。我們用 30 度：照整個星座數，一年會多出第 13 段。</li>
         <li><b>每 28 天一個星座。</b>Ptolemy《占星四書》IV.10 寫每 28 天推一個星座（Loeb 版的注 82 記有 30 天的讀法，沒有抄本支持）。這樣一年約 13 個月，又不和太陽回歸對齊；Abū Maʿshar 明白拒絕了 Ptolemy 的做法。我們<b>沒有算</b>。</li>
@@ -86,6 +90,8 @@
         <li data-source="Vettius Valens, Anthologies IV.28">Vettius Valens《占星選集》IV.28（Riley 英譯，Kroll 頁碼 204）：日盤看此刻的太陽離出生時的太陽多遠，從年度小限的星座數同樣的距離；夜盤改用月亮。核到：<span class="mono">已讀譯本</span>（英譯，希臘文未核）。</li>
         <li data-source="Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, Persian Nativities IV">Abū Maʿshar《論本命年的回歸》（Dykes 英譯，Persian Nativities IV，2019）：年度小限的星座也是第 1 個月；每月的回歸盤取太陽走到出生時度數的下一個星座同一度數的時刻；拒絕 Ptolemy 的做法。核到：<span class="mono">轉引</span>（只讀到二手：Dykes 在 The Astrology Podcast 第 218 集的口頭介紹，原書未核）。</li>
         <li data-source="al-Biruni, Book of Instruction in the Elements of the Art of Astrology, tr. R. R. Wright">al-Bīrūnī《占星術入門》（Kitāb al-Tafhīm）§522（Wright 英譯，1934）：每月的回歸取太陽回到出生時同一度數的時刻；小限的一年分成 13 個月。核到：<span class="mono">已讀譯本</span>（英譯）。</li>
+        <li data-source="Abu Ma'shar, On the Revolutions of the Years of Nativities IX.1.26-31, tr. B. Dykes, Persian Nativities IV">Abū Maʿshar《論本命年的回歸》IX.1.26–31（Dykes 英譯，Persian Nativities IV，2019）：各個指標（年度小限的星座也在內）每月依所在星座移動：固定星座往前，啟動星座往後（第 2 個月是第 12 個星座），變動星座前 15 度往前、第 16 度起往後。本站每月一律往前推，不採這條規則。核到：<span class="mono">已讀譯本</span>（Dykes 英譯；阿拉伯原文未讀）。</li>
+        <li data-source="[Abū Maʿshar], De revolutionibus nativitatum I.1, Latin translation printed under the name of Hermes">學界歸於 Abū Maʿshar 的《論本命年度回歸》，拉丁本託名 Hermes（巴塞爾 1559）I.1，頁 211：「Solaris mensis xxx graduum」，太陽月為 30 度，用來說明一年為何跟著太陽走；這裡沒有每月小限的規則。核到：<span class="mono">已讀譯本</span>（中世紀拉丁譯本）。</li>
         <li data-source="Guido Bonatti, Liber astronomiae Tr.9">Guido Bonatti《天文學之書》（Decem tractatus astronomiae）Tr.9（Dykes 英譯）：以度數推進的小限，每年 30 度、每月 2 度 30 分。核到：<span class="mono">已讀譯本</span>（英譯）。</li>
         <li data-source="Ptolemy, Tetrabiblos IV.10">Ptolemy《占星四書》IV.10（Robbins 英譯，Loeb p.453 與注 82，LacusCurtius）：每 28 天推一個星座、每 2⅓ 天推一個星座的日小限；我們沒有採用。核到：<span class="mono">已讀譯本</span>（Robbins 英譯，在 LacusCurtius 網頁讀了這一章全文）。</li>
       </ol>
@@ -118,12 +124,14 @@
     <p><b>75 年之後。</b>Bonatti《天文學之書》（Decem tractatus astronomiae）第 9 論第 3 章明寫：日盤到南交點之後回到太陽，依序往下；夜盤他只說「一切照日盤」。所以重新開始是他的明文，不是我們的推定。</p>
     <h3>文獻說法不同的兩處</h3>
     <ul>
-      <li data-public-mark="classical_source_disagreement"><span class="mono">古典文獻說法不一</span> <b>夜盤的交點排在哪裡。</b>預設排在水星之後，也就是七顆行星輪完才輪到交點：al-Bīrūnī《占星術入門》§438–439 的表（Wright 1934 英譯 p.48，我們讀的是書頁影像）如此排列，二手資料說 Abū Maʿshar 也這樣寫（《Persian Nativities IV》IV.8，我們沒有讀到原書）。另一種排法是把交點放在火星之後、太陽之前，常被說成 Bonatti 的做法；但我們讀 Bonatti 的英譯，他寫夜盤從月亮起，之後「一切照日盤」，並沒有寫交點在火星之後。那是 Zoller 對 Bonatti 的讀法；Hand 則讀成交點在最後。兩種排法都可以選，都不標為唯一正確，結果上印出用的是哪一種。「交點在土星之後」不是任何具名版本，不提供。</li>
+      <li data-public-mark="classical_source_disagreement"><span class="mono">古典文獻說法不一</span> <b>夜盤的交點排在哪裡。</b>預設排在水星之後，也就是七顆行星輪完才輪到交點：al-Bīrūnī《占星術入門》§438–439 的表（Wright 1934 英譯 p.48，我們讀的是書頁影像）如此排列，Abū Maʿshar 也這樣寫（Dykes 英譯《Persian Nativities IV》IV.7.24；1559 年拉丁文本 p. 272）。另一種排法是把交點放在火星之後、太陽之前，常被說成 Bonatti 的做法；但我們讀 Bonatti 的英譯，他寫夜盤從月亮起，之後「一切照日盤」，並沒有寫交點在火星之後。那是 Zoller 對 Bonatti 的讀法；Hand 則讀成交點在最後。兩種排法都可以選，都不標為唯一正確，結果上印出用的是哪一種。「交點在土星之後」不是任何具名版本，不提供。</li>
       <li><b>子期換成日期。</b>子期的長度是主期年數的七分之一，不是整數年。我們在子期所在的那一個回歸年裡<b>按比例內插</b>：例如 10/7 年，是一個回歸年再加下一個回歸年的 3/7。al-Bīrūnī 的寫法是年、月、日、時，一個月算 30 日，例如太陽主期的子期寫成 1 年 5 個月 4 日 7 小時。把這個寫法照字面接在回歸年之後，第一個子期照字面約 519.5 日，比例內插約 521.8 日；所有行星的子期算下來，兩種讀法最多相差約 4.5 日，出現在主期的第 6/7 處。火星主期 7 年，每個子期剛好 1 年，兩種讀法相同。兩種讀法的差別只在零頭：照字面是一個月算 30 日，比例內插是把零頭攤在那一個回歸年裡。我們維持比例內插，因為整數年的部分和年界用的是同一個回歸年。</li>
     </ul>
     <h3>出處</h3>
     <ol class="ct-notes">
-      <li data-source="Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, Persian Nativities IV">Abū Maʿshar《論本命年的回歸》（Dykes 英譯，Persian Nativities IV，2019；拉丁節本在 Persian Nativities III，2010）：現存最完整的法達操作說明，夜盤交點在水星後。核到：<span class="mono">轉引</span>（只讀到二手；章節依二手資料為 IV.8，原書未讀）。</li>
+      <li data-source="Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, Persian Nativities IV">Abū Maʿshar《論本命年的回歸》（Dykes 英譯，Persian Nativities IV，2019；拉丁節本在 Persian Nativities III，2010）：IV.1.2–4 列年數與日夜序，IV.7.24–25 說夜盤交點在水星後、滿 75 年回到起始的光體。核到：<span class="mono">已讀譯本</span>（Dykes 英譯與中世紀拉丁譯本；阿拉伯原文未讀）。</li>
+      <li data-source="[Abū Maʿshar], De revolutionibus nativitatum, Lib. II, Latin translation printed under the name of Hermes">學界歸於 Abū Maʿshar 的《論本命年度回歸》，拉丁本託名 Hermes（巴塞爾 1559）第二卷，頁 264、272：頁 264 列各段年數（共 75 年）、日盤從太陽起、夜盤從月亮起，每段分七個子期，交點不分；頁 272 說夜盤的交點排在水星之後，滿 75 年回到起始的行星。核到：<span class="mono">已讀譯本</span>（中世紀拉丁譯本；頁 265–271 未逐行讀）。</li>
+      <li data-source="Abraham Ibn Ezra, Sefer ha-Tequfah §14, ed. and tr. S. Sela">Ibn Ezra《回歸之書》（Sefer ha-Tequfah）§14（Sela 2014，頁 383–385）：日盤與夜盤的順序，夜盤排到水星之後才是交點；滿 75 年重新開始。核到：<span class="mono">已讀譯本</span>（Sela 英譯）。</li>
       <li data-source="al-Biruni, Book of Instruction in the Elements of the Art of Astrology §438-439">al-Bīrūnī《占星術入門》§438–439（Wright 1934 英譯 p.48）：各段年數與日夜順序的表；交點不分日夜都是 3 年與 2 年，排在七顆行星之後，交點不分子期。核到：<span class="mono">已讀譯本</span>（英譯，書頁影像）。</li>
       <li data-source="al-Qabisi, Introduction">al-Qabīṣī《導論》（al-Mudkhal）：較簡略的夜盤序列，研究筆記認為拉丁傳承的分歧由此而來。核到：<span class="mono">轉引</span>（只讀到二手；原書未核）。</li>
       <li data-source="Guido Bonatti, De astronomia">Guido Bonatti《天文學之書》（De astronomia，1550 年 Basel 版）講本命的一論第 3 章〈De annis Firdariae et ipsorum dispositoribus〉，cols. 813–814（Dykes 英譯編為第 9 論第 3 章）：各段年數（太陽 10、金星 8、水星 13、月亮 9、土星 11、木星 12、火星 7、北交點 3、南交點 2，共 75 年）、日盤順序、每顆行星的主期分成七份依序與後面的行星共掌、交點沒有寫共掌，南交點之後回到太陽；夜盤從月亮起，「一切照前面所說」（in omnibus et per omnia, ut dictum est）。交點在火星之後是 Zoller 的讀法，不是 Bonatti 的原話。核到：<span class="mono">已讀原文</span>（拉丁文，archive.org 上這一版的頁影像，bub_gb_BgWuc5O-JzIC 第 n415 張，頁眉作 Pars V）。</li>
@@ -133,7 +141,7 @@
 
   <section class="ds-sec" id="releasing" data-register-entry="zodiacal_releasing">
     <h2 class="hdr"><span>04</span>黃道釋放</h2>
-    <p><b>黃道釋放</b>（zodiacal releasing）：從<b>命運點</b>（Lot of Fortune；希臘文 klēros tychēs，tychē 是「機運、運氣」；阿拉伯文稱 sahm al-saʿāda，「福祉之點」；中文常見譯名為福點、幸運點）或精神點（Lot of Spirit）所在的星座起，依各星座的年數往後分期。規則出自 Valens《占星選集》第四卷。</p>
+    <p><b>黃道釋放</b>（zodiacal releasing）：從<b>命運點</b>（Lot of Fortune；希臘文 klēros tychēs，tychē 是「機運、運氣」；阿拉伯文稱 sahm al-saʿāda，「福祉之點」；中文常見譯名為福點、幸運點）或精神點（Lot of Spirit）所在的星座起，依各星座的年數往後分期。規則出自 Valens《占星選集》第四卷。線上排黃道釋放見<a href="/zh-TW/calculate/zodiacal-releasing">黃道釋放計算</a>。</p>
     <p data-public-mark="modern_arrangement"><span class="mono">現代整理</span> 「黃道釋放」是現代的名稱，Valens 本人沒有用這個詞；「第一層（大期）」「第二層（小期）」這種分層名稱，以及常見的 L1、L2 寫法，也是現代（Schmidt、Brennan）的整理。規則本身出自 Valens。</p>
     <p><b>起點。</b>命運點與精神點各起一條，兩條都算、並列。Valens IV.4 其實有選擇的規則：身體方面的事從命運點起，行動方面的事從精神點起；其中一方或它的主星「受剋」（古書的吉凶判斷，本站不做），就由另一方兼管；男命多從精神點起，女命與嬰兒從命運點起。這些規則需要判斷吉凶與性別，我們不替你選，兩條都列。</p>
     <p><b>星座的年數。</b>各星座的年數大多等於它主星的「小年」；只有摩羯是 27，不是土星的小年 30（同屬土星的水瓶仍是 30；Valens IV.4 的例表，IV.6 解釋來由），所以這張表要單獨記，不能由行星年數推得。十二個星座一圈合計 211 年。</p>

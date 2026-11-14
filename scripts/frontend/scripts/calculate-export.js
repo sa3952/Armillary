@@ -116,7 +116,24 @@ function endPrint() {
   clearPrintInputSummary();
   printBriefTables.querySelectorAll(".print-brief-timelords").forEach((node) => node.remove());
 }
+// 紙本版面比畫面短得多，捲動位置在列印時被壓到紙本的高度，還原展開後也回不去：記下視窗中央那個元素，印完把它放回原位。
+// 一次列印可能送兩次 beforeprint，只記第一次（那時還是畫面版面）。記不到位置也不能擋住列印。
+function holdPrintView() {
+  if (pageState.printView) return;
+  const node = document.elementFromPoint?.((window.innerWidth || 0) / 2, (window.innerHeight || 0) / 2);
+  if (node) pageState.printView = { node, top: node.getBoundingClientRect().top };
+}
+function returnToPrintView() {
+  const held = pageState.printView;
+  pageState.printView = null;
+  if (!held) return;
+  const put = () => window.scrollBy({ top: held.node.getBoundingClientRect().top - held.top, behavior: "instant" });
+  put();
+  // 有的瀏覽器在 afterprint 之後才換回畫面版面。
+  window.requestAnimationFrame(put);
+}
 window.addEventListener("beforeprint", () => {
+  holdPrintView();
   // 按鈕寫下的模式維持到 afterprint：有的瀏覽器（Chromium 存成 PDF）在一次列印裡會再送一次
   // beforeprint，不能因此退回完整列印。
   const mode = pageState.pendingPrintMode || (results.dataset.printMode === PRINT_MODE.BRIEF ? PRINT_MODE.BRIEF : PRINT_MODE.FULL);
@@ -133,7 +150,7 @@ window.addEventListener("beforeprint", () => {
   // 「第一次看星盤？」的導覽不印（calculate.css），也不展開。
   pageState.restorePrintExpansion = window.ChartExport.printExpansion(results.querySelectorAll("details:not(.tl-decade):not(.first-time)"));
 });
-window.addEventListener("afterprint", () => { pageState.pendingPrintMode = null; endPrint(); });
+window.addEventListener("afterprint", () => { pageState.pendingPrintMode = null; endPrint(); returnToPrintView(); });
 
 // 列印的輸入摘要：列印藏起表單，紙上只剩結果，看不出是哪一組輸入算的。列印前把表單上「畫面看得到」的值抄成一張摘要：被
 // 精度收起的時分秒、收起的手動座標不印，只印使用者已經在畫面上看到的東西。結果與輸入一致才會走到這裡（上面的匯出守

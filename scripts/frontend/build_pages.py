@@ -58,6 +58,9 @@ LICENSE_URL = "https://spdx.org/licenses/AGPL-3.0-only.html"
 # terms {{private_alpha_last_day}} (the day before).  A test refuses any other date written next to the public start,
 # and Gate F (verify_pre_image_readiness) refuses pages that disagree on it or state it after the day of that run.
 PUBLIC_ALPHA_START = date(2026, 10, 10)
+# The day Public Beta is declared, named {{public_beta_start}} in the pages.  It is the planned release day: move it if
+# the release moves.
+PUBLIC_BETA_START = date(2026, 11, 14)
 
 # The privacy and terms head notes write dates with U+2011 (non-breaking hyphen) so a wrapping note never breaks a date
 # at its hyphen.  Other pages keep the plain hyphen.
@@ -244,12 +247,17 @@ def application_features() -> list[str]:
         "計算收據與 JSON、Markdown、CSV、純文字匯出（calculation receipt and exports）"]
     return items
 
-# The home page's armillary plate is gen_armillary's projection, injected where the fragment writes {{armillary_svg}}
+# The features page's armillary plate is gen_armillary's projection, injected where the fragment writes {{armillary_svg}}
 # on a line of its own, so the drawing served is the geometry the currentness test checks.
 @lru_cache(maxsize=1)
 def armillary_svg() -> str:
     from scripts.frontend import gen_armillary
     return gen_armillary.build(gen_armillary.HOUR_ANGLE, gen_armillary.AZIM, gen_armillary.ELEV)[0]
+
+@lru_cache(maxsize=1)
+def armillary_named_svg() -> str:
+    from scripts.frontend import gen_armillary
+    return gen_armillary.build(gen_armillary.HOUR_ANGLE, gen_armillary.AZIM, gen_armillary.ELEV, named=True)[0]
 
 # Every backend route lives under this prefix; robots.txt keeps crawlers out of it.  A test binds it to the routes the
 # application mounts.
@@ -895,6 +903,10 @@ def render(item: dict, origin: str, lastmod: dict | None = None) -> str:
     return fill_article_version(_render_dated(item, origin, *_render_parts(item, origin),
                                               recorded_page_date(item, lastmod)), item, lastmod)
 
+def _public_beta_start(item: Mapping) -> str:
+    hyphen = NON_BREAKING_HYPHEN if item["fragment"] in NON_BREAKING_DATE_FRAGMENTS else "-"
+    return PUBLIC_BETA_START.isoformat().replace("-", hyphen)
+
 def _public_alpha_date(item: Mapping, key: str) -> str:
     return public_alpha_dates(non_breaking=item["fragment"] in NON_BREAKING_DATE_FRAGMENTS)[key]
 
@@ -907,6 +919,7 @@ SCALARS: dict[str, Callable[[Mapping], str]] = {
     "telemetry_field_list": lambda item: telemetry_field_list(),
     "public_alpha_start": lambda item: _public_alpha_date(item, "public_alpha_start"),
     "private_alpha_last_day": lambda item: _public_alpha_date(item, "private_alpha_last_day"),
+    "public_beta_start": _public_beta_start,
     "place_source_snapshot_date": lambda item: place_source_snapshot_date(),
     "ephemeris_file_count": lambda item: zh_count(len(ephemeris_digests())),
     "advanced_option_count": lambda item: options_catalogue_counts()["advanced_option_count"],
@@ -955,6 +968,8 @@ def _ephemeris_lines(indent: str) -> str:
 BODY_FILLERS: tuple[Callable[[str, dict, str], str], ...] = (lambda body, item, origin: fill_scalars(body, item),
     lambda body, item, origin: _fill_block(body, "ephemeris_digests", _ephemeris_lines), lambda body, item,
     origin: _fill_block(body, "armillary_svg", lambda indent: textwrap.indent(armillary_svg(), indent)), lambda body,
+    item, origin: _fill_block(body, "armillary_named_svg", lambda indent: textwrap.indent(armillary_named_svg(), indent)),
+    lambda body,
     item, origin: fill_fx_defs(body), lambda body, item, origin: fill_article_byline(body, item), lambda body, item,
     origin: fill_source_legend(body, item), lambda body, item, origin: fill_article_dates(body, item), lambda body,
     item, origin: fill_article_reading_time(body, item), lambda body, item, origin: fill_slate_numbers(body),
@@ -979,6 +994,14 @@ def _render_parts(item: dict, origin: str) -> tuple[str, str | None]:
         load_surface_manifest()["surfaces"]) else None)
     return body, headline
 
+_ARTICLE_NEXT_LIST_END = re.compile(r'(<section class="ar-next".*?)(\n\s*</ul>)', re.S)
+
+def _with_article_support(body: str) -> str:
+    """Every article's closing reading list ends with the support page, so a new article needs no copy of the line."""
+    return _ARTICLE_NEXT_LIST_END.sub(
+        lambda match: f'{match.group(1)}\n        <li><a href="/zh-TW/support">支持渾儀：一個人維護、不收費的網站</a></li>{match.group(2)}',
+        body, count=1)
+
 def _render_dated(item: dict, origin: str, body: str, headline: str | None,
                   updated: str | None, stamp: bool = True) -> str:
     if updated is not None and not is_dated(item):
@@ -988,6 +1011,7 @@ def _render_dated(item: dict, origin: str, body: str, headline: str | None,
         raise ValueError("page shell must have exactly one page date placeholder")
     shell = shell.replace(_PAGE_UPDATED_PLACEHOLDER, "" if updated is None else page_updated_line(updated))
     body = fill_method_updated(body, item, updated)
+    body = _with_article_support(body)
     metadata = structured_data.metadata_values(item, origin, headline, updated, body)
     og_image, twitter_card = og_image_markup(origin)
     # {{body}} goes in first, then {{assets}} stamps the content version, in that order: fragments need the version key

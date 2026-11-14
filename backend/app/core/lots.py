@@ -64,8 +64,9 @@ SECT_SOURCE = (
     "al-Qabīṣī I (Latin 1512); Lilly 1647 p.113 (Hayz), p.42. "
     "Most treat a diurnal or nocturnal birth as a given category, or describe "
     "planetary conditions as above or below the earth; the closest to a solar "
-    "day/night criterion are Valens III.11 (Pingree; = III.14 Kroll/Riley, '14K;11P'; the Moon 'above the earth' read as until "
-    "it sets) and Lilly 1647 p.42 (checking the chart time by the Sun's house). None "
+    "day/night criterion is Lilly 1647 p.42 (checking the chart time by the Sun's house); Valens III.11 "
+    "(Pingree; = III.14 Kroll/Riley) changes Fortune's formula within a night birth by "
+    "whether the Moon has set, which is not a day/night criterion. None "
     "specifies sun-centre, upper limb or refraction; the >0° rule is a product convention."
 )
 # The loci SECT_SOURCE names, one citation object each.  Where another register
@@ -106,19 +107,21 @@ SECT_SOURCE_CITATIONS = [
     reference_only("Abū Maʿshar, Abbreviation III.3 (Dykes ITA §III.2)", "sect as a given category"),
     reference_only("al-Qabīṣī, Introduction I (Latin 1512)", "sect as a given category"),
     cited("William Lilly, Christian Astrology (1647) p.113, 'Hayz'",
-          "a diurnal planet by day above the earth, a nocturnal planet by night under the earth",
-          ORIGINAL_LANGUAGE_READ, "archive.org OCR text of a modern reset edition"),
+          "a masculine diurnal planet by day above the earth in a masculine sign, a feminine nocturnal planet by night under the earth in a feminine sign",
+          ORIGINAL_LANGUAGE_READ, "the 1647 first edition as scanned at archive.org (b30338724, leaf n147 = p.113)"),
     cited("William Lilly, Christian Astrology (1647) p.42",
           "checking the chart time by the Sun's house", ORIGINAL_LANGUAGE_READ,
           ("the 1647 printing as scanned at archive.org (b30338724, n75 = p.42): "
            "'that they may presently consider whether they have set their Figure right'")),
     cited(
         "Vettius Valens, Anthologies III.11 (Pingree; = III.14 Kroll/Riley, '14K;11P')",
-        "the Moon 'above the earth' read as until it sets",
+        ("for a night birth, Moon to Sun while the Moon is above the earth, Sun to "
+         "Moon once it has set: a rule within a night birth, not a day/night criterion"),
         TRANSLATION_READ,
         ("Riley's translation in a reformatted online copy of his preliminary edition "
          "(github.com/janegca/latex-valens), the chapter headed '(14K,11P)': 'if the "
-         "Moon is above the earth, i.e. until the time it sets'; the Greek not checked"),
+         "Moon is above the earth, i.e. until the time it sets'; the Greek checked "
+         "in Kroll 1908 p.155 ll.5-9 (III.14)"),
     ),
 ]
 # 近地平敏感提示帶：±50 角分（理由見 module docstring）。
@@ -172,7 +175,8 @@ LOTS_SOURCE_CITATIONS = [
         ("Riley's translation in a reformatted online copy of his preliminary edition "
          "(github.com/janegca/latex-valens), the chapter headed '(14K,11P)', after "
          "Riley's /147P/ marker: 'After the Moon has set, determine the distance from "
-         "the Sun to it'; the Greek not checked"),
+         "the Sun to it'; the Greek checked in Kroll 1908 p.155 ll.5-9 (III.14); "
+         "Pingree p.147 checked"),
     ),
     cited(("Greenbaum, 'Calculating the Lots of Fortune and Daemon in Hellenistic "
            "Astrology', Culture and Cosmos 11, 2007, p.183 (article pp.163-187)"),

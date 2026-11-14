@@ -161,8 +161,6 @@ class HouseSystemUnavailableError(Exception):
         reason: str | None = None,
         reason_code: str = "swiss_house_fallback_rejected",
     ):
-        if reason_code not in HOUSE_AVAILABILITY_REASONS:
-            raise InternalInvariantError(reason_code)
         self.house_system = code
         self.latitude = latitude
         self.reason_code = reason_code

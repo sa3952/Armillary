@@ -109,15 +109,23 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
                   "Riley's English translation via the public re-typeset janegca/latex-valens"),
             cited(("Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, "
                    "Persian Nativities IV (2019)"),
-                  ("the year's sign is also the first month's sign and each following sign "
-                   "the next month; the monthly revolution charts are cast when the Sun "
+                  ("the year's sign is also the first month's sign; the monthly revolution charts are cast when the Sun "
                    "reaches the natal Sun's degree in each following sign, the solar return "
                    "being also the first month; Ptolemy's monthly method rejected. Timing the "
                    "profected months by those same instants is the product's reading of that "
-                   "summary"),
+                   "summary. His own rule for moving the month's sign is IX.1.26-31 below, "
+                   "which the product does not adopt"),
                   SECONDARY_ONLY,
                   ("known only from Dykes's spoken summary (The Astrology Podcast, episode "
                    "218, 2019); the book is not checked")),
+            cited("Abu Ma'shar, On the Revolutions of the Years of Nativities IX.1.26-31, tr. B. Dykes, Persian Nativities IV (2019)",
+                  ("each of the four indicators moves by month according to its "
+                   "sign (§32 moves the second indicator always forward): forward from a fixed sign, backward from a movable sign (the second "
+                   "month is the twelfth sign), and from a double-bodied sign forward through "
+                   "its first 15 degrees and backward from the 16th. The product moves every "
+                   "month forward, so it does not follow this rule"),
+                  TRANSLATION_READ,
+                  "read in Dykes's English; the Arabic not read"),
             cited(("al-Biruni, Book of Instruction in the Elements of the Art of Astrology, tr. "
                    "R. R. Wright (1934), section 522"),
                   ("the monthly revolution is taken each time the Sun reaches the degree and "
@@ -125,6 +133,11 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
                    "the profection year into thirteen months of 28 days 1 hour 51 minutes, the "
                    "thirteenth repeating the year's sign, which the product does not compute"),
                   TRANSLATION_READ, "Wright's English translation"),
+            cited(("[Abū Maʿshar], De revolutionibus nativitatum I.1, Latin translation printed "
+                   "under the name of Hermes (Basel 1559) p.211"),
+                  ("'Solaris mensis xxx graduum': a solar month of 30 degrees, in his "
+                   "argument for why the year follows the Sun; no monthly profection rule there"),
+                  TRANSLATION_READ, "the medieval Latin translation at the cited page"),
             cited("Guido Bonatti, Liber astronomiae Tr.9 (Dykes translation)",
                   ("profection by equal degrees, 30 degrees a year, 2 degrees 30 minutes a "
                    "month, 5 minutes a day, counted from birth; a different method the product "
@@ -142,12 +155,14 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
             ("Robbins's English (Loeb 1940): the whole of IV.10 read in the LacusCurtius "
              "transcription; the Greek not checked")),
         "not_from_the_sources": [
+            "moving every month forward whatever the sign: Abu Ma'shar turns the months "
+            "backward from movable signs and from the second half of double-bodied signs",
             "the Sun's 30-degree steps for a night birth: Valens IV.28 uses the Moon by "
             "night; the product uses the Sun for every chart, as Abu Ma'shar is reported "
             "to do",
             "the equal-twelfths profile: no classical source for it was found; it is the "
             "arrangement common in modern software",
-            "the profile names and the word 'month' for a 30-degree step of the Sun",
+            "the profile names",
         ],
         "worked_example": (
             "none: no source read gives a monthly profection with numbers; the tests "

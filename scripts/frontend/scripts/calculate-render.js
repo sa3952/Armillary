@@ -1175,6 +1175,8 @@ function paintBackToTop() {
   });
   backToTop.hidden = !shown && document.activeElement !== backToTop;
 }
+// 按開選單不一定有捲動，按鈕要當下讓開，不是等下一次捲動。
+document.querySelector("#export-toolbar .export-menu").addEventListener("toggle", paintBackToTop);
 window.addEventListener("scroll", () => {
   if (!backToTopState.frame) backToTopState.frame = window.requestAnimationFrame(paintBackToTop);
 }, { passive: true });

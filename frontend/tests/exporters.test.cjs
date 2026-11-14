@@ -144,7 +144,7 @@ function fixture() {
     library_info: { swiss_ephemeris_library_version: "2.10.03" },
     computation_mode: { zodiac: "tropical" },
     requested_options: { include_aspects: false },
-    output_contract: { status: "provisional" },
+    output_contract: { status: "public_beta_frozen" },
     astronomical_data: {
       bodies: [{ name: "木星, Jupiter", longitude: 321.123456789 }],
     },

@@ -145,8 +145,8 @@ DEPENDENCY_BUNDLE_PATHS = ("third_party/" "sources", "third_party/" "build_wheel
                            "docs/" "DEPENDENCY_LICENSES.md")
 RECONSTRUCTION_MODES = ("online-clean",)
 RECONSTRUCTION_BUILDER_IMAGE = (
-    "python:3.14.10-trixie@"
-    "sha256:d6eb5bd79dd4cc88445ad56d0bd6a6b91610358b1249796a2cb1e6634f960ad1"
+    "python:3.15.2-trixie@"
+    "sha256:2a01fe7b84cc646c76d6fe8c8c216aef39de2617ad2723ed488e7c4f495a9539"
 )
 
 

@@ -266,15 +266,16 @@ def compute() -> dict:
                              if len({_element(sky.mercury(t)[0]) for pair in by_year[y] for t in pair}) == 1)
         four = sorted(y for y in whole_years if len(by_year[y]) == 4)
         # Transits: the next inferior conjunction whose least separation is within the Sun's apparent radius.
-        def least(c: float) -> float:
-            lo, hi = c - 0.5, c + 0.5
+        def minimum(fn, lo: float, hi: float) -> float:
             for _ in range(60):
                 m1, m2 = lo + (hi - lo) / 3, hi - (hi - lo) / 3
-                if sky.separation(m1) < sky.separation(m2):
+                if fn(m1) < fn(m2):
                     hi = m2
                 else:
                     lo = m1
             return (lo + hi) / 2
+        def least(c: float) -> float:
+            return minimum(sky.separation, c - 0.5, c + 0.5)
         next_transit = None
         for x in inferiors:
             if x > d:
@@ -286,14 +287,7 @@ def compute() -> dict:
             raise RuntimeError("no transit of Mercury before the end of the span")
         closest = least(c)
         # The western elongation after this conjunction: the most negative longitude difference.
-        lo, hi = c, superior_after
-        for _ in range(60):
-            m1, m2 = lo + (hi - lo) / 3, hi - (hi - lo) / 3
-            if sky.difference(m1) < sky.difference(m2):
-                hi = m2
-            else:
-                lo = m1
-        elongation = (lo + hi) / 2
+        elongation = minimum(sky.difference, c, superior_after)
         combust_ends = [x for x in crossings["lilly"]["combust"] if r < x < d]
         if len(combust_ends) != 2:
             raise RuntimeError("Lilly's combustion does not have two edges inside the retrograde")
@@ -567,7 +561,7 @@ def _plot(layout: str, fid: str, data: dict, bound: _fx.Bound) -> str:
     L = data["labels"]
     this = data["this"]
     out = [_fx.svg_open(layout, W, H, fid), _fx.plate(W, H)]
-    out.append(_fx.text(x0, top - (30 if wide else 30), "↑ 太陽東側（昏星）", "fx-t fx-small fx-rub"))
+    out.append(_fx.text(x0, top - 30, "↑ 太陽東側（昏星）", "fx-t fx-small fx-rub"))
     out.append(f'<clipPath id="{fid}-{layout}-plot">{_fx.rect(x0, top, x1 - x0, bottom - top)}</clipPath>')
     plot = [f'<g clip-path="url(#{fid}-{layout}-plot)">', _fx.rect(x0, top, x1 - x0, bottom - top, "fx-track")]
     for key, _, _ in PROFILES:

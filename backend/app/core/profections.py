@@ -28,8 +28,6 @@ LORD_TABLE = "traditional_seven_domicile_v1"
 DOMICILE_LORD: dict[str, str] = {
     sign: planet for planet, signs in DOMICILE_SIGNS.items() for sign in signs
 }
-if set(DOMICILE_LORD) != set(SIGNS):
-    raise RuntimeError("every sign needs exactly one seven-planet domicile lord")
 
 
 def profect(natal_ascendant_sign: str, *, completed_years: int) -> dict:

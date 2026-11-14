@@ -102,8 +102,8 @@ KNOWN_UTC_LEAP_SECOND_DATES = frozenset({
 
 
 # The accepted IANA names are committed with the code: the production image's
-# zoneinfo.available_timezones() without `localtime` (a link to the container's
-# own clock setting) and `Factory` (a placeholder, not a place).  Reading the
+# zoneinfo.available_timezones() without `Factory` (a placeholder, not a place);
+# Python 3.15 no longer lists `localtime` there, and it stays refused.  Reading the
 # host's list instead made one request 200 on one machine and 422 on another.
 # Gate D checks the committed list against the image (verify_container_runtime).
 IANA_ZONE_NAMES_PATH = Path(__file__).with_name("iana_zone_names.json")

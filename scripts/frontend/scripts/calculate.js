@@ -45,6 +45,8 @@ function dropResultsForNewAttempt() {
   // 它已是 disabled，處理函式也因 lifecycle 已清空而拒絕。
   pageState.boundInputSignature = null;
   pageState.currentViewTree = null;
+  // 各星落宮由出生資料推得：就地清空，不只換掉參照。
+  pageState.positionHouses.clear();
   setStale(false);
   lifecycle.clear();
   clearPrintInputSummary();

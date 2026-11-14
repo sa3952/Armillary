@@ -127,7 +127,7 @@ def _day_art(layout: str, fid: str, data: dict, steps: list, bound: _fx.Bound) -
         label = "0′" if d == 0 else f"{'+' if d > 0 else '−'}{abs(d)}′"
         out.append(_fx.text(L - 8, Yd(d) + 5, bound.scale(label), "fx-t fx-small fx-num", "end"))
     out.append(_fx.path("M" + " L".join(f"{_fx.f(X(h))} {_fx.f(Yd(d))}" for h, d, _ in data["curve"]), "fx-curve"))
-    for h in ((0, 6, 12, 18, 24) if wide else (0, 6, 12, 18, 24)):
+    for h in (0, 6, 12, 18, 24):
         out.append(_fx.line(X(h), low_box[1], X(h), low_box[1] + 6, "fx-axis"))
         anchor = "start" if h == 0 and not wide else "end" if h == 24 and not wide else "middle"
         out.append(_fx.text(X(h), low_box[1] + 24, bound.scale(f"{h:02d}:00"), "fx-t fx-small fx-num", anchor))
@@ -136,7 +136,7 @@ def _day_art(layout: str, fid: str, data: dict, steps: list, bound: _fx.Bound) -
         body = (_fx.line(x, top_box[0] - 4, x, low_box[1], "fx-cursor") + _fx.circle(x, Ya(step["altitude"]), 6 if wide else 5,
             "fx-cursor") + _fx.circle(x, Yd(step["shift"]), 6 if wide else 5, "fx-cursor"))
         out.append(_fx.step_group(i, DEFAULT_STEP, body))
-    out.append(_fx.text(L if wide else 14, H - 18, "直線：拖拉條選的整點" if wide else "直線：拖拉條選的整點", small + " fx-dim"))
+    out.append(_fx.text(L if wide else 14, H - 18, "直線：拖拉條選的整點", small + " fx-dim"))
     out.append("</svg>")
     return "".join(out)
 

@@ -209,8 +209,8 @@ def test_the_wheelhouse_holds_one_hash_checked_wheel_per_locked_binary_and_the_b
         assert flag in download
     platforms = [download[index + 1] for index, word in enumerate(download) if word == "--platform"]
     assert platforms == [f"manylinux_2_{minor}_x86_64" for minor in range(41, 4, -1)]
-    assert download[download.index("--python-version") + 1] == "3.14"
-    assert download[download.index("--abi") + 1] == "cp314"
+    assert download[download.index("--python-version") + 1] == "3.15"
+    assert download[download.index("--abi") + 1] == "cp315"
     requested = (context / module.WHEELHOUSE).parent
     assert not any(path.suffix == ".lock" for path in requested.iterdir())
 

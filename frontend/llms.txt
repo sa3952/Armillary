@@ -16,7 +16,7 @@
 - 宮位制：Whole Sign、Equal、Porphyry、Alcabitius、Campanus、Regiomontanus、Placidus
 - 時間主星：年度小限（annual profections）、月小限（monthly profections）、法達（firdaria）、黃道釋放（zodiacal releasing）與十年期（decennials）；只列哪一段時間由哪顆行星或哪個星座輪值
 - 本命盤：行星位置、上升點、中天與行星落宮；相位；本質尊貴：廟、旺、陷、弱、界、面、三分性、外來；日盤夜盤；命運點與精神點；恆星；反照點；赤緯平行與反平行；月空亡；十二分部；月宿；焦傷、在光束下與日輪內；行速、停滯與東出西入；月相與產前朔望；日月食；行星時
-- 狀態：公開測試（Public Alpha），自2026-10-10起
+- 狀態：Public Beta，自2026-11-14起。公開測試（Public Alpha）自2026-10-10起
 - 已知限制（英文）：https://github.com/sa3952/Armillary/blob/main/docs/KNOWN_LIMITATIONS.md
 - 方法頁全文與文章重點（純文字）：https://projectarmillary.com/llms-full.txt
 - 親手驗證隱私：https://projectarmillary.com/zh-TW/security/verify
@@ -70,16 +70,16 @@ Armillary (Project Armillary) is a classical Western astrology calculator with a
 - [使用條款](https://projectarmillary.com/zh-TW/legal/terms): 渾儀的使用條款：服務做什麼與不做什麼、出生資料與計算結果的歸屬、計算資訊的性質與責任邊界、可用性與變更、禁止行為，以及準據法與管轄。
 - [著作權、授權與對應原始碼](https://projectarmillary.com/zh-TW/legal/copyright): 渾儀的著作權與授權：怎麼取得你正在使用那一版的 AGPLv3 對應原始碼與它的範圍，以及 Swiss Ephemeris、地名資料、Debian 基底與其他第三方依賴的授權揭露。
 - [聯絡渾儀 Armillary](https://projectarmillary.com/zh-TW/contact): 渾儀只有一個聯絡信箱，個資權利請求、安全通報、一般聯絡與錯誤回報共用。
-- [支持渾儀 Armillary](https://projectarmillary.com/zh-TW/support): 渾儀不收費、不需註冊。
+- [支持渾儀 Armillary](https://projectarmillary.com/zh-TW/support): 渾儀的排盤不收費、不需註冊，計算、卷宗與匯出對每個人都一樣。
 - [關於渾儀 Armillary](https://projectarmillary.com/zh-TW/about): 渾儀 Armillary 是古典西洋占星的計算網站，名稱取自天文儀器渾儀（渾天儀），不是儀器本身。
 - [無障礙聲明](https://projectarmillary.com/zh-TW/accessibility): 渾儀網頁目前做到的無障礙：鍵盤操作、控制項名稱、字級與窄螢幕、減少動態與高對比主題。
 
 ## 文章
 
 - [出生時間差五分鐘，上升星座與宮位會怎麼變](https://projectarmillary.com/zh-TW/blog/birth-time-sensitivity): 出生時刻記到幾點幾分，但記錄可能差幾分鐘：同一天同一地點，行星幾乎不動，上升點與宮位卻可能整組換掉。
-- [臺灣夏令時間是哪幾年？夏令時間出生排盤要減一小時嗎](https://projectarmillary.com/zh-TW/blog/taiwan-time-zone-history): 臺灣夏令時間（日光節約時間）實施於 1946–1961、1974、1975、1979 年共十九個夏天，期間鐘面是 UTC+9。
+- [台灣夏令時間是哪幾年？1946–1979 全部 19 個夏天一覽](https://projectarmillary.com/zh-TW/blog/taiwan-time-zone-history): 台灣夏令時間（日光節約時間）實施於 1946–1961、1974、1975、1979 年，共 19 個夏天，期間鐘面是 UTC+9。
 - [民國年、昭和年怎麼換算西元？日治時期出生怎麼排盤](https://projectarmillary.com/zh-TW/blog/taiwan-era-years-birth-time): 民國年加 1911、昭和年加 1925、大正年加 1911 就是西元年。
-- [香港出生時間怎麼換算？夏令時間、日佔時期與天文台的紀錄](https://projectarmillary.com/zh-TW/blog/hong-kong-birth-time): 香港 1941–1979 年實施過三十多段夏令時間，日佔時期用東京時間 UTC+9。
+- [香港夏令時間是哪幾年？1941–1979 逐年表與出生時間換算](https://projectarmillary.com/zh-TW/blog/hong-kong-birth-time): 香港 1941–1979 年有三十多段夏令時間，日佔時期用東京時間 UTC+9。
 - [整宮制與 Placidus 差在哪：同一顆行星，兩個宮位](https://projectarmillary.com/zh-TW/blog/whole-sign-vs-placidus): 換一種宮位制，行星就換了宮，不代表有一邊算錯。
 - [四套界表，四個答案：同一個度數為什麼有不同的界主](https://projectarmillary.com/zh-TW/blog/four-bounds-tables): 界把每個星座切成五段交給五顆行星（各段的行星稱為界主星），但古書留下的切法不只一套。
 - [北交點真交點與平均交點差多少？真交點其實是密切交點](https://projectarmillary.com/zh-TW/blog/mean-vs-osculating-node): 北交點（俗稱龍頭）有兩種算法：排盤軟體的「真交點」與平均交點最多差將近 2 度。
@@ -105,10 +105,12 @@ Armillary (Project Armillary) is a classical Western astrology calculator with a
 - [兩個網站的上升點差 2 角分？出生地座標差一點的影響](https://projectarmillary.com/zh-TW/blog/ascendant-coordinates): 同一個出生時刻、同樣選臺北，兩個排盤工具的上升點常差兩、三角分，原因多半是「臺北」的座標不同。
 - [黑月莉莉絲（Lilith）怎麼算？平均、真與自然三種差在哪](https://projectarmillary.com/zh-TW/blog/black-moon-lilith-mean-true-natural): 黑月莉莉絲（Lilith）是月球軌道的遠地點，有平均、「真」（密切）、自然三種算法。
 - [地心月亮和站心月亮差多少？為什麼月亮會差將近 1 度](https://projectarmillary.com/zh-TW/blog/geocentric-vs-topocentric-moon): 從出生地看的月亮（站心）和從地心看的，最多差 1 度，有時換星座。
-- [行星時怎麼算？從日出起算、晝夜各十二等分與迦勒底序](https://projectarmillary.com/zh-TW/blog/planetary-hours): 行星時把白天與夜晚各分成十二等分，依迦勒底序輪給七顆行星，第一時由星期主星開始。
+- [行星時怎麼算？四步驟算出任一天每個小時的主星（附對照表）](https://projectarmillary.com/zh-TW/blog/planetary-hours): 從日出起，白天和夜晚各分十二等分，依迦勒底序輪給七顆行星。
 - [反照點是什麼？反照點與反向反照點怎麼算、為何以至點為鏡](https://projectarmillary.com/zh-TW/blog/antiscia): 反照點（antiscia）是行星對 0° 巨蟹—0° 摩羯至點軸的鏡像，算法是 180° 減黃經。
 - [2026 水星逆行時刻表：10–11 月天蠍座水逆與古書怎麼說](https://projectarmillary.com/zh-TW/blog/mercury-retrograde-2026): 2026 年 10 月 24 日到 11 月 13 日的水星逆行：停滯、下合、焦傷與日輪內的逐分時刻表，三次水逆為何都在水象，並照 Lilly、Valens 希臘原文、Ptolemy、al-Bīrūnī 說明這些狀態原本指誰的水星。
 - [水星轉順 2026：11 月 13 日停滯時刻，古書怎麼說行星停滯](https://projectarmillary.com/zh-TW/blog/mercury-station-direct-2026): 2026 年 11 月 13 日 23:53 水星在天蠍 5°02′ 轉回順行，金星隔天在天秤轉順。
+- [小限第幾年怎麼數？第 N 年是已滿 N−1 歲](https://projectarmillary.com/zh-TW/blog/profection-year-count): 年度小限的第 N 年就是已滿 N−1 歲：第 1 年是上升星座本身，第 13 年回到上升星座。
+- [星盤和其他網站不一樣？依序檢查 7 個設定](https://projectarmillary.com/zh-TW/blog/chart-settings-reconcile): 兩個網站排出的星盤不同，多半是設定不同，不等於有一邊算錯。
 - [澳門出生時間怎麼換算？夏令時間、1941–1945 戰時鐘點與逐年表](https://projectarmillary.com/zh-TW/blog/macau-birth-time): 澳門 1946–1979 年實施過 32 段夏令時間，1942、1943 年夏天鐘面更曾快到 UTC+10。
 
 ## Optional

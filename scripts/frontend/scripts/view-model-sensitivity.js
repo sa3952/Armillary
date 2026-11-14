@@ -113,8 +113,8 @@ function sensitivityNotes(sensitivity) {
     "「各取樣點分類相同」只表示在列出的取樣點分類一致，不代表結果穩定：兩個取樣點之間"
     + "仍可能變了又變回，本系統沒有用任何推論排除這種情形。黃經、四軸與宮頭的數值在區間內" + "本來就會移動，另以範圍列出。"
   );
-  const probeCoverage = isRecord(sensitivity.probe_coverage) ? sensitivity.probe_coverage : null;
-  const skipped = probeCoverage && Array.isArray(probeCoverage.skipped) ? probeCoverage.skipped : [];
+  const probeCoverage = isRecord(sensitivity.probe_coverage) ? sensitivity.probe_coverage : {};
+  const skipped = Array.isArray(probeCoverage.skipped) ? probeCoverage.skipped : [];
   if (skipped.some((item) => isRecord(item) && item.reason_code === "local_time_nonexistent")) {
     notes.push("這個民用小時只有一部分實際存在；以下範圍只涵蓋可取樣的時刻。");
   }
@@ -134,13 +134,13 @@ function sensitivityNotes(sensitivity) {
         .join("、") + "。"
     );
   }
-  const schedule = sensitivity.precision === "date_only" && isRecord(sensitivity.sample_schedule) ? sensitivity.sample_schedule : null;
-  if (schedule && Array.isArray(schedule.utc_offset_changes) && schedule.utc_offset_changes.length) {
+  const schedule = sensitivity.precision === "date_only" && isRecord(sensitivity.sample_schedule) ? sensitivity.sample_schedule : {};
+  if (Array.isArray(schedule.utc_offset_changes) && schedule.utc_offset_changes.length) {
     notes.push(
       `這一天時鐘變更 ${schedule.utc_offset_changes.length} 次` + `（UTC ${schedule.utc_offset_changes.join("、")}），變更前後各取一秒。`
     );
   }
-  if (schedule && Array.isArray(schedule.absent_hourly_labels) && schedule.absent_hourly_labels.length) {
+  if (Array.isArray(schedule.absent_hourly_labels) && schedule.absent_hourly_labels.length) {
     notes.push(`這些整點在這個時區當天不存在，沒有取樣：${schedule.absent_hourly_labels.join("、")}。`);
   }
   return notes;
@@ -149,14 +149,15 @@ function sensitivityNotes(sensitivity) {
 function sensitivityTables(response, sensitivity) {
   // 每一種精度回的形狀不同，各自承接：落成空表讀起來像「沒有東西變動」，正好把後端的話反過來說。
   const tables = [];
+  const ranges = sensitivity.position_ranges || [];
+  const bodySigns = sensitivity.body_signs || [];
   const bodyNames = {
     ...extendedLotNames(response),
     ...Object.fromEntries(
-      (sensitivity.body_signs || []).concat(sensitivity.position_ranges || [])
+      bodySigns.concat(ranges)
         .filter((item) => item && item.key && item.name).map((item) => [item.key, item.name])
     ),
   };
-  const ranges = sensitivity.position_ranges || [];
   if (ranges.length) {
     tables.push({
       title: "位置範圍", columns: ["天體", "代表性黃經（度）", "取樣點出現的星座數", "取樣狀態"], collapse: ["取樣狀態"],
@@ -166,7 +167,6 @@ function sensitivityTables(response, sensitivity) {
       ]),
     });
   }
-  const bodySigns = sensitivity.body_signs || [];
   if (bodySigns.length) {
     tables.push({
       title: "星座落點", columns: ["天體", "代表性星座", "取樣點出現的星座數", "取樣狀態"], collapse: ["取樣狀態"],
@@ -181,7 +181,7 @@ function sensitivityTables(response, sensitivity) {
     tables.push({
       title: "落宮", columns: ["天體", "代表性宮位", "取樣點出現的宮位數", "取樣狀態"], collapse: ["取樣狀態"],
       rows: placements.map((item) => [
-        item.name || item.key, item.representative_house === null || item.representative_house === undefined ? DASH
+        item.name || item.key, item.representative_house == null ? DASH
           : String(item.representative_house), String((item.sampled_houses || []).length), samplingStatus(item.status),
       ]),
     });
