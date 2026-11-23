@@ -158,7 +158,7 @@
     { key: "include_anti_vertex", group: "points", label_zh: "反宿命點", label_en: "Anti-Vertex" },
     { key: "include_lots", group: "points",
       label_zh: "阿拉伯點", label_en: "Arabic lots",
-      help_zh: "目前僅命運點與精神點。太陽靠近地平時，日盤與夜盤兩套公式的結果並列；主要值依太陽真高度大於 0 度的規則，落宮與相位只用主要值。" },
+      help_zh: "列命運點與精神點，另有七個延伸的點（Paulus 第 23 章五個、Valens IV.25 兩個）。太陽靠近地平時，日盤與夜盤兩套公式的結果並列；主要值依太陽真高度大於 0 度的規則，落宮與相位只用主要值。" },
 
     { key: "include_fixed_stars", group: "stars",
       label_zh: "恆星", label_en: "Fixed stars",

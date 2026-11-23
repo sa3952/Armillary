@@ -537,8 +537,17 @@ def _utc_reading(jd_ut: float) -> tuple[int, int, int, int, int, float]:
     # is the next millisecond exactly when that millisecond's own Julian day is it.
     if short_of_next < math.ulp(jd_ut) * SECONDS_PER_DAY:
         year, month, day, hour, minute, _ = reading
-        if swe.utc_to_jd(year, month, day, hour, minute, next_millisecond, swe.GREG_CAL)[1] == jd_ut:
-            return (year, month, day, hour, minute, next_millisecond)
+        candidate = (year, month, day, hour, minute, next_millisecond)
+        if next_millisecond >= 60.0:
+            # Only a leap second has a second 60; elsewhere the next
+            # millisecond is the start of the next minute, which Swiss's own
+            # reading of the following Julian day names.
+            if tuple(following[:5]) != (year, month, day, hour, minute):
+                candidate = (*following[:5], 0.0)
+            elif following[5] < 60.0:
+                return reading
+        if swe.utc_to_jd(*candidate, swe.GREG_CAL)[1] == jd_ut:
+            return candidate
     return reading
 
 

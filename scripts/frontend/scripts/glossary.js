@@ -44,7 +44,7 @@
     { key: "triplicity", term: "三分性", en: "Triplicity", chapter: "古典判斷",
       text: "火、土、風、水四個元素各有幾顆守護行星；日盤與夜盤由不同的行星主事。古書有好幾套，本站平等提供，不替你選。" },
     { key: "lots", term: "命運點與精神點", en: "Lot of Fortune, Lot of Spirit", chapter: "古典判斷",
-      text: "用太陽、月亮與上升點的位置算出來的點，不是天體。日盤與夜盤的公式不同。命運點也叫福點、幸運點。這類點統稱阿拉伯點（Lots），也有人稱希臘點；本站一律寫阿拉伯點。" },
+      text: "用太陽、月亮與上升點的位置算出來的點，不是天體。日盤與夜盤的公式不同。命運點也叫福點、幸運點。這類點統稱阿拉伯點（Lots），也有人稱希臘點；本站一律寫阿拉伯點。除了這兩個，表中還列七個延伸的點：Paulus 第 23 章的五個與 Valens IV.25 的兩個。" },
     { key: "dodecatemoria", term: "十二分部", en: "Dodecatemoria", chapter: "位置",
       text: "把一個點在星座裡走了幾度乘以 12，從同一個星座的起點往後數，數到的位置。Firmicus《Mathesis》II.13 用乘以 12，Manilius《Astronomica》II.693–748 把每個星座分成十二段，落到的星座相同；Paulus《導論》第 22 章另用乘以 13（Paulus 這一條只讀到二手轉述）。" },
     { key: "novenaria", term: "九分部", en: "Novenaria", chapter: "位置（十二分部一區的說明）",
@@ -64,7 +64,7 @@
     { key: "zodiacal_releasing", term: "黃道釋放", en: "Zodiacal releasing", chapter: "時間主星",
       text: "從命運點或精神點所在的星座起，依各星座的年數往後分期。這個名稱是現代人取的，Valens 本人沒有用這個詞。" },
     { key: "decennials", term: "十年期", en: "Decennials", chapter: "時間主星",
-      text: "每段 10 年 9 個月，依出生時行星在黃道上的順序輪值；本站算到第二層。" },
+      text: "每段 10 年 9 個分配月，依出生時行星在黃道上的順序輪值；本站算到第二層。" },
     { key: "cazimi", term: "日輪內", en: "Cazimi", chapter: "古典判斷",
       text: "行星幾乎落在太陽正中（阿拉伯文「在太陽之心」）。Lilly《Christian Astrology》1647 年版 p.113 定在離太陽 17 角分以內，"
         + "al-Bīrūnī《占星術入門》§481–484 定在不到 16 角分（1 角分是 1 度的 60 分之 1）。"

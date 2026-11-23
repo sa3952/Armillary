@@ -240,7 +240,7 @@ def application_features() -> list[str]:
     items.insert(1, "七種宮位制：" + "、".join(houses[code] for code in LLMS_HOUSE_SYSTEM_ORDER) + "（house systems）")
     items += [f"年度時間主星：{zh}（{en}）" for _, zh, en in time_lord_techniques()]
     status = _backend("core.method_status")
-    if "solar_return_chart" not in status.ANNUAL_PROVISIONAL_METHODS:
+    if "solar_return_chart" not in status.ANNUAL_METHODS:
         raise ValueError("the feature list names the solar return chart, but it has no method status")
     items.append("太陽回歸盤（solar return chart）")
     items += ["出生時間不確定時標出會變的結果（birth-time sensitivity）",

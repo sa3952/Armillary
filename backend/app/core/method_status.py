@@ -48,21 +48,24 @@ DECIDED_METHODS: frozenset[str] = frozenset({
     "classical_classifications",
     # 行速、停滯與東出西入：平均行度、逆行比法、月亮門檻、停滯天數與東出西入的意思都已裁定。
     "motion_states",
+    # 相位、阿拉伯點與行星時：現行預設與輸出方式已採用為本站做法。
+    "aspects",
+    "lots",
+    "planetary_hours",
 })
 
-# 維持 provisional 的方法：Lots 隨可用的上升點保留 provisional；月空亡的定義仍未定，
-# 已定的只有求解法；相位預設開啟不等於採用該方法；行星時隨基本輸出計算，但核准加入
-# 輸出不等於採用其定義（日主取日出所在民用日期等）。
-PROVISIONAL_METHODS: frozenset[str] = frozenset({
-    "lots", "void_of_course", "aspects", "planetary_hours",
-})
+# 維持 provisional 的方法：月空亡的入相序列尚未對獨立星表比對，上一次離相只回看 3 天。
+PROVISIONAL_METHODS: frozenset[str] = frozenset({"void_of_course"})
 
-# The annual route's methods: provisional until their output rows are decided.
-# Kept apart so the chart's partition test can name what /api/chart emits.
-ANNUAL_PROVISIONAL_METHODS: frozenset[str] = frozenset({
+# The annual route's methods, kept apart so the chart's partition test can name what
+# /api/chart emits.  All are adopted but the monthly profection, whose
+# rule for moving the month's sign is still open.
+ANNUAL_METHODS: frozenset[str] = frozenset({
     "annual_profection", "firdaria", "zodiacal_releasing", "extended_lots", "decennials",
     "monthly_profection", "solar_return_chart",
 })
+ANNUAL_PROVISIONAL_METHODS: frozenset[str] = frozenset({"monthly_profection"})
+ANNUAL_DECIDED_METHODS: frozenset[str] = ANNUAL_METHODS - ANNUAL_PROVISIONAL_METHODS
 
 METHOD_PERIODS: tuple[str, ...] = (
     "hellenistic", "medieval_arabic", "medieval_latin", "renaissance_early_modern", "modern",
@@ -172,7 +175,7 @@ if any(
 
 
 def method_status(module: str) -> str:
-    if module in DECIDED_METHODS:
+    if module in DECIDED_METHODS | ANNUAL_DECIDED_METHODS:
         return METHOD_STATUS_DECIDED
     if module in PROVISIONAL_METHODS | ANNUAL_PROVISIONAL_METHODS:
         return METHOD_STATUS_PROVISIONAL

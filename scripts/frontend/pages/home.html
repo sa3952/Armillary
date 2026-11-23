@@ -35,7 +35,7 @@
         </div>
         <ul>
           <li>行星位置、上升點與中天</li>
-          <li>宮位<em>七種宮位制可選，或不算宮位</em></li>
+          <li>宮位分割<em>七種，或不算宮位</em></li>
           <li>相位</li>
           <li>本質尊貴<em>廟、旺、陷、弱、界、面、三分性、外來</em></li>
           <li>日夜盤、命運點與精神點</li>
@@ -53,7 +53,7 @@
           <li>月小限<em>monthly profection</em><span class="li-note">小限那一年再分成十二個月</span></li>
           <li>法達<em>firdaria</em><span class="li-note">一生依固定年數分給七顆行星與月交點</span></li>
           <li>黃道釋放<em>zodiacal releasing</em><span class="li-note">從命運點與精神點起算的兩層期間</span></li>
-          <li>十年期<em>decennials</em><span class="li-note">每段 10 年 9 個月，七顆行星輪值</span></li>
+          <li>十年期<em>decennials</em><span class="li-note">每段 10 年 9 個分配月，七顆行星輪值</span></li>
         </ul>
       </div>
     </div>
@@ -84,22 +84,21 @@
   <section id="fig2">
     <div class="eyebrow">FIG 1.2 — 同一時刻，兩種黃道，上升星座不同</div>
     <h2>兩個網站算出不一樣的<br>上升星座，誰錯了？</h2>
-    <p><b>多半是輸入不同，不是誰算錯。</b>先對照兩邊的時區、夏令時間、出生地座標與出生時間；這四樣都一樣還是不同，常見原因是黃道的起算點：回歸黃道從春分點起算，恆星黃道扣掉歲差、從恆星背景起算。同一個上升點，在兩套裡讀出來的星座可以不一樣——下面就是。</p>
+    <p><b>多半是輸入不同，不是誰算錯。</b>同一個上升點，在回歸黃道與恆星黃道裡讀出來的星座可以不一樣：兩個都對，差的是起算點，不是天空。完整對照、可以換的口徑與邊界，見〈<a href="/zh-TW/features#zodiacs">功能</a>〉。</p>
 
     <div class="rules">
       <div class="rule-row">
         <span class="name">回歸黃道<i>tropical</i></span>
         <span class="readout">上升 ASC　<b>天秤 1°35′32.3″</b></span>
-        <span class="why">從春分點起算。這是多數西洋占星軟體的預設。</span>
+        <span class="why">從春分點起算。</span>
       </div>
       <div class="rule-row">
         <span class="name">恆星黃道<i>sidereal</i></span>
         <span class="readout">上升 ASC　<b>處女 6°58′59.9″</b></span>
-        <span class="why">扣掉歲差 24°36′32.4″（Fagan–Bradley）。上升星座因此退到前一個星座。</span>
+        <span class="why">扣掉歲差 24°36′32.4″（Fagan–Bradley）。</span>
       </div>
     </div>
 
-    <p class="stake">兩個都對，差的是起算點，不是天空。<b>但如果一張盤沒寫它用了哪一套，你就沒辦法拿它跟另一張盤對照，也沒辦法重現自己這一張。</b>渾儀把用了哪一套寫在每一次計算的結果與匯出檔裡；想換另一套，在計算頁換一個選項就行。</p>
   </section>
 
   <div id="log" class="tabula-band">
@@ -174,62 +173,13 @@
       <div class="sd-hint">拖曳上面的把手，或用方向鍵移動。五個刻度是後端實際取樣的時刻。</div>
     </div>
 
-    <p class="stake">跨過那條線的瞬間，整宮制下<b>十一個天體的落宮同時改變</b>。所以渾儀不替你猜一個好看的時刻——它在整個小時裡取樣，告訴你哪些判定在每個取樣時刻都相同、哪些在取樣之間翻面、翻面卡在哪十幾秒之間。<b>不確定的東西，就標成不確定。</b></p>
+    <p class="stake">跨過那條線的瞬間，整宮制下<b>十一個天體的落宮同時改變</b>。渾儀不替你猜一個好看的時刻，它在整個小時裡取樣，標出哪些判定翻面、翻面卡在哪十幾秒之間。<b>不確定的東西，就標成不確定。</b>取樣方法與邊界見〈<a href="/zh-TW/features#birth-time">功能</a>〉。</p>
   </section>
 
   <section id="moduli">
     <h2>眼前這個數字是天文事實，<br>還是有人替你選了一套技法？</h2>
     <p class="terse">分三個環標明，你不必猜。</p>
-
-    <div class="moduli">
-      <div class="ring r1">
-        <div class="ring-head">
-          <b lang="en">RING I</b><span>天文事實</span>
-          <i>直接計算結果，不含技法選擇</i>
-        </div>
-        <ul>
-          <li>時間轉換</li>
-          <li>天體位置<em>七政</em></li>
-          <li>月交點<em>密切與平均並列</em></li>
-          <li>軸點<em lang="en">ASC · MC · DSC · IC</em></li>
-          <li>恆星<em>{{fixed_star_count}} 顆與 {{fixed_star_cluster_count}} 個星團</em></li>
-          <li>Lilith 與 Priapus</li>
-          <li>站心月亮</li>
-          <li>額外角點</li>
-          <li>朔望與日月食</li>
-          <li>升降與中天</li>
-        </ul>
-      </div>
-
-      <div class="ring r2">
-        <div class="ring-head">
-          <b lang="en">RING II</b><span>幾何推導</span>
-          <i>純幾何轉換，算式印在數字上方</i>
-        </div>
-        <ul>
-          <li>反照點<em>antiscia，以巨蟹／摩羯軸鏡射</em></li>
-          <li>赤緯平行與反平行<em>17 世紀 Placidus 的界定，非古典傳統</em></li>
-        </ul>
-      </div>
-
-      <div class="ring r3">
-        <div class="ring-head">
-          <b lang="en">RING III</b><span>方法判斷</span>
-          <i>需要選定技法者，一律在卷宗記下方法版本與審閱狀態</i>
-        </div>
-        <ul>
-          <li>宮位分割<em>七種，或不算宮位</em></li>
-          <li>行星落宮<em>附距最近宮頭的角距</em></li>
-          <li>相位</li>
-          <li>本質尊貴</li>
-          <li>日夜盤</li>
-          <li>阿拉伯點<em>命運點（Lot of Fortune，也譯福點、幸運點）· 精神點（Lot of Spirit）</em></li>
-          <li>月空亡</li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="after">沒有勾選的模組不會計算，結果裡寫「未請求」——<em>不是給你一個預設值。</em></div>
+    <p>天文事實是直接算出的結果；幾何推導是純幾何轉換，算式印在數字上方；方法判斷是需要選定技法的項目，一律在卷宗記下方法版本與審閱狀態。每個環包含哪些項目，見〈<a href="/zh-TW/methods#rings">方法</a>〉。沒有勾選的模組不會計算，結果裡寫「未請求」，<em>不是給你一個預設值。</em></p>
   </section>
 
   <section id="privacy">
@@ -239,25 +189,19 @@
     <ol class="mech">
       <li>
         <b>沒有可以存出生資料的地方</b>
-        <span>不是「我們選擇不存」，是沒有那個元件：沒有帳號資料庫、沒有命盤資料庫、沒有工作階段儲存、沒有請求快取、沒有出生資料快取、沒有背景佇列。</span>
+        <span>沒有帳號資料庫、命盤資料庫、工作階段儲存、請求快取、出生資料快取、背景佇列。</span>
       </li>
       <li>
         <b>計算路徑不主動寫磁碟</b>
-        <span>請求內容 → 請求範圍的資料模型 → 行程鎖底下的同步計算 → 回應與計算卷宗 → 你的瀏覽器記憶體。只有在你按下時，才進剪貼簿或下載檔案。</span>
-      </li>
-      <li>
-        <b>計算請求期間寫檔會讓測試失敗</b>
-        <span>自動化測試在一次預設計算請求期間，攔截 Python 的檔案寫入介面（open、io.open、os.open）；只要出現一次帶寫入旗標的呼叫，測試就失敗。原生函式庫與其他請求組合不在這個測試的涵蓋範圍內。</span>
+        <span>有測試守著；原生函式庫與其他請求組合不在這個測試的涵蓋範圍內。</span>
       </li>
       <li>
         <b>日誌只有 {{telemetry_field_count}} 個固定欄位</b>
-        <span>每完成一個 API 請求輸出一行事件（網頁與靜態檔不記，伺服器出錯時才記），欄位是封閉清單。不含出生資料、IP、User-Agent、請求內容。這一行會留在容器日誌裡，保存方式見〈<a href="/zh-TW/legal/privacy">隱私政策</a>〉。</span>
-      </li>
-      <li>
-        <b>不引入第三方追蹤、分析或遠端日誌相依</b>
-        <span>不使用追蹤器、廣告、分析或遠端日誌；主機、DNS 與網域在同一家瑞士供應商，那一層的界線寫在〈信任中心〉。站上只有一個資料庫：內建的地名目錄，以唯讀不可變模式開啟，也不寫入你查詢的字串。</span>
+        <span>不含出生資料、IP、User-Agent、請求內容。</span>
       </li>
     </ol>
+
+    <p>各項機制的測試與涵蓋範圍，見〈<a href="/zh-TW/features#privacy">功能</a>〉。</p>
 
     <p>這些不必只聽我們說：<a href="/zh-TW/security/verify">〈親手驗證〉</a>教你用瀏覽器內建的開發者工具，自己看算一次盤送出的每一個請求都只到本站。</p>
 
@@ -277,14 +221,14 @@
   <section id="take" class="no-rule">
     <div class="eyebrow">整份可帶走</div>
     <h2>離開這個網站以後，<br>這份計算仍然完整。</h2>
-    <p>畫面與匯出讀同一份資料，不從畫面反推。勾「附驗算資料」匯出時，每一份都附完整逐步軌跡與計算收據，也含出生地的精確經緯度與海拔；預設（不勾「附驗算資料」）的匯出含天體、座標、宮位、相位與所選計算，不另列出生地座標，但星盤數值本身可推回出生地點。在相同輸入、版本、資料與計算口徑下重算，結果應當一致。</p>
+    <p>畫面與匯出讀同一份資料，不從畫面反推。要把軌跡、版本與收據一起帶走，匯出時勾「附驗算資料」。在相同輸入、版本、資料與計算口徑下重算，結果應當一致。</p>
     <div class="formats">
       <div><b lang="en">JSON</b><span>完整結構</span></div>
       <div><b lang="en">Markdown</b><span>可讀卷宗</span></div>
       <div><b lang="en">CSV</b><span>表格核對</span></div>
       <div><b>純文字</b><span>筆記保存</span></div>
     </div>
-    <p class="formats-note">結果頁另有列印版面：直接列印或存成 PDF 時，隱藏表單與控制項、展開所有摺疊區塊並印出結果；若已打開「技術細節與驗算資料」取得驗算資料，收據與驗算資料也一併印出。</p>
+    <p class="formats-note">預設與勾選的差別、列印版面，見〈<a href="/zh-TW/features#dossier">功能</a>〉。</p>
   </section>
 
   <div class="cta">

@@ -1236,8 +1236,10 @@ def _pair_record(
         raise ValueError("nearest aspect must belong to aspect_definitions")
     # The threshold depends only on the pair (its participants and the orb
     # configuration); a target the rule does not govern says why in its
-    # in_orb_reason_code.  A pair therefore never has two thresholds, and its
-    # one entry is the pair-level value.
+    # in_orb_reason_code.  Two thresholds in one pair would make the pair-level
+    # value wrong for some target, so that is refused rather than reported.
+    if len(pair_orbs) > 1:
+        raise ValueError(f"one pair, two orb thresholds: {sorted(pair_orbs)}")
     pair_threshold, pair_rule = next(iter(pair_orbs), (None, None))
 
     record = {

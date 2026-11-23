@@ -196,7 +196,7 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         "sources": [
             cited(("Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, "
                    "Persian Nativities IV (2019); Latin abridgement in Persian Nativities III (2010)"),
-                  ("IV.1.2-4: the periods, the diurnal sequence in full and the nocturnal "
+                  ("IV.1.2-4: the periods, the diurnal sequence as far as Saturn and the nocturnal "
                    "from the Moon; IV.1.8: the nodes govern alone once the seven planets' 70 "
                    "years are done; IV.7.24-25: by day the nodes follow Mars, by night "
                    "Mercury, both from age 71, and after 75 years the sequence returns to the "

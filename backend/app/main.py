@@ -766,7 +766,11 @@ def _lifespan(
     async def write_counts_on_stop(_application: FastAPI) -> AsyncIterator[None]:
         # Before the first request, so no search pays for the catalogue's shared tables.
         await run_in_threadpool(place_catalog.warm)
-        yield
+        flusher = asyncio.create_task(counter.flush_finished_periodically())
+        try:
+            yield
+        finally:
+            flusher.cancel()
         counter.flush()
         refusal_totals.flush()
 

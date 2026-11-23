@@ -8,14 +8,15 @@ number of browsers that day; the browser's own cache does the deduplication and
 the service never tells two visitors apart.
 
 Neither request is logged on its own.  Each worker keeps two integers and
-writes one aggregate line for each clock hour that had any count, when the
-next hour's first request arrives or the worker stops: the hour and the two
-counts.  No address, user agent, referrer, page or request time is kept.  A day's
+writes one aggregate line for each clock hour that had any count, at the
+latest FLUSH_INTERVAL_SECONDS after the hour ends (sooner if the next hour's
+first request arrives), or when the worker stops: the hour and the two counts.  No address, user agent, referrer, page or request time is kept.  A day's
 figures are the sum of its hours over every worker.
 """
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 import json
@@ -28,6 +29,9 @@ EVENT_NAME: Final = "visit_counts"
 EVENT_FIELDS: Final = ("event", "hour_utc", "page_views", "daily_visitors")
 # The day a "daily visitor" belongs to: the operator's and most visitors' day.
 COUNT_ZONE: Final = ZoneInfo("Asia/Taipei")
+# How often each worker checks for a finished hour, so an idle worker's last
+# hour reaches the journal within this bound; the daily archive relies on it.
+FLUSH_INTERVAL_SECONDS: Final = 60
 PAGE_VIEW: Final = "page_view"
 DAILY_VISITOR: Final = "daily_visitor"
 
@@ -93,6 +97,23 @@ class VisitCounter:
             self._counts[kind] += 1
         if finished is not None:
             self._emit(finished)
+
+    def flush_finished(self) -> None:
+        """Write the counted hour if it has ended, without waiting for a request."""
+
+        with self._lock:
+            hour = self._hour_of(self._clock())
+            if hour == self._hour:
+                return
+            line = self._take()
+            self._hour = hour
+        if line is not None:
+            self._emit(line)
+
+    async def flush_finished_periodically(self) -> None:
+        while True:
+            await asyncio.sleep(FLUSH_INTERVAL_SECONDS)
+            self.flush_finished()
 
     def flush(self) -> None:
         """Write the current hour's counts now (the worker is stopping)."""

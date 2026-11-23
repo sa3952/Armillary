@@ -84,7 +84,7 @@ def _plot1(layout: str, fid: str, data: dict, bound: _fx.Bound) -> str:
     out.append(_fx.text(x0 + 8, y(mean) + 18, f"比平均 {bound.num(data['mean_text'])} 慢（單線底）", "fx-t fx-small fx-key"))
     m = data["moments"]
     for key in ("retro", "direct"):
-        start = m[key] - (1 if key == "retro" else data["days"]["mercury"]["second_station_to_direct"])
+        start = m[key] - data["days"]["mercury"]["first_station_to_retrograde" if key == "retro" else "second_station_to_direct"]
         out.append(_fx.rect(x(start), top, x(m[key]) - x(start), bottom - top, "fx-fill-solid"))
     out.append(_fx.line(x0, y(0), x1, y(0), "fx-sunline"))
     pts = " ".join(f"{_fx.f(x(t))},{_fx.f(y(v * 60))}" for t, v in curve)

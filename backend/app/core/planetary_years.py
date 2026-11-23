@@ -95,7 +95,8 @@ _SOURCES: dict[str, dict] = {
                    "ll.1-4 not interpreted")),
         ],
         "note": (
-            "computed here as (minor + greater) / 2, the rule Valens III.16 states"
+            "computed here as (minor + greater) / 2, the rule Valens III.16 states; the "
+            "page works Saturn and Jupiter only, the other five follow the rule"
         ),
     },
     "greatest": {

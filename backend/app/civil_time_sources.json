@@ -426,21 +426,59 @@
     "note": "影像直連可用。"
    }
   },
-  "mo-1942-1945": {
+  "mo-1942": {
    "region": "macau",
-   "title": "1942–1945 年戰時時間",
-   "document": "澳門政府 1942–1945 年的立法條例與訓令（DIL 764、DIL 781、PT 3434、PT 3504、PT 3843）",
+   "title": "1942 年夏令時間開始",
+   "document": "立法條例第 764 號（DIL 764），1942 年 4 月 30 日公報第 9 期副刊",
+   "verification_level": "read_original",
+   "read": [
+    {
+     "label": "1942 年 4 月 30 日公報第 9 期副刊影像",
+     "url": "https://igallery.icm.gov.mo/Images/Archives/BO/MO_AH_PUB_BO_1942_04/MO_AH_PUB_BO_1942_04_00021_Grey.JPG"
+    }
+   ],
+   "holder": {
+    "name": "澳門檔案館公報影像",
+    "url": "https://igallery.icm.gov.mo/Images/Archives/BO/MO_AH_PUB_BO_1942_04/MO_AH_PUB_BO_1942_04_00021_Grey.JPG",
+    "note": "影像直連可用。"
+   }
+  },
+  "mo-1942-1943": {
+   "region": "macau",
+   "title": "1942 年回撥與 1943 年夏令時間",
+   "document": "立法條例第 781 號（DIL 781）；第 3434、3504 號訓令（PT 3434、PT 3504）",
    "verification_level": "relayed",
    "read": [
     {
      "label": "IANA 時區資料庫 2026d 版 asia 檔，Macau 一節，P Chan 2018-05-10 註記",
      "url": "https://github.com/eggert/tz/blob/2026d/asia"
+    },
+    {
+     "label": "1942 年 10 月 10 日公報第 21 期第 388 頁影像（DIL 781）",
+     "url": "https://igallery.icm.gov.mo/Images/Archives/BO/MO_AH_PUB_BO_1942_10/MO_AH_PUB_BO_1942_10_00002_Grey.JPG"
     }
    ],
    "holder": {
     "name": "澳門檔案館公報影像",
     "url": "https://igallery.icm.gov.mo/",
-    "note": "我們沒有讀到這幾份原件。公報影像在澳門檔案館的影像庫，沒有索引，需依年月逐頁翻找；時區資料庫引用的 LegisMac 查詢系統已失效。影像庫首頁 2026-10-16 查核時無法開啟（本表 2026-10-11 整理），網際網路檔案館只存有 2007 年的一個轉址頁，不是影像庫本身；其他各列引用的公報影像直連仍可開啟。"
+    "note": "DIL 781 已讀影像，但依其自然讀法回撥在 10 月 17 日，時區資料庫記 11 月 17 日，出入未解，本列仍依時區資料庫並標轉引；PT 3434、PT 3504 未讀到原件。"
+   }
+  },
+  "mo-1945": {
+   "region": "macau",
+   "title": "1945 年恢復標準時間",
+   "document": "第 3843 號訓令（PT 3843），1945 年 9 月 29 日公報第 39 期",
+   "verification_level": "read_original",
+   "read": [
+    {
+     "label": "1945 年 9 月 29 日公報第 39 期影像",
+     "url": "https://igallery.icm.gov.mo/Images/Archives/BO/MO_AH_PUB_BO_1945_09/MO_AH_PUB_BO_1945_09_00017_Grey.JPG"
+    }
+   ],
+   "holder": {
+    "name": "澳門檔案館公報影像",
+    "url": "https://igallery.icm.gov.mo/Images/Archives/BO/MO_AH_PUB_BO_1945_09/MO_AH_PUB_BO_1945_09_00017_Grey.JPG",
+    "note": "影像直連可用。"
    }
   },
   "mo-1946-1979": {
@@ -1666,7 +1704,7 @@
    "abbreviation": "+10",
    "summer_time": true,
    "regime": "summer_time",
-   "source": "mo-1942-1945"
+   "source": "mo-1942"
   },
   {
    "zone": "Asia/Macau",
@@ -1675,7 +1713,7 @@
    "abbreviation": "+09",
    "summer_time": false,
    "regime": "wartime_time",
-   "source": "mo-1942-1945"
+   "source": "mo-1942-1943"
   },
   {
    "zone": "Asia/Macau",
@@ -1684,7 +1722,7 @@
    "abbreviation": "+10",
    "summer_time": true,
    "regime": "summer_time",
-   "source": "mo-1942-1945"
+   "source": "mo-1942-1943"
   },
   {
    "zone": "Asia/Macau",
@@ -1693,7 +1731,7 @@
    "abbreviation": "+09",
    "summer_time": false,
    "regime": "wartime_time",
-   "source": "mo-1942-1945"
+   "source": "mo-1942-1943"
   },
   {
    "zone": "Asia/Macau",
@@ -1702,7 +1740,7 @@
    "abbreviation": "CST",
    "summer_time": false,
    "regime": "standard_time",
-   "source": "mo-1942-1945"
+   "source": "mo-1945"
   },
   {
    "zone": "Asia/Macau",

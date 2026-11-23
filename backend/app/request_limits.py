@@ -568,6 +568,18 @@ class ChartRequestBoundary:
         ):
             if (
                 scope["type"] == "http"
+                and scope.get("path") in self.bounded_json_paths
+                and _declares_body(scope)
+            ):
+                # A wrong method on a bounded path would be admitted as a
+                # calculation and have its body pumped; the answer is the
+                # one it gets without a body, given before any of that.
+                await _refuse(
+                    scope, receive, send, "unsupported_method", headers={"Allow": "POST"},
+                )
+                return
+            if (
+                scope["type"] == "http"
                 and (scope.get("method"), scope.get("path")) in _BODYLESS_ROUTES
                 and _declares_body(scope)
             ):

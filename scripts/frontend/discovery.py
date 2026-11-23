@@ -35,12 +35,10 @@ def robots_text(payload: dict) -> str:
         f"Disallow: {build_pages.API_PATH_PREFIX}", "Allow: /", "", f"Sitemap: {origin}/sitemap.xml", ""])
 
 def sitemap_date(item: Mapping, lastmod: dict) -> str:
-    """A page's <lastmod>: an article's own modified date, the day its page and its dateModified state; any other
-    page's lastmod record date (its content digest's date, which is also the date the page and its dateModified
-    state)."""
-    if is_article(item):
-        return item["article"]["modified"]
-    return lastmod["pages"][item["key"]]["lastmod"]
+    """A page's <lastmod>: the later of its lastmod record date (its content digest's date) and, for an article, its
+    own modified date (the day its dateModified states), so a changed article's date never goes backwards."""
+    recorded = lastmod["pages"][item["key"]]["lastmod"]
+    return max(recorded, item["article"]["modified"]) if is_article(item) else recorded
 
 def sitemap_text(payload: dict, lastmod: dict) -> str:
     origin = payload["origin"]
@@ -202,6 +200,11 @@ def _first_sentence(value: str) -> str:
     ends = [index for index in (text.find("。"), text.find("；")) if index >= 0]
     return text if not ends else text[:min(ends)] + "。"
 
+# A page whose one-line entry must not drop a disclosure: the support page's first sentence omits that the link to
+# Portaly leaves this site's privacy promise (wording as on the support page).
+LLMS_ENTRY_NOTES = {"support": "點進 Portaly 後，它自己的網站會載入 Meta、Google Tag Manager、Microsoft Clarity 等追蹤腳本並設定 cookie，"
+    "本站的隱私承諾到此為止。"}
+
 def llms_text(payload: dict, shell: str | None = None) -> str:
     """/llms.txt (llmstxt.org): the site's name, summary and pages, each page by title, address and its description's
     first sentence; the full descriptions and the page text are llms-full.txt's.
@@ -237,7 +240,7 @@ def llms_text(payload: dict, shell: str | None = None) -> str:
             listed.add(item["surface"])
             lines.append(
                 f"- [{_markdown_text(_title_without_brand(item['title']))}]({origin}{item['surface']}): "
-                f"{_first_sentence(item['description'])}"
+                f"{_first_sentence(item['description'])}{LLMS_ENTRY_NOTES.get(item['key'], '')}"
             )
         lines.append("")
     unlisted = {item["surface"] for item in payload["surfaces"] if item["indexable"]} - listed
@@ -252,7 +255,7 @@ def llms_text(payload: dict, shell: str | None = None) -> str:
     return re.sub(r"(https?://[^\s）]+)）", r"\1 ）", "\n".join(lines))
 LLMS_FULL_PAGE_KEYS = ("methods",)
 # Interface text with no meaning outside the page.
-_PLAIN_SKIPPED_TAGS = frozenset({"script", "style", "svg", "button", "summary", "template", "nav"})
+_PLAIN_SKIPPED_TAGS = frozenset({"script", "style", "svg", "button", "summary", "template"})
 _PLAIN_SKIPPED_CLASSES = frozenset({"ar-cite"})
 _PLAIN_VOID_TAGS = frozenset({"br", "hr", "img", "input", "meta", "link", "source", "wbr", "col", "area"})
 _PLAIN_BLOCK_TAGS = frozenset({"p", "div", "section", "article", "header", "footer", "nav", "aside", "main", "ul",

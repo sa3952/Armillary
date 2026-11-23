@@ -116,8 +116,8 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
                    "summary. His own rule for moving the month's sign is IX.1.26-31 below, "
                    "which the product does not adopt"),
                   SECONDARY_ONLY,
-                  ("known only from Dykes's spoken summary (The Astrology Podcast, episode "
-                   "218, 2019); the book is not checked")),
+                  ("Dykes's spoken summary (The Astrology Podcast, episode 218, 2019); the "
+                   "book's own rule is read in the IX.1.26-31 entry below")),
             cited("Abu Ma'shar, On the Revolutions of the Years of Nativities IX.1.26-31, tr. B. Dykes, Persian Nativities IV (2019)",
                   ("each of the four indicators moves by month according to its "
                    "sign (§32 moves the second indicator always forward): forward from a fixed sign, backward from a movable sign (the second "
@@ -133,11 +133,15 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
                    "the profection year into thirteen months of 28 days 1 hour 51 minutes, the "
                    "thirteenth repeating the year's sign, which the product does not compute"),
                   TRANSLATION_READ, "Wright's English translation"),
-            cited(("[Abū Maʿshar], De revolutionibus nativitatum I.1, Latin translation printed "
+            cited(("[Abū Maʿshar], De revolutionibus nativitatum I.2, Latin translation printed "
                    "under the name of Hermes (Basel 1559) p.211"),
                   ("'Solaris mensis xxx graduum': a solar month of 30 degrees, in his "
                    "argument for why the year follows the Sun; no monthly profection rule there"),
                   TRANSLATION_READ, "the medieval Latin translation at the cited page"),
+            cited(("Abu Ma'shar, On the Revolutions of the Years of Nativities I.3.9-13 and "
+                   "IX.1.23-24, tr. B. Dykes, Persian Nativities IV (2019) pp.151, 557-558"),
+                  "the Sun's passage through 30 degrees is a month",
+                  TRANSLATION_READ, "read in Dykes's English; the Arabic not read"),
             cited("Guido Bonatti, Liber astronomiae Tr.9 (Dykes translation)",
                   ("profection by equal degrees, 30 degrees a year, 2 degrees 30 minutes a "
                    "month, 5 minutes a day, counted from birth; a different method the product "

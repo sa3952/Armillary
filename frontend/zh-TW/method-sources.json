@@ -1657,7 +1657,7 @@
    "default_profile": "twelvefold_from_sign_start_v1",
    "documentary_evidence": "P.Berl. 9825 (horoscope of 319 CE) gives the twelfth-part signs only. Greenbaum and Jones 2017 para. 188: the Moon, Saturn, Jupiter (at its corrected position), Mars and Venus match the 13-fold formula; Mercury, both nodes and the prenatal full Moon do not, and match the 12-fold formula, which also fits Saturn, Jupiter and Mars. So only the Moon and Venus favour the 13-fold rule against the 12-fold one, and three planets fit both. They leave two explanations open: the 13-fold rule with the minutes neglected, or the 12-fold rule miscalculated for the Moon and Venus.",
    "lord_rule": "The lord listed is the domicile lord of the twelfth-part's sign in the traditional seven-planet scheme (the product's domicile table). Later steps that look at which planets occupy or aspect that sign are not computed; this product lists positions and lords only.",
-   "not_computed": "Manilius's further division of each part among the five planets; the midheaven (Paulus ch.22's rule covers the angles, but the pages read give no worked midheaven example); judgements of which planets occupy or aspect the twelfth-part.",
+   "not_computed": "Manilius's further division of each part among the five planets; the midheaven (Paulus ch.22's rule covers planets, angles and lots, the midheaven included; the page works only Mercury and the Moon, so leaving it out is this product's choice, not the text's limit); judgements of which planets occupy or aspect the twelfth-part.",
    "profiles": {
     "thirteenfold_from_sign_start_v1": "Multiply the degrees inside the sign by 13 and count on from the start of the same sign; the same as multiplying by 12 and counting on from the point's own degree. The product multiplies the full position, minutes included; the worked examples of Paulus and Olympiodorus use whole degrees, and Greenbaum and Jones infer that P.Berl. 9825 multiplied the whole degrees and disregarded the minutes.",
     "twelvefold_from_sign_start_v1": "Multiply the degrees and minutes inside the sign by 12 and count the product on from the start of the same sign, 30 to each sign. The product's default. At sign level this equals the division of each sign into twelve parts of 2 deg 30 min given to the sign itself and the following signs in order."
@@ -2109,7 +2109,7 @@
      "citation": "Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, Persian Nativities IV (2019); Latin abridgement in Persian Nativities III (2010)",
      "read_at": "Dykes's English translation, PN IV pp.116-117, 364-366 and 392-394, read at those pages; the Arabic not checked",
      "reading": "translation_read",
-     "says": "IV.1.2-4: the periods, the diurnal sequence in full and the nocturnal from the Moon; IV.1.8: the nodes govern alone once the seven planets' 70 years are done; IV.7.24-25: by day the nodes follow Mars, by night Mercury, both from age 71, and after 75 years the sequence returns to the luminary it began from (Book IV has chapters IV.1-IV.7 only)"
+     "says": "IV.1.2-4: the periods, the diurnal sequence as far as Saturn and the nocturnal from the Moon; IV.1.8: the nodes govern alone once the seven planets' 70 years are done; IV.7.24-25: by day the nodes follow Mars, by night Mercury, both from age 71, and after 75 years the sequence returns to the luminary it began from (Book IV has chapters IV.1-IV.7 only)"
     },
     {
      "citation": "[Abū Maʿshar], De revolutionibus nativitatum, Lib. II, Latin translation printed under the name of Hermes (Basel 1559) pp.264, 272",
@@ -2868,7 +2868,7 @@
     },
     {
      "citation": "Abu Ma'shar, On the Revolutions of the Years of Nativities, tr. B. Dykes, Persian Nativities IV (2019)",
-     "read_at": "known only from Dykes's spoken summary (The Astrology Podcast, episode 218, 2019); the book is not checked",
+     "read_at": "Dykes's spoken summary (The Astrology Podcast, episode 218, 2019); the book's own rule is read in the IX.1.26-31 entry below",
      "reading": "secondary_only",
      "says": "the year's sign is also the first month's sign; the monthly revolution charts are cast when the Sun reaches the natal Sun's degree in each following sign, the solar return being also the first month; Ptolemy's monthly method rejected. Timing the profected months by those same instants is the product's reading of that summary. His own rule for moving the month's sign is IX.1.26-31 below, which the product does not adopt"
     },
@@ -2885,10 +2885,16 @@
      "says": "the monthly revolution is taken each time the Sun reaches the degree and minute it held at the nativity or the revolution; the same section divides the profection year into thirteen months of 28 days 1 hour 51 minutes, the thirteenth repeating the year's sign, which the product does not compute"
     },
     {
-     "citation": "[Abū Maʿshar], De revolutionibus nativitatum I.1, Latin translation printed under the name of Hermes (Basel 1559) p.211",
+     "citation": "[Abū Maʿshar], De revolutionibus nativitatum I.2, Latin translation printed under the name of Hermes (Basel 1559) p.211",
      "read_at": "the medieval Latin translation at the cited page",
      "reading": "translation_read",
      "says": "'Solaris mensis xxx graduum': a solar month of 30 degrees, in his argument for why the year follows the Sun; no monthly profection rule there"
+    },
+    {
+     "citation": "Abu Ma'shar, On the Revolutions of the Years of Nativities I.3.9-13 and IX.1.23-24, tr. B. Dykes, Persian Nativities IV (2019) pp.151, 557-558",
+     "read_at": "read in Dykes's English; the Arabic not read",
+     "reading": "translation_read",
+     "says": "the Sun's passage through 30 degrees is a month"
     },
     {
      "citation": "Guido Bonatti, Liber astronomiae Tr.9 (Dykes translation)",
@@ -3017,7 +3023,7 @@
      "verification": "later_literature_hellenistic_source_not_confirmed"
     },
     "middle": {
-     "note": "computed here as (minor + greater) / 2, the rule Valens III.16 states",
+     "note": "computed here as (minor + greater) / 2, the rule Valens III.16 states; the page works Saturn and Jupiter only, the other five follow the rule",
      "sources": [
       {
        "citation": "Valens, Anthologies III.16 (Kroll 1908 p.157)",

@@ -165,8 +165,9 @@ server {
 }
 
 server {
-    listen 443 ssl http2 default_server;
-    listen [::]:443 ssl http2 default_server;
+    listen 443 ssl default_server;
+    listen [::]:443 ssl default_server;
+    http2 on;
     server_name _;
     access_log off;
     error_log /var/log/nginx/error.log emerg;
@@ -241,8 +242,9 @@ server {
 }
 
 server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
     server_name __STAGING_WWW_SERVER_NAME__;
     ssl_certificate __TLS_CERTIFICATE_PATH__;
     ssl_certificate_key __TLS_CERTIFICATE_KEY_PATH__;
@@ -269,8 +271,9 @@ server {
 }
 
 server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
     server_name __STAGING_SERVER_NAME__;
 
     ssl_certificate __TLS_CERTIFICATE_PATH__;

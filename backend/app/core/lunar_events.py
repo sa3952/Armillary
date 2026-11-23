@@ -547,16 +547,22 @@ def _eclipse_result(kind: str, retflag: int, tret: tuple[float, ...]) -> dict:
 # reference would skip an eclipse up to 8.64 s before it.  Start past that
 # window and keep only a maximum strictly before the reference.
 _BACKWARD_SEARCH_MARGIN_DAYS = 0.001
+# The search needs one or two steps; the cap only stops a search that never converges.
+_BACKWARD_SEARCH_MAX_STEPS = 100
 
 
 def _previous_strictly_before(search, reference_jd_ut: float):
     start = reference_jd_ut + _BACKWARD_SEARCH_MARGIN_DAYS
-    while True:
+    for _ in range(_BACKWARD_SEARCH_MAX_STEPS):
         flag, times = search(start)
         if times[0] < reference_jd_ut:
             return flag, times
         # Starting at this maximum makes Swiss reject it and look earlier.
         start = times[0]
+    raise RuntimeError(
+        "the backward eclipse search did not move before the reference "
+        f"instant within {_BACKWARD_SEARCH_MAX_STEPS} steps"
+    )
 
 
 def compute_previous_eclipses(reference_jd_ut: float, trace: Trace) -> dict:

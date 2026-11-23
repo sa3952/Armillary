@@ -389,7 +389,7 @@
     zr_fortune_level_2: Object.freeze({ title: "命運點・第二層", short: "命運 2", subtitle: "黃道釋放・小期", prefix: "小期" }),
     zr_spirit_level_1: Object.freeze({ title: "精神點・第一層", short: "精神 1", subtitle: "黃道釋放・大期", prefix: "大期" }),
     zr_spirit_level_2: Object.freeze({ title: "精神點・第二層", short: "精神 2", subtitle: "黃道釋放・小期", prefix: "小期" }),
-    decennials_level_1: Object.freeze({ title: "十年期・第一層", short: "十年期 1", subtitle: "每段 10 年 9 個月", prefix: "第一層" }),
+    decennials_level_1: Object.freeze({ title: "十年期・第一層", short: "十年期 1", subtitle: "每段 10 年 9 個分配月", prefix: "第一層" }),
     decennials_level_2: Object.freeze({ title: "十年期・第二層", short: "十年期 2", subtitle: "依小年分月", prefix: "第二層" }),
   });
 
@@ -521,7 +521,7 @@
     firdaria_level_1: Object.freeze({ title: "法達", short: "法達", note: "主期，75 年一輪" }),
     zr_fortune_level_1: Object.freeze({ title: "黃道釋放・命運點", short: "命運點", note: "第一層大期" }),
     zr_spirit_level_1: Object.freeze({ title: "黃道釋放・精神點", short: "精神點", note: "第一層大期" }),
-    decennials_level_1: Object.freeze({ title: "十年期", short: "十年期", note: "每段 10 年 9 個月" }),
+    decennials_level_1: Object.freeze({ title: "十年期", short: "十年期", note: "每段 10 年 9 個分配月" }),
   });
 
   /** 某一天是幾足歲：落在哪個年度（太陽回歸年界）就是那個年度的 n；最後一年之後是 n + 1。 */
@@ -811,7 +811,7 @@
       [null, "「黃道釋放」這個名稱與「第一層」「第二層」的分層名稱，是現代（Schmidt、Brennan）的整理，不是 Valens 的用語。"],
     ]), decennials: Object.freeze([
       [["Vettius Valens, Anthologies VI.6", "Valens VI.7"],
-        "Vettius Valens《占星選集》（Anthologiae）VI.6–VI.7（Pingree 的章號；Kroll 校勘本為 VI.5–VI.7）：每段 10 年 9 個月、依出生時的黃道順序、分配年 360 日。",
+        "Vettius Valens《占星選集》（Anthologiae）VI.6–VI.7（Pingree 的章號；Kroll 校勘本為 VI.5–VI.7）：每段 10 年 9 個分配月、依出生時的黃道順序、分配年 360 日。",
         "translation_read", "（Riley 英譯，公開的重排本；希臘文未核）"], ["Firmicus Maternus, Mathesis II.26-27",
         "Firmicus Maternus《Mathesis》II.26–27：日盤從太陽、夜盤從月亮起，每段再依小年分成月。",
         "original_language_read", "（拉丁文本）"]]), monthly_profection: Object.freeze([["Vettius Valens, Anthologies IV.28",

@@ -76,8 +76,8 @@ DOMICILE_LORD_BY_SIGN = {
 }
 
 # Listed points, in order: the seven planets; the ascendant when the chart has
-# angles; Fortune and Spirit when computed.  Paulus ch.22's rule covers the
-# angles too, but no text read works the midheaven's twelfth-part as an example.
+# angles; Fortune and Spirit when computed.  Paulus ch.22's rule covers every
+# angle; leaving out the midheaven is this product's choice, not the text's limit.
 POINT_CATEGORIES = ("classical_planet", "angle", "lot")
 _ANGLE_POINTS = (("asc", "上升"),)
 _LOT_POINTS = (("fortune", "命運點"), ("spirit", "精神點"))
@@ -425,8 +425,9 @@ METHOD_SOURCE_ENTRIES: dict[str, dict] = {
         ),
         "not_computed": (
             "Manilius's further division of each part among the five planets; the "
-            "midheaven (Paulus ch.22's rule covers the angles, but the pages read give no "
-            "worked midheaven example); judgements of which planets occupy or aspect "
+            "midheaven (Paulus ch.22's rule covers planets, angles and lots, the midheaven "
+            "included; the page works only Mercury and the Moon, so leaving it out is this "
+            "product's choice, not the text's limit); judgements of which planets occupy or aspect "
             "the twelfth-part."
         ),
     },

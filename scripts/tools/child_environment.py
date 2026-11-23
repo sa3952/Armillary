@@ -105,8 +105,8 @@ def require_all(environment: Mapping[str, str] | None = None) -> bool:
 
 def _dotted_test(node_id: str) -> str:
     """One spelling for a pytest node id and its JUnit form (dotted class name
-    plus test name), without parameters."""
-    return node_id.split("[", 1)[0].replace(".py::", ".").replace("/", ".").replace("::", ".")
+    plus test name), without parameters or an xdist `@group`."""
+    return node_id.split("[", 1)[0].split("@", 1)[0].replace(".py::", ".").replace("/", ".").replace("::", ".")
 
 
 _EXPECTED_DOTTED = {_dotted_test(node_id): reason for node_id, reason in EXPECTED_SKIPS.items()}

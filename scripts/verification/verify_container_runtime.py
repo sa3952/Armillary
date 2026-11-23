@@ -869,7 +869,7 @@ def _start_container(image: str, workers: int, platform: str | None) -> tuple[st
 # precompiled application and standard-library caches are there to be read,
 # and no __pycache__ appeared under /app while the workers imported it.
 _CONTAINER_CONTROL_PROBE = r"""
-import errno, importlib.util, json, os, sys
+import errno, importlib.util, json, os, sys, sysconfig
 root_options = None
 with open("/proc/self/mountinfo", encoding="utf-8") as handle:
     for line in handle:
@@ -900,7 +900,7 @@ print(json.dumps({
     "bytecode": {
         "dont_write": sys.flags.dont_write_bytecode,
         "app_pyc": os.path.isfile(importlib.util.cache_from_source("/app/backend/app/main.py")),
-        "stdlib_pyc": os.path.isfile(importlib.util.cache_from_source("/usr/local/lib/python3.15/argparse.py")),
+        "stdlib_pyc": os.path.isfile(importlib.util.cache_from_source(os.path.join(sysconfig.get_path("stdlib"), "argparse.py"))),
         "app_pycache": any("__pycache__" in names for _, names, _ in os.walk("/app")),
     },
 }, sort_keys=True))

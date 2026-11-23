@@ -7,8 +7,9 @@ not-yet-started replacement before it notices another dead worker.  With two
 workers on similar request counts both are regularly absent together and the
 whole site stops answering.  Here the supervisor owns the request limit
 instead: workers never exit on it, and a worker over its limit is retired only
-after its replacement is serving, one worker at a time, so the listening
-socket always has a ready worker behind it.
+after its replacement is serving, one worker at a time and only once the
+previous retiree has exited, so the listening socket always has a ready worker
+behind it and recycling adds at most two processes.
 
 Run as ``python -c "...; from app.worker_supervisor import main; main()" <uvicorn args>``.
 """
@@ -28,6 +29,9 @@ from uvicorn.config import STARTUP_FAILURE, Config
 from uvicorn.protocols.http.h11_impl import H11Protocol
 from uvicorn.server import Server
 from uvicorn.supervisors.multiprocess import Multiprocess, Process, logger
+
+
+VERIFIED_UVICORN = "0.54.0"
 
 
 class _DrainingH11Protocol(H11Protocol):
@@ -184,6 +188,11 @@ class RollingMultiprocess(Multiprocess):
                     return
         if self._pending is not None:
             self._advance_recycle()
+            return
+        if self._retiring:
+            # One worker draining at a time: the next recycle waits until the last
+            # retiree has exited, so at most one replacement and one retiree run
+            # beside the serving workers.  Dead workers above are never held back.
             return
         while self._restart_queue:
             old = self._restart_queue.pop(0)

@@ -108,9 +108,9 @@ def build() -> tuple[dict[str, str], list[str]]:
         f'這張盤是 <span class="mono">{_demo.dms(obliquity["真黃赤交角ε(度)"], 2)}</span>，'
         f'平值 <span class="mono">{_demo.dms(obliquity["平黃赤交角(度)"], 2)}</span> '
         f'加章動 <span class="mono">{obliquity["交角章動(度)"] * 3600:+.3f}″</span>',
-        f"<b>{zh(len(hour['changed_classical']))}顆星的落宮會在同一個時刻附近一起換宮。"
+        f"<b>{zh(len(hour['changed_classical']))}顆古典行星（七政）的落宮會在同一個時刻附近一起換宮。"
         f"我們把那個時刻夾在 {site['transition_resolution_seconds']} 秒以內的區間裡。</b>",
-        f"<div><b>{len(hour['changed_classical'])}</b><span>顆星的落宮同時改變</span></div>",
+        f"<div><b>{len(hour['changed_classical'])}</b><span>顆古典行星（七政）的落宮同時改變</span></div>",
         f"<div><b>{hour['asc_range']:.2f}°</b><span>上升點在這一小時內取樣到的範圍</span></div>",
         f"做法是對整個小時取樣{zh(hour['probes'])}個時刻",
         f"月亮在每個取樣點都在{hour['moon_sign']}",

@@ -25,14 +25,19 @@ from __future__ import annotations
 import argparse
 from collections import defaultdict
 from collections.abc import Iterable
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
+import os
+from pathlib import Path
 import re
 import sys
 from typing import TextIO
 from zoneinfo import ZoneInfo
 
 COUNT_ZONE = ZoneInfo("Asia/Taipei")
+# A worker writes each finished hour within one minute (FLUSH_INTERVAL_SECONDS in backend/app/visit_counts.py,
+# not imported: this script runs on the host).  A day is sealed only after this much longer than that.
+SEAL_AFTER_DAY_END = timedelta(minutes=10)
 VISIT_MARKER = "VISIT_COUNTS "
 EVENT_MARKER = "PRIVACY_EVENT "
 REFUSALS_MARKER = "PRIVACY_REFUSALS "
@@ -83,11 +88,13 @@ def _payload(message: str, marker: str) -> dict | None:
     return payload
 
 
-def daily_visits(stream: TextIO) -> dict[str, tuple[int, int]]:
-    """{Taiwan date: (page views, daily visitors)}."""
+def daily_visits(stream: TextIO, earliest: list[int] | None = None) -> dict[str, tuple[int, int]]:
+    """{Taiwan date: (page views, daily visitors)}; `earliest`, when given, receives the oldest receive time seen."""
     days: dict[str, list[int]] = defaultdict(lambda: [0, 0])
     lines = 0
-    for message, _stamp in _entries(stream):
+    for message, stamp in _entries(stream):
+        if earliest is not None and stamp is not None and (not earliest or stamp < earliest[0]):
+            earliest[:] = [stamp]
         line = _payload(message, VISIT_MARKER)
         if line is None: continue
         hour, views, visitors = line.get("hour_utc"), line.get("page_views"), line.get("daily_visitors")
@@ -102,6 +109,48 @@ def daily_visits(stream: TextIO) -> dict[str, tuple[int, int]]:
         lines += 1
     if not lines: raise ReportError("no VISIT_COUNTS line in the input (wrong container, or --since too short)")
     return {day: (counts[0], counts[1]) for day, counts in sorted(days.items())}
+
+
+def complete_days(days: dict[str, tuple[int, int]], earliest_us: int, now: datetime) -> dict[str, tuple[int, int]]:
+    """The days the journal holds whole: begun after its oldest entry and ended (Taiwan) at least
+    SEAL_AFTER_DAY_END ago, so every worker has written its last hour of the day."""
+    kept = {}
+    for day, counts in days.items():
+        start = datetime.strptime(day, "%Y-%m-%d").replace(tzinfo=COUNT_ZONE)
+        if start + timedelta(days=1) + SEAL_AFTER_DAY_END <= now and start.timestamp() * 1_000_000 >= earliest_us:
+            kept[day] = counts
+    return kept
+
+
+def read_archive(path: Path) -> dict[str, tuple[int, int]]:
+    if not path.exists(): return {}
+    rows = path.read_text(encoding="utf-8").splitlines()
+    if not rows or rows[0] != "日期\t瀏覽數\t今日訪客數": raise ReportError(f"{path} is not a visit archive")
+    days = {}
+    for row in rows[1:]:
+        fields = row.split("\t")
+        if len(fields) != 3 or not all(field.isdigit() for field in fields[1:]):
+            raise ReportError(f"{path}: unreadable row {row[:60]!r}")
+        days[fields[0]] = (int(fields[1]), int(fields[2]))
+    return days
+
+
+def archive(stream: TextIO, path: Path, now: datetime) -> list[str]:
+    """Add each whole day the journal holds and the archive lacks; a day already archived is never rewritten
+    (the journal may since have dropped its first hours).  Returns the days added."""
+    earliest: list[int] = []
+    days = daily_visits(stream, earliest)
+    if not earliest: raise ReportError("--archive needs `journalctl -o json`: plain lines carry no receive time")
+    kept = read_archive(path)
+    added = sorted(day for day in complete_days(days, earliest[0], now) if day not in kept)
+    if not added: return []
+    kept.update({day: days[day] for day in added})
+    partial = path.with_name(path.name + ".partial")
+    with partial.open("w", encoding="utf-8") as out:
+        print_daily(dict(sorted(kept.items())), out)
+    os.chmod(partial, 0o640)
+    os.replace(partial, path)
+    return added
 
 
 def chart_load(stream: TextIO) -> dict[str, dict[str, int]]:
@@ -154,9 +203,14 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--chart-load", action="store_true",
                         help="per UTC hour: chart requests, 503 refusals and answers of a second or more")
+    parser.add_argument("--archive", type=Path, metavar="FILE",
+                        help="add each whole Taiwan day the journal holds to FILE (journal JSON only); never rewrites a day")
     arguments = parser.parse_args(argv)
     try:
-        if arguments.chart_load:
+        if arguments.archive is not None:
+            added = archive(sys.stdin, arguments.archive, datetime.now(timezone.utc))
+            print(f"[visit archive] added {', '.join(added) if added else 'nothing'}")
+        elif arguments.chart_load:
             print_load(chart_load(sys.stdin), sys.stdout)
         else:
             print_daily(daily_visits(sys.stdin), sys.stdout)

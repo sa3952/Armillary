@@ -737,7 +737,8 @@ def _night_data(sky: Sky, data: dict, pick) -> dict:
     ticks = [at(10, 26, 0), at(10, 31, 0), at(11, 5, 0), at(11, 10, 0), at(11, 15, 0)]
     close_ticks = [start, at(11, 4, 21), at(11, 5, 0), end]
     spans = {(key, band): pick(key, band) for key, _, _ in PROFILES for band, _ in BANDS if data["crossings"][key][band]}
-    return {"start": start, "end": end, "states": states, "path": path, "closest": closest,
+    span_minutes = {k: _minutes_between(swe, *v) for k, v in spans.items()}
+    return {"start": start, "end": end, "states": states, "span_minutes": span_minutes, "path": path, "closest": closest,
             "sun_radius": transit["radius"], "conjunction": this["conjunction"], "closest_at": transit["closest_at"],
             "separation": transit["closest"], "mercury_diameter": swe.pheno_ut(this["conjunction"], swe.MERCURY)[3],
             "spans": spans, "ticks": ticks, "close_ticks": close_ticks, "far_end": at(11, 16, 0),
@@ -748,8 +749,12 @@ def _night_data(sky: Sky, data: dict, pick) -> dict:
             "range_text": (_short(swe, start), _short(swe, end)),
             "far_text": (_slash(swe, ticks[0]), _slash(swe, at(11, 16, 0)))}
 
-def _hours(span: list[float]) -> str:
-    minutes = math.floor((span[1] - span[0]) * 1440)
+def _minutes_between(swe, start: float, end: float) -> int:
+    """Whole minutes between the two clock labels as printed (each truncated to the minute)."""
+    a, b = (dt.datetime(*_local(swe, jd)) for jd in (start, end))
+    return round((b - a).total_seconds() / 60)
+
+def _hours(minutes: int) -> str:
     return f"{minutes // 60} 小時 {minutes % 60} 分"
 
 def _swatch(x: float, y: float, cls: str, name: str) -> str:
@@ -812,7 +817,7 @@ def _scale_plot(layout: str, fid: str, data: dict, night: dict, bound: _fx.Bound
         elif row_key is None:
             note = "沒有任何時刻符合"
         elif span:
-            note = bound.num(_hours(span))
+            note = bound.num(_hours(night["span_minutes"][(row_key, row_band)]))
         if wide:
             name(y, bound.label(row_label))
         else:
@@ -981,7 +986,7 @@ def build() -> tuple[dict[str, str], list[str]]:
     hel = pick("hellenistic", "under_beams")
     swift = [x for x in data["swift"] if window[0] < x < window[1]]
     retro_in_beams = min(this["end"], beams[1]) - max(this["start"], beams[0])
-    cazimi_minutes = round((cazimi[1] - cazimi[0]) * 1440)
+    cazimi_minutes = _minutes_between(swe, *cazimi)
     sup = data["superior_before"]
     sup_beams = data["lilly_beams_sup"]
     syn, dur, arcs = st["synodic"], st["durations"], st["arcs"]

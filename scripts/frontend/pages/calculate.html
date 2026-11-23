@@ -47,7 +47,8 @@
           <legend>出生日期與時間</legend>
           <fieldset class="choice-group" id="precision-choice" aria-describedby="precision-help">
           <legend class="choice-lead" id="precision-lead">你對出生時刻的把握程度</legend>
-          <details><summary>出生時間精確度說明</summary><p class="note" id="precision-help">不知道確切出生時間？選『只知道日期』或『只知道約略小時』，結果會告訴你上升點與宮位在這段時間裡有沒有換（只知道日期時不算上升點與宮位）。只知道日期時，結果以一個<button type="button" class="term" data-term="representative_instant">代表性時刻</button>代表這一天。</p></details>
+          <span class="visually-hidden" id="precision-help">不知道確切出生時間時，可選只知道日期或只知道約略小時；下方有完整說明。</span>
+          <details><summary>出生時間精確度說明</summary><p class="note" id="precision-detail">不知道確切出生時間？選『只知道日期』或『只知道約略小時』，結果會告訴你上升點與宮位在這段時間裡有沒有換（只知道日期時不算上升點與宮位）。只知道日期時，結果以一個<button type="button" class="term" data-term="representative_instant">代表性時刻</button>代表這一天。</p></details>
           <div class="choice">
             <label>
               <input type="radio" name="precision" value="exact" checked>
@@ -230,7 +231,7 @@
             <p class="note">已依古典作法勾好；不要的可以取消。</p>
             <div class="plan-checks">
               <label><input type="checkbox" class="option-control" id="plan-body_selection_preset" data-plan-key="body_selection_preset" data-plan-on="classical_seven_v1" data-plan-off="custom">只算古典七顆行星（太陽、月亮、水星、金星、火星、木星、土星）</label>
-              <label><input type="checkbox" class="option-control" id="plan-include_lots" data-plan-key="include_lots">日盤／夜盤，以及命運點與精神點</label>
+              <label><input type="checkbox" class="option-control" id="plan-include_lots" data-plan-key="include_lots">日盤／夜盤，以及命運點、精神點與七個延伸的點</label>
               <label><input type="checkbox" class="option-control" id="plan-include_domicile_exaltation" data-plan-key="include_domicile_exaltation">廟、旺、陷、弱</label>
               <label><input type="checkbox" class="option-control" id="plan-peregrine_profile" data-plan-key="peregrine_profile" data-plan-on="lilly_1647_p112_v1"><span>外來 <span class="en" lang="en">Peregrine</span>（依 Lilly 1647 判）</span></label>
               <label><input type="checkbox" class="option-control" id="plan-include_dodecatemoria" data-plan-key="include_dodecatemoria"><span>十二分部 <span class="en" lang="en">Dodecatemoria</span></span></label>
@@ -477,7 +478,7 @@
               <option value="saturn">土星</option>
             </select>
           </span>
-          <p class="note">十年期（每段 10 年 9 個月）的起點，古書有不同的規則；本站預設不需要判斷的 Firmicus 規則，不替你判斷光體（太陽與月亮）的好壞。說明見〈<a href="/zh-TW/methods/decennials">十年期的規則、出處與驗算</a>〉。</p>
+          <p class="note">十年期（每段 10 年 9 個分配月）的起點，古書有不同的規則；本站預設不需要判斷的 Firmicus 規則，不替你判斷光體（太陽與月亮）的好壞。說明見〈<a href="/zh-TW/methods/decennials">十年期的規則、出處與驗算</a>〉。</p>
           <div class="annual-choice">
           <label for="annual-fir-node">法達夜盤的兩個月交點排在哪裡</label>
           <select id="annual-fir-node">
